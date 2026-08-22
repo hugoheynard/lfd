@@ -6,7 +6,29 @@
 >
 > Audit : [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md) §P0-6.
 
-## 1. Les specs ne sont typecheckées nulle part
+## 1. ~~Les specs ne sont typecheckées nulle part~~ — FERMÉ le 2026-08-22
+
+> **La porte est posée.** `tsc --noEmit -p tsconfig.test.json` tourne dans le
+> job `backend` de la CI, à côté du typecheck de production. 194 erreurs → 0.
+>
+> Falsifié : renommer une méthode d'un double de test laisse `tsc --noEmit`
+> (l'ancien) à **zéro** et fait passer la nouvelle porte à **1**.
+>
+> Deux choses en sont sorties, qui disent ce que le trou coûtait vraiment :
+>
+> - un vrai défaut de production — `ListTvaRates` composait son usage par défaut
+>   avec **deux canaux sur trois**. Un taux que seule la plateforme B2B utilise
+>   s'affichait « 0 famille », donc supprimable ; la base l'aurait refusé, mais
+>   l'écran promettait l'inverse ;
+> - `container/worker.ts` est **sorti** de cette configuration. Il vit dans le
+>   monde Cloudflare Workers, a son propre tsconfig, et le compiler avec les
+>   types Node produisait huit erreurs qui ne disaient rien de vrai. Sa spec
+>   reste couverte : elle lit le fichier comme du **texte**.
+>
+> Le récit ci-dessous est conservé — c'est la description de la panne, et elle
+> reste la meilleure justification de la porte.
+
+### Ce que le trou cachait
 
 `tsc --noEmit` tourne sur `tsconfig.json`, qui **exclut** `test/` et
 `**/*.spec.ts`. Jest, lui, transpile sans vérifier les types. Résultat : le code
@@ -56,7 +78,28 @@ permanence — et une CI rouge en permanence se fait désactiver.
 > catalogue**, famille et produit : les doubles du ramassage des visuels
 > traînaient la même dérive (`MediaStore.remove`, trois méthodes de
 > `MediaLibrary`, un paramètre disparu de `SweepOrphanMedia.execute`).
-> **194 erreurs** restantes, essentiellement B2B.
+> **Épilogue le même jour** : les 194 restantes sont tombées à leur tour. Ce
+> qu'elles étaient, en une phrase chacune — des doubles qui avaient perdu la
+> moitié des méthodes de leur port, des fixtures dont le domaine avait bougé
+> sous elles (`"member"` n'est plus un rôle, une commande a gagné un paramètre,
+> une date de livraison est devenue obligatoire), des propriétés dupliquées dans
+> un même littéral, et deux appels à des signatures mortes qui passaient parce
+> qu'un autre refus se déclenchait d'abord.
+
+## 1bis. Les adaptateurs Prisma du référentiel n'avaient aucun test
+
+Fermé le même jour, et il vaut d'être noté séparément : les specs remplacent le
+dépôt Prisma par un double en mémoire. Le filtre sur le chemin `fr` d'une
+colonne `jsonb`, le `COUNT` des sous-familles, l'écriture réelle des colonnes de
+TVA — rien de tout ça n'était vérifié.
+
+`test/pim-categories.e2e-spec.ts` les éprouve contre un vrai Postgres.
+Démonstration de l'écart : remplacer `path: ["fr"]` par un chemin inexistant
+laisse les **155 tests unitaires du catalogue verts** et fait tomber l'e2e.
+
+Défaut du harnais trouvé au passage : `truncateAll` balayait `public`, `growth`
+et `ops` — **pas `pim`**. Les lignes du référentiel fuyaient d'une suite e2e à
+la suivante.
 
 ## 2. Les quatre apps Angular n'ont aucun ESLint
 
