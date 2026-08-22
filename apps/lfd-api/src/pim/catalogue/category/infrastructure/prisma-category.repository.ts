@@ -101,19 +101,8 @@ export class PrismaCategoryRepository extends CategoryRepository {
     );
   }
 
-  async countActiveProducts(id: string): Promise<number> {
-    return this.prisma.product.count({
-      where: { categoryId: id, status: { not: "archived" } },
-    });
-  }
-
-  async activeProductCounts(): Promise<ReadonlyMap<string, number>> {
-    const rows = await this.prisma.product.groupBy({
-      by: ["categoryId"],
-      where: { status: { not: "archived" } },
-      _count: { _all: true },
-    });
-    return new Map(rows.map((row) => [row.categoryId, row._count._all]));
+  async countActiveChildren(parentId: string): Promise<number> {
+    return this.prisma.category.count({ where: { parentId, isArchived: false } });
   }
 
   async nextPosition(parentId: string | null): Promise<number> {

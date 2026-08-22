@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import type { CategorySnapshot } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
+import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 
 /** Une famille telle que la liste la rend : son état, plus ce que l'écran doit savoir. */
 export type CategoryListItem = CategorySnapshot & { readonly activeProductCount: number };
@@ -14,7 +15,10 @@ export class ListCategoriesHandler implements IQueryHandler<
   ListCategoriesQuery,
   CategoryListItem[]
 > {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly products: ProductCountReader,
+  ) {}
 
   /**
    * Le compte de fiches accompagne chaque famille.
@@ -28,7 +32,7 @@ export class ListCategoriesHandler implements IQueryHandler<
   async execute(): Promise<CategoryListItem[]> {
     const [categories, counts] = await Promise.all([
       this.categories.listAll(),
-      this.categories.activeProductCounts(),
+      this.products.countByCategory(),
     ]);
     return categories.map((category) => {
       const snapshot = category.snapshot();

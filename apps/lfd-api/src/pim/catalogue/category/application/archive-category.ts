@@ -1,7 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { CategoryHasActiveProductsError } from "../domain/errors/category-errors.js";
+import {
+  CategoryHasActiveChildrenError,
+  CategoryHasActiveProductsError,
+} from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
+import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 import { requireCategory } from "./category-support.js";
 
 export class ArchiveCategoryCommand {
@@ -10,18 +14,34 @@ export class ArchiveCategoryCommand {
 
 @CommandHandler(ArchiveCategoryCommand)
 export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCommand, void> {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly products: ProductCountReader,
+  ) {}
 
   /**
-   * Invariant 5 : archiver une famille qui porte des produits actifs est
-   * refusé. Le compte se lit hors de l'agrégat — une famille ne voit pas les
-   * fiches qui la référencent.
+   * Deux refus, deux relations qu'une famille ne voit pas depuis elle-même.
+   *
+   * Les **fiches** (invariant 5) : archiver sous des produits actifs les
+   * rendrait invendables sans que rien ne le dise.
+   *
+   * Les **sous-familles** : `MoveCategory` refuse de RANGER une famille sous
+   * une archivée ; sans le refus symétrique ici, il suffisait d'archiver le
+   * parent pour obtenir exactement l'état qu'il interdit — des familles
+   * vivantes sous un parent mort, absentes du choix de parent et pointant un
+   * nom qu'on ne trouve plus dans la liste.
    */
   async execute(command: ArchiveCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
-    if ((await this.categories.countActiveProducts(command.id)) > 0) {
+
+    if ((await this.products.countForCategory(command.id)) > 0) {
       throw new CategoryHasActiveProductsError(command.id);
     }
+    const children = await this.categories.countActiveChildren(command.id);
+    if (children > 0) {
+      throw new CategoryHasActiveChildrenError(command.id, children);
+    }
+
     category.archive();
     await this.categories.save(category);
   }
