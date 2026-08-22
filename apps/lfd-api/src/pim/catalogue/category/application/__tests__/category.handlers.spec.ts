@@ -1,22 +1,30 @@
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { TvaRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
 import { TvaRate } from "../../../../commerce/domain/entities/tva-rate.js";
-import { TvaRateRepository } from "../../../../commerce/domain/ports/tva-rate.repository.js";
+import {
+  TvaRateRepository,
+  type TvaRateUsage,
+} from "../../../../commerce/domain/ports/tva-rate.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
   CategoryArchivedParentError,
   CategoryCycleError,
   CategoryFrozenError,
+  CategoryHasActiveChildrenError,
   CategoryHasActiveProductsError,
   CategoryNotFoundError,
   CategoryOrderMismatchError,
+  CategoryTvaWithoutChannelError,
+  CategoryUnknownEmplacementError,
 } from "../../domain/errors/category-errors.js";
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
+import { KnownEmplacementsReader } from "../../domain/ports/known-emplacements.reader.js";
+import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
 import { CreateCategoryCommand, CreateCategoryHandler } from "../create-category.js";
-import { ListCategoriesHandler, ListCategoriesQuery } from "../list-categories.js";
+import { ListCategoriesHandler } from "../list-categories.js";
 import { MoveCategoryCommand, MoveCategoryHandler } from "../move-category.js";
 import { RenameCategoryCommand, RenameCategoryHandler } from "../rename-category.js";
 import { ReorderCategoriesCommand, ReorderCategoriesHandler } from "../reorder-categories.js";
@@ -34,10 +42,7 @@ import { SetCategoryTvaCommand, SetCategoryTvaHandler } from "../set-category-tv
  */
 class InMemoryCategories extends CategoryRepository {
   readonly stored = new Map<string, CategorySnapshot>();
-  activeProducts = 0;
   transactions = 0;
-  /** Ce que la lecture de liste joindra. Vide = aucune famille n'a de fiche. */
-  countsByCategory: ReadonlyMap<string, number> = new Map();
 
   findById(id: string): Promise<Category | null> {
     const snapshot = this.stored.get(id);
@@ -64,11 +69,11 @@ class InMemoryCategories extends CategoryRepository {
     }
     return Promise.resolve();
   }
-  countActiveProducts(): Promise<number> {
-    return Promise.resolve(this.activeProducts);
-  }
-  activeProductCounts(): Promise<ReadonlyMap<string, number>> {
-    return Promise.resolve(this.countsByCategory);
+  countActiveChildren(parentId: string): Promise<number> {
+    const live = [...this.stored.values()].filter(
+      (row) => row.parentId === parentId && !row.isArchived,
+    );
+    return Promise.resolve(live.length);
   }
   nextPosition(parentId: string | null): Promise<number> {
     const siblings = [...this.stored.values()].filter((row) => row.parentId === parentId);
@@ -85,6 +90,44 @@ class InMemoryCategories extends CategoryRepository {
   }
 }
 
+/**
+ * Le compte de fiches, désormais hors du dépôt des familles. Un double séparé,
+ * c'est justement le bénéfice : un test d'archivage n'a plus à feindre une
+ * table de produits sur le port des familles.
+ */
+class StubProductCounts extends ProductCountReader {
+  constructor(
+    private readonly forOne = 0,
+    private readonly byCategory: ReadonlyMap<string, number> = new Map(),
+  ) {
+    super();
+  }
+  countForCategory(): Promise<number> {
+    return Promise.resolve(this.forOne);
+  }
+  countByCategory(): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(this.byCategory);
+  }
+}
+
+/** Un référentiel d'emplacements qui dit oui à tout — le cas nominal. */
+function allEmplacementsKnown(): KnownEmplacementsReader {
+  return new (class extends KnownEmplacementsReader {
+    existing(ids: readonly string[]): Promise<ReadonlySet<string>> {
+      return Promise.resolve(new Set(ids));
+    }
+  })();
+}
+
+/** Un référentiel VIDE : aucun identifiant cité n'existe. */
+function noEmplacementKnown(): KnownEmplacementsReader {
+  return new (class extends KnownEmplacementsReader {
+    existing(): Promise<ReadonlySet<string>> {
+      return Promise.resolve(new Set<string>());
+    }
+  })();
+}
+
 class InMemoryRegimes extends TvaRateRepository {
   private readonly rows: TvaRate[] = [];
 
@@ -94,8 +137,11 @@ class InMemoryRegimes extends TvaRateRepository {
   findById(id: string): Promise<TvaRate | null> {
     return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
   }
-  findByTag(tag: string): Promise<TvaRate | null> {
-    return Promise.resolve(this.rows.find((r) => r.tag === tag) ?? null);
+  findByPercent(percent: number): Promise<TvaRate | null> {
+    return Promise.resolve(this.rows.find((r) => r.percent === percent) ?? null);
+  }
+  usageByRegime(): Promise<ReadonlyMap<string, TvaRateUsage>> {
+    return Promise.resolve(new Map());
   }
   add(rate: TvaRate): Promise<void> {
     this.rows.push(rate);
@@ -140,6 +186,21 @@ async function openRoots(repo: InMemoryCategories, count: number): Promise<strin
   return ids;
 }
 
+/** Le handler d'archivage, sans fiche active. */
+function archive(repo: InMemoryCategories): ArchiveCategoryHandler {
+  return new ArchiveCategoryHandler(repo, new StubProductCounts());
+}
+
+/** …avec `count` fiches actives. */
+function archiveWith(repo: InMemoryCategories, count: number): ArchiveCategoryHandler {
+  return new ArchiveCategoryHandler(repo, new StubProductCounts(count));
+}
+
+/** Le handler des canaux, avec un référentiel d'emplacements complaisant. */
+function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
+  return new SetCategoryChannelsHandler(repo, allEmplacementsKnown());
+}
+
 describe("CreateCategoryHandler", () => {
   it("crée une famille avec un slug dérivé", async () => {
     const repo = new InMemoryCategories();
@@ -148,6 +209,23 @@ describe("CreateCategoryHandler", () => {
     );
 
     expect(repo.at(id).slug.fr).toBe("chocolats-fins");
+  });
+
+  /**
+   * `MoveCategory` refusait déjà un parent archivé ; la création, non. Le front
+   * filtre les archivées de sa liste de parents — c'est précisément pourquoi
+   * le trou serait passé inaperçu.
+   */
+  it("refuse un parent ARCHIVÉ", async () => {
+    const repo = new InMemoryCategories();
+    const [parent] = await openRoots(repo, 1);
+    await archive(repo).execute(new ArchiveCategoryCommand(parent!));
+
+    await expect(
+      new CreateCategoryHandler(repo, new SequentialIds()).execute(
+        new CreateCategoryCommand({ nameFr: "Tartes", parentId: parent! }),
+      ),
+    ).rejects.toBeInstanceOf(CategoryArchivedParentError);
   });
 
   it("refuse un parent inexistant", async () => {
@@ -177,18 +255,43 @@ describe("ArchiveCategoryHandler", () => {
   it("refuse d’archiver une famille avec des produits actifs", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
-    repo.activeProducts = 2;
 
     await expect(
-      new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!)),
+      archiveWith(repo, 2).execute(new ArchiveCategoryCommand(id!)),
     ).rejects.toBeInstanceOf(CategoryHasActiveProductsError);
+  });
+
+  /**
+   * Le pendant du refus de `MoveCategory` : sans lui, il suffisait d'archiver
+   * le parent pour obtenir l'état que le déplacement interdit — des familles
+   * vivantes sous un parent mort.
+   */
+  it("refuse d’archiver une famille qui porte des sous-familles vivantes", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, child] = await openRoots(repo, 2);
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(child!, parent!));
+
+    await expect(archive(repo).execute(new ArchiveCategoryCommand(parent!))).rejects.toBeInstanceOf(
+      CategoryHasActiveChildrenError,
+    );
+  });
+
+  it("accepte quand les sous-familles sont elles-mêmes archivées", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, child] = await openRoots(repo, 2);
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(child!, parent!));
+    await archive(repo).execute(new ArchiveCategoryCommand(child!));
+
+    await archive(repo).execute(new ArchiveCategoryCommand(parent!));
+
+    expect(repo.at(parent!).isArchived).toBe(true);
   });
 
   it("archive une famille vide", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
 
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
+    await archive(repo).execute(new ArchiveCategoryCommand(id!));
 
     expect(repo.at(id!).isArchived).toBe(true);
   });
@@ -199,9 +302,7 @@ describe("SetCategoryChannelsHandler", () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
 
-    await new SetCategoryChannelsHandler(repo).execute(
-      new SetCategoryChannelsCommand(id!, ALL_OPEN),
-    );
+    await setChannels(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN));
 
     expect(repo.at(id!).channelPreset).toEqual(ALL_OPEN);
   });
@@ -209,20 +310,49 @@ describe("SetCategoryChannelsHandler", () => {
   it("refuse une famille inexistante", async () => {
     const repo = new InMemoryCategories();
     await expect(
-      new SetCategoryChannelsHandler(repo).execute(
-        new SetCategoryChannelsCommand("absent", ALL_OPEN),
-      ),
+      setChannels(repo).execute(new SetCategoryChannelsCommand("absent", ALL_OPEN)),
     ).rejects.toBeInstanceOf(CategoryNotFoundError);
+  });
+
+  /**
+   * Le mur avait une seule face : `DeleteEmplacement` refuse de supprimer sous
+   * une famille qui coche, mais rien n'empêchait d'écrire un preset citant un
+   * emplacement qui n'existe pas. L'écran l'aurait rendu invisible — il ignore
+   * les clés inconnues — au lieu de le rendre faux.
+   */
+  it("refuse un emplacement qui n’existe pas", async () => {
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+
+    await expect(
+      new SetCategoryChannelsHandler(repo, noEmplacementKnown()).execute(
+        new SetCategoryChannelsCommand(id!, ALL_OPEN),
+      ),
+    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+  });
+
+  /** L'écriture est refusée EN ENTIER : pas de preset à moitié posé. */
+  it("n’écrit rien quand un seul emplacement est inconnu", async () => {
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+    const before = repo.at(id!).channelPreset;
+
+    await expect(
+      new SetCategoryChannelsHandler(repo, noEmplacementKnown()).execute(
+        new SetCategoryChannelsCommand(id!, ALL_OPEN),
+      ),
+    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+    expect(repo.at(id!).channelPreset).toEqual(before);
   });
 
   /** La décision « archivée = gelée » : les réglages sont refusés. */
   it("refuse de régler les canaux d’une famille archivée", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
+    await archive(repo).execute(new ArchiveCategoryCommand(id!));
 
     await expect(
-      new SetCategoryChannelsHandler(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
+      setChannels(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
     ).rejects.toBeInstanceOf(CategoryFrozenError);
   });
 
@@ -230,7 +360,7 @@ describe("SetCategoryChannelsHandler", () => {
   it("laisse renommer une famille archivée", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
+    await archive(repo).execute(new ArchiveCategoryCommand(id!));
 
     await new RenameCategoryHandler(repo).execute(
       new RenameCategoryCommand(id!, { nameFr: "Chocolats" }),
@@ -241,30 +371,54 @@ describe("SetCategoryChannelsHandler", () => {
 });
 
 describe("SetCategoryTvaHandler", () => {
-  it("règle les deux taux quand ils existent", async () => {
+  /** Une famille qui vend, donc capable de porter un taux (invariant agrégat). */
+  async function sellingCategory(categories: InMemoryCategories): Promise<string> {
+    const [id] = await openRoots(categories, 1);
+    await setChannels(categories).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN));
+    return id!;
+  }
+
+  it("règle le taux d’un canal vendu", async () => {
+    const categories = new InMemoryCategories();
+    const rates = new InMemoryRegimes();
+    await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
+    const id = await sellingCategory(categories);
+
+    await new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
+      new SetCategoryTvaCommand(id, { emporter: "tva_5", surPlace: null, b2b: null }),
+    );
+
+    expect(categories.at(id).emporterTvaId).toBe("tva_5");
+    expect(categories.at(id).surPlaceTvaId).toBeNull();
+    expect(categories.at(id).b2bTvaId).toBeNull();
+  });
+
+  it("refuse un taux fantôme", async () => {
+    const categories = new InMemoryCategories();
+    const id = await sellingCategory(categories);
+
+    await expect(
+      new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
+        new SetCategoryTvaCommand(id, { emporter: "tva_absent", surPlace: null, b2b: null }),
+      ),
+    ).rejects.toBeInstanceOf(TvaRateNotFoundError);
+  });
+
+  /**
+   * La règle tenue par l'agrégat, vue depuis le handler : aucun appelant ne
+   * peut plus rattacher un taux à un canal fermé, même en sautant l'écran.
+   */
+  it("refuse le taux d’un canal que la famille ne vend pas", async () => {
     const categories = new InMemoryCategories();
     const rates = new InMemoryRegimes();
     await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const [id] = await openRoots(categories, 1);
 
-    await new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
-      new SetCategoryTvaCommand(id!, { emporter: "tva_5", surPlace: null, b2b: null }),
-    );
-
-    expect(categories.at(id!).emporterTvaId).toBe("tva_5");
-    expect(categories.at(id!).surPlaceTvaId).toBeNull();
-    expect(categories.at(id!).b2bTvaId).toBeNull();
-  });
-
-  it("refuse un taux fantôme", async () => {
-    const categories = new InMemoryCategories();
-    const [id] = await openRoots(categories, 1);
-
     await expect(
-      new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
-        new SetCategoryTvaCommand(id!, { emporter: "tva_absent", surPlace: null, b2b: null }),
+      new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
+        new SetCategoryTvaCommand(id!, { emporter: "tva_5", surPlace: null, b2b: null }),
       ),
-    ).rejects.toBeInstanceOf(TvaRateNotFoundError);
+    ).rejects.toBeInstanceOf(CategoryTvaWithoutChannelError);
   });
 });
 
@@ -303,7 +457,7 @@ describe("MoveCategoryHandler", () => {
   it("refuse de ranger une famille sous une famille archivée", async () => {
     const repo = new InMemoryCategories();
     const [parent, moved] = await openRoots(repo, 2);
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(parent!));
+    await archive(repo).execute(new ArchiveCategoryCommand(parent!));
 
     await expect(
       new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(moved!, parent!)),
@@ -339,7 +493,7 @@ describe("ReorderCategoriesHandler", () => {
   it("ignore les familles archivées du niveau", async () => {
     const repo = new InMemoryCategories();
     const [first, second, archived] = await openRoots(repo, 3);
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(archived!));
+    await archive(repo).execute(new ArchiveCategoryCommand(archived!));
 
     await new ReorderCategoriesHandler(repo).execute(
       new ReorderCategoriesCommand(null, [second!, first!]),
@@ -358,9 +512,9 @@ describe("ListCategoriesHandler", () => {
     const created = await new CreateCategoryHandler(repo, new SequentialIds()).execute(
       new CreateCategoryCommand({ nameFr: "Viennoiseries" }),
     );
-    repo.countsByCategory = new Map([[created, 3]]);
+    const counts = new StubProductCounts(0, new Map([[created, 3]]));
 
-    const [row] = await new ListCategoriesHandler(repo).execute(new ListCategoriesQuery());
+    const [row] = await new ListCategoriesHandler(repo, counts).execute();
 
     expect(row?.activeProductCount).toBe(3);
   });
@@ -373,7 +527,7 @@ describe("ListCategoriesHandler", () => {
       new CreateCategoryCommand({ nameFr: "Pains" }),
     );
 
-    const [row] = await new ListCategoriesHandler(repo).execute(new ListCategoriesQuery());
+    const [row] = await new ListCategoriesHandler(repo, new StubProductCounts()).execute();
 
     expect(row?.activeProductCount).toBe(0);
   });

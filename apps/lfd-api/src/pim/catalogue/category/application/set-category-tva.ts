@@ -50,7 +50,7 @@ export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaComm
    */
   private async journalize(
     before: CategoryTvaSnapshot,
-    after: CategoryTvaSnapshot & { id: string; name: unknown },
+    after: CategoryTvaSnapshot & { id: string },
   ): Promise<void> {
     const changed =
       before.emporterTvaId !== after.emporterTvaId ||
