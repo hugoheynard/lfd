@@ -16,6 +16,7 @@ import {
   FoldInputComponent,
   FoldListboxComponent,
   FoldOptionComponent,
+  FoldPanelBodyComponent,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
@@ -52,6 +53,7 @@ export interface CategoryPanelData {
   imports: [
     RouterLink,
     FoldPanelHeaderComponent,
+    FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldInputComponent,
     FoldListboxComponent,
