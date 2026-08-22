@@ -1,12 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
-import {
-  EmplacementRepository,
-  type EmplacementFields,
-  type EmplacementRecord,
-  type NewEmplacement,
-} from "../domain/ports/emplacement.repository.js";
+import { Emplacement } from "../domain/entities/emplacement.js";
+import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
 import type { TableState } from "../domain/value-objects/table.js";
 
 interface TableRow {
@@ -24,8 +20,8 @@ interface EmplacementRow {
   tables: TableRow[];
 }
 
-function toRecord(row: EmplacementRow): EmplacementRecord {
-  return {
+function toEmplacement(row: EmplacementRow): Emplacement {
+  return Emplacement.reconstitute({
     id: row.id,
     name: row.name,
     clickCollect: row.clickCollect,
@@ -36,7 +32,7 @@ function toRecord(row: EmplacementRow): EmplacementRecord {
       qrCreated: table.qrCreated,
       token: table.token,
     })),
-  };
+  });
 }
 
 function tableRows(id: string, tables: readonly TableState[]) {
@@ -48,38 +44,41 @@ function tableRows(id: string, tables: readonly TableState[]) {
   }));
 }
 
+const WITH_TABLES = { tables: { orderBy: { number: "asc" } } } as const;
+
 @Injectable()
 export class PrismaEmplacementRepository extends EmplacementRepository {
   constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
-  async listAll(): Promise<EmplacementRecord[]> {
+  async listAll(): Promise<Emplacement[]> {
     const rows = await this.prisma.emplacement.findMany({
       orderBy: [{ name: "asc" }],
-      include: { tables: { orderBy: { number: "asc" } } },
+      include: WITH_TABLES,
     });
-    return rows.map(toRecord);
+    return rows.map(toEmplacement);
   }
 
-  async findById(id: string): Promise<EmplacementRecord | null> {
+  async findById(id: string): Promise<Emplacement | null> {
     const row = await this.prisma.emplacement.findUnique({
       where: { id },
-      include: { tables: { orderBy: { number: "asc" } } },
+      include: WITH_TABLES,
     });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : toEmplacement(row);
   }
 
-  async insert(emplacement: NewEmplacement): Promise<void> {
+  async add(emplacement: Emplacement): Promise<void> {
+    const snapshot = emplacement.snapshot();
     await this.prisma.emplacement.create({
       data: {
-        id: emplacement.id,
-        name: emplacement.name,
-        clickCollect: emplacement.clickCollect,
-        surPlace: emplacement.surPlace,
-        baseUrl: emplacement.baseUrl,
+        id: snapshot.id,
+        name: snapshot.name,
+        clickCollect: snapshot.clickCollect,
+        surPlace: snapshot.surPlace,
+        baseUrl: snapshot.baseUrl,
         tables: {
-          create: emplacement.tables.map((table) => ({
+          create: snapshot.tables.map((table) => ({
             number: table.number,
             qrCreated: table.qrCreated,
             token: table.token,
@@ -89,39 +88,35 @@ export class PrismaEmplacementRepository extends EmplacementRepository {
     });
   }
 
-  async updateFields(id: string, fields: EmplacementFields): Promise<void> {
-    await this.prisma.emplacement.update({
-      where: { id },
-      data: {
-        name: fields.name,
-        clickCollect: fields.clickCollect,
-        surPlace: fields.surPlace,
-        baseUrl: fields.baseUrl,
-      },
-    });
-  }
-
-  async replaceTables(id: string, tables: readonly TableState[]): Promise<void> {
+  /**
+   * L'état entier, **en une transaction** : les champs et la grille de tables.
+   *
+   * C'était deux écritures indépendantes, et c'est ce qui rendait l'invariant
+   * cassable — entre les deux, un emplacement fermé en salle gardait ses
+   * tables, donc des QR imprimés qui menaient quelque part. Ici, ou tout passe
+   * ou rien ne passe.
+   *
+   * La grille est remplacée plutôt que rapprochée ligne à ligne : elle tient en
+   * quelques centaines de lignes au plus (`MAX_TABLES`), et un diff coûterait
+   * plus en complexité qu'il ne gagne en écritures.
+   */
+  async save(emplacement: Emplacement): Promise<void> {
+    const snapshot = emplacement.snapshot();
     await this.prisma.$transaction([
-      this.prisma.emplacementTable.deleteMany({
-        where: { emplacementId: id },
+      this.prisma.emplacement.update({
+        where: { id: snapshot.id },
+        data: {
+          name: snapshot.name,
+          clickCollect: snapshot.clickCollect,
+          surPlace: snapshot.surPlace,
+          baseUrl: snapshot.baseUrl,
+        },
       }),
-      this.prisma.emplacementTable.createMany({ data: tableRows(id, tables) }),
+      this.prisma.emplacementTable.deleteMany({ where: { emplacementId: snapshot.id } }),
+      this.prisma.emplacementTable.createMany({
+        data: tableRows(snapshot.id, snapshot.tables),
+      }),
     ]);
-  }
-
-  async setTableQr(
-    id: string,
-    tableNumber: number,
-    qrCreated: boolean,
-    token: string | null,
-  ): Promise<void> {
-    await this.prisma.emplacementTable.update({
-      where: {
-        emplacementId_number: { emplacementId: id, number: tableNumber },
-      },
-      data: { qrCreated, token },
-    });
   }
 
   async remove(id: string): Promise<void> {

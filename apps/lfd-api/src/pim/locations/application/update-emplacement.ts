@@ -1,11 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import {
-  EmplacementRepository,
-  type EmplacementFields,
-} from "../domain/ports/emplacement.repository.js";
-import { syncTables } from "../domain/value-objects/table.js";
-import { cleanName, requireEmplacement } from "./emplacement-support.js";
+import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
+import { requireEmplacement } from "./emplacement-support.js";
 
 export interface UpdateEmplacementPatch {
   readonly name?: string | undefined;
@@ -23,9 +19,13 @@ export class UpdateEmplacementCommand {
 }
 
 /**
- * Applique un patch partiel puis re-synchronise la grille de tables : couper
- * « sur place » vide les tables ; un nouveau `tableCount` aligne la grille en
- * gardant l'état QR des tables conservées.
+ * Applique un patch partiel sur l'agrégat, puis l'enregistre **en une fois**.
+ *
+ * Le handler ne décide plus rien : « couper sur place vide les tables » est un
+ * invariant de l'agrégat, et non plus un `if` d'ici. C'était le trou — le
+ * handler écrivait les champs, puis les tables, en deux fois : un échec entre
+ * les deux laissait un emplacement fermé en salle avec ses tables, donc des QR
+ * imprimés qui menaient quelque part.
  */
 @CommandHandler(UpdateEmplacementCommand)
 export class UpdateEmplacementHandler implements ICommandHandler<UpdateEmplacementCommand, void> {
@@ -33,22 +33,26 @@ export class UpdateEmplacementHandler implements ICommandHandler<UpdateEmplaceme
 
   async execute(command: UpdateEmplacementCommand): Promise<void> {
     const { id, patch } = command;
-    const current = await requireEmplacement(this.emplacements, id);
-    const surPlace = patch.surPlace ?? current.surPlace;
-    const fields: EmplacementFields = {
-      name: patch.name !== undefined ? cleanName(patch.name) : current.name,
-      clickCollect: patch.clickCollect ?? current.clickCollect,
-      surPlace,
-      baseUrl: patch.baseUrl !== undefined ? patch.baseUrl.trim() : current.baseUrl,
-    };
-    await this.emplacements.updateFields(id, fields);
+    const emplacement = await requireEmplacement(this.emplacements, id);
 
-    if (!surPlace) {
-      if (current.tables.length > 0) {
-        await this.emplacements.replaceTables(id, []);
-      }
-    } else if (patch.tableCount !== undefined) {
-      await this.emplacements.replaceTables(id, syncTables(current.tables, patch.tableCount));
+    if (patch.name !== undefined) {
+      emplacement.rename(patch.name);
     }
+    if (patch.clickCollect !== undefined) {
+      emplacement.setClickCollect(patch.clickCollect);
+    }
+    if (patch.baseUrl !== undefined) {
+      emplacement.setBaseUrl(patch.baseUrl);
+    }
+    // La salle AVANT la grille : fermer vide les tables, et un `tableCount`
+    // reçu dans le même patch ne doit pas les faire revenir.
+    if (patch.surPlace !== undefined) {
+      emplacement.setSurPlace(patch.surPlace);
+    }
+    if (patch.tableCount !== undefined) {
+      emplacement.setTableCount(patch.tableCount);
+    }
+
+    await this.emplacements.save(emplacement);
   }
 }

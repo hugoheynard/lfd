@@ -1,40 +1,19 @@
-import type { TableState } from "../value-objects/table.js";
+import type { Emplacement } from "../entities/emplacement.js";
 
-/** Vue d'un emplacement telle que la persistance la rend — hors colonnes système. */
-export interface EmplacementRecord {
-  readonly id: string;
-  readonly name: string;
-  readonly clickCollect: boolean;
-  readonly surPlace: boolean;
-  readonly baseUrl: string;
-  readonly tables: readonly TableState[];
-}
-
-/** Champs scalaires d'un emplacement — la grille de tables est portée à part. */
-export interface EmplacementFields {
-  readonly name: string;
-  readonly clickCollect: boolean;
-  readonly surPlace: boolean;
-  readonly baseUrl: string;
-}
-
-export interface NewEmplacement extends EmplacementFields {
-  readonly id: string;
-  readonly tables: readonly TableState[];
-}
-
-/** Port : l'application dépend de cette abstraction, jamais de Prisma. */
+/**
+ * Port : l'application dépend de cette abstraction, jamais de Prisma.
+ *
+ * Il rend et reprend l'**agrégat** plutôt qu'une ligne et un tas de champs.
+ * Il portait une méthode par mutation (`updateFields`, `replaceTables`,
+ * `setTableQr`) — donc plusieurs écritures pour un seul geste métier, et un
+ * état intermédiaire où un emplacement fermé en salle gardait ses tables. Un
+ * `save` de l'agrégat entier ferme ce trou : il n'y a plus d'entre-deux.
+ */
 export abstract class EmplacementRepository {
-  abstract listAll(): Promise<EmplacementRecord[]>;
-  abstract findById(id: string): Promise<EmplacementRecord | null>;
-  abstract insert(emplacement: NewEmplacement): Promise<void>;
-  abstract updateFields(id: string, fields: EmplacementFields): Promise<void>;
-  abstract replaceTables(id: string, tables: readonly TableState[]): Promise<void>;
-  abstract setTableQr(
-    id: string,
-    tableNumber: number,
-    qrCreated: boolean,
-    token: string | null,
-  ): Promise<void>;
+  abstract listAll(): Promise<Emplacement[]>;
+  abstract findById(id: string): Promise<Emplacement | null>;
+  abstract add(emplacement: Emplacement): Promise<void>;
+  /** Écrit l'état entier — champs ET grille de tables — en une transaction. */
+  abstract save(emplacement: Emplacement): Promise<void>;
   abstract remove(id: string): Promise<void>;
 }

@@ -2,7 +2,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
 import { TableTokenGenerator } from "../domain/ports/table-token-generator.js";
-import { requireEmplacement, requireTable } from "./emplacement-support.js";
+import { EmplacementTableNotFoundError } from "../domain/errors/locations-errors.js";
+import { requireEmplacement } from "./emplacement-support.js";
 
 export class GenerateTableQrCommand {
   constructor(
@@ -24,9 +25,12 @@ export class GenerateTableQrHandler implements ICommandHandler<GenerateTableQrCo
 
   async execute(command: GenerateTableQrCommand): Promise<string> {
     const emplacement = await requireEmplacement(this.emplacements, command.emplacementId);
-    requireTable(emplacement, command.tableNumber);
     const token = this.tokens.next();
-    await this.emplacements.setTableQr(command.emplacementId, command.tableNumber, true, token);
+    // L'agrégat sait si la table existe ; le handler traduit ce « non » en 404.
+    if (!emplacement.attachQr(command.tableNumber, token)) {
+      throw new EmplacementTableNotFoundError(command.emplacementId, command.tableNumber);
+    }
+    await this.emplacements.save(emplacement);
     return token;
   }
 }

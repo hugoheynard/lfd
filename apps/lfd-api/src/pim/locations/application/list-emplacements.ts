@@ -1,9 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import {
-  EmplacementRepository,
-  type EmplacementRecord,
-} from "../domain/ports/emplacement.repository.js";
+import type { EmplacementSnapshot } from "../domain/entities/emplacement.js";
+import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
 
 /** Lecture des emplacements — dispatchée par le `QueryBus`. Sans paramètre. */
 export class ListEmplacementsQuery {}
@@ -11,11 +9,14 @@ export class ListEmplacementsQuery {}
 @QueryHandler(ListEmplacementsQuery)
 export class ListEmplacementsHandler implements IQueryHandler<
   ListEmplacementsQuery,
-  EmplacementRecord[]
+  EmplacementSnapshot[]
 > {
   constructor(private readonly emplacements: EmplacementRepository) {}
 
-  execute(): Promise<EmplacementRecord[]> {
-    return this.emplacements.listAll();
+  /** La lecture rend des **instantanés**, pas des agrégats : un lecteur n'a
+   *  aucune raison de pouvoir muter ce qu'il affiche. */
+  async execute(): Promise<EmplacementSnapshot[]> {
+    const emplacements = await this.emplacements.listAll();
+    return emplacements.map((emplacement) => emplacement.snapshot());
   }
 }

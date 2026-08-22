@@ -3,65 +3,55 @@ import {
   EmplacementNameRequiredError,
   EmplacementTableNotFoundError,
 } from "../../domain/errors/locations-errors.js";
-import {
-  EmplacementRepository,
-  type EmplacementFields,
-  type EmplacementRecord,
-  type NewEmplacement,
-} from "../../domain/ports/emplacement.repository.js";
+import { Emplacement, type EmplacementSnapshot } from "../../domain/entities/emplacement.js";
+import { EmplacementRepository } from "../../domain/ports/emplacement.repository.js";
 import { TableTokenGenerator } from "../../domain/ports/table-token-generator.js";
-import type { TableState } from "../../domain/value-objects/table.js";
 import { CreateEmplacementCommand, CreateEmplacementHandler } from "../create-emplacement.js";
 import { DeleteEmplacementCommand, DeleteEmplacementHandler } from "../delete-emplacement.js";
 import { GenerateTableQrCommand, GenerateTableQrHandler } from "../generate-table-qr.js";
 import { UpdateEmplacementCommand, UpdateEmplacementHandler } from "../update-emplacement.js";
 
+/**
+ * Le faux dépôt garde des **instantanés**, pas des agrégats, et reconstitue à
+ * chaque lecture : un test ne doit pas pouvoir passer parce qu'il tient la même
+ * instance que le handler — ce que la vraie base ne fera jamais.
+ */
 class InMemoryEmplacements extends EmplacementRepository {
-  readonly rows: EmplacementRecord[] = [];
+  readonly stored = new Map<string, EmplacementSnapshot>();
 
-  listAll(): Promise<EmplacementRecord[]> {
-    return Promise.resolve([...this.rows]);
+  listAll(): Promise<Emplacement[]> {
+    return Promise.resolve(
+      [...this.stored.values()].map((snapshot) => Emplacement.reconstitute(snapshot)),
+    );
   }
-  findById(id: string): Promise<EmplacementRecord | null> {
-    return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
+  findById(id: string): Promise<Emplacement | null> {
+    const snapshot = this.stored.get(id);
+    return Promise.resolve(snapshot === undefined ? null : Emplacement.reconstitute(snapshot));
   }
-  insert(emplacement: NewEmplacement): Promise<void> {
-    this.rows.push({ ...emplacement, tables: [...emplacement.tables] });
-    return Promise.resolve();
+  add(emplacement: Emplacement): Promise<void> {
+    return this.save(emplacement);
   }
-  updateFields(id: string, fields: EmplacementFields): Promise<void> {
-    this.mutate(id, (row) => ({ ...row, ...fields }));
-    return Promise.resolve();
-  }
-  replaceTables(id: string, tables: readonly TableState[]): Promise<void> {
-    this.mutate(id, (row) => ({ ...row, tables: [...tables] }));
-    return Promise.resolve();
-  }
-  setTableQr(
-    id: string,
-    tableNumber: number,
-    qrCreated: boolean,
-    token: string | null,
-  ): Promise<void> {
-    this.mutate(id, (row) => ({
-      ...row,
-      tables: row.tables.map((t) => (t.number === tableNumber ? { ...t, qrCreated, token } : t)),
-    }));
+  save(emplacement: Emplacement): Promise<void> {
+    const snapshot = emplacement.snapshot();
+    this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
   remove(id: string): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows.splice(index, 1);
-    }
+    this.stored.delete(id);
     return Promise.resolve();
   }
 
-  private mutate(id: string, map: (row: EmplacementRecord) => EmplacementRecord): void {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = map(this.rows[index]!);
+  /** Confort de lecture pour les assertions. */
+  at(id: string): EmplacementSnapshot {
+    const snapshot = this.stored.get(id);
+    if (snapshot === undefined) {
+      throw new Error(`emplacement ${id} absent du faux dépôt`);
     }
+    return snapshot;
+  }
+
+  get rows(): EmplacementSnapshot[] {
+    return [...this.stored.values()];
   }
 }
 

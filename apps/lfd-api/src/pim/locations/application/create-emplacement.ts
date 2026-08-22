@@ -2,9 +2,8 @@ import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { Emplacement } from "../domain/entities/emplacement.js";
 import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
-import { syncTables } from "../domain/value-objects/table.js";
-import { cleanName } from "./emplacement-support.js";
 
 export interface CreateEmplacementPayload {
   readonly name: string;
@@ -28,14 +27,9 @@ export class CreateEmplacementHandler implements ICommandHandler<CreateEmplaceme
   async execute(command: CreateEmplacementCommand): Promise<string> {
     const { payload } = command;
     const id = this.ids.next();
-    await this.emplacements.insert({
-      id,
-      name: cleanName(payload.name),
-      clickCollect: payload.clickCollect,
-      surPlace: payload.surPlace,
-      baseUrl: payload.baseUrl.trim(),
-      tables: payload.surPlace ? syncTables([], payload.tableCount) : [],
-    });
+    // Le nom exigé, l'URL trimée, la grille alignée — ou vide sans salle : tout
+    // ça est décidé PAR l'agrégat, pas recomposé ici.
+    await this.emplacements.add(Emplacement.open({ id, ...payload }));
     return id;
   }
 }
