@@ -1,7 +1,24 @@
 import { Category } from "../category.js";
-import { CategoryFrozenError, CategorySelfParentError } from "../../errors/category-errors.js";
+import {
+  CategoryFrozenError,
+  CategorySelfParentError,
+  CategoryTvaWithoutChannelError,
+} from "../../errors/category-errors.js";
+import type { SalesChannels } from "../../../../shared/domain/value-objects/sales-channels.js";
 
 const OPEN = { id: "cat_1", name: { fr: "Chocolats fins" }, parentId: null, position: 0 };
+
+/** Une grille de canaux ; `boutiques` est indexée par IDENTIFIANT d'emplacement. */
+function channels(over: Partial<SalesChannels> = {}): SalesChannels {
+  return { boutiques: {}, b2b: false, ...over };
+}
+
+/** Une famille qui vend le mode demandé, prête à porter un taux. */
+function selling(over: Partial<SalesChannels>): Category {
+  const category = Category.open(OPEN);
+  category.setChannels(channels(over));
+  return category;
+}
 
 describe("l’agrégat Category", () => {
   describe("le slug suit le nom, toujours", () => {
@@ -46,15 +63,16 @@ describe("l’agrégat Category", () => {
 
     it("refuse les canaux", () => {
       expect(() =>
-        archived().setChannels({
-          b1: { emporter: true, surPlace: true },
-          b2: { emporter: false, surPlace: false },
-        }),
+        archived().setChannels(
+          channels({ boutiques: { emp_1: { emporter: true, surPlace: true } } }),
+        ),
       ).toThrow(CategoryFrozenError);
     });
 
     it("refuse la TVA", () => {
-      expect(() => archived().setTva("tva_5", null)).toThrow(CategoryFrozenError);
+      expect(() => archived().setTva({ emporter: "tva_5", surPlace: null, b2b: null })).toThrow(
+        CategoryFrozenError,
+      );
     });
 
     it("refuse le déplacement et le rang", () => {
@@ -89,5 +107,57 @@ describe("l’agrégat Category", () => {
   it("se reconstitue à l’identique depuis son instantané", () => {
     const snapshot = Category.open(OPEN).snapshot();
     expect(Category.reconstitute(snapshot).snapshot()).toEqual(snapshot);
+  });
+
+  /**
+   * La règle vivait dans le navigateur : le panneau envoyait les canaux, PUIS
+   * les taux nettoyés, en deux requêtes sans transaction. La seconde perdue
+   * laissait une famille qui ne vend plus en B2B et pointe toujours son taux.
+   */
+  describe("un taux ne se règle que pour un canal vendu", () => {
+    it("refuse le taux d’un canal fermé", () => {
+      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      expect(() => category.setTva({ emporter: "tva_55", surPlace: "tva_10", b2b: null })).toThrow(
+        CategoryTvaWithoutChannelError,
+      );
+    });
+
+    it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
+      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      category.setTva({ emporter: "tva_55", surPlace: null, b2b: null });
+      expect(category.tvaIds).toEqual({ emporter: "tva_55", surPlace: null, b2b: null });
+    });
+
+    it("traite le B2B comme un canal à part entière", () => {
+      const category = selling({ b2b: true });
+      category.setTva({ emporter: null, surPlace: null, b2b: "tva_55" });
+      expect(category.tvaIds.b2b).toBe("tva_55");
+    });
+
+    it("EFFACE le taux d’un canal qu’on ferme", () => {
+      const category = selling({ b2b: true });
+      category.setTva({ emporter: null, surPlace: null, b2b: "tva_55" });
+
+      category.setChannels(channels({ b2b: false }));
+
+      expect(category.tvaIds.b2b).toBeNull();
+    });
+
+    it("laisse intact le taux d’un canal qui reste vendu", () => {
+      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      category.setTva({ emporter: "tva_55", surPlace: null, b2b: null });
+
+      // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
+      category.setChannels(
+        channels({
+          boutiques: {
+            emp_1: { emporter: true, surPlace: false },
+            emp_2: { emporter: true, surPlace: false },
+          },
+        }),
+      );
+
+      expect(category.tvaIds.emporter).toBe("tva_55");
+    });
   });
 });

@@ -1,4 +1,8 @@
-import { CategoryFrozenError, CategorySelfParentError } from "../errors/category-errors.js";
+import {
+  CategoryFrozenError,
+  CategorySelfParentError,
+  CategoryTvaWithoutChannelError,
+} from "../errors/category-errors.js";
 import {
   slugify,
   type LocalizedText,
@@ -6,6 +10,7 @@ import {
 import {
   defaultSalesChannels,
   normalizeSalesChannels,
+  sellsMode,
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
 
@@ -19,6 +24,12 @@ import {
  *   le premier verbe qui oubliait faisait diverger les deux en silence. Le
  *   slug n'a plus de passage par l'extérieur : `rename` le recalcule ;
  * - une famille **n'est jamais sa propre parente** ;
+ * - un taux **ne se règle que pour un canal vendu**, et fermer un canal
+ *   **efface** son taux. Cette règle vivait dans le navigateur : le panneau
+ *   envoyait les canaux, PUIS les taux nettoyés, en deux requêtes sans
+ *   transaction — la seconde perdue laissait une famille qui ne vend plus en
+ *   B2B et pointe toujours son taux B2B. L'agrégat voit les deux moitiés de la
+ *   règle, c'est donc à lui de la tenir ;
  * - une famille **archivée est gelée** : ses réglages — canaux, TVA, place
  *   dans l'arbre — sont refusés. Seul le **renommage** reste permis, parce
  *   qu'une faute de frappe doit pouvoir se corriger sans ressusciter une
@@ -178,9 +189,17 @@ export class Category {
     this.positionValue = position;
   }
 
+  /**
+   * Change ce qui est vendu — et **efface le taux des canaux qu'on ferme**.
+   *
+   * Deux verbes, un seul invariant : sans cet effacement, il faudrait que
+   * l'appelant enchaîne `setTva` derrière, et un appelant qui l'oublie (ou une
+   * requête perdue entre les deux) laisse un taux orphelin.
+   */
   setChannels(channels: SalesChannels): void {
     this.refuseIfArchived();
     this.channelPresetValue = normalizeSalesChannels(channels);
+    this.forgetTvaOfClosedChannels();
   }
 
   /**
@@ -192,6 +211,7 @@ export class Category {
    */
   setTva(ids: CategoryTvaIds): void {
     this.refuseIfArchived();
+    this.refuseTvaWithoutChannel(ids);
     this.emporterTvaIdValue = ids.emporter;
     this.surPlaceTvaIdValue = ids.surPlace;
     this.b2bTvaIdValue = ids.b2b;
@@ -215,6 +235,37 @@ export class Category {
       surPlaceTvaId: this.surPlaceTvaIdValue,
       b2bTvaId: this.b2bTvaIdValue,
     };
+  }
+
+  /** Quels canaux la famille vend, lus une fois pour les deux règles ci-dessous. */
+  private soldChannels(): Record<keyof CategoryTvaIds, boolean> {
+    return {
+      emporter: sellsMode(this.channelPresetValue, "emporter"),
+      surPlace: sellsMode(this.channelPresetValue, "surPlace"),
+      b2b: this.channelPresetValue.b2b,
+    };
+  }
+
+  private refuseTvaWithoutChannel(ids: CategoryTvaIds): void {
+    const sold = this.soldChannels();
+    for (const channel of ["emporter", "surPlace", "b2b"] as const) {
+      if (ids[channel] !== null && !sold[channel]) {
+        throw new CategoryTvaWithoutChannelError(channel);
+      }
+    }
+  }
+
+  private forgetTvaOfClosedChannels(): void {
+    const sold = this.soldChannels();
+    if (!sold.emporter) {
+      this.emporterTvaIdValue = null;
+    }
+    if (!sold.surPlace) {
+      this.surPlaceTvaIdValue = null;
+    }
+    if (!sold.b2b) {
+      this.b2bTvaIdValue = null;
+    }
   }
 
   private refuseIfArchived(): void {

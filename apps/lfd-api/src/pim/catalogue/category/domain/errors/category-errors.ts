@@ -53,6 +53,52 @@ export class CategoryHasActiveProductsError extends BusinessError {
   }
 }
 
+/**
+ * Un taux ne se règle que pour un canal **qu'on vend**.
+ *
+ * Le garder pour un canal fermé laisserait la famille pointer un taux dont
+ * personne ne se sert : il gonflerait le compte d'usages de l'écran des taux,
+ * et la base refuserait de supprimer un taux que plus rien ne facture.
+ */
+export class CategoryTvaWithoutChannelError extends BusinessError {
+  constructor(readonly channel: string) {
+    super(
+      "catalogue.category.tva_without_channel",
+      `Le canal « ${channel} » n’est pas vendu : il ne peut pas porter de taux.`,
+    );
+  }
+}
+
+/**
+ * On n'archive pas une famille qui porte encore des familles vivantes.
+ *
+ * Le pendant d'`CategoryArchivedParentError` : celui-là refuse de RANGER une
+ * famille sous une archivée, celui-ci refuse d'ARCHIVER par-dessus des
+ * vivantes. Sans lui, l'invariant n'était gardé que sur un chemin des deux,
+ * et pas celui qui crée l'état.
+ */
+export class CategoryHasActiveChildrenError extends BusinessError {
+  constructor(
+    readonly categoryId: string,
+    readonly children: number,
+  ) {
+    super(
+      "catalogue.category.has_active_children",
+      `Cette famille porte encore ${children} sous-famille(s) vivante(s) : les déplacer ou les archiver avant.`,
+    );
+  }
+}
+
+/** Un preset de canaux ne référence que des emplacements qui existent. */
+export class CategoryUnknownEmplacementError extends BusinessError {
+  constructor(readonly emplacementId: string) {
+    super(
+      "catalogue.category.unknown_emplacement",
+      `L’emplacement « ${emplacementId} » n’existe pas.`,
+    );
+  }
+}
+
 /** Invariant 5 du socle : l'arbre des familles ne doit pas contenir de cycle. */
 export class CategoryCycleError extends BusinessError {
   constructor(readonly categoryId: string) {
