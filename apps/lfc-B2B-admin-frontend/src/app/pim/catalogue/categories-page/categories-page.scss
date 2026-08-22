@@ -29,16 +29,26 @@
   }
 }
 
+/* La carte de la vue téléphone. Même cadre que les cartes de taux (bordure
+   discrète, rayon md, fond carte) : deux listes du même écran ne doivent pas
+   avoir deux idées de ce qu'est une carte. */
 .cat-card {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
   width: 100%;
-  padding: var(--fold-space-sm);
-  border: 0;
-  background: none;
-  cursor: pointer;
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--fold-color-border);
+  }
 }
 
 .cat-card-head {
@@ -48,7 +58,27 @@
 }
 
 .cat-card-name {
+  /* Prend la place restante : le compte et les trois points sont poussés au
+     bout de la ligne sans cale vide dans le gabarit. */
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.cat-card-count {
+  flex: none;
+}
+
+/* Les trois points ANNONCENT le panneau ; c'est la carte entière qui l'ouvre.
+   Un vrai bouton ici serait imbriqué dans celui de la carte. */
+.cat-card-more {
+  flex: none;
+  color: var(--fold-color-text-muted);
+}
+
+.cat-card-channels {
+  display: block;
 }
 
 .cat-card-meta {

@@ -5,13 +5,22 @@
     héritent ses produits. Côté Shopify, elle devient une <em>collection</em>.
   </p>
 
+  @if (archivedCount() > 0) {
+    <fold-toggle-icon
+      pageActions
+      [icon]="eyeIcon()"
+      [tooltip]="eyeTooltip()"
+      size="sm"
+      [(active)]="showArchived"
+    />
+  }
   <button pageActions foldButton emphasis="solid" size="sm" (click)="openCreate()">
     Ajouter une catégorie
   </button>
 
   <fold-data-table
     [columns]="columns"
-    [rows]="categories()"
+    [rows]="visible()"
     [rowKey]="rowKey"
     mobileLayout="custom"
     zebra
@@ -34,25 +43,11 @@
       }
     </ng-template>
 
-    <!-- Le B2B d'abord : c'est le canal de CET écran, et il ne se décline pas
-         par boutique — le lire après une liste d'emplacements le noierait. -->
     <ng-template foldCell="channels" let-c>
-      <span class="chan-pills">
-        @if (c.channelPreset.b2b) {
-          <fold-badge content="B2B" variant="success" />
-        }
-        @if (presetEmporter(c).length > 0) {
-          <fold-badge [content]="'Emporter ' + presetEmporter(c).join(' · ')" variant="accent" />
-        }
-        @if (presetSurPlace(c).length > 0) {
-          <fold-badge [content]="'Salle ' + presetSurPlace(c).join(' · ')" variant="info" />
-        }
-        @if (
-          !c.channelPreset.b2b && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0
-        ) {
-          <span class="muted">aucun</span>
-        }
-      </span>
+      <ng-container
+        [ngTemplateOutlet]="channelBadges"
+        [ngTemplateOutletContext]="{ $implicit: c }"
+      />
     </ng-template>
 
     <!-- Les trois points nus : une affordance, pas un bouton. Une seule action
@@ -69,24 +64,62 @@
     </ng-template>
 
     <!-- Sur téléphone, une CARTE : `auto-cards` empilerait des paires
-         libellé/valeur, donc un tableau debout. La carte entière est la cible. -->
+         libellé/valeur, donc un tableau debout. La carte entière est la cible —
+         les trois points l'ANNONCENT sans être un second bouton, qui serait
+         imbriqué dans le premier. -->
     <ng-template foldRowCard let-c>
-      <button type="button" class="cat-card" (click)="open(c)">
+      <button
+        type="button"
+        class="cat-card"
+        [attr.aria-label]="'Ouvrir « ' + c.name.fr + ' »'"
+        (click)="open(c)"
+      >
         <span class="cat-card-head">
           <span class="cat-card-name">{{ c.name.fr }}</span>
           @if (c.isArchived) {
             <fold-badge content="archivée" variant="neutral" />
           }
+          <fold-badge class="cat-card-count" [content]="ficheLabel(c)" variant="neutral" />
+          <fold-icon class="cat-card-more" name="more-vertical" size="sm" aria-hidden="true" />
         </span>
-        <span class="cat-card-meta">{{ parentName(c) }}</span>
-        <span class="cat-card-meta">
-          @if (c.activeProductCount === 0) {
-            Aucune fiche
-          } @else {
-            {{ c.activeProductCount }} fiche(s)
-          }
+        <span class="cat-card-channels">
+          <ng-container
+            [ngTemplateOutlet]="channelBadges"
+            [ngTemplateOutletContext]="{ $implicit: c }"
+          />
         </span>
+        @if (c.parentId !== null) {
+          <span class="cat-card-meta">dans {{ parentName(c) }}</span>
+        }
       </button>
     </ng-template>
   </fold-data-table>
+
+  <!-- Les mêmes pastilles dans la colonne et dans la carte. Dupliquées, leurs
+       conditions divergent : c'est comme ça qu'une famille vendue seulement en
+       B2B s'est retrouvée « aucun canal ».
+
+       Le B2B d'abord : c'est le canal de CET écran, et le seul qui ne se
+       décline pas par boutique — le lire après une liste d'emplacements le
+       noierait. -->
+  <ng-template #channelBadges let-c>
+    <span class="chan-pills">
+      @if (c.channelPreset.b2b) {
+        <fold-badge content="B2B" variant="success" />
+      }
+      @if (presetEmporter(c).length > 0) {
+        <fold-badge [content]="'Emporter ' + presetEmporter(c).join(' · ')" variant="accent" />
+      }
+      @if (presetSurPlace(c).length > 0) {
+        <fold-badge [content]="'Salle ' + presetSurPlace(c).join(' · ')" variant="info" />
+      }
+      @if (
+        !c.channelPreset.b2b && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0
+      ) {
+        <!-- « aucun » seul se lisait sous l'en-tête de colonne, qui fournissait
+             le nom ; la carte n'a pas d'en-tête, il fallait le porter ici. -->
+        <span class="muted">Aucun canal</span>
+      }
+    </span>
+  </ng-template>
 </fold-page-layout>
