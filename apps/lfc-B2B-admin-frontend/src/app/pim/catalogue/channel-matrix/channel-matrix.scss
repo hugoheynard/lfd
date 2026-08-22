@@ -57,3 +57,11 @@
   letter-spacing: 0.05em;
   color: var(--fold-color-text-muted);
 }
+
+/* La ligne B2B n'a qu'une case. Elle occupe la LARGEUR DES DEUX colonnes de
+   modes (plus leur gouttière) plutôt que d'en laisser une vide, qui se lirait
+   comme un choix non fait. La rangée est en flex, pas en grid : la largeur se
+   calcule, elle ne se déclare pas en `grid-column`. */
+.cm-cell--wide {
+  flex: 0 0 calc(var(--cm-mode-col) * 2 + 0.5rem);
+}

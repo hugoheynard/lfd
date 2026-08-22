@@ -18,9 +18,11 @@ function category(overrides: Partial<Category> = {}): Category {
     channelPreset: {
       b1: { emporter: true, surPlace: false },
       b2: { emporter: false, surPlace: false },
+      b2b: false,
     },
     emporterTvaId: 'tva_55',
     surPlaceTvaId: '',
+    b2bTvaId: '',
     activeProductCount: 0,
     ...overrides,
   };
@@ -133,5 +135,82 @@ describe('CategoryPanel — enregistrer', () => {
     // Le nom n'a pas changé : on ne renomme pas pour rien.
     expect(rename).not.toHaveBeenCalled();
     expect(closed).toHaveLength(1);
+  });
+});
+
+describe('CategoryPanel — un taux par canal vendu', () => {
+  function channels(over: Partial<Category['channelPreset']> = {}): Category['channelPreset'] {
+    return {
+      b1: { emporter: false, surPlace: false },
+      b2: { emporter: false, surPlace: false },
+      b2b: false,
+      ...over,
+    };
+  }
+
+  it("ne propose aucun taux tant qu'aucun canal n'est coché", () => {
+    const { host } = setup(category({ channelPreset: channels() }));
+
+    expect(host.textContent).toContain('Cochez un canal');
+    expect(host.querySelectorAll('fold-listbox')).toHaveLength(0);
+  });
+
+  /** Les libellés des listes de taux — PAS le texte de la page : la matrice de
+   *  canaux affiche elle aussi une colonne « Sur place ». */
+  function rateLabels(host: HTMLElement): string[] {
+    const pickers = host.querySelector('.tva-pickers');
+    return [...(pickers?.querySelectorAll('fold-listbox') ?? [])].map((box) =>
+      (box.getAttribute('label') ?? box.textContent ?? '').trim(),
+    );
+  }
+
+  it('ne montre que les taux des canaux vendus', () => {
+    const { host } = setup(
+      category({ channelPreset: channels({ b1: { emporter: true, surPlace: false } }) }),
+    );
+
+    expect(rateLabels(host)).toHaveLength(1);
+    expect(rateLabels(host)[0]).toContain('emporter');
+  });
+
+  it('montre le taux B2B dès que la plateforme est cochée', () => {
+    const { host } = setup(category({ channelPreset: channels({ b2b: true }) }));
+
+    expect(rateLabels(host)).toHaveLength(1);
+    expect(rateLabels(host)[0]).toContain('B2B');
+  });
+
+  it('montre les trois quand tout est vendu', () => {
+    const { host } = setup(
+      category({
+        channelPreset: channels({
+          b1: { emporter: true, surPlace: true },
+          b2b: true,
+        }),
+      }),
+    );
+
+    expect(rateLabels(host)).toHaveLength(3);
+  });
+
+  it("EFFACE le taux d'un canal qu'on ne vend pas", async () => {
+    // Le garder laisserait la famille pointer un taux dont personne ne se sert :
+    // le compte d'usages de l'écran des taux le compterait, et la base
+    // refuserait de supprimer un taux que plus rien ne facture.
+    const { host, api, stable } = setup(
+      category({
+        channelPreset: channels({ b2b: true }),
+        emporterTvaId: 'tva_55',
+        surPlaceTvaId: 'tva_10',
+        b2bTvaId: 'tva_20',
+      }),
+    );
+    const tva = vi.spyOn(api, 'setCategoryTva').mockResolvedValue();
+    vi.spyOn(api, 'setCategoryChannelPreset').mockResolvedValue();
+
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(tva).toHaveBeenCalledWith('cat_1', { emporter: '', surPlace: '', b2b: 'tva_20' });
   });
 });

@@ -7,8 +7,8 @@ import type { SalesChannels } from '../../data/models';
 
 /**
  * L'atome de la décision « sur quels canaux se vend ce produit ». Grille
- * **asymétrique** : à emporter = un interrupteur (fiche en ligne unique), sur
- * place = par boutique. Purement présentationnel : il montre les canaux
+ * **asymétrique** : les boutiques déclinent « à emporter » et « sur place », la
+ * plateforme B2B est une seule case. Purement présentationnel : il montre les canaux
  * effectifs et émet la nouvelle valeur ; l'hôte décide de la sémantique
  * héritage/override (tout-ou-rien) car elle dépend du défaut de la gamme.
  */
@@ -37,5 +37,9 @@ export class ChannelMatrix {
       ...current,
       [boutique]: { ...current[boutique], [mode]: value },
     });
+  }
+
+  protected setB2b(value: boolean): void {
+    this.channelsChange.emit({ ...this.channels(), b2b: value });
   }
 }

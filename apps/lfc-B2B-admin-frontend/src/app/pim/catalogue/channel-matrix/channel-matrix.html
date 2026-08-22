@@ -54,5 +54,20 @@
         />
       </span>
     </div>
+
+    <!-- La plateforme B2B : UNE case, pas une paire. Un professionnel qui
+         commande en gros ne consomme ni sur place ni à emporter — lui donner
+         deux colonnes inventerait un choix qui n'existe pas. La cellule
+         traverse donc les deux colonnes de modes. -->
+    <div class="cm-row cm-row--single">
+      <span class="cm-label">Plateforme B2B</span>
+      <span class="cm-cell cm-cell--wide">
+        <fold-checkbox
+          ariaLabel="Plateforme B2B"
+          [checked]="channels().b2b"
+          (checkedChange)="setB2b($event)"
+        />
+      </span>
+    </div>
   </div>
 </div>

@@ -48,6 +48,7 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
 const NO_CHANNELS: SalesChannels = {
   b1: { emporter: false, surPlace: false },
   b2: { emporter: false, surPlace: false },
+  b2b: false,
 };
 
 @Component({

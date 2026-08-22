@@ -22,8 +22,16 @@ function toCategory(row: CategoryView): Category {
     channelPreset: row.channelPreset,
     emporterTvaId: row.emporterTvaId ?? '',
     surPlaceTvaId: row.surPlaceTvaId ?? '',
+    b2bTvaId: row.b2bTvaId ?? '',
     activeProductCount: row.activeProductCount,
   };
+}
+
+/** Les taux saisis à l'écran ; `''` = non réglé. */
+export interface CategoryTvaDraft {
+  readonly emporter: string;
+  readonly surPlace: string;
+  readonly b2b: string;
 }
 
 /** `''` (non réglé côté front) → `null` (non réglé côté backend). */
@@ -69,10 +77,16 @@ export class CategoryHttpApi {
     return this.put(`categories/${id}/channels`, channels);
   }
 
-  setTva(id: string, emporterTvaId: string, surPlaceTvaId: string): Promise<void> {
+  /**
+   * Les trois taux d'un bloc. Un record et non trois arguments positionnels :
+   * à trois `string`, intervertir « sur place » et « B2B » ne se verrait ni au
+   * compilateur ni à la lecture, et se paierait en TVA facturée.
+   */
+  setTva(id: string, ids: CategoryTvaDraft): Promise<void> {
     return this.put(`categories/${id}/tva`, {
-      emporterTvaId: toRef(emporterTvaId),
-      surPlaceTvaId: toRef(surPlaceTvaId),
+      emporterTvaId: toRef(ids.emporter),
+      surPlaceTvaId: toRef(ids.surPlace),
+      b2bTvaId: toRef(ids.b2b),
     });
   }
 

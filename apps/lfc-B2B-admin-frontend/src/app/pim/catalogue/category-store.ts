@@ -2,7 +2,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
 import type { Category, SalesChannels } from '../data/models';
-import { CategoryHttpApi } from './category-http-api';
+import { CategoryHttpApi, type CategoryTvaDraft } from './category-http-api';
 
 /**
  * Source **réactive** unique des familles — remplace le signal LocalDb. Les
@@ -55,8 +55,8 @@ export class CategoryStore {
     await this.reload();
   }
 
-  async setTva(id: string, emporterTvaId: string, surPlaceTvaId: string): Promise<void> {
-    await this.api.setTva(id, emporterTvaId, surPlaceTvaId);
+  async setTva(id: string, ids: CategoryTvaDraft): Promise<void> {
+    await this.api.setTva(id, ids);
     await this.reload();
   }
 }

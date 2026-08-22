@@ -6,6 +6,7 @@ import { ChannelMatrix } from './channel-matrix';
 const CHANNELS: SalesChannels = {
   b1: { emporter: true, surPlace: true },
   b2: { emporter: true, surPlace: false },
+  b2b: false,
 };
 
 function render(inherited: boolean) {

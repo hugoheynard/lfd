@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
 import { CategoryStore } from './category-store';
+import type { CategoryTvaDraft } from './category-http-api';
 import { ProductHttpApi } from './product-http-api';
 import { TvaStore } from './tva-rates/tva-store';
 
@@ -57,9 +58,9 @@ export class CatalogueApi {
     await this.categoryStore.setChannels(id, preset);
   }
 
-  /** Taux de TVA appliqués aux fiches à emporter / sur place d'une catégorie. */
-  async setCategoryTva(id: string, emporterTvaId: string, surPlaceTvaId: string): Promise<void> {
-    await this.categoryStore.setTva(id, emporterTvaId, surPlaceTvaId);
+  /** Les trois taux de TVA d'une famille, un par canal de vente. */
+  async setCategoryTva(id: string, ids: CategoryTvaDraft): Promise<void> {
+    await this.categoryStore.setTva(id, ids);
   }
 
   // ── Taux de TVA (backend `commerce/tva-rates`, via TvaStore) ─────────

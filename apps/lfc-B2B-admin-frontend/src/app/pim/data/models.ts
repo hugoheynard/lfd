@@ -47,13 +47,15 @@ export interface BoutiqueChannels {
 }
 
 /**
- * Où et comment un produit se vend, **par boutique**. Chaque boutique décline
- * indépendamment « à emporter » et « sur place » — une vraie matrice
- * boutiques × modes. Le labo ne vend pas (absent de la grille).
+ * Où et comment un produit se vend. Chaque boutique décline indépendamment « à
+ * emporter » et « sur place » ; la plateforme B2B est une seule case, parce
+ * qu'un professionnel qui commande en gros ne fait ni l'un ni l'autre. Le labo
+ * ne vend pas (absent de la grille).
  */
 export interface SalesChannels {
   b1: BoutiqueChannels;
   b2: BoutiqueChannels;
+  b2b: boolean;
 }
 
 export interface Variant {
@@ -98,9 +100,10 @@ export interface Category {
   isArchived: boolean;
   /** Défauts dont héritent les produits de la catégorie (sauf override). */
   channelPreset: SalesChannels;
-  /** Taux de TVA appliqué aux fiches à emporter / sur place. */
+  /** Taux de TVA appliqué par canal de vente. `''` = non réglé. */
   emporterTvaId: string;
   surPlaceTvaId: string;
+  b2bTvaId: string;
   /**
    * Fiches **actives** portées par la famille. Une famille qui en porte ne peut
    * pas être archivée : le compte permet de le dire AVANT le clic, plutôt que

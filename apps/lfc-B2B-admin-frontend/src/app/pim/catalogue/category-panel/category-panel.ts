@@ -26,6 +26,7 @@ import { NotifyService } from '../../../notify.service';
 import { formatPercent } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
+import type { CategoryTvaDraft } from '../category-http-api';
 
 /** Charge passée à `open()` : la famille à régler, et les taux disponibles. */
 export interface CategoryPanelData {
@@ -108,6 +109,27 @@ export class CategoryPanel {
   );
   protected readonly draftEmporterTva = linkedSignal(() => this.category().emporterTvaId);
   protected readonly draftSurPlaceTva = linkedSignal(() => this.category().surPlaceTvaId);
+  protected readonly draftB2bTva = linkedSignal(() => this.category().b2bTvaId);
+
+  /**
+   * Un taux ne se règle que pour un canal qu'on vend.
+   *
+   * « À emporter » et « sur place » se déclinent par boutique : le taux
+   * concerne le MODE, donc il suffit qu'une boutique le propose. Le B2B est
+   * une case unique.
+   */
+  protected readonly sellsEmporter = computed(
+    () => this.draftChannels().b1.emporter || this.draftChannels().b2.emporter,
+  );
+  protected readonly sellsSurPlace = computed(
+    () => this.draftChannels().b1.surPlace || this.draftChannels().b2.surPlace,
+  );
+  protected readonly sellsB2b = computed(() => this.draftChannels().b2b);
+
+  /** Aucun canal coché ⇒ la section des taux n'a rien à montrer. */
+  protected readonly hasAnyChannel = computed(
+    () => this.sellsEmporter() || this.sellsSurPlace() || this.sellsB2b(),
+  );
 
   protected readonly canSubmit = computed(() => !this.busy() && this.draftName().trim() !== '');
 
@@ -135,9 +157,25 @@ export class CategoryPanel {
         await this.api.renameCategory(category.id, name);
       }
       await this.api.setCategoryChannelPreset(category.id, this.draftChannels());
-      await this.api.setCategoryTva(category.id, this.draftEmporterTva(), this.draftSurPlaceTva());
+      await this.api.setCategoryTva(category.id, this.tvaToSave());
       this.ref.close();
     });
+  }
+
+  /**
+   * Les taux à enregistrer — **effacés** pour tout canal décoché.
+   *
+   * Masquer un champ sans effacer sa valeur laisserait la famille pointer un
+   * taux qu'elle n'utilise plus : ça gonflerait le compte d'usages affiché sur
+   * l'écran des taux, et la base refuserait de supprimer un taux que plus rien
+   * ne facture. Ce qui n'est pas vendu ne référence rien.
+   */
+  private tvaToSave(): CategoryTvaDraft {
+    return {
+      emporter: this.sellsEmporter() ? this.draftEmporterTva() : '',
+      surPlace: this.sellsSurPlace() ? this.draftSurPlaceTva() : '',
+      b2b: this.sellsB2b() ? this.draftB2bTva() : '',
+    };
   }
 
   protected async archive(): Promise<void> {

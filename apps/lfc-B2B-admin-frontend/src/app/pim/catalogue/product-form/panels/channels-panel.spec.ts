@@ -43,9 +43,11 @@ describe('ChannelsPanel', () => {
         channelPreset: {
           b1: { emporter: true, surPlace: false },
           b2: { emporter: true, surPlace: false },
+          b2b: false,
         },
         emporterTvaId: 'tva_55',
         surPlaceTvaId: 'tva_55',
+        b2bTvaId: '',
         activeProductCount: 0,
       },
     ]);
