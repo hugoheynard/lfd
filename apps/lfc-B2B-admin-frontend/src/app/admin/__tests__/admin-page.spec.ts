@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -17,14 +18,14 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
     can: (permission: StaffPermission): boolean => permissions.includes(permission),
   };
   TestBed.configureTestingModule({
-    providers: [{ provide: PermissionsStore, useValue: store }],
+    providers: [provideRouter([]), { provide: PermissionsStore, useValue: store }],
   });
   const page = TestBed.runInInjectionContext(() => new AdminPage());
-  // `tabs` est protégé — on lit ce que le template lit, via l'instance.
-  return TestBed.runInInjectionContext(() => page['tabs']().map((tab) => tab.key));
+  // `views` est privé — on lit ce que le rail reçoit, via l'instance.
+  return TestBed.runInInjectionContext(() => page['views']().map((view) => view.key));
 }
 
-describe("les onglets d'Admin", () => {
+describe("les vues d'Admin", () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
     expect(tabsFor(['companies:read', 'staff:read'])).toEqual(['acces-en-attente', 'utilisateurs']);
   });

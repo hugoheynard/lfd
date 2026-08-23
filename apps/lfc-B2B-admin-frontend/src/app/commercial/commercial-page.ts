@@ -1,26 +1,30 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import {
-  FoldNavLayoutComponent,
-  FoldPageLayoutComponent,
-  FoldViewNavComponent,
-  type FoldIconName,
-  type FoldViewNavItem,
-} from 'fold-ng';
+import { FoldPageLayoutComponent } from 'fold-ng';
 
-/** Un onglet, plus ce que la page doit en dire — titre et intro vivent ICI. */
-interface CommercialTab extends FoldViewNavItem {
-  readonly link: string;
+import {
+  provideWorkspaceRail,
+  type WorkspaceRailItem,
+} from '../shared/workspace-rail/workspace-rail.store';
+import { WorkspaceViewsComponent } from '../shared/workspace-rail/workspace-views.component';
+
+/** Une vue, plus ce que la page doit en dire — titre et intro vivent ICI. */
+interface CommercialTab extends WorkspaceRailItem {
   /**
-   * Le fragment d'URL qui allume l'onglet, quand il diffère du lien.
+   * Le préfixe d'URL qui désigne cette vue, quand il est plus large que le lien.
    *
-   * Une vue à deux listes (Tarification) a un lien qui pointe vers l'une des
-   * deux : sans `match`, l'onglet s'éteindrait dès qu'on passe sur l'autre.
+   * Il pilote l'EN-TÊTE de page (`current`), pas l'état actif du rail : une vue
+   * à deux listes (Tarification) a un lien vers l'une des deux, et sans `match`
+   * le titre retomberait sur le tableau de bord dès qu'on passe sur l'autre.
+   * L'entrée du rail, elle, s'éteint — `routerLinkActive` compare au lien, et
+   * ni le rail ni la barre étroite n'offrent de dérogation.
+   *
+   * Chemin ABSOLU, comme `link` : le rail est rendu par la racine, pas par
+   * cette page — un chemin relatif s'y résoudrait à côté.
    */
   readonly match?: string;
-  readonly icon: FoldIconName;
   /** L'intro sous le titre : une phrase, celle que la vue portait elle-même avant. */
   readonly description: string;
 }
@@ -29,7 +33,7 @@ interface CommercialTab extends FoldViewNavItem {
 const COCKPIT: CommercialTab = {
   key: 'cockpit',
   label: 'Tableau de bord',
-  link: 'cockpit',
+  link: '/commercial/cockpit',
   icon: 'dashboard',
   description: 'La journée, ceux qui attendent, et les coups à jouer.',
 };
@@ -53,14 +57,14 @@ const TABS: CommercialTab[] = [
     // part alors qu'elle est le cœur du poste de travail commercial.
     key: 'comptes-clients',
     label: 'Comptes clients',
-    link: 'comptes-clients',
+    link: '/commercial/comptes-clients',
     icon: 'customer-account',
     description: 'Le parc, ceux qui commandent et ceux qui dorment.',
   },
   {
     key: 'prospects',
     label: 'Prospects',
-    link: 'prospects',
+    link: '/commercial/prospects',
     icon: 'team',
     description:
       "Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud, puis l'activation du dossier.",
@@ -68,7 +72,7 @@ const TABS: CommercialTab[] = [
   {
     key: 'calendrier',
     label: 'Calendrier',
-    link: 'calendrier',
+    link: '/commercial/calendrier',
     icon: 'calendar',
     description: 'Les rendez-vous posés — cliquez-en un pour ouvrir son dossier.',
   },
@@ -77,8 +81,8 @@ const TABS: CommercialTab[] = [
     label: 'Tarification',
     // Le lien mène à la première des deux listes ; l'onglet reste allumé sur
     // l'autre, parce que `match` couvre les deux (cf. `current`).
-    link: 'tarification/mercuriales-templates',
-    match: 'tarification',
+    link: '/commercial/tarification/mercuriales-templates',
+    match: '/commercial/tarification',
     icon: 'tag',
     description:
       "Les grilles de prix qu'on prépare une fois : un prix fixe, ou des paliers. On les repose chez autant de clients qu'on veut.",
@@ -111,14 +115,16 @@ const TABS: CommercialTab[] = [
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldNavLayoutComponent, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent, WorkspaceViewsComponent],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })
 export class CommercialPage {
   private readonly router = inject(Router);
 
-  protected readonly tabs: FoldViewNavItem[] = TABS;
+  constructor() {
+    provideWorkspaceRail(signal({ title: 'Commercial', icon: 'calendar', items: TABS }));
+  }
 
   /** L'URL courante — la seule source de vérité de l'onglet actif. */
   private readonly url = toSignal(
@@ -132,6 +138,6 @@ export class CommercialPage {
   /** La vue affichée. Repli sur la première : `/commercial` seul y redirige. */
   protected readonly current = computed<CommercialTab>(() => {
     const url = this.url();
-    return TABS.find((tab) => url.includes(`/commercial/${tab.match ?? tab.link}`)) ?? COCKPIT;
+    return TABS.find((tab) => url.includes(tab.match ?? tab.link)) ?? COCKPIT;
   });
 }

@@ -1,32 +1,14 @@
 <fold-page-layout [icon]="current().icon" [title]="current().label">
   <p description>{{ current().description }}</p>
 
-  <!-- Rail latéral, comme le PIM — mais DANS le `fold-page-layout`, et c'est la
-       seule façon possible ici : les vues du Commercial n'ont plus d'en-tête à
-       elles (le shell porte titre et intro, tirés de la table des onglets).
-       Sortir le rail du page-layout, comme fait le PIM, effacerait le titre de
-       chaque vue.
+  <!-- Les vues du Commercial vivent dans le RAIL SECONDAIRE de la coquille,
+       publié par le composant. Le titre de page suit la vue affichée : le nom
+       de l'ESPACE est en tête du rail, la page porte celui de la VUE — sans
+       quoi les deux diraient « Commercial » et aucun ne dirait où l'on est.
 
-       `placement="side"` replie DE LUI-MÊME en barre horizontale sous 56rem, et
-       sur la largeur du LAYOUT plutôt que du viewport. Le view-nav garde
-       `direction="auto"` : il lit le layout par DI et bascule vertical ↔
-       horizontal seul — d'où la disparition du `direction="horizontal"` et du
-       repli calculé sur le viewport, qui faisaient ce travail à la main.
+       Pas de `gutter` : la barre de reprise étroite vit dans le
+       `fold-page-layout`, qui a déjà posé la sienne. -->
+  <app-workspace-views />
 
-       `underline` sur fond transparent remplace les pastilles pleines : leur
-       raison d'être était de se poser SUR la première carte de la vue, une
-       composition qui n'existe plus dès que la nav passe sur le côté. -->
-  <fold-nav-layout #nav placement="side" [foldAt]="896">
-    <fold-view-nav
-      tabNav
-      class="cm-tabs"
-      [items]="tabs"
-      [collapsed]="nav.stacked()"
-      size="comfortable"
-      activeStyle="underline"
-      background="transparent"
-    />
-
-    <router-outlet />
-  </fold-nav-layout>
+  <router-outlet />
 </fold-page-layout>

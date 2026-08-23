@@ -1,19 +1,10 @@
-<fold-page-layout icon="shield" title="Admin">
-  <!-- Idiome des Réglages : la coquille porte le titre du module, le rail nomme
-       la vue, et les vues n'écrivent aucun en-tête — sans quoi chaque écran
-       s'annoncerait deux fois. `placement="side"` replie le rail à
-       l'horizontale sur la largeur du LAYOUT (pas du viewport), donc juste
-       aussi en iframe dans la suite. -->
-  <fold-nav-layout #nav placement="side" [foldAt]="896">
-    <fold-view-nav
-      tabNav
-      [items]="tabs()"
-      [collapsed]="nav.stacked()"
-      size="comfortable"
-      activeStyle="underline"
-      background="transparent"
-    />
+<fold-page-layout [icon]="current().icon" [title]="current().label">
+  <!-- Les vues de l'Admin vivent dans le RAIL SECONDAIRE de la coquille, publié
+       par le composant. Le titre de page suit la vue affichée : le nom de
+       l'ESPACE est en tête du rail, la page porte celui de la VUE. Il disait
+       « Admin » pendant que le rail le disait déjà — et aucun des deux ne
+       nommait l'écran ouvert. -->
+  <app-workspace-views />
 
-    <router-outlet />
-  </fold-nav-layout>
+  <router-outlet />
 </fold-page-layout>
