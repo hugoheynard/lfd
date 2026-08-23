@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
@@ -6,12 +6,10 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
+  FoldAsideLayoutComponent,
   FoldLoadingStateComponent,
-  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
-  FoldTabPanelComponent,
-  FoldTabsComponent,
-  type FoldTabItem,
+  FoldPageSectionComponent,
 } from 'fold-ng';
 
 import { ChannelsPanel } from './panels/channels-panel';
@@ -22,7 +20,15 @@ import { PricingPanel } from './panels/pricing-panel';
 import { RegulatoryPanel } from './panels/regulatory-panel';
 import { VisualsPanel } from './panels/visuals-panel';
 import type { HasPendingChanges } from './pending-changes.guard';
-import { ProductFormStore } from './product-form-store';
+import { ProductFormStore, type FormSection } from './product-form-store';
+import { PublishRail } from './publish-rail/publish-rail';
+import { SectionState } from './section-state/section-state';
+
+interface PageSection {
+  readonly key: FormSection;
+  readonly label: string;
+  readonly description: string;
+}
 
 /**
  * Formulaire produit — **coquille**. Elle fournit le {@link ProductFormStore}
@@ -42,9 +48,10 @@ import { ProductFormStore } from './product-form-store';
     FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
-    FoldNavLayoutComponent,
-    FoldTabsComponent,
-    FoldTabPanelComponent,
+    FoldAsideLayoutComponent,
+    FoldPageSectionComponent,
+    SectionState,
+    PublishRail,
     IdentityPanel,
     PricingPanel,
     ChannelsPanel,
@@ -61,45 +68,69 @@ export class ProductFormPage implements HasPendingChanges {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly activeTab = signal<string>('identite');
-  protected readonly leaveWarning = signal(false);
-  /** Laissez-passer ponctuel une fois l'utilisateur a tranché la bannière. */
-  private forceLeave = false;
-
-  protected readonly tabs: FoldTabItem[] = [
-    { key: 'identite', label: 'Identité', icon: 'grid' },
-    { key: 'tarif', label: 'Tarif & logistique', icon: 'tag' },
-    { key: 'canaux', label: 'Canaux & TVA', icon: 'sliders' },
-    { key: 'fiche', label: 'Allergènes & nutrition', icon: 'shield' },
-    { key: 'communication', label: 'Communication', icon: 'edit' },
-    { key: 'visuels', label: 'Visuels', icon: 'eye' },
-    { key: 'integrations', label: 'Intégrations', icon: 'shopify' },
+  /**
+   * Les sections ENREGISTRABLES, dans l'ordre de lecture. La description
+   * remplace le `<p class="panel-desc">` que chaque panneau ouvrait : c'est
+   * `fold-page-section` qui la porte maintenant, au même endroit pour toutes.
+   */
+  protected readonly sections: PageSection[] = [
+    {
+      key: 'identite',
+      label: 'Identité',
+      description: 'Le strict nécessaire pour exister au catalogue.',
+    },
+    {
+      key: 'tarif',
+      label: 'Tarif & logistique',
+      description: "Prix canonique HT et poids de l'unité vendue.",
+    },
+    {
+      key: 'fiche',
+      label: 'Fiche réglementaire',
+      description: 'Allergènes obligatoires avant publication, et déclaration nutritionnelle.',
+    },
+    {
+      key: 'communication',
+      label: 'Contenu',
+      description: 'Textes du site et référencement — ce que voit le client.',
+    },
+    {
+      key: 'visuels',
+      label: 'Visuels',
+      description: 'Le master ; chaque canal en dérivera ses tailles.',
+    },
   ];
 
   constructor() {
     void this.store.init(this.route.snapshot.paramMap.get('id'));
   }
 
-  /** Garde CanDeactivate : retient si des sections sont modifiées. */
+  /**
+   * Garde CanDeactivate — elle ne retient plus.
+   *
+   * Le contrat de la garde est : `false` retient ET le composant affiche sa
+   * propre bannière. La bannière disparaît avec le nouveau modèle d'édition,
+   * puisque le rail nomme en permanence les sections en attente et porte « Tout
+   * enregistrer ». Garder `false` sans bannière piégerait l'utilisateur sans un
+   * mot d'explication — un mur silencieux, pire que l'avertissement qu'on
+   * retire.
+   *
+   * La garde reste branchée sur la route : le jour où un blocage réel est
+   * nécessaire, c'est ici qu'il s'écrit. Elle est INERTE aujourd'hui, et c'est
+   * dit plutôt que sous-entendu.
+   */
   canLeave(): boolean {
-    if (this.forceLeave || this.store.dirtySections().length === 0) {
-      return true;
-    }
-    this.leaveWarning.set(true);
-    return false;
+    return true;
   }
 
-  protected leaveAnyway(): void {
-    this.forceLeave = true;
-    this.back();
+  /** Enregistre UNE section — le bouton posé à droite de son titre. */
+  protected saveSection(section: FormSection): void {
+    void this.store.saveOne(section);
   }
 
-  protected async saveDirtyAndLeave(): Promise<void> {
-    await this.store.saveDirty();
-    if (this.store.dirtySections().length === 0) {
-      this.forceLeave = true;
-      this.back();
-    }
+  /** Enregistre toutes les sections modifiées, depuis le rail. */
+  protected saveAll(): void {
+    void this.store.saveDirty();
   }
 
   protected async submit(): Promise<void> {
@@ -107,9 +138,5 @@ export class ProductFormPage implements HasPendingChanges {
     if (id !== null) {
       await this.router.navigate(['/pim/produits', id]);
     }
-  }
-
-  private back(): void {
-    void this.router.navigate(['/pim/produits']);
   }
 }

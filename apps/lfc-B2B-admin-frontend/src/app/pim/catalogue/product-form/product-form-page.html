@@ -3,7 +3,7 @@
 
   <p description>
     @if (store.isEdit()) {
-      Chaque section s'enregistre indépendamment (un bouton par section).
+      Tout est éditable ; chaque section affiche son état et s'enregistre indépendamment.
     } @else {
       Un nom et une catégorie suffisent pour créer le brouillon ; le reste se complète ensuite à
       l'édition.
@@ -24,58 +24,55 @@
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
   } @else {
-    @if (leaveWarning()) {
-      <fold-callout appearance="inset" variant="warning" role="alert" class="leave-warning">
-        <div class="leave-body">
-          <span>
-            Vous avez modifié des champs de
-            <strong>{{ store.dirtyLabel() }}</strong
-            >. Enregistrer avant de quitter ?
-          </span>
-          <div class="leave-actions">
-            <button foldButton size="sm" (click)="saveDirtyAndLeave()">Sauvegarder</button>
-            <button foldButton size="sm" emphasis="soft" intent="neutral" (click)="leaveAnyway()">
-              Retour aux produits
-            </button>
-          </div>
-        </div>
-      </fold-callout>
-    }
+    <fold-aside-layout>
+      <!-- Une section par bloc, toutes visibles : un back-office se lit de haut
+           en bas. Les sept onglets s'ajoutaient au rail du PIM (sept entrées
+           lui aussi), cachaient l'état — impossible de voir d'un coup ce qui
+           manquait — et dispersaient sept boutons d'enregistrement. -->
+      @for (section of sections; track section.key) {
+        <fold-page-section [title]="section.label" [description]="section.description">
+          <app-section-state sectionActions [section]="section.key" (save)="saveSection($event)" />
+          @switch (section.key) {
+            @case ('identite') {
+              <app-identity-panel />
+            }
+            @case ('tarif') {
+              <app-pricing-panel />
+            }
+            @case ('fiche') {
+              <app-regulatory-panel />
+            }
+            @case ('communication') {
+              <app-communication-panel />
+            }
+            @case ('visuels') {
+              <app-visuals-panel />
+            }
+          }
+        </fold-page-section>
+      }
 
-    <fold-nav-layout placement="top">
-      <fold-tabs
-        tabNav
-        activeStyle="fill"
-        background="transparent"
-        class="product-tabs"
-        [tabs]="tabs"
-        [(activeKey)]="activeTab"
-        #ref="foldTabs"
-      />
-
-      <fold-tab-panel [tabs]="ref" key="identite">
-        <app-identity-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="tarif">
-        <app-pricing-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="canaux">
+      <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
+           propre, donc pas d'indicateur d'état. -->
+      <fold-page-section
+        title="Canaux de vente"
+        description="Hérités de la famille du produit : la provenance, les boutiques concernées et le cas « non proposé »."
+      >
         <app-channels-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="fiche">
-        <app-regulatory-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="communication">
-        <app-communication-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="visuels">
-        <app-visuals-panel />
-      </fold-tab-panel>
-      <fold-tab-panel [tabs]="ref" key="integrations">
+      </fold-page-section>
+      <fold-page-section
+        title="Diffusion par canal"
+        description="Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau d'onglets."
+      >
         <app-integrations-panel />
-      </fold-tab-panel>
-    </fold-nav-layout>
+      </fold-page-section>
 
+      <app-publish-rail asideRight (saveAll)="saveAll()" />
+    </fold-aside-layout>
+
+    <!-- La création reste un geste unique : le produit n'existe pas encore,
+         donc aucune section ne peut s'enregistrer indépendamment. C'est le
+         modèle d'ÉDITION que la refonte remplace, pas celui-ci. -->
     @if (!store.isEdit()) {
       <div class="save-bar">
         @if (!store.isValid()) {

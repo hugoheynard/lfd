@@ -1,0 +1,64 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  /* `sticky` n'a d'amplitude que si aucun ancêtre ne clippe en `hidden` — un
+     ancêtre en `hidden` devient le conteneur de défilement le plus proche.
+     `fold-card` utilise `clip` pour cette raison exacte. */
+  position: sticky;
+  top: var(--fold-space-lg);
+  align-self: start;
+}
+
+.pr-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.pr-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.pr-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--fold-radius-round);
+  background: var(--fold-color-warning);
+}
+
+/* Le signe REDIT ce que la couleur dit — une pastille verte et une ambre ne se
+   distinguent pas en niveaux de gris ni pour un daltonien. */
+.pr-check {
+  flex: none;
+  color: var(--fold-color-success-text);
+  font-weight: var(--fold-weight-bold);
+}
+
+.pr-list li.is-todo {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-medium);
+}
+
+.pr-list li.is-todo .pr-check {
+  color: var(--fold-color-warning-text);
+}
+
+.pr-cta {
+  margin-top: var(--fold-space-sm);
+  width: 100%;
+}

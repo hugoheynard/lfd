@@ -1,0 +1,38 @@
+@if (store.dirtySections().length >= 2) {
+  <section class="pr-block" aria-labelledby="pr-dirty">
+    <fold-element-title
+      id="pr-dirty"
+      [title]="store.dirtySections().length + ' sections modifiées'"
+    />
+    <fold-card>
+      <ul class="pr-list">
+        @for (section of store.dirtySections(); track section.key) {
+          <li>
+            <span class="pr-dot" aria-hidden="true"></span>
+            {{ section.label }}
+          </li>
+        }
+      </ul>
+      <button foldButton class="pr-cta" [loading]="store.busy()" (click)="saveAll.emit()">
+        Tout enregistrer
+      </button>
+    </fold-card>
+  </section>
+}
+
+<section class="pr-block" aria-labelledby="pr-completeness">
+  <fold-element-title
+    id="pr-completeness"
+    [title]="'Complétude · ' + done() + '/' + checks().length"
+  />
+  <fold-card>
+    <ul class="pr-list">
+      @for (check of checks(); track check.label) {
+        <li [class.is-todo]="!check.done">
+          <span class="pr-check" aria-hidden="true">{{ check.done ? '✓' : '!' }}</span>
+          {{ check.label }}
+        </li>
+      }
+    </ul>
+  </fold-card>
+</section>

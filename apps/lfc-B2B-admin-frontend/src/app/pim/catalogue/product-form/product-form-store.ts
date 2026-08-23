@@ -226,6 +226,59 @@ export class ProductFormStore {
     );
   });
 
+  /** Les sections enregistrables, dans l'ordre de la page. */
+  readonly saveable = SAVEABLE;
+
+  /** Cette section a-t-elle des modifications en attente ? */
+  isDirty(section: FormSection): boolean {
+    return this.dirtySections().some((s) => s.key === section);
+  }
+
+  /**
+   * Annule les modifications d'une section — retour à sa dernière valeur
+   * enregistrée.
+   *
+   * Le pendant exact de `snapshot()`, et il vit collé à lui pour cette raison :
+   * l'instantané est un tableau POSITIONNEL, donc ajouter un champ d'un côté
+   * sans l'autre casse silencieusement l'annulation. Les deux se lisent
+   * ensemble ou pas du tout.
+   */
+  revert(section: FormSection): void {
+    const raw = this.baseline()[section];
+    if (raw === undefined) {
+      return;
+    }
+    const value: unknown = JSON.parse(raw);
+    if (!Array.isArray(value)) {
+      // `communication` et `visuels` sérialisent un objet / un tableau d'objets.
+      if (section === 'communication') {
+        this.editorial.set(value as EditorialFields);
+      }
+      return;
+    }
+    switch (section) {
+      case 'identite':
+        this.name.set(String(value[0] ?? ''));
+        this.setKind(String(value[1] ?? ''));
+        this.categoryId.set(String(value[2] ?? ''));
+        return;
+      case 'tarif':
+        this.priceEur.set(value[0] as number | null);
+        this.weightGrams.set(value[1] as number | null);
+        return;
+      case 'fiche':
+        this.declaresNone.set(Boolean(value[0]));
+        this.selected.set([...(value[1] as string[])]);
+        this.nutrition.set(value[2] as NutritionValues);
+        return;
+      case 'visuels':
+        this.media.set(value as MediaSlot[]);
+        return;
+      case 'communication':
+        return;
+    }
+  }
+
   readonly dirtyLabel = computed(() =>
     this.dirtySections()
       .map((section) => section.label)
@@ -449,11 +502,12 @@ export class ProductFormStore {
   /** Enregistre chaque section modifiée (pour « sauvegarder puis quitter »). */
   async saveDirty(): Promise<void> {
     for (const section of this.dirtySections()) {
-      await this.saveSection(section.key);
+      await this.saveOne(section.key);
     }
   }
 
-  private saveSection(key: FormSection): Promise<void> {
+  /** Enregistre UNE section — le bouton posé à droite de son titre. */
+  saveOne(key: FormSection): Promise<void> {
     switch (key) {
       case 'identite':
         return this.saveIdentity();

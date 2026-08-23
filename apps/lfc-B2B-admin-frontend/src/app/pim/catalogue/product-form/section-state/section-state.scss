@@ -1,0 +1,33 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex: none;
+  white-space: nowrap;
+}
+
+.ss-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Le point porte l'état à lui seul, donc il ne peut pas être la SEULE
+   information : le libellé qui le suit dit la même chose en mots. */
+.ss-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--fold-radius-round);
+  background: var(--fold-color-border);
+}
+
+.ss-mark--dirty {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.ss-mark--dirty .ss-dot {
+  background: var(--fold-color-warning);
+}

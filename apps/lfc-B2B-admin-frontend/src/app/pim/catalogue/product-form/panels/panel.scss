@@ -3,12 +3,6 @@
   display: block;
 }
 
-.panel-desc {
-  margin: 0 0 var(--fold-space-md);
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md);
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

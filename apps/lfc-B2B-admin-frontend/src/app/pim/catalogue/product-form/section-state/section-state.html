@@ -1,0 +1,24 @@
+@if (store.isDirty(section()); as dirty) {
+  <span class="ss-mark ss-mark--dirty">
+    <span class="ss-dot" aria-hidden="true"></span>
+    Modifié
+  </span>
+  <button
+    foldButton
+    size="sm"
+    emphasis="soft"
+    intent="neutral"
+    [disabled]="store.busy()"
+    (click)="store.revert(section())"
+  >
+    Annuler
+  </button>
+  <button foldButton size="sm" [loading]="saving()" (click)="save.emit(section())">
+    Enregistrer
+  </button>
+} @else {
+  <span class="ss-mark">
+    <span class="ss-dot" aria-hidden="true"></span>
+    {{ store.statusText(section()) || 'À jour' }}
+  </span>
+}
