@@ -175,6 +175,15 @@ jobs:
       - name: "Gate : les liens absolus mènent quelque part"
         run: pnpm lint:router-links
 
+      # La couche modèle du référentiel portait `tvaTagFromPercent`,
+      # `generateFiches` et un `collections.ts` entier : quatre mots de Shopify
+      # au milieu du vocabulaire du catalogue. Six écrans qui n'ont rien à voir
+      # avec Shopify le traînaient dans leur bundle. Un déplacement sans porte
+      # se défait ; celle-ci tient la direction — un canal lit le catalogue, le
+      # catalogue ignore les canaux.
+      - name: "Gate : le modèle du référentiel ignore les canaux"
+        run: pnpm lint:pim-data-neutral
+
       # Un cycle d'import ne se voit NULLE PART : tsc n'en dit rien, les tests
       # passent, la compilation de production réussit. Seul le navigateur tombe,
       # à l'exécution, sur la page concernée — « Failed to fetch dynamically
