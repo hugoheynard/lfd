@@ -15,6 +15,9 @@ function payload(overrides: Partial<ShopifyProductPayload> = {}): ShopifyProduct
     title: "Croissant",
     handle: "croissant",
     status: "ACTIVE",
+    descriptionHtml: "",
+    vendor: null,
+    seo: { title: "", description: "" },
     variants: [
       {
         sku: "PATI-CROISSANT",

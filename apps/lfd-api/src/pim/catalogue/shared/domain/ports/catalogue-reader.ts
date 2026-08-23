@@ -1,4 +1,5 @@
 import type { LocalizedText } from "../value-objects/localized-text.js";
+import type { ProductEditorialView } from "../../../product/domain/ports/editorial-reader.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 
 /**
@@ -64,4 +65,14 @@ export abstract class CatalogueReader {
   abstract tvaPercents(categoryId: string): Promise<CategoryTvaPercents>;
   /** Les familles **non archivées**, avec leurs taux résolus (emporter + B2B). */
   abstract channelCategories(): Promise<ChannelCategory[]>;
+  /**
+   * La couche éditoriale de plusieurs produits, indexée par identifiant.
+   *
+   * Elle ne voyage PAS dans `ProductRecord` : c'est un satellite optionnel du produit,
+   * avec sa propre table et son propre rythme de vie. La coller à l'instantané du
+   * produit obligerait tout lecteur à la charger, y compris ceux qui ne la lisent pas.
+   */
+  abstract editorials(
+    productIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ProductEditorialView>>;
 }

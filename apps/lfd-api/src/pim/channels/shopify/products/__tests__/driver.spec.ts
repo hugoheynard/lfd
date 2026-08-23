@@ -9,6 +9,9 @@ const PAYLOAD: ShopifyProductPayload = {
   title: "Croissant",
   handle: "croissant",
   status: "ACTIVE",
+  descriptionHtml: "",
+  vendor: null,
+  seo: { title: "", description: "" },
   variants: [{ sku: "PATI-CROISSANT", title: "Défaut", options: {}, price: "1.30" }],
 };
 

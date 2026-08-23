@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 
 import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { ProductEditorialView } from "../../../../catalogue/product/domain/ports/editorial-reader.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
 import type { ChannelMode } from "../../shared/settings.service.js";
@@ -60,12 +61,16 @@ interface Harness {
     payload: ShopifyProductPayload;
   }) => void;
   loadArgs: [string, number][];
+  /** Les lots d'identifiants pour lesquels le pousseur a demandé l'éditorial. */
+  editorialAsks: string[][];
 }
 
 async function build(
   mode: ChannelMode,
   bindingRow: { lastPushedHash: string } | null = null,
+  editorials: ReadonlyMap<string, ProductEditorialView> = new Map(),
 ): Promise<Harness> {
+  const editorialAsks: string[][] = [];
   const recorded: RecordSnapshotInput[] = [];
   const livePushes: ShopifyProductPayload[] = [];
   const dryPushes: ShopifyProductPayload[] = [];
@@ -112,6 +117,10 @@ async function build(
         useValue: {
           byIds: () => Promise.resolve([product()]),
           tvaPercents: () => Promise.resolve({ emporter: 5.5, surPlace: null }),
+          editorials: (ids: readonly string[]) => {
+            editorialAsks.push([...ids]);
+            return Promise.resolve(editorials);
+          },
         },
       },
       {
@@ -180,6 +189,7 @@ async function build(
       loadValue = value;
     },
     loadArgs,
+    editorialAsks,
   };
 }
 
@@ -239,7 +249,7 @@ describe("ShopifyPushService — snapshots", () => {
   });
 
   it("en pré-push, rapporte « déjà à jour » si l’empreinte est identique", async () => {
-    const hash = fingerprint(projectProduct(product()));
+    const hash = fingerprint(projectProduct(product(), null));
     const h = await build("live", { lastPushedHash: hash });
 
     const summary = await h.service.push(["p1"], true);
@@ -249,7 +259,7 @@ describe("ShopifyPushService — snapshots", () => {
   });
 
   it("sur empreinte identique, ne pousse ni n’écrit de snapshot", async () => {
-    const hash = fingerprint(projectProduct(product()));
+    const hash = fingerprint(projectProduct(product(), null));
     const h = await build("live", { lastPushedHash: hash });
 
     const summary = await h.service.push(["p1"]);
@@ -260,10 +270,46 @@ describe("ShopifyPushService — snapshots", () => {
   });
 });
 
+describe("ShopifyPushService — la couche éditoriale", () => {
+  it("demande l’éditorial des produits poussés, en un seul lot", async () => {
+    const h = await build("live");
+
+    await h.service.push(["p1"]);
+
+    expect(h.editorialAsks).toEqual([["p1"]]);
+  });
+
+  it("la description écrite au back-office atteint la fiche poussée", async () => {
+    const h = await build(
+      "live",
+      null,
+      new Map([
+        [
+          "p1",
+          {
+            descriptionShort: null,
+            descriptionLong: "Pâte feuilletée.",
+            story: null,
+            pairing: null,
+            brand: "Signature",
+            seoTitle: null,
+            seoDescription: null,
+          },
+        ],
+      ]),
+    );
+
+    await h.service.push(["p1"]);
+
+    expect(h.livePushes[0]?.descriptionHtml).toBe("<p>Pâte feuilletée.</p>");
+    expect(h.livePushes[0]?.vendor).toBe("Signature");
+  });
+});
+
 describe("ShopifyPushService — rollback", () => {
   it("re-pousse le payload figé de la version ciblée et journalise une nouvelle version", async () => {
     const h = await build("live");
-    const payload = projectProduct(product());
+    const payload = projectProduct(product(), null);
     h.setLoad({ id: "snap_7", version: 2, productId: "p1", payload });
 
     const report = await h.service.rollback("croissant", 2);

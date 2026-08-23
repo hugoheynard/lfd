@@ -5,6 +5,7 @@ import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
 import { CategoryNotFoundError } from "../../../category/domain/errors/category-errors.js";
+import { EditorialReader } from "../../../product/domain/ports/editorial-reader.js";
 import { PrismaCatalogueReader } from "../prisma-catalogue-reader.js";
 
 /** Le peu de l'agrégat que le lecteur touche : ses taux, d'un bloc. */
@@ -26,6 +27,10 @@ async function build(
       {
         provide: CategoryRepository,
         useValue: { findById: () => Promise.resolve(category) },
+      },
+      {
+        provide: EditorialReader,
+        useValue: { findByProducts: () => Promise.resolve(new Map()) },
       },
       {
         provide: TvaRateRepository,

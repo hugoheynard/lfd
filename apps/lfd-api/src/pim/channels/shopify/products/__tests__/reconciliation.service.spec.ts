@@ -51,7 +51,7 @@ async function build(
   mode: "live" | "dry-run",
   remoteProducts: ShopifyProductSnapshot[],
 ): Promise<ShopifyReconciliationService> {
-  const basePayload = projectProduct(product());
+  const basePayload = projectProduct(product(), null);
   const prisma = {
     shopifyProductBinding: {
       findMany: () => Promise.resolve([{ headSnapshotId: "snap_1" }]),
@@ -73,7 +73,10 @@ async function build(
       ShopifyReconciliationService,
       {
         provide: CatalogueReader,
-        useValue: { publishable: () => Promise.resolve([product()]) },
+        useValue: {
+          publishable: () => Promise.resolve([product()]),
+          editorials: () => Promise.resolve(new Map()),
+        },
       },
       { provide: PimPrismaService, useValue: prisma },
       {

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { PushReport, PushSummary, TaxCollectionsPass } from "@lfd/pim-contracts";
 
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { ProductEditorialView } from "../../../catalogue/product/domain/ports/editorial-reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyCollectionsService } from "../collections/collections.service.js";
@@ -63,9 +64,18 @@ export class ShopifyPushService {
     // n'écrit rien, donc il ne la fait pas.
     const taxCollections = preview ? null : await this.ensureTaxCollections();
 
+    // Une seule requête pour tout le lot : la fiche part avec ses textes, et un
+    // produit sans éditorial part quand même (la couche est optionnelle).
+    const editorials = await this.catalogue.editorials(products.map((product) => product.id));
+
     const results: PushReport[] = [];
     for (const product of products) {
-      results.push(preview ? await this.previewOne(product) : await this.pushOne(product, driver));
+      const editorial = editorials.get(product.id) ?? null;
+      results.push(
+        preview
+          ? await this.previewOne(product, editorial)
+          : await this.pushOne(product, editorial, driver),
+      );
     }
 
     // Un pré-push n'atteint jamais la boutique : le mode rapporté est `dry-run`.
@@ -94,8 +104,11 @@ export class ShopifyPushService {
    * Ce qui partirait pour un produit — **sans effet de bord** : projette, compare à
    * l'empreinte du dernier push, et ne touche ni réseau, ni binding, ni snapshot.
    */
-  private async previewOne(product: ProductRecord): Promise<PushReport> {
-    const payload = projectProduct(product);
+  private async previewOne(
+    product: ProductRecord,
+    editorial: ProductEditorialView | null,
+  ): Promise<PushReport> {
+    const payload = projectProduct(product, editorial);
     const hash = fingerprint(payload);
     const existing = await this.prisma.shopifyProductBinding.findUnique({
       where: { productId: product.id },
@@ -173,8 +186,12 @@ export class ShopifyPushService {
    * rafale parallèle se ferait étrangler. À volume de boulangerie, la lenteur est
    * invisible ; l'étranglement, non.
    */
-  private async pushOne(product: ProductRecord, driver: ShopifyDriver): Promise<PushReport> {
-    const payload = projectProduct(product);
+  private async pushOne(
+    product: ProductRecord,
+    editorial: ProductEditorialView | null,
+    driver: ShopifyDriver,
+  ): Promise<PushReport> {
+    const payload = projectProduct(product, editorial);
     const hash = fingerprint(payload);
 
     const existing = await this.prisma.shopifyProductBinding.findUnique({

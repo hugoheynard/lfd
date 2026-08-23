@@ -6,10 +6,43 @@ function payload(over: Partial<ShopifyProductPayload> = {}): ShopifyProductPaylo
     title: "Croissant",
     handle: "croissant",
     status: "ACTIVE",
+    descriptionHtml: "",
+    vendor: null,
+    seo: { title: "", description: "" },
     variants: [],
     ...over,
   };
 }
+
+describe("buildProductSetInput — description, SEO, marque", () => {
+  it("envoie TOUJOURS la description et le SEO, vides compris", () => {
+    const input = buildProductSetInput(payload());
+
+    expect(input.descriptionHtml).toBe("");
+    expect(input.seo).toEqual({ title: "", description: "" });
+  });
+
+  it("porte la description et le SEO projetés", () => {
+    const input = buildProductSetInput(
+      payload({
+        descriptionHtml: "<p>Feuilletée.</p>",
+        seo: { title: "T", description: "D" },
+      }),
+    );
+
+    expect(input.descriptionHtml).toBe("<p>Feuilletée.</p>");
+    expect(input.seo).toEqual({ title: "T", description: "D" });
+  });
+
+  // Shopify assigne un vendor par défaut ; ne rien déclarer ne doit pas l'écraser.
+  it("omet la marque quand le référentiel n’en déclare pas", () => {
+    expect("vendor" in buildProductSetInput(payload())).toBe(false);
+  });
+
+  it("envoie la marque quand elle est déclarée", () => {
+    expect(buildProductSetInput(payload({ vendor: "Signature" })).vendor).toBe("Signature");
+  });
+});
 
 describe("buildProductSetInput", () => {
   it("sans options → variante par défaut, prix inclus quand tarifé", () => {

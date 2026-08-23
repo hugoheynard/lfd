@@ -34,6 +34,17 @@ export interface ProductMediaRecord {
 export abstract class EditorialReader {
   abstract findByProduct(productId: string): Promise<ProductEditorialView | null>;
   /**
+   * L'éditorial de plusieurs produits, indexé par identifiant — absent de la carte
+   * quand rien n'a été écrit.
+   *
+   * En lot, et pas par une boucle d'appels : la réconciliation projette **tout** le
+   * catalogue publiable d'un coup, et une requête par produit y coûterait autant de
+   * allers-retours que de fiches.
+   */
+  abstract findByProducts(
+    productIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ProductEditorialView>>;
+  /**
    * Les visuels d'un produit, ordonnés.
    *
    * Ils n'étaient RELUS nulle part : acceptés à la création, ils disparaissaient

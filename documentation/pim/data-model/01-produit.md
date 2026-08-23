@@ -22,16 +22,16 @@ a écrit quelque chose (motif _shared primary key_, cf. [`04`](./04-composition-
 
 ## 1. `ProductEditorial` — PK/FK `product_id`
 
-| Champ                  | Type                      | Rôle                                                        |
-| ---------------------- | ------------------------- | ----------------------------------------------------------- |
-| `description_short` 🌐 | LocalizedText?            | Résumé (listes, cartes produit, écran caisse)               |
-| `description_long` 🌐  | LocalizedText? (markdown) | Fiche complète web                                          |
-| `story` 🌐             | LocalizedText?            | Récit / savoir-faire : « façonnée à la main chaque matin… » |
-| `provenance`           | `Provenance[]`            | Origine des ingrédients nobles                              |
-| `brand`                | string?                   | Signature maison / gamme (« Signature Chevallot »)          |
-| `pairing` 🌐           | LocalizedText?            | Accord / conseil de dégustation                             |
-| `seo_title` 🌐         | LocalizedText?            |                                                             |
-| `seo_description` 🌐   | LocalizedText?            |                                                             |
+| Champ                  | Type           | Rôle                                                        |
+| ---------------------- | -------------- | ----------------------------------------------------------- |
+| `description_short` 🌐 | LocalizedText? | Résumé (listes, cartes produit, écran caisse)               |
+| `description_long` 🌐  | LocalizedText? | Fiche complète web — texte simple, **pas** de markdown (§4) |
+| `story` 🌐             | LocalizedText? | Récit / savoir-faire : « façonnée à la main chaque matin… » |
+| `provenance`           | `Provenance[]` | Origine des ingrédients nobles                              |
+| `brand`                | string?        | Signature maison / gamme (« Signature Chevallot »)          |
+| `pairing` 🌐           | LocalizedText? | Accord / conseil de dégustation                             |
+| `seo_title` 🌐         | LocalizedText? |                                                             |
+| `seo_description` 🌐   | LocalizedText? |                                                             |
 
 `Provenance` : `{ ingredient, origin, label? }` — ex. `{ "beurre", "AOP Charentes-Poitou", "AOP" }`,
 `{ "farine", "Moulin de Val d'Isère", null }`. C'est ce qui fait la crédibilité du positionnement
@@ -79,13 +79,31 @@ L'attachement passe par des **tables de liaison dédiées** — `product_media`,
 
 ## 4. Ce que chaque canal consomme de cette couche
 
-| Donnée                                      | Shopify (C&C web)  | Caisse PI / Helios | B2B     |
-| ------------------------------------------- | ------------------ | ------------------ | ------- |
-| `description_short`                         | ✅                 | ✅ (tronqué)       | ✅      |
-| `description_long`, `story`, `pairing`, SEO | ✅                 | —                  | —       |
-| `provenance`                                | ✅                 | —                  | ✅      |
-| Médias                                      | `hero` + `gallery` | `thumbnail`        | `print` |
-| Certifications                              | ✅ (logos)         | éventuel           | ✅      |
+| Donnée              | Shopify (C&C web)  | Caisse PI / Helios | B2B     | Câblé ?                     |
+| ------------------- | ------------------ | ------------------ | ------- | --------------------------- |
+| `description_short` | ✅                 | ✅ (tronqué)       | ✅      | Shopify seulement, en repli |
+| `description_long`  | ✅                 | —                  | —       | ✅ `descriptionHtml`        |
+| SEO                 | ✅                 | —                  | —       | ✅ `seo { title, … }`       |
+| `brand`             | ✅                 | —                  | —       | ✅ `vendor`                 |
+| `story`, `pairing`  | ✅                 | —                  | —       | ❌ pas de destination       |
+| `provenance`        | ✅                 | —                  | ✅      | ❌ n'existe pas             |
+| Médias              | `hero` + `gallery` | `thumbnail`        | `print` | ❌                          |
+| Certifications      | ✅ (logos)         | éventuel           | ✅      | ❌ n'existe pas             |
+
+**Ce que « câblé » veut dire, et ce qu'il ne dit pas.** Shopify n'a **qu'un** champ de
+description : `description_long` le prend, et `description_short` sert de repli quand la
+longue manque — le résumé garde sa vocation propre (listes, cartes, écran de caisse), qui
+n'est câblée nulle part encore.
+
+`story` et `pairing` restent **volontairement** hors projection : décider s'ils se
+concatènent à la description ou vivent en metafields est un arbitrage éditorial, pas une
+évidence technique. Les y verser en silence les rendrait invisibles à qui les écrit.
+
+**Le texte n'est pas du markdown**, malgré ce que dit le tableau §1. Rien n'en a jamais
+rendu — ni le champ de saisie (un `textarea` nu), ni un lecteur. La projection échappe le
+texte et découpe les lignes blanches en paragraphes ; une astérisque tapée reste une
+astérisque. Le jour où le markdown est vraiment voulu, c'est un choix à faire des deux
+côtés à la fois, saisie comprise.
 
 Le **comment** de cette projection (bindings, overrides, état de synchro) est dans
 [`04-composition-et-canaux.md`](./04-composition-et-canaux.md).

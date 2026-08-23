@@ -10,6 +10,10 @@ import {
 } from "../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import {
+  EditorialReader,
+  type ProductEditorialView,
+} from "../../product/domain/ports/editorial-reader.js";
+import {
   ProductRepository,
   type ProductRecord,
 } from "../../product/domain/ports/product.repository.js";
@@ -27,8 +31,14 @@ export class PrismaCatalogueReader extends CatalogueReader {
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
     private readonly rates: TvaRateRepository,
+    private readonly editorialReader: EditorialReader,
   ) {
     super();
+  }
+
+  /** Délégué au lecteur éditorial : le canal ne connaît qu'un port, celui-ci. */
+  editorials(productIds: readonly string[]): Promise<ReadonlyMap<string, ProductEditorialView>> {
+    return this.editorialReader.findByProducts(productIds);
   }
 
   /**

@@ -5,6 +5,9 @@ const PAYLOAD: ShopifyProductPayload = {
   title: "Croissant",
   handle: "croissant",
   status: "DRAFT",
+  descriptionHtml: "",
+  vendor: null,
+  seo: { title: "", description: "" },
   variants: [
     {
       sku: "PATI-CROISSANT",
@@ -20,6 +23,28 @@ const PAYLOAD: ShopifyProductPayload = {
     },
   ],
 };
+
+/**
+ * Un snapshot écrit AVANT que la description existe n'est pas corrompu — un
+ * historique ne se relit pas avec les exigences du présent. Sans ça, le premier
+ * rollback vers une version ancienne tomberait sur « snapshot corrompu ».
+ */
+describe("relecture d’un snapshot antérieur aux textes", () => {
+  it("lit « rien de déclaré » plutôt que de refuser", () => {
+    const ancien = {
+      title: "Croissant",
+      handle: "croissant",
+      status: "DRAFT",
+      variants: [{ sku: "PATI-CROISSANT", title: "Nature", options: {}, price: "1.30" }],
+    };
+
+    const payload = readPayloadColumn(ancien);
+
+    expect(payload.descriptionHtml).toBe("");
+    expect(payload.vendor).toBeNull();
+    expect(payload.seo).toEqual({ title: "", description: "" });
+  });
+});
 
 describe("snapshot payload (aller-retour jsonb)", () => {
   it("relit à l’identique ce qu’il a écrit", () => {

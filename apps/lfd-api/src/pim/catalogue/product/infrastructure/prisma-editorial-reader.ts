@@ -20,6 +20,27 @@ function frOf(value: unknown): string | null {
   return typeof fr === "string" ? fr : null;
 }
 
+/** Ligne `product_editorial` → vue à plat. Les textes sont localisés, la vue non. */
+function viewOf(row: {
+  descriptionShort: unknown;
+  descriptionLong: unknown;
+  story: unknown;
+  pairing: unknown;
+  brand: string | null;
+  seoTitle: unknown;
+  seoDescription: unknown;
+}): ProductEditorialView {
+  return {
+    descriptionShort: frOf(row.descriptionShort),
+    descriptionLong: frOf(row.descriptionLong),
+    story: frOf(row.story),
+    pairing: frOf(row.pairing),
+    brand: row.brand,
+    seoTitle: frOf(row.seoTitle),
+    seoDescription: frOf(row.seoDescription),
+  };
+}
+
 @Injectable()
 export class PrismaEditorialReader extends EditorialReader {
   constructor(private readonly prisma: PimPrismaService) {
@@ -30,18 +51,19 @@ export class PrismaEditorialReader extends EditorialReader {
     const row = await this.prisma.productEditorial.findUnique({
       where: { productId },
     });
-    if (row === null) {
-      return null;
+    return row === null ? null : viewOf(row);
+  }
+
+  async findByProducts(
+    productIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ProductEditorialView>> {
+    if (productIds.length === 0) {
+      return new Map();
     }
-    return {
-      descriptionShort: frOf(row.descriptionShort),
-      descriptionLong: frOf(row.descriptionLong),
-      story: frOf(row.story),
-      pairing: frOf(row.pairing),
-      brand: row.brand,
-      seoTitle: frOf(row.seoTitle),
-      seoDescription: frOf(row.seoDescription),
-    };
+    const rows = await this.prisma.productEditorial.findMany({
+      where: { productId: { in: [...productIds] } },
+    });
+    return new Map(rows.map((row) => [row.productId, viewOf(row)]));
   }
 
   async mediaOf(productId: string): Promise<readonly ProductMediaRecord[]> {

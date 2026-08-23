@@ -9,6 +9,11 @@ export interface ProductSetInput {
   readonly title: string;
   readonly handle: string;
   readonly status: "ACTIVE" | "DRAFT";
+  /** Toujours envoyé, `""` compris : le référentiel fait autorité sur la description. */
+  readonly descriptionHtml: string;
+  readonly seo: { readonly title: string; readonly description: string };
+  /** Omis quand le référentiel ne déclare pas de marque — cf. `ShopifyProductPayload`. */
+  readonly vendor?: string;
   /** Déclaré seulement s'il y a de vraies options ; sinon Shopify crée la variante par défaut. */
   readonly productOptions?: readonly ProductSetOption[];
   readonly variants: readonly ProductSetVariant[];
@@ -46,6 +51,9 @@ export function buildProductSetInput(payload: ShopifyProductPayload): ProductSet
     title: payload.title,
     handle: payload.handle,
     status: payload.status,
+    descriptionHtml: payload.descriptionHtml,
+    seo: payload.seo,
+    ...(payload.vendor === null ? {} : { vendor: payload.vendor }),
   } as const;
 
   // Aucune vraie option → l'option par défaut `Title` / `Default Title`, obligatoire.

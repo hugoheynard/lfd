@@ -65,6 +65,13 @@ export function comparableHash(comparable: Comparable): string {
     handle: comparable.handle,
     title: comparable.title,
     status: comparable.status === "ACTIVE" ? "ACTIVE" : "DRAFT",
+    // NEUTRALISÉS, comme les options juste en dessous, et pour la même raison :
+    // la lecture Shopify (`ShopifyProductSnapshot`) ne rend ni description, ni SEO,
+    // ni vendor. Les comparer ferait paraître CHAQUE produit dérivé côté boutique,
+    // en permanence — le piège déjà rencontré sur le titre de déclinaison.
+    descriptionHtml: "",
+    vendor: null,
+    seo: { title: "", description: "" },
     variants: comparable.variants.map((v) => ({
       sku: v.sku,
       title: "",

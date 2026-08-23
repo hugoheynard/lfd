@@ -75,6 +75,28 @@ function readVariant(value: unknown): ShopifyVariantPayload {
   };
 }
 
+/**
+ * Champ absent d'un snapshot ANTÉRIEUR aux textes : il n'est pas corrompu, il a été
+ * écrit avant que la description existe. On lit donc « rien de déclaré » plutôt que de
+ * refuser — un historique ne se relit pas avec les exigences du présent.
+ *
+ * Conséquence assumée : rétablir une telle version efface la description en boutique.
+ * C'est ce que « rétablir cette version » veut dire — elle n'en portait pas.
+ */
+function readOptionalString(value: unknown): string {
+  return value === undefined || value === null ? "" : readString(value);
+}
+
+function readSeo(value: unknown): { title: string; description: string } {
+  if (!isRecord(value)) {
+    return { title: "", description: "" };
+  }
+  return {
+    title: readOptionalString(value["title"]),
+    description: readOptionalString(value["description"]),
+  };
+}
+
 /** Colonne `jsonb` → `ShopifyProductPayload` vérifié — la matière du rollback. */
 export function readPayloadColumn(value: unknown): ShopifyProductPayload {
   if (!isRecord(value) || !Array.isArray(value["variants"])) {
@@ -84,6 +106,12 @@ export function readPayloadColumn(value: unknown): ShopifyProductPayload {
     title: readString(value["title"]),
     handle: readString(value["handle"]),
     status: readStatus(value["status"]),
+    descriptionHtml: readOptionalString(value["descriptionHtml"]),
+    vendor:
+      value["vendor"] === undefined || value["vendor"] === null
+        ? null
+        : readString(value["vendor"]),
+    seo: readSeo(value["seo"]),
     variants: value["variants"].map(readVariant),
   };
 }

@@ -157,9 +157,10 @@ export class ShopifyReconciliationService {
 
   private async loadOurs(): Promise<Map<string, OursEntry>> {
     const products = await this.catalogue.publishable();
+    const editorials = await this.catalogue.editorials(products.map((product) => product.id));
     const map = new Map<string, OursEntry>();
     for (const product of products) {
-      const payload = projectProduct(product);
+      const payload = projectProduct(product, editorials.get(product.id) ?? null);
       map.set(payload.handle, { productId: product.id, payload });
     }
     return map;
