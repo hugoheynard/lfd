@@ -168,6 +168,13 @@ jobs:
       - name: "Gate : variables fold existantes"
         run: pnpm lint:fold-tokens
 
+      # Une taille écrite à la main ne casse rien non plus — elle diverge de
+      # 0,03rem par écran, et le système se dissout par des différences que
+      # personne ne remarque une par une. Le gate tient les dossiers drainés et
+      # affiche le solde restant plutôt que de le taire.
+      - name: "Gate : typographie fold"
+        run: pnpm lint:fold-typography
+
       # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
       # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
       # portait cinq, survivants de sa fusion dans le back-office — ses routes

@@ -28,7 +28,8 @@
     "lint:catalog-shared-deps": "node dev-toolbox/gates/catalog-shared-deps.mjs",
     "lint:deployed-app-files": "node dev-toolbox/gates/deployed-app-files.mjs",
     "test": "turbo run test",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "lint:fold-typography": "node dev-toolbox/gates/fold-typography.mjs"
   },
   "devDependencies": {
     "@lfd/endpoints": "workspace:*",
