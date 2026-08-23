@@ -164,3 +164,34 @@ fold-app-shell {
     white-space: nowrap;
   }
 }
+
+/* Pied du lanceur mobile : qui est connecté, et la sortie. La déconnexion y
+   descend — elle était une tuile parmi les destinations, alors qu'elle n'en est
+   pas une : on n'y va pas, on s'en va. */
+.nav-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.nav-foot-who {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.nav-foot-logout {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-alert-text);
+}

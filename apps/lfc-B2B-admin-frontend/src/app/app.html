@@ -271,13 +271,21 @@
       <router-outlet />
     }
 
-    <!-- Navigation mobile — grille de tuiles plein écran (le shell ne rend pas de
-         tiroir, `mobileNav="none"`). Même `mobileNavOpen` que le burger. -->
-    <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à">
+    <!-- Navigation mobile — le LANCEUR, en deux niveaux (le shell ne rend pas
+         de tiroir, `mobileNav="none"`). Même `mobileNavOpen` que le burger.
+
+         Un espace de travail y devient un `fold-nav-group` : une tuile qui
+         contient des tuiles ouvre un niveau. Les vues viennent du MÊME
+         catalogue que le rail secondaire — le lanceur les montre toutes, le
+         rail seulement celles de l'espace ouvert, mais aucune ne se déclare
+         deux fois.
+
+         Même ORDRE que le rail primaire : deux navigations qui ne rangent pas
+         pareil obligent à réapprendre l'écran en changeant de taille. -->
+    <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à" eyebrow="LFC B2B" heading="Admin">
       @if (canSeeCompanies()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="customer-account"
           label="Comptes clients"
           routerLink="/commercial/comptes-clients"
@@ -288,24 +296,30 @@
         ></a>
       }
       @if (canSeeCommercial()) {
-        <a
-          fold-nav-tile
-          variant="filled"
+        <fold-nav-group
           icon="calendar"
           label="Commercial"
           [badge]="companyBadge()"
           badgeTone="accent"
-          routerLink="/commercial"
-          routerLinkActive
-          #commercialTile="routerLinkActive"
-          [active]="commercialTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          [entryCountLabel]="entriesLabel"
+        >
+          @for (view of commercialViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [active]="rla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeeProduction()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="production"
           label="Production"
           routerLink="/production"
@@ -318,7 +332,6 @@
       @if (canSeeProduction()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="truck"
           label="Livraison"
           routerLink="/livraison"
@@ -328,41 +341,47 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      <!-- Même ordre que le rail : le catalogue s'insérera ici, et le canal de
-           secours reste en dernier. Deux navigations qui ne rangent pas pareil
-           obligent à réapprendre l'écran en changeant de taille. -->
       @if (canSeePim()) {
-        <a
-          fold-nav-tile
-          variant="filled"
-          icon="catalog"
-          label="PIM"
-          routerLink="/pim"
-          routerLinkActive
-          #pimTile="routerLinkActive"
-          [active]="pimTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+        <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">
+          @for (view of pimViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [active]="rla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeeAdmin()) {
-        <a
-          fold-nav-tile
-          variant="filled"
+        <fold-nav-group
           icon="shield"
           label="Admin"
           [badge]="accessBadge()"
           badgeTone="warning"
-          routerLink="/admin"
-          routerLinkActive
-          #adminTile="routerLinkActive"
-          [active]="adminTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          [entryCountLabel]="entriesLabel"
+        >
+          @for (view of adminViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [active]="rla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeeAnalytics()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="stats"
           label="Analytics"
           routerLink="/analytics"
@@ -375,7 +394,6 @@
       @if (canSeeOps()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="ops"
           label="OPS"
           routerLink="/sante"
@@ -387,7 +405,6 @@
       }
       <a
         fold-nav-tile
-        variant="filled"
         icon="library"
         label="Documentation"
         routerLink="/documentation"
@@ -399,7 +416,6 @@
       @if (canSeeSettings()) {
         <a
           fold-nav-tile
-          variant="filled"
           icon="settings"
           label="Réglages"
           routerLink="/reglages"
@@ -409,14 +425,16 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      <button
-        fold-nav-tile
-        variant="filled"
-        icon="logout"
-        label="Déconnexion"
-        type="button"
-        (click)="logout()"
-      ></button>
+
+      <!-- Le pied : ce que l'application possède et que la bibliothèque n'a pas
+           à deviner. La déconnexion y descend — elle était une tuile parmi les
+           destinations, alors qu'elle n'en est pas une. -->
+      <div footer class="nav-foot">
+        @if (email(); as who) {
+          <span class="nav-foot-who" [title]="who">{{ who }}</span>
+        }
+        <button type="button" class="nav-foot-logout" (click)="logout()">Déconnexion</button>
+      </div>
     </fold-nav-launcher>
 
     <!-- Hôte unique des side-panels (fiche compte à venir). -->

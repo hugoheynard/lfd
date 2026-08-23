@@ -14,6 +14,7 @@ import {
   FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldNavGroupComponent,
   FoldNavLauncherComponent,
   FoldNavTileComponent,
   FoldPanelHostComponent,
@@ -29,6 +30,7 @@ import { PushNotificationsService } from './shared/push/push-notifications.servi
 import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
+import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -56,6 +58,7 @@ import { WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store
     FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldNavGroupComponent,
     FoldNavLauncherComponent,
     FoldNavTileComponent,
     FoldPanelHostComponent,
@@ -88,6 +91,21 @@ export class App {
    * l'espace publie (cf. `provideWorkspaceRail`).
    */
   protected readonly workspace = inject(WorkspaceRailStore).rail;
+
+  /**
+   * Les vues de chaque espace, pour le LANCEUR mobile — qui les montre toutes,
+   * y compris celles d'un espace où l'on n'est pas. Le rail secondaire, lui,
+   * n'a que l'espace ouvert : c'est la même table, lue deux fois, jamais
+   * déclarée deux fois.
+   */
+  private readonly catalogue = inject(WorkspaceCatalogue);
+  protected readonly commercialViews = this.catalogue.views('commercial');
+  protected readonly pimViews = this.catalogue.views('pim');
+  protected readonly adminViews = this.catalogue.views('admin');
+
+  /** « 7 entrées » — le lanceur de fold parle anglais par défaut. */
+  protected readonly entriesLabel = (count: number): string =>
+    count === 1 ? '1 entrée' : `${String(count)} entrées`;
 
   /**
    * Le menu se déduit des **permissions**, jamais du rôle : le jour où une
