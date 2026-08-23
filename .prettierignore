@@ -1,0 +1,10 @@
+# Le lockfile reste tel que pnpm l'écrit. Le reformater le fait diverger de ce
+# que produit un `pnpm install` ailleurs, et chaque installation le rendrait
+# sale — un fichier qui se re-salit tout seul finit committé au hasard.
+pnpm-lock.yaml
+
+# Sorties de build.
+dist/
+.angular/
+.turbo/
+coverage/

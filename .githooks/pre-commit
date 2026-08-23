@@ -1,0 +1,12 @@
+#!/bin/sh
+# Formate ce qui part au commit. Rien d'autre.
+#
+# Le lint (règles de fond) et le typecheck restent en CI : ils sont
+# TYPE-AWARE sur lfd-api, donc lents, et un commit qui prend trente
+# secondes finit contourné au `--no-verify`. Ce hook ne coûte rien et
+# couvre la seule classe d'échec qu'on s'est infligée : `prettier/prettier`
+# rouge en CI, huit minutes pour deux sauts de ligne.
+#
+# S'installe seul au `pnpm install` (script `prepare`) ; à la main :
+#   pnpm run setup:hooks
+pnpm exec lint-staged

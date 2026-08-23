@@ -7,6 +7,8 @@
   "type": "module",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "setup:hooks": "git config core.hooksPath .githooks",
     "build": "turbo run build",
     "dev:infra": "node dev-toolbox/ensure-docker.mjs && docker compose -f docker-compose.dev.yml up -d",
     "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@lfd/endpoints": "workspace:*",
+    "lint-staged": "^17.3.0",
     "prettier": "catalog:",
     "turbo": "^2.5.0",
     "typescript": "catalog:"
