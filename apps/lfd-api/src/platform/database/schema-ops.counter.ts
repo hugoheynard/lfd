@@ -120,6 +120,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   EmplacementTable: "pim",
   Product: "pim",
   ProductVariant: "pim",
+  ProductPackaging: "pim",
   ShopifySettings: "pim",
   ShopifyProductBinding: "pim",
   ShopifyPushSnapshot: "pim",
