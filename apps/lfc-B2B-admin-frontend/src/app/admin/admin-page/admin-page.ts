@@ -2,52 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import type { StaffPermission } from '@lfd/contracts';
 import { FoldPageLayoutComponent } from 'fold-ng';
 
-import { PermissionsStore } from '../../auth/permissions.store';
 import {
   provideWorkspaceRail,
   type WorkspaceRailItem,
 } from '../../shared/workspace-rail/workspace-rail.store';
 import { WorkspaceViewsComponent } from '../../shared/workspace-rail/workspace-views.component';
-
-/** Une vue de l'Admin, et le droit qui l'ouvre. */
-interface AdminView extends WorkspaceRailItem {
-  readonly needs: StaffPermission;
-}
-
-/**
- * Les vues. Chacune porte le droit qui l'ouvre, et la liste se filtre dessus :
- * ranger deux écrans sous un même titre ne leur donne pas le même mur. Montrée
- * sans le droit, l'entrée offrait une porte fermée à clé — on cliquait, la page
- * s'ouvrait, et chaque appel rendait 403.
- *
- * Chemins ABSOLUS : le rail est rendu par la racine, pas par cette page.
- */
-const VIEWS: readonly AdminView[] = [
-  {
-    key: 'acces-en-attente',
-    label: 'Accès à remettre',
-    link: '/admin/acces-en-attente',
-    icon: 'shield',
-    needs: 'companies:read',
-  },
-  {
-    key: 'utilisateurs',
-    label: 'Utilisateurs',
-    link: '/admin/utilisateurs',
-    icon: 'user',
-    needs: 'staff:read',
-  },
-  {
-    key: 'journal',
-    label: 'Journal',
-    link: '/admin/journal',
-    icon: 'timeline',
-    needs: 'activity:read',
-  },
-];
+import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 
 /** L'espace lui-même, quand aucune vue n'est reconnue dans l'URL. */
 const ADMIN: WorkspaceRailItem = {
@@ -80,13 +42,11 @@ const ADMIN: WorkspaceRailItem = {
   templateUrl: './admin-page.html',
 })
 export class AdminPage {
-  private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
+  private readonly catalogue = inject(WorkspaceCatalogue);
 
   /** Le rail ne montre pas une vue dont la route refusera l'entrée. */
-  private readonly views = computed<WorkspaceRailItem[]>(() =>
-    VIEWS.filter((view) => this.permissions.can(view.needs)).map(({ needs, ...view }) => view),
-  );
+  private readonly views = this.catalogue.views('admin');
 
   /** L'URL courante — la seule source de vérité de la vue affichée. */
   private readonly url = toSignal(
@@ -109,8 +69,6 @@ export class AdminPage {
   });
 
   constructor() {
-    provideWorkspaceRail(
-      computed(() => ({ title: 'Admin', icon: 'shield' as const, items: this.views() })),
-    );
+    provideWorkspaceRail(this.catalogue.rail('admin'));
   }
 }
