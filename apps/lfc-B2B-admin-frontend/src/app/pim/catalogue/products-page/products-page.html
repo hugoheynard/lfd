@@ -94,9 +94,7 @@
 
     <ng-template foldCell="name" let-p>
       <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. -->
-      <button class="cell-name-link" type="button" (click)="openProduct(p)">
-        {{ p.name.fr }}
-      </button>
+      <fold-link (clicked)="openProduct(p)">{{ p.name.fr }}</fold-link>
     </ng-template>
 
     <ng-template foldCell="category" let-p>
@@ -131,9 +129,11 @@
     <ng-template foldCell="actions" let-p>
       <div class="row-actions">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
-          <button foldPopoverTrigger type="button" class="kebab" aria-label="Actions">
-            <fold-icon name="more-vertical" />
-          </button>
+          <fold-button-icon
+            foldPopoverTrigger
+            icon="more-vertical"
+            tooltip="Actions"
+          />
 
           <fold-dropdown-item icon="edit" (selected)="openProduct(p)">
             Ouvrir la fiche

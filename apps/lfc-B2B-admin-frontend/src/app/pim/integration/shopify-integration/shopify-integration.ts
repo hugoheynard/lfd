@@ -43,7 +43,22 @@ interface ConnectionStatus {
 @Component({
   selector: 'app-shopify-integration',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FoldHeroCardComponent, FoldContextCardComponent, FoldFieldListComponent, FoldFieldComponent, FoldStatusBadgeComponent, FoldIconComponent, FoldSpinnerComponent, FoldInputComponent, FoldCheckboxComponent, FoldButtonComponent, FoldCalloutComponent, FoldBadgeComponent, FoldElementTitleComponent],
+  imports: [
+    DatePipe,
+    FoldHeroCardComponent,
+    FoldContextCardComponent,
+    FoldFieldListComponent,
+    FoldFieldComponent,
+    FoldStatusBadgeComponent,
+    FoldIconComponent,
+    FoldSpinnerComponent,
+    FoldInputComponent,
+    FoldCheckboxComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldBadgeComponent,
+    FoldElementTitleComponent,
+  ],
   templateUrl: './shopify-integration.html',
   styleUrl: './shopify-integration.scss',
 })

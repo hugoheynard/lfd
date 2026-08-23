@@ -24,7 +24,12 @@ import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/mo
 @Component({
   selector: 'app-channel-matrix',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCheckboxComponent, FoldBadgeComponent, FoldButtonComponent, FoldElementTitleComponent],
+  imports: [
+    FoldCheckboxComponent,
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldElementTitleComponent,
+  ],
   templateUrl: './channel-matrix.html',
   styleUrl: './channel-matrix.scss',
 })

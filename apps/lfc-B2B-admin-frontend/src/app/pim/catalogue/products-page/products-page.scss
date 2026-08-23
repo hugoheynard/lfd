@@ -6,7 +6,9 @@ code {
 }
 
 .table-toolbar {
+  container-type: inline-size;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-md);
   width: 100%;
@@ -44,49 +46,21 @@ code {
   align-items: center;
 }
 
-@media (max-width: 640px) {
-  .table-toolbar {
-    flex-wrap: wrap;
-  }
+/* La barre vit DANS une table qui a sa propre largeur : c'est elle qui décide,
+   pas la fenêtre. Une table dans un panneau étroit sur grand écran doit replier
+   sa barre ; la même table pleine largeur sur téléphone n'a aucune raison de le
+   faire. Même contradiction que celle relevée dans `_nav-gap.scss` côté
+   bibliothèque, même correctif.
 
+   `flex-wrap` vit sur la barre elle-même et non dans la requête : un élément
+   n'est jamais son propre conteneur, il ne peut donc pas répondre à sa propre
+   règle `@container`. */
+@container (max-width: 640px) {
   .toolbar-search {
     order: 3;
     flex-basis: 100%;
     max-width: none;
   }
-}
-
-.cell-name {
-  width: 100%;
-  min-width: 8rem;
-  padding: 0.35rem 0.5rem;
-  font: inherit;
-  color: inherit;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--fold-radius-sm);
-}
-
-.cell-name:hover,
-.cell-name:focus-visible {
-  background: var(--fold-color-surface-sunken);
-  border-color: var(--fold-color-border);
-  outline: none;
-}
-
-.chan-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.35rem;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  border-radius: var(--fold-radius-sm);
-}
-
-.chan-cell:hover {
-  background: var(--fold-color-surface-sunken);
 }
 
 .chan-pills {
@@ -95,49 +69,11 @@ code {
   gap: 0.3rem;
 }
 
-.chan-perso {
-  color: var(--fold-color-primary);
-  font-size: var(--fold-text-2xs);
-}
-
 .row-actions {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
   white-space: nowrap;
-}
-
-.chan-editor {
-  display: grid;
-  gap: var(--fold-space-lg);
-}
-
-.chan-editor-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
-}
-
-.chan-editor-head .muted {
-  margin-left: var(--fold-space-sm);
-}
-
-.chan-fiches {
-  display: grid;
-  gap: 0.5rem;
-  border-top: 0.5px solid var(--fold-color-border);
-  padding-top: var(--fold-space-md);
-}
-
-.fiche {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.fiche-title {
-  font-weight: var(--fold-weight-medium);
 }
 
 .muted {
@@ -152,38 +88,3 @@ code {
   margin-top: var(--fold-space-md);
 }
 
-/* Déclencheur du menu kebab : bouton icône discret. */
-.kebab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  color: var(--fold-color-text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--fold-radius-sm);
-  cursor: pointer;
-}
-
-.kebab:hover,
-.kebab:focus-visible {
-  color: var(--fold-color-text);
-  background: var(--fold-color-surface-hover);
-  outline: none;
-}
-
-.cell-name-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fold-color-primary-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}

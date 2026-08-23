@@ -51,7 +51,19 @@ interface GapRow {
 @Component({
   selector: 'app-b2b-integration',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldCalloutComponent, FoldCardComponent, FoldFieldComponent, FoldFieldListComponent, FoldHeroCardComponent, FoldIconComponent, FoldSpinnerComponent, FoldStatusBadgeComponent, FoldElementTitleComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCardComponent,
+    FoldFieldComponent,
+    FoldFieldListComponent,
+    FoldHeroCardComponent,
+    FoldIconComponent,
+    FoldSpinnerComponent,
+    FoldStatusBadgeComponent,
+    FoldElementTitleComponent,
+  ],
   templateUrl: './b2b-integration.html',
   styleUrl: './b2b-integration.scss',
 })
