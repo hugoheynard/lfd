@@ -1,19 +1,3 @@
 :host {
   display: block;
 }
-
-/* Le rail n'est pas dans un `fold-page-layout` : la gouttière de page est donc
-   la sienne à poser, et c'est le MÊME token que celui des vues à sa droite —
-   les deux restent alignés à tous les paliers, y compris sur la valeur fluide.
-
-   Accroché en haut : les vues sont longues (grille produits, publication), et
-   changer d'onglet ne doit pas demander de remonter. */
-.pim-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: block;
-  min-width: 0;
-  padding-inline-start: var(--fold-page-gutter);
-  padding-block: var(--fold-page-gap) var(--fold-space-xs);
-}

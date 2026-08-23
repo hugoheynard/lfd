@@ -1,22 +1,9 @@
-<!-- Le rail EST la structure de la page (« page scaffold » dans fold) : pas de
-     `fold-page-layout` ici, parce que chaque vue porte déjà le sien — son titre,
-     son intro et ses actions. En empiler un second donnait deux fois le titre
-     et deux fois la gouttière, à chaque écran du référentiel.
+<!-- Les vues du PIM vivent dans le RAIL SECONDAIRE de la coquille, publié par
+     le composant (cf. `provideWorkspaceRail`) — pas ici. Un contexte borné
+     entier occupe le deuxième étage de la navigation, pas le troisième.
 
-     `placement="side"` : rail à gauche, replié DE LUI-MÊME en barre horizontale
-     sous 56rem — et sur la largeur du LAYOUT, pas du viewport, donc juste aussi
-     en iframe. Le view-nav garde `direction="auto"` : il lit le layout par DI et
-     bascule vertical ↔ horizontal seul. -->
-<fold-nav-layout #nav placement="side" [foldAt]="896">
-  <fold-view-nav
-    tabNav
-    class="pim-tabs"
-    [items]="tabs()"
-    [collapsed]="nav.stacked()"
-    size="comfortable"
-    activeStyle="underline"
-    background="transparent"
-  />
+     `gutter` : le PIM n'a pas de `fold-page-layout` (chaque vue porte le sien),
+     donc la gouttière de page est à la barre de la poser. -->
+<app-workspace-views gutter />
 
-  <router-outlet />
-</fold-nav-layout>
+<router-outlet />
