@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
 
 import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
@@ -135,7 +135,6 @@ export class ProductFormStore {
   readonly name = signal('');
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
-  readonly sku = signal('');
   readonly priceEur = signal<number | null>(null);
   readonly weightGrams = signal<number | null>(null);
   readonly selected = signal<string[]>([]);
@@ -143,6 +142,14 @@ export class ProductFormStore {
   readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
   readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
   readonly media = signal<MediaSlot[]>([]);
+
+  /**
+   * La référence — **lue, jamais saisie**. Le référentiel l'émet à la création
+   * (`P-XXXXXX`, cf. ADR-16) et rien ne la modifie ensuite : l'exposer en écriture
+   * inviterait un écran à proposer une saisie que le backend ignorerait.
+   */
+  private readonly skuValue = signal('');
+  readonly sku: Signal<string> = this.skuValue;
   /** Un dépôt en cours — le bouton se désarme, la liste ne bouge pas encore. */
   readonly uploading = signal(false);
 
@@ -369,7 +376,6 @@ export class ProductFormStore {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const sku = this.sku().trim();
       const price = this.priceEur();
       const weight = this.weightGrams();
       const description = this.editorial().descriptionShort.trim();
@@ -378,7 +384,6 @@ export class ProductFormStore {
         nameFr: this.name().trim(),
         kind: this.kind(),
         categoryId: this.categoryId(),
-        ...(sku === '' ? {} : { sku }),
         ...(declares ? { allergens: this.selected() } : {}),
         ...(price === null ? {} : { priceEur: price }),
         ...(weight === null ? {} : { weightGrams: weight }),
@@ -509,7 +514,7 @@ export class ProductFormStore {
       return;
     }
     const product = detail.product;
-    this.sku.set(product.sku);
+    this.skuValue.set(product.sku);
     this.name.set(product.name.fr);
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);

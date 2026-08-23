@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCardComponent,
+  FoldFieldComponent,
+  FoldFieldListComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldOptionComponent,
@@ -10,13 +12,18 @@ import {
 
 import { ProductFormStore } from '../product-form-store';
 
-/** Panneau Identité — nom, nature, famille, référence. Lit/écrit le store injecté. */
+/**
+ * Panneau Identité — nom, nature, famille. La **référence** y figure en lecture
+ * seule (édition seulement) : elle est émise par le référentiel, pas saisie.
+ */
 @Component({
   selector: 'app-identity-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldCardComponent,
     FoldButtonComponent,
+    FoldFieldComponent,
+    FoldFieldListComponent,
     FoldInputComponent,
     FoldListboxComponent,
     FoldOptionComponent,

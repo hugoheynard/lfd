@@ -180,16 +180,21 @@ déclinaisons du même produit se reconnaissent d'un coup d'œil sur un bon de c
 
 > **Le format imposé par un tiers n'a pas disparu du problème** — il a changé de place. Un canal qui
 > ne peut pas accepter notre référence (PLU numérique de caisse) la porte dans la colonne
-> `channel_reference` de **sa** table de binding (§6), et la saisie manuelle reste ouverte à la
-> création : reprise d'un ancien catalogue, référence fournisseur, format contractuel.
+> `channel_reference` de **sa** table de binding (§6), et le champ `sku` de `CreateProduct` reste
+> ouvert : reprise d'un ancien catalogue, référence fournisseur, format contractuel. Le **back-office**
+> ne l'expose pas — il affiche la référence en lecture, il ne la saisit pas.
 
 > **Aucune migration.** Rien ne parse un SKU et aucune référence existante ne change : les produits
 > déjà créés gardent la leur, seuls les suivants naissent sous la nouvelle forme.
 
 ### Quatre règles d'usage
 
-1. **Proposé, jamais imposé.** La commande calcule un défaut, l'utilisateur peut l'écraser à la
-   saisie. Un SKU auto-généré qu'on ne peut pas corriger est plus hostile qu'un champ vide.
+1. **Émis par le référentiel.** La commande calcule la référence ; le champ `sku` de `CreateProduct`
+   permet d'en imposer une (import, reprise, format contractuel), mais **le back-office ne l'expose
+   pas**. La règle d'origine — « proposé, jamais imposé », l'utilisateur peut écraser le défaut — était
+   celle d'une référence _signifiante_, qu'un humain pouvait vouloir corriger parce qu'elle prétendait
+   dire quelque chose. Une référence opaque ne prétend rien : il n'y a rien à corriger, et un champ de
+   saisie n'y proposerait qu'une occasion de créer un doublon.
 2. **Calculé une seule fois, à la création.** Renommer un produit ne renomme **pas** son SKU. Sinon
    la référence bouge sous les pieds de tout le monde à chaque retouche éditoriale.
 3. **Collision → jamais un hash.** Pour le **produit**, on **re-tire** un identifiant frais :

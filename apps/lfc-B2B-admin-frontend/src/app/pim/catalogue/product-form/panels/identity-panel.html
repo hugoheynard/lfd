@@ -21,13 +21,15 @@
         <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
       }
     </fold-listbox>
-    <fold-input
-      label="Référence — SKU"
-      [hint]="store.isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'"
-      [value]="store.sku()"
-      [disabled]="store.isEdit()"
-      (valueChange)="store.sku.set($event)"
-    />
+    <!-- La référence est ÉMISE par le référentiel, jamais saisie : rien à proposer
+         tant que le produit n'existe pas, rien à modifier une fois qu'il existe. -->
+    @if (store.isEdit()) {
+      <fold-field-list>
+        <fold-field label="Référence">
+          <code class="sku">{{ store.sku() }}</code>
+        </fold-field>
+      </fold-field-list>
+    }
   </div>
   @if (store.isEdit()) {
     <div class="section-footer">

@@ -67,7 +67,6 @@ export class CatalogueApi {
     nameFr: string;
     kind: ProductKind;
     categoryId: string;
-    sku?: string;
     allergens?: string[];
     channelsOverride?: SalesChannels | null;
     priceEur?: number;
@@ -81,7 +80,6 @@ export class CatalogueApi {
       nameFr: payload.nameFr,
       kind: payload.kind,
       categoryId: payload.categoryId,
-      sku: payload.sku,
       allergens: payload.allergens,
       descriptionFr: payload.descriptionFr,
       priceEur: payload.priceEur,

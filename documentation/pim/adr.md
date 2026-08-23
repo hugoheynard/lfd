@@ -328,8 +328,10 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 > la référence société `C-XXXXXX` (ADR B2B) — deuxième usage, donc généralisation légitime.
 >
 > **Le besoin d'une référence à format imposé ne disparaît pas** ; il est servi là où il doit l'être :
-> `channel_reference` dans la table de binding du canal (ADR-13, ci-dessus), et la saisie manuelle qui
-> reste possible à la création — reprise d'un ancien catalogue comprise.
+> `channel_reference` dans la table de binding du canal (ADR-13, ci-dessus), et le champ `sku` de
+> `CreateProduct` — reprise d'un ancien catalogue, référence fournisseur, format contractuel. **Le
+> back-office, lui, ne propose plus de saisie** : il n'a rien à proposer avant que le produit existe,
+> et rien à modifier ensuite. La porte est celle de l'API, pas celle du formulaire.
 >
 > **Aucune migration** : rien ne parse un SKU et aucune référence existante ne change. Les produits
 > déjà créés gardent la leur ; seuls les suivants naissent sous la nouvelle forme.

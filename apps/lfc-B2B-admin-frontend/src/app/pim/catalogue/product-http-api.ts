@@ -148,7 +148,6 @@ export interface CreateProductInput {
   readonly nameFr: string;
   readonly kind: ProductKind;
   readonly categoryId: string;
-  readonly sku?: string | undefined;
   readonly allergens?: readonly string[] | undefined;
   readonly descriptionFr?: string | undefined;
   readonly priceEur?: number | undefined;
@@ -213,7 +212,6 @@ export class ProductHttpApi {
         nameFr: input.nameFr,
         kind: input.kind,
         categoryId: input.categoryId,
-        ...(input.sku === undefined ? {} : { sku: input.sku }),
         ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
         ...(input.descriptionFr === undefined || input.descriptionFr === ''
           ? {}
