@@ -74,7 +74,9 @@
       <!-- Tables : ouvertes par le sur place. Une carte QR par table. -->
       @if (emp.surPlace && emp.tables.length > 0) {
         <div class="tables">
-          <span class="block-label"> Tables — click & collect ({{ emp.tables.length }}) </span>
+          <fold-element-title
+            [title]="'Tables — click \u0026 collect (' + emp.tables.length + ')'"
+          />
 
           <div class="tcards">
             @for (t of emp.tables; track t.number) {

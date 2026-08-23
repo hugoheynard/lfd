@@ -6,6 +6,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldElementTitleComponent,
 } from 'fold-ng';
 
 import {
@@ -46,7 +47,7 @@ interface TvaCollectionsView {
 @Component({
   selector: 'app-publication-tva-collections',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldCalloutComponent, FoldBadgeComponent, FoldButtonComponent],
+  imports: [FoldCardComponent, FoldCalloutComponent, FoldBadgeComponent, FoldButtonComponent, FoldElementTitleComponent],
   templateUrl: './publication-tva-collections.html',
   styleUrl: './publication-tva-collections.scss',
 })

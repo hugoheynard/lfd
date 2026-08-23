@@ -13,15 +13,7 @@ code {
 /* Sur la bande accent, le texte s'inverse : on lit via les tokens sémantiques
    (jamais `--fold-color-primary`, qui resterait navy sur navy). */
 .toolbar-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
   flex: 0 0 auto;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fold-color-text);
   white-space: nowrap;
 }
 

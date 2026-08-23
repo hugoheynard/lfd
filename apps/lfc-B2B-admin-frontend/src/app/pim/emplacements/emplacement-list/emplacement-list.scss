@@ -11,14 +11,6 @@
   gap: var(--fold-space-lg);
 }
 
-.block-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--fold-color-text-muted);
-}
-
 .tables {
   display: grid;
   gap: var(--fold-space-sm);

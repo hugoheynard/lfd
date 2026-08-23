@@ -34,14 +34,6 @@ code {
   gap: var(--fold-space-sm);
 }
 
-.block-label {
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--fold-color-text-muted);
-}
-
 .recon-list {
   list-style: none;
   margin: 0;

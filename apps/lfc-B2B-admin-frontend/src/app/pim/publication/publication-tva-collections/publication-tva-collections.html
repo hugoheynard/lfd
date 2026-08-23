@@ -24,15 +24,15 @@
 <fold-card class="recon">
   <header class="recon-head">
     <div class="recon-status">
-      <span class="block-label">
-        État de la boutique
+      <fold-element-title title="État de la boutique">
         @if (mode(); as m) {
           <fold-badge
+            titleAction
             [content]="m === 'live' ? 'réel' : 'simulation'"
             [variant]="m === 'live' ? 'success' : 'neutral'"
           />
         }
-      </span>
+      </fold-element-title>
       @if (lastInspectedAt(); as at) {
         <span class="muted">Dernière inspection à {{ at }}</span>
       } @else {

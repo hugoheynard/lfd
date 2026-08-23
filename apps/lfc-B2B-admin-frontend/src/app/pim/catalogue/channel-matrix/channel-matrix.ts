@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import { FoldBadgeComponent, FoldButtonComponent, FoldCheckboxComponent } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldCheckboxComponent,
+  FoldElementTitleComponent,
+} from 'fold-ng';
 
 import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/models';
 
@@ -19,7 +24,7 @@ import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/mo
 @Component({
   selector: 'app-channel-matrix',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCheckboxComponent, FoldBadgeComponent, FoldButtonComponent],
+  imports: [FoldCheckboxComponent, FoldBadgeComponent, FoldButtonComponent, FoldElementTitleComponent],
   templateUrl: './channel-matrix.html',
   styleUrl: './channel-matrix.scss',
 })

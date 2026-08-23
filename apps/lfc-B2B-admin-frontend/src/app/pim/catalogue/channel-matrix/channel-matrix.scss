@@ -50,14 +50,6 @@
   justify-content: center;
 }
 
-.cm-col {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--fold-color-text-muted);
-}
-
 /* La ligne B2B n'a qu'une case. Elle occupe la LARGEUR DES DEUX colonnes de
    modes (plus leur gouttière) plutôt que d'en laisser une vide, qui se lirait
    comme un choix non fait. La rangée est en flex, pas en grid : la largeur se
