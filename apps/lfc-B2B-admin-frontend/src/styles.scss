@@ -13,6 +13,42 @@
    d'export déclaré par le paquet. */
 @import 'fold-ng/tokens.css';
 
+/* ── Les faces, posées par l'APP ────────────────────────────────────────────
+   `--fold-font-*` est theme-invariant par contrat (`scales.css` de fold), et
+   l'argument tient : contrairement au rayon, changer de face re-flowe la page.
+   La police est donc une décision d'app hôte, pas de thème.
+
+   IBM Plex et pas la face système, et ce n'est pas un goût : la famille a de
+   VRAIS chiffres tabulaires et une sœur monospace métriquement cohérente.
+   `fold-data-table`, `fold-paginator` et `fold-slider` posent déjà
+   `font-variant-numeric: tabular-nums` ; avec `system-ui` le résultat dépend
+   de l'OS du client — ce qu'une colonne de montants ne peut pas se permettre.
+   Le PIM affiche des prix, des volumes, des poids et des taux de TVA.
+
+   Auto-hébergées via @fontsource : la bibliothèque se revendique
+   « self-contained, no asset pipeline », et un @import Google Fonts la
+   contredirait par une dépendance réseau au premier rendu.
+
+   Sous-ensemble LATIN explicitement : les fichiers complets embarquent aussi
+   cyrillique, grec et vietnamien — vingt fichiers qu'une app FR/EN/IT ne
+   servira jamais. Le navigateur ne les télécharge pas (l'`unicode-range` s'en
+   charge), mais ils pèsent dans le bundle et dans le cache du CDN.
+   Cinq graisses : Sans 400/600/700, Mono 400/500. */
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-sans/latin-700.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+:root {
+  --fold-font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --fold-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+body {
+  font-family: var(--fold-font-sans);
+}
+
 /* ── Rythme des pages ───────────────────────────────────────────────────────
    `fold-page-layout` applique par défaut : gouttière 16→32 px (fluide), gap
    32 px entre bandes, et un padding vertical de 28 px en haut / 40 px en bas.
