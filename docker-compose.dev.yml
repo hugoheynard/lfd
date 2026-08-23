@@ -67,9 +67,24 @@ services:
       retries: 10
       start_period: 5s
 
-  # Crée le bucket au démarrage, puis sort. Sans lui, la première pièce déposée
-  # tomberait sur un `NoSuchBucket` — en prod le bucket R2 est créé une fois à
-  # la main, ici il doit renaître avec le volume (`dev:infra:nuke`).
+  # Crée les buckets au démarrage, puis sort. Sans lui, la première pièce déposée
+  # tomberait sur un `NoSuchBucket` — en prod les buckets R2 sont créés une fois à
+  # la main, ici ils doivent renaître avec le volume (`dev:infra:nuke`).
+  #
+  # DEUX buckets, et la différence n'est pas cosmétique :
+  #
+  #   lfc-b2b-dev    pièces PRIVÉES (KBIS, mandat SEPA). Reste fermé : elles se
+  #                  lisent par une URL signée expirante, à travers l'API.
+  #   lfc-media-dev  visuels PUBLICS du catalogue. Ouvert en LECTURE ANONYME,
+  #                  parce que c'est la moitié du stockage qui ne passe pas par
+  #                  nous : le navigateur va chercher l'image droit sur le
+  #                  bucket, avec l'URL enregistrée en base. Sans `anonymous set
+  #                  download`, le dépôt réussirait et chaque fiche afficherait
+  #                  une image cassée — un échec qui ne se voit qu'à l'affichage,
+  #                  longtemps après.
+  #
+  # Miroir prod : en R2 le bucket média est servi par `media.lafoliecoffee.info`,
+  # le bucket des pièces par personne.
   minio-init:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     container_name: lfd-dev-minio-init
@@ -79,7 +94,9 @@ services:
     entrypoint: >
       sh -c "mc alias set lfd http://minio:9000 lfc lfclfclfc &&
              mc mb --ignore-existing lfd/lfc-b2b-dev &&
-             echo 'bucket lfc-b2b-dev prêt'"
+             mc mb --ignore-existing lfd/lfc-media-dev &&
+             mc anonymous set download lfd/lfc-media-dev &&
+             echo 'buckets lfc-b2b-dev (privé) et lfc-media-dev (lecture publique) prêts'"
 
 volumes:
   postgres-data:

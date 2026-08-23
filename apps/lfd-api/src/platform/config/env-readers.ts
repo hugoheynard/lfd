@@ -197,11 +197,40 @@ export function optionalMediaPublicBaseUrl(): string | null {
     return null;
   }
   const trimmed = raw.replace(/\/+$/, "");
-  // Une valeur non-https est traitée comme ABSENTE plutôt que fatale, pour la
+  // Une valeur non servable est traitée comme ABSENTE plutôt que fatale, pour la
   // même raison que ci-dessus : servir des images en clair depuis une adresse
   // qu'on n'a pas voulue serait pire, mais coucher l'API pour ça le serait
   // encore plus. L'usage s'éteint, et le bulletin le dit.
-  return trimmed.startsWith("https://") ? trimmed : null;
+  return isServableBaseUrl(trimmed) ? trimmed : null;
+}
+
+/** Hôtes où le clair est un fait de la machine, pas une négligence de déploiement. */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * `https` partout — **sauf en boucle locale**, où il n'y a pas de TLS à avoir.
+ *
+ * Sans cette exception, le MinIO de `docker-compose.dev.yml` est INERTE : il
+ * sert sur `http://localhost:9100`, l'URL publique est donc rejetée, et le dépôt
+ * d'image refuse en annonçant un « stockage à moitié configuré ». On développait
+ * la bibliothèque de visuels sans jamais déposer un visuel — exactement ce que
+ * le conteneur MinIO avait été monté pour corriger côté KBIS.
+ *
+ * L'hôte est lu par `URL`, pas par un préfixe de chaîne : `localhost.exemple.fr`
+ * commence par « localhost » sans être la machine de personne. Une adresse
+ * publique en clair, elle, reste refusée — elle serait servie à des navigateurs.
+ */
+function isServableBaseUrl(value: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol === "https:") {
+    return true;
+  }
+  return parsed.protocol === "http:" && LOOPBACK_HOSTS.has(parsed.hostname);
 }
 
 /**
