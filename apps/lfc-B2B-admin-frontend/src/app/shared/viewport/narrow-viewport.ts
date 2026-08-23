@@ -4,7 +4,7 @@ import { DestroyRef, inject, signal, type Signal } from '@angular/core';
  * Le seuil « étroit » du back-office — le même que celui des retraits resserrés
  * de fold-ng, pour qu'un écran ne bascule pas en deux temps.
  */
-const NARROW = '(max-width: 640px)';
+const NARROW = 640;
 
 /**
  * L'écran est-il étroit, **en direct** ?
@@ -21,13 +21,17 @@ const NARROW = '(max-width: 640px)';
  *
  * Sans `matchMedia` — rendu serveur, environnement de test — on répond **non** :
  * le rendu large est le défaut, et l'hydratation corrige.
+ *
+ * `maxWidth` par défaut au seuil resserré du back-office. Le passer explicitement
+ * sert à s'accrocher au seuil d'un AUTRE composant — celui où la coquille retire
+ * ses rails, par exemple — pour que les deux basculent au même pixel.
  */
-export function narrowViewport(): Signal<boolean> {
+export function narrowViewport(maxWidth: number = NARROW): Signal<boolean> {
   const narrow = signal(false);
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return narrow.asReadonly();
   }
-  const query = window.matchMedia(NARROW);
+  const query = window.matchMedia(`(max-width: ${String(maxWidth)}px)`);
   narrow.set(query.matches);
   const onChange = (event: MediaQueryListEvent): void => narrow.set(event.matches);
   query.addEventListener('change', onChange);

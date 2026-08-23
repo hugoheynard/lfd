@@ -1,0 +1,19 @@
+/* Accrochée en haut : les vues d'un espace sont longues (grille produits, file
+   d'appels, calendrier), et changer de vue ne doit pas demander de remonter. */
+:host {
+  display: none;
+}
+
+/* Rendue : la barre existe et prend sa place. */
+:host(.is-live) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: block;
+  min-width: 0;
+  padding-block: var(--fold-page-gap) var(--fold-space-xs);
+}
+
+:host(.has-gutter) {
+  padding-inline-start: var(--fold-page-gutter);
+}

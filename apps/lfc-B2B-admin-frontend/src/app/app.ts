@@ -11,6 +11,7 @@ import { NavCountsService } from './nav-counts.service';
 import {
   FoldAppShellComponent,
   FoldButtonIconComponent,
+  FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
   FoldNavLauncherComponent,
@@ -27,6 +28,7 @@ import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
+import { WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -51,6 +53,7 @@ import { NotificationBell } from './shared/notifications/notification-bell/notif
     RouterLinkActive,
     FoldAppShellComponent,
     FoldButtonIconComponent,
+    FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
     FoldNavLauncherComponent,
@@ -78,6 +81,13 @@ export class App {
 
   private readonly auth = inject(StaffAuth);
   private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * L'espace de travail ouvert, s'il y en a un — ce que rend le rail
+   * secondaire. La racine ne sait pas ce qu'il contient : elle affiche ce que
+   * l'espace publie (cf. `provideWorkspaceRail`).
+   */
+  protected readonly workspace = inject(WorkspaceRailStore).rail;
 
   /**
    * Le menu se déduit des **permissions**, jamais du rôle : le jour où une

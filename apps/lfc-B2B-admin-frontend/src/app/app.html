@@ -199,6 +199,35 @@
       ></button>
     </fold-menu>
 
+    <!-- RAIL D'ESPACE DE TRAVAIL — le deuxième étage de la coquille, entre
+         l'application et les vues d'une page. Vide la plupart du temps : la
+         colonne est intrinsèque et se replie d'elle-même, il n'y a rien à
+         masquer. Ce qui le remplit vient du store, pas d'une lecture d'URL —
+         la racine n'a pas à connaître les vues du PIM.
+
+         ⚠️ Sous 768px la coquille retire les DEUX rails et ne ramène que le
+         primaire (en tiroir, ici en lanceur de tuiles). C'est l'espace lui-même
+         qui rend alors ses vues, en barre horizontale dans la page. -->
+    @if (workspace(); as ws) {
+      <fold-menu railSecondary level="secondary" [expanded]="true">
+        <div header class="rail-workspace">
+          <fold-icon [name]="ws.icon" size="sm" />
+          <span>{{ ws.title }}</span>
+        </div>
+        @for (item of ws.items; track item.key) {
+          <a
+            fold-menu-item
+            [icon]="item.icon"
+            [label]="item.label"
+            [routerLink]="item.link"
+            routerLinkActive
+            #wsRla="routerLinkActive"
+            [active]="wsRla.isActive"
+          ></a>
+        }
+      </fold-menu>
+    }
+
     <!-- En-tête. Il n'existe que pour ce qui n'est PAS de la navigation : ouvrir
          le menu mobile, et la cloche d'équipe. Le menu, lui, reste dans le rail —
          un lien n'a pas à exister à deux endroits sur le même écran. -->

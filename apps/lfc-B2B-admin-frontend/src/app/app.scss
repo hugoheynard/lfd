@@ -141,3 +141,26 @@ fold-app-shell {
     color: var(--fold-color-text-muted);
   }
 }
+
+/* En-tête du rail d'espace de travail : il DIT où l'on est. Sans lui, sept
+   entrées apparaissent à côté du menu de l'app sans rien qui les rattache à
+   quoi que ce soit — et le rail secondaire n'a pas de marque à porter, il a un
+   contexte à nommer. */
+.rail-workspace {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
