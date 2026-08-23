@@ -52,12 +52,12 @@ describe("Packaging", () => {
 
   it("refuse un prix ou un poids qui n'a pas de sens", () => {
     const pack = open();
-    expect(() =>
-      pack.describe({ grossWeightGrams: -1, priceCents: null, channels: [] }),
-    ).toThrow(InvalidVariantPricingError);
-    expect(() =>
-      pack.describe({ grossWeightGrams: null, priceCents: 12.5, channels: [] }),
-    ).toThrow(InvalidVariantPricingError);
+    expect(() => pack.describe({ grossWeightGrams: -1, priceCents: null, channels: [] })).toThrow(
+      InvalidVariantPricingError,
+    );
+    expect(() => pack.describe({ grossWeightGrams: null, priceCents: 12.5, channels: [] })).toThrow(
+      InvalidVariantPricingError,
+    );
   });
 
   it("normalise ses canaux, pour qu'un ré-enregistrement ne se lise pas comme un changement", () => {
