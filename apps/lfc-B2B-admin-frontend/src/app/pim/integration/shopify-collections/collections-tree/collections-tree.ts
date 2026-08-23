@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { FoldBadgeComponent, FoldDisclosureComponent } from 'fold-ng';
 
-import { familyCount, type CollectionFamily } from '../../data/collections';
+import { familyCount, type CollectionFamily } from '../collections';
 
 /**
  * Arbre présentationnel des collections — trois lectures des tags, descendant

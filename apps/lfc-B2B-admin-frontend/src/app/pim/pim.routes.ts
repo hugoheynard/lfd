@@ -38,7 +38,9 @@ export const pimRoutes: Routes = [
         path: 'collections',
         title: 'Collections — LFC B2B admin',
         loadComponent: () =>
-          import('./catalogue/collections/collections-page').then((m) => m.CollectionsPage),
+          import('./integration/shopify-collections/collections-page/collections-page').then(
+            (m) => m.CollectionsPage,
+          ),
       },
       {
         path: 'publication',

@@ -3,11 +3,11 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { FoldPageLayoutComponent } from 'fold-ng';
 
 import { CollectionsTree } from '../collections-tree/collections-tree';
-import { buildCollections } from '../../data/collections';
-import { EmplacementStore } from '../../emplacements/emplacement-store';
-import { CategoryStore } from '../category-store';
-import { ProductStore } from '../product-store';
-import { TvaStore } from '../tva-rates/tva-store';
+import { buildCollections } from '../collections';
+import { EmplacementStore } from '../../../emplacements/emplacement-store';
+import { CategoryStore } from '../../../catalogue/category-store';
+import { ProductStore } from '../../../catalogue/product-store';
+import { TvaStore } from '../../../catalogue/tva-rates/tva-store';
 
 /**
  * Arbre des collections que le paramétrage génère — trois lectures des tags,

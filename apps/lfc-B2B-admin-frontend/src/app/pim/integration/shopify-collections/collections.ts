@@ -1,5 +1,6 @@
-import { formatPercent, generateFiches, tvaTagFromPercent } from './channels';
-import type { Category, Emplacement, Product, TvaRate } from './models';
+import { formatPercent } from '../../data/channels';
+import type { Category, Emplacement, Product, TvaRate } from '../../data/models';
+import { generateFiches, tvaTagFromPercent } from './fiches';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
 export interface CollectionEntry {
