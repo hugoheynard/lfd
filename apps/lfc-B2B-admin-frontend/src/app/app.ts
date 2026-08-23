@@ -10,6 +10,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { NavCountsService } from './nav-counts.service';
 import {
   FoldAppShellComponent,
+  FoldAvatarDetailComponent,
   FoldButtonIconComponent,
   FoldIconComponent,
   FoldMenuComponent,
@@ -23,6 +24,8 @@ import {
   FoldToastContainerComponent,
 } from 'fold-ng';
 
+import type { StaffRole } from '@lfd/contracts';
+
 import { PermissionsStore } from './auth/permissions.store';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
@@ -31,6 +34,23 @@ import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
+
+/**
+ * Les rôles en toutes lettres. Une COPIE de `STAFF_ROLE_LABELS`, et c'est
+ * délibéré : la table du contrat est une *valeur*, donc l'importer ici tirerait
+ * zod et tous les schémas dans le bundle EAGER — la racine n'est pas paresseuse.
+ *
+ * Une copie qui dérive serait un mensonge, mais celle-ci ne peut pas : le
+ * `Record<StaffRole, string>` est exhaustif, donc un rôle ajouté au contrat
+ * casse la compilation ici jusqu'à ce qu'on lui donne son libellé.
+ */
+const ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
+  admin: 'Administrateur',
+  commercial: 'Commercial',
+  comptabilite: 'Comptabilité',
+  support: 'Support',
+  dev: 'Technique',
+};
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -54,6 +74,7 @@ import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
     RouterLink,
     RouterLinkActive,
     FoldAppShellComponent,
+    FoldAvatarDetailComponent,
     FoldButtonIconComponent,
     FoldIconComponent,
     FoldMenuComponent,
@@ -108,11 +129,15 @@ export class App {
     count === 1 ? '1 entrée' : `${String(count)} entrées`;
 
   /**
-   * Le menu se déduit des **permissions**, jamais du rôle : le jour où une
+   * Tout se déduit des **permissions**, jamais du rôle : le jour où une
    * dérogation ouvre la croissance à quelqu'un, l'entrée apparaît sans qu'on y
    * touche.
+   *
+   * Celle-ci n'ouvre plus aucune entrée — « Comptes clients » est une vue du
+   * Commercial depuis que le lanceur sait descendre. Elle garde un seul rôle :
+   * ne lancer la lecture des compteurs que pour qui a le droit de les lire.
    */
-  protected readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
+  private readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
 
   private readonly counts = inject(NavCountsService);
   private readonly push = inject(PushNotificationsService);
@@ -171,6 +196,26 @@ export class App {
 
   /** E-mail du staff connecté, quand la session est celle de cette app. */
   protected readonly email = this.auth.email;
+
+  /**
+   * Qui est là : « Camille Roux », puis son rôle.
+   *
+   * Le rôle et non l'e-mail en seconde ligne — on connaît sa propre adresse,
+   * alors que « sous quel rôle suis-je entré » décide de ce que l'écran montre.
+   *
+   * Sans fiche staff lue (session résolue mais `/admin/me` pas encore revenu,
+   * ou compte inconnu du backend), on retombe sur l'e-mail : écrire un nom
+   * générique serait affirmer une identité qu'on n'a pas.
+   */
+  protected readonly whoPrimary = computed(() => {
+    const me = this.permissions.identity();
+    return me ? `${me.firstName} ${me.lastName}`.trim() : (this.email() ?? 'Session');
+  });
+
+  protected readonly whoSecondary = computed(() => {
+    const me = this.permissions.identity();
+    return me ? ROLE_LABELS[me.role] : '';
+  });
 
   /**
    * Montrer la porte ? Seulement quand cette app porte sa propre session et que

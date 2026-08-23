@@ -177,11 +177,6 @@ fold-app-shell {
 
 .nav-foot-who {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
 }
 
 .nav-foot-logout {

@@ -281,20 +281,23 @@
          deux fois.
 
          Même ORDRE que le rail primaire : deux navigations qui ne rangent pas
-         pareil obligent à réapprendre l'écran en changeant de taille. -->
-    <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à" eyebrow="LFC B2B" heading="Admin">
-      @if (canSeeCompanies()) {
-        <a
-          fold-nav-tile
-          icon="customer-account"
-          label="Comptes clients"
-          routerLink="/commercial/comptes-clients"
-          routerLinkActive
-          #comptesTile="routerLinkActive"
-          [active]="comptesTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+         pareil obligent à réapprendre l'écran en changeant de taille. C'est
+         pourquoi « Comptes clients » n'a plus sa tuile de premier niveau : elle
+         datait du lanceur plat, où atteindre une vue du Commercial demandait un
+         raccourci. Elle est une VUE du Commercial — la première qu'on y trouve —
+         et la montrer aussi à côté de son propre espace la déclarait deux fois.
+
+         `glass` : les plans deviennent translucides sur un voile de halos. Deux
+         choses à savoir — le contraste du texte baisse d'environ un cran sur un
+         plan à 50 %, et `backdrop-filter` coûte une couche de composition par
+         plan, perceptible au défilement sur un mobile d'entrée de gamme. -->
+    <fold-nav-launcher
+      [(open)]="mobileNavOpen"
+      label="Aller à"
+      eyebrow="LFC B2B"
+      heading="Admin"
+      glass
+    >
       @if (canSeeCommercial()) {
         <fold-nav-group
           icon="calendar"
@@ -428,11 +431,19 @@
 
       <!-- Le pied : ce que l'application possède et que la bibliothèque n'a pas
            à deviner. La déconnexion y descend — elle était une tuile parmi les
-           destinations, alors qu'elle n'en est pas une. -->
+           destinations, alors qu'elle n'en est pas une.
+
+           `fold-avatar-detail` plutôt qu'une identité cousue main : c'est la
+           cellule d'identité du DS, et elle tire ses initiales du nom. Le rôle
+           en seconde ligne, pas l'e-mail — on connaît sa propre adresse, alors
+           que « sous quel rôle suis-je entré » décide de ce que l'écran montre. -->
       <div footer class="nav-foot">
-        @if (email(); as who) {
-          <span class="nav-foot-who" [title]="who">{{ who }}</span>
-        }
+        <fold-avatar-detail
+          class="nav-foot-who"
+          size="sm"
+          [primary]="whoPrimary()"
+          [secondary]="whoSecondary()"
+        />
         <button type="button" class="nav-foot-logout" (click)="logout()">Déconnexion</button>
       </div>
     </fold-nav-launcher>
