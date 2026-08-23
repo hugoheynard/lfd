@@ -1712,7 +1712,7 @@ model StaffPushSubscription {
   /// commune à l'équipe.
   staffSub String @map("staff_sub")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
   /// Dernier envoi ACCEPTÉ par le service de push. Un abonnement muet depuis
   /// des mois est un téléphone remplacé, pas une panne.
   lastSentAt DateTime? @map("last_sent_at")
@@ -1795,14 +1795,14 @@ model CatalogPriceHistory {
   id String @id
 
   /// Le SKU de la déclinaison — la clé de l'article reçu.
-  sku String
+  sku        String
   /// Le SKU du PRODUIT : c'est par lui que la boutique vend, donc par lui qu'on relit.
   productSku String @map("product_sku")
 
   /// Prix HT en centimes réellement applicable à cet instant.
-  priceCents Int @map("price_cents")
+  priceCents Int    @map("price_cents")
   /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
-  source String
+  source     String
 
   recordedAt DateTime @map("recorded_at")
 
@@ -2075,12 +2075,12 @@ model PriceFloor {
   /// Les deux conditions ci-dessous doivent être remplies pour l'ouvrir — la
   /// plus stricte gagne. Une condition `NULL` est réputée remplie ; les deux
   /// `NULL` feraient de la porte un mur, ce que l'agrégat refuse.
-  dynamicMode  String? @map("dynamic_mode")
-  dynamicValue Int?    @map("dynamic_value")
+  dynamicMode            String? @map("dynamic_mode")
+  dynamicValue           Int?    @map("dynamic_value")
   /// Quantité minimale **sur la commande** — déterministe au checkout.
-  unlockMinQuantity Int? @map("unlock_min_quantity")
+  unlockMinQuantity      Int?    @map("unlock_min_quantity")
   /// Ratio de volume **observé** requis, en points de base (`12500` = ×1,25).
-  unlockMinVolumeRatioBp Int? @map("unlock_min_volume_ratio_bp")
+  unlockMinVolumeRatioBp Int?    @map("unlock_min_volume_ratio_bp")
 
   /// Le tarif **représentatif des articles visés**, figé au moment où la limite a
   /// été posée — la médiane de leurs prix canoniques.
@@ -2483,7 +2483,6 @@ model SkuRegistry {
 
   @@index([ownerId])
   @@map("sku_registry")
-
   @@schema("pim")
 }
 
@@ -2505,14 +2504,14 @@ model Category {
   /// Taux de TVA visés par les fiches à emporter / sur place. `NULL` = non
   /// réglé. `onDelete: Restrict` (défaut) : un taux référencé ne peut pas être
   /// supprimé tant qu'une famille le vise.
-  emporterTvaId String?    @map("emporter_tva_id")
+  emporterTvaId String?  @map("emporter_tva_id")
   emporterTva   TvaRate? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
-  surPlaceTvaId String?    @map("sur_place_tva_id")
+  surPlaceTvaId String?  @map("sur_place_tva_id")
   surPlaceTva   TvaRate? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
   /// Taux visé par la **plateforme B2B**. Vendre à un professionnel n'est ni « à
   /// emporter » ni « sur place » : le canal facturait jusqu'ici au taux « à
   /// emporter », emprunté sans que rien ne le dise.
-  b2bTvaId      String?    @map("b2b_tva_id")
+  b2bTvaId      String?  @map("b2b_tva_id")
   b2bTva        TvaRate? @relation("CategoryB2bTva", fields: [b2bTvaId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -2524,7 +2523,6 @@ model Category {
   @@index([surPlaceTvaId])
   @@index([b2bTvaId])
   @@map("category")
-
   @@schema("pim")
 }
 
@@ -2551,7 +2549,6 @@ model TvaRate {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("tva_rate")
-
   @@schema("pim")
 }
 
@@ -2574,7 +2571,6 @@ model Emplacement {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("emplacement")
-
   @@schema("pim")
 }
 
@@ -2592,7 +2588,6 @@ model EmplacementTable {
 
   @@id([emplacementId, number])
   @@map("emplacement_table")
-
   @@schema("pim")
 }
 
@@ -2623,7 +2618,6 @@ model Product {
 
   @@index([categoryId])
   @@map("product")
-
   @@schema("pim")
 }
 
@@ -2651,6 +2645,14 @@ model ProductVariant {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
+  /// Conditionnements — les unités de vente en VOLUME qui emballent cette
+  /// déclinaison. Rattachés ici et non au produit : « carton de 20 » ne veut
+  /// rien dire tant qu'on ne sait pas de quoi (des parts, ou des tartes 6
+  /// parts ?). La relation EST l'information — cf. la révision du 2026-08-23
+  /// de `documentation/b2b/architecture-conditionnements-pricing.md`, qui
+  /// renverse le choix initial de les modéliser en déclinaisons plates.
+  packagings ProductPackaging[]
+
   /// Fiche réglementaire — **optionnelle** (`o|`) : son absence signifie
   /// « pas encore renseigné ». Un 1:1 obligatoire forcerait une ligne vide à la
   /// création, donc affirmerait « aucun allergène » sans vérification. La garde
@@ -2665,7 +2667,61 @@ model ProductVariant {
 
   @@index([productId])
   @@map("product_variant")
+  @@schema("pim")
+}
 
+/// Les formes d'emballage vendues en volume.
+enum PackagingType {
+  carton
+  sac
+  plateau
+
+  @@schema("pim")
+}
+
+/// Le **conditionnement** — une unité de vente en volume qui emballe une
+/// déclinaison. Trois faits lui sont propres, et c'est ce qui en fait une
+/// entité plutôt qu'un attribut :
+///
+///  · le poids **BRUT**, emballage inclus. Il ne se déduit PAS du poids net de
+///    la déclaration nutritionnelle : un carton de 20 parts pèse 20 × le net,
+///    plus le carton, les intercalaires et le film. Sans lui, pas d'expédition.
+///  · le **prix canonique**. Un carton de 20 ne vaut pas 20 × l'unité — c'est le
+///    principe même de la vente en volume, et un prix dérivé ne saurait pas
+///    exprimer la remise de gros qui justifie le conditionnement.
+///  · les **canaux**. Un plateau de 6 se vend à emporter ; hériter de la famille
+///    rendrait ce cas inexprimable.
+///
+/// Le libellé n'est PAS stocké : il se dérive de `type` × `quantity`. Le
+/// stocker rouvrirait la porte à « Carton 20 » et « carton de 20 » pour la
+/// même chose.
+model ProductPackaging {
+  id        String         @id
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  /// Le pro commande par référence — elle est donc unique, comme celle d'une
+  /// déclinaison.
+  sku       String         @unique
+  type      PackagingType
+  /// Nombre d'unités emballées. Entier > 0 : zéro n'emballe rien (l'invariant
+  /// vit dans l'entité, la base ne sait pas l'exprimer).
+  quantity  Int
+
+  /// Poids BRUT en grammes, emballage inclus. `NULL` = non renseigné, et donc
+  /// non expédiable.
+  grossWeightGrams Int?     @map("gross_weight_grams")
+  /// Prix canonique HT en centimes, **pré-altération** : le dégressif de volume
+  /// et les remises vivent dans la couche pricing B2B, jamais ici.
+  priceCents       Int?     @map("price_cents")
+  /// Canaux de vente propres. `[]` = aucun, donc invendable.
+  channels         String[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([variantId])
+  @@map("product_packaging")
   @@schema("pim")
 }
 
@@ -2711,7 +2767,6 @@ model ShopifySettings {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("shopify_settings")
-
   @@schema("pim")
 }
 
@@ -2733,7 +2788,6 @@ model ShopifyProductBinding {
   headSnapshotId String? @map("head_snapshot_id")
 
   @@map("shopify_product_binding")
-
   @@schema("pim")
 }
 
@@ -2762,7 +2816,6 @@ model ShopifyPushSnapshot {
   @@unique([handle, version])
   @@index([handle])
   @@map("shopify_push_snapshot")
-
   @@schema("pim")
 }
 
@@ -2778,7 +2831,6 @@ model ShopifyVariantBinding {
   shopifyVariantGid String? @map("shopify_variant_gid")
 
   @@map("shopify_variant_binding")
-
   @@schema("pim")
 }
 
@@ -2804,7 +2856,6 @@ model NutritionDeclaration {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("nutrition_declaration")
-
   @@schema("pim")
 }
 
@@ -2838,7 +2889,6 @@ model ProductEditorial {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("product_editorial")
-
   @@schema("pim")
 }
 
@@ -2862,14 +2912,14 @@ model MediaAsset {
   /// La clé dans le bucket média — `products/{sha256}.{ext}`. `null` ⇒ l'octet
   /// n'est pas chez nous. C'est par elle qu'un ramassage d'orphelins saura un
   /// jour quel objet R2 plus aucune fiche ne référence.
-  storageKey String? @map("storage_key")
+  storageKey  String? @map("storage_key")
   /// Type MIME **constaté dans les octets** au dépôt, jamais annoncé.
   contentType String? @map("content_type")
   /// Taille intrinsèque, lue dans l'en-tête au dépôt. Sans elle, une galerie ne
   /// peut pas réserver sa place et la fiche saute au chargement des images.
-  width  Int?
-  height Int?
-  bytes  Int?
+  width       Int?
+  height      Int?
+  bytes       Int?
 
   products ProductMedia[]
 
@@ -2877,7 +2927,6 @@ model MediaAsset {
 
   @@index([url])
   @@map("media_asset")
-
   @@schema("pim")
 }
 
@@ -2894,7 +2943,6 @@ model ProductMedia {
   @@id([productId, mediaId])
   @@index([productId])
   @@map("product_media")
-
   @@schema("pim")
 }
 
@@ -2927,6 +2975,5 @@ model B2bChannelBinding {
   lastPushedAt DateTime? @map("last_pushed_at")
 
   @@map("b2b_channel_binding")
-
   @@schema("pim")
 }

@@ -38,6 +38,17 @@ export class InvalidProductVariantsError extends DomainError {
   }
 }
 
+/** Une quantité de conditionnement qui n'emballe rien : zéro, négative, ou non entière. */
+export class InvalidPackagingQuantityError extends DomainError {
+  constructor(received: number) {
+    super(
+      "catalogue.packaging.invalid_quantity",
+      `Quantité de conditionnement impossible (${String(received)}) : ` +
+        `attendu un entier strictement positif — un conditionnement emballe au moins une unité.`,
+    );
+  }
+}
+
 /** Un prix ou un poids qui n'a pas de sens : négatif, fractionnaire, infini. */
 export class InvalidVariantPricingError extends DomainError {
   constructor(field: string, received: number) {
