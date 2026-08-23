@@ -92,8 +92,7 @@ export class CategoryHasActiveChildrenError extends BusinessError {
 /**
  * Deux familles ne peuvent pas porter le même slug.
  *
- * Il est dérivé du nom, jamais saisi — et il sert d'identifiant EN AVAL : il
- * fournit le préfixe de famille de tous les SKU (`productSkuRoot`) et il est
+ * Il est dérivé du nom, jamais saisi — et il sert d'identifiant EN AVAL : il est
  * projeté tel quel vers le catalogue B2B. Deux familles qui le partagent, c'est
  * un identifiant qui cesse d'identifier. Refuser plutôt que suffixer en
  * silence : « Pains » et « Pains », c'est une faute de saisie, pas un besoin.

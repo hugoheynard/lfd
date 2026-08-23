@@ -89,16 +89,16 @@ erDiagram
 
 ## Entité : `Product` — l'identité, rien d'autre
 
-| Champ         | Type            | Rôle                                                                                                     |
-| ------------- | --------------- | -------------------------------------------------------------------------------------------------------- |
-| `id`          | UUID v7         | Identité interne stable — **assignée par la commande** (R1), ne change **jamais**                        |
-| `sku`         | string          | Référence métier lisible, **unique globalement** — `VIEN-CROI-BEURRE`. Modifiable via `ChangeProductSku` |
-| `slug` 🌐     | LocalizedText   | Identifiant URL **par locale** — unique par locale                                                       |
-| `kind`        | enum            | Nature : `daily` · `made_to_order` · `resale`                                                            |
-| `name` 🌐     | LocalizedText   | Désignation commerciale                                                                                  |
-| `category_id` | UUID → Category | Famille de rattachement (**une seule**)                                                                  |
-| `status`      | enum            | `draft` · `published` · `archived` — **conséquence des verbes**, jamais écrit directement                |
-| `attributes`  | jsonb           | Échappatoire gouvernée (voir conventions)                                                                |
+| Champ         | Type            | Rôle                                                                                                                                |
+| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | UUID v7         | Identité interne stable — **assignée par la commande** (R1), ne change **jamais**                                                   |
+| `sku`         | string          | Référence **opaque**, unique globalement — `P-K7M3QT` (doc 06 §4). Figée à la création : le verbe `ChangeProductSku` reste à écrire |
+| `slug` 🌐     | LocalizedText   | Identifiant URL **par locale** — unique par locale                                                                                  |
+| `kind`        | enum            | Nature : `daily` · `made_to_order` · `resale`                                                                                       |
+| `name` 🌐     | LocalizedText   | Désignation commerciale                                                                                                             |
+| `category_id` | UUID → Category | Famille de rattachement (**une seule**)                                                                                             |
+| `status`      | enum            | `draft` · `published` · `archived` — **conséquence des verbes**, jamais écrit directement                                           |
+| `attributes`  | jsonb           | Échappatoire gouvernée (voir conventions)                                                                                           |
 
 `kind` (boulangerie) : `daily` = frais du jour · `made_to_order` = sur commande · `resale` = revendu
 tel quel. Il reste ici car il définit _ce qu'est_ le produit.

@@ -311,12 +311,28 @@ de binding** — une table **étant** un canal, l'unicité par canal est structu
 discriminant. Par défaut la colonne est `NULL` et l'adaptateur pousse le SKU interne ; elle n'est
 renseignée que si le canal ne peut pas l'accepter (PLU numérique).
 
-**SKU par défaut** : **signifiant** (pas séquentiel), `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`,
-charset `A-Z 0-9 -`. Le signifiant l'emporte parce que le SKU sera lu à voix haute au labo et cherché
-sur un écran de caisse ; son défaut habituel (l'information se périme) est neutralisé par l'invariant
-**« rien ne parse jamais un SKU »**. Il est **proposé** à la création, **calculé une seule fois**
-(renommer un produit ne renomme pas sa référence) et **modifiable**. Collision → suffixe numérique
-lisible, jamais un hash.
+**SKU par défaut** : **opaque** — `P-XXXXXX` pour le produit, `P-XXXXXX-{N}` pour ses déclinaisons,
+charset `A-Z 0-9 -`. Il est **proposé** à la création, **calculé une seule fois** (renommer un produit
+ne renomme pas sa référence) et **modifiable**. Collision → **re-tirage** d'un identifiant frais pour
+le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
+
+> **Révisé le 2026-08-23 — le signifiant est abandonné.** La forme retenue à l'origine
+> (`{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}]`) dérivait la référence du **slug de famille** et du **nom du
+> produit**, puis la figeait : reclasser un produit laissait sa référence affirmer une famille qui
+> n'était plus la sienne. L'invariant « rien ne parse jamais un SKU » protège le code de ce mensonge,
+> **pas l'humain qui le lit** — or c'est précisément pour lui que le signifiant avait été choisi.
+>
+> L'argument « il sera lu à voix haute au labo » penche en fait dans l'autre sens. Six caractères
+> tirés d'un alphabet **sans caractères ambigus** (ni `I`, ni `O`, ni `0`, ni `1`) se dictent mieux
+> qu'une chaîne longue qu'il faut épeler. C'est le raisonnement, l'alphabet et le motif de tirage de
+> la référence société `C-XXXXXX` (ADR B2B) — deuxième usage, donc généralisation légitime.
+>
+> **Le besoin d'une référence à format imposé ne disparaît pas** ; il est servi là où il doit l'être :
+> `channel_reference` dans la table de binding du canal (ADR-13, ci-dessus), et la saisie manuelle qui
+> reste possible à la création — reprise d'un ancien catalogue comprise.
+>
+> **Aucune migration** : rien ne parse un SKU et aucune référence existante ne change. Les produits
+> déjà créés gardent la leur ; seuls les suivants naissent sous la nouvelle forme.
 
 **Conséquences** :
 

@@ -4,9 +4,22 @@ import { Sku, SKU_MAX_LENGTH } from "../value-objects/sku.value-object.js";
 /**
  * Génération de la référence **proposée** à la création.
  *
- * Choix documenté (ADR-16) : référence **signifiante** plutôt que séquentielle — elle sera
- * lue à voix haute au labo et cherchée sur un écran de caisse. Son défaut habituel
- * (l'information se périme) est neutralisé par l'invariant « rien ne parse jamais un SKU ».
+ * Choix documenté (ADR-16, révisé) : référence **opaque** `P-XXXXXX` plutôt que
+ * signifiante. La forme signifiante (`VIEN-CROISS`) dérivait la référence du slug de
+ * famille et du nom du produit — deux valeurs **éditoriales et mutables** — puis la
+ * figeait. Reclasser un produit laissait donc sa référence affirmer une famille qui
+ * n'était plus la sienne. L'invariant « rien ne parse jamais un SKU » protège le code
+ * de ce mensonge ; il ne protège pas l'humain qui le lit.
+ *
+ * L'argument qui avait fait pencher vers le signifiant — « il sera lu à voix haute au
+ * labo » — penche en réalité dans l'autre sens : six caractères tirés d'un alphabet
+ * **sans caractères ambigus** se dictent mieux qu'une chaîne longue où `O` et `0` se
+ * confondent. C'est le même raisonnement, et le même alphabet, que la référence société
+ * `C-XXXXXX` (`b2b/account/infrastructure/prisma-company.repository.ts`).
+ *
+ * Le besoin d'une référence à un format imposé par un tiers ne disparaît pas — il est
+ * servi là où il doit l'être : la colonne `channel_reference` de la table de binding du
+ * canal (ADR-13), et la saisie manuelle qui reste possible à la création.
  *
  * Ce module est **pur** : il dépend d'un port, jamais d'un dépôt. Le défaut est *proposé*,
  * pas garanti unique — seul l'index unique en base garantit (cf. doc 06 §5).
@@ -16,104 +29,67 @@ export interface SkuAvailability {
 }
 
 const MAX_ATTEMPTS = 10;
-const FAMILY_LENGTH = 4;
-const PRODUCT_MAX_WORDS = 2;
-const PRODUCT_WORD_LENGTH = 6;
-const SINGLE_SEGMENT_LENGTH = 4;
-
-/** Mots vides français : ils remplissent la référence sans rien lui apprendre. */
-const STOP_WORDS = new Set([
-  "A",
-  "AU",
-  "AUX",
-  "D",
-  "DE",
-  "DES",
-  "DU",
-  "EN",
-  "ET",
-  "L",
-  "LA",
-  "LE",
-  "LES",
-  "SUR",
-]);
-
-function segments(source: string): string[] {
-  const normalized = Sku.normalize(source);
-  return normalized === "" ? [] : normalized.split("-");
-}
-
-function isNumeric(segment: string): boolean {
-  return /^[0-9]+$/u.test(segment);
-}
-
-/** `viennoiseries` → `VIEN` */
-export function familyPrefix(categorySlug: string): string {
-  return segments(categorySlug).join("").slice(0, FAMILY_LENGTH);
-}
-
-/** `Tarte aux fraises` → `TARTE-FRAISE` */
-export function productMnemonic(productName: string): string {
-  return segments(productName)
-    .filter((segment) => !STOP_WORDS.has(segment))
-    .slice(0, PRODUCT_MAX_WORDS)
-    .map((segment) => segment.slice(0, PRODUCT_WORD_LENGTH))
-    .join("-");
-}
 
 /**
- * `{ taille: "6 pers" }` → `6P` · `{ parfum: "chocolat" }` → `CHOC`
- *
- * Un segment numérique est conservé entier (il porte l'information) ; un segment
- * alphabétique est réduit à son initiale quand il en accompagne d'autres, et gardé
- * plus long quand il est seul — sinon `chocolat` deviendrait `C`.
+ * Alphabet de la référence — **sans caractères ambigus** (ni `I`, ni `O`, ni `0`, ni
+ * `1`) : elle se dicte au téléphone et se relit sur une feuille de production sans
+ * confusion. 32 symboles, donc 5 bits par caractère.
  */
-export function optionsDiscriminator(options: ReadonlyMap<string, string>): string {
-  const parts: string[] = [];
+const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-  for (const value of options.values()) {
-    const parsed = segments(value);
-    const compact = parsed
-      .map((segment) => {
-        if (isNumeric(segment)) {
-          return segment;
-        }
-        return parsed.length === 1 ? segment.slice(0, SINGLE_SEGMENT_LENGTH) : segment.slice(0, 1);
-      })
-      .join("");
+/** 6 symboles = 30 bits ≈ 33 millions de combinaisons. */
+const CODE_LENGTH = 6;
 
-    if (compact !== "") {
-      parts.push(compact);
-    }
+/** Préfixe de la référence produit — ce que le `C-` de la société est à un client. */
+const PRODUCT_PREFIX = "P";
+
+/**
+ * Nombre de chiffres hexadécimaux lus en queue d'identifiant. 12 chiffres = 48 bits,
+ * dont on consomme 30 : 2⁴⁸ étant un multiple de 2³⁰, la troncature reste **uniforme**
+ * (aucun biais de modulo).
+ */
+const TAIL_HEX_LENGTH = 12;
+
+/**
+ * Projette la queue d'un identifiant sur l'alphabet lisible.
+ *
+ * La queue d'un UUID v7 est sa composante **aléatoire** (son préfixe, lui, est
+ * l'horodatage : le lire produirait des références voisines pour des produits créés
+ * la même milliseconde). Les caractères non hexadécimaux sont ignorés plutôt que de
+ * faire échouer la conversion — un identifiant reste une chaîne opaque, pas une
+ * structure que ce module aurait le droit d'exiger.
+ */
+function encodeTail(id: string): string {
+  const hex = id.toLowerCase().replace(/[^0-9a-f]/gu, "");
+  const tail = hex.slice(-TAIL_HEX_LENGTH).padStart(TAIL_HEX_LENGTH, "0");
+
+  let remaining = BigInt(`0x${tail}`);
+  let code = "";
+
+  for (let index = 0; index < CODE_LENGTH; index += 1) {
+    code = REFERENCE_ALPHABET[Number(remaining % 32n)] + code;
+    remaining /= 32n;
   }
 
-  return parts.join("-");
+  return code;
 }
 
-export function productSkuRoot(categorySlug: string, productName: string): string {
-  return [familyPrefix(categorySlug), productMnemonic(productName)]
-    .filter((part) => part !== "")
-    .join("-");
+/** `0192f3…a7b91c` → `P-K7M3QT`. Déterministe : même identifiant, même référence. */
+export function productSkuRoot(id: string): string {
+  return `${PRODUCT_PREFIX}-${encodeTail(id)}`;
 }
 
 /**
- * Racine d'une déclinaison : la référence du produit, **suffixée**.
+ * Racine d'une déclinaison : la référence du produit, **suffixée par son rang**.
  *
  * Le suffixe n'est pas décoratif. L'espace de noms des références est global (produits et
- * déclinaisons confondus) : sans lui, la déclinaison par défaut d'un produit sans option
- * viserait exactement la référence de son produit, et la création échouerait sur le
- * registre. Quand aucune option ne distingue la déclinaison, on retombe donc sur son
- * **rang** — `-1`, `-2` — ce qui reste lisible et se lit comme une numérotation d'atelier.
+ * déclinaisons confondus) : sans lui, la déclinaison par défaut viserait exactement la
+ * référence de son produit, et la création échouerait sur le registre. Le rang — `-1`,
+ * `-2` — se lit comme une numérotation d'atelier, et garde visible le fait que deux
+ * déclinaisons appartiennent au même produit.
  */
-export function variantSkuRoot(
-  productSku: Sku,
-  options: ReadonlyMap<string, string>,
-  position: number,
-): string {
-  const discriminator = optionsDiscriminator(options);
-  const suffix = discriminator === "" ? `${position + 1}` : discriminator;
-  return `${productSku.value}-${suffix}`;
+export function variantSkuRoot(productSku: Sku, position: number): string {
+  return `${productSku.value}-${position + 1}`;
 }
 
 /** Tronque sans laisser de tiret orphelin en fin de chaîne. */
@@ -122,7 +98,31 @@ function truncateTo(value: string, max: number): string {
 }
 
 /**
- * Cherche la première référence libre à partir d'une racine.
+ * Cherche la première référence produit libre.
+ *
+ * Collision → **re-tirage** d'un identifiant frais, jamais un suffixe : `P-K7M3QT-2`
+ * se lirait comme la déclinaison n° 2 de `P-K7M3QT`, ce qu'elle ne serait pas. Le
+ * motif est celui de `pickFreeCompanyReference`, à ceci près qu'on échoue franchement
+ * plutôt que de rendre une valeur prise — le registre a déjà son erreur pour ça.
+ */
+export async function proposeProductSku(
+  draw: () => string,
+  availability: SkuAvailability,
+): Promise<Sku> {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const candidate = Sku.create(productSkuRoot(draw()));
+
+    if (!(await availability.isTaken(candidate))) {
+      return candidate;
+    }
+  }
+
+  throw new SkuGenerationExhaustedError(`${PRODUCT_PREFIX}-`, MAX_ATTEMPTS);
+}
+
+/**
+ * Cherche la première référence libre à partir d'une racine **déjà déterminée** — celle
+ * d'une déclinaison, qui doit rester préfixée par son produit.
  * Collision → suffixe **numérique lisible** (`-2`, `-3`), jamais un hash.
  */
 export async function proposeSku(root: string, availability: SkuAvailability): Promise<Sku> {

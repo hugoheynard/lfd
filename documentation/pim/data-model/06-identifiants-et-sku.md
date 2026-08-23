@@ -21,9 +21,10 @@ Deux règles en découlent, et elles suffisent à trancher la plupart des débat
 > **La jointure se fait toujours sur l'`id`, jamais sur le `sku`.** C'est le seul point que la
 > proposition d'origine avait parfaitement juste, et il faut le garder tel quel.
 
-> **Rien ne _parse_ jamais un SKU.** Le jour où un bout de code lit `VIEN-…` pour en déduire la
-> famille, la famille a deux sources de vérité et le SKU devient non modifiable. Le SKU est un
-> **libellé**, pas une structure de données.
+> **Rien ne _parse_ jamais un SKU.** Le jour où un bout de code lit le début d'une référence pour en
+> déduire la famille, la famille a deux sources de vérité et le SKU devient non modifiable. Le SKU est
+> un **libellé**, pas une structure de données. Depuis que le défaut est **opaque** (§4), la tentation
+> a disparu : il n'y a plus rien à y lire.
 
 ## 2. Pourquoi « un SKU par canal » est faux
 
@@ -126,41 +127,64 @@ qui traversera la chaîne — champs Shopify, écrans de caisse, exports CSV, no
 
 ## 4. Le SKU par défaut — la pratique courante
 
-### Le débat, tranché
+### Le débat, re-tranché le 2026-08-23
 
 Deux écoles s'affrontent depuis toujours : le **SKU signifiant** (`VIEN-CROISSANT-BEURRE`) et le
 **SKU muet** (`100472`). Le muet ne ment jamais et ne se périme pas ; le signifiant se lit.
 
-Pour une boulangerie, **le signifiant gagne** — parce que le SKU sera lu à voix haute au labo, cherché
-sur un écran de caisse à 6h, imprimé sur une feuille de production. Un identifiant qu'aucun humain ne
-peut reconnaître se paie tous les jours.
+Ce document avait tranché pour le **signifiant**, sur un argument d'usage : le SKU sera lu à voix
+haute au labo, cherché sur un écran de caisse à 6h, imprimé sur une feuille de production. Le risque
+(l'information se périme) était réputé neutralisé par la règle du §1 — rien ne parse le SKU, il peut
+donc mentir sans conséquence _technique_.
 
-Le risque du signifiant (l'information se périme : un produit change de famille, le SKU ment) est
-neutralisé par la règle du §1 : **rien ne parse le SKU**. Il peut donc mentir sans conséquence
-technique — c'est un mnémonique, pas une donnée.
+**C'est l'inversion qui a fait rouvrir le débat.** Cette règle protège le code ; elle ne protège pas
+l'humain qui lit la référence — or c'était précisément _pour lui_ que le signifiant avait été choisi.
+`{FAMILLE}-{PRODUIT}` dérivait la référence de deux valeurs **éditoriales et mutables**, puis la
+figeait : reclasser un produit laissait sa référence annoncer `VIEN` pour toujours. Un affichage qui
+affirme avec aplomb quelque chose de faux, exactement ce que le §1 interdit au code de croire.
+
+Et l'argument d'usage penche en fait dans **l'autre sens**. Six caractères tirés d'un alphabet sans
+caractères ambigus se dictent au téléphone et se relisent sur une feuille de production mieux que
+`PATI-TARTE-FRAISE-6P`, qui est long, contient des `O` et des `I`, et s'épelle. Quant à « chercher sur
+un écran de caisse » : on cherche un produit **par son nom**, pas par sa référence.
+
+**Le muet gagne donc**, et il n'a rien coûté : le motif existait déjà, éprouvé, sur la référence
+société `C-XXXXXX`.
 
 ### Le format retenu
 
 ```
-{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]
+P-XXXXXX      le produit
+P-XXXXXX-{N}  ses déclinaisons, par rang
 ```
 
-| Segment       | Source             | Règle                                                                                                                        |
-| ------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `FAMILLE`     | slug de la famille | 4 premiers caractères — `viennoiseries` → `VIEN`                                                                             |
-| `PRODUIT`     | slug du nom `fr`   | mots vides retirés (`de`, `du`, `la`, `aux`, `et`…), 2 mots max, 6 caractères par mot — `tarte-aux-fraises` → `TARTE-FRAISE` |
-| `DÉCLINAISON` | `options`          | initiales + chiffres — `{ taille: "6 pers" }` → `6P`. Absent sur la déclinaison par défaut d'un produit sans options         |
-| `N`           | —                  | **suffixe de collision** uniquement : `-2`, `-3`…                                                                            |
+| Segment  | Source                                 | Règle                                                                                              |
+| -------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `P`      | —                                      | préfixe fixe, ce que `C-` est à un client                                                          |
+| `XXXXXX` | queue d'un identifiant frais (UUID v7) | 6 symboles sur l'alphabet `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — ni `I`, ni `O`, ni `0`, ni `1`      |
+| `N`      | rang de la déclinaison                 | `-1`, `-2`… — jamais absent : sans lui, la déclinaison par défaut viserait la référence du produit |
 
 ```
-VIEN-CROISS              croissant au beurre (déclinaison unique)
-PATI-TARTE-FRAISE        tarte aux fraises, déclinaison par défaut
-PATI-TARTE-FRAISE-6P     …déclinée 6 personnes
-PATI-TARTE-FRAISE-8P     …déclinée 8 personnes
+P-K7M3QT      croissant au beurre
+P-K7M3QT-1    …sa déclinaison par défaut
+P-K7M3QT-2    …son carton de 50
 ```
 
-Le SKU de déclinaison **préfixe** celui du produit : c'est la convention de fait (parent SKU + suffixe),
-elle rend le tri alphabétique utile et regroupe visuellement une famille de déclinaisons.
+**Pourquoi la _queue_ de l'identifiant** : le préfixe d'un UUID v7 est son **horodatage**. Le lire
+donnerait des références voisines à deux produits créés la même milliseconde — la partie aléatoire est
+en fin de chaîne. 12 chiffres hexadécimaux (48 bits) en entrée, 30 consommés : 2⁴⁸ étant un multiple de
+2³⁰, la troncature reste **uniforme**, sans biais de modulo. 6 symboles ≈ 33 millions de combinaisons.
+
+Le SKU de déclinaison **préfixe** celui du produit : le tri alphabétique reste utile et deux
+déclinaisons du même produit se reconnaissent d'un coup d'œil sur un bon de commande.
+
+> **Le format imposé par un tiers n'a pas disparu du problème** — il a changé de place. Un canal qui
+> ne peut pas accepter notre référence (PLU numérique de caisse) la porte dans la colonne
+> `channel_reference` de **sa** table de binding (§6), et la saisie manuelle reste ouverte à la
+> création : reprise d'un ancien catalogue, référence fournisseur, format contractuel.
+
+> **Aucune migration.** Rien ne parse un SKU et aucune référence existante ne change : les produits
+> déjà créés gardent la leur, seuls les suivants naissent sous la nouvelle forme.
 
 ### Quatre règles d'usage
 
@@ -168,8 +192,11 @@ elle rend le tri alphabétique utile et regroupe visuellement une famille de dé
    saisie. Un SKU auto-généré qu'on ne peut pas corriger est plus hostile qu'un champ vide.
 2. **Calculé une seule fois, à la création.** Renommer un produit ne renomme **pas** son SKU. Sinon
    la référence bouge sous les pieds de tout le monde à chaque retouche éditoriale.
-3. **Collision → suffixe numérique**, jamais un aléa. `-2` reste lisible et prononçable ; un hash ne
-   l'est pas. La boucle est bornée (10 tentatives) et échoue franchement au-delà.
+3. **Collision → jamais un hash.** Pour le **produit**, on **re-tire** un identifiant frais :
+   suffixer donnerait `P-XXXXXX-2`, qui se lirait comme la déclinaison n° 2 d'un autre produit — une
+   référence qui ment sur ce qu'elle désigne. Pour la **déclinaison**, dont la racine est imposée par
+   son produit, on suffixe (`-2`, `-3`) : lisible et prononçable. Les deux boucles sont bornées
+   (10 tentatives) et échouent franchement au-delà.
 4. **Le défaut n'est pas une garantie d'unicité** — seule la base l'est (§5). Le générateur _propose_
    en évitant les collisions connues ; il ne les _exclut_ pas.
 
@@ -179,22 +206,17 @@ export interface SkuAvailability {
   isTaken(candidate: Sku): Promise<boolean>;
 }
 
-export async function proposeVariantSku(
-  productSku: Sku,
-  options: ReadonlyMap<string, string>,
-  availability: SkuAvailability,
-): Promise<Sku> {
-  const base = discriminator(options);
-  const root = base === "" ? productSku.value : `${productSku.value}-${base}`;
+/** `0192f3…a7b91c` → `P-K7M3QT`. Déterministe : même identifiant, même référence. */
+export function productSkuRoot(id: string): string;
 
-  for (let attempt = 1; attempt <= 10; attempt += 1) {
-    const candidate = Sku.create(attempt === 1 ? root : `${root}-${attempt}`);
-    if (!(await availability.isTaken(candidate))) {
-      return candidate;
-    }
-  }
-  throw new SkuGenerationExhaustedError(root);
-}
+/** Collision → re-tirage, jamais un suffixe (cf. règle 3). */
+export async function proposeProductSku(
+  draw: () => string,
+  availability: SkuAvailability,
+): Promise<Sku>;
+
+/** Racine d'une déclinaison : la référence du produit, suffixée par son rang. */
+export function variantSkuRoot(productSku: Sku, position: number): string;
 ```
 
 > Le générateur dépend d'un **port** (`SkuAvailability`), pas d'un dépôt : le domaine reste pur et

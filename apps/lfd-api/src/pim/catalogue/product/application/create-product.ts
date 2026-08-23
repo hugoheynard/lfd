@@ -11,7 +11,7 @@ import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import { NutritionRepository } from "../domain/ports/nutrition.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import {
-  productSkuRoot,
+  proposeProductSku,
   proposeSku,
   variantSkuRoot,
   type SkuAvailability,
@@ -37,7 +37,10 @@ export interface CreateProductInput {
   readonly nameEn?: string | undefined;
   readonly kind: ProductKind;
   readonly categoryId: string;
-  /** Laissé vide, une référence lisible est **proposée**. */
+  /**
+   * Laissé vide, une référence opaque `P-XXXXXX` est **proposée**. Renseigné, il permet
+   * de reprendre une référence existante (reprise de l'ancien catalogue, format imposé).
+   */
   readonly sku?: string | undefined;
   /**
    * Fiche réglementaire de la déclinaison par défaut. **Absente** = non renseignée
@@ -84,7 +87,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
     const sku =
       input.sku === undefined || input.sku.trim() === ""
-        ? await proposeSku(productSkuRoot(category.slug.fr, name.fr), this.availability)
+        ? await proposeProductSku(() => this.ids.next(), this.availability)
         : Sku.create(input.sku);
 
     // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
@@ -99,7 +102,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
     const productId = this.ids.next();
     const variantId = this.ids.next();
-    const variantSku = await proposeSku(variantSkuRoot(sku, new Map(), 0), this.availability);
+    const variantSku = await proposeSku(variantSkuRoot(sku, 0), this.availability);
 
     const product = Product.open({
       id: productId,
