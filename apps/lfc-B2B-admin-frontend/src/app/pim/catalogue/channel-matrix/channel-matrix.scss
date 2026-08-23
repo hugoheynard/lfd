@@ -3,13 +3,13 @@
      pour rester alignés. */
   --cm-mode-col: 6.5rem;
   display: grid;
-  gap: var(--fold-space-md, 0.75rem);
+  gap: var(--fold-space-md);
 }
 
 .cm-head {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-sm);
 }
 
 /* Petite table : une ligne d'en-tête + une ligne par boutique, séparateurs

@@ -5,7 +5,7 @@
 
 .panel-desc {
   margin: 0 0 var(--fold-space-md);
-  color: var(--fold-color-text-muted, #71717a);
+  color: var(--fold-color-text-muted);
   font-size: 0.875rem;
 }
 
@@ -31,16 +31,16 @@
 .block-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--fold-color-text-muted, #555);
+  color: var(--fold-color-text-muted);
 }
 
 .native-input {
   width: 100%;
   padding: 0.5rem 0.625rem;
-  border: 1px solid var(--fold-color-border, #d4d4d8);
-  border-radius: var(--fold-radius-md, 0.5rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-card);
-  color: var(--fold-color-text, #18181b);
+  color: var(--fold-color-text);
   font: inherit;
 
   &:focus-visible {
@@ -64,7 +64,7 @@
 .section-status,
 .muted {
   font-size: 0.8125rem;
-  color: var(--fold-color-text-muted, #71717a);
+  color: var(--fold-color-text-muted);
 }
 
 .scope {
@@ -78,8 +78,8 @@
   gap: var(--fold-space-lg);
 
   fieldset {
-    border: 1px solid var(--fold-color-border, #e4e4e7);
-    border-radius: var(--fold-radius-md, 0.5rem);
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--fold-radius-md);
     padding: var(--fold-space-md);
     display: flex;
     flex-direction: column;
@@ -91,7 +91,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--fold-color-text-muted, #71717a);
+    color: var(--fold-color-text-muted);
     padding: 0 0.25rem;
   }
 }
@@ -99,7 +99,7 @@
 .inherit-from {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--fold-color-text-muted, #71717a);
+  color: var(--fold-color-text-muted);
 }
 
 .tva-list {
@@ -119,7 +119,7 @@
 
   dd {
     margin: 0;
-    color: var(--fold-color-text-muted, #71717a);
+    color: var(--fold-color-text-muted);
   }
 }
 

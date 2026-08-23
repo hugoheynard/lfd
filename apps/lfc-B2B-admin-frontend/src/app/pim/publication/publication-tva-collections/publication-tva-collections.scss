@@ -53,7 +53,7 @@ code {
 
 .recon-row.is-missing {
   // Souligne discrètement les lignes à pousser.
-  --fold-color-text-muted: var(--fold-color-warning-text, currentColor);
+  --fold-color-text-muted: var(--fold-color-warning-text);
 }
 
 .recon-name {

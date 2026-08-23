@@ -6,7 +6,7 @@
 
 .muted {
   font-size: 0.8125rem;
-  color: var(--fold-color-text-muted, #71717a);
+  color: var(--fold-color-text-muted);
 }
 
 .save-bar {
@@ -16,7 +16,7 @@
   gap: var(--fold-space-lg);
   margin-top: var(--fold-space-xl);
   padding-top: var(--fold-space-lg);
-  border-top: 1px solid var(--fold-color-border, #e4e4e7);
+  border-top: 1px solid var(--fold-color-border);
 }
 
 .save-actions {

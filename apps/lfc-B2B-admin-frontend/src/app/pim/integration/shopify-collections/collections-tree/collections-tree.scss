@@ -1,6 +1,6 @@
 .tree {
   display: grid;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-sm);
 }
 
 .node {
@@ -20,13 +20,13 @@
 }
 
 .family > .collection {
-  margin-left: var(--fold-space-md, 1rem);
+  margin-left: var(--fold-space-md);
 }
 
 .family-desc {
   margin: 0.15rem 0 0.15rem;
   font-size: 0.82rem;
-  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  color: var(--fold-color-text-secondary);
   line-height: 1.4;
 }
 

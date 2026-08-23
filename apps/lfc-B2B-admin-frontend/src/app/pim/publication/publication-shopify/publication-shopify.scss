@@ -19,7 +19,7 @@
   font-size: var(--fold-text-sm);
 
   &.is-live {
-    border-color: var(--fold-color-success, var(--fold-color-border));
+    border-color: var(--fold-color-success);
     color: var(--fold-color-text);
   }
 
@@ -142,7 +142,7 @@
   color: var(--fold-color-text-secondary);
 
   &.is-alert {
-    color: var(--fold-color-warning-text, var(--fold-color-warning));
+    color: var(--fold-color-warning-text);
   }
 }
 
@@ -174,7 +174,7 @@
 }
 
 .rec-diff-after {
-  color: var(--fold-color-success-text, var(--fold-color-text));
+  color: var(--fold-color-success-text);
   font-weight: 600;
 }
 
