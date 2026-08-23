@@ -2,13 +2,12 @@
   <p description>{{ current().description }}</p>
 
   <!-- Les vues du Commercial vivent dans le RAIL SECONDAIRE de la coquille,
-       publié par le composant. Le titre de page suit la vue affichée : le nom
-       de l'ESPACE est en tête du rail, la page porte celui de la VUE — sans
-       quoi les deux diraient « Commercial » et aucun ne dirait où l'on est.
+       publié par le composant — et, sous 768px où la coquille retire ses rails,
+       dans le LANCEUR, qui rend l'espace comme un groupe à deux niveaux. Rien
+       ici : la page n'a plus de navigation du tout.
 
-       Pas de `gutter` : la barre de reprise étroite vit dans le
-       `fold-page-layout`, qui a déjà posé la sienne. -->
-  <app-workspace-views />
-
+       Le titre de page suit la vue affichée : le nom de l'ESPACE est en tête du
+       rail, la page porte celui de la VUE — sans quoi les deux diraient
+       « Commercial » et aucun ne dirait où l'on est. -->
   <router-outlet />
 </fold-page-layout>

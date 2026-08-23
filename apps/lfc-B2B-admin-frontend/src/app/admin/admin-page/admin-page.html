@@ -1,10 +1,8 @@
 <fold-page-layout [icon]="current().icon" [title]="current().label">
-  <!-- Les vues de l'Admin vivent dans le RAIL SECONDAIRE de la coquille, publié
-       par le composant. Le titre de page suit la vue affichée : le nom de
-       l'ESPACE est en tête du rail, la page porte celui de la VUE. Il disait
-       « Admin » pendant que le rail le disait déjà — et aucun des deux ne
-       nommait l'écran ouvert. -->
-  <app-workspace-views />
-
+  <!-- Les vues de l'Admin vivent dans le RAIL SECONDAIRE de la coquille, et
+       sous 768px dans le LANCEUR. Le titre de page suit la vue affichée : le
+       nom de l'ESPACE est en tête du rail, la page porte celui de la VUE. Il
+       disait « Admin » pendant que le rail le disait déjà — et aucun des deux
+       ne nommait l'écran ouvert. -->
   <router-outlet />
 </fold-page-layout>

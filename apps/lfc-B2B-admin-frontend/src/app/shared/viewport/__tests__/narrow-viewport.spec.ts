@@ -32,16 +32,10 @@ class Host {
   readonly narrow: Signal<boolean> = narrowViewport();
 }
 
-/** Le même, accroché au seuil d'un AUTRE composant. */
-@Injectable()
-class HostAtShellBreakpoint {
-  readonly narrow: Signal<boolean> = narrowViewport(768);
-}
-
 /** La dernière requête média demandée, quel que soit l'hôte. */
 let asked: string | undefined;
 
-function mount<T = Host>(query: FakeQuery | null, token: new () => T = Host as new () => T): T {
+function mount(query: FakeQuery | null): Host {
   const original = window.matchMedia;
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
@@ -54,9 +48,9 @@ function mount<T = Host>(query: FakeQuery | null, token: new () => T = Host as n
             return query;
           }),
   });
-  TestBed.configureTestingModule({ providers: [Host, HostAtShellBreakpoint] });
+  TestBed.configureTestingModule({ providers: [Host] });
   // Résolu AVANT de rendre `matchMedia` — l'hôte l'appelle à la construction.
-  const host = TestBed.inject(token);
+  const host = TestBed.inject(Host);
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
@@ -75,14 +69,6 @@ describe('narrowViewport', () => {
     mount(new FakeQuery());
 
     expect(asked).toBe('(max-width: 640px)');
-  });
-
-  it("interroge le seuil DEMANDÉ quand on s'accroche à un autre composant", () => {
-    // Sans cela, un appelant qui passe 768 basculerait quand même à 640 — et
-    // la bascule serait muette : le signal répondrait, juste au mauvais pixel.
-    mount(new FakeQuery(), HostAtShellBreakpoint);
-
-    expect(asked).toBe('(max-width: 768px)');
   });
 
   it('part de la largeur RÉELLE, pas du défaut', () => {

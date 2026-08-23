@@ -1,9 +1,5 @@
 <!-- Les vues du PIM vivent dans le RAIL SECONDAIRE de la coquille, publié par
-     le composant (cf. `provideWorkspaceRail`) — pas ici. Un contexte borné
-     entier occupe le deuxième étage de la navigation, pas le troisième.
-
-     `gutter` : le PIM n'a pas de `fold-page-layout` (chaque vue porte le sien),
-     donc la gouttière de page est à la barre de la poser. -->
-<app-workspace-views gutter />
-
+     le composant (cf. `provideWorkspaceRail`) — et, sous 768px où la coquille
+     retire ses rails, dans le LANCEUR, qui rend l'espace comme un groupe à deux
+     niveaux. La coquille du PIM ne porte donc plus aucune navigation. -->
 <router-outlet />

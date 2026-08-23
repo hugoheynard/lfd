@@ -8,7 +8,6 @@ import {
   provideWorkspaceRail,
   type WorkspaceRailItem,
 } from '../../shared/workspace-rail/workspace-rail.store';
-import { WorkspaceViewsComponent } from '../../shared/workspace-rail/workspace-views.component';
 import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 
 /** L'espace lui-même, quand aucune vue n'est reconnue dans l'URL. */
@@ -38,7 +37,7 @@ const ADMIN: WorkspaceRailItem = {
 @Component({
   selector: 'app-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent, WorkspaceViewsComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent],
   templateUrl: './admin-page.html',
 })
 export class AdminPage {

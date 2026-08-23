@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { provideWorkspaceRail } from '../../shared/workspace-rail/workspace-rail.store';
-import { WorkspaceViewsComponent } from '../../shared/workspace-rail/workspace-views.component';
 import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 
 /**
@@ -29,7 +28,7 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 @Component({
   selector: 'app-pim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, WorkspaceViewsComponent],
+  imports: [RouterOutlet],
   templateUrl: './pim-page.html',
   styleUrl: './pim-page.scss',
 })

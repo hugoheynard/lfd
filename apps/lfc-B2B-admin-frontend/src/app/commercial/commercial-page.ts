@@ -5,7 +5,6 @@ import { filter, map } from 'rxjs';
 import { FoldPageLayoutComponent } from 'fold-ng';
 
 import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
-import { WorkspaceViewsComponent } from '../shared/workspace-rail/workspace-views.component';
 import {
   COMMERCIAL_COCKPIT,
   COMMERCIAL_VIEWS,
@@ -39,7 +38,7 @@ import {
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent, WorkspaceViewsComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })
