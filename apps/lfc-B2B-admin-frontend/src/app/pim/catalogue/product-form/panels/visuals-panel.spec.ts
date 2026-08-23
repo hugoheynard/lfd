@@ -1,7 +1,8 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import { ProductHttpApi } from '../../product-http-api';
 import { ProductFormStore } from '../product-form-store';
 import { VisualsPanel } from './visuals-panel';
 
@@ -11,6 +12,55 @@ function setup(): ProductFormStore {
   });
   return TestBed.inject(ProductFormStore);
 }
+
+/**
+ * L'enveloppe telle que l'API la rend VRAIMENT — c'est elle que `httpErrorMessage`
+ * sait lire, et un faux approximatif ferait passer le test pour de mauvaises
+ * raisons. `HttpErrorResponse` est une `Error` dont le `message` est générique :
+ * toute la valeur est dans `error.message`.
+ */
+function refusal(message: string): HttpErrorResponse {
+  return new HttpErrorResponse({
+    status: 400,
+    url: 'http://localhost:3200/pim/catalogue/media',
+    error: { code: 'catalogue.media.unsupported_image', message },
+  });
+}
+
+/** Un dépôt qui échoue, l'API remplacée par la porte d'injection — pas par une
+ *  écriture dans un champ privé du store. */
+function refusing(message: string): ProductFormStore {
+  TestBed.configureTestingModule({
+    providers: [
+      ProductFormStore,
+      provideHttpClient(),
+      {
+        provide: ProductHttpApi,
+        useValue: { uploadMedia: (): Promise<never> => Promise.reject(refusal(message)) },
+      },
+    ],
+  });
+  return TestBed.inject(ProductFormStore);
+}
+
+describe('VisualsPanel — le refus du serveur', () => {
+  it('affiche la raison du refus, pas le code HTTP', async () => {
+    const reason = 'Visuel refusé : format non accepté — PNG, JPEG ou WebP attendus.';
+    const store = refusing(reason);
+
+    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.heic'));
+
+    expect(store.error()).toBe(reason);
+  });
+
+  it('ne laisse pas le dépôt marqué « en cours » après un refus', async () => {
+    const store = refusing('Trop petit.');
+
+    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.png'));
+
+    expect(store.uploading()).toBe(false);
+  });
+});
 
 describe('VisualsPanel', () => {
   it('ajoute un visuel via le store au clic', () => {

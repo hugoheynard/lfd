@@ -1,5 +1,7 @@
 import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
 
+import { httpErrorMessage } from '@lfd/endpoints';
+
 import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 import type {
@@ -544,6 +546,20 @@ export class ProductFormStore {
   }
 }
 
+/**
+ * Le message que l'écran affichera.
+ *
+ * `caught.message` était trompeur : une `HttpErrorResponse` EST une `Error`, et
+ * sa propriété `message` vaut « Http failure response for … : 400 Bad Request ».
+ * Le refus du serveur — « Visuel refusé : format non accepté, PNG, JPEG ou WebP
+ * attendus » — vit dans l'enveloppe, sous `error.error.message`, et se perdait
+ * intégralement. L'utilisateur lisait une URL et un code là où le backend avait
+ * pris la peine de lui expliquer, en français, ce qui n'allait pas dans son
+ * fichier.
+ *
+ * `httpErrorMessage` (@lfd/endpoints) sait lire cette enveloppe, et c'est déjà
+ * ce qu'emploient les toasts et la liste des emplacements.
+ */
 function messageOf(caught: unknown): string {
-  return caught instanceof Error ? caught.message : 'Erreur inattendue.';
+  return httpErrorMessage(caught, 'Erreur inattendue.');
 }
