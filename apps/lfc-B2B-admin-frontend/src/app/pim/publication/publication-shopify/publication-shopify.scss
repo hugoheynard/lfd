@@ -138,7 +138,7 @@
 .rec-detail-head {
   display: block;
   margin-top: var(--fold-space-xs);
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text-secondary);
 
   &.is-alert {
@@ -164,7 +164,7 @@
 
 .rec-diff-field {
   min-width: 6rem;
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text-muted);
 }
 
@@ -175,7 +175,7 @@
 
 .rec-diff-after {
   color: var(--fold-color-success-text);
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
 }
 
 .rec-history {
@@ -195,7 +195,7 @@
 }
 
 .rec-snap-ver {
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 

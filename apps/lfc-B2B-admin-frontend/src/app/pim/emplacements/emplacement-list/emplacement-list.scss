@@ -38,8 +38,8 @@
 }
 
 .tcard-title {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: var(--fold-weight-semibold);
+  font-size: var(--fold-text-md);
 }
 
 .tcard-actions {
@@ -51,5 +51,5 @@
 .muted {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
 }

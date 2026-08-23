@@ -1,5 +1,7 @@
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--fold-font-mono);
+  /* em, pas un token : du monospace rend optiquement plus gros à px égal,
+     donc il se dimensionne RELATIVEMENT au texte qui l'entoure. */
   font-size: 0.85em;
 }
 
@@ -95,7 +97,7 @@ code {
 
 .chan-perso {
   color: var(--fold-color-primary);
-  font-size: 0.7rem;
+  font-size: var(--fold-text-2xs);
 }
 
 .row-actions {
@@ -135,12 +137,12 @@ code {
 }
 
 .fiche-title {
-  font-weight: 500;
+  font-weight: var(--fold-weight-medium);
 }
 
 .muted {
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
 }
 
 .products-paginator {

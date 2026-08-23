@@ -1,10 +1,12 @@
 .muted {
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--fold-font-mono);
+  /* em, pas un token : du monospace rend optiquement plus gros à px égal,
+     donc il se dimensionne RELATIVEMENT au texte qui l'entoure. */
   font-size: 0.85em;
   color: var(--fold-color-text-muted);
 }
@@ -70,16 +72,16 @@ code {
 }
 
 .tva-card-name {
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text);
 }
 
 .tva-card-desc {
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
   color: var(--fold-color-text-secondary);
 }
 
 .tva-card-usage {
-  font-size: 0.85rem;
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }

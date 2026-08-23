@@ -12,11 +12,11 @@
 }
 
 .node-title {
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
 }
 
 .node-label {
-  font-weight: 500;
+  font-weight: var(--fold-weight-medium);
 }
 
 .family > .collection {
@@ -25,14 +25,14 @@
 
 .family-desc {
   margin: 0.15rem 0 0.15rem;
-  font-size: 0.82rem;
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-secondary);
-  line-height: 1.4;
+  line-height: var(--fold-leading-normal);
 }
 
 .visibility {
   margin: 0 0 0.4rem;
-  font-size: 0.75rem;
+  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
 }
 
@@ -49,7 +49,7 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0.45rem;
-  font-size: 0.88rem;
+  font-size: var(--fold-text-md);
 }
 
 .fiche-title {
@@ -57,17 +57,19 @@
 }
 
 .fiche-boutiques {
-  font-size: 0.78rem;
+  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
 }
 
 .muted {
   color: var(--fold-color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fold-text-sm);
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--fold-font-mono);
+  /* em, pas un token : du monospace rend optiquement plus gros à px égal,
+     donc il se dimensionne RELATIVEMENT au texte qui l'entoure. */
   font-size: 0.8em;
   color: var(--fold-color-text-muted);
 }

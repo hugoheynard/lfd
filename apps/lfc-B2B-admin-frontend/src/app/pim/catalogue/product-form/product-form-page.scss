@@ -5,7 +5,7 @@
 }
 
 .muted {
-  font-size: 0.8125rem;
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
 

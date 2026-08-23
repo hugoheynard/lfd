@@ -6,7 +6,7 @@
 
 .muted {
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
 }
 
 /* Les trois points nus en bout de ligne : une affordance discrète, pas un
@@ -62,7 +62,7 @@
      bout de la ligne sans cale vide dans le gabarit. */
   flex: 1 1 auto;
   min-width: 0;
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text);
 }
 

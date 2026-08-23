@@ -32,13 +32,13 @@
 .hero-title {
   margin: 0;
   font-size: var(--fold-text-lg);
-  font-weight: 700;
+  font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
 
 .hero-sub {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--fold-text-md);
   color: var(--fold-color-text-secondary);
 }
 
@@ -66,8 +66,8 @@
 .parity-sub,
 .parity-fix {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--fold-text-md);
+  line-height: var(--fold-leading-normal);
   color: var(--fold-color-text-secondary);
 }
 
@@ -112,7 +112,9 @@
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--fold-font-mono);
+  /* em, pas un token : du monospace rend optiquement plus gros à px égal,
+     donc il se dimensionne RELATIVEMENT au texte qui l'entoure. */
   font-size: 0.85em;
   color: var(--fold-color-text-muted);
 }

@@ -40,8 +40,8 @@
 .cm-label {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-medium);
 }
 
 .cm-cell {

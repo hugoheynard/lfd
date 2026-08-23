@@ -6,7 +6,7 @@
 .panel-desc {
   margin: 0 0 var(--fold-space-md);
   color: var(--fold-color-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--fold-text-md);
 }
 
 .grid {
@@ -29,8 +29,8 @@
 
 .field-label,
 .block-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text-muted);
 }
 
@@ -63,7 +63,7 @@
 
 .section-status,
 .muted {
-  font-size: 0.8125rem;
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
 
@@ -87,10 +87,10 @@
   }
 
   legend {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--fold-text-xs);
+    font-weight: var(--fold-weight-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--fold-tracking-wide);
     color: var(--fold-color-text-muted);
     padding: 0 0.25rem;
   }
@@ -98,7 +98,7 @@
 
 .inherit-from {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--fold-text-md);
   color: var(--fold-color-text-muted);
 }
 
@@ -114,7 +114,7 @@
   }
 
   dt {
-    font-weight: 600;
+    font-weight: var(--fold-weight-semibold);
   }
 
   dd {
