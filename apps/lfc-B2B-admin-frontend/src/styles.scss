@@ -95,7 +95,7 @@ router-outlet ~ * {
 /* ── Pas de zoom automatique à l'ouverture du clavier ───────────────────────
    iOS zoome AUTOMATIQUEMENT sur tout champ dont la police calculée est sous
    16px, puis ne dézoome pas : la mise en page reste décalée jusqu'à ce qu'on
-   pince l'écran pour revenir. Or les champs fold sont à `--fold-text-md` (14px)
+   pince l'écran pour revenir. Or les champs fold sont à `--fold-text-base` (14px)
    en taille par défaut, et `--fold-text-sm` (12px) en `size="sm"`.
 
    La solution de facilité serait `maximum-scale=1, user-scalable=no` sur le

@@ -24,7 +24,7 @@
 
 .callout-title {
   margin: 0 0 var(--fold-space-sm);
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-base);
   font-weight: 600;
 }
 
@@ -47,13 +47,13 @@
 .counts {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-base);
   font-variant-numeric: tabular-nums;
 }
 
 .vat {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-base);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

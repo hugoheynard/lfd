@@ -43,7 +43,7 @@
 }
 
 .back {
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .title {
@@ -53,7 +53,7 @@
 
 .tally {
   margin: 0;
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -113,7 +113,7 @@
 
 .shelf-name {
   margin: 0;
-  font-size: var(--fold-text-md, 1rem);
+  font-size: var(--fold-text-base, 1rem);
   font-weight: 650;
 }
 

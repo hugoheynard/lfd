@@ -20,7 +20,7 @@
 .hint {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
   max-width: 62ch;
 }
 
@@ -53,7 +53,7 @@
 .caveat {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .result-head {
@@ -75,7 +75,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .fact.is-sealed {
@@ -93,7 +93,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .table th,

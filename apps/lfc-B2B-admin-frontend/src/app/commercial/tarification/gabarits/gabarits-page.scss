@@ -28,7 +28,7 @@
   margin: 0;
   max-width: 62ch;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .card {
@@ -71,7 +71,7 @@
 
 .card-meta {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .card-actions {
@@ -87,7 +87,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .table th,
@@ -122,7 +122,7 @@
 .item-meta,
 .card-meta,
 .muted {
-  font-size: var(--fold-text-md, 0.875rem);
+  font-size: var(--fold-text-base, 0.875rem);
 }
 
 .flat {
