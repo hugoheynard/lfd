@@ -69,13 +69,15 @@
       </p>
     }
 
-    <!-- `mobileLayout="custom"` : sous 768px la table cède la place aux cartes
+    <!-- `narrowLayout="cards"
+      rowCardChrome="none"` : sous 768px la table cède la place aux cartes
          ci-dessous. `auto-cards` empilerait les sept colonnes en paires
          libellé/valeur — sept lignes par compte, et le nom perdu au milieu. -->
     <fold-data-table
       caption="Comptes clients B2B"
       toolbarSurface="accent"
-      mobileLayout="custom"
+      narrowLayout="cards"
+      rowCardChrome="none"
       hover
       stickyFirst
       [columns]="columns"

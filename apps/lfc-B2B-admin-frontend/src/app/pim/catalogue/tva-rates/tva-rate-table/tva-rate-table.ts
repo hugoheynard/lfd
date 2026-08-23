@@ -36,7 +36,7 @@ const ALL_COLUMNS: readonly FoldTableColumn[] = [
  * (backend) et n'expose que l'affichage : toute mutation passe par le
  * side-panel et le store, donc la liste se met à jour toute seule.
  *
- * Sur écran étroit il rend sa propre **carte** (`mobileLayout="custom"` + un
+ * Sur écran étroit il rend sa propre **carte** (`narrowLayout="cards"` + un
  * `foldRowCard` projeté) : `auto-cards` empile des paires libellé/valeur, donc
  * un tableau debout. Une carte n'a pas d'en-têtes de colonnes à répéter.
  *

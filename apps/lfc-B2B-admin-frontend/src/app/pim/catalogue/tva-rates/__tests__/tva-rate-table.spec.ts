@@ -8,7 +8,7 @@ import { TvaRateTable } from '../tva-rate-table/tva-rate-table';
 /**
  * Le garde-fou de la vue mobile.
  *
- * `mobileLayout="custom"` cache le tableau et rend le `foldRowCard` projeté. Si
+ * `narrowLayout="cards"` cache le tableau et rend le `foldRowCard` projeté. Si
  * la directive qui capte ce template manque des `imports` du composant, Angular
  * **ne dit rien** — `foldRowCard` reste un attribut inerte sur un `ng-template`,
  * le build passe, et le téléphone affiche le vide. C'est arrivé.
