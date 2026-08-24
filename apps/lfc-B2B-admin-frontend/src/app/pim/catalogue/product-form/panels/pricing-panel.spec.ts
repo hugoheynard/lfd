@@ -88,28 +88,31 @@ describe('PricingPanel', () => {
     expect(text).toContain('5,5 %');
   });
 
-  it("n'offre pas de « Redéfinir » — l'API neutralise l'override", () => {
-    // La maquette en pose un. `channelsOverride` est neutralisé côté API
-    // (contexte commerce, tranche 2) : un lien qui n'ouvre rien coûte plus cher
-    // que son absence.
+  it('offre de REDÉFINIR les canaux — la fiche peut ne pas suivre sa famille', () => {
+    // Ce test disait l'inverse : « n'offre pas de Redéfinir, l'API neutralise
+    // l'override ». Il avait raison tant que rien ne portait la décision. Ce
+    // n'est plus le cas — et un écran qui refuse un geste que le serveur accepte
+    // est aussi faux que l'inverse.
     const store = setup();
     withFamily(store);
     const fixture = TestBed.createComponent(PricingPanel);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Redéfinir');
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Redéfinir les canaux');
   });
-  it('donne au B2B sa PROPRE ligne, avec son propre taux', () => {
-    // Le B2B ne se déduit pas des boutiques : il a son taux, qui peut différer
-    // de celui du comptoir. Absent de l'encadré, un produit vendu 20 % aux pros
-    // se lisait comme un produit à 5,5 %.
+
+  it('dit que les canaux sont redéfinis, plutôt que de parler d’héritage', () => {
     const store = setup();
     withFamily(store);
+    store.channelsOverride.set({ boutiques: {}, b2b: true });
     const fixture = TestBed.createComponent(PricingPanel);
     fixture.detectChanges();
-    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
-    expect(b2b?.textContent).toContain('20 %');
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('redéfinis pour cette fiche');
+    expect(text).not.toContain('Hérité de la famille');
   });
+
   it('ouvre par le B2B — le comptoir est le cas particulier ici', () => {
     const store = setup();
     withFamily(store);
@@ -169,5 +172,36 @@ describe('PricingPanel — la dérogation de la fiche', () => {
     );
     expect(emporter?.textContent).toContain('5,5 %');
     expect(emporter?.textContent).not.toContain('Redéfini');
+  });
+});
+
+describe('PricingPanel — la fiche qui ne suit plus sa famille', () => {
+  it('lit les LIGNES sur la matrice de la fiche', () => {
+    // La famille vend au comptoir ET en B2B ; cette fiche-là ne se vend qu'aux
+    // pros. Sans résolution, l'encadré afficherait des boutiques où elle n'est
+    // pas vendue — et un taux pour un canal qu'elle a fermé.
+    const store = setup();
+    withFamily(store);
+    store.channelsOverride.set({ boutiques: {}, b2b: true });
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+
+    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
+    const emporter = rows.find((row) => row.querySelector('dt')?.textContent?.includes('emporter'));
+    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
+
+    expect(emporter?.textContent).toContain('non proposé');
+    expect(b2b?.textContent).toContain('20 %');
+  });
+});
+
+describe('PricingPanel — ce qui n’y est PAS', () => {
+  it('ne porte plus le poids : il appartient à la déclaration nutritionnelle', () => {
+    const store = setup();
+    store.weightGrams.set(220);
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Poids');
   });
 });

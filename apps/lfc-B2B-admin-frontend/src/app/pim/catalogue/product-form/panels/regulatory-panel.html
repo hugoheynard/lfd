@@ -49,6 +49,20 @@
 
 <div class="stack">
   <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
+  <!-- Le POIDS NET vit ici, pas dans « Tarif & TVA ». La grille est « pour
+       100 g » : sans le poids de l'unité, elle ne dit rien de ce qu'on vend.
+       Isolé ailleurs dans la page, son absence ne se voyait pas en contexte. -->
+  <label class="field field-weight">
+    <span class="field-label">Poids net de l’unité (g)</span>
+    <input
+      class="native-input"
+      type="number"
+      step="1"
+      min="0"
+      [value]="store.weightGrams() ?? ''"
+      (input)="store.weightGrams.set(numberValue($event))"
+    />
+  </label>
   <div class="grid">
     @for (field of nutritionFields; track field.key) {
       <label class="field">

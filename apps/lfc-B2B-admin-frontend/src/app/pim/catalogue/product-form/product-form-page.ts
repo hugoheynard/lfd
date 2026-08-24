@@ -176,12 +176,13 @@ export class ProductFormPage implements HasPendingChanges {
     {
       key: 'tarif',
       label: 'Tarif & TVA',
-      description: 'Prix canonique HT ; les taux sont hérités de la famille.',
+      description: 'Prix canonique HT, canaux de vente et taux — hérités, ou redéfinis ici.',
     },
     {
       key: 'fiche',
       label: 'Fiche réglementaire',
-      description: 'Allergènes obligatoires avant publication, et déclaration nutritionnelle.',
+      description:
+        'Allergènes obligatoires avant publication, déclaration nutritionnelle et poids net.',
     },
     {
       key: 'communication',

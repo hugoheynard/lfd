@@ -38,3 +38,20 @@ describe('RegulatoryPanel', () => {
     expect(labels.some((label) => label.includes('Enregistrer'))).toBe(false);
   });
 });
+
+describe('RegulatoryPanel — le poids net', () => {
+  it('vit AVEC la déclaration, pas dans « Tarif & TVA »', () => {
+    // La grille est « pour 100 g » : sans le poids de l'unité, elle ne dit rien
+    // de ce qu'on vend. Isolé ailleurs dans la page, son absence ne se voyait
+    // pas en contexte.
+    const store = setup();
+    store.weightGrams.set(220);
+    const fixture = TestBed.createComponent(RegulatoryPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('Poids net');
+    const weight = host.querySelector<HTMLInputElement>('.field-weight input');
+    expect(weight?.value).toBe('220');
+  });
+});
