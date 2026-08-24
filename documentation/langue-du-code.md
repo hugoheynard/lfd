@@ -68,17 +68,44 @@ elle est précise. C'est **l'exception nommée**, pas un oubli : une exception
 
 ## 4. Les paliers
 
-| Palier                                                                                                                          | Coût   | Risque                                           |
-| ------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------ |
-| **P1 — arrêter la dérive** : lexique dans `CLAUDE.md`, gate de lint sur les mots FR interdits dans les nouveaux identifiants    | ~1 h   | nul                                              |
-| **P2 — l'intérieur** : renommer ce qui ne traverse ni le fil ni la base (variables, méthodes privées, types internes, fichiers) | ~1 j   | nul — le compilateur voit tout                   |
-| **P3 — le fil** : champs des contrats partagés (`livraison`, `retrait`, `remise`…)                                              | ~1 j   | moyen — back + 3 fronts doivent partir ensemble  |
-| **P4 — la base** : tables, colonnes, **et valeurs** (`AddressKind`, clés `jsonb`)                                               | ~2–3 j | élevé — étendre / basculer / resserrer par champ |
+| Palier                                                                                                                                                                             | Coût   | Risque                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------ |
+| ~~**P1 — arrêter la dérive**~~ ✅ 2026-08-24 : lexique dans `CLAUDE.md`, gate `lint:code-language` en CI                                                                           | fait   | —                                                |
+| ~~**P2 — l'intérieur**~~ ✅ 2026-08-24 : `TvaRate`→`VatRate`, `Emplacement`→`Location`, `BoutiqueChannels`→`ShopChannels`. **2076 → 271** identifiants comptés, 4 dossiers drainés | fait   | —                                                |
+| **P3 — le fil** : champs des contrats partagés (`livraison`, `retrait`, `remise`…)                                                                                                 | ~1 j   | moyen — back + 3 fronts doivent partir ensemble  |
+| **P4 — la base** : tables, colonnes, **et valeurs** (`AddressKind`, clés `jsonb`)                                                                                                  | ~2–3 j | élevé — étendre / basculer / resserrer par champ |
 
-**P1 et P2 se font sans rien casser.** P3 se fait en une fois si les quatre
+**P1 et P2 sont faits** (2026-08-24), sans rien casser en production. P3 se fait en une fois si les quatre
 paquets partent ensemble. P4 est la seule qui demande la discipline de C0 : trois
 déploiements par champ, et les clés `emporter`/`surPlace` vivent **dans du
 `jsonb`**, donc leur migration réécrit des documents, pas des colonnes.
+
+## 4 bis. Ce que P2 a appris
+
+Trois erreurs, toutes de la même famille : **un remplacement de chaîne ne sait
+pas distinguer un nom d'une adresse**.
+
+1. Des dossiers de **migrations** renommés. Prisma les suit par leur nom : une
+   migration renommée est une migration inconnue, et elle se rejouerait.
+2. `TVA_HANDLE_PREFIX = "tva-"` réécrit en `"vat-"`. C'est ce préfixe qui
+   rattache une collection Shopify existante à son taux : le changer les aurait
+   toutes orphelinées, sans erreur visible avant la poussée suivante.
+3. `remplacement` contient `emplacement` : la prose s'est retrouvée pleine de
+   « rlocation ».
+
+Et deux **chemins d'API** ont bougé sans qu'on le décide (`commerce/tva-rates`,
+`locations/emplacements`). Rétablis : le front et le back ne se déploient pas au
+même instant, donc un chemin qui change sans coordination est une fenêtre de 404.
+
+La leçon opératoire : renommer par lots courts, **relire le diff des chaînes**
+(`@map`, URL, valeurs), et faire tourner les trois suites entre chaque lot.
+
+## 4 ter. Ce qui reste de P2
+
+- Les **adresses de livraison** du front client (`AdresseLivraison`,
+  `adressesLivraison`) : à confronter d'abord à `@lfd/contracts` — si le champ
+  voyage, c'est P3.
+- `tvaByContext` (79) et `tvaIntracom` (118) : du fil, donc P3 par construction.
 
 ## 5. Ce qu'on ne fera pas
 
