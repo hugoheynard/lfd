@@ -29,7 +29,6 @@ import {
 import type { ProductStatus } from '../../data/models';
 import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
 
-import { ChannelsPanel } from './panels/channels-panel';
 import { CommunicationPanel } from './panels/communication-panel';
 import { IdentityPanel } from './panels/identity-panel';
 import { IntegrationsPanel } from './panels/integrations-panel';
@@ -98,7 +97,6 @@ interface PageSection {
     PublishRail,
     IdentityPanel,
     PricingPanel,
-    ChannelsPanel,
     RegulatoryPanel,
     CommunicationPanel,
     VisualsPanel,
@@ -177,8 +175,8 @@ export class ProductFormPage implements HasPendingChanges {
     },
     {
       key: 'tarif',
-      label: 'Tarif & logistique',
-      description: "Prix canonique HT et poids de l'unité vendue.",
+      label: 'Tarif & TVA',
+      description: 'Prix canonique HT ; les taux sont hérités de la famille.',
     },
     {
       key: 'fiche',

@@ -1,24 +1,38 @@
-<div class="grid">
-  <label class="field">
-    <span class="field-label">Prix (€)</span>
-    <input
-      class="native-input"
-      type="number"
-      step="0.01"
-      min="0"
-      [value]="store.priceEur() ?? ''"
-      (input)="store.priceEur.set(numberValue($event))"
-    />
-  </label>
-  <label class="field">
-    <span class="field-label">Poids (g)</span>
-    <input
-      class="native-input"
-      type="number"
-      step="1"
-      min="0"
-      [value]="store.weightGrams() ?? ''"
-      (input)="store.weightGrams.set(numberValue($event))"
-    />
-  </label>
+<!-- La forme de la maquette : le prix à gauche, étroit, et à sa droite le bloc
+     qui dit d'où viennent les taux. Les deux se lisent ensemble parce qu'ils
+     répondent à la même question — combien, et sous quel régime. -->
+<div class="tarif">
+  <div class="stack">
+    <label class="field">
+      <span class="field-label">Prix HT</span>
+      <!-- HT, et non le TTC de la maquette : le prix saisi ici est le prix
+           canonique du catalogue. Le TTC dépend du mode de vente — deux taux
+           possibles pour un même produit — donc il se CALCULE, il ne se saisit
+           pas. Le saisir en TTC obligerait à choisir lequel des deux. -->
+      <span class="field-money">
+        <input
+          class="native-input"
+          type="number"
+          step="0.01"
+          min="0"
+          [value]="store.priceEur() ?? ''"
+          (input)="store.priceEur.set(numberValue($event))"
+        />
+        <span class="field-unit" aria-hidden="true">€</span>
+      </span>
+    </label>
+    <label class="field">
+      <span class="field-label">Poids (g)</span>
+      <input
+        class="native-input"
+        type="number"
+        step="1"
+        min="0"
+        [value]="store.weightGrams() ?? ''"
+        (input)="store.weightGrams.set(numberValue($event))"
+      />
+    </label>
+  </div>
+
+  <app-channels-panel />
 </div>

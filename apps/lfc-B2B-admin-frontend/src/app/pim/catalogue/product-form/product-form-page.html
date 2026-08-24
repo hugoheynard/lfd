@@ -107,21 +107,8 @@
             </fold-page-section>
           }
 
-          <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
+          <!-- Une section en lecture seule : elle n'a pas d'enregistrement
              propre, donc pas d'indicateur d'état. -->
-          <fold-page-section
-            title="Canaux de vente"
-            separator
-            collapsible
-            [open]="sectionOpen('canaux')()"
-            (openChange)="setSectionOpen('canaux', $event)"
-          >
-            <span sectionSubtitle>
-              Hérités de la famille du produit : la provenance, les boutiques concernées et le cas «
-              non proposé ».
-            </span>
-            <app-channels-panel />
-          </fold-page-section>
           <fold-page-section
             title="Diffusion par canal"
             separator

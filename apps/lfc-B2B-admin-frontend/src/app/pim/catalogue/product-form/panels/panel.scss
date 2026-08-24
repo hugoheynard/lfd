@@ -99,30 +99,96 @@ app-lang-switch {
   }
 }
 
-.inherit-from {
-  margin: 0;
-  font-size: var(--fold-text-md);
+/* ── Tarif & TVA ─────────────────────────────────────────────────────────────
+   Le prix est court et le régime est long : une grille à deux colonnes plutôt
+   que deux colonnes égales, sinon le champ « Prix » s'étire sur la largeur d'une
+   phrase pour accueillir cinq caractères. Elles se replient l'une sous l'autre
+   quand la colonne se resserre. */
+.tarif {
+  display: grid;
+  grid-template-columns: minmax(9rem, 10rem) 1fr;
+  gap: var(--fold-space-xl);
+  align-items: start;
+}
+
+@media (width < 40rem) {
+  .tarif {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* L'unité DANS le champ : « € » n'est pas une étiquette, c'est ce que mesure le
+   nombre. Posée à côté du libellé, elle s'éloigne du chiffre qu'elle qualifie. */
+.field-money {
+  position: relative;
+  display: block;
+
+  .native-input {
+    /* La place de l'unité, plus la gouttière — sinon un montant long passe
+       dessous. Les flèches natives du champ nombre vivent à droite elles aussi :
+       on les efface, le pas se règle au clavier. */
+    padding-inline-end: 2rem;
+    appearance: textfield;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .native-input::-webkit-outer-spin-button,
+  .native-input::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
+
+.field-unit {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0.625rem;
+  display: flex;
+  align-items: center;
   color: var(--fold-color-text-muted);
 }
 
-.tva-list {
-  margin: 0;
-  display: grid;
-  gap: var(--fold-space-sm);
+/* Le bloc d'héritage : un encadré à bandeau, comme la maquette. Le bandeau dit
+   D'OÙ viennent les taux, les lignes disent ce qu'ils valent par mode. */
+.inherit {
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  overflow: clip;
+}
 
-  div {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--fold-space-lg);
+.inherit-head {
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  background: var(--fold-color-surface-band);
+  font-size: var(--fold-text-md);
+}
+
+.inherit-rows {
+  margin: 0;
+}
+
+.inherit-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+
+  /* Un filet ENTRE les lignes, pas sous la dernière : le bord du bloc ferme
+     déjà, et deux traits à un cheveu l'un de l'autre se lisent comme un défaut. */
+  & + .inherit-row {
+    border-block-start: 1px solid var(--fold-color-border);
   }
 
   dt {
-    font-weight: var(--fold-weight-semibold);
+    flex: 0 0 5rem;
+    font-size: var(--fold-text-sm);
+    color: var(--fold-color-text-muted);
   }
 
   dd {
+    flex: 1;
+    min-width: 0;
     margin: 0;
-    color: var(--fold-color-text-muted);
   }
 }
 

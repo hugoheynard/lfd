@@ -1,10 +1,16 @@
 @if (store.channelsInheritance(); as inh) {
-  <div class="stack">
-    <p class="inherit-from">
+  <div class="inherit">
+    <!-- La provenance en tête du bloc, pas en légende dessous : elle vaut pour
+         toutes les lignes qui suivent, et lue après elles il faudrait relire.
+
+         La maquette pose ici un « Redéfinir ». Il n'existe pas : l'API neutralise
+         `channelsOverride` (contexte commerce, tranche 2). Un lien qui n'ouvre
+         rien coûte plus cher que son absence. -->
+    <p class="inherit-head">
       Hérité de la famille <strong>{{ inh.categoryName }}</strong>
     </p>
-    <dl class="tva-list">
-      <div>
+    <dl class="inherit-rows">
+      <div class="inherit-row">
         <dt>À emporter</dt>
         <dd>
           @if (inh.emporter.sold) {
@@ -17,7 +23,7 @@
           }
         </dd>
       </div>
-      <div>
+      <div class="inherit-row">
         <dt>Sur place</dt>
         <dd>
           @if (inh.surPlace.sold) {
