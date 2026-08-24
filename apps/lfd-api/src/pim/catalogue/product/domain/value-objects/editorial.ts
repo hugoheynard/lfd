@@ -1,6 +1,7 @@
 import { DomainError } from "../../../../../platform/shared/errors/app-error.js";
 import {
   localizedText,
+  SOURCE_LOCALE,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
 
@@ -63,7 +64,9 @@ export interface MediaInput {
 
 /** Un champ vide n'est pas une valeur : il ne doit pas créer de `{ fr: "" }`. */
 function optionalText(field: string, raw: string | undefined): LocalizedText | undefined {
-  return raw === undefined || raw.trim() === "" ? undefined : localizedText(field, raw);
+  return raw === undefined || raw.trim() === ""
+    ? undefined
+    : localizedText(field, { [SOURCE_LOCALE]: raw });
 }
 
 export function editorial(input: EditorialInput): Editorial {
@@ -110,7 +113,7 @@ export function mediaItems(inputs: readonly MediaInput[]): MediaItem[] {
     items.push({
       role: input.role,
       url,
-      alt: localizedText("texte alternatif", input.alt ?? url),
+      alt: localizedText("texte alternatif", { [SOURCE_LOCALE]: input.alt ?? url }),
       position: items.length,
     });
   }

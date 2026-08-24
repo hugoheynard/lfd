@@ -5,12 +5,17 @@ import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
 import { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { localizedText } from "../../shared/domain/value-objects/localized-text.js";
+import {
+  localizedText,
+  type LocalizedText,
+} from "../../shared/domain/value-objects/localized-text.js";
 import { requireCategory, requireFreeSlug } from "./category-support.js";
 
 export interface CreateCategoryPayload {
-  readonly nameFr: string;
-  readonly nameEn?: string | undefined;
+  /** Le nom, dans les langues renseignées — la source est obligatoire. Une
+   *  CARTE et non `nameFr` + `nameEn` : ouvrir une langue ne doit pas ajouter un
+   *  champ ici, ni chez les quatre autres commandes qui portaient les mêmes. */
+  readonly name: LocalizedText;
   readonly parentId?: string | undefined;
 }
 
@@ -46,7 +51,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
 
     const category = Category.open({
       id: this.ids.next(),
-      name: localizedText("nom", payload.nameFr, payload.nameEn),
+      name: localizedText("nom", payload.name),
       parentId,
       position: await this.categories.nextPosition(parentId),
     });

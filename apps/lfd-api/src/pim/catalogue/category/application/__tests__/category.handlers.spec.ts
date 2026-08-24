@@ -204,7 +204,9 @@ async function openRoots(repo: InMemoryCategories, count: number): Promise<strin
   const handler = new CreateCategoryHandler(repo, new SequentialIds());
   const ids: string[] = [];
   for (let index = 0; index < count; index += 1) {
-    ids.push(await handler.execute(new CreateCategoryCommand({ nameFr: `Famille ${index}` })));
+    ids.push(
+      await handler.execute(new CreateCategoryCommand({ name: { fr: `Famille ${index}` } })),
+    );
   }
   return ids;
 }
@@ -228,7 +230,7 @@ describe("CreateCategoryHandler", () => {
   it("crée une famille avec un slug dérivé", async () => {
     const repo = new InMemoryCategories();
     const id = await new CreateCategoryHandler(repo, new SequentialIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats fins" }),
+      new CreateCategoryCommand({ name: { fr: "Chocolats fins" } }),
     );
 
     expect(repo.at(id).slug.fr).toBe("chocolats-fins");
@@ -246,7 +248,7 @@ describe("CreateCategoryHandler", () => {
 
     await expect(
       new CreateCategoryHandler(repo, new SequentialIds()).execute(
-        new CreateCategoryCommand({ nameFr: "Tartes", parentId: parent! }),
+        new CreateCategoryCommand({ name: { fr: "Tartes" }, parentId: parent! }),
       ),
     ).rejects.toBeInstanceOf(CategoryArchivedParentError);
   });
@@ -255,7 +257,7 @@ describe("CreateCategoryHandler", () => {
     const repo = new InMemoryCategories();
     await expect(
       new CreateCategoryHandler(repo, new SequentialIds()).execute(
-        new CreateCategoryCommand({ nameFr: "Sous-famille", parentId: "absent" }),
+        new CreateCategoryCommand({ name: { fr: "Sous-famille" }, parentId: "absent" }),
       ),
     ).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
@@ -267,7 +269,7 @@ describe("RenameCategoryHandler", () => {
     const [id] = await openRoots(repo, 1);
 
     await new RenameCategoryHandler(repo).execute(
-      new RenameCategoryCommand(id!, { nameFr: "Chocolats & pralinés" }),
+      new RenameCategoryCommand(id!, { name: { fr: "Chocolats & pralinés" } }),
     );
 
     expect(repo.at(id!).slug.fr).toBe("chocolats-pralines");
@@ -386,7 +388,7 @@ describe("SetCategoryChannelsHandler", () => {
     await archive(repo).execute(new ArchiveCategoryCommand(id!));
 
     await new RenameCategoryHandler(repo).execute(
-      new RenameCategoryCommand(id!, { nameFr: "Chocolats" }),
+      new RenameCategoryCommand(id!, { name: { fr: "Chocolats" } }),
     );
 
     expect(repo.at(id!).name.fr).toBe("Chocolats");
@@ -473,22 +475,24 @@ describe("le slug est unique", () => {
   it("refuse une seconde famille du même nom", async () => {
     const repo = new InMemoryCategories();
     const handler = new CreateCategoryHandler(repo, new SequentialIds());
-    await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
+    await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
 
     await expect(
-      handler.execute(new CreateCategoryCommand({ nameFr: "Pains" })),
+      handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } })),
     ).rejects.toBeInstanceOf(CategorySlugTakenError);
   });
 
   it("refuse un renommage qui prend le slug d’une autre", async () => {
     const repo = new InMemoryCategories();
     const handler = new CreateCategoryHandler(repo, new SequentialIds());
-    await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
-    const second = await handler.execute(new CreateCategoryCommand({ nameFr: "Viennoiseries" }));
+    await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
+    const second = await handler.execute(
+      new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }),
+    );
 
     await expect(
       new RenameCategoryHandler(repo).execute(
-        new RenameCategoryCommand(second, { nameFr: "Pains" }),
+        new RenameCategoryCommand(second, { name: { fr: "Pains" } }),
       ),
     ).rejects.toBeInstanceOf(CategorySlugTakenError);
   });
@@ -501,7 +505,7 @@ describe("le slug est unique", () => {
     const own = repo.at(id!).slug.fr;
 
     await new RenameCategoryHandler(repo).execute(
-      new RenameCategoryCommand(id!, { nameFr: repo.at(id!).name.fr }),
+      new RenameCategoryCommand(id!, { name: { fr: repo.at(id!).name.fr } }),
     );
 
     expect(repo.at(id!).slug.fr).toBe(own);
@@ -511,11 +515,11 @@ describe("le slug est unique", () => {
   it("compte aussi les familles archivées", async () => {
     const repo = new InMemoryCategories();
     const handler = new CreateCategoryHandler(repo, new SequentialIds());
-    const id = await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
+    const id = await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
     await archive(repo).execute(new ArchiveCategoryCommand(id));
 
     await expect(
-      handler.execute(new CreateCategoryCommand({ nameFr: "Pains" })),
+      handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } })),
     ).rejects.toBeInstanceOf(CategorySlugTakenError);
   });
 });
@@ -608,7 +612,7 @@ describe("ListCategoriesHandler", () => {
     // référencent. C'est une donnée de lecture, jointe au moment de lire.
     const repo = new InMemoryCategories();
     const created = await new CreateCategoryHandler(repo, new SequentialIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Viennoiseries" }),
+      new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }),
     );
     const counts = new StubProductCounts(0, new Map([[created, 3]]));
 
@@ -622,7 +626,7 @@ describe("ListCategoriesHandler", () => {
     // `undefined` afficherait « undefined fiche(s) » dans sa zone dangereuse.
     const repo = new InMemoryCategories();
     await new CreateCategoryHandler(repo, new SequentialIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Pains" }),
+      new CreateCategoryCommand({ name: { fr: "Pains" } }),
     );
 
     const [row] = await new ListCategoriesHandler(repo, new StubProductCounts()).execute();

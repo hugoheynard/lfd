@@ -8,7 +8,7 @@ import {
   type RegisteredMedia,
 } from "../domain/ports/media-library.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
-import { localizedText } from "../../shared/domain/value-objects/localized-text.js";
+import { localizedText, SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 
 /**
  * Combien de lignes, en moyenne, partagent une clé — sert seulement à demander
@@ -36,7 +36,7 @@ export class PrismaMediaLibrary extends MediaLibrary {
         // quelqu'un qui sait ce que le produit raconte. Au dépôt il n'y a
         // personne pour l'écrire : la colonne est obligatoire, on y met l'URL,
         // comme le fait déjà le rattachement quand le champ est laissé vide.
-        alt: localizedColumn(localizedText("texte alternatif", entry.url)),
+        alt: localizedColumn(localizedText("texte alternatif", { [SOURCE_LOCALE]: entry.url })),
         storageKey: entry.storageKey,
         contentType: entry.contentType,
         width: entry.width,

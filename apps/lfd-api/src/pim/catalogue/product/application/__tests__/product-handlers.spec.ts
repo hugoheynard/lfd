@@ -177,7 +177,7 @@ describe("UpdateProductIdentityHandler", () => {
     const products = new FakeProductRepository(seedProduct());
     await new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
       new UpdateProductIdentityCommand(PRODUCT_ID, {
-        nameFr: "Moka",
+        name: { fr: "Moka" },
         kind: "daily",
         categoryId: "cat_active",
       }),
@@ -193,7 +193,7 @@ describe("UpdateProductIdentityHandler", () => {
     await expect(
       new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
-          nameFr: "Moka",
+          name: { fr: "Moka" },
           kind: "daily",
           categoryId: "cat_archived",
         }),
@@ -207,7 +207,7 @@ describe("UpdateProductIdentityHandler", () => {
     await expect(
       new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
-          nameFr: "Moka",
+          name: { fr: "Moka" },
           kind: "daily",
           categoryId: "cat_absent",
         }),
@@ -220,7 +220,7 @@ describe("UpdateProductIdentityHandler", () => {
     await expect(
       new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
         new UpdateProductIdentityCommand("prd_absent", {
-          nameFr: "X",
+          name: { fr: "X" },
           kind: "daily",
           categoryId: "cat_active",
         }),

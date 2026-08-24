@@ -63,7 +63,11 @@ async function readRate(id: string): Promise<RateRow> {
 
 /** Une famille qui vend en B2B et vise `rate` pour ce canal. */
 async function categorySellingB2b(nameFr: string, rate: string): Promise<string> {
-  const id = jsonBody<{ id: string }>(await staff().post(CATEGORIES).send({ nameFr })).id;
+  const id = jsonBody<{ id: string }>(
+    await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: nameFr } }),
+  ).id;
   await staff().put(`${CATEGORIES}/${id}/channels`).send({ boutiques: {}, b2b: true }).expect(200);
   await staff()
     .put(`${CATEGORIES}/${id}/tva`)

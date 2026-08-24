@@ -16,7 +16,10 @@ import {
   variantSkuRoot,
   type SkuAvailability,
 } from "../domain/services/sku-generator.js";
-import { localizedText } from "../../shared/domain/value-objects/localized-text.js";
+import {
+  localizedText,
+  type LocalizedText,
+} from "../../shared/domain/value-objects/localized-text.js";
 import {
   editorial,
   isEmptyEditorial,
@@ -33,8 +36,10 @@ import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
 import { Product } from "../domain/entities/product.js";
 
 export interface CreateProductInput {
-  readonly nameFr: string;
-  readonly nameEn?: string | undefined;
+  /** Le nom, dans les langues renseignées — la source est obligatoire. Une
+   *  CARTE et non `nameFr` + `nameEn` : ouvrir une langue ne doit pas ajouter un
+   *  champ ici, ni chez les quatre autres commandes qui portaient les mêmes. */
+  readonly name: LocalizedText;
   readonly kind: ProductKind;
   readonly categoryId: string;
   /**
@@ -75,7 +80,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
   async execute(command: CreateProductCommand): Promise<string> {
     const { input } = command;
-    const name = localizedText("nom", input.nameFr, input.nameEn);
+    const name = localizedText("nom", input.name);
     const category = await this.categories.findById(input.categoryId);
 
     if (category === null) {

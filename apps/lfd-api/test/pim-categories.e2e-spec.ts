@@ -41,7 +41,8 @@ const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
 
 async function createCategory(nameFr: string, parentId?: string): Promise<string> {
-  const body = parentId === undefined ? { nameFr } : { nameFr, parentId };
+  const body =
+    parentId === undefined ? { name: { fr: nameFr } } : { name: { fr: nameFr }, parentId };
   const response = await staff().post(CATEGORIES).send(body);
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
@@ -89,7 +90,9 @@ describe("le slug d'une famille est unique", () => {
   it("refuse une seconde famille du même nom", async () => {
     await createCategory("Pains");
 
-    const response = await staff().post(CATEGORIES).send({ nameFr: "Pains" });
+    const response = await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Pains" } });
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.slug_taken");
@@ -98,7 +101,9 @@ describe("le slug d'une famille est unique", () => {
   it("n'écrit RIEN quand il refuse", async () => {
     await createCategory("Pains");
 
-    await staff().post(CATEGORIES).send({ nameFr: "Pains" });
+    await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Pains" } });
 
     const all = jsonBody<CategoryRow[]>(await staff().get(CATEGORIES));
     expect(all.filter((row) => row.slug.fr === "pains")).toHaveLength(1);
@@ -107,7 +112,9 @@ describe("le slug d'une famille est unique", () => {
   it("laisse un nom différent qui donne un autre slug", async () => {
     await createCategory("Pains");
 
-    const response = await staff().post(CATEGORIES).send({ nameFr: "Pains spéciaux" });
+    const response = await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Pains spéciaux" } });
 
     expect(response.status).toBe(201);
   });
@@ -217,7 +224,9 @@ describe("l'archivage regarde ce qui pend en dessous", () => {
     const parent = await createCategory("Pains");
     await staff().put(`${CATEGORIES}/${parent}/archive`).send({}).expect(200);
 
-    const response = await staff().post(CATEGORIES).send({ nameFr: "Tartes", parentId: parent });
+    const response = await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Tartes" }, parentId: parent });
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.archived_parent");

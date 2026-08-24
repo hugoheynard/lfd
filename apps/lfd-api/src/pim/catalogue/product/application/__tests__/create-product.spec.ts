@@ -139,7 +139,7 @@ function setup(taken: readonly string[] = []): {
 }
 
 function input(over: Partial<CreateProductInput> = {}): CreateProductInput {
-  return { nameFr: "Croissant au beurre", kind: "daily", categoryId: "cat_active", ...over };
+  return { name: { fr: "Croissant au beurre" }, kind: "daily", categoryId: "cat_active", ...over };
 }
 
 describe("CreateProductHandler — la référence proposée", () => {

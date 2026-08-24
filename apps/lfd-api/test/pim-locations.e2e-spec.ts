@@ -139,7 +139,9 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     const emplacement = await createEmplacement({ name: "Village" });
     const other = await createEmplacement({ name: "Labo" });
     const category = jsonBody<{ id: string }>(
-      await staff().post(CATEGORIES).send({ nameFr: "Viennoiseries" }),
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
@@ -153,7 +155,9 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
   it("refuse de supprimer un emplacement encore coché", async () => {
     const emplacement = await createEmplacement({ name: "Village" });
     const category = jsonBody<{ id: string }>(
-      await staff().post(CATEGORIES).send({ nameFr: "Viennoiseries" }),
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
@@ -169,7 +173,9 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
   it("accepte la suppression une fois décoché", async () => {
     const emplacement = await createEmplacement({ name: "Village" });
     const category = jsonBody<{ id: string }>(
-      await staff().post(CATEGORIES).send({ nameFr: "Viennoiseries" }),
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
