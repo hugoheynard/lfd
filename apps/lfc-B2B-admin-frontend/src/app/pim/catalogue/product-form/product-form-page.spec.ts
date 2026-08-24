@@ -43,6 +43,20 @@ describe('ProductFormPage — en-tête', () => {
     expect(badge?.classList.contains('warning')).toBe(true);
   });
 
+  it('pose la ligne de faits dans [pageSubtitle], jamais dans la description', () => {
+    // Les deux créneaux se ressemblent assez pour que l'erreur passe : une ligne
+    // de faits dans `[description]` prend l'espacement d'un paragraphe et se
+    // détache du titre qu'elle identifie.
+    const { root } = render(true);
+    expect(root.querySelector('.page-subtitle .ident')).not.toBeNull();
+    expect(root.querySelector('.page-desc .ident')).toBeNull();
+  });
+
+  it('ferme l’en-tête sur un filet — le corps arrive au ras', () => {
+    const { root } = render(true);
+    expect(root.querySelector('fold-page-layout')?.hasAttribute('data-separator')).toBe(true);
+  });
+
   it('ne laisse pas de séparateur orphelin quand un fait manque', () => {
     // La famille n'est pas encore connue (référentiel non chargé) et il n'y a
     // aucune déclinaison : la ligne doit se lire « TYPE » seul, sans « · · ».
@@ -87,8 +101,10 @@ describe('ProductFormPage — en-tête', () => {
     const { root } = render(false);
     expect(root.querySelector('.page-title-badge fold-badge')).toBeNull();
     expect(root.querySelector('fold-dropdown')).toBeNull();
-    // …et la ligne sous le titre redevient une consigne, pas des faits.
+    // …et la ligne sous le titre redevient une consigne — de la PROSE, donc la
+    // description, pas le sous-titre.
     expect(root.querySelector('.ident')).toBeNull();
+    expect(root.querySelector('.page-subtitle')?.textContent?.trim() ?? '').toBe('');
     expect(root.querySelector('.page-desc')?.textContent).toContain(
       'Un nom et une catégorie suffisent',
     );

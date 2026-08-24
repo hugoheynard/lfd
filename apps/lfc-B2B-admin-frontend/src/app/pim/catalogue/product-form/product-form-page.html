@@ -1,6 +1,8 @@
 <!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
      « edit » y ajoutait le geste plutôt que la chose. -->
-<fold-page-layout [title]="store.pageTitle()">
+<!-- `separator` : le corps de la fiche est une suite de sections sans surface
+     propre, donc sans le filet l'en-tête se lit comme la première d'entre elles. -->
+<fold-page-layout [title]="store.pageTitle()" separator>
   <!-- Le fil ne nomme que les ANCÊTRES (`[currentPage]="false"`) : le titre
        juste dessous EST la page courante. Il remplace le « Retour aux produits »
        qui se projetait dans `[pageActions]`, donc peint en haut à DROITE alors
@@ -18,23 +20,28 @@
 
   <!-- La ligne sous le titre porte des FAITS, pas de la prose : ce qu'on regarde
        s'identifie (référence), se situe (type, famille) et se compte
-       (déclinaisons). L'ancienne phrase — « tout est éditable, chaque section
-       s'enregistre » — décrivait le fonctionnement de l'écran ; il se voit
-       maintenant tout seul, section par section, à droite de chaque titre. -->
-  <p description>
-    @if (store.isEdit()) {
-      <span class="ident">
-        <span class="ident-sku">{{ store.sku() }}</span>
-        @for (fact of facts(); track fact) {
-          <span class="ident-sep" aria-hidden="true">·</span>
-          <span>{{ fact }}</span>
-        }
-      </span>
-    } @else {
+       (déclinaisons). Elle vit donc dans `[pageSubtitle]` — serrée sous le titre
+       — et non dans `[description]`, dont l'espacement de paragraphe la
+       détachait du titre qu'elle identifie.
+
+       L'ancienne phrase — « tout est éditable, chaque section s'enregistre » —
+       décrivait le fonctionnement de l'écran ; il se voit maintenant tout seul,
+       section par section, à droite de chaque titre. Seule la CRÉATION garde une
+       consigne, et c'est de la prose : elle reste dans `[description]`. -->
+  @if (store.isEdit()) {
+    <span pageSubtitle class="ident">
+      <span class="ident-sku">{{ store.sku() }}</span>
+      @for (fact of facts(); track fact) {
+        <span class="ident-sep" aria-hidden="true">·</span>
+        <span>{{ fact }}</span>
+      }
+    </span>
+  } @else {
+    <p description>
       Un nom et une catégorie suffisent pour créer le brouillon ; le reste se complète ensuite à
       l'édition.
-    }
-  </p>
+    </p>
+  }
 
   @if (store.isEdit()) {
     <fold-dropdown pageActions ariaLabel="Actions du produit" placement="bottom-end">
