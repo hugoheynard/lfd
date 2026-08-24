@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { localizedTextSchema } from "./localized.js";
 import type { LocalizedText } from "./shared.js";
 
 /**
@@ -35,8 +36,9 @@ const editorialShape = {
 };
 
 export const createProductPayloadSchema = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
+  /** Le nom, dans les langues renseignées. La source (`fr`) est obligatoire ;
+   *  ouvrir une langue de plus ne change pas ce contrat. */
+  name: localizedTextSchema,
   kind: productKindSchema,
   categoryId: z.string().min(1),
   sku: z.string().optional(),
@@ -57,8 +59,9 @@ export const createProductPayloadSchema = z.object({
 export type CreateProductPayload = z.infer<typeof createProductPayloadSchema>;
 
 export const updateProductIdentityPayloadSchema = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
+  /** Le nom, dans les langues renseignées. La source (`fr`) est obligatoire ;
+   *  ouvrir une langue de plus ne change pas ce contrat. */
+  name: localizedTextSchema,
   kind: productKindSchema,
   categoryId: z.string().min(1),
 });

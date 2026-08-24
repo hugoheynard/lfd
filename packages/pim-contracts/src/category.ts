@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { localizedTextSchema } from "./localized.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**
@@ -8,15 +9,17 @@ import type { LocalizedText, SalesChannels } from "./shared.js";
  * réglé) ; le slug est dérivé du nom côté serveur.
  */
 export const createCategoryPayloadSchema = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
+  /** Le nom, dans les langues renseignées. La source (`fr`) est obligatoire ;
+   *  ouvrir une langue de plus ne change pas ce contrat. */
+  name: localizedTextSchema,
   parentId: z.string().optional(),
 });
 export type CreateCategoryPayload = z.infer<typeof createCategoryPayloadSchema>;
 
 export const renameCategoryPayloadSchema = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
+  /** Le nom, dans les langues renseignées. La source (`fr`) est obligatoire ;
+   *  ouvrir une langue de plus ne change pas ce contrat. */
+  name: localizedTextSchema,
 });
 export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 

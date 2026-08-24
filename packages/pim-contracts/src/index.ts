@@ -1,9 +1,21 @@
 export type {
   LocalizedText,
+  Locale,
+  TranslatedLocale,
   BoutiqueChannels,
   SalesChannels,
   CreatedIdResponse,
 } from "./shared.js";
+export {
+  LOCALES,
+  SOURCE_LOCALE,
+  readLocalized,
+  writeLocalized,
+  filledLocales,
+  missingLocales,
+} from "./shared.js";
+
+export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 
 export { tvaRatePayloadSchema } from "./commerce.js";
 export type { TvaRatePayload, TvaRateView } from "./commerce.js";
