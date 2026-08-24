@@ -14,6 +14,7 @@ import { PermissionsStore } from '../../../../auth/permissions.store';
 import { formatPercent } from '../../../data/channels';
 import { type TvaRate } from '../../catalogue-api';
 import { TvaStore } from '../tva-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import {
   TvaRateFormPanel,
   type TvaRatePanelData,
@@ -64,6 +65,8 @@ export class TvaRateTable {
   private readonly store = inject(TvaStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
+  /** Le registre : il NOMME les contextes que le compte d'usages ne fait que citer. */
+  private readonly contexts = inject(SalesContextStore);
 
   /** Sans `tax:write`, la colonne d'actions n'a rien à proposer — on la retire. */
   protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
@@ -92,21 +95,25 @@ export class TvaRateTable {
     return formatPercent(percent);
   }
 
-  /** Combien de familles visent ce taux, les deux modes confondus. */
+  /**
+   * Combien de familles visent ce taux, **tous contextes confondus**.
+   *
+   * Il additionnait deux modes sur trois : un taux que seule la plateforme B2B
+   * visait totalisait zéro, donc la ligne proposait de le supprimer — et la
+   * base refusait, après le clic. Une somme sur la carte ne peut plus oublier
+   * un contexte.
+   */
   protected usageTotal(rate: TvaRate): number {
-    return rate.usage.emporter + rate.usage.surPlace;
+    return Object.values(rate.usage).reduce((total, count) => total + count, 0);
   }
 
-  /** « 3 à emporter · 1 sur place » — les modes cités seulement s'ils comptent. */
+  /** « 3 à emporter · 1 sur place » — les contextes cités s'ils comptent. */
   protected usageLabel(rate: TvaRate): string {
-    const parts: string[] = [];
-    if (rate.usage.emporter > 0) {
-      parts.push(`${rate.usage.emporter} à emporter`);
-    }
-    if (rate.usage.surPlace > 0) {
-      parts.push(`${rate.usage.surPlace} sur place`);
-    }
-    return parts.join(' · ');
+    return this.contexts
+      .items()
+      .filter((context) => (rate.usage[context.key] ?? 0) > 0)
+      .map((context) => `${rate.usage[context.key] ?? 0} ${context.label.toLocaleLowerCase('fr')}`)
+      .join(' · ');
   }
 
   /**

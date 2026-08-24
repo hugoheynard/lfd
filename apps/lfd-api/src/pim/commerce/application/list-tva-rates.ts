@@ -8,14 +8,14 @@ import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
 export class ListTvaRatesQuery {}
 
 /**
- * Un taux jamais visé : absent de la carte d'usages, donc à zéro.
+ * Un taux jamais visé : absent de la carte d'usages, donc **aucune clé**.
  *
- * **Les trois canaux**, B2B compris. Ce défaut n'en portait que deux : un taux
- * que seule la plateforme B2B utilise s'affichait donc « 0 famille », ce qui
- * invite à le supprimer — la base l'aurait refusé, mais l'écran promettait
- * l'inverse.
+ * Le défaut nommait les canaux, et n'en nommait que deux : un taux que seule la
+ * plateforme B2B utilisait s'affichait « 0 famille », ce qui invite à le
+ * supprimer — la base l'aurait refusé, mais l'écran promettait l'inverse. Une
+ * carte vide ne peut pas oublier un contexte.
  */
-const UNUSED = { b2b: 0, emporter: 0, surPlace: 0 } as const;
+const UNUSED: Readonly<Record<string, number>> = {};
 
 /**
  * Rend un **modèle de lecture**, et non l'instantané de l'agrégat : la vue porte

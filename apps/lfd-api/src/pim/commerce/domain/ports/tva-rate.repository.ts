@@ -1,17 +1,18 @@
 import type { TvaRate } from "../entities/tva-rate.js";
 
 /**
- * Combien de familles visent un taux, par mode de vente.
+ * Combien de familles visent un taux, **par clé de contexte de vente**. Une clé
+ * absente = aucune famille ne le vise dans ce contexte.
  *
  * Une **projection de lecture**, pas un état de l'agrégat : `TvaRate` n'a
  * aucun invariant qui dépende de ce compte, et le lui faire porter obligerait
  * à le recompter à chaque `save()` pour rien.
+ *
+ * Indexé, et non trois champs nommés : le compte protège la suppression, et un
+ * contexte oublié dans le total offrirait un bouton « Supprimer » que la base
+ * refuserait ensuite. C'est exactement ce qui arrivait au B2B côté écran.
  */
-export interface TvaRateUsage {
-  readonly emporter: number;
-  readonly surPlace: number;
-  readonly b2b: number;
-}
+export type TvaRateUsage = Readonly<Record<string, number>>;
 
 /**
  * Port : l'application dépend de cette abstraction, jamais de Prisma.

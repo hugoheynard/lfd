@@ -14,16 +14,18 @@ export const tvaRatePayloadSchema = z.object({
 export type TvaRatePayload = z.infer<typeof tvaRatePayloadSchema>;
 
 /**
- * Combien de familles visent ce taux, par mode de vente.
+ * Combien de familles visent ce taux, **par clé de contexte de vente**. Clé
+ * absente = aucune, dans ce contexte.
  *
  * C'est la donnée qui **protège la suppression** : la base pose un `Restrict`
- * sur les deux relations, donc supprimer un taux visé échoue — l'écran doit
- * le dire AVANT, pas laisser l'erreur de clé étrangère l'apprendre.
+ * sur la jointure, donc supprimer un taux visé échoue — l'écran doit le dire
+ * AVANT, pas laisser l'erreur de clé étrangère l'apprendre.
+ *
+ * Elle nommait deux modes et en oubliait un troisième : un taux que seule la
+ * plateforme B2B visait s'affichait « 0 famille », donc supprimable, et la base
+ * refusait après le clic. Une carte ne peut plus oublier un contexte.
  */
-export interface TvaRateUsageView {
-  readonly emporter: number;
-  readonly surPlace: number;
-}
+export type TvaRateUsageView = Readonly<Record<string, number>>;
 
 /** Vue d'un taux de TVA telle que l'API la rend. */
 export interface TvaRateView {

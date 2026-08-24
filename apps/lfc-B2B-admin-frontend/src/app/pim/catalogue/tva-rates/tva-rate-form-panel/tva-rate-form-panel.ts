@@ -88,7 +88,9 @@ export class TvaRateFormPanel {
   /** Combien de familles visent ce taux — 0 = suppression sans conséquence. */
   protected readonly usageTotal = computed(() => {
     const target = this.rate();
-    return target === undefined ? 0 : target.usage.emporter + target.usage.surPlace;
+    return target === undefined
+      ? 0
+      : Object.values(target.usage).reduce((total, count) => total + count, 0);
   });
 
   /** Pour supprimer, le nom retapé doit correspondre exactement. */

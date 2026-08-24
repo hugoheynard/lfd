@@ -157,22 +157,23 @@ describe("RemoveTvaRateHandler", () => {
 });
 
 describe("ListTvaRatesHandler", () => {
-  it("joint le compte d’usages, et pose zéro sur un taux que personne ne vise", async () => {
+  it("joint le compte d’usages, et n’invente aucun contexte", async () => {
     const repo = new InMemoryRepo();
     // Un SEUL générateur : deux instances repartiraient de `tva_1` chacune, et
     // le second taux écraserait le premier.
     const create = new CreateTvaRateHandler(repo, new StubIds(), new RecordingJournal());
     await create.execute(new CreateTvaRateCommand({ name: "Réduit", percent: 5.5 }));
     await create.execute(new CreateTvaRateCommand({ name: "Normal", percent: 20 }));
-    repo.usage.set("tva_1", { b2b: 0, emporter: 3, surPlace: 1 });
+    repo.usage.set("tva_1", { emporter: 3, surPlace: 1 });
 
     const views = await new ListTvaRatesHandler(repo).execute();
 
-    // Le B2B compte comme les deux autres : c'est un canal de vente à part
-    // entière, et un taux qu'il seul utilise ne doit pas paraître libre.
+    // Un taux que personne ne vise rend une carte VIDE. Poser un zéro par
+    // contexte reviendrait à nommer les contextes dans la réponse, donc à les
+    // figer — c'est ce qui avait fait oublier le B2B pendant des mois.
     expect(views.map((view) => [view.percent, view.usage])).toEqual([
-      [5.5, { b2b: 0, emporter: 3, surPlace: 1 }],
-      [20, { b2b: 0, emporter: 0, surPlace: 0 }],
+      [5.5, { emporter: 3, surPlace: 1 }],
+      [20, {}],
     ]);
   });
 });
@@ -185,7 +186,7 @@ describe("Le journal du référentiel", () => {
       new CreateTvaRateCommand({ name: "Réduit", percent: 5.5 }),
     );
     // Ce que ce taux touchait à l'instant du changement.
-    repo.usage.set(id, { b2b: 0, emporter: 3, surPlace: 1 });
+    repo.usage.set(id, { emporter: 3, surPlace: 1, b2b: 2 });
 
     await new UpdateTvaRateHandler(repo, journal).execute(
       new UpdateTvaRateCommand(id, { name: "Intermédiaire", percent: 10 }),
@@ -200,8 +201,10 @@ describe("Le journal du référentiel", () => {
       subjectType: "tva_rate",
       subjectId: id,
       payload: { from: 5.5, to: 10 },
-      // Des comptes NOMMÉS, pas un rayon transitif : ce que le handler savait.
-      blast: { familiesEmporter: 3, familiesSurPlace: 1 },
+      // Des comptes par CONTEXTE, pas un rayon transitif : ce que le handler
+      // savait, et tous les contextes — un taux B2B qui bouge sous « 0 / 0 »
+      // était une trace qui disait que ça ne touchait personne.
+      blast: { families: { emporter: 3, surPlace: 1, b2b: 2 } },
     });
   });
 

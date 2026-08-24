@@ -57,18 +57,16 @@ export const PIM_EVENTS = {
  * magique dont personne ne saurait dire ce qu'il additionne.
  */
 export interface PimBlastRadius {
-  /** Familles visant ce taux, à emporter. */
-  readonly familiesEmporter?: number;
-  /** Familles visant ce taux, sur place. */
-  readonly familiesSurPlace?: number;
   /**
-   * Familles visant ce taux sur la **plateforme B2B**.
+   * Familles visant ce taux, **par clé de contexte de vente**.
    *
-   * Manquait : la portée d'un changement de taux comptait deux canaux sur
-   * trois, et un taux que seules des familles B2B visent bougeait sous un
-   * « 0 / 0 » — la trace disait que ça ne touchait personne.
+   * C'étaient trois champs nommés, et il n'y en a eu longtemps que deux : la
+   * portée d'un changement de taux comptait deux canaux sur trois, et un taux
+   * que seules des familles B2B visent bougeait sous un « 0 / 0 » — la trace
+   * disait que ça ne touchait personne. Une carte ne peut pas oublier un
+   * contexte, et un contexte ajouté demain y entrera sans qu'on y pense.
    */
-  readonly familiesB2b?: number;
+  readonly families?: Readonly<Record<string, number>>;
   /** Articles portés par le produit concerné. */
   readonly variants?: number;
 }

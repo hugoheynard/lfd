@@ -42,11 +42,15 @@ export interface TvaRate {
   usage: TvaRateUsage;
 }
 
-/** Le compte d'usages d'un taux, par mode de vente. */
-export interface TvaRateUsage {
-  readonly emporter: number;
-  readonly surPlace: number;
-}
+/**
+ * Le compte d'usages d'un taux, **par clé de contexte de vente**. Clé absente =
+ * aucune famille ne le vise dans ce contexte.
+ *
+ * Il nommait deux modes et en oubliait un troisième : un taux que seule la
+ * plateforme B2B visait s'affichait « 0 famille », donc supprimable, et la base
+ * refusait après le clic.
+ */
+export type TvaRateUsage = Readonly<Record<string, number>>;
 
 /** Ce qu'une boutique propose pour un produit : à emporter et/ou sur place. */
 export interface BoutiqueChannels {

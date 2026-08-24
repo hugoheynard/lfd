@@ -130,22 +130,24 @@ describe("un taux visé ne se supprime pas", () => {
   });
 });
 
-describe("le compte d'usages dit la vérité sur les trois canaux", () => {
+describe("le compte d'usages dit la vérité sur TOUS les contextes", () => {
   /**
    * Il composait son défaut avec deux canaux sur trois : un taux que seules des
    * familles B2B visent s'affichait « 0 famille », donc supprimable — alors que
    * la base refuse. L'écran promettait l'inverse de ce qui allait se passer.
    */
-  it("compte le canal B2B comme les deux autres", async () => {
+  it("compte le contexte B2B comme les autres", async () => {
     const rate = await createRate("Réduit", 5.5);
     await categorySellingB2b("Viennoiseries", rate);
 
-    expect((await readRate(rate)).usage).toEqual({ emporter: 0, surPlace: 0, b2b: 1 });
+    expect((await readRate(rate)).usage).toEqual({ b2b: 1 });
   });
 
-  it("rend zéro sur les trois canaux pour un taux que personne ne vise", async () => {
+  it("ne rend AUCUNE clé pour un taux que personne ne vise", async () => {
     const rate = await createRate("Réduit", 5.5);
 
-    expect((await readRate(rate)).usage).toEqual({ emporter: 0, surPlace: 0, b2b: 0 });
+    // Zéro par contexte plutôt qu'absence, c'était nommer les contextes dans
+    // la réponse — donc les figer dans le contrat.
+    expect((await readRate(rate)).usage).toEqual({});
   });
 });

@@ -2501,21 +2501,9 @@ model Category {
   /// `{}` sur les lignes antérieures est relu comme « rien vendu » (défensif).
   channelPreset Json @default("{}") @map("channel_preset")
 
-  /// Taux de TVA visés par les fiches à emporter / sur place. `NULL` = non
-  /// réglé. `onDelete: Restrict` (défaut) : un taux référencé ne peut pas être
-  /// supprimé tant qu'une famille le vise.
-  emporterTvaId String?  @map("emporter_tva_id")
-  emporterTva   TvaRate? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
-  surPlaceTvaId String?  @map("sur_place_tva_id")
-  surPlaceTva   TvaRate? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
-  /// Taux visé par la **plateforme B2B**. Vendre à un professionnel n'est ni « à
-  /// emporter » ni « sur place » : le canal facturait jusqu'ici au taux « à
-  /// emporter », emprunté sans que rien ne le dise.
-  b2bTvaId      String?  @map("b2b_tva_id")
-  b2bTva        TvaRate? @relation("CategoryB2bTva", fields: [b2bTvaId], references: [id])
-
-  /// Les taux par contexte de vente — le modèle data-driven. Les trois colonnes
-  /// ci-dessus sont écrites EN PARALLÈLE le temps d'un déploiement, puis tombent.
+  /// Les taux par contexte de vente. Trois colonnes fixes vivaient ici
+  /// (`emporter` / `surPlace` / `b2b`) : ajouter un contexte demandait une
+  /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
   contextTva CategoryContextTva[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -2523,9 +2511,6 @@ model Category {
   updatedBy String?  @map("updated_by")
 
   @@index([parentId])
-  @@index([emporterTvaId])
-  @@index([surPlaceTvaId])
-  @@index([b2bTvaId])
   @@map("category")
   @@schema("pim")
 }
@@ -2612,14 +2597,10 @@ model TvaRate {
   /// handles de canal.
   percent     Float  @unique
 
-  /// Familles qui visent ce taux — extrémités des relations portées par
-  /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.
-  categoriesEmporter Category[] @relation("CategoryEmporterTva")
-  categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
-  categoriesB2b      Category[] @relation("CategoryB2bTva")
-
-  /// Familles qui visent ce taux **par contexte** — le modèle qui remplace les
-  /// trois relations ci-dessus.
+  /// Familles qui visent ce taux, **par contexte** — l'autre extrémité de la
+  /// jointure. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la
+  /// suppression, et le compte d'usages que l'écran affiche avant de proposer
+  /// de supprimer.
   contextTva CategoryContextTva[]
 
   createdAt DateTime @default(now()) @map("created_at")

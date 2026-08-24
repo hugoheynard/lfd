@@ -22,7 +22,7 @@ const RATE = {
   name: 'Réduit',
   description: '',
   percent: 5.5,
-  usage: { emporter: 0, surPlace: 0 },
+  usage: {},
 };
 
 /** Le bouton portant ce libellé — on pilote l'écran, pas ses champs privés. */
@@ -62,5 +62,38 @@ describe('TvaRateFormPanel — un taux déjà pris', () => {
     expect(toast?.variant).toBe('error');
     // Et il s'efface — un refus rattrapable n'a pas à rester en travers.
     expect(toast?.durationMs).toBeGreaterThan(0);
+  });
+});
+
+describe('TvaRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
+  it('refuse la suppression, comme la base le ferait', async () => {
+    // Le total additionnait deux contextes sur trois : un taux que seules des
+    // familles B2B visaient totalisait zéro, le panneau offrait « Supprimer »,
+    // et la base refusait APRÈS le clic. Le compte porte maintenant tous les
+    // contextes, sans en nommer aucun.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        { provide: FoldPanelRef, useValue: { close: () => undefined } },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(TvaRateFormPanel);
+    fixture.componentRef.setInput('data', { rate: { ...RATE, usage: { b2b: 1 } } });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    button(host, 'Supprimer ce taux').click();
+    fixture.detectChanges();
+
+    // La zone dangereuse dit POURQUOI et n'offre pas le geste : le compte porte
+    // désormais le contexte B2B, qu'il additionnait à zéro.
+    expect(host.textContent).toContain('1 famille(s)');
+    expect(
+      [...host.querySelectorAll('button')].some((b) =>
+        (b.textContent ?? '').includes('définitivement'),
+      ),
+    ).toBe(false);
   });
 });

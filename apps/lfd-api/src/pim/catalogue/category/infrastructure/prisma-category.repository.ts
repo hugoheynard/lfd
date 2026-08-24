@@ -21,13 +21,7 @@ interface CategoryRow {
   contextTva: readonly { tvaRateId: string; context: { key: string } }[];
 }
 
-/**
- * Les taux viennent de la JOINTURE, plus des trois colonnes.
- *
- * Elles sont encore écrites (`legacyTvaColumns`) — le temps d'un déploiement,
- * pour que le binaire précédent, qui les lit, ne serve pas des taux figés au
- * moment de la bascule. Elles tombent au déploiement d'après.
- */
+/** Les taux viennent de la jointure — les trois colonnes n'existent plus. */
 const CATEGORY_WITH_TVA = {
   contextTva: { select: { tvaRateId: true, context: { select: { key: true } } } },
 } as const;
@@ -58,22 +52,6 @@ function toColumns(snapshot: CategorySnapshot) {
     position: snapshot.position,
     isArchived: snapshot.isArchived,
     channelPreset: salesChannelsColumn(snapshot.channelPreset),
-    ...legacyTvaColumns(snapshot),
-  };
-}
-
-/**
- * Les trois colonnes de l'ancien modèle, dérivées de la carte.
- *
- * Transitoire et daté : à supprimer avec elles, au troisième déploiement
- * (`documentation/pim/projection-sales-context.md`, C0). Écrire les deux
- * modèles pendant la bascule est ce qui rend le retour en arrière possible.
- */
-function legacyTvaColumns(snapshot: CategorySnapshot) {
-  return {
-    emporterTvaId: snapshot.tvaByContext["emporter"] ?? null,
-    surPlaceTvaId: snapshot.tvaByContext["surPlace"] ?? null,
-    b2bTvaId: snapshot.tvaByContext["b2b"] ?? null,
   };
 }
 

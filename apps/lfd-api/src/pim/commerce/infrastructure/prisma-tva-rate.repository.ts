@@ -96,33 +96,36 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
   }
 
   /**
-   * Les trois relations comptées côté base (`_count`), en une requête. Compter
-   * en mémoire aurait demandé de charger toutes les familles pour n'en garder
-   * que le nombre.
+   * Les usages comptés **côté base**, en un aller-retour : un `groupBy` sur la
+   * jointure, plus la table des contextes (trois lignes) pour nommer les clés.
+   * Compter en mémoire aurait demandé de charger toutes les familles pour n'en
+   * garder que le nombre.
    */
   async usageByRegime(): Promise<ReadonlyMap<string, TvaRateUsage>> {
-    const rows = await this.prisma.tvaRate.findMany({
-      select: {
-        id: true,
-        _count: {
-          select: {
-            categoriesEmporter: true,
-            categoriesSurPlace: true,
-            categoriesB2b: true,
-          },
-        },
-      },
-    });
-    return new Map(
-      rows.map((row) => [
-        row.id,
-        {
-          emporter: row._count.categoriesEmporter,
-          surPlace: row._count.categoriesSurPlace,
-          b2b: row._count.categoriesB2b,
-        },
-      ]),
-    );
+    const [grouped, contexts] = await Promise.all([
+      this.prisma.categoryContextTva.groupBy({
+        by: ["tvaRateId", "contextId"],
+        _count: { _all: true },
+      }),
+      this.prisma.salesContext.findMany({ select: { id: true, key: true } }),
+    ]);
+    const keyById = new Map(contexts.map((context) => [context.id, context.key]));
+
+    const usage = new Map<string, Record<string, number>>();
+    for (const row of grouped) {
+      const key = keyById.get(row.contextId);
+      if (key === undefined) {
+        // Une ligne dont le contexte a disparu ne se compte pas : la nommer
+        // « inconnu » ferait apparaître un usage que l'écran ne sait pas
+        // expliquer. La clé étrangère rend le cas théorique ; on ne s'y appuie
+        // pas pour autant.
+        continue;
+      }
+      const current = usage.get(row.tvaRateId) ?? {};
+      current[key] = row._count._all;
+      usage.set(row.tvaRateId, current);
+    }
+    return usage;
   }
 
   async remove(id: string): Promise<void> {
