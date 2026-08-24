@@ -12,6 +12,36 @@ routée dans un `fold-page-layout`.
 Ce fichier ne répète pas ces règles. Il ne porte que ce qui est **propre au
 back-office**.
 
+## Travailler fold et l'app en même temps
+
+Le catalogue épingle `fold-ng` à une version **publiée**. Tant qu'on dessine à
+deux mains — un créneau dans le design system, son usage ici — chaque essai
+coûterait un cycle `release → npm → catalog → install`, soit plusieurs minutes
+et une version mineure brûlée pour un pixel.
+
+```bash
+node dev-toolbox/fold-local.mjs on      # construit fold-ng du disque et le branche
+node dev-toolbox/fold-local.mjs sync    # après chaque modif de fold
+node dev-toolbox/fold-local.mjs off     # retour à la version du catalogue
+node dev-toolbox/fold-local.mjs status  # qui est branché, sur quoi
+```
+
+Trois choses à savoir, et elles comptent :
+
+- **Rien n'est écrit dans un fichier suivi** — ni `package.json`, ni
+  `pnpm-workspace.yaml`, ni le lockfile. Le seul état modifié vit dans
+  `node_modules/`, donc la bidouille ne peut pas fuir en CI. Un `override`
+  aurait été plus « propre » et c'est exactement le danger : il se commite, et la
+  CI construirait alors contre un chemin qui n'existe que sur une machine.
+- **Un `pnpm install` la balaie.** C'est le prix de la ligne précédente ;
+  `status` le rappelle.
+- **Redémarrer le serveur de dev** après `on` comme après `sync` : le pré-bundle
+  Vite est jeté, pas rechargé à chaud.
+
+**Avant de livrer, `off`** — puis la vraie release fold, la montée du catalogue,
+et on vérifie que l'app construit contre le paquet publié. Ce que le pont permet,
+c'est d'itérer, pas de se dispenser de publier.
+
 ## Les états d'une vue passent TOUS par fold
 
 Rappel explicite parce que c'est la règle la plus souvent enfreinte ici — le
