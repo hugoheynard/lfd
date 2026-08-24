@@ -134,3 +134,40 @@ describe('PricingPanel', () => {
     expect(rate?.querySelector('.inherit-regime')?.textContent?.trim()).toBe('Normal');
   });
 });
+
+describe('PricingPanel — la dérogation de la fiche', () => {
+  it('affiche le taux de la FICHE, marqué comme redéfini', () => {
+    // La règle de résolution, à l'écran comme au serveur : la fiche d'abord, sa
+    // famille ensuite — contexte par contexte.
+    const store = setup();
+    withFamily(store);
+    store.tvaOverride.set({ b2b: 'tva_55' });
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const b2b = [...host.querySelectorAll('.inherit-row')].find((row) =>
+      row.querySelector('dt')?.textContent?.includes('B2B'),
+    );
+    expect(b2b?.textContent).toContain('5,5 %');
+    expect(b2b?.textContent).toContain('Redéfini');
+    expect(b2b?.classList.contains('is-overridden')).toBe(true);
+  });
+
+  it('laisse les autres contextes à leur famille', () => {
+    // Déroger en B2B ne déroge nulle part ailleurs : c'est ce qui rend la
+    // dérogation utilisable sans avoir à tout redéclarer.
+    const store = setup();
+    withFamily(store);
+    store.tvaOverride.set({ b2b: 'tva_55' });
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const emporter = [...host.querySelectorAll('.inherit-row')].find((row) =>
+      row.querySelector('dt')?.textContent?.includes('emporter'),
+    );
+    expect(emporter?.textContent).toContain('5,5 %');
+    expect(emporter?.textContent).not.toContain('Redéfini');
+  });
+});

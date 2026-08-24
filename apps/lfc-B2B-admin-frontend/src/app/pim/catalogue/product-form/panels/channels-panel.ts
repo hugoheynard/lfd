@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FoldButtonIconComponent, FoldPanelHostService } from 'fold-ng';
 
+import { formatPercent } from '../../../data/channels';
 import { ProductFormStore, type ChannelInheritance } from '../product-form-store';
+import {
+  TvaOverridePanel,
+  type TvaOverridePanelData,
+  type TvaOverridePanelResult,
+} from './tva-override-panel/tva-override-panel';
 
 /**
  * Panneau Canaux & TVA — **lecture seule**. Rend explicite l'héritage par
@@ -13,6 +20,7 @@ import { ProductFormStore, type ChannelInheritance } from '../product-form-store
 @Component({
   selector: 'app-channels-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldButtonIconComponent],
   templateUrl: './channels-panel.html',
   styleUrl: './panel.scss',
 })
@@ -27,4 +35,37 @@ export class ChannelsPanel {
   protected readonly rows = computed<readonly ChannelInheritance[]>(
     () => this.store.channelsInheritance()?.channels ?? [],
   );
+
+  private readonly panelHost = inject(FoldPanelHostService);
+
+  /**
+   * Ouvre la dérogation de CETTE ligne.
+   *
+   * Le panneau ne connaît ni la fiche ni le magasin : il rend un choix, et
+   * c'est ici qu'on en fait une écriture. La section « Tarif & TVA » l'enverra
+   * avec le prix — les deux sont la même décision.
+   */
+  protected async redefine(row: ChannelInheritance): Promise<void> {
+    const data: TvaOverridePanelData = {
+      contextKey: row.key,
+      contextLabel: row.label,
+      rates: this.store.rates(),
+      inheritedLabel: this.inheritedLabel(row.key),
+      current: this.store.tvaOverride()[row.key] ?? null,
+    };
+    const chosen = await this.panelHost.open<TvaOverridePanelData, TvaOverridePanelResult>(
+      TvaOverridePanel,
+      { data },
+    ).closed;
+    if (chosen !== undefined) {
+      this.store.setTvaOverride(row.key, chosen.rateId);
+    }
+  }
+
+  /** Le taux de la FAMILLE pour ce contexte, nommé — jamais celui de la fiche. */
+  private inheritedLabel(contextKey: string): string {
+    const rateId = this.store.familyTva()[contextKey];
+    const rate = rateId === undefined ? undefined : this.store.rates().find((r) => r.id === rateId);
+    return rate === undefined ? 'non réglé' : `${rate.name} · ${formatPercent(rate.percent)}`;
+  }
 }

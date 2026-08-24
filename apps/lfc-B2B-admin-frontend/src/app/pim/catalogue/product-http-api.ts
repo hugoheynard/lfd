@@ -152,6 +152,7 @@ export function backendToProduct(
     status: product.status,
     variants: product.variants.map(toVariant),
     channelsOverride: null,
+    tvaByContext: product.tvaByContext,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
@@ -280,6 +281,15 @@ export class ProductHttpApi {
     const body = new FormData();
     body.append('file', file);
     return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
+  }
+
+  /**
+   * La dérogation de TVA de la fiche — carte VIDE comprise, qui la rend à sa
+   * famille. Un `PUT` de remplacement comme les autres sections : l'écran envoie
+   * ce qu'il affiche.
+   */
+  saveTva(id: string, tvaByContext: Readonly<Record<string, string>>): Promise<void> {
+    return this.put(`products/${id}/tva`, { tvaByContext });
   }
 
   saveMedia(id: string, media: readonly MediaSlot[]): Promise<void> {

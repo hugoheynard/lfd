@@ -2,10 +2,7 @@
   <div class="inherit">
     <!-- La provenance en tête du bloc, pas en légende dessous : elle vaut pour
          toutes les lignes qui suivent, et lue après elles il faudrait relire.
-
-         La maquette pose ici un « Redéfinir ». Il n'existe pas : l'API neutralise
-         `channelsOverride` (contexte commerce, tranche 2). Un lien qui n'ouvre
-         rien coûte plus cher que son absence. -->
+         Chaque ligne qui DÉROGE le dit ensuite pour elle-même. -->
     <p class="inherit-head">
       Hérité de la famille <strong>{{ inh.categoryName }}</strong>
     </p>
@@ -15,11 +12,17 @@
          pareil, et le chiffre qu'on cherche se perdait au bout d'une phrase. Le
          mot « TVA » disparaît : l'encadré ne parle que de ça. -->
     <dl class="inherit-rows">
-      @for (row of rows(); track row.label) {
-        <div class="inherit-row">
+      @for (row of rows(); track row.key) {
+        <div class="inherit-row" [class.is-overridden]="row.source === 'overridden'">
           <dt>{{ row.label }}</dt>
           @if (row.sold) {
-            <dd class="inherit-where">{{ row.boutiques.join(' · ') }}</dd>
+            <dd class="inherit-where">
+              @if (row.source === 'overridden') {
+                <span class="inherit-mark">Redéfini</span>
+              } @else {
+                {{ row.boutiques.join(' · ') }}
+              }
+            </dd>
             <dd class="inherit-rate">
               @if (row.rate; as rate) {
                 <strong>{{ rate.percent }}</strong>
@@ -27,6 +30,17 @@
               } @else {
                 <span class="muted">taux non défini</span>
               }
+              <!-- Le geste est SUR la ligne qu'il change : un bouton unique en
+                   pied de bloc aurait demandé de choisir le contexte deux fois,
+                   une fois dans sa tête et une fois dans le panneau. -->
+              <fold-button-icon
+                icon="edit"
+                size="sm"
+                [tooltip]="
+                  row.source === 'overridden' ? 'Modifier la dérogation' : 'Redéfinir ce taux'
+                "
+                (clicked)="redefine(row)"
+              />
             </dd>
           } @else {
             <dd class="inherit-where muted">non proposé</dd>

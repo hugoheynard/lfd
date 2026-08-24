@@ -81,6 +81,14 @@ export interface ChannelInheritance {
   readonly key: string;
   readonly label: string;
   /**
+   * D'où vient le taux affiché. `overridden` = cette fiche déroge à sa famille.
+   *
+   * La provenance voyage AVEC la valeur : sans elle, l'écran ne pourrait ni
+   * marquer la ligne, ni proposer d'y renoncer — et un taux sans provenance ne
+   * se défend pas devant quelqu'un qui le conteste.
+   */
+  readonly source: 'inherited' | 'overridden';
+  /**
    * Le contexte est-il vendu ? **Distinct** de la liste de noms ci-dessous :
    * savoir qu'un mode se vend et savoir nommer les boutiques sont deux faits, et
    * le second peut manquer (référentiel pas encore chargé) sans que le premier
@@ -290,6 +298,15 @@ export class ProductFormStore {
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
   readonly priceEur = signal<number | null>(null);
+
+  /**
+   * La **dérogation** de cette fiche, par clé de contexte. Vide = elle hérite.
+   *
+   * Séparée de l'héritage, et non fusionnée : l'écran doit pouvoir dire d'où
+   * vient chaque taux, et une valeur fusionnée aurait perdu la provenance en
+   * chemin — donc le moyen de revenir en arrière.
+   */
+  readonly tvaOverride = signal<Readonly<Record<string, string>>>({});
   readonly weightGrams = signal<number | null>(null);
   readonly selected = signal<string[]>([]);
   readonly declaresNone = signal(false);
@@ -372,16 +389,30 @@ export class ProductFormStore {
     this.categories().find((c) => c.id === this.categoryId()),
   );
 
+  /**
+   * Les taux de la FAMILLE du produit, par contexte — l'héritage nu, sans la
+   * dérogation. Le panneau en a besoin pour nommer ce à quoi « hériter » vaut :
+   * proposer « revenir au défaut » sans dire lequel, c'est choisir à l'aveugle.
+   */
+  readonly familyTva = computed<Readonly<Record<string, string>>>(
+    () => this.selectedCategory()?.tvaByContext ?? {},
+  );
+
   readonly channelsInheritance = computed<CategoryInheritanceView | null>(() => {
     const category = this.selectedCategory();
     if (category === undefined) {
       return null;
     }
-    const rateOf = (contextKey: string): RateView | null => {
-      const rateId = category.tvaByContext[contextKey];
+    const viewOf = (rateId: string | undefined): RateView | null => {
       const rate = rateId === undefined ? undefined : this.regimeById().get(rateId);
       return rate === undefined ? null : { name: rate.name, percent: formatPercent(rate.percent) };
     };
+    // La règle de résolution, à l'écran comme au serveur : la fiche d'abord, sa
+    // famille ensuite. Contexte par contexte — on peut déroger en B2B et suivre
+    // sa famille au comptoir.
+    const override = this.tvaOverride();
+    const rateOf = (contextKey: string): RateView | null =>
+      viewOf(override[contextKey] ?? category.tvaByContext[contextKey]);
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
@@ -405,6 +436,7 @@ export class ProductFormStore {
                 this.emplacements(),
               ),
         rate: rateOf(context.key),
+        source: override[context.key] === undefined ? 'inherited' : 'overridden',
       })),
     };
   });
@@ -489,6 +521,7 @@ export class ProductFormStore {
       case 'tarif':
         this.priceEur.set(value[0] as number | null);
         this.weightGrams.set(value[1] as number | null);
+        this.tvaOverride.set(value[2] as Readonly<Record<string, string>>);
         return;
       case 'fiche':
         this.declaresNone.set(Boolean(value[0]));
@@ -760,15 +793,32 @@ export class ProductFormStore {
     );
   }
 
+  /**
+   * Déroge au taux de la famille pour UN contexte, ou lui rend la main.
+   *
+   * `null` retire la clé plutôt que d'écrire une valeur vide : « je reviens à
+   * l'héritage » est un geste, et il ne doit pas s'écrire comme une décision.
+   */
+  setTvaOverride(contextKey: string, rateId: string | null): void {
+    this.tvaOverride.update((current) => {
+      const { [contextKey]: _dropped, ...rest } = current;
+      return rateId === null ? rest : { ...rest, [contextKey]: rateId };
+    });
+  }
+
   savePricing(): Promise<void> {
     const price = this.priceEur();
     const weight = this.weightGrams();
-    return this.save('tarif', () =>
-      this.products.savePricing(this.productId(), this.variantId(), {
+    return this.save('tarif', async () => {
+      await this.products.savePricing(this.productId(), this.variantId(), {
         priceCents: price === null ? null : Math.round(price * 100),
         weightGrams: weight === null ? null : Math.round(weight),
-      }),
-    );
+      });
+      // Le prix et son régime partent ENSEMBLE : ils sont dans la même section,
+      // et enregistrer l'un sans l'autre laisserait l'écran vert sur une moitié
+      // de décision.
+      await this.products.saveTva(this.productId(), this.tvaOverride());
+    });
   }
 
   saveFiche(): Promise<void> {
@@ -875,7 +925,7 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([this.priceEur(), this.weightGrams()]);
+        return JSON.stringify([this.priceEur(), this.weightGrams(), this.tvaOverride()]);
       case 'fiche':
         return JSON.stringify([this.declaresNone(), [...this.selected()].sort(), this.nutrition()]);
       case 'communication':
@@ -910,6 +960,7 @@ export class ProductFormStore {
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
+    this.tvaOverride.set(product.tvaByContext);
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);

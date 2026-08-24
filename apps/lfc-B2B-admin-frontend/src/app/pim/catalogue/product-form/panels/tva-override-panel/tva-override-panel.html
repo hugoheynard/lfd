@@ -1,0 +1,19 @@
+<fold-panel-header [title]="'TVA — ' + data().contextLabel" />
+<fold-panel-body>
+  <fold-listbox
+    label="Taux facturé pour ce contexte"
+    [value]="draft()"
+    (selectionChange)="draft.set($event)"
+  >
+    <!-- L'héritage est la PREMIÈRE option, et il nomme le taux qu'il vaut :
+         « revenir au défaut » sans dire à quoi laisse choisir à l'aveugle. -->
+    <fold-option value="">Hérité de la famille — {{ data().inheritedLabel }}</fold-option>
+    @for (rate of rates(); track rate.id) {
+      <fold-option [value]="rate.id">{{ label(rate) }}</fold-option>
+    }
+  </fold-listbox>
+</fold-panel-body>
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton (click)="confirm()">Appliquer</button>
+</fold-panel-footer>

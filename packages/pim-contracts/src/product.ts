@@ -131,6 +131,15 @@ export interface ProductView {
   readonly categoryId: string;
   readonly status: ProductStatus;
   readonly variants: readonly VariantView[];
+  /**
+   * La **dérogation** de cette fiche au taux de sa famille, par clé de contexte.
+   * Vide = elle hérite, et c'est le cas courant.
+   *
+   * La vue rend la dérogation SEULE, pas le taux effectif : l'écran affiche
+   * déjà l'héritage de la famille, et rendre les deux fusionnés lui retirerait
+   * le moyen de dire « ce taux-là vient d'ici ».
+   */
+  readonly tvaByContext: Readonly<Record<string, string>>;
 }
 
 /**

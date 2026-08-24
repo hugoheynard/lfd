@@ -92,6 +92,12 @@ export interface Product {
   variants: Variant[];
   /** `null` = canaux hérités de la gamme ; sinon override tout-ou-rien. */
   channelsOverride: SalesChannels | null;
+  /**
+   * La **dérogation** de cette fiche au taux de sa famille, par clé de contexte.
+   * Vide = elle hérite. Ce n'est PAS le taux effectif : l'écran compose les deux
+   * pour pouvoir dire d'où vient chaque taux.
+   */
+  tvaByContext: Readonly<Record<string, string>>;
   /** Handle Shopify — pilote l'URL, jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */

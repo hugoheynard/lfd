@@ -40,6 +40,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     categoryId: 'cat_choco',
     status: 'draft' as const,
     variants: [variant],
+    tvaByContext: {},
   };
 }
 
@@ -83,5 +84,16 @@ describe('backendToProduct', () => {
     expect(product.variants).toHaveLength(1);
     expect(product.variants[0]?.allergens).toEqual(['TBD_BARLEY']);
     expect(product.variants[0]?.isDefault).toBe(true);
+  });
+});
+
+describe('la dérogation de TVA', () => {
+  it('voyage TELLE QUELLE — l’écran compose l’héritage, pas le transport', () => {
+    // La fusion « fiche par-dessus famille » appartient au magasin, qui connaît
+    // les deux. La faire ici priverait l'écran de la provenance, donc du moyen
+    // de marquer la ligne et d'y renoncer.
+    const product = backendToProduct({ ...backendProduct(), tvaByContext: { b2b: 'tva_20' } });
+
+    expect(product.tvaByContext).toEqual({ b2b: 'tva_20' });
   });
 });
