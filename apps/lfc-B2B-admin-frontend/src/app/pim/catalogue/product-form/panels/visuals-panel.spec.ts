@@ -132,6 +132,46 @@ describe('VisualsPanel', () => {
     expect(gallery.querySelector('fold-file-dropzone')).not.toBeNull();
   });
 
+  it("porte le ratio de l'image, et son poids", () => {
+    // Recadrer tout en 4/3 ferait paraître un portrait carré, et on ne s'en
+    // apercevrait qu'en boutique.
+    const store = setup();
+    store.media.set([
+      {
+        role: 'hero',
+        url: 'https://media.test/a.png',
+        alt: { fr: 'Une tarte' },
+        width: 1600,
+        height: 1200,
+        bytes: 253952,
+      },
+    ]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-thumb')?.getAttribute('style')).toContain('1600 / 1200');
+    expect(host.textContent).toContain('1600 × 1200');
+    expect(host.textContent).toContain('248 ko');
+  });
+
+  it('nomme les langues qui manquent À CETTE image', () => {
+    // La question devant une galerie n'est pas « manque-t-il des traductions »
+    // mais « laquelle, sur laquelle » — le compte de la section n'y répond pas.
+    const store = setup();
+    store.media.set([
+      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte', en: 'A tart' } },
+      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
+    ]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
+    expect(tiles[0]?.textContent).toContain('À traduire en italien');
+    expect(tiles[0]?.textContent).not.toContain('anglais');
+    expect(tiles[1]?.textContent).toContain('anglais et italien');
+  });
+
   it("dit qu'une image externe n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);

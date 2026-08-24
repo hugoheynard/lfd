@@ -565,6 +565,18 @@ export class ProductFormStore {
   }
 
   /**
+   * Les langues qui manquent au texte alternatif d'UN visuel.
+   *
+   * Par image ET par langue, parce que c'est la question qu'on se pose devant
+   * une galerie : pas « est-ce qu'il manque des traductions » mais « laquelle,
+   * sur laquelle ». Le compte agrégé de la section ne peut pas y répondre.
+   */
+  mediaAltMissing(index: number): readonly Locale[] {
+    const alt = this.media()[index]?.alt;
+    return alt === undefined ? LOCALES : missingLocales(alt);
+  }
+
+  /**
    * Les langues qu'il reste à traduire sur les visuels. Même règle que
    * l'éditorial : un visuel sans alternative du tout n'est pas « à traduire »,
    * il est à rédiger — et c'est la complétude qui le dit, pas ce point-ci.

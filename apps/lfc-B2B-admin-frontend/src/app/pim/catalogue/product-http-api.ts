@@ -70,6 +70,8 @@ export interface MediaSlot {
   alt?: LocalizedText;
   readonly width?: number | null;
   readonly height?: number | null;
+  /** Le poids du fichier. `null` = pas mesuré (visuel saisi par son URL). */
+  readonly bytes?: number | null;
 }
 
 /** Détail complet pour la page d'édition : produit + éditorial + fiche + visuels. */
@@ -208,6 +210,7 @@ export class ProductHttpApi {
         alt: item.alt,
         width: item.width,
         height: item.height,
+        bytes: item.bytes,
       })),
     };
   }

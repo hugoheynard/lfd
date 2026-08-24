@@ -133,6 +133,10 @@ app-lang-switch {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: var(--fold-space-md);
+  /* Les tuiles portent chacune le ratio de leur image, donc elles n'ont pas la
+     même hauteur : les caler en haut fait une galerie, les étirer ferait des
+     aperçus déformés au sein d'une même rangée. */
+  align-items: start;
 }
 
 .media-tile {
@@ -157,9 +161,10 @@ app-lang-switch {
   border-color: var(--fold-color-warning-border);
 }
 
+/* L'aperçu porte le ratio de SON image : recadrer tout en 4/3 ferait paraître
+   un portrait carré, et on ne s'en apercevrait qu'en boutique. */
 .media-thumb {
   position: relative;
-  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--fold-color-surface-sunken);
 
@@ -209,9 +214,15 @@ app-lang-switch {
 }
 
 /* La dernière tuile est le dépôt : il vit DANS la galerie, à la place qu'aurait
-   l'image suivante, plutôt qu'en bas de section où il faut aller le chercher. */
+   l'image suivante, plutôt qu'en bas de section où il faut aller le chercher.
+
+   À la TAILLE d'une vignette, donc : étiré sur la hauteur de sa rangée, il
+   dépassait des images à côté de lui et se lisait comme une bande, pas comme la
+   case suivante. `align-self: start` le décroche de l'étirement de la grille, et
+   le cadre par défaut d'un aperçu lui donne sa forme. */
 .media-drop {
-  min-height: 100%;
+  align-self: start;
+  aspect-ratio: 4 / 3;
 }
 
 .media-actions {

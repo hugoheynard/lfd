@@ -12,9 +12,21 @@ import {
 } from 'fold-ng';
 
 import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
+import { SOURCE_LOCALE } from '@lfd/pim-contracts';
+
 import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
 import { ProductFormStore } from '../product-form-store';
 import type { MediaSlot } from '../../product-http-api';
+
+/** Le cadre d'un aperçu dont on ne connaît pas la taille. */
+const UNKNOWN_RATIO = '4 / 3';
+
+/** Le poids d'un fichier, en unités qu'un humain lit. */
+function formatBytes(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${String(Math.round(bytes / 1024))} ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
 
 const MEDIA_ROLES: readonly { value: string; label: string }[] = [
   { value: 'hero', label: 'Principale' },
@@ -61,13 +73,40 @@ export class VisualsPanel {
   );
   protected readonly roles = MEDIA_ROLES;
 
+  /**
+   * Le ratio de l'aperçu — celui de l'IMAGE, pas un cadre imposé.
+   *
+   * Une vignette qui recadre tout en 4/3 ment sur ce qu'on a déposé : un portrait
+   * y paraît carré, et on ne s'en aperçoit qu'en boutique. Elle réserve aussi sa
+   * place, donc la galerie ne saute pas au chargement.
+   *
+   * Taille inconnue (visuel saisi par son URL) : un cadre par défaut, parce que
+   * réserver une place approximative vaut mieux que n'en réserver aucune.
+   */
+  protected ratioOf(slot: MediaSlot): string {
+    const { width, height } = slot;
+    if (typeof width !== 'number' || typeof height !== 'number' || height === 0) {
+      return UNKNOWN_RATIO;
+    }
+    return `${width} / ${height}`;
+  }
+
   /** Ce qu'on sait du fichier, ou son absence de mesure — jamais « 0 × 0 ». */
   protected metaOf(slot: MediaSlot): string {
-    const { width, height } = slot;
+    const { width, height, bytes } = slot;
     if (typeof width !== 'number' || typeof height !== 'number') {
       return 'Image externe — non hébergée';
     }
-    return `${width} × ${height} px`;
+    const size = typeof bytes === 'number' ? ` · ${formatBytes(bytes)}` : '';
+    return `${width} × ${height}${size}`;
+  }
+
+  /** Les langues qui manquent à CETTE image, nommées ; rien quand tout y est. */
+  protected untranslated(index: number): string | undefined {
+    const missing = this.store.mediaAltMissing(index).filter((locale) => locale !== SOURCE_LOCALE);
+    return missing.length === 0
+      ? undefined
+      : missing.map((locale) => LOCALE_NAMES[locale]).join(' et ');
   }
 
   /** Un seul fichier à la fois : `fold-file-dropzone` remet son champ à zéro

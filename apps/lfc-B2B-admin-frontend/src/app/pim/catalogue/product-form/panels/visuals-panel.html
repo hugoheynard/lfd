@@ -16,7 +16,7 @@
       [class.is-hero]="slot.role === 'hero'"
       [class.is-incomplete]="store.mediaAlt($index).trim() === ''"
     >
-      <div class="media-thumb">
+      <div class="media-thumb" [style.aspect-ratio]="ratioOf(slot)">
         @if (slot.url !== '') {
           <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
         }
@@ -49,8 +49,12 @@
           [value]="store.mediaAlt($index)"
           (valueChange)="store.setMediaAlt($index, $event)"
         />
+        <!-- Par image ET par langue : devant une galerie, la question n'est pas
+             « manque-t-il des traductions » mais « laquelle, sur laquelle ». -->
         @if (store.mediaAlt($index).trim() === '') {
           <span class="media-missing">Texte alternatif manquant</span>
+        } @else if (untranslated($index); as langs) {
+          <span class="media-missing">À traduire en {{ langs }}</span>
         }
         @if (slot.url === '') {
           <fold-input
