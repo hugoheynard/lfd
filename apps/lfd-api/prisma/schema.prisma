@@ -2514,6 +2514,10 @@ model Category {
   b2bTvaId      String?  @map("b2b_tva_id")
   b2bTva        TvaRate? @relation("CategoryB2bTva", fields: [b2bTvaId], references: [id])
 
+  /// Les taux par contexte de vente — le modèle data-driven. Les trois colonnes
+  /// ci-dessus sont écrites EN PARALLÈLE le temps d'un déploiement, puis tombent.
+  contextTva CategoryContextTva[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
@@ -2529,6 +2533,75 @@ model Category {
 /// Taux de TVA — référence commerciale partagée. Les canaux en dérivent ce
 /// dont ils ont besoin : Shopify un handle de collection, la boutique B2B un
 /// nombre à facturer. Aucun de ces deux vocabulaires ne vit ici.
+/// Un **contexte de vente** — une manière de vendre l'article qui a son propre
+/// traitement de TVA (donc sa propre collection `tva-*` côté Shopify).
+///
+/// Une TABLE et non trois colonnes sur `category` : ajouter « B2B » ou « borne
+/// libre-service » doit être une LIGNE, pas une migration plus un déploiement.
+/// Les trois colonnes `*_tva_id` de `category` sont l'ancien modèle ; elles
+/// tombent au troisième déploiement (étendre → basculer → resserrer).
+model SalesContext {
+  id  String @id
+  /// Identité stable, lue par le code (`emporter`, `surPlace`, `b2b`).
+  key String @unique
+  /// Ce qu'un humain lit à l'écran.
+  label String
+
+  /// Suffixe de handle Shopify. **Vide pour le contexte par défaut** : le
+  /// handle nu protège les URL déjà indexées (cf. C0-bis, write-once SEO).
+  handleSuffix String @default("") @map("handle_suffix")
+
+  /// Quel drapeau de `category.channel_preset` autorise ce contexte. Colonne de
+  /// TRANSITION, assumée : tant que la matrice des canaux garde ses clés fixes
+  /// (`emporter` / `surPlace` / `b2b`), le contexte doit dire lequel le porte.
+  /// Elle disparaît quand la matrice devient elle aussi une donnée.
+  channelKey String @map("channel_key")
+
+  /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
+  /// plus à l'écran et ne facture plus. Explicite, jamais implicite : la TVA est
+  /// de l'argent, et un contexte activé par accident facture faux.
+  active Boolean @default(false)
+
+  /// Shopify en fait-il un produit ? **Distinct de `active`**, et la distinction
+  /// n'est pas théorique : le B2B est en service — il facture ses professionnels
+  /// — sans que la boutique en ligne ait à porter un second produit par article.
+  /// Les confondre activerait des handles `-b2b` le jour où on règle un taux B2B.
+  shopifyProjected Boolean @default(false) @map("shopify_projected")
+
+  position Int @default(0)
+
+  categoryTva CategoryContextTva[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sales_context")
+  @@schema("pim")
+}
+
+/// Le taux d'une famille **pour un contexte**. Clé composite : une famille ne
+/// peut pas porter deux taux pour le même contexte, et c'est structurel.
+///
+/// **L'absence de ligne est la donnée** : « non réglé » ne s'écrit pas, il ne
+/// s'écrit rien (cf. `data-model/04`, motif de la clé partagée).
+model CategoryContextTva {
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  contextId  String   @map("context_id")
+  context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  tvaRateId  String   @map("tva_rate_id")
+  /// `Restrict` (défaut) : un taux visé par une famille ne peut pas disparaître.
+  tvaRate    TvaRate  @relation(fields: [tvaRateId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([categoryId, contextId])
+  @@index([tvaRateId])
+  @@map("category_context_tva")
+  @@schema("pim")
+}
+
 model TvaRate {
   id          String @id
   name        String
@@ -2544,6 +2617,10 @@ model TvaRate {
   categoriesEmporter Category[] @relation("CategoryEmporterTva")
   categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
   categoriesB2b      Category[] @relation("CategoryB2bTva")
+
+  /// Familles qui visent ce taux **par contexte** — le modèle qui remplace les
+  /// trois relations ci-dessus.
+  contextTva CategoryContextTva[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
