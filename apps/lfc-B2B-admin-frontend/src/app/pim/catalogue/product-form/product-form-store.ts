@@ -153,6 +153,20 @@ export class ProductFormStore {
    */
   private readonly skuValue = signal('');
   readonly sku: Signal<string> = this.skuValue;
+
+  /**
+   * Le **slug** — le handle qui pilote l'URL publique. Lu, jamais saisi, et pour
+   * une raison plus forte que la référence : il est figé à la création (SEO —
+   * une URL qui change casse les liens et le référencement acquis). L'exposer
+   * en écriture proposerait de corriger ce que le backend refuse de bouger.
+   *
+   * Vide tant que le produit n'a pas été poussé : le handle naît de la première
+   * publication, pas de la création. Un slug « proposé » affiché ici prétendrait
+   * connaître l'algorithme du serveur — et le jour où ils divergent, l'écran
+   * aurait menti sans que rien ne le dise.
+   */
+  private readonly slugValue = signal('');
+  readonly slug: Signal<string> = this.slugValue;
   /**
    * L'état de publication — **lu**, et changé par le menu de l'en-tête, jamais
    * par un champ. Il vit ici et pas dans la page parce que c'est un fait DU
@@ -645,6 +659,7 @@ export class ProductFormStore {
     const product = detail.product;
     this.skuValue.set(product.sku);
     this.statusValue.set(product.status);
+    this.slugValue.set(product.slug?.fr ?? '');
     this.variantCountValue.set(product.variants.length);
     this.name.set(product.name.fr);
     this.kind.set(product.kind);

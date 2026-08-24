@@ -15,7 +15,10 @@ function setup(): ProductFormStore {
 describe('IdentityPanel', () => {
   // La référence est ÉMISE par le référentiel. Un champ de saisie proposerait
   // d'écrire une valeur que le backend n'écoute plus — et inviterait au doublon.
-  it('n’offre aucun champ de saisie pour la référence', () => {
+  it('n’offre aucun champ de saisie pour la référence ni pour le slug', () => {
+    // Les deux sont ÉMIS par le référentiel. Un champ de saisie proposerait
+    // d'écrire une valeur que le backend ignore — et, pour le slug, qu'il
+    // refuse même de bouger après création.
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
@@ -25,20 +28,40 @@ describe('IdentityPanel', () => {
       (input) => input.getAttribute('label') ?? '',
     );
     expect(labels.some((label) => label.includes('Référence'))).toBe(false);
+    expect(labels.some((label) => label.includes('Slug'))).toBe(false);
   });
 
-  it('affiche la référence en lecture une fois le produit créé', () => {
+  it('présente les champs dans l’ordre nom · famille · nature · slug', () => {
+    // L'ordre EST le contenu d'une fiche : on nomme la chose, on la range, on
+    // dit ce qu'elle est, puis on lit ce que le référentiel en a fait.
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
 
-    const field = (fixture.nativeElement as HTMLElement).querySelector('fold-field');
-    expect(field?.getAttribute('label')).toBe('Référence');
+    const grid = (fixture.nativeElement as HTMLElement).querySelector('.grid')!;
+    const labels = [...grid.querySelectorAll('fold-input, fold-listbox, fold-field')].map(
+      (el) => el.getAttribute('label') ?? '',
+    );
+    expect(labels).toEqual(['Nom du produit', 'Famille', 'Nature', 'Slug']);
   });
 
-  // Rien à montrer tant que le produit n'existe pas : la référence naît avec lui.
-  it('ne montre pas de référence en création', () => {
+  it('dit que le slug manque plutôt que d’en inventer un', () => {
+    // Le handle naît de la première publication. Afficher un slug « proposé »
+    // prétendrait connaître l'algorithme du serveur, et mentirait le jour où
+    // les deux divergent.
+    const store = setup();
+    store.isEdit.set(true);
+    store.name.set('Tarte au citron meringuée');
+    const fixture = TestBed.createComponent(IdentityPanel);
+    fixture.detectChanges();
+
+    const field = (fixture.nativeElement as HTMLElement).querySelector('fold-field');
+    expect(field?.textContent).toContain('attribué à la première publication');
+    expect(field?.textContent).not.toContain('tarte');
+  });
+
+  it('ne montre ni slug ni référence en création', () => {
     const store = setup();
     store.isEdit.set(false);
     const fixture = TestBed.createComponent(IdentityPanel);
