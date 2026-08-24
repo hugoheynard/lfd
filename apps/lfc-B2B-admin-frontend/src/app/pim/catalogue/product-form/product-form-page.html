@@ -1,8 +1,10 @@
 <!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
      « edit » y ajoutait le geste plutôt que la chose. -->
-<!-- `separator` : le corps de la fiche est une suite de sections sans surface
-     propre, donc sans le filet l'en-tête se lit comme la première d'entre elles. -->
-<fold-page-layout [title]="store.pageTitle()" separator>
+<!-- `headerBand` + `separator` : l'en-tête se pose sur le sol de bande — un pas
+     à l'écart de la page, dans le sens que la polarité du thème impose — et se
+     ferme sur un filet. Les deux, comme la maquette : sur un thème où la bande
+     s'écarte peu, c'est le filet qui dit où l'en-tête s'arrête. -->
+<fold-page-layout [title]="store.pageTitle()" headerBand separator>
   <!-- Un retour, pas un fil. La fiche n'a qu'un seul parent réel — la liste des
        produits ; la famille n'a pas d'écran, donc un fil aurait nommé une étape
        où l'on ne peut pas aller. La flèche dit le sens, et c'est tout ce que
@@ -76,7 +78,7 @@
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
   } @else {
-    <fold-aside-layout>
+    <fold-aside-layout band="right" asideRightLabel="Publication">
       <!-- Une section par bloc, toutes visibles : un back-office se lit de haut
            en bas. Les sept onglets s'ajoutaient au rail du PIM (sept entrées
            lui aussi), cachaient l'état — impossible de voir d'un coup ce qui

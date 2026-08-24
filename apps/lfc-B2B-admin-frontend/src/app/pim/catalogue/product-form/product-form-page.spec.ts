@@ -57,6 +57,21 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('fold-page-layout')?.hasAttribute('data-separator')).toBe(true);
   });
 
+  it('pose l’en-tête sur le sol de bande, et le rail de publication avec', () => {
+    // Les deux zones que la maquette détache du contenu : l'en-tête et le rail.
+    // Elles nomment le MÊME rôle (`--fold-color-surface-band`), donc elles
+    // s'accordent sur les cinq thèmes sans qu'aucune connaisse sa polarité.
+    const { root } = render(true);
+    expect(root.querySelector('fold-page-layout')?.hasAttribute('data-header-band')).toBe(true);
+    expect(root.querySelector('fold-aside-layout')?.getAttribute('data-band')).toBe('right');
+  });
+
+  it('expose le rail comme un repère nommé, pas comme une région anonyme', () => {
+    const { root } = render(true);
+    const rail = root.querySelector('[role="complementary"]');
+    expect(rail?.getAttribute('aria-label')).toBe('Publication');
+  });
+
   it('ne laisse pas de séparateur orphelin quand un fait manque', () => {
     // La famille n'est pas encore connue (référentiel non chargé) et il n'y a
     // aucune déclinaison : la ligne doit se lire « TYPE » seul, sans « · · ».

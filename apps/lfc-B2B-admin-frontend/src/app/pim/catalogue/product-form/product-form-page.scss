@@ -1,3 +1,12 @@
+/* La page possède DÉJÀ la gouttière : `fold-page-layout` la paye sur son hôte.
+   Laisser `fold-aside-layout` payer la sienne par-dessus l'inserait une seconde
+   fois — invisible tant que rien n'est peint, voyant dès que le rail porte sa
+   bande, qui flotterait alors à 28px du bord au lieu de l'atteindre. Le bas
+   reste à zéro pour la même raison : `--fold-page-pad-bottom` le couvre. */
+fold-aside-layout {
+  --fold-aside-layout-pad: 0;
+}
+
 /* La ligne de faits sous le titre. Elle vit dans le créneau `[description]` de
    fold-page-layout, qui lui donne déjà sa taille et son gris : ici on ne pose
    que le rythme des séparateurs et la face de la référence. */
