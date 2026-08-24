@@ -203,6 +203,48 @@ export class ShopifyAdminClient {
   }
 
   /**
+   * Les **handles de collections** auxquelles ce produit appartient.
+   *
+   * Nécessaire pour tenir l'invariant S2 — un produit dans **une seule**
+   * collection `tva-*`. Sans cette lecture, un article qui change de taux
+   * resterait membre de son ancienne collection : la boutique le taxerait
+   * encore selon elle, et rien ne le signalerait.
+   */
+  async collectionHandlesOfProduct(productId: string): Promise<string[]> {
+    const data = await this.graphql<{
+      product: { collections: { nodes: readonly { handle: string }[] } } | null;
+    }>(PRODUCT_COLLECTIONS_QUERY, { id: productId });
+    return (data.product?.collections.nodes ?? []).map((node) => node.handle);
+  }
+
+  /**
+   * Retire des produits d'une collection **manuelle** (`collectionRemoveProducts`).
+   * Idempotent côté Shopify : retirer un produit non membre est sans effet.
+   */
+  async removeProductsFromCollection(
+    collectionId: string,
+    productIds: readonly string[],
+  ): Promise<void> {
+    if (productIds.length === 0) {
+      return;
+    }
+    const data = await this.graphql<{
+      collectionRemoveProducts: {
+        job: { id: string } | null;
+        userErrors: readonly UserError[];
+      };
+    }>(COLLECTION_REMOVE_PRODUCTS_MUTATION, { id: collectionId, productIds });
+
+    const { userErrors } = data.collectionRemoveProducts;
+    if (userErrors.length > 0) {
+      throw new ShopifyRejectedError(
+        userErrors.map((error) => error.message).join(" ; ") ||
+          `Retrait de la collection « ${collectionId} » refusé.`,
+      );
+    }
+  }
+
+  /**
    * Transport GraphQL **authentifié** vers l'API Admin — jeton, endpoint, erreurs.
    * Public pour que les adaptateurs (drivers de push) réutilisent le transport sans
    * dupliquer l'auth ; eux portent la forme de *leur* mutation, ici on ne fait que
@@ -288,6 +330,23 @@ const CREATE_COLLECTION_MUTATION = `
 const COLLECTION_ADD_PRODUCTS_MUTATION = `
   mutation CollectionAddProducts($id: ID!, $productIds: [ID!]!) {
     collectionAddProductsV2(id: $id, productIds: $productIds) {
+      job { id }
+      userErrors { field message }
+    }
+  }
+`;
+
+const PRODUCT_COLLECTIONS_QUERY = `
+  query ProductCollections($id: ID!) {
+    product(id: $id) {
+      collections(first: 250) { nodes { handle } }
+    }
+  }
+`;
+
+const COLLECTION_REMOVE_PRODUCTS_MUTATION = `
+  mutation CollectionRemoveProducts($id: ID!, $productIds: [ID!]!) {
+    collectionRemoveProducts(id: $id, productIds: $productIds) {
       job { id }
       userErrors { field message }
     }

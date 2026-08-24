@@ -11,8 +11,11 @@ interface AddCall {
 
 async function build(
   collections: { handle: string; id: string }[],
-): Promise<{ service: ShopifyMembershipService; adds: AddCall[] }> {
+  /** Ce à quoi le produit appartient DÉJÀ chez le marchand. */
+  held: readonly string[] = [],
+): Promise<{ service: ShopifyMembershipService; adds: AddCall[]; removes: AddCall[] }> {
   const adds: AddCall[] = [];
+  const removes: AddCall[] = [];
   const moduleRef = await Test.createTestingModule({
     providers: [
       ShopifyMembershipService,
@@ -37,11 +40,16 @@ async function build(
             adds.push({ collectionId, productIds });
             return Promise.resolve();
           },
+          collectionHandlesOfProduct: () => Promise.resolve([...held]),
+          removeProductsFromCollection: (collectionId: string, productIds: readonly string[]) => {
+            removes.push({ collectionId, productIds });
+            return Promise.resolve();
+          },
         },
       },
     ],
   }).compile();
-  return { service: moduleRef.get(ShopifyMembershipService), adds };
+  return { service: moduleRef.get(ShopifyMembershipService), adds, removes };
 }
 
 describe("ShopifyMembershipService", () => {
@@ -51,6 +59,7 @@ describe("ShopifyMembershipService", () => {
     const outcome = await service.assign("gid-prod", ["tva-5-5"]);
 
     expect(outcome.joined).toEqual(["tva-5-5"]);
+    expect(outcome.left).toEqual([]);
     expect(outcome.missing).toEqual([]);
     expect(adds[0]).toEqual({
       collectionId: "gid-55",
@@ -71,7 +80,45 @@ describe("ShopifyMembershipService", () => {
   it("sans tag, ne fait rien", async () => {
     const { service, adds } = await build([]);
     const outcome = await service.assign("gid-prod", []);
-    expect(outcome).toEqual({ joined: [], missing: [] });
+    expect(outcome).toEqual({ joined: [], left: [], missing: [] });
     expect(adds).toHaveLength(0);
+  });
+});
+
+describe("ShopifyMembershipService — un seul taux à la fois (S2)", () => {
+  it("QUITTE la collection de l'ancien taux", async () => {
+    // La panne la plus chère du lot : un article dont le taux change restait
+    // membre de son ancienne collection, la boutique le taxait selon elle, et
+    // rien ne le signalait. Rejoindre ne suffit pas.
+    const { service, removes } = await build(
+      [
+        { handle: "tva-5-5", id: "gid-55" },
+        { handle: "tva-20", id: "gid-20" },
+      ],
+      ["tva-5-5"],
+    );
+
+    const outcome = await service.assign("gid-prod", ["tva-20"]);
+
+    expect(outcome.joined).toEqual(["tva-20"]);
+    expect(outcome.left).toEqual(["tva-5-5"]);
+    expect(removes).toEqual([{ collectionId: "gid-55", productIds: ["gid-prod"] }]);
+  });
+
+  it("ne touche PAS aux collections du marchand", async () => {
+    // Les collections hors `tva-*` appartiennent à la boutique : « Noël »,
+    // « Nouveautés ». Ce service n'a rien à y dire.
+    const { service, removes } = await build(
+      [
+        { handle: "tva-20", id: "gid-20" },
+        { handle: "noel", id: "gid-noel" },
+      ],
+      ["noel"],
+    );
+
+    const outcome = await service.assign("gid-prod", ["tva-20"]);
+
+    expect(outcome.left).toEqual([]);
+    expect(removes).toEqual([]);
   });
 });

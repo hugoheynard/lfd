@@ -26,6 +26,12 @@ function describeMembership(outcome: MembershipOutcome): string {
   if (outcome.joined.length > 0) {
     parts.push(`rangé dans ${outcome.joined.join(", ")}`);
   }
+  // Le rapport DIT ce qu'on a quitté : un article qui change de taux change de
+  // collection, et c'est le genre de chose qu'on veut lire dans le compte rendu
+  // plutôt que découvrir sur une facture.
+  if (outcome.left.length > 0) {
+    parts.push(`retiré de ${outcome.left.join(", ")}`);
+  }
   if (outcome.missing.length > 0) {
     parts.push(`⚠ collection(s) absente(s) : ${outcome.missing.join(", ")}`);
   }

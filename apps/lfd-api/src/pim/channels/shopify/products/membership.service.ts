@@ -1,12 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
-import { ShopifyAdminClient } from "@lfd/shopify-admin";
+import { ShopifyAdminClient, TVA_HANDLE_PREFIX } from "@lfd/shopify-admin";
 
 import { LiveShopifyCollectionsGateway } from "../collections/gateway.js";
 
-/** Ce qu'a donné le rangement : les collections rejointes, celles introuvables. */
+/** Ce qu'a donné le rangement : rejointes, quittées, et celles introuvables. */
 export interface MembershipOutcome {
   readonly joined: readonly string[];
+  /**
+   * Les collections `tva-*` **quittées** — l'article y était rangé sous un taux
+   * qui n'est plus le sien.
+   */
+  readonly left: readonly string[];
   /** Tags `tva-*` demandés mais absents de la boutique (à créer via le push collections). */
   readonly missing: readonly string[];
 }
@@ -30,7 +35,7 @@ export class ShopifyMembershipService {
 
   async assign(productGid: string, tags: readonly string[]): Promise<MembershipOutcome> {
     if (tags.length === 0) {
-      return { joined: [], missing: [] };
+      return { joined: [], left: [], missing: [] };
     }
     const byHandle = new Map(
       (await this.gateway.list()).map((collection) => [collection.handle, collection.id]),
@@ -47,6 +52,41 @@ export class ShopifyMembershipService {
       await this.client.addProductsToCollection(collectionId, [productGid]);
       joined.push(tag);
     }
-    return { joined, missing };
+    return { joined, left: await this.leaveStale(productGid, tags, byHandle), missing };
+  }
+
+  /**
+   * Quitte les collections `tva-*` qui ne sont plus les siennes — l'invariant
+   * **S2** : un produit n'est membre que d'UNE collection de taxe.
+   *
+   * Rejoindre ne suffit pas. Un article dont le taux change — parce que sa
+   * famille bouge, ou parce qu'il déroge — restait membre de son ancienne
+   * collection : la boutique continuait de le taxer selon elle, sans que rien
+   * ne le signale. C'est la panne la plus chère du lot, parce qu'elle est
+   * silencieuse et qu'elle porte sur de l'argent.
+   *
+   * On ne touche QUE les collections `tva-*` : les autres appartiennent au
+   * marchand, et ce service n'a rien à y dire.
+   */
+  private async leaveStale(
+    productGid: string,
+    keep: readonly string[],
+    byHandle: ReadonlyMap<string, string>,
+  ): Promise<string[]> {
+    const held = await this.client.collectionHandlesOfProduct(productGid);
+    const stale = held.filter(
+      (handle) => handle.startsWith(TVA_HANDLE_PREFIX) && !keep.includes(handle),
+    );
+
+    const left: string[] = [];
+    for (const handle of stale) {
+      const collectionId = byHandle.get(handle);
+      if (collectionId === undefined) {
+        continue;
+      }
+      await this.client.removeProductsFromCollection(collectionId, [productGid]);
+      left.push(handle);
+    }
+    return left;
   }
 }

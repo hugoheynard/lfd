@@ -163,7 +163,7 @@ async function build(
         useValue: {
           assign: (productGid: string, tags: readonly string[]) => {
             assigns.push({ productGid, tags });
-            return Promise.resolve({ joined: tags, missing: [] });
+            return Promise.resolve({ joined: tags, left: [], missing: [] });
           },
         },
       },
