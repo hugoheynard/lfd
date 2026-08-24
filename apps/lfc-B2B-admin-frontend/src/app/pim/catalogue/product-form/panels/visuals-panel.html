@@ -9,76 +9,84 @@
   ariaLabel="Langue des textes alternatifs"
 />
 
-<div class="stack">
-  <div class="media">
-    @for (slot of store.media(); track $index) {
-      <div class="media-row">
-        <!-- L'aperçu réserve sa place quand on connaît la taille : sans ratio,
-             la liste saute au chargement de chaque image. -->
-        <div class="media-thumb" [style.aspect-ratio]="ratioOf(slot)">
-          @if (slot.url !== '') {
-            <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
+<div class="media">
+  @for (slot of store.media(); track $index) {
+    <div
+      class="media-tile"
+      [class.is-hero]="slot.role === 'hero'"
+      [class.is-incomplete]="store.mediaAlt($index).trim() === ''"
+    >
+      <div class="media-thumb">
+        @if (slot.url !== '') {
+          <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
+        }
+        @if (slot.role === 'hero') {
+          <fold-badge class="media-badge" content="Principale" variant="accent" radius="square" />
+        }
+        <fold-dropdown class="media-menu" ariaLabel="Actions du visuel" placement="bottom-end">
+          <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
+          @for (role of roles; track role.value) {
+            <fold-dropdown-item
+              [icon]="role.value === slot.role ? 'check' : undefined"
+              (selected)="store.setMedia($index, 'role', role.value)"
+            >
+              {{ role.label }}
+            </fold-dropdown-item>
           }
-        </div>
-        <div class="media-fields">
-          <fold-listbox
-            [value]="slot.role"
-            (selectionChange)="store.setMedia($index, 'role', $event)"
-          >
-            @for (role of roles; track role.value) {
-              <fold-option [value]="role.value">{{ role.label }}</fold-option>
-            }
-          </fold-listbox>
-          <!-- Accessibilité ET référencement : ce champ n'était pas exposé, et
-               le texte alternatif retombait donc sur l'URL. C'est le SEUL champ
-               d'image qui se traduit — le sélecteur en haut le fait basculer. -->
-          <fold-input
-            [placeholder]="altPlaceholder()"
-            [value]="store.mediaAlt($index)"
-            (valueChange)="store.setMediaAlt($index, $event)"
-          />
-          @if (slot.url === '') {
-            <fold-input
-              placeholder="https://…"
-              [value]="slot.url"
-              (valueChange)="store.setMedia($index, 'url', $event)"
-            />
-          } @else {
-            <span class="media-meta">{{ metaOf(slot) }}</span>
-          }
-        </div>
-        <button
-          foldButton
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          (click)="store.removeMedia($index)"
-        >
-          Retirer
-        </button>
+          <fold-dropdown-item icon="bin" tone="danger" (selected)="store.removeMedia($index)">
+            Retirer
+          </fold-dropdown-item>
+        </fold-dropdown>
       </div>
-    } @empty {
-      <p class="media-empty">Aucun visuel. Déposez une image pour commencer.</p>
-    }
-  </div>
 
-  <div class="media-actions">
-    <label class="media-pick" [class.is-busy]="store.uploading()">
-      <input
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        [disabled]="store.uploading()"
-        (change)="pick($event)"
-      />
-      <span>{{ store.uploading() ? 'Dépôt…' : 'Déposer une image' }}</span>
-    </label>
-    <!-- Le chemin historique reste ouvert : le catalogue existant est fait
-         d'URL saisies, et rien ne les a rapatriées. -->
-    <button foldButton emphasis="outline" size="sm" (click)="store.addMedia()">
-      Ajouter par URL
-    </button>
-  </div>
+      <div class="media-caption">
+        <!-- Accessibilité ET référencement. C'est le SEUL champ d'image qui se
+             traduit — le sélecteur en haut le fait basculer. -->
+        <fold-input
+          size="sm"
+          [ariaLabel]="altPlaceholder()"
+          [placeholder]="altPlaceholder()"
+          [value]="store.mediaAlt($index)"
+          (valueChange)="store.setMediaAlt($index, $event)"
+        />
+        @if (store.mediaAlt($index).trim() === '') {
+          <span class="media-missing">Texte alternatif manquant</span>
+        }
+        @if (slot.url === '') {
+          <fold-input
+            size="sm"
+            ariaLabel="Adresse de l'image"
+            placeholder="https://…"
+            [value]="slot.url"
+            (valueChange)="store.setMedia($index, 'url', $event)"
+          />
+        } @else {
+          <span class="media-meta">{{ metaOf(slot) }}</span>
+        }
+      </div>
+    </div>
+  } @empty {
+    <p class="media-empty">Aucun visuel. Déposez une image pour commencer.</p>
+  }
+
+  <!-- La dernière tuile est le dépôt, à la place qu'occuperait l'image
+       suivante : le geste est là où le regard finit, pas en bas de section. -->
+  <fold-file-dropzone
+    class="media-drop"
+    accept="image/png,image/jpeg,image/webp"
+    [multiple]="false"
+    label="Déposer une image"
+    hint="ou parcourir"
+    [busy]="store.uploading()"
+    busyLabel="Dépôt…"
+    (filesPicked)="pick($event)"
+  />
 </div>
 
-<!-- Le pied de section, comme les autres panneaux enregistrables. Les visuels
-     n'en avaient pas : ils se saisissaient dans le vide. -->
+<div class="media-actions">
+  <!-- Le chemin historique reste ouvert : le catalogue existant est fait d'URL
+       saisies, et rien ne les a rapatriées. -->
+  <button foldButton emphasis="outline" size="sm" (click)="store.addMedia()">
+    Ajouter par URL
+  </button>
+</div>

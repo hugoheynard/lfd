@@ -126,26 +126,41 @@ app-lang-switch {
   }
 }
 
+/* ── Visuels : une GALERIE de vignettes ──────────────────────────────────────
+   Une liste de lignes obligeait à lire les images une par une pour trouver
+   celle qui pèche. En grille, l'œil compare — c'est le seul but de la forme. */
 .media {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: var(--fold-space-md);
 }
 
-.media-row {
-  display: grid;
-  // L'aperçu, les champs, l'action. La colonne d'aperçu est fixe : c'est ce qui
-  // fait que la liste reste alignée quels que soient les ratios des images.
-  grid-template-columns: 5rem 1fr auto;
-  gap: var(--fold-space-sm);
-  align-items: start;
+.media-tile {
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  min-width: 0;
+}
+
+/* La principale se voit AVANT de lire son étiquette. */
+.media-tile.is-hero {
+  border-color: var(--fold-color-primary);
+  box-shadow: inset 0 0 0 1px var(--fold-color-primary);
+}
+
+/* Ce qui pèche se voit sur la VIGNETTE, pas dans un panneau : c'est ce qui
+   permet de repérer l'image fautive sans ouvrir les trois. */
+.media-tile.is-incomplete {
+  border-color: var(--fold-color-warning-border);
 }
 
 .media-thumb {
-  width: 5rem;
+  position: relative;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
   background: var(--fold-color-surface-sunken);
 
   img {
@@ -156,21 +171,47 @@ app-lang-switch {
   }
 }
 
-.media-fields {
+.media-badge {
+  position: absolute;
+  top: var(--fold-space-xs);
+  left: var(--fold-space-xs);
+}
+
+.media-menu {
+  position: absolute;
+  top: var(--fold-space-xs);
+  right: var(--fold-space-xs);
+}
+
+.media-caption {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
   min-width: 0;
 }
 
 .media-meta,
 .media-empty {
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
+}
+
+.media-missing {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-warning-text);
 }
 
 .media-empty {
   margin: 0;
+  grid-column: 1 / -1;
+}
+
+/* La dernière tuile est le dépôt : il vit DANS la galerie, à la place qu'aurait
+   l'image suivante, plutôt qu'en bas de section où il faut aller le chercher. */
+.media-drop {
+  min-height: 100%;
 }
 
 .media-actions {
@@ -178,47 +219,7 @@ app-lang-switch {
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
   align-items: center;
-}
-
-.media-pick {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-  font-size: var(--fold-text-sm);
-
-  input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-  }
-
-  &:focus-within {
-    outline: 2px solid var(--fold-color-primary);
-    outline-offset: 1px;
-  }
-
-  &.is-busy {
-    cursor: progress;
-    opacity: 0.6;
-  }
-}
-
-@media (max-width: 40rem) {
-  .media-row {
-    // En dessous, trois colonnes écrasent les champs : l'aperçu passe en tête
-    // de ligne et l'action descend sous les champs.
-    grid-template-columns: 5rem 1fr;
-  }
-
-  .media-row > button {
-    grid-column: 2;
-    justify-self: start;
-  }
+  margin-top: var(--fold-space-md);
 }
 
 /* Diffusion par canal : deux blocs côte à côte, qui se replient l'un sous

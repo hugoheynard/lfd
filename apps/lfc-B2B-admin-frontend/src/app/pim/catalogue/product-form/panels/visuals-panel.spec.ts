@@ -89,27 +89,55 @@ describe('VisualsPanel', () => {
     expect(store.media()).toHaveLength(0);
   });
 
-  it("réserve la place de l'aperçu au ratio de l'image", () => {
-    // Sans ratio, la liste saute au chargement de chaque image — le défaut que
-    // les dimensions mesurées au dépôt existent pour corriger.
+  it('marque sur la VIGNETTE ce qui pèche, pas dans un panneau', () => {
+    // C'est ce qui rend visible d'un coup l'image fautive, sans ouvrir les
+    // trois. Une liste de lignes obligeait à les lire une par une.
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 1200, height: 800 }]);
+    store.media.set([
+      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } },
+      { role: 'gallery', url: 'https://media.test/b.png' },
+    ]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
 
-    const thumb = (fixture.nativeElement as HTMLElement).querySelector('.media-thumb');
-    expect(thumb?.getAttribute('style')).toContain('1200 / 800');
+    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
+    expect(tiles.length).toBe(2);
+    expect(tiles[0]?.classList.contains('is-incomplete')).toBe(false);
+    expect(tiles[1]?.classList.contains('is-incomplete')).toBe(true);
+    expect(tiles[1]?.textContent).toContain('Texte alternatif manquant');
   });
 
-  it("n'invente pas de ratio pour un visuel dont on ne connaît pas la taille", () => {
+  it('désigne la PRINCIPALE, celle que les boutiques prennent', () => {
+    const store = setup();
+    store.media.set([
+      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
+      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } },
+    ]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
+    // C'est le RÔLE qui la désigne, pas la position — le modèle porte les deux,
+    // et seul le rôle survit à un réordonnancement.
+    expect(tiles[0]?.classList.contains('is-hero')).toBe(false);
+    expect(tiles[1]?.classList.contains('is-hero')).toBe(true);
+    expect(tiles[1]?.querySelector('.media-badge')).not.toBeNull();
+  });
+
+  it('pose le dépôt DANS la galerie, à la place de l’image suivante', () => {
+    setup();
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+    const gallery = (fixture.nativeElement as HTMLElement).querySelector('.media')!;
+    expect(gallery.querySelector('fold-file-dropzone')).not.toBeNull();
+  });
+
+  it("dit qu'une image externe n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('.media-thumb')?.getAttribute('style')).toContain('1 / 1');
-    expect(host.textContent).toContain('non hébergée');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('non hébergée');
   });
 
   it('expose le texte alternatif, qui ne se saisissait nulle part', () => {

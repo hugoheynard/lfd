@@ -1,10 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
+  FoldButtonIconComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
+  FoldFileDropzoneComponent,
   FoldInputComponent,
-  FoldListboxComponent,
-  FoldOptionComponent,
+  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
@@ -20,9 +24,6 @@ const MEDIA_ROLES: readonly { value: string; label: string }[] = [
   { value: 'print', label: 'Impression' },
 ];
 
-/** Le ratio par défaut d'un aperçu dont on ne connaît pas la taille. */
-const UNKNOWN_RATIO = '1 / 1';
-
 /**
  * Panneau **Visuels** — dépôt de fichier vers la bibliothèque média, puis
  * composition de la liste du produit.
@@ -35,10 +36,14 @@ const UNKNOWN_RATIO = '1 / 1';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LangSwitch,
+    FoldBadgeComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldFileDropzoneComponent,
     FoldInputComponent,
-    FoldListboxComponent,
-    FoldOptionComponent,
+    FoldPopoverTriggerDirective,
   ],
   templateUrl: './visuals-panel.html',
   styleUrl: './panel.scss',
@@ -56,19 +61,6 @@ export class VisualsPanel {
   );
   protected readonly roles = MEDIA_ROLES;
 
-  /**
-   * Le ratio de l'aperçu. Une taille inconnue (visuel saisi par son URL) rend
-   * un carré : réserver une place approximative vaut mieux que n'en réserver
-   * aucune, qui fait sauter toute la liste au chargement.
-   */
-  protected ratioOf(slot: MediaSlot): string {
-    const { width, height } = slot;
-    if (typeof width !== 'number' || typeof height !== 'number' || height === 0) {
-      return UNKNOWN_RATIO;
-    }
-    return `${width} / ${height}`;
-  }
-
   /** Ce qu'on sait du fichier, ou son absence de mesure — jamais « 0 × 0 ». */
   protected metaOf(slot: MediaSlot): string {
     const { width, height } = slot;
@@ -78,17 +70,12 @@ export class VisualsPanel {
     return `${width} × ${height} px`;
   }
 
-  protected pick(event: Event): void {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
-    const file = input.files?.[0];
+  /** Un seul fichier à la fois : `fold-file-dropzone` remet son champ à zéro
+   *  lui-même, donc redéposer le MÊME fichier après un refus fonctionne. */
+  protected pick(files: readonly File[]): void {
+    const file = files[0];
     if (file !== undefined) {
       void this.store.uploadMedia(file);
     }
-    // Remet le champ à zéro : sans ça, redéposer le MÊME fichier après un refus
-    // n'émettrait aucun `change`, et le bouton paraîtrait mort.
-    input.value = '';
   }
 }

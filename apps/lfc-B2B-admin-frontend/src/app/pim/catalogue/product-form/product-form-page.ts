@@ -193,7 +193,11 @@ export class ProductFormPage implements HasPendingChanges {
     {
       key: 'visuels',
       label: 'Visuels',
-      description: 'Le master ; chaque canal en dérivera ses tailles.',
+      // Ce qui est VRAI aujourd'hui. La maquette annonce « glisser pour
+      // réordonner » ; rien ne réordonne encore, et l'annoncer serait promettre
+      // un geste qui ne répond pas. C'est le RÔLE qui désigne la principale.
+      description:
+        'La principale est celle des boutiques. Le texte alternatif est le seul champ d’image qui se traduit.',
     },
   ];
 
