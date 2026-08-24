@@ -33,6 +33,8 @@ export interface ProductEditorialView {
 export interface ProductMediaRecord {
   readonly role: string;
   readonly url: string;
+  /** L'étiquette de la bibliothèque ; `''` = pas nommé. */
+  readonly name: string;
   readonly alt: LocalizedText;
   readonly width: number | null;
   readonly height: number | null;

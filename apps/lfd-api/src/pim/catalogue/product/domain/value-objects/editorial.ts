@@ -31,6 +31,9 @@ export class MissingMediaUrlError extends DomainError {
 export interface MediaItem {
   readonly role: MediaRole;
   readonly url: string;
+  /** L'étiquette de la bibliothèque — courte, non traduite, faite pour
+   *  RETROUVER. `''` tant que personne n'a nommé le fichier. */
+  readonly name: string;
   /** Accessibilité **et** SEO : ce n'est pas un champ décoratif. */
   readonly alt: LocalizedText;
   readonly position: number;
@@ -60,6 +63,7 @@ export interface EditorialInput {
 export interface MediaInput {
   readonly role: string;
   readonly url: string;
+  readonly name?: string | undefined;
   /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
   readonly alt?: LocalizedText | undefined;
 }
@@ -123,6 +127,7 @@ export function mediaItems(inputs: readonly MediaInput[]): MediaItem[] {
     items.push({
       role: input.role,
       url,
+      name: (input.name ?? "").trim(),
       // Sans texte alternatif on retombe sur l'URL : la colonne est obligatoire,
       // et une chaîne vide passerait pour une alternative rédigée.
       alt: localizedText("texte alternatif", input.alt ?? { [SOURCE_LOCALE]: url }),

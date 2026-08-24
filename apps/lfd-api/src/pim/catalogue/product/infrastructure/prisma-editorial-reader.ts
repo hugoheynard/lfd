@@ -98,6 +98,7 @@ export class PrismaEditorialReader extends EditorialReader {
     return rows.map((row) => ({
       role: row.role,
       url: row.media.url,
+      name: row.media.name,
       // L'alternative est stockée localisée, et relue telle quelle. Le repli sur
       // l'URL vaut mieux que la chaîne vide qu'on rendait : une alternative
       // absente doit se voir, pas se confondre avec une alternative écrite.

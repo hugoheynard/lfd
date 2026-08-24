@@ -2906,6 +2906,12 @@ model MediaAsset {
   id     String @id
   url    String
   alt    Json
+
+  /// L'étiquette de la bibliothèque — courte, non traduite, faite pour
+  /// RETROUVER. Distincte du texte alternatif, qui décrit l'image à qui ne la
+  /// voit pas : deux informations, deux publics. Vide tant que personne n'a
+  /// nommé le fichier.
+  name String @default("")
   focalX Float? @map("focal_x")
   focalY Float? @map("focal_y")
 

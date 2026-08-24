@@ -60,6 +60,7 @@ export const createProductPayloadSchema = z.object({
       z.object({
         role: z.string(),
         url: z.string(),
+        name: z.string().optional(),
         alt: optionalLocalizedTextSchema,
       }),
     )
@@ -168,6 +169,13 @@ export interface ProductMediaView extends MediaFactsView {
   /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
   readonly role: string;
   readonly url: string;
+  /** L'étiquette de la bibliothèque — courte, non traduite, faite pour
+   *  RETROUVER. Distincte du texte alternatif, qui DÉCRIT l'image à qui ne la
+   *  voit pas : deux informations, deux publics. `''` = pas nommé.
+   *
+   *  Elle vit sur la VUE du visuel attaché et pas sur les faits techniques :
+   *  un dépôt ne rend pas de nom, puisque personne ne l'a encore donné. */
+  readonly name: string;
   readonly alt: LocalizedText;
 }
 
@@ -209,6 +217,7 @@ export const setProductMediaPayloadSchema = z.object({
     z.object({
       role: z.string().min(1),
       url: z.string().min(1),
+      name: z.string().optional(),
       alt: optionalLocalizedTextSchema,
     }),
   ),

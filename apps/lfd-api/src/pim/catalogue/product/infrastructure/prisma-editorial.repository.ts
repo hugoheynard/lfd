@@ -80,7 +80,13 @@ export class PrismaEditorialRepository extends EditorialRepository {
       const mediaId = this.ids.next();
       const facts = await this.factsFor(item.url);
       await this.prisma.mediaAsset.create({
-        data: { id: mediaId, url: item.url, alt: localizedColumn(item.alt), ...facts },
+        data: {
+          id: mediaId,
+          url: item.url,
+          name: item.name,
+          alt: localizedColumn(item.alt),
+          ...facts,
+        },
       });
       await this.prisma.productMedia.create({
         data: {
