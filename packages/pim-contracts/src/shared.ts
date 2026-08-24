@@ -82,8 +82,14 @@ export function missingLocales(text: LocalizedText): readonly Locale[] {
   return LOCALES.filter((locale) => !filled.includes(locale));
 }
 
-/** Un mode de vente par boutique. */
-export interface BoutiqueChannels {
+/**
+ * Ce qu'un point de vente propose.
+ *
+ * ⚠️ `emporter` / `surPlace` restent français : ce sont des **clés de données**
+ * (le `jsonb` `channel_preset`, `sales_context.key`). Les renommer est une
+ * migration, pas un renommage — cf. `documentation/langue-du-code.md`, palier 4.
+ */
+export interface ShopChannels {
   readonly emporter: boolean;
   readonly surPlace: boolean;
 }
@@ -99,7 +105,7 @@ export interface BoutiqueChannels {
  * un professionnel qui commande en gros ne consomme ni sur place ni à emporter.
  */
 export interface SalesChannels {
-  readonly boutiques: Readonly<Record<string, BoutiqueChannels>>;
+  readonly boutiques: Readonly<Record<string, ShopChannels>>;
   readonly b2b: boolean;
 }
 

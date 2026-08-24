@@ -22,7 +22,7 @@ interface CategoryRow {
 }
 
 /** Les taux viennent de la jointure — les trois colonnes n'existent plus. */
-const CATEGORY_WITH_TVA = {
+const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
 } as const;
 
@@ -64,7 +64,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async findById(id: string): Promise<Category | null> {
     const row = await this.prisma.category.findUnique({
       where: { id },
-      include: CATEGORY_WITH_TVA,
+      include: CATEGORY_WITH_VAT,
     });
     return row === null ? null : toCategory(row);
   }
@@ -73,7 +73,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async findBySlugFr(slugFr: string): Promise<Category | null> {
     const row = await this.prisma.category.findFirst({
       where: { slug: { path: ["fr"], equals: slugFr } },
-      include: CATEGORY_WITH_TVA,
+      include: CATEGORY_WITH_VAT,
     });
     return row === null ? null : toCategory(row);
   }
@@ -82,7 +82,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
     const rows = await this.prisma.category.findMany({
       where: { parentId },
       orderBy: [{ position: "asc" }],
-      include: CATEGORY_WITH_TVA,
+      include: CATEGORY_WITH_VAT,
     });
     return rows.map(toCategory);
   }
@@ -90,7 +90,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async listAll(): Promise<Category[]> {
     const rows = await this.prisma.category.findMany({
       orderBy: [{ position: "asc" }],
-      include: CATEGORY_WITH_TVA,
+      include: CATEGORY_WITH_VAT,
     });
     return rows.map(toCategory);
   }

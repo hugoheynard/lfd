@@ -67,7 +67,7 @@ import type { Category } from '../catalogue-api';
 })
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
-  private readonly tvaStore = inject(VatRateStore);
+  private readonly vatRateStore = inject(VatRateStore);
   private readonly locationStore = inject(LocationStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
@@ -75,7 +75,7 @@ export class CategoriesPage {
   protected readonly categories = this.categoryStore.items;
   /** Les archivées sont hors de vue tant qu'on ne les rappelle pas. */
   protected readonly showArchived = signal(false);
-  protected readonly rates = this.tvaStore.items;
+  protected readonly rates = this.vatRateStore.items;
   /** Les noms affichés dans les pastilles viennent du référentiel. */
   protected readonly locations = this.locationStore.items;
 

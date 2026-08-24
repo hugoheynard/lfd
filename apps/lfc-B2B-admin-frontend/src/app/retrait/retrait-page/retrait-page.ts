@@ -37,7 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   templateUrl: './retrait-page.html',
   styleUrl: './retrait-page.scss',
 })
-export class RetraitPage {
+export class PickupPage {
   /** Le jeton, lié depuis le segment de route (c'est le QR qui l'apporte). */
   readonly token = input.required<string>();
 

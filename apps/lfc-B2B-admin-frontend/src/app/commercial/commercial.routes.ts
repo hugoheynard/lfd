@@ -82,7 +82,7 @@ export const commercialRoutes: Routes = [
         title: 'Grille de mercuriale — LFC B2B admin',
         data: { kind: 'mercuriale' },
         loadComponent: () =>
-          import('./tarification/grille/gabarit-grille-page').then((m) => m.GabaritGrillePage),
+          import('./tarification/grille/gabarit-grille-page').then((m) => m.TemplateGridPage),
       },
       {
         path: 'tarification/devis-templates',
@@ -99,7 +99,7 @@ export const commercialRoutes: Routes = [
         title: 'Grille de devis — LFC B2B admin',
         data: { kind: 'devis' },
         loadComponent: () =>
-          import('./tarification/grille/gabarit-grille-page').then((m) => m.GabaritGrillePage),
+          import('./tarification/grille/gabarit-grille-page').then((m) => m.TemplateGridPage),
       },
     ],
   },

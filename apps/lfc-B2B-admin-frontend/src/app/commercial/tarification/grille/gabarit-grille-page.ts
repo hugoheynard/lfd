@@ -96,7 +96,7 @@ const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
   templateUrl: './gabarit-grille-page.html',
   styleUrl: './gabarit-grille-page.scss',
 })
-export class GabaritGrillePage {
+export class TemplateGridPage {
   /** `nouveau` = on compose ; sinon on révise ce gabarit. */
   readonly id = input.required<string>();
   readonly kind = input.required<PriceTemplateKind>();

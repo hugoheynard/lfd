@@ -1,5 +1,13 @@
-/** Les modes qu'un emplacement propose pour une gamme. */
-export interface BoutiqueChannels {
+/**
+ * Les modes qu'un point de vente propose.
+ *
+ * ⚠️ `emporter` et `surPlace` restent français, et ce n'est pas un oubli : ce
+ * sont des **clés de données**. Elles vivent dans le `jsonb` de
+ * `category.channel_preset`, et dans `sales_context.key`. Les renommer est une
+ * migration — étendre, basculer, resserrer — pas un renommage
+ * (`documentation/langue-du-code.md`, palier 4).
+ */
+export interface ShopChannels {
   readonly emporter: boolean;
   readonly surPlace: boolean;
 }
@@ -30,7 +38,7 @@ export interface BoutiqueChannels {
  */
 export interface SalesChannels {
   /** Par location, clé = son identifiant. Une clé absente = rien n'y est vendu. */
-  readonly boutiques: Readonly<Record<string, BoutiqueChannels>>;
+  readonly boutiques: Readonly<Record<string, ShopChannels>>;
   readonly b2b: boolean;
 }
 
@@ -48,7 +56,7 @@ export function defaultSalesChannels(): SalesChannels {
  * ferait grossir la colonne à chaque emplacement décoché.
  */
 export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
-  const boutiques: Record<string, BoutiqueChannels> = {};
+  const boutiques: Record<string, ShopChannels> = {};
   for (const [id, modes] of Object.entries(channels.boutiques)) {
     if (modes.emporter || modes.surPlace) {
       boutiques[id] = { emporter: modes.emporter, surPlace: modes.surPlace };
@@ -58,7 +66,7 @@ export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
 }
 
 /** Un mode est-il vendu **quelque part** ? Le taux suit le mode, pas la boutique. */
-export function sellsMode(channels: SalesChannels, mode: keyof BoutiqueChannels): boolean {
+export function sellsMode(channels: SalesChannels, mode: keyof ShopChannels): boolean {
   return Object.values(channels.boutiques).some((modes) => modes[mode]);
 }
 

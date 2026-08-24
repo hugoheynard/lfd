@@ -69,7 +69,7 @@ export const routes: Routes = [
     path: 'retrait/:token',
     canActivate: [permissionGuard('orders:write')],
     title: 'Retrait — LFC B2B admin',
-    loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.RetraitPage),
+    loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.PickupPage),
   },
   // ORDRE ② — après `comptes-clients/:id/nouvelle-commande` ci-dessus. La fiche
   // n'a pas d'enfant `nouvelle-commande` ; si elle passait devant, Angular

@@ -7,7 +7,7 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import type { BoutiqueChannels, Location, SalesChannels } from '../../data/models';
+import type { ShopChannels, Location, SalesChannels } from '../../data/models';
 
 /**
  * L'atome de la décision « sur quels canaux se vend ce produit ».
@@ -51,7 +51,7 @@ export class ChannelMatrix {
   readonly revert = output<void>();
 
   /** Une clé absente = rien n'y est vendu ; la carte ne porte que ce qui l'est. */
-  protected isOn(locationId: string, mode: keyof BoutiqueChannels): boolean {
+  protected isOn(locationId: string, mode: keyof ShopChannels): boolean {
     return this.channels().boutiques[locationId]?.[mode] === true;
   }
 
@@ -62,10 +62,10 @@ export class ChannelMatrix {
    * bloquerait sa suppression, puisque le référentiel refuse d'ôter un
    * location encore coché.
    */
-  protected setCell(locationId: string, mode: keyof BoutiqueChannels, value: boolean): void {
+  protected setCell(locationId: string, mode: keyof ShopChannels, value: boolean): void {
     const current = this.channels();
     const before = current.boutiques[locationId] ?? { emporter: false, surPlace: false };
-    const after: BoutiqueChannels = { ...before, [mode]: value };
+    const after: ShopChannels = { ...before, [mode]: value };
     const boutiques = { ...current.boutiques };
     if (after.emporter || after.surPlace) {
       boutiques[locationId] = after;

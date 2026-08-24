@@ -2,7 +2,7 @@ export type {
   LocalizedText,
   Locale,
   TranslatedLocale,
-  BoutiqueChannels,
+  ShopChannels,
   SalesChannels,
   CreatedIdResponse,
 } from "./shared.js";

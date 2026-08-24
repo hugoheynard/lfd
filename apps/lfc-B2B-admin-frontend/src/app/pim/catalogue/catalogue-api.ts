@@ -33,7 +33,7 @@ import type { Category, Product, ProductKind, SalesChannels, VatRate } from '../
 export class CatalogueApi {
   private readonly productsApi = inject(ProductHttpApi);
   private readonly categoryStore = inject(CategoryStore);
-  private readonly tvaStore = inject(VatRateStore);
+  private readonly vatRateStore = inject(VatRateStore);
 
   // ── Familles (backend `catalogue/categories`, via CategoryStore) ──────────
 
@@ -50,8 +50,8 @@ export class CatalogueApi {
   // ── Taux de TVA (backend `commerce/tva-rates`, via VatRateStore) ─────────
 
   async listVatRates(): Promise<VatRate[]> {
-    await this.tvaStore.reload();
-    return [...this.tvaStore.items()];
+    await this.vatRateStore.reload();
+    return [...this.vatRateStore.items()];
   }
 
   // ── Produits (backend `catalogue/products`, via ProductHttpApi) ──────────

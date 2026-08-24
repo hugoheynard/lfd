@@ -62,7 +62,7 @@ export interface AllergenGroup {
  * ce qui n'est pas « sur place » retombe sur « à emporter » — le B2B, lui, ne
  * passe jamais par ici (il n'a pas de comptoir).
  */
-function boutiqueMode(channelKey: string): 'emporter' | 'surPlace' {
+function shopMode(channelKey: string): 'emporter' | 'surPlace' {
   return channelKey === 'surPlace' ? 'surPlace' : 'emporter';
 }
 
@@ -481,11 +481,11 @@ export class ProductFormStore {
         sold:
           context.channelKey === 'b2b'
             ? channels.b2b
-            : sellsMode(channels, boutiqueMode(context.channelKey)),
+            : sellsMode(channels, shopMode(context.channelKey)),
         boutiques:
           context.channelKey === 'b2b'
             ? []
-            : boutiquesWith(channels, boutiqueMode(context.channelKey), this.locations()),
+            : boutiquesWith(channels, shopMode(context.channelKey), this.locations()),
         rate: rateOf(context.key),
         gross: grossFor(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',

@@ -52,8 +52,14 @@ export interface VatRate {
  */
 export type VatRateUsage = Readonly<Record<string, number>>;
 
-/** Ce qu'une boutique propose pour un produit : à emporter et/ou sur place. */
-export interface BoutiqueChannels {
+/**
+ * Ce qu'un point de vente propose.
+ *
+ * ⚠️ `emporter` / `surPlace` restent français : ce sont des **clés de données**
+ * (le `jsonb` `channel_preset`, `sales_context.key`). Les renommer est une
+ * migration, pas un renommage — cf. `documentation/langue-du-code.md`, palier 4.
+ */
+export interface ShopChannels {
   emporter: boolean;
   surPlace: boolean;
 }
@@ -68,7 +74,7 @@ export interface BoutiqueChannels {
  * Le B2B reste un booléen à part — la plateforme n'est pas un emplacement.
  */
 export interface SalesChannels {
-  boutiques: Record<string, BoutiqueChannels>;
+  boutiques: Record<string, ShopChannels>;
   b2b: boolean;
 }
 

@@ -1,6 +1,6 @@
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { LocalizedText } from "../domain/value-objects/localized-text.js";
-import type { BoutiqueChannels, SalesChannels } from "../domain/value-objects/sales-channels.js";
+import type { ShopChannels, SalesChannels } from "../domain/value-objects/sales-channels.js";
 
 /**
  * Lecture des colonnes `jsonb`.
@@ -64,7 +64,7 @@ export function readStringArrayColumn(value: unknown, field: string): string[] {
  * n'est vendu tant que non configuré ») ; un mode présent mais non booléen est
  * en revanche une corruption franche.
  */
-function readBoutiqueChannels(value: unknown, field: string): BoutiqueChannels {
+function readShopChannels(value: unknown, field: string): ShopChannels {
   if (!isRecord(value)) {
     throw new CorruptedRecordError(field);
   }
@@ -89,10 +89,10 @@ export function readSalesChannelsColumn(value: unknown, field: string): SalesCha
     throw new CorruptedRecordError(field);
   }
   const raw = value["boutiques"];
-  const boutiques: Record<string, BoutiqueChannels> = {};
+  const boutiques: Record<string, ShopChannels> = {};
   if (isRecord(raw)) {
     for (const [id, modes] of Object.entries(raw)) {
-      boutiques[id] = readBoutiqueChannels(modes ?? {}, field);
+      boutiques[id] = readShopChannels(modes ?? {}, field);
     }
   }
   return { boutiques, b2b: readModeFlag(value["b2b"], field) };

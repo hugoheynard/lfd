@@ -1,4 +1,4 @@
-import type { BoutiqueChannels, Category, Location, Product, SalesChannels } from './models';
+import type { ShopChannels, Category, Location, Product, SalesChannels } from './models';
 
 /**
  * Aucun canal — le point de départ d'une fiche ou d'une famille qu'on crée.
@@ -19,7 +19,7 @@ export const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
  */
 export function boutiquesWith(
   channels: SalesChannels,
-  mode: keyof BoutiqueChannels,
+  mode: keyof ShopChannels,
   locations: readonly Location[],
 ): string[] {
   return locations
@@ -28,7 +28,7 @@ export function boutiquesWith(
 }
 
 /** Un mode est-il vendu **quelque part** ? Le taux suit le mode, pas la boutique. */
-export function sellsMode(channels: SalesChannels, mode: keyof BoutiqueChannels): boolean {
+export function sellsMode(channels: SalesChannels, mode: keyof ShopChannels): boolean {
   return Object.values(channels.boutiques).some((modes) => modes[mode]);
 }
 
