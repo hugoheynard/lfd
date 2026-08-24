@@ -4,7 +4,22 @@
          toutes les lignes qui suivent, et lue après elles il faudrait relire.
          Chaque ligne qui DÉROGE le dit ensuite pour elle-même. -->
     <p class="inherit-head">
-      Hérité de la famille <strong>{{ inh.categoryName }}</strong>
+      @if (inh.channelsSource === 'inherited') {
+        <span
+          >Hérité de la famille <strong>{{ inh.categoryName }}</strong></span
+        >
+      } @else {
+        <!-- La fiche ne suit plus sa famille : le bandeau doit le dire, sinon
+             l'encadré affirme un héritage qui n'a plus lieu. -->
+        <span>Canaux <strong>redéfinis pour cette fiche</strong></span>
+      }
+      <button type="button" class="inherit-redefine" (click)="redefineChannels()">
+        @if (inh.channelsSource === 'inherited') {
+          Redéfinir les canaux
+        } @else {
+          Modifier
+        }
+      </button>
     </p>
     <!-- Trois colonnes, chacune de son poids : le canal nomme la ligne, les
          boutiques s'effacent, le taux se lit en un coup d'œil à droite. Sur une

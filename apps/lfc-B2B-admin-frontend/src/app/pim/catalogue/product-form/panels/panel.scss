@@ -161,6 +161,28 @@ app-lang-switch {
   padding: var(--fold-space-sm) var(--fold-space-md);
   background: var(--fold-color-surface-band);
   font-size: var(--fold-text-md);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+/* Le geste du bandeau : un lien, pas un bouton plein. Il ouvre un réglage, il
+   ne valide rien — et un bouton plein dans un bandeau attirerait l'œil plus que
+   le taux, qui est ce qu'on vient lire. */
+.inherit-redefine {
+  flex: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--fold-color-primary);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .inherit-rows {

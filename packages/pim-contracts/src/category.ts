@@ -28,13 +28,20 @@ const boutiqueChannelsSchema = z.object({
   surPlace: z.boolean(),
 });
 
-export const setCategoryChannelsPayloadSchema = z.object({
+/**
+ * La matrice de vente, telle qu'elle voyage. Nommée à part parce qu'une FICHE
+ * peut désormais la porter aussi : deux copies du même schéma finiraient par ne
+ * plus accepter les mêmes formes.
+ */
+export const salesChannelsSchema = z.object({
   /** Clé = identifiant d'emplacement. Une clé absente ⇒ rien n'y est vendu. */
   boutiques: z.record(z.string(), boutiqueChannelsSchema),
   // Un booléen, pas une entrée de la carte : la plateforme n'est pas un
   // emplacement, et un professionnel ne consomme ni sur place ni à emporter.
   b2b: z.boolean(),
 });
+
+export const setCategoryChannelsPayloadSchema = salesChannelsSchema;
 export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;
 
 /**

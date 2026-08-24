@@ -11,7 +11,8 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
+import { NO_CHANNELS, boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
+import type { SalesChannels } from '../../data/models';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import type {
@@ -103,6 +104,8 @@ export interface ChannelInheritance {
 
 export interface CategoryInheritanceView {
   readonly categoryName: string;
+  /** La matrice affichée vient-elle de la famille, ou de la fiche ? */
+  readonly channelsSource: 'inherited' | 'overridden';
   readonly channels: readonly ChannelInheritance[];
 }
 
@@ -307,6 +310,15 @@ export class ProductFormStore {
    * chemin — donc le moyen de revenir en arrière.
    */
   readonly tvaOverride = signal<Readonly<Record<string, string>>>({});
+
+  /**
+   * Où la fiche se vend quand elle ne suit PAS sa famille. `null` = elle hérite.
+   *
+   * Tout-ou-rien, à la différence des taux : une matrice à moitié redéfinie ne
+   * se lit pas — devant une case vide, on ne saurait pas dire si la fiche n'est
+   * pas vendue là ou si sa famille ne l'y vendait pas.
+   */
+  readonly channelsOverride = signal<SalesChannels | null>(null);
   readonly weightGrams = signal<number | null>(null);
   readonly selected = signal<string[]>([]);
   readonly declaresNone = signal(false);
@@ -398,6 +410,20 @@ export class ProductFormStore {
     () => this.selectedCategory()?.tvaByContext ?? {},
   );
 
+  /** La matrice de la FAMILLE — l'héritage nu, celui auquel on peut revenir. */
+  readonly familyChannels = computed<SalesChannels>(
+    () => this.selectedCategory()?.channelPreset ?? NO_CHANNELS,
+  );
+
+  /**
+   * Où la fiche se vend RÉELLEMENT : sa matrice si elle en a une, celle de sa
+   * famille sinon. La même règle qu'au serveur, et pour la même raison — deux
+   * écritures finiraient par ne plus dire la même chose.
+   */
+  readonly effectiveChannels = computed<SalesChannels>(
+    () => this.channelsOverride() ?? this.familyChannels(),
+  );
+
   readonly channelsInheritance = computed<CategoryInheritanceView | null>(() => {
     const category = this.selectedCategory();
     if (category === undefined) {
@@ -411,12 +437,16 @@ export class ProductFormStore {
     // famille ensuite. Contexte par contexte — on peut déroger en B2B et suivre
     // sa famille au comptoir.
     const override = this.tvaOverride();
+    // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend se lit
+    // sur les siens, pas sur ceux de sa famille.
+    const channels = this.effectiveChannels();
     const rateOf = (contextKey: string): RateView | null =>
       viewOf(override[contextKey] ?? category.tvaByContext[contextKey]);
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
       // ligne de plus ici, sans livrer de front.
+      channelsSource: this.channelsOverride() === null ? 'inherited' : 'overridden',
       channels: this.orderedContexts().map((context) => ({
         key: context.key,
         label: context.label,
@@ -425,16 +455,12 @@ export class ProductFormStore {
         // rien ici. Les modes boutique, eux, nomment les points de vente.
         sold:
           context.channelKey === 'b2b'
-            ? category.channelPreset.b2b
-            : sellsMode(category.channelPreset, boutiqueMode(context.channelKey)),
+            ? channels.b2b
+            : sellsMode(channels, boutiqueMode(context.channelKey)),
         boutiques:
           context.channelKey === 'b2b'
             ? []
-            : boutiquesWith(
-                category.channelPreset,
-                boutiqueMode(context.channelKey),
-                this.emplacements(),
-              ),
+            : boutiquesWith(channels, boutiqueMode(context.channelKey), this.emplacements()),
         rate: rateOf(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',
       })),
@@ -520,13 +546,14 @@ export class ProductFormStore {
         return;
       case 'tarif':
         this.priceEur.set(value[0] as number | null);
-        this.weightGrams.set(value[1] as number | null);
-        this.tvaOverride.set(value[2] as Readonly<Record<string, string>>);
+        this.tvaOverride.set(value[1] as Readonly<Record<string, string>>);
+        this.channelsOverride.set(value[2] as SalesChannels | null);
         return;
       case 'fiche':
         this.declaresNone.set(Boolean(value[0]));
         this.selected.set([...(value[1] as string[])]);
         this.nutrition.set(value[2] as NutritionValues);
+        this.weightGrams.set(value[3] as number | null);
         return;
       case 'visuels':
         this.media.set(value as MediaSlot[]);
@@ -807,27 +834,40 @@ export class ProductFormStore {
   }
 
   savePricing(): Promise<void> {
-    const price = this.priceEur();
-    const weight = this.weightGrams();
     return this.save('tarif', async () => {
-      await this.products.savePricing(this.productId(), this.variantId(), {
-        priceCents: price === null ? null : Math.round(price * 100),
-        weightGrams: weight === null ? null : Math.round(weight),
-      });
+      await this.saveVariantFacts();
       // Le prix et son régime partent ENSEMBLE : ils sont dans la même section,
       // et enregistrer l'un sans l'autre laisserait l'écran vert sur une moitié
       // de décision.
       await this.products.saveTva(this.productId(), this.tvaOverride());
+      // Les canaux partent avec : fermer un canal efface les taux qu'on y avait
+      // posés, et les envoyer séparément laisserait une fenêtre où l'un des deux
+      // gestes est passé et l'autre non.
+      await this.products.saveChannels(this.productId(), this.channelsOverride());
     });
   }
 
   saveFiche(): Promise<void> {
-    return this.save('fiche', () =>
-      this.products.saveNutrition(this.productId(), this.variantId(), {
+    return this.save('fiche', async () => {
+      await this.products.saveNutrition(this.productId(), this.variantId(), {
         allergens: this.declaresNone() ? [] : this.selected(),
         nutrition: this.nutrition(),
-      }),
-    );
+      });
+      // Le poids voyage par la route du TARIF, qui porte prix ET poids sur la
+      // déclinaison. Les deux valeurs partent à chaque fois : la section qui
+      // n'a pas bougé renvoie ce qu'elle avait, rien ne se perd.
+      await this.saveVariantFacts();
+    });
+  }
+
+  /** Prix + poids de la déclinaison — une route, deux sections qui l'appellent. */
+  private saveVariantFacts(): Promise<void> {
+    const price = this.priceEur();
+    const weight = this.weightGrams();
+    return this.products.savePricing(this.productId(), this.variantId(), {
+      priceCents: price === null ? null : Math.round(price * 100),
+      weightGrams: weight === null ? null : Math.round(weight),
+    });
   }
 
   /** Section Visuels — la liste entière, dans son ordre : c'est un remplacement. */
@@ -925,9 +965,16 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([this.priceEur(), this.weightGrams(), this.tvaOverride()]);
+        return JSON.stringify([this.priceEur(), this.tvaOverride(), this.channelsOverride()]);
       case 'fiche':
-        return JSON.stringify([this.declaresNone(), [...this.selected()].sort(), this.nutrition()]);
+        // Le poids net est de CETTE section : la grille est « pour 100 g », et
+        // sans lui elle ne dit rien de ce qu'on vend.
+        return JSON.stringify([
+          this.declaresNone(),
+          [...this.selected()].sort(),
+          this.nutrition(),
+          this.weightGrams(),
+        ]);
       case 'communication':
         return JSON.stringify(this.editorial());
       case 'visuels':
@@ -961,6 +1008,7 @@ export class ProductFormStore {
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
     this.tvaOverride.set(product.tvaByContext);
+    this.channelsOverride.set(product.channelsOverride);
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);

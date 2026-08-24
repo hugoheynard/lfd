@@ -4,11 +4,17 @@
 > contexte. Ce doc décrit comment un produit **redéfinit** l'un ou l'autre pour lui seul, sans
 > toucher sa famille ni les autres produits qu'elle porte.
 >
-> Statut : **🟡 moitié construite.** Rédigé le 2026-08-24, et la **TVA** l'a été le
-> jour même : `product_context_tva`, le verbe, l'API, l'écran et le retrait de la
-> collection Shopify obsolète (O0→O3). Reste la **disponibilité** — tout le §3 et
-> la partie canaux du §2, encore 📐. Voir aussi
-> [`tva-resolution.md`](./tva-resolution.md), qui décrit la chaîne complète.
+> Statut : **✅ construit le 2026-08-24**, TVA et disponibilité.
+>
+> Une correction au §3 : la disponibilité ne prend PAS la forme d'une table de
+> marqueur plus une table de lignes. Ce §3 supposait la matrice des canaux déjà
+> data-driven (C0-d) — elle ne l'est pas. Une fiche porte donc une colonne
+> `product.channel_override` en `jsonb` **nullable**, exactement la forme de
+> `category.channel_preset` qu'elle remplace : `NULL` = elle hérite, et le
+> tout-ou-rien est porté par ce `NULL` sans table ni drapeau. Elle mourra avec
+> son modèle, comme la colonne de la famille.
+>
+> Voir [`tva-resolution.md`](./tva-resolution.md) pour la chaîne complète.
 >
 > ⚠️ **Dépend de C0** ([`projection-sales-context.md`](./projection-sales-context.md), addendum) :
 > la refonte data-driven des contextes. Écrire l'override AVANT C0 signifierait ajouter au produit

@@ -2679,6 +2679,18 @@ model Product {
   /// Les taux propres à CE produit, par contexte. Absence = il hérite.
   contextTva ProductContextTva[]
 
+  /// Où cette fiche se vend, quand elle ne suit PAS sa famille.
+  ///
+  /// `NULL` = elle hérite, et c'est le cas courant. Une matrice à moitié
+  /// redéfinie ne se lit pas — devant une case vide, on ne saurait pas dire si
+  /// la fiche n'est pas vendue là ou si sa famille ne l'y vendait pas — d'où le
+  /// tout-ou-rien, marqué par le `NULL` lui-même.
+  ///
+  /// Une colonne `jsonb`, comme `category.channel_preset` : la matrice garde
+  /// ses clés fixes jusqu'à sa propre refonte (C0-d), et la fiche doit avoir
+  /// exactement la forme de ce qu'elle remplace.
+  channelOverride Json? @map("channel_override")
+
   /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
   shopifyBinding ShopifyProductBinding?
   b2bBinding     B2bChannelBinding?

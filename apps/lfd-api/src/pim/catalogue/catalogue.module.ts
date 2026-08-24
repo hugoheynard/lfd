@@ -20,6 +20,7 @@ import { PublishProductHandler } from "./product/application/publish-product.js"
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
+import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
 import { SetProductTvaHandler } from "./product/application/set-product-tva.js";
 import { SweepOrphanMediaHandler } from "./product/application/sweep-orphan-media.js";
 import { UploadProductImageHandler } from "./product/application/upload-product-image.js";
@@ -87,6 +88,7 @@ import {
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
     SetProductMediaHandler,
+    SetProductChannelsHandler,
     SetProductTvaHandler,
     UploadProductImageHandler,
     SweepOrphanMediaHandler,

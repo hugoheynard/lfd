@@ -3,6 +3,12 @@ import { FoldButtonIconComponent, FoldPanelHostService } from 'fold-ng';
 
 import { formatPercent } from '../../../data/channels';
 import { ProductFormStore, type ChannelInheritance } from '../product-form-store';
+import { EmplacementStore } from '../../../emplacements/emplacement-store';
+import {
+  ChannelsOverridePanel,
+  type ChannelsOverridePanelData,
+  type ChannelsOverridePanelResult,
+} from './channels-override-panel/channels-override-panel';
 import {
   TvaOverridePanel,
   type TvaOverridePanelData,
@@ -59,6 +65,31 @@ export class ChannelsPanel {
     ).closed;
     if (chosen !== undefined) {
       this.store.setTvaOverride(row.key, chosen.rateId);
+    }
+  }
+
+  private readonly emplacementStore = inject(EmplacementStore);
+
+  /**
+   * Ouvre la matrice de la fiche.
+   *
+   * Un seul geste pour toute la matrice, là où les taux se redéfinissent ligne
+   * par ligne : une matrice à moitié redéfinie ne se lit pas, alors que deux
+   * taux sont deux faits indépendants.
+   */
+  protected async redefineChannels(): Promise<void> {
+    const data: ChannelsOverridePanelData = {
+      current: this.store.channelsOverride(),
+      inherited: this.store.familyChannels(),
+      emplacements: this.emplacementStore.items(),
+      unreadable: this.emplacementStore.loadError(),
+    };
+    const chosen = await this.panelHost.open<
+      ChannelsOverridePanelData,
+      ChannelsOverridePanelResult
+    >(ChannelsOverridePanel, { data }).closed;
+    if (chosen !== undefined) {
+      this.store.channelsOverride.set(chosen.channels);
     }
   }
 

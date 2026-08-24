@@ -135,8 +135,9 @@
   - [x] **O2 (TVA)** _(2026-08-24)_ — « Redéfinir » par ligne dans l'encadré, panneau à un contexte, liseré + « Redéfini » ; part avec la section Tarif
   - [x] **O3** _(2026-08-24)_ — Shopify quitte la collection `tva-*` obsolète (S2), et le rapport le dit
   - [x] Compte d'usages : familles **et** fiches (un taux visé par une seule fiche paraissait libre)
-  - [ ] **Disponibilité** — `product_channel_override` + `product_context_channel` + panneau réutilisant `ChannelMatrix` : rien n'est codé
-  - [ ] Vestige : `Product.channelsOverride` existe côté front et vaut TOUJOURS `null` (`backendToProduct`) — à brancher avec la disponibilité, ou à retirer
+  - [x] **Disponibilité** _(2026-08-24)_ — `product.channel_override` (`jsonb` nullable, `NULL` = hérite), `PUT /catalogue/products/:id/channels`, panneau réutilisant `ChannelMatrix` ; fermer un canal EFFACE les taux qu'on y avait posés, et les taux se jugent sur les canaux EFFECTIFS
+  - [x] Vestige `Product.channelsOverride` : il vaut enfin ce que le serveur dit, au lieu de `null` en dur
+  - [ ] La matrice reste **déclarative** : aucune projection ne la lit. Fermer un canal sur une fiche ne la retire pas de la boutique — à rendre effectif quand un canal en aura besoin
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur

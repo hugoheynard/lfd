@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "../../../../platform/database/client/client.js";
+
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
 import { Product, type ProductSnapshot } from "../domain/entities/product.js";
@@ -13,8 +15,10 @@ import {
   isUniqueViolation,
   localizedColumn,
   readLocalizedColumn,
+  readSalesChannelsColumn,
   readStringArrayColumn,
   readStringMapColumn,
+  salesChannelsColumn,
 } from "../../shared/infrastructure/json-readers.js";
 
 interface NutritionRow {
@@ -50,6 +54,7 @@ interface ProductRow {
   status: ProductStatus;
   variants: VariantRow[];
   contextTva: readonly { tvaRateId: string; context: { key: string } }[];
+  channelOverride: unknown;
 }
 
 /** Les dérogations de taux voyagent AVEC le produit : elles sont à lui. */
@@ -100,6 +105,11 @@ function toProduct(row: ProductRow): Product {
     tvaByContext: Object.fromEntries(
       row.contextTva.map((line) => [line.context.key, line.tvaRateId]),
     ),
+    // `null` traversé TEL QUEL : c'est « la fiche hérite », pas « matrice vide ».
+    channelOverride:
+      row.channelOverride === null
+        ? null
+        : readSalesChannelsColumn(row.channelOverride, "product.channelOverride"),
   });
 }
 
@@ -111,6 +121,13 @@ function toColumns(snapshot: ProductSnapshot) {
     kind: snapshot.kind,
     categoryId: snapshot.categoryId,
     status: snapshot.status,
+    // `DbNull` et non `null` : en `jsonb` nullable, Prisma distingue le NULL de
+    // la COLONNE du null JSON stocké dans la valeur. C'est le premier qu'on
+    // veut — « cette fiche hérite » n'est pas « cette fiche a une matrice nulle ».
+    channelOverride:
+      snapshot.channelOverride === null
+        ? Prisma.DbNull
+        : salesChannelsColumn(snapshot.channelOverride),
   };
 }
 

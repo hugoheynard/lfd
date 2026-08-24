@@ -4,6 +4,7 @@ import type {
   ProductDetailView,
   UploadedMediaView,
   ProductEditorialView,
+  SalesChannels,
   ProductView,
   VariantNutritionView,
   VariantView,
@@ -132,8 +133,8 @@ function toVariant(variant: VariantView): Variant {
 
 /**
  * Backend → modèle front. Le prix/poids viennent de la déclinaison par défaut ;
- * `channelsOverride` est neutralisé (contexte commerce, slice 2) ; `workflowFlags`
- * n'est plus porté (différé). `descriptionFr` n'existe que sur le détail enrichi.
+ * `workflowFlags` n'est plus porté (différé). `descriptionFr` n'existe que sur le
+ * détail enrichi.
  */
 export function backendToProduct(
   product: ProductView,
@@ -151,7 +152,9 @@ export function backendToProduct(
     categoryId: product.categoryId,
     status: product.status,
     variants: product.variants.map(toVariant),
-    channelsOverride: null,
+    // Le vestige devient RÉEL : il valait `null` en dur depuis la greffe, et
+    // l'écran affirmait donc un héritage qu'il n'avait pas lu.
+    channelsOverride: product.channelOverride,
     tvaByContext: product.tvaByContext,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
@@ -290,6 +293,14 @@ export class ProductHttpApi {
    */
   saveTva(id: string, tvaByContext: Readonly<Record<string, string>>): Promise<void> {
     return this.put(`products/${id}/tva`, { tvaByContext });
+  }
+
+  /**
+   * Où la fiche se vend, quand elle ne suit pas sa famille. `null` la rend à sa
+   * famille — une valeur, pas une omission.
+   */
+  saveChannels(id: string, channels: SalesChannels | null): Promise<void> {
+    return this.put(`products/${id}/channels`, { channels });
   }
 
   saveMedia(id: string, media: readonly MediaSlot[]): Promise<void> {

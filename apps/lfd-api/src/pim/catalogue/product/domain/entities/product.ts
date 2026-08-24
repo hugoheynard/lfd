@@ -11,7 +11,10 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
+import {
+  normalizeSalesChannels,
+  type SalesChannels,
+} from "../../../shared/domain/value-objects/sales-channels.js";
 import {
   contextIsSold,
   type ContextTva,
@@ -36,6 +39,14 @@ export interface ProductSnapshot {
    * famille. Clé absente = il hérite, et c'est le cas courant.
    */
   readonly tvaByContext: ContextTva;
+  /**
+   * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
+   *
+   * Tout-ou-rien, à la différence des taux : une matrice à moitié redéfinie ne
+   * se lit pas. Les taux, eux, sont des faits indépendants — déroger en B2B et
+   * suivre sa famille au comptoir est le cas courant.
+   */
+  readonly channelOverride: SalesChannels | null;
 }
 
 /**
@@ -82,6 +93,7 @@ export class Product {
     private statusValue: ProductStatus,
     private readonly variantList: readonly Variant[],
     private tvaByContextValue: ContextTva,
+    private channelOverrideValue: SalesChannels | null,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -98,6 +110,7 @@ export class Product {
       // Un produit naît SANS dérogation : il suit sa famille jusqu'à ce que
       // quelqu'un décide le contraire, et cette décision se voit.
       {},
+      null,
     );
   }
 
@@ -113,6 +126,7 @@ export class Product {
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
       snapshot.tvaByContext,
+      snapshot.channelOverride,
     );
   }
 
@@ -137,6 +151,48 @@ export class Product {
     return this.tvaByContextValue;
   }
 
+  /** Sa matrice propre, ou `null` s'il suit sa famille. */
+  get channelOverride(): SalesChannels | null {
+    return this.channelOverrideValue;
+  }
+
+  /**
+   * Où cette fiche se vend RÉELLEMENT : sa matrice si elle en a une, celle de
+   * sa famille sinon.
+   *
+   * La règle de résolution vit ici plutôt que chez chaque appelant — c'est elle
+   * qui décide où un taux peut se poser, et deux copies finiraient par ne plus
+   * dire la même chose.
+   */
+  effectiveChannels(familyChannels: SalesChannels): SalesChannels {
+    return this.channelOverrideValue ?? familyChannels;
+  }
+
+  /**
+   * Redéfinit où la fiche se vend — ou la rend à sa famille avec `null`.
+   *
+   * Fermer un canal **efface** les taux que la fiche y avait posés, exactement
+   * comme sur la famille : sans cet effacement, une fiche qui ne se vend plus en
+   * B2B garderait son taux B2B, il compterait comme un usage, et la suppression
+   * de ce taux resterait bloquée par une décision que plus rien n'applique.
+   */
+  setChannels(
+    channels: SalesChannels | null,
+    contexts: readonly SalesContext[],
+    familyChannels: SalesChannels,
+  ): void {
+    this.channelOverrideValue = channels === null ? null : normalizeSalesChannels(channels);
+    const effective = this.effectiveChannels(familyChannels);
+    const kept: Record<string, string> = {};
+    for (const context of contexts) {
+      const rateId = this.tvaByContextValue[context.key];
+      if (rateId !== undefined && contextIsSold(context, effective)) {
+        kept[context.key] = rateId;
+      }
+    }
+    this.tvaByContextValue = kept;
+  }
+
   /**
    * Déroge au taux de la famille, ou **revient à l'héritage**.
    *
@@ -150,13 +206,17 @@ export class Product {
    * un objet ne garantit que ce qu'il voit.
    */
   setTva(tva: ContextTva, contexts: readonly SalesContext[], familyChannels: SalesChannels): void {
+    // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend juge ses
+    // taux là-dessus, pas sur ceux de sa famille. Sans quoi elle pourrait poser
+    // un taux sur un canal qu'elle vient elle-même de fermer.
+    const sellingChannels = this.effectiveChannels(familyChannels);
     const known = new Map(contexts.map((context) => [context.key, context]));
     for (const key of Object.keys(tva)) {
       const context = known.get(key);
       if (context === undefined) {
         throw new ProductUnknownContextError(key);
       }
-      if (!contextIsSold(context, familyChannels)) {
+      if (!contextIsSold(context, sellingChannels)) {
         throw new ProductTvaWithoutChannelError(key);
       }
     }
@@ -252,6 +312,7 @@ export class Product {
       status: this.statusValue,
       variants: this.variantList.map((variant) => variant.snapshot()),
       tvaByContext: this.tvaByContextValue,
+      channelOverride: this.channelOverrideValue,
     };
   }
 }

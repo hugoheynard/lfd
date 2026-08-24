@@ -14,8 +14,10 @@ import {
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
+  setProductChannelsPayloadSchema,
   setProductTvaPayloadSchema,
   type SetProductMediaPayload,
+  type SetProductChannelsPayload,
   type SetProductTvaPayload,
 } from "@lfd/pim-contracts";
 
@@ -30,6 +32,7 @@ import { PublishProductCommand } from "../application/publish-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
 import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
+import { SetProductChannelsCommand } from "../application/set-product-channels.js";
 import { SetProductTvaCommand } from "../application/set-product-tva.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
@@ -113,6 +116,21 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductMediaCommand, void>(
       new SetProductMediaCommand(id, body.media),
+    );
+    return { id };
+  }
+
+  /**
+   * Section **Canaux** : où cette fiche se vend, quand elle ne suit pas sa
+   * famille. `null` la rend à sa famille.
+   */
+  @Put(":id/channels")
+  async setProductChannels(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductChannelsPayloadSchema)) body: SetProductChannelsPayload,
+  ) {
+    await this.commands.execute<SetProductChannelsCommand, void>(
+      new SetProductChannelsCommand(id, body.channels),
     );
     return { id };
   }

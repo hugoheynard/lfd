@@ -42,6 +42,8 @@ export const PIM_EVENTS = {
    * pose vraiment — « qui a décidé ça, et quand ».
    */
   productTvaChanged: "product.tva_changed",
+  /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
+  productChannelsChanged: "product.channels_changed",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
 } as const;

@@ -73,7 +73,10 @@ suppression du taux resterait bloquée pour rien.
 sommés, et masque le geste. (Il n'en sommait que deux : un taux visé seulement par
 le B2B paraissait libre, et la base refusait après le clic. Corrigé le 2026-08-24.)
 
-**Une fiche ne déroge que là où sa FAMILLE vend.** Déroger sur un contexte fermé,
+**Une fiche ne déroge que là où ELLE vend.** Les canaux effectifs — sa propre
+matrice si elle en a une, celle de sa famille sinon — et non ceux de sa famille :
+une fiche qui a fermé le B2B ne peut pas y poser un taux. Fermer un canal
+**efface** les taux qu'elle y avait posés, exactement comme sur la famille. Déroger sur un contexte fermé,
 c'est décider d'un prix pour une vente qui n'a pas lieu — et bloquer la
 suppression d'un taux que plus rien ne facture. Même règle que sur la famille,
 elle change juste de porteur (`catalogue.product.tva_without_channel`).
@@ -172,9 +175,10 @@ Deux réserves, et elles sont sérieuses :
 - **C0-d** — la matrice des canaux reste à clés fixes ; `channel_key` meurt avec elle.
 - **Repli `billableRate`** — à retirer après le premier push complet ; il fait
   encore dépendre une ligne facturée d'une jointure de famille.
-- **Override de DISPONIBILITÉ** — la moitié canaux de
-  [`override-produit.md`](./override-produit.md) reste 📐 : seule la TVA est
-  construite. `Product.channelsOverride` vaut toujours `null` côté front.
+- **La matrice des canaux reste déclarative** : elle décide où un taux peut se
+  poser et informe l'écran, mais aucune projection ne la lit. Fermer un canal sur
+  une fiche ne la retire donc PAS de la boutique — c'est le binding de canal qui
+  décide de ça. À rendre effectif quand un canal en aura besoin.
 
 ## 8. Ce qui a été fait (2026-08-24)
 

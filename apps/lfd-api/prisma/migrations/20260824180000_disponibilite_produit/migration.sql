@@ -1,0 +1,12 @@
+-- Une fiche peut ne pas se vendre là où sa famille se vend.
+--
+-- `NULL` = elle hérite (le cas courant). Une valeur = elle décide pour elle,
+-- **en entier** : une matrice à moitié redéfinie ne se lit pas — devant une case
+-- vide, on ne saurait pas dire si la fiche n'est pas vendue là ou si sa famille
+-- ne l'y vendait pas. Le tout-ou-rien est porté par le `NULL` lui-même, sans
+-- table ni drapeau supplémentaire.
+--
+-- Une colonne `jsonb` comme `category.channel_preset`, et pour la même durée :
+-- la matrice garde ses clés fixes jusqu'à sa refonte data-driven (C0-d), et une
+-- dérogation doit avoir exactement la forme de ce qu'elle remplace.
+ALTER TABLE "pim"."product" ADD COLUMN "channel_override" JSONB;

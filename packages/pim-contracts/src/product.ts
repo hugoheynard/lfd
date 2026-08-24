@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { salesChannelsSchema } from "./category.js";
+
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
-import type { LocalizedText } from "./shared.js";
+import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**
  * Contrat de fil des **produits** (catalogue). L'édition se fait **par section**
@@ -140,6 +142,14 @@ export interface ProductView {
    * le moyen de dire « ce taux-là vient d'ici ».
    */
   readonly tvaByContext: Readonly<Record<string, string>>;
+  /**
+   * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
+   *
+   * La vue rend la DÉROGATION, pas les canaux effectifs : l'écran a déjà la
+   * matrice de la famille, et rendre les deux fusionnés lui retirerait le moyen
+   * de dire « ceci vient d'ici » — donc de proposer d'y renoncer.
+   */
+  readonly channelOverride: SalesChannels | null;
 }
 
 /**
@@ -232,6 +242,18 @@ export type ProductDetailView = ProductView & {
  * vend pas le contexte : déroger là où rien ne se vend, c'est décider d'un prix
  * pour une vente qui n'a pas lieu.
  */
+/**
+ * Où une fiche se vend, quand elle ne suit PAS sa famille.
+ *
+ * `null` la rend à sa famille — c'est une valeur, pas une omission, et c'est ce
+ * qui rend le geste réversible. Sinon la matrice entière : tout-ou-rien, parce
+ * qu'une matrice à moitié redéfinie ne se lit pas.
+ */
+export const setProductChannelsPayloadSchema = z.object({
+  channels: salesChannelsSchema.nullable(),
+});
+export type SetProductChannelsPayload = z.infer<typeof setProductChannelsPayloadSchema>;
+
 export const setProductTvaPayloadSchema = z.object({
   tvaByContext: z.record(z.string(), z.string()),
 });

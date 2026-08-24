@@ -26,6 +26,7 @@ export {
   renameCategoryPayloadSchema,
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
+  salesChannelsSchema,
   setCategoryTvaPayloadSchema,
 } from "./category.js";
 export type {
@@ -60,6 +61,7 @@ export {
   productEditorialPayloadSchema,
   declareNutritionPayloadSchema,
   setProductMediaPayloadSchema,
+  setProductChannelsPayloadSchema,
   setProductTvaPayloadSchema,
 } from "./product.js";
 export type {
@@ -79,6 +81,7 @@ export type {
   MediaFactsView,
   UploadedMediaView,
   SetProductMediaPayload,
+  SetProductChannelsPayload,
   SetProductTvaPayload,
 } from "./product.js";
 

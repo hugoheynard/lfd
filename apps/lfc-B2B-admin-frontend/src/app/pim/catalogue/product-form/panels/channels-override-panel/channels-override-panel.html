@@ -1,0 +1,18 @@
+<fold-panel-header title="Canaux de cette fiche" />
+<fold-panel-body>
+  <!-- La MÊME grille que le panneau famille. `inherited` lui fait porter son
+       bandeau et son « Revenir au défaut » ; c'est l'hôte qui sait à quoi ce
+       défaut ramène. -->
+  <app-channel-matrix
+    [channels]="shown()"
+    [emplacements]="data().emplacements"
+    [unreadable]="data().unreadable"
+    [inherited]="draft() === null"
+    (channelsChange)="write($event)"
+    (revert)="inherit()"
+  />
+</fold-panel-body>
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton (click)="confirm()">Appliquer</button>
+</fold-panel-footer>

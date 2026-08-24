@@ -41,6 +41,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     status: 'draft' as const,
     variants: [variant],
     tvaByContext: {},
+    channelOverride: null,
   };
 }
 

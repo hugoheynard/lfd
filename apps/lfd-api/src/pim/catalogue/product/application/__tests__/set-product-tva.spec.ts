@@ -13,6 +13,9 @@ import {
 } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
+import { CategoryUnknownEmplacementError } from "../../../category/domain/errors/category-errors.js";
+import { KnownEmplacementsReader } from "../../../category/domain/ports/known-emplacements.reader.js";
+import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
 import { SetProductTvaCommand, SetProductTvaHandler } from "../set-product-tva.js";
 
 const CONTEXTS: readonly SalesContext[] = [
@@ -40,7 +43,10 @@ const CONTEXTS: readonly SalesContext[] = [
 
 const registry: SalesContextRegistry = { active: () => Promise.resolve(CONTEXTS) };
 
-function snapshot(tvaByContext: Readonly<Record<string, string>> = {}): ProductSnapshot {
+function snapshot(
+  tvaByContext: Readonly<Record<string, string>> = {},
+  channelOverride: SalesChannels | null = null,
+): ProductSnapshot {
   return {
     id: "prd_1",
     sku: "TAR-1",
@@ -65,8 +71,19 @@ function snapshot(tvaByContext: Readonly<Record<string, string>> = {}): ProductS
       },
     ],
     tvaByContext,
+    channelOverride,
   };
 }
+
+/** Tous les emplacements cités existent — le mur du `jsonb`, ouvert. */
+const allEmplacementsKnown: KnownEmplacementsReader = {
+  existing: (ids: readonly string[]) => Promise.resolve(new Set(ids)),
+};
+
+/** Aucun n'existe : la fiche cite un emplacement fantôme. */
+const noEmplacementKnown: KnownEmplacementsReader = {
+  existing: () => Promise.resolve(new Set<string>()),
+};
 
 /** Reconstitue à chaque lecture : un test ne doit pas passer parce qu'il tient
  *  la même instance que le handler — ce que la vraie base ne fera jamais. */
@@ -218,5 +235,99 @@ describe("SetProductTvaHandler", () => {
     ).execute(new SetProductTvaCommand("prd_1", { b2b: "tva_20" }));
 
     expect(journal.types()).toEqual([]);
+  });
+});
+
+describe("SetProductChannelsHandler", () => {
+  it("redéfinit où la fiche se vend, et le journal le note", async () => {
+    const products = new FakeProducts(snapshot());
+    const journal = new RecordingJournal();
+
+    await new SetProductChannelsHandler(
+      products,
+      familySelling(SELLS_ALL),
+      allEmplacementsKnown,
+      registry,
+      journal,
+    ).execute(new SetProductChannelsCommand("prd_1", { boutiques: {}, b2b: true }));
+
+    expect(products.saved.channelOverride).toEqual({ boutiques: {}, b2b: true });
+    expect(journal.types()).toEqual(["product.channels_changed"]);
+  });
+
+  it("rend la fiche à sa famille avec `null`", async () => {
+    const products = new FakeProducts(snapshot({}, { boutiques: {}, b2b: true }));
+
+    await new SetProductChannelsHandler(
+      products,
+      familySelling(SELLS_ALL),
+      allEmplacementsKnown,
+      registry,
+      new RecordingJournal(),
+    ).execute(new SetProductChannelsCommand("prd_1", null));
+
+    expect(products.saved.channelOverride).toBeNull();
+  });
+
+  it("refuse un emplacement qui n’existe pas", async () => {
+    // La grille est du `jsonb` : aucune clé étrangère ne tient la référence. Un
+    // emplacement fantôme serait accepté, persisté, puis rendu INVISIBLE par
+    // l'écran, qui ignore les clés inconnues.
+    const products = new FakeProducts(snapshot());
+
+    await expect(
+      new SetProductChannelsHandler(
+        products,
+        familySelling(SELLS_ALL),
+        noEmplacementKnown,
+        registry,
+        new RecordingJournal(),
+      ).execute(
+        new SetProductChannelsCommand("prd_1", {
+          boutiques: { emp_fantome: { emporter: true, surPlace: false } },
+          b2b: false,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+  });
+
+  it("EFFACE le taux d’un canal que la fiche vient de fermer", async () => {
+    // La règle de la famille, un cran plus bas : sans cet effacement, une fiche
+    // qui ne se vend plus en B2B garderait son taux B2B, il compterait comme un
+    // usage, et la suppression de ce taux resterait bloquée par une décision que
+    // plus rien n'applique.
+    const products = new FakeProducts(snapshot({ b2b: "tva_20" }));
+
+    await new SetProductChannelsHandler(
+      products,
+      familySelling(SELLS_ALL),
+      allEmplacementsKnown,
+      registry,
+      new RecordingJournal(),
+    ).execute(
+      new SetProductChannelsCommand("prd_1", {
+        boutiques: { emp_1: { emporter: true, surPlace: false } },
+        b2b: false,
+      }),
+    );
+
+    expect(products.saved.tvaByContext).toEqual({});
+  });
+
+  it("juge les taux sur les canaux EFFECTIFS, pas sur ceux de la famille", async () => {
+    // La famille vend en B2B ; cette fiche-là non, parce qu'elle a redéfini sa
+    // matrice. Elle ne peut donc pas y poser un taux — sinon elle décide d'un
+    // prix pour une vente qu'elle vient elle-même de fermer.
+    const products = new FakeProducts(snapshot({}, { boutiques: {}, b2b: false }));
+
+    await expect(
+      new SetProductTvaHandler(
+        products,
+        familySelling(SELLS_ALL),
+        rates(),
+        registry,
+        new RecordingJournal(),
+      ).execute(new SetProductTvaCommand("prd_1", { b2b: "tva_20" })),
+    ).rejects.toBeInstanceOf(ProductTvaWithoutChannelError);
   });
 });
