@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   FoldBadgeComponent,
+  FoldBreadcrumbComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
@@ -15,6 +16,7 @@ import {
   FoldPageSectionComponent,
   FoldPopoverTriggerDirective,
   type FoldBadgeVariant,
+  type FoldBreadcrumbItem,
 } from 'fold-ng';
 
 import type { ProductStatus } from '../../data/models';
@@ -68,6 +70,7 @@ interface PageSection {
   imports: [
     FoldPageLayoutComponent,
     FoldBadgeComponent,
+    FoldBreadcrumbComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldDropdownComponent,
@@ -95,6 +98,24 @@ export class ProductFormPage implements HasPendingChanges {
   protected readonly store = inject(ProductFormStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  /**
+   * Le fil d'Ariane — les ancêtres, pas la page.
+   *
+   * La famille ne porte PAS de lien : il n'existe pas d'écran par famille, et
+   * la liste des produits ne se filtre pas encore par famille. Un maillon
+   * cliquable qui n'irait nulle part promettrait une navigation que
+   * l'application n'a pas ; il reste donc une étape, lisible et inerte, jusqu'au
+   * jour où cet écran existe.
+   */
+  protected readonly trail = computed<FoldBreadcrumbItem[]>(() => {
+    const items: FoldBreadcrumbItem[] = [{ label: 'Produits', routerLink: '/pim/produits' }];
+    const family = this.store.categoryName();
+    if (family !== '') {
+      items.push({ label: family });
+    }
+    return items;
+  });
 
   protected readonly statusLabel = computed(() => STATUS_LABELS[this.store.status()]);
   protected readonly statusVariant = computed(() => STATUS_VARIANTS[this.store.status()]);

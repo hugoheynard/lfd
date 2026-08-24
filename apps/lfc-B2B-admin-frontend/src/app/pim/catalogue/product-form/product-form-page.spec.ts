@@ -63,6 +63,26 @@ describe('ProductFormPage — en-tête', () => {
     expect(items).not.toContain('Dépublier');
   });
 
+  it('pose le fil d’Ariane AU-DESSUS du titre, dans l’en-tête', () => {
+    const { root } = render(true);
+    const eyebrow = root.querySelector('.page-eyebrow fold-breadcrumb');
+    expect(eyebrow).not.toBeNull();
+    // Le corps de la page ne doit RIEN en recevoir : sans le créneau, un fil
+    // projeté tombe en silence dans le corps, et l'erreur ne se voit qu'à l'œil.
+    expect(root.querySelector('.page-body fold-breadcrumb')).toBeNull();
+  });
+
+  it('ne revendique aucune page courante dans le fil — le titre l’est', () => {
+    const { root } = render(true);
+    expect(root.querySelector('fold-breadcrumb [aria-current]')).toBeNull();
+    // La famille est inconnue ici : le fil se réduit à son ancêtre réel plutôt
+    // que d'afficher un maillon vide.
+    const crumbs = [...root.querySelectorAll('fold-breadcrumb .bc-node')].map(
+      (node) => node.textContent?.trim() ?? '',
+    );
+    expect(crumbs).toEqual(['Produits']);
+  });
+
   it('en création : ni pastille, ni menu — le produit n’existe pas encore', () => {
     const { root } = render(false);
     expect(root.querySelector('.page-title-badge fold-badge')).toBeNull();

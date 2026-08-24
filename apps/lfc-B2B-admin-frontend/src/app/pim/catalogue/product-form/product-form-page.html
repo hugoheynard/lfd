@@ -1,6 +1,17 @@
 <!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
      « edit » y ajoutait le geste plutôt que la chose. -->
 <fold-page-layout [title]="store.pageTitle()">
+  <!-- Le fil ne nomme que les ANCÊTRES (`[currentPage]="false"`) : le titre
+       juste dessous EST la page courante. Il remplace le « Retour aux produits »
+       qui se projetait dans `[pageActions]`, donc peint en haut à DROITE alors
+       qu'il désigne le haut de la hiérarchie. -->
+  <fold-breadcrumb
+    pageEyebrow
+    [items]="trail()"
+    [currentPage]="false"
+    ariaLabel="Fil d'Ariane du produit"
+  />
+
   @if (store.isEdit()) {
     <fold-badge titleBadge [content]="statusLabel()" [variant]="statusVariant()" radius="pill" />
   }
