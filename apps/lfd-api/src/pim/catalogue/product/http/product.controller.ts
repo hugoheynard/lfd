@@ -147,7 +147,7 @@ export class ProductController {
     @Body(new ZodBody(setProductVatPayloadSchema)) body: SetProductVatPayload,
   ) {
     await this.commands.execute<SetProductVatCommand, void>(
-      new SetProductVatCommand(id, body.tvaByContext),
+      new SetProductVatCommand(id, body.vatByContext),
     );
     return { id };
   }

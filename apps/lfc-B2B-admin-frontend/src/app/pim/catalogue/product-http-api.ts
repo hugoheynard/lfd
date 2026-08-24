@@ -155,7 +155,7 @@ export function backendToProduct(
     // Le vestige devient RÉEL : il valait `null` en dur depuis la greffe, et
     // l'écran affirmait donc un héritage qu'il n'avait pas lu.
     channelsOverride: product.channelOverride,
-    tvaByContext: product.tvaByContext,
+    vatByContext: product.vatByContext,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
@@ -291,8 +291,8 @@ export class ProductHttpApi {
    * famille. Un `PUT` de remplacement comme les autres sections : l'écran envoie
    * ce qu'il affiche.
    */
-  saveVat(id: string, tvaByContext: Readonly<Record<string, string>>): Promise<void> {
-    return this.put(`products/${id}/vat`, { tvaByContext });
+  saveVat(id: string, vatByContext: Readonly<Record<string, string>>): Promise<void> {
+    return this.put(`products/${id}/vat`, { vatByContext });
   }
 
   /**

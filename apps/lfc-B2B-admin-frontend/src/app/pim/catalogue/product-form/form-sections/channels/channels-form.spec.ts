@@ -48,7 +48,7 @@ describe('ChannelsForm', () => {
           },
           b2b: false,
         },
-        tvaByContext: { emporter: 'tva_55', surPlace: 'tva_55' },
+        vatByContext: { emporter: 'tva_55', surPlace: 'tva_55' },
         activeProductCount: 0,
       },
     ]);

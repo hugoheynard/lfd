@@ -38,10 +38,10 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     for (const rateId of Object.values(command.vat)) {
       await requireRate(this.rates, rateId);
     }
-    const before = category.tvaByContext;
+    const before = category.vatByContext;
     category.setVat(command.vat, await this.contexts.active());
     await this.categories.save(category);
-    await this.journalize(category.id, before, category.tvaByContext);
+    await this.journalize(category.id, before, category.vatByContext);
   }
 
   /**

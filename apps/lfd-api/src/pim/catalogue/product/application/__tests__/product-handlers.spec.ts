@@ -105,7 +105,7 @@ class FakeCategoryRepository extends CategoryRepository {
       position: 0,
       isArchived,
       channelPreset: NO_CHANNELS,
-      tvaByContext: {},
+      vatByContext: {},
     });
   }
 

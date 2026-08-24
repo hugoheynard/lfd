@@ -35,7 +35,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     categoryId: "cat_vien",
     status: "published",
     variants: [variant()],
-    tvaByContext: {},
+    vatByContext: {},
     ...over,
   };
 }
@@ -47,7 +47,7 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
     slug: { fr: "viennoiseries" },
     parentId: null,
     position: 0,
-    tvaByContext: { emporter: 5.5, b2b: 5.5 },
+    vatByContext: { emporter: 5.5, b2b: 5.5 },
     ...over,
   };
 }
@@ -103,7 +103,7 @@ describe("projectCatalog", () => {
     // passer inaperçu.
     const { snapshot } = projectCatalog(
       [product()],
-      [category({ tvaByContext: { emporter: 5.5, b2b: 20 } })],
+      [category({ vatByContext: { emporter: 5.5, b2b: 20 } })],
       vat({ emporter: 5.5, b2b: 20 }),
       sold(),
       AT,
@@ -172,7 +172,7 @@ describe("projectCatalog", () => {
   it("pousse un produit dont la famille n’a pas de TVA, avec un taux null", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
-      [category({ tvaByContext: { emporter: 5.5 } })],
+      [category({ vatByContext: { emporter: 5.5 } })],
       vat(),
       sold(),
       AT,

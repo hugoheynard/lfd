@@ -40,7 +40,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     categoryId: 'cat_choco',
     status: 'draft' as const,
     variants: [variant],
-    tvaByContext: {},
+    vatByContext: {},
     channelOverride: null,
   };
 }
@@ -93,8 +93,8 @@ describe('la dérogation de TVA', () => {
     // La fusion « fiche par-dessus famille » appartient au magasin, qui connaît
     // les deux. La faire ici priverait l'écran de la provenance, donc du moyen
     // de marquer la ligne et d'y renoncer.
-    const product = backendToProduct({ ...backendProduct(), tvaByContext: { b2b: 'tva_20' } });
+    const product = backendToProduct({ ...backendProduct(), vatByContext: { b2b: 'tva_20' } });
 
-    expect(product.tvaByContext).toEqual({ b2b: 'tva_20' });
+    expect(product.vatByContext).toEqual({ b2b: 'tva_20' });
   });
 });

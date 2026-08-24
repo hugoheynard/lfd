@@ -103,7 +103,7 @@ export interface Product {
    * Vide = elle hérite. Ce n'est PAS le taux effectif : l'écran compose les deux
    * pour pouvoir dire d'où vient chaque taux.
    */
-  tvaByContext: Readonly<Record<string, string>>;
+  vatByContext: Readonly<Record<string, string>>;
   /** Handle Shopify — pilote l'URL, jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */
@@ -134,7 +134,7 @@ export interface Category {
    * modifier ici, dans le mapper, dans le panneau et dans deux écrans. Le
    * registre vit en base ; le front l'itère.
    */
-  tvaByContext: Readonly<Record<string, string>>;
+  vatByContext: Readonly<Record<string, string>>;
   /**
    * Fiches **actives** portées par la famille. Une famille qui en porte ne peut
    * pas être archivée : le compte permet de le dire AVANT le clic, plutôt que

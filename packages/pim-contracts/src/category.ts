@@ -57,7 +57,7 @@ export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPaylo
  * pour rien. Le serveur refuse une clé qui ne désigne aucun contexte connu.
  */
 export const setCategoryVatPayloadSchema = z.object({
-  tvaByContext: z.record(z.string(), z.string()),
+  vatByContext: z.record(z.string(), z.string()),
 });
 export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
 
@@ -101,7 +101,7 @@ export interface CategoryView {
   readonly isArchived: boolean;
   readonly channelPreset: SalesChannels;
   /** Les taux visés, par clé de contexte. Clé absente = non réglé. */
-  readonly tvaByContext: Readonly<Record<string, string>>;
+  readonly vatByContext: Readonly<Record<string, string>>;
   /**
    * Combien de fiches **actives** cette famille porte.
    *

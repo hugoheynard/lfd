@@ -43,7 +43,7 @@ function withFamily(store: ProductFormStore): void {
         boutiques: { emp_rivoli: { emporter: true, surPlace: false } },
         b2b: true,
       },
-      tvaByContext: { emporter: 'tva_55', surPlace: 'tva_55', b2b: 'tva_20' },
+      vatByContext: { emporter: 'tva_55', surPlace: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
     },
   ]);

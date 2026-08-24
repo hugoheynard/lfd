@@ -67,7 +67,7 @@ interface CategoryRow {
   readonly id: string;
   readonly slug: { readonly fr: string };
   readonly channelPreset: { readonly boutiques: Record<string, unknown>; readonly b2b: boolean };
-  readonly tvaByContext: Readonly<Record<string, string>>;
+  readonly vatByContext: Readonly<Record<string, string>>;
 }
 
 async function readCategory(id: string): Promise<CategoryRow> {
@@ -157,7 +157,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/vat`)
-      .send({ tvaByContext: { emporter: rate } });
+      .send({ vatByContext: { emporter: rate } });
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe(
@@ -180,16 +180,16 @@ describe("un taux ne tient que sur un canal vendu", () => {
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${category}/vat`)
-      .send({ tvaByContext: { b2b: rate } })
+      .send({ vatByContext: { b2b: rate } })
       .expect(200);
-    expect((await readCategory(category)).tvaByContext).toEqual({ b2b: rate });
+    expect((await readCategory(category)).vatByContext).toEqual({ b2b: rate });
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send({ boutiques: {}, b2b: false })
       .expect(200);
 
-    expect((await readCategory(category)).tvaByContext).toEqual({});
+    expect((await readCategory(category)).vatByContext).toEqual({});
   });
 });
 

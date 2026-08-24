@@ -86,12 +86,12 @@ export class PrismaCatalogueReader extends CatalogueReader {
         if (category === null) {
           throw new CategoryNotFoundError(product.categoryId);
         }
-        family = category.tvaByContext;
+        family = category.vatByContext;
         families.set(product.categoryId, family);
       }
       resolved.set(
         product.id,
-        this.resolve(effectiveVat(family, product.tvaByContext), percentById),
+        this.resolve(effectiveVat(family, product.vatByContext), percentById),
       );
     }
     return resolved;
@@ -142,7 +142,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
         slug: category.slug,
         parentId: category.parentId,
         position: category.position,
-        tvaByContext: this.resolve(category.tvaByContext, percentById),
+        vatByContext: this.resolve(category.vatByContext, percentById),
       }));
   }
 
@@ -163,11 +163,11 @@ export class PrismaCatalogueReader extends CatalogueReader {
    * le seul choix sûr — inventer un taux ici facturerait un client.
    */
   private resolve(
-    tvaByContext: Readonly<Record<string, string>>,
+    vatByContext: Readonly<Record<string, string>>,
     percentById: ReadonlyMap<string, number>,
   ): CategoryVatPercents {
     const percents: Record<string, number> = {};
-    for (const [contextKey, rateId] of Object.entries(tvaByContext)) {
+    for (const [contextKey, rateId] of Object.entries(vatByContext)) {
       const percent = percentById.get(rateId);
       if (percent !== undefined) {
         percents[contextKey] = percent;

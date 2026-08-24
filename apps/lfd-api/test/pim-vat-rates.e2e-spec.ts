@@ -71,7 +71,7 @@ async function categorySellingB2b(nameFr: string, rate: string): Promise<string>
   await staff().put(`${CATEGORIES}/${id}/channels`).send({ boutiques: {}, b2b: true }).expect(200);
   await staff()
     .put(`${CATEGORIES}/${id}/vat`)
-    .send({ tvaByContext: { b2b: rate } })
+    .send({ vatByContext: { b2b: rate } })
     .expect(200);
   return id;
 }

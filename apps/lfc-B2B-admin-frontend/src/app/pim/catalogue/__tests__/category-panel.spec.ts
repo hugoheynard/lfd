@@ -30,7 +30,7 @@ function category(overrides: Partial<Category> = {}): Category {
       },
       b2b: false,
     },
-    tvaByContext: { emporter: 'tva_55' },
+    vatByContext: { emporter: 'tva_55' },
     activeProductCount: 0,
     ...overrides,
   };
@@ -280,7 +280,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host, http, stable } = await setup(
       category({
         channelPreset: channels({ b2b: true }),
-        tvaByContext: { emporter: 'tva_55', surPlace: 'tva_10', b2b: 'tva_20' },
+        vatByContext: { emporter: 'tva_55', surPlace: 'tva_10', b2b: 'tva_20' },
       }),
     );
 

@@ -47,7 +47,7 @@ export interface ChannelCategory {
   /**
    * Les taux de la famille en %, par clé de contexte. Clé absente = non réglé.
    */
-  readonly tvaByContext: CategoryVatPercents;
+  readonly vatByContext: CategoryVatPercents;
 }
 
 export abstract class CatalogueReader {

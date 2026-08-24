@@ -102,7 +102,7 @@ function toProduct(row: ProductRow): Product {
     categoryId: row.categoryId,
     status: row.status,
     variants: row.variants.map(toVariant),
-    tvaByContext: Object.fromEntries(
+    vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
     ),
     // `null` traversé TEL QUEL : c'est « la fiche hérite », pas « matrice vide ».
@@ -217,7 +217,7 @@ export class PrismaProductRepository extends ProductRepository {
       // laisserait vivre la ligne d'un contexte qu'on vient de rendre à sa
       // famille, et « je reviens à l'héritage » ressemblerait à « rien changé ».
       this.prisma.productContextVat.deleteMany({ where: { productId: snapshot.id } }),
-      ...Object.entries(snapshot.tvaByContext).map(([contextKey, vatRateId]) =>
+      ...Object.entries(snapshot.vatByContext).map(([contextKey, vatRateId]) =>
         this.prisma.productContextVat.create({
           data: {
             product: { connect: { id: snapshot.id } },

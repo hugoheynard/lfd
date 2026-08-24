@@ -85,7 +85,7 @@ export class CategoryController {
     @Body(new ZodBody(setCategoryVatPayloadSchema)) body: SetCategoryVatPayload,
   ) {
     await this.commands.execute<SetCategoryVatCommand, void>(
-      new SetCategoryVatCommand(id, body.tvaByContext),
+      new SetCategoryVatCommand(id, body.vatByContext),
     );
     return { id };
   }

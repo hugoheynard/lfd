@@ -48,10 +48,10 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     }
     const category = await requireCategory(this.categories, product.categoryId);
 
-    const before = product.tvaByContext;
+    const before = product.vatByContext;
     product.setVat(command.vat, await this.contexts.active(), category.channelPreset);
     await this.products.save(product);
-    await this.journalize(product.id, before, product.tvaByContext);
+    await this.journalize(product.id, before, product.vatByContext);
   }
 
   /**

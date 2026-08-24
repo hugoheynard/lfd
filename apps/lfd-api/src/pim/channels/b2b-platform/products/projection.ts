@@ -235,6 +235,6 @@ function projectCategory(category: ChannelCategory): SyncCategory {
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent: vatOf(category.tvaByContext),
+    vatRatePercent: vatOf(category.vatByContext),
   };
 }

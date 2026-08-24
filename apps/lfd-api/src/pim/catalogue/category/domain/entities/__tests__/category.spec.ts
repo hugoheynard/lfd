@@ -134,7 +134,7 @@ describe("l’agrégat Category", () => {
   it("naît vivante, sans canal vendu ni TVA réglée", () => {
     const snapshot = Category.open(OPEN).snapshot();
     expect(snapshot.isArchived).toBe(false);
-    expect(snapshot.tvaByContext).toEqual({});
+    expect(snapshot.vatByContext).toEqual({});
     // Une carte VIDE, pas deux boutiques à zéro : les emplacements sont une
     // donnée, et une famille neuve n'en coche aucun.
     expect(snapshot.channelPreset).toEqual({ boutiques: {}, b2b: false });
@@ -161,7 +161,7 @@ describe("l’agrégat Category", () => {
     it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
       const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
       category.setVat({ emporter: "tva_55" }, CONTEXTS);
-      expect(category.tvaByContext).toEqual({ emporter: "tva_55" });
+      expect(category.vatByContext).toEqual({ emporter: "tva_55" });
     });
 
     it("traite le B2B comme un canal à part entière", () => {

@@ -163,7 +163,7 @@ export class CategoryPanel {
    * par contexte le figerait dans le code de l'écran.
    */
   protected readonly draftVat = linkedSignal<Record<string, string>>(() => ({
-    ...(this.existing()?.tvaByContext ?? {}),
+    ...(this.existing()?.vatByContext ?? {}),
   }));
   /** `''` = la racine. */
   protected readonly draftParent = linkedSignal(() => this.existing()?.parentId ?? '');

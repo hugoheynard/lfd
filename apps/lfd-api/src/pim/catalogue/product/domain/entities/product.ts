@@ -38,7 +38,7 @@ export interface ProductSnapshot {
    * Les taux propres à CE produit, par clé de contexte — sa **dérogation** à sa
    * famille. Clé absente = il hérite, et c'est le cas courant.
    */
-  readonly tvaByContext: ContextVat;
+  readonly vatByContext: ContextVat;
   /**
    * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
    *
@@ -125,7 +125,7 @@ export class Product {
       snapshot.categoryId,
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
-      snapshot.tvaByContext,
+      snapshot.vatByContext,
       snapshot.channelOverride,
     );
   }
@@ -147,7 +147,7 @@ export class Product {
   }
 
   /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
-  get tvaByContext(): ContextVat {
+  get vatByContext(): ContextVat {
     return this.vatByContextValue;
   }
 
@@ -311,7 +311,7 @@ export class Product {
       categoryId: this.categoryIdValue,
       status: this.statusValue,
       variants: this.variantList.map((variant) => variant.snapshot()),
-      tvaByContext: this.vatByContextValue,
+      vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
     };
   }

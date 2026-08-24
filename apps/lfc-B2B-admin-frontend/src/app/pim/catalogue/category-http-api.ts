@@ -20,7 +20,7 @@ function toCategory(row: CategoryView): Category {
     position: row.position,
     isArchived: row.isArchived,
     channelPreset: row.channelPreset,
-    tvaByContext: row.tvaByContext,
+    vatByContext: row.vatByContext,
     activeProductCount: row.activeProductCount,
   };
 }
@@ -93,7 +93,7 @@ export class CategoryHttpApi {
    */
   setVat(id: string, ids: CategoryVatDraft): Promise<void> {
     return this.put(`categories/${id}/vat`, {
-      tvaByContext: settledOnly(ids),
+      vatByContext: settledOnly(ids),
     });
   }
 

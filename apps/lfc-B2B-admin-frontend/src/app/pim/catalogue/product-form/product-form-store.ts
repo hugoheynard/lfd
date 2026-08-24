@@ -426,7 +426,7 @@ export class ProductFormStore {
    * proposer « revenir au défaut » sans dire lequel, c'est choisir à l'aveugle.
    */
   readonly familyVat = computed<Readonly<Record<string, string>>>(
-    () => this.selectedCategory()?.tvaByContext ?? {},
+    () => this.selectedCategory()?.vatByContext ?? {},
   );
 
   /** La matrice de la FAMILLE — l'héritage nu, celui auquel on peut revenir. */
@@ -460,7 +460,7 @@ export class ProductFormStore {
     // sur les siens, pas sur ceux de sa famille.
     const channels = this.effectiveChannels();
     const rateIdOf = (contextKey: string): string | undefined =>
-      override[contextKey] ?? category.tvaByContext[contextKey];
+      override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
     const grossFor = (contextKey: string): string | null => {
       const rateId = rateIdOf(contextKey);
@@ -1033,7 +1033,7 @@ export class ProductFormStore {
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
-    this.vatOverride.set(product.tvaByContext);
+    this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);

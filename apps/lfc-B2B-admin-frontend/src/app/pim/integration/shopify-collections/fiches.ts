@@ -64,7 +64,7 @@ function rateOfContext(
   contextKey: string,
   regimeById: ReadonlyMap<string, VatRate>,
 ): VatRate | undefined {
-  const rateId = category.tvaByContext[contextKey];
+  const rateId = category.vatByContext[contextKey];
   return rateId === undefined ? undefined : regimeById.get(rateId);
 }
 

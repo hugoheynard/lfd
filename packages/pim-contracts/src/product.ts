@@ -141,7 +141,7 @@ export interface ProductView {
    * déjà l'héritage de la famille, et rendre les deux fusionnés lui retirerait
    * le moyen de dire « ce taux-là vient d'ici ».
    */
-  readonly tvaByContext: Readonly<Record<string, string>>;
+  readonly vatByContext: Readonly<Record<string, string>>;
   /**
    * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
    *
@@ -255,7 +255,7 @@ export const setProductChannelsPayloadSchema = z.object({
 export type SetProductChannelsPayload = z.infer<typeof setProductChannelsPayloadSchema>;
 
 export const setProductVatPayloadSchema = z.object({
-  tvaByContext: z.record(z.string(), z.string()),
+  vatByContext: z.record(z.string(), z.string()),
 });
 export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
 

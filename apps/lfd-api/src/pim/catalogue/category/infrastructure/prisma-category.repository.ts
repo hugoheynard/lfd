@@ -27,9 +27,9 @@ const CATEGORY_WITH_VAT = {
 } as const;
 
 function toCategory(row: CategoryRow): Category {
-  const tvaByContext: Record<string, string> = {};
+  const vatByContext: Record<string, string> = {};
   for (const line of row.contextVat) {
-    tvaByContext[line.context.key] = line.vatRateId;
+    vatByContext[line.context.key] = line.vatRateId;
   }
   return Category.reconstitute({
     id: row.id,
@@ -39,7 +39,7 @@ function toCategory(row: CategoryRow): Category {
     position: row.position,
     isArchived: row.isArchived,
     channelPreset: readSalesChannelsColumn(row.channelPreset, "category.channelPreset"),
-    tvaByContext,
+    vatByContext,
   });
 }
 
@@ -149,7 +149,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
   private vatOperations(snapshot: CategorySnapshot) {
     return [
       this.prisma.categoryContextVat.deleteMany({ where: { categoryId: snapshot.id } }),
-      ...Object.entries(snapshot.tvaByContext).map(([contextKey, vatRateId]) =>
+      ...Object.entries(snapshot.vatByContext).map(([contextKey, vatRateId]) =>
         this.prisma.categoryContextVat.create({
           data: {
             category: { connect: { id: snapshot.id } },

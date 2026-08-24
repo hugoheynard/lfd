@@ -44,7 +44,7 @@ const CONTEXTS: readonly SalesContext[] = [
 const registry: SalesContextRegistry = { active: () => Promise.resolve(CONTEXTS) };
 
 function snapshot(
-  tvaByContext: Readonly<Record<string, string>> = {},
+  vatByContext: Readonly<Record<string, string>> = {},
   channelOverride: SalesChannels | null = null,
 ): ProductSnapshot {
   return {
@@ -70,7 +70,7 @@ function snapshot(
         nutrition: null,
       },
     ],
-    tvaByContext,
+    vatByContext,
     channelOverride,
   };
 }
@@ -120,7 +120,7 @@ function familySelling(channels: SalesChannels): CategoryRepository {
     position: 0,
     isArchived: false,
     channelPreset: channels,
-    tvaByContext: { emporter: "tva_55" },
+    vatByContext: { emporter: "tva_55" },
   });
   return {
     findById: () => Promise.resolve(category),
@@ -155,7 +155,7 @@ describe("SetProductVatHandler", () => {
       journal,
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
-    expect(products.saved.tvaByContext).toEqual({ b2b: "tva_20" });
+    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
     expect(journal.types()).toEqual(["product.tva_changed"]);
   });
 
@@ -173,7 +173,7 @@ describe("SetProductVatHandler", () => {
       new RecordingJournal(),
     ).execute(new SetProductVatCommand("prd_1", {}));
 
-    expect(products.saved.tvaByContext).toEqual({});
+    expect(products.saved.vatByContext).toEqual({});
   });
 
   it("refuse un taux fantôme", async () => {
@@ -188,7 +188,7 @@ describe("SetProductVatHandler", () => {
         new RecordingJournal(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_absent" })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
-    expect(products.saved.tvaByContext).toEqual({});
+    expect(products.saved.vatByContext).toEqual({});
   });
 
   it("refuse un contexte que le registre ne connaît pas", async () => {
@@ -311,7 +311,7 @@ describe("SetProductChannelsHandler", () => {
       }),
     );
 
-    expect(products.saved.tvaByContext).toEqual({});
+    expect(products.saved.vatByContext).toEqual({});
   });
 
   it("juge les taux sur les canaux EFFECTIFS, pas sur ceux de la famille", async () => {

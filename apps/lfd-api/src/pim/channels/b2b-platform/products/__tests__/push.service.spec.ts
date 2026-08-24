@@ -58,7 +58,7 @@ const category = {
   slug: { fr: "viennoiseries" },
   parentId: null,
   position: 0,
-  tvaByContext: { emporter: 5.5, b2b: 5.5 },
+  vatByContext: { emporter: 5.5, b2b: 5.5 },
 };
 
 /** Enregistre les `updateMany` pour dire QUI a été estampillé. */
@@ -118,7 +118,7 @@ async function build(
                       [category],
                       // Le taux effectif, résolu en amont — ici celui de la
                       // famille, puisque aucune fiche ne déroge.
-                      new Map(products.map((p) => [p.id, category.tvaByContext])),
+                      new Map(products.map((p) => [p.id, category.vatByContext])),
                       // Et les canaux : ces fiches se vendent aux professionnels,
                       // sinon ce canal les écarterait.
                       new Map(products.map((p) => [p.id, { boutiques: {}, b2b: true }])),

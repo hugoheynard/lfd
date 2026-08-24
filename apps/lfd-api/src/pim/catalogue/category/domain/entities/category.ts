@@ -55,7 +55,7 @@ export interface CategorySnapshot {
   readonly isArchived: boolean;
   readonly channelPreset: SalesChannels;
   /** Les taux visés, **par clé de contexte**. Clé absente = non réglé. */
-  readonly tvaByContext: ContextVat;
+  readonly vatByContext: ContextVat;
 }
 
 /** Ce qu'il faut pour ouvrir une famille. Le reste, l'agrégat le décide. */
@@ -105,7 +105,7 @@ export class Category {
       snapshot.position,
       snapshot.isArchived,
       snapshot.channelPreset,
-      snapshot.tvaByContext,
+      snapshot.vatByContext,
     );
   }
 
@@ -141,7 +141,7 @@ export class Category {
    * faute de mieux, et a facturé les professionnels au taux à emporter pendant
    * tout ce temps. Lire la valeur entière rend l'oubli visible au point d'usage.
    */
-  get tvaByContext(): ContextVat {
+  get vatByContext(): ContextVat {
     return this.vatByContextValue;
   }
 
@@ -228,7 +228,7 @@ export class Category {
       position: this.positionValue,
       isArchived: this.archivedValue,
       channelPreset: this.channelPresetValue,
-      tvaByContext: this.vatByContextValue,
+      vatByContext: this.vatByContextValue,
     };
   }
 

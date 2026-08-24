@@ -454,7 +454,7 @@ describe("SetCategoryVatHandler", () => {
       new SetCategoryVatCommand(id, { emporter: "tva_5" }),
     );
 
-    expect(categories.at(id).tvaByContext).toEqual({ emporter: "tva_5" });
+    expect(categories.at(id).vatByContext).toEqual({ emporter: "tva_5" });
   });
 
   it("refuse un taux fantôme", async () => {

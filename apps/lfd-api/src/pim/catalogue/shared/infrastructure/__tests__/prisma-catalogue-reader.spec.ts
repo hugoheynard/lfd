@@ -10,12 +10,12 @@ import { PrismaCatalogueReader } from "../prisma-catalogue-reader.js";
 
 /** Le peu de l'agrégat que le lecteur touche : ses taux, d'un bloc. */
 interface CategoryLike {
-  tvaByContext: Readonly<Record<string, string>>;
+  vatByContext: Readonly<Record<string, string>>;
 }
 
 /** Une fiche réduite à ce que la résolution regarde : sa famille, sa dérogation. */
-function product(tvaByContext: Readonly<Record<string, string>> = {}) {
-  return { id: "prd_1", categoryId: "cat_vien", tvaByContext };
+function product(vatByContext: Readonly<Record<string, string>> = {}) {
+  return { id: "prd_1", categoryId: "cat_vien", vatByContext };
 }
 
 async function build(
@@ -53,7 +53,7 @@ async function build(
 describe("PrismaCatalogueReader.vatPercents", () => {
   it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
     const reader = await build(
-      { tvaByContext: { emporter: "r1", surPlace: "r2" } },
+      { vatByContext: { emporter: "r1", surPlace: "r2" } },
       { r1: 5.5, r2: 10 },
     );
 
@@ -67,7 +67,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
     // comptoir. Écrire la fusion à deux endroits finirait par facturer deux
     // taux différents pour le même article.
     const reader = await build(
-      { tvaByContext: { emporter: "r1", b2b: "r1" } },
+      { vatByContext: { emporter: "r1", b2b: "r1" } },
       { r1: 5.5, r2: 20 },
     );
 
@@ -79,7 +79,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
   it("ne rend AUCUNE clé pour un contexte non réglé sur la catégorie", async () => {
     // L'absence de clé, plutôt qu'une clé à `null` : « non réglé » ne s'écrit
     // pas, et un appelant qui itère la carte ne voit que ce qui existe.
-    const reader = await build({ tvaByContext: { emporter: "r1" } }, { r1: 5.5 });
+    const reader = await build({ vatByContext: { emporter: "r1" } }, { r1: 5.5 });
 
     const rates = await reader.vatPercents([product()]);
 
@@ -89,7 +89,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
 
   it("écarte le contexte dont le taux a disparu, plutôt que d’en inventer un", async () => {
     const reader = await build(
-      { tvaByContext: { emporter: "r1", surPlace: "r_parti" } },
+      { vatByContext: { emporter: "r1", surPlace: "r_parti" } },
       { r1: 5.5 },
     );
 
