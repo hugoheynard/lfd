@@ -49,7 +49,14 @@ interface ProductRow {
   categoryId: string;
   status: ProductStatus;
   variants: VariantRow[];
+  contextTva: readonly { tvaRateId: string; context: { key: string } }[];
 }
+
+/** Les dérogations de taux voyagent AVEC le produit : elles sont à lui. */
+const PRODUCT_INCLUDE = {
+  variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
+  contextTva: { select: { tvaRateId: true, context: { select: { key: true } } } },
+} as const;
 
 function toVariant(row: VariantRow): VariantSnapshot {
   return {
@@ -90,6 +97,9 @@ function toProduct(row: ProductRow): Product {
     categoryId: row.categoryId,
     status: row.status,
     variants: row.variants.map(toVariant),
+    tvaByContext: Object.fromEntries(
+      row.contextTva.map((line) => [line.context.key, line.tvaRateId]),
+    ),
   });
 }
 
@@ -113,24 +123,14 @@ export class PrismaProductRepository extends ProductRepository {
   async findById(id: string): Promise<Product | null> {
     const row = await this.prisma.product.findUnique({
       where: { id },
-      include: {
-        variants: {
-          orderBy: { position: "asc" },
-          include: { nutrition: true },
-        },
-      },
+      include: PRODUCT_INCLUDE,
     });
     return row === null ? null : toProduct(row);
   }
 
   async listAll(): Promise<Product[]> {
     const rows = await this.prisma.product.findMany({
-      include: {
-        variants: {
-          orderBy: { position: "asc" },
-          include: { nutrition: true },
-        },
-      },
+      include: PRODUCT_INCLUDE,
       orderBy: { sku: "asc" },
     });
     return rows.map(toProduct);
@@ -196,6 +196,19 @@ export class PrismaProductRepository extends ProductRepository {
     const snapshot = product.snapshot();
     await this.prisma.$transaction([
       this.prisma.product.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
+      // Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte
+      // laisserait vivre la ligne d'un contexte qu'on vient de rendre à sa
+      // famille, et « je reviens à l'héritage » ressemblerait à « rien changé ».
+      this.prisma.productContextTva.deleteMany({ where: { productId: snapshot.id } }),
+      ...Object.entries(snapshot.tvaByContext).map(([contextKey, tvaRateId]) =>
+        this.prisma.productContextTva.create({
+          data: {
+            product: { connect: { id: snapshot.id } },
+            context: { connect: { key: contextKey } },
+            tvaRate: { connect: { id: tvaRateId } },
+          },
+        }),
+      ),
       ...snapshot.variants.map((variant) =>
         this.prisma.productVariant.update({
           where: { id: variant.id },

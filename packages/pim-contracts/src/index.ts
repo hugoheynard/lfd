@@ -60,6 +60,7 @@ export {
   productEditorialPayloadSchema,
   declareNutritionPayloadSchema,
   setProductMediaPayloadSchema,
+  setProductTvaPayloadSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -78,6 +79,7 @@ export type {
   MediaFactsView,
   UploadedMediaView,
   SetProductMediaPayload,
+  SetProductTvaPayload,
 } from "./product.js";
 
 export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";

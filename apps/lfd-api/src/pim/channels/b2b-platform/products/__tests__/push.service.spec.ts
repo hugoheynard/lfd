@@ -113,7 +113,14 @@ async function build(
               publishedIds.length === 0
                 ? { snapshot: emptySnapshot(generatedAt), candidates: 0, excluded: [] }
                 : {
-                    ...projectCatalog([...products], [category], generatedAt),
+                    ...projectCatalog(
+                      [...products],
+                      [category],
+                      // Le taux effectif, résolu en amont — ici celui de la
+                      // famille, puisque aucune fiche ne déroge.
+                      new Map(products.map((p) => [p.id, category.vatByContext])),
+                      generatedAt,
+                    ),
                     candidates: publishedIds.length,
                   },
             ),

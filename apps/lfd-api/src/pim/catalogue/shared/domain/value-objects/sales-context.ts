@@ -46,3 +46,20 @@ export type ContextTva = Readonly<Record<string, string>>;
 export function contextIsSold(context: SalesContext, channels: SalesChannels): boolean {
   return context.channelKey === "b2b" ? channels.b2b : sellsMode(channels, context.channelKey);
 }
+
+/**
+ * Le taux EFFECTIF d'un produit : sa dérogation par-dessus celle de sa famille.
+ *
+ * Une seule ligne, mais c'est LA règle de résolution, et elle vit ici pour
+ * qu'il n'y en ait qu'une : deux canaux qui la réécriraient chacun de leur côté
+ * factureraient un jour deux taux différents pour le même article.
+ *
+ * Contexte par contexte : un produit peut déroger en B2B et suivre sa famille
+ * au comptoir. C'est le cas courant, pas l'exception.
+ */
+export function effectiveTva<T>(
+  family: Readonly<Record<string, T>>,
+  product: Readonly<Record<string, T>>,
+): Readonly<Record<string, T>> {
+  return { ...family, ...product };
+}

@@ -2,6 +2,8 @@ import {
   ArchivedProductNotPublishableError,
   InvalidProductVariantsError,
   ProductNotPublishableError,
+  ProductTvaWithoutChannelError,
+  ProductUnknownContextError,
   VariantNotFoundError,
 } from "../errors/product-errors.js";
 import { Variant, type VariantSnapshot } from "./variant.js";
@@ -9,6 +11,12 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
+import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
+import {
+  contextIsSold,
+  type ContextTva,
+  type SalesContext,
+} from "../../../shared/domain/value-objects/sales-context.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -23,6 +31,11 @@ export interface ProductSnapshot {
   readonly categoryId: string;
   readonly status: ProductStatus;
   readonly variants: readonly VariantSnapshot[];
+  /**
+   * Les taux propres à CE produit, par clé de contexte — sa **dérogation** à sa
+   * famille. Clé absente = il hérite, et c'est le cas courant.
+   */
+  readonly tvaByContext: ContextTva;
 }
 
 /**
@@ -68,6 +81,7 @@ export class Product {
     private categoryIdValue: string,
     private statusValue: ProductStatus,
     private readonly variantList: readonly Variant[],
+    private tvaByContextValue: ContextTva,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -81,6 +95,9 @@ export class Product {
       // Un produit naît INVISIBLE : c'est ce qui rend l'invariant 7 tenable.
       "draft",
       [Variant.openDefault(input.defaultVariant)],
+      // Un produit naît SANS dérogation : il suit sa famille jusqu'à ce que
+      // quelqu'un décide le contraire, et cette décision se voit.
+      {},
     );
   }
 
@@ -95,6 +112,7 @@ export class Product {
       snapshot.categoryId,
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
+      snapshot.tvaByContext,
     );
   }
 
@@ -112,6 +130,37 @@ export class Product {
 
   get categoryId(): string {
     return this.categoryIdValue;
+  }
+
+  /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
+  get tvaByContext(): ContextTva {
+    return this.tvaByContextValue;
+  }
+
+  /**
+   * Déroge au taux de la famille, ou **revient à l'héritage**.
+   *
+   * Une carte vide n'est pas une dérogation vide : c'est le retour au taux de
+   * la famille, et c'est ce qui rend le geste réversible sans écrire un état
+   * « pas de dérogation » qui ressemblerait à une décision.
+   *
+   * Deux refus, et l'agrégat ne peut en tenir qu'un seul seul : le contexte
+   * doit exister (registre), et le contexte doit être VENDU par la famille —
+   * d'où les canaux passés en argument. Un produit ne voit pas sa famille ;
+   * un objet ne garantit que ce qu'il voit.
+   */
+  setTva(tva: ContextTva, contexts: readonly SalesContext[], familyChannels: SalesChannels): void {
+    const known = new Map(contexts.map((context) => [context.key, context]));
+    for (const key of Object.keys(tva)) {
+      const context = known.get(key);
+      if (context === undefined) {
+        throw new ProductUnknownContextError(key);
+      }
+      if (!contextIsSold(context, familyChannels)) {
+        throw new ProductTvaWithoutChannelError(key);
+      }
+    }
+    this.tvaByContextValue = { ...tva };
   }
 
   /** Renomme — et re-dérive le slug. */
@@ -202,6 +251,7 @@ export class Product {
       categoryId: this.categoryIdValue,
       status: this.statusValue,
       variants: this.variantList.map((variant) => variant.snapshot()),
+      tvaByContext: this.tvaByContextValue,
     };
   }
 }

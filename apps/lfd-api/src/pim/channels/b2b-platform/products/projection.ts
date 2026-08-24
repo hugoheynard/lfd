@@ -1,7 +1,10 @@
 import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
-import type { ChannelCategory } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type {
+  CategoryTvaPercents,
+  ChannelCategory,
+} from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 
 /**
  * La clé du contexte que CE canal facture. Une constante nommée plutôt qu'une
@@ -131,6 +134,12 @@ function sortVariants(
 export function projectCatalog(
   products: readonly ProductRecord[],
   categories: readonly ChannelCategory[],
+  /**
+   * Le taux effectif **par produit**, résolu en amont (dérogation de la fiche
+   * par-dessus celle de sa famille). Passé plutôt que recalculé : la règle
+   * n'a qu'une écriture, et cette fonction reste pure.
+   */
+  vatByProduct: ReadonlyMap<string, CategoryTvaPercents>,
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -147,7 +156,10 @@ export function projectCatalog(
     }
     // Résolu ICI, une fois par produit : chaque article part avec SON taux,
     // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
-    const { sellable, excluded: rejected } = sortVariants(product, vatOf(category));
+    const { sellable, excluded: rejected } = sortVariants(
+      product,
+      vatOf(vatByProduct.get(product.id) ?? {}),
+    );
     excluded.push(...rejected);
 
     if (sellable.length === 0) {
@@ -190,8 +202,8 @@ export function projectCatalog(
  * `null` quand le contexte n'est pas réglé : la plateforme écarte alors
  * l'article de sa boutique plutôt que de supposer un taux.
  */
-function vatOf(category: ChannelCategory): number | null {
-  return category.vatByContext[B2B_CONTEXT_KEY] ?? null;
+function vatOf(percents: CategoryTvaPercents): number | null {
+  return percents[B2B_CONTEXT_KEY] ?? null;
 }
 
 /** Le taux part tel quel, `null` compris — on ne remplit jamais un trou de TVA. */
@@ -202,6 +214,6 @@ function projectCategory(category: ChannelCategory): SyncCategory {
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent: vatOf(category),
+    vatRatePercent: vatOf(category.vatByContext),
   };
 }

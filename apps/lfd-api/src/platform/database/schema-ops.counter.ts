@@ -116,6 +116,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   SkuRegistry: "pim",
   Category: "pim",
   CategoryContextTva: "pim",
+  ProductContextTva: "pim",
   SalesContext: "pim",
   TvaRate: "pim",
   Emplacement: "pim",

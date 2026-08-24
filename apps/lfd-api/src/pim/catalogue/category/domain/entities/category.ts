@@ -145,6 +145,16 @@ export class Category {
     return this.tvaByContextValue;
   }
 
+  /**
+   * Ce que la famille vend — lu, jamais modifié d'ici.
+   *
+   * Une fiche qui veut déroger au taux de sa famille doit savoir si le contexte
+   * est vendu ; elle ne voit pas sa famille, donc quelqu'un le lui montre.
+   */
+  get channelPreset(): SalesChannels {
+    return this.channelPresetValue;
+  }
+
   /** Le taux visé pour UN contexte, ou `null` s'il n'est pas réglé. */
   tvaOf(contextKey: string): string | null {
     return this.tvaByContextValue[contextKey] ?? null;

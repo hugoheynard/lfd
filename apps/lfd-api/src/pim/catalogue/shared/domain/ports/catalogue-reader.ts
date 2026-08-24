@@ -52,8 +52,22 @@ export interface ChannelCategory {
 export abstract class CatalogueReader {
   abstract publishable(): Promise<ProductRecord[]>;
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
-  /** Le taux de TVA par contexte pour une catégorie (résout le taux). */
-  abstract tvaPercents(categoryId: string): Promise<CategoryTvaPercents>;
+  /**
+   * Le taux **effectif** de chaque produit, par contexte : sa dérogation
+   * par-dessus celle de sa famille, résolue en pourcentages.
+   *
+   * Par PRODUIT et non par catégorie : depuis qu'une fiche peut déroger, une
+   * réponse par famille ne dit plus ce qu'on facture. Les deux canaux passent
+   * par ici — le seul endroit où la règle « produit d'abord, famille ensuite »
+   * est écrite.
+   *
+   * Une famille inconnue est un REFUS (`CategoryNotFoundError`), pas une
+   * absence de taux : deux causes distinctes (un rattachement cassé / un taux à
+   * régler) ne doivent pas rendre le même symptôme.
+   */
+  abstract vatPercents(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, CategoryTvaPercents>>;
   /** Les familles **non archivées**, avec leurs taux résolus, par contexte. */
   abstract channelCategories(): Promise<ChannelCategory[]>;
   /**

@@ -2556,6 +2556,7 @@ model SalesContext {
   position Int @default(0)
 
   categoryTva CategoryContextTva[]
+  productTva  ProductContextTva[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2602,6 +2603,11 @@ model TvaRate {
   /// suppression, et le compte d'usages que l'écran affiche avant de proposer
   /// de supprimer.
   contextTva CategoryContextTva[]
+
+  /// Produits qui DÉROGENT à leur famille pour viser ce taux. Comptés eux aussi
+  /// dans les usages : un taux visé par une seule fiche ne se supprime pas plus
+  /// qu'un taux visé par une famille.
+  productTva ProductContextTva[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2670,12 +2676,41 @@ model Product {
   editorial ProductEditorial?
   media     ProductMedia[]
 
+  /// Les taux propres à CE produit, par contexte. Absence = il hérite.
+  contextTva ProductContextTva[]
+
   /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
   shopifyBinding ShopifyProductBinding?
   b2bBinding     B2bChannelBinding?
 
   @@index([categoryId])
   @@map("product")
+  @@schema("pim")
+}
+
+/// Le taux qu'un **produit** vise pour un contexte — la dérogation à sa famille.
+///
+/// Même forme que `category_context_tva`, un cran plus bas, et la même règle :
+/// **l'absence de ligne est la donnée**. Pas de ligne = le produit hérite ; une
+/// ligne = il déroge, et c'est un fait qu'on peut dater et retirer.
+///
+/// Ce n'est PAS une colonne sur `product` : trois colonnes fixes sont
+/// exactement ce que la famille vient de perdre.
+model ProductContextTva {
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  contextId String  @map("context_id")
+  context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  tvaRateId String  @map("tva_rate_id")
+  /// `Restrict` : un taux visé par un produit ne disparaît pas sous lui.
+  tvaRate   TvaRate @relation(fields: [tvaRateId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([productId, contextId])
+  @@index([tvaRateId])
+  @@map("product_context_tva")
   @@schema("pim")
 }
 

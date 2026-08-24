@@ -88,3 +88,36 @@ export class ArchivedProductNotPublishableError extends BusinessError {
     );
   }
 }
+
+/**
+ * Une dérogation de taux visant un contexte que le registre ne connaît pas.
+ *
+ * Même refus que sur la famille, et pour la même raison : la clé serait
+ * persistée sans ligne de registre en face, et personne ne saurait plus dire ce
+ * qu'elle facturait.
+ */
+export class ProductUnknownContextError extends BusinessError {
+  constructor(readonly contextKey: string) {
+    super(
+      "catalogue.product.unknown_sales_context",
+      `Contexte de vente « ${contextKey} » inconnu.`,
+    );
+  }
+}
+
+/**
+ * Une dérogation pour un contexte que la **famille ne vend pas**.
+ *
+ * Déroger là où rien ne se vend, c'est décider d'un prix pour une vente qui
+ * n'a pas lieu — et gonfler le compte d'usages d'un taux que plus rien ne
+ * facture, donc bloquer sa suppression pour rien. La règle est la même que sur
+ * la famille : elle change juste de porteur.
+ */
+export class ProductTvaWithoutChannelError extends BusinessError {
+  constructor(readonly contextKey: string) {
+    super(
+      "catalogue.product.tva_without_channel",
+      `La famille ne vend pas en « ${contextKey} » : son taux ne se redéfinit pas.`,
+    );
+  }
+}

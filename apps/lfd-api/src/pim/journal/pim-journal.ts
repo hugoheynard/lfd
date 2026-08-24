@@ -35,6 +35,13 @@ export const PIM_EVENTS = {
   tvaRateRenamed: "tax_rate.renamed",
   tvaRateDeleted: "tax_rate.deleted",
   categoryTvaChanged: "category.tva_changed",
+  /**
+   * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
+   * précédent : l'un décide pour un rayon entier, l'autre pour une ligne, et
+   * confondre les deux dans l'historique rendrait illisible la question qu'on
+   * pose vraiment — « qui a décidé ça, et quand ».
+   */
+  productTvaChanged: "product.tva_changed",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
 } as const;

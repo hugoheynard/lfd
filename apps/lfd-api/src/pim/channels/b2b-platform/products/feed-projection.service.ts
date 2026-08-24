@@ -41,7 +41,10 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       this.catalogue.byIds(productIds),
       this.catalogue.channelCategories(),
     ]);
-    const { snapshot, excluded } = projectCatalog(products, categories, generatedAt);
+    // Le taux effectif de chaque fiche — sa dérogation par-dessus celle de sa
+    // famille. Résolu ici, une fois, pour que la projection reste pure.
+    const vatByProduct = await this.catalogue.vatPercents(products);
+    const { snapshot, excluded } = projectCatalog(products, categories, vatByProduct, generatedAt);
     return { snapshot, candidates: productIds.length, excluded };
   }
 }

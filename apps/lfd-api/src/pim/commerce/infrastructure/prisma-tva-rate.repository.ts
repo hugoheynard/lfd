@@ -96,14 +96,21 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
   }
 
   /**
-   * Les usages comptés **côté base**, en un aller-retour : un `groupBy` sur la
-   * jointure, plus la table des contextes (trois lignes) pour nommer les clés.
-   * Compter en mémoire aurait demandé de charger toutes les familles pour n'en
-   * garder que le nombre.
+   * Les usages comptés **côté base** : deux `groupBy` — les familles et les
+   * fiches qui dérogent — plus la table des contextes (trois lignes) pour nommer
+   * les clés. Compter en mémoire aurait demandé de charger tout le catalogue
+   * pour n'en garder que des nombres.
    */
   async usageByRegime(): Promise<ReadonlyMap<string, TvaRateUsage>> {
-    const [grouped, contexts] = await Promise.all([
+    const [byFamily, byProduct, contexts] = await Promise.all([
       this.prisma.categoryContextTva.groupBy({
+        by: ["tvaRateId", "contextId"],
+        _count: { _all: true },
+      }),
+      // Les DÉROGATIONS comptent aussi : un taux visé par une seule fiche ne se
+      // supprime pas plus qu'un taux visé par une famille entière — la base
+      // pose le même `RESTRICT`, et l'écran doit le dire avant le clic.
+      this.prisma.productContextTva.groupBy({
         by: ["tvaRateId", "contextId"],
         _count: { _all: true },
       }),
@@ -112,7 +119,7 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
     const keyById = new Map(contexts.map((context) => [context.id, context.key]));
 
     const usage = new Map<string, Record<string, number>>();
-    for (const row of grouped) {
+    for (const row of [...byFamily, ...byProduct]) {
       const key = keyById.get(row.contextId);
       if (key === undefined) {
         // Une ligne dont le contexte a disparu ne se compte pas : la nommer
@@ -122,7 +129,9 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
         continue;
       }
       const current = usage.get(row.tvaRateId) ?? {};
-      current[key] = row._count._all;
+      // On ADDITIONNE : familles et fiches visent le même taux dans le même
+      // contexte, et le compte doit dire combien de décisions en dépendent.
+      current[key] = (current[key] ?? 0) + row._count._all;
       usage.set(row.tvaRateId, current);
     }
     return usage;

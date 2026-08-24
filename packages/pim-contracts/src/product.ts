@@ -212,6 +212,22 @@ export type ProductDetailView = ProductView & {
  * décomposer ce que l'utilisateur a fait en une suite d'appels dont l'échec
  * partiel laisserait un ordre incohérent.
  */
+/**
+ * La **dérogation de TVA** d'une fiche, par clé de contexte de vente.
+ *
+ * Une carte VIDE est la valeur qui rend le produit à sa famille : c'est un
+ * geste, pas un oubli. Une clé absente d'une carte non vide dit la même chose
+ * pour ce contexte-là — le produit hérite là, et déroge ailleurs.
+ *
+ * Le serveur refuse une clé inconnue du registre, et une clé dont la famille ne
+ * vend pas le contexte : déroger là où rien ne se vend, c'est décider d'un prix
+ * pour une vente qui n'a pas lieu.
+ */
+export const setProductTvaPayloadSchema = z.object({
+  tvaByContext: z.record(z.string(), z.string()),
+});
+export type SetProductTvaPayload = z.infer<typeof setProductTvaPayloadSchema>;
+
 export const setProductMediaPayloadSchema = z.object({
   media: z.array(
     z.object({

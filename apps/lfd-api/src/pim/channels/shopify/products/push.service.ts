@@ -268,7 +268,10 @@ export class ShopifyPushService {
       return "";
     }
     try {
-      const rates = await this.catalogue.tvaPercents(product.categoryId);
+      // Le taux EFFECTIF de cette fiche : sa dérogation si elle en a une, celui
+      // de sa famille sinon. Un produit qui déroge change donc de collection de
+      // taxe — et c'est bien le but.
+      const rates = (await this.catalogue.vatPercents([product])).get(product.id) ?? {};
       // Le handle se dérive ICI, chez le canal qui range par collection — le
       // catalogue ne rend qu'un taux.
       // Les contextes viennent du REGISTRE, plus d'une constante : en ajouter un

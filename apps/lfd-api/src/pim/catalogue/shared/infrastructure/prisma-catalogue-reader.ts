@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { effectiveTva } from "../domain/value-objects/sales-context.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 
 import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
@@ -62,18 +63,37 @@ export class PrismaCatalogueReader extends CatalogueReader {
   /**
    * Une famille INCONNUE n'est pas une famille non réglée.
    *
-   * Elle rendait `{ emporter: null, surPlace: null }` — exactement ce que rend
-   * une famille bien réelle dont personne n'a réglé la TVA. Deux causes, deux
-   * gestes (réparer un rattachement / régler un taux), un seul symptôme. Le
-   * refus est donc explicite ; son appelant, le pousseur Shopify, l'attrape
-   * déjà et le rend visible dans son rapport plutôt que de tomber.
+   * Elle rendait une carte vide — exactement ce que rend une famille bien
+   * réelle dont personne n'a réglé la TVA. Deux causes, deux gestes (réparer un
+   * rattachement / régler un taux), un seul symptôme. Le refus est donc
+   * explicite ; ses appelants l'attrapent et le rendent visible plutôt que de
+   * tomber.
    */
-  async tvaPercents(categoryId: string): Promise<CategoryTvaPercents> {
-    const category = await this.categories.findById(categoryId);
-    if (category === null) {
-      throw new CategoryNotFoundError(categoryId);
+  async vatPercents(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, CategoryTvaPercents>> {
+    const percentById = await this.percentIndex();
+    const resolved = new Map<string, CategoryTvaPercents>();
+    // Les familles sont lues UNE fois chacune, même quand cent produits les
+    // partagent : c'est le cas normal d'un catalogue.
+    const families = new Map<string, Readonly<Record<string, string>>>();
+
+    for (const product of products) {
+      let family = families.get(product.categoryId);
+      if (family === undefined) {
+        const category = await this.categories.findById(product.categoryId);
+        if (category === null) {
+          throw new CategoryNotFoundError(product.categoryId);
+        }
+        family = category.tvaByContext;
+        families.set(product.categoryId, family);
+      }
+      resolved.set(
+        product.id,
+        this.resolve(effectiveTva(family, product.tvaByContext), percentById),
+      );
     }
-    return this.resolve(category.tvaByContext, await this.percentIndex());
+    return resolved;
   }
 
   /**

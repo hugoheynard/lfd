@@ -34,6 +34,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     categoryId: "cat_vien",
     status: "published",
     variants: [variant()],
+    tvaByContext: {},
     ...over,
   };
 }
@@ -50,15 +51,38 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
   };
 }
 
+/**
+ * Le taux EFFECTIF de chaque fiche, résolu en amont : ici, celui de la famille.
+ * Les tests qui parlent d'une dérogation le passent explicitement — c'est tout
+ * l'intérêt de le recevoir plutôt que de le déduire.
+ */
+function vat(percents: Record<string, number> = { emporter: 5.5, b2b: 5.5 }) {
+  return new Map([["prd_1", percents]]);
+}
+
 describe("projectCatalog", () => {
   it("projette un produit tarifé, avec le taux de TVA de sa famille", () => {
-    const { snapshot, excluded } = projectCatalog([product()], [category()], AT);
+    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), AT);
 
     expect(excluded).toEqual([]);
     expect(snapshot.generatedAt).toBe(AT);
     expect(snapshot.products).toHaveLength(1);
     expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
     expect(snapshot.categories[0]?.vatRatePercent).toBe(5.5);
+  });
+
+  it("facture la DÉROGATION de la fiche, pas le taux de sa famille", () => {
+    // La famille est à 5,5 % ; cette fiche-là déroge à 20 %. Sans ça, il aurait
+    // fallu lui inventer une famille — et une famille de un n'est plus une
+    // famille.
+    const { snapshot } = projectCatalog(
+      [product()],
+      [category()],
+      vat({ emporter: 5.5, b2b: 20 }),
+      AT,
+    );
+
+    expect(snapshot.products[0]?.variants[0]?.vatRatePercent).toBe(20);
   });
 
   it("facture au taux B2B, JAMAIS à celui « à emporter »", () => {
@@ -70,6 +94,7 @@ describe("projectCatalog", () => {
     const { snapshot } = projectCatalog(
       [product()],
       [category({ vatByContext: { emporter: 5.5, b2b: 20 } })],
+      vat({ emporter: 5.5, b2b: 20 }),
       AT,
     );
 
@@ -78,7 +103,7 @@ describe("projectCatalog", () => {
   });
 
   it("ne lit aucune horloge : l’instant d’émission est celui qu’on lui passe", () => {
-    const { snapshot } = projectCatalog([product()], [category()], AT);
+    const { snapshot } = projectCatalog([product()], [category()], vat(), AT);
 
     expect(snapshot.generatedAt).toBe(AT);
   });
@@ -88,7 +113,7 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "VIE-001-1", priceCents: null })],
     });
 
-    const { snapshot, excluded } = projectCatalog([priceless], [category()], AT);
+    const { snapshot, excluded } = projectCatalog([priceless], [category()], vat(), AT);
 
     expect(excluded).toContainEqual({
       sku: "VIE-001-1",
@@ -106,7 +131,7 @@ describe("projectCatalog", () => {
       ],
     });
 
-    const { snapshot, excluded } = projectCatalog([mixed], [category()], AT);
+    const { snapshot, excluded } = projectCatalog([mixed], [category()], vat(), AT);
 
     expect(excluded).toContainEqual({ sku: "A", reason: "variant_arretee" });
     expect(excluded).toContainEqual({ sku: "B", reason: "variant_sans_prix" });
@@ -118,7 +143,7 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "A", isDiscontinued: true })],
     });
 
-    const { snapshot, excluded } = projectCatalog([dead], [category()], AT);
+    const { snapshot, excluded } = projectCatalog([dead], [category()], vat(), AT);
 
     expect(excluded).toContainEqual({
       sku: "VIE-001",
@@ -137,6 +162,7 @@ describe("projectCatalog", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
       [category({ vatByContext: { emporter: 5.5 } })],
+      vat(),
       AT,
     );
 
@@ -148,7 +174,7 @@ describe("projectCatalog", () => {
   it("écarte un produit dont la famille est inconnue", () => {
     const orphan = product({ categoryId: "cat_fantome" });
 
-    const { excluded } = projectCatalog([orphan], [category()], AT);
+    const { excluded } = projectCatalog([orphan], [category()], vat(), AT);
 
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "famille_inconnue" }]);
   });
@@ -156,7 +182,7 @@ describe("projectCatalog", () => {
   it("ne pousse que les familles réellement utilisées", () => {
     const unused = category({ id: "cat_vide", name: { fr: "Vide" } });
 
-    const { snapshot } = projectCatalog([product()], [category(), unused], AT);
+    const { snapshot } = projectCatalog([product()], [category(), unused], vat(), AT);
 
     expect(snapshot.categories.map((c) => c.id)).toEqual(["cat_vien"]);
   });
@@ -166,13 +192,13 @@ describe("projectCatalog", () => {
       name: { fr: "Croissant", en: "Croissant" },
     });
 
-    const { snapshot } = projectCatalog([bilingual], [category()], AT);
+    const { snapshot } = projectCatalog([bilingual], [category()], vat(), AT);
 
     expect(snapshot.products[0]?.name).toBe("Croissant");
   });
 
   it("rend un snapshot vide sans rien inventer quand rien n’est publié", () => {
-    const { snapshot, excluded } = projectCatalog([], [category()], AT);
+    const { snapshot, excluded } = projectCatalog([], [category()], vat(), AT);
 
     expect(snapshot.products).toEqual([]);
     expect(snapshot.categories).toEqual([]);

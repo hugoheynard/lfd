@@ -117,7 +117,10 @@ async function build(
         provide: CatalogueReader,
         useValue: {
           byIds: () => Promise.resolve([product()]),
-          tvaPercents: () => Promise.resolve({ emporter: 5.5 }),
+          // Le taux EFFECTIF, par produit : la fiche ne déroge pas ici, donc
+          // c'est celui de sa famille.
+          vatPercents: (items: readonly { id: string }[]) =>
+            Promise.resolve(new Map(items.map((item) => [item.id, { emporter: 5.5 }]))),
           editorials: (ids: readonly string[]) => {
             editorialAsks.push([...ids]);
             return Promise.resolve(editorials);

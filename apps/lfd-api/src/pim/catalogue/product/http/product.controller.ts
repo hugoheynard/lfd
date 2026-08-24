@@ -14,7 +14,9 @@ import {
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
+  setProductTvaPayloadSchema,
   type SetProductMediaPayload,
+  type SetProductTvaPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
@@ -28,6 +30,7 @@ import { PublishProductCommand } from "../application/publish-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
 import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
+import { SetProductTvaCommand } from "../application/set-product-tva.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
@@ -110,6 +113,23 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductMediaCommand, void>(
       new SetProductMediaCommand(id, body.media),
+    );
+    return { id };
+  }
+
+  /**
+   * Section **Tarif & TVA** : la dérogation de la fiche au taux de sa famille.
+   *
+   * Un `PUT` de remplacement comme les autres sections — l'écran envoie ce qu'il
+   * affiche, carte vide comprise, et la carte vide est le retour à l'héritage.
+   */
+  @Put(":id/tva")
+  async setProductTva(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductTvaPayloadSchema)) body: SetProductTvaPayload,
+  ) {
+    await this.commands.execute<SetProductTvaCommand, void>(
+      new SetProductTvaCommand(id, body.tvaByContext),
     );
     return { id };
   }
