@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
+import type { LocalizedText } from '@lfd/pim-contracts';
+
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
 import { TvaStore } from './tva-rates/tva-store';
@@ -64,7 +66,7 @@ export class CatalogueApi {
   }
 
   async createProduct(payload: {
-    nameFr: string;
+    name: LocalizedText;
     kind: ProductKind;
     categoryId: string;
     allergens?: string[];
@@ -77,7 +79,7 @@ export class CatalogueApi {
     // `channelsOverride` / `handleFr` différés : les canaux relèvent du contexte
     // commerce et le slug est dérivé côté backend.
     return this.productsApi.create({
-      nameFr: payload.nameFr,
+      name: payload.name,
       kind: payload.kind,
       categoryId: payload.categoryId,
       allergens: payload.allergens,

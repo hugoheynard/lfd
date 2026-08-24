@@ -307,7 +307,7 @@ describe('CategoryPanel — création', () => {
     button(host, 'Créer la famille').click();
     await stable();
 
-    expect(http.create).toHaveBeenCalledWith({ nameFr: 'Glaces' });
+    expect(http.create).toHaveBeenCalledWith({ name: { fr: 'Glaces' } });
     expect(http.setChannels.mock.calls[0]?.[0]).toBe('cat_neuve');
     expect(http.setTva.mock.calls[0]?.[0]).toBe('cat_neuve');
     expect(closed).toHaveLength(1);
@@ -401,7 +401,7 @@ describe('CategoryPanel — une famille archivée est gelée', () => {
     button(host, 'Enregistrer').click();
     await stable();
 
-    expect(http.rename).toHaveBeenCalledWith('cat_1', 'Ancien corrigé');
+    expect(http.rename).toHaveBeenCalledWith('cat_1', { fr: 'Ancien corrigé' });
     expect(http.setChannels).not.toHaveBeenCalled();
     expect(http.setTva).not.toHaveBeenCalled();
     expect(http.move).not.toHaveBeenCalled();

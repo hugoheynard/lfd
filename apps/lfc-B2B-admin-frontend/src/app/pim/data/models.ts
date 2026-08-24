@@ -8,11 +8,19 @@
  * n'existe pas — cf. le POC frontend-only (DB en repo, aucun serveur).
  */
 
-/** Textes traduisibles — `fr` obligatoire, repli sur `fr`. */
-export interface LocalizedText {
-  fr: string;
-  en?: string;
-}
+/**
+ * Textes traduisibles. Le vocabulaire vient du CONTRAT — une seule liste de
+ * locales pour le monorepo, et ouvrir une langue est une entrée de plus là-bas,
+ * pas un champ de plus ici.
+ *
+ * Import de TYPES uniquement pour `LocalizedText` ; `LOCALES` et compagnie sont
+ * des valeurs, donc réexportées depuis le point d'entrée paresseux qui les
+ * utilise — `@lfd/pim-contracts` tire zod, qui n'a rien à faire dans le bundle
+ * initial.
+ */
+import type { LocalizedText } from '@lfd/pim-contracts';
+
+export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
 export type ProductKind = 'daily' | 'made_to_order' | 'resale';
 export type ProductStatus = 'draft' | 'published' | 'archived';

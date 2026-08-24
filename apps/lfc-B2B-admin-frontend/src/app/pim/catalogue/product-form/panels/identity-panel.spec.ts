@@ -40,10 +40,13 @@ describe('IdentityPanel', () => {
     fixture.detectChanges();
 
     const grid = (fixture.nativeElement as HTMLElement).querySelector('.grid')!;
-    const labels = [...grid.querySelectorAll('fold-input, fold-listbox, fold-field')].map(
-      (el) => el.getAttribute('label') ?? '',
-    );
-    expect(labels).toEqual(['Nom du produit', 'Famille', 'Nature', 'Slug']);
+    const fields = [...grid.querySelectorAll('fold-input, fold-listbox, fold-field')];
+    // Le libellé du nom est une entrée SIGNAL (il nomme la langue en cours),
+    // donc aucun attribut ne le reflète — on lit ce que le composant rend.
+    const labels = fields.map((el) => el.getAttribute('label') ?? el.textContent?.trim() ?? '');
+    expect(labels.length).toBe(4);
+    expect(labels[0]).toContain('Nom du produit');
+    expect(labels.slice(1)).toEqual(['Famille', 'Nature', 'Slug']);
   });
 
   it('dit que le slug manque plutôt que d’en inventer un', () => {
@@ -52,7 +55,7 @@ describe('IdentityPanel', () => {
     // les deux divergent.
     const store = setup();
     store.isEdit.set(true);
-    store.name.set('Tarte au citron meringuée');
+    store.setName('Tarte au citron meringuée');
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
 

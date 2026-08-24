@@ -63,19 +63,7 @@
     />
   } @else {
     <fold-aside-layout band="right" bleed asideRightLabel="Publication">
-      <!-- Une section par bloc, toutes visibles : un back-office se lit de haut
-           en bas. Les sept onglets s'ajoutaient au rail du PIM (sept entrées
-           lui aussi), cachaient l'état — impossible de voir d'un coup ce qui
-           manquait — et dispersaient sept boutons d'enregistrement. -->
       @for (section of sections; track section.key) {
-        <!-- `separator` : chaque en-tête de section se ferme sur un filet, et
-             c'est ce qui donne son rythme à la colonne — huit blocs nus qui se
-             suivent sans rien pour les délimiter se lisent comme un seul.
-
-             La ligne d'explication passe en `[sectionSubtitle]` : elle décrit ce
-             que la section CONTIENT, serrée sous son titre, et pas en
-             `[description]` dont l'espacement de paragraphe la détachait du
-             titre qu'elle qualifie. -->
         <fold-card>
           <fold-page-section [title]="section.label" separator>
             <span sectionSubtitle>{{ section.description }}</span>

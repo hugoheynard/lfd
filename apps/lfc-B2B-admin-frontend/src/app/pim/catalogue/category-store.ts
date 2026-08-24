@@ -1,6 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
+import { SOURCE_LOCALE, writeLocalized, type LocalizedText } from '@lfd/pim-contracts';
+
 import type { Category, SalesChannels } from '../data/models';
 import { CategoryHttpApi, type CategoryTvaDraft } from './category-http-api';
 import { ListLoadState } from '../data/list-load-state';
@@ -99,7 +101,7 @@ export class CategoryStore {
   private async openNew(draft: CategorySettingsDraft): Promise<string> {
     const parentId = draft.settings?.parentId ?? null;
     const created = await this.api.create(
-      parentId === null ? { nameFr: draft.nameFr } : { nameFr: draft.nameFr, parentId },
+      parentId === null ? { name: { fr: draft.nameFr } } : { name: { fr: draft.nameFr }, parentId },
     );
     return created.id;
   }
@@ -117,7 +119,11 @@ export class CategoryStore {
   private async reword(id: string, draft: CategorySettingsDraft): Promise<string> {
     const current = this.state().find((item) => item.id === id);
     if (current === undefined || current.name.fr !== draft.nameFr) {
-      await this.api.rename(id, draft.nameFr);
+      // On repart du nom EXISTANT : renommer en français ne doit pas effacer
+      // les traductions qu'on ne montre pas encore. Un `{ fr }` nu remplaçait
+      // l'objet entier, donc chaque renommage perdait l'anglais en silence.
+      const base: LocalizedText = current?.name ?? { fr: draft.nameFr };
+      await this.api.rename(id, writeLocalized(base, SOURCE_LOCALE, draft.nameFr));
     }
     // Le déplacement ne concerne que les vivantes : `settings` est absent sinon.
     if (draft.settings !== null) {

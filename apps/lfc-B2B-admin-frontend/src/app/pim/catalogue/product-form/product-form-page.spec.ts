@@ -27,7 +27,7 @@ function render(edit: boolean) {
 describe('ProductFormPage — en-tête', () => {
   it('porte le nom du produit comme titre, pas le geste qu’on y fait', () => {
     const { fixture, store, root } = render(true);
-    store.name.set('Tarte au citron meringuée');
+    store.setName('Tarte au citron meringuée');
     fixture.detectChanges();
     expect(root.querySelector('.page-title')?.textContent).toContain('Tarte au citron meringuée');
     expect(root.querySelector('.page-title')?.textContent).not.toContain('Éditer');

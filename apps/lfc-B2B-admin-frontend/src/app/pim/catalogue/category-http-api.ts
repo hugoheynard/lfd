@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { CategoryView, SalesChannels } from '@lfd/pim-contracts';
+import type { CategoryView, LocalizedText, SalesChannels } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -54,10 +54,10 @@ export class CategoryHttpApi {
     return rows.map(toCategory);
   }
 
-  create(payload: { nameFr: string; parentId?: string | undefined }): Promise<{ id: string }> {
+  create(payload: { name: LocalizedText; parentId?: string | undefined }): Promise<{ id: string }> {
     return firstValueFrom(
       this.http.post<{ id: string }>(this.url('categories'), {
-        nameFr: payload.nameFr,
+        name: payload.name,
         ...(payload.parentId === undefined || payload.parentId === ''
           ? {}
           : { parentId: payload.parentId }),
@@ -65,8 +65,8 @@ export class CategoryHttpApi {
     );
   }
 
-  rename(id: string, nameFr: string): Promise<void> {
-    return this.put(`categories/${id}/name`, { nameFr });
+  rename(id: string, name: LocalizedText): Promise<void> {
+    return this.put(`categories/${id}/name`, { name });
   }
 
   /**

@@ -1,9 +1,20 @@
+<!-- Le sélecteur appartient à CETTE section, et il ne fait basculer que le nom.
+     La famille, la nature et le slug ne se traduisent pas — un sélecteur de page
+     les aurait fait basculer avec, ou aurait laissé croire qu'ils basculent. -->
+<app-lang-switch
+  [lang]="store.nameLocale()"
+  (langChange)="store.nameLocale.set($event)"
+  [missing]="store.nameMissing()"
+  [hint]="missingHint()"
+  ariaLabel="Langue du nom"
+/>
+
 <div class="grid">
   <fold-input
-    label="Nom du produit"
-    required
+    [label]="nameLabel()"
+    [required]="store.nameLocale() === sourceLocale"
     [value]="store.name()"
-    (valueChange)="store.name.set($event)"
+    (valueChange)="store.setName($event)"
   />
   <fold-listbox
     label="Famille"

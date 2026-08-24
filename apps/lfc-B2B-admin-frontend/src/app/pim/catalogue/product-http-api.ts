@@ -7,6 +7,7 @@ import type {
   ProductView,
   VariantNutritionView,
   VariantView,
+  LocalizedText,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -145,7 +146,7 @@ export function backendToProduct(
 }
 
 export interface CreateProductInput {
-  readonly nameFr: string;
+  readonly name: LocalizedText;
   readonly kind: ProductKind;
   readonly categoryId: string;
   readonly allergens?: readonly string[] | undefined;
@@ -209,7 +210,7 @@ export class ProductHttpApi {
   async create(input: CreateProductInput): Promise<{ id: string }> {
     const created = await firstValueFrom(
       this.http.post<{ id: string }>(this.url('products'), {
-        nameFr: input.nameFr,
+        name: input.name,
         kind: input.kind,
         categoryId: input.categoryId,
         ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
@@ -227,7 +228,7 @@ export class ProductHttpApi {
   /** Section Identité — nom + nature + famille en une requête (pas de micro-PUT). */
   saveIdentity(
     id: string,
-    input: { nameFr: string; kind: ProductKind; categoryId: string },
+    input: { name: LocalizedText; kind: ProductKind; categoryId: string },
   ): Promise<void> {
     return this.put(`products/${id}/identity`, input);
   }

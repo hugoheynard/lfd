@@ -1,5 +1,13 @@
 import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
 
+import {
+  SOURCE_LOCALE,
+  missingLocales,
+  writeLocalized,
+  type Locale,
+  type LocalizedText,
+} from '@lfd/pim-contracts';
+
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
@@ -135,7 +143,27 @@ export class ProductFormStore {
   readonly scope = signal<AllergenScope>('eu');
 
   // Champs éditables
-  readonly name = signal('');
+  /**
+   * Le nom, **dans toutes ses langues**. Un `LocalizedText` et non une chaîne :
+   * un formulaire qui ne tenait que le français réécrivait l'objet entier à
+   * chaque enregistrement, donc éditer le nom d'un produit EFFAÇAIT sa
+   * traduction anglaise — en silence, puisque l'écran ne l'affichait pas.
+   */
+  readonly nameText = signal<LocalizedText>({ fr: '' });
+
+  /** La langue en cours d'édition — celle que le sélecteur de la section pointe. */
+  readonly nameLocale = signal<Locale>(SOURCE_LOCALE);
+
+  /** Le nom dans la langue affichée, vide si elle n'est pas traduite. */
+  readonly name = computed(() => this.nameText()[this.nameLocale()] ?? '');
+
+  /** Écrit dans la langue affichée, sans toucher aux autres. */
+  setName(value: string): void {
+    this.nameText.update((text) => writeLocalized(text, this.nameLocale(), value));
+  }
+
+  /** Les langues du nom qui restent à traduire — le point ambre du sélecteur. */
+  readonly nameMissing = computed(() => missingLocales(this.nameText()));
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
   readonly priceEur = signal<number | null>(null);
@@ -203,7 +231,7 @@ export class ProductFormStore {
     if (!this.isEdit()) {
       return 'Nouveau produit';
     }
-    const name = this.name().trim();
+    const name = this.nameText()[SOURCE_LOCALE].trim();
     return name === '' ? 'Produit sans nom' : name;
   });
 
@@ -305,7 +333,7 @@ export class ProductFormStore {
     }
     switch (section) {
       case 'identite':
-        this.name.set(String(value[0] ?? ''));
+        this.nameText.set(value[0] as LocalizedText);
         this.setKind(String(value[1] ?? ''));
         this.categoryId.set(String(value[2] ?? ''));
         return;
@@ -346,7 +374,7 @@ export class ProductFormStore {
   }
 
   isValid(): boolean {
-    return this.name().trim() !== '' && this.categoryId() !== '';
+    return this.nameText()[SOURCE_LOCALE].trim() !== '' && this.categoryId() !== '';
   }
 
   // ── Mutations d'état avec un peu de logique ──────────────────────────────
@@ -483,7 +511,7 @@ export class ProductFormStore {
       const description = this.editorial().descriptionShort.trim();
       const declares = this.declaresNone() || this.selected().length > 0;
       const created = await this.api.createProduct({
-        nameFr: this.name().trim(),
+        name: this.nameText(),
         kind: this.kind(),
         categoryId: this.categoryId(),
         ...(declares ? { allergens: this.selected() } : {}),
@@ -508,7 +536,7 @@ export class ProductFormStore {
     }
     return this.save('identite', () =>
       this.products.saveIdentity(this.productId(), {
-        nameFr: this.name().trim(),
+        name: this.nameText(),
         kind: this.kind(),
         categoryId: this.categoryId(),
       }),
@@ -628,7 +656,7 @@ export class ProductFormStore {
   private snapshot(section: FormSection): string {
     switch (section) {
       case 'identite':
-        return JSON.stringify([this.name().trim(), this.kind(), this.categoryId()]);
+        return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
         return JSON.stringify([this.priceEur(), this.weightGrams()]);
       case 'fiche':
@@ -661,7 +689,7 @@ export class ProductFormStore {
     this.statusValue.set(product.status);
     this.slugValue.set(product.slug?.fr ?? '');
     this.variantCountValue.set(product.variants.length);
-    this.name.set(product.name.fr);
+    this.nameText.set(product.name);
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
