@@ -29,12 +29,12 @@ import {
 import type { ProductStatus } from '../../data/models';
 import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
 
-import { CommunicationPanel } from './panels/communication-panel';
-import { IdentityPanel } from './panels/identity-panel';
-import { IntegrationsPanel } from './panels/integrations-panel';
-import { PricingPanel } from './panels/pricing-panel';
-import { RegulatoryPanel } from './panels/regulatory-panel';
-import { VisualsPanel } from './panels/visuals-panel';
+import { CommunicationForm } from './form-sections/communication/communication-form';
+import { IdentityForm } from './form-sections/identity/identity-form';
+import { IntegrationsForm } from './form-sections/integrations/integrations-form';
+import { PricingForm } from './form-sections/pricing/pricing-form';
+import { RegulatoryForm } from './form-sections/regulatory/regulatory-form';
+import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
@@ -95,12 +95,12 @@ interface PageSection {
     FoldPageSectionComponent,
     SectionState,
     PublishRail,
-    IdentityPanel,
-    PricingPanel,
-    RegulatoryPanel,
-    CommunicationPanel,
-    VisualsPanel,
-    IntegrationsPanel,
+    IdentityForm,
+    PricingForm,
+    RegulatoryForm,
+    CommunicationForm,
+    VisualsForm,
+    IntegrationsForm,
   ],
   templateUrl: './product-form-page.html',
   styleUrl: './product-form-page.scss',

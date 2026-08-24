@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { ChannelsPanel } from './channels-panel';
-import { ProductFormStore } from '../product-form-store';
-import { numberValue } from './dom';
+import { ChannelsForm } from '../channels/channels-form';
+import { ProductFormStore } from '../../product-form-store';
+import { numberValue } from '../dom';
 
 /**
  * Panneau Tarif & TVA — le prix canonique HT, le poids de l'unité vendue, et le
@@ -14,13 +14,13 @@ import { numberValue } from './dom';
  * raison.
  */
 @Component({
-  selector: 'app-pricing-panel',
+  selector: 'app-pricing-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChannelsPanel],
-  templateUrl: './pricing-panel.html',
-  styleUrl: './panel.scss',
+  imports: [ChannelsForm],
+  templateUrl: './pricing-form.html',
+  styleUrls: ['../form-section.scss', './pricing-form.scss'],
 })
-export class PricingPanel {
+export class PricingForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly numberValue = numberValue;
 }

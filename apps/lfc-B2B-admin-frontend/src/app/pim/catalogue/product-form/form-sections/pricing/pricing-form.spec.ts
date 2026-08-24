@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductFormStore } from '../product-form-store';
-import { provideTestSalesContexts } from '../../sales-contexts/sales-context-store.testing';
-import { PricingPanel } from './pricing-panel';
+import { ProductFormStore } from '../../product-form-store';
+import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-store.testing';
+import { PricingForm } from './pricing-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -50,7 +50,7 @@ function withFamily(store: ProductFormStore): void {
   store.categoryId.set('cat_tartes');
 }
 
-describe('PricingPanel', () => {
+describe('PricingForm', () => {
   // Le bouton d'enregistrement a QUITTÉ le panneau : il vit dans l'en-tête de la
   // section (`app-section-state`), à droite de son titre, et n'apparaît qu'à la
   // première frappe. Un panneau qui garderait le sien en poserait un SECOND —
@@ -59,7 +59,7 @@ describe('PricingPanel', () => {
   it('ne porte aucun bouton d’enregistrement — il vit dans l’en-tête de section', () => {
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.section-footer')).toBeNull();
@@ -68,7 +68,7 @@ describe('PricingPanel', () => {
   });
   it('demande un prix HT — le TTC dépend du mode, il se calcule', () => {
     setup();
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Prix HT');
@@ -80,7 +80,7 @@ describe('PricingPanel', () => {
     // Les séparer obligeait à replier une section pour en déplier une autre.
     const store = setup();
     withFamily(store);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Prix HT');
@@ -95,7 +95,7 @@ describe('PricingPanel', () => {
     // est aussi faux que l'inverse.
     const store = setup();
     withFamily(store);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Redéfinir les canaux');
@@ -105,7 +105,7 @@ describe('PricingPanel', () => {
     const store = setup();
     withFamily(store);
     store.channelsOverride.set({ boutiques: {}, b2b: true });
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -116,7 +116,7 @@ describe('PricingPanel', () => {
   it('ouvre par le B2B — le comptoir est le cas particulier ici', () => {
     const store = setup();
     withFamily(store);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row dt')]
       .map((cell) => cell.textContent?.trim() ?? '')
@@ -130,7 +130,7 @@ describe('PricingPanel', () => {
     // qu'on cherche se perdait au bout de la phrase.
     const store = setup();
     withFamily(store);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const rate = (fixture.nativeElement as HTMLElement).querySelector('.inherit-rate');
     expect(rate?.querySelector('strong')?.textContent?.trim()).toBe('20 %');
@@ -138,14 +138,14 @@ describe('PricingPanel', () => {
   });
 });
 
-describe('PricingPanel — la dérogation de la fiche', () => {
+describe('PricingForm — la dérogation de la fiche', () => {
   it('affiche le taux de la FICHE, marqué comme redéfini', () => {
     // La règle de résolution, à l'écran comme au serveur : la fiche d'abord, sa
     // famille ensuite — contexte par contexte.
     const store = setup();
     withFamily(store);
     store.tvaOverride.set({ b2b: 'tva_55' });
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -163,7 +163,7 @@ describe('PricingPanel — la dérogation de la fiche', () => {
     const store = setup();
     withFamily(store);
     store.tvaOverride.set({ b2b: 'tva_55' });
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -175,7 +175,7 @@ describe('PricingPanel — la dérogation de la fiche', () => {
   });
 });
 
-describe('PricingPanel — la fiche qui ne suit plus sa famille', () => {
+describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
   it('lit les LIGNES sur la matrice de la fiche', () => {
     // La famille vend au comptoir ET en B2B ; cette fiche-là ne se vend qu'aux
     // pros. Sans résolution, l'encadré afficherait des boutiques où elle n'est
@@ -183,7 +183,7 @@ describe('PricingPanel — la fiche qui ne suit plus sa famille', () => {
     const store = setup();
     withFamily(store);
     store.channelsOverride.set({ boutiques: {}, b2b: true });
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
@@ -195,11 +195,11 @@ describe('PricingPanel — la fiche qui ne suit plus sa famille', () => {
   });
 });
 
-describe('PricingPanel — ce qui n’y est PAS', () => {
+describe('PricingForm — ce qui n’y est PAS', () => {
   it('ne porte plus le poids : il appartient à la déclaration nutritionnelle', () => {
     const store = setup();
     store.weightGrams.set(220);
-    const fixture = TestBed.createComponent(PricingPanel);
+    const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Poids');

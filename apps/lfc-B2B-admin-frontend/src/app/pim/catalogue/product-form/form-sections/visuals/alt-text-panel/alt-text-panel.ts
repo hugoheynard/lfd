@@ -9,7 +9,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { LOCALE_NAMES } from '../../../../../shared/lang-switch/locale-names';
+import { LOCALE_NAMES } from '../../../../../../shared/lang-switch/locale-names';
 
 /** Charge d'ouverture : l'image qu'on décrit, et ce qui en est déjà écrit. */
 export interface AltTextPanelData {

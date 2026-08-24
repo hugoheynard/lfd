@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent } from 'fold-ng';
 
-import type { AllergenScope } from '../../../data/models';
-import type { NutritionValues } from '../../product-http-api';
-import { ProductFormStore } from '../product-form-store';
-import { numberValue } from './dom';
+import type { AllergenScope } from '../../../../data/models';
+import type { NutritionValues } from '../../../product-http-api';
+import { ProductFormStore } from '../../product-form-store';
+import { numberValue } from '../dom';
 
 const SCOPES: readonly { value: AllergenScope; label: string }[] = [
   { value: 'eu', label: 'UE / France' },
@@ -22,13 +22,13 @@ const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[]
 
 /** Panneau Allergènes & nutrition — **une** fiche réglementaire (un seul save). */
 @Component({
-  selector: 'app-regulatory-panel',
+  selector: 'app-regulatory-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent],
-  templateUrl: './regulatory-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './regulatory-form.html',
+  styleUrls: ['../form-section.scss', './regulatory-form.scss'],
 })
-export class RegulatoryPanel {
+export class RegulatoryForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly numberValue = numberValue;
   protected readonly scopes = SCOPES;

@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import { FoldInputComponent } from 'fold-ng';
 
-import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
-import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
-import { ProductFormStore, type LocalizedEditorialKey } from '../product-form-store';
-import { textValue } from './dom';
+import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
+import { LOCALE_NAMES, missingSentence } from '../../../../../shared/lang-switch/locale-names';
+import { ProductFormStore, type LocalizedEditorialKey } from '../../product-form-store';
+import { textValue } from '../dom';
 
 interface EditorialField {
   readonly key: LocalizedEditorialKey;
@@ -22,13 +22,13 @@ const FIELDS: readonly EditorialField[] = [
 
 /** Panneau Communication — couche éditoriale complète (un seul save). */
 @Component({
-  selector: 'app-communication-panel',
+  selector: 'app-communication-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LangSwitch, FoldInputComponent],
-  templateUrl: './communication-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './communication-form.html',
+  styleUrls: ['../form-section.scss'],
 })
-export class CommunicationPanel {
+export class CommunicationForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly textValue = textValue;
   protected readonly fields = FIELDS;

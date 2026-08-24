@@ -2,8 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductFormStore } from '../product-form-store';
-import { IdentityPanel } from './identity-panel';
+import { ProductFormStore } from '../../product-form-store';
+import { IdentityForm } from './identity-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -12,7 +12,7 @@ function setup(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-describe('IdentityPanel', () => {
+describe('IdentityForm', () => {
   // La référence est ÉMISE par le référentiel. Un champ de saisie proposerait
   // d'écrire une valeur que le backend n'écoute plus — et inviterait au doublon.
   it('n’offre aucun champ de saisie pour la référence', () => {
@@ -20,7 +20,7 @@ describe('IdentityPanel', () => {
     // proposerait d'écrire une valeur que le backend ignore.
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(IdentityPanel);
+    const fixture = TestBed.createComponent(IdentityForm);
     fixture.detectChanges();
 
     const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-input')].map(
@@ -35,7 +35,7 @@ describe('IdentityPanel', () => {
     // en ligne, donc une propriété du canal Shopify, pas de l'identité.
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(IdentityPanel);
+    const fixture = TestBed.createComponent(IdentityForm);
     fixture.detectChanges();
 
     const grid = (fixture.nativeElement as HTMLElement).querySelector('.grid')!;
@@ -51,7 +51,7 @@ describe('IdentityPanel', () => {
   it('ne montre aucun champ en lecture — ni référence, ni handle', () => {
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(IdentityPanel);
+    const fixture = TestBed.createComponent(IdentityForm);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-field')).toBeNull();
   });
@@ -64,7 +64,7 @@ describe('IdentityPanel', () => {
   it('ne porte aucun bouton d’enregistrement — il vit dans l’en-tête de section', () => {
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(IdentityPanel);
+    const fixture = TestBed.createComponent(IdentityForm);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.section-footer')).toBeNull();

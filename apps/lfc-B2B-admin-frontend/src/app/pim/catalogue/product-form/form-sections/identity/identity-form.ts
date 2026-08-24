@@ -4,22 +4,22 @@ import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 
 import { FoldInputComponent, FoldListboxComponent, FoldOptionComponent } from 'fold-ng';
 
-import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
-import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
-import { ProductFormStore } from '../product-form-store';
+import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
+import { LOCALE_NAMES, missingSentence } from '../../../../../shared/lang-switch/locale-names';
+import { ProductFormStore } from '../../product-form-store';
 
 /**
  * Panneau Identité — nom, nature, famille. La **référence** y figure en lecture
  * seule (édition seulement) : elle est émise par le référentiel, pas saisie.
  */
 @Component({
-  selector: 'app-identity-panel',
+  selector: 'app-identity-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LangSwitch, FoldInputComponent, FoldListboxComponent, FoldOptionComponent],
-  templateUrl: './identity-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './identity-form.html',
+  styleUrls: ['../form-section.scss'],
 })
-export class IdentityPanel {
+export class IdentityForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly sourceLocale = SOURCE_LOCALE;
 

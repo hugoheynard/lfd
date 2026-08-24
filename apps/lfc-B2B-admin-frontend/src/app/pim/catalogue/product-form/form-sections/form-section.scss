@@ -1,0 +1,82 @@
+// Ce que TOUTES les sections du formulaire partagent : la trame des champs,
+// la grille, l'entrée native. Ce qui n'appartient qu'à une section vit dans
+// son dossier — une feuille commune où chacun pousse ses règles redevient
+// vite l'endroit où personne n'ose supprimer.
+
+// Styles partagés par tous les panneaux du formulaire produit.
+:host {
+  display: block;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--fold-space-lg);
+}
+
+/* Le sélecteur de langue COMMANDE les champs qui le suivent — il ne fait pas
+   partie de leur suite. Il s'en détache donc plus que les champs ne se
+   détachent entre eux (`--fold-space-lg`), faute de quoi il se lit comme une
+   ligne de plus du formulaire au lieu de l'interrupteur qui les gouverne. */
+app-lang-switch {
+  display: block;
+  margin-block-end: var(--fold-space-2xl);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.field-label,
+.block-label {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text-muted);
+}
+
+.native-input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 1px;
+  }
+}
+
+.native-textarea {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.section-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-lg);
+}
+
+.section-status,
+.muted {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+@media (width < 40rem) {
+  .tarif {
+    grid-template-columns: 1fr;
+  }
+}

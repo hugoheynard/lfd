@@ -2,9 +2,9 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductHttpApi } from '../../product-http-api';
-import { ProductFormStore } from '../product-form-store';
-import { VisualsPanel } from './visuals-panel';
+import { ProductHttpApi } from '../../../product-http-api';
+import { ProductFormStore } from '../../product-form-store';
+import { VisualsForm } from './visuals-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -61,7 +61,7 @@ function accepting(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-describe('VisualsPanel — le refus du serveur', () => {
+describe('VisualsForm — le refus du serveur', () => {
   it('affiche la raison du refus, pas le code HTTP', async () => {
     const reason = 'Visuel refusé : format non accepté — PNG, JPEG ou WebP attendus.';
     const store = refusing(reason);
@@ -80,7 +80,7 @@ describe('VisualsPanel — le refus du serveur', () => {
   });
 });
 
-describe('VisualsPanel', () => {
+describe('VisualsForm', () => {
   it('un visuel déposé prend un rôle NEUTRE', async () => {
     // L'API en exige un, mais l'écran n'en propose plus. Le premier déposé
     // devenait « hero », ce qui affirmait une hiérarchie que ni Shopify ni le
@@ -95,7 +95,7 @@ describe('VisualsPanel', () => {
 
   it('pose le dépôt DANS la galerie, à la place de l’image suivante', () => {
     setup();
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
     const gallery = (fixture.nativeElement as HTMLElement).querySelector('.media')!;
     expect(gallery.querySelector('fold-file-dropzone')).not.toBeNull();
@@ -116,7 +116,7 @@ describe('VisualsPanel', () => {
         bytes: 253952,
       },
     ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -130,7 +130,7 @@ describe('VisualsPanel', () => {
     // pire que les deux.
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png', name: '' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.media-ratio')).toBeNull();
   });
@@ -140,7 +140,7 @@ describe('VisualsPanel', () => {
     store.media.set([
       { role: 'hero', url: 'https://media.test/a.png', name: '', width: 4289, height: 2848 },
     ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.media-ratio')?.textContent,
@@ -150,7 +150,7 @@ describe('VisualsPanel', () => {
   it("dit qu'une image n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://media.test/a.png', name: '' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Dimensions inconnues');
   });
@@ -161,7 +161,7 @@ describe('VisualsPanel', () => {
     // sans que rien ne le signale.
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://media.test/a.png', name: 'a' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;
     expect(host.textContent).not.toContain('URL');
@@ -185,7 +185,7 @@ describe('VisualsPanel', () => {
       },
       { role: 'gallery', url: 'https://media.test/b.png', name: 'b' },
     ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -204,7 +204,7 @@ describe('VisualsPanel', () => {
     store.media.set([
       { role: 'hero', url: 'https://media.test/a.png', name: 'a', alt: { fr: 'Une tarte' } },
     ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -224,7 +224,7 @@ describe('VisualsPanel', () => {
         alt: { fr: 'Tarte entière, vue de face' },
       },
     ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -237,7 +237,7 @@ describe('VisualsPanel', () => {
   it('dit « sans nom » plutôt que de laisser la rangée vide', () => {
     const store = setup();
     store.media.set([{ role: 'gallery', url: 'https://media.test/a.png', name: '' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -250,7 +250,7 @@ describe('VisualsPanel', () => {
     // lisibilité qu'avait la pastille « Principale ».
     const store = setup();
     store.media.set([{ role: 'gallery', url: 'https://media.test/a.png', name: 'a' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
+    const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;

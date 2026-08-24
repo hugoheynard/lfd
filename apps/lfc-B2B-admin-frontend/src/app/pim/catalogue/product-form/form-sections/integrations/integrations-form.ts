@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { FoldElementTitleComponent, FoldFieldComponent, FoldFieldListComponent } from 'fold-ng';
 
-import { ProductFormStore } from '../product-form-store';
+import { ProductFormStore } from '../../product-form-store';
 
 /**
  * Panneau Diffusion par canal — **deux blocs côte à côte**, plus un troisième
@@ -15,12 +15,12 @@ import { ProductFormStore } from '../product-form-store';
  * Google — donc le référencement n'a rien à faire dans la carte Identité.
  */
 @Component({
-  selector: 'app-integrations-panel',
+  selector: 'app-integrations-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldElementTitleComponent, FoldFieldComponent, FoldFieldListComponent],
-  templateUrl: './integrations-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './integrations-form.html',
+  styleUrls: ['../form-section.scss', './integrations-form.scss'],
 })
-export class IntegrationsPanel {
+export class IntegrationsForm {
   protected readonly store = inject(ProductFormStore);
 }

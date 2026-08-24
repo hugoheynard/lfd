@@ -8,8 +8,8 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
-import { ChannelMatrix } from '../../../channel-matrix/channel-matrix';
-import type { Emplacement, SalesChannels } from '../../../../data/models';
+import { ChannelMatrix } from '../../../../channel-matrix/channel-matrix';
+import type { Emplacement, SalesChannels } from '../../../../../data/models';
 
 /** Ce que le panneau reçoit : la matrice courante, l'héritage, et le référentiel. */
 export interface ChannelsOverridePanelData {

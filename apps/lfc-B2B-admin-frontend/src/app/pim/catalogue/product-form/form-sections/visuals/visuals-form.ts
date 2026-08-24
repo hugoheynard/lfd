@@ -7,17 +7,17 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
-import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
+import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
 import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 
-import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
+import { LOCALE_NAMES, missingSentence } from '../../../../../shared/lang-switch/locale-names';
 import {
   AltTextPanel,
   type AltTextPanelData,
   type AltTextPanelResult,
 } from './alt-text-panel/alt-text-panel';
-import { ProductFormStore } from '../product-form-store';
-import type { MediaSlot } from '../../product-http-api';
+import { ProductFormStore } from '../../product-form-store';
+import type { MediaSlot } from '../../../product-http-api';
 
 /** Le plus grand diviseur commun — pour réduire un ratio à sa forme lisible. */
 function gcd(a: number, b: number): number {
@@ -52,13 +52,13 @@ function formatBytes(bytes: number): string {
  * elle affirmait une hiérarchie que rien ne consommait.
  */
 @Component({
-  selector: 'app-visuals-panel',
+  selector: 'app-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LangSwitch, FoldButtonIconComponent, FoldCalloutComponent, FoldFileDropzoneComponent],
-  templateUrl: './visuals-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './visuals-form.html',
+  styleUrls: ['../form-section.scss', './visuals-form.scss'],
 })
-export class VisualsPanel {
+export class VisualsForm {
   protected readonly store = inject(ProductFormStore);
   private readonly panels = inject(FoldPanelHostService);
 

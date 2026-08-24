@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { FoldButtonIconComponent, FoldPanelHostService } from 'fold-ng';
 
-import { formatPercent } from '../../../data/channels';
-import { ProductFormStore, type ChannelInheritance } from '../product-form-store';
-import { EmplacementStore } from '../../../emplacements/emplacement-store';
+import { formatPercent } from '../../../../data/channels';
+import { ProductFormStore, type ChannelInheritance } from '../../product-form-store';
+import { EmplacementStore } from '../../../../emplacements/emplacement-store';
 import {
   ChannelsOverridePanel,
   type ChannelsOverridePanelData,
@@ -24,13 +24,13 @@ import {
  * connaît plus « à emporter / sur place / B2B ».
  */
 @Component({
-  selector: 'app-channels-panel',
+  selector: 'app-channels-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldButtonIconComponent],
-  templateUrl: './channels-panel.html',
-  styleUrl: './panel.scss',
+  templateUrl: './channels-form.html',
+  styleUrls: ['../form-section.scss', './channels-form.scss'],
 })
-export class ChannelsPanel {
+export class ChannelsForm {
   protected readonly store = inject(ProductFormStore);
 
   /**

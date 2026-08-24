@@ -2,8 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductFormStore } from '../product-form-store';
-import { RegulatoryPanel } from './regulatory-panel';
+import { ProductFormStore } from '../../product-form-store';
+import { RegulatoryForm } from './regulatory-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -12,10 +12,10 @@ function setup(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-describe('RegulatoryPanel', () => {
+describe('RegulatoryForm', () => {
   it('rend les valeurs nutritionnelles et le sélecteur allergènes', () => {
     setup();
-    const fixture = TestBed.createComponent(RegulatoryPanel);
+    const fixture = TestBed.createComponent(RegulatoryForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Calories (kcal)');
@@ -30,7 +30,7 @@ describe('RegulatoryPanel', () => {
   it('ne porte aucun bouton d’enregistrement — il vit dans l’en-tête de section', () => {
     const store = setup();
     store.isEdit.set(true);
-    const fixture = TestBed.createComponent(RegulatoryPanel);
+    const fixture = TestBed.createComponent(RegulatoryForm);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.section-footer')).toBeNull();
@@ -39,14 +39,14 @@ describe('RegulatoryPanel', () => {
   });
 });
 
-describe('RegulatoryPanel — le poids net', () => {
+describe('RegulatoryForm — le poids net', () => {
   it('vit AVEC la déclaration, pas dans « Tarif & TVA »', () => {
     // La grille est « pour 100 g » : sans le poids de l'unité, elle ne dit rien
     // de ce qu'on vend. Isolé ailleurs dans la page, son absence ne se voyait
     // pas en contexte.
     const store = setup();
     store.weightGrams.set(220);
-    const fixture = TestBed.createComponent(RegulatoryPanel);
+    const fixture = TestBed.createComponent(RegulatoryForm);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;

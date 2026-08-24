@@ -18,8 +18,8 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
-import { formatPercent } from '../../../../data/channels';
-import type { TvaRate } from '../../../catalogue-api';
+import { formatPercent } from '../../../../../data/channels';
+import type { TvaRate } from '../../../../catalogue-api';
 
 /** Ce que le panneau reçoit : le contexte visé, les taux, et l'état actuel. */
 export interface TvaOverridePanelData {

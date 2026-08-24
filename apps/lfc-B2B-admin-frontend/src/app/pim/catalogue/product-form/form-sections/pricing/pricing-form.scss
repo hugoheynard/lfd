@@ -1,0 +1,44 @@
+// Ce qui n'appartient qu'à la section « pricing ».
+
+/* ── Tarif & TVA ─────────────────────────────────────────────────────────────
+   Le prix est court et le régime est long : une grille à deux colonnes plutôt
+   que deux colonnes égales, sinon le champ « Prix » s'étire sur la largeur d'une
+   phrase pour accueillir cinq caractères. Elles se replient l'une sous l'autre
+   quand la colonne se resserre. */
+.tarif {
+  display: grid;
+  grid-template-columns: minmax(9rem, 10rem) 1fr;
+  gap: var(--fold-space-xl);
+  align-items: start;
+}
+
+/* L'unité DANS le champ : « € » n'est pas une étiquette, c'est ce que mesure le
+   nombre. Posée à côté du libellé, elle s'éloigne du chiffre qu'elle qualifie. */
+.field-money {
+  position: relative;
+  display: block;
+
+  .native-input {
+    /* La place de l'unité, plus la gouttière — sinon un montant long passe
+       dessous. Les flèches natives du champ nombre vivent à droite elles aussi :
+       on les efface, le pas se règle au clavier. */
+    padding-inline-end: 2rem;
+    appearance: textfield;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .native-input::-webkit-outer-spin-button,
+  .native-input::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
+
+.field-unit {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0.625rem;
+  display: flex;
+  align-items: center;
+  color: var(--fold-color-text-muted);
+}

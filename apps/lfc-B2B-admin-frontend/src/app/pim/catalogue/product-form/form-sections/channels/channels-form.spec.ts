@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductFormStore } from '../product-form-store';
-import { provideTestSalesContexts } from '../../sales-contexts/sales-context-store.testing';
-import { ChannelsPanel } from './channels-panel';
+import { ProductFormStore } from '../../product-form-store';
+import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-store.testing';
+import { ChannelsForm } from './channels-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -13,10 +13,10 @@ function setup(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-describe('ChannelsPanel', () => {
+describe('ChannelsForm', () => {
   it('invite à choisir une famille sans héritage', () => {
     setup();
-    const fixture = TestBed.createComponent(ChannelsPanel);
+    const fixture = TestBed.createComponent(ChannelsForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Choisissez une famille');
@@ -53,7 +53,7 @@ describe('ChannelsPanel', () => {
       },
     ]);
     store.categoryId.set('cat_vien');
-    const fixture = TestBed.createComponent(ChannelsPanel);
+    const fixture = TestBed.createComponent(ChannelsForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Viennoiseries');

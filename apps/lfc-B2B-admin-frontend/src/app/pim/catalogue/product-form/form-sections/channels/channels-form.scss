@@ -1,0 +1,123 @@
+// Ce qui n'appartient qu'à la section « channels ».
+
+/* Le bloc d'héritage : un encadré à bandeau, comme la maquette. Le bandeau dit
+   D'OÙ viennent les taux, les lignes disent ce qu'ils valent par mode. */
+.inherit {
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  overflow: clip;
+}
+
+.inherit-head {
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  background: var(--fold-color-surface-band);
+  font-size: var(--fold-text-md);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+/* Le geste du bandeau : un lien, pas un bouton plein. Il ouvre un réglage, il
+   ne valide rien — et un bouton plein dans un bandeau attirerait l'œil plus que
+   le taux, qui est ce qu'on vient lire. */
+.inherit-redefine {
+  flex: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--fold-color-primary);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.inherit-rows {
+  margin: 0;
+}
+
+/* Trois colonnes ALIGNÉES d'une ligne à l'autre : les taux se comparent
+   verticalement, ce qu'une suite de phrases de longueurs différentes rendait
+   impossible. La colonne du milieu absorbe le reste et se tronque. */
+.inherit-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+
+  /* Un filet ENTRE les lignes, pas sous la dernière : le bord du bloc ferme
+     déjà, et deux traits à un cheveu l'un de l'autre se lisent comme un défaut. */
+  & + .inherit-row {
+    border-block-start: 1px solid var(--fold-color-border);
+  }
+
+  dt {
+    font-size: var(--fold-text-sm);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+/* Les boutiques nomment un contexte, elles ne sont pas le sujet de la ligne. */
+.inherit-where {
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quand un mode n'est pas proposé, il n'y a pas de taux : la valeur occupe les
+   deux colonnes restantes plutôt que de laisser un vide à droite qui se lirait
+   comme un chiffre manquant. */
+.inherit-where:last-child {
+  grid-column: 2 / -1;
+}
+
+.inherit-rate {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  justify-self: end;
+  white-space: nowrap;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* La ligne qui DÉROGE se signale — un liseré à gauche, pas une couleur de fond :
+   la dérogation est une exception, elle doit se voir sans repeindre la ligne. */
+.inherit-row.is-overridden {
+  box-shadow: inset 3px 0 0 var(--fold-color-primary);
+}
+
+/* « Redéfini » prend la place des boutiques : sur une ligne qui déroge, la
+   provenance est la seule chose qu'on cherche. */
+.inherit-mark {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-primary);
+}
+
+/* Le NOM du régime, en micro-libellé : il qualifie le chiffre, il ne le
+   concurrence pas. Même face que les en-têtes de colonnes du reste de l'app. */
+.inherit-regime {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
+}
