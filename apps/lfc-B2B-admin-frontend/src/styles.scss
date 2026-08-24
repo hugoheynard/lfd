@@ -43,6 +43,17 @@
 :root {
   --fold-font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   --fold-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Le registre MICRO-LIBELLÉ passe au mono : titres de section, en-têtes de
+     colonne, eyebrows. `--fold-font-label` vaut `inherit` chez fold — la
+     bibliothèque ne décide pas de la face, elle nomme le rôle — et c'est
+     l'app qui tranche, une fois, pour les trois.
+
+     Le mono ici n'est pas un effet : un libellé en capitales tracées se lit
+     comme une parole du SYSTÈME (« voici comment ce bloc s'appelle ») plutôt
+     que comme de la prose, et la sœur monospace d'IBM Plex est métriquement
+     cohérente avec la sans qui l'entoure. */
+  --fold-font-label: var(--fold-font-mono);
 }
 
 body {
