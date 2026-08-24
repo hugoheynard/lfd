@@ -11,7 +11,7 @@
 </fold-callout>
 
 @if (!store.declaresNone()) {
-  <fold-card class="stack">
+  <div class="stack">
     <div class="scope">
       @for (option of scopes; track option.value) {
         <button
@@ -44,10 +44,10 @@
         </fieldset>
       }
     </div>
-  </fold-card>
+  </div>
 }
 
-<fold-card class="stack">
+<div class="stack">
   <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
   <div class="grid">
     @for (field of nutritionFields; track field.key) {
@@ -64,11 +64,4 @@
       </label>
     }
   </div>
-</fold-card>
-
-@if (store.isEdit()) {
-  <div class="section-footer">
-    <button foldButton size="sm" (click)="store.saveFiche()">Enregistrer la fiche</button>
-    <span class="section-status">{{ store.statusText('fiche') }}</span>
-  </div>
-}
+</div>

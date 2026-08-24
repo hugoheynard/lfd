@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
-
 import { ProductFormStore } from '../product-form-store';
 import { numberValue } from './dom';
 
@@ -9,7 +7,6 @@ import { numberValue } from './dom';
 @Component({
   selector: 'app-pricing-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent],
   templateUrl: './pricing-panel.html',
   styleUrl: './panel.scss',
 })

@@ -1,4 +1,4 @@
-<fold-card class="stack">
+<div class="stack">
   <div class="grid">
     @for (field of fields; track field.key) {
       <fold-input
@@ -26,10 +26,4 @@
       (input)="store.setEditorial('story', textValue($event))"
     ></textarea>
   </label>
-  @if (store.isEdit()) {
-    <div class="section-footer">
-      <button foldButton size="sm" (click)="store.saveCommunication()">Enregistrer</button>
-      <span class="section-status">{{ store.statusText('communication') }}</span>
-    </div>
-  }
-</fold-card>
+</div>

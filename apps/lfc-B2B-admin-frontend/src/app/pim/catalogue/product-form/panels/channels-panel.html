@@ -1,5 +1,5 @@
 @if (store.channelsInheritance(); as inh) {
-  <fold-card class="stack">
+  <div class="stack">
     <p class="inherit-from">
       Hérité de la famille <strong>{{ inh.categoryName }}</strong>
     </p>
@@ -31,9 +31,7 @@
         </dd>
       </div>
     </dl>
-  </fold-card>
+  </div>
 } @else {
-  <fold-card>
-    <p class="muted">Choisissez une famille pour voir l'héritage.</p>
-  </fold-card>
+  <p class="muted">Choisissez une famille pour voir l'héritage.</p>
 }

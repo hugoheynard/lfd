@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
-  FoldCardComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldOptionComponent,
@@ -32,13 +31,7 @@ const UNKNOWN_RATIO = '1 / 1';
 @Component({
   selector: 'app-visuals-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldCardComponent,
-    FoldButtonComponent,
-    FoldInputComponent,
-    FoldListboxComponent,
-    FoldOptionComponent,
-  ],
+  imports: [FoldButtonComponent, FoldInputComponent, FoldListboxComponent, FoldOptionComponent],
   templateUrl: './visuals-panel.html',
   styleUrl: './panel.scss',
 })

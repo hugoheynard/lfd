@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import {
-  FoldButtonComponent,
-  FoldCardComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldInputComponent,
@@ -20,8 +18,6 @@ import { ProductFormStore } from '../product-form-store';
   selector: 'app-identity-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldCardComponent,
-    FoldButtonComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
     FoldInputComponent,

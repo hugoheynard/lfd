@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
+import { FoldInputComponent } from 'fold-ng';
 
 import type { EditorialFields } from '../../product-http-api';
 import { ProductFormStore } from '../product-form-store';
@@ -17,7 +17,7 @@ const FIELDS: readonly { key: keyof EditorialFields; label: string }[] = [
 @Component({
   selector: 'app-communication-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, FoldInputComponent],
+  imports: [FoldInputComponent],
   templateUrl: './communication-panel.html',
   styleUrl: './panel.scss',
 })

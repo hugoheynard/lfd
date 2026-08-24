@@ -1,4 +1,4 @@
-<fold-card class="stack">
+<div class="stack">
   <div class="media">
     @for (slot of store.media(); track $index) {
       <div class="media-row">
@@ -66,11 +66,7 @@
       Ajouter par URL
     </button>
   </div>
-</fold-card>
+</div>
 
 <!-- Le pied de section, comme les autres panneaux enregistrables. Les visuels
      n'en avaient pas : ils se saisissaient dans le vide. -->
-<div class="section-footer">
-  <button foldButton size="sm" (click)="store.saveMedia()">Enregistrer</button>
-  <span class="section-status">{{ store.statusText('visuels') }}</span>
-</div>

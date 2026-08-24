@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldCheckboxComponent,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent } from 'fold-ng';
 
 import type { AllergenScope } from '../../../data/models';
 import type { NutritionValues } from '../../product-http-api';
@@ -29,7 +24,7 @@ const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[]
 @Component({
   selector: 'app-regulatory-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent],
+  imports: [FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent],
   templateUrl: './regulatory-panel.html',
   styleUrl: './panel.scss',
 })

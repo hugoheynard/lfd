@@ -13,15 +13,19 @@ function setup(): ProductFormStore {
 }
 
 describe('PricingPanel', () => {
-  it('affiche le bouton save en édition, pas en création', () => {
+  // Le bouton d'enregistrement a QUITTÉ le panneau : il vit dans l'en-tête de la
+  // section (`app-section-state`), à droite de son titre, et n'apparaît qu'à la
+  // première frappe. Un panneau qui garderait le sien en poserait un SECOND —
+  // c'est très exactement les « sept boutons d'enregistrement dispersés » que la
+  // refonte devait supprimer, et ils avaient survécu à l'arrivée du premier.
+  it('ne porte aucun bouton d’enregistrement — il vit dans l’en-tête de section', () => {
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(PricingPanel);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.section-footer')).not.toBeNull();
-
-    store.isEdit.set(false);
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.section-footer')).toBeNull();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.section-footer')).toBeNull();
+    const labels = [...root.querySelectorAll('button')].map((b) => b.textContent ?? '');
+    expect(labels.some((label) => label.includes('Enregistrer'))).toBe(false);
   });
 });

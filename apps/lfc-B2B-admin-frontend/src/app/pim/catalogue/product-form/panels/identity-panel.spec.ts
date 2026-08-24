@@ -47,21 +47,19 @@ describe('IdentityPanel', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-field')).toBeNull();
   });
 
-  it('affiche un bouton d’enregistrement en mode édition', () => {
+  // Le bouton d'enregistrement a QUITTÉ le panneau : il vit dans l'en-tête de la
+  // section (`app-section-state`), à droite de son titre, et n'apparaît qu'à la
+  // première frappe. Un panneau qui garderait le sien en poserait un SECOND —
+  // c'est très exactement les « sept boutons d'enregistrement dispersés » que la
+  // refonte devait supprimer, et ils avaient survécu à l'arrivée du premier.
+  it('ne porte aucun bouton d’enregistrement — il vit dans l’en-tête de section', () => {
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
-    const button = (fixture.nativeElement as HTMLElement).querySelector('.section-footer button');
-    expect(button?.textContent).toContain('Enregistrer');
-  });
-
-  it('pas de bouton d’enregistrement en création', () => {
-    const store = setup();
-    store.isEdit.set(false);
-    const fixture = TestBed.createComponent(IdentityPanel);
-    fixture.detectChanges();
-    const footer = (fixture.nativeElement as HTMLElement).querySelector('.section-footer');
-    expect(footer).toBeNull();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.section-footer')).toBeNull();
+    const labels = [...root.querySelectorAll('button')].map((b) => b.textContent ?? '');
+    expect(labels.some((label) => label.includes('Enregistrer'))).toBe(false);
   });
 });
