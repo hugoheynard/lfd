@@ -65,9 +65,9 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('fold-page-layout')?.hasAttribute('data-header-band')).toBe(true);
     const aside = root.querySelector('fold-aside-layout');
     expect(aside?.getAttribute('data-band')).toBe('right');
-    // …et la bande atteint le bord : un rail bandé tenu à distance par la
-    // gouttière est la carte flottante que la bande sert justement à remplacer.
-    expect(aside?.classList.contains('is-bleed')).toBe(true);
+    // La bande s'arrête à la gouttière de page : le rail vit DANS la page, il ne
+    // la coiffe pas — contrairement à l'en-tête, qui elle va bord à bord.
+    expect(aside?.classList.contains('is-bleed')).toBe(false);
   });
 
   it('expose le rail comme un repère nommé, pas comme une région anonyme', () => {

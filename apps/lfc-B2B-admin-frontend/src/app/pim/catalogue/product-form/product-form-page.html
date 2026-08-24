@@ -62,7 +62,7 @@
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
   } @else {
-    <fold-aside-layout band="right" bleed asideRightLabel="Publication">
+    <fold-aside-layout band="right" asideRightLabel="Publication">
       @for (section of sections; track section.key) {
         <fold-card>
           <fold-page-section [title]="section.label" separator>
