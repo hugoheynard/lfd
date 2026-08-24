@@ -68,7 +68,7 @@
     <fold-aside-layout band="right" asideRightLabel="Publication">
       @for (section of sections; track section.key) {
         <fold-card>
-          <fold-page-section [title]="section.label" separator>
+          <fold-page-section [title]="section.label" separator collapsible>
             <span sectionSubtitle>{{ section.description }}</span>
             <app-section-state
               sectionActions
@@ -99,7 +99,7 @@
       <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
            propre, donc pas d'indicateur d'état. -->
       <fold-card>
-        <fold-page-section title="Canaux de vente" separator>
+        <fold-page-section title="Canaux de vente" separator collapsible>
           <span sectionSubtitle>
             Hérités de la famille du produit : la provenance, les boutiques concernées et le cas «
             non proposé ».
@@ -108,7 +108,7 @@
         </fold-page-section>
       </fold-card>
       <fold-card>
-        <fold-page-section title="Diffusion par canal" separator>
+        <fold-page-section title="Diffusion par canal" separator collapsible>
           <span sectionSubtitle>
             Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
             d'onglets.

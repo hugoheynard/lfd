@@ -134,4 +134,23 @@ describe('ProductFormPage — en-tête', () => {
       'Un nom et une catégorie suffisent',
     );
   });
+
+  it('replie ses sections, sans jamais replier leur état', () => {
+    // La refonte est partie de « aucune section n'est cachée » : les onglets
+    // cachaient l'état AVEC les champs. Replier reste compatible avec ça tant
+    // que la tête ne se replie pas — sinon on a réinventé les onglets.
+    const { fixture, root } = render(true);
+    const sections = [...root.querySelectorAll('fold-page-section')];
+    expect(sections.length).toBeGreaterThan(0);
+    expect(sections.every((s) => s.hasAttribute('data-collapsible'))).toBe(true);
+
+    const first = sections[0]!;
+    first.querySelector<HTMLButtonElement>('.section-toggle')!.click();
+    fixture.detectChanges();
+
+    expect(first.querySelector<HTMLElement>('.section-body')!.hidden).toBe(true);
+    // …et l'état de la section est TOUJOURS là, repliée.
+    expect(first.querySelector('.section-title-text')).not.toBeNull();
+    expect(first.querySelector('.section-actions app-section-state')).not.toBeNull();
+  });
 });

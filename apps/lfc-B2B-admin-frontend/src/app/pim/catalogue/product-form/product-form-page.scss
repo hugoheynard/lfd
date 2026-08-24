@@ -5,6 +5,13 @@
    reste à zéro pour la même raison : `--fold-page-pad-bottom` le couvre. */
 fold-aside-layout {
   --fold-aside-layout-pad: 0;
+
+  /* L'écart entre deux sections doit dire « on change de sujet », pas
+     « paragraphe suivant ». Le rythme par défaut du layout (18px) séparait deux
+     cartes d'à peine plus que deux champs à l'intérieur d'une (16px) : à cette
+     distance, huit cartes se lisent comme une seule liste hachée. Le double
+     tranche, et c'est le seul rôle de ce réglage. */
+  --fold-aside-layout-stack: var(--fold-space-3xl);
 }
 
 /* La ligne de faits sous le titre. Elle vit dans le créneau `[description]` de
