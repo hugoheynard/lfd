@@ -8,7 +8,7 @@
  */
 export abstract class LocationUsageReader {
   /**
-   * Combien de **familles** cochent cet location dans leur grille de canaux.
+   * Combien de **familles** cochent cet emplacement dans leur grille de canaux.
    *
    * Sert le refus de suppression : un point de vente encore vendeur ne se
    * supprime pas sous les fiches qui s'y vendent. C'est la même protection que
@@ -26,7 +26,7 @@ export abstract class LocationUsageReader {
    * l'écriture ; les appeler en boucle ferait N lectures pour peupler une
    * liste. C'est le découpage de `ProductCountReader`, côté catalogue.
    *
-   * Les locations que personne ne coche sont **absents** de la table : un
+   * Les emplacements que personne ne coche sont **absents** de la table : un
    * lecteur lit `?? 0`, il ne suppose pas la présence de la clé.
    */
   abstract countByLocation(): Promise<ReadonlyMap<string, number>>;

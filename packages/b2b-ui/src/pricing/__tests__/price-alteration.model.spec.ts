@@ -89,7 +89,7 @@ describe('l’aller-retour avec le CartAdjustment du contrat', () => {
     expect(remise).toEqual(majoration);
   });
 
-  it('rend le sens au retour, depuis l’location', () => {
+  it('rend le sens au retour, depuis l’emplacement', () => {
     expect(fromCartAdjustment({ mode: 'amount', cents: 2000 }, 'increase')).toEqual({
       direction: 'increase',
       mode: 'amount',

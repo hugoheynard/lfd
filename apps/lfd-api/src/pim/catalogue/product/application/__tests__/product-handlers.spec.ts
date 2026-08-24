@@ -90,7 +90,7 @@ class FakeProductRepository extends ProductRepository {
   }
 }
 
-/** Rien de vendu. Les locations sont une DONNÉE : la carte est vide, elle
+/** Rien de vendu. Les emplacements sont une DONNÉE : la carte est vide, elle
  *  ne porte pas deux boutiques codées en dur à zéro. */
 const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
 

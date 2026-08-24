@@ -45,7 +45,7 @@ export interface LocationView {
   readonly baseUrl: string;
   readonly tables: readonly TableView[];
   /**
-   * Combien de **familles** cochent cet location dans leurs canaux.
+   * Combien de **familles** cochent cet emplacement dans leurs canaux.
    *
    * Voyage avec la vue pour que l'écran le DISE avant le clic : le référentiel
    * refuse de supprimer un point de vente encore vendeur, et un bouton dont on

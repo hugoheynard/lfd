@@ -12,7 +12,7 @@ export class PrismaLocationUsageReader extends LocationUsageReader {
   }
 
   /**
-   * Compte les familles dont la grille coche cet location.
+   * Compte les familles dont la grille coche cet emplacement.
    *
    * **Sans SQL brut, et sans filtre `jsonb`.** La surface Prisma du référentiel
    * est énumérée modèle par modèle, délibérément : y ouvrir `$queryRaw` rendrait

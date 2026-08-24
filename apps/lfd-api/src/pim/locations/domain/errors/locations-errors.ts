@@ -11,7 +11,7 @@ export class LocationNameRequiredError extends BusinessError {
 }
 
 /**
- * Deux locations ne portent pas le même nom.
+ * Deux emplacements ne portent pas le même nom.
  *
  * Le nom est ce que l'écran affiche pour désigner un point de vente — dans la
  * grille de canaux d'une famille, c'est la SEULE chose qui distingue une ligne
@@ -28,14 +28,14 @@ export class LocationNameTakenError extends BusinessError {
   }
 }
 
-/** L'location visé n'existe pas (→ 404). */
+/** L’emplacement visé n'existe pas (→ 404). */
 export class LocationNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
     super("locations.location_not_found", `Location introuvable : ${id}.`);
   }
 }
 
-/** La table visée n'existe pas dans cet location (→ 404). */
+/** La table visée n'existe pas dans cet emplacement (→ 404). */
 export class LocationTableNotFoundError extends ResourceNotFoundError {
   constructor(locationId: string, tableNumber: number) {
     super(
@@ -46,7 +46,7 @@ export class LocationTableNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * L'location est encore coché par des familles : on refuse de le supprimer.
+ * L’emplacement est encore coché par des familles : on refuse de le supprimer.
  *
  * **Business** et non domaine : la règle n'est pas un invariant de l'agrégat —
  * un emplacement ignore les familles — mais une protection de l'exploitation

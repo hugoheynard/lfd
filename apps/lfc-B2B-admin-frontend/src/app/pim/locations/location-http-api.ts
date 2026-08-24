@@ -33,7 +33,7 @@ export interface LocationInput {
 }
 
 /**
- * Accès **réel** aux locations — parle au backend (`locations`).
+ * Accès **réel** aux emplacements — parle au backend (`locations`).
  * Le token QR d'une table est **minté par le serveur** (R1) : `generateTableQr`
  * ne l'envoie plus, il le reçoit. Remplace la branche LocalDb.
  */

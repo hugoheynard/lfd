@@ -32,7 +32,7 @@ export interface LocationPanelData {
 }
 
 /**
- * Panneau **location** : création, édition ou suppression, ouvert
+ * Panneau **emplacement** : création, édition ou suppression, ouvert
  * impérativement via `FoldPanelHostService.open()`. Sans `data` il crée ; avec
  * `{ mode: 'edit', location }` il édite (champs préremplis) ; avec
  * `{ mode: 'delete', location }` il affiche une **zone dangereuse** —
@@ -89,7 +89,7 @@ export class LocationFormPanel {
       ? "Supprimer l'emplacement"
       : this.isEdit()
         ? "Modifier l'emplacement"
-        : 'Nouvel location',
+        : 'Nouvel emplacement',
   );
   protected readonly subtitle = computed(() =>
     this.isDelete() ? 'Action irréversible.' : 'Une boutique, ses modes de vente et ses tables.',

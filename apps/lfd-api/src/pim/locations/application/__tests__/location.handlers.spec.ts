@@ -88,8 +88,8 @@ class StubUsage extends LocationUsageReader {
 /**
  * **Séquentiel**, pas fixe. Il rendait `"emp_fixed"` pour tous : deux créations
  * dans le même test s'écrasaient dans le dépôt, si bien qu'un test qui croyait
- * manipuler deux locations n'en avait qu'un — et toute règle qui parle des
- * AUTRES locations passait pour la seule raison qu'il n'y en avait pas.
+ * manipuler deux emplacements n'en avait qu'un — et toute règle qui parle des
+ * AUTRES emplacements passait pour la seule raison qu'il n'y en avait pas.
  *
  * Le premier reste `emp_fixed`, pour que les tests qui le nomment tiennent.
  */
@@ -238,7 +238,7 @@ describe("GenerateTableQrHandler", () => {
 });
 
 describe("DeleteLocationHandler", () => {
-  it("supprime l’location", async () => {
+  it("supprime l’emplacement", async () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 1);
 
@@ -353,7 +353,7 @@ describe("ListLocationsHandler", () => {
   });
 
   it("rend 0 — jamais `undefined` — pour un emplacement que personne ne coche", async () => {
-    // Les locations sans usage sont ABSENTS de la table : un écran qui
+    // Les emplacements sans usage sont ABSENTS de la table : un écran qui
     // lirait `undefined` afficherait « undefined famille(s) ».
     const repo = new InMemoryLocations();
     await open(repo, { name: "Village" });

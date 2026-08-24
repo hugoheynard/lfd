@@ -271,7 +271,7 @@ describe("SetProductChannelsHandler", () => {
 
   it("refuse un emplacement qui n’existe pas", async () => {
     // La grille est du `jsonb` : aucune clé étrangère ne tient la référence. Un
-    // location fantôme serait accepté, persisté, puis rendu INVISIBLE par
+    // emplacement fantôme serait accepté, persisté, puis rendu INVISIBLE par
     // l'écran, qui ignore les clés inconnues.
     const products = new FakeProducts(snapshot());
 

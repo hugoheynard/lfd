@@ -13,7 +13,7 @@ export const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
  * Les **noms** des emplacements qui proposent un mode donné.
  *
  * Il lisait deux libellés codés en dur, dont l'un ne correspondait à aucun
- * location du référentiel : l'écran affichait une boutique qui n'existait
+ * emplacement du référentiel : l'écran affichait une boutique qui n'existait
  * pas. Les noms viennent maintenant de la liste qu'on lui passe, et une clé
  * qui ne désigne plus rien est simplement ignorée.
  */

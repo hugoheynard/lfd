@@ -22,7 +22,7 @@ export interface NewLocationInput {
 }
 
 /**
- * Un **location** — un point de vente, ses modes, et sa grille de tables.
+ * Un **emplacement** — un point de vente, ses modes, et sa grille de tables.
  *
  * ## Pourquoi c'est devenu un agrégat
  *
@@ -32,7 +32,7 @@ export interface NewLocationInput {
  *
  * D'abord parce que régler un emplacement faisait **deux écritures** : les
  * champs, puis les tables. Entre les deux, ou si la seconde échouait, un
- * location restait « pas sur place » AVEC des tables — exactement l'état que
+ * emplacement restait « pas sur place » AVEC des tables — exactement l'état que
  * le handler s'efforçait d'empêcher. Ici l'invariant est tenu par le
  * constructeur : il n'y a pas de chemin qui le viole, et la persistance écrit
  * un seul état.

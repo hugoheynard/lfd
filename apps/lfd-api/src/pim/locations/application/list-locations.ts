@@ -4,7 +4,7 @@ import type { LocationSnapshot } from "../domain/entities/location.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
 import { LocationUsageReader } from "../domain/ports/location-usage.reader.js";
 
-/** Un location tel que la liste le rend : son état, plus ce que l'écran doit savoir. */
+/** Un emplacement tel que la liste le rend : son état, plus ce que l'écran doit savoir. */
 export type LocationListItem = LocationSnapshot & {
   /** Combien de familles le cochent. Zéro ⇒ supprimable. */
   readonly usedByCategories: number;
@@ -25,7 +25,7 @@ export class ListLocationsHandler implements IQueryHandler<ListLocationsQuery, L
    * aucune raison de pouvoir muter ce qu'il affiche.
    *
    * Le compte d'usages voyage avec. Il ne vit PAS dans l'agrégat — un
-   * location ignore les familles qui le cochent — mais l'écran en a besoin
+   * emplacement ignore les familles qui le cochent — mais l'écran en a besoin
    * pour DIRE qu'une suppression échouera, au lieu de l'apprendre après le
    * clic. Même raison que le compte de fiches sur une famille.
    *

@@ -104,7 +104,7 @@ import {
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches
     // interroge les produits, l'existence d'un emplacement interroge les
-    // locations. Ni l'un ni l'autre n'est la persistance d'une famille.
+    // emplacements. Ni l'un ni l'autre n'est la persistance d'une famille.
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
     { provide: KnownLocationsReader, useClass: PrismaKnownLocationsReader },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },

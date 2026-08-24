@@ -184,7 +184,7 @@ class InMemoryRegimes extends VatRateRepository {
   }
 }
 
-/** Deux locations quelconques : ce sont des ids, plus des clés fixes. */
+/** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = {
   boutiques: {
     emp_village: { emporter: true, surPlace: true },
@@ -383,7 +383,7 @@ describe("SetCategoryChannelsHandler", () => {
   /**
    * Le mur avait une seule face : `DeleteLocation` refuse de supprimer sous
    * une famille qui coche, mais rien n'empêchait d'écrire un preset citant un
-   * location qui n'existe pas. L'écran l'aurait rendu invisible — il ignore
+   * emplacement qui n’existe pas. L'écran l'aurait rendu invisible — il ignore
    * les clés inconnues — au lieu de le rendre faux.
    */
   it("refuse un emplacement qui n’existe pas", async () => {

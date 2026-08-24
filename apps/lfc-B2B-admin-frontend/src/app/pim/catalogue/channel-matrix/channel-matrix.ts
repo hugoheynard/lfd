@@ -60,7 +60,7 @@ export class ChannelMatrix {
    * que gardée à zéro : la carte dit ce qui est vendu, et une clé qui ne vend
    * rien ferait grossir la colonne à chaque emplacement décoché — puis
    * bloquerait sa suppression, puisque le référentiel refuse d'ôter un
-   * location encore coché.
+   * emplacement encore coché.
    */
   protected setCell(locationId: string, mode: keyof ShopChannels, value: boolean): void {
     const current = this.channels();

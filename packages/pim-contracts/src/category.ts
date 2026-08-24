@@ -37,7 +37,7 @@ export const salesChannelsSchema = z.object({
   /** Clé = identifiant d'emplacement. Une clé absente ⇒ rien n'y est vendu. */
   boutiques: z.record(z.string(), shopChannelsSchema),
   // Un booléen, pas une entrée de la carte : la plateforme n'est pas un
-  // location, et un professionnel ne consomme ni sur place ni à emporter.
+  // emplacement, et un professionnel ne consomme ni sur place ni à emporter.
   b2b: z.boolean(),
 });
 

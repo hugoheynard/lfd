@@ -15,7 +15,7 @@ export interface ShopChannels {
 /**
  * Où et comment une gamme se vend.
  *
- * ## Les locations sont une DONNÉE, plus des clés
+ * ## Les emplacements sont une DONNÉE, plus des clés
  *
  * C'était `{ b1: …, b2: … }` — deux boutiques nommées en dur dans un type, avec
  * leurs libellés dans une constante du front. Ouvrir un troisième point de
@@ -23,13 +23,13 @@ export interface ShopChannels {
  * les lecteurs. Et le nom affiché avait divergé du réel : l'écran proposait
  * « Ardroit » pour un emplacement qui s'appelle « Labo » en base.
  *
- * La grille est donc indexée par **identifiant d'emplacement**. Un location
+ * La grille est donc indexée par **identifiant d'emplacement**. Un emplacement
  * de plus est une ligne de plus dans `pim.location`, et rien d'autre.
  *
  * ## Le B2B reste à part
  *
  * Un booléen, pas une entrée de la carte : la plateforme n'est pas un
- * location, et un professionnel qui commande en gros ne consomme ni sur
+ * emplacement, et un professionnel qui commande en gros ne consomme ni sur
  * place ni à emporter. L'y ranger obligerait à lui inventer deux modes.
  *
  * ⚠️ Ceci reste une **intention** héritée par les fiches. Le fait qu'un produit

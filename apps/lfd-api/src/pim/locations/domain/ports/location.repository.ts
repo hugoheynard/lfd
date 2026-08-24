@@ -13,7 +13,7 @@ export abstract class LocationRepository {
   abstract listAll(): Promise<Location[]>;
   abstract findById(id: string): Promise<Location | null>;
   /**
-   * L'location qui porte ce nom, s'il y en a un. Comparaison **insensible à
+   * L’emplacement qui porte ce nom, s'il y en a un. Comparaison **insensible à
    * la casse** : « Village » et « village » désignent le même point de vente
    * pour qui lit l'écran, et c'est l'écran qui compte ici.
    */

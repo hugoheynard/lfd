@@ -6,8 +6,8 @@ import { LocationFormPanel } from './location-form-panel/location-form-panel';
 import { LocationList } from './location-list/location-list';
 
 /**
- * Admin **Locations** — les boutiques et leurs modes de vente. Page-coquille :
- * elle pose le chrome, l'action « Nouvel location » (side-panel de création)
+ * Admin **Emplacements** — les boutiques et leurs modes de vente. Page-coquille :
+ * elle pose le chrome, l'action « Nouvel emplacement » (side-panel de création)
  * et compose la liste des boutiques ({@link LocationList}). Création, édition
  * et suppression passent toutes par le side-panel ({@link LocationFormPanel}).
  */

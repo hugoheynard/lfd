@@ -112,7 +112,7 @@ export class CategorySlugTakenError extends BusinessError {
 /** Un preset de canaux ne référence que des emplacements qui existent. */
 export class CategoryUnknownLocationError extends BusinessError {
   constructor(readonly locationId: string) {
-    super("catalogue.category.unknown_location", `L’location « ${locationId} » n’existe pas.`);
+    super("catalogue.category.unknown_location", `L’emplacement « ${locationId} » n’existe pas.`);
   }
 }
 

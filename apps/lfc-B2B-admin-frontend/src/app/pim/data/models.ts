@@ -67,7 +67,7 @@ export interface ShopChannels {
 /**
  * Où et comment un produit se vend.
  *
- * Les locations sont une **donnée** : la carte est indexée par identifiant,
+ * Les emplacements sont une **donnée** : la carte est indexée par identifiant,
  * jamais par des clés fixes. C'était `{ b1, b2 }`, avec des libellés en dur qui
  * avaient fini par désigner une boutique absente du référentiel.
  *
@@ -170,7 +170,7 @@ export interface LocationTable {
 }
 
 /**
- * Un **location** (boutique / point de vente). Il expose ses modes de vente ;
+ * Un **emplacement** (boutique / point de vente). Il expose ses modes de vente ;
  * s'il fait « sur place », son nombre de tables ouvre une section click & collect
  * par table (une URL + un QR par table).
  */
@@ -186,7 +186,7 @@ export interface Location {
   /** Tables (si sur place) — dérivées du nombre de tables. */
   tables: LocationTable[];
   /**
-   * Combien de **familles** cochent cet location dans leurs canaux.
+   * Combien de **familles** cochent cet emplacement dans leurs canaux.
    *
    * Vient de l'API pour que l'écran DISE qu'une suppression échouera avant
    * qu'on clique : le référentiel refuse de supprimer un point de vente encore

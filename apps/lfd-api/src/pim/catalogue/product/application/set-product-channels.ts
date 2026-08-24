@@ -58,7 +58,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
 
   /**
    * La grille est indexée par identifiant d'emplacement dans une colonne
-   * `jsonb` : aucune clé étrangère ne tient cette référence. Un location
+   * `jsonb` : aucune clé étrangère ne tient cette référence. Un emplacement
    * fantôme serait accepté, persisté, puis rendu INVISIBLE par l'écran — qui
    * ignore les clés inconnues. Le mur existe déjà pour les familles ; une fiche
    * qui déroge doit rencontrer le même.
