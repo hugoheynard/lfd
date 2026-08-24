@@ -1,8 +1,8 @@
 import { computed, Injectable, signal } from '@angular/core';
 
 import type {
-  Adresse,
-  AdresseLivraison,
+  Address,
+  DeliveryAddress,
   ClientProfile,
   Contact,
   DeliveryContact,
@@ -11,10 +11,10 @@ import type {
 } from './profil.model';
 
 /** Charge de création/édition de l'adresse de facturation (sans l'`id` géré ici). */
-export type AdresseDraft = Omit<Adresse, 'id'>;
+export type AddressDraft = Omit<Address, 'id'>;
 
 /** Charge de création/édition d'une adresse de livraison (note + créneaux compris). */
-export type AdresseLivraisonDraft = Omit<AdresseLivraison, 'id'>;
+export type DeliveryAddressDraft = Omit<DeliveryAddress, 'id'>;
 
 /**
  * Source de vérité du profil client pro — pour l'instant **en mémoire**, semée
@@ -36,8 +36,8 @@ export class ProfilService {
    * Adresses de livraison, **l'adresse par défaut toujours en tête**. Le tri est
    * stable (comparateur sur le seul `isDefaut`) : les autres gardent leur ordre.
    */
-  readonly adressesLivraison = computed(() =>
-    [...this.state().adressesLivraison].sort((a, b) => Number(b.isDefaut) - Number(a.isDefaut)),
+  readonly deliveryAddresses = computed(() =>
+    [...this.state().deliveryAddresses].sort((a, b) => Number(b.isDefaut) - Number(a.isDefaut)),
   );
   readonly representant = computed(() => this.state().representant);
 
@@ -70,10 +70,10 @@ export class ProfilService {
   }
 
   /** Met à jour l'unique adresse de facturation (jamais « par défaut »). */
-  updateBillingAddress(draft: AdresseDraft): void {
+  updateBillingAddress(draft: AddressDraft): void {
     this.state.update((p) => ({
       ...p,
-      adresseFacturation: { ...draft, id: p.adresseFacturation.id, isDefaut: false },
+      billingAddress: { ...draft, id: p.billingAddress.id, isDefaut: false },
     }));
   }
 
@@ -82,24 +82,24 @@ export class ProfilService {
    * brouillon est marqué par défaut, il devient le seul par défaut ; la toute
    * première adresse ajoutée est promue par défaut d'office.
    */
-  saveDeliveryAddress(draft: AdresseLivraisonDraft, id: string | null): void {
+  saveDeliveryAddress(draft: DeliveryAddressDraft, id: string | null): void {
     this.state.update((p) => {
-      const list = p.adressesLivraison;
+      const list = p.deliveryAddresses;
       const targetId = id ?? nextAddressId(list);
       const wantsDefault = draft.isDefaut || list.length === 0;
       const next =
         id === null ? [...list, { ...draft, id: targetId }] : replaceById(list, targetId, draft);
-      return { ...p, adressesLivraison: normaliseDefault(next, wantsDefault ? targetId : null) };
+      return { ...p, deliveryAddresses: normaliseDefault(next, wantsDefault ? targetId : null) };
     });
   }
 
   /** Retire une adresse de livraison ; réattribue le défaut si besoin. */
   removeDeliveryAddress(id: string): void {
     this.state.update((p) => {
-      const removedWasDefault = p.adressesLivraison.find((a) => a.id === id)?.isDefaut ?? false;
-      const kept = p.adressesLivraison.filter((a) => a.id !== id);
+      const removedWasDefault = p.deliveryAddresses.find((a) => a.id === id)?.isDefaut ?? false;
+      const kept = p.deliveryAddresses.filter((a) => a.id !== id);
       const promoteId = removedWasDefault ? (kept[0]?.id ?? null) : null;
-      return { ...p, adressesLivraison: normaliseDefault(kept, promoteId) };
+      return { ...p, deliveryAddresses: normaliseDefault(kept, promoteId) };
     });
   }
 
@@ -107,17 +107,17 @@ export class ProfilService {
   setDefaultDelivery(id: string): void {
     this.state.update((p) => ({
       ...p,
-      adressesLivraison: normaliseDefault(p.adressesLivraison, id),
+      deliveryAddresses: normaliseDefault(p.deliveryAddresses, id),
     }));
   }
 }
 
 /** Remplace l'adresse `id` par le brouillon, en conservant son `id`. */
 function replaceById(
-  list: readonly AdresseLivraison[],
+  list: readonly DeliveryAddress[],
   id: string,
-  draft: AdresseLivraisonDraft,
-): AdresseLivraison[] {
+  draft: DeliveryAddressDraft,
+): DeliveryAddress[] {
   return list.map((a) => (a.id === id ? { ...draft, id } : a));
 }
 
@@ -127,9 +127,9 @@ function replaceById(
  * première quand aucune n'est marquée (une liste non vide a toujours un défaut).
  */
 function normaliseDefault(
-  list: readonly AdresseLivraison[],
+  list: readonly DeliveryAddress[],
   defaultId: string | null,
-): AdresseLivraison[] {
+): DeliveryAddress[] {
   if (list.length === 0) {
     return [];
   }
@@ -138,7 +138,7 @@ function normaliseDefault(
 }
 
 /** Id incrémental stable (SSR-safe : pas de `Math.random`/`Date.now`). */
-function nextAddressId(list: readonly AdresseLivraison[]): string {
+function nextAddressId(list: readonly DeliveryAddress[]): string {
   const max = list.reduce((acc, a) => {
     const n = Number.parseInt(a.id.replace(/\D/g, ''), 10);
     return Number.isNaN(n) ? acc : Math.max(acc, n);
@@ -169,7 +169,7 @@ const SEED: ClientProfile = {
     email: 'achats@pqmarais.fr',
     telephone: '06 12 88 54 30',
   },
-  adresseFacturation: {
+  billingAddress: {
     id: 'fact_1',
     label: 'Siège',
     ligne1: '18 rue des Archives',
@@ -179,7 +179,7 @@ const SEED: ClientProfile = {
     pays: 'France',
     isDefaut: false,
   },
-  adressesLivraison: [
+  deliveryAddresses: [
     {
       id: 'liv_1',
       label: 'Boutique Archives',

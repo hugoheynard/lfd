@@ -1,6 +1,6 @@
 import { formatPercent } from '../../data/channels';
 import type { Category, Location, Product, VatRate } from '../../data/models';
-import { generateFiches, tvaTagFromPercent } from './fiches';
+import { generateFiches, vatTagFromPercent } from './fiches';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
 export interface CollectionEntry {
@@ -81,7 +81,7 @@ export function buildCollections(
   // se DÉRIVE du taux ici : il est du vocabulaire Shopify, et cette projection
   // est justement l'endroit qui parle Shopify.
   const vat: Collection[] = rates.map((rate) => {
-    const tag = tvaTagFromPercent(rate.percent);
+    const tag = vatTagFromPercent(rate.percent);
     return {
       tag,
       label: rate.name,

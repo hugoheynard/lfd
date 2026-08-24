@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { draftPayloadOf, draftSnapshotOf, restoreLines } from '../draft-payload';
 import { DraftStore, NEW_ADDRESS } from '../draft.store';
 
-const BOUTIQUE: DeliveryAddressView = {
+const SHOP: DeliveryAddressView = {
   id: 'addr_1',
   label: 'Boutique',
   ligne1: '12 avenue Foch',
@@ -56,7 +56,7 @@ describe('la traduction écran ↔ brouillon', () => {
     const draft = new DraftStore();
     draft.method.set('delivery');
 
-    const payload = draftPayloadOf(draft.snapshot(), [], [BOUTIQUE]);
+    const payload = draftPayloadOf(draft.snapshot(), [], [SHOP]);
 
     expect(payload.deliveryAddress?.ligne1).toBe('12 avenue Foch');
   });
@@ -74,7 +74,7 @@ describe('la traduction écran ↔ brouillon', () => {
           pays: 'France',
         },
       }),
-      [BOUTIQUE],
+      [SHOP],
     );
 
     expect(snapshot.addressId).toBe('addr_1');
@@ -93,7 +93,7 @@ describe('la traduction écran ↔ brouillon', () => {
           pays: 'France',
         },
       }),
-      [BOUTIQUE],
+      [SHOP],
     );
 
     expect(snapshot.addressId).toBe(NEW_ADDRESS);

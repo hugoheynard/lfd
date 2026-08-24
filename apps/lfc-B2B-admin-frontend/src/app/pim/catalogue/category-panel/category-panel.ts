@@ -162,7 +162,7 @@ export class CategoryPanel {
    * signal par contexte : le nombre de contextes est une donnée, et un signal
    * par contexte le figerait dans le code de l'écran.
    */
-  protected readonly draftTva = linkedSignal<Record<string, string>>(() => ({
+  protected readonly draftVat = linkedSignal<Record<string, string>>(() => ({
     ...(this.existing()?.tvaByContext ?? {}),
   }));
   /** `''` = la racine. */
@@ -196,11 +196,11 @@ export class CategoryPanel {
 
   /** Le taux saisi pour un contexte — `''` tant qu'il n'est pas réglé. */
   protected vatOf(contextKey: string): string {
-    return this.draftTva()[contextKey] ?? '';
+    return this.draftVat()[contextKey] ?? '';
   }
 
-  protected setTvaOf(contextKey: string, rateId: string): void {
-    this.draftTva.update((current) => ({ ...current, [contextKey]: rateId }));
+  protected setVatOf(contextKey: string, rateId: string): void {
+    this.draftVat.update((current) => ({ ...current, [contextKey]: rateId }));
   }
 
   protected readonly canSubmit = computed(() => !this.busy() && this.draftName().trim() !== '');
@@ -246,7 +246,7 @@ export class CategoryPanel {
    * entier. On envoie ce qu'on montre.
    */
   private vatToSave(): CategoryVatDraft {
-    const draft = this.draftTva();
+    const draft = this.draftVat();
     return Object.fromEntries(
       this.settableContexts()
         .map((context) => [context.key, draft[context.key] ?? ''] as const)

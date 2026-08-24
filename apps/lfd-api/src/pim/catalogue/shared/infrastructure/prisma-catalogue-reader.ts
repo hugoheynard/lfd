@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
-import { effectiveTva } from "../domain/value-objects/sales-context.js";
+import { effectiveVat } from "../domain/value-objects/sales-context.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 
 import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
@@ -91,7 +91,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
       }
       resolved.set(
         product.id,
-        this.resolve(effectiveTva(family, product.tvaByContext), percentById),
+        this.resolve(effectiveVat(family, product.tvaByContext), percentById),
       );
     }
     return resolved;

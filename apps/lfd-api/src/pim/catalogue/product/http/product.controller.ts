@@ -142,7 +142,7 @@ export class ProductController {
    * affiche, carte vide comprise, et la carte vide est le retour à l'héritage.
    */
   @Put(":id/vat")
-  async setProductTva(
+  async setProductVat(
     @Param("id") id: string,
     @Body(new ZodBody(setProductVatPayloadSchema)) body: SetProductVatPayload,
   ) {

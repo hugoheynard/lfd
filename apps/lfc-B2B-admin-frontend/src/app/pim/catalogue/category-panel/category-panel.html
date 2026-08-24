@@ -57,7 +57,7 @@
             <fold-listbox
               [label]="context.label"
               [value]="vatOf(context.key)"
-              (selectionChange)="setTvaOf(context.key, $event)"
+              (selectionChange)="setVatOf(context.key, $event)"
             >
               <fold-option value="">— Non réglé —</fold-option>
               @for (rate of rates(); track rate.id) {

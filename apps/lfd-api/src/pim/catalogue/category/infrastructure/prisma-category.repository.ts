@@ -99,7 +99,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
     const snapshot = category.snapshot();
     await this.prisma.$transaction([
       this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
-      ...this.tvaOperations(snapshot),
+      ...this.vatOperations(snapshot),
     ]);
   }
 
@@ -107,7 +107,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
     const snapshot = category.snapshot();
     await this.prisma.$transaction([
       this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
-      ...this.tvaOperations(snapshot),
+      ...this.vatOperations(snapshot),
     ]);
   }
 
@@ -127,7 +127,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
             where: { id: snapshot.id },
             data: toColumns(snapshot),
           }),
-          ...this.tvaOperations(snapshot),
+          ...this.vatOperations(snapshot),
         ];
       }),
     );
@@ -146,7 +146,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
    * inconnue casse l'écriture au lieu de créer une ligne orpheline. L'agrégat,
    * lui, l'a déjà refusée — c'est la seconde barrière, pas la première.
    */
-  private tvaOperations(snapshot: CategorySnapshot) {
+  private vatOperations(snapshot: CategorySnapshot) {
     return [
       this.prisma.categoryContextVat.deleteMany({ where: { categoryId: snapshot.id } }),
       ...Object.entries(snapshot.tvaByContext).map(([contextKey, vatRateId]) =>

@@ -34,14 +34,14 @@ export const PIM_EVENTS = {
   /** Renommage / description : tracé à part, parce que c'est sans conséquence. */
   vatRateRenamed: "tax_rate.renamed",
   vatRateDeleted: "tax_rate.deleted",
-  categoryTvaChanged: "category.tva_changed",
+  categoryVatChanged: "category.tva_changed",
   /**
    * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
    * précédent : l'un décide pour un rayon entier, l'autre pour une ligne, et
    * confondre les deux dans l'historique rendrait illisible la question qu'on
    * pose vraiment — « qui a décidé ça, et quand ».
    */
-  productTvaChanged: "product.tva_changed",
+  productVatChanged: "product.tva_changed",
   /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
   productChannelsChanged: "product.channels_changed",
   productPublished: "product.published",

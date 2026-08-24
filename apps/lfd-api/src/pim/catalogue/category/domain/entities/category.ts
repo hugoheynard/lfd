@@ -192,7 +192,7 @@ export class Category {
   setChannels(channels: SalesChannels, contexts: readonly SalesContext[]): void {
     this.refuseIfArchived();
     this.channelPresetValue = normalizeSalesChannels(channels);
-    this.forgetTvaOfClosedChannels(contexts);
+    this.forgetVatOfClosedChannels(contexts);
   }
 
   /**
@@ -255,7 +255,7 @@ export class Category {
    * laisse un taux orphelin. Un contexte qu'on ne connaît plus voit son taux
    * conservé : on n'efface pas ce qu'on ne sait pas juger.
    */
-  private forgetTvaOfClosedChannels(contexts: readonly SalesContext[]): void {
+  private forgetVatOfClosedChannels(contexts: readonly SalesContext[]): void {
     const closed = contexts.filter((context) => !contextIsSold(context, this.channelPresetValue));
     if (closed.length === 0) {
       return;

@@ -70,7 +70,7 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
       return;
     }
     await this.journal.record({
-      type: PIM_EVENTS.productTvaChanged,
+      type: PIM_EVENTS.productVatChanged,
       subjectType: "product",
       subjectId: productId,
       payload: Object.fromEntries(

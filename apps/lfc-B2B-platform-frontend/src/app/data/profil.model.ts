@@ -51,10 +51,10 @@ export interface Contact {
 }
 
 /** À quoi sert une adresse. */
-export type AdresseKind = 'facturation' | 'livraison';
+export type AddressKind = 'facturation' | 'livraison';
 
 /** Une adresse postale (facturation ou point de livraison). */
-export interface Adresse {
+export interface Address {
   readonly id: string;
   /** Nom d'usage : « Siège », « Boutique Bastille »… */
   readonly label: string;
@@ -128,7 +128,7 @@ export interface GpsPoint {
 /**
  * Ce qu'une adresse **de livraison** ajoute à une adresse postale : une note pour
  * les livreurs, les créneaux préférés, le contact sur place et un point GPS
- * optionnel. Isolé de `Adresse` pour que seule une livraison le porte.
+ * optionnel. Isolé de `Address` pour que seule une livraison le porte.
  */
 export interface DeliverySpecs {
   /** Consignes libres pour le livreur (code, étage, dépôt) — `''` si aucune. */
@@ -141,7 +141,7 @@ export interface DeliverySpecs {
 }
 
 /** Une adresse de livraison = une adresse postale enrichie de ses consignes. */
-export type AdresseLivraison = Adresse & DeliverySpecs;
+export type DeliveryAddress = Address & DeliverySpecs;
 
 /** Aucun créneau, pour les sept jours. */
 export const EMPTY_SLOT_BY_DAY: SlotByDay = {
@@ -239,8 +239,8 @@ export interface ClientProfile {
    * l'entreprise, distinct du contact du compte. `null` si non renseigné.
    */
   readonly representant: Contact | null;
-  readonly adresseFacturation: Adresse;
-  readonly adressesLivraison: readonly AdresseLivraison[];
+  readonly billingAddress: Address;
+  readonly deliveryAddresses: readonly DeliveryAddress[];
   readonly paymentTerm: PaymentTerm;
 }
 

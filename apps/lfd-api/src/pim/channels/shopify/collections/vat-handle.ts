@@ -7,7 +7,7 @@
  * ses consommateurs. Elle vit donc ici, chez le seul qui en ait jamais eu
  * besoin — la boutique B2B, elle, lit un nombre et facture avec.
  *
- * Le préfixe est partagé avec la réconciliation (`TVA_HANDLE_PREFIX`), qui s'en
+ * Le préfixe est partagé avec la réconciliation (`VAT_HANDLE_PREFIX`), qui s'en
  * sert pour repérer les collections orphelines.
  */
 export function vatCollectionHandle(percent: number): string {

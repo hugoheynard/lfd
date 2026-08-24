@@ -21,4 +21,4 @@ export interface DesiredCollection {
 }
 
 /** Préfixe qui marque une collection comme « gérée par la TVA ». */
-export const TVA_HANDLE_PREFIX = "tva-";
+export const VAT_HANDLE_PREFIX = "tva-";

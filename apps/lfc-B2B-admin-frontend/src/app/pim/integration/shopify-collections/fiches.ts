@@ -17,7 +17,7 @@ import type { Category, Location, Product, VatRate } from '../../data/models';
  */
 
 /** Handle de la collection Shopify dérivé du taux : `5.5` → `tva-5-5`. */
-export function tvaTagFromPercent(percent: number): string {
+export function vatTagFromPercent(percent: number): string {
   return `tva-${percent.toString().replace('.', '-')}`;
 }
 
@@ -39,7 +39,7 @@ export interface GeneratedFiche {
  * canal. C'est ici, dans la projection Shopify, qu'il se recalcule.
  */
 function tagOf(rate: VatRate | undefined): string {
-  return rate === undefined ? '—' : tvaTagFromPercent(rate.percent);
+  return rate === undefined ? '—' : vatTagFromPercent(rate.percent);
 }
 
 function rateOf(rate: VatRate | undefined): string {

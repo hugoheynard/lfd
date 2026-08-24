@@ -65,7 +65,7 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
       return;
     }
     await this.journal.record({
-      type: PIM_EVENTS.categoryTvaChanged,
+      type: PIM_EVENTS.categoryVatChanged,
       subjectType: "category",
       subjectId: categoryId,
       payload: Object.fromEntries(

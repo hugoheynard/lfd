@@ -19,4 +19,4 @@ import { FoldButtonComponent, FoldEmptyStateComponent, FoldPageLayoutComponent }
   imports: [RouterLink, FoldButtonComponent, FoldEmptyStateComponent, FoldPageLayoutComponent],
   templateUrl: './livraison-page.html',
 })
-export class LivraisonPage {}
+export class DeliveryPage {}

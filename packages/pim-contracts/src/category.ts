@@ -23,7 +23,7 @@ export const renameCategoryPayloadSchema = z.object({
 });
 export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 
-const boutiqueChannelsSchema = z.object({
+const shopChannelsSchema = z.object({
   emporter: z.boolean(),
   surPlace: z.boolean(),
 });
@@ -35,7 +35,7 @@ const boutiqueChannelsSchema = z.object({
  */
 export const salesChannelsSchema = z.object({
   /** Clé = identifiant d'emplacement. Une clé absente ⇒ rien n'y est vendu. */
-  boutiques: z.record(z.string(), boutiqueChannelsSchema),
+  boutiques: z.record(z.string(), shopChannelsSchema),
   // Un booléen, pas une entrée de la carte : la plateforme n'est pas un
   // location, et un professionnel ne consomme ni sur place ni à emporter.
   b2b: z.boolean(),

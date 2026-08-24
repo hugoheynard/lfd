@@ -78,7 +78,7 @@ function buildFeatured(): FeaturedItem[] {
   templateUrl: './boutique-page.html',
   styleUrl: './boutique-page.scss',
 })
-export class BoutiquePage {
+export class ShopPage {
   protected readonly favorites = inject(FavoritesService);
   private readonly cart = inject(CartService);
   private readonly account = inject(AccountService);

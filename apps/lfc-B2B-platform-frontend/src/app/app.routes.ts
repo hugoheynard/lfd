@@ -29,8 +29,7 @@ export const routes: Routes = [
     path: 'boutique',
     title: 'Boutique — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./boutique/boutique-page/boutique-page').then((m) => m.BoutiquePage),
+    loadComponent: () => import('./boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
   },
   homeRoute,
   {

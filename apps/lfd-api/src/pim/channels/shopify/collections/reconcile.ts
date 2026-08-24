@@ -13,7 +13,7 @@
 import {
   type DesiredCollection,
   type ShopifyCollection,
-  TVA_HANDLE_PREFIX,
+  VAT_HANDLE_PREFIX,
 } from "@lfd/shopify-admin";
 
 /** Une collection désirée rapprochée de son éventuelle contrepartie distante. */
@@ -52,7 +52,7 @@ export function reconcileCollections(
 
   const orphans = live.filter(
     (collection) =>
-      collection.handle.startsWith(TVA_HANDLE_PREFIX) && !wanted.has(collection.handle),
+      collection.handle.startsWith(VAT_HANDLE_PREFIX) && !wanted.has(collection.handle),
   );
   const missingCount = rows.filter((row) => !row.present).length;
 

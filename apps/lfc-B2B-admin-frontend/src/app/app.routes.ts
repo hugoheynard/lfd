@@ -122,7 +122,7 @@ export const routes: Routes = [
     canActivate: [permissionGuard('orders:read')],
     title: 'Livraison — LFC B2B admin',
     loadComponent: () =>
-      import('./livraison/livraison-page/livraison-page').then((m) => m.LivraisonPage),
+      import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
   },
   {
     // L'APP MOBILE — il n'y en a pas à télécharger : c'est cette adresse-ci,

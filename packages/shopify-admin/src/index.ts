@@ -10,7 +10,7 @@ export type { ShopifyOAuthCredentials, ShopifyCredentialsSource } from "./creden
 export type { ShopifyStoreSettings, ShopifyStoreCoordinates } from "./store-settings.js";
 
 export type { ShopifyProductSnapshot, ShopifyVariantSnapshot } from "./product-snapshot.js";
-export { TVA_HANDLE_PREFIX } from "./collection-types.js";
+export { VAT_HANDLE_PREFIX } from "./collection-types.js";
 export type { ShopifyCollection, DesiredCollection } from "./collection-types.js";
 
 export { ShopifyTokenProvider } from "./token-provider.js";

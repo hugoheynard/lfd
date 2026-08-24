@@ -63,7 +63,7 @@ export function contextIsSold(context: SalesContext, channels: SalesChannels): b
  * Contexte par contexte : un produit peut déroger en B2B et suivre sa famille
  * au comptoir. C'est le cas courant, pas l'exception.
  */
-export function effectiveTva<T>(
+export function effectiveVat<T>(
   family: Readonly<Record<string, T>>,
   product: Readonly<Record<string, T>>,
 ): Readonly<Record<string, T>> {

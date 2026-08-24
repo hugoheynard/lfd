@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { ShopifyAdminClient, TVA_HANDLE_PREFIX } from "@lfd/shopify-admin";
+import { ShopifyAdminClient, VAT_HANDLE_PREFIX } from "@lfd/shopify-admin";
 
 import { LiveShopifyCollectionsGateway } from "../collections/gateway.js";
 
@@ -75,7 +75,7 @@ export class ShopifyMembershipService {
   ): Promise<string[]> {
     const held = await this.client.collectionHandlesOfProduct(productGid);
     const stale = held.filter(
-      (handle) => handle.startsWith(TVA_HANDLE_PREFIX) && !keep.includes(handle),
+      (handle) => handle.startsWith(VAT_HANDLE_PREFIX) && !keep.includes(handle),
     );
 
     const left: string[] = [];
