@@ -21,7 +21,7 @@ export type PimSubjectType = "tva_rate" | "product" | "category";
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
  * HTTP : `tax_rate.rate_changed` se relit dans six mois,
- * `PUT /commerce/vat-rates/x` non.
+ * `PUT /commerce/tva-rates/x` non.
  *
  * On ne trace pas tout. Ces sept-là ont en commun de **changer ce qui est taxé
  * ou vendu** — le reste (une description retouchée, un libellé) n'a pas d'aval

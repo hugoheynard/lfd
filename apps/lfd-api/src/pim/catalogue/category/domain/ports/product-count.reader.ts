@@ -9,7 +9,7 @@
  * quatrième valeur, la définition de « active » changeait en silence pour
  * l'archivage.
  *
- * Le découpage est celui d'`EmplacementUsageReader`, à côté : un port dédié
+ * Le découpage est celui d'`LocationUsageReader`, à côté : un port dédié
  * qui répond à une question posée sur un AUTRE agrégat, sans que le dépôt de
  * celui-ci ait à le savoir.
  */

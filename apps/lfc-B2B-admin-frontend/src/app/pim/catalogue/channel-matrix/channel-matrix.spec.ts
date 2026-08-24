@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import type { Emplacement, SalesChannels } from '../../data/models';
+import type { Location, SalesChannels } from '../../data/models';
 import { ChannelMatrix } from './channel-matrix';
 
 const CHANNELS: SalesChannels = {
@@ -12,7 +12,7 @@ const CHANNELS: SalesChannels = {
 };
 
 /** Les points de vente sont une DONNÉE : la grille en reçoit la liste. */
-const EMPLACEMENTS: Emplacement[] = [
+const EMPLACEMENTS: Location[] = [
   {
     id: 'emp_village',
     name: 'Village',
@@ -35,12 +35,12 @@ const EMPLACEMENTS: Emplacement[] = [
 
 function render(
   inherited: boolean,
-  emplacements: Emplacement[] = EMPLACEMENTS,
+  locations: Location[] = EMPLACEMENTS,
   unreadable: string | null = null,
 ) {
   const fixture = TestBed.createComponent(ChannelMatrix);
   fixture.componentRef.setInput('channels', CHANNELS);
-  fixture.componentRef.setInput('emplacements', emplacements);
+  fixture.componentRef.setInput('locations', locations);
   fixture.componentRef.setInput('unreadable', unreadable);
   fixture.componentRef.setInput('inherited', inherited);
   fixture.detectChanges();

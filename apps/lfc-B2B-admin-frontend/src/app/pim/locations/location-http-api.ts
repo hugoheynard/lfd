@@ -1,18 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { EmplacementView, TableView } from '@lfd/pim-contracts';
+import type { LocationView, TableView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
-import type { Emplacement, EmplacementTable } from '../data/models';
+import type { Location, LocationTable } from '../data/models';
 
-function toTable(table: TableView): EmplacementTable {
+function toTable(table: TableView): LocationTable {
   return table.token === null
     ? { number: table.number, qrCreated: table.qrCreated }
     : { number: table.number, qrCreated: table.qrCreated, token: table.token };
 }
 
-function toEmplacement(row: EmplacementView): Emplacement {
+function toLocation(row: LocationView): Location {
   return {
     id: row.id,
     name: row.name,
@@ -24,7 +24,7 @@ function toEmplacement(row: EmplacementView): Emplacement {
   };
 }
 
-export interface EmplacementInput {
+export interface LocationInput {
   readonly name: string;
   readonly clickCollect: boolean;
   readonly surPlace: boolean;
@@ -33,25 +33,25 @@ export interface EmplacementInput {
 }
 
 /**
- * Accès **réel** aux emplacements — parle au backend (`locations/emplacements`).
+ * Accès **réel** aux locations — parle au backend (`locations/emplacements`).
  * Le token QR d'une table est **minté par le serveur** (R1) : `generateTableQr`
  * ne l'envoie plus, il le reçoit. Remplace la branche LocalDb.
  */
 @Injectable({ providedIn: 'root' })
-export class EmplacementHttpApi {
+export class LocationHttpApi {
   private readonly http = inject(HttpClient);
   private readonly base = inject(API_BASE_URL);
 
-  async list(): Promise<Emplacement[]> {
-    const rows = await firstValueFrom(this.http.get<EmplacementView[]>(this.url('')));
-    return rows.map(toEmplacement);
+  async list(): Promise<Location[]> {
+    const rows = await firstValueFrom(this.http.get<LocationView[]>(this.url('')));
+    return rows.map(toLocation);
   }
 
-  create(input: EmplacementInput): Promise<{ id: string }> {
+  create(input: LocationInput): Promise<{ id: string }> {
     return firstValueFrom(this.http.post<{ id: string }>(this.url(''), input));
   }
 
-  async update(id: string, patch: Partial<EmplacementInput>): Promise<void> {
+  async update(id: string, patch: Partial<LocationInput>): Promise<void> {
     await firstValueFrom(this.http.put(this.url(id), patch));
   }
 

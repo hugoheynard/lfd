@@ -23,7 +23,7 @@ import {
 } from 'fold-ng';
 
 import { NO_CHANNELS, boutiquesWith, resolveChannels } from '../../data/channels';
-import { EmplacementStore } from '../../emplacements/emplacement-store';
+import { LocationStore } from '../../locations/location-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
 import {
@@ -73,10 +73,10 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
 })
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
-  private readonly emplacementStore = inject(EmplacementStore);
+  private readonly locationStore = inject(LocationStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
-  protected readonly emplacements = this.emplacementStore.items;
+  protected readonly locations = this.locationStore.items;
   private readonly shopify = inject(ShopifyApi);
   private readonly router = inject(Router);
 
@@ -218,11 +218,11 @@ export class ProductsPage {
   }
 
   protected rowEmporter(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'emporter', this.emplacements());
+    return boutiquesWith(this.rowChannels(product), 'emporter', this.locations());
   }
 
   protected rowSurPlace(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'surPlace', this.emplacements());
+    return boutiquesWith(this.rowChannels(product), 'surPlace', this.locations());
   }
 
   protected rowInherited(product: Product): boolean {

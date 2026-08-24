@@ -19,7 +19,7 @@ const stubAdminVerifier = {
 
 const CATEGORIES = "/pim/catalogue/categories";
 const EMPLACEMENTS = "/pim/locations/emplacements";
-const RATES = "/pim/commerce/vat-rates";
+const RATES = "/pim/commerce/tva-rates";
 
 let ctx: E2eContext;
 
@@ -48,7 +48,7 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function createEmplacement(name: string): Promise<string> {
+async function createLocation(name: string): Promise<string> {
   const response = await staff()
     .post(EMPLACEMENTS)
     .send({ name, clickCollect: true, surPlace: false, baseUrl: "", tableCount: 0 });
@@ -122,16 +122,14 @@ describe("le slug d'une famille est unique", () => {
 describe("un preset ne cite que des emplacements qui existent", () => {
   it("accepte un emplacement du référentiel", async () => {
     const category = await createCategory("Viennoiseries");
-    const emplacement = await createEmplacement("Village");
+    const location = await createLocation("Village");
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [emplacement]: { emporter: true, surPlace: false } }, b2b: false });
+      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false });
 
     expect(response.status).toBe(200);
-    expect(Object.keys((await readCategory(category)).channelPreset.boutiques)).toEqual([
-      emplacement,
-    ]);
+    expect(Object.keys((await readCategory(category)).channelPreset.boutiques)).toEqual([location]);
   });
 
   /**
@@ -147,9 +145,7 @@ describe("un preset ne cite que des emplacements qui existent", () => {
       .send({ boutiques: { emp_fantome: { emporter: true, surPlace: false } }, b2b: false });
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe(
-      "catalogue.category.unknown_emplacement",
-    );
+    expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.unknown_location");
     expect((await readCategory(category)).channelPreset.boutiques).toEqual({});
   });
 });

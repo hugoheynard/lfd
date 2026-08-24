@@ -51,7 +51,7 @@ export class PrismaProductNormStore extends ProductNormStore {
   }
 
   /**
-   * Remplacement intégral, dans une transaction : un read-model dérivé n'a pas
+   * Rlocation intégral, dans une transaction : un read-model dérivé n'a pas
    * d'état à préserver, mais il ne doit jamais être lu à moitié reconstruit — une
    * norme absente ferait taire la détection sans que personne ne le sache.
    */

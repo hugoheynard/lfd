@@ -1,8 +1,8 @@
-import { EmplacementNameRequiredError } from "../errors/locations-errors.js";
+import { LocationNameRequiredError } from "../errors/locations-errors.js";
 import { syncTables, type TableState } from "../value-objects/table.js";
 
 /** L'état complet d'un emplacement — ce que la persistance rend et reprend. */
-export interface EmplacementSnapshot {
+export interface LocationSnapshot {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
@@ -12,7 +12,7 @@ export interface EmplacementSnapshot {
 }
 
 /** Ce qu'il faut pour ouvrir un emplacement. Le reste, l'agrégat le décide. */
-export interface NewEmplacementInput {
+export interface NewLocationInput {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
@@ -22,7 +22,7 @@ export interface NewEmplacementInput {
 }
 
 /**
- * Un **emplacement** — un point de vente, ses modes, et sa grille de tables.
+ * Un **location** — un point de vente, ses modes, et sa grille de tables.
  *
  * ## Pourquoi c'est devenu un agrégat
  *
@@ -32,7 +32,7 @@ export interface NewEmplacementInput {
  *
  * D'abord parce que régler un emplacement faisait **deux écritures** : les
  * champs, puis les tables. Entre les deux, ou si la seconde échouait, un
- * emplacement restait « pas sur place » AVEC des tables — exactement l'état que
+ * location restait « pas sur place » AVEC des tables — exactement l'état que
  * le handler s'efforçait d'empêcher. Ici l'invariant est tenu par le
  * constructeur : il n'y a pas de chemin qui le viole, et la persistance écrit
  * un seul état.
@@ -46,7 +46,7 @@ export interface NewEmplacementInput {
  * occupée ; en garder une sur un emplacement qui ne sert plus en salle laisse
  * un QR imprimé qui mène quelque part.
  */
-export class Emplacement {
+export class Location {
   private constructor(
     private readonly identity: string,
     private nameValue: string,
@@ -56,8 +56,8 @@ export class Emplacement {
     private tablesValue: readonly TableState[],
   ) {}
 
-  static open(input: NewEmplacementInput): Emplacement {
-    return new Emplacement(
+  static open(input: NewLocationInput): Location {
+    return new Location(
       input.id,
       requireName(input.name),
       input.clickCollect,
@@ -67,8 +67,8 @@ export class Emplacement {
     );
   }
 
-  static reconstitute(snapshot: EmplacementSnapshot): Emplacement {
-    return new Emplacement(
+  static reconstitute(snapshot: LocationSnapshot): Location {
+    return new Location(
       snapshot.id,
       snapshot.name,
       snapshot.clickCollect,
@@ -146,7 +146,7 @@ export class Emplacement {
     return this.rewriteTable(tableNumber, { qrCreated: false, token: null });
   }
 
-  snapshot(): EmplacementSnapshot {
+  snapshot(): LocationSnapshot {
     return {
       id: this.identity,
       name: this.nameValue,
@@ -172,7 +172,7 @@ export class Emplacement {
 function requireName(name: string): string {
   const trimmed = name.trim();
   if (trimmed === "") {
-    throw new EmplacementNameRequiredError();
+    throw new LocationNameRequiredError();
   }
   return trimmed;
 }

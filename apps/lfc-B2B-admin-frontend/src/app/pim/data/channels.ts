@@ -1,4 +1,4 @@
-import type { BoutiqueChannels, Category, Emplacement, Product, SalesChannels } from './models';
+import type { BoutiqueChannels, Category, Location, Product, SalesChannels } from './models';
 
 /**
  * Aucun canal — le point de départ d'une fiche ou d'une famille qu'on crée.
@@ -13,18 +13,18 @@ export const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
  * Les **noms** des emplacements qui proposent un mode donné.
  *
  * Il lisait deux libellés codés en dur, dont l'un ne correspondait à aucun
- * emplacement du référentiel : l'écran affichait une boutique qui n'existait
+ * location du référentiel : l'écran affichait une boutique qui n'existait
  * pas. Les noms viennent maintenant de la liste qu'on lui passe, et une clé
  * qui ne désigne plus rien est simplement ignorée.
  */
 export function boutiquesWith(
   channels: SalesChannels,
   mode: keyof BoutiqueChannels,
-  emplacements: readonly Emplacement[],
+  locations: readonly Location[],
 ): string[] {
-  return emplacements
-    .filter((emplacement) => channels.boutiques[emplacement.id]?.[mode] === true)
-    .map((emplacement) => emplacement.name);
+  return locations
+    .filter((location) => channels.boutiques[location.id]?.[mode] === true)
+    .map((location) => location.name);
 }
 
 /** Un mode est-il vendu **quelque part** ? Le taux suit le mode, pas la boutique. */

@@ -94,7 +94,7 @@ export interface E2eContext {
 }
 
 /**
- * Remplacement d'un provider pour la durée d'une suite.
+ * Rlocation d'un provider pour la durée d'une suite.
  *
  * Réservé aux frontières **sortantes** qu'un e2e n'a pas à éprouver (un service
  * distant tiers). Doubler un provider interne — un repository, un handler — ferait

@@ -19,28 +19,28 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import type { Emplacement } from '../../data/models';
-import { EmplacementStore } from '../emplacement-store';
+import type { Location } from '../../data/models';
+import { LocationStore } from '../location-store';
 
 /** Ce qu'on fait d'un emplacement existant depuis le panneau. */
-export type EmplacementPanelMode = 'edit' | 'delete';
+export type LocationPanelMode = 'edit' | 'delete';
 
 /** Charge passée à `open()` : la boutique visée et l'intention. Absente = création. */
-export interface EmplacementPanelData {
-  readonly mode: EmplacementPanelMode;
-  readonly emplacement: Emplacement;
+export interface LocationPanelData {
+  readonly mode: LocationPanelMode;
+  readonly location: Location;
 }
 
 /**
- * Panneau **emplacement** : création, édition ou suppression, ouvert
+ * Panneau **location** : création, édition ou suppression, ouvert
  * impérativement via `FoldPanelHostService.open()`. Sans `data` il crée ; avec
- * `{ mode: 'edit', emplacement }` il édite (champs préremplis) ; avec
- * `{ mode: 'delete', emplacement }` il affiche une **zone dangereuse** —
+ * `{ mode: 'edit', location }` il édite (champs préremplis) ; avec
+ * `{ mode: 'delete', location }` il affiche une **zone dangereuse** —
  * confirmation en retapant le nom, car supprimer la boutique emporte ses tables
  * et rend caducs les QR déjà imprimés.
  */
 @Component({
-  selector: 'app-emplacement-form-panel',
+  selector: 'app-location-form-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPanelHeaderComponent,
@@ -50,18 +50,18 @@ export interface EmplacementPanelData {
     FoldButtonComponent,
     FoldCalloutComponent,
   ],
-  templateUrl: './emplacement-form-panel.html',
-  styleUrl: './emplacement-form-panel.scss',
+  templateUrl: './location-form-panel.html',
+  styleUrl: './location-form-panel.scss',
 })
-export class EmplacementFormPanel {
-  private readonly store = inject(EmplacementStore);
+export class LocationFormPanel {
+  private readonly store = inject(LocationStore);
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
 
   /** Boutique + intention ; absent = création. */
-  readonly data = input<EmplacementPanelData | undefined>(undefined);
+  readonly data = input<LocationPanelData | undefined>(undefined);
 
-  protected readonly emplacement = computed(() => this.data()?.emplacement);
+  protected readonly location = computed(() => this.data()?.location);
 
   /**
    * Les brouillons **dérivent** de la boutique reçue.
@@ -71,14 +71,12 @@ export class EmplacementFormPanel {
    * une fenêtre où les champs étaient vides — assez pour qu'un enregistrement
    * précoce parte avec un nom vide. Même correction que sur le panneau famille.
    */
-  protected readonly draftName = linkedSignal(() => this.emplacement()?.name ?? '');
-  protected readonly draftBaseUrl = linkedSignal(() => this.emplacement()?.baseUrl ?? '');
-  protected readonly draftClickCollect = linkedSignal(
-    () => this.emplacement()?.clickCollect ?? true,
-  );
-  protected readonly draftSurPlace = linkedSignal(() => this.emplacement()?.surPlace ?? false);
+  protected readonly draftName = linkedSignal(() => this.location()?.name ?? '');
+  protected readonly draftBaseUrl = linkedSignal(() => this.location()?.baseUrl ?? '');
+  protected readonly draftClickCollect = linkedSignal(() => this.location()?.clickCollect ?? true);
+  protected readonly draftSurPlace = linkedSignal(() => this.location()?.surPlace ?? false);
   protected readonly draftTables = linkedSignal<number | null>(
-    () => this.emplacement()?.tables.length ?? 0,
+    () => this.location()?.tables.length ?? 0,
   );
   /** Saisie de confirmation en mode suppression (doit égaler le nom de la boutique). */
   protected readonly confirmName = signal('');
@@ -91,7 +89,7 @@ export class EmplacementFormPanel {
       ? "Supprimer l'emplacement"
       : this.isEdit()
         ? "Modifier l'emplacement"
-        : 'Nouvel emplacement',
+        : 'Nouvel location',
   );
   protected readonly subtitle = computed(() =>
     this.isDelete() ? 'Action irréversible.' : 'Une boutique, ses modes de vente et ses tables.',
@@ -106,12 +104,12 @@ export class EmplacementFormPanel {
 
   /** En suppression, le nom retapé doit correspondre exactement. */
   protected readonly confirmMatches = computed(() => {
-    const target = this.emplacement();
+    const target = this.location();
     return target !== undefined && this.confirmName().trim() === target.name;
   });
 
   /** Combien de familles vendent ici — le référentiel refusera tant que > 0. */
-  protected readonly usedByCategories = computed(() => this.emplacement()?.usedByCategories ?? 0);
+  protected readonly usedByCategories = computed(() => this.location()?.usedByCategories ?? 0);
 
   /**
    * Supprimable : **personne ne s'en sert**, et le nom est confirmé.
@@ -151,7 +149,7 @@ export class EmplacementFormPanel {
   }
 
   private async persist(): Promise<void> {
-    const target = this.emplacement();
+    const target = this.location();
     if (this.isDelete() && target !== undefined) {
       await this.store.remove(target.id);
       return;

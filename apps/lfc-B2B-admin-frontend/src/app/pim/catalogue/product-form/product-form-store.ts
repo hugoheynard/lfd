@@ -13,7 +13,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { NO_CHANNELS, boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
 import type { SalesChannels } from '../../data/models';
-import { EmplacementStore } from '../../emplacements/emplacement-store';
+import { LocationStore } from '../../locations/location-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
@@ -233,11 +233,11 @@ function writeText(
 export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
-  private readonly emplacementStore = inject(EmplacementStore);
+  private readonly locationStore = inject(LocationStore);
   private readonly contextStore = inject(SalesContextStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
-  readonly emplacements = this.emplacementStore.items;
+  readonly locations = this.locationStore.items;
   private readonly reference = inject(ReferenceApi);
 
   readonly kinds = KINDS;
@@ -485,7 +485,7 @@ export class ProductFormStore {
         boutiques:
           context.channelKey === 'b2b'
             ? []
-            : boutiquesWith(channels, boutiqueMode(context.channelKey), this.emplacements()),
+            : boutiquesWith(channels, boutiqueMode(context.channelKey), this.locations()),
         rate: rateOf(context.key),
         gross: grossFor(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',

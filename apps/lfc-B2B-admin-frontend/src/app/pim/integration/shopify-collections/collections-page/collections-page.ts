@@ -4,7 +4,7 @@ import { FoldPageLayoutComponent } from 'fold-ng';
 
 import { CollectionsTree } from '../collections-tree/collections-tree';
 import { buildCollections } from '../collections';
-import { EmplacementStore } from '../../../emplacements/emplacement-store';
+import { LocationStore } from '../../../locations/location-store';
 import { CategoryStore } from '../../../catalogue/category-store';
 import { ProductStore } from '../../../catalogue/product-store';
 import { VatRateStore } from '../../../catalogue/vat-rates/vat-store';
@@ -24,14 +24,14 @@ export class CollectionsPage {
   private readonly products = inject(ProductStore);
   private readonly categories = inject(CategoryStore);
   private readonly rates = inject(VatRateStore);
-  private readonly emplacements = inject(EmplacementStore);
+  private readonly locations = inject(LocationStore);
 
   protected readonly families = computed(() =>
     buildCollections(
       this.products.items(),
       this.categories.items(),
       this.rates.items(),
-      this.emplacements.items(),
+      this.locations.items(),
     ),
   );
 }

@@ -7,7 +7,7 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/models';
+import type { BoutiqueChannels, Location, SalesChannels } from '../../data/models';
 
 /**
  * L'atome de la décision « sur quels canaux se vend ce produit ».
@@ -36,7 +36,7 @@ import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/mo
 export class ChannelMatrix {
   readonly channels = input.required<SalesChannels>();
   /** Les points de vente à proposer — la liste du référentiel. */
-  readonly emplacements = input.required<readonly Emplacement[]>();
+  readonly locations = input.required<readonly Location[]>();
   /**
    * Pourquoi la liste est vide, si elle l'est faute d'avoir pu la lire.
    * L'hôte le sait (il tient le store) ; la grille se contente de le dire.
@@ -51,8 +51,8 @@ export class ChannelMatrix {
   readonly revert = output<void>();
 
   /** Une clé absente = rien n'y est vendu ; la carte ne porte que ce qui l'est. */
-  protected isOn(emplacementId: string, mode: keyof BoutiqueChannels): boolean {
-    return this.channels().boutiques[emplacementId]?.[mode] === true;
+  protected isOn(locationId: string, mode: keyof BoutiqueChannels): boolean {
+    return this.channels().boutiques[locationId]?.[mode] === true;
   }
 
   /**
@@ -60,17 +60,17 @@ export class ChannelMatrix {
    * que gardée à zéro : la carte dit ce qui est vendu, et une clé qui ne vend
    * rien ferait grossir la colonne à chaque emplacement décoché — puis
    * bloquerait sa suppression, puisque le référentiel refuse d'ôter un
-   * emplacement encore coché.
+   * location encore coché.
    */
-  protected setCell(emplacementId: string, mode: keyof BoutiqueChannels, value: boolean): void {
+  protected setCell(locationId: string, mode: keyof BoutiqueChannels, value: boolean): void {
     const current = this.channels();
-    const before = current.boutiques[emplacementId] ?? { emporter: false, surPlace: false };
+    const before = current.boutiques[locationId] ?? { emporter: false, surPlace: false };
     const after: BoutiqueChannels = { ...before, [mode]: value };
     const boutiques = { ...current.boutiques };
     if (after.emporter || after.surPlace) {
-      boutiques[emplacementId] = after;
+      boutiques[locationId] = after;
     } else {
-      delete boutiques[emplacementId];
+      delete boutiques[locationId];
     }
     this.channelsChange.emit({ ...current, boutiques });
   }

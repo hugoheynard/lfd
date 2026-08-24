@@ -1,5 +1,5 @@
 /**
- * E2E des **emplacements** — sur un vrai Postgres.
+ * E2E des **locations** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve : la recherche de nom **insensible à la casse**
  * (`mode: "insensitive"` côté Postgres, que les doubles remplacent par un
@@ -38,7 +38,7 @@ beforeEach(async () => {
 const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
 
-interface EmplacementRow {
+interface LocationRow {
   readonly id: string;
   readonly name: string;
   readonly surPlace: boolean;
@@ -46,7 +46,7 @@ interface EmplacementRow {
   readonly usedByCategories: number;
 }
 
-async function createEmplacement(
+async function createLocation(
   over: Partial<{ name: string; surPlace: boolean; tableCount: number }> = {},
 ): Promise<string> {
   const response = await staff()
@@ -63,19 +63,19 @@ async function createEmplacement(
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function readEmplacement(id: string): Promise<EmplacementRow> {
+async function readLocation(id: string): Promise<LocationRow> {
   const response = await staff().get(EMPLACEMENTS);
   expect(response.status).toBe(200);
-  const row = jsonBody<EmplacementRow[]>(response).find((item) => item.id === id);
+  const row = jsonBody<LocationRow[]>(response).find((item) => item.id === id);
   if (row === undefined) {
-    throw new Error(`emplacement ${id} absent de la liste`);
+    throw new Error(`location ${id} absent de la liste`);
   }
   return row;
 }
 
 describe("le nom d'un emplacement est unique", () => {
-  it("refuse un second emplacement du même nom", async () => {
-    await createEmplacement({ name: "Village" });
+  it("refuse un second location du même nom", async () => {
+    await createLocation({ name: "Village" });
 
     const response = await staff().post(EMPLACEMENTS).send({
       name: "Village",
@@ -86,7 +86,7 @@ describe("le nom d'un emplacement est unique", () => {
     });
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("locations.emplacement.name_taken");
+    expect(jsonBody<{ code: string }>(response).code).toBe("locations.location.name_taken");
   });
 
   /**
@@ -95,7 +95,7 @@ describe("le nom d'un emplacement est unique", () => {
    * filtre était faux.
    */
   it("refuse une casse différente — c'est le même point de vente à l'écran", async () => {
-    await createEmplacement({ name: "Village" });
+    await createLocation({ name: "Village" });
 
     const response = await staff().post(EMPLACEMENTS).send({
       name: "  village ",
@@ -109,24 +109,24 @@ describe("le nom d'un emplacement est unique", () => {
   });
 
   it("refuse un renommage qui prend le nom d'un autre", async () => {
-    await createEmplacement({ name: "Village" });
-    const second = await createEmplacement({ name: "Labo" });
+    await createLocation({ name: "Village" });
+    const second = await createLocation({ name: "Labo" });
 
     const response = await staff().put(`${EMPLACEMENTS}/${second}`).send({ name: "VILLAGE" });
 
     expect(response.status).toBe(409);
-    expect((await readEmplacement(second)).name).toBe("Labo");
+    expect((await readLocation(second)).name).toBe("Labo");
   });
 
   it("laisse un emplacement garder son propre nom en changeant autre chose", async () => {
-    const id = await createEmplacement({ name: "Village" });
+    const id = await createLocation({ name: "Village" });
 
     await staff()
       .put(`${EMPLACEMENTS}/${id}`)
       .send({ name: "Village", surPlace: true })
       .expect(200);
 
-    expect((await readEmplacement(id)).surPlace).toBe(true);
+    expect((await readLocation(id)).surPlace).toBe(true);
   });
 });
 
@@ -136,8 +136,8 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
    * ne touche ce parcours : les doubles rendent une carte fixée par le test.
    */
   it("compte les familles qui le cochent, et rend 0 sinon", async () => {
-    const emplacement = await createEmplacement({ name: "Village" });
-    const other = await createEmplacement({ name: "Labo" });
+    const location = await createLocation({ name: "Village" });
+    const other = await createLocation({ name: "Labo" });
     const category = jsonBody<{ id: string }>(
       await staff()
         .post(CATEGORIES)
@@ -145,15 +145,15 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [emplacement]: { emporter: true, surPlace: false } }, b2b: false })
+      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
       .expect(200);
 
-    expect((await readEmplacement(emplacement)).usedByCategories).toBe(1);
-    expect((await readEmplacement(other)).usedByCategories).toBe(0);
+    expect((await readLocation(location)).usedByCategories).toBe(1);
+    expect((await readLocation(other)).usedByCategories).toBe(0);
   });
 
   it("refuse de supprimer un emplacement encore coché", async () => {
-    const emplacement = await createEmplacement({ name: "Village" });
+    const location = await createLocation({ name: "Village" });
     const category = jsonBody<{ id: string }>(
       await staff()
         .post(CATEGORIES)
@@ -161,17 +161,17 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [emplacement]: { emporter: true, surPlace: false } }, b2b: false })
+      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
       .expect(200);
 
-    const response = await staff().delete(`${EMPLACEMENTS}/${emplacement}`);
+    const response = await staff().delete(`${EMPLACEMENTS}/${location}`);
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("locations.emplacement_in_use");
+    expect(jsonBody<{ code: string }>(response).code).toBe("locations.location_in_use");
   });
 
   it("accepte la suppression une fois décoché", async () => {
-    const emplacement = await createEmplacement({ name: "Village" });
+    const location = await createLocation({ name: "Village" });
     const category = jsonBody<{ id: string }>(
       await staff()
         .post(CATEGORIES)
@@ -179,14 +179,14 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [emplacement]: { emporter: true, surPlace: false } }, b2b: false })
+      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send({ boutiques: {}, b2b: false })
       .expect(200);
 
-    await staff().delete(`${EMPLACEMENTS}/${emplacement}`).expect(200);
+    await staff().delete(`${EMPLACEMENTS}/${location}`).expect(200);
   });
 });
 
@@ -198,24 +198,24 @@ describe("fermer la salle vide la grille — en base", () => {
    * des QR imprimés qui menaient quelque part.
    */
   it("supprime les tables ET leurs QR quand on coupe le sur place", async () => {
-    const id = await createEmplacement({ name: "Village", surPlace: true, tableCount: 3 });
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 3 });
     await staff().post(`${EMPLACEMENTS}/${id}/tables/2/qr`).send({}).expect(201);
-    expect((await readEmplacement(id)).tables).toHaveLength(3);
+    expect((await readLocation(id)).tables).toHaveLength(3);
 
     await staff().put(`${EMPLACEMENTS}/${id}`).send({ surPlace: false }).expect(200);
 
-    const row = await readEmplacement(id);
+    const row = await readLocation(id);
     expect(row.surPlace).toBe(false);
     expect(row.tables).toEqual([]);
   });
 
   it("préserve le QR d'une table conservée quand la grille rétrécit", async () => {
-    const id = await createEmplacement({ name: "Village", surPlace: true, tableCount: 4 });
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 4 });
     await staff().post(`${EMPLACEMENTS}/${id}/tables/1/qr`).send({}).expect(201);
 
     await staff().put(`${EMPLACEMENTS}/${id}`).send({ tableCount: 2 }).expect(200);
 
-    const row = await readEmplacement(id);
+    const row = await readLocation(id);
     expect(row.tables).toHaveLength(2);
     expect(row.tables[0]?.qrCreated).toBe(true);
   });

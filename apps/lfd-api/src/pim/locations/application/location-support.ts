@@ -1,23 +1,23 @@
 import {
-  EmplacementNameTakenError,
-  EmplacementNotFoundError,
+  LocationNameTakenError,
+  LocationNotFoundError,
 } from "../domain/errors/locations-errors.js";
-import type { Emplacement } from "../domain/entities/emplacement.js";
-import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
+import type { Location } from "../domain/entities/location.js";
+import { LocationRepository } from "../domain/ports/location.repository.js";
 
 /**
  * Charge un emplacement, ou refuse. Le seul partage qui reste ici : `cleanName`
  * et `requireTable` ont rejoint l'agrégat, qui est le lieu de ces règles.
  */
-export async function requireEmplacement(
-  emplacements: EmplacementRepository,
+export async function requireLocation(
+  locations: LocationRepository,
   id: string,
-): Promise<Emplacement> {
-  const emplacement = await emplacements.findById(id);
-  if (emplacement === null) {
-    throw new EmplacementNotFoundError(id);
+): Promise<Location> {
+  const location = await locations.findById(id);
+  if (location === null) {
+    throw new LocationNotFoundError(id);
   }
-  return emplacement;
+  return location;
 }
 
 /**
@@ -28,12 +28,12 @@ export async function requireEmplacement(
  * — une règle qui parle des autres, donc tenue par le handler.
  */
 export async function requireFreeName(
-  emplacements: EmplacementRepository,
+  locations: LocationRepository,
   name: string,
   exceptId: string | null,
 ): Promise<void> {
-  const holder = await emplacements.findByName(name);
+  const holder = await locations.findByName(name);
   if (holder !== null && holder.id !== exceptId) {
-    throw new EmplacementNameTakenError(name, holder.id);
+    throw new LocationNameTakenError(name, holder.id);
   }
 }

@@ -21,21 +21,21 @@
 
     <!-- Une ligne par emplacement RÉEL. C'étaient deux lignes en dur, dont
          l'une nommait une boutique absente du référentiel. -->
-    @for (emplacement of emplacements(); track emplacement.id) {
+    @for (location of locations(); track location.id) {
       <div class="cm-row">
-        <span class="cm-label">{{ emplacement.name }}</span>
+        <span class="cm-label">{{ location.name }}</span>
         <span class="cm-cell">
           <fold-checkbox
-            [ariaLabel]="emplacement.name + ' — à emporter'"
-            [checked]="isOn(emplacement.id, 'emporter')"
-            (checkedChange)="setCell(emplacement.id, 'emporter', $event)"
+            [ariaLabel]="location.name + ' — à emporter'"
+            [checked]="isOn(location.id, 'emporter')"
+            (checkedChange)="setCell(location.id, 'emporter', $event)"
           />
         </span>
         <span class="cm-cell">
           <fold-checkbox
-            [ariaLabel]="emplacement.name + ' — sur place'"
-            [checked]="isOn(emplacement.id, 'surPlace')"
-            (checkedChange)="setCell(emplacement.id, 'surPlace', $event)"
+            [ariaLabel]="location.name + ' — sur place'"
+            [checked]="isOn(location.id, 'surPlace')"
+            (checkedChange)="setCell(location.id, 'surPlace', $event)"
           />
         </span>
       </div>

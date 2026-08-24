@@ -38,8 +38,8 @@ export abstract class PimPrismaService {
   abstract readonly salesContext: PrismaService["salesContext"];
   abstract readonly categoryContextVat: PrismaService["categoryContextVat"];
   abstract readonly productContextVat: PrismaService["productContextVat"];
-  abstract readonly emplacement: PrismaService["emplacement"];
-  abstract readonly emplacementTable: PrismaService["emplacementTable"];
+  abstract readonly location: PrismaService["location"];
+  abstract readonly locationTable: PrismaService["locationTable"];
   abstract readonly product: PrismaService["product"];
   abstract readonly productVariant: PrismaService["productVariant"];
   abstract readonly shopifySettings: PrismaService["shopifySettings"];

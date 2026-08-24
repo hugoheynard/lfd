@@ -1,25 +1,25 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
-import { EmplacementTableNotFoundError } from "../domain/errors/locations-errors.js";
-import { requireEmplacement } from "./emplacement-support.js";
+import { LocationRepository } from "../domain/ports/location.repository.js";
+import { LocationTableNotFoundError } from "../domain/errors/locations-errors.js";
+import { requireLocation } from "./location-support.js";
 
 export class RemoveTableQrCommand {
   constructor(
-    readonly emplacementId: string,
+    readonly locationId: string,
     readonly tableNumber: number,
   ) {}
 }
 
 @CommandHandler(RemoveTableQrCommand)
 export class RemoveTableQrHandler implements ICommandHandler<RemoveTableQrCommand, void> {
-  constructor(private readonly emplacements: EmplacementRepository) {}
+  constructor(private readonly locations: LocationRepository) {}
 
   async execute(command: RemoveTableQrCommand): Promise<void> {
-    const emplacement = await requireEmplacement(this.emplacements, command.emplacementId);
-    if (!emplacement.detachQr(command.tableNumber)) {
-      throw new EmplacementTableNotFoundError(command.emplacementId, command.tableNumber);
+    const location = await requireLocation(this.locations, command.locationId);
+    if (!location.detachQr(command.tableNumber)) {
+      throw new LocationTableNotFoundError(command.locationId, command.tableNumber);
     }
-    await this.emplacements.save(emplacement);
+    await this.locations.save(location);
   }
 }

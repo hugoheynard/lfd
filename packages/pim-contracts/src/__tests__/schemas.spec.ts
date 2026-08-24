@@ -1,6 +1,6 @@
 import {
   createCategoryPayloadSchema,
-  createEmplacementPayloadSchema,
+  createLocationPayloadSchema,
   vatRatePayloadSchema,
 } from "../index.js";
 
@@ -22,11 +22,7 @@ describe("pim-contracts payload schemas", () => {
       surPlace: true,
       baseUrl: "",
     };
-    expect(createEmplacementPayloadSchema.safeParse({ ...base, tableCount: 12 }).success).toBe(
-      true,
-    );
-    expect(createEmplacementPayloadSchema.safeParse({ ...base, tableCount: 999 }).success).toBe(
-      false,
-    );
+    expect(createLocationPayloadSchema.safeParse({ ...base, tableCount: 12 }).success).toBe(true);
+    expect(createLocationPayloadSchema.safeParse({ ...base, tableCount: 999 }).success).toBe(false);
   });
 });

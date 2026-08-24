@@ -17,10 +17,10 @@ import {
   CategoryOrderMismatchError,
   CategorySlugTakenError,
   CategoryVatWithoutChannelError,
-  CategoryUnknownEmplacementError,
+  CategoryUnknownLocationError,
 } from "../../domain/errors/category-errors.js";
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
-import { KnownEmplacementsReader } from "../../domain/ports/known-emplacements.reader.js";
+import { KnownLocationsReader } from "../../domain/ports/known-locations.reader.js";
 import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
@@ -136,8 +136,8 @@ class StubProductCounts extends ProductCountReader {
 }
 
 /** Un référentiel d'emplacements qui dit oui à tout — le cas nominal. */
-function allEmplacementsKnown(): KnownEmplacementsReader {
-  return new (class extends KnownEmplacementsReader {
+function allLocationsKnown(): KnownLocationsReader {
+  return new (class extends KnownLocationsReader {
     existing(ids: readonly string[]): Promise<ReadonlySet<string>> {
       return Promise.resolve(new Set(ids));
     }
@@ -145,8 +145,8 @@ function allEmplacementsKnown(): KnownEmplacementsReader {
 }
 
 /** Un référentiel VIDE : aucun identifiant cité n'existe. */
-function noEmplacementKnown(): KnownEmplacementsReader {
-  return new (class extends KnownEmplacementsReader {
+function noLocationKnown(): KnownLocationsReader {
+  return new (class extends KnownLocationsReader {
     existing(): Promise<ReadonlySet<string>> {
       return Promise.resolve(new Set<string>());
     }
@@ -184,7 +184,7 @@ class InMemoryRegimes extends VatRateRepository {
   }
 }
 
-/** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
+/** Deux locations quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = {
   boutiques: {
     emp_village: { emporter: true, surPlace: true },
@@ -264,7 +264,7 @@ const CONTEXTS: readonly SalesContext[] = [
 const registry: SalesContextRegistry = { active: () => Promise.resolve(CONTEXTS) };
 
 function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
-  return new SetCategoryChannelsHandler(repo, allEmplacementsKnown(), registry);
+  return new SetCategoryChannelsHandler(repo, allLocationsKnown(), registry);
 }
 
 describe("CreateCategoryHandler", () => {
@@ -381,9 +381,9 @@ describe("SetCategoryChannelsHandler", () => {
   });
 
   /**
-   * Le mur avait une seule face : `DeleteEmplacement` refuse de supprimer sous
+   * Le mur avait une seule face : `DeleteLocation` refuse de supprimer sous
    * une famille qui coche, mais rien n'empêchait d'écrire un preset citant un
-   * emplacement qui n'existe pas. L'écran l'aurait rendu invisible — il ignore
+   * location qui n'existe pas. L'écran l'aurait rendu invisible — il ignore
    * les clés inconnues — au lieu de le rendre faux.
    */
   it("refuse un emplacement qui n’existe pas", async () => {
@@ -391,23 +391,23 @@ describe("SetCategoryChannelsHandler", () => {
     const [id] = await openRoots(repo, 1);
 
     await expect(
-      new SetCategoryChannelsHandler(repo, noEmplacementKnown(), registry).execute(
+      new SetCategoryChannelsHandler(repo, noLocationKnown(), registry).execute(
         new SetCategoryChannelsCommand(id!, ALL_OPEN),
       ),
-    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
   });
 
   /** L'écriture est refusée EN ENTIER : pas de preset à moitié posé. */
-  it("n’écrit rien quand un seul emplacement est inconnu", async () => {
+  it("n’écrit rien quand un seul location est inconnu", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
     const before = repo.at(id!).channelPreset;
 
     await expect(
-      new SetCategoryChannelsHandler(repo, noEmplacementKnown(), registry).execute(
+      new SetCategoryChannelsHandler(repo, noLocationKnown(), registry).execute(
         new SetCategoryChannelsCommand(id!, ALL_OPEN),
       ),
-    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
     expect(repo.at(id!).channelPreset).toEqual(before);
   });
 

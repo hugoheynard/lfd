@@ -1,9 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
-import { requireEmplacement, requireFreeName } from "./emplacement-support.js";
+import { LocationRepository } from "../domain/ports/location.repository.js";
+import { requireLocation, requireFreeName } from "./location-support.js";
 
-export interface UpdateEmplacementPatch {
+export interface UpdateLocationPatch {
   readonly name?: string | undefined;
   readonly clickCollect?: boolean | undefined;
   readonly surPlace?: boolean | undefined;
@@ -11,10 +11,10 @@ export interface UpdateEmplacementPatch {
   readonly tableCount?: number | undefined;
 }
 
-export class UpdateEmplacementCommand {
+export class UpdateLocationCommand {
   constructor(
     readonly id: string,
-    readonly patch: UpdateEmplacementPatch,
+    readonly patch: UpdateLocationPatch,
   ) {}
 }
 
@@ -27,33 +27,33 @@ export class UpdateEmplacementCommand {
  * les deux laissait un emplacement fermé en salle avec ses tables, donc des QR
  * imprimés qui menaient quelque part.
  */
-@CommandHandler(UpdateEmplacementCommand)
-export class UpdateEmplacementHandler implements ICommandHandler<UpdateEmplacementCommand, void> {
-  constructor(private readonly emplacements: EmplacementRepository) {}
+@CommandHandler(UpdateLocationCommand)
+export class UpdateLocationHandler implements ICommandHandler<UpdateLocationCommand, void> {
+  constructor(private readonly locations: LocationRepository) {}
 
-  async execute(command: UpdateEmplacementCommand): Promise<void> {
+  async execute(command: UpdateLocationCommand): Promise<void> {
     const { id, patch } = command;
-    const emplacement = await requireEmplacement(this.emplacements, id);
+    const location = await requireLocation(this.locations, id);
 
     if (patch.name !== undefined) {
-      emplacement.rename(patch.name);
-      await requireFreeName(this.emplacements, emplacement.name, emplacement.id);
+      location.rename(patch.name);
+      await requireFreeName(this.locations, location.name, location.id);
     }
     if (patch.clickCollect !== undefined) {
-      emplacement.setClickCollect(patch.clickCollect);
+      location.setClickCollect(patch.clickCollect);
     }
     if (patch.baseUrl !== undefined) {
-      emplacement.setBaseUrl(patch.baseUrl);
+      location.setBaseUrl(patch.baseUrl);
     }
     // La salle AVANT la grille : fermer vide les tables, et un `tableCount`
     // reçu dans le même patch ne doit pas les faire revenir.
     if (patch.surPlace !== undefined) {
-      emplacement.setSurPlace(patch.surPlace);
+      location.setSurPlace(patch.surPlace);
     }
     if (patch.tableCount !== undefined) {
-      emplacement.setTableCount(patch.tableCount);
+      location.setTableCount(patch.tableCount);
     }
 
-    await this.emplacements.save(emplacement);
+    await this.locations.save(location);
   }
 }

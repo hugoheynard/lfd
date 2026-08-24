@@ -44,7 +44,9 @@ const ROOT = process.cwd();
 /** Les dossiers dont la dette est purgée. En ajouter un = l'avoir drainé. */
 const SCOPE = [
   "apps/lfd-api/src/pim/commerce",
+  "apps/lfd-api/src/pim/locations",
   "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/vat-rates",
+  "apps/lfc-B2B-admin-frontend/src/app/pim/locations",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

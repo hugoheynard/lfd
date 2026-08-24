@@ -3,9 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { FoldPanelRef, FoldToastService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import { EmplacementFormPanel } from '../emplacement-form-panel/emplacement-form-panel';
-import { EmplacementStore } from '../emplacement-store';
-import type { Emplacement } from '../../data/models';
+import { LocationFormPanel } from '../location-form-panel/location-form-panel';
+import { LocationStore } from '../location-store';
+import type { Location } from '../../data/models';
 
 /**
  * Le refus tel que le backend le renvoie sur un emplacement encore coché : un
@@ -16,12 +16,12 @@ import type { Emplacement } from '../../data/models';
 const IN_USE = {
   status: 409,
   error: {
-    code: 'locations.emplacement_in_use',
+    code: 'locations.location_in_use',
     message: 'Emplacement encore vendeur : 3 famille(s) le cochent.',
   },
 };
 
-function emplacement(over: Partial<Emplacement> = {}): Emplacement {
+function location(over: Partial<Location> = {}): Location {
   return {
     id: 'emp_1',
     name: 'Village',
@@ -47,14 +47,14 @@ function button(root: HTMLElement, label: string): HTMLButtonElement {
 
 interface Mounted {
   host: HTMLElement;
-  store: EmplacementStore;
+  store: LocationStore;
   toasts: FoldToastService;
   closed: unknown[];
   detect: () => void;
   stable: () => Promise<unknown>;
 }
 
-function mount(data?: { mode: 'edit' | 'delete'; emplacement: Emplacement }): Mounted {
+function mount(data?: { mode: 'edit' | 'delete'; location: Location }): Mounted {
   const closed: unknown[] = [];
   TestBed.configureTestingModule({
     providers: [
@@ -62,14 +62,14 @@ function mount(data?: { mode: 'edit' | 'delete'; emplacement: Emplacement }): Mo
       { provide: FoldPanelRef, useValue: { close: (v: unknown) => closed.push(v) } },
     ],
   });
-  const fixture = TestBed.createComponent(EmplacementFormPanel);
+  const fixture = TestBed.createComponent(LocationFormPanel);
   if (data !== undefined) {
     fixture.componentRef.setInput('data', data);
   }
   fixture.detectChanges();
   return {
     host: fixture.nativeElement as HTMLElement,
-    store: TestBed.inject(EmplacementStore),
+    store: TestBed.inject(LocationStore),
     toasts: TestBed.inject(FoldToastService),
     closed,
     detect: () => fixture.detectChanges(),
@@ -77,7 +77,7 @@ function mount(data?: { mode: 'edit' | 'delete'; emplacement: Emplacement }): Mo
   };
 }
 
-describe('EmplacementFormPanel — supprimer un emplacement encore vendeur', () => {
+describe('LocationFormPanel — supprimer un emplacement encore vendeur', () => {
   /**
    * Le référentiel refuse tant qu'une famille le coche. Le panneau offrait
    * pourtant un bouton armé et laissait le refus arriver après le clic — alors
@@ -85,7 +85,7 @@ describe('EmplacementFormPanel — supprimer un emplacement encore vendeur', () 
    * exactement cette raison.
    */
   it("dit le refus AVANT le clic, et n'offre rien à retaper", () => {
-    const { host } = mount({ mode: 'delete', emplacement: emplacement({ usedByCategories: 3 }) });
+    const { host } = mount({ mode: 'delete', location: location({ usedByCategories: 3 }) });
 
     expect(host.textContent).toContain('Suppression impossible');
     expect(host.textContent).toContain('3 famille(s)');
@@ -94,7 +94,7 @@ describe('EmplacementFormPanel — supprimer un emplacement encore vendeur', () 
   });
 
   it('propose la confirmation quand personne ne le coche', () => {
-    const { host } = mount({ mode: 'delete', emplacement: emplacement({ usedByCategories: 0 }) });
+    const { host } = mount({ mode: 'delete', location: location({ usedByCategories: 0 }) });
 
     expect(host.textContent).toContain('Zone dangereuse');
     expect(host.textContent).not.toContain('Suppression impossible');
@@ -108,7 +108,7 @@ describe('EmplacementFormPanel — supprimer un emplacement encore vendeur', () 
   it('rend le message du référentiel, pas celui du transport', async () => {
     const { host, store, toasts, closed, detect, stable } = mount({
       mode: 'delete',
-      emplacement: emplacement({ usedByCategories: 0 }),
+      location: location({ usedByCategories: 0 }),
     });
     vi.spyOn(store, 'remove').mockRejectedValue(IN_USE);
     const input = host.querySelector('fold-input input');
@@ -129,7 +129,7 @@ describe('EmplacementFormPanel — supprimer un emplacement encore vendeur', () 
   });
 });
 
-describe('EmplacementFormPanel — la création', () => {
+describe('LocationFormPanel — la création', () => {
   it("n'annonce PAS un enregistrement qui n'a pas eu lieu", async () => {
     // `persist` sortait en silence sur un nom vide, et `submit` fermait quand
     // même le panneau avec `close(true)` — soit un succès pour un non-geste.

@@ -61,7 +61,7 @@ export interface BoutiqueChannels {
 /**
  * Où et comment un produit se vend.
  *
- * Les emplacements sont une **donnée** : la carte est indexée par identifiant,
+ * Les locations sont une **donnée** : la carte est indexée par identifiant,
  * jamais par des clés fixes. C'était `{ b1, b2 }`, avec des libellés en dur qui
  * avaient fini par désigner une boutique absente du référentiel.
  *
@@ -154,7 +154,7 @@ export interface ShopifySettings {
  * Une **table** d'un emplacement en click & collect sur place : elle porte une
  * URL dérivée (`baseUrl?table=N`) et sait si son QR code a été généré.
  */
-export interface EmplacementTable {
+export interface LocationTable {
   /** Numéro de table — verrouillé une fois créé (identité de l'URL). */
   number: number;
   qrCreated: boolean;
@@ -164,11 +164,11 @@ export interface EmplacementTable {
 }
 
 /**
- * Un **emplacement** (boutique / point de vente). Il expose ses modes de vente ;
+ * Un **location** (boutique / point de vente). Il expose ses modes de vente ;
  * s'il fait « sur place », son nombre de tables ouvre une section click & collect
  * par table (une URL + un QR par table).
  */
-export interface Emplacement {
+export interface Location {
   id: string;
   name: string;
   /** Vente à emporter en ligne. */
@@ -178,9 +178,9 @@ export interface Emplacement {
   /** URL de base du click & collect de la boutique. */
   baseUrl: string;
   /** Tables (si sur place) — dérivées du nombre de tables. */
-  tables: EmplacementTable[];
+  tables: LocationTable[];
   /**
-   * Combien de **familles** cochent cet emplacement dans leurs canaux.
+   * Combien de **familles** cochent cet location dans leurs canaux.
    *
    * Vient de l'API pour que l'écran DISE qu'une suppression échouera avant
    * qu'on clique : le référentiel refuse de supprimer un point de vente encore

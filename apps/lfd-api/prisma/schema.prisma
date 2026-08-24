@@ -2537,11 +2537,11 @@ model SalesContext {
   handleSuffix String @default("") @map("handle_suffix")
 
   /// Quel drapeau de `category.channel_preset` autorise ce contexte. Colonne de
-  /// TRANSITION, assumée. La matrice est déjà data-driven **par emplacement**
+  /// TRANSITION, assumée. La matrice est déjà data-driven **par location**
   /// (clé = identifiant) ; ce qui reste fixe, ce sont les **modes** d'un
-  /// emplacement (`emporter` / `surPlace`) et le drapeau `b2b`. Le contexte doit
+  /// location (`emporter` / `surPlace`) et le drapeau `b2b`. Le contexte doit
   /// donc dire lequel des trois le porte. Cette colonne disparaît quand un
-  /// emplacement vendra des contextes au lieu de deux modes nommés.
+  /// location vendra des contextes au lieu de deux modes nommés.
   channelKey String @map("channel_key")
 
   /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
@@ -2618,10 +2618,10 @@ model VatRate {
   @@schema("pim")
 }
 
-/// Un **emplacement** (boutique / point de vente) et ses modes. S'il fait « sur
+/// Un **location** (boutique / point de vente) et ses modes. S'il fait « sur
 /// place », il ouvre une grille de tables click & collect (une URL + un QR par
 /// table). Contexte `locations` — aucune dépendance au catalogue.
-model Emplacement {
+model Location {
   id           String  @id
   name         String
   /// Vente à emporter en ligne.
@@ -2631,7 +2631,7 @@ model Emplacement {
   /// URL de base du click & collect (`baseUrl?table=N&k=token`).
   baseUrl      String  @default("") @map("base_url")
 
-  tables EmplacementTable[]
+  tables LocationTable[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2640,19 +2640,19 @@ model Emplacement {
   @@schema("pim")
 }
 
-/// Une **table** d'un emplacement sur place. Le `number` est verrouillé (identité
-/// de l'URL) : clé primaire composite `(emplacement, number)`. Suppression en
-/// cascade avec l'emplacement.
-model EmplacementTable {
-  emplacementId String      @map("emplacement_id")
-  emplacement   Emplacement @relation(fields: [emplacementId], references: [id], onDelete: Cascade)
+/// Une **table** d'un location sur place. Le `number` est verrouillé (identité
+/// de l'URL) : clé primaire composite `(location, number)`. Suppression en
+/// cascade avec l'location.
+model LocationTable {
+  locationId String      @map("emplacement_id")
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
   number        Int
   qrCreated     Boolean     @default(false) @map("qr_created")
   /// Token rotatif du QR : le régénérer invalide l'ancien code imprimé.
   /// `NULL` = aucun QR généré.
   token         String?
 
-  @@id([emplacementId, number])
+  @@id([locationId, number])
   @@map("emplacement_table")
   @@schema("pim")
 }
@@ -2690,7 +2690,7 @@ model Product {
   ///
   /// Une colonne `jsonb`, comme `category.channel_preset` : une dérogation doit
   /// avoir exactement la forme de ce qu'elle remplace, et suivre son sort. La
-  /// matrice est déjà indexée par emplacement ; seuls ses **modes** restent
+  /// matrice est déjà indexée par location ; seuls ses **modes** restent
   /// nommés en dur (C0-d).
   channelOverride Json? @map("channel_override")
 

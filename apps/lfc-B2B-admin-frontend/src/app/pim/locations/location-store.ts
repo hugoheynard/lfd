@@ -1,8 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
-import type { Emplacement } from '../data/models';
-import { EmplacementHttpApi, type EmplacementInput } from './emplacement-http-api';
+import type { Location } from '../data/models';
+import { LocationHttpApi, type LocationInput } from './location-http-api';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -11,11 +11,11 @@ import { ListLoadState } from '../data/list-load-state';
  * passent ici (backend puis relecture), donc la liste se met à jour toute seule.
  */
 @Injectable({ providedIn: 'root' })
-export class EmplacementStore {
-  private readonly api = inject(EmplacementHttpApi);
+export class LocationStore {
+  private readonly api = inject(LocationHttpApi);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  private readonly state = signal<Emplacement[]>([]);
+  private readonly state = signal<Location[]>([]);
   readonly items = this.state.asReadonly();
   private readonly load = new ListLoadState();
   /**
@@ -41,13 +41,13 @@ export class EmplacementStore {
     );
   }
 
-  async create(input: EmplacementInput): Promise<{ id: string }> {
+  async create(input: LocationInput): Promise<{ id: string }> {
     const created = await this.api.create(input);
     await this.reload();
     return created;
   }
 
-  async update(id: string, patch: Partial<EmplacementInput>): Promise<void> {
+  async update(id: string, patch: Partial<LocationInput>): Promise<void> {
     await this.api.update(id, patch);
     await this.reload();
   }

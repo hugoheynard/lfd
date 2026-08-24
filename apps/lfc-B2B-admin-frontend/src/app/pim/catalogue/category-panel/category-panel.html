@@ -33,8 +33,8 @@
       <fold-element-title variant="eyebrow" icon="places" title="Canaux par défaut" />
       <app-channel-matrix
         [channels]="draftChannels()"
-        [emplacements]="emplacements()"
-        [unreadable]="emplacementsError()"
+        [locations]="locations()"
+        [unreadable]="locationsError()"
         [showState]="false"
         (channelsChange)="draftChannels.set($event)"
       />

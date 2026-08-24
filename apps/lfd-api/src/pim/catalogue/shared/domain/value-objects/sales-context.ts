@@ -21,7 +21,7 @@ export interface SalesContext {
    * De TRANSITION, et il faut être précis sur ce qui l'est : la matrice est
    * DÉJÀ data-driven **par emplacement** (clé = identifiant, une boutique de
    * plus est une ligne de plus). Ce qui reste fixe, ce sont les **modes** d'un
-   * emplacement — `emporter` / `surPlace` — et le drapeau `b2b`. C'est
+   * location — `emporter` / `surPlace` — et le drapeau `b2b`. C'est
    * exactement ce que cette colonne désigne, et elle mourra quand un emplacement
    * vendra des CONTEXTES au lieu de deux modes nommés.
    */

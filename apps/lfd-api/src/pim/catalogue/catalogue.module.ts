@@ -30,7 +30,7 @@ import { UpdateVariantPricingHandler } from "./product/application/update-varian
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { SalesContextRegistry } from "./shared/domain/ports/sales-context.registry.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
-import { KnownEmplacementsReader } from "./category/domain/ports/known-emplacements.reader.js";
+import { KnownLocationsReader } from "./category/domain/ports/known-locations.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
@@ -45,7 +45,7 @@ import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
-import { PrismaKnownEmplacementsReader } from "./category/infrastructure/prisma-known-emplacements.reader.js";
+import { PrismaKnownLocationsReader } from "./category/infrastructure/prisma-known-locations.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
@@ -104,9 +104,9 @@ import {
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches
     // interroge les produits, l'existence d'un emplacement interroge les
-    // emplacements. Ni l'un ni l'autre n'est la persistance d'une famille.
+    // locations. Ni l'un ni l'autre n'est la persistance d'une famille.
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
-    { provide: KnownEmplacementsReader, useClass: PrismaKnownEmplacementsReader },
+    { provide: KnownLocationsReader, useClass: PrismaKnownLocationsReader },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },

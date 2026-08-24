@@ -21,11 +21,11 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-/** Une par famille de contrôleurs : catalogue, commerce, emplacements, canaux. */
+/** Une par famille de contrôleurs : catalogue, commerce, locations, canaux. */
 const ROUTES = [
   "/pim/catalogue/products",
   "/pim/catalogue/categories",
-  "/pim/commerce/vat-rates",
+  "/pim/commerce/tva-rates",
   "/pim/locations/emplacements",
   "/pim/channels/b2b/products",
 ] as const;

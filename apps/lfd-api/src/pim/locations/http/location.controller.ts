@@ -1,24 +1,24 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
-  createEmplacementPayloadSchema,
-  updateEmplacementPayloadSchema,
-  type CreateEmplacementPayload,
-  type EmplacementView,
-  type UpdateEmplacementPayload,
+  createLocationPayloadSchema,
+  updateLocationPayloadSchema,
+  type CreateLocationPayload,
+  type LocationView,
+  type UpdateLocationPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { CreateEmplacementCommand } from "../application/create-emplacement.js";
-import { DeleteEmplacementCommand } from "../application/delete-emplacement.js";
+import { CreateLocationCommand } from "../application/create-location.js";
+import { DeleteLocationCommand } from "../application/delete-location.js";
 import { GenerateTableQrCommand } from "../application/generate-table-qr.js";
-import { ListEmplacementsQuery } from "../application/list-emplacements.js";
+import { ListLocationsQuery } from "../application/list-locations.js";
 import { RemoveTableQrCommand } from "../application/remove-table-qr.js";
-import { UpdateEmplacementCommand } from "../application/update-emplacement.js";
+import { UpdateLocationCommand } from "../application/update-location.js";
 
 /**
- * Emplacements (boutiques : modes + tables + QR click & collect) — dispatchés sur
+ * Locations (boutiques : modes + tables + QR click & collect) — dispatchés sur
  * les bus CQRS.
  *
  * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
@@ -28,45 +28,41 @@ import { UpdateEmplacementCommand } from "../application/update-emplacement.js";
  */
 @AdminSurface("catalog")
 @Controller("locations/emplacements")
-export class EmplacementController {
+export class LocationController {
   constructor(
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
 
   @Get()
-  listEmplacements(): Promise<EmplacementView[]> {
-    return this.queries.execute<ListEmplacementsQuery, EmplacementView[]>(
-      new ListEmplacementsQuery(),
-    );
+  listLocations(): Promise<LocationView[]> {
+    return this.queries.execute<ListLocationsQuery, LocationView[]>(new ListLocationsQuery());
   }
 
   @Post()
-  async createEmplacement(
-    @Body(new ZodBody(createEmplacementPayloadSchema))
-    body: CreateEmplacementPayload,
+  async createLocation(
+    @Body(new ZodBody(createLocationPayloadSchema))
+    body: CreateLocationPayload,
   ) {
-    const id = await this.commands.execute<CreateEmplacementCommand, string>(
-      new CreateEmplacementCommand(body),
+    const id = await this.commands.execute<CreateLocationCommand, string>(
+      new CreateLocationCommand(body),
     );
     return { id };
   }
 
   @Put(":id")
-  async updateEmplacement(
+  async updateLocation(
     @Param("id") id: string,
-    @Body(new ZodBody(updateEmplacementPayloadSchema))
-    body: UpdateEmplacementPayload,
+    @Body(new ZodBody(updateLocationPayloadSchema))
+    body: UpdateLocationPayload,
   ) {
-    await this.commands.execute<UpdateEmplacementCommand, void>(
-      new UpdateEmplacementCommand(id, body),
-    );
+    await this.commands.execute<UpdateLocationCommand, void>(new UpdateLocationCommand(id, body));
     return { id };
   }
 
   @Delete(":id")
-  async deleteEmplacement(@Param("id") id: string) {
-    await this.commands.execute<DeleteEmplacementCommand, void>(new DeleteEmplacementCommand(id));
+  async deleteLocation(@Param("id") id: string) {
+    await this.commands.execute<DeleteLocationCommand, void>(new DeleteLocationCommand(id));
     return { id };
   }
 

@@ -2,18 +2,18 @@ import { Module } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
-import { CreateEmplacementHandler } from "./application/create-emplacement.js";
-import { DeleteEmplacementHandler } from "./application/delete-emplacement.js";
+import { CreateLocationHandler } from "./application/create-location.js";
+import { DeleteLocationHandler } from "./application/delete-location.js";
 import { GenerateTableQrHandler } from "./application/generate-table-qr.js";
-import { ListEmplacementsHandler } from "./application/list-emplacements.js";
+import { ListLocationsHandler } from "./application/list-locations.js";
 import { RemoveTableQrHandler } from "./application/remove-table-qr.js";
-import { UpdateEmplacementHandler } from "./application/update-emplacement.js";
-import { EmplacementRepository } from "./domain/ports/emplacement.repository.js";
-import { EmplacementUsageReader } from "./domain/ports/emplacement-usage.reader.js";
+import { UpdateLocationHandler } from "./application/update-location.js";
+import { LocationRepository } from "./domain/ports/location.repository.js";
+import { LocationUsageReader } from "./domain/ports/location-usage.reader.js";
 import { TableTokenGenerator } from "./domain/ports/table-token-generator.js";
-import { EmplacementController } from "./http/emplacement.controller.js";
-import { PrismaEmplacementRepository } from "./infrastructure/prisma-emplacement.repository.js";
-import { PrismaEmplacementUsageReader } from "./infrastructure/prisma-emplacement-usage.reader.js";
+import { LocationController } from "./http/location.controller.js";
+import { PrismaLocationRepository } from "./infrastructure/prisma-location.repository.js";
+import { PrismaLocationUsageReader } from "./infrastructure/prisma-location-usage.reader.js";
 import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-generator.js";
 
 /**
@@ -23,18 +23,18 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
  */
 @Module({
   imports: [PimDatabaseModule],
-  controllers: [EmplacementController],
+  controllers: [LocationController],
   providers: [
-    CreateEmplacementHandler,
-    UpdateEmplacementHandler,
-    DeleteEmplacementHandler,
+    CreateLocationHandler,
+    UpdateLocationHandler,
+    DeleteLocationHandler,
     GenerateTableQrHandler,
     RemoveTableQrHandler,
-    ListEmplacementsHandler,
+    ListLocationsHandler,
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: TableTokenGenerator, useClass: UuidTableTokenGenerator },
-    { provide: EmplacementRepository, useClass: PrismaEmplacementRepository },
-    { provide: EmplacementUsageReader, useClass: PrismaEmplacementUsageReader },
+    { provide: LocationRepository, useClass: PrismaLocationRepository },
+    { provide: LocationUsageReader, useClass: PrismaLocationUsageReader },
   ],
 })
 export class LocationsModule {}

@@ -3,7 +3,7 @@ import { FoldButtonIconComponent, FoldPanelHostService } from 'fold-ng';
 
 import { formatPercent } from '../../../../data/channels';
 import { ProductFormStore, type ChannelInheritance } from '../../product-form-store';
-import { EmplacementStore } from '../../../../emplacements/emplacement-store';
+import { LocationStore } from '../../../../locations/location-store';
 import {
   ChannelsOverridePanel,
   type ChannelsOverridePanelData,
@@ -68,7 +68,7 @@ export class ChannelsForm {
     }
   }
 
-  private readonly emplacementStore = inject(EmplacementStore);
+  private readonly locationStore = inject(LocationStore);
 
   /**
    * Ouvre la matrice de la fiche.
@@ -81,8 +81,8 @@ export class ChannelsForm {
     const data: ChannelsOverridePanelData = {
       current: this.store.channelsOverride(),
       inherited: this.store.familyChannels(),
-      emplacements: this.emplacementStore.items(),
-      unreadable: this.emplacementStore.loadError(),
+      locations: this.locationStore.items(),
+      unreadable: this.locationStore.loadError(),
     };
     const chosen = await this.panelHost.open<
       ChannelsOverridePanelData,

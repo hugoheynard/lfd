@@ -13,8 +13,8 @@ import {
 } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
-import { CategoryUnknownEmplacementError } from "../../../category/domain/errors/category-errors.js";
-import { KnownEmplacementsReader } from "../../../category/domain/ports/known-emplacements.reader.js";
+import { CategoryUnknownLocationError } from "../../../category/domain/errors/category-errors.js";
+import { KnownLocationsReader } from "../../../category/domain/ports/known-locations.reader.js";
 import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
 
@@ -76,12 +76,12 @@ function snapshot(
 }
 
 /** Tous les emplacements cités existent — le mur du `jsonb`, ouvert. */
-const allEmplacementsKnown: KnownEmplacementsReader = {
+const allLocationsKnown: KnownLocationsReader = {
   existing: (ids: readonly string[]) => Promise.resolve(new Set(ids)),
 };
 
 /** Aucun n'existe : la fiche cite un emplacement fantôme. */
-const noEmplacementKnown: KnownEmplacementsReader = {
+const noLocationKnown: KnownLocationsReader = {
   existing: () => Promise.resolve(new Set<string>()),
 };
 
@@ -246,7 +246,7 @@ describe("SetProductChannelsHandler", () => {
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allEmplacementsKnown,
+      allLocationsKnown,
       registry,
       journal,
     ).execute(new SetProductChannelsCommand("prd_1", { boutiques: {}, b2b: true }));
@@ -261,7 +261,7 @@ describe("SetProductChannelsHandler", () => {
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allEmplacementsKnown,
+      allLocationsKnown,
       registry,
       new RecordingJournal(),
     ).execute(new SetProductChannelsCommand("prd_1", null));
@@ -271,7 +271,7 @@ describe("SetProductChannelsHandler", () => {
 
   it("refuse un emplacement qui n’existe pas", async () => {
     // La grille est du `jsonb` : aucune clé étrangère ne tient la référence. Un
-    // emplacement fantôme serait accepté, persisté, puis rendu INVISIBLE par
+    // location fantôme serait accepté, persisté, puis rendu INVISIBLE par
     // l'écran, qui ignore les clés inconnues.
     const products = new FakeProducts(snapshot());
 
@@ -279,7 +279,7 @@ describe("SetProductChannelsHandler", () => {
       new SetProductChannelsHandler(
         products,
         familySelling(SELLS_ALL),
-        noEmplacementKnown,
+        noLocationKnown,
         registry,
         new RecordingJournal(),
       ).execute(
@@ -288,7 +288,7 @@ describe("SetProductChannelsHandler", () => {
           b2b: false,
         }),
       ),
-    ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
+    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
   });
 
   it("EFFACE le taux d’un canal que la fiche vient de fermer", async () => {
@@ -301,7 +301,7 @@ describe("SetProductChannelsHandler", () => {
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allEmplacementsKnown,
+      allLocationsKnown,
       registry,
       new RecordingJournal(),
     ).execute(

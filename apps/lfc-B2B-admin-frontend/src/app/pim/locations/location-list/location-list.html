@@ -6,9 +6,9 @@
 
 <!-- Trois vides, trois causes, trois gestes : rien du tout, rien parce qu'on
      n'a pas pu lire, ou une vraie liste. Il n'y en avait AUCUN — zéro
-     emplacement rendait une page blanche, et un chargement échoué rendait
+     location rendait une page blanche, et un chargement échoué rendait
      exactement la même. -->
-@if (emplacements().length === 0) {
+@if (locations().length === 0) {
   @if (loadError(); as reason) {
     <fold-empty-state
       tone="alert"
@@ -27,7 +27,7 @@
   }
 }
 
-@for (emp of emplacements(); track emp.id) {
+@for (emp of locations(); track emp.id) {
   <fold-card class="emp">
     <fold-element-title
       cardHeader

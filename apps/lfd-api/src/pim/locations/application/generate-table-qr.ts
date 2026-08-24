@@ -1,13 +1,13 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
+import { LocationRepository } from "../domain/ports/location.repository.js";
 import { TableTokenGenerator } from "../domain/ports/table-token-generator.js";
-import { EmplacementTableNotFoundError } from "../domain/errors/locations-errors.js";
-import { requireEmplacement } from "./emplacement-support.js";
+import { LocationTableNotFoundError } from "../domain/errors/locations-errors.js";
+import { requireLocation } from "./location-support.js";
 
 export class GenerateTableQrCommand {
   constructor(
-    readonly emplacementId: string,
+    readonly locationId: string,
     readonly tableNumber: number,
   ) {}
 }
@@ -19,18 +19,18 @@ export class GenerateTableQrCommand {
 @CommandHandler(GenerateTableQrCommand)
 export class GenerateTableQrHandler implements ICommandHandler<GenerateTableQrCommand, string> {
   constructor(
-    private readonly emplacements: EmplacementRepository,
+    private readonly locations: LocationRepository,
     private readonly tokens: TableTokenGenerator,
   ) {}
 
   async execute(command: GenerateTableQrCommand): Promise<string> {
-    const emplacement = await requireEmplacement(this.emplacements, command.emplacementId);
+    const location = await requireLocation(this.locations, command.locationId);
     const token = this.tokens.next();
     // L'agrégat sait si la table existe ; le handler traduit ce « non » en 404.
-    if (!emplacement.attachQr(command.tableNumber, token)) {
-      throw new EmplacementTableNotFoundError(command.emplacementId, command.tableNumber);
+    if (!location.attachQr(command.tableNumber, token)) {
+      throw new LocationTableNotFoundError(command.locationId, command.tableNumber);
     }
-    await this.emplacements.save(emplacement);
+    await this.locations.save(location);
     return token;
   }
 }

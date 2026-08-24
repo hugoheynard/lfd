@@ -5,7 +5,7 @@
        défaut ramène. -->
   <app-channel-matrix
     [channels]="shown()"
-    [emplacements]="data().emplacements"
+    [locations]="data().locations"
     [unreadable]="data().unreadable"
     [inherited]="draft() === null"
     (channelsChange)="write($event)"

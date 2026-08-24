@@ -24,7 +24,7 @@ export const pimRoutes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'produits' },
       {
-        path: 'vat',
+        path: 'tva',
         // Le référentiel fiscal a sa propre ressource : la comptabilité l'écrit,
         // alors qu'elle ne fait que lire le reste du catalogue. Le parent exige
         // déjà `catalog:read`, mais c'est `tax:read` qui décide de CET écran —
@@ -57,8 +57,7 @@ export const pimRoutes: Routes = [
       {
         path: 'emplacements',
         title: 'Emplacements — LFC B2B admin',
-        loadComponent: () =>
-          import('./emplacements/emplacements-page').then((m) => m.EmplacementsPage),
+        loadComponent: () => import('./locations/locations-page').then((m) => m.LocationsPage),
       },
       {
         path: 'integration',

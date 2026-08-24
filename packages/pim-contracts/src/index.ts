@@ -42,14 +42,14 @@ export type {
 
 export {
   MAX_TABLES,
-  createEmplacementPayloadSchema,
-  updateEmplacementPayloadSchema,
+  createLocationPayloadSchema,
+  updateLocationPayloadSchema,
 } from "./locations.js";
 export type {
-  CreateEmplacementPayload,
-  UpdateEmplacementPayload,
+  CreateLocationPayload,
+  UpdateLocationPayload,
   TableView,
-  EmplacementView,
+  LocationView,
   TableQrResponse,
 } from "./locations.js";
 

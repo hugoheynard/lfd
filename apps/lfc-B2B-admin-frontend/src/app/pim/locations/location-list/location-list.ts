@@ -18,25 +18,25 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import type { Emplacement, EmplacementTable } from '../../data/models';
+import type { Location, LocationTable } from '../../data/models';
 import { slugify } from '../../data/sku';
-import { EmplacementStore } from '../emplacement-store';
+import { LocationStore } from '../location-store';
 import {
-  EmplacementFormPanel,
-  type EmplacementPanelData,
-} from '../emplacement-form-panel/emplacement-form-panel';
+  LocationFormPanel,
+  type LocationPanelData,
+} from '../location-form-panel/location-form-panel';
 import { QrCode } from '../../../shared/qr-code/qr-code';
 import { qrSvgString } from '../../../shared/qr-code/qr';
 
 /**
  * La **liste des emplacements** — une carte par boutique. Elle lit le
- * {@link EmplacementStore} (backend), donc création / édition / suppression se
+ * {@link LocationStore} (backend), donc création / édition / suppression se
  * voient tout de suite. Chaque carte porte un menu (modifier / supprimer) qui
  * ouvre le side-panel ; les réglages ne s'éditent plus en place. La gestion des
  * QR de table (générer / retirer / exporter) reste sur la carte.
  */
 @Component({
-  selector: 'app-emplacement-list',
+  selector: 'app-location-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldCardComponent,
@@ -53,27 +53,27 @@ import { qrSvgString } from '../../../shared/qr-code/qr';
     FoldPopoverTriggerDirective,
     QrCode,
   ],
-  templateUrl: './emplacement-list.html',
-  styleUrl: './emplacement-list.scss',
+  templateUrl: './location-list.html',
+  styleUrl: './location-list.scss',
 })
-export class EmplacementList {
-  private readonly store = inject(EmplacementStore);
+export class LocationList {
+  private readonly store = inject(LocationStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
   /** Liste réactive : suit le store, donc les mutations du panel se voient direct. */
-  protected readonly emplacements = this.store.items;
+  protected readonly locations = this.store.items;
   /** Pourquoi la liste est vide — `null` = elle l'est vraiment. */
   protected readonly loadError = this.store.loadError;
 
   /** Erreurs des actions QR (les mutations de la boutique remontent via le panel). */
   protected readonly error = signal<string | null>(null);
 
-  protected modesLabel(emplacement: Emplacement): string {
+  protected modesLabel(location: Location): string {
     const modes: string[] = [];
-    if (emplacement.clickCollect) {
+    if (location.clickCollect) {
       modes.push('Click & collect');
     }
-    if (emplacement.surPlace) {
+    if (location.surPlace) {
       modes.push('Sur place');
     }
     return modes.length === 0 ? 'Aucun mode actif' : modes.join(' · ');
@@ -81,23 +81,23 @@ export class EmplacementList {
 
   /** URL de click & collect d'une table — `table` verrouillé, `k` = token
    *  rotatif (présent une fois le QR généré). */
-  protected tableUrl(emplacement: Emplacement, table: EmplacementTable): string {
-    const base = `${emplacement.baseUrl}?table=${table.number}`;
+  protected tableUrl(location: Location, table: LocationTable): string {
+    const base = `${location.baseUrl}?table=${table.number}`;
     return table.token === undefined ? base : `${base}&k=${table.token}`;
   }
 
   /** Édition : side-panel prérempli sur cette boutique. */
-  protected openEdit(emplacement: Emplacement): void {
-    this.openPanel({ mode: 'edit', emplacement });
+  protected openEdit(location: Location): void {
+    this.openPanel({ mode: 'edit', location });
   }
 
   /** Suppression : side-panel en zone dangereuse (confirmation par le nom). */
-  protected openDelete(emplacement: Emplacement): void {
-    this.openPanel({ mode: 'delete', emplacement });
+  protected openDelete(location: Location): void {
+    this.openPanel({ mode: 'delete', location });
   }
 
-  private openPanel(data: EmplacementPanelData): void {
-    this.panelHost.open(EmplacementFormPanel, { data, side: 'right' });
+  private openPanel(data: LocationPanelData): void {
+    this.panelHost.open(LocationFormPanel, { data, side: 'right' });
   }
 
   /** Génère ou **régénère** : le backend mint un token neuf → nouveau QR,
@@ -111,12 +111,12 @@ export class EmplacementList {
   }
 
   /** Export vectoriel nommé : `qr-{boutique}-table-N.svg`. */
-  protected exportQr(emplacement: Emplacement, table: EmplacementTable): void {
+  protected exportQr(location: Location, table: LocationTable): void {
     if (typeof document === 'undefined') {
       return;
     }
-    const svg = qrSvgString(this.tableUrl(emplacement, table));
-    const filename = `qr-${slugify(emplacement.name)}-table-${table.number}.svg`;
+    const svg = qrSvgString(this.tableUrl(location, table));
+    const filename = `qr-${slugify(location.name)}-table-${table.number}.svg`;
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement('a');

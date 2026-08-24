@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { KnownEmplacementsReader } from "../domain/ports/known-emplacements.reader.js";
+import { KnownLocationsReader } from "../domain/ports/known-locations.reader.js";
 
 @Injectable()
-export class PrismaKnownEmplacementsReader extends KnownEmplacementsReader {
+export class PrismaKnownLocationsReader extends KnownLocationsReader {
   constructor(private readonly prisma: PimPrismaService) {
     super();
   }
@@ -17,7 +17,7 @@ export class PrismaKnownEmplacementsReader extends KnownEmplacementsReader {
     if (ids.length === 0) {
       return new Set();
     }
-    const rows = await this.prisma.emplacement.findMany({
+    const rows = await this.prisma.location.findMany({
       where: { id: { in: [...ids] } },
       select: { id: true },
     });

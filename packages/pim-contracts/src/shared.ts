@@ -91,7 +91,7 @@ export interface BoutiqueChannels {
 /**
  * Où et comment une gamme se vend.
  *
- * Les emplacements sont une **donnée** : la carte est indexée par identifiant
+ * Les locations sont une **donnée** : la carte est indexée par identifiant
  * d'emplacement, jamais par des clés fixes. Ouvrir un point de vente est une
  * ligne de plus dans le référentiel, pas une migration.
  *

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
-import { Emplacement } from "../domain/entities/emplacement.js";
-import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
+import { Location } from "../domain/entities/location.js";
+import { LocationRepository } from "../domain/ports/location.repository.js";
 import type { TableState } from "../domain/value-objects/table.js";
 
 interface TableRow {
@@ -11,7 +11,7 @@ interface TableRow {
   token: string | null;
 }
 
-interface EmplacementRow {
+interface LocationRow {
   id: string;
   name: string;
   clickCollect: boolean;
@@ -20,8 +20,8 @@ interface EmplacementRow {
   tables: TableRow[];
 }
 
-function toEmplacement(row: EmplacementRow): Emplacement {
-  return Emplacement.reconstitute({
+function toLocation(row: LocationRow): Location {
+  return Location.reconstitute({
     id: row.id,
     name: row.name,
     clickCollect: row.clickCollect,
@@ -37,7 +37,7 @@ function toEmplacement(row: EmplacementRow): Emplacement {
 
 function tableRows(id: string, tables: readonly TableState[]) {
   return tables.map((table) => ({
-    emplacementId: id,
+    locationId: id,
     number: table.number,
     qrCreated: table.qrCreated,
     token: table.token,
@@ -47,17 +47,17 @@ function tableRows(id: string, tables: readonly TableState[]) {
 const WITH_TABLES = { tables: { orderBy: { number: "asc" } } } as const;
 
 @Injectable()
-export class PrismaEmplacementRepository extends EmplacementRepository {
+export class PrismaLocationRepository extends LocationRepository {
   constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
-  async listAll(): Promise<Emplacement[]> {
-    const rows = await this.prisma.emplacement.findMany({
+  async listAll(): Promise<Location[]> {
+    const rows = await this.prisma.location.findMany({
       orderBy: [{ name: "asc" }],
       include: WITH_TABLES,
     });
-    return rows.map(toEmplacement);
+    return rows.map(toLocation);
   }
 
   /**
@@ -65,25 +65,25 @@ export class PrismaEmplacementRepository extends EmplacementRepository {
    * `toLowerCase()` en mémoire : on ne lit pas la table entière pour trouver
    * un nom.
    */
-  async findByName(name: string): Promise<Emplacement | null> {
-    const row = await this.prisma.emplacement.findFirst({
+  async findByName(name: string): Promise<Location | null> {
+    const row = await this.prisma.location.findFirst({
       where: { name: { equals: name, mode: "insensitive" } },
       include: WITH_TABLES,
     });
-    return row === null ? null : toEmplacement(row);
+    return row === null ? null : toLocation(row);
   }
 
-  async findById(id: string): Promise<Emplacement | null> {
-    const row = await this.prisma.emplacement.findUnique({
+  async findById(id: string): Promise<Location | null> {
+    const row = await this.prisma.location.findUnique({
       where: { id },
       include: WITH_TABLES,
     });
-    return row === null ? null : toEmplacement(row);
+    return row === null ? null : toLocation(row);
   }
 
-  async add(emplacement: Emplacement): Promise<void> {
-    const snapshot = emplacement.snapshot();
-    await this.prisma.emplacement.create({
+  async add(location: Location): Promise<void> {
+    const snapshot = location.snapshot();
+    await this.prisma.location.create({
       data: {
         id: snapshot.id,
         name: snapshot.name,
@@ -113,10 +113,10 @@ export class PrismaEmplacementRepository extends EmplacementRepository {
    * quelques centaines de lignes au plus (`MAX_TABLES`), et un diff coûterait
    * plus en complexité qu'il ne gagne en écritures.
    */
-  async save(emplacement: Emplacement): Promise<void> {
-    const snapshot = emplacement.snapshot();
+  async save(location: Location): Promise<void> {
+    const snapshot = location.snapshot();
     await this.prisma.$transaction([
-      this.prisma.emplacement.update({
+      this.prisma.location.update({
         where: { id: snapshot.id },
         data: {
           name: snapshot.name,
@@ -125,14 +125,14 @@ export class PrismaEmplacementRepository extends EmplacementRepository {
           baseUrl: snapshot.baseUrl,
         },
       }),
-      this.prisma.emplacementTable.deleteMany({ where: { emplacementId: snapshot.id } }),
-      this.prisma.emplacementTable.createMany({
+      this.prisma.locationTable.deleteMany({ where: { locationId: snapshot.id } }),
+      this.prisma.locationTable.createMany({
         data: tableRows(snapshot.id, snapshot.tables),
       }),
     ]);
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.emplacement.delete({ where: { id } });
+    await this.prisma.location.delete({ where: { id } });
   }
 }

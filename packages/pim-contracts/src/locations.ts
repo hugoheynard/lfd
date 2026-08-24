@@ -11,23 +11,23 @@ export const MAX_TABLES = 200;
 
 const tableCountSchema = z.number().int().min(0).max(MAX_TABLES);
 
-export const createEmplacementPayloadSchema = z.object({
+export const createLocationPayloadSchema = z.object({
   name: z.string().min(1),
   clickCollect: z.boolean(),
   surPlace: z.boolean(),
   baseUrl: z.string(),
   tableCount: tableCountSchema,
 });
-export type CreateEmplacementPayload = z.infer<typeof createEmplacementPayloadSchema>;
+export type CreateLocationPayload = z.infer<typeof createLocationPayloadSchema>;
 
-export const updateEmplacementPayloadSchema = z.object({
+export const updateLocationPayloadSchema = z.object({
   name: z.string().min(1).optional(),
   clickCollect: z.boolean().optional(),
   surPlace: z.boolean().optional(),
   baseUrl: z.string().optional(),
   tableCount: tableCountSchema.optional(),
 });
-export type UpdateEmplacementPayload = z.infer<typeof updateEmplacementPayloadSchema>;
+export type UpdateLocationPayload = z.infer<typeof updateLocationPayloadSchema>;
 
 /** Vue d'une table : `number` verrouillé, `token` présent une fois le QR généré. */
 export interface TableView {
@@ -37,7 +37,7 @@ export interface TableView {
 }
 
 /** Vue d'un emplacement telle que l'API la rend. */
-export interface EmplacementView {
+export interface LocationView {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
@@ -45,7 +45,7 @@ export interface EmplacementView {
   readonly baseUrl: string;
   readonly tables: readonly TableView[];
   /**
-   * Combien de **familles** cochent cet emplacement dans leurs canaux.
+   * Combien de **familles** cochent cet location dans leurs canaux.
    *
    * Voyage avec la vue pour que l'écran le DISE avant le clic : le référentiel
    * refuse de supprimer un point de vente encore vendeur, et un bouton dont on

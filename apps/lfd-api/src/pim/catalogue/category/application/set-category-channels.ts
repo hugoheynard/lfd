@@ -1,11 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { CategoryUnknownEmplacementError } from "../domain/errors/category-errors.js";
+import { CategoryUnknownLocationError } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { KnownEmplacementsReader } from "../domain/ports/known-emplacements.reader.js";
+import { KnownLocationsReader } from "../domain/ports/known-locations.reader.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
 import {
-  referencedEmplacements,
+  referencedLocations,
   type SalesChannels,
 } from "../../shared/domain/value-objects/sales-channels.js";
 import { requireCategory } from "./category-support.js";
@@ -21,7 +21,7 @@ export class SetCategoryChannelsCommand {
  * Règle où une famille se vend — et **refuse un emplacement qui n'existe pas**.
  *
  * La grille est indexée par identifiant d'emplacement dans une colonne `jsonb` :
- * aucune clé étrangère ne tient cette référence. `DeleteEmplacement` en tire
+ * aucune clé étrangère ne tient cette référence. `DeleteLocation` en tire
  * déjà la conséquence et refuse de supprimer sous une famille qui coche. Rien
  * ne gardait le sens inverse : un preset citant `emp_fantome` était accepté,
  * persisté, puis rendu INVISIBLE par l'écran — qui ignore les clés inconnues.
@@ -34,25 +34,25 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
 > {
   constructor(
     private readonly categories: CategoryRepository,
-    private readonly emplacements: KnownEmplacementsReader,
+    private readonly locations: KnownLocationsReader,
     private readonly contexts: SalesContextRegistry,
   ) {}
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
-    await this.refuseUnknownEmplacements(command.channels);
+    await this.refuseUnknownLocations(command.channels);
     // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
     // lui qui sait quel contexte s'appuie sur quel canal.
     category.setChannels(command.channels, await this.contexts.active());
     await this.categories.save(category);
   }
 
-  private async refuseUnknownEmplacements(channels: SalesChannels): Promise<void> {
-    const cited = referencedEmplacements(channels);
-    const known = await this.emplacements.existing(cited);
+  private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {
+    const cited = referencedLocations(channels);
+    const known = await this.locations.existing(cited);
     for (const id of cited) {
       if (!known.has(id)) {
-        throw new CategoryUnknownEmplacementError(id);
+        throw new CategoryUnknownLocationError(id);
       }
     }
   }

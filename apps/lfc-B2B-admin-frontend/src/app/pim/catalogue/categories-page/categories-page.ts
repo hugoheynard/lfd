@@ -18,7 +18,7 @@ import {
 import { boutiquesWith } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { VatRateStore } from '../vat-rates/vat-store';
-import { EmplacementStore } from '../../emplacements/emplacement-store';
+import { LocationStore } from '../../locations/location-store';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 import type { Category } from '../catalogue-api';
 
@@ -68,7 +68,7 @@ import type { Category } from '../catalogue-api';
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
   private readonly tvaStore = inject(VatRateStore);
-  private readonly emplacementStore = inject(EmplacementStore);
+  private readonly locationStore = inject(LocationStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
   /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
@@ -77,7 +77,7 @@ export class CategoriesPage {
   protected readonly showArchived = signal(false);
   protected readonly rates = this.tvaStore.items;
   /** Les noms affichés dans les pastilles viennent du référentiel. */
-  protected readonly emplacements = this.emplacementStore.items;
+  protected readonly locations = this.locationStore.items;
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
@@ -150,11 +150,11 @@ export class CategoriesPage {
   }
 
   protected presetEmporter(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'emporter', this.emplacements());
+    return boutiquesWith(category.channelPreset, 'emporter', this.locations());
   }
 
   protected presetSurPlace(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'surPlace', this.emplacements());
+    return boutiquesWith(category.channelPreset, 'surPlace', this.locations());
   }
 
   /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */

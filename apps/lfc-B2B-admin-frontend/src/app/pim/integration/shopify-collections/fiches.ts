@@ -1,6 +1,6 @@
 import { slugify } from '../../data/sku';
 import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
-import type { Category, Emplacement, Product, VatRate } from '../../data/models';
+import type { Category, Location, Product, VatRate } from '../../data/models';
 
 /**
  * **Les fiches Shopify** qu'un produit engendre au push — et rien d'autre.
@@ -72,13 +72,13 @@ export function generateFiches(
   product: Product,
   category: Category,
   regimeById: ReadonlyMap<string, VatRate>,
-  emplacements: readonly Emplacement[],
+  locations: readonly Location[],
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
-  const emporter = boutiquesWith(channels, 'emporter', emplacements);
+  const emporter = boutiquesWith(channels, 'emporter', locations);
   if (emporter.length > 0) {
     const rate = rateOfContext(category, 'emporter', regimeById);
     fiches.push({
@@ -91,7 +91,7 @@ export function generateFiches(
     });
   }
 
-  const surPlace = boutiquesWith(channels, 'surPlace', emplacements);
+  const surPlace = boutiquesWith(channels, 'surPlace', locations);
   if (surPlace.length > 0) {
     const rate = rateOfContext(category, 'surPlace', regimeById);
     fiches.push({

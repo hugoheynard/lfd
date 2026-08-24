@@ -7,7 +7,7 @@ export interface BoutiqueChannels {
 /**
  * Où et comment une gamme se vend.
  *
- * ## Les emplacements sont une DONNÉE, plus des clés
+ * ## Les locations sont une DONNÉE, plus des clés
  *
  * C'était `{ b1: …, b2: … }` — deux boutiques nommées en dur dans un type, avec
  * leurs libellés dans une constante du front. Ouvrir un troisième point de
@@ -15,13 +15,13 @@ export interface BoutiqueChannels {
  * les lecteurs. Et le nom affiché avait divergé du réel : l'écran proposait
  * « Ardroit » pour un emplacement qui s'appelle « Labo » en base.
  *
- * La grille est donc indexée par **identifiant d'emplacement**. Un emplacement
- * de plus est une ligne de plus dans `pim.emplacement`, et rien d'autre.
+ * La grille est donc indexée par **identifiant d'emplacement**. Un location
+ * de plus est une ligne de plus dans `pim.location`, et rien d'autre.
  *
  * ## Le B2B reste à part
  *
  * Un booléen, pas une entrée de la carte : la plateforme n'est pas un
- * emplacement, et un professionnel qui commande en gros ne consomme ni sur
+ * location, et un professionnel qui commande en gros ne consomme ni sur
  * place ni à emporter. L'y ranger obligerait à lui inventer deux modes.
  *
  * ⚠️ Ceci reste une **intention** héritée par les fiches. Le fait qu'un produit
@@ -29,7 +29,7 @@ export interface BoutiqueChannels {
  * son auteur.
  */
 export interface SalesChannels {
-  /** Par emplacement, clé = son identifiant. Une clé absente = rien n'y est vendu. */
+  /** Par location, clé = son identifiant. Une clé absente = rien n'y est vendu. */
   readonly boutiques: Readonly<Record<string, BoutiqueChannels>>;
   readonly b2b: boolean;
 }
@@ -63,6 +63,6 @@ export function sellsMode(channels: SalesChannels, mode: keyof BoutiqueChannels)
 }
 
 /** Les identifiants d'emplacement que cette grille référence. */
-export function referencedEmplacements(channels: SalesChannels): string[] {
+export function referencedLocations(channels: SalesChannels): string[] {
   return Object.keys(channels.boutiques);
 }

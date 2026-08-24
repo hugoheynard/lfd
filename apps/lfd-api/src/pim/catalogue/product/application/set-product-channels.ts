@@ -2,12 +2,12 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
-import { CategoryUnknownEmplacementError } from "../../category/domain/errors/category-errors.js";
+import { CategoryUnknownLocationError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
-import { KnownEmplacementsReader } from "../../category/domain/ports/known-emplacements.reader.js";
+import { KnownLocationsReader } from "../../category/domain/ports/known-locations.reader.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
 import {
-  referencedEmplacements,
+  referencedLocations,
   type SalesChannels,
 } from "../../shared/domain/value-objects/sales-channels.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
@@ -38,7 +38,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly emplacements: KnownEmplacementsReader,
+    private readonly locations: KnownLocationsReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
   ) {}
@@ -46,7 +46,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
   async execute(command: SetProductChannelsCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
     if (command.channels !== null) {
-      await this.refuseUnknownEmplacements(command.channels);
+      await this.refuseUnknownLocations(command.channels);
     }
     const category = await requireCategory(this.categories, product.categoryId);
 
@@ -58,17 +58,17 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
 
   /**
    * La grille est indexée par identifiant d'emplacement dans une colonne
-   * `jsonb` : aucune clé étrangère ne tient cette référence. Un emplacement
+   * `jsonb` : aucune clé étrangère ne tient cette référence. Un location
    * fantôme serait accepté, persisté, puis rendu INVISIBLE par l'écran — qui
    * ignore les clés inconnues. Le mur existe déjà pour les familles ; une fiche
    * qui déroge doit rencontrer le même.
    */
-  private async refuseUnknownEmplacements(channels: SalesChannels): Promise<void> {
-    const cited = referencedEmplacements(channels);
-    const known = await this.emplacements.existing(cited);
+  private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {
+    const cited = referencedLocations(channels);
+    const known = await this.locations.existing(cited);
     for (const id of cited) {
       if (!known.has(id)) {
-        throw new CategoryUnknownEmplacementError(id);
+        throw new CategoryUnknownLocationError(id);
       }
     }
   }

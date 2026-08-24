@@ -188,7 +188,7 @@ const CATEGORY_ICON =
   '</svg>';
 
 /**
- * Les emplacements — deux bâtiments, le grand et l'annexe. Source : SVG Repo
+ * Les locations — deux bâtiments, le grand et l'annexe. Source : SVG Repo
  * (domaine public).
  *
  * Dessin **plein** (des blocs percés de fenêtres), pas un tracé au trait :
@@ -405,7 +405,7 @@ const PRINT_ICON =
  * Un compte client — la fenêtre du dossier, sa fiche et ses lignes. Source :
  * SVG Repo (domaine public). Remplace le `company` de l'onglet « Comptes
  * clients » : `company` dessine un bâtiment, c'est-à-dire l'ENTREPRISE ; ici on
- * range des dossiers, et le même glyphe servait déjà aux emplacements.
+ * range des dossiers, et le même glyphe servait déjà aux locations.
  *
  * Nommée `customer-account` et non `client-account` : **`customer` est le mot
  * du domaine** — `CustomerRole`, `Principal.role`, l'audience Auth0 des

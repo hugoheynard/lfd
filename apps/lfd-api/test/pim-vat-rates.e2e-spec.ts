@@ -16,7 +16,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-const RATES = "/pim/commerce/vat-rates";
+const RATES = "/pim/commerce/tva-rates";
 const CATEGORIES = "/pim/catalogue/categories";
 
 let ctx: E2eContext;
