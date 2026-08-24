@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldDropdownComponent,
@@ -36,27 +35,25 @@ function formatBytes(bytes: number): string {
     : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-const MEDIA_ROLES: readonly { value: string; label: string }[] = [
-  { value: 'hero', label: 'Principale' },
-  { value: 'gallery', label: 'Galerie' },
-  { value: 'lifestyle', label: 'Ambiance' },
-  { value: 'thumbnail', label: 'Miniature' },
-  { value: 'print', label: 'Impression' },
-];
-
 /**
  * Panneau **Visuels** — dépôt de fichier vers la bibliothèque média, puis
  * composition de la liste du produit.
  *
  * Les deux gestes sont volontairement distincts : déposer crée un fichier et ne
  * touche à aucune fiche ; enregistrer remplace la liste entière du produit.
+ *
+ * **Cette section AGRÈGE des ressources, elle ne les classe pas.** Il n'y a donc
+ * ni « principale » ni rôle à choisir ici : quelle image une boutique prend pour
+ * vignette est une décision du CANAL, comme le handle Shopify, et elle vivra
+ * dans « Diffusion par canal ». La notion de principale n'avait d'ailleurs
+ * aucun consommateur — ni la projection Shopify ni le B2B ne lisent le rôle ;
+ * elle affirmait une hiérarchie que rien ne consommait.
  */
 @Component({
   selector: 'app-visuals-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LangSwitch,
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldDropdownComponent,
@@ -75,7 +72,6 @@ export class VisualsPanel {
   protected readonly missingHint = computed(() =>
     missingSentence('Des textes alternatifs manquent', this.store.mediaMissing()),
   );
-  protected readonly roles = MEDIA_ROLES;
 
   /**
    * La FORME du fichier, réduite — « 4:3 », « 16:9 », « 1:1 ».

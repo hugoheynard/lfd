@@ -148,12 +148,6 @@ app-lang-switch {
   min-width: 0;
 }
 
-/* La principale se voit AVANT de lire son étiquette. */
-.media-tile.is-hero {
-  border-color: var(--fold-color-primary);
-  box-shadow: inset 0 0 0 1px var(--fold-color-primary);
-}
-
 /* Ce qui pèche se voit sur la VIGNETTE, pas dans un panneau : c'est ce qui
    permet de repérer l'image fautive sans ouvrir les trois. */
 .media-tile.is-incomplete {
@@ -175,12 +169,6 @@ app-lang-switch {
     height: 100%;
     object-fit: cover;
   }
-}
-
-.media-badge {
-  position: absolute;
-  top: var(--fold-space-xs);
-  left: var(--fold-space-xs);
 }
 
 .media-menu {

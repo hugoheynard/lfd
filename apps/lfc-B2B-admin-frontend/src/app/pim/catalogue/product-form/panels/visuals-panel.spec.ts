@@ -73,7 +73,10 @@ describe('VisualsPanel', () => {
     (add as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(store.media()).toHaveLength(1);
-    expect(store.media()[0]?.role).toBe('hero');
+    // Un rôle NEUTRE : l'API en exige un, mais l'écran n'en propose plus. Le
+    // premier déposé devenait « hero », ce qui affirmait une hiérarchie que ni
+    // Shopify ni le B2B ne lisent.
+    expect(store.media()[0]?.role).toBe('gallery');
   });
 
   it('retire un visuel', () => {
@@ -107,21 +110,27 @@ describe('VisualsPanel', () => {
     expect(tiles[1]?.textContent).toContain('Texte alternatif manquant');
   });
 
-  it('désigne la PRINCIPALE, celle que les boutiques prennent', () => {
+  it('ne classe RIEN — la section agrège des ressources', () => {
+    // Quelle image une boutique prend pour vignette est une décision du CANAL,
+    // comme le handle Shopify. La notion de « principale » n'avait d'ailleurs
+    // aucun consommateur : ni la projection Shopify ni le B2B ne lisent le rôle.
     const store = setup();
     store.media.set([
-      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
       { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } },
+      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
     ]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
 
-    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
-    // C'est le RÔLE qui la désigne, pas la position — le modèle porte les deux,
-    // et seul le rôle survit à un réordonnancement.
-    expect(tiles[0]?.classList.contains('is-hero')).toBe(false);
-    expect(tiles[1]?.classList.contains('is-hero')).toBe(true);
-    expect(tiles[1]?.querySelector('.media-badge')).not.toBeNull();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-badge')).toBeNull();
+    expect(host.textContent).not.toContain('Principale');
+    // …et aucun rôle à choisir : le menu ne porte plus que l'alternative et le retrait.
+    const items = [...host.querySelectorAll('fold-dropdown-item')].map(
+      (item) => item.textContent?.trim() ?? '',
+    );
+    expect(items).not.toContain('Galerie');
+    expect(items.some((label) => label.includes('Texte alternatif'))).toBe(true);
   });
 
   it('pose le dépôt DANS la galerie, à la place de l’image suivante', () => {

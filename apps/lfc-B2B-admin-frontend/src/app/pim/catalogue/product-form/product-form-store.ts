@@ -92,6 +92,19 @@ const SAVEABLE: readonly SectionRef[] = [
   { key: 'visuels', label: 'Visuels' },
 ];
 
+/**
+ * Le rôle d'un visuel neuf.
+ *
+ * L'API en exige un, mais l'écran n'en propose plus : classer une image est une
+ * décision de CANAL — quelle image une boutique prend pour vignette — et elle
+ * vivra dans « Diffusion par canal ». Le premier déposé devenait « hero », ce
+ * qui affirmait une hiérarchie qu'aucun canal ne lit aujourd'hui : ni la
+ * projection Shopify ni le B2B ne consultent le rôle.
+ *
+ * `gallery` est le neutre : « une image du produit », sans prétention d'usage.
+ */
+const DEFAULT_MEDIA_ROLE = 'gallery';
+
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
   carbsG: null,
@@ -490,10 +503,7 @@ export class ProductFormStore {
   }
 
   addMedia(): void {
-    this.media.update((current) => [
-      ...current,
-      { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
-    ]);
+    this.media.update((current) => [...current, { role: DEFAULT_MEDIA_ROLE, url: '' }]);
   }
 
   /**
@@ -516,7 +526,7 @@ export class ProductFormStore {
       this.media.update((current) => [
         ...current,
         {
-          role: current.length === 0 ? 'hero' : 'gallery',
+          role: DEFAULT_MEDIA_ROLE,
           url: uploaded.url,
           width: uploaded.width,
           height: uploaded.height,

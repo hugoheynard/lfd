@@ -11,17 +11,10 @@
 
 <div class="media">
   @for (slot of store.media(); track $index) {
-    <div
-      class="media-tile"
-      [class.is-hero]="slot.role === 'hero'"
-      [class.is-incomplete]="store.mediaAlt($index).trim() === ''"
-    >
+    <div class="media-tile" [class.is-incomplete]="store.mediaAlt($index).trim() === ''">
       <div class="media-thumb">
         @if (slot.url !== '') {
           <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
-        }
-        @if (slot.role === 'hero') {
-          <fold-badge class="media-badge" content="Principale" variant="accent" radius="square" />
         }
         <!-- La vignette recadre pour rester homogène ; la pastille dit donc la
              forme RÉELLE du fichier, que le cadre ne montre plus. -->
@@ -30,14 +23,6 @@
         }
         <fold-dropdown class="media-menu" ariaLabel="Actions du visuel" placement="bottom-end">
           <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
-          @for (role of roles; track role.value) {
-            <fold-dropdown-item
-              [icon]="role.value === slot.role ? 'check' : undefined"
-              (selected)="store.setMedia($index, 'role', role.value)"
-            >
-              {{ role.label }}
-            </fold-dropdown-item>
-          }
           <fold-dropdown-item icon="edit" (selected)="editAlt($index)">
             Texte alternatif…
           </fold-dropdown-item>
