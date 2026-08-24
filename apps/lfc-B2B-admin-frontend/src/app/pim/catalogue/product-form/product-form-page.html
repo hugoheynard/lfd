@@ -3,16 +3,13 @@
 <!-- `separator` : le corps de la fiche est une suite de sections sans surface
      propre, donc sans le filet l'en-tête se lit comme la première d'entre elles. -->
 <fold-page-layout [title]="store.pageTitle()" separator>
-  <!-- Le fil ne nomme que les ANCÊTRES (`[currentPage]="false"`) : le titre
-       juste dessous EST la page courante. Il remplace le « Retour aux produits »
-       qui se projetait dans `[pageActions]`, donc peint en haut à DROITE alors
-       qu'il désigne le haut de la hiérarchie. -->
-  <fold-breadcrumb
-    pageEyebrow
-    [items]="trail()"
-    [currentPage]="false"
-    ariaLabel="Fil d'Ariane du produit"
-  />
+  <!-- Un retour, pas un fil. La fiche n'a qu'un seul parent réel — la liste des
+       produits ; la famille n'a pas d'écran, donc un fil aurait nommé une étape
+       où l'on ne peut pas aller. La flèche dit le sens, et c'est tout ce que
+       cette rangée a à dire. Elle vit dans `[pageEyebrow]`, au-dessus du titre :
+       dans `[pageActions]` elle était peinte en haut à DROITE alors qu'elle
+       désigne le haut de la hiérarchie. -->
+  <fold-back-link pageEyebrow icon="arrow-back" label="Produits" routerLink="/pim/produits" />
 
   @if (store.isEdit()) {
     <fold-badge titleBadge [content]="statusLabel()" [variant]="statusVariant()" radius="pill" />

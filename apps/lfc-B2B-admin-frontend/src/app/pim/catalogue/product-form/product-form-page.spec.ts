@@ -77,24 +77,26 @@ describe('ProductFormPage — en-tête', () => {
     expect(items).not.toContain('Dépublier');
   });
 
-  it('pose le fil d’Ariane AU-DESSUS du titre, dans l’en-tête', () => {
+  it('pose le retour AU-DESSUS du titre, dans l’en-tête', () => {
     const { root } = render(true);
-    const eyebrow = root.querySelector('.page-eyebrow fold-breadcrumb');
-    expect(eyebrow).not.toBeNull();
-    // Le corps de la page ne doit RIEN en recevoir : sans le créneau, un fil
-    // projeté tombe en silence dans le corps, et l'erreur ne se voit qu'à l'œil.
-    expect(root.querySelector('.page-body fold-breadcrumb')).toBeNull();
+    const back = root.querySelector('.page-eyebrow fold-back-link');
+    expect(back).not.toBeNull();
+    // Le corps ne doit RIEN en recevoir : sans le créneau, un contenu projeté
+    // tombe en silence dans le corps, et l'erreur ne se voit qu'à l'œil.
+    expect(root.querySelector('.page-body fold-back-link')).toBeNull();
   });
 
-  it('ne revendique aucune page courante dans le fil — le titre l’est', () => {
+  it('mène à la liste des produits, avec une flèche', () => {
     const { root } = render(true);
-    expect(root.querySelector('fold-breadcrumb [aria-current]')).toBeNull();
-    // La famille est inconnue ici : le fil se réduit à son ancêtre réel plutôt
-    // que d'afficher un maillon vide.
-    const crumbs = [...root.querySelectorAll('fold-breadcrumb .bc-node')].map(
-      (node) => node.textContent?.trim() ?? '',
+    const anchor = root.querySelector<HTMLAnchorElement>('fold-back-link a');
+    expect(anchor?.getAttribute('href')).toBe('/pim/produits');
+    expect(anchor?.textContent?.trim()).toBe('Produits');
+    // Une FLÈCHE, pas un chevron : le chevron ouvre, la flèche remonte. `name`
+    // est une entrée signal, donc rien ne le reflète en attribut — mais
+    // `fold-icon` rend un `<use>` vers le sprite, qui NOMME l'icône choisie.
+    expect(root.querySelector('fold-back-link svg use')?.getAttribute('href')).toBe(
+      '#fold-icon-arrow-back',
     );
-    expect(crumbs).toEqual(['Produits']);
   });
 
   it('en création : ni pastille, ni menu — le produit n’existe pas encore', () => {
