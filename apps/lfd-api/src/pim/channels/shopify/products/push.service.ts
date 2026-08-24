@@ -12,6 +12,7 @@ import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./dr
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
 import { fingerprint, projectProduct } from "./projection.js";
 import { SalesContextRegistry } from "../../../catalogue/shared/domain/ports/sales-context.registry.js";
+import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/sales-context.js";
 import { ShopifySnapshotService } from "./snapshot.service.js";
 import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
 
@@ -115,7 +116,7 @@ export class ShopifyPushService {
     product: ProductRecord,
     editorial: ProductEditorialView | null,
   ): Promise<PushReport> {
-    const payload = projectProduct(product, editorial);
+    const payload = projectProduct(product, editorial, await this.soldOnStorefront(product));
     const hash = fingerprint(payload);
     const existing = await this.prisma.shopifyProductBinding.findUnique({
       where: { productId: product.id },
@@ -198,7 +199,7 @@ export class ShopifyPushService {
     editorial: ProductEditorialView | null,
     driver: ShopifyDriver,
   ): Promise<PushReport> {
-    const payload = projectProduct(product, editorial);
+    const payload = projectProduct(product, editorial, await this.soldOnStorefront(product));
     const hash = fingerprint(payload);
 
     const existing = await this.prisma.shopifyProductBinding.findUnique({
@@ -257,6 +258,35 @@ export class ShopifyPushService {
         outcome: "failed",
         message,
       };
+    }
+  }
+
+  /**
+   * Cette fiche se vend-elle dans un contexte que la boutique **projette** ?
+   *
+   * Les canaux effectifs — sa matrice si elle en a une, celle de sa famille
+   * sinon — croisés avec les contextes marqués `shopify_projected`. Vendre en
+   * B2B ne met rien en vitrine : ce contexte n'y est pas projeté.
+   *
+   * En cas d'échec de lecture, on répond `true` : la vitrine garde ce qu'elle
+   * avait plutôt que de dépublier sur une panne. Dépublier par accident coûte
+   * un chiffre d'affaires ; garder en ligne une fiche à retirer coûte un push.
+   */
+  private async soldOnStorefront(product: ProductRecord): Promise<boolean> {
+    try {
+      const [contexts, channels] = await Promise.all([
+        this.contexts.active(),
+        this.catalogue.effectiveChannels([product]),
+      ]);
+      const effective = channels.get(product.id);
+      if (effective === undefined) {
+        return true;
+      }
+      return contexts.some(
+        (context) => context.shopifyProjected && contextIsSold(context, effective),
+      );
+    } catch {
+      return true;
     }
   }
 

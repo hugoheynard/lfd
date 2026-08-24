@@ -119,6 +119,9 @@ async function build(
                       // Le taux effectif, résolu en amont — ici celui de la
                       // famille, puisque aucune fiche ne déroge.
                       new Map(products.map((p) => [p.id, category.vatByContext])),
+                      // Et les canaux : ces fiches se vendent aux professionnels,
+                      // sinon ce canal les écarterait.
+                      new Map(products.map((p) => [p.id, { boutiques: {}, b2b: true }])),
                       generatedAt,
                     ),
                     candidates: publishedIds.length,

@@ -1,3 +1,4 @@
+import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
   ProductRecord,
@@ -60,9 +61,17 @@ function vat(percents: Record<string, number> = { emporter: 5.5, b2b: 5.5 }) {
   return new Map([["prd_1", percents]]);
 }
 
+/**
+ * Où la fiche se vend, résolu en amont. Par défaut : chez les professionnels —
+ * sans quoi ce canal l'écarte, et c'est bien le but.
+ */
+function sold(channels: SalesChannels = { boutiques: {}, b2b: true }) {
+  return new Map([["prd_1", channels]]);
+}
+
 describe("projectCatalog", () => {
   it("projette un produit tarifé, avec le taux de TVA de sa famille", () => {
-    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), AT);
+    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), sold(), AT);
 
     expect(excluded).toEqual([]);
     expect(snapshot.generatedAt).toBe(AT);
@@ -79,6 +88,7 @@ describe("projectCatalog", () => {
       [product()],
       [category()],
       vat({ emporter: 5.5, b2b: 20 }),
+      sold(),
       AT,
     );
 
@@ -95,6 +105,7 @@ describe("projectCatalog", () => {
       [product()],
       [category({ vatByContext: { emporter: 5.5, b2b: 20 } })],
       vat({ emporter: 5.5, b2b: 20 }),
+      sold(),
       AT,
     );
 
@@ -103,7 +114,7 @@ describe("projectCatalog", () => {
   });
 
   it("ne lit aucune horloge : l’instant d’émission est celui qu’on lui passe", () => {
-    const { snapshot } = projectCatalog([product()], [category()], vat(), AT);
+    const { snapshot } = projectCatalog([product()], [category()], vat(), sold(), AT);
 
     expect(snapshot.generatedAt).toBe(AT);
   });
@@ -113,7 +124,7 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "VIE-001-1", priceCents: null })],
     });
 
-    const { snapshot, excluded } = projectCatalog([priceless], [category()], vat(), AT);
+    const { snapshot, excluded } = projectCatalog([priceless], [category()], vat(), sold(), AT);
 
     expect(excluded).toContainEqual({
       sku: "VIE-001-1",
@@ -131,7 +142,7 @@ describe("projectCatalog", () => {
       ],
     });
 
-    const { snapshot, excluded } = projectCatalog([mixed], [category()], vat(), AT);
+    const { snapshot, excluded } = projectCatalog([mixed], [category()], vat(), sold(), AT);
 
     expect(excluded).toContainEqual({ sku: "A", reason: "variant_arretee" });
     expect(excluded).toContainEqual({ sku: "B", reason: "variant_sans_prix" });
@@ -143,7 +154,7 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "A", isDiscontinued: true })],
     });
 
-    const { snapshot, excluded } = projectCatalog([dead], [category()], vat(), AT);
+    const { snapshot, excluded } = projectCatalog([dead], [category()], vat(), sold(), AT);
 
     expect(excluded).toContainEqual({
       sku: "VIE-001",
@@ -163,6 +174,7 @@ describe("projectCatalog", () => {
       [product()],
       [category({ vatByContext: { emporter: 5.5 } })],
       vat(),
+      sold(),
       AT,
     );
 
@@ -174,7 +186,7 @@ describe("projectCatalog", () => {
   it("écarte un produit dont la famille est inconnue", () => {
     const orphan = product({ categoryId: "cat_fantome" });
 
-    const { excluded } = projectCatalog([orphan], [category()], vat(), AT);
+    const { excluded } = projectCatalog([orphan], [category()], vat(), sold(), AT);
 
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "famille_inconnue" }]);
   });
@@ -182,7 +194,7 @@ describe("projectCatalog", () => {
   it("ne pousse que les familles réellement utilisées", () => {
     const unused = category({ id: "cat_vide", name: { fr: "Vide" } });
 
-    const { snapshot } = projectCatalog([product()], [category(), unused], vat(), AT);
+    const { snapshot } = projectCatalog([product()], [category(), unused], vat(), sold(), AT);
 
     expect(snapshot.categories.map((c) => c.id)).toEqual(["cat_vien"]);
   });
@@ -192,16 +204,43 @@ describe("projectCatalog", () => {
       name: { fr: "Croissant", en: "Croissant" },
     });
 
-    const { snapshot } = projectCatalog([bilingual], [category()], vat(), AT);
+    const { snapshot } = projectCatalog([bilingual], [category()], vat(), sold(), AT);
 
     expect(snapshot.products[0]?.name).toBe("Croissant");
   });
 
   it("rend un snapshot vide sans rien inventer quand rien n’est publié", () => {
-    const { snapshot, excluded } = projectCatalog([], [category()], vat(), AT);
+    const { snapshot, excluded } = projectCatalog([], [category()], vat(), sold(), AT);
 
     expect(snapshot.products).toEqual([]);
     expect(snapshot.categories).toEqual([]);
     expect(excluded).toEqual([]);
+  });
+});
+
+describe("projectCatalog — la matrice DÉCIDE", () => {
+  it("écarte une fiche qu'on ne vend pas aux professionnels, et le DIT", () => {
+    // La matrice ne décrivait rien qu'elle-même : fermer le B2B sur une fiche
+    // la laissait en vente. Écartée du snapshot, elle sort de la boutique au
+    // push suivant — l'ingestion supprime ce qui n'arrive plus.
+    const { snapshot, excluded } = projectCatalog(
+      [product()],
+      [category()],
+      vat(),
+      sold({ boutiques: { emp_1: { emporter: true, surPlace: false } }, b2b: false }),
+      AT,
+    );
+
+    expect(snapshot.products).toEqual([]);
+    expect(excluded).toEqual([{ sku: "VIE-001", reason: "canal_ferme" }]);
+  });
+
+  it("écarte aussi une fiche dont on ignore les canaux, plutôt que de la pousser", () => {
+    // Une carte sans entrée pour ce produit veut dire « on n'a pas résolu » —
+    // et sur une boutique, ne pas savoir n'autorise pas à vendre.
+    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), new Map(), AT);
+
+    expect(snapshot.products).toEqual([]);
+    expect(excluded).toEqual([{ sku: "VIE-001", reason: "canal_ferme" }]);
   });
 });

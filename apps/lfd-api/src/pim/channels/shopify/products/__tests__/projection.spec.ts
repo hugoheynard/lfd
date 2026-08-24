@@ -132,7 +132,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   });
 
   it("part sans rien quand personne n’a écrit — la couche est optionnelle", () => {
-    const payload = projectProduct(product(), null);
+    const payload = projectProduct(product(), null, true);
 
     expect(payload.descriptionHtml).toBe("");
     expect(payload.vendor).toBeNull();
@@ -144,14 +144,14 @@ describe("projection Shopify — la couche éditoriale", () => {
   // effacé. Le contraire obligerait le canal à distinguer deux vides.
   it("traite « vidé » et « jamais écrit » de la même façon", () => {
     const cleared = projectProduct(product(), written({ descriptionLong: { fr: "" } }));
-    const never = projectProduct(product(), null);
+    const never = projectProduct(product(), null, true);
 
     expect(cleared.descriptionHtml).toBe("");
     expect(cleared.descriptionHtml).toBe(never.descriptionHtml);
   });
 
   it("change d’empreinte quand la description change", () => {
-    const before = fingerprint(projectProduct(product(), null));
+    const before = fingerprint(projectProduct(product(), null, true));
     const after = fingerprint(
       projectProduct(product(), written({ descriptionLong: { fr: "Neuf." } })),
     );
@@ -162,7 +162,7 @@ describe("projection Shopify — la couche éditoriale", () => {
 
 describe("projection Shopify", () => {
   it("projette le nom, l’identifiant d’URL et les déclinaisons", () => {
-    const payload = projectProduct(product(), null);
+    const payload = projectProduct(product(), null, true);
 
     expect(payload.title).toBe("Tarte aux fraises");
     expect(payload.handle).toBe("tarte-aux-fraises");
@@ -177,7 +177,7 @@ describe("projection Shopify", () => {
       variants: [{ ...product().variants[0]!, priceCents: null }],
     });
 
-    expect(projectProduct(untarifed, null).variants[0]?.price).toBeNull();
+    expect(projectProduct(untarifed, null, true).variants[0]?.price).toBeNull();
   });
 
   // Le garde-fou qui compte : on ne met jamais un brouillon en ligne par inadvertance.
@@ -186,7 +186,7 @@ describe("projection Shopify", () => {
     ["archived", "DRAFT"],
     ["published", "ACTIVE"],
   ] as const)("statut %s → %s", (status, expected) => {
-    expect(projectProduct(product({ status }), null).status).toBe(expected);
+    expect(projectProduct(product({ status }), null, true).status).toBe(expected);
   });
 
   it("omet les déclinaisons retirées de la vente", () => {
@@ -197,13 +197,13 @@ describe("projection Shopify", () => {
       ],
     });
 
-    expect(projectProduct(withRetired, null).variants).toHaveLength(1);
+    expect(projectProduct(withRetired, null, true).variants).toHaveLength(1);
   });
 
   describe("empreinte", () => {
     it("est stable pour un contenu identique", () => {
-      expect(fingerprint(projectProduct(product(), null))).toBe(
-        fingerprint(projectProduct(product(), null)),
+      expect(fingerprint(projectProduct(product(), null, true))).toBe(
+        fingerprint(projectProduct(product(), null, true)),
       );
     });
 
@@ -227,17 +227,32 @@ describe("projection Shopify", () => {
         ],
       });
 
-      expect(fingerprint(projectProduct(first, null))).toBe(
-        fingerprint(projectProduct(second, null)),
+      expect(fingerprint(projectProduct(first, null, true))).toBe(
+        fingerprint(projectProduct(second, null, true)),
       );
     });
 
     it("change dès que le contenu poussé change", () => {
       const renamed = product({ name: { fr: "Tarte aux framboises" } });
 
-      expect(fingerprint(projectProduct(product(), null))).not.toBe(
-        fingerprint(projectProduct(renamed, null)),
+      expect(fingerprint(projectProduct(product(), null, true))).not.toBe(
+        fingerprint(projectProduct(renamed, null, true)),
       );
     });
+  });
+});
+
+describe("projection Shopify — la matrice décide de la vitrine", () => {
+  it("pousse en BROUILLON une fiche qu'on ne vend plus en vitrine", () => {
+    // « Retirer de la boutique » sans détruire : le brouillon disparaît de la
+    // vitrine et reste dans l'administration, avec ce que le marchand y a
+    // ajouté — photos, collections, avis. Le geste est réversible.
+    const payload = projectProduct(product({ status: "published" }), null, false);
+
+    expect(payload.status).toBe("DRAFT");
+  });
+
+  it("laisse ACTIVE une fiche publiée ET vendue", () => {
+    expect(projectProduct(product({ status: "published" }), null, true).status).toBe("ACTIVE");
   });
 });

@@ -119,6 +119,15 @@ async function build(
           byIds: () => Promise.resolve([product()]),
           // Le taux EFFECTIF, par produit : la fiche ne déroge pas ici, donc
           // c'est celui de sa famille.
+          effectiveChannels: (items: readonly { id: string }[]) =>
+            Promise.resolve(
+              new Map(
+                items.map((item) => [
+                  item.id,
+                  { boutiques: { emp_1: { emporter: true, surPlace: false } }, b2b: false },
+                ]),
+              ),
+            ),
           vatPercents: (items: readonly { id: string }[]) =>
             Promise.resolve(new Map(items.map((item) => [item.id, { emporter: 5.5 }]))),
           editorials: (ids: readonly string[]) => {
@@ -284,7 +293,7 @@ describe("ShopifyPushService — snapshots", () => {
   });
 
   it("en pré-push, rapporte « déjà à jour » si l’empreinte est identique", async () => {
-    const hash = fingerprint(projectProduct(product(), null));
+    const hash = fingerprint(projectProduct(product(), null, true));
     const h = await build("live", { lastPushedHash: hash });
 
     const summary = await h.service.push(["p1"], true);
@@ -294,7 +303,7 @@ describe("ShopifyPushService — snapshots", () => {
   });
 
   it("sur empreinte identique, ne pousse ni n’écrit de snapshot", async () => {
-    const hash = fingerprint(projectProduct(product(), null));
+    const hash = fingerprint(projectProduct(product(), null, true));
     const h = await build("live", { lastPushedHash: hash });
 
     const summary = await h.service.push(["p1"]);
@@ -344,7 +353,7 @@ describe("ShopifyPushService — la couche éditoriale", () => {
 describe("ShopifyPushService — rollback", () => {
   it("re-pousse le payload figé de la version ciblée et journalise une nouvelle version", async () => {
     const h = await build("live");
-    const payload = projectProduct(product(), null);
+    const payload = projectProduct(product(), null, true);
     h.setLoad({ id: "snap_7", version: 2, productId: "p1", payload });
 
     const report = await h.service.rollback("croissant", 2);

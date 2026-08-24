@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 
 import type { ShopifyProductSnapshot } from "@lfd/shopify-admin";
+import { SalesContextRegistry } from "../../../../catalogue/shared/domain/ports/sales-context.registry.js";
 import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
@@ -51,7 +52,7 @@ async function build(
   mode: "live" | "dry-run",
   remoteProducts: ShopifyProductSnapshot[],
 ): Promise<ShopifyReconciliationService> {
-  const basePayload = projectProduct(product(), null);
+  const basePayload = projectProduct(product(), null, true);
   const prisma = {
     shopifyProductBinding: {
       findMany: () => Promise.resolve([{ headSnapshotId: "snap_1" }]),
@@ -76,9 +77,38 @@ async function build(
         useValue: {
           publishable: () => Promise.resolve([product()]),
           editorials: () => Promise.resolve(new Map()),
+          // La fiche est vendue au comptoir : sinon la réconciliation la
+          // comparerait à un brouillon, ce que ce test ne cherche pas.
+          effectiveChannels: (items: readonly { id: string }[]) =>
+            Promise.resolve(
+              new Map(
+                items.map((item) => [
+                  item.id,
+                  { boutiques: { emp_1: { emporter: true, surPlace: false } }, b2b: false },
+                ]),
+              ),
+            ),
         },
       },
       { provide: PimPrismaService, useValue: prisma },
+      {
+        provide: SalesContextRegistry,
+        useValue: {
+          active: () =>
+            Promise.resolve([
+              {
+                id: "ctx_emporter",
+                key: "emporter",
+                label: "À emporter",
+                handleSuffix: "",
+                channelKey: "emporter",
+                active: true,
+                shopifyProjected: true,
+                position: 1,
+              },
+            ]),
+        },
+      },
       {
         provide: ShopifyInspectionService,
         useValue: {

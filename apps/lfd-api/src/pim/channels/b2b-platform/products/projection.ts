@@ -5,6 +5,7 @@ import type {
   CategoryTvaPercents,
   ChannelCategory,
 } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { SalesChannels } from "../../../catalogue/shared/domain/value-objects/sales-channels.js";
 
 /**
  * La clé du contexte que CE canal facture. Une constante nommée plutôt qu'une
@@ -31,7 +32,12 @@ export interface Exclusion {
   /** SKU du produit ou de la déclinaison concernée. */
   readonly sku: string;
   readonly reason:
-    "variant_sans_prix" | "variant_arretee" | "produit_sans_variante_vendable" | "famille_inconnue";
+    | "variant_sans_prix"
+    | "variant_arretee"
+    | "produit_sans_variante_vendable"
+    | "famille_inconnue"
+    /** La fiche n'est pas vendue sur ce canal — sa matrice, ou celle de sa famille. */
+    | "canal_ferme";
 }
 
 export interface Projection {
@@ -140,6 +146,14 @@ export function projectCatalog(
    * n'a qu'une écriture, et cette fonction reste pure.
    */
   vatByProduct: ReadonlyMap<string, CategoryTvaPercents>,
+  /**
+   * Où chaque fiche se vend **réellement**, résolu en amont de la même façon.
+   *
+   * Ce que ce canal en fait : il écarte ce qui n'est pas vendu chez lui. Écarté
+   * du snapshot, l'article est **retiré de la boutique** au push suivant —
+   * l'ingestion supprime ce qui n'arrive plus.
+   */
+  channelsByProduct: ReadonlyMap<string, SalesChannels>,
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -152,6 +166,13 @@ export function projectCatalog(
     const category = byId.get(product.categoryId);
     if (category === undefined) {
       excluded.push({ sku: product.sku, reason: "famille_inconnue" });
+      continue;
+    }
+    // La matrice DÉCIDE, elle ne se contente plus de décrire : une fiche qu'on
+    // ne vend pas aux professionnels n'entre pas dans leur boutique, et celle
+    // qui y était en sort au push suivant.
+    if (channelsByProduct.get(product.id)?.b2b !== true) {
+      excluded.push({ sku: product.sku, reason: "canal_ferme" });
       continue;
     }
     // Résolu ICI, une fois par produit : chaque article part avec SON taux,

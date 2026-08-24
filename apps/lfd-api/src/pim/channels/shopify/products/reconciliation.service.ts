@@ -7,6 +7,8 @@ import type {
 } from "@lfd/pim-contracts";
 
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import { SalesContextRegistry } from "../../../catalogue/shared/domain/ports/sales-context.registry.js";
+import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/sales-context.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyInspectionService } from "./inspection.service.js";
 import { fingerprint, projectProduct, type ShopifyProductPayload } from "./projection.js";
@@ -53,6 +55,7 @@ export class ShopifyReconciliationService {
     private readonly catalogue: CatalogueReader,
     private readonly prisma: PimPrismaService,
     private readonly inspection: ShopifyInspectionService,
+    private readonly contexts: SalesContextRegistry,
   ) {}
 
   async board(): Promise<ReconciliationBoardView> {
@@ -157,10 +160,23 @@ export class ShopifyReconciliationService {
 
   private async loadOurs(): Promise<Map<string, OursEntry>> {
     const products = await this.catalogue.publishable();
-    const editorials = await this.catalogue.editorials(products.map((product) => product.id));
+    const [editorials, contexts, channels] = await Promise.all([
+      this.catalogue.editorials(products.map((product) => product.id)),
+      this.contexts.active(),
+      this.catalogue.effectiveChannels(products),
+    ]);
+    const projected = contexts.filter((context) => context.shopifyProjected);
+
     const map = new Map<string, OursEntry>();
     for (const product of products) {
-      const payload = projectProduct(product, editorials.get(product.id) ?? null);
+      // La MÊME question que le push : une fiche qu'on ne vend plus dans aucun
+      // contexte projeté est un brouillon. Sans ça, la réconciliation
+      // comparerait la boutique à un état que le push n'enverrait jamais, et
+      // annoncerait une dérive éternelle.
+      const effective = channels.get(product.id);
+      const sold =
+        effective === undefined || projected.some((context) => contextIsSold(context, effective));
+      const payload = projectProduct(product, editorials.get(product.id) ?? null, sold);
       map.set(payload.handle, { productId: product.id, payload });
     }
     return map;

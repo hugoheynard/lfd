@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
 import { effectiveTva } from "../domain/value-objects/sales-context.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 
@@ -92,6 +93,31 @@ export class PrismaCatalogueReader extends CatalogueReader {
         product.id,
         this.resolve(effectiveTva(family, product.tvaByContext), percentById),
       );
+    }
+    return resolved;
+  }
+
+  /**
+   * Les canaux effectifs, produit par produit. Les familles sont lues une fois
+   * chacune, même quand cent produits les partagent.
+   */
+  async effectiveChannels(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, SalesChannels>> {
+    const families = new Map<string, SalesChannels>();
+    const resolved = new Map<string, SalesChannels>();
+
+    for (const product of products) {
+      let family = families.get(product.categoryId);
+      if (family === undefined) {
+        const category = await this.categories.findById(product.categoryId);
+        if (category === null) {
+          throw new CategoryNotFoundError(product.categoryId);
+        }
+        family = category.channelPreset;
+        families.set(product.categoryId, family);
+      }
+      resolved.set(product.id, product.channelOverride ?? family);
     }
     return resolved;
   }

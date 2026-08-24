@@ -1,4 +1,5 @@
 import type { LocalizedText } from "../value-objects/localized-text.js";
+import type { SalesChannels } from "../value-objects/sales-channels.js";
 import type { ProductEditorialView } from "../../../product/domain/ports/editorial-reader.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 
@@ -68,6 +69,21 @@ export abstract class CatalogueReader {
   abstract vatPercents(
     products: readonly ProductRecord[],
   ): Promise<ReadonlyMap<string, CategoryTvaPercents>>;
+
+  /**
+   * Où chaque produit se vend **réellement** : sa propre matrice s'il en a une,
+   * celle de sa famille sinon.
+   *
+   * Par PRODUIT, comme les taux, et pour la même raison : depuis qu'une fiche
+   * peut redéfinir ses canaux, la matrice de la famille ne dit plus où elle se
+   * vend. C'est le canal qui décide ensuite ce qu'il en fait — la plateforme
+   * B2B écarte de sa boutique ce qui n'y est pas vendu.
+   *
+   * Une famille inconnue est un REFUS, comme pour les taux.
+   */
+  abstract effectiveChannels(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, SalesChannels>>;
   /** Les familles **non archivées**, avec leurs taux résolus, par contexte. */
   abstract channelCategories(): Promise<ChannelCategory[]>;
   /**

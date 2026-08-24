@@ -82,12 +82,23 @@ function forStorefront(text: LocalizedText | null | undefined): string {
 export function projectProduct(
   product: ProductRecord,
   editorial: ProductEditorialView | null,
+  /**
+   * La fiche est-elle vendue dans un contexte que la boutique projette ?
+   *
+   * `false` la pousse en **brouillon** : elle disparaît de la vitrine sans
+   * quitter l'administration de la boutique. C'est ce que « retirer de la
+   * boutique » veut dire ici — réversible, et sans effacer ce que le marchand y
+   * a ajouté (photos, collections, avis).
+   */
+  soldOnStorefront: boolean,
 ): ShopifyProductPayload {
   return {
     title: product.name.fr,
     handle: product.slug.fr,
-    // Un brouillon reste un brouillon : on ne met jamais en ligne par inadvertance.
-    status: product.status === "published" ? "ACTIVE" : "DRAFT",
+    // Un brouillon reste un brouillon : on ne met jamais en ligne par
+    // inadvertance. Et une fiche qu'on ne vend plus dans aucun contexte projeté
+    // en redevient un — la matrice DÉCIDE, elle ne décrit plus.
+    status: product.status === "published" && soldOnStorefront ? "ACTIVE" : "DRAFT",
     // La longue l'emporte : Shopify n'a qu'un champ, et le résumé sert ailleurs
     // (listes, cartes, caisse). À défaut de longue, le résumé vaut mieux que rien.
     descriptionHtml: toHtml(

@@ -137,7 +137,8 @@
   - [x] Compte d'usages : familles **et** fiches (un taux visé par une seule fiche paraissait libre)
   - [x] **Disponibilité** _(2026-08-24)_ — `product.channel_override` (`jsonb` nullable, `NULL` = hérite), `PUT /catalogue/products/:id/channels`, panneau réutilisant `ChannelMatrix` ; fermer un canal EFFACE les taux qu'on y avait posés, et les taux se jugent sur les canaux EFFECTIFS
   - [x] Vestige `Product.channelsOverride` : il vaut enfin ce que le serveur dit, au lieu de `null` en dur
-  - [ ] La matrice reste **déclarative** : aucune projection ne la lit. Fermer un canal sur une fiche ne la retire pas de la boutique — à rendre effectif quand un canal en aura besoin
+  - [x] **La matrice est EFFECTIVE** _(2026-08-24)_ — B2B : fiche écartée du snapshot (`canal_ferme`), donc supprimée par l'ingestion au push suivant. Shopify : poussée en **brouillon** (hors vitrine, rien de détruit) ; la réconciliation pose la même question, sinon elle annoncerait une dérive éternelle
+  - [ ] À trancher : le retrait B2B doit-il aussi retirer le _binding_ de canal, ou rester une conséquence de la matrice ? (aujourd'hui : conséquence — le binding reste, la fiche revient si on rouvre le canal)
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur

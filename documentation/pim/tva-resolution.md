@@ -175,10 +175,12 @@ Deux réserves, et elles sont sérieuses :
 - **C0-d** — la matrice des canaux reste à clés fixes ; `channel_key` meurt avec elle.
 - **Repli `billableRate`** — à retirer après le premier push complet ; il fait
   encore dépendre une ligne facturée d'une jointure de famille.
-- **La matrice des canaux reste déclarative** : elle décide où un taux peut se
-  poser et informe l'écran, mais aucune projection ne la lit. Fermer un canal sur
-  une fiche ne la retire donc PAS de la boutique — c'est le binding de canal qui
-  décide de ça. À rendre effectif quand un canal en aura besoin.
+- **La matrice est effective depuis le 2026-08-24** : fermer un canal retire
+  vraiment. Côté B2B, la fiche est **écartée du snapshot** (`canal_ferme`) et
+  l'ingestion la supprime au push suivant. Côté Shopify, elle est poussée en
+  **brouillon** — hors vitrine, toujours dans l'administration, avec ce que le
+  marchand y a ajouté. Reste à décider si le retrait B2B doit aussi retirer le
+  _binding_ de canal, ou rester une conséquence de la matrice.
 
 ## 8. Ce qui a été fait (2026-08-24)
 
