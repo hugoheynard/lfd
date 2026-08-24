@@ -4,7 +4,11 @@
 > contexte. Ce doc décrit comment un produit **redéfinit** l'un ou l'autre pour lui seul, sans
 > toucher sa famille ni les autres produits qu'elle porte.
 >
-> Statut : **📐 doc-first — décidé, rien n'est codé.** Rédigé le 2026-08-24.
+> Statut : **🟡 moitié construite.** Rédigé le 2026-08-24, et la **TVA** l'a été le
+> jour même : `product_context_tva`, le verbe, l'API, l'écran et le retrait de la
+> collection Shopify obsolète (O0→O3). Reste la **disponibilité** — tout le §3 et
+> la partie canaux du §2, encore 📐. Voir aussi
+> [`tva-resolution.md`](./tva-resolution.md), qui décrit la chaîne complète.
 >
 > ⚠️ **Dépend de C0** ([`projection-sales-context.md`](./projection-sales-context.md), addendum) :
 > la refonte data-driven des contextes. Écrire l'override AVANT C0 signifierait ajouter au produit

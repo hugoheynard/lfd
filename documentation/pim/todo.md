@@ -129,12 +129,14 @@
   - [ ] **C0-bis — Handle publié = write-once (SEO)** : figer le handle au 1er push (binding/snapshot) ; **bloquer** le changement de `slug.fr` d'un produit publié (ou flux renommage+301) — sinon la réconciliation par handle orpheline l'ancien produit + casse le référencement ; réconciliation distingue **renommage** de **retrait+création** via `productId` ; `handleSuffix` d'un contexte figé **avant** son 1er push.
   - [ ] **C4** _(après C0)_ — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
   - [ ] **C5** _(après C0)_ — contexte `b2b` (TVA 20 %) = **une ligne de données** (grâce à C0)
-- [ ] **Override local au produit — disponibilité + TVA** ([`override-produit.md`](./override-produit.md), 📐) :
-  - [ ] **O0** _(après C0)_ — `product_context_tva` + `product_channel_override` + `product_context_channel` + le résolveur pur (produit → famille → `null`), appelé par les DEUX projections
-  - [ ] **O1** — contrats + API : la fiche rend la valeur **et sa provenance** (`hérité` / `redéfini`) ; écriture et remise à zéro
-  - [ ] **O2** — panneau produit réutilisant `ChannelMatrix` + listbox de taux ; « Revenir au défaut » **supprime** les lignes
-  - [ ] **O3** — Shopify : ôter le produit de son ancienne collection `tva-*` quand le taux résolu change (S2)
-  - [ ] Vestige à traiter : `Product.channelsOverride` existe côté front et vaut TOUJOURS `null` (`backendToProduct`) — le brancher en O1, ou le retirer
+- [ ] **Override local au produit — disponibilité + TVA** ([`override-produit.md`](./override-produit.md), 🟡 moitié faite) :
+  - [x] **O0 (TVA)** _(2026-08-24)_ — `product_context_tva` + `effectiveTva` (résolveur pur, produit → famille → rien) appelé par les DEUX projections ; le port rend le taux **par produit**
+  - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.tva_changed` ; carte vide = retour à l'héritage
+  - [x] **O2 (TVA)** _(2026-08-24)_ — « Redéfinir » par ligne dans l'encadré, panneau à un contexte, liseré + « Redéfini » ; part avec la section Tarif
+  - [x] **O3** _(2026-08-24)_ — Shopify quitte la collection `tva-*` obsolète (S2), et le rapport le dit
+  - [x] Compte d'usages : familles **et** fiches (un taux visé par une seule fiche paraissait libre)
+  - [ ] **Disponibilité** — `product_channel_override` + `product_context_channel` + panneau réutilisant `ChannelMatrix` : rien n'est codé
+  - [ ] Vestige : `Product.channelsOverride` existe côté front et vaut TOUJOURS `null` (`backendToProduct`) — à brancher avec la disponibilité, ou à retirer
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur

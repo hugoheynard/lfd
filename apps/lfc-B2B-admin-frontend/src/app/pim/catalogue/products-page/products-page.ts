@@ -22,7 +22,7 @@ import {
   type FoldTableTone,
 } from 'fold-ng';
 
-import { NO_CHANNELS, boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
+import { NO_CHANNELS, boutiquesWith, resolveChannels } from '../../data/channels';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
@@ -185,10 +185,6 @@ export class ProductsPage {
     () => new Map(this.categories().map((category) => [category.id, category])),
   );
 
-  private readonly regimeById = computed(
-    () => new Map(this.rates().map((rate) => [rate.id, rate])),
-  );
-
   constructor() {
     void this.reload();
   }
@@ -231,22 +227,6 @@ export class ProductsPage {
 
   protected rowInherited(product: Product): boolean {
     return product.channelsOverride === null;
-  }
-
-  /**
-   * « 5,5 % → 10 % » : les taux à emporter / sur place de la catégorie.
-   *
-   * La colonne nomme ces deux contextes-là — c'est ce que la table montre. Le
-   * jour où un troisième doit s'y lire, elle itérera le registre plutôt que de
-   * gagner une clé de plus.
-   */
-  protected categoryTvaText(category: Category): string {
-    const rate = (contextKey: string): string => {
-      const rateId = category.tvaByContext[contextKey];
-      const found = rateId === undefined ? undefined : this.regimeById().get(rateId);
-      return found === undefined ? '—' : formatPercent(found.percent);
-    };
-    return `${rate('emporter')} → ${rate('surPlace')}`;
   }
 
   /** Un produit précis — le bouton de la ligne. */

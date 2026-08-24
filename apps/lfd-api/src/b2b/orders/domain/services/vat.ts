@@ -11,10 +11,19 @@
  * jamais sur une somme flottante globale.
  */
 
-/** Taux réduit produits alimentaires (boulangerie) — le défaut du catalogue. */
-export const DEFAULT_FOOD_VAT_RATE = 5.5;
-
-/** Taux de la prestation de livraison (transport) — taux normal. */
+/**
+ * Taux de la prestation de livraison (transport) — taux normal.
+ *
+ * Une **constante de domaine**, et pas une donnée : le taux d'une prestation de
+ * transport est le taux normal, il ne se paramètre pas par boutique. Les taux
+ * des marchandises, eux, sont de la donnée — ils viennent du PIM, article par
+ * article (cf. `documentation/pim/tva-resolution.md`).
+ *
+ * Une constante `DEFAULT_FOOD_VAT_RATE` vivait ici et n'était lue que par son
+ * propre test : elle nommait un « défaut alimentaire » que rien n'appliquait, ce
+ * qui laissait croire qu'un article sans taux serait facturé à 5,5 %. Il est
+ * écarté de la vente. Nommer un défaut qui n'existe pas est pire que rien.
+ */
 export const DELIVERY_VAT_RATE = 20;
 
 /** Une ligne pour le calcul : son total **HT** (centimes) et son taux (en %). */

@@ -1,10 +1,11 @@
-import { computeVatCents, DEFAULT_FOOD_VAT_RATE } from "../vat.js";
+import { computeVatCents } from "../vat.js";
 
 describe("computeVatCents", () => {
   it("applique 5,5 % sur des marchandises alimentaires", () => {
     // 1000 HT × 5,5 % = 55.
     const vat = computeVatCents({
-      lines: [{ htCents: 1000, vatRate: DEFAULT_FOOD_VAT_RATE }],
+      // 5,5 % : le taux d'un article alimentaire, tel que le PIM le résout.
+      lines: [{ htCents: 1000, vatRate: 5.5 }],
       discountCents: 0,
       deliveryFeeCents: 0,
     });
