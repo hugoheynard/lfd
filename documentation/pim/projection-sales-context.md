@@ -26,7 +26,10 @@
 >    `(categoryId, contextId) → tvaRateId`) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId`
 >    et `ACTIVE_SALES_CONTEXTS`. Les lectures deviennent des **listes** `[{contextKey, tag}]`.
 >    Ajouter un contexte (B2B) = **une ligne**, zéro code. **Une fois testé, le modèle ne bouge plus**
->    (règle produit). Cousin à traiter pareil : `Category.channelPreset` (boutiques `b1`/`b2` en clés fixes).
+>    (règle produit). Cousin à traiter pareil : `Category.channelPreset`. ⚠️ **Corrigé depuis** : les
+>    boutiques `b1`/`b2` ont été remplacées par des identifiants d'emplacement — cette
+>    moitié est faite. Ce qui reste fixe, ce sont les **modes** (`emporter`/`surPlace`)
+>    et le drapeau `b2b`.
 > 2. **Handle publié = write-once (SEO).** Une URL indexée est définitive : la changer = 404 + perte
 >    de ranking (Shopify ne garantit pas la 301 via `productSet`). Donc : (a) le handle est **figé au
 >    1er push** (dans le binding/snapshot) ; changer `slug.fr` d'un produit publié est **bloqué** ou

@@ -16,8 +16,14 @@ export interface SalesContext {
   /** Suffixe de handle Shopify — **vide** pour le contexte par défaut. */
   readonly handleSuffix: string;
   /**
-   * Quel drapeau de la matrice des canaux autorise ce contexte. De TRANSITION :
-   * la matrice garde ses clés fixes tant que sa propre refonte n'a pas eu lieu.
+   * Quel drapeau de la matrice des canaux autorise ce contexte.
+   *
+   * De TRANSITION, et il faut être précis sur ce qui l'est : la matrice est
+   * DÉJÀ data-driven **par emplacement** (clé = identifiant, une boutique de
+   * plus est une ligne de plus). Ce qui reste fixe, ce sont les **modes** d'un
+   * emplacement — `emporter` / `surPlace` — et le drapeau `b2b`. C'est
+   * exactement ce que cette colonne désigne, et elle mourra quand un emplacement
+   * vendra des CONTEXTES au lieu de deux modes nommés.
    */
   readonly channelKey: SalesChannelKey;
   /** En service : réglable à l'écran, et facturable. */

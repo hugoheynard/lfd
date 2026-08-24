@@ -7,6 +7,7 @@
 -- table ni drapeau supplémentaire.
 --
 -- Une colonne `jsonb` comme `category.channel_preset`, et pour la même durée :
--- la matrice garde ses clés fixes jusqu'à sa refonte data-driven (C0-d), et une
--- dérogation doit avoir exactement la forme de ce qu'elle remplace.
+-- une dérogation doit avoir exactement la forme de ce qu'elle remplace, et
+-- suivre son sort. (La matrice est déjà indexée par emplacement ; seuls ses
+-- modes restent nommés en dur — cf. C0-d.)
 ALTER TABLE "pim"."product" ADD COLUMN "channel_override" JSONB;

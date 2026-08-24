@@ -2537,9 +2537,11 @@ model SalesContext {
   handleSuffix String @default("") @map("handle_suffix")
 
   /// Quel drapeau de `category.channel_preset` autorise ce contexte. Colonne de
-  /// TRANSITION, assumée : tant que la matrice des canaux garde ses clés fixes
-  /// (`emporter` / `surPlace` / `b2b`), le contexte doit dire lequel le porte.
-  /// Elle disparaît quand la matrice devient elle aussi une donnée.
+  /// TRANSITION, assumée. La matrice est déjà data-driven **par emplacement**
+  /// (clé = identifiant) ; ce qui reste fixe, ce sont les **modes** d'un
+  /// emplacement (`emporter` / `surPlace`) et le drapeau `b2b`. Le contexte doit
+  /// donc dire lequel des trois le porte. Cette colonne disparaît quand un
+  /// emplacement vendra des contextes au lieu de deux modes nommés.
   channelKey String @map("channel_key")
 
   /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
@@ -2686,9 +2688,10 @@ model Product {
   /// la fiche n'est pas vendue là ou si sa famille ne l'y vendait pas — d'où le
   /// tout-ou-rien, marqué par le `NULL` lui-même.
   ///
-  /// Une colonne `jsonb`, comme `category.channel_preset` : la matrice garde
-  /// ses clés fixes jusqu'à sa propre refonte (C0-d), et la fiche doit avoir
-  /// exactement la forme de ce qu'elle remplace.
+  /// Une colonne `jsonb`, comme `category.channel_preset` : une dérogation doit
+  /// avoir exactement la forme de ce qu'elle remplace, et suivre son sort. La
+  /// matrice est déjà indexée par emplacement ; seuls ses **modes** restent
+  /// nommés en dur (C0-d).
   channelOverride Json? @map("channel_override")
 
   /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).

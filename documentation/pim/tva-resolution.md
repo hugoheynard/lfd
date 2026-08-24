@@ -149,9 +149,11 @@ front »).
 Deux réserves, et elles sont sérieuses :
 
 1. **`channel_key` est une colonne de transition.** Tant que la matrice des canaux
-   garde ses clés fixes, un contexte doit dire lequel l'autorise — donc un contexte
-   vraiment neuf (un canal qui n'existe pas encore) demande d'abord la refonte de la
-   matrice (C0-d).
+   est déjà indexée par EMPLACEMENT — une boutique de plus est une ligne de plus —
+   mais ses **modes** restent nommés en dur (`emporter` / `surPlace`), plus le
+   drapeau `b2b`. Un contexte doit donc s'appuyer sur l'un des trois : « traiteur »
+   peut exister, mais il se vendra là où « à emporter » se vend, pas ailleurs. Un
+   contexte qui doit se cocher indépendamment attend C0-d.
 2. **`shopify_projected = true` change des URL.** Le suffixe de handle est figé avant
    le premier push ; l'activer sur un contexte déjà poussé casse le référencement.
 
@@ -172,7 +174,10 @@ Deux réserves, et elles sont sérieuses :
 - **Déploiement en DEUX temps.** La bascule C0-b part d'abord ; le `DROP` des trois
   colonnes (C0-c) au déploiement suivant. Les livrer ensemble casse l'API pendant
   le `wrangler deploy`.
-- **C0-d** — la matrice des canaux reste à clés fixes ; `channel_key` meurt avec elle.
+- **C0-d** — la matrice est data-driven par emplacement, mais ses **modes** sont
+  encore des clés fixes (`emporter` / `surPlace`) et le B2B un drapeau à part. Tant
+  que c'est le cas, deux contextes qui partagent un `channel_key` ne peuvent pas se
+  cocher séparément. `channel_key` meurt avec cette refonte.
 - **Repli `billableRate`** — à retirer après le premier push complet ; il fait
   encore dépendre une ligne facturée d'une jointure de famille.
 - **La matrice est effective depuis le 2026-08-24** : fermer un canal retire
