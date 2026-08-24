@@ -153,4 +153,22 @@ describe('ProductFormPage — en-tête', () => {
     expect(first.querySelector('.section-title-text')).not.toBeNull();
     expect(first.querySelector('.section-actions app-section-state')).not.toBeNull();
   });
+
+  it('retient les sections repliées d’une visite à l’autre', () => {
+    // Le pli est un CHOIX : le perdre au rechargement le transforme en geste à
+    // refaire, et huit sections font huit gestes.
+    localStorage.clear();
+    const first = render(true);
+    const section = first.root.querySelector('fold-page-section')!;
+    section.querySelector<HTMLButtonElement>('.section-toggle')!.click();
+    first.fixture.detectChanges();
+    expect(section.querySelector<HTMLElement>('.section-body')!.hidden).toBe(true);
+
+    // Une page NEUVE : c'est le stockage qui doit porter le choix.
+    TestBed.resetTestingModule();
+    const second = render(true);
+    const reopened = second.root.querySelector('fold-page-section')!;
+    expect(reopened.querySelector<HTMLElement>('.section-body')!.hidden).toBe(true);
+    localStorage.clear();
+  });
 });

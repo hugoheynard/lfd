@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
@@ -20,6 +27,7 @@ import {
 } from 'fold-ng';
 
 import type { ProductStatus } from '../../data/models';
+import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
 
 import { ChannelsPanel } from './panels/channels-panel';
 import { CommunicationPanel } from './panels/communication-panel';
@@ -49,6 +57,10 @@ const STATUS_VARIANTS: Readonly<Record<ProductStatus, FoldBadgeVariant>> = {
   published: 'success',
   archived: 'neutral',
 };
+
+/** L'espace de noms des plis de CET écran — une fiche produit se replie comme
+ *  une autre, donc la préférence est celle de l'écran, pas celle du produit. */
+const FOLD_SCOPE = 'pim.product-form';
 
 interface PageSection {
   readonly key: FormSection;
@@ -99,6 +111,37 @@ export class ProductFormPage implements HasPendingChanges {
   protected readonly store = inject(ProductFormStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  private readonly uiPrefs = inject(UiPrefsStore);
+
+  /**
+   * L'état replié de chaque section, retenu d'une visite à l'autre.
+   *
+   * Un signal par clé, initialisé au chargement : on lit le stockage UNE fois,
+   * pas à chaque rendu — une lecture dans un `computed` en ferait une source de
+   * vérité que rien n'invalide, et le premier `setItem` d'un autre onglet
+   * mentirait sans jamais rafraîchir.
+   */
+  private readonly openState = new Map<string, WritableSignal<boolean>>();
+
+  /** Le signal d'ouverture d'une section, créé à la demande. */
+  protected sectionOpen(key: string): WritableSignal<boolean> {
+    const existing = this.openState.get(key);
+    if (existing !== undefined) {
+      return existing;
+    }
+    // Déployée par défaut : une section qui démarre repliée est une section
+    // qu'il faut découvrir.
+    const created = signal(this.uiPrefs.isOpen(FOLD_SCOPE, key, true));
+    this.openState.set(key, created);
+    return created;
+  }
+
+  /** Le pli est un choix : on le retient. */
+  protected setSectionOpen(key: string, open: boolean): void {
+    this.sectionOpen(key).set(open);
+    this.uiPrefs.setOpen(FOLD_SCOPE, key, open);
+  }
 
   protected readonly statusLabel = computed(() => STATUS_LABELS[this.store.status()]);
   protected readonly statusVariant = computed(() => STATUS_VARIANTS[this.store.status()]);
