@@ -25,6 +25,12 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 
 ---
 
+## La langue du code
+
+| Doc                                      | État | De quoi ça parle                                                                                              |
+| ---------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
+| [`langue-du-code.md`](langue-du-code.md) | 📐   | **Le mélange FR/EN dans un même symbole** : l'écart chiffré, le lexique, et 4 paliers dont 2 ne coûtent rien. |
+
 ## Plan courant
 
 | Doc                                                  | État | De quoi ça parle                                                                                                               |
