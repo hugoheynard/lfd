@@ -52,7 +52,12 @@
                  par le serveur au moment de la commande. -->
             <dd class="inherit-gross">
               @if (row.gross; as gross) {
-                {{ gross }}
+                <strong>{{ gross }}</strong>
+                <!-- Le montant seul ne dit pas ce qu'il est : à côté d'un taux
+                     et d'un prix HT saisi plus haut, « 12,00 € » peut se lire
+                     comme l'un ou l'autre. La mention lève le doute là où il
+                     naît, pas dans un en-tête qu'on ne relit pas. -->
+                <span class="inherit-regime">TTC</span>
               } @else {
                 <span class="muted">—</span>
               }

@@ -87,10 +87,16 @@
 /* Le TTC, tout à droite et en chiffres tabulaires : c'est une COLONNE, elle ne
    se lit que si les montants s'alignent d'une ligne à l'autre. */
 .inherit-gross {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
   justify-self: end;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text-muted);
+
+  strong {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--fold-weight-medium);
+  }
 }
 
 .inherit-rate {

@@ -221,12 +221,17 @@ describe('PricingForm — le TTC par canal', () => {
     const gross = (label: string): string =>
       rows
         .find((row) => row.querySelector('dt')?.textContent?.includes(label))
-        ?.querySelector('.inherit-gross')
+        ?.querySelector('.inherit-gross strong')
         ?.textContent?.replace(/\u202f|\u00a0/g, ' ')
         .trim() ?? '';
 
     expect(gross('emporter')).toBe('10,55 €');
     expect(gross('B2B')).toBe('12,00 €');
+
+    // Le montant est ÉTIQUETÉ : seul, « 12,00 € » se lirait aussi bien comme le
+    // prix HT saisi plus haut.
+    const rate = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
+    expect(rate?.querySelector('.inherit-gross')?.textContent).toContain('TTC');
   });
 
   it('ne montre RIEN sans prix — jamais un TTC égal au HT', () => {
