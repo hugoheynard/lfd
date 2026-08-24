@@ -22,6 +22,13 @@ function withFamily(store: ProductFormStore): void {
       percent: 5.5,
       usage: { emporter: 0, surPlace: 0 },
     },
+    {
+      id: 'tva_20',
+      name: 'Normal',
+      description: '',
+      percent: 20,
+      usage: { emporter: 0, surPlace: 0 },
+    },
   ]);
   store.categories.set([
     {
@@ -33,11 +40,11 @@ function withFamily(store: ProductFormStore): void {
       isArchived: false,
       channelPreset: {
         boutiques: { emp_rivoli: { emporter: true, surPlace: false } },
-        b2b: false,
+        b2b: true,
       },
       emporterTvaId: 'tva_55',
       surPlaceTvaId: 'tva_55',
-      b2bTvaId: '',
+      b2bTvaId: 'tva_20',
       activeProductCount: 0,
     },
   ]);
@@ -91,5 +98,17 @@ describe('PricingPanel', () => {
     const fixture = TestBed.createComponent(PricingPanel);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Redéfinir');
+  });
+  it('donne au B2B sa PROPRE ligne, avec son propre taux', () => {
+    // Le B2B ne se déduit pas des boutiques : il a son taux, qui peut différer
+    // de celui du comptoir. Absent de l'encadré, un produit vendu 20 % aux pros
+    // se lisait comme un produit à 5,5 %.
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
+    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
+    expect(b2b?.textContent).toContain('20 %');
   });
 });

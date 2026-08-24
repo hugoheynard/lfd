@@ -59,10 +59,22 @@ export interface ModeInheritance {
   readonly sold: boolean;
 }
 
+/**
+ * Le B2B, qui n'a PAS de boutiques : il se vend depuis la plateforme, pas depuis
+ * un comptoir. Lui prêter la forme des modes boutique donnerait une liste
+ * toujours vide — un champ qui ne se remplit jamais se lit comme une donnée
+ * manquante, pas comme une donnée sans objet.
+ */
+export interface ChannelInheritance {
+  readonly tva: string;
+  readonly sold: boolean;
+}
+
 export interface CategoryInheritanceView {
   readonly categoryName: string;
   readonly emporter: ModeInheritance;
   readonly surPlace: ModeInheritance;
+  readonly b2b: ChannelInheritance;
 }
 
 /** Les sections **enregistrables** — la seule source des clés de section. */
@@ -358,6 +370,12 @@ export class ProductFormStore {
         sold: sellsMode(category.channelPreset, 'surPlace'),
         boutiques: boutiquesWith(category.channelPreset, 'surPlace', this.emplacements()),
         tva: tva(category.surPlaceTvaId),
+      },
+      b2b: {
+        // Un drapeau, pas une somme de boutiques : le B2B se vend ou ne se vend
+        // pas, et son taux est le sien — 5,5 % en boutique n'entraîne rien ici.
+        sold: category.channelPreset.b2b,
+        tva: tva(category.b2bTvaId),
       },
     };
   });

@@ -36,6 +36,16 @@
           }
         </dd>
       </div>
+      <div class="inherit-row">
+        <dt>B2B</dt>
+        <dd>
+          @if (inh.b2b.sold) {
+            TVA <strong>{{ inh.b2b.tva }}</strong>
+          } @else {
+            <span class="muted">non proposé</span>
+          }
+        </dd>
+      </div>
     </dl>
   </div>
 } @else {
