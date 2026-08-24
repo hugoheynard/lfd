@@ -521,6 +521,36 @@ globales — c'est voulu, pas à contourner avec `ignoreDeprecations`.
 documentation, messages d'erreur destinés à l'utilisateur, messages de commit.
 Le code (identifiants, types, noms de fichiers) reste en anglais.
 
+### Le lexique
+
+Le dépôt a dérivé : `emplacement`, `tva`, `palier`, et une centaine de types
+mixtes du genre `BoutiqueChannels { emporter, surPlace }` — un nom anglais avec
+des membres français. L'audit chiffré et le plan de sortie sont dans
+[`documentation/langue-du-code.md`](documentation/langue-du-code.md) ; voici les
+mots à employer :
+
+| Français    | Anglais    | Français        | Anglais     |
+| ----------- | ---------- | --------------- | ----------- |
+| emplacement | `location` | gabarit         | `template`  |
+| taux de TVA | `vatRate`  | conditionnement | `packaging` |
+| tarif       | `pricing`  | boutique        | `shop`      |
+| palier      | `tier`     | à emporter      | `takeaway`  |
+| remise      | `discount` | sur place       | `eatIn`     |
+| retrait     | `pickup`   | livraison       | `delivery`  |
+
+**Deux exceptions, écrites plutôt que tues** — une exception nommée ne dérive
+pas, une exception tacite si :
+
+- **`mercuriale` reste en français.** Ce n'est ni un `priceList`, ni un
+  `catalog`, ni un `quote` : le traduire par approximation ferait perdre ce que
+  le mot dit, et le DDD demande de garder la langue du métier quand elle est
+  précise.
+- **Le front reste en français** dans ses LIBELLÉS : ils s'adressent à des
+  humains francophones. Ses identifiants, eux, suivent la règle.
+
+`pnpm lint:code-language` tient la ligne : les dossiers drainés échouent au
+premier mot français, le reste est compté et affiché à chaque exécution.
+
 ### JSDoc
 
 JSDoc obligatoire sur toute **frontière** : classe exportée, méthode publique,

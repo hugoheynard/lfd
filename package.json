@@ -28,6 +28,7 @@
     "lint:import-cycles": "node dev-toolbox/gates/import-cycles.mjs",
     "lint:context-boundaries": "node dev-toolbox/gates/context-boundaries.mjs",
     "lint:cross-schema-join": "node dev-toolbox/gates/cross-schema-join.mjs",
+    "lint:code-language": "node dev-toolbox/gates/code-language.mjs",
     "lint:catalog-shared-deps": "node dev-toolbox/gates/catalog-shared-deps.mjs",
     "lint:deployed-app-files": "node dev-toolbox/gates/deployed-app-files.mjs",
     "test": "turbo run test",

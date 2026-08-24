@@ -175,6 +175,11 @@ jobs:
       - name: "Gate : typographie fold"
         run: pnpm lint:fold-typography
 
+      # La langue des identifiants. Le gate ne juge que les dossiers DRAINÉS —
+      # il compte le reste et l'affiche, pour que la dette ne se taise pas.
+      - name: "Gate : les identifiants sont en anglais"
+        run: pnpm lint:code-language
+
       # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
       # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
       # portait cinq, survivants de sa fusion dans le back-office — ses routes
