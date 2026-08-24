@@ -27,7 +27,7 @@ import { UpdateLocationCommand } from "../application/update-location.js";
  * suffisait, et un révoqué gardait la main sur le catalogue.
  */
 @AdminSurface("catalog")
-@Controller("locations/emplacements")
+@Controller("locations")
 export class LocationController {
   constructor(
     private readonly commands: CommandBus,

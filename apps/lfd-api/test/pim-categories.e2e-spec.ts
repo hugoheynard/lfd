@@ -18,8 +18,8 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
-const EMPLACEMENTS = "/pim/locations/emplacements";
-const RATES = "/pim/commerce/tva-rates";
+const LOCATIONS = "/pim/locations";
+const RATES = "/pim/commerce/vat-rates";
 
 let ctx: E2eContext;
 
@@ -50,7 +50,7 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
 
 async function createLocation(name: string): Promise<string> {
   const response = await staff()
-    .post(EMPLACEMENTS)
+    .post(LOCATIONS)
     .send({ name, clickCollect: true, surPlace: false, baseUrl: "", tableCount: 0 });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;

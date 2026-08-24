@@ -16,7 +16,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-const EMPLACEMENTS = "/pim/locations/emplacements";
+const LOCATIONS = "/pim/locations";
 const CATEGORIES = "/pim/catalogue/categories";
 
 let ctx: E2eContext;
@@ -50,7 +50,7 @@ async function createLocation(
   over: Partial<{ name: string; surPlace: boolean; tableCount: number }> = {},
 ): Promise<string> {
   const response = await staff()
-    .post(EMPLACEMENTS)
+    .post(LOCATIONS)
     .send({
       name: "Village",
       clickCollect: true,
@@ -64,7 +64,7 @@ async function createLocation(
 }
 
 async function readLocation(id: string): Promise<LocationRow> {
-  const response = await staff().get(EMPLACEMENTS);
+  const response = await staff().get(LOCATIONS);
   expect(response.status).toBe(200);
   const row = jsonBody<LocationRow[]>(response).find((item) => item.id === id);
   if (row === undefined) {
@@ -77,7 +77,7 @@ describe("le nom d'un emplacement est unique", () => {
   it("refuse un second location du même nom", async () => {
     await createLocation({ name: "Village" });
 
-    const response = await staff().post(EMPLACEMENTS).send({
+    const response = await staff().post(LOCATIONS).send({
       name: "Village",
       clickCollect: true,
       surPlace: false,
@@ -97,7 +97,7 @@ describe("le nom d'un emplacement est unique", () => {
   it("refuse une casse différente — c'est le même point de vente à l'écran", async () => {
     await createLocation({ name: "Village" });
 
-    const response = await staff().post(EMPLACEMENTS).send({
+    const response = await staff().post(LOCATIONS).send({
       name: "  village ",
       clickCollect: true,
       surPlace: false,
@@ -112,7 +112,7 @@ describe("le nom d'un emplacement est unique", () => {
     await createLocation({ name: "Village" });
     const second = await createLocation({ name: "Labo" });
 
-    const response = await staff().put(`${EMPLACEMENTS}/${second}`).send({ name: "VILLAGE" });
+    const response = await staff().put(`${LOCATIONS}/${second}`).send({ name: "VILLAGE" });
 
     expect(response.status).toBe(409);
     expect((await readLocation(second)).name).toBe("Labo");
@@ -121,10 +121,7 @@ describe("le nom d'un emplacement est unique", () => {
   it("laisse un emplacement garder son propre nom en changeant autre chose", async () => {
     const id = await createLocation({ name: "Village" });
 
-    await staff()
-      .put(`${EMPLACEMENTS}/${id}`)
-      .send({ name: "Village", surPlace: true })
-      .expect(200);
+    await staff().put(`${LOCATIONS}/${id}`).send({ name: "Village", surPlace: true }).expect(200);
 
     expect((await readLocation(id)).surPlace).toBe(true);
   });
@@ -164,7 +161,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
       .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
       .expect(200);
 
-    const response = await staff().delete(`${EMPLACEMENTS}/${location}`);
+    const response = await staff().delete(`${LOCATIONS}/${location}`);
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("locations.location_in_use");
@@ -186,7 +183,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
       .send({ boutiques: {}, b2b: false })
       .expect(200);
 
-    await staff().delete(`${EMPLACEMENTS}/${location}`).expect(200);
+    await staff().delete(`${LOCATIONS}/${location}`).expect(200);
   });
 });
 
@@ -199,10 +196,10 @@ describe("fermer la salle vide la grille — en base", () => {
    */
   it("supprime les tables ET leurs QR quand on coupe le sur place", async () => {
     const id = await createLocation({ name: "Village", surPlace: true, tableCount: 3 });
-    await staff().post(`${EMPLACEMENTS}/${id}/tables/2/qr`).send({}).expect(201);
+    await staff().post(`${LOCATIONS}/${id}/tables/2/qr`).send({}).expect(201);
     expect((await readLocation(id)).tables).toHaveLength(3);
 
-    await staff().put(`${EMPLACEMENTS}/${id}`).send({ surPlace: false }).expect(200);
+    await staff().put(`${LOCATIONS}/${id}`).send({ surPlace: false }).expect(200);
 
     const row = await readLocation(id);
     expect(row.surPlace).toBe(false);
@@ -211,9 +208,9 @@ describe("fermer la salle vide la grille — en base", () => {
 
   it("préserve le QR d'une table conservée quand la grille rétrécit", async () => {
     const id = await createLocation({ name: "Village", surPlace: true, tableCount: 4 });
-    await staff().post(`${EMPLACEMENTS}/${id}/tables/1/qr`).send({}).expect(201);
+    await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201);
 
-    await staff().put(`${EMPLACEMENTS}/${id}`).send({ tableCount: 2 }).expect(200);
+    await staff().put(`${LOCATIONS}/${id}`).send({ tableCount: 2 }).expect(200);
 
     const row = await readLocation(id);
     expect(row.tables).toHaveLength(2);

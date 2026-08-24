@@ -33,7 +33,7 @@ export interface LocationInput {
 }
 
 /**
- * Accès **réel** aux locations — parle au backend (`locations/emplacements`).
+ * Accès **réel** aux locations — parle au backend (`locations`).
  * Le token QR d'une table est **minté par le serveur** (R1) : `generateTableQr`
  * ne l'envoie plus, il le reçoit. Remplace la branche LocalDb.
  */
@@ -71,8 +71,6 @@ export class LocationHttpApi {
   }
 
   private url(path: string): string {
-    return path === ''
-      ? `${this.base}/locations/emplacements`
-      : `${this.base}/locations/emplacements/${path}`;
+    return path === '' ? `${this.base}/locations` : `${this.base}/locations/${path}`;
   }
 }

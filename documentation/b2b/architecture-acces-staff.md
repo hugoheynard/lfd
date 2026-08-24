@@ -155,7 +155,7 @@ une taxonomie d'intention :
 | `companies`    | `admin/companies` et ses sous-routes, `admin/activations`, `admin/companies/:id/alert-rules`, `admin/companies/:id/members`                                 |
 | `orders`       | `admin/orders`, `admin/handover`, les alertes de compte (`admin/alerts/*`)                                                                                  |
 | `catalog`      | Le PIM : produits, familles, collections, emplacements, canaux et publication (`products`, `categories`, `channels/*`, `collections/tva`, `admin/catalog*`) |
-| `tax`          | Le référentiel fiscal, et lui seul : `commerce/tva-rates`                                                                                                   |
+| `tax`          | Le référentiel fiscal, et lui seul : `commerce/vat-rates`                                                                                                   |
 | `growth`       | `admin/cockpit`, `admin/growth`, `admin/leads`, `admin/prospects`, `admin/commercial/market`                                                                |
 | `appointments` | `admin/availability`, `admin/appointments`                                                                                                                  |
 | `support`      | `admin/support-requests`, `admin/notifications`                                                                                                             |

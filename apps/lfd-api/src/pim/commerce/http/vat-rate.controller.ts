@@ -25,7 +25,7 @@ import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
  * de taxe vers un canal reste `catalog:write`.
  */
 @AdminSurface("tax")
-@Controller("commerce/tva-rates")
+@Controller("commerce/vat-rates")
 export class VatRateController {
   constructor(
     private readonly commands: CommandBus,

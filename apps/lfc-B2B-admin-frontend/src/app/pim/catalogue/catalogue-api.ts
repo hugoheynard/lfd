@@ -47,7 +47,7 @@ export class CatalogueApi {
   // rien d'autre qu'un appel, et deux portes vers la même donnée finissent par
   // ne plus dire la même chose.
 
-  // ── Taux de TVA (backend `commerce/tva-rates`, via VatRateStore) ─────────
+  // ── Taux de TVA (backend `commerce/vat-rates`, via VatRateStore) ─────────
 
   async listVatRates(): Promise<VatRate[]> {
     await this.vatRateStore.reload();
