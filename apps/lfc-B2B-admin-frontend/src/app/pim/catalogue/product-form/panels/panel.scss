@@ -9,6 +9,15 @@
   gap: var(--fold-space-lg);
 }
 
+/* Le sélecteur de langue COMMANDE les champs qui le suivent — il ne fait pas
+   partie de leur suite. Il s'en détache donc plus que les champs ne se
+   détachent entre eux (`--fold-space-lg`), faute de quoi il se lit comme une
+   ligne de plus du formulaire au lieu de l'interrupteur qui les gouverne. */
+app-lang-switch {
+  display: block;
+  margin-block-end: var(--fold-space-2xl);
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -210,4 +219,19 @@
     grid-column: 2;
     justify-self: start;
   }
+}
+
+/* Diffusion par canal : deux blocs côte à côte, qui se replient l'un sous
+   l'autre quand la colonne se resserre. */
+.channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--fold-space-xl);
+}
+
+.channel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
 }

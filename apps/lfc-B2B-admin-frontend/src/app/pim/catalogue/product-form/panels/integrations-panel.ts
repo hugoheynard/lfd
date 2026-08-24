@@ -1,32 +1,26 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import {
-  FoldEmptyStateComponent,
-  FoldNavLayoutComponent,
-  FoldTabPanelComponent,
-  FoldTabsComponent,
-  type FoldTabItem,
-} from 'fold-ng';
+import { FoldElementTitleComponent, FoldFieldComponent, FoldFieldListComponent } from 'fold-ng';
 
-/** Panneau Intégrations — un **second** nav-layout, **vertical**, qui héberge un
- *  sous-onglet par intégration (B2B, Shopify…). Chaque sous-onglet accueillera
- *  les champs spécifiques à son canal. Vide pour l'instant (à remplir). */
+import { ProductFormStore } from '../product-form-store';
+
+/**
+ * Panneau Diffusion par canal — **deux blocs côte à côte**, plus un troisième
+ * niveau d'onglets. Deux états vides derrière trois niveaux de navigation ne se
+ * justifient pas, et l'ajout d'un champ Shopify ne doit pas créer une page.
+ *
+ * C'est aussi le domicile du **handle** : une URL de boutique en ligne est une
+ * propriété du canal Shopify, pas de l'identité du produit. Le B2B ne s'en sert
+ * pas — un professionnel qui commande en gros ne cherche pas le produit sur
+ * Google — donc le référencement n'a rien à faire dans la carte Identité.
+ */
 @Component({
   selector: 'app-integrations-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldNavLayoutComponent,
-    FoldTabsComponent,
-    FoldTabPanelComponent,
-    FoldEmptyStateComponent,
-  ],
+  imports: [FoldElementTitleComponent, FoldFieldComponent, FoldFieldListComponent],
   templateUrl: './integrations-panel.html',
   styleUrl: './panel.scss',
 })
 export class IntegrationsPanel {
-  protected readonly subTabs: FoldTabItem[] = [
-    { key: 'b2b', label: 'B2B', icon: 'store' },
-    { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-  ];
-  protected readonly activeSub = signal<string>('b2b');
+  protected readonly store = inject(ProductFormStore);
 }

@@ -2,13 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import { LOCALES, SOURCE_LOCALE, type Locale } from '@lfd/pim-contracts';
 
-import {
-  FoldFieldComponent,
-  FoldFieldListComponent,
-  FoldInputComponent,
-  FoldListboxComponent,
-  FoldOptionComponent,
-} from 'fold-ng';
+import { FoldInputComponent, FoldListboxComponent, FoldOptionComponent } from 'fold-ng';
 
 import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
 import { ProductFormStore } from '../product-form-store';
@@ -27,14 +21,7 @@ const LOCALE_NAMES: Readonly<Record<Locale, string>> = {
 @Component({
   selector: 'app-identity-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    LangSwitch,
-    FoldFieldComponent,
-    FoldFieldListComponent,
-    FoldInputComponent,
-    FoldListboxComponent,
-    FoldOptionComponent,
-  ],
+  imports: [LangSwitch, FoldInputComponent, FoldListboxComponent, FoldOptionComponent],
   templateUrl: './identity-panel.html',
   styleUrl: './panel.scss',
 })

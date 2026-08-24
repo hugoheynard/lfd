@@ -15,10 +15,9 @@ function setup(): ProductFormStore {
 describe('IdentityPanel', () => {
   // La référence est ÉMISE par le référentiel. Un champ de saisie proposerait
   // d'écrire une valeur que le backend n'écoute plus — et inviterait au doublon.
-  it('n’offre aucun champ de saisie pour la référence ni pour le slug', () => {
-    // Les deux sont ÉMIS par le référentiel. Un champ de saisie proposerait
-    // d'écrire une valeur que le backend ignore — et, pour le slug, qu'il
-    // refuse même de bouger après création.
+  it('n’offre aucun champ de saisie pour la référence', () => {
+    // La référence est ÉMISE par le référentiel : un champ de saisie
+    // proposerait d'écrire une valeur que le backend ignore.
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
@@ -28,12 +27,12 @@ describe('IdentityPanel', () => {
       (input) => input.getAttribute('label') ?? '',
     );
     expect(labels.some((label) => label.includes('Référence'))).toBe(false);
-    expect(labels.some((label) => label.includes('Slug'))).toBe(false);
   });
 
-  it('présente les champs dans l’ordre nom · famille · nature · slug', () => {
+  it('présente les champs dans l’ordre nom · famille · nature', () => {
     // L'ordre EST le contenu d'une fiche : on nomme la chose, on la range, on
-    // dit ce qu'elle est, puis on lit ce que le référentiel en a fait.
+    // dit ce qu'elle est. Le HANDLE n'y figure pas — c'est une URL de boutique
+    // en ligne, donc une propriété du canal Shopify, pas de l'identité.
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
@@ -44,32 +43,16 @@ describe('IdentityPanel', () => {
     // Le libellé du nom est une entrée SIGNAL (il nomme la langue en cours),
     // donc aucun attribut ne le reflète — on lit ce que le composant rend.
     const labels = fields.map((el) => el.getAttribute('label') ?? el.textContent?.trim() ?? '');
-    expect(labels.length).toBe(4);
+    expect(labels.length).toBe(3);
     expect(labels[0]).toContain('Nom du produit');
-    expect(labels.slice(1)).toEqual(['Famille', 'Nature', 'Slug']);
+    expect(labels.slice(1)).toEqual(['Famille', 'Nature']);
   });
 
-  it('dit que le slug manque plutôt que d’en inventer un', () => {
-    // Le handle naît de la première publication. Afficher un slug « proposé »
-    // prétendrait connaître l'algorithme du serveur, et mentirait le jour où
-    // les deux divergent.
+  it('ne montre aucun champ en lecture — ni référence, ni handle', () => {
     const store = setup();
     store.isEdit.set(true);
-    store.setName('Tarte au citron meringuée');
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
-
-    const field = (fixture.nativeElement as HTMLElement).querySelector('fold-field');
-    expect(field?.textContent).toContain('attribué à la première publication');
-    expect(field?.textContent).not.toContain('tarte');
-  });
-
-  it('ne montre ni slug ni référence en création', () => {
-    const store = setup();
-    store.isEdit.set(false);
-    const fixture = TestBed.createComponent(IdentityPanel);
-    fixture.detectChanges();
-
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-field')).toBeNull();
   });
 

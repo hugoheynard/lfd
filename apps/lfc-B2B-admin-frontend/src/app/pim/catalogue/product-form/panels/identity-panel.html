@@ -1,5 +1,5 @@
 <!-- Le sélecteur appartient à CETTE section, et il ne fait basculer que le nom.
-     La famille, la nature et le slug ne se traduisent pas — un sélecteur de page
+     La famille et la nature ne se traduisent pas — un sélecteur de page
      les aurait fait basculer avec, ou aurait laissé croire qu'ils basculent. -->
 <app-lang-switch
   [lang]="store.nameLocale()"
@@ -30,25 +30,4 @@
       <fold-option [value]="option.value">{{ option.label }}</fold-option>
     }
   </fold-listbox>
-
-  <!-- Le slug est LU, jamais saisi : il est figé à la création, parce qu'une URL
-       qui change casse les liens et le référencement acquis. Il naît de la
-       première publication, donc il peut manquer sur un brouillon — et on le dit
-       plutôt que d'afficher une valeur « proposée » qui prétendrait connaître
-       l'algorithme du serveur.
-
-       La RÉFÉRENCE, elle, a quitté ce panneau : elle vit maintenant dans la
-       ligne de faits de l'en-tête, avec la famille et le nombre de déclinaisons.
-       La répéter ici en ferait un champ de formulaire qui n'en est pas un. -->
-  @if (store.isEdit()) {
-    <fold-field-list>
-      <fold-field label="Slug">
-        @if (store.slug(); as slug) {
-          <code class="sku">{{ slug }}</code>
-        } @else {
-          <span class="muted">attribué à la première publication</span>
-        }
-      </fold-field>
-    </fold-field-list>
-  }
 </div>
