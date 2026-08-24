@@ -205,3 +205,40 @@ describe('PricingForm — ce qui n’y est PAS', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Poids');
   });
 });
+
+describe('PricingForm — le TTC par canal', () => {
+  it('calcule le TTC de CHAQUE contexte à partir du prix HT et de son taux', () => {
+    // La famille est à 5,5 % au comptoir et 20 % en B2B : deux TTC pour un seul
+    // prix HT. C'est exactement ce que la colonne existe pour montrer — sans
+    // elle, il faut faire le calcul de tête pour savoir ce que paie le client.
+    const store = setup();
+    withFamily(store);
+    store.priceEur.set(10);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
+    const gross = (label: string): string =>
+      rows
+        .find((row) => row.querySelector('dt')?.textContent?.includes(label))
+        ?.querySelector('.inherit-gross')
+        ?.textContent?.replace(/\u202f|\u00a0/g, ' ')
+        .trim() ?? '';
+
+    expect(gross('emporter')).toBe('10,55 €');
+    expect(gross('B2B')).toBe('12,00 €');
+  });
+
+  it('ne montre RIEN sans prix — jamais un TTC égal au HT', () => {
+    // Un produit non tarifé afficherait « 0,00 € » si on calculait sur `null`,
+    // et un zéro se lit comme un prix.
+    const store = setup();
+    withFamily(store);
+    store.priceEur.set(null);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const gross = (fixture.nativeElement as HTMLElement).querySelector('.inherit-gross');
+    expect(gross?.textContent?.trim()).toBe('—');
+  });
+});

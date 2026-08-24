@@ -46,7 +46,7 @@
    impossible. La colonne du milieu absorbe le reste et se tronque. */
 .inherit-row {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: var(--fold-space-md);
   padding: var(--fold-space-sm) var(--fold-space-md);
@@ -82,6 +82,15 @@
    comme un chiffre manquant. */
 .inherit-where:last-child {
   grid-column: 2 / -1;
+}
+
+/* Le TTC, tout à droite et en chiffres tabulaires : c'est une COLONNE, elle ne
+   se lit que si les montants s'alignent d'une ligne à l'autre. */
+.inherit-gross {
+  justify-self: end;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
 }
 
 .inherit-rate {

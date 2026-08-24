@@ -72,6 +72,23 @@ export interface RateView {
 }
 
 /**
+ * Le prix TTC d'un contexte — **calculé ici**, jamais reçu.
+ *
+ * Le catalogue porte un prix HT et un taux par contexte : le TTC en découle, et
+ * le stocker en ferait une troisième valeur à tenir d'accord avec les deux
+ * autres. C'est une aide à la lecture, pas une donnée : la facture, elle, est
+ * calculée par le serveur au moment de la commande.
+ */
+function grossOf(priceEur: number | null, percent: number | undefined): string | null {
+  if (priceEur === null || percent === undefined) {
+    return null;
+  }
+  return EUROS.format(Math.round(priceEur * (1 + percent / 100) * 100) / 100);
+}
+
+const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+
+/**
  * Une ligne de l'héritage : un contexte de vente, ce qu'il dessert, son taux.
  *
  * C'étaient trois champs nommés (`emporter`, `surPlace`, `b2b`). Un quatrième
@@ -100,6 +117,8 @@ export interface ChannelInheritance {
   /** Vide pour un contexte sans comptoir — le B2B se vend depuis la plateforme. */
   readonly boutiques: readonly string[];
   readonly rate: RateView | null;
+  /** Le prix TTC de ce contexte — `null` sans prix ou sans taux. */
+  readonly gross: string | null;
 }
 
 export interface CategoryInheritanceView {
@@ -440,8 +459,14 @@ export class ProductFormStore {
     // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend se lit
     // sur les siens, pas sur ceux de sa famille.
     const channels = this.effectiveChannels();
-    const rateOf = (contextKey: string): RateView | null =>
-      viewOf(override[contextKey] ?? category.tvaByContext[contextKey]);
+    const rateIdOf = (contextKey: string): string | undefined =>
+      override[contextKey] ?? category.tvaByContext[contextKey];
+    const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
+    const grossFor = (contextKey: string): string | null => {
+      const rateId = rateIdOf(contextKey);
+      const rate = rateId === undefined ? undefined : this.regimeById().get(rateId);
+      return grossOf(this.priceEur(), rate?.percent);
+    };
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
@@ -462,6 +487,7 @@ export class ProductFormStore {
             ? []
             : boutiquesWith(channels, boutiqueMode(context.channelKey), this.emplacements()),
         rate: rateOf(context.key),
+        gross: grossFor(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',
       })),
     };

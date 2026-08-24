@@ -45,6 +45,17 @@
               } @else {
                 <span class="muted">taux non défini</span>
               }
+            </dd>
+            <!-- Le TTC de CE contexte. Calculé ici à partir du prix HT et du
+                 taux : le stocker en ferait une troisième valeur à tenir
+                 d'accord avec les deux autres. La facture, elle, est calculée
+                 par le serveur au moment de la commande. -->
+            <dd class="inherit-gross">
+              @if (row.gross; as gross) {
+                {{ gross }}
+              } @else {
+                <span class="muted">—</span>
+              }
               <!-- Le geste est SUR la ligne qu'il change : un bouton unique en
                    pied de bloc aurait demandé de choisir le contexte deux fois,
                    une fois dans sa tête et une fois dans le panneau. -->
