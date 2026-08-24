@@ -166,17 +166,18 @@ describe('ProductFormPage — en-tête', () => {
     localStorage.clear();
   });
 
-  it('tient toutes ses sections dans UNE carte', () => {
-    // Une carte par section empilait huit boîtes pour ne rien distinguer de
-    // plus. Ce qui sépare deux sujets, c'est l'écart et le filet de chaque
-    // en-tête — pas un cadre de plus autour de chacune.
+  it('donne à CHAQUE section sa carte', () => {
+    // La carte unique tenait sur l'idée que le filet d'en-tête suffit à séparer
+    // deux sujets. À l'usage, non : il fallait 32px d'écart pour que la
+    // séparation se voie, et ce vide DANS une boîte se lisait comme un trou.
     const { root } = render(true);
     const sections = [...root.querySelectorAll('fold-page-section')];
     expect(sections.length).toBeGreaterThan(1);
-    // Toutes dans la MÊME carte — on compare les parents plutôt que de compter
-    // les cartes de la page, dont le rail de publication a les siennes.
-    const cards = new Set(sections.map((section) => section.closest('fold-card')));
-    expect(cards.size).toBe(1);
-    expect([...cards][0]).not.toBeNull();
+    // Une carte par section, et aucune partagée — on compare les parents plutôt
+    // que de compter les cartes de la page, dont le rail de publication a les
+    // siennes.
+    const cards = sections.map((section) => section.closest('fold-card'));
+    expect(cards.every((card) => card !== null)).toBe(true);
+    expect(new Set(cards).size).toBe(sections.length);
   });
 });

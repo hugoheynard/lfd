@@ -63,17 +63,14 @@
     />
   } @else {
     <fold-aside-layout asideRightLabel="Publication">
-      <!-- UNE carte pour toutes les sections, comme la maquette. Une carte par
-           section empilait huit boîtes pour ne rien distinguer de plus : ce qui
-           sépare deux sujets, c'est l'écart entre elles et le filet de chaque
-           en-tête — pas un cadre de plus autour de chacune.
-
-           C'est le PLIAGE qui rend la carte unique tenable : huit sections
-           déployées dans une seule boîte feraient un mur, et c'est très
-           exactement pour ça qu'on y avait mis des onglets la première fois. -->
-      <fold-card>
-        <div class="sections">
-          @for (section of sections; track section.key) {
+      <!-- UNE carte PAR section. La carte unique tenait sur l'argument que le
+           filet d'en-tête suffit à séparer deux sujets ; à l'usage, non : il
+           faut un écart de 32px pour que la séparation se voie, et cet écart
+           creuse un vide DANS une boîte, ce qui se lit comme un trou plutôt
+           que comme une frontière. Un bord ferme, et 16px suffisent alors. -->
+      <div class="sections">
+        @for (section of sections; track section.key) {
+          <fold-card>
             <fold-page-section
               [title]="section.label"
               separator
@@ -105,10 +102,12 @@
                 }
               }
             </fold-page-section>
-          }
+          </fold-card>
+        }
 
-          <!-- Une section en lecture seule : elle n'a pas d'enregistrement
+        <!-- Une section en lecture seule : elle n'a pas d'enregistrement
              propre, donc pas d'indicateur d'état. -->
+        <fold-card>
           <fold-page-section
             title="Diffusion par canal"
             separator
@@ -122,8 +121,8 @@
             </span>
             <app-integrations-panel />
           </fold-page-section>
-        </div>
-      </fold-card>
+        </fold-card>
+      </div>
 
       <app-publish-rail asideRight (saveAll)="saveAll()" />
     </fold-aside-layout>

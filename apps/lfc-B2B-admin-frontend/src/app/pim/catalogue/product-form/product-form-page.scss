@@ -1,14 +1,12 @@
-/* Les sections, dans LA carte.
+/* Les sections, UNE carte chacune.
 
-   L'écart entre deux sections doit dire « on change de sujet », pas
-   « paragraphe suivant » : dans une même carte, deux sections séparées de
-   l'écart qui sépare deux champs (16px) se liraient comme une seule liste
-   hachée. Le double tranche — et c'est le seul rôle de ce réglage, puisque le
-   filet de chaque en-tête dit déjà où une section commence. */
+   L'écart se resserre parce que le bord fait le travail : entre deux cartes, il
+   ne sépare plus deux sujets — il les espace seulement, et 32px creusaient un
+   couloir. Le changement de sujet est dit par la carte, pas par le vide. */
 .sections {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3xl);
+  gap: var(--fold-space-lg);
 }
 
 /* La page possède DÉJÀ la gouttière : `fold-page-layout` la paye sur son hôte.
