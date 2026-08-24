@@ -1,13 +1,10 @@
 <!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
      « edit » y ajoutait le geste plutôt que la chose. -->
-<!-- Trois décisions, trois attributs. `headerBleed` : l'en-tête va bord à bord,
-     donc son filet aussi — c'est la portée. `headerBand` : elle se pose sur le
-     sol de bande, un pas à l'écart de la page dans le sens que la polarité du
-     thème impose. `separator` : elle se ferme sur un filet, parce que sur un
-     thème où la bande s'écarte peu, c'est le filet qui dit où elle s'arrête.
-
-     Pour un filet pleine largeur SANS fond, il suffit de retirer `headerBand`. -->
-<fold-page-layout [title]="store.pageTitle()" headerBleed headerBand separator>
+<!-- `headerBleed` + `separator` : l'en-tête va bord à bord, donc son filet
+     aussi. PAS de `headerBand` — l'élévation de cet écran est portée par la
+     carte qui tient les sections ; une bande derrière l'en-tête ET un rail
+     bandé y ajouteraient deux sols qui se disputent le même rôle. -->
+<fold-page-layout [title]="store.pageTitle()" headerBleed separator>
   <fold-back-link pageEyebrow icon="arrow-back" label="Produits" routerLink="/pim/produits" />
 
   @if (store.isEdit()) {
@@ -65,74 +62,80 @@
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
   } @else {
-    <fold-aside-layout band="right" asideRightLabel="Publication">
-      @for (section of sections; track section.key) {
-        <fold-card>
+    <fold-aside-layout asideRightLabel="Publication">
+      <!-- UNE carte pour toutes les sections, comme la maquette. Une carte par
+           section empilait huit boîtes pour ne rien distinguer de plus : ce qui
+           sépare deux sujets, c'est l'écart entre elles et le filet de chaque
+           en-tête — pas un cadre de plus autour de chacune.
+
+           C'est le PLIAGE qui rend la carte unique tenable : huit sections
+           déployées dans une seule boîte feraient un mur, et c'est très
+           exactement pour ça qu'on y avait mis des onglets la première fois. -->
+      <fold-card>
+        <div class="sections">
+          @for (section of sections; track section.key) {
+            <fold-page-section
+              [title]="section.label"
+              separator
+              collapsible
+              [open]="sectionOpen(section.key)()"
+              (openChange)="setSectionOpen(section.key, $event)"
+            >
+              <span sectionSubtitle>{{ section.description }}</span>
+              <app-section-state
+                sectionActions
+                [section]="section.key"
+                (save)="saveSection($event)"
+              />
+              @switch (section.key) {
+                @case ('identite') {
+                  <app-identity-panel />
+                }
+                @case ('tarif') {
+                  <app-pricing-panel />
+                }
+                @case ('fiche') {
+                  <app-regulatory-panel />
+                }
+                @case ('communication') {
+                  <app-communication-panel />
+                }
+                @case ('visuels') {
+                  <app-visuals-panel />
+                }
+              }
+            </fold-page-section>
+          }
+
+          <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
+             propre, donc pas d'indicateur d'état. -->
           <fold-page-section
-            [title]="section.label"
+            title="Canaux de vente"
             separator
             collapsible
-            [open]="sectionOpen(section.key)()"
-            (openChange)="setSectionOpen(section.key, $event)"
+            [open]="sectionOpen('canaux')()"
+            (openChange)="setSectionOpen('canaux', $event)"
           >
-            <span sectionSubtitle>{{ section.description }}</span>
-            <app-section-state
-              sectionActions
-              [section]="section.key"
-              (save)="saveSection($event)"
-            />
-            @switch (section.key) {
-              @case ('identite') {
-                <app-identity-panel />
-              }
-              @case ('tarif') {
-                <app-pricing-panel />
-              }
-              @case ('fiche') {
-                <app-regulatory-panel />
-              }
-              @case ('communication') {
-                <app-communication-panel />
-              }
-              @case ('visuels') {
-                <app-visuals-panel />
-              }
-            }
+            <span sectionSubtitle>
+              Hérités de la famille du produit : la provenance, les boutiques concernées et le cas «
+              non proposé ».
+            </span>
+            <app-channels-panel />
           </fold-page-section>
-        </fold-card>
-      }
-
-      <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
-           propre, donc pas d'indicateur d'état. -->
-      <fold-card>
-        <fold-page-section
-          title="Canaux de vente"
-          separator
-          collapsible
-          [open]="sectionOpen('canaux')()"
-          (openChange)="setSectionOpen('canaux', $event)"
-        >
-          <span sectionSubtitle>
-            Hérités de la famille du produit : la provenance, les boutiques concernées et le cas «
-            non proposé ».
-          </span>
-          <app-channels-panel />
-        </fold-page-section>
-      </fold-card>
-      <fold-card>
-        <fold-page-section
-          title="Diffusion par canal"
-          separator
-          collapsible
-          [open]="sectionOpen('diffusion')()"
-          (openChange)="setSectionOpen('diffusion', $event)"
-        >
-          <span sectionSubtitle>
-            Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
-            d'onglets.
-          </span>
-          <app-integrations-panel />
-        </fold-page-section>
+          <fold-page-section
+            title="Diffusion par canal"
+            separator
+            collapsible
+            [open]="sectionOpen('diffusion')()"
+            (openChange)="setSectionOpen('diffusion', $event)"
+          >
+            <span sectionSubtitle>
+              Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
+              d'onglets.
+            </span>
+            <app-integrations-panel />
+          </fold-page-section>
+        </div>
       </fold-card>
 
       <app-publish-rail asideRight (saveAll)="saveAll()" />

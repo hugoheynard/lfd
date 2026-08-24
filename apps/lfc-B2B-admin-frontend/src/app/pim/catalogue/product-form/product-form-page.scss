@@ -1,3 +1,16 @@
+/* Les sections, dans LA carte.
+
+   L'écart entre deux sections doit dire « on change de sujet », pas
+   « paragraphe suivant » : dans une même carte, deux sections séparées de
+   l'écart qui sépare deux champs (16px) se liraient comme une seule liste
+   hachée. Le double tranche — et c'est le seul rôle de ce réglage, puisque le
+   filet de chaque en-tête dit déjà où une section commence. */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3xl);
+}
+
 /* La page possède DÉJÀ la gouttière : `fold-page-layout` la paye sur son hôte.
    Laisser `fold-aside-layout` payer la sienne par-dessus l'inserait une seconde
    fois — invisible tant que rien n'est peint, voyant dès que le rail porte sa
@@ -5,13 +18,6 @@
    reste à zéro pour la même raison : `--fold-page-pad-bottom` le couvre. */
 fold-aside-layout {
   --fold-aside-layout-pad: 0;
-
-  /* L'écart entre deux sections doit dire « on change de sujet », pas
-     « paragraphe suivant ». Le rythme par défaut du layout (18px) séparait deux
-     cartes d'à peine plus que deux champs à l'intérieur d'une (16px) : à cette
-     distance, huit cartes se lisent comme une seule liste hachée. Le double
-     tranche, et c'est le seul rôle de ce réglage. */
-  --fold-aside-layout-stack: var(--fold-space-3xl);
 }
 
 /* La ligne de faits sous le titre. Elle vit dans le créneau `[description]` de

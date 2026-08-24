@@ -57,21 +57,15 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('fold-page-layout')?.hasAttribute('data-separator')).toBe(true);
   });
 
-  it('pose l’en-tête sur le sol de bande, et le rail de publication avec', () => {
-    // Les deux zones que la maquette détache du contenu : l'en-tête et le rail.
-    // Elles nomment le MÊME rôle (`--fold-color-surface-band`), donc elles
-    // s'accordent sur les cinq thèmes sans qu'aucune connaisse sa polarité.
+  it('ne peint AUCUNE bande — la carte porte l’élévation', () => {
+    // Deux sols qui disent « ceci n'est pas le contenu » se disputent le même
+    // rôle : la carte qui tient les sections le dit déjà, et mieux.
     const { root } = render(true);
     const layout = root.querySelector('fold-page-layout');
-    expect(layout?.hasAttribute('data-header-band')).toBe(true);
-    // La PORTÉE est une décision distincte du SOL : c'est elle qui fait courir
-    // le filet sur toute la largeur, et on doit pouvoir l'avoir sans le fond.
+    expect(layout?.hasAttribute('data-header-band')).toBe(false);
+    expect(root.querySelector('fold-aside-layout')?.hasAttribute('data-band')).toBe(false);
+    // La PORTÉE reste : c'est elle qui fait courir le filet sur toute la largeur.
     expect(layout?.hasAttribute('data-header-bleed')).toBe(true);
-    const aside = root.querySelector('fold-aside-layout');
-    expect(aside?.getAttribute('data-band')).toBe('right');
-    // La bande s'arrête à la gouttière de page : le rail vit DANS la page, il ne
-    // la coiffe pas — contrairement à l'en-tête, qui elle va bord à bord.
-    expect(aside?.classList.contains('is-bleed')).toBe(false);
   });
 
   it('expose le rail comme un repère nommé, pas comme une région anonyme', () => {
@@ -170,5 +164,19 @@ describe('ProductFormPage — en-tête', () => {
     const reopened = second.root.querySelector('fold-page-section')!;
     expect(reopened.querySelector<HTMLElement>('.section-body')!.hidden).toBe(true);
     localStorage.clear();
+  });
+
+  it('tient toutes ses sections dans UNE carte', () => {
+    // Une carte par section empilait huit boîtes pour ne rien distinguer de
+    // plus. Ce qui sépare deux sujets, c'est l'écart et le filet de chaque
+    // en-tête — pas un cadre de plus autour de chacune.
+    const { root } = render(true);
+    const sections = [...root.querySelectorAll('fold-page-section')];
+    expect(sections.length).toBeGreaterThan(1);
+    // Toutes dans la MÊME carte — on compare les parents plutôt que de compter
+    // les cartes de la page, dont le rail de publication a les siennes.
+    const cards = new Set(sections.map((section) => section.closest('fold-card')));
+    expect(cards.size).toBe(1);
+    expect([...cards][0]).not.toBeNull();
   });
 });
