@@ -1,0 +1,28 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* L'aperçu tient dans le panneau sans le remplir : il sert à reconnaître
+   l'image, pas à la juger. */
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 14rem;
+  object-fit: contain;
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

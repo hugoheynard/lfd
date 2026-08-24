@@ -1,0 +1,29 @@
+<fold-panel-header
+  title="Texte alternatif"
+  subtitle="Ce que montre l'image, pour qui ne la voit pas — et pour les moteurs."
+/>
+
+<div class="body">
+  <!-- L'image, en grand : on ne décrit pas une image qu'on ne voit pas. -->
+  @if (data().url !== '') {
+    <img class="preview" [src]="data().url" alt="" />
+  }
+
+  @for (locale of locales; track locale) {
+    <fold-input
+      [label]="names[locale]"
+      [required]="locale === sourceLocale"
+      [value]="valueOf(locale)"
+      (valueChange)="write(locale, $event)"
+    />
+  }
+
+  <p class="note">
+    Le français fait foi : une langue laissée vide retombe sur lui plutôt que d'afficher du vide.
+  </p>
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton (click)="submit()">Enregistrer</button>
+</footer>

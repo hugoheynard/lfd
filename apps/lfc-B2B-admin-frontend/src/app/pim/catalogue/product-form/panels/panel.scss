@@ -133,9 +133,8 @@ app-lang-switch {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: var(--fold-space-md);
-  /* Les tuiles portent chacune le ratio de leur image, donc elles n'ont pas la
-     même hauteur : les caler en haut fait une galerie, les étirer ferait des
-     aperçus déformés au sein d'une même rangée. */
+  /* Toutes les tuiles ont la même forme ; les caler en haut évite qu'une
+     légende plus longue étire la rangée entière. */
   align-items: start;
 }
 
@@ -161,10 +160,12 @@ app-lang-switch {
   border-color: var(--fold-color-warning-border);
 }
 
-/* L'aperçu porte le ratio de SON image : recadrer tout en 4/3 ferait paraître
-   un portrait carré, et on ne s'en apercevrait qu'en boutique. */
+/* Un cadre IDENTIQUE pour toutes : c'est ce qui permet de comparer des images
+   d'un coup d'œil, et c'est le seul but de la grille. Le recadrage cache la
+   forme réelle du fichier — la pastille de ratio la rend. */
 .media-thumb {
   position: relative;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--fold-color-surface-sunken);
 
@@ -186,6 +187,42 @@ app-lang-switch {
   position: absolute;
   top: var(--fold-space-xs);
   right: var(--fold-space-xs);
+}
+
+/* La forme réelle du fichier, que le recadrage ne montre plus. En bas à droite,
+   là où elle ne recouvre ni l'étiquette « Principale » ni le menu. */
+.media-ratio {
+  position: absolute;
+  right: var(--fold-space-xs);
+  bottom: var(--fold-space-xs);
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La légende EST le bouton d'édition : cliquer le texte alternatif ouvre le
+   panneau qui le porte dans les trois langues. Une cible pleine largeur plutôt
+   qu'une icône — c'est le texte qu'on veut corriger, donc c'est lui qu'on vise. */
+.media-alt {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-snug);
+  color: var(--fold-color-text);
+}
+.media-alt:hover .media-alt-text {
+  text-decoration: underline;
+}
+.media-alt:focus-visible {
+  outline: 2px solid var(--fold-color-primary-border);
+  outline-offset: 2px;
 }
 
 .media-caption {
@@ -216,10 +253,9 @@ app-lang-switch {
 /* La dernière tuile est le dépôt : il vit DANS la galerie, à la place qu'aurait
    l'image suivante, plutôt qu'en bas de section où il faut aller le chercher.
 
-   À la TAILLE d'une vignette, donc : étiré sur la hauteur de sa rangée, il
-   dépassait des images à côté de lui et se lisait comme une bande, pas comme la
-   case suivante. `align-self: start` le décroche de l'étirement de la grille, et
-   le cadre par défaut d'un aperçu lui donne sa forme. */
+   Exactement la forme d'un aperçu — même ratio, même cadre : une case qui ne
+   ressemble pas aux autres se lit comme un intrus dans la grille, pas comme la
+   suivante. */
 .media-drop {
   align-self: start;
   aspect-ratio: 4 / 3;

@@ -564,6 +564,21 @@ export class ProductFormStore {
     );
   }
 
+  /** Remplace le texte alternatif d'un visuel, dans toutes ses langues. */
+  setMediaAltText(index: number, alt: LocalizedText | undefined): void {
+    this.media.update((current) =>
+      current.map((slot, position) => {
+        if (position !== index) {
+          return slot;
+        }
+        // `exactOptionalPropertyTypes` : « pas d'alternative » est une clé
+        // ABSENTE, pas une clé à `undefined`.
+        const { alt: _dropped, ...rest } = slot;
+        return alt === undefined ? rest : { ...rest, alt };
+      }),
+    );
+  }
+
   /**
    * Les langues qui manquent au texte alternatif d'UN visuel.
    *

@@ -8,6 +8,7 @@ import {
   FoldDropdownItemComponent,
   FoldFileDropzoneComponent,
   FoldInputComponent,
+  FoldPanelHostService,
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
@@ -15,11 +16,18 @@ import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
 import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 
 import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
+import {
+  AltTextPanel,
+  type AltTextPanelData,
+  type AltTextPanelResult,
+} from './alt-text-panel/alt-text-panel';
 import { ProductFormStore } from '../product-form-store';
 import type { MediaSlot } from '../../product-http-api';
 
-/** Le cadre d'un aperçu dont on ne connaît pas la taille. */
-const UNKNOWN_RATIO = '4 / 3';
+/** Le plus grand diviseur commun — pour réduire un ratio à sa forme lisible. */
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
 
 /** Le poids d'un fichier, en unités qu'un humain lit. */
 function formatBytes(bytes: number): string {
@@ -62,11 +70,7 @@ const MEDIA_ROLES: readonly { value: string; label: string }[] = [
 })
 export class VisualsPanel {
   protected readonly store = inject(ProductFormStore);
-
-  /** L'invite nomme la langue — sans elle, on croit relire le même champ. */
-  protected readonly altPlaceholder = computed(
-    () => `Ce que montre l'image (${LOCALE_NAMES[this.store.mediaLocale()]})`,
-  );
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly missingHint = computed(() =>
     missingSentence('Des textes alternatifs manquent', this.store.mediaMissing()),
@@ -74,21 +78,27 @@ export class VisualsPanel {
   protected readonly roles = MEDIA_ROLES;
 
   /**
-   * Le ratio de l'aperçu — celui de l'IMAGE, pas un cadre imposé.
+   * La FORME du fichier, réduite — « 4:3 », « 16:9 », « 1:1 ».
    *
-   * Une vignette qui recadre tout en 4/3 ment sur ce qu'on a déposé : un portrait
-   * y paraît carré, et on ne s'en aperçoit qu'en boutique. Elle réserve aussi sa
-   * place, donc la galerie ne saute pas au chargement.
+   * La vignette recadre pour que la galerie reste homogène : c'est le bon
+   * arbitrage pour comparer des images, mais il cache la forme réelle du
+   * fichier. La pastille la rend, sans quoi on découvrirait en boutique qu'un
+   * visuel était un portrait.
    *
-   * Taille inconnue (visuel saisi par son URL) : un cadre par défaut, parce que
-   * réserver une place approximative vaut mieux que n'en réserver aucune.
+   * Rien à dire d'une image non mesurée : une pastille vide vaudrait mieux que
+   * rien, mais une pastille FAUSSE serait pire que les deux.
    */
-  protected ratioOf(slot: MediaSlot): string {
+  protected ratioOf(slot: MediaSlot): string | undefined {
     const { width, height } = slot;
-    if (typeof width !== 'number' || typeof height !== 'number' || height === 0) {
-      return UNKNOWN_RATIO;
+    if (typeof width !== 'number' || typeof height !== 'number' || width <= 0 || height <= 0) {
+      return undefined;
     }
-    return `${width} / ${height}`;
+    const divisor = gcd(width, height);
+    const w = width / divisor;
+    const h = height / divisor;
+    // Réduit, un capteur donne parfois « 4288:2848 » : illisible, donc on
+    // retombe sur une décimale plutôt que d'afficher une fraction de recensement.
+    return w <= 32 && h <= 32 ? `${String(w)}:${String(h)}` : `${(width / height).toFixed(2)}:1`;
   }
 
   /** Ce qu'on sait du fichier, ou son absence de mesure — jamais « 0 × 0 ». */
@@ -111,6 +121,31 @@ export class VisualsPanel {
 
   /** Un seul fichier à la fois : `fold-file-dropzone` remet son champ à zéro
    *  lui-même, donc redéposer le MÊME fichier après un refus fonctionne. */
+  /**
+   * Ouvre le panneau du texte alternatif — les trois langues d'un coup.
+   *
+   * Le panneau rend le texte, ou `undefined` s'il a été vidé ; `dismiss()` ne
+   * rend rien du tout, et c'est la différence qui compte : annuler ne doit pas
+   * effacer ce qui existait.
+   */
+  protected editAlt(index: number): void {
+    const slot = this.store.media()[index];
+    if (slot === undefined) {
+      return;
+    }
+    void this.panels
+      .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
+        data: { url: slot.url, alt: slot.alt },
+      })
+      .closed.then((result) => {
+        // `undefined` = annulé. Écrire alors effacerait ce qu'on venait de
+        // renoncer à changer.
+        if (result !== undefined) {
+          this.store.setMediaAltText(index, result.alt);
+        }
+      });
+  }
+
   protected pick(files: readonly File[]): void {
     const file = files[0];
     if (file !== undefined) {

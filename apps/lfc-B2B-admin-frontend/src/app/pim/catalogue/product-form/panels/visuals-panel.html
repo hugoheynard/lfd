@@ -16,12 +16,17 @@
       [class.is-hero]="slot.role === 'hero'"
       [class.is-incomplete]="store.mediaAlt($index).trim() === ''"
     >
-      <div class="media-thumb" [style.aspect-ratio]="ratioOf(slot)">
+      <div class="media-thumb">
         @if (slot.url !== '') {
           <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
         }
         @if (slot.role === 'hero') {
           <fold-badge class="media-badge" content="Principale" variant="accent" radius="square" />
+        }
+        <!-- La vignette recadre pour rester homogène ; la pastille dit donc la
+             forme RÉELLE du fichier, que le cadre ne montre plus. -->
+        @if (ratioOf(slot); as ratio) {
+          <span class="media-ratio">{{ ratio }}</span>
         }
         <fold-dropdown class="media-menu" ariaLabel="Actions du visuel" placement="bottom-end">
           <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
@@ -33,6 +38,9 @@
               {{ role.label }}
             </fold-dropdown-item>
           }
+          <fold-dropdown-item icon="edit" (selected)="editAlt($index)">
+            Texte alternatif…
+          </fold-dropdown-item>
           <fold-dropdown-item icon="bin" tone="danger" (selected)="store.removeMedia($index)">
             Retirer
           </fold-dropdown-item>
@@ -40,20 +48,20 @@
       </div>
 
       <div class="media-caption">
-        <!-- Accessibilité ET référencement. C'est le SEUL champ d'image qui se
-             traduit — le sélecteur en haut le fait basculer. -->
-        <fold-input
-          size="sm"
-          [ariaLabel]="altPlaceholder()"
-          [placeholder]="altPlaceholder()"
-          [value]="store.mediaAlt($index)"
-          (valueChange)="store.setMediaAlt($index, $event)"
-        />
+        <!-- La légende est le texte alternatif dans la langue affichée. On
+             l'ÉDITE dans un panneau, pas ici : une tuile fait onze rems, et un
+             champ qui n'y montre qu'une langue à la fois oblige à basculer trois
+             fois pour vérifier une image. -->
+        <button type="button" class="media-alt" (click)="editAlt($index)">
+          @if (store.mediaAlt($index).trim(); as alt) {
+            <span class="media-alt-text">{{ alt }}</span>
+          } @else {
+            <span class="media-missing">Texte alternatif manquant</span>
+          }
+        </button>
         <!-- Par image ET par langue : devant une galerie, la question n'est pas
              « manque-t-il des traductions » mais « laquelle, sur laquelle ». -->
-        @if (store.mediaAlt($index).trim() === '') {
-          <span class="media-missing">Texte alternatif manquant</span>
-        } @else if (untranslated($index); as langs) {
+        @if (store.mediaAlt($index).trim() !== '' && untranslated($index); as langs) {
           <span class="media-missing">À traduire en {{ langs }}</span>
         }
         @if (slot.url === '') {

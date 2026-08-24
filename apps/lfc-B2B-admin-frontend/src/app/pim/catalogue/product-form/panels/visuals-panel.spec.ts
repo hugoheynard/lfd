@@ -132,9 +132,9 @@ describe('VisualsPanel', () => {
     expect(gallery.querySelector('fold-file-dropzone')).not.toBeNull();
   });
 
-  it("porte le ratio de l'image, et son poids", () => {
-    // Recadrer tout en 4/3 ferait paraître un portrait carré, et on ne s'en
-    // apercevrait qu'en boutique.
+  it('dit la FORME du fichier en pastille, que le recadrage cache', () => {
+    // La vignette recadre pour que la grille reste comparable ; sans la
+    // pastille, on découvrirait en boutique qu'un visuel était un portrait.
     const store = setup();
     store.media.set([
       {
@@ -150,9 +150,44 @@ describe('VisualsPanel', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('.media-thumb')?.getAttribute('style')).toContain('1600 / 1200');
+    expect(host.querySelector('.media-ratio')?.textContent?.trim()).toBe('4:3');
     expect(host.textContent).toContain('1600 × 1200');
     expect(host.textContent).toContain('248 ko');
+  });
+
+  it('ne met AUCUNE pastille sur une image non mesurée', () => {
+    // Une pastille vide vaudrait mieux que rien ; une pastille FAUSSE serait
+    // pire que les deux.
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.media-ratio')).toBeNull();
+  });
+
+  it('réduit un ratio de capteur en décimale plutôt qu’en fraction illisible', () => {
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 4289, height: 2848 }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.media-ratio')?.textContent,
+    ).toContain(':1');
+  });
+
+  it('ouvre le texte alternatif dans un panneau, les trois langues d’un coup', () => {
+    // Une tuile fait onze rems : un champ qui n'y montre qu'UNE langue oblige à
+    // basculer trois fois pour vérifier une image.
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    // Aucun champ de saisie dans la tuile — la légende est le bouton.
+    expect(host.querySelector('.media-caption fold-input')).toBeNull();
+    const trigger = host.querySelector<HTMLButtonElement>('.media-alt');
+    expect(trigger?.textContent).toContain('Une tarte');
   });
 
   it('nomme les langues qui manquent À CETTE image', () => {
@@ -180,13 +215,16 @@ describe('VisualsPanel', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('non hébergée');
   });
 
-  it('expose le texte alternatif, qui ne se saisissait nulle part', () => {
+  it('expose le texte alternatif — sur la vignette, et éditable', () => {
+    // Il ne se saisissait NULLE PART avant ; il se lit maintenant sur la
+    // légende, et s'édite dans le panneau qu'elle ouvre.
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 800, height: 800 }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
 
-    const alts = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-input')];
-    expect(alts.length).toBeGreaterThan(0);
+    const trigger = (fixture.nativeElement as HTMLElement).querySelector('.media-alt');
+    expect(trigger).not.toBeNull();
+    expect(trigger?.tagName).toBe('BUTTON');
   });
 });
