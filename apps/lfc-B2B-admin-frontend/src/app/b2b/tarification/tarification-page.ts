@@ -73,7 +73,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  *   voient pas ici — c'est le prix de vitrine, et l'en-tête l'écrit.
  */
 @Component({
-  selector: 'app-reglages-tarification-page',
+  selector: 'app-tarification-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
@@ -86,10 +86,10 @@ type LoadState = 'loading' | 'ready' | 'error';
     TarificationSummaryBar,
     VolumeEffort,
   ],
-  templateUrl: './reglages-tarification-page.html',
-  styleUrl: './reglages-tarification-page.scss',
+  templateUrl: './tarification-page.html',
+  styleUrl: './tarification-page.scss',
 })
-export class ReglagesTarificationPage {
+export class TarificationPage {
   private readonly tarification = inject(TarificationService);
   private readonly panels = inject(FoldPanelHostService);
 

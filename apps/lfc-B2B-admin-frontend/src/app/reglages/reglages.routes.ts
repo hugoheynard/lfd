@@ -12,42 +12,24 @@ export const reglagesRoutes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'retraits-livraisons' },
 
+      // Le catalogue et la tarification B2B ont DÉMÉNAGÉ dans l'espace B2B : on
+      // ne va pas dans les réglages pour travailler. Les anciennes adresses
+      // redirigent — elles vivent dans des favoris et des liens collés, et un
+      // rangement qui rend 404 se paie par celui qui ne l'a pas fait.
+      //
+      // Les redirections sont ici, DANS les enfants de `reglages`, et non au
+      // niveau racine : le routeur entre d'abord dans cette route parente, et
+      // ce qu'il y cherche doit s'y trouver.
+      { path: 'catalogue', redirectTo: '/b2b/catalogue' },
+      { path: 'tarification', pathMatch: 'full', redirectTo: '/b2b/tarification' },
+      { path: 'tarification/frise', redirectTo: '/b2b/tarification/frise' },
+      { path: 'tarification/simulateur', redirectTo: '/b2b/tarification/simulateur' },
+
       {
         path: 'retraits-livraisons',
         title: 'Retraits & livraisons — LFC B2B admin',
         loadComponent: () =>
           import('./retraits-livraisons/reglages-pickup-page').then((m) => m.ReglagesPickupPage),
-      },
-      {
-        path: 'catalogue',
-        title: 'Catalogue — LFC B2B admin',
-        loadComponent: () =>
-          import('./catalogue/reglages-catalogue-page').then((m) => m.ReglagesCataloguePage),
-      },
-      {
-        path: 'tarification',
-        title: 'Tarification — LFC B2B admin',
-        loadComponent: () =>
-          import('./tarification/reglages-tarification-page').then(
-            (m) => m.ReglagesTarificationPage,
-          ),
-      },
-      {
-        // La frise vit à côté de la grille, pas dedans : deux façons de lire le
-        // même prix — l'une pour décider aujourd'hui, l'autre pour comprendre ce
-        // qui s'est passé. Une route propre les rend partageables par lien.
-        path: 'tarification/frise',
-        title: 'Frise tarifaire — LFC B2B admin',
-        loadComponent: () => import('./tarification/frise/frise-page').then((m) => m.FrisePage),
-      },
-      {
-        // Le banc d'essai vit à côté de la grille et de la frise : trois façons
-        // de lire le même prix — ce qui est décidé, ce qui l'était, et ce que
-        // ça donne pour ce client-là à cette quantité-là.
-        path: 'tarification/simulateur',
-        title: 'Simulateur de prix — LFC B2B admin',
-        loadComponent: () =>
-          import('./tarification/simulateur/simulateur-page').then((m) => m.SimulateurPage),
       },
       {
         path: 'facturation',

@@ -54,20 +54,6 @@ export class ReglagesPage {
       needs: 'settings:read',
     },
     {
-      key: 'catalogue',
-      label: 'Catalogue',
-      link: 'catalogue',
-      icon: 'package',
-      needs: 'settings:read',
-    },
-    {
-      key: 'tarification',
-      label: 'Tarification',
-      link: 'tarification',
-      icon: 'tag',
-      needs: 'settings:read',
-    },
-    {
       key: 'facturation',
       label: 'Facturation',
       link: 'facturation',

@@ -105,6 +105,21 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
+ * Les vues de l'**espace B2B** — ce que la plateforme client vend, et à quel
+ * prix. Toutes deux sous `settings:read`, le droit qui ouvre déjà l'espace :
+ * le répéter serait une condition toujours vraie, donc jamais relue.
+ */
+export const B2B_VIEWS: readonly WorkspaceView[] = [
+  { key: 'catalogue', label: 'Catalogue', link: '/b2b/catalogue', icon: 'package' },
+  {
+    key: 'tarification',
+    label: 'Tarification B2B',
+    link: '/b2b/tarification',
+    icon: 'tag',
+  },
+];
+
+/**
  * Les vues de l'**Admin**. Chacune porte le droit qui l'ouvre : ranger deux
  * écrans sous un même titre ne leur donne pas le même mur. Montrée sans le
  * droit, l'entrée offrait une porte fermée à clé — on cliquait, la page
@@ -138,6 +153,7 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
+  b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
   admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
 } as const satisfies Record<string, Workspace>;
 

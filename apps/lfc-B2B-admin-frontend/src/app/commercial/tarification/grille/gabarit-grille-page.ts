@@ -16,7 +16,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { nativeValue } from '../../../shared/native-input';
-import { TarificationService } from '../../../reglages/tarification/tarification.service';
+import { TarificationService } from '../../../b2b/tarification/tarification.service';
 import { PriceTemplatesService } from '../templates.service';
 import { PoseBar, type PoseRequest } from '../pose-bar/pose-bar';
 import { eurosField } from './price-field';

@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { ArchivePanel } from '../archive-panel/archive-panel';
 import { FloorPanel } from '../floor-panel/floor-panel';
 import { JournalPanel } from '../journal-panel/journal-panel';
-import { ReglagesTarificationPage } from '../reglages-tarification-page';
+import { TarificationPage } from '../tarification-page';
 import { RulePanel } from '../rule-panel/rule-panel';
 import { TarificationService } from '../tarification.service';
 
@@ -35,7 +35,7 @@ const EMPTY_BOARD: PricingBoardView = {
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 
-function page(board: PricingBoardView = EMPTY_BOARD): ReglagesTarificationPage {
+function page(board: PricingBoardView = EMPTY_BOARD): TarificationPage {
   const service: Pick<TarificationService, 'read'> = { read: () => Promise.resolve(board) };
 
   TestBed.configureTestingModule({
@@ -44,7 +44,7 @@ function page(board: PricingBoardView = EMPTY_BOARD): ReglagesTarificationPage {
       { provide: FoldPanelHostService, useValue: {} },
     ],
   });
-  return TestBed.runInInjectionContext(() => new ReglagesTarificationPage());
+  return TestBed.runInInjectionContext(() => new TarificationPage());
 }
 
 function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
@@ -222,7 +222,7 @@ describe('suspendre et reprendre', () => {
     };
   }
 
-  function pageWith(calls: string[], opened: unknown[] = []): ReglagesTarificationPage {
+  function pageWith(calls: string[], opened: unknown[] = []): TarificationPage {
     const service: Pick<TarificationService, 'read' | 'pauseRule' | 'resumeRule' | 'archiveRule'> =
       {
         read: () => Promise.resolve(EMPTY_BOARD),
@@ -246,7 +246,7 @@ describe('suspendre et reprendre', () => {
         { provide: FoldPanelHostService, useValue: panelHost(opened) },
       ],
     });
-    return TestBed.runInInjectionContext(() => new ReglagesTarificationPage());
+    return TestBed.runInInjectionContext(() => new TarificationPage());
   }
 
   it('suspend une règle en vigueur', async () => {

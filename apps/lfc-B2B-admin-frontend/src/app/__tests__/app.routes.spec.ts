@@ -65,18 +65,20 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
 
   reglages: 'settings:read',
   'reglages/retraits-livraisons': null,
-  // `null` = hérite du `settings:read` du parent : le paramétrage du catalogue
-  // est du réglage, pas une ressource à part.
-  'reglages/catalogue': null,
-  // Même raison : décider d'un prix est du réglage.
-  'reglages/tarification': null,
-  // La frise LIT la même chose que la grille, à d'autres dates : même mur.
-  'reglages/tarification/frise': null,
-  'reglages/tarification/simulateur': null,
   // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,
   'reglages/commercial': 'growth:read',
+
+  // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
+  // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
+  // du paramétrage, pas une ressource à part.
+  b2b: 'settings:read',
+  'b2b/catalogue': null,
+  'b2b/tarification': null,
+  // La frise LIT la même chose que la grille, à d'autres dates : même mur.
+  'b2b/tarification/frise': null,
+  'b2b/tarification/simulateur': null,
 
   pim: 'catalog:read',
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
@@ -168,6 +170,24 @@ describe("l'arbre de routes du back-office", () => {
       .filter(({ path, declared }) => declared !== (SCREENS[path] === OPEN ? null : SCREENS[path]));
 
     expect(wrong).toEqual([]);
+  });
+
+  it('garde les anciennes adresses des deux écrans déménagés', () => {
+    // Catalogue et Tarification ont quitté les Réglages pour l'espace B2B.
+    // Leurs URL vivent dans des favoris et des liens collés : un rangement qui
+    // rend 404 se paie par celui qui ne l'a pas fait.
+    const reglages = routes.find((route) => route.path === 'reglages');
+    const moved = (reglages?.children ?? [])
+      .filter((child) => typeof child.redirectTo === 'string')
+      .map((child) => [child.path, child.redirectTo]);
+
+    expect(moved).toEqual([
+      ['', 'retraits-livraisons'],
+      ['catalogue', '/b2b/catalogue'],
+      ['tarification', '/b2b/tarification'],
+      ['tarification/frise', '/b2b/tarification/frise'],
+      ['tarification/simulateur', '/b2b/tarification/simulateur'],
+    ]);
   });
 
   it('ne laisse hériter que les écrans dont le parent est gardé', () => {

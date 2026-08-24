@@ -4,6 +4,7 @@ import { permissionGuard } from './auth/permission.guard';
 import { adminRoutes } from './admin/admin.routes';
 import { commercialRoutes } from './commercial/commercial.routes';
 import { ficheClientRoutes, nouveauCompteRoutes } from './fiche-client/fiche-client.routes';
+import { b2bRoutes } from './b2b/b2b.routes';
 import { pimRoutes } from './pim/pim.routes';
 import { reglagesRoutes } from './reglages/reglages.routes';
 
@@ -99,6 +100,8 @@ export const routes: Routes = [
       import('./analytics/croissance/croissance-page').then((m) => m.CroissancePage),
   },
   ...pimRoutes,
+  ...b2bRoutes,
+
   {
     // LA DOCUMENTATION — au pied du menu, avec les Réglages : on ne l'ouvre pas
     // pour travailler, on l'ouvre pour comprendre puis on repart. Elle était un

@@ -13,7 +13,10 @@
     <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. -->
     <fold-menu railPrimary collapsible tint="primary" level="primary" [(expanded)]="menuExpanded">
       <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
-        <span class="brand-mark" aria-hidden="true">B2B</span>
+        <!-- LFC, l'enseigne — pas « B2B », qui nommait un canal parmi d'autres.
+             L'outil sert le PIM, la production, le commercial et la plateforme
+             pro : la pastille doit nommer la maison, pas l'une de ses portes. -->
+        <span class="brand-mark" aria-hidden="true">LFC</span>
         @if (menuExpanded()) {
           <span class="rail-wordmark">Admin</span>
         }
@@ -80,6 +83,24 @@
           routerLinkActive
           #pimRla="routerLinkActive"
           [active]="pimRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeSettings()) {
+        <!-- B2B — ce que la plateforme client VEND, et à quel prix. Ses deux
+             écrans vivaient dans les Réglages, entre les heures de retrait et
+             la facturation : on n'y va pas pour travailler, alors qu'on reprend
+             le catalogue et la tarification tous les jours. Sous le PIM, parce
+             que c'est ce que le PIM y publie qu'on y règle. -->
+        <a
+          fold-menu-item
+          icon="store"
+          label="B2B"
+          routerLink="/b2b"
+          routerLinkActive
+          #b2bRla="routerLinkActive"
+          [active]="b2bRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

@@ -40,7 +40,7 @@ interface Shelf {
  *   rassurante dont la moitié n'est achetable par personne.
  */
 @Component({
-  selector: 'app-reglages-catalogue-page',
+  selector: 'app-catalogue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CatalogRow,
@@ -52,10 +52,10 @@ interface Shelf {
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
   ],
-  templateUrl: './reglages-catalogue-page.html',
-  styleUrl: './reglages-catalogue-page.scss',
+  templateUrl: './catalogue-page.html',
+  styleUrl: './catalogue-page.scss',
 })
-export class ReglagesCataloguePage {
+export class CataloguePage {
   private readonly catalogue = inject(CatalogueService);
   private readonly notify = inject(NotifyService);
 
