@@ -39,7 +39,7 @@ export const syncCategorySchema = z.object({
   parentId: z.string().min(1).nullable(),
   position: z.number().int().nonnegative(),
   /**
-   * Taux de TVA en pourcentage (5.5, 20…), résolu depuis le `TvaRate` de la
+   * Taux de TVA en pourcentage (5.5, 20…), résolu depuis le `VatRate` de la
    * famille — **le taux « à emporter »**.
    *
    * ⚠️ **Descriptif depuis la v2.** L'autorité est passée à l'article

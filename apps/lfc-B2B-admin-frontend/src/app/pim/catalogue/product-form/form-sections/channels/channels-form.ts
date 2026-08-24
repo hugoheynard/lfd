@@ -10,10 +10,10 @@ import {
   type ChannelsOverridePanelResult,
 } from './channels-override-panel/channels-override-panel';
 import {
-  TvaOverridePanel,
-  type TvaOverridePanelData,
-  type TvaOverridePanelResult,
-} from './tva-override-panel/tva-override-panel';
+  VatOverridePanel,
+  type VatOverridePanelData,
+  type VatOverridePanelResult,
+} from './vat-override-panel/vat-override-panel';
 
 /**
  * Panneau Canaux & TVA — **lecture seule**. Rend explicite l'héritage par
@@ -52,19 +52,19 @@ export class ChannelsForm {
    * avec le prix — les deux sont la même décision.
    */
   protected async redefine(row: ChannelInheritance): Promise<void> {
-    const data: TvaOverridePanelData = {
+    const data: VatOverridePanelData = {
       contextKey: row.key,
       contextLabel: row.label,
       rates: this.store.rates(),
       inheritedLabel: this.inheritedLabel(row.key),
-      current: this.store.tvaOverride()[row.key] ?? null,
+      current: this.store.vatOverride()[row.key] ?? null,
     };
-    const chosen = await this.panelHost.open<TvaOverridePanelData, TvaOverridePanelResult>(
-      TvaOverridePanel,
+    const chosen = await this.panelHost.open<VatOverridePanelData, VatOverridePanelResult>(
+      VatOverridePanel,
       { data },
     ).closed;
     if (chosen !== undefined) {
-      this.store.setTvaOverride(row.key, chosen.rateId);
+      this.store.setVatOverride(row.key, chosen.rateId);
     }
   }
 
@@ -95,7 +95,7 @@ export class ChannelsForm {
 
   /** Le taux de la FAMILLE pour ce contexte, nommé — jamais celui de la fiche. */
   private inheritedLabel(contextKey: string): string {
-    const rateId = this.store.familyTva()[contextKey];
+    const rateId = this.store.familyVat()[contextKey];
     const rate = rateId === undefined ? undefined : this.store.rates().find((r) => r.id === rateId);
     return rate === undefined ? 'non réglé' : `${rate.name} · ${formatPercent(rate.percent)}`;
   }

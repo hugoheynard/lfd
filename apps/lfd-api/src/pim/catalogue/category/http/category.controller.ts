@@ -6,14 +6,14 @@ import {
   renameCategoryPayloadSchema,
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
-  setCategoryTvaPayloadSchema,
+  setCategoryVatPayloadSchema,
   type CategoryView,
   type CreateCategoryPayload,
   type MoveCategoryPayload,
   type RenameCategoryPayload,
   type ReorderCategoriesPayload,
   type SetCategoryChannelsPayload,
-  type SetCategoryTvaPayload,
+  type SetCategoryVatPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
@@ -25,7 +25,7 @@ import { MoveCategoryCommand } from "../application/move-category.js";
 import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
 import { SetCategoryChannelsCommand } from "../application/set-category-channels.js";
-import { SetCategoryTvaCommand } from "../application/set-category-tva.js";
+import { SetCategoryVatCommand } from "../application/set-category-vat.js";
 
 /**
  * Familles du catalogue — dispatchées sur les bus CQRS.
@@ -79,13 +79,13 @@ export class CategoryController {
     return { id };
   }
 
-  @Put(":id/tva")
-  async setTva(
+  @Put(":id/vat")
+  async setVat(
     @Param("id") id: string,
-    @Body(new ZodBody(setCategoryTvaPayloadSchema)) body: SetCategoryTvaPayload,
+    @Body(new ZodBody(setCategoryVatPayloadSchema)) body: SetCategoryVatPayload,
   ) {
-    await this.commands.execute<SetCategoryTvaCommand, void>(
-      new SetCategoryTvaCommand(id, body.tvaByContext),
+    await this.commands.execute<SetCategoryVatCommand, void>(
+      new SetCategoryVatCommand(id, body.tvaByContext),
     );
     return { id };
   }

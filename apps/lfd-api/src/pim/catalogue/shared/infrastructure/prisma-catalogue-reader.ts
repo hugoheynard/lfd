@@ -4,10 +4,10 @@ import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
 import { effectiveTva } from "../domain/value-objects/sales-context.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 
-import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
+import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
 import {
   CatalogueReader,
-  type CategoryTvaPercents,
+  type CategoryVatPercents,
   type ChannelCategory,
 } from "../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -23,7 +23,7 @@ import {
 /**
  * Implémentation du port de lecture. Elle s'appuie sur les dépôts du catalogue —
  * c'est-à-dire qu'elle reste **à l'intérieur** du module, là où lire ces tables est
- * légitime — et compose avec le port `TvaRateRepository` (commerce, déjà importé par
+ * légitime — et compose avec le port `VatRateRepository` (commerce, déjà importé par
  * le module) pour résoudre le tag de collection d'une catégorie. L'adaptateur Shopify
  * ne voit que le résultat (ADR-13).
  */
@@ -32,7 +32,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly rates: TvaRateRepository,
+    private readonly rates: VatRateRepository,
     private readonly editorialReader: EditorialReader,
   ) {
     super();
@@ -72,9 +72,9 @@ export class PrismaCatalogueReader extends CatalogueReader {
    */
   async vatPercents(
     products: readonly ProductRecord[],
-  ): Promise<ReadonlyMap<string, CategoryTvaPercents>> {
+  ): Promise<ReadonlyMap<string, CategoryVatPercents>> {
     const percentById = await this.percentIndex();
-    const resolved = new Map<string, CategoryTvaPercents>();
+    const resolved = new Map<string, CategoryVatPercents>();
     // Les familles sont lues UNE fois chacune, même quand cent produits les
     // partagent : c'est le cas normal d'un catalogue.
     const families = new Map<string, Readonly<Record<string, string>>>();
@@ -142,7 +142,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
         slug: category.slug,
         parentId: category.parentId,
         position: category.position,
-        vatByContext: this.resolve(category.tvaByContext, percentById),
+        tvaByContext: this.resolve(category.tvaByContext, percentById),
       }));
   }
 
@@ -165,7 +165,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   private resolve(
     tvaByContext: Readonly<Record<string, string>>,
     percentById: ReadonlyMap<string, number>,
-  ): CategoryTvaPercents {
+  ): CategoryVatPercents {
     const percents: Record<string, number> = {};
     for (const [contextKey, rateId] of Object.entries(tvaByContext)) {
       const percent = percentById.get(rateId);

@@ -54,7 +54,7 @@ export interface ProspectView {
 export type ActivationStatus = "pending" | "active";
 
 /** Pièce d'activation (alignée sur les steps du tunnel). */
-export type ActivationStep = "tva" | "kbis" | "billing" | "delivery";
+export type ActivationStep = "vat" | "kbis" | "billing" | "delivery";
 
 /** Une ligne du tunnel **activation & frictions** (sujet = société). */
 export interface ActivationView {

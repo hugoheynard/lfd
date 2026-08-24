@@ -115,7 +115,7 @@ export class ShopifyAdminClient {
   }
 
   /** Les collections `tva-*` présentes sur la boutique (paginées). */
-  async listTvaCollections(): Promise<ShopifyCollection[]> {
+  async listVatCollections(): Promise<ShopifyCollection[]> {
     const collections: ShopifyCollection[] = [];
     let cursor: string | null = null;
 

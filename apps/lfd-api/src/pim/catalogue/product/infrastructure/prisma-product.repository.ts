@@ -53,14 +53,14 @@ interface ProductRow {
   categoryId: string;
   status: ProductStatus;
   variants: VariantRow[];
-  contextTva: readonly { tvaRateId: string; context: { key: string } }[];
+  contextVat: readonly { vatRateId: string; context: { key: string } }[];
   channelOverride: unknown;
 }
 
 /** Les dérogations de taux voyagent AVEC le produit : elles sont à lui. */
 const PRODUCT_INCLUDE = {
   variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
-  contextTva: { select: { tvaRateId: true, context: { select: { key: true } } } },
+  contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
 } as const;
 
 function toVariant(row: VariantRow): VariantSnapshot {
@@ -103,7 +103,7 @@ function toProduct(row: ProductRow): Product {
     status: row.status,
     variants: row.variants.map(toVariant),
     tvaByContext: Object.fromEntries(
-      row.contextTva.map((line) => [line.context.key, line.tvaRateId]),
+      row.contextVat.map((line) => [line.context.key, line.vatRateId]),
     ),
     // `null` traversé TEL QUEL : c'est « la fiche hérite », pas « matrice vide ».
     channelOverride:
@@ -216,13 +216,13 @@ export class PrismaProductRepository extends ProductRepository {
       // Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte
       // laisserait vivre la ligne d'un contexte qu'on vient de rendre à sa
       // famille, et « je reviens à l'héritage » ressemblerait à « rien changé ».
-      this.prisma.productContextTva.deleteMany({ where: { productId: snapshot.id } }),
-      ...Object.entries(snapshot.tvaByContext).map(([contextKey, tvaRateId]) =>
-        this.prisma.productContextTva.create({
+      this.prisma.productContextVat.deleteMany({ where: { productId: snapshot.id } }),
+      ...Object.entries(snapshot.tvaByContext).map(([contextKey, vatRateId]) =>
+        this.prisma.productContextVat.create({
           data: {
             product: { connect: { id: snapshot.id } },
             context: { connect: { key: contextKey } },
-            tvaRate: { connect: { id: tvaRateId } },
+            vatRate: { connect: { id: vatRateId } },
           },
         }),
       ),

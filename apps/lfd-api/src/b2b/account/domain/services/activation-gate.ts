@@ -8,7 +8,7 @@ import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
  * reformulation un déploiement backend, et d'une traduction une migration.
  */
 export type ActivationBlocker =
-  "identite_legale" | "detenteur" | "telephone" | "tva" | "facturation";
+  "identite_legale" | "detenteur" | "telephone" | "vat" | "facturation";
 
 /** Une pièce du dossier, telle que la fiche la montre. */
 export interface ActivationCheck {
@@ -51,7 +51,7 @@ export interface ActivationGate {
  * changeait la définition de « client » pour toute la plateforme, sans revue,
  * sans test, sans trace.
  *
- * - `tva` — bloquante. Sans numéro, une société assujettie n'est pas facturable.
+ * - `vat` — bloquante. Sans numéro, une société assujettie n'est pas facturable.
  *   Les non-assujetties sont déjà réputées en règle (cf. `isDone`).
  * - `kbis` — **jamais bloquante**. C'est une convention interne : on veut voir
  *   l'extrait, on ne veut pas perdre la commande de demain matin pour un PDF.
@@ -63,13 +63,13 @@ export interface ActivationGate {
  * case à cocher.
  */
 const PIECES: readonly { readonly piece: ActivationPiece; readonly blocking: boolean }[] = [
-  { piece: "tva", blocking: true },
+  { piece: "vat", blocking: true },
   { piece: "kbis", blocking: false },
   { piece: "billing", blocking: true },
 ];
 
 const PIECE_BLOCKERS: Readonly<Partial<Record<ActivationPiece, ActivationBlocker>>> = {
-  tva: "tva",
+  vat: "vat",
   billing: "facturation",
 };
 
@@ -117,7 +117,7 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
 
 function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolean {
   switch (piece) {
-    case "tva":
+    case "vat":
       // Non assujetti ⇒ la TVA n'est jamais « manquante » (rien à exiger).
       return !company.vatNumberRequired || company.tvaIntracom.trim() !== "";
     case "kbis":

@@ -1,0 +1,70 @@
+<fold-data-table
+  [columns]="columns()"
+  [rows]="rates()"
+  [rowKey]="rowKey"
+  narrowLayout="cards"
+  rowCardChrome="none"
+  zebra
+  [empty]="emptyState()"
+>
+  <ng-template foldCell="name" let-r
+    ><strong>{{ r.name }}</strong></ng-template
+  >
+
+  <ng-template foldCell="description" let-r>
+    <span class="muted">{{ r.description || '—' }}</span>
+  </ng-template>
+
+  <ng-template foldCell="rate" let-r>
+    <fold-badge [content]="format(r.percent)" variant="accent" />
+  </ng-template>
+
+  <!-- Le compte d'usages : ce qui dit, avant même d'ouvrir le taux, qu'il est
+       visé — la base pose un `Restrict`, elle refusera la suppression. -->
+  <ng-template foldCell="usage" let-r>
+    @if (usageTotal(r) === 0) {
+      <span class="muted">Aucune famille</span>
+    } @else {
+      <span class="usage">
+        <fold-badge [content]="usageTotal(r) + ' famille(s)'" variant="neutral" />
+        <span class="muted">{{ usageLabel(r) }}</span>
+      </span>
+    }
+  </ng-template>
+
+  <!-- Les trois points nus : une affordance, pas un bouton. Une seule action
+       par ligne — ouvrir le taux — donc rien à choisir dans un menu. -->
+  <ng-template foldCell="actions" let-r>
+    <button
+      type="button"
+      class="row-open"
+      [attr.aria-label]="'Ouvrir « ' + r.name + ' »'"
+      (click)="open(r)"
+    >
+      <fold-icon name="more-vertical" size="sm" />
+    </button>
+  </ng-template>
+
+  <!-- La vue mobile, à nous : `auto-cards` empile encore des paires
+       libellé/valeur, donc un tableau debout. Sur un téléphone on veut une
+       CARTE — le nom en tête, le taux en évidence, l'usage en pied — et la
+       carte entière est la cible. -->
+  <ng-template foldRowCard let-r>
+    <button type="button" class="tva-card" (click)="open(r)">
+      <span class="tva-card-head">
+        <span class="tva-card-name">{{ r.name }}</span>
+        <fold-badge [content]="format(r.percent)" variant="accent" />
+      </span>
+      @if (r.description) {
+        <span class="tva-card-desc">{{ r.description }}</span>
+      }
+      <span class="tva-card-usage">
+        @if (usageTotal(r) === 0) {
+          Aucune famille
+        } @else {
+          {{ usageLabel(r) }}
+        }
+      </span>
+    </button>
+  </ng-template>
+</fold-data-table>

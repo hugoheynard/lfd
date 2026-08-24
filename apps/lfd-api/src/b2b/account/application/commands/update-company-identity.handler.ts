@@ -48,7 +48,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal
     // dédoublonne par (société, étape) : seule la 1re fois compte.
     if (command.payload.tvaIntracom.trim() !== "") {
-      this.events.publish(new CompanyStepReachedEvent(command.companyId, "tva"));
+      this.events.publish(new CompanyStepReachedEvent(command.companyId, "vat"));
     }
   }
 }

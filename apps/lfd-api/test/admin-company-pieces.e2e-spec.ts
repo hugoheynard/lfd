@@ -100,8 +100,8 @@ describe("pièces d'activation staff (Porte B)", () => {
     const [step] = await ctx.prisma.activityEvent.findMany({
       where: { type: "company.step_reached" },
     });
-    expect(step!.idempotencyKey).toBe(`company.step_reached:tva:${companyId}`);
-    expect(step!.payload).toMatchObject({ step: "tva" });
+    expect(step!.idempotencyKey).toBe(`company.step_reached:vat:${companyId}`);
+    expect(step!.payload).toMatchObject({ step: "vat" });
   });
 
   it("fixe le règlement CONVENU et solde la demande client", async () => {
@@ -169,7 +169,7 @@ describe("pièces d'activation staff (Porte B)", () => {
 
 describe("activation d'un compte (gate serveur)", () => {
   it("refuse l'activation si des pièces requises manquent (409)", async () => {
-    // Défauts : tva + billing requises. La société pending n'a ni l'une ni l'autre.
+    // Défauts : vat + billing requises. La société pending n'a ni l'une ni l'autre.
     const response = await staff().post(`/admin/companies/${companyId}/activate`);
     expect(response.status).toBe(409);
 

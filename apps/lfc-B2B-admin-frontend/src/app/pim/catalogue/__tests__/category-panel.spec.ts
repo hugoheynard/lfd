@@ -47,7 +47,7 @@ interface HttpSpy {
   rename: ReturnType<typeof vi.fn>;
   move: ReturnType<typeof vi.fn>;
   setChannels: ReturnType<typeof vi.fn>;
-  setTva: ReturnType<typeof vi.fn>;
+  setVat: ReturnType<typeof vi.fn>;
   archive: ReturnType<typeof vi.fn>;
 }
 
@@ -90,7 +90,7 @@ async function mount(
     rename: vi.fn(async () => undefined),
     move: vi.fn(async () => undefined),
     setChannels: vi.fn(async () => undefined),
-    setTva: vi.fn(async () => undefined),
+    setVat: vi.fn(async () => undefined),
     archive: vi.fn(async () => undefined),
   };
   TestBed.configureTestingModule({
@@ -189,7 +189,7 @@ describe('CategoryPanel — enregistrer', () => {
     await stable();
 
     expect(http.setChannels).toHaveBeenCalledTimes(1);
-    expect(http.setTva).toHaveBeenCalledTimes(1);
+    expect(http.setVat).toHaveBeenCalledTimes(1);
     // Ni le nom ni le parent n'ont changé : on n'écrit pas pour rien.
     expect(http.rename).not.toHaveBeenCalled();
     expect(http.move).not.toHaveBeenCalled();
@@ -207,15 +207,15 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = await setup(category({ channelPreset: channels() }));
 
     expect(host.textContent).toContain('Cochez un canal');
-    // Dans `.tva-pickers` uniquement : « Parent » est une liste lui aussi, et
+    // Dans `.vat-pickers` uniquement : « Parent » est une liste lui aussi, et
     // il n'a rien à voir avec les taux.
-    expect(host.querySelectorAll('.tva-pickers fold-listbox')).toHaveLength(0);
+    expect(host.querySelectorAll('.vat-pickers fold-listbox')).toHaveLength(0);
   });
 
   /** Les libellés des listes de taux — PAS le texte de la page : la matrice de
    *  canaux affiche elle aussi une colonne « Sur place ». */
   function rateLabels(host: HTMLElement): string[] {
-    const pickers = host.querySelector('.tva-pickers');
+    const pickers = host.querySelector('.vat-pickers');
     return [...(pickers?.querySelectorAll('fold-listbox') ?? [])].map((box) =>
       (box.getAttribute('label') ?? box.textContent ?? '').trim(),
     );
@@ -289,7 +289,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
 
     // Les contextes fermés ne partent PAS à vide : ils ne partent pas du tout.
     // « Non réglé » est une clé absente, des deux côtés du fil.
-    expect(http.setTva).toHaveBeenCalledWith('cat_1', { b2b: 'tva_20' });
+    expect(http.setVat).toHaveBeenCalledWith('cat_1', { b2b: 'tva_20' });
   });
 });
 
@@ -334,7 +334,7 @@ describe('CategoryPanel — création', () => {
 
     expect(http.create).toHaveBeenCalledWith({ name: { fr: 'Glaces' } });
     expect(http.setChannels.mock.calls[0]?.[0]).toBe('cat_neuve');
-    expect(http.setTva.mock.calls[0]?.[0]).toBe('cat_neuve');
+    expect(http.setVat.mock.calls[0]?.[0]).toBe('cat_neuve');
     expect(closed).toHaveLength(1);
   });
 
@@ -428,7 +428,7 @@ describe('CategoryPanel — une famille archivée est gelée', () => {
 
     expect(http.rename).toHaveBeenCalledWith('cat_1', { fr: 'Ancien corrigé' });
     expect(http.setChannels).not.toHaveBeenCalled();
-    expect(http.setTva).not.toHaveBeenCalled();
+    expect(http.setVat).not.toHaveBeenCalled();
     expect(http.move).not.toHaveBeenCalled();
   });
 });

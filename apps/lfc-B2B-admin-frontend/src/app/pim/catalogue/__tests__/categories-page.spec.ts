@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { CategoriesPage } from '../categories-page/categories-page';
 import { CategoryHttpApi } from '../category-http-api';
 import { EmplacementHttpApi } from '../../emplacements/emplacement-http-api';
-import { TvaHttpApi } from '../tva-rates/tva-http-api';
+import { VatRateHttpApi } from '../vat-rates/vat-http-api';
 import type { Category } from '../../data/models';
 
 function category(overrides: Partial<Category> = {}): Category {
@@ -30,7 +30,7 @@ async function render(rows: Category[]): Promise<HTMLElement> {
       provideHttpClient(),
       provideRouter([]),
       { provide: CategoryHttpApi, useValue: { list: async () => rows } },
-      { provide: TvaHttpApi, useValue: { list: async () => [] } },
+      { provide: VatRateHttpApi, useValue: { list: async () => [] } },
       { provide: EmplacementHttpApi, useValue: { list: async () => [] } },
     ],
   });

@@ -2504,7 +2504,7 @@ model Category {
   /// Les taux par contexte de vente. Trois colonnes fixes vivaient ici
   /// (`emporter` / `surPlace` / `b2b`) : ajouter un contexte demandait une
   /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
-  contextTva CategoryContextTva[]
+  contextVat CategoryContextVat[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2557,8 +2557,8 @@ model SalesContext {
 
   position Int @default(0)
 
-  categoryTva CategoryContextTva[]
-  productTva  ProductContextTva[]
+  categoryVat CategoryContextVat[]
+  productVat  ProductContextVat[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2572,25 +2572,25 @@ model SalesContext {
 ///
 /// **L'absence de ligne est la donnée** : « non réglé » ne s'écrit pas, il ne
 /// s'écrit rien (cf. `data-model/04`, motif de la clé partagée).
-model CategoryContextTva {
+model CategoryContextVat {
   categoryId String   @map("category_id")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   contextId  String   @map("context_id")
   context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-  tvaRateId  String   @map("tva_rate_id")
+  vatRateId  String   @map("tva_rate_id")
   /// `Restrict` (défaut) : un taux visé par une famille ne peut pas disparaître.
-  tvaRate    TvaRate  @relation(fields: [tvaRateId], references: [id])
+  vatRate    VatRate  @relation(fields: [vatRateId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@id([categoryId, contextId])
-  @@index([tvaRateId])
+  @@index([vatRateId])
   @@map("category_context_tva")
   @@schema("pim")
 }
 
-model TvaRate {
+model VatRate {
   id          String @id
   name        String
   description String @default("")
@@ -2604,12 +2604,12 @@ model TvaRate {
   /// jointure. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la
   /// suppression, et le compte d'usages que l'écran affiche avant de proposer
   /// de supprimer.
-  contextTva CategoryContextTva[]
+  contextVat CategoryContextVat[]
 
   /// Produits qui DÉROGENT à leur famille pour viser ce taux. Comptés eux aussi
   /// dans les usages : un taux visé par une seule fiche ne se supprime pas plus
   /// qu'un taux visé par une famille.
-  productTva ProductContextTva[]
+  productVat ProductContextVat[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2679,7 +2679,7 @@ model Product {
   media     ProductMedia[]
 
   /// Les taux propres à CE produit, par contexte. Absence = il hérite.
-  contextTva ProductContextTva[]
+  contextVat ProductContextVat[]
 
   /// Où cette fiche se vend, quand elle ne suit PAS sa famille.
   ///
@@ -2711,20 +2711,20 @@ model Product {
 ///
 /// Ce n'est PAS une colonne sur `product` : trois colonnes fixes sont
 /// exactement ce que la famille vient de perdre.
-model ProductContextTva {
+model ProductContextVat {
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   contextId String  @map("context_id")
   context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-  tvaRateId String  @map("tva_rate_id")
+  vatRateId String  @map("tva_rate_id")
   /// `Restrict` : un taux visé par un produit ne disparaît pas sous lui.
-  tvaRate   TvaRate @relation(fields: [tvaRateId], references: [id])
+  vatRate   VatRate @relation(fields: [vatRateId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@id([productId, contextId])
-  @@index([tvaRateId])
+  @@index([vatRateId])
   @@map("product_context_tva")
   @@schema("pim")
 }

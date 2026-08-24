@@ -2,7 +2,7 @@ import { Category } from "../category.js";
 import {
   CategoryFrozenError,
   CategorySelfParentError,
-  CategoryTvaWithoutChannelError,
+  CategoryVatWithoutChannelError,
   CategoryUnknownContextError,
 } from "../../errors/category-errors.js";
 import type { SalesChannels } from "../../../../shared/domain/value-objects/sales-channels.js";
@@ -110,7 +110,7 @@ describe("l’agrégat Category", () => {
     });
 
     it("refuse la TVA", () => {
-      expect(() => archived().setTva({ emporter: "tva_5" }, CONTEXTS)).toThrow(CategoryFrozenError);
+      expect(() => archived().setVat({ emporter: "tva_5" }, CONTEXTS)).toThrow(CategoryFrozenError);
     });
 
     it("refuse le déplacement et le rang", () => {
@@ -153,35 +153,35 @@ describe("l’agrégat Category", () => {
   describe("un taux ne se règle que pour un canal vendu", () => {
     it("refuse le taux d’un canal fermé", () => {
       const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
-      expect(() => category.setTva({ emporter: "tva_55", surPlace: "tva_10" }, CONTEXTS)).toThrow(
-        CategoryTvaWithoutChannelError,
+      expect(() => category.setVat({ emporter: "tva_55", surPlace: "tva_10" }, CONTEXTS)).toThrow(
+        CategoryVatWithoutChannelError,
       );
     });
 
     it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
       const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
-      category.setTva({ emporter: "tva_55" }, CONTEXTS);
+      category.setVat({ emporter: "tva_55" }, CONTEXTS);
       expect(category.tvaByContext).toEqual({ emporter: "tva_55" });
     });
 
     it("traite le B2B comme un canal à part entière", () => {
       const category = selling({ b2b: true });
-      category.setTva({ b2b: "tva_55" }, CONTEXTS);
-      expect(category.tvaOf("b2b")).toBe("tva_55");
+      category.setVat({ b2b: "tva_55" }, CONTEXTS);
+      expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
     it("EFFACE le taux d’un canal qu’on ferme", () => {
       const category = selling({ b2b: true });
-      category.setTva({ b2b: "tva_55" }, CONTEXTS);
+      category.setVat({ b2b: "tva_55" }, CONTEXTS);
 
       category.setChannels(channels({ b2b: false }), CONTEXTS);
 
-      expect(category.tvaOf("b2b")).toBeNull();
+      expect(category.vatOf("b2b")).toBeNull();
     });
 
     it("laisse intact le taux d’un canal qui reste vendu", () => {
       const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
-      category.setTva({ emporter: "tva_55" }, CONTEXTS);
+      category.setVat({ emporter: "tva_55" }, CONTEXTS);
 
       // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
       category.setChannels(
@@ -194,7 +194,7 @@ describe("l’agrégat Category", () => {
         CONTEXTS,
       );
 
-      expect(category.tvaOf("emporter")).toBe("tva_55");
+      expect(category.vatOf("emporter")).toBe("tva_55");
     });
 
     it("refuse un contexte que le registre ne connaît pas", () => {
@@ -202,7 +202,7 @@ describe("l’agrégat Category", () => {
       // personne ne saurait plus dire, six mois après, ce que « traiteur »
       // facturait.
       const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
-      expect(() => category.setTva({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
+      expect(() => category.setVat({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
         CategoryUnknownContextError,
       );
     });

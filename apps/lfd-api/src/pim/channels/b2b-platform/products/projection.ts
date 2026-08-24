@@ -2,7 +2,7 @@ import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@l
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
 import type {
-  CategoryTvaPercents,
+  CategoryVatPercents,
   ChannelCategory,
 } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { SalesChannels } from "../../../catalogue/shared/domain/value-objects/sales-channels.js";
@@ -145,7 +145,7 @@ export function projectCatalog(
    * par-dessus celle de sa famille). Passé plutôt que recalculé : la règle
    * n'a qu'une écriture, et cette fonction reste pure.
    */
-  vatByProduct: ReadonlyMap<string, CategoryTvaPercents>,
+  vatByProduct: ReadonlyMap<string, CategoryVatPercents>,
   /**
    * Où chaque fiche se vend **réellement**, résolu en amont de la même façon.
    *
@@ -223,7 +223,7 @@ export function projectCatalog(
  * `null` quand le contexte n'est pas réglé : la plateforme écarte alors
  * l'article de sa boutique plutôt que de supposer un taux.
  */
-function vatOf(percents: CategoryTvaPercents): number | null {
+function vatOf(percents: CategoryVatPercents): number | null {
   return percents[B2B_CONTEXT_KEY] ?? null;
 }
 
@@ -235,6 +235,6 @@ function projectCategory(category: ChannelCategory): SyncCategory {
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent: vatOf(category.vatByContext),
+    vatRatePercent: vatOf(category.tvaByContext),
   };
 }

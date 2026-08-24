@@ -21,7 +21,7 @@ import type {
   Category,
   ProductKind,
   ProductStatus,
-  TvaRate,
+  VatRate,
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
 import { ReferenceApi } from '../reference-api';
@@ -232,7 +232,7 @@ export class ProductFormStore {
 
   // Référentiels
   readonly categories = signal<Category[]>([]);
-  readonly rates = signal<TvaRate[]>([]);
+  readonly rates = signal<VatRate[]>([]);
   readonly entries = signal<AllergenEntry[]>([]);
   readonly provisional = signal(false);
   readonly scope = signal<AllergenScope>('eu');
@@ -309,7 +309,7 @@ export class ProductFormStore {
    * vient chaque taux, et une valeur fusionnée aurait perdu la provenance en
    * chemin — donc le moyen de revenir en arrière.
    */
-  readonly tvaOverride = signal<Readonly<Record<string, string>>>({});
+  readonly vatOverride = signal<Readonly<Record<string, string>>>({});
 
   /**
    * Où la fiche se vend quand elle ne suit PAS sa famille. `null` = elle hérite.
@@ -406,7 +406,7 @@ export class ProductFormStore {
    * dérogation. Le panneau en a besoin pour nommer ce à quoi « hériter » vaut :
    * proposer « revenir au défaut » sans dire lequel, c'est choisir à l'aveugle.
    */
-  readonly familyTva = computed<Readonly<Record<string, string>>>(
+  readonly familyVat = computed<Readonly<Record<string, string>>>(
     () => this.selectedCategory()?.tvaByContext ?? {},
   );
 
@@ -436,7 +436,7 @@ export class ProductFormStore {
     // La règle de résolution, à l'écran comme au serveur : la fiche d'abord, sa
     // famille ensuite. Contexte par contexte — on peut déroger en B2B et suivre
     // sa famille au comptoir.
-    const override = this.tvaOverride();
+    const override = this.vatOverride();
     // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend se lit
     // sur les siens, pas sur ceux de sa famille.
     const channels = this.effectiveChannels();
@@ -546,7 +546,7 @@ export class ProductFormStore {
         return;
       case 'tarif':
         this.priceEur.set(value[0] as number | null);
-        this.tvaOverride.set(value[1] as Readonly<Record<string, string>>);
+        this.vatOverride.set(value[1] as Readonly<Record<string, string>>);
         this.channelsOverride.set(value[2] as SalesChannels | null);
         return;
       case 'fiche':
@@ -748,7 +748,7 @@ export class ProductFormStore {
     try {
       const [categories, rates] = await Promise.all([
         this.api.listCategories(),
-        this.api.listTvaRates(),
+        this.api.listVatRates(),
       ]);
       const active = categories.filter((category) => !category.isArchived);
       this.categories.set(active);
@@ -826,8 +826,8 @@ export class ProductFormStore {
    * `null` retire la clé plutôt que d'écrire une valeur vide : « je reviens à
    * l'héritage » est un geste, et il ne doit pas s'écrire comme une décision.
    */
-  setTvaOverride(contextKey: string, rateId: string | null): void {
-    this.tvaOverride.update((current) => {
+  setVatOverride(contextKey: string, rateId: string | null): void {
+    this.vatOverride.update((current) => {
       const { [contextKey]: _dropped, ...rest } = current;
       return rateId === null ? rest : { ...rest, [contextKey]: rateId };
     });
@@ -839,7 +839,7 @@ export class ProductFormStore {
       // Le prix et son régime partent ENSEMBLE : ils sont dans la même section,
       // et enregistrer l'un sans l'autre laisserait l'écran vert sur une moitié
       // de décision.
-      await this.products.saveTva(this.productId(), this.tvaOverride());
+      await this.products.saveVat(this.productId(), this.vatOverride());
       // Les canaux partent avec : fermer un canal efface les taux qu'on y avait
       // posés, et les envoyer séparément laisserait une fenêtre où l'un des deux
       // gestes est passé et l'autre non.
@@ -965,7 +965,7 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([this.priceEur(), this.tvaOverride(), this.channelsOverride()]);
+        return JSON.stringify([this.priceEur(), this.vatOverride(), this.channelsOverride()]);
       case 'fiche':
         // Le poids net est de CETTE section : la grille est « pour 100 g », et
         // sans lui elle ne dit rien de ce qu'on vend.
@@ -1007,7 +1007,7 @@ export class ProductFormStore {
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
-    this.tvaOverride.set(product.tvaByContext);
+    this.vatOverride.set(product.tvaByContext);
     this.channelsOverride.set(product.channelsOverride);
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);

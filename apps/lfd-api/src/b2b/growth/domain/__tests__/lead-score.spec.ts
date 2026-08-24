@@ -130,7 +130,7 @@ describe("deriveLeadScores", () => {
     const [lead] = deriveLeadScores(
       [
         declared("c1", "2026-08-06T09:00:00.000Z"),
-        stepReached("c1", "2026-08-06T10:00:00.000Z", "tva"),
+        stepReached("c1", "2026-08-06T10:00:00.000Z", "vat"),
         stepReached("c1", "2026-08-06T11:00:00.000Z", "kbis"),
       ],
       NOW,

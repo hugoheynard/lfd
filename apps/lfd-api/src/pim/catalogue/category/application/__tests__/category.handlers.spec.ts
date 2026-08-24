@@ -1,10 +1,10 @@
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { TvaRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
-import { TvaRate } from "../../../../commerce/domain/entities/tva-rate.js";
+import { VatRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
+import { VatRate } from "../../../../commerce/domain/entities/vat-rate.js";
 import {
-  TvaRateRepository,
-  type TvaRateUsage,
-} from "../../../../commerce/domain/ports/tva-rate.repository.js";
+  VatRateRepository,
+  type VatRateUsage,
+} from "../../../../commerce/domain/ports/vat-rate.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
@@ -16,7 +16,7 @@ import {
   CategoryNotFoundError,
   CategoryOrderMismatchError,
   CategorySlugTakenError,
-  CategoryTvaWithoutChannelError,
+  CategoryVatWithoutChannelError,
   CategoryUnknownEmplacementError,
 } from "../../domain/errors/category-errors.js";
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
@@ -33,7 +33,7 @@ import {
   SetCategoryChannelsCommand,
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
-import { SetCategoryTvaCommand, SetCategoryTvaHandler } from "../set-category-tva.js";
+import { SetCategoryVatCommand, SetCategoryVatHandler } from "../set-category-vat.js";
 import { SalesContextRegistry } from "../../../shared/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../shared/domain/value-objects/sales-context.js";
 
@@ -153,22 +153,22 @@ function noEmplacementKnown(): KnownEmplacementsReader {
   })();
 }
 
-class InMemoryRegimes extends TvaRateRepository {
-  private readonly rows: TvaRate[] = [];
+class InMemoryRegimes extends VatRateRepository {
+  private readonly rows: VatRate[] = [];
 
-  listAll(): Promise<TvaRate[]> {
+  listAll(): Promise<VatRate[]> {
     return Promise.resolve([...this.rows]);
   }
-  findById(id: string): Promise<TvaRate | null> {
+  findById(id: string): Promise<VatRate | null> {
     return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
   }
-  findByPercent(percent: number): Promise<TvaRate | null> {
+  findByPercent(percent: number): Promise<VatRate | null> {
     return Promise.resolve(this.rows.find((r) => r.percent === percent) ?? null);
   }
-  usageByRegime(): Promise<ReadonlyMap<string, TvaRateUsage>> {
+  usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
     return Promise.resolve(new Map());
   }
-  add(rate: TvaRate): Promise<void> {
+  add(rate: VatRate): Promise<void> {
     this.rows.push(rate);
     return Promise.resolve();
   }
@@ -436,7 +436,7 @@ describe("SetCategoryChannelsHandler", () => {
   });
 });
 
-describe("SetCategoryTvaHandler", () => {
+describe("SetCategoryVatHandler", () => {
   /** Une famille qui vend, donc capable de porter un taux (invariant agrégat). */
   async function sellingCategory(categories: InMemoryCategories): Promise<string> {
     const [id] = await openRoots(categories, 1);
@@ -447,11 +447,11 @@ describe("SetCategoryTvaHandler", () => {
   it("règle le taux d’un canal vendu", async () => {
     const categories = new InMemoryCategories();
     const rates = new InMemoryRegimes();
-    await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
+    await rates.add(VatRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const id = await sellingCategory(categories);
 
-    await new SetCategoryTvaHandler(categories, rates, registry, new RecordingJournal()).execute(
-      new SetCategoryTvaCommand(id, { emporter: "tva_5" }),
+    await new SetCategoryVatHandler(categories, rates, registry, new RecordingJournal()).execute(
+      new SetCategoryVatCommand(id, { emporter: "tva_5" }),
     );
 
     expect(categories.at(id).tvaByContext).toEqual({ emporter: "tva_5" });
@@ -462,13 +462,13 @@ describe("SetCategoryTvaHandler", () => {
     const id = await sellingCategory(categories);
 
     await expect(
-      new SetCategoryTvaHandler(
+      new SetCategoryVatHandler(
         categories,
         new InMemoryRegimes(),
         registry,
         new RecordingJournal(),
-      ).execute(new SetCategoryTvaCommand(id, { emporter: "tva_absent" })),
-    ).rejects.toBeInstanceOf(TvaRateNotFoundError);
+      ).execute(new SetCategoryVatCommand(id, { emporter: "tva_absent" })),
+    ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
 
   /**
@@ -478,14 +478,14 @@ describe("SetCategoryTvaHandler", () => {
   it("refuse le taux d’un canal que la famille ne vend pas", async () => {
     const categories = new InMemoryCategories();
     const rates = new InMemoryRegimes();
-    await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
+    await rates.add(VatRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const [id] = await openRoots(categories, 1);
 
     await expect(
-      new SetCategoryTvaHandler(categories, rates, registry, new RecordingJournal()).execute(
-        new SetCategoryTvaCommand(id!, { emporter: "tva_5" }),
+      new SetCategoryVatHandler(categories, rates, registry, new RecordingJournal()).execute(
+        new SetCategoryVatCommand(id!, { emporter: "tva_5" }),
       ),
-    ).rejects.toBeInstanceOf(CategoryTvaWithoutChannelError);
+    ).rejects.toBeInstanceOf(CategoryVatWithoutChannelError);
   });
 });
 

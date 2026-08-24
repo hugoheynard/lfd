@@ -24,7 +24,7 @@ import type { ProductRecord } from "../../../product/domain/ports/product.reposi
  * collection. Chacun dérive maintenant ce dont il a besoin — Shopify un handle,
  * la boutique B2B un nombre à facturer.
  */
-export type CategoryTvaPercents = Readonly<Record<string, number>>;
+export type CategoryVatPercents = Readonly<Record<string, number>>;
 
 /**
  * Une famille telle qu'un **canal** a besoin de la ranger : son identité, sa
@@ -47,7 +47,7 @@ export interface ChannelCategory {
   /**
    * Les taux de la famille en %, par clé de contexte. Clé absente = non réglé.
    */
-  readonly vatByContext: CategoryTvaPercents;
+  readonly tvaByContext: CategoryVatPercents;
 }
 
 export abstract class CatalogueReader {
@@ -68,7 +68,7 @@ export abstract class CatalogueReader {
    */
   abstract vatPercents(
     products: readonly ProductRecord[],
-  ): Promise<ReadonlyMap<string, CategoryTvaPercents>>;
+  ): Promise<ReadonlyMap<string, CategoryVatPercents>>;
 
   /**
    * Où chaque produit se vend **réellement** : sa propre matrice s'il en a une,

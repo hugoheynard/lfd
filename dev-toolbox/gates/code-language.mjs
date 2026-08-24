@@ -42,7 +42,10 @@ import { join, relative } from "node:path";
 const ROOT = process.cwd();
 
 /** Les dossiers dont la dette est purgée. En ajouter un = l'avoir drainé. */
-const SCOPE = [];
+const SCOPE = [
+  "apps/lfd-api/src/pim/commerce",
+  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/vat-rates",
+];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */
 const WATCHED = [
@@ -84,15 +87,35 @@ function identifiersOnly(source) {
   );
 }
 
-const WORD = new RegExp(`\\b[A-Za-z_$]*(?:${FRENCH.join("|")})[A-Za-z0-9_$]*\\b`, "gi");
+const FORBIDDEN = new Set(FRENCH);
+const IDENTIFIER = /[A-Za-z_$][A-Za-z0-9_$]*/g;
+
+/**
+ * Un identifiant, découpé en MOTS — `camelCase`, `PascalCase`, `snake_case`.
+ *
+ * Comparer des sous-chaînes ne marche pas : `firstValueFrom` contient « tVa »,
+ * et `programme` contient « gamme ». Deux faux positifs qui auraient appris à
+ * ignorer le gate — ce qui est pire que de ne pas en avoir.
+ */
+function wordsOf(identifier) {
+  return identifier
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_$]/g, " ")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+}
 
 function findingsIn(file) {
   const found = [];
   identifiersOnly(readFileSync(file, "utf8"))
     .split("\n")
     .forEach((line, i) => {
-      for (const match of line.matchAll(WORD)) {
-        found.push([i + 1, match[0]]);
+      for (const match of line.matchAll(IDENTIFIER)) {
+        const guilty = wordsOf(match[0]).filter((word) => FORBIDDEN.has(word));
+        if (guilty.length > 0) {
+          found.push([i + 1, `${match[0]} (${guilty.join(", ")})`]);
+        }
       }
     });
   return found;

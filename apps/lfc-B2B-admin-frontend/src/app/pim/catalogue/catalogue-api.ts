@@ -4,7 +4,7 @@ import type { LocalizedText } from '@lfd/pim-contracts';
 
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
-import { TvaStore } from './tva-rates/tva-store';
+import { VatRateStore } from './vat-rates/vat-store';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
 // `type Category` / `type Product` depuis ce fichier sans changement.
@@ -17,11 +17,11 @@ export type {
   ProductKind,
   ProductStatus,
   SalesChannels,
-  TvaRate,
+  VatRate,
   Variant,
 } from '../data/models';
 
-import type { Category, Product, ProductKind, SalesChannels, TvaRate } from '../data/models';
+import type { Category, Product, ProductKind, SalesChannels, VatRate } from '../data/models';
 
 /**
  * Façade catalogue — délègue au backend Prisma via des **stores réactifs**
@@ -33,7 +33,7 @@ import type { Category, Product, ProductKind, SalesChannels, TvaRate } from '../
 export class CatalogueApi {
   private readonly productsApi = inject(ProductHttpApi);
   private readonly categoryStore = inject(CategoryStore);
-  private readonly tvaStore = inject(TvaStore);
+  private readonly tvaStore = inject(VatRateStore);
 
   // ── Familles (backend `catalogue/categories`, via CategoryStore) ──────────
 
@@ -47,9 +47,9 @@ export class CatalogueApi {
   // rien d'autre qu'un appel, et deux portes vers la même donnée finissent par
   // ne plus dire la même chose.
 
-  // ── Taux de TVA (backend `commerce/tva-rates`, via TvaStore) ─────────
+  // ── Taux de TVA (backend `commerce/vat-rates`, via VatRateStore) ─────────
 
-  async listTvaRates(): Promise<TvaRate[]> {
+  async listVatRates(): Promise<VatRate[]> {
     await this.tvaStore.reload();
     return [...this.tvaStore.items()];
   }

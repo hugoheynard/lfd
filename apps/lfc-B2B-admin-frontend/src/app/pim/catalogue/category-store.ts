@@ -4,7 +4,7 @@ import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { SOURCE_LOCALE, writeLocalized, type LocalizedText } from '@lfd/pim-contracts';
 
 import type { Category, SalesChannels } from '../data/models';
-import { CategoryHttpApi, type CategoryTvaDraft } from './category-http-api';
+import { CategoryHttpApi, type CategoryVatDraft } from './category-http-api';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -30,7 +30,7 @@ export interface CategorySettingsDraft {
 export interface CategoryMutableSettings {
   readonly parentId: string | null;
   readonly channels: SalesChannels;
-  readonly tva: CategoryTvaDraft;
+  readonly vat: CategoryVatDraft;
 }
 
 /**
@@ -92,7 +92,7 @@ export class CategoryStore {
     const id = draft.id === null ? await this.openNew(draft) : await this.reword(draft.id, draft);
     if (draft.settings !== null) {
       await this.api.setChannels(id, draft.settings.channels);
-      await this.api.setTva(id, draft.settings.tva);
+      await this.api.setVat(id, draft.settings.vat);
     }
     await this.reload();
     return id;

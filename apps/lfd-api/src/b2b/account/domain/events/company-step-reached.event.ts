@@ -2,7 +2,7 @@
  * Étape d'activation franchie — aligné sur les **pièces** (`ActivationPiece`) :
  * TVA renseignée, KBIS déposé, adresse de facturation / de livraison saisie.
  */
-export type ActivationStep = "tva" | "kbis" | "billing" | "delivery";
+export type ActivationStep = "vat" | "kbis" | "billing" | "delivery";
 
 /**
  * Fait de domaine : **une pièce d'activation vient d'être fournie**. Chaque étape

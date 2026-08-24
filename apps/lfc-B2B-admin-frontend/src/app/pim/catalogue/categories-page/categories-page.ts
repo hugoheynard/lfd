@@ -17,7 +17,7 @@ import {
 
 import { boutiquesWith } from '../../data/channels';
 import { CategoryStore } from '../category-store';
-import { TvaStore } from '../tva-rates/tva-store';
+import { VatRateStore } from '../vat-rates/vat-store';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 import type { Category } from '../catalogue-api';
@@ -67,7 +67,7 @@ import type { Category } from '../catalogue-api';
 })
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
-  private readonly tvaStore = inject(TvaStore);
+  private readonly tvaStore = inject(VatRateStore);
   private readonly emplacementStore = inject(EmplacementStore);
   private readonly panelHost = inject(FoldPanelHostService);
 

@@ -27,7 +27,7 @@ export interface CompanyIdentityView {
   readonly siret: string;
   readonly tvaIntracom: string;
   /** TVA requise par la forme juridique mais absente → zone à compléter. */
-  readonly tvaMissing: boolean;
+  readonly vatMissing: boolean;
   /**
    * Les pièces d'**identité légale** qui manquent, nommées (« raison sociale »,
    * « SIRET »…). Vide quand rien ne manque.

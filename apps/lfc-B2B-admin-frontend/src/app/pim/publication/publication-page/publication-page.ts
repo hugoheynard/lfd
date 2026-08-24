@@ -10,7 +10,7 @@ import {
 } from 'fold-ng';
 
 import { PublicationB2b } from '../publication-b2b/publication-b2b';
-import { PublicationTvaCollections } from '../publication-tva-collections/publication-tva-collections';
+import { PublicationVatCollections } from '../publication-vat-collections/publication-vat-collections';
 import { PublicationShopify } from '../publication-shopify/publication-shopify';
 
 /**
@@ -36,7 +36,7 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
     FoldTabPanelComponent,
     PublicationB2b,
     PublicationShopify,
-    PublicationTvaCollections,
+    PublicationVatCollections,
   ],
   templateUrl: './publication-page.html',
 })

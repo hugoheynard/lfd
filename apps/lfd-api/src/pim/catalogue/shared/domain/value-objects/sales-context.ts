@@ -40,7 +40,7 @@ export type SalesChannelKey = "emporter" | "surPlace" | "b2b";
  * Le taux visé par une famille, **par clé de contexte**. Une clé absente n'est
  * pas un taux nul : c'est l'absence de réglage, et les deux se distinguent.
  */
-export type ContextTva = Readonly<Record<string, string>>;
+export type ContextVat = Readonly<Record<string, string>>;
 
 /**
  * Ce contexte est-il vendu par cette matrice ?

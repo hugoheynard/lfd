@@ -31,7 +31,7 @@ export class FicheClientPanels {
    * (le KBIS est un dépôt de fichier, le règlement se règle sur la fiche).
    */
   openStep(key: string, company: AdminCompanyDetail): Promise<unknown> | null {
-    if (key === 'tva' || key === 'legal') {
+    if (key === 'vat' || key === 'legal') {
       return this.panels.open(AdminIdentitePanel, {
         data: {
           companyId: company.id,

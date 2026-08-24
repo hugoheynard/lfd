@@ -13,7 +13,7 @@ import { TaxCollectionsPlan } from "./tax-collections.plan.js";
 
 /**
  * Ressource **collections de TVA** : inspection (diff) et push (créer les
- * manquantes). Sous-chemin `collections/tva` sous le préfixe module
+ * manquantes). Sous-chemin `collections/vat` sous le préfixe module
  * `channels/shopify`.
  *
  * Les deux routes ne prennent **aucun corps** : les collections voulues se
@@ -31,7 +31,7 @@ import { TaxCollectionsPlan } from "./tax-collections.plan.js";
  * de catalogue — la comptabilité pose un taux juste, le publieur réconcilie.
  */
 @AdminSurface("catalog")
-@Controller("collections/tva")
+@Controller("collections/vat")
 export class ShopifyCollectionsController {
   constructor(
     private readonly collections: ShopifyCollectionsService,

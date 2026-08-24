@@ -19,7 +19,7 @@ const stubAdminVerifier = {
 
 const CATEGORIES = "/pim/catalogue/categories";
 const EMPLACEMENTS = "/pim/locations/emplacements";
-const RATES = "/pim/commerce/tva-rates";
+const RATES = "/pim/commerce/vat-rates";
 
 let ctx: E2eContext;
 
@@ -160,7 +160,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
     const rate = await createRate("Réduit", 5.5);
 
     const response = await staff()
-      .put(`${CATEGORIES}/${category}/tva`)
+      .put(`${CATEGORIES}/${category}/vat`)
       .send({ tvaByContext: { emporter: rate } });
 
     expect(response.status).toBe(409);
@@ -183,7 +183,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
       .send({ boutiques: {}, b2b: true })
       .expect(200);
     await staff()
-      .put(`${CATEGORIES}/${category}/tva`)
+      .put(`${CATEGORIES}/${category}/vat`)
       .send({ tvaByContext: { b2b: rate } })
       .expect(200);
     expect((await readCategory(category)).tvaByContext).toEqual({ b2b: rate });

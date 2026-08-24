@@ -56,10 +56,10 @@ export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPaylo
  * vend plus gonflerait le compte d'usages du taux et bloquerait sa suppression
  * pour rien. Le serveur refuse une clé qui ne désigne aucun contexte connu.
  */
-export const setCategoryTvaPayloadSchema = z.object({
+export const setCategoryVatPayloadSchema = z.object({
   tvaByContext: z.record(z.string(), z.string()),
 });
-export type SetCategoryTvaPayload = z.infer<typeof setCategoryTvaPayloadSchema>;
+export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
 
 /** Un contexte de vente, tel que l'API le rend — le registre, en lecture. */
 export interface SalesContextView {

@@ -144,7 +144,7 @@ export interface ActivationGate {
 
 /** Ce qui empêche d'activer — un code, la phrase est à l'écran. */
 export type ActivationBlocker =
-  'identite_legale' | 'detenteur' | 'telephone' | 'tva' | 'facturation';
+  'identite_legale' | 'detenteur' | 'telephone' | 'vat' | 'facturation';
 
 /**
  * L'état d'une pièce du dossier, et si elle **empêche** d'activer.

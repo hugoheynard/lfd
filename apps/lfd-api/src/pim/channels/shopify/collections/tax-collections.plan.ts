@@ -2,8 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import type { DesiredCollection } from "@lfd/shopify-admin";
 
-import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
-import { tvaHandleOf } from "./tva-handle.js";
+import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
+import { vatCollectionHandle } from "./vat-handle.js";
 
 /** « 5.5 » → « 5,5 % ». Le rendu du taux dans un titre de collection. */
 function formatPercent(percent: number): string {
@@ -25,13 +25,13 @@ function formatPercent(percent: number): string {
  */
 @Injectable()
 export class TaxCollectionsPlan {
-  constructor(private readonly rates: TvaRateRepository) {}
+  constructor(private readonly rates: VatRateRepository) {}
 
   async desired(): Promise<DesiredCollection[]> {
     const rates = await this.rates.listAll();
     return rates.map((rate) => {
       const { percent } = rate.snapshot();
-      return { handle: tvaHandleOf(percent), title: `TVA ${formatPercent(percent)}` };
+      return { handle: vatCollectionHandle(percent), title: `TVA ${formatPercent(percent)}` };
     });
   }
 }

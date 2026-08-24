@@ -31,7 +31,7 @@ import {
   type Category,
   type Product,
   type SalesChannels,
-  type TvaRate,
+  type VatRate,
 } from '../catalogue-api';
 
 const SYNC_LABELS: Record<SyncStatus, string> = {
@@ -85,7 +85,7 @@ export class ProductsPage {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
-  protected readonly rates = signal<TvaRate[]>([]);
+  protected readonly rates = signal<VatRate[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly page = signal(1);
@@ -354,7 +354,7 @@ export class ProductsPage {
         this.api.listProducts(),
         this.api.listCategories(),
         this.shopify.listBindings(),
-        this.api.listTvaRates(),
+        this.api.listVatRates(),
       ]);
       this.products.set(products);
       this.bindings.set(bindings);

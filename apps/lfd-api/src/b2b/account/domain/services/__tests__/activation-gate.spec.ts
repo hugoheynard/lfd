@@ -84,7 +84,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
   it("dit ce qui bloque, pièce par pièce", () => {
     // Ni le KBIS ni la livraison : le premier est une convention interne, la
     // seconde un service qui n'existe pas.
-    expect(activationGate(detail()).blocking).toEqual(["tva", "facturation"]);
+    expect(activationGate(detail()).blocking).toEqual(["vat", "facturation"]);
   });
 
   it("ouvre la porte quand tout est réuni", () => {
@@ -123,7 +123,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
 
   it("ne demande PLUS la livraison, tant que le service n'existe pas", () => {
     const pieces = activationGate(detail()).checklist.map((check) => check.piece);
-    expect(pieces).toEqual(["tva", "kbis", "billing"]);
+    expect(pieces).toEqual(["vat", "kbis", "billing"]);
   });
 
   it("ne réclame pas de TVA à un non-assujetti", () => {

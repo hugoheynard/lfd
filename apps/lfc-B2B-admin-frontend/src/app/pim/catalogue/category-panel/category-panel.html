@@ -48,7 +48,7 @@
            demanderait de trancher pour une vente qui n'a pas lieu, et laisserait
            la famille pointer un taux dont personne ne se sert. -->
       @if (hasAnyChannel()) {
-        <div class="tva-pickers">
+        <div class="vat-pickers">
           <!-- UNE liste par contexte VENDU, itérée depuis le registre. C'étaient
                trois blocs jumeaux : un quatrième contexte demandait d'en écrire
                un quatrième, et un oubli dans l'une des copies ne se voyait
@@ -56,7 +56,7 @@
           @for (context of settableContexts(); track context.key) {
             <fold-listbox
               [label]="context.label"
-              [value]="tvaOf(context.key)"
+              [value]="vatOf(context.key)"
               (selectionChange)="setTvaOf(context.key, $event)"
             >
               <fold-option value="">— Non réglé —</fold-option>

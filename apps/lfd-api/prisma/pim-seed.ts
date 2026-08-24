@@ -24,14 +24,14 @@ const prisma = new PrismaClient({
 });
 
 /** Les taux de TVA : un nom, un taux. Le reste se dérive chez les canaux. */
-async function seedTvaRates(): Promise<void> {
+async function seedVatRates(): Promise<void> {
   for (const regime of SEED_TVA_RATES) {
     const fields = {
       name: regime.name,
       description: regime.description,
       percent: regime.percent,
     };
-    await prisma.tvaRate.upsert({
+    await prisma.vatRate.upsert({
       where: { id: regime.id },
       create: { id: regime.id, ...fields },
       update: fields,
@@ -119,7 +119,7 @@ async function seedProducts(): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  await seedTvaRates();
+  await seedVatRates();
   await seedCategories();
   const products = await seedProducts();
   console.log(

@@ -71,7 +71,7 @@ describe("GET /admin/activations", () => {
       via: "self",
     });
     await seed("company.step_reached", "c_self", "2026-08-11T09:00:00.000Z", "customer", {
-      step: "tva",
+      step: "vat",
     });
     // c_staff : une pièce posée par le staff → PAS adoption+.
     await seed("company.declared", "c_staff", "2026-08-09T09:00:00.000Z", "customer", {
@@ -82,7 +82,7 @@ describe("GET /admin/activations", () => {
     });
     // Bruit : une étape sans déclaration → hors tunnel.
     await seed("company.step_reached", "c_ghost", "2026-08-12T09:00:00.000Z", "customer", {
-      step: "tva",
+      step: "vat",
     });
 
     const views = jsonBody<ActivationView[]>(await staff().get("/admin/activations").expect(200));
@@ -91,7 +91,7 @@ describe("GET /admin/activations", () => {
     const self = views.find((v) => v.companyId === "c_self");
     expect(self).toMatchObject({
       status: "pending",
-      stepsReached: ["tva"],
+      stepsReached: ["vat"],
       completion: 0.25,
       adoptionPlus: true,
     });

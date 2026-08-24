@@ -25,7 +25,7 @@ function isFilterValue(value: string): value is FilterValue {
 
 /** Libellé FR de chaque pièce d'activation. */
 const STEP_LABELS: Record<string, string> = {
-  tva: 'TVA',
+  vat: 'TVA',
   kbis: 'KBIS',
   billing: 'Facturation',
   delivery: 'Livraison',

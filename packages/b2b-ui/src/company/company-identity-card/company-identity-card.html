@@ -14,8 +14,8 @@
         foldButton
         size="sm"
         icon="edit"
-        [intent]="id.tvaMissing ? 'warning' : 'neutral'"
-        [emphasis]="id.tvaMissing ? 'soft' : 'outline'"
+        [intent]="id.vatMissing ? 'warning' : 'neutral'"
+        [emphasis]="id.vatMissing ? 'soft' : 'outline'"
         (click)="edit.emit()"
       >
         Modifier
@@ -56,7 +56,7 @@
       </fold-callout>
     }
 
-    @if (id.tvaMissing) {
+    @if (id.vatMissing) {
       <fold-callout variant="warning">
         Cette forme juridique nécessite un numéro de TVA intracommunautaire.
         <button actions foldButton intent="warning" emphasis="soft" size="sm" (click)="edit.emit()">

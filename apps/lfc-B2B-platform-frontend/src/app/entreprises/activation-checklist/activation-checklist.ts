@@ -13,7 +13,7 @@ import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise
 import { PaymentTermPanel } from '../payment-term-panel/payment-term-panel';
 
 /** Les étapes possibles du dossier d'activation. */
-type StepKey = 'tva' | 'kbis' | 'billing' | 'delivery' | 'payment';
+type StepKey = 'vat' | 'kbis' | 'billing' | 'delivery' | 'payment';
 
 /** Une étape à faire, telle que le container la calcule (sans le `kind` d'UI). */
 interface Step {
@@ -65,7 +65,7 @@ export class ActivationChecklist {
 
     if (company.vatNumberRequired && company.tvaIntracom.trim() === '') {
       steps.push({
-        key: 'tva',
+        key: 'vat',
         title: 'Numéro de TVA',
         detail: 'Votre forme juridique nécessite un numéro de TVA intracommunautaire.',
         cta: 'Renseigner la TVA',
@@ -117,7 +117,7 @@ export class ActivationChecklist {
   /** Exécute l'action d'une étape (ouvre le bon panneau). */
   protected act(key: string): void {
     const company = this.company();
-    if (key === 'tva') {
+    if (key === 'vat') {
       this.panelHost.open(EntrepriseIdentitePanel, {
         data: {
           companyId: company.id,

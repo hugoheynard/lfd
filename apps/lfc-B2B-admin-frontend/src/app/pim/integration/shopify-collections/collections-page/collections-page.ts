@@ -7,7 +7,7 @@ import { buildCollections } from '../collections';
 import { EmplacementStore } from '../../../emplacements/emplacement-store';
 import { CategoryStore } from '../../../catalogue/category-store';
 import { ProductStore } from '../../../catalogue/product-store';
-import { TvaStore } from '../../../catalogue/tva-rates/tva-store';
+import { VatRateStore } from '../../../catalogue/vat-rates/vat-store';
 
 /**
  * Arbre des collections que le paramétrage génère — trois lectures des tags,
@@ -23,7 +23,7 @@ import { TvaStore } from '../../../catalogue/tva-rates/tva-store';
 export class CollectionsPage {
   private readonly products = inject(ProductStore);
   private readonly categories = inject(CategoryStore);
-  private readonly rates = inject(TvaStore);
+  private readonly rates = inject(VatRateStore);
   private readonly emplacements = inject(EmplacementStore);
 
   protected readonly families = computed(() =>

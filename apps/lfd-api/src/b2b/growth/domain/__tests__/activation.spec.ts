@@ -47,7 +47,7 @@ describe("deriveActivations", () => {
     const [view] = deriveActivations(
       [
         declared("c1", "2026-08-10T09:00:00.000Z"),
-        step("c1", "2026-08-11T09:00:00.000Z", "tva"),
+        step("c1", "2026-08-11T09:00:00.000Z", "vat"),
         step("c1", "2026-08-12T09:00:00.000Z", "kbis"),
       ],
       NOW,
@@ -55,7 +55,7 @@ describe("deriveActivations", () => {
     expect(view).toMatchObject({
       companyId: "c1",
       status: "pending",
-      stepsReached: ["tva", "kbis"],
+      stepsReached: ["vat", "kbis"],
       stepsMissing: ["billing", "delivery"],
       completion: 0.5,
       stalledDays: 10,
@@ -66,7 +66,7 @@ describe("deriveActivations", () => {
     const [view] = deriveActivations(
       [
         declared("c1", "2026-08-10T09:00:00.000Z", "self"),
-        step("c1", "2026-08-11T09:00:00.000Z", "tva", "customer"),
+        step("c1", "2026-08-11T09:00:00.000Z", "vat", "customer"),
       ],
       NOW,
     );
@@ -77,7 +77,7 @@ describe("deriveActivations", () => {
     const [view] = deriveActivations(
       [
         declared("c1", "2026-08-10T09:00:00.000Z", "self"),
-        step("c1", "2026-08-11T09:00:00.000Z", "tva", "staff"),
+        step("c1", "2026-08-11T09:00:00.000Z", "vat", "staff"),
       ],
       NOW,
     );
@@ -95,7 +95,7 @@ describe("deriveActivations", () => {
     const [view] = deriveActivations(
       [
         declared("c1", "2026-08-10T09:00:00.000Z", "self"),
-        step("c1", "2026-08-11T09:00:00.000Z", "tva", "customer"),
+        step("c1", "2026-08-11T09:00:00.000Z", "vat", "customer"),
         activated("c1", "2026-08-14T09:00:00.000Z"),
       ],
       NOW,
@@ -117,7 +117,7 @@ describe("deriveActivations", () => {
   });
 
   it("ignore une société sans fait `company.declared` au journal", () => {
-    expect(deriveActivations([step("c1", "2026-08-11T09:00:00.000Z", "tva")], NOW)).toEqual([]);
+    expect(deriveActivations([step("c1", "2026-08-11T09:00:00.000Z", "vat")], NOW)).toEqual([]);
   });
 
   it("trie pending d'abord, le plus anciennement bloqué en tête", () => {

@@ -60,7 +60,7 @@ export class CategoryHasActiveProductsError extends BusinessError {
  * personne ne se sert : il gonflerait le compte d'usages de l'écran des taux,
  * et la base refuserait de supprimer un taux que plus rien ne facture.
  */
-export class CategoryTvaWithoutChannelError extends BusinessError {
+export class CategoryVatWithoutChannelError extends BusinessError {
   constructor(readonly channel: string) {
     super(
       "catalogue.category.tva_without_channel",

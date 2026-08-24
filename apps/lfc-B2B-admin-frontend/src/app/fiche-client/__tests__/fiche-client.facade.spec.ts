@@ -111,7 +111,7 @@ describe('façade — un panneau fermé recharge la fiche', () => {
     // de relire.
     const { facade, loads } = setup({});
 
-    facade.openStep('tva');
+    facade.openStep('vat');
     await Promise.resolve();
     await Promise.resolve();
 

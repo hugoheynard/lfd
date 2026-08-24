@@ -97,7 +97,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 export const PIM_VIEWS: readonly WorkspaceView[] = [
   { key: 'produits', label: 'Produits', link: '/pim/produits', icon: 'product' },
   { key: 'categories', label: 'Catégories', link: '/pim/categories', icon: 'category' },
-  { key: 'tva', label: 'Taux de TVA', link: '/pim/tva', icon: 'tax', needs: 'tax:read' },
+  { key: 'vat', label: 'Taux de TVA', link: '/pim/vat', icon: 'tax', needs: 'tax:read' },
   { key: 'collections', label: 'Collections', link: '/pim/collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: '/pim/publication', icon: 'publish' },
   { key: 'emplacements', label: 'Emplacements', link: '/pim/emplacements', icon: 'places' },

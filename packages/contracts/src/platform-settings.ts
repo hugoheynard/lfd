@@ -20,5 +20,5 @@ import { z } from "zod";
  * valeur) ; `delivery` n'est plus demandée tant que le service n'existe pas,
  * mais son nom reste — c'est un vocabulaire, pas une liste d'exigences.
  */
-export const activationPieceSchema = z.enum(["tva", "kbis", "billing", "delivery"]);
+export const activationPieceSchema = z.enum(["vat", "kbis", "billing", "delivery"]);
 export type ActivationPiece = z.infer<typeof activationPieceSchema>;

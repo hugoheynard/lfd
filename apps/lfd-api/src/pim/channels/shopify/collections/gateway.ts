@@ -58,7 +58,7 @@ export class LiveShopifyCollectionsGateway extends ShopifyCollectionsGateway {
   }
 
   list(): Promise<ShopifyCollection[]> {
-    return this.client.listTvaCollections();
+    return this.client.listVatCollections();
   }
 
   create(target: DesiredCollection): Promise<ShopifyCollection> {

@@ -30,10 +30,10 @@ function toCategory(row: CategoryView): Category {
  * que rend une liste déroulante vide, et la clé est **retirée** avant l'envoi
  * plutôt qu'envoyée à vide : « non réglé » ne s'écrit pas.
  */
-export type CategoryTvaDraft = Readonly<Record<string, string>>;
+export type CategoryVatDraft = Readonly<Record<string, string>>;
 
 /** Retire les contextes laissés vides — le serveur n'accepte que du réglé. */
-function settledOnly(draft: CategoryTvaDraft): Record<string, string> {
+function settledOnly(draft: CategoryVatDraft): Record<string, string> {
   return Object.fromEntries(Object.entries(draft).filter(([, id]) => id !== ''));
 }
 
@@ -91,8 +91,8 @@ export class CategoryHttpApi {
    * positionnels : intervertir « sur place » et « B2B » ne se verrait ni au
    * compilateur ni à la lecture, et se paierait en TVA facturée.
    */
-  setTva(id: string, ids: CategoryTvaDraft): Promise<void> {
-    return this.put(`categories/${id}/tva`, {
+  setVat(id: string, ids: CategoryVatDraft): Promise<void> {
+    return this.put(`categories/${id}/vat`, {
       tvaByContext: settledOnly(ids),
     });
   }

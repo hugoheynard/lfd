@@ -1,0 +1,23 @@
+<fold-page-layout icon="tax" title="Taux de TVA">
+  <p description>
+    Le <strong>référentiel fiscal</strong> du catalogue : un nom, un taux. Une famille y rattache
+    ses fiches à emporter et sur place, la boutique B2B facture au taux résolu, et Shopify en tire
+    une collection — dont le handle se dérive du taux, côté canal. Pousser les collections se fait
+    dans <strong>Publication</strong>.
+  </p>
+
+  <!-- Projeté dans les actions de page (`pageActions`) : l'action principale de
+       l'écran appartient à son en-tête, pas à la barre du tableau — qui a
+       disparu, le titre de page disant déjà de quoi il s'agit. -->
+  @if (canWrite()) {
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="openCreate()">
+      <!-- Deux libellés, un seul bouton : sur la ligne du titre en mobile,
+           « Ajouter un taux de TVA » répéterait « taux de TVA » à côté du titre
+           qui le dit déjà — et ne tiendrait pas sur 375 px. -->
+      <span class="cta-full">Ajouter un taux de TVA</span>
+      <span class="cta-short">Ajouter</span>
+    </button>
+  }
+
+  <app-vat-rate-table />
+</fold-page-layout>

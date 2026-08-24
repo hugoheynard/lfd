@@ -30,7 +30,7 @@ export type ProductStatus = 'draft' | 'published' | 'archived';
  * `tva-5-5`, `tva-10`, `tva-20`). Donnée créable — la base qui porte les
  * dérogations. Une catégorie référence un taux à emporter et un sur place.
  */
-export interface TvaRate {
+export interface VatRate {
   id: string;
   /** Nom lisible — « Réduit », « Intermédiaire », « Normal ». */
   name: string;
@@ -39,7 +39,7 @@ export interface TvaRate {
   /** Taux en pourcentage : 5.5, 10, 20. */
   percent: number;
   /** Combien de familles le visent — rendu par l'API, jamais recalculé ici. */
-  usage: TvaRateUsage;
+  usage: VatRateUsage;
 }
 
 /**
@@ -50,7 +50,7 @@ export interface TvaRate {
  * plateforme B2B visait s'affichait « 0 famille », donc supprimable, et la base
  * refusait après le clic.
  */
-export type TvaRateUsage = Readonly<Record<string, number>>;
+export type VatRateUsage = Readonly<Record<string, number>>;
 
 /** Ce qu'une boutique propose pour un produit : à emporter et/ou sur place. */
 export interface BoutiqueChannels {

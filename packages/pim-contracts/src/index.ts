@@ -17,8 +17,8 @@ export {
 
 export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 
-export { tvaRatePayloadSchema } from "./commerce.js";
-export type { TvaRatePayload, TvaRateView } from "./commerce.js";
+export { vatRatePayloadSchema } from "./commerce.js";
+export type { VatRatePayload, VatRateView } from "./commerce.js";
 
 export {
   createCategoryPayloadSchema,
@@ -27,7 +27,7 @@ export {
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
   salesChannelsSchema,
-  setCategoryTvaPayloadSchema,
+  setCategoryVatPayloadSchema,
 } from "./category.js";
 export type {
   CreateCategoryPayload,
@@ -35,7 +35,7 @@ export type {
   RenameCategoryPayload,
   ReorderCategoriesPayload,
   SetCategoryChannelsPayload,
-  SetCategoryTvaPayload,
+  SetCategoryVatPayload,
   CategoryView,
   SalesContextView,
 } from "./category.js";
@@ -62,7 +62,7 @@ export {
   declareNutritionPayloadSchema,
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
-  setProductTvaPayloadSchema,
+  setProductVatPayloadSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -82,7 +82,7 @@ export type {
   UploadedMediaView,
   SetProductMediaPayload,
   SetProductChannelsPayload,
-  SetProductTvaPayload,
+  SetProductVatPayload,
 } from "./product.js";
 
 export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";

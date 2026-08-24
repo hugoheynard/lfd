@@ -79,10 +79,10 @@ describe("deriveGrowthStats", () => {
     const stats = deriveGrowthStats(
       [
         ev("company.declared", "company", "c1", "2026-08-05T09:00:00.000Z", { via: "self" }),
-        ev("company.step_reached", "company", "c1", "2026-08-06T09:00:00.000Z", { step: "tva" }),
+        ev("company.step_reached", "company", "c1", "2026-08-06T09:00:00.000Z", { step: "vat" }),
         ev("company.step_reached", "company", "c1", "2026-08-07T09:00:00.000Z", { step: "kbis" }),
         ev("company.declared", "company", "c2", "2026-08-05T09:00:00.000Z", { via: "self" }),
-        ev("company.step_reached", "company", "c2", "2026-08-06T09:00:00.000Z", { step: "tva" }),
+        ev("company.step_reached", "company", "c2", "2026-08-06T09:00:00.000Z", { step: "vat" }),
       ],
       [],
       NOW,
@@ -90,7 +90,7 @@ describe("deriveGrowthStats", () => {
     const counts = stats.activationFunnel.map((s) => `${s.key}:${s.count}`);
     expect(counts).toEqual([
       "declared:2",
-      "tva:2",
+      "vat:2",
       "kbis:1",
       "billing:0",
       "delivery:0",

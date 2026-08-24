@@ -2,7 +2,7 @@ import {
   ArchivedProductNotPublishableError,
   InvalidProductVariantsError,
   ProductNotPublishableError,
-  ProductTvaWithoutChannelError,
+  ProductVatWithoutChannelError,
   ProductUnknownContextError,
   VariantNotFoundError,
 } from "../errors/product-errors.js";
@@ -17,7 +17,7 @@ import {
 } from "../../../shared/domain/value-objects/sales-channels.js";
 import {
   contextIsSold,
-  type ContextTva,
+  type ContextVat,
   type SalesContext,
 } from "../../../shared/domain/value-objects/sales-context.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
@@ -38,7 +38,7 @@ export interface ProductSnapshot {
    * Les taux propres à CE produit, par clé de contexte — sa **dérogation** à sa
    * famille. Clé absente = il hérite, et c'est le cas courant.
    */
-  readonly tvaByContext: ContextTva;
+  readonly tvaByContext: ContextVat;
   /**
    * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
    *
@@ -92,7 +92,7 @@ export class Product {
     private categoryIdValue: string,
     private statusValue: ProductStatus,
     private readonly variantList: readonly Variant[],
-    private tvaByContextValue: ContextTva,
+    private vatByContextValue: ContextVat,
     private channelOverrideValue: SalesChannels | null,
   ) {}
 
@@ -147,8 +147,8 @@ export class Product {
   }
 
   /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
-  get tvaByContext(): ContextTva {
-    return this.tvaByContextValue;
+  get tvaByContext(): ContextVat {
+    return this.vatByContextValue;
   }
 
   /** Sa matrice propre, ou `null` s'il suit sa famille. */
@@ -185,12 +185,12 @@ export class Product {
     const effective = this.effectiveChannels(familyChannels);
     const kept: Record<string, string> = {};
     for (const context of contexts) {
-      const rateId = this.tvaByContextValue[context.key];
+      const rateId = this.vatByContextValue[context.key];
       if (rateId !== undefined && contextIsSold(context, effective)) {
         kept[context.key] = rateId;
       }
     }
-    this.tvaByContextValue = kept;
+    this.vatByContextValue = kept;
   }
 
   /**
@@ -205,22 +205,22 @@ export class Product {
    * d'où les canaux passés en argument. Un produit ne voit pas sa famille ;
    * un objet ne garantit que ce qu'il voit.
    */
-  setTva(tva: ContextTva, contexts: readonly SalesContext[], familyChannels: SalesChannels): void {
+  setVat(vat: ContextVat, contexts: readonly SalesContext[], familyChannels: SalesChannels): void {
     // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend juge ses
     // taux là-dessus, pas sur ceux de sa famille. Sans quoi elle pourrait poser
     // un taux sur un canal qu'elle vient elle-même de fermer.
     const sellingChannels = this.effectiveChannels(familyChannels);
     const known = new Map(contexts.map((context) => [context.key, context]));
-    for (const key of Object.keys(tva)) {
+    for (const key of Object.keys(vat)) {
       const context = known.get(key);
       if (context === undefined) {
         throw new ProductUnknownContextError(key);
       }
       if (!contextIsSold(context, sellingChannels)) {
-        throw new ProductTvaWithoutChannelError(key);
+        throw new ProductVatWithoutChannelError(key);
       }
     }
-    this.tvaByContextValue = { ...tva };
+    this.vatByContextValue = { ...vat };
   }
 
   /** Renomme — et re-dérive le slug. */
@@ -311,7 +311,7 @@ export class Product {
       categoryId: this.categoryIdValue,
       status: this.statusValue,
       variants: this.variantList.map((variant) => variant.snapshot()),
-      tvaByContext: this.tvaByContextValue,
+      tvaByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
     };
   }

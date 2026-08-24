@@ -24,7 +24,7 @@ export interface MembershipOutcome {
  * Choix (revue adverse §8.2 du design) : on **ne crée pas** la collection ici — une
  * collection sans titre soigné serait un déchet ; on **rapporte** l'absence pour que
  * l'appelant la remonte, plutôt que d'avaler l'anomalie. Les collections se créent, avec
- * leur titre, via le push collections (`collections/tva/push`).
+ * leur titre, via le push collections (`collections/vat/push`).
  */
 @Injectable()
 export class ShopifyMembershipService {

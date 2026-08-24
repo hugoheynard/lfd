@@ -1,7 +1,7 @@
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /** Un taux de TVA visé n'existe pas. */
-export class TvaRateNotFoundError extends BusinessError {
+export class VatRateNotFoundError extends BusinessError {
   constructor(id: string) {
     super("commerce.tva_rate_not_found", `Taux de TVA introuvable : ${id}.`);
   }
@@ -19,7 +19,7 @@ export class TvaRateNotFoundError extends BusinessError {
  * l'invariant est fiscal. Un comptable à qui l'on répond « conflit de tag » n'a
  * aucun moyen de savoir qu'il vient de recréer le taux réduit.
  */
-export class TvaRateConflictError extends BusinessError {
+export class VatRateConflictError extends BusinessError {
   constructor(percent: number) {
     super(
       "commerce.tva_rate_conflict",
@@ -29,7 +29,7 @@ export class TvaRateConflictError extends BusinessError {
 }
 
 /** Suppression refusée : une catégorie vise encore ce taux (FK `Restrict`). */
-export class TvaRateInUseError extends BusinessError {
+export class VatRateInUseError extends BusinessError {
   constructor(id: string) {
     super(
       "commerce.tva_rate_in_use",
@@ -39,7 +39,7 @@ export class TvaRateInUseError extends BusinessError {
 }
 
 /** Un taux sans nom ne se retrouve pas dans une liste déroulante. */
-export class EmptyTvaRateNameError extends DomainError {
+export class EmptyVatRateNameError extends DomainError {
   constructor() {
     super("commerce.tva_rate.empty_name", "Le nom du taux de TVA est obligatoire.");
   }

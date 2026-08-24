@@ -144,7 +144,7 @@ describe('PricingForm — la dérogation de la fiche', () => {
     // famille ensuite — contexte par contexte.
     const store = setup();
     withFamily(store);
-    store.tvaOverride.set({ b2b: 'tva_55' });
+    store.vatOverride.set({ b2b: 'tva_55' });
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -162,7 +162,7 @@ describe('PricingForm — la dérogation de la fiche', () => {
     // dérogation utilisable sans avoir à tout redéclarer.
     const store = setup();
     withFamily(store);
-    store.tvaOverride.set({ b2b: 'tva_55' });
+    store.vatOverride.set({ b2b: 'tva_55' });
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 

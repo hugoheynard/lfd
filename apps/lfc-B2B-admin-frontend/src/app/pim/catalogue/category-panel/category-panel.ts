@@ -26,8 +26,8 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { NO_CHANNELS, formatPercent, sellsMode } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
-import type { Category, SalesChannels, TvaRate } from '../catalogue-api';
-import type { CategoryTvaDraft } from '../category-http-api';
+import type { Category, SalesChannels, VatRate } from '../catalogue-api';
+import type { CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
@@ -38,7 +38,7 @@ import { EmplacementStore } from '../../emplacements/emplacement-store';
  * second formulaire à tenir à jour quand un réglage bouge.
  */
 export interface CategoryPanelData {
-  readonly rates: readonly TvaRate[];
+  readonly rates: readonly VatRate[];
   readonly category?: Category;
 }
 
@@ -113,7 +113,7 @@ export class CategoryPanel {
     this.isCreate() ? 'Créer la famille' : 'Enregistrer',
   );
 
-  protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
+  protected readonly rates = computed<readonly VatRate[]>(() => this.data()?.rates ?? []);
   /**
    * Les parents proposables — dans les DEUX modes désormais.
    *
@@ -195,7 +195,7 @@ export class CategoryPanel {
   }
 
   /** Le taux saisi pour un contexte — `''` tant qu'il n'est pas réglé. */
-  protected tvaOf(contextKey: string): string {
+  protected vatOf(contextKey: string): string {
     return this.draftTva()[contextKey] ?? '';
   }
 
@@ -205,7 +205,7 @@ export class CategoryPanel {
 
   protected readonly canSubmit = computed(() => !this.busy() && this.draftName().trim() !== '');
 
-  protected rateLabel(rate: TvaRate): string {
+  protected rateLabel(rate: VatRate): string {
     return `${rate.name} · ${formatPercent(rate.percent)}`;
   }
 
@@ -229,7 +229,7 @@ export class CategoryPanel {
           : {
               parentId: this.draftParent() === '' ? null : this.draftParent(),
               channels: this.draftChannels(),
-              tva: this.tvaToSave(),
+              vat: this.vatToSave(),
             },
       });
       this.ref.close();
@@ -245,7 +245,7 @@ export class CategoryPanel {
    * qu'il vient de masquer, et le référentiel refuserait l'enregistrement
    * entier. On envoie ce qu'on montre.
    */
-  private tvaToSave(): CategoryTvaDraft {
+  private vatToSave(): CategoryVatDraft {
     const draft = this.draftTva();
     return Object.fromEntries(
       this.settableContexts()

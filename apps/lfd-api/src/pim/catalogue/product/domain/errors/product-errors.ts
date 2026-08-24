@@ -113,7 +113,7 @@ export class ProductUnknownContextError extends BusinessError {
  * facture, donc bloquer sa suppression pour rien. La règle est la même que sur
  * la famille : elle change juste de porteur.
  */
-export class ProductTvaWithoutChannelError extends BusinessError {
+export class ProductVatWithoutChannelError extends BusinessError {
   constructor(readonly contextKey: string) {
     super(
       "catalogue.product.tva_without_channel",

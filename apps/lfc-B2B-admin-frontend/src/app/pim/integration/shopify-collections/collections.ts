@@ -1,5 +1,5 @@
 import { formatPercent } from '../../data/channels';
-import type { Category, Emplacement, Product, TvaRate } from '../../data/models';
+import type { Category, Emplacement, Product, VatRate } from '../../data/models';
 import { generateFiches, tvaTagFromPercent } from './fiches';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
@@ -20,7 +20,7 @@ export interface Collection {
 
 /** Une des trois familles de collections du doc. */
 export interface CollectionFamily {
-  key: 'tva' | 'navigation' | 'salle';
+  key: 'vat' | 'navigation' | 'salle';
   title: string;
   description: string;
   /** Visibilité côté public — répond à « ces tags apparaissent-ils au client ? ». */
@@ -34,7 +34,7 @@ interface FicheContext {
   handle: string;
   title: string;
   boutiques: string[];
-  tvaTag: string;
+  vatTag: string;
   mode: 'emporter' | 'surPlace';
   categoryId: string;
 }
@@ -51,7 +51,7 @@ function toEntry(f: FicheContext): CollectionEntry {
 export function buildCollections(
   products: readonly Product[],
   categories: readonly Category[],
-  rates: readonly TvaRate[],
+  rates: readonly VatRate[],
   emplacements: readonly Emplacement[],
 ): CollectionFamily[] {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -68,7 +68,7 @@ export function buildCollections(
         handle: fiche.handle,
         title: fiche.title,
         boutiques: fiche.boutiques,
-        tvaTag: fiche.tvaTag,
+        vatTag: fiche.vatTag,
         mode: fiche.mode,
         categoryId: category.id,
       });
@@ -80,13 +80,13 @@ export function buildCollections(
   // Famille A — TVA : une collection par taux, groupée par handle. Le handle
   // se DÉRIVE du taux ici : il est du vocabulaire Shopify, et cette projection
   // est justement l'endroit qui parle Shopify.
-  const tva: Collection[] = rates.map((rate) => {
+  const vat: Collection[] = rates.map((rate) => {
     const tag = tvaTagFromPercent(rate.percent);
     return {
       tag,
       label: rate.name,
       sub: `${tag} · ${formatPercent(rate.percent)}`,
-      entries: fiches.filter((f) => f.tvaTag === tag).map(toEntry),
+      entries: fiches.filter((f) => f.vatTag === tag).map(toEntry),
     };
   });
 
@@ -114,12 +114,12 @@ export function buildCollections(
 
   return [
     {
-      key: 'tva',
+      key: 'vat',
       title: 'TVA — Famille A',
       description: 'Techniques ; portent les dérogations de taux.',
       visibility: 'Invisible — aucune page ni menu (calcul de taxe seul)',
       isPublic: false,
-      collections: tva,
+      collections: vat,
     },
     {
       key: 'navigation',

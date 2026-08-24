@@ -6,7 +6,7 @@ import type { ProductEditorialView } from "../../../catalogue/product/domain/por
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyCollectionsService } from "../collections/collections.service.js";
-import { tvaHandleOf } from "../collections/tva-handle.js";
+import { vatCollectionHandle } from "../collections/vat-handle.js";
 import { TaxCollectionsPlan } from "../collections/tax-collections.plan.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
@@ -316,7 +316,9 @@ export class ShopifyPushService {
       const contexts = await this.contexts.active();
       const tags = contexts.flatMap((context) => {
         const percent = rates[context.key];
-        return context.shopifyProjected && percent !== undefined ? [tvaHandleOf(percent)] : [];
+        return context.shopifyProjected && percent !== undefined
+          ? [vatCollectionHandle(percent)]
+          : [];
       });
       return describeMembership(await this.membership.assign(productGid, tags));
     } catch (error) {

@@ -179,7 +179,7 @@ function activationFunnel(
     activations.filter((a) => a.stepsReached.includes(step)).length;
   return [
     { key: "declared", label: "Déclarées", count: activations.length },
-    { key: "tva", label: "TVA", count: reached("tva") },
+    { key: "vat", label: "TVA", count: reached("vat") },
     { key: "kbis", label: "KBIS", count: reached("kbis") },
     { key: "billing", label: "Facturation", count: reached("billing") },
     { key: "delivery", label: "Livraison", count: reached("delivery") },

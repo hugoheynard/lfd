@@ -15,10 +15,10 @@ import {
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
-  setProductTvaPayloadSchema,
+  setProductVatPayloadSchema,
   type SetProductMediaPayload,
   type SetProductChannelsPayload,
-  type SetProductTvaPayload,
+  type SetProductVatPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
@@ -33,7 +33,7 @@ import { RestoreProductCommand } from "../application/restore-product.js";
 import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
 import { SetProductChannelsCommand } from "../application/set-product-channels.js";
-import { SetProductTvaCommand } from "../application/set-product-tva.js";
+import { SetProductVatCommand } from "../application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
@@ -141,13 +141,13 @@ export class ProductController {
    * Un `PUT` de remplacement comme les autres sections — l'écran envoie ce qu'il
    * affiche, carte vide comprise, et la carte vide est le retour à l'héritage.
    */
-  @Put(":id/tva")
+  @Put(":id/vat")
   async setProductTva(
     @Param("id") id: string,
-    @Body(new ZodBody(setProductTvaPayloadSchema)) body: SetProductTvaPayload,
+    @Body(new ZodBody(setProductVatPayloadSchema)) body: SetProductVatPayload,
   ) {
-    await this.commands.execute<SetProductTvaCommand, void>(
-      new SetProductTvaCommand(id, body.tvaByContext),
+    await this.commands.execute<SetProductVatCommand, void>(
+      new SetProductVatCommand(id, body.tvaByContext),
     );
     return { id };
   }

@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 
-import { TvaRateRepository } from "../../../../commerce/domain/ports/tva-rate.repository.js";
+import { VatRateRepository } from "../../../../commerce/domain/ports/vat-rate.repository.js";
 import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
@@ -38,7 +38,7 @@ async function build(
         useValue: { findByProducts: () => Promise.resolve(new Map()) },
       },
       {
-        provide: TvaRateRepository,
+        provide: VatRateRepository,
         useValue: {
           findById: (id: string) => Promise.resolve(id in rates ? { percent: rates[id] } : null),
           listAll: () =>

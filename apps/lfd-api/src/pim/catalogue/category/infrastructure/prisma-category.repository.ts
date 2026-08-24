@@ -18,18 +18,18 @@ interface CategoryRow {
   position: number;
   isArchived: boolean;
   channelPreset: unknown;
-  contextTva: readonly { tvaRateId: string; context: { key: string } }[];
+  contextVat: readonly { vatRateId: string; context: { key: string } }[];
 }
 
 /** Les taux viennent de la jointure — les trois colonnes n'existent plus. */
 const CATEGORY_WITH_TVA = {
-  contextTva: { select: { tvaRateId: true, context: { select: { key: true } } } },
+  contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
 } as const;
 
 function toCategory(row: CategoryRow): Category {
   const tvaByContext: Record<string, string> = {};
-  for (const line of row.contextTva) {
-    tvaByContext[line.context.key] = line.tvaRateId;
+  for (const line of row.contextVat) {
+    tvaByContext[line.context.key] = line.vatRateId;
   }
   return Category.reconstitute({
     id: row.id,
@@ -148,13 +148,13 @@ export class PrismaCategoryRepository extends CategoryRepository {
    */
   private tvaOperations(snapshot: CategorySnapshot) {
     return [
-      this.prisma.categoryContextTva.deleteMany({ where: { categoryId: snapshot.id } }),
-      ...Object.entries(snapshot.tvaByContext).map(([contextKey, tvaRateId]) =>
-        this.prisma.categoryContextTva.create({
+      this.prisma.categoryContextVat.deleteMany({ where: { categoryId: snapshot.id } }),
+      ...Object.entries(snapshot.tvaByContext).map(([contextKey, vatRateId]) =>
+        this.prisma.categoryContextVat.create({
           data: {
             category: { connect: { id: snapshot.id } },
             context: { connect: { key: contextKey } },
-            tvaRate: { connect: { id: tvaRateId } },
+            vatRate: { connect: { id: vatRateId } },
           },
         }),
       ),

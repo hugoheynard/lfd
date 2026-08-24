@@ -1,6 +1,6 @@
 import { slugify } from '../../data/sku';
 import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
-import type { Category, Emplacement, Product, TvaRate } from '../../data/models';
+import type { Category, Emplacement, Product, VatRate } from '../../data/models';
 
 /**
  * **Les fiches Shopify** qu'un produit engendre au push — et rien d'autre.
@@ -29,8 +29,8 @@ export interface GeneratedFiche {
   handle: string;
   /** Boutiques concernées — vide pour la fiche en ligne (catalogue partagé). */
   boutiques: string[];
-  tvaTag: string;
-  tvaRate: string;
+  vatTag: string;
+  vatRate: string;
 }
 
 /**
@@ -38,11 +38,11 @@ export interface GeneratedFiche {
  * lu sur le taux : le référentiel fiscal ne porte plus de vocabulaire de
  * canal. C'est ici, dans la projection Shopify, qu'il se recalcule.
  */
-function tagOf(rate: TvaRate | undefined): string {
+function tagOf(rate: VatRate | undefined): string {
   return rate === undefined ? '—' : tvaTagFromPercent(rate.percent);
 }
 
-function rateOf(rate: TvaRate | undefined): string {
+function rateOf(rate: VatRate | undefined): string {
   return rate === undefined ? '—' : formatPercent(rate.percent);
 }
 
@@ -62,8 +62,8 @@ function rateOf(rate: TvaRate | undefined): string {
 function rateOfContext(
   category: Category,
   contextKey: string,
-  regimeById: ReadonlyMap<string, TvaRate>,
-): TvaRate | undefined {
+  regimeById: ReadonlyMap<string, VatRate>,
+): VatRate | undefined {
   const rateId = category.tvaByContext[contextKey];
   return rateId === undefined ? undefined : regimeById.get(rateId);
 }
@@ -71,7 +71,7 @@ function rateOfContext(
 export function generateFiches(
   product: Product,
   category: Category,
-  regimeById: ReadonlyMap<string, TvaRate>,
+  regimeById: ReadonlyMap<string, VatRate>,
   emplacements: readonly Emplacement[],
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
@@ -86,8 +86,8 @@ export function generateFiches(
       title: product.name.fr,
       handle,
       boutiques: emporter,
-      tvaTag: tagOf(rate),
-      tvaRate: rateOf(rate),
+      vatTag: tagOf(rate),
+      vatRate: rateOf(rate),
     });
   }
 
@@ -99,8 +99,8 @@ export function generateFiches(
       title: `${product.name.fr} (sur place)`,
       handle: `${handle}-sur-place`,
       boutiques: surPlace,
-      tvaTag: tagOf(rate),
-      tvaRate: rateOf(rate),
+      vatTag: tagOf(rate),
+      vatRate: rateOf(rate),
     });
   }
 

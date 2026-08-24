@@ -291,8 +291,8 @@ export class ProductHttpApi {
    * famille. Un `PUT` de remplacement comme les autres sections : l'écran envoie
    * ce qu'il affiche.
    */
-  saveTva(id: string, tvaByContext: Readonly<Record<string, string>>): Promise<void> {
-    return this.put(`products/${id}/tva`, { tvaByContext });
+  saveVat(id: string, tvaByContext: Readonly<Record<string, string>>): Promise<void> {
+    return this.put(`products/${id}/vat`, { tvaByContext });
   }
 
   /**

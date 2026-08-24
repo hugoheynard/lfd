@@ -112,12 +112,12 @@ export class ShopifyChannelApi {
    * faisait décider le titre d'une collection Shopify par un composant Angular —
    * et interdisait à la publication de créer ce qui manque sans écran ouvert.
    */
-  inspectTvaCollections(): Promise<InspectResult> {
-    return firstValueFrom(this.http.post<InspectResult>(this.url('collections/tva/inspect'), {}));
+  inspectVatCollections(): Promise<InspectResult> {
+    return firstValueFrom(this.http.post<InspectResult>(this.url('collections/vat/inspect'), {}));
   }
 
-  pushTvaCollections(): Promise<PushResult> {
-    return firstValueFrom(this.http.post<PushResult>(this.url('collections/tva/push'), {}));
+  pushVatCollections(): Promise<PushResult> {
+    return firstValueFrom(this.http.post<PushResult>(this.url('collections/vat/push'), {}));
   }
 
   private url(path: string): string {

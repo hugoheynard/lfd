@@ -12,7 +12,7 @@ import { ACTIVITY_TYPES } from "./activity-event.js";
  */
 
 /** Les 4 pièces du tunnel, dans l'ordre canonique (runtime, pour l'itération). */
-export const ACTIVATION_STEPS: readonly ActivationStep[] = ["tva", "kbis", "billing", "delivery"];
+export const ACTIVATION_STEPS: readonly ActivationStep[] = ["vat", "kbis", "billing", "delivery"];
 
 /** Un événement du journal (sujet = société), réduit à ce que la projection lit. */
 export interface ActivationEvent {

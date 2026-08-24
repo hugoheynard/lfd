@@ -14,7 +14,7 @@ import { activationSteps, blockedReason, openingSteps } from '../informations/ac
  * phrase. C'est tout ce que cet écran a encore le droit de savoir.
  */
 const ALL_TODO: readonly ActivationCheck[] = [
-  { piece: 'tva', blocking: true, done: false },
+  { piece: 'vat', blocking: true, done: false },
   { piece: 'kbis', blocking: false, done: false },
   { piece: 'billing', blocking: true, done: false },
 ];
@@ -40,14 +40,14 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     // avec un geste mort apprend à ignorer l'encart entier.
     const steps = activationSteps(withGate({}));
 
-    expect(steps.map((step) => step.key)).toEqual(['tva', 'kbis', 'billing']);
+    expect(steps.map((step) => step.key)).toEqual(['vat', 'kbis', 'billing']);
   });
 
   it('tait une pièce faite, et garde celle qui ne bloque pas', () => {
     const steps = activationSteps(
       withGate({
         checklist: [
-          { piece: 'tva', blocking: true, done: true },
+          { piece: 'vat', blocking: true, done: true },
           { piece: 'kbis', blocking: false, done: false },
           { piece: 'billing', blocking: false, done: false },
         ],
@@ -69,7 +69,7 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     // pièces : un dossier complet sans téléphone affichait « 1 point à régler »
     // au-dessus de zéro ligne, et le manquant n'était nommé nulle part.
     const complet: readonly ActivationCheck[] = [
-      { piece: 'tva', blocking: true, done: true },
+      { piece: 'vat', blocking: true, done: true },
       { piece: 'kbis', blocking: false, done: true },
       { piece: 'billing', blocking: true, done: true },
     ];
@@ -94,16 +94,16 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     // l'identique, et un bouton actif au-dessus passait pour un trou.
     const steps = activationSteps(
       withGate({
-        blocking: ['tva'],
+        blocking: ['vat'],
         checklist: [
-          { piece: 'tva', blocking: true, done: false },
+          { piece: 'vat', blocking: true, done: false },
           { piece: 'kbis', blocking: false, done: false },
           { piece: 'billing', blocking: true, done: true },
         ],
       }),
     );
 
-    expect(steps.find((step) => step.key === 'tva')?.blocking).toBe(true);
+    expect(steps.find((step) => step.key === 'vat')?.blocking).toBe(true);
     expect(steps.find((step) => step.key === 'kbis')?.blocking).toBe(false);
   });
 
@@ -145,7 +145,7 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     const complet = activationSteps(
       withGate({
         checklist: [
-          { piece: 'tva', blocking: true, done: true },
+          { piece: 'vat', blocking: true, done: true },
           { piece: 'kbis', blocking: false, done: true },
           { piece: 'billing', blocking: true, done: true },
         ],
@@ -197,9 +197,9 @@ describe('Aucune étape ne justifie une exigence par une donnée absente', () =>
    */
   it('ne fait pas reposer la TVA sur la forme juridique', () => {
     const steps = activationSteps(withGate({ blocking: ['identite_legale'] }));
-    const tva = steps.find((step) => step.key === 'tva');
+    const vat = steps.find((step) => step.key === 'vat');
 
-    expect(tva).toBeDefined();
-    expect(tva?.detail).not.toMatch(/forme juridique/i);
+    expect(vat).toBeDefined();
+    expect(vat?.detail).not.toMatch(/forme juridique/i);
   });
 });

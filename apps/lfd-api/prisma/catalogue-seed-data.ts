@@ -23,7 +23,7 @@ export const SEED_CATEGORIES: readonly SeedCategory[] = [
 ];
 
 /** Un taux de TVA de départ : un nom et un taux, rien d'autre. */
-export interface SeedTvaRate {
+export interface SeedVatRate {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -41,7 +41,7 @@ export interface SeedTvaRate {
  * relève de quel taux est une décision comptable, pas une donnée de départ. Le
  * seed installe le référentiel, il ne remplit pas la déclaration.
  */
-export const SEED_TVA_RATES: readonly SeedTvaRate[] = [
+export const SEED_TVA_RATES: readonly SeedVatRate[] = [
   {
     id: "tva_reduit",
     name: "Réduit",

@@ -84,7 +84,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
   // `tax` existe pour ça — sans retirer de lecture à qui l'avait.
-  'pim/tva': 'tax:read',
+  'pim/vat': 'tax:read',
   'pim/collections': null,
   'pim/publication': null,
   'pim/categories': null,

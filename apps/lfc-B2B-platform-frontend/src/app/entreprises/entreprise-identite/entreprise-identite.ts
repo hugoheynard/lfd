@@ -59,7 +59,7 @@ export class EntrepriseIdentite {
       formeJuridique: c.formeJuridique,
       siret: formatSiret(c.siret),
       tvaIntracom: c.tvaIntracom,
-      tvaMissing: c.vatNumberRequired && c.tvaIntracom.trim() === '',
+      vatMissing: c.vatNumberRequired && c.tvaIntracom.trim() === '',
       // Côté client, l'identité légale est exigée à la création : rien ne peut
       // manquer ici. Le rappel existe pour les dossiers ouverts par un
       // commercial, sans les papiers.

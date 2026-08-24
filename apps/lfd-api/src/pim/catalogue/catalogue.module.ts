@@ -12,7 +12,7 @@ import { MoveCategoryHandler } from "./category/application/move-category.js";
 import { ReorderCategoriesHandler } from "./category/application/reorder-categories.js";
 import { RenameCategoryHandler } from "./category/application/rename-category.js";
 import { SetCategoryChannelsHandler } from "./category/application/set-category-channels.js";
-import { SetCategoryTvaHandler } from "./category/application/set-category-tva.js";
+import { SetCategoryVatHandler } from "./category/application/set-category-vat.js";
 import { DeclareProductNutritionHandler } from "./product/application/declare-product-nutrition.js";
 import { GetProductDetailHandler } from "./product/application/get-product-detail.js";
 import { ListProductsHandler } from "./product/application/list-products.js";
@@ -21,7 +21,7 @@ import { UnpublishProductHandler } from "./product/application/unpublish-product
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
-import { SetProductTvaHandler } from "./product/application/set-product-tva.js";
+import { SetProductVatHandler } from "./product/application/set-product-vat.js";
 import { SweepOrphanMediaHandler } from "./product/application/sweep-orphan-media.js";
 import { UploadProductImageHandler } from "./product/application/upload-product-image.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
@@ -78,7 +78,7 @@ import {
     CreateCategoryHandler,
     RenameCategoryHandler,
     SetCategoryChannelsHandler,
-    SetCategoryTvaHandler,
+    SetCategoryVatHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
     MoveCategoryHandler,
@@ -89,7 +89,7 @@ import {
     UpdateVariantPricingHandler,
     SetProductMediaHandler,
     SetProductChannelsHandler,
-    SetProductTvaHandler,
+    SetProductVatHandler,
     UploadProductImageHandler,
     SweepOrphanMediaHandler,
     UpdateProductEditorialHandler,

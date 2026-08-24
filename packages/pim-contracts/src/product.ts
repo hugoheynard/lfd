@@ -254,10 +254,10 @@ export const setProductChannelsPayloadSchema = z.object({
 });
 export type SetProductChannelsPayload = z.infer<typeof setProductChannelsPayloadSchema>;
 
-export const setProductTvaPayloadSchema = z.object({
+export const setProductVatPayloadSchema = z.object({
   tvaByContext: z.record(z.string(), z.string()),
 });
-export type SetProductTvaPayload = z.infer<typeof setProductTvaPayloadSchema>;
+export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
 
 export const setProductMediaPayloadSchema = z.object({
   media: z.array(

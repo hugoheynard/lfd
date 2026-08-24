@@ -72,7 +72,7 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key' | 'blockin
       'Raison sociale, forme juridique ou SIRET manquent — le compte ne peut pas être activé sans eux.',
     cta: "Compléter l'identité",
   },
-  tva: {
+  vat: {
     title: 'Numéro de TVA',
     // Ne s'appuie PAS sur la forme juridique : elle peut manquer, et manque
     // souvent — la ligne « Identité légale » juste au-dessus le dit alors dans
@@ -120,7 +120,7 @@ const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
   detenteur:
     "Aucun détenteur rattaché : personne ne pourrait se connecter à cet espace. Renseignez l'adresse de la personne qui commande.",
   telephone: 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.',
-  tva: 'Le numéro de TVA intracommunautaire manque.',
+  vat: 'Le numéro de TVA intracommunautaire manque.',
   facturation: "L'adresse de facturation manque.",
 };
 

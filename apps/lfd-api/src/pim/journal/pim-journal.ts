@@ -21,19 +21,19 @@ export type PimSubjectType = "tva_rate" | "product" | "category";
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
  * HTTP : `tax_rate.rate_changed` se relit dans six mois,
- * `PUT /commerce/tva-rates/x` non.
+ * `PUT /commerce/vat-rates/x` non.
  *
  * On ne trace pas tout. Ces sept-là ont en commun de **changer ce qui est taxé
  * ou vendu** — le reste (une description retouchée, un libellé) n'a pas d'aval
  * et n'a rien à faire dans un journal qu'on relit pour comprendre un écart.
  */
 export const PIM_EVENTS = {
-  tvaRateCreated: "tax_rate.created",
+  vatRateCreated: "tax_rate.created",
   /** Le taux a bougé — le seul changement de taux qui ait un aval. */
-  tvaRateRateChanged: "tax_rate.rate_changed",
+  vatRateRateChanged: "tax_rate.rate_changed",
   /** Renommage / description : tracé à part, parce que c'est sans conséquence. */
-  tvaRateRenamed: "tax_rate.renamed",
-  tvaRateDeleted: "tax_rate.deleted",
+  vatRateRenamed: "tax_rate.renamed",
+  vatRateDeleted: "tax_rate.deleted",
   categoryTvaChanged: "category.tva_changed",
   /**
    * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
