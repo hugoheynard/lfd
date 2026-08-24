@@ -1,0 +1,12 @@
+<div class="ls">
+  <fold-view-toggle
+    size="sm"
+    [ariaLabel]="ariaLabel()"
+    [options]="options()"
+    [value]="lang()"
+    (valueChange)="onValue($event)"
+  />
+  @if (hint(); as text) {
+    <p class="ls-hint">{{ text }}</p>
+  }
+</div>

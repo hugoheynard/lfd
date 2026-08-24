@@ -1,0 +1,15 @@
+.ls {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+/* La phrase qui dit CE QUI manque. Le point ambre du sélecteur dit « regarde
+   ici » ; sans cette ligne il faudrait ouvrir les trois langues pour savoir. */
+.ls-hint {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-snug);
+  color: var(--fold-color-text-muted);
+}
