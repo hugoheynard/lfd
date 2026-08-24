@@ -57,7 +57,7 @@ describe('champs traduisibles — écrire une langue n’efface pas les autres',
 
   it('le texte alternatif suit la même règle, par visuel', () => {
     const s = store();
-    s.media.set([{ role: 'hero', url: 'https://x/1.jpg', alt: { fr: 'Une tarte' } }]);
+    s.media.set([{ role: 'hero', url: 'https://x/1.jpg', name: '', alt: { fr: 'Une tarte' } }]);
     expect(s.mediaMissing()).toEqual(['en', 'it']);
 
     s.mediaLocale.set('it');

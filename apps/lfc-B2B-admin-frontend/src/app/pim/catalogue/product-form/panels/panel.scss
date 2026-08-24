@@ -148,10 +148,16 @@ app-lang-switch {
   min-width: 0;
 }
 
-/* Ce qui pèche se voit sur la VIGNETTE, pas dans un panneau : c'est ce qui
-   permet de repérer l'image fautive sans ouvrir les trois. */
+/* Ce qui pèche se voit sur la VIGNETTE : un liseré autour de la carte, et le
+   bloc d'information sur fond d'alerte. L'avertissement détaillé, lui, est
+   au-dessus de la grille — répété par tuile, il devenait le motif de fond de la
+   section. Ici la tuile dit « celle-ci », le callout dit « ce qui manque ». */
 .media-tile.is-incomplete {
   border-color: var(--fold-color-warning-border);
+  box-shadow: inset 0 0 0 1px var(--fold-color-warning-border);
+}
+.media-tile.is-incomplete .media-caption {
+  background: var(--fold-color-warning-surface);
 }
 
 /* Un cadre IDENTIQUE pour toutes : c'est ce qui permet de comparer des images
@@ -171,14 +177,9 @@ app-lang-switch {
   }
 }
 
-.media-menu {
-  position: absolute;
-  top: var(--fold-space-xs);
-  right: var(--fold-space-xs);
-}
-
-/* La forme réelle du fichier, que le recadrage ne montre plus. En bas à droite,
-   là où elle ne recouvre ni l'étiquette « Principale » ni le menu. */
+/* La forme réelle du fichier, que le recadrage ne montre plus. En bas à droite
+   de l'aperçu — le seul repère qu'on pose encore sur l'image, parce qu'il n'y a
+   rien d'autre à cet endroit et qu'il ne se clique pas. */
 .media-ratio {
   position: absolute;
   right: var(--fold-space-xs);
@@ -191,26 +192,48 @@ app-lang-switch {
   font-variant-numeric: tabular-nums;
 }
 
-/* La légende EST le bouton d'édition : cliquer le texte alternatif ouvre le
-   panneau qui le porte dans les trois langues. Une cible pleine largeur plutôt
-   qu'une icône — c'est le texte qu'on veut corriger, donc c'est lui qu'on vise. */
-.media-alt {
-  all: unset;
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  cursor: pointer;
-  border-radius: var(--fold-radius-sm);
+/* Rangée 1 : le nom, et le menu au bout. Le menu est DANS la légende et non
+   sur l'aperçu — un contrôle posé sur une photo quelconque a exactement le
+   problème de lisibilité qu'avait la pastille « Principale ». */
+.media-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.media-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fold-text-xs);
-  line-height: var(--fold-leading-snug);
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text);
 }
-.media-alt:hover .media-alt-text {
-  text-decoration: underline;
+
+/* Rangée 3 : la description, dans la langue affichée. */
+.media-alt {
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-snug);
+  color: var(--fold-color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.media-alt:focus-visible {
-  outline: 2px solid var(--fold-color-primary-border);
-  outline-offset: 2px;
+
+/* Ce qui n'a pas encore été écrit se dit, sans crier : le liseré et le callout
+   portent déjà l'alerte. */
+.media-name.is-unset,
+.media-alt.is-unset {
+  font-weight: var(--fold-weight-regular);
+  font-style: italic;
+  color: var(--fold-color-text-muted);
+}
+
+.media-menu {
+  flex: none;
 }
 
 .media-caption {

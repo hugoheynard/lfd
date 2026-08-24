@@ -14,6 +14,7 @@ import { LOCALE_NAMES } from '../../../../../shared/lang-switch/locale-names';
 /** Charge d'ouverture : l'image qu'on décrit, et ce qui en est déjà écrit. */
 export interface AltTextPanelData {
   readonly url: string;
+  readonly name: string;
   readonly alt: LocalizedText | undefined;
 }
 
@@ -24,11 +25,15 @@ export interface AltTextPanelData {
  * à changer.
  */
 export interface AltTextPanelResult {
+  readonly name: string;
   readonly alt: LocalizedText | undefined;
+  /** Le visuel a-t-il été RETIRÉ ? Le retrait vit ici parce que c'est ici qu'on
+   *  regarde l'image en grand — décider de la jeter demande de la voir. */
+  readonly removed?: boolean;
 }
 
 /**
- * Panneau **Texte alternatif** — les trois langues d'une image, côte à côte.
+ * Panneau **Visuel** — son nom, ses trois textes alternatifs, et son retrait.
  *
  * Pourquoi un panneau et pas un champ dans la vignette : une tuile de galerie
  * fait onze rems de large, et un champ qui n'y montre qu'UNE langue à la fois
@@ -57,10 +62,13 @@ export class AltTextPanel {
   protected readonly sourceLocale = SOURCE_LOCALE;
 
   protected readonly draft = signal<LocalizedText>({ fr: '' });
+  protected readonly name = signal('');
 
   constructor() {
     effect(() => {
-      this.draft.set(this.data().alt ?? { fr: '' });
+      const data = this.data();
+      this.draft.set(data.alt ?? { fr: '' });
+      this.name.set(data.name);
     });
   }
 
@@ -76,7 +84,15 @@ export class AltTextPanel {
    *  plutôt qu'une alternative vide, que tout ce qui compte les langues croirait. */
   protected submit(): void {
     const text = this.draft();
-    this.ref.close({ alt: text[SOURCE_LOCALE].trim() === '' ? undefined : text });
+    this.ref.close({
+      name: this.name().trim(),
+      alt: text[SOURCE_LOCALE].trim() === '' ? undefined : text,
+    });
+  }
+
+  /** Retire le visuel du produit — pas de la bibliothèque. */
+  protected remove(): void {
+    this.ref.close({ name: this.name(), alt: this.draft(), removed: true });
   }
 
   /** Ferme SANS résultat — l'enveloppe absente veut dire « annulé ». */

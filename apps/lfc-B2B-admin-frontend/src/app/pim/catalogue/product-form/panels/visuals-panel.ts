@@ -3,12 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
+  FoldCalloutComponent,
   FoldFileDropzoneComponent,
-  FoldInputComponent,
   FoldPanelHostService,
-  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
@@ -26,6 +23,12 @@ import type { MediaSlot } from '../../product-http-api';
 /** Le plus grand diviseur commun — pour réduire un ratio à sa forme lisible. */
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
+}
+
+/** Le format, tel qu'on le nomme — « image/jpeg » est un type MIME, pas un mot. */
+function formatOf(contentType: string): string {
+  const subtype = contentType.split('/')[1] ?? contentType;
+  return subtype.toUpperCase();
 }
 
 /** Le poids d'un fichier, en unités qu'un humain lit. */
@@ -56,11 +59,8 @@ function formatBytes(bytes: number): string {
     LangSwitch,
     FoldButtonComponent,
     FoldButtonIconComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
+    FoldCalloutComponent,
     FoldFileDropzoneComponent,
-    FoldInputComponent,
-    FoldPopoverTriggerDirective,
   ],
   templateUrl: './visuals-panel.html',
   styleUrl: './panel.scss',
@@ -69,9 +69,28 @@ export class VisualsPanel {
   protected readonly store = inject(ProductFormStore);
   private readonly panels = inject(FoldPanelHostService);
 
-  protected readonly missingHint = computed(() =>
-    missingSentence('Des textes alternatifs manquent', this.store.mediaMissing()),
-  );
+  /**
+   * L'avertissement de la GALERIE — un seul, au-dessus de la grille.
+   *
+   * Un message par vignette devenait le motif de fond de la section : répété
+   * huit fois, on ne lisait plus que lui, donc plus rien. Ici il compte, il
+   * nomme les langues, et les tuiles concernées se signalent par leur liseré.
+   */
+  protected readonly missingHint = computed(() => {
+    const anyEmpty = this.store.media().some((slot) => slot.alt === undefined);
+    const missing = missingSentence('Des descriptions manquent', this.store.mediaMissing());
+    if (anyEmpty) {
+      return missing === undefined
+        ? 'Certaines images n’ont aucune description.'
+        : `Certaines images n’ont aucune description. ${missing}`;
+    }
+    return missing;
+  });
+
+  /** Cette image a-t-elle un trou — pas de description, ou pas dans une langue ? */
+  protected incomplete(index: number): boolean {
+    return this.store.mediaAltMissing(index).length > 0;
+  }
 
   /**
    * La FORME du fichier, réduite — « 4:3 », « 16:9 », « 1:1 ».
@@ -97,14 +116,24 @@ export class VisualsPanel {
     return w <= 32 && h <= 32 ? `${String(w)}:${String(h)}` : `${(width / height).toFixed(2)}:1`;
   }
 
-  /** Ce qu'on sait du fichier, ou son absence de mesure — jamais « 0 × 0 ». */
+  /**
+   * Résolution, poids, format — ce qu'on a CONSTATÉ dans les octets au dépôt.
+   * Jamais « 0 × 0 » : une image externe n'est pas mesurée, et le dire vaut
+   * mieux que d'inventer une dimension.
+   */
   protected metaOf(slot: MediaSlot): string {
-    const { width, height, bytes } = slot;
+    const { width, height, bytes, contentType } = slot;
     if (typeof width !== 'number' || typeof height !== 'number') {
       return 'Image externe — non hébergée';
     }
-    const size = typeof bytes === 'number' ? ` · ${formatBytes(bytes)}` : '';
-    return `${width} × ${height}${size}`;
+    const parts = [`${String(width)} × ${String(height)}`];
+    if (typeof bytes === 'number') {
+      parts.push(formatBytes(bytes));
+    }
+    if (typeof contentType === 'string' && contentType !== '') {
+      parts.push(formatOf(contentType));
+    }
+    return parts.join(' · ');
   }
 
   /** Les langues qui manquent à CETTE image, nommées ; rien quand tout y est. */
@@ -124,21 +153,27 @@ export class VisualsPanel {
    * rend rien du tout, et c'est la différence qui compte : annuler ne doit pas
    * effacer ce qui existait.
    */
-  protected editAlt(index: number): void {
+  protected editMedia(index: number): void {
     const slot = this.store.media()[index];
     if (slot === undefined) {
       return;
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: { url: slot.url, alt: slot.alt },
+        data: { url: slot.url, name: slot.name, alt: slot.alt },
       })
       .closed.then((result) => {
         // `undefined` = annulé. Écrire alors effacerait ce qu'on venait de
         // renoncer à changer.
-        if (result !== undefined) {
-          this.store.setMediaAltText(index, result.alt);
+        if (result === undefined) {
+          return;
         }
+        if (result.removed === true) {
+          this.store.removeMedia(index);
+          return;
+        }
+        this.store.setMedia(index, 'name', result.name);
+        this.store.setMediaAltText(index, result.alt);
       });
   }
 

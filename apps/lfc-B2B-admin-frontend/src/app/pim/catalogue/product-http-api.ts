@@ -66,12 +66,17 @@ export interface EditorialFields {
 export interface MediaSlot {
   role: string;
   url: string;
+  /** L'étiquette de la bibliothèque — courte, non traduite, faite pour
+   *  RETROUVER. Distincte du texte alternatif, qui DÉCRIT. `''` = pas nommé. */
+  name: string;
   /** Le SEUL champ d'image qui se traduit. */
   alt?: LocalizedText;
   readonly width?: number | null;
   readonly height?: number | null;
   /** Le poids du fichier. `null` = pas mesuré (visuel saisi par son URL). */
   readonly bytes?: number | null;
+  /** Le type constaté dans les octets au dépôt. `null` = pas mesuré. */
+  readonly contentType?: string | null;
 }
 
 /** Détail complet pour la page d'édition : produit + éditorial + fiche + visuels. */
@@ -207,10 +212,12 @@ export class ProductHttpApi {
       media: row.media.map((item) => ({
         role: item.role,
         url: item.url,
+        name: item.name,
         alt: item.alt,
         width: item.width,
         height: item.height,
         bytes: item.bytes,
+        contentType: item.contentType,
       })),
     };
   }
@@ -280,6 +287,7 @@ export class ProductHttpApi {
       media: media.map((slot) => ({
         role: slot.role,
         url: slot.url,
+        name: slot.name,
         ...(slot.alt === undefined ? {} : { alt: slot.alt }),
       })),
     });

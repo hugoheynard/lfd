@@ -503,7 +503,7 @@ export class ProductFormStore {
   }
 
   addMedia(): void {
-    this.media.update((current) => [...current, { role: DEFAULT_MEDIA_ROLE, url: '' }]);
+    this.media.update((current) => [...current, { role: DEFAULT_MEDIA_ROLE, url: '', name: '' }]);
   }
 
   /**
@@ -527,6 +527,7 @@ export class ProductFormStore {
         ...current,
         {
           role: DEFAULT_MEDIA_ROLE,
+          name: '',
           url: uploaded.url,
           width: uploaded.width,
           height: uploaded.height,
@@ -543,7 +544,7 @@ export class ProductFormStore {
     this.media.update((current) => current.filter((_, position) => position !== index));
   }
 
-  setMedia(index: number, key: 'role' | 'url', value: string): void {
+  setMedia(index: number, key: 'role' | 'url' | 'name', value: string): void {
     this.media.update((current) =>
       current.map((slot, position) => (position === index ? { ...slot, [key]: value } : slot)),
     );

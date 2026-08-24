@@ -1,64 +1,58 @@
 <!-- Le sélecteur de CETTE section. Il ne fait basculer QUE les textes
-     alternatifs : le rôle, l'URL et les dimensions d'un visuel ne se traduisent
+     alternatifs : le nom, l'URL et les dimensions d'un visuel ne se traduisent
      pas, et l'image encore moins. -->
 <app-lang-switch
   [lang]="store.mediaLocale()"
   (langChange)="store.mediaLocale.set($event)"
   [missing]="store.mediaMissing()"
-  [hint]="missingHint()"
   ariaLabel="Langue des textes alternatifs"
 />
 
+<!-- UN avertissement pour la galerie, pas un par vignette. Répété sur chaque
+     tuile, le message devenait le motif de fond de la section : on ne lisait
+     plus que lui, donc plus rien. Ici il compte, il nomme les langues, et les
+     tuiles concernées se signalent par leur liseré. -->
+@if (missingHint(); as hint) {
+  <fold-callout appearance="inset" variant="warning">{{ hint }}</fold-callout>
+}
+
 <div class="media">
   @for (slot of store.media(); track $index) {
-    <div class="media-tile" [class.is-incomplete]="store.mediaAlt($index).trim() === ''">
+    <div class="media-tile" [class.is-incomplete]="incomplete($index)">
       <div class="media-thumb">
         @if (slot.url !== '') {
           <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
         }
-        <!-- La vignette recadre pour rester homogène ; la pastille dit donc la
-             forme RÉELLE du fichier, que le cadre ne montre plus. -->
+        <!-- La forme RÉELLE du fichier, que le recadrage ne montre plus. -->
         @if (ratioOf(slot); as ratio) {
           <span class="media-ratio">{{ ratio }}</span>
         }
-        <fold-dropdown class="media-menu" ariaLabel="Actions du visuel" placement="bottom-end">
-          <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
-          <fold-dropdown-item icon="edit" (selected)="editAlt($index)">
-            Texte alternatif…
-          </fold-dropdown-item>
-          <fold-dropdown-item icon="bin" tone="danger" (selected)="store.removeMedia($index)">
-            Retirer
-          </fold-dropdown-item>
-        </fold-dropdown>
       </div>
 
       <div class="media-caption">
-        <!-- La légende est le texte alternatif dans la langue affichée. On
-             l'ÉDITE dans un panneau, pas ici : une tuile fait onze rems, et un
-             champ qui n'y montre qu'une langue à la fois oblige à basculer trois
-             fois pour vérifier une image. -->
-        <button type="button" class="media-alt" (click)="editAlt($index)">
-          @if (store.mediaAlt($index).trim(); as alt) {
-            <span class="media-alt-text">{{ alt }}</span>
+        <!-- Le NOM, et le menu qui ouvre le reste. Le nom identifie le fichier
+             pour l'équipe ; le texte alternatif décrit l'image à qui ne la voit
+             pas. Deux informations, deux publics, deux lignes. -->
+        <div class="media-row">
+          @if (slot.name.trim(); as name) {
+            <span class="media-name">{{ name }}</span>
           } @else {
-            <span class="media-missing">Texte alternatif manquant</span>
+            <span class="media-name is-unset">Sans nom</span>
           }
-        </button>
-        <!-- Par image ET par langue : devant une galerie, la question n'est pas
-             « manque-t-il des traductions » mais « laquelle, sur laquelle ». -->
-        @if (store.mediaAlt($index).trim() !== '' && untranslated($index); as langs) {
-          <span class="media-missing">À traduire en {{ langs }}</span>
-        }
-        @if (slot.url === '') {
-          <fold-input
-            size="sm"
-            ariaLabel="Adresse de l'image"
-            placeholder="https://…"
-            [value]="slot.url"
-            (valueChange)="store.setMedia($index, 'url', $event)"
+          <fold-button-icon
+            class="media-menu"
+            icon="more-vertical"
+            tooltip="Modifier ce visuel"
+            (clicked)="editMedia($index)"
           />
+        </div>
+
+        <span class="media-meta">{{ metaOf(slot) }}</span>
+
+        @if (store.mediaAlt($index).trim(); as alt) {
+          <span class="media-alt">{{ alt }}</span>
         } @else {
-          <span class="media-meta">{{ metaOf(slot) }}</span>
+          <span class="media-alt is-unset">Sans description</span>
         }
       </div>
     </div>

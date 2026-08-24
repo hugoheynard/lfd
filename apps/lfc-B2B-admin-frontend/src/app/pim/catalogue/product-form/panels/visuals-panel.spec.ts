@@ -79,60 +79,6 @@ describe('VisualsPanel', () => {
     expect(store.media()[0]?.role).toBe('gallery');
   });
 
-  it('retire un visuel', () => {
-    const store = setup();
-    store.media.set([{ role: 'hero', url: '' }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-    const remove = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
-      (b) => b.textContent?.includes('Retirer'),
-    );
-    (remove as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(store.media()).toHaveLength(0);
-  });
-
-  it('marque sur la VIGNETTE ce qui pèche, pas dans un panneau', () => {
-    // C'est ce qui rend visible d'un coup l'image fautive, sans ouvrir les
-    // trois. Une liste de lignes obligeait à les lire une par une.
-    const store = setup();
-    store.media.set([
-      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } },
-      { role: 'gallery', url: 'https://media.test/b.png' },
-    ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-
-    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
-    expect(tiles.length).toBe(2);
-    expect(tiles[0]?.classList.contains('is-incomplete')).toBe(false);
-    expect(tiles[1]?.classList.contains('is-incomplete')).toBe(true);
-    expect(tiles[1]?.textContent).toContain('Texte alternatif manquant');
-  });
-
-  it('ne classe RIEN — la section agrège des ressources', () => {
-    // Quelle image une boutique prend pour vignette est une décision du CANAL,
-    // comme le handle Shopify. La notion de « principale » n'avait d'ailleurs
-    // aucun consommateur : ni la projection Shopify ni le B2B ne lisent le rôle.
-    const store = setup();
-    store.media.set([
-      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } },
-      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
-    ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('.media-badge')).toBeNull();
-    expect(host.textContent).not.toContain('Principale');
-    // …et aucun rôle à choisir : le menu ne porte plus que l'alternative et le retrait.
-    const items = [...host.querySelectorAll('fold-dropdown-item')].map(
-      (item) => item.textContent?.trim() ?? '',
-    );
-    expect(items).not.toContain('Galerie');
-    expect(items.some((label) => label.includes('Texte alternatif'))).toBe(true);
-  });
-
   it('pose le dépôt DANS la galerie, à la place de l’image suivante', () => {
     setup();
     const fixture = TestBed.createComponent(VisualsPanel);
@@ -149,6 +95,7 @@ describe('VisualsPanel', () => {
       {
         role: 'hero',
         url: 'https://media.test/a.png',
+        name: 'tarte-face',
         alt: { fr: 'Une tarte' },
         width: 1600,
         height: 1200,
@@ -168,7 +115,7 @@ describe('VisualsPanel', () => {
     // Une pastille vide vaudrait mieux que rien ; une pastille FAUSSE serait
     // pire que les deux.
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);
+    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png', name: '' }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.media-ratio')).toBeNull();
@@ -176,7 +123,9 @@ describe('VisualsPanel', () => {
 
   it('réduit un ratio de capteur en décimale plutôt qu’en fraction illisible', () => {
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 4289, height: 2848 }]);
+    store.media.set([
+      { role: 'hero', url: 'https://media.test/a.png', name: '', width: 4289, height: 2848 },
+    ]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
     expect(
@@ -184,56 +133,98 @@ describe('VisualsPanel', () => {
     ).toContain(':1');
   });
 
-  it('ouvre le texte alternatif dans un panneau, les trois langues d’un coup', () => {
-    // Une tuile fait onze rems : un champ qui n'y montre qu'UNE langue oblige à
-    // basculer trois fois pour vérifier une image.
-    const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte' } }]);
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    // Aucun champ de saisie dans la tuile — la légende est le bouton.
-    expect(host.querySelector('.media-caption fold-input')).toBeNull();
-    const trigger = host.querySelector<HTMLButtonElement>('.media-alt');
-    expect(trigger?.textContent).toContain('Une tarte');
-  });
-
-  it('nomme les langues qui manquent À CETTE image', () => {
-    // La question devant une galerie n'est pas « manque-t-il des traductions »
-    // mais « laquelle, sur laquelle » — le compte de la section n'y répond pas.
-    const store = setup();
-    store.media.set([
-      { role: 'hero', url: 'https://media.test/a.png', alt: { fr: 'Une tarte', en: 'A tart' } },
-      { role: 'gallery', url: 'https://media.test/b.png', alt: { fr: 'Une part' } },
-    ]);
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-
-    const tiles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.media-tile')];
-    expect(tiles[0]?.textContent).toContain('À traduire en italien');
-    expect(tiles[0]?.textContent).not.toContain('anglais');
-    expect(tiles[1]?.textContent).toContain('anglais et italien');
-  });
-
   it("dit qu'une image externe n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);
+    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png', name: '' }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('non hébergée');
   });
 
-  it('expose le texte alternatif — sur la vignette, et éditable', () => {
-    // Il ne se saisissait NULLE PART avant ; il se lit maintenant sur la
-    // légende, et s'édite dans le panneau qu'elle ouvre.
+  it('marque la tuile d’un liseré, et détaille AU-DESSUS de la grille', () => {
+    // Un message par vignette devenait le motif de fond de la section : répété
+    // huit fois, on ne lisait plus que lui. La tuile dit « celle-ci », le
+    // callout dit « ce qui manque ».
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 800, height: 800 }]);
+    store.media.set([
+      {
+        role: 'gallery',
+        url: 'https://media.test/a.png',
+        name: 'a',
+        alt: { fr: 'Une tarte', en: 'A tart', it: 'Una crostata' },
+      },
+      { role: 'gallery', url: 'https://media.test/b.png', name: 'b' },
+    ]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
 
-    const trigger = (fixture.nativeElement as HTMLElement).querySelector('.media-alt');
-    expect(trigger).not.toBeNull();
-    expect(trigger?.tagName).toBe('BUTTON');
+    const host = fixture.nativeElement as HTMLElement;
+    const tiles = [...host.querySelectorAll('.media-tile')];
+    expect(tiles[0]?.classList.contains('is-incomplete')).toBe(false);
+    expect(tiles[1]?.classList.contains('is-incomplete')).toBe(true);
+
+    const callouts = host.querySelectorAll('fold-callout');
+    expect(callouts.length).toBe(1);
+    expect(callouts[0]?.textContent).toContain('aucune description');
+  });
+
+  it('ne classe RIEN — la section agrège des ressources', () => {
+    // Quelle image une boutique prend pour vignette est une décision du CANAL.
+    const store = setup();
+    store.media.set([
+      { role: 'hero', url: 'https://media.test/a.png', name: 'a', alt: { fr: 'Une tarte' } },
+    ]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-badge')).toBeNull();
+    expect(host.textContent).not.toContain('Principale');
+  });
+
+  it('affiche le NOM du visuel, distinct de sa description', () => {
+    // Le nom identifie le fichier pour l'équipe ; la description dit l'image à
+    // qui ne la voit pas. Deux informations, deux publics, deux lignes.
+    const store = setup();
+    store.media.set([
+      {
+        role: 'gallery',
+        url: 'https://media.test/a.png',
+        name: 'tarte-face-01',
+        alt: { fr: 'Tarte entière, vue de face' },
+      },
+    ]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-name')?.textContent?.trim()).toBe('tarte-face-01');
+    expect(host.querySelector('.media-alt')?.textContent?.trim()).toBe(
+      'Tarte entière, vue de face',
+    );
+  });
+
+  it('dit « sans nom » plutôt que de laisser la rangée vide', () => {
+    const store = setup();
+    store.media.set([{ role: 'gallery', url: 'https://media.test/a.png', name: '' }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-name')?.textContent).toContain('Sans nom');
+    expect(host.querySelector('.media-alt')?.textContent).toContain('Sans description');
+  });
+
+  it('pose le menu dans la LÉGENDE, pas sur l’aperçu', () => {
+    // Un contrôle posé sur une photo quelconque a exactement le problème de
+    // lisibilité qu'avait la pastille « Principale ».
+    const store = setup();
+    store.media.set([{ role: 'gallery', url: 'https://media.test/a.png', name: 'a' }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-thumb .media-menu')).toBeNull();
+    expect(host.querySelector('.media-caption .media-menu')).not.toBeNull();
   });
 });

@@ -21,8 +21,24 @@
   color: var(--fold-color-text-muted);
 }
 
+.section-label {
+  margin: 0;
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-label);
+}
+
 .foot {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--fold-space-sm);
+}
+
+/* Pousse « Annuler » et « Enregistrer » à droite, et laisse « Retirer » seul à
+   gauche : une action destructrice ne se place pas à côté de celle qu'on vise. */
+.foot-spacer {
+  flex: 1;
 }

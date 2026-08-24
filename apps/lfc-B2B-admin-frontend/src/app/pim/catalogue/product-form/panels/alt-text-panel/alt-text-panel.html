@@ -1,6 +1,6 @@
 <fold-panel-header
-  title="Texte alternatif"
-  subtitle="Ce que montre l'image, pour qui ne la voit pas — et pour les moteurs."
+  title="Visuel"
+  subtitle="Son nom pour l'équipe, sa description pour qui ne le voit pas."
 />
 
 <div class="body">
@@ -8,6 +8,18 @@
   @if (data().url !== '') {
     <img class="preview" [src]="data().url" alt="" />
   }
+
+  <!-- Le NOM identifie le fichier pour l'équipe : court, non traduit, fait pour
+       retrouver. Il ne remplace pas la description, il répond à une autre
+       question. -->
+  <fold-input
+    label="Nom du visuel"
+    hint="Pour le retrouver dans la bibliothèque. Il ne se traduit pas."
+    [value]="name()"
+    (valueChange)="name.set($event)"
+  />
+
+  <p class="section-label">Description</p>
 
   @for (locale of locales; track locale) {
     <fold-input
@@ -24,6 +36,10 @@
 </div>
 
 <footer class="foot">
+  <!-- Le retrait vit ICI parce que c'est ici qu'on voit l'image en grand :
+       décider de jeter un visuel demande de le regarder. -->
+  <button foldButton emphasis="soft" intent="danger" (click)="remove()">Retirer</button>
+  <span class="foot-spacer"></span>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
   <button foldButton (click)="submit()">Enregistrer</button>
 </footer>
