@@ -63,7 +63,11 @@ describe('ProductFormPage — en-tête', () => {
     // s'accordent sur les cinq thèmes sans qu'aucune connaisse sa polarité.
     const { root } = render(true);
     expect(root.querySelector('fold-page-layout')?.hasAttribute('data-header-band')).toBe(true);
-    expect(root.querySelector('fold-aside-layout')?.getAttribute('data-band')).toBe('right');
+    const aside = root.querySelector('fold-aside-layout');
+    expect(aside?.getAttribute('data-band')).toBe('right');
+    // …et la bande atteint le bord : un rail bandé tenu à distance par la
+    // gouttière est la carte flottante que la bande sert justement à remplacer.
+    expect(aside?.classList.contains('is-bleed')).toBe(true);
   });
 
   it('expose le rail comme un repère nommé, pas comme une région anonyme', () => {
