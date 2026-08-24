@@ -47,26 +47,36 @@ export interface Editorial {
 }
 
 export interface EditorialInput {
-  readonly descriptionShort?: string | undefined;
-  readonly descriptionLong?: string | undefined;
-  readonly story?: string | undefined;
-  readonly pairing?: string | undefined;
+  readonly descriptionShort?: LocalizedText | undefined;
+  readonly descriptionLong?: LocalizedText | undefined;
+  readonly story?: LocalizedText | undefined;
+  readonly pairing?: LocalizedText | undefined;
+  /** Un nom propre, donc pas de traduction : « La Folie Coffee » l'est partout. */
   readonly brand?: string | undefined;
-  readonly seoTitle?: string | undefined;
-  readonly seoDescription?: string | undefined;
+  readonly seoTitle?: LocalizedText | undefined;
+  readonly seoDescription?: LocalizedText | undefined;
 }
 
 export interface MediaInput {
   readonly role: string;
   readonly url: string;
-  readonly alt?: string | undefined;
+  /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
+  readonly alt?: LocalizedText | undefined;
 }
 
-/** Un champ vide n'est pas une valeur : il ne doit pas créer de `{ fr: "" }`. */
-function optionalText(field: string, raw: string | undefined): LocalizedText | undefined {
-  return raw === undefined || raw.trim() === ""
-    ? undefined
-    : localizedText(field, { [SOURCE_LOCALE]: raw });
+/**
+ * Un champ vide n'est pas une valeur : il ne doit pas créer de `{ fr: "" }`.
+ *
+ * L'entrée arrive déjà localisée, donc on la RECONSTRUIT plutôt que de la
+ * recopier — `localizedText` est le seul endroit qui sait rogner, écarter une
+ * traduction vide et exiger la langue source. La laisser passer telle quelle
+ * ferait entrer en base ce qu'aucune autre porte ne laisserait entrer.
+ */
+function optionalText(field: string, raw: LocalizedText | undefined): LocalizedText | undefined {
+  if (raw === undefined || (raw[SOURCE_LOCALE] ?? "").trim() === "") {
+    return undefined;
+  }
+  return localizedText(field, raw);
 }
 
 export function editorial(input: EditorialInput): Editorial {
@@ -113,7 +123,9 @@ export function mediaItems(inputs: readonly MediaInput[]): MediaItem[] {
     items.push({
       role: input.role,
       url,
-      alt: localizedText("texte alternatif", { [SOURCE_LOCALE]: input.alt ?? url }),
+      // Sans texte alternatif on retombe sur l'URL : la colonne est obligatoire,
+      // et une chaîne vide passerait pour une alternative rédigée.
+      alt: localizedText("texte alternatif", input.alt ?? { [SOURCE_LOCALE]: url }),
       position: items.length,
     });
   }

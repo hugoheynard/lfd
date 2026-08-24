@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { localizedTextSchema } from "./localized.js";
+import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import type { LocalizedText } from "./shared.js";
 
 /**
@@ -25,14 +25,23 @@ const nutritionInputShape = z
   })
   .optional();
 
+/**
+ * La couche éditoriale. Tout est TRADUISIBLE sauf `brand` : une marque est un
+ * nom propre, elle ne se traduit pas — et la traiter comme du texte inviterait
+ * à écrire « La Folie Coffee » en trois langues pour rien.
+ *
+ * Le domaine stockait déjà ces champs en `LocalizedText` ; c'est l'entrée qui
+ * était plate, donc chaque enregistrement écrasait l'objet entier et EFFAÇAIT
+ * les traductions — le même défaut que le nom, un cran plus bas.
+ */
 const editorialShape = {
-  descriptionShort: z.string().optional(),
-  descriptionLong: z.string().optional(),
-  story: z.string().optional(),
-  pairing: z.string().optional(),
+  descriptionShort: optionalLocalizedTextSchema,
+  descriptionLong: optionalLocalizedTextSchema,
+  story: optionalLocalizedTextSchema,
+  pairing: optionalLocalizedTextSchema,
   brand: z.string().optional(),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
+  seoTitle: optionalLocalizedTextSchema,
+  seoDescription: optionalLocalizedTextSchema,
 };
 
 export const createProductPayloadSchema = z.object({
@@ -51,7 +60,7 @@ export const createProductPayloadSchema = z.object({
       z.object({
         role: z.string(),
         url: z.string(),
-        alt: z.string().optional(),
+        alt: optionalLocalizedTextSchema,
       }),
     )
     .optional(),
@@ -123,15 +132,23 @@ export interface ProductView {
   readonly variants: readonly VariantView[];
 }
 
-/** Couche éditoriale rendue en FR plat ; `null` = non renseigné. */
+/**
+ * Couche éditoriale rendue **dans toutes ses langues** ; `null` = non renseigné.
+ *
+ * La vue rendait le français à plat, avec pour raison « le back-office est
+ * monolingue FR ». Il ne l'est plus — et surtout, une vue qui aplatit prive de
+ * traduction TOUT consommateur, y compris celui qui voudrait l'italien. C'est au
+ * lecteur qui vise une langue d'appeler `readLocalized`, parce que lui seul sait
+ * laquelle il vise.
+ */
 export interface ProductEditorialView {
-  readonly descriptionShort: string | null;
-  readonly descriptionLong: string | null;
-  readonly story: string | null;
-  readonly pairing: string | null;
+  readonly descriptionShort: LocalizedText | null;
+  readonly descriptionLong: LocalizedText | null;
+  readonly story: LocalizedText | null;
+  readonly pairing: LocalizedText | null;
   readonly brand: string | null;
-  readonly seoTitle: string | null;
-  readonly seoDescription: string | null;
+  readonly seoTitle: LocalizedText | null;
+  readonly seoDescription: LocalizedText | null;
 }
 
 /**
@@ -151,7 +168,7 @@ export interface ProductMediaView extends MediaFactsView {
   /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
   readonly role: string;
   readonly url: string;
-  readonly alt: string;
+  readonly alt: LocalizedText;
 }
 
 /**
@@ -192,7 +209,7 @@ export const setProductMediaPayloadSchema = z.object({
     z.object({
       role: z.string().min(1),
       url: z.string().min(1),
-      alt: z.string().optional(),
+      alt: optionalLocalizedTextSchema,
     }),
   ),
 });

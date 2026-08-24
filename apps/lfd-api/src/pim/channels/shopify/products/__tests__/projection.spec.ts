@@ -49,7 +49,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   it("porte la description longue, en paragraphes", () => {
     const payload = projectProduct(
       product(),
-      written({ descriptionLong: "Pâte feuilletée.\n\nFraises de Provence." }),
+      written({ descriptionLong: { fr: "Pâte feuilletée.\n\nFraises de Provence." } }),
     );
 
     expect(payload.descriptionHtml).toBe("<p>Pâte feuilletée.</p><p>Fraises de Provence.</p>");
@@ -58,7 +58,10 @@ describe("projection Shopify — la couche éditoriale", () => {
   // Un rédacteur qui appuie une fois sur Entrée veut un retour à la ligne, pas
   // un paragraphe — et surtout pas que ses deux lignes se collent.
   it("transforme un retour simple en <br>", () => {
-    const payload = projectProduct(product(), written({ descriptionLong: "Ligne 1\nLigne 2" }));
+    const payload = projectProduct(
+      product(),
+      written({ descriptionLong: { fr: "Ligne 1\nLigne 2" } }),
+    );
 
     expect(payload.descriptionHtml).toBe("<p>Ligne 1<br>Ligne 2</p>");
   });
@@ -66,7 +69,10 @@ describe("projection Shopify — la couche éditoriale", () => {
   // Shopify n'a qu'un champ de description ; le résumé sert ailleurs (listes,
   // cartes, caisse). Mais un produit qui n'a QUE son résumé vaut mieux qu'un vide.
   it("retombe sur le résumé quand la longue manque", () => {
-    const payload = projectProduct(product(), written({ descriptionShort: "Tarte de saison." }));
+    const payload = projectProduct(
+      product(),
+      written({ descriptionShort: { fr: "Tarte de saison." } }),
+    );
 
     expect(payload.descriptionHtml).toBe("<p>Tarte de saison.</p>");
   });
@@ -74,7 +80,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   it("préfère la longue quand les deux existent", () => {
     const payload = projectProduct(
       product(),
-      written({ descriptionShort: "Court.", descriptionLong: "Long." }),
+      written({ descriptionShort: { fr: "Court." }, descriptionLong: { fr: "Long." } }),
     );
 
     expect(payload.descriptionHtml).toBe("<p>Long.</p>");
@@ -88,7 +94,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   it("échappe le balisage saisi au lieu de le rendre", () => {
     const payload = projectProduct(
       product(),
-      written({ descriptionLong: '<script>alert("x")</script>' }),
+      written({ descriptionLong: { fr: '<script>alert("x")</script>' } }),
     );
 
     expect(payload.descriptionHtml).toBe(
@@ -100,7 +106,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   // Le modèle annonce du markdown, rien n'en a jamais rendu. Tant que c'est vrai,
   // une astérisque tapée pour elle-même doit rester une astérisque.
   it("n’interprète pas le markdown", () => {
-    const payload = projectProduct(product(), written({ descriptionLong: "Beurre *AOP*" }));
+    const payload = projectProduct(product(), written({ descriptionLong: { fr: "Beurre *AOP*" } }));
 
     expect(payload.descriptionHtml).toBe("<p>Beurre *AOP*</p>");
   });
@@ -108,7 +114,11 @@ describe("projection Shopify — la couche éditoriale", () => {
   it("porte la marque en vendor et le SEO tel quel", () => {
     const payload = projectProduct(
       product(),
-      written({ brand: "Signature", seoTitle: "Tarte fraises", seoDescription: "La meilleure." }),
+      written({
+        brand: "Signature",
+        seoTitle: { fr: "Tarte fraises" },
+        seoDescription: { fr: "La meilleure." },
+      }),
     );
 
     expect(payload.vendor).toBe("Signature");
@@ -133,7 +143,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   // compte est que l'ANCIEN texte parte, pas de savoir laquelle des deux causes l'a
   // effacé. Le contraire obligerait le canal à distinguer deux vides.
   it("traite « vidé » et « jamais écrit » de la même façon", () => {
-    const cleared = projectProduct(product(), written({ descriptionLong: "" }));
+    const cleared = projectProduct(product(), written({ descriptionLong: { fr: "" } }));
     const never = projectProduct(product(), null);
 
     expect(cleared.descriptionHtml).toBe("");
@@ -142,7 +152,9 @@ describe("projection Shopify — la couche éditoriale", () => {
 
   it("change d’empreinte quand la description change", () => {
     const before = fingerprint(projectProduct(product(), null));
-    const after = fingerprint(projectProduct(product(), written({ descriptionLong: "Neuf." })));
+    const after = fingerprint(
+      projectProduct(product(), written({ descriptionLong: { fr: "Neuf." } })),
+    );
 
     expect(before).not.toBe(after);
   });

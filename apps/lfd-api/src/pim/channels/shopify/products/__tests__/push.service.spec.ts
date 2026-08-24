@@ -288,7 +288,7 @@ describe("ShopifyPushService — la couche éditoriale", () => {
           "p1",
           {
             descriptionShort: null,
-            descriptionLong: "Pâte feuilletée.",
+            descriptionLong: { fr: "Pâte feuilletée." },
             story: null,
             pairing: null,
             brand: "Signature",

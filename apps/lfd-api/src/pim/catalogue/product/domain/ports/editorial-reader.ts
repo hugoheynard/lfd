@@ -1,17 +1,26 @@
+import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
+
 /**
  * Lecture de la couche éditoriale — surface **séparée** de l'écriture
  * (`EditorialRepository`) : un consommateur qui lit ne dépend pas du `save`.
- * Les champs sont rendus en français plat (le back-office est monolingue FR) ;
  * `null` = non renseigné.
+ *
+ * Les champs sont rendus **dans toutes leurs langues**. Ils l'étaient en
+ * français plat, avec pour raison « le back-office est monolingue FR » : une
+ * hypothèse d'un consommateur inscrite dans un port que trois consommateurs
+ * partagent. Aplatir ici privait de traduction jusqu'à celui qui voulait
+ * l'italien ; c'est au lecteur qui vise une langue d'appeler `readLocalized`,
+ * parce que lui seul sait laquelle il vise.
  */
 export interface ProductEditorialView {
-  readonly descriptionShort: string | null;
-  readonly descriptionLong: string | null;
-  readonly story: string | null;
-  readonly pairing: string | null;
+  readonly descriptionShort: LocalizedText | null;
+  readonly descriptionLong: LocalizedText | null;
+  readonly story: LocalizedText | null;
+  readonly pairing: LocalizedText | null;
+  /** Un nom propre : pas de traduction. */
   readonly brand: string | null;
-  readonly seoTitle: string | null;
-  readonly seoDescription: string | null;
+  readonly seoTitle: LocalizedText | null;
+  readonly seoDescription: LocalizedText | null;
 }
 
 /**
@@ -24,7 +33,7 @@ export interface ProductEditorialView {
 export interface ProductMediaRecord {
   readonly role: string;
   readonly url: string;
-  readonly alt: string;
+  readonly alt: LocalizedText;
   readonly width: number | null;
   readonly height: number | null;
   readonly bytes: number | null;

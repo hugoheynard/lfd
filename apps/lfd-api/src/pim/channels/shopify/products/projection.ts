@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
 
+import {
+  readLocalized,
+  SOURCE_LOCALE,
+  type LocalizedText,
+} from "../../../catalogue/shared/domain/value-objects/localized-text.js";
 import type { ProductEditorialView } from "../../../catalogue/product/domain/ports/editorial-reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 
@@ -59,6 +64,21 @@ export interface ShopifyProductPayload {
  * et décider s'ils s'y concatènent ou vivent en metafields est un arbitrage éditorial,
  * pas une évidence technique. Les inventer ici les rendrait invisibles à qui les écrit.
  */
+/**
+ * La langue que la vitrine Shopify sert.
+ *
+ * Elle était implicite — la vue rendait le français à plat, donc la projection
+ * poussait du français sans jamais le dire. Elle le dit maintenant, et c'est ici
+ * que se pose la question le jour où une seconde vitrine ouvre : `readLocalized`
+ * prendra une autre locale, et rien d'autre ne bougera.
+ */
+const STOREFRONT_LOCALE = SOURCE_LOCALE;
+
+/** La vitrine ne parle qu'une langue à la fois ; `""` quand rien n'est écrit. */
+function forStorefront(text: LocalizedText | null | undefined): string {
+  return text === null || text === undefined ? "" : readLocalized(text, STOREFRONT_LOCALE);
+}
+
 export function projectProduct(
   product: ProductRecord,
   editorial: ProductEditorialView | null,
@@ -70,11 +90,13 @@ export function projectProduct(
     status: product.status === "published" ? "ACTIVE" : "DRAFT",
     // La longue l'emporte : Shopify n'a qu'un champ, et le résumé sert ailleurs
     // (listes, cartes, caisse). À défaut de longue, le résumé vaut mieux que rien.
-    descriptionHtml: toHtml(editorial?.descriptionLong ?? editorial?.descriptionShort ?? ""),
+    descriptionHtml: toHtml(
+      forStorefront(editorial?.descriptionLong ?? editorial?.descriptionShort),
+    ),
     vendor: emptyToNull(editorial?.brand ?? null),
     seo: {
-      title: editorial?.seoTitle ?? "",
-      description: editorial?.seoDescription ?? "",
+      title: forStorefront(editorial?.seoTitle),
+      description: forStorefront(editorial?.seoDescription),
     },
     variants: product.variants
       .filter((variant) => !variant.isDiscontinued)

@@ -280,7 +280,7 @@ describe("UpdateProductEditorialHandler", () => {
     const editorials = new RecordingEditorialRepository();
     await new UpdateProductEditorialHandler(products, editorials).execute(
       new UpdateProductEditorialCommand(PRODUCT_ID, {
-        descriptionShort: "Torréfaction douce",
+        descriptionShort: { fr: "Torréfaction douce" },
       }),
     );
     expect(editorials.calls).toHaveLength(1);
@@ -396,7 +396,7 @@ describe("SetProductMediaHandler", () => {
 
     await new SetProductMediaHandler(products, editorials).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
-        { role: "hero", url: "https://cdn/1.jpg", alt: "De face" },
+        { role: "hero", url: "https://cdn/1.jpg", alt: { fr: "De face" } },
         { role: "gallery", url: "https://cdn/2.jpg" },
       ]),
     );
