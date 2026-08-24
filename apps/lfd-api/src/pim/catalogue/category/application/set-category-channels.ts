@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { CategoryUnknownEmplacementError } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { KnownEmplacementsReader } from "../domain/ports/known-emplacements.reader.js";
+import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
 import {
   referencedEmplacements,
   type SalesChannels,
@@ -34,12 +35,15 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
   constructor(
     private readonly categories: CategoryRepository,
     private readonly emplacements: KnownEmplacementsReader,
+    private readonly contexts: SalesContextRegistry,
   ) {}
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     await this.refuseUnknownEmplacements(command.channels);
-    category.setChannels(command.channels);
+    // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
+    // lui qui sait quel contexte s'appuie sur quel canal.
+    category.setChannels(command.channels, await this.contexts.active());
     await this.categories.save(category);
   }
 

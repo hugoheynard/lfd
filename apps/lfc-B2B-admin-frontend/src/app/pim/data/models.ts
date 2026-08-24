@@ -111,9 +111,14 @@ export interface Category {
   /** Défauts dont héritent les produits de la catégorie (sauf override). */
   channelPreset: SalesChannels;
   /** Taux de TVA appliqué par canal de vente. `''` = non réglé. */
-  emporterTvaId: string;
-  surPlaceTvaId: string;
-  b2bTvaId: string;
+  /**
+   * Les taux visés, **par clé de contexte de vente**. Clé absente = non réglé.
+   *
+   * C'étaient trois champs nommés : ajouter un contexte demandait de les
+   * modifier ici, dans le mapper, dans le panneau et dans deux écrans. Le
+   * registre vit en base ; le front l'itère.
+   */
+  tvaByContext: Readonly<Record<string, string>>;
   /**
    * Fiches **actives** portées par la famille. Une famille qui en porte ne peut
    * pas être archivée : le compte permet de le dire AVANT le clic, plutôt que

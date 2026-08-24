@@ -11,7 +11,7 @@ import { TaxCollectionsPlan } from "../collections/tax-collections.plan.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
 import { fingerprint, projectProduct } from "./projection.js";
-import { ACTIVE_SALES_CONTEXTS } from "./sales-context.js";
+import { SalesContextRegistry } from "../../../catalogue/shared/domain/ports/sales-context.registry.js";
 import { ShopifySnapshotService } from "./snapshot.service.js";
 import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
 
@@ -44,6 +44,7 @@ export class ShopifyPushService {
     private readonly membership: ShopifyMembershipService,
     private readonly collections: ShopifyCollectionsService,
     private readonly taxPlan: TaxCollectionsPlan,
+    private readonly contexts: SalesContextRegistry,
   ) {}
 
   /**
@@ -270,9 +271,13 @@ export class ShopifyPushService {
       const rates = await this.catalogue.tvaPercents(product.categoryId);
       // Le handle se dérive ICI, chez le canal qui range par collection — le
       // catalogue ne rend qu'un taux.
-      const tags = ACTIVE_SALES_CONTEXTS.flatMap((context) => {
-        const percent = context.pick(rates);
-        return percent === null ? [] : [tvaHandleOf(percent)];
+      // Les contextes viennent du REGISTRE, plus d'une constante : en ajouter un
+      // est une ligne de données. On ne range que ceux que Shopify projette —
+      // le B2B est en service sans que la boutique porte son produit.
+      const contexts = await this.contexts.active();
+      const tags = contexts.flatMap((context) => {
+        const percent = rates[context.key];
+        return context.shopifyProjected && percent !== undefined ? [tvaHandleOf(percent)] : [];
       });
       return describeMembership(await this.membership.assign(productGid, tags));
     } catch (error) {

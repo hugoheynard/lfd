@@ -18,9 +18,7 @@ function category(overrides: Partial<Category> = {}): Category {
     position: 0,
     isArchived: false,
     channelPreset: { boutiques: {}, b2b: false },
-    emporterTvaId: '',
-    surPlaceTvaId: '',
-    b2bTvaId: '',
+    tvaByContext: {},
     activeProductCount: 0,
     ...overrides,
   };

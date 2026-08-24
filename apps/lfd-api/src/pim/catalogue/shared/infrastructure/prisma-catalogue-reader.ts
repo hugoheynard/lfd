@@ -73,10 +73,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
     if (category === null) {
       throw new CategoryNotFoundError(categoryId);
     }
-    return {
-      emporter: await this.percentOf(category.tvaIds.emporter),
-      surPlace: await this.percentOf(category.tvaIds.surPlace),
-    };
+    return this.resolve(category.tvaByContext, await this.percentIndex());
   }
 
   /**
@@ -86,11 +83,10 @@ export class PrismaCatalogueReader extends CatalogueReader {
    * ferait N+1 requêtes pour une table qui tient en quelques lignes.
    */
   async channelCategories(): Promise<ChannelCategory[]> {
-    const [categories, rates] = await Promise.all([
+    const [categories, percentById] = await Promise.all([
       this.categories.listAll(),
-      this.rates.listAll(),
+      this.percentIndex(),
     ]);
-    const percentById = new Map(rates.map((rate) => [rate.id, rate.percent]));
 
     return categories
       .filter((category) => !category.isArchived)
@@ -100,25 +96,37 @@ export class PrismaCatalogueReader extends CatalogueReader {
         slug: category.slug,
         parentId: category.parentId,
         position: category.position,
-        emporterVatPercent: percentOrNull(percentById, category.tvaIds.emporter),
-        b2bVatPercent: percentOrNull(percentById, category.tvaIds.b2b),
+        vatByContext: this.resolve(category.tvaByContext, percentById),
       }));
   }
 
-  /** Un id de taux → son taux, ou `null` si non réglé / introuvable. */
-  private async percentOf(regimeId: string | null): Promise<number | null> {
-    if (regimeId === null) {
-      return null;
-    }
-    const rate = await this.rates.findById(regimeId);
-    return rate?.percent ?? null;
+  /**
+   * Les taux, indexés **une fois**. Résoudre famille par famille ferait N+1
+   * requêtes pour une table qui tient en quelques lignes.
+   */
+  private async percentIndex(): Promise<ReadonlyMap<string, number>> {
+    const rates = await this.rates.listAll();
+    return new Map(rates.map((rate) => [rate.id, rate.percent]));
   }
-}
 
-/** Un id de taux → son taux dans la table déjà indexée, ou `null`. */
-function percentOrNull(
-  percentById: ReadonlyMap<string, number>,
-  rateId: string | null,
-): number | null {
-  return rateId === null ? null : (percentById.get(rateId) ?? null);
+  /**
+   * Les identifiants de taux d'une famille → leurs pourcentages.
+   *
+   * Un identifiant qui ne désigne aucun taux ne produit **pas de clé** : le
+   * contexte est alors non réglé, comme s'il n'avait jamais été renseigné. C'est
+   * le seul choix sûr — inventer un taux ici facturerait un client.
+   */
+  private resolve(
+    tvaByContext: Readonly<Record<string, string>>,
+    percentById: ReadonlyMap<string, number>,
+  ): CategoryTvaPercents {
+    const percents: Record<string, number> = {};
+    for (const [contextKey, rateId] of Object.entries(tvaByContext)) {
+      const percent = percentById.get(rateId);
+      if (percent !== undefined) {
+        percents[contextKey] = percent;
+      }
+    }
+    return percents;
+  }
 }

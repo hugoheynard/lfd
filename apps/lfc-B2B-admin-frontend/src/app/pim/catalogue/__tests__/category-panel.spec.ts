@@ -4,9 +4,15 @@ import { provideRouter } from '@angular/router';
 import { FoldPanelRef, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { SalesContextView } from '@lfd/pim-contracts';
+
 import type { Category } from '../catalogue-api';
 import { CategoryHttpApi } from '../category-http-api';
 import { CategoryStore } from '../category-store';
+import {
+  TEST_SALES_CONTEXTS,
+  provideTestSalesContexts,
+} from '../sales-contexts/sales-context-store.testing';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 
 function category(overrides: Partial<Category> = {}): Category {
@@ -24,9 +30,7 @@ function category(overrides: Partial<Category> = {}): Category {
       },
       b2b: false,
     },
-    emporterTvaId: 'tva_55',
-    surPlaceTvaId: '',
-    b2bTvaId: '',
+    tvaByContext: { emporter: 'tva_55' },
     activeProductCount: 0,
     ...overrides,
   };
@@ -62,8 +66,11 @@ interface Mounted {
  * pour une tout autre raison — la liste était vide, donc la comparaison ne
  * répondait jamais oui.
  */
-async function setup(cat: Category): Promise<Mounted> {
-  return mount({ category: cat, rates: [] });
+async function setup(
+  cat: Category,
+  contexts: readonly SalesContextView[] = TEST_SALES_CONTEXTS,
+): Promise<Mounted> {
+  return mount({ category: cat, rates: [] }, contexts);
 }
 
 /** Sans `category` dans la charge, le panneau crée. */
@@ -71,7 +78,10 @@ async function setupCreate(): Promise<Mounted> {
   return mount({ rates: [] });
 }
 
-async function mount(data: CategoryPanelData): Promise<Mounted> {
+async function mount(
+  data: CategoryPanelData,
+  contexts: readonly SalesContextView[] = TEST_SALES_CONTEXTS,
+): Promise<Mounted> {
   const closed: unknown[] = [];
   const known = data.category === undefined ? [] : [data.category];
   const http: HttpSpy = {
@@ -86,6 +96,7 @@ async function mount(data: CategoryPanelData): Promise<Mounted> {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideTestSalesContexts(contexts),
       // Le panneau renvoie vers « Taux de TVA » — un `routerLink` a besoin
       // d'une route, même vide.
       provideRouter([]),
@@ -243,6 +254,25 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     expect(rateLabels(host)).toHaveLength(3);
   });
 
+  it('accueille un contexte de PLUS sans une ligne de front', async () => {
+    // La raison d'être de C0 : « traiteur » n'existe nulle part dans ce code.
+    // Il arrive par le registre, et l'écran lui ouvre son réglage.
+    TestBed.resetTestingModule();
+    const { host } = await setup(
+      category({
+        channelPreset: channels({
+          boutiques: { emp_village: { emporter: true, surPlace: false } },
+        }),
+      }),
+      [
+        ...TEST_SALES_CONTEXTS,
+        { key: 'traiteur', label: 'Traiteur', channelKey: 'emporter', position: 4 },
+      ],
+    );
+
+    expect(rateLabels(host).some((label) => label.includes('Traiteur'))).toBe(true);
+  });
+
   it("EFFACE le taux d'un canal qu'on ne vend pas", async () => {
     // Le garder laisserait la famille pointer un taux dont personne ne se sert :
     // le compte d'usages de l'écran des taux le compterait, et la base
@@ -250,21 +280,16 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host, http, stable } = await setup(
       category({
         channelPreset: channels({ b2b: true }),
-        emporterTvaId: 'tva_55',
-        surPlaceTvaId: 'tva_10',
-        b2bTvaId: 'tva_20',
+        tvaByContext: { emporter: 'tva_55', surPlace: 'tva_10', b2b: 'tva_20' },
       }),
     );
 
     button(host, 'Enregistrer').click();
     await stable();
 
-    // La CHARGE remise au transport ; c'est lui qui traduit `''` en `null`.
-    expect(http.setTva).toHaveBeenCalledWith('cat_1', {
-      emporter: '',
-      surPlace: '',
-      b2b: 'tva_20',
-    });
+    // Les contextes fermés ne partent PAS à vide : ils ne partent pas du tout.
+    // « Non réglé » est une clé absente, des deux côtés du fil.
+    expect(http.setTva).toHaveBeenCalledWith('cat_1', { b2b: 'tva_20' });
   });
 });
 

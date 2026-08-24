@@ -2,6 +2,13 @@ import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@l
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
 import type { ChannelCategory } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+
+/**
+ * La clé du contexte que CE canal facture. Une constante nommée plutôt qu'une
+ * chaîne au fil du code : elle désigne une ligne du registre, et le jour où elle
+ * ne désigne plus rien, il n'y a qu'un endroit à corriger.
+ */
+const B2B_CONTEXT_KEY = "b2b";
 import type {
   ProductRecord,
   VariantRecord,
@@ -140,7 +147,7 @@ export function projectCatalog(
     }
     // Résolu ICI, une fois par produit : chaque article part avec SON taux,
     // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
-    const { sellable, excluded: rejected } = sortVariants(product, category.b2bVatPercent);
+    const { sellable, excluded: rejected } = sortVariants(product, vatOf(category));
     excluded.push(...rejected);
 
     if (sellable.length === 0) {
@@ -175,6 +182,18 @@ export function projectCatalog(
   };
 }
 
+/**
+ * Le taux du contexte **B2B** — cette projection EST ce canal, donc elle nomme
+ * sa clé. Elle lisait le taux « à emporter » faute de mieux : un emprunt que
+ * rien ne signalait et qu'aucun écran ne permettait de corriger.
+ *
+ * `null` quand le contexte n'est pas réglé : la plateforme écarte alors
+ * l'article de sa boutique plutôt que de supposer un taux.
+ */
+function vatOf(category: ChannelCategory): number | null {
+  return category.vatByContext[B2B_CONTEXT_KEY] ?? null;
+}
+
 /** Le taux part tel quel, `null` compris — on ne remplit jamais un trou de TVA. */
 function projectCategory(category: ChannelCategory): SyncCategory {
   return {
@@ -183,6 +202,6 @@ function projectCategory(category: ChannelCategory): SyncCategory {
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent: category.b2bVatPercent,
+    vatRatePercent: vatOf(category),
   };
 }

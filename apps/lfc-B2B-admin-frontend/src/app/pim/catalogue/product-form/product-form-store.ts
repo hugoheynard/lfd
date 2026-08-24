@@ -13,6 +13,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
+import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
   AllergenScope,
@@ -52,41 +53,49 @@ export interface AllergenGroup {
  * ils forçaient l'écran à tout peindre du même poids, alors que le chiffre est
  * ce qu'on cherche et le nom ce qui le qualifie.
  */
+/**
+ * La clé de canal d'un contexte, ramenée aux deux modes que la matrice porte.
+ *
+ * Transitoire, comme la colonne `channel_key` qu'elle lit : la matrice des
+ * canaux garde des clés fixes tant que sa propre refonte n'a pas eu lieu. Tout
+ * ce qui n'est pas « sur place » retombe sur « à emporter » — le B2B, lui, ne
+ * passe jamais par ici (il n'a pas de comptoir).
+ */
+function boutiqueMode(channelKey: string): 'emporter' | 'surPlace' {
+  return channelKey === 'surPlace' ? 'surPlace' : 'emporter';
+}
+
 export interface RateView {
   readonly name: string;
   readonly percent: string;
 }
 
-export interface ModeInheritance {
-  readonly boutiques: readonly string[];
-  /** `null` quand la famille ne désigne aucun régime pour ce mode. */
-  readonly rate: RateView | null;
-  /**
-   * Le mode est-il vendu ? **Distinct** de la liste de noms ci-dessus : savoir
-   * qu'un mode se vend et savoir nommer les boutiques sont deux faits, et le
-   * second peut manquer (référentiel pas encore chargé) sans que le premier
-   * soit faux. L'écran affichait « non proposé » dès que les noms manquaient,
-   * et cachait la TVA derrière eux.
-   */
-  readonly sold: boolean;
-}
-
 /**
- * Le B2B, qui n'a PAS de boutiques : il se vend depuis la plateforme, pas depuis
- * un comptoir. Lui prêter la forme des modes boutique donnerait une liste
- * toujours vide — un champ qui ne se remplit jamais se lit comme une donnée
- * manquante, pas comme une donnée sans objet.
+ * Une ligne de l'héritage : un contexte de vente, ce qu'il dessert, son taux.
+ *
+ * C'étaient trois champs nommés (`emporter`, `surPlace`, `b2b`). Un quatrième
+ * contexte demandait de modifier ce type, le calcul, le gabarit et son test —
+ * pour une information que la base savait déjà porter.
  */
 export interface ChannelInheritance {
-  readonly rate: RateView | null;
+  readonly key: string;
+  readonly label: string;
+  /**
+   * Le contexte est-il vendu ? **Distinct** de la liste de noms ci-dessous :
+   * savoir qu'un mode se vend et savoir nommer les boutiques sont deux faits, et
+   * le second peut manquer (référentiel pas encore chargé) sans que le premier
+   * soit faux. L'écran affichait « non proposé » dès que les noms manquaient, et
+   * cachait la TVA derrière eux.
+   */
   readonly sold: boolean;
+  /** Vide pour un contexte sans comptoir — le B2B se vend depuis la plateforme. */
+  readonly boutiques: readonly string[];
+  readonly rate: RateView | null;
 }
 
 export interface CategoryInheritanceView {
   readonly categoryName: string;
-  readonly emporter: ModeInheritance;
-  readonly surPlace: ModeInheritance;
-  readonly b2b: ChannelInheritance;
+  readonly channels: readonly ChannelInheritance[];
 }
 
 /** Les sections **enregistrables** — la seule source des clés de section. */
@@ -195,6 +204,7 @@ export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
   private readonly emplacementStore = inject(EmplacementStore);
+  private readonly contextStore = inject(SalesContextStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
   readonly emplacements = this.emplacementStore.items;
@@ -367,30 +377,50 @@ export class ProductFormStore {
     if (category === undefined) {
       return null;
     }
-    const tva = (id: string): RateView | null => {
-      const rate = this.regimeById().get(id);
+    const rateOf = (contextKey: string): RateView | null => {
+      const rateId = category.tvaByContext[contextKey];
+      const rate = rateId === undefined ? undefined : this.regimeById().get(rateId);
       return rate === undefined ? null : { name: rate.name, percent: formatPercent(rate.percent) };
     };
     return {
       categoryName: category.name.fr,
-      emporter: {
-        sold: sellsMode(category.channelPreset, 'emporter'),
-        boutiques: boutiquesWith(category.channelPreset, 'emporter', this.emplacements()),
-        rate: tva(category.emporterTvaId),
-      },
-      surPlace: {
-        sold: sellsMode(category.channelPreset, 'surPlace'),
-        boutiques: boutiquesWith(category.channelPreset, 'surPlace', this.emplacements()),
-        rate: tva(category.surPlaceTvaId),
-      },
-      b2b: {
-        // Un drapeau, pas une somme de boutiques : le B2B se vend ou ne se vend
-        // pas, et son taux est le sien — 5,5 % en boutique n'entraîne rien ici.
-        sold: category.channelPreset.b2b,
-        rate: tva(category.b2bTvaId),
-      },
+      // UNE ligne par contexte du registre : un contexte de plus en base est une
+      // ligne de plus ici, sans livrer de front.
+      channels: this.orderedContexts().map((context) => ({
+        key: context.key,
+        label: context.label,
+        // Le B2B est un drapeau, pas une somme de boutiques : il se vend ou ne
+        // se vend pas, et son taux est le sien — 5,5 % en boutique n'entraîne
+        // rien ici. Les modes boutique, eux, nomment les points de vente.
+        sold:
+          context.channelKey === 'b2b'
+            ? category.channelPreset.b2b
+            : sellsMode(category.channelPreset, boutiqueMode(context.channelKey)),
+        boutiques:
+          context.channelKey === 'b2b'
+            ? []
+            : boutiquesWith(
+                category.channelPreset,
+                boutiqueMode(context.channelKey),
+                this.emplacements(),
+              ),
+        rate: rateOf(context.key),
+      })),
     };
   });
+
+  /**
+   * Les contextes, **B2B en tête**.
+   *
+   * L'ordre du registre sert la projection ; celui-ci sert la LECTURE de cette
+   * app, dont le métier est la vente aux professionnels — le comptoir y est le
+   * cas particulier. Une décision d'écran, donc écrite dans l'écran.
+   */
+  private readonly orderedContexts = computed(() =>
+    [...this.contextStore.items()].sort(
+      (a, b) => Number(b.channelKey === 'b2b') - Number(a.channelKey === 'b2b'),
+    ),
+  );
 
   readonly groups = computed<AllergenGroup[]>(() => {
     const byLabel = new Map<string, AllergenEntry[]>();

@@ -7,9 +7,9 @@ import { API_BASE_URL } from '../data/api';
 import type { Category } from '../data/models';
 
 /**
- * Le backend rend une `CategoryView` (contrat `@lfd/pim-contracts`) où les
- * références de TVA sont **nullables** (`null` = non réglé) ; le modèle front les
- * veut en chaîne, `''` faisant office de « non réglé ». D'où ce mapper.
+ * Le backend rend une `CategoryView` (contrat `@lfd/pim-contracts`). Les taux y
+ * sont une carte indexée par contexte, et le front la transporte telle quelle :
+ * une clé absente est « non réglé », des deux côtés.
  */
 function toCategory(row: CategoryView): Category {
   return {
@@ -20,23 +20,21 @@ function toCategory(row: CategoryView): Category {
     position: row.position,
     isArchived: row.isArchived,
     channelPreset: row.channelPreset,
-    emporterTvaId: row.emporterTvaId ?? '',
-    surPlaceTvaId: row.surPlaceTvaId ?? '',
-    b2bTvaId: row.b2bTvaId ?? '',
+    tvaByContext: row.tvaByContext,
     activeProductCount: row.activeProductCount,
   };
 }
 
-/** Les taux saisis à l'écran ; `''` = non réglé. */
-export interface CategoryTvaDraft {
-  readonly emporter: string;
-  readonly surPlace: string;
-  readonly b2b: string;
-}
+/**
+ * Les taux saisis à l'écran, par clé de contexte. `''` = non réglé — c'est ce
+ * que rend une liste déroulante vide, et la clé est **retirée** avant l'envoi
+ * plutôt qu'envoyée à vide : « non réglé » ne s'écrit pas.
+ */
+export type CategoryTvaDraft = Readonly<Record<string, string>>;
 
-/** `''` (non réglé côté front) → `null` (non réglé côté backend). */
-function toRef(id: string): string | null {
-  return id === '' ? null : id;
+/** Retire les contextes laissés vides — le serveur n'accepte que du réglé. */
+function settledOnly(draft: CategoryTvaDraft): Record<string, string> {
+  return Object.fromEntries(Object.entries(draft).filter(([, id]) => id !== ''));
 }
 
 /**
@@ -89,15 +87,13 @@ export class CategoryHttpApi {
   }
 
   /**
-   * Les trois taux d'un bloc. Un record et non trois arguments positionnels :
-   * à trois `string`, intervertir « sur place » et « B2B » ne se verrait ni au
+   * Les taux d'un bloc, indexés par contexte. Une carte et non des arguments
+   * positionnels : intervertir « sur place » et « B2B » ne se verrait ni au
    * compilateur ni à la lecture, et se paierait en TVA facturée.
    */
   setTva(id: string, ids: CategoryTvaDraft): Promise<void> {
     return this.put(`categories/${id}/tva`, {
-      emporterTvaId: toRef(ids.emporter),
-      surPlaceTvaId: toRef(ids.surPlace),
-      b2bTvaId: toRef(ids.b2b),
+      tvaByContext: settledOnly(ids),
     });
   }
 

@@ -52,6 +52,22 @@ function rateOf(rate: TvaRate | undefined): string {
  * et/ou sur place). Le taux/tag vient du taux référencé — l'exception chocolat
  * (20 % sur place) n'est plus une règle codée, juste `surPlaceTvaId = tva-20`.
  */
+/**
+ * Le taux d'un contexte pour une famille, ou `undefined` s'il n'est pas réglé.
+ *
+ * Cet aperçu reste écrit par mode (une fiche « à emporter », une « sur place »)
+ * parce que c'est ce que la boutique reçoit aujourd'hui ; la boucle sur le
+ * registre viendra avec les contextes multiples côté Shopify (C4).
+ */
+function rateOfContext(
+  category: Category,
+  contextKey: string,
+  regimeById: ReadonlyMap<string, TvaRate>,
+): TvaRate | undefined {
+  const rateId = category.tvaByContext[contextKey];
+  return rateId === undefined ? undefined : regimeById.get(rateId);
+}
+
 export function generateFiches(
   product: Product,
   category: Category,
@@ -64,7 +80,7 @@ export function generateFiches(
 
   const emporter = boutiquesWith(channels, 'emporter', emplacements);
   if (emporter.length > 0) {
-    const rate = regimeById.get(category.emporterTvaId);
+    const rate = rateOfContext(category, 'emporter', regimeById);
     fiches.push({
       mode: 'emporter',
       title: product.name.fr,
@@ -77,7 +93,7 @@ export function generateFiches(
 
   const surPlace = boutiquesWith(channels, 'surPlace', emplacements);
   if (surPlace.length > 0) {
-    const rate = regimeById.get(category.surPlaceTvaId);
+    const rate = rateOfContext(category, 'surPlace', regimeById);
     fiches.push({
       mode: 'surPlace',
       title: `${product.name.fr} (sur place)`,

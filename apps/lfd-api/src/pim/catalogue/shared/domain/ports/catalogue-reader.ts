@@ -23,10 +23,7 @@ import type { ProductRecord } from "../../../product/domain/ports/product.reposi
  * collection. Chacun dérive maintenant ce dont il a besoin — Shopify un handle,
  * la boutique B2B un nombre à facturer.
  */
-export interface CategoryTvaPercents {
-  readonly emporter: number | null;
-  readonly surPlace: number | null;
-}
+export type CategoryTvaPercents = Readonly<Record<string, number>>;
 
 /**
  * Une famille telle qu'un **canal** a besoin de la ranger : son identité, sa
@@ -46,16 +43,10 @@ export interface ChannelCategory {
   readonly slug: LocalizedText;
   readonly parentId: string | null;
   readonly position: number;
-  /** Taux « à emporter » en %, ou `null` si la famille n'est pas réglée. */
-  readonly emporterVatPercent: number | null;
   /**
-   * Taux **de la plateforme B2B** en %, ou `null` si non réglé.
-   *
-   * Distinct de celui à emporter, et c'est le point : la projection B2B lisait
-   * `emporterVatPercent` — un emprunt que rien ne signalait et qu'aucun écran
-   * ne permettait de corriger.
+   * Les taux de la famille en %, par clé de contexte. Clé absente = non réglé.
    */
-  readonly b2bVatPercent: number | null;
+  readonly vatByContext: CategoryTvaPercents;
 }
 
 export abstract class CatalogueReader {
@@ -63,7 +54,7 @@ export abstract class CatalogueReader {
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
   /** Le taux de TVA par contexte pour une catégorie (résout le taux). */
   abstract tvaPercents(categoryId: string): Promise<CategoryTvaPercents>;
-  /** Les familles **non archivées**, avec leurs taux résolus (emporter + B2B). */
+  /** Les familles **non archivées**, avec leurs taux résolus, par contexte. */
   abstract channelCategories(): Promise<ChannelCategory[]>;
   /**
    * La couche éditoriale de plusieurs produits, indexée par identifiant.

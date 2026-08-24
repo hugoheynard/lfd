@@ -67,8 +67,7 @@ interface CategoryRow {
   readonly id: string;
   readonly slug: { readonly fr: string };
   readonly channelPreset: { readonly boutiques: Record<string, unknown>; readonly b2b: boolean };
-  readonly emporterTvaId: string | null;
-  readonly b2bTvaId: string | null;
+  readonly tvaByContext: Readonly<Record<string, string>>;
 }
 
 async function readCategory(id: string): Promise<CategoryRow> {
@@ -162,7 +161,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/tva`)
-      .send({ emporterTvaId: rate, surPlaceTvaId: null, b2bTvaId: null });
+      .send({ tvaByContext: { emporter: rate } });
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe(
@@ -171,7 +170,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
   });
 
   /**
-   * L'effacement traverse jusqu'à la COLONNE : c'est ce que la panne d'origine
+   * L'effacement traverse jusqu'à la BASE : c'est ce que la panne d'origine
    * laissait derrière elle — une famille qui ne vend plus en B2B et pointe
    * toujours son taux B2B, parce que l'écran envoyait les deux réglages en deux
    * requêtes et que la seconde pouvait se perdre.
@@ -185,16 +184,16 @@ describe("un taux ne tient que sur un canal vendu", () => {
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${category}/tva`)
-      .send({ emporterTvaId: null, surPlaceTvaId: null, b2bTvaId: rate })
+      .send({ tvaByContext: { b2b: rate } })
       .expect(200);
-    expect((await readCategory(category)).b2bTvaId).toBe(rate);
+    expect((await readCategory(category)).tvaByContext).toEqual({ b2b: rate });
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send({ boutiques: {}, b2b: false })
       .expect(200);
 
-    expect((await readCategory(category)).b2bTvaId).toBeNull();
+    expect((await readCategory(category)).tvaByContext).toEqual({});
   });
 });
 

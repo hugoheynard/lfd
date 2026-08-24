@@ -3,11 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { ProductFormStore } from '../product-form-store';
+import { provideTestSalesContexts } from '../../sales-contexts/sales-context-store.testing';
 import { ChannelsPanel } from './channels-panel';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
-    providers: [ProductFormStore, provideHttpClient()],
+    providers: [ProductFormStore, provideHttpClient(), provideTestSalesContexts()],
   });
   return TestBed.inject(ProductFormStore);
 }
@@ -47,9 +48,7 @@ describe('ChannelsPanel', () => {
           },
           b2b: false,
         },
-        emporterTvaId: 'tva_55',
-        surPlaceTvaId: 'tva_55',
-        b2bTvaId: '',
+        tvaByContext: { emporter: 'tva_55', surPlace: 'tva_55' },
         activeProductCount: 0,
       },
     ]);

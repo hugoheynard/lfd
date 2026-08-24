@@ -179,6 +179,11 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     reset: async () => {
       await background.whenIdle();
       await truncateAll(prisma);
+      // Le registre des contextes est du VOCABULAIRE, pas de la donnée de test :
+      // il est posé par migration, et une base qu'un `TRUNCATE` d'avant cette
+      // règle a vidée ne le retrouverait jamais — `migrate deploy` ne rejoue pas
+      // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
+      await ensureSalesContexts(prisma);
       await seedE2eStaff(prisma);
       // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
       // toute suite qui commande passerait au vert sur un catalogue vide.
@@ -268,11 +273,62 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * la suivante, qui refusait alors son propre slug pour une raison qui n'avait
  * rien à voir avec ce qu'elle testait.
  * `_prisma_migrations` est préservée — la vider forcerait une re-migration.
+ * `sales_context` aussi, et pour la même raison : ses lignes sont posées PAR une
+ * migration. C'est le vocabulaire du modèle, pas de la donnée de test — la vider
+ * laisserait une base sans aucun contexte de vente, où régler une TVA échoue sur
+ * « contexte inconnu » alors que rien n'est cassé.
  */
+/**
+ * Les contextes de vente, à l'identique de la migration `20260824150000` qui les
+ * pose. Idempotent : c'est une garantie de présence, pas une écriture.
+ */
+async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
+  const contexts = [
+    {
+      id: "ctx_emporter",
+      key: "emporter",
+      label: "À emporter",
+      handleSuffix: "",
+      channelKey: "emporter",
+      active: true,
+      shopifyProjected: true,
+      position: 1,
+    },
+    {
+      id: "ctx_sur_place",
+      key: "surPlace",
+      label: "Sur place",
+      handleSuffix: "-surplace",
+      channelKey: "surPlace",
+      active: true,
+      shopifyProjected: false,
+      position: 2,
+    },
+    {
+      id: "ctx_b2b",
+      key: "b2b",
+      label: "B2B",
+      handleSuffix: "-b2b",
+      channelKey: "b2b",
+      active: true,
+      shopifyProjected: false,
+      position: 3,
+    },
+  ];
+  for (const context of contexts) {
+    await prisma.salesContext.upsert({
+      where: { id: context.id },
+      create: context,
+      update: context,
+    });
+  }
+}
+
 async function truncateAll(prisma: PrismaService): Promise<void> {
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
-    WHERE schemaname IN ('public', 'growth', 'ops', 'pim') AND tablename <> '_prisma_migrations'
+    WHERE schemaname IN ('public', 'growth', 'ops', 'pim')
+      AND tablename NOT IN ('_prisma_migrations', 'sales_context')
   `;
   if (tables.length === 0) {
     return;

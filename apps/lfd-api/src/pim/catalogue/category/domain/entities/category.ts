@@ -2,6 +2,7 @@ import {
   CategoryFrozenError,
   CategorySelfParentError,
   CategoryTvaWithoutChannelError,
+  CategoryUnknownContextError,
 } from "../errors/category-errors.js";
 import {
   slugify,
@@ -10,9 +11,13 @@ import {
 import {
   defaultSalesChannels,
   normalizeSalesChannels,
-  sellsMode,
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
+import {
+  contextIsSold,
+  type ContextTva,
+  type SalesContext,
+} from "../../../shared/domain/value-objects/sales-context.js";
 
 /**
  * **La famille — l'agrégat.**
@@ -49,24 +54,8 @@ export interface CategorySnapshot {
   readonly position: number;
   readonly isArchived: boolean;
   readonly channelPreset: SalesChannels;
-  readonly emporterTvaId: string | null;
-  readonly surPlaceTvaId: string | null;
-  readonly b2bTvaId: string | null;
-}
-
-/**
- * Les taux d'une famille, **un par canal de vente**. `null` = non réglé.
- *
- * Le mode de consommation décide du taux — c'est la loi, pas un choix de
- * boutique — donc « à emporter » et « sur place » ne se déclinent pas par
- * boutique. Le B2B a le sien parce que vendre à un professionnel n'est ni l'un
- * ni l'autre ; jusqu'ici la plateforme facturait au taux « à emporter »,
- * emprunté sans que rien ne le dise.
- */
-export interface CategoryTvaIds {
-  readonly emporter: string | null;
-  readonly surPlace: string | null;
-  readonly b2b: string | null;
+  /** Les taux visés, **par clé de contexte**. Clé absente = non réglé. */
+  readonly tvaByContext: ContextTva;
 }
 
 /** Ce qu'il faut pour ouvrir une famille. Le reste, l'agrégat le décide. */
@@ -86,9 +75,7 @@ export class Category {
     private positionValue: number,
     private archivedValue: boolean,
     private channelPresetValue: SalesChannels,
-    private emporterTvaIdValue: string | null,
-    private surPlaceTvaIdValue: string | null,
-    private b2bTvaIdValue: string | null,
+    private tvaByContextValue: ContextTva,
   ) {}
 
   /** Ouvre une famille : vivante, sans canal vendu, sans TVA réglée. */
@@ -104,9 +91,7 @@ export class Category {
       input.position,
       false,
       defaultSalesChannels(),
-      null,
-      null,
-      null,
+      {},
     );
   }
 
@@ -120,9 +105,7 @@ export class Category {
       snapshot.position,
       snapshot.isArchived,
       snapshot.channelPreset,
-      snapshot.emporterTvaId,
-      snapshot.surPlaceTvaId,
-      snapshot.b2bTvaId,
+      snapshot.tvaByContext,
     );
   }
 
@@ -153,18 +136,18 @@ export class Category {
   /**
    * Les taux, **d'un bloc** — la même valeur que `setTva` reprend.
    *
-   * Trois getters séparés invitaient à en lire un et à oublier les autres :
-   * c'est exactement ce qui s'est passé quand la projection B2B a lu
-   * `emporterTvaId` faute de mieux, et a facturé les professionnels au taux à
-   * emporter pendant tout ce temps. Lire la valeur entière rend l'oubli
-   * visible au point d'usage.
+   * Un getter par canal invitait à en lire un et à oublier les autres : c'est
+   * exactement ce qui s'est passé quand la projection B2B a lu `emporterTvaId`
+   * faute de mieux, et a facturé les professionnels au taux à emporter pendant
+   * tout ce temps. Lire la valeur entière rend l'oubli visible au point d'usage.
    */
-  get tvaIds(): CategoryTvaIds {
-    return {
-      emporter: this.emporterTvaIdValue,
-      surPlace: this.surPlaceTvaIdValue,
-      b2b: this.b2bTvaIdValue,
-    };
+  get tvaByContext(): ContextTva {
+    return this.tvaByContextValue;
+  }
+
+  /** Le taux visé pour UN contexte, ou `null` s'il n'est pas réglé. */
+  tvaOf(contextKey: string): string | null {
+    return this.tvaByContextValue[contextKey] ?? null;
   }
 
   /** Renomme — et **re-dérive le slug**. Permis même archivée (cf. en-tête). */
@@ -196,25 +179,29 @@ export class Category {
    * l'appelant enchaîne `setTva` derrière, et un appelant qui l'oublie (ou une
    * requête perdue entre les deux) laisse un taux orphelin.
    */
-  setChannels(channels: SalesChannels): void {
+  setChannels(channels: SalesChannels, contexts: readonly SalesContext[]): void {
     this.refuseIfArchived();
     this.channelPresetValue = normalizeSalesChannels(channels);
-    this.forgetTvaOfClosedChannels();
+    this.forgetTvaOfClosedChannels(contexts);
   }
 
   /**
-   * Règle les taux **d'un bloc**, un par canal de vente.
+   * Règle les taux **d'un bloc**, un par contexte de vente.
    *
-   * Un record plutôt que des arguments positionnels : à trois taux, une liste
+   * Une carte plutôt que des arguments positionnels : à trois taux, une liste
    * de `string | null` devient un piège — inverser « sur place » et « B2B » ne
    * se voit ni au compilateur ni à la lecture, et se paie en TVA facturée.
+   *
+   * Les contextes viennent du registre, pas de l'agrégat : il ne peut pas
+   * savoir seul quels contextes existent, et un objet ne garantit que ce qu'il
+   * voit. Ce qu'il garantit, lui : un taux ne se règle pas pour un contexte
+   * qu'on ne vend pas, et **rien ne se règle pour un contexte inconnu**.
    */
-  setTva(ids: CategoryTvaIds): void {
+  setTva(tva: ContextTva, contexts: readonly SalesContext[]): void {
     this.refuseIfArchived();
-    this.refuseTvaWithoutChannel(ids);
-    this.emporterTvaIdValue = ids.emporter;
-    this.surPlaceTvaIdValue = ids.surPlace;
-    this.b2bTvaIdValue = ids.b2b;
+    this.refuseUnknownContext(tva, contexts);
+    this.refuseTvaWithoutChannel(tva, contexts);
+    this.tvaByContextValue = { ...tva };
   }
 
   /** Idempotent : archiver deux fois n'est pas une erreur, c'est un état visé. */
@@ -231,41 +218,43 @@ export class Category {
       position: this.positionValue,
       isArchived: this.archivedValue,
       channelPreset: this.channelPresetValue,
-      emporterTvaId: this.emporterTvaIdValue,
-      surPlaceTvaId: this.surPlaceTvaIdValue,
-      b2bTvaId: this.b2bTvaIdValue,
+      tvaByContext: this.tvaByContextValue,
     };
   }
 
-  /** Quels canaux la famille vend, lus une fois pour les deux règles ci-dessous. */
-  private soldChannels(): Record<keyof CategoryTvaIds, boolean> {
-    return {
-      emporter: sellsMode(this.channelPresetValue, "emporter"),
-      surPlace: sellsMode(this.channelPresetValue, "surPlace"),
-      b2b: this.channelPresetValue.b2b,
-    };
-  }
-
-  private refuseTvaWithoutChannel(ids: CategoryTvaIds): void {
-    const sold = this.soldChannels();
-    for (const channel of ["emporter", "surPlace", "b2b"] as const) {
-      if (ids[channel] !== null && !sold[channel]) {
-        throw new CategoryTvaWithoutChannelError(channel);
+  private refuseUnknownContext(tva: ContextTva, contexts: readonly SalesContext[]): void {
+    const known = new Set(contexts.map((context) => context.key));
+    for (const key of Object.keys(tva)) {
+      if (!known.has(key)) {
+        throw new CategoryUnknownContextError(key);
       }
     }
   }
 
-  private forgetTvaOfClosedChannels(): void {
-    const sold = this.soldChannels();
-    if (!sold.emporter) {
-      this.emporterTvaIdValue = null;
+  private refuseTvaWithoutChannel(tva: ContextTva, contexts: readonly SalesContext[]): void {
+    for (const context of contexts) {
+      if (tva[context.key] !== undefined && !contextIsSold(context, this.channelPresetValue)) {
+        throw new CategoryTvaWithoutChannelError(context.key);
+      }
     }
-    if (!sold.surPlace) {
-      this.surPlaceTvaIdValue = null;
+  }
+
+  /**
+   * Fermer un canal **efface** le taux des contextes qu'il portait — sans quoi
+   * il faudrait que l'appelant enchaîne `setTva`, et un appelant qui l'oublie
+   * laisse un taux orphelin. Un contexte qu'on ne connaît plus voit son taux
+   * conservé : on n'efface pas ce qu'on ne sait pas juger.
+   */
+  private forgetTvaOfClosedChannels(contexts: readonly SalesContext[]): void {
+    const closed = contexts.filter((context) => !contextIsSold(context, this.channelPresetValue));
+    if (closed.length === 0) {
+      return;
     }
-    if (!sold.b2b) {
-      this.b2bTvaIdValue = null;
+    const kept: Record<string, string> = { ...this.tvaByContextValue };
+    for (const context of closed) {
+      delete kept[context.key];
     }
+    this.tvaByContextValue = kept;
   }
 
   private refuseIfArchived(): void {

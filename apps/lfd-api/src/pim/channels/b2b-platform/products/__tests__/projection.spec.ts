@@ -45,8 +45,7 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
     slug: { fr: "viennoiseries" },
     parentId: null,
     position: 0,
-    emporterVatPercent: 5.5,
-    b2bVatPercent: 5.5,
+    vatByContext: { emporter: 5.5, b2b: 5.5 },
     ...over,
   };
 }
@@ -70,7 +69,7 @@ describe("projectCatalog", () => {
     // passer inaperçu.
     const { snapshot } = projectCatalog(
       [product()],
-      [category({ emporterVatPercent: 5.5, b2bVatPercent: 20 })],
+      [category({ vatByContext: { emporter: 5.5, b2b: 20 } })],
       AT,
     );
 
@@ -137,7 +136,7 @@ describe("projectCatalog", () => {
   it("pousse un produit dont la famille n’a pas de TVA, avec un taux null", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
-      [category({ b2bVatPercent: null })],
+      [category({ vatByContext: { emporter: 5.5 } })],
       AT,
     );
 

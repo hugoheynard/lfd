@@ -38,17 +38,30 @@ export const setCategoryChannelsPayloadSchema = z.object({
 export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;
 
 /**
- * Les trois taux **d'un bloc** : un par canal de vente. `null` = non réglé, et
- * c'est aussi ce qu'envoie l'écran quand le canal correspondant est décoché —
- * garder la référence d'un canal qu'on ne vend plus gonflerait le compte
- * d'usages du taux et bloquerait sa suppression pour rien.
+ * Les taux **d'un bloc**, indexés par **clé de contexte de vente**.
+ *
+ * Une carte plutôt que trois champs nommés : ajouter un contexte (borne
+ * libre-service, marché) est une ligne de données, et ni ce contrat, ni le
+ * serveur, ni l'écran n'ont à le connaître pour le transporter.
+ *
+ * Une clé **absente** = non réglé — c'est aussi ce qu'envoie l'écran quand le
+ * canal correspondant est décoché : garder la référence d'un canal qu'on ne
+ * vend plus gonflerait le compte d'usages du taux et bloquerait sa suppression
+ * pour rien. Le serveur refuse une clé qui ne désigne aucun contexte connu.
  */
 export const setCategoryTvaPayloadSchema = z.object({
-  emporterTvaId: z.string().nullable(),
-  surPlaceTvaId: z.string().nullable(),
-  b2bTvaId: z.string().nullable(),
+  tvaByContext: z.record(z.string(), z.string()),
 });
 export type SetCategoryTvaPayload = z.infer<typeof setCategoryTvaPayloadSchema>;
+
+/** Un contexte de vente, tel que l'API le rend — le registre, en lecture. */
+export interface SalesContextView {
+  readonly key: string;
+  readonly label: string;
+  /** Le canal de la matrice qui l'autorise (`emporter` / `surPlace` / `b2b`). */
+  readonly channelKey: string;
+  readonly position: number;
+}
 
 /**
  * Déplacer une famille. `parentId: null` = remonter à la racine — d'où le
@@ -80,9 +93,8 @@ export interface CategoryView {
   readonly position: number;
   readonly isArchived: boolean;
   readonly channelPreset: SalesChannels;
-  readonly emporterTvaId: string | null;
-  readonly surPlaceTvaId: string | null;
-  readonly b2bTvaId: string | null;
+  /** Les taux visés, par clé de contexte. Clé absente = non réglé. */
+  readonly tvaByContext: Readonly<Record<string, string>>;
   /**
    * Combien de fiches **actives** cette famille porte.
    *

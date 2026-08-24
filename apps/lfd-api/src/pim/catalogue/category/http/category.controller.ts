@@ -85,11 +85,7 @@ export class CategoryController {
     @Body(new ZodBody(setCategoryTvaPayloadSchema)) body: SetCategoryTvaPayload,
   ) {
     await this.commands.execute<SetCategoryTvaCommand, void>(
-      new SetCategoryTvaCommand(id, {
-        emporter: body.emporterTvaId,
-        surPlace: body.surPlaceTvaId,
-        b2b: body.b2bTvaId,
-      }),
+      new SetCategoryTvaCommand(id, body.tvaByContext),
     );
     return { id };
   }

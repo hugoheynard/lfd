@@ -26,6 +26,7 @@ import { UpdateProductEditorialHandler } from "./product/application/update-prod
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
+import { SalesContextRegistry } from "./shared/domain/ports/sales-context.registry.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { KnownEmplacementsReader } from "./category/domain/ports/known-emplacements.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
@@ -40,6 +41,7 @@ import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
+import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaKnownEmplacementsReader } from "./category/infrastructure/prisma-known-emplacements.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
@@ -105,12 +107,15 @@ import {
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
+    { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).
-  exports: [CatalogueReader],
+  // Le registre sort AVEC le lecteur : les canaux itèrent les contextes, et
+  // Shopify doit savoir lesquels il projette.
+  exports: [CatalogueReader, SalesContextRegistry],
 })
 export class CatalogueModule {}

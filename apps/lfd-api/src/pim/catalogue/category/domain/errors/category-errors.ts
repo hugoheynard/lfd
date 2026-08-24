@@ -149,3 +149,19 @@ export class CategoryOrderMismatchError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un taux réglé pour un contexte que le registre ne connaît pas.
+ *
+ * Le refus est net parce que l'alternative l'est moins : accepter la clé la
+ * persisterait dans une jointure sans ligne de registre en face, et personne ne
+ * saurait plus dire, six mois après, ce que « traiteur » facturait.
+ */
+export class CategoryUnknownContextError extends BusinessError {
+  constructor(readonly contextKey: string) {
+    super(
+      "catalogue.category.unknown_sales_context",
+      `Contexte de vente « ${contextKey} » inconnu.`,
+    );
+  }
+}

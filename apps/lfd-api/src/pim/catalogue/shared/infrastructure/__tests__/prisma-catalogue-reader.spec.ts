@@ -36,6 +36,8 @@ async function build(
         provide: TvaRateRepository,
         useValue: {
           findById: (id: string) => Promise.resolve(id in rates ? { percent: rates[id] } : null),
+          listAll: () =>
+            Promise.resolve(Object.entries(rates).map(([id, percent]) => ({ id, percent }))),
         },
       },
     ],
@@ -46,26 +48,33 @@ async function build(
 describe("PrismaCatalogueReader.tvaPercents", () => {
   it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
     const reader = await build(
-      { tvaIds: { emporter: "r1", surPlace: "r2", b2b: null } },
+      { tvaByContext: { emporter: "r1", surPlace: "r2" } },
       { r1: 5.5, r2: 10 },
     );
 
     const rates = await reader.tvaPercents("cat_vien");
 
-    expect(rates.emporter).toBe(5.5);
-    expect(rates.surPlace).toBe(10);
+    expect(rates).toEqual({ emporter: 5.5, surPlace: 10 });
   });
 
-  it("rend null pour un contexte non réglé sur la catégorie", async () => {
-    const reader = await build(
-      { tvaIds: { emporter: "r1", surPlace: null, b2b: null } },
-      { r1: 5.5 },
-    );
+  it("ne rend AUCUNE clé pour un contexte non réglé sur la catégorie", async () => {
+    // L'absence de clé, plutôt qu'une clé à `null` : « non réglé » ne s'écrit
+    // pas, et un appelant qui itère la carte ne voit que ce qui existe.
+    const reader = await build({ tvaByContext: { emporter: "r1" } }, { r1: 5.5 });
 
     const rates = await reader.tvaPercents("cat_vien");
 
-    expect(rates.emporter).toBe(5.5);
-    expect(rates.surPlace).toBeNull();
+    expect(rates).toEqual({ emporter: 5.5 });
+    expect("surPlace" in rates).toBe(false);
+  });
+
+  it("écarte le contexte dont le taux a disparu, plutôt que d’en inventer un", async () => {
+    const reader = await build(
+      { tvaByContext: { emporter: "r1", surPlace: "r_parti" } },
+      { r1: 5.5 },
+    );
+
+    expect(await reader.tvaPercents("cat_vien")).toEqual({ emporter: 5.5 });
   });
 
   /**

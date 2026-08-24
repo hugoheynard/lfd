@@ -18,12 +18,25 @@ interface CategoryRow {
   position: number;
   isArchived: boolean;
   channelPreset: unknown;
-  emporterTvaId: string | null;
-  surPlaceTvaId: string | null;
-  b2bTvaId: string | null;
+  contextTva: readonly { tvaRateId: string; context: { key: string } }[];
 }
 
+/**
+ * Les taux viennent de la JOINTURE, plus des trois colonnes.
+ *
+ * Elles sont encore écrites (`legacyTvaColumns`) — le temps d'un déploiement,
+ * pour que le binaire précédent, qui les lit, ne serve pas des taux figés au
+ * moment de la bascule. Elles tombent au déploiement d'après.
+ */
+const CATEGORY_WITH_TVA = {
+  contextTva: { select: { tvaRateId: true, context: { select: { key: true } } } },
+} as const;
+
 function toCategory(row: CategoryRow): Category {
+  const tvaByContext: Record<string, string> = {};
+  for (const line of row.contextTva) {
+    tvaByContext[line.context.key] = line.tvaRateId;
+  }
   return Category.reconstitute({
     id: row.id,
     name: readLocalizedColumn(row.name, "category.name"),
@@ -32,9 +45,7 @@ function toCategory(row: CategoryRow): Category {
     position: row.position,
     isArchived: row.isArchived,
     channelPreset: readSalesChannelsColumn(row.channelPreset, "category.channelPreset"),
-    emporterTvaId: row.emporterTvaId,
-    surPlaceTvaId: row.surPlaceTvaId,
-    b2bTvaId: row.b2bTvaId,
+    tvaByContext,
   });
 }
 
@@ -47,9 +58,22 @@ function toColumns(snapshot: CategorySnapshot) {
     position: snapshot.position,
     isArchived: snapshot.isArchived,
     channelPreset: salesChannelsColumn(snapshot.channelPreset),
-    emporterTvaId: snapshot.emporterTvaId,
-    surPlaceTvaId: snapshot.surPlaceTvaId,
-    b2bTvaId: snapshot.b2bTvaId,
+    ...legacyTvaColumns(snapshot),
+  };
+}
+
+/**
+ * Les trois colonnes de l'ancien modèle, dérivées de la carte.
+ *
+ * Transitoire et daté : à supprimer avec elles, au troisième déploiement
+ * (`documentation/pim/projection-sales-context.md`, C0). Écrire les deux
+ * modèles pendant la bascule est ce qui rend le retour en arrière possible.
+ */
+function legacyTvaColumns(snapshot: CategorySnapshot) {
+  return {
+    emporterTvaId: snapshot.tvaByContext["emporter"] ?? null,
+    surPlaceTvaId: snapshot.tvaByContext["surPlace"] ?? null,
+    b2bTvaId: snapshot.tvaByContext["b2b"] ?? null,
   };
 }
 
@@ -60,7 +84,10 @@ export class PrismaCategoryRepository extends CategoryRepository {
   }
 
   async findById(id: string): Promise<Category | null> {
-    const row = await this.prisma.category.findUnique({ where: { id } });
+    const row = await this.prisma.category.findUnique({
+      where: { id },
+      include: CATEGORY_WITH_TVA,
+    });
     return row === null ? null : toCategory(row);
   }
 
@@ -68,6 +95,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async findBySlugFr(slugFr: string): Promise<Category | null> {
     const row = await this.prisma.category.findFirst({
       where: { slug: { path: ["fr"], equals: slugFr } },
+      include: CATEGORY_WITH_TVA,
     });
     return row === null ? null : toCategory(row);
   }
@@ -76,26 +104,33 @@ export class PrismaCategoryRepository extends CategoryRepository {
     const rows = await this.prisma.category.findMany({
       where: { parentId },
       orderBy: [{ position: "asc" }],
+      include: CATEGORY_WITH_TVA,
     });
     return rows.map(toCategory);
   }
 
   async listAll(): Promise<Category[]> {
-    const rows = await this.prisma.category.findMany({ orderBy: [{ position: "asc" }] });
+    const rows = await this.prisma.category.findMany({
+      orderBy: [{ position: "asc" }],
+      include: CATEGORY_WITH_TVA,
+    });
     return rows.map(toCategory);
   }
 
   async add(category: Category): Promise<void> {
     const snapshot = category.snapshot();
-    await this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } });
+    await this.prisma.$transaction([
+      this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
+      ...this.tvaOperations(snapshot),
+    ]);
   }
 
   async save(category: Category): Promise<void> {
     const snapshot = category.snapshot();
-    await this.prisma.category.update({
-      where: { id: snapshot.id },
-      data: toColumns(snapshot),
-    });
+    await this.prisma.$transaction([
+      this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
+      ...this.tvaOperations(snapshot),
+    ]);
   }
 
   /**
@@ -107,14 +142,45 @@ export class PrismaCategoryRepository extends CategoryRepository {
       return;
     }
     await this.prisma.$transaction(
-      categories.map((category) => {
+      categories.flatMap((category) => {
         const snapshot = category.snapshot();
-        return this.prisma.category.update({
-          where: { id: snapshot.id },
-          data: toColumns(snapshot),
-        });
+        return [
+          this.prisma.category.update({
+            where: { id: snapshot.id },
+            data: toColumns(snapshot),
+          }),
+          ...this.tvaOperations(snapshot),
+        ];
       }),
     );
+  }
+
+  /**
+   * Remplace les taux d'une famille : on efface, puis on réécrit.
+   *
+   * Un `upsert` par contexte laisserait vivre la ligne d'un contexte qu'on
+   * vient de retirer — et « plus de taux » ressemblerait à « taux inchangé ».
+   * Ces opérations partent dans la MÊME transaction que la famille : une
+   * catégorie enregistrée sans ses taux serait une famille qui ne facture plus.
+   *
+   * Le lien entre clé de contexte et identifiant passe par une sous-requête
+   * (`connect` par `key`) : le dépôt n'a pas à charger le registre, et une clé
+   * inconnue casse l'écriture au lieu de créer une ligne orpheline. L'agrégat,
+   * lui, l'a déjà refusée — c'est la seconde barrière, pas la première.
+   */
+  private tvaOperations(snapshot: CategorySnapshot) {
+    return [
+      this.prisma.categoryContextTva.deleteMany({ where: { categoryId: snapshot.id } }),
+      ...Object.entries(snapshot.tvaByContext).map(([contextKey, tvaRateId]) =>
+        this.prisma.categoryContextTva.create({
+          data: {
+            category: { connect: { id: snapshot.id } },
+            context: { connect: { key: contextKey } },
+            tvaRate: { connect: { id: tvaRateId } },
+          },
+        }),
+      ),
+    ];
   }
 
   async countActiveChildren(parentId: string): Promise<number> {

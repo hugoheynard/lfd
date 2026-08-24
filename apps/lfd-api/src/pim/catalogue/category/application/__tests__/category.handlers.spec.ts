@@ -34,6 +34,8 @@ import {
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
 import { SetCategoryTvaCommand, SetCategoryTvaHandler } from "../set-category-tva.js";
+import { SalesContextRegistry } from "../../../shared/domain/ports/sales-context.registry.js";
+import type { SalesContext } from "../../../shared/domain/value-objects/sales-context.js";
 
 /**
  * Le faux dépôt garde des **agrégats**, pas des lignes : c'est ce que le port
@@ -222,8 +224,47 @@ function archiveWith(repo: InMemoryCategories, count: number): ArchiveCategoryHa
 }
 
 /** Le handler des canaux, avec un référentiel d'emplacements complaisant. */
+/**
+ * Le registre des contextes, tel que la base le sert. Un double plutôt qu'un
+ * faux à la volée : les trois handlers le lisent, et trois copies divergeraient.
+ */
+const CONTEXTS: readonly SalesContext[] = [
+  {
+    id: "ctx_emporter",
+    key: "emporter",
+    label: "À emporter",
+    handleSuffix: "",
+    channelKey: "emporter",
+    active: true,
+    shopifyProjected: true,
+    position: 1,
+  },
+  {
+    id: "ctx_sur_place",
+    key: "surPlace",
+    label: "Sur place",
+    handleSuffix: "-surplace",
+    channelKey: "surPlace",
+    active: true,
+    shopifyProjected: false,
+    position: 2,
+  },
+  {
+    id: "ctx_b2b",
+    key: "b2b",
+    label: "B2B",
+    handleSuffix: "-b2b",
+    channelKey: "b2b",
+    active: true,
+    shopifyProjected: false,
+    position: 3,
+  },
+];
+
+const registry: SalesContextRegistry = { active: () => Promise.resolve(CONTEXTS) };
+
 function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
-  return new SetCategoryChannelsHandler(repo, allEmplacementsKnown());
+  return new SetCategoryChannelsHandler(repo, allEmplacementsKnown(), registry);
 }
 
 describe("CreateCategoryHandler", () => {
@@ -350,7 +391,7 @@ describe("SetCategoryChannelsHandler", () => {
     const [id] = await openRoots(repo, 1);
 
     await expect(
-      new SetCategoryChannelsHandler(repo, noEmplacementKnown()).execute(
+      new SetCategoryChannelsHandler(repo, noEmplacementKnown(), registry).execute(
         new SetCategoryChannelsCommand(id!, ALL_OPEN),
       ),
     ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
@@ -363,7 +404,7 @@ describe("SetCategoryChannelsHandler", () => {
     const before = repo.at(id!).channelPreset;
 
     await expect(
-      new SetCategoryChannelsHandler(repo, noEmplacementKnown()).execute(
+      new SetCategoryChannelsHandler(repo, noEmplacementKnown(), registry).execute(
         new SetCategoryChannelsCommand(id!, ALL_OPEN),
       ),
     ).rejects.toBeInstanceOf(CategoryUnknownEmplacementError);
@@ -409,13 +450,11 @@ describe("SetCategoryTvaHandler", () => {
     await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const id = await sellingCategory(categories);
 
-    await new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
-      new SetCategoryTvaCommand(id, { emporter: "tva_5", surPlace: null, b2b: null }),
+    await new SetCategoryTvaHandler(categories, rates, registry, new RecordingJournal()).execute(
+      new SetCategoryTvaCommand(id, { emporter: "tva_5" }),
     );
 
-    expect(categories.at(id).emporterTvaId).toBe("tva_5");
-    expect(categories.at(id).surPlaceTvaId).toBeNull();
-    expect(categories.at(id).b2bTvaId).toBeNull();
+    expect(categories.at(id).tvaByContext).toEqual({ emporter: "tva_5" });
   });
 
   it("refuse un taux fantôme", async () => {
@@ -423,9 +462,12 @@ describe("SetCategoryTvaHandler", () => {
     const id = await sellingCategory(categories);
 
     await expect(
-      new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
-        new SetCategoryTvaCommand(id, { emporter: "tva_absent", surPlace: null, b2b: null }),
-      ),
+      new SetCategoryTvaHandler(
+        categories,
+        new InMemoryRegimes(),
+        registry,
+        new RecordingJournal(),
+      ).execute(new SetCategoryTvaCommand(id, { emporter: "tva_absent" })),
     ).rejects.toBeInstanceOf(TvaRateNotFoundError);
   });
 
@@ -440,8 +482,8 @@ describe("SetCategoryTvaHandler", () => {
     const [id] = await openRoots(categories, 1);
 
     await expect(
-      new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
-        new SetCategoryTvaCommand(id!, { emporter: "tva_5", surPlace: null, b2b: null }),
+      new SetCategoryTvaHandler(categories, rates, registry, new RecordingJournal()).execute(
+        new SetCategoryTvaCommand(id!, { emporter: "tva_5" }),
       ),
     ).rejects.toBeInstanceOf(CategoryTvaWithoutChannelError);
   });

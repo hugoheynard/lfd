@@ -36,6 +36,7 @@ export type {
   SetCategoryChannelsPayload,
   SetCategoryTvaPayload,
   CategoryView,
+  SalesContextView,
 } from "./category.js";
 
 export {

@@ -233,13 +233,20 @@ export class ProductsPage {
     return product.channelsOverride === null;
   }
 
-  /** « 5,5 % → 10 % » : les taux à emporter / sur place de la catégorie. */
+  /**
+   * « 5,5 % → 10 % » : les taux à emporter / sur place de la catégorie.
+   *
+   * La colonne nomme ces deux contextes-là — c'est ce que la table montre. Le
+   * jour où un troisième doit s'y lire, elle itérera le registre plutôt que de
+   * gagner une clé de plus.
+   */
   protected categoryTvaText(category: Category): string {
-    const emporter = this.regimeById().get(category.emporterTvaId);
-    const surPlace = this.regimeById().get(category.surPlaceTvaId);
-    const rate = (rate: TvaRate | undefined): string =>
-      rate === undefined ? '—' : formatPercent(rate.percent);
-    return `${rate(emporter)} → ${rate(surPlace)}`;
+    const rate = (contextKey: string): string => {
+      const rateId = category.tvaByContext[contextKey];
+      const found = rateId === undefined ? undefined : this.regimeById().get(rateId);
+      return found === undefined ? '—' : formatPercent(found.percent);
+    };
+    return `${rate('emporter')} → ${rate('surPlace')}`;
   }
 
   /** Un produit précis — le bouton de la ligne. */

@@ -12,6 +12,7 @@ import { ShopifyMembershipService } from "../membership.service.js";
 import { ShopifyCollectionsService } from "../../collections/collections.service.js";
 import { TaxCollectionsPlan } from "../../collections/tax-collections.plan.js";
 import { ShopifyPushService } from "../push.service.js";
+import { SalesContextRegistry } from "../../../../catalogue/shared/domain/ports/sales-context.registry.js";
 import type { RecordSnapshotInput } from "../snapshot.service.js";
 import { ShopifySnapshotService } from "../snapshot.service.js";
 
@@ -116,11 +117,42 @@ async function build(
         provide: CatalogueReader,
         useValue: {
           byIds: () => Promise.resolve([product()]),
-          tvaPercents: () => Promise.resolve({ emporter: 5.5, surPlace: null }),
+          tvaPercents: () => Promise.resolve({ emporter: 5.5 }),
           editorials: (ids: readonly string[]) => {
             editorialAsks.push([...ids]);
             return Promise.resolve(editorials);
           },
+        },
+      },
+      {
+        // Le registre décide de ce que Shopify projette. « Sur place » est en
+        // service et pourtant absent des tags : c'est la distinction que la
+        // constante d'avant ne pouvait pas porter.
+        provide: SalesContextRegistry,
+        useValue: {
+          active: () =>
+            Promise.resolve([
+              {
+                id: "ctx_emporter",
+                key: "emporter",
+                label: "À emporter",
+                handleSuffix: "",
+                channelKey: "emporter",
+                active: true,
+                shopifyProjected: true,
+                position: 1,
+              },
+              {
+                id: "ctx_sur_place",
+                key: "surPlace",
+                label: "Sur place",
+                handleSuffix: "-surplace",
+                channelKey: "surPlace",
+                active: true,
+                shopifyProjected: false,
+                position: 2,
+              },
+            ]),
         },
       },
       {

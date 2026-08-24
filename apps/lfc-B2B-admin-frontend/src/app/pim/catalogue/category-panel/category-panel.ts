@@ -29,6 +29,7 @@ import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import type { Category, SalesChannels, TvaRate } from '../catalogue-api';
 import type { CategoryTvaDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
+import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 
 /**
@@ -156,27 +157,51 @@ export class CategoryPanel {
   protected readonly draftChannels = linkedSignal<SalesChannels>(
     () => this.existing()?.channelPreset ?? NO_CHANNELS,
   );
-  protected readonly draftEmporterTva = linkedSignal(() => this.existing()?.emporterTvaId ?? '');
-  protected readonly draftSurPlaceTva = linkedSignal(() => this.existing()?.surPlaceTvaId ?? '');
-  protected readonly draftB2bTva = linkedSignal(() => this.existing()?.b2bTvaId ?? '');
+  /**
+   * Les taux en cours de saisie, par clé de contexte. UNE carte plutôt qu'un
+   * signal par contexte : le nombre de contextes est une donnée, et un signal
+   * par contexte le figerait dans le code de l'écran.
+   */
+  protected readonly draftTva = linkedSignal<Record<string, string>>(() => ({
+    ...(this.existing()?.tvaByContext ?? {}),
+  }));
   /** `''` = la racine. */
   protected readonly draftParent = linkedSignal(() => this.existing()?.parentId ?? '');
 
+  /** Le registre : l'écran ne connaît plus la liste, il l'itère. */
+  private readonly contextStore = inject(SalesContextStore);
+
   /**
-   * Un taux ne se règle que pour un canal qu'on vend.
+   * Les contextes **réglables ici** : ceux dont le canal est vendu.
    *
-   * « À emporter » et « sur place » se déclinent par boutique : le taux
-   * concerne le MODE, donc il suffit qu'une boutique le propose. Le B2B est
-   * une case unique.
+   * Un taux ne se règle que pour un canal qu'on vend — l'afficher demanderait de
+   * trancher pour une vente qui n'a pas lieu, et laisserait la famille pointer
+   * un taux dont personne ne se sert. « À emporter » et « sur place » se
+   * déclinent par boutique : le taux concerne le MODE, donc il suffit qu'une
+   * boutique le propose. Le B2B est une case unique.
    */
-  protected readonly sellsEmporter = computed(() => sellsMode(this.draftChannels(), 'emporter'));
-  protected readonly sellsSurPlace = computed(() => sellsMode(this.draftChannels(), 'surPlace'));
-  protected readonly sellsB2b = computed(() => this.draftChannels().b2b);
+  protected readonly settableContexts = computed(() =>
+    this.contextStore.items().filter((context) => this.sells(context.channelKey)),
+  );
 
   /** Aucun canal coché ⇒ la section des taux n'a rien à montrer. */
-  protected readonly hasAnyChannel = computed(
-    () => this.sellsEmporter() || this.sellsSurPlace() || this.sellsB2b(),
-  );
+  protected readonly hasAnyChannel = computed(() => this.settableContexts().length > 0);
+
+  private sells(channelKey: string): boolean {
+    const channels = this.draftChannels();
+    return channelKey === 'b2b'
+      ? channels.b2b
+      : sellsMode(channels, channelKey === 'surPlace' ? 'surPlace' : 'emporter');
+  }
+
+  /** Le taux saisi pour un contexte — `''` tant qu'il n'est pas réglé. */
+  protected tvaOf(contextKey: string): string {
+    return this.draftTva()[contextKey] ?? '';
+  }
+
+  protected setTvaOf(contextKey: string, rateId: string): void {
+    this.draftTva.update((current) => ({ ...current, [contextKey]: rateId }));
+  }
 
   protected readonly canSubmit = computed(() => !this.busy() && this.draftName().trim() !== '');
 
@@ -212,20 +237,21 @@ export class CategoryPanel {
   }
 
   /**
-   * Les taux à enregistrer — **vidés** pour tout canal décoché.
+   * Les taux à enregistrer — **seulement ceux qu'on montre**.
    *
    * Ce n'est plus l'écran qui tient la règle : l'agrégat efface le taux d'un
-   * canal qu'on ferme, et refuse un taux pour un canal fermé. Ce nettoyage
-   * reste néanmoins nécessaire — sans lui, le panneau enverrait le taux d'un
-   * champ qu'il vient de masquer, et le référentiel refuserait l'enregistrement
+   * canal qu'on ferme, et refuse un taux pour un canal fermé. Ce filtrage reste
+   * néanmoins nécessaire — sans lui, le panneau enverrait le taux d'un champ
+   * qu'il vient de masquer, et le référentiel refuserait l'enregistrement
    * entier. On envoie ce qu'on montre.
    */
   private tvaToSave(): CategoryTvaDraft {
-    return {
-      emporter: this.sellsEmporter() ? this.draftEmporterTva() : '',
-      surPlace: this.sellsSurPlace() ? this.draftSurPlaceTva() : '',
-      b2b: this.sellsB2b() ? this.draftB2bTva() : '',
-    };
+    const draft = this.draftTva();
+    return Object.fromEntries(
+      this.settableContexts()
+        .map((context) => [context.key, draft[context.key] ?? ''] as const)
+        .filter(([, rateId]) => rateId !== ''),
+    );
   }
 
   protected async archive(category: Category): Promise<void> {
