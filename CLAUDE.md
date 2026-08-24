@@ -538,7 +538,7 @@ mots à employer :
 | remise      | `discount` | sur place       | `eatIn`     |
 | retrait     | `pickup`   | livraison       | `delivery`  |
 
-**Deux exceptions, écrites plutôt que tues** — une exception nommée ne dérive
+**Trois exceptions, écrites plutôt que tues** — une exception nommée ne dérive
 pas, une exception tacite si :
 
 - **`mercuriale` reste en français.** Ce n'est ni un `priceList`, ni un
@@ -547,6 +547,13 @@ pas, une exception tacite si :
   précise.
 - **Le front reste en français** dans ses LIBELLÉS : ils s'adressent à des
   humains francophones. Ses identifiants, eux, suivent la règle.
+- **Une VALEUR de donnée n'est pas un nom.** `TVA_HANDLE_PREFIX` s'appelle
+  désormais `VAT_HANDLE_PREFIX` mais vaut toujours `"tva-"` : c'est ce préfixe
+  qui rattache une collection Shopify à son taux. Même règle pour les valeurs
+  du journal (`category.tva_changed` : ce qui a été écrit à l'époque), les clés
+  d'un `jsonb`, les valeurs d'enum Postgres et les noms de dossiers de
+  migration. Les renommer est une **migration**, pas un renommage — et elle se
+  fait en trois déploiements (`documentation/ops/pipelines.md`).
 
 `pnpm lint:code-language` tient la ligne : les dossiers drainés échouent au
 premier mot français, le reste est compté et affiché à chaque exécution.
