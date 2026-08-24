@@ -1,3 +1,24 @@
+/* La ligne de faits sous le titre. Elle vit dans le créneau `[description]` de
+   fold-page-layout, qui lui donne déjà sa taille et son gris : ici on ne pose
+   que le rythme des séparateurs et la face de la référence. */
+.ident {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* La référence est un CODE : mono, et jamais coupée sur deux lignes — une
+   référence à cheval sur un retour à la ligne ne se recopie pas. */
+.ident-sku {
+  font-family: var(--fold-font-mono);
+  white-space: nowrap;
+}
+
+.ident-sep {
+  color: var(--fold-color-text-faded);
+}
+
 .muted {
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);

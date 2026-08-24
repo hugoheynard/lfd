@@ -9,6 +9,7 @@ import type {
   AllergenScope,
   Category,
   ProductKind,
+  ProductStatus,
   TvaRate,
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
@@ -152,6 +153,23 @@ export class ProductFormStore {
    */
   private readonly skuValue = signal('');
   readonly sku: Signal<string> = this.skuValue;
+  /**
+   * L'état de publication — **lu**, et changé par le menu de l'en-tête, jamais
+   * par un champ. Il vit ici et pas dans la page parce que c'est un fait DU
+   * PRODUIT : la page le peint, le rail de publication le lit, et les deux
+   * doivent voir la même valeur après un « Publier ».
+   */
+  private readonly statusValue = signal<ProductStatus>('draft');
+  readonly status: Signal<ProductStatus> = this.statusValue;
+
+  /**
+   * Le nombre de déclinaisons — un COMPTE, pas la liste. L'en-tête a besoin de
+   * « 3 déclinaisons » ; personne n'édite encore les déclinaisons ici, donc
+   * hydrater la liste entière serait déclarer plus que l'écran ne sait faire.
+   */
+  private readonly variantCountValue = signal(0);
+  readonly variantCount: Signal<number> = this.variantCountValue;
+
   /** Un dépôt en cours — le bouton se désarme, la liste ne bouge pas encore. */
   readonly uploading = signal(false);
 
@@ -160,13 +178,28 @@ export class ProductFormStore {
   private readonly statusMap = signal<Partial<Record<FormSection, SectionStatus>>>({});
   private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
 
+  /**
+   * Le titre de la page **est le nom du produit** — plus « Éditer le produit —
+   * X ». Une fiche ne s'intitule pas par le geste qu'on y fait : le fil
+   * d'Ariane dit d'où l'on vient, le titre dit ce qu'on regarde, et « Éditer »
+   * ne disait ni l'un ni l'autre (tout est éditable en permanence, donc le mot
+   * ne distinguait plus rien).
+   */
   readonly pageTitle = computed(() => {
     if (!this.isEdit()) {
       return 'Nouveau produit';
     }
     const name = this.name().trim();
-    return name === '' ? 'Éditer le produit' : `Éditer le produit — ${name}`;
+    return name === '' ? 'Produit sans nom' : name;
   });
+
+  /** La famille du produit, nommée — `''` tant que le référentiel n'a pas répondu. */
+  readonly categoryName = computed(() => this.selectedCategory()?.name.fr ?? '');
+
+  /** Le type de produit, nommé — lu dans la même table que le sélecteur. */
+  readonly kindLabel = computed(
+    () => KINDS.find((option) => option.value === this.kind())?.label ?? '',
+  );
 
   private readonly regimeById = computed(() => new Map(this.rates().map((r) => [r.id, r])));
 
@@ -506,6 +539,46 @@ export class ProductFormStore {
     }
   }
 
+  /**
+   * Publie, dépublie ou archive — le menu de l'en-tête.
+   *
+   * Ce n'est PAS un enregistrement de section : rien ici ne dépend de ce qui
+   * est en attente dans les champs, et l'inverse est vrai aussi — un produit se
+   * publie avec des sections modifiées, elles restent modifiées après. Les deux
+   * gestes ne se mélangent donc pas, et `statusMap` (par section) ne le suit
+   * pas.
+   *
+   * L'état n'avance qu'au retour du serveur : le peindre avant, c'est afficher
+   * « Publié » sur un produit que le backend a refusé.
+   */
+  async changeStatus(next: ProductStatus): Promise<void> {
+    const id = this.productId();
+    if (id === '' || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.callStatus(id, next);
+      this.statusValue.set(next);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private callStatus(id: string, next: ProductStatus): Promise<void> {
+    switch (next) {
+      case 'published':
+        return this.api.publishProduct(id);
+      case 'draft':
+        return this.api.unpublishProduct(id);
+      case 'archived':
+        return this.api.archiveProduct(id);
+    }
+  }
+
   /** Enregistre UNE section — le bouton posé à droite de son titre. */
   saveOne(key: FormSection): Promise<void> {
     switch (key) {
@@ -571,6 +644,8 @@ export class ProductFormStore {
     }
     const product = detail.product;
     this.skuValue.set(product.sku);
+    this.statusValue.set(product.status);
+    this.variantCountValue.set(product.variants.length);
     this.name.set(product.name.fr);
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);

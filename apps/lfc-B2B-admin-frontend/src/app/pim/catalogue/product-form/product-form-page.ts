@@ -1,16 +1,23 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
-  FoldBackLinkComponent,
+  FoldBadgeComponent,
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
   FoldAsideLayoutComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPopoverTriggerDirective,
+  type FoldBadgeVariant,
 } from 'fold-ng';
+
+import type { ProductStatus } from '../../data/models';
 
 import { ChannelsPanel } from './panels/channels-panel';
 import { CommunicationPanel } from './panels/communication-panel';
@@ -23,6 +30,23 @@ import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SectionState } from './section-state/section-state';
+
+/**
+ * Les libellés d'état — exhaustifs par construction : un `Record<ProductStatus,
+ * …>` casse la compilation le jour où le modèle gagne un état, là où un `switch`
+ * avec `default` l'aurait peint « Brouillon » en silence.
+ */
+const STATUS_LABELS: Readonly<Record<ProductStatus, string>> = {
+  draft: 'Brouillon',
+  published: 'Publié',
+  archived: 'Archivé',
+};
+
+const STATUS_VARIANTS: Readonly<Record<ProductStatus, FoldBadgeVariant>> = {
+  draft: 'warning',
+  published: 'success',
+  archived: 'neutral',
+};
 
 interface PageSection {
   readonly key: FormSection;
@@ -43,8 +67,12 @@ interface PageSection {
   providers: [ProductFormStore],
   imports: [
     FoldPageLayoutComponent,
-    FoldBackLinkComponent,
+    FoldBadgeComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldPopoverTriggerDirective,
     FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
@@ -67,6 +95,27 @@ export class ProductFormPage implements HasPendingChanges {
   protected readonly store = inject(ProductFormStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  protected readonly statusLabel = computed(() => STATUS_LABELS[this.store.status()]);
+  protected readonly statusVariant = computed(() => STATUS_VARIANTS[this.store.status()]);
+
+  /**
+   * Les faits de l'en-tête, après la référence : où le produit est rangé, et
+   * combien de déclinaisons il porte.
+   *
+   * Une liste FILTRÉE, et c'est tout l'intérêt : un fait que le référentiel n'a
+   * pas encore rendu (la famille, tant que les catégories chargent) disparaît
+   * avec son séparateur, au lieu de laisser « P-000123 ·  · 3 déclinaisons » —
+   * deux points de suspension pour une valeur absente.
+   */
+  protected readonly facts = computed(() => {
+    const count = this.store.variantCount();
+    return [
+      this.store.kindLabel(),
+      this.store.categoryName(),
+      count === 0 ? '' : `${String(count)} déclinaison${count > 1 ? 's' : ''}`,
+    ].filter((fact) => fact !== '');
+  });
 
   /**
    * Les sections ENREGISTRABLES, dans l'ordre de lecture. La description
@@ -126,6 +175,18 @@ export class ProductFormPage implements HasPendingChanges {
   /** Enregistre UNE section — le bouton posé à droite de son titre. */
   protected saveSection(section: FormSection): void {
     void this.store.saveOne(section);
+  }
+
+  protected publish(): void {
+    void this.store.changeStatus('published');
+  }
+
+  protected unpublish(): void {
+    void this.store.changeStatus('draft');
+  }
+
+  protected archive(): void {
+    void this.store.changeStatus('archived');
   }
 
   /** Enregistre toutes les sections modifiées, depuis le rail. */

@@ -1,14 +1,51 @@
-<fold-page-layout icon="edit" [title]="store.pageTitle()">
-  <fold-back-link pageActions label="Retour aux produits" routerLink="/pim/produits" />
+<!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
+     « edit » y ajoutait le geste plutôt que la chose. -->
+<fold-page-layout [title]="store.pageTitle()">
+  @if (store.isEdit()) {
+    <fold-badge titleBadge [content]="statusLabel()" [variant]="statusVariant()" radius="pill" />
+  }
 
+  <!-- La ligne sous le titre porte des FAITS, pas de la prose : ce qu'on regarde
+       s'identifie (référence), se situe (type, famille) et se compte
+       (déclinaisons). L'ancienne phrase — « tout est éditable, chaque section
+       s'enregistre » — décrivait le fonctionnement de l'écran ; il se voit
+       maintenant tout seul, section par section, à droite de chaque titre. -->
   <p description>
     @if (store.isEdit()) {
-      Tout est éditable ; chaque section affiche son état et s'enregistre indépendamment.
+      <span class="ident">
+        <span class="ident-sku">{{ store.sku() }}</span>
+        @for (fact of facts(); track fact) {
+          <span class="ident-sep" aria-hidden="true">·</span>
+          <span>{{ fact }}</span>
+        }
+      </span>
     } @else {
       Un nom et une catégorie suffisent pour créer le brouillon ; le reste se complète ensuite à
       l'édition.
     }
   </p>
+
+  @if (store.isEdit()) {
+    <fold-dropdown pageActions ariaLabel="Actions du produit" placement="bottom-end">
+      <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
+
+      @if (store.status() !== 'published') {
+        <fold-dropdown-item icon="check" [disabled]="store.busy()" (selected)="publish()">
+          Publier
+        </fold-dropdown-item>
+      }
+      @if (store.status() === 'published') {
+        <fold-dropdown-item icon="eye-off" [disabled]="store.busy()" (selected)="unpublish()">
+          Dépublier
+        </fold-dropdown-item>
+      }
+      @if (store.status() !== 'archived') {
+        <fold-dropdown-item icon="folder" [disabled]="store.busy()" (selected)="archive()">
+          Archiver
+        </fold-dropdown-item>
+      }
+    </fold-dropdown>
+  }
 
   @if (store.error(); as message) {
     <fold-callout appearance="inset" variant="alert" role="alert">
