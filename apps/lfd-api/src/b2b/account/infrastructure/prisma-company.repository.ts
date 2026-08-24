@@ -113,7 +113,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           enseigne: company.enseigne,
           formeJuridique: company.formeJuridique,
           siret: company.siretDigits,
-          tvaIntracom: company.tvaIntracom,
+          vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
           // Déclarée, pas cliente : l'activation est commerciale.
           status: CompanyStatus.pending,
@@ -166,7 +166,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           enseigne: company.enseigne,
           formeJuridique: company.formeJuridique,
           siret: company.siretDigits,
-          tvaIntracom: company.tvaIntracom,
+          vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
           // Déclarée, pas cliente : l'activation reste commerciale.
           status: CompanyStatus.pending,
@@ -190,7 +190,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       enseigne: row.enseigne,
       formeJuridique: row.formeJuridique,
       siret: row.siret,
-      tvaIntracom: row.tvaIntracom,
+      vatNumber: row.vatNumber,
       // Adresse vide ⇒ **aucun détenteur**, et non un contact sans nom : la
       // société a été ouverte sur son enseigne seule, le rattachement viendra.
       // Passer ces colonnes vides à `ContactDetails.create` lèverait d'ailleurs
@@ -244,7 +244,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         raisonSociale: state.raisonSociale,
         formeJuridique: state.formeJuridique,
         siret: state.siret,
-        tvaIntracom: state.tvaIntracom,
+        vatNumber: state.vatNumber,
         ...contactColumns(state.contact),
         grantedTerms: [...state.grantedTerms],
         requestedTerm: state.requestedTerm,

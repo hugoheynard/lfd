@@ -167,7 +167,7 @@ describe("ce qu'il faut pour OUVRIR n'est pas ce qu'il faut pour ACTIVER", () =>
     enseigne: '',
     formeJuridique: '',
     siret: '',
-    tvaIntracom: '',
+    vatNumber: '',
   };
 
   it('ne réclame QUE le nom d’usage', () => {

@@ -61,7 +61,7 @@ export interface CompanyView {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   /** La forme juridique impose-t-elle un n° de TVA ? (dérivé, cf. `vat-liability`). */
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;

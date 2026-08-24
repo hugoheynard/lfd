@@ -71,7 +71,7 @@ function command(overrides: Partial<CreateCompanyCommand> = {}): CreateCompanyCo
     overrides.enseigne ?? "Le Pain Quotidien",
     overrides.formeJuridique ?? "SAS",
     overrides.siret ?? "812 456 789 00021",
-    overrides.tvaIntracom ?? "",
+    overrides.vatNumber ?? "",
   );
 }
 

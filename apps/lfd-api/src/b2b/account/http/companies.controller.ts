@@ -51,7 +51,7 @@ export class CompaniesController {
         payload.enseigne,
         payload.formeJuridique,
         payload.siret,
-        payload.tvaIntracom,
+        payload.vatNumber,
       ),
     );
     return { id };

@@ -21,7 +21,7 @@ function reconstituted(): Company {
     enseigne: "Marais Café",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    tvaIntracom: "FR12345678901",
+    vatNumber: "FR12345678901",
     contact: ContactDetails.create(CONTACT),
     grantedTerms: [],
     requestedTerm: null,
@@ -39,7 +39,7 @@ describe("Company — reconstitution + mutations souples", () => {
   it("reconstitue une société avec son id et sérialise ses champs mutables", () => {
     const state = reconstituted().toPersistence();
     expect(state.enseigne).toBe("Marais Café");
-    expect(state.tvaIntracom).toBe("FR12345678901");
+    expect(state.vatNumber).toBe("FR12345678901");
     expect(state.contact).toEqual({
       firstName: "Camille",
       lastName: "Rousseau",
@@ -51,23 +51,23 @@ describe("Company — reconstitution + mutations souples", () => {
 
   it("editSoftIdentity normalise (espaces réduits) enseigne et TVA", () => {
     const company = reconstituted();
-    company.editSoftIdentity({ enseigne: "  Nouvelle   Enseigne  ", tvaIntracom: " FR99 " });
+    company.editSoftIdentity({ enseigne: "  Nouvelle   Enseigne  ", vatNumber: " FR99 " });
     const state = company.toPersistence();
     expect(state.enseigne).toBe("Nouvelle Enseigne");
-    expect(state.tvaIntracom).toBe("FR99");
+    expect(state.vatNumber).toBe("FR99");
     expect(company.displayName()).toBe("Nouvelle Enseigne");
   });
 
   it("editSoftIdentity accepte le vide (enseigne effacée → displayName retombe sur la raison sociale)", () => {
     const company = reconstituted();
-    company.editSoftIdentity({ enseigne: "", tvaIntracom: "" });
+    company.editSoftIdentity({ enseigne: "", vatNumber: "" });
     expect(company.toPersistence().enseigne).toBe("");
     expect(company.displayName()).toBe("PQ Marais");
   });
 
   it("editSoftIdentity refuse une enseigne trop longue", () => {
     const company = reconstituted();
-    expect(() => company.editSoftIdentity({ enseigne: "x".repeat(200), tvaIntracom: "" })).toThrow(
+    expect(() => company.editSoftIdentity({ enseigne: "x".repeat(200), vatNumber: "" })).toThrow(
       InvalidCompanyIdentityError,
     );
   });
@@ -90,7 +90,7 @@ describe("Company — reconstitution + mutations souples", () => {
         enseigne: "Le Pain Quotidien",
         formeJuridique: "SARL",
         siret: "81245678900021",
-        tvaIntracom: "",
+        vatNumber: "",
       },
       ContactDetails.create(CONTACT),
     );
@@ -178,7 +178,7 @@ describe("Company — activation", () => {
       enseigne: "Le Pain Quotidien",
       formeJuridique: "SAS",
       siret: "81245678900021",
-      tvaIntracom: "",
+      vatNumber: "",
       contact: ContactDetails.create(CONTACT),
       grantedTerms: [],
       requestedTerm: null,

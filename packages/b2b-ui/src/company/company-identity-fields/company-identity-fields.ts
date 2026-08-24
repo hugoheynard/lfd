@@ -92,7 +92,7 @@ export class CompanyIdentityFields {
   protected setSiret(siret: string): void {
     this.value.update((draft) => ({ ...draft, siret }));
   }
-  protected setTvaIntracom(tvaIntracom: string): void {
-    this.value.update((draft) => ({ ...draft, tvaIntracom }));
+  protected setVatNumber(vatNumber: string): void {
+    this.value.update((draft) => ({ ...draft, vatNumber }));
   }
 }

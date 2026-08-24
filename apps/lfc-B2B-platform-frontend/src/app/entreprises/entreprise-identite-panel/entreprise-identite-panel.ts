@@ -21,7 +21,7 @@ import { AccountService } from '../../account/account.service';
 export interface IdentitePanelData {
   readonly companyId: string;
   readonly enseigne: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
 }
 
 /**
@@ -43,7 +43,7 @@ export class EntrepriseIdentitePanel {
   readonly data = input<IdentitePanelData | undefined>(undefined);
 
   protected readonly enseigne = signal('');
-  protected readonly tvaIntracom = signal('');
+  protected readonly vatNumber = signal('');
   protected readonly saving = signal(false);
 
   protected readonly canSubmit = computed(() => !this.saving());
@@ -55,7 +55,7 @@ export class EntrepriseIdentitePanel {
         return;
       }
       this.enseigne.set(data.enseigne);
-      this.tvaIntracom.set(data.tvaIntracom);
+      this.vatNumber.set(data.vatNumber);
     });
   }
 
@@ -67,7 +67,7 @@ export class EntrepriseIdentitePanel {
     this.saving.set(true);
     this.account.updateIdentity(
       data.companyId,
-      { enseigne: this.enseigne().trim(), tvaIntracom: this.tvaIntracom().trim() },
+      { enseigne: this.enseigne().trim(), vatNumber: this.vatNumber().trim() },
       () => this.ref.close(true),
     );
   }

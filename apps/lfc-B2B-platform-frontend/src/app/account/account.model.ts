@@ -100,7 +100,7 @@ export interface Company {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   /** La forme juridique impose-t-elle un n° de TVA ? (dérivé côté backend). */
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
@@ -145,7 +145,7 @@ export type UserProfileDraft = Pick<UserProfile, 'firstName' | 'lastName' | 'ema
 /** Ce que le formulaire « Créer une entreprise » envoie. */
 export type CompanyDraft = Pick<
   Company,
-  'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'tvaIntracom'
+  'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'vatNumber'
 >;
 
 /**

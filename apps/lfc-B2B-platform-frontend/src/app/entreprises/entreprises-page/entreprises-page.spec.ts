@@ -22,7 +22,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     enseigne,
     formeJuridique: 'SAS',
     siret: '81245678900021',
-    tvaIntracom: '',
+    vatNumber: '',
     vatNumberRequired: true,
     status: 'pending',
     grantedTerms: [],

@@ -38,7 +38,7 @@ function sampleCompany(): Company {
     enseigne: "Le Comptoir",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    tvaIntracom: "",
+    vatNumber: "",
     contact: ContactDetails.create(HOLDER),
     grantedTerms: [],
     requestedTerm: null,

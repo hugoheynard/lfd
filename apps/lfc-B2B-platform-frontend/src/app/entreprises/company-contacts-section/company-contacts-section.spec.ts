@@ -24,7 +24,7 @@ function company(over: Partial<Company> = {}): Company {
     enseigne: '',
     formeJuridique: 'SAS',
     siret: '81245678900021',
-    tvaIntracom: '',
+    vatNumber: '',
     vatNumberRequired: true,
     status: 'active',
     grantedTerms: [],

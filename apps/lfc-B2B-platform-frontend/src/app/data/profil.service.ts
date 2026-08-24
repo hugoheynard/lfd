@@ -153,7 +153,7 @@ const SEED: ClientProfile = {
     enseigne: 'Le Pain Quotidien du Marais',
     formeJuridique: 'SAS',
     siret: '812 456 789 00021',
-    tvaIntracom: 'FR32 812456789',
+    vatNumber: 'FR32 812456789',
   },
   contact: {
     prenom: 'Camille',

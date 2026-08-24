@@ -83,12 +83,12 @@ describe("pièces d'activation staff (Porte B)", () => {
   it("édite l'identité souple (enseigne + TVA)", async () => {
     await staff()
       .patch(`/admin/companies/${companyId}/identity`)
-      .send({ enseigne: "Le Comptoir", tvaIntracom: "FR32812456789" })
+      .send({ enseigne: "Le Comptoir", vatNumber: "FR32812456789" })
       .expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.enseigne).toBe("Le Comptoir");
-    expect(company.tvaIntracom).toBe("FR32812456789");
+    expect(company.vatNumber).toBe("FR32812456789");
 
     // Une pièce posée par le STAFF (Porte B) franchit aussi l'étape (câblage staff→growth).
     for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -184,7 +184,7 @@ describe("activation d'un compte (gate serveur)", () => {
       where: { id: companyId },
       // Un numéro joignable : sans lui, l'agrégat refuse d'activer — un livreur
       // qui cherche une porte doit pouvoir appeler quelqu'un.
-      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
+      data: { vatNumber: "FR32812456789", contactTelephone: "01 42 71 08 44" },
     });
     await ctx.prisma.address.create({
       data: {
@@ -382,7 +382,7 @@ describe("certification du KBIS", () => {
     // plus la porte — c'est le signal côté liste qui la réclame.
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
+      data: { vatNumber: "FR32812456789", contactTelephone: "01 42 71 08 44" },
     });
     await ctx.prisma.address.create({
       data: {
@@ -468,7 +468,7 @@ describe("certification du KBIS", () => {
   async function activatedCompany(): Promise<void> {
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
+      data: { vatNumber: "FR32812456789", contactTelephone: "01 42 71 08 44" },
     });
     await ctx.prisma.address.create({
       data: {

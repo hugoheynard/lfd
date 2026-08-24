@@ -26,9 +26,7 @@
           e.formeJuridique
         }}</fold-field>
         <fold-field label="SIRET">{{ e.siret }}</fold-field>
-        <fold-field label="N° TVA intracom" [empty]="!e.tvaIntracom">{{
-          e.tvaIntracom
-        }}</fold-field>
+        <fold-field label="N° TVA intracom" [empty]="!e.vatNumber">{{ e.vatNumber }}</fold-field>
       </fold-field-list>
     } @else {
       <form class="edit" (submit)="$event.preventDefault(); save()">
@@ -62,8 +60,8 @@
           label="N° de TVA intracommunautaire"
           placeholder="ex. FR32 812456789"
           optional
-          [value]="tvaIntracom()"
-          (valueChange)="tvaIntracom.set($event)"
+          [value]="vatNumber()"
+          (valueChange)="vatNumber.set($event)"
         />
 
         <div class="edit-actions">

@@ -12,7 +12,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "12345678901234",
-    tvaIntracom: "",
+    vatNumber: "",
     status: "pending",
     grantedTerms: [],
     requestedTerm: null,
@@ -40,7 +40,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
 
 /** Un dossier complet — on retire ensuite ce qu'on veut éprouver. */
 const COMPLETE: Partial<AdminCompanyDetailView> = {
-  tvaIntracom: "FR32812456789",
+  vatNumber: "FR32812456789",
   kbis: {
     fileName: "k.pdf",
     uploadedAt: "2026-08-01T10:00:00.000Z",

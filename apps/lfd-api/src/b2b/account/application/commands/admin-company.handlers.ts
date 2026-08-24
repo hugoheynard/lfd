@@ -78,7 +78,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     await this.companies.save(company);
 
     // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).
-    if (command.payload.tvaIntracom.trim() !== "") {
+    if (command.payload.vatNumber.trim() !== "") {
       this.events.publish(new CompanyStepReachedEvent(command.companyId, "vat"));
     }
   }

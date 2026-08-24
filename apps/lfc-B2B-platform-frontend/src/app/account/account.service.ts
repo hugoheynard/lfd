@@ -159,7 +159,7 @@ export class AccountService {
 
   updateIdentity(
     companyId: string,
-    identity: { enseigne: string; tvaIntracom: string },
+    identity: { enseigne: string; vatNumber: string },
     onDone?: () => void,
   ): void {
     this.mutate(

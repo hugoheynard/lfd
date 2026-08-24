@@ -22,7 +22,7 @@ function reconstituted(): Company {
     enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    tvaIntracom: "",
+    vatNumber: "",
     contact: ContactDetails.create(CONTACT),
     grantedTerms: [],
     requestedTerm: null,

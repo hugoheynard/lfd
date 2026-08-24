@@ -24,7 +24,7 @@ import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.
 export interface AdminIdentitePanelData {
   readonly companyId: string;
   readonly enseigne: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   /** Vide quand le compte a été ouvert sans papiers — le panneau les réclame alors. */
   readonly raisonSociale: string;
   readonly formeJuridique: string;
@@ -80,7 +80,7 @@ export class AdminIdentitePanel {
     enseigne: '',
     formeJuridique: '',
     siret: '',
-    tvaIntracom: '',
+    vatNumber: '',
   });
   protected readonly submitting = signal(false);
 
@@ -110,7 +110,7 @@ export class AdminIdentitePanel {
         enseigne: data.enseigne,
         formeJuridique: data.formeJuridique,
         siret: data.siret,
-        tvaIntracom: data.tvaIntracom,
+        vatNumber: data.vatNumber,
       });
     });
   }
@@ -124,7 +124,7 @@ export class AdminIdentitePanel {
       const draft = this.draft();
       await this.service.updateIdentity(this.data().companyId, {
         enseigne: draft.enseigne.trim(),
-        tvaIntracom: draft.tvaIntracom.trim(),
+        vatNumber: draft.vatNumber.trim(),
         raisonSociale: draft.raisonSociale.trim(),
         formeJuridique: draft.formeJuridique.trim(),
         siret: draft.siret.trim(),

@@ -43,7 +43,7 @@ export class SocieteSection {
   protected readonly enseigne = signal('');
   protected readonly formeJuridique = signal('');
   protected readonly siret = signal('');
-  protected readonly tvaIntracom = signal('');
+  protected readonly vatNumber = signal('');
 
   protected readonly canSave = computed(
     () => this.raisonSociale().trim() !== '' && this.siret().trim() !== '',
@@ -55,7 +55,7 @@ export class SocieteSection {
     this.enseigne.set(e.enseigne);
     this.formeJuridique.set(e.formeJuridique);
     this.siret.set(e.siret);
-    this.tvaIntracom.set(e.tvaIntracom);
+    this.vatNumber.set(e.vatNumber);
     this.editing.set(true);
   }
 
@@ -72,7 +72,7 @@ export class SocieteSection {
       enseigne: this.enseigne().trim(),
       formeJuridique: this.formeJuridique().trim(),
       siret: this.siret().trim(),
-      tvaIntracom: this.tvaIntracom().trim(),
+      vatNumber: this.vatNumber().trim(),
     };
     this.profil.updateEtablissement(next);
     this.editing.set(false);

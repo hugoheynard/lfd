@@ -24,7 +24,7 @@ export class CreateCompanyByStaffCommand {
     readonly enseigne: string,
     readonly formeJuridique: string,
     readonly siret: string,
-    readonly tvaIntracom: string,
+    readonly vatNumber: string,
     /** Le détenteur, ou `null` : il sera rattaché plus tard, par son adresse. */
     readonly contact: ContactDetailsInput | null,
     readonly invitedBy: string,

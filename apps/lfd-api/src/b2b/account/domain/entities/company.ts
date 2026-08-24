@@ -26,7 +26,7 @@ export interface CompanyIdentityInput {
   readonly formeJuridique: string;
   readonly siret: string;
   /** N° de TVA intracommunautaire — vide si non assujetti / inconnu. */
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
 }
 
 /**
@@ -56,7 +56,7 @@ export interface ReconstituteCompanyInput {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   /** `null` tant qu'aucun détenteur n'a été rattaché. */
   readonly contact: CompanyContact | null;
   /** Terme **convenu** (celui qui s'applique). */
@@ -95,7 +95,7 @@ export interface CompanySoftState {
   readonly raisonSociale: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   /** `null` tant qu'aucun détenteur n'est rattaché — pas un contact vide. */
   readonly contact: {
     readonly firstName: string;
@@ -138,7 +138,7 @@ export class Company {
     private enseigneValue: string,
     private formeJuridiqueValue: string,
     private siretValue: Siret | null,
-    private tvaIntracomValue: string,
+    private vatNumberValue: string,
     private contactValue: CompanyContact | null,
     private grantedTermsValue: readonly DeferredTerm[],
     private requestedTermValue: DeferredTerm | null,
@@ -164,7 +164,7 @@ export class Company {
       // se complètent ensuite, et l'activation les exige (cf. `activate`).
       optional(identity.formeJuridique, "Forme juridique"),
       Siret.createOptional(identity.siret),
-      optional(identity.tvaIntracom, "TVA intracommunautaire"),
+      optional(identity.vatNumber, "TVA intracommunautaire"),
       contact,
       // Déclarée : aucun crédit accordé (elle paie à la commande), aucune demande,
       // aucune préférence d'acheminement, et **non validée** (pending) —
@@ -189,7 +189,7 @@ export class Company {
       input.enseigne,
       input.formeJuridique,
       Siret.createOptional(input.siret),
-      input.tvaIntracom,
+      input.vatNumber,
       input.contact,
       input.grantedTerms,
       input.requestedTerm,
@@ -290,8 +290,8 @@ export class Company {
     }
   }
 
-  get tvaIntracom(): string {
-    return this.tvaIntracomValue;
+  get vatNumber(): string {
+    return this.vatNumberValue;
   }
 
   get contact(): CompanyContact | null {
@@ -316,9 +316,9 @@ export class Company {
   }
 
   /** Édite l'identité **souple** (enseigne + TVA). L'identité légale reste figée. */
-  editSoftIdentity(input: { enseigne: string; tvaIntracom: string }): void {
+  editSoftIdentity(input: { enseigne: string; vatNumber: string }): void {
     this.enseigneValue = optional(input.enseigne, "Enseigne");
-    this.tvaIntracomValue = optional(input.tvaIntracom, "TVA intracommunautaire");
+    this.vatNumberValue = optional(input.vatNumber, "TVA intracommunautaire");
   }
 
   get nafCode(): string {
@@ -534,7 +534,7 @@ export class Company {
       raisonSociale: this.raisonSocialeValue,
       formeJuridique: this.formeJuridiqueValue,
       siret: this.siretDigits,
-      tvaIntracom: this.tvaIntracomValue,
+      vatNumber: this.vatNumberValue,
       contact: serializeContact(this.contactValue),
       grantedTerms: this.grantedTermsValue,
       requestedTerm: this.requestedTermValue,

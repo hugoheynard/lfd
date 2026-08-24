@@ -262,7 +262,7 @@ export class ComptesApiDouble {
       enseigne: 'Le Comptoir',
       formeJuridique: 'SAS',
       siret: '81245678900021',
-      tvaIntracom: '',
+      vatNumber: '',
       status: 'pending',
       // Vide par défaut : la société paie à la commande, comme tout le monde.
       grantedTerms: this.grantedTerms,
@@ -303,7 +303,7 @@ export function listedCompany(over: Record<string, unknown> = {}): Record<string
     enseigne: 'Le Comptoir',
     formeJuridique: 'SAS',
     siret: '81245678900021',
-    tvaIntracom: '',
+    vatNumber: '',
     status: 'active',
     grantedTerms: [],
     requestedTerm: null,

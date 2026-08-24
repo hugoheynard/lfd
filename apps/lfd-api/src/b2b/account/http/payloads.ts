@@ -7,7 +7,7 @@ import { z } from "zod";
  * objects, qui la tiennent quel que soit le chemin d'entrée. Ici on ne fait que
  * refuser ce qui n'a pas la bonne structure, avec un message lisible.
  *
- * Les champs facultatifs (`enseigne`, `tvaIntracom`, `phone`) ont pour défaut la
+ * Les champs facultatifs (`enseigne`, `vatNumber`, `phone`) ont pour défaut la
  * chaîne vide et non `undefined` : l'absence se représente d'un seul et même
  * façon dans tout le système, du formulaire à la colonne Postgres.
  */
@@ -50,7 +50,7 @@ export const createCompanyPayload = z.object({
   enseigne: z.string().default(""),
   formeJuridique: z.string().default(""),
   siret: z.string().default(""),
-  tvaIntracom: z.string().default(""),
+  vatNumber: z.string().default(""),
 });
 
 export type CreateCompanyPayload = z.infer<typeof createCompanyPayload>;

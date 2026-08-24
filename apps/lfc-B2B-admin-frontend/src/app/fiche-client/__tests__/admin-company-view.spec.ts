@@ -16,7 +16,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     enseigne: '',
     formeJuridique: 'SAS',
     siret: '81245678900021',
-    tvaIntracom: '',
+    vatNumber: '',
     status: 'pending',
     grantedTerms: [],
     requestedTerm: null,
@@ -51,17 +51,17 @@ describe('admin-company-view', () => {
   it('SIGNALE la TVA manquante quand la forme juridique l’impose', () => {
     // La fiche réclamait le SIRET dans un bandeau et se taisait sur la TVA :
     // deux pièces d'activation, une seule annoncée.
-    expect(toIdentityView(company({ tvaIntracom: '' })).vatMissing).toBe(true);
+    expect(toIdentityView(company({ vatNumber: '' })).vatMissing).toBe(true);
   });
 
   it('ne dit RIEN quand la forme n’y est pas assujettie', () => {
-    expect(toIdentityView(company({ tvaIntracom: '', vatNumberRequired: false })).vatMissing).toBe(
+    expect(toIdentityView(company({ vatNumber: '', vatNumberRequired: false })).vatMissing).toBe(
       false,
     );
   });
 
   it('ne dit rien non plus quand le numéro est là', () => {
-    expect(toIdentityView(company({ tvaIntracom: 'FR12345678901' })).vatMissing).toBe(false);
+    expect(toIdentityView(company({ vatNumber: 'FR12345678901' })).vatMissing).toBe(false);
   });
 
   it('mappe le ton du statut, `terminated` inclus', () => {

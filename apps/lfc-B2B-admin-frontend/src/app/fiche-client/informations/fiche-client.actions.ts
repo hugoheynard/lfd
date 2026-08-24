@@ -304,6 +304,6 @@ export function trimIdentity(draft: CompanyIdentityDraft): CompanyIdentityDraft 
     enseigne: draft.enseigne.trim(),
     formeJuridique: draft.formeJuridique.trim(),
     siret: draft.siret.trim(),
-    tvaIntracom: draft.tvaIntracom.trim(),
+    vatNumber: draft.vatNumber.trim(),
   };
 }

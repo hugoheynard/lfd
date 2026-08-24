@@ -92,7 +92,7 @@ export class AdminCompaniesController {
         payload.enseigne,
         payload.formeJuridique,
         payload.siret,
-        payload.tvaIntracom,
+        payload.vatNumber,
         payload.primaryContact ?? null,
         staffSub,
       ),

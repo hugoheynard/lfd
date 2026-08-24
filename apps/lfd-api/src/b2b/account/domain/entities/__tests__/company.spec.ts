@@ -22,7 +22,7 @@ const identity: CompanyIdentityInput = {
   enseigne: "Le Pain Quotidien du Marais",
   formeJuridique: "SAS",
   siret: "812 456 789 00021",
-  tvaIntracom: "FR32812456789",
+  vatNumber: "FR32812456789",
 };
 
 const AGENT = { sub: "auth0|staff", name: "Camille Rousseau", role: "commercial" };
@@ -119,9 +119,9 @@ describe("Company.declare", () => {
   it("accepte une TVA absente", () => {
     // Tous les clients ne sont pas assujettis : l'exiger bloquerait des
     // déclarations parfaitement légitimes.
-    const company = Company.declare({ ...identity, tvaIntracom: "" }, contact);
+    const company = Company.declare({ ...identity, vatNumber: "" }, contact);
 
-    expect(company.tvaIntracom).toBe("");
+    expect(company.vatNumber).toBe("");
   });
 
   it("retombe sur la raison sociale d'une société déjà en base sans enseigne", () => {
@@ -133,7 +133,7 @@ describe("Company.declare", () => {
       enseigne: "",
       formeJuridique: "SAS",
       siret: "812 456 789 00021",
-      tvaIntracom: "",
+      vatNumber: "",
       contact,
       grantedTerms: [],
       requestedTerm: null,

@@ -63,7 +63,7 @@ export class ActivationChecklist {
     const view = this.addressesView();
     const steps: Step[] = [];
 
-    if (company.vatNumberRequired && company.tvaIntracom.trim() === '') {
+    if (company.vatNumberRequired && company.vatNumber.trim() === '') {
       steps.push({
         key: 'vat',
         title: 'Numéro de TVA',
@@ -122,7 +122,7 @@ export class ActivationChecklist {
         data: {
           companyId: company.id,
           enseigne: company.enseigne,
-          tvaIntracom: company.tvaIntracom,
+          vatNumber: company.vatNumber,
         },
         side: 'right',
       });

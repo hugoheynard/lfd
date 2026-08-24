@@ -45,7 +45,7 @@ function withoutHolder(): Company {
     enseigne: "Café des Halles",
     formeJuridique: "",
     siret: "",
-    tvaIntracom: "",
+    vatNumber: "",
     contact: null,
     grantedTerms: [],
     requestedTerm: null,

@@ -37,8 +37,8 @@ export function toIdentityView(company: AdminCompanyDetail): CompanyIdentityView
     enseigne: company.enseigne,
     formeJuridique: company.formeJuridique,
     siret: formatSiret(company.siret),
-    tvaIntracom: company.tvaIntracom,
-    vatMissing: company.vatNumberRequired && company.tvaIntracom.trim() === '',
+    vatNumber: company.vatNumber,
+    vatMissing: company.vatNumberRequired && company.vatNumber.trim() === '',
     // Ce qui manque au greffe — la même liste que la synthèse du haut de page,
     // répétée là où on la corrige.
     missingLegal: missingLegalOf(company),

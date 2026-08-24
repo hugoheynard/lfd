@@ -55,7 +55,7 @@ export type Settlement = z.infer<typeof settlementSchema>;
  */
 export const updateIdentityPayloadSchema = z.object({
   enseigne: z.string().default(""),
-  tvaIntracom: z.string().default(""),
+  vatNumber: z.string().default(""),
   /**
    * Identité légale — envoyée seulement quand elle **manque** : un compte peut
    * s'ouvrir sans papiers (le commercial est chez le client), et ils arrivent

@@ -244,7 +244,7 @@ model Company {
   enseigne       String @default("") // nom commercial si différent
   formeJuridique String @map("forme_juridique") // SAS, SARL, EI…
   siret          String
-  tvaIntracom    String @default("") @map("tva_intracom")
+  vatNumber      String @default("") @map("tva_intracom")
 
   // Code NAF (activité principale) résolu depuis le SIRET via l'API entreprises —
   // vide tant qu'inconnu. Dimension d'analyse commerciale (segmenter l'acquisition
@@ -2526,9 +2526,9 @@ model Category {
 /// Les trois colonnes `*_tva_id` de `category` sont l'ancien modèle ; elles
 /// tombent au troisième déploiement (étendre → basculer → resserrer).
 model SalesContext {
-  id  String @id
+  id    String @id
   /// Identité stable, lue par le code (`emporter`, `surPlace`, `b2b`).
-  key String @unique
+  key   String @unique
   /// Ce qu'un humain lit à l'écran.
   label String
 
@@ -2573,13 +2573,13 @@ model SalesContext {
 /// **L'absence de ligne est la donnée** : « non réglé » ne s'écrit pas, il ne
 /// s'écrit rien (cf. `data-model/04`, motif de la clé partagée).
 model CategoryContextVat {
-  categoryId String   @map("category_id")
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  contextId  String   @map("context_id")
+  categoryId String       @map("category_id")
+  category   Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  contextId  String       @map("context_id")
   context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-  vatRateId  String   @map("tva_rate_id")
+  vatRateId  String       @map("tva_rate_id")
   /// `Restrict` (défaut) : un taux visé par une famille ne peut pas disparaître.
-  vatRate    VatRate  @relation(fields: [vatRateId], references: [id])
+  vatRate    VatRate      @relation(fields: [vatRateId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2644,13 +2644,13 @@ model Location {
 /// de l'URL) : clé primaire composite `(location, number)`. Suppression en
 /// cascade avec l'location.
 model LocationTable {
-  locationId String      @map("emplacement_id")
+  locationId String   @map("emplacement_id")
   location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  number        Int
-  qrCreated     Boolean     @default(false) @map("qr_created")
+  number     Int
+  qrCreated  Boolean  @default(false) @map("qr_created")
   /// Token rotatif du QR : le régénérer invalide l'ancien code imprimé.
   /// `NULL` = aucun QR généré.
-  token         String?
+  token      String?
 
   @@id([locationId, number])
   @@map("emplacement_table")
@@ -2712,13 +2712,13 @@ model Product {
 /// Ce n'est PAS une colonne sur `product` : trois colonnes fixes sont
 /// exactement ce que la famille vient de perdre.
 model ProductContextVat {
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  contextId String  @map("context_id")
+  productId String       @map("product_id")
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  contextId String       @map("context_id")
   context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-  vatRateId String  @map("tva_rate_id")
+  vatRateId String       @map("tva_rate_id")
   /// `Restrict` : un taux visé par un produit ne disparaît pas sous lui.
-  vatRate   VatRate @relation(fields: [vatRateId], references: [id])
+  vatRate   VatRate      @relation(fields: [vatRateId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -3011,15 +3011,15 @@ model ProductEditorial {
 /// ni type constaté, ni dimensions. `null` veut dire « pas mesuré », jamais
 /// « zéro » — un consommateur ne doit pas le coercer en taille.
 model MediaAsset {
-  id     String @id
-  url    String
-  alt    Json
+  id  String @id
+  url String
+  alt Json
 
   /// L'étiquette de la bibliothèque — courte, non traduite, faite pour
   /// RETROUVER. Distincte du texte alternatif, qui décrit l'image à qui ne la
   /// voit pas : deux informations, deux publics. Vide tant que personne n'a
   /// nommé le fichier.
-  name String @default("")
+  name   String @default("")
   focalX Float? @map("focal_x")
   focalY Float? @map("focal_y")
 

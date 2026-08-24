@@ -66,7 +66,7 @@ const valide = {
   enseigne: "Le Comptoir des Halles",
   formeJuridique: "SAS",
   siret: "812 456 789 00021",
-  tvaIntracom: "FR32812456789",
+  vatNumber: "FR32812456789",
   primaryContact: {
     firstName: "Camille",
     lastName: "Rousseau",

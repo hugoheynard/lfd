@@ -14,7 +14,7 @@ const view: AdminCompanyView = {
   enseigne: "Chez Léa",
   formeJuridique: "SAS",
   siret: "12345678901234",
-  tvaIntracom: "FR12345678901",
+  vatNumber: "FR12345678901",
   status: "pending",
   grantedTerms: [],
   primaryContact: {

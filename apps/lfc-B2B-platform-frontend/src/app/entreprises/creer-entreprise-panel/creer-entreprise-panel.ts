@@ -70,7 +70,7 @@ export class CreerEntreprisePanel {
         enseigne: draft.enseigne.trim(),
         formeJuridique: draft.formeJuridique.trim(),
         siret: draft.siret.trim(),
-        tvaIntracom: draft.tvaIntracom.trim(),
+        vatNumber: draft.vatNumber.trim(),
       },
       () => this.ref.close(),
     );

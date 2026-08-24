@@ -34,7 +34,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     }
     company.editSoftIdentity({
       enseigne: command.payload.enseigne,
-      tvaIntracom: command.payload.tvaIntracom,
+      vatNumber: command.payload.vatNumber,
     });
     // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
     // possible : ce serait un compte ouvert pour rien.
@@ -47,7 +47,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
 
     // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal
     // dédoublonne par (société, étape) : seule la 1re fois compte.
-    if (command.payload.tvaIntracom.trim() !== "") {
+    if (command.payload.vatNumber.trim() !== "") {
       this.events.publish(new CompanyStepReachedEvent(command.companyId, "vat"));
     }
   }

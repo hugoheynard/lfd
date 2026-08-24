@@ -13,7 +13,7 @@ import {
 const PARTIELLE: AdminIdentitePanelData = {
   companyId: 'cmp_1',
   enseigne: 'Le Comptoir',
-  tvaIntracom: 'FR32812456789',
+  vatNumber: 'FR32812456789',
   raisonSociale: 'Le Comptoir SAS',
   formeJuridique: 'SAS',
   siret: '',
@@ -23,7 +23,7 @@ const PARTIELLE: AdminIdentitePanelData = {
 const SANS_PAPIERS: AdminIdentitePanelData = {
   companyId: 'cmp_2',
   enseigne: 'Le Comptoir',
-  tvaIntracom: '',
+  vatNumber: '',
   raisonSociale: '',
   formeJuridique: '',
   siret: '',
@@ -60,7 +60,7 @@ describe('AdminIdentitePanel', () => {
 
     expect(panel['draft']()).toEqual({
       enseigne: 'Le Comptoir',
-      tvaIntracom: 'FR32812456789',
+      vatNumber: 'FR32812456789',
       raisonSociale: 'Le Comptoir SAS',
       formeJuridique: 'SAS',
       siret: '',

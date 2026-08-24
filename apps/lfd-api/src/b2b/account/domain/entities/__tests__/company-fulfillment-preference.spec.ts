@@ -10,7 +10,7 @@ function sampleCompany(): Company {
     enseigne: "Le Comptoir",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    tvaIntracom: "",
+    vatNumber: "",
     contact: ContactDetails.create({
       firstName: "Camille",
       lastName: "Rousseau",

@@ -36,7 +36,7 @@ export class FicheClientPanels {
         data: {
           companyId: company.id,
           enseigne: company.enseigne,
-          tvaIntracom: company.tvaIntracom,
+          vatNumber: company.vatNumber,
           raisonSociale: company.raisonSociale,
           formeJuridique: company.formeJuridique,
           siret: company.siret,

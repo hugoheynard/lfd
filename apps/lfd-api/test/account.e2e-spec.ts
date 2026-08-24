@@ -179,7 +179,7 @@ describe("POST /companies", () => {
     enseigne: "Le Pain Quotidien du Marais",
     formeJuridique: "SAS",
     siret: "812 456 789 00021",
-    tvaIntracom: "FR32812456789",
+    vatNumber: "FR32812456789",
   };
 
   it("déclare l'entreprise, la laisse en attente, et fait du créateur son gestionnaire", async () => {

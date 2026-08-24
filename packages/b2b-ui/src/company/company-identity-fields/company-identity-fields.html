@@ -69,6 +69,6 @@
   "
   [required]="vatRequired() && !legalDeferred()"
   [optional]="!vatRequired()"
-  [value]="value().tvaIntracom"
-  (valueChange)="setTvaIntracom($event)"
+  [value]="value().vatNumber"
+  (valueChange)="setVatNumber($event)"
 />

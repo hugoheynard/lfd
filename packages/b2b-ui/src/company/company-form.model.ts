@@ -13,7 +13,7 @@ export interface CompanyIdentityDraft {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
 }
 
 /**
@@ -41,7 +41,7 @@ export const EMPTY_COMPANY_IDENTITY_DRAFT: CompanyIdentityDraft = {
   enseigne: '',
   formeJuridique: '',
   siret: '',
-  tvaIntracom: '',
+  vatNumber: '',
 };
 
 /** Brouillon de contact vide. */

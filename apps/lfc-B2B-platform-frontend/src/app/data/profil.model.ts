@@ -36,7 +36,7 @@ export interface Etablissement {
   readonly formeJuridique: string;
   readonly siret: string;
   /** N° de TVA intracommunautaire — `''` si non assujetti / inconnu. */
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
 }
 
 /** Un interlocuteur — contact principal ou représentant. */

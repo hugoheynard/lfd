@@ -66,7 +66,7 @@ export interface AdminCompany {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   readonly status: CompanyStatus;
   /**
    * Les crédits **accordés**, cumulatifs et possiblement vides. Vide = la

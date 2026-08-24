@@ -119,7 +119,7 @@ function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolea
   switch (piece) {
     case "vat":
       // Non assujetti ⇒ la TVA n'est jamais « manquante » (rien à exiger).
-      return !company.vatNumberRequired || company.tvaIntracom.trim() !== "";
+      return !company.vatNumberRequired || company.vatNumber.trim() !== "";
     case "kbis":
       // **Certifié**, et non « déposé ». Se contenter de la présence reviendrait
       // à cocher sur la foi d'un PDF que personne n'a ouvert — n'importe quel

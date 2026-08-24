@@ -81,7 +81,7 @@ function fill(page: InformationsPage): void {
     enseigne: '  Le Comptoir  ',
     formeJuridique: '',
     siret: '',
-    tvaIntracom: '',
+    vatNumber: '',
   });
   page['holder'].set({
     firstName: 'Jean',
@@ -128,7 +128,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       enseigne: 'Le Comptoir',
       formeJuridique: '',
       siret: '',
-      tvaIntracom: '',
+      vatNumber: '',
     });
 
     expect(page['canCreate']()).toBe(true);
@@ -143,7 +143,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       enseigne: 'Le Comptoir',
       formeJuridique: '',
       siret: '',
-      tvaIntracom: '',
+      vatNumber: '',
     });
 
     await page['createAccount']();
@@ -154,7 +154,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
         enseigne: 'Le Comptoir',
         formeJuridique: '',
         siret: '',
-        tvaIntracom: '',
+        vatNumber: '',
       },
       contact: undefined,
     });
@@ -171,7 +171,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
         enseigne: 'Le Comptoir',
         formeJuridique: '',
         siret: '',
-        tvaIntracom: '',
+        vatNumber: '',
       },
       contact: {
         firstName: 'Jean',

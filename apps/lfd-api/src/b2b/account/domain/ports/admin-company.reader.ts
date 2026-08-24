@@ -50,7 +50,7 @@ export interface AdminCompanyView {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
-  readonly tvaIntracom: string;
+  readonly vatNumber: string;
   readonly status: CompanyStatus;
   /** Condition de règlement **convenue** (écrite par le staff). */
   readonly grantedTerms: readonly DeferredTerm[];

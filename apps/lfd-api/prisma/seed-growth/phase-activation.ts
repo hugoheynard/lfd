@@ -140,7 +140,7 @@ async function advancePieces(
   if (depth >= 1) {
     const payload: UpdateIdentityPayload = {
       enseigne: "",
-      tvaIntracom: `FR${validSiret(1).slice(0, 11)}`,
+      vatNumber: `FR${validSiret(1).slice(0, 11)}`,
     };
     await step(() =>
       harness.commands.execute<UpdateCompanyIdentityCommand, void>(
