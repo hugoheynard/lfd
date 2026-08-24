@@ -502,10 +502,6 @@ export class ProductFormStore {
     }
   }
 
-  addMedia(): void {
-    this.media.update((current) => [...current, { role: DEFAULT_MEDIA_ROLE, url: '', name: '' }]);
-  }
-
   /**
    * Dépose un fichier et l'ajoute à la liste — SANS enregistrer la section.
    *
@@ -544,9 +540,14 @@ export class ProductFormStore {
     this.media.update((current) => current.filter((_, position) => position !== index));
   }
 
-  setMedia(index: number, key: 'role' | 'url' | 'name', value: string): void {
+  /**
+   * Renomme un visuel — la SEULE écriture libre de la liste. L'URL, elle, vient
+   * du dépôt : elle désigne un objet de notre stockage, et la saisir à la main
+   * ferait pointer une fiche vers un fichier que personne ici ne garde.
+   */
+  setMediaName(index: number, name: string): void {
     this.media.update((current) =>
-      current.map((slot, position) => (position === index ? { ...slot, [key]: value } : slot)),
+      current.map((slot, position) => (position === index ? { ...slot, name } : slot)),
     );
   }
 

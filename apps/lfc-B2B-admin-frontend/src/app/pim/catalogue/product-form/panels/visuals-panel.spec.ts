@@ -43,6 +43,24 @@ function refusing(message: string): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
+/** Un dépôt qui aboutit — l'API rend l'objet tel qu'elle le rend vraiment. */
+function accepting(): ProductFormStore {
+  TestBed.configureTestingModule({
+    providers: [
+      ProductFormStore,
+      provideHttpClient(),
+      {
+        provide: ProductHttpApi,
+        useValue: {
+          uploadMedia: (): Promise<{ url: string; width: number; height: number }> =>
+            Promise.resolve({ url: 'https://media.test/depose.png', width: 800, height: 600 }),
+        },
+      },
+    ],
+  });
+  return TestBed.inject(ProductFormStore);
+}
+
 describe('VisualsPanel — le refus du serveur', () => {
   it('affiche la raison du refus, pas le code HTTP', async () => {
     const reason = 'Visuel refusé : format non accepté — PNG, JPEG ou WebP attendus.';
@@ -63,19 +81,15 @@ describe('VisualsPanel — le refus du serveur', () => {
 });
 
 describe('VisualsPanel', () => {
-  it('ajoute un visuel via le store au clic', () => {
-    const store = setup();
-    const fixture = TestBed.createComponent(VisualsPanel);
-    fixture.detectChanges();
-    const add = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('Ajouter'),
-    );
-    (add as HTMLButtonElement).click();
-    fixture.detectChanges();
+  it('un visuel déposé prend un rôle NEUTRE', async () => {
+    // L'API en exige un, mais l'écran n'en propose plus. Le premier déposé
+    // devenait « hero », ce qui affirmait une hiérarchie que ni Shopify ni le
+    // B2B ne lisent.
+    const store = accepting();
+
+    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.png'));
+
     expect(store.media()).toHaveLength(1);
-    // Un rôle NEUTRE : l'API en exige un, mais l'écran n'en propose plus. Le
-    // premier déposé devenait « hero », ce qui affirmait une hiérarchie que ni
-    // Shopify ni le B2B ne lisent.
     expect(store.media()[0]?.role).toBe('gallery');
   });
 
@@ -133,12 +147,28 @@ describe('VisualsPanel', () => {
     ).toContain(':1');
   });
 
-  it("dit qu'une image externe n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
+  it("dit qu'une image n'est pas mesurée, plutôt que d'inventer 0 × 0", () => {
     const store = setup();
-    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png', name: '' }]);
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', name: '' }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('non hébergée');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Dimensions inconnues');
+  });
+
+  it("n'offre AUCUN chemin pour saisir une URL — un visuel entre par le dépôt", () => {
+    // Le dépôt écrit dans notre stockage ; une URL saisie ferait pointer la
+    // fiche vers un fichier que personne ici ne garde, et qui peut disparaître
+    // sans que rien ne le signale.
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', name: 'a' }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).not.toContain('URL');
+    const urlInputs = Array.from(host.querySelectorAll('input')).filter(
+      (input) => input.type !== 'file',
+    );
+    expect(urlInputs).toEqual([]);
   });
 
   it('marque la tuile d’un liseré, et détaille AU-DESSUS de la grille', () => {

@@ -272,14 +272,6 @@ app-lang-switch {
   aspect-ratio: 4 / 3;
 }
 
-.media-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-  align-items: center;
-  margin-top: var(--fold-space-md);
-}
-
 /* Diffusion par canal : deux blocs côte à côte, qui se replient l'un sous
    l'autre quand la colonne se resserre. */
 .channels {

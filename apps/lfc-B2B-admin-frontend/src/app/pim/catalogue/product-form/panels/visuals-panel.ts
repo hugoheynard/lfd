@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
-  FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldFileDropzoneComponent,
@@ -55,13 +54,7 @@ function formatBytes(bytes: number): string {
 @Component({
   selector: 'app-visuals-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    LangSwitch,
-    FoldButtonComponent,
-    FoldButtonIconComponent,
-    FoldCalloutComponent,
-    FoldFileDropzoneComponent,
-  ],
+  imports: [LangSwitch, FoldButtonIconComponent, FoldCalloutComponent, FoldFileDropzoneComponent],
   templateUrl: './visuals-panel.html',
   styleUrl: './panel.scss',
 })
@@ -118,13 +111,15 @@ export class VisualsPanel {
 
   /**
    * Résolution, poids, format — ce qu'on a CONSTATÉ dans les octets au dépôt.
-   * Jamais « 0 × 0 » : une image externe n'est pas mesurée, et le dire vaut
-   * mieux que d'inventer une dimension.
+   *
+   * Le repli couvre les visuels d'avant la mesure, pas des images d'ailleurs :
+   * tout fichier entre par le dépôt et vit chez nous. On dit qu'on ne sait pas
+   * plutôt que d'inventer « 0 × 0 ».
    */
   protected metaOf(slot: MediaSlot): string {
     const { width, height, bytes, contentType } = slot;
     if (typeof width !== 'number' || typeof height !== 'number') {
-      return 'Image externe — non hébergée';
+      return 'Dimensions inconnues';
     }
     const parts = [`${String(width)} × ${String(height)}`];
     if (typeof bytes === 'number') {
@@ -172,7 +167,7 @@ export class VisualsPanel {
           this.store.removeMedia(index);
           return;
         }
-        this.store.setMedia(index, 'name', result.name);
+        this.store.setMediaName(index, result.name);
         this.store.setMediaAltText(index, result.alt);
       });
   }
