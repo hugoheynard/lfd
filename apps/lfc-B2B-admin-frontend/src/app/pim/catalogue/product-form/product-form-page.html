@@ -76,44 +76,55 @@
              que la section CONTIENT, serrée sous son titre, et pas en
              `[description]` dont l'espacement de paragraphe la détachait du
              titre qu'elle qualifie. -->
-        <fold-page-section [title]="section.label" separator>
-          <span sectionSubtitle>{{ section.description }}</span>
-          <app-section-state sectionActions [section]="section.key" (save)="saveSection($event)" />
-          @switch (section.key) {
-            @case ('identite') {
-              <app-identity-panel />
+        <fold-card>
+          <fold-page-section [title]="section.label" separator>
+            <span sectionSubtitle>{{ section.description }}</span>
+            <app-section-state
+              sectionActions
+              [section]="section.key"
+              (save)="saveSection($event)"
+            />
+            @switch (section.key) {
+              @case ('identite') {
+                <app-identity-panel />
+              }
+              @case ('tarif') {
+                <app-pricing-panel />
+              }
+              @case ('fiche') {
+                <app-regulatory-panel />
+              }
+              @case ('communication') {
+                <app-communication-panel />
+              }
+              @case ('visuels') {
+                <app-visuals-panel />
+              }
             }
-            @case ('tarif') {
-              <app-pricing-panel />
-            }
-            @case ('fiche') {
-              <app-regulatory-panel />
-            }
-            @case ('communication') {
-              <app-communication-panel />
-            }
-            @case ('visuels') {
-              <app-visuals-panel />
-            }
-          }
-        </fold-page-section>
+          </fold-page-section>
+        </fold-card>
       }
 
       <!-- Deux sections en lecture seule : elles n'ont pas d'enregistrement
            propre, donc pas d'indicateur d'état. -->
-      <fold-page-section title="Canaux de vente" separator>
-        <span sectionSubtitle>
-          Hérités de la famille du produit : la provenance, les boutiques concernées et le cas « non
-          proposé ».
-        </span>
-        <app-channels-panel />
-      </fold-page-section>
-      <fold-page-section title="Diffusion par canal" separator>
-        <span sectionSubtitle>
-          Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau d'onglets.
-        </span>
-        <app-integrations-panel />
-      </fold-page-section>
+      <fold-card>
+        <fold-page-section title="Canaux de vente" separator>
+          <span sectionSubtitle>
+            Hérités de la famille du produit : la provenance, les boutiques concernées et le cas «
+            non proposé ».
+          </span>
+          <app-channels-panel />
+        </fold-page-section>
+      </fold-card>
+      <fold-card>
+        <fold-page-section title="Diffusion par canal" separator>
+          <span sectionSubtitle>
+            Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
+            d'onglets.
+          </span>
+          <app-integrations-panel />
+        </fold-page-section>
+      </fold-card>
 
       <app-publish-rail asideRight (saveAll)="saveAll()" />
     </fold-aside-layout>

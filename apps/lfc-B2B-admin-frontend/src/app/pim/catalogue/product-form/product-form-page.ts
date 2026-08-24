@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   FoldBackLinkComponent,
   FoldBadgeComponent,
+  FoldCardComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
@@ -70,6 +71,7 @@ interface PageSection {
     FoldPageLayoutComponent,
     FoldBackLinkComponent,
     FoldBadgeComponent,
+    FoldCardComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldDropdownComponent,
