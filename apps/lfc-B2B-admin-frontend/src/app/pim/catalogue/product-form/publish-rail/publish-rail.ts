@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
+import { SOURCE_LOCALE } from '@lfd/pim-contracts';
+
 import { ProductFormStore } from '../product-form-store';
 
 interface Check {
@@ -49,7 +51,12 @@ export class PublishRail {
       label: 'Allergènes déclarés',
       done: this.store.declaresNone() || this.store.selected().length > 0,
     },
-    { label: 'Description', done: this.store.editorial().descriptionShort.trim() !== '' },
+    {
+      // La SOURCE fait foi pour la complétude : une fiche est publiable en
+      // français, les traductions sont un autre sujet (et un autre indicateur).
+      label: 'Description',
+      done: (this.store.editorial().descriptionShort?.[SOURCE_LOCALE] ?? '').trim() !== '',
+    },
     { label: 'Au moins un visuel', done: this.store.media().length > 0 },
   ]);
 

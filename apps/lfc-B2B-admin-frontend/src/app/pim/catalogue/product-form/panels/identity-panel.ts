@@ -1,18 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { LOCALES, SOURCE_LOCALE, type Locale } from '@lfd/pim-contracts';
+import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 
 import { FoldInputComponent, FoldListboxComponent, FoldOptionComponent } from 'fold-ng';
 
 import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
+import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
 import { ProductFormStore } from '../product-form-store';
-
-/** Les langues nommées, pour la phrase qui dit ce qui manque. */
-const LOCALE_NAMES: Readonly<Record<Locale, string>> = {
-  fr: 'français',
-  en: 'anglais',
-  it: 'italien',
-};
 
 /**
  * Panneau Identité — nom, nature, famille. La **référence** y figure en lecture
@@ -41,15 +35,7 @@ export class IdentityPanel {
    * laquelle pèche. Rien à dire quand tout est traduit — une ligne qui annonce
    * « rien ne manque » est du bruit permanent.
    */
-  protected readonly missingHint = computed(() => {
-    const missing = this.store.nameMissing().filter((locale) => locale !== SOURCE_LOCALE);
-    if (missing.length === 0) {
-      return undefined;
-    }
-    const named = missing.map((locale) => LOCALE_NAMES[locale]).join(' et ');
-    const done = LOCALES.filter((locale) => !missing.some((m) => m === locale))
-      .map((locale) => LOCALE_NAMES[locale])
-      .join(', ');
-    return `Le nom manque en ${named}. Renseigné en ${done}.`;
-  });
+  protected readonly missingHint = computed(() =>
+    missingSentence('Le nom manque', this.store.nameMissing()),
+  );
 }

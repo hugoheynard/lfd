@@ -68,13 +68,13 @@ describe('backendToProduct', () => {
 
   it('remonte descriptionFr depuis l’éditorial enrichi', () => {
     const product = backendToProduct(backendProduct(), {
-      descriptionShort: 'Torréfaction douce',
+      descriptionShort: { fr: 'Torréfaction douce' },
     });
     expect(product.descriptionFr).toBe('Torréfaction douce');
   });
 
   it('ignore un éditorial vide', () => {
-    const product = backendToProduct(backendProduct(), { descriptionShort: '' });
+    const product = backendToProduct(backendProduct(), { descriptionShort: { fr: '' } });
     expect(product.descriptionFr).toBeUndefined();
   });
 

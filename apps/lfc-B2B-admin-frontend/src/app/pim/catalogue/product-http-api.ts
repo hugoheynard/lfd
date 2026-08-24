@@ -9,6 +9,7 @@ import type {
   VariantView,
   LocalizedText,
 } from '@lfd/pim-contracts';
+import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -36,14 +37,22 @@ const EMPTY_NUTRITION: NutritionValues = {
 };
 
 /** Couche éditoriale à plat (FR), champs vides = chaîne vide — pour l'édition. */
+/**
+ * La couche éditoriale, dans toutes ses langues. `brand` reste une chaîne : une
+ * marque est un nom propre, elle ne se traduit pas.
+ *
+ * `null` plutôt que `''` pour l'absence : une valeur localisée absente n'a pas
+ * de langue source, et `{ fr: '' }` serait comptée comme renseignée par tout ce
+ * qui lit les locales remplies.
+ */
 export interface EditorialFields {
-  readonly descriptionShort: string;
-  readonly descriptionLong: string;
-  readonly story: string;
-  readonly pairing: string;
+  readonly descriptionShort: LocalizedText | null;
+  readonly descriptionLong: LocalizedText | null;
+  readonly story: LocalizedText | null;
+  readonly pairing: LocalizedText | null;
   readonly brand: string;
-  readonly seoTitle: string;
-  readonly seoDescription: string;
+  readonly seoTitle: LocalizedText | null;
+  readonly seoDescription: LocalizedText | null;
 }
 
 /**
@@ -57,7 +66,8 @@ export interface EditorialFields {
 export interface MediaSlot {
   role: string;
   url: string;
-  alt?: string;
+  /** Le SEUL champ d'image qui se traduit. */
+  alt?: LocalizedText;
   readonly width?: number | null;
   readonly height?: number | null;
 }
@@ -88,13 +98,13 @@ function toNutritionValues(nutrition: VariantNutritionView | null): NutritionVal
 
 function toEditorialFields(editorial: ProductEditorialView | null): EditorialFields {
   return {
-    descriptionShort: editorial?.descriptionShort ?? '',
-    descriptionLong: editorial?.descriptionLong ?? '',
-    story: editorial?.story ?? '',
-    pairing: editorial?.pairing ?? '',
+    descriptionShort: editorial?.descriptionShort ?? null,
+    descriptionLong: editorial?.descriptionLong ?? null,
+    story: editorial?.story ?? null,
+    pairing: editorial?.pairing ?? null,
     brand: editorial?.brand ?? '',
-    seoTitle: editorial?.seoTitle ?? '',
-    seoDescription: editorial?.seoDescription ?? '',
+    seoTitle: editorial?.seoTitle ?? null,
+    seoDescription: editorial?.seoDescription ?? null,
   };
 }
 
@@ -120,12 +130,12 @@ function toVariant(variant: VariantView): Variant {
  */
 export function backendToProduct(
   product: ProductView,
-  editorial?: { descriptionShort: string | null } | null,
+  editorial?: { descriptionShort: LocalizedText | null } | null,
 ): Product {
   const base = defaultVariant(product);
   const price = base?.priceCents;
   const weight = base?.weightGrams;
-  const description = editorial?.descriptionShort;
+  const description = editorial?.descriptionShort?.[SOURCE_LOCALE];
   return {
     id: product.id,
     sku: product.sku,
@@ -216,7 +226,7 @@ export class ProductHttpApi {
         ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
         ...(input.descriptionFr === undefined || input.descriptionFr === ''
           ? {}
-          : { editorial: { descriptionShort: input.descriptionFr } }),
+          : { editorial: { descriptionShort: { fr: input.descriptionFr } } }),
       }),
     );
     if (input.priceEur !== undefined || input.weightGrams !== undefined) {
@@ -267,7 +277,7 @@ export class ProductHttpApi {
       media: media.map((slot) => ({
         role: slot.role,
         url: slot.url,
-        ...(slot.alt === undefined || slot.alt === '' ? {} : { alt: slot.alt }),
+        ...(slot.alt === undefined ? {} : { alt: slot.alt }),
       })),
     });
   }

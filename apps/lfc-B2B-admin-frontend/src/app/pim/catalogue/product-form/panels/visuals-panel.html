@@ -1,3 +1,14 @@
+<!-- Le sélecteur de CETTE section. Il ne fait basculer QUE les textes
+     alternatifs : le rôle, l'URL et les dimensions d'un visuel ne se traduisent
+     pas, et l'image encore moins. -->
+<app-lang-switch
+  [lang]="store.mediaLocale()"
+  (langChange)="store.mediaLocale.set($event)"
+  [missing]="store.mediaMissing()"
+  [hint]="missingHint()"
+  ariaLabel="Langue des textes alternatifs"
+/>
+
 <div class="stack">
   <div class="media">
     @for (slot of store.media(); track $index) {
@@ -6,7 +17,7 @@
              la liste saute au chargement de chaque image. -->
         <div class="media-thumb" [style.aspect-ratio]="ratioOf(slot)">
           @if (slot.url !== '') {
-            <img [src]="slot.url" [alt]="slot.alt ?? ''" loading="lazy" />
+            <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
           }
         </div>
         <div class="media-fields">
@@ -19,11 +30,12 @@
             }
           </fold-listbox>
           <!-- Accessibilité ET référencement : ce champ n'était pas exposé, et
-               le texte alternatif retombait donc sur l'URL. -->
+               le texte alternatif retombait donc sur l'URL. C'est le SEUL champ
+               d'image qui se traduit — le sélecteur en haut le fait basculer. -->
           <fold-input
-            placeholder="Ce que montre l'image"
-            [value]="slot.alt ?? ''"
-            (valueChange)="store.setMedia($index, 'alt', $event)"
+            [placeholder]="altPlaceholder()"
+            [value]="store.mediaAlt($index)"
+            (valueChange)="store.setMediaAlt($index, $event)"
           />
           @if (slot.url === '') {
             <fold-input

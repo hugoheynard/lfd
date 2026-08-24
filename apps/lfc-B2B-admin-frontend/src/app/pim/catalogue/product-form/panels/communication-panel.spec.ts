@@ -24,7 +24,7 @@ describe('CommunicationPanel', () => {
 
   it('reflète l’éditorial du store', () => {
     const store = setup();
-    store.editorial.update((e) => ({ ...e, descriptionLong: 'Torréfaction' }));
+    store.editorial.update((e) => ({ ...e, descriptionLong: { fr: 'Torréfaction' } }));
     const fixture = TestBed.createComponent(CommunicationPanel);
     fixture.detectChanges();
     const textarea = (fixture.nativeElement as HTMLElement).querySelector('textarea');

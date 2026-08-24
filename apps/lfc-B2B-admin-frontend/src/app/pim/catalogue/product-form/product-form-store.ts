@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
 
 import {
+  LOCALES,
   SOURCE_LOCALE,
   missingLocales,
   writeLocalized,
@@ -100,14 +101,50 @@ const EMPTY_NUTRITION: NutritionValues = {
 };
 
 const EMPTY_EDITORIAL: EditorialFields = {
-  descriptionShort: '',
-  descriptionLong: '',
-  story: '',
-  pairing: '',
+  descriptionShort: null,
+  descriptionLong: null,
+  story: null,
+  pairing: null,
   brand: '',
-  seoTitle: '',
-  seoDescription: '',
+  seoTitle: null,
+  seoDescription: null,
 };
+
+/**
+ * Les champs éditoriaux qui se TRADUISENT. `brand` n'y est pas : une marque est
+ * un nom propre. Une table plutôt qu'une suite de `if` — ajouter un champ
+ * traduisible se fait ici, et le sélecteur de langue le prend en compte sans
+ * rien savoir de lui.
+ */
+const LOCALIZED_EDITORIAL_KEYS = [
+  'descriptionShort',
+  'descriptionLong',
+  'story',
+  'pairing',
+  'seoTitle',
+  'seoDescription',
+] as const satisfies readonly (keyof EditorialFields)[];
+
+export type LocalizedEditorialKey = (typeof LOCALIZED_EDITORIAL_KEYS)[number];
+
+/**
+ * Écrit une locale dans un texte qui peut ne pas exister encore.
+ *
+ * `null` (rien de renseigné) et `{ fr: '' }` (une source vide) ne sont pas la
+ * même chose : le premier ne compte aucune langue, le second en compterait une.
+ * Écrire une valeur vide dans un texte absent le laisse donc absent.
+ */
+function writeText(
+  text: LocalizedText | null,
+  locale: Locale,
+  value: string,
+): LocalizedText | null {
+  const trimmed = value.trim();
+  if (text === null) {
+    return trimmed === '' || locale !== SOURCE_LOCALE ? text : { [SOURCE_LOCALE]: trimmed };
+  }
+  return writeLocalized(text, locale, value);
+}
 
 /**
  * Store du formulaire produit — **fourni au niveau de la page** (une instance
@@ -164,6 +201,45 @@ export class ProductFormStore {
 
   /** Les langues du nom qui restent à traduire — le point ambre du sélecteur. */
   readonly nameMissing = computed(() => missingLocales(this.nameText()));
+
+  /**
+   * La langue en cours d'édition de la DESCRIPTION — la sienne, distincte de
+   * celle du nom. Deux sections localisées ne basculent pas ensemble : on peut
+   * très bien traduire les descriptions sans toucher aux noms, et un sélecteur
+   * partagé forcerait à faire les deux d'un coup.
+   */
+  readonly editorialLocale = signal<Locale>(SOURCE_LOCALE);
+
+  /** Un champ éditorial traduisible, dans la langue affichée. */
+  editorialText(key: LocalizedEditorialKey): string {
+    return this.editorial()[key]?.[this.editorialLocale()] ?? '';
+  }
+
+  /** Écrit un champ éditorial dans la langue affichée, sans toucher aux autres. */
+  setEditorialText(key: LocalizedEditorialKey, value: string): void {
+    this.editorial.update((fields) => ({
+      ...fields,
+      [key]: writeText(fields[key], this.editorialLocale(), value),
+    }));
+  }
+
+  /**
+   * Les langues qu'il reste à traduire pour la SECTION.
+   *
+   * Un champ vide partout ne « manque » dans aucune langue — il est simplement
+   * vide, et le marquer d'un point ambre transformerait chaque fiche neuve en
+   * alerte permanente. Une langue manque quand un champ est écrit dans la langue
+   * source et pas dans celle-là : là, il y a bien quelque chose à traduire.
+   */
+  readonly editorialMissing = computed(() => {
+    const fields = this.editorial();
+    return LOCALES.filter((locale) =>
+      LOCALIZED_EDITORIAL_KEYS.some((key) => {
+        const text = fields[key];
+        return text !== null && (text[SOURCE_LOCALE] ?? '') !== '' && (text[locale] ?? '') === '';
+      }),
+    );
+  });
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
   readonly priceEur = signal<number | null>(null);
@@ -391,8 +467,9 @@ export class ProductFormStore {
     }
   }
 
-  setEditorial(key: keyof EditorialFields, value: string): void {
-    this.editorial.update((current) => ({ ...current, [key]: value }));
+  /** Le seul champ éditorial NON traduisible — un nom propre. */
+  setBrand(value: string): void {
+    this.editorial.update((current) => ({ ...current, brand: value }));
   }
 
   setNutrition(key: keyof NutritionValues, value: number | null): void {
@@ -456,11 +533,52 @@ export class ProductFormStore {
     this.media.update((current) => current.filter((_, position) => position !== index));
   }
 
-  setMedia(index: number, key: 'role' | 'url' | 'alt', value: string): void {
+  setMedia(index: number, key: 'role' | 'url', value: string): void {
     this.media.update((current) =>
       current.map((slot, position) => (position === index ? { ...slot, [key]: value } : slot)),
     );
   }
+
+  /** La langue en cours d'édition des textes alternatifs — la sienne. */
+  readonly mediaLocale = signal<Locale>(SOURCE_LOCALE);
+
+  /** Le texte alternatif d'un visuel, dans la langue affichée. */
+  mediaAlt(index: number): string {
+    return this.media()[index]?.alt?.[this.mediaLocale()] ?? '';
+  }
+
+  /** Écrit le texte alternatif dans la langue affichée, sans toucher aux autres. */
+  setMediaAlt(index: number, value: string): void {
+    this.media.update((current) =>
+      current.map((slot, position) => {
+        if (position !== index) {
+          return slot;
+        }
+        const alt = writeText(slot.alt ?? null, this.mediaLocale(), value);
+        // `exactOptionalPropertyTypes` : une clé ABSENTE et une clé à `undefined`
+        // ne sont pas la même chose, et c'est bien la première qu'on veut —
+        // « pas d'alternative » plutôt que « alternative indéfinie ».
+        const { alt: _dropped, ...rest } = slot;
+        return alt === null ? rest : { ...rest, alt };
+      }),
+    );
+  }
+
+  /**
+   * Les langues qu'il reste à traduire sur les visuels. Même règle que
+   * l'éditorial : un visuel sans alternative du tout n'est pas « à traduire »,
+   * il est à rédiger — et c'est la complétude qui le dit, pas ce point-ci.
+   */
+  readonly mediaMissing = computed(() =>
+    LOCALES.filter((locale) =>
+      this.media().some(
+        (slot) =>
+          slot.alt !== undefined &&
+          (slot.alt[SOURCE_LOCALE] ?? '') !== '' &&
+          (slot.alt[locale] ?? '') === '',
+      ),
+    ),
+  );
 
   // ── Chargement / mode ────────────────────────────────────────────────────
 
@@ -508,7 +626,7 @@ export class ProductFormStore {
     try {
       const price = this.priceEur();
       const weight = this.weightGrams();
-      const description = this.editorial().descriptionShort.trim();
+      const description = (this.editorial().descriptionShort?.[SOURCE_LOCALE] ?? '').trim();
       const declares = this.declaresNone() || this.selected().length > 0;
       const created = await this.api.createProduct({
         name: this.nameText(),

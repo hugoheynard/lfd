@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
@@ -7,6 +7,8 @@ import {
   FoldOptionComponent,
 } from 'fold-ng';
 
+import { LangSwitch } from '../../../../shared/lang-switch/lang-switch';
+import { LOCALE_NAMES, missingSentence } from '../../../../shared/lang-switch/locale-names';
 import { ProductFormStore } from '../product-form-store';
 import type { MediaSlot } from '../../product-http-api';
 
@@ -31,12 +33,27 @@ const UNKNOWN_RATIO = '1 / 1';
 @Component({
   selector: 'app-visuals-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldInputComponent, FoldListboxComponent, FoldOptionComponent],
+  imports: [
+    LangSwitch,
+    FoldButtonComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+    FoldOptionComponent,
+  ],
   templateUrl: './visuals-panel.html',
   styleUrl: './panel.scss',
 })
 export class VisualsPanel {
   protected readonly store = inject(ProductFormStore);
+
+  /** L'invite nomme la langue — sans elle, on croit relire le même champ. */
+  protected readonly altPlaceholder = computed(
+    () => `Ce que montre l'image (${LOCALE_NAMES[this.store.mediaLocale()]})`,
+  );
+
+  protected readonly missingHint = computed(() =>
+    missingSentence('Des textes alternatifs manquent', this.store.mediaMissing()),
+  );
   protected readonly roles = MEDIA_ROLES;
 
   /**

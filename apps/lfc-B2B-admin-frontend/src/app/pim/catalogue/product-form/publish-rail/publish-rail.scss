@@ -1,13 +1,15 @@
+/* Le rail remplit la colonne que la mise en page lui donne.
+   Il portait son PROPRE `position: sticky; align-self: start` — et
+   `fold-aside-layout` le rend déjà collant, avec son propre décalage. Le doublon
+   ne rendait pas le rail « plus collant » : `align-self: start` annulait
+   l'étirement de la colonne, donc chaque bloc se rétrécissait à la largeur de
+   son texte le plus long, en laissant du vide à droite. Réimplémenter ce que le
+   conteneur possède coûte ici une largeur. */
 :host {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
-  /* `sticky` n'a d'amplitude que si aucun ancêtre ne clippe en `hidden` — un
-     ancêtre en `hidden` devient le conteneur de défilement le plus proche.
-     `fold-card` utilise `clip` pour cette raison exacte. */
-  position: sticky;
-  top: var(--fold-space-lg);
-  align-self: start;
+  min-width: 0;
 }
 
 .pr-block {

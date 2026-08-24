@@ -1,29 +1,47 @@
+<!-- Le sélecteur de CETTE section : les textes éditoriaux basculent ensemble,
+     et la marque ne bascule pas — c'est un nom propre. -->
+<app-lang-switch
+  [lang]="store.editorialLocale()"
+  (langChange)="store.editorialLocale.set($event)"
+  [missing]="store.editorialMissing()"
+  [hint]="missingHint()"
+  ariaLabel="Langue des textes"
+/>
+
 <div class="stack">
   <div class="grid">
     @for (field of fields; track field.key) {
       <fold-input
-        [label]="field.label"
-        [value]="store.editorial()[field.key]"
-        (valueChange)="store.setEditorial(field.key, $event)"
+        [label]="labelOf(field)"
+        [value]="store.editorialText(field.key)"
+        (valueChange)="store.setEditorialText(field.key, $event)"
       />
     }
+    <fold-input
+      label="Marque / gamme"
+      hint="Un nom propre : il ne se traduit pas."
+      [value]="store.editorial().brand"
+      (valueChange)="store.setBrand($event)"
+    />
   </div>
   <label class="field">
-    <span class="field-label">Description longue</span>
+    <span class="field-label">{{
+      labelOf({ key: 'descriptionLong', label: 'Description longue' })
+    }}</span>
     <textarea
       class="native-input native-textarea"
       rows="4"
-      [value]="store.editorial().descriptionLong"
-      (input)="store.setEditorial('descriptionLong', textValue($event))"
+      [value]="store.editorialText('descriptionLong')"
+      (input)="store.setEditorialText('descriptionLong', textValue($event))"
     ></textarea>
   </label>
   <label class="field">
-    <span class="field-label">Récit / savoir-faire</span>
+    <span class="field-label">{{ labelOf({ key: 'story', label: 'Récit / savoir-faire' }) }}</span>
     <textarea
       class="native-input native-textarea"
       rows="3"
-      [value]="store.editorial().story"
-      (input)="store.setEditorial('story', textValue($event))"
+      [value]="store.editorialText('story')"
+      (input)="store.setEditorialText('story', textValue($event))"
     ></textarea>
   </label>
 </div>
