@@ -9,43 +9,30 @@
     <p class="inherit-head">
       Hérité de la famille <strong>{{ inh.categoryName }}</strong>
     </p>
+    <!-- Trois colonnes, chacune de son poids : le canal nomme la ligne, les
+         boutiques s'effacent, le taux se lit en un coup d'œil à droite. Sur une
+         seule ligne — « Labo · Village — TVA Réduit · 5,5 % » — tout pesait
+         pareil, et le chiffre qu'on cherche se perdait au bout d'une phrase. Le
+         mot « TVA » disparaît : l'encadré ne parle que de ça. -->
     <dl class="inherit-rows">
-      <div class="inherit-row">
-        <dt>À emporter</dt>
-        <dd>
-          @if (inh.emporter.sold) {
-            @if (inh.emporter.boutiques.length > 0) {
-              {{ inh.emporter.boutiques.join(' · ') }} —
-            }
-            TVA <strong>{{ inh.emporter.tva }}</strong>
+      @for (row of rows(); track row.label) {
+        <div class="inherit-row">
+          <dt>{{ row.label }}</dt>
+          @if (row.sold) {
+            <dd class="inherit-where">{{ row.boutiques.join(' · ') }}</dd>
+            <dd class="inherit-rate">
+              @if (row.rate; as rate) {
+                <strong>{{ rate.percent }}</strong>
+                <span class="inherit-regime">{{ rate.name }}</span>
+              } @else {
+                <span class="muted">taux non défini</span>
+              }
+            </dd>
           } @else {
-            <span class="muted">non proposé</span>
+            <dd class="inherit-where muted">non proposé</dd>
           }
-        </dd>
-      </div>
-      <div class="inherit-row">
-        <dt>Sur place</dt>
-        <dd>
-          @if (inh.surPlace.sold) {
-            @if (inh.surPlace.boutiques.length > 0) {
-              {{ inh.surPlace.boutiques.join(' · ') }} —
-            }
-            TVA <strong>{{ inh.surPlace.tva }}</strong>
-          } @else {
-            <span class="muted">non proposé</span>
-          }
-        </dd>
-      </div>
-      <div class="inherit-row">
-        <dt>B2B</dt>
-        <dd>
-          @if (inh.b2b.sold) {
-            TVA <strong>{{ inh.b2b.tva }}</strong>
-          } @else {
-            <span class="muted">non proposé</span>
-          }
-        </dd>
-      </div>
+        </div>
+      }
     </dl>
   </div>
 } @else {

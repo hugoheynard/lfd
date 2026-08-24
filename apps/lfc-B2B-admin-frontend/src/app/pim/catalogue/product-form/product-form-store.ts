@@ -46,9 +46,21 @@ export interface AllergenGroup {
   readonly entries: readonly AllergenEntry[];
 }
 
+/**
+ * Un taux, en DEUX faits plutôt qu'en une phrase : « Réduit » nomme le régime,
+ * « 5,5 % » le chiffre. Assemblés dans le magasin — « TVA Réduit · 5,5 % » —
+ * ils forçaient l'écran à tout peindre du même poids, alors que le chiffre est
+ * ce qu'on cherche et le nom ce qui le qualifie.
+ */
+export interface RateView {
+  readonly name: string;
+  readonly percent: string;
+}
+
 export interface ModeInheritance {
   readonly boutiques: readonly string[];
-  readonly tva: string;
+  /** `null` quand la famille ne désigne aucun régime pour ce mode. */
+  readonly rate: RateView | null;
   /**
    * Le mode est-il vendu ? **Distinct** de la liste de noms ci-dessus : savoir
    * qu'un mode se vend et savoir nommer les boutiques sont deux faits, et le
@@ -66,7 +78,7 @@ export interface ModeInheritance {
  * manquante, pas comme une donnée sans objet.
  */
 export interface ChannelInheritance {
-  readonly tva: string;
+  readonly rate: RateView | null;
   readonly sold: boolean;
 }
 
@@ -355,27 +367,27 @@ export class ProductFormStore {
     if (category === undefined) {
       return null;
     }
-    const tva = (id: string): string => {
+    const tva = (id: string): RateView | null => {
       const rate = this.regimeById().get(id);
-      return rate === undefined ? '—' : `${rate.name} · ${formatPercent(rate.percent)}`;
+      return rate === undefined ? null : { name: rate.name, percent: formatPercent(rate.percent) };
     };
     return {
       categoryName: category.name.fr,
       emporter: {
         sold: sellsMode(category.channelPreset, 'emporter'),
         boutiques: boutiquesWith(category.channelPreset, 'emporter', this.emplacements()),
-        tva: tva(category.emporterTvaId),
+        rate: tva(category.emporterTvaId),
       },
       surPlace: {
         sold: sellsMode(category.channelPreset, 'surPlace'),
         boutiques: boutiquesWith(category.channelPreset, 'surPlace', this.emplacements()),
-        tva: tva(category.surPlaceTvaId),
+        rate: tva(category.surPlaceTvaId),
       },
       b2b: {
         // Un drapeau, pas une somme de boutiques : le B2B se vend ou ne se vend
         // pas, et son taux est le sien — 5,5 % en boutique n'entraîne rien ici.
         sold: category.channelPreset.b2b,
-        tva: tva(category.b2bTvaId),
+        rate: tva(category.b2bTvaId),
       },
     };
   });

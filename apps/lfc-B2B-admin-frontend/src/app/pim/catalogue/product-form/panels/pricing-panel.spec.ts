@@ -111,4 +111,27 @@ describe('PricingPanel', () => {
     const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
     expect(b2b?.textContent).toContain('20 %');
   });
+  it('ouvre par le B2B — le comptoir est le cas particulier ici', () => {
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+    const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row dt')]
+      .map((cell) => cell.textContent?.trim() ?? '')
+      .filter((label) => label !== '');
+    expect(labels[0]).toBe('B2B');
+    expect(labels).toEqual(['B2B', 'À emporter', 'Sur place']);
+  });
+
+  it('sépare le CHIFFRE du nom du régime', () => {
+    // « TVA Réduit · 5,5 % » peignait les deux du même poids, et le chiffre
+    // qu'on cherche se perdait au bout de la phrase.
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingPanel);
+    fixture.detectChanges();
+    const rate = (fixture.nativeElement as HTMLElement).querySelector('.inherit-rate');
+    expect(rate?.querySelector('strong')?.textContent?.trim()).toBe('20 %');
+    expect(rate?.querySelector('.inherit-regime')?.textContent?.trim()).toBe('Normal');
+  });
 });

@@ -167,8 +167,12 @@ app-lang-switch {
   margin: 0;
 }
 
+/* Trois colonnes ALIGNÉES d'une ligne à l'autre : les taux se comparent
+   verticalement, ce qu'une suite de phrases de longueurs différentes rendait
+   impossible. La colonne du milieu absorbe le reste et se tronque. */
 .inherit-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--fold-space-md);
   padding: var(--fold-space-sm) var(--fold-space-md);
@@ -180,16 +184,52 @@ app-lang-switch {
   }
 
   dt {
-    flex: 0 0 5rem;
     font-size: var(--fold-text-sm);
     color: var(--fold-color-text-muted);
   }
 
   dd {
-    flex: 1;
-    min-width: 0;
     margin: 0;
   }
+}
+
+/* Les boutiques nomment un contexte, elles ne sont pas le sujet de la ligne. */
+.inherit-where {
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quand un mode n'est pas proposé, il n'y a pas de taux : la valeur occupe les
+   deux colonnes restantes plutôt que de laisser un vide à droite qui se lirait
+   comme un chiffre manquant. */
+.inherit-where:last-child {
+  grid-column: 2 / -1;
+}
+
+.inherit-rate {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  justify-self: end;
+  white-space: nowrap;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Le NOM du régime, en micro-libellé : il qualifie le chiffre, il ne le
+   concurrence pas. Même face que les en-têtes de colonnes du reste de l'app. */
+.inherit-regime {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
 }
 
 /* ── Visuels : une GALERIE de vignettes ──────────────────────────────────────
