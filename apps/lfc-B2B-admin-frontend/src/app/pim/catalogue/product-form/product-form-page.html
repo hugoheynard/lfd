@@ -1,10 +1,13 @@
 <!-- Pas d'icône devant le titre : le titre EST le nom du produit, et une icône
      « edit » y ajoutait le geste plutôt que la chose. -->
-<!-- `headerBand` + `separator` : l'en-tête se pose sur le sol de bande — un pas
-     à l'écart de la page, dans le sens que la polarité du thème impose — et se
-     ferme sur un filet. Les deux, comme la maquette : sur un thème où la bande
-     s'écarte peu, c'est le filet qui dit où l'en-tête s'arrête. -->
-<fold-page-layout [title]="store.pageTitle()" headerBand separator>
+<!-- Trois décisions, trois attributs. `headerBleed` : l'en-tête va bord à bord,
+     donc son filet aussi — c'est la portée. `headerBand` : elle se pose sur le
+     sol de bande, un pas à l'écart de la page dans le sens que la polarité du
+     thème impose. `separator` : elle se ferme sur un filet, parce que sur un
+     thème où la bande s'écarte peu, c'est le filet qui dit où elle s'arrête.
+
+     Pour un filet pleine largeur SANS fond, il suffit de retirer `headerBand`. -->
+<fold-page-layout [title]="store.pageTitle()" headerBleed headerBand separator>
   <fold-back-link pageEyebrow icon="arrow-back" label="Produits" routerLink="/pim/produits" />
 
   @if (store.isEdit()) {

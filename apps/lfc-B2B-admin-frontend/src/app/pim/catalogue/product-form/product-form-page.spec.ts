@@ -62,7 +62,11 @@ describe('ProductFormPage — en-tête', () => {
     // Elles nomment le MÊME rôle (`--fold-color-surface-band`), donc elles
     // s'accordent sur les cinq thèmes sans qu'aucune connaisse sa polarité.
     const { root } = render(true);
-    expect(root.querySelector('fold-page-layout')?.hasAttribute('data-header-band')).toBe(true);
+    const layout = root.querySelector('fold-page-layout');
+    expect(layout?.hasAttribute('data-header-band')).toBe(true);
+    // La PORTÉE est une décision distincte du SOL : c'est elle qui fait courir
+    // le filet sur toute la largeur, et on doit pouvoir l'avoir sans le fond.
+    expect(layout?.hasAttribute('data-header-bleed')).toBe(true);
     const aside = root.querySelector('fold-aside-layout');
     expect(aside?.getAttribute('data-band')).toBe('right');
     // La bande s'arrête à la gouttière de page : le rail vit DANS la page, il ne
