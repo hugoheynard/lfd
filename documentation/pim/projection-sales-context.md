@@ -11,8 +11,14 @@
 > (`emporter`)**, donc la boutique reçoit toujours **1 produit par article** — mais l'ajout d'un
 > 2ᵉ contexte est une ligne de config, pas une refonte.
 
-> ⚠️ **Décisions arrêtées APRÈS rédaction — à implémenter (on y revient, cf. [`todo.md`](./todo.md)).**
-> Elles **corrigent** les §2/§4/§5 ci-dessous (qui décrivent le C1 livré, à colonnes fixes) :
+> ✅ **Point 1 ci-dessous LIVRÉ le 2026-08-24** (C0-a « étendre » + C0-b « basculer »).
+> Le registre est la table `pim.sales_context`, les taux la jointure
+> `pim.category_context_tva`, et `ACTIVE_SALES_CONTEXTS` n'existe plus. Les §2/§4/§5
+> décrivent encore le C1 d'origine, à colonnes fixes — lire l'addendum d'abord.
+> Reste **C0-c** (le `DROP` des trois colonnes, au déploiement suivant) et le cousin
+> `channelPreset`. Le point 2 (handle write-once) est intact, à faire.
+>
+> ⚠️ **Décisions arrêtées APRÈS rédaction :**
 >
 > 1. **Data-driven, pas en dur.** Toute dimension scalable (contextes/canaux de vente, TVA par
 >    contexte) = **donnée**, jamais colonnes fixes ni const. `sales_context` (table = registre :
