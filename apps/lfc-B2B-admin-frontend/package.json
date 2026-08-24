@@ -9,6 +9,8 @@
     "build:cloudflare": "pnpm config:api && pnpm config:auth && ng build --configuration cloudflare",
     "watch": "pnpm config:api && pnpm config:auth && ng build --watch --configuration development",
     "test": "ng test",
+    "lint": "eslint src --fix",
+    "lint:ci": "eslint src",
     "test:watch": "ng test --watch",
     "dev": "pnpm config:api && pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
     "postinstall": "pnpm config:api && pnpm config:auth",
@@ -61,10 +63,15 @@
     "@playwright/test": "catalog:",
     "@types/d3": "^7.4.3",
     "@types/d3-sankey": "^0.12.5",
+    "@eslint/js": "catalog:",
     "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
     "vitest": "catalog:"
   }
 }

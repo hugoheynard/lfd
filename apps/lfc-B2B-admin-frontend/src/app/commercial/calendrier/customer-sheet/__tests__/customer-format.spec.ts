@@ -9,7 +9,10 @@ function trend(patch: Partial<CustomerSpendTrend> = {}): CustomerSpendTrend {
 
 describe('euros', () => {
   it('convertit les centimes et arrondit à l’euro', () => {
-    expect(euros(1_248_000).replace(/ | /gu, ' ')).toBe('12 480 €');
+    // Les espaces d'`Intl` sont insécables, et laquelle dépend de la version
+    // d'ICU : on les normalise par leur point de code, écrit, plutôt que par un
+    // caractère invisible collé dans la source.
+    expect(euros(1_248_000).replace(/[\u00a0\u202f]/gu, ' ')).toBe('12 480 €');
   });
 
   it('ne rend pas « 0,01 € » pour un centime perdu', () => {

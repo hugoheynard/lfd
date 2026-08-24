@@ -198,6 +198,12 @@ jobs:
       - name: "Gate : aucun cycle d'import"
         run: pnpm lint:import-cycles
 
+      # Admin seul pour l'instant : le front plateforme n'a pas encore de config
+      # ESLint, et en fabriquer une à l'aveugle poserait une porte sans savoir ce
+      # qu'elle laisse passer.
+      - name: "Lint : admin"
+        run: pnpm --filter lfc-b2b-admin-frontend lint:ci
+
       - name: Typecheck des fronts
         run: |
           # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de
