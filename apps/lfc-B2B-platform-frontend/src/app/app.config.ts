@@ -5,6 +5,9 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
+import { LFD_NOTIFY } from '@lfd/b2b-ui/panel';
+
+import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
 import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
@@ -32,6 +35,10 @@ export const appConfig: ApplicationConfig = {
     provideAuth(),
     // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
     provideFoldToasts({}),
+    // Le port de retour d'opération de `@lfd/b2b-ui` : les panneaux de la lib
+    // annoncent succès et échec sans rien savoir de nos toasts ni du filtrage
+    // d'erreurs de `@lfd/endpoints`.
+    { provide: LFD_NOTIFY, useExisting: NotifyService },
     // Ce que les vraies personnes vivent, renvoyé à notre API : la sonde dit
     // que ce front est SERVI, ces trois mesures disent s'il est utilisable.
     provideWebVitals(OPS_NODE, AUTH_CONFIG.apiBaseUrl),

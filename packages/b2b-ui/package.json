@@ -29,6 +29,10 @@
       "types": "./src/order/index.ts",
       "default": "./src/order/index.ts"
     },
+    "./panel": {
+      "types": "./src/panel/index.ts",
+      "default": "./src/panel/index.ts"
+    },
     "./catalog": {
       "types": "./src/catalog/index.ts",
       "default": "./src/catalog/index.ts"

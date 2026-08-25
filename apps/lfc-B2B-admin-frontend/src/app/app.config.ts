@@ -11,6 +11,9 @@ import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
 import { APP_REVISION_VALUE, B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
 import { routes } from './app.routes';
+import { LFD_NOTIFY } from '@lfd/b2b-ui/panel';
+
+import { NotifyService } from './notify.service';
 import { provideAppIcons } from './shared/icons/app-icons';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
@@ -78,5 +81,9 @@ export const appConfig: ApplicationConfig = {
     // Toasts d'opération (succès/échec). Durées par défaut de fold : succès bref,
     // erreur **sticky** (à fermer, pas à rater).
     provideFoldToasts({}),
+    // Le port de retour d'opération de `@lfd/b2b-ui` : les panneaux de la lib
+    // annoncent succès et échec sans rien savoir de nos toasts ni du filtrage
+    // d'erreurs de `@lfd/endpoints`.
+    { provide: LFD_NOTIFY, useExisting: NotifyService },
   ],
 };

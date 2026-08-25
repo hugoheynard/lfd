@@ -32,6 +32,7 @@
       "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"],
       "@lfd/b2b-ui/hours": ["../../packages/b2b-ui/src/hours/index.ts"],
       "@lfd/b2b-ui/order": ["../../packages/b2b-ui/src/order/index.ts"],
+      "@lfd/b2b-ui/panel": ["../../packages/b2b-ui/src/panel/index.ts"],
       "@lfd/b2b-ui/pricing": ["../../packages/b2b-ui/src/pricing/index.ts"],
       "@lfd/b2b-ui/subscription": ["../../packages/b2b-ui/src/subscription/index.ts"],
       "@lfd/catalog-ui": ["../../packages/catalog-ui/src/index.ts"],
