@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import {
   LocationInUseError,
@@ -15,6 +17,7 @@ import {
   type CreateLocationPayload,
 } from "../create-location.js";
 import { DeleteLocationCommand, DeleteLocationHandler } from "../delete-location.js";
+import { RemoveTableQrCommand, RemoveTableQrHandler } from "../remove-table-qr.js";
 import { GenerateTableQrCommand, GenerateTableQrHandler } from "../generate-table-qr.js";
 import { ListLocationsHandler } from "../list-locations.js";
 import { UpdateLocationCommand, UpdateLocationHandler } from "../update-location.js";
@@ -118,7 +121,12 @@ function open(repo: InMemoryLocations, over: Partial<CreateLocationPayload> = {}
     ids = new StubIds();
     idsOf.set(repo, ids);
   }
-  return new CreateLocationHandler(repo, ids).execute(
+  return new CreateLocationHandler(
+    repo,
+    ids,
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  ).execute(
     new CreateLocationCommand({
       name: "Boutique",
       clickCollect: true,
@@ -131,7 +139,12 @@ function open(repo: InMemoryLocations, over: Partial<CreateLocationPayload> = {}
 }
 
 function createSurPlace(repo: InMemoryLocations, tableCount: number) {
-  return new CreateLocationHandler(repo, new StubIds()).execute(
+  return new CreateLocationHandler(
+    repo,
+    new StubIds(),
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  ).execute(
     new CreateLocationCommand({
       name: "Boutique",
       clickCollect: true,
@@ -153,7 +166,12 @@ describe("CreateLocationHandler", () => {
 
   it("ne crée aucune table quand il ne fait pas sur place", async () => {
     const repo = new InMemoryLocations();
-    await new CreateLocationHandler(repo, new StubIds()).execute(
+    await new CreateLocationHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new CreateLocationCommand({
         name: "En ligne",
         clickCollect: true,
@@ -169,7 +187,12 @@ describe("CreateLocationHandler", () => {
   it("refuse un nom vide", async () => {
     const repo = new InMemoryLocations();
     await expect(
-      new CreateLocationHandler(repo, new StubIds()).execute(
+      new CreateLocationHandler(
+        repo,
+        new StubIds(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new CreateLocationCommand({
           name: "   ",
           clickCollect: true,
@@ -186,11 +209,14 @@ describe("UpdateLocationHandler", () => {
   it("re-synchronise les tables en gardant l’état QR existant", async () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 3);
-    await new GenerateTableQrHandler(repo, new StubTokens()).execute(
-      new GenerateTableQrCommand("emp_fixed", 2),
-    );
+    await new GenerateTableQrHandler(
+      repo,
+      new StubTokens(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new GenerateTableQrCommand("emp_fixed", 2));
 
-    await new UpdateLocationHandler(repo).execute(
+    await new UpdateLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UpdateLocationCommand("emp_fixed", { tableCount: 4 }),
     );
 
@@ -204,7 +230,7 @@ describe("UpdateLocationHandler", () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 2);
 
-    await new UpdateLocationHandler(repo).execute(
+    await new UpdateLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UpdateLocationCommand("emp_fixed", { surPlace: false }),
     );
 
@@ -217,9 +243,12 @@ describe("GenerateTableQrHandler", () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 2);
 
-    const token = await new GenerateTableQrHandler(repo, new StubTokens()).execute(
-      new GenerateTableQrCommand("emp_fixed", 1),
-    );
+    const token = await new GenerateTableQrHandler(
+      repo,
+      new StubTokens(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new GenerateTableQrCommand("emp_fixed", 1));
 
     expect(token).toBe("tok_fixed");
     expect(repo.rows[0]?.tables[0]?.qrCreated).toBe(true);
@@ -230,9 +259,12 @@ describe("GenerateTableQrHandler", () => {
     await createSurPlace(repo, 1);
 
     await expect(
-      new GenerateTableQrHandler(repo, new StubTokens()).execute(
-        new GenerateTableQrCommand("emp_fixed", 9),
-      ),
+      new GenerateTableQrHandler(
+        repo,
+        new StubTokens(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new GenerateTableQrCommand("emp_fixed", 9)),
     ).rejects.toBeInstanceOf(LocationTableNotFoundError);
   });
 });
@@ -242,9 +274,12 @@ describe("DeleteLocationHandler", () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 1);
 
-    await new DeleteLocationHandler(repo, new StubUsage()).execute(
-      new DeleteLocationCommand("emp_fixed"),
-    );
+    await new DeleteLocationHandler(
+      repo,
+      new StubUsage(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new DeleteLocationCommand("emp_fixed"));
 
     expect(repo.rows).toEqual([]);
   });
@@ -259,7 +294,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const id = await createSurPlace(repo, 2);
 
     await expect(
-      new DeleteLocationHandler(repo, new StubUsage(3)).execute(new DeleteLocationCommand(id)),
+      new DeleteLocationHandler(
+        repo,
+        new StubUsage(3),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new DeleteLocationCommand(id)),
     ).rejects.toThrow(LocationInUseError);
 
     expect(repo.rows).toHaveLength(1);
@@ -270,7 +310,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const id = await createSurPlace(repo, 1);
 
     await expect(
-      new DeleteLocationHandler(repo, new StubUsage(2)).execute(new DeleteLocationCommand(id)),
+      new DeleteLocationHandler(
+        repo,
+        new StubUsage(2),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new DeleteLocationCommand(id)),
     ).rejects.toThrow(/2 famille/);
   });
 
@@ -278,7 +323,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const repo = new InMemoryLocations();
     const id = await createSurPlace(repo, 1);
 
-    await new DeleteLocationHandler(repo, new StubUsage(0)).execute(new DeleteLocationCommand(id));
+    await new DeleteLocationHandler(
+      repo,
+      new StubUsage(0),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new DeleteLocationCommand(id));
 
     expect(repo.rows).toEqual([]);
   });
@@ -310,7 +360,7 @@ describe("le nom d'un emplacement est unique", () => {
     const second = await open(repo, { name: "Labo" });
 
     await expect(
-      new UpdateLocationHandler(repo).execute(
+      new UpdateLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new UpdateLocationCommand(second, { name: "Village" }),
       ),
     ).rejects.toBeInstanceOf(LocationNameTakenError);
@@ -320,7 +370,7 @@ describe("le nom d'un emplacement est unique", () => {
     const repo = new InMemoryLocations();
     const id = await open(repo, { name: "Village" });
 
-    await new UpdateLocationHandler(repo).execute(
+    await new UpdateLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UpdateLocationCommand(id, { name: "Village", clickCollect: false }),
     );
 
@@ -361,5 +411,99 @@ describe("ListLocationsHandler", () => {
     const [row] = await new ListLocationsHandler(repo, new StubUsage()).execute();
 
     expect(row?.usedByCategories).toBe(0);
+  });
+});
+
+/**
+ * Le journal des emplacements. Ce qu'on tient ici n'est pas « le handler appelle
+ * le journal » — la porte `lint:journal-tracked` et le laissez-passer s'en
+ * chargent — mais **ce qu'il affirme** : un fait nommé par geste, et rien
+ * d'inscrit quand rien n'a bougé.
+ */
+describe("Ce que les emplacements inscrivent au journal", () => {
+  it("nomme un fait par geste — ouverture, réglage, QR posé, QR retiré, suppression", async () => {
+    const repo = new InMemoryLocations();
+    const journal = new RecordingJournal();
+    const uow = new DirectUnitOfWork();
+
+    const id = await new CreateLocationHandler(repo, new StubIds(), journal, uow).execute(
+      new CreateLocationCommand({
+        name: "Village",
+        clickCollect: true,
+        surPlace: true,
+        baseUrl: "https://order.example",
+        tableCount: 2,
+      }),
+    );
+    await new UpdateLocationHandler(repo, journal, uow).execute(
+      new UpdateLocationCommand(id, { name: "Village haut" }),
+    );
+    await new GenerateTableQrHandler(repo, new StubTokens(), journal, uow).execute(
+      new GenerateTableQrCommand(id, 1),
+    );
+    await new RemoveTableQrHandler(repo, journal, uow).execute(new RemoveTableQrCommand(id, 1));
+    await new DeleteLocationHandler(repo, new StubUsage(), journal, uow).execute(
+      new DeleteLocationCommand(id),
+    );
+
+    expect(journal.types()).toEqual([
+      "location.created",
+      "location.updated",
+      "location.table_qr_generated",
+      "location.table_qr_removed",
+      "location.deleted",
+    ]);
+  });
+
+  /**
+   * Le jeton vaut ACCÈS à la commande à cette table. Un journal se relit plus
+   * largement que la table qui le porte : on trace le geste, pas le secret.
+   */
+  it("ne verse jamais le jeton d’un QR dans la charge utile", async () => {
+    const repo = new InMemoryLocations();
+    const journal = new RecordingJournal();
+    const id = await createSurPlace(repo, 1);
+
+    await new GenerateTableQrHandler(
+      repo,
+      new StubTokens(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new GenerateTableQrCommand(id, 1));
+
+    expect(JSON.stringify(journal.entries)).not.toContain("tok_fixed");
+    expect(journal.entries[0]?.payload).toEqual({ table: 1 });
+  });
+
+  /**
+   * L'écran renvoie la fiche entière à chaque enregistrement. Sans ce filtre,
+   * l'historique d'un emplacement serait surtout fait de gestes sans effet.
+   */
+  it("n’inscrit rien quand l’enregistrement ne change rien", async () => {
+    const repo = new InMemoryLocations();
+    const journal = new RecordingJournal();
+    const id = await open(repo, { name: "Village" });
+
+    await new UpdateLocationHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new UpdateLocationCommand(id, { name: "Village", clickCollect: true }),
+    );
+
+    expect(journal.types()).toEqual([]);
+  });
+
+  /**
+   * La suppression d'un emplacement est la seule **physique** du référentiel :
+   * après elle, le nom n'existe plus que dans le journal.
+   */
+  it("emporte le nom dans le fait de suppression", async () => {
+    const repo = new InMemoryLocations();
+    const journal = new RecordingJournal();
+    const id = await open(repo, { name: "Village" });
+
+    await new DeleteLocationHandler(repo, new StubUsage(), journal, new DirectUnitOfWork()).execute(
+      new DeleteLocationCommand(id),
+    );
+
+    expect(journal.entries[0]?.payload).toMatchObject({ name: "Village" });
   });
 });

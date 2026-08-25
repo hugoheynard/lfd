@@ -1,4 +1,5 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
@@ -30,6 +31,7 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
   constructor(
     private readonly categories: CategoryRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: MoveCategoryCommand): Promise<void> {
@@ -44,15 +46,19 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
       assertNoCycle(tree, command.id, command.parentId);
     }
 
+    const from = category.parentId;
     category.moveUnder(command.parentId, await this.categories.nextPosition(command.parentId));
-    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
-    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
-    // silence qu'on prendrait pour une décision.
-    await this.categories.save(
-      category,
-      this.journal.untraced(
-        "déplacement de famille — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.categoryMoved,
+        subjectType: "category",
+        subjectId: category.id,
+        // Le parent AVANT et APRÈS : c'est de lui que la famille tient sa TVA
+        // et ses canaux, donc c'est lui qu'on vient chercher quand un tarif a
+        // changé sans que personne n'ait touché au tarif.
+        payload: { parentId: { from, to: command.parentId } },
+      });
+      await this.categories.save(category, ticket);
+    });
   }
 }

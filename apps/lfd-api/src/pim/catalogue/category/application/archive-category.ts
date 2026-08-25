@@ -1,4 +1,5 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import {
@@ -19,6 +20,7 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
     private readonly categories: CategoryRepository,
     private readonly products: ProductCountReader,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -45,14 +47,16 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
     }
 
     category.archive();
-    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
-    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
-    // silence qu'on prendrait pour une décision.
-    await this.categories.save(
-      category,
-      this.journal.untraced(
-        "archivage de famille — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.categoryArchived,
+        subjectType: "category",
+        subjectId: category.id,
+        // Le nom part avec le fait : une famille archivée disparaît des
+        // écrans, et l'historique resterait illisible s'il ne portait qu'un id.
+        payload: { name: category.name },
+      });
+      await this.categories.save(category, ticket);
+    });
   }
 }

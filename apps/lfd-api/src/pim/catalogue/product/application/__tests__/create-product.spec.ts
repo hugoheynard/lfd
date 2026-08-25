@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { v7 as uuidV7 } from "uuid";
 
@@ -117,8 +118,10 @@ class RealIds extends PimIdGenerator {
 function setup(taken: readonly string[] = []): {
   handler: CreateProductHandler;
   products: FakeProductRepository;
+  journal: RecordingJournal;
 } {
   const products = new FakeProductRepository();
+  const journal = new RecordingJournal();
   const set = new Set(taken);
   const availability: SkuAvailability = {
     isTaken: (candidate: Sku): Promise<boolean> => Promise.resolve(set.has(candidate.value)),
@@ -126,12 +129,14 @@ function setup(taken: readonly string[] = []): {
 
   return {
     products,
+    journal,
     handler: new CreateProductHandler(
       products,
       new FakeCategoryRepository(),
       new SilentNutrition(),
       new SilentEditorial(),
-      new RecordingJournal(),
+      journal,
+      new DirectUnitOfWork(),
       new RealIds(),
       availability,
     ),
@@ -207,5 +212,35 @@ describe("CreateProductHandler — la référence proposée", () => {
       handler.execute(new CreateProductCommand(input({ categoryId: "cat_archived" }))),
     ).rejects.toThrow(CategoryArchivedError);
     expect(products.written).toHaveLength(0);
+  });
+});
+
+describe("CreateProductHandler — ce qu'il inscrit au journal", () => {
+  it("inscrit UN fait pour l’ouverture, même quand elle touche trois dépôts", async () => {
+    const { handler, journal } = setup();
+
+    const id = await handler.execute(
+      new CreateProductCommand(
+        input({ allergens: ["UW"], editorial: { descriptionShort: { fr: "Pur beurre" } } }),
+      ),
+    );
+
+    // La fiche, sa déclaration et son éditorial partent ensemble : c'est UN
+    // geste. Trois lignes pour un formulaire rendraient l'historique illisible.
+    expect(journal.types()).toEqual(["product.created"]);
+    expect(journal.entries[0]?.subjectId).toBe(id);
+    expect(journal.entries[0]?.payload).toMatchObject({
+      kind: "daily",
+      categoryId: "cat_active",
+      declared: true,
+    });
+  });
+
+  it("dit dans la charge utile si la fiche naît DÉCLARÉE ou non", async () => {
+    const { handler, journal } = setup();
+
+    await handler.execute(new CreateProductCommand(input()));
+
+    expect(journal.entries[0]?.payload).toMatchObject({ declared: false });
   });
 });

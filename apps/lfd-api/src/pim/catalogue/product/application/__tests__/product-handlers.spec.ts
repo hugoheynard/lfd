@@ -460,21 +460,25 @@ describe("Archive / Restore product", () => {
   it("archive puis restaure le produit", async () => {
     const products = new FakeProductRepository(seedProduct());
 
-    await new ArchiveProductHandler(products, new RecordingJournal()).execute(
-      new ArchiveProductCommand(PRODUCT_ID),
-    );
+    await new ArchiveProductHandler(
+      products,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new ArchiveProductCommand(PRODUCT_ID));
     expect(products.snapshot()?.status).toBe("archived");
 
-    await new RestoreProductHandler(products, new RecordingJournal()).execute(
-      new RestoreProductCommand(PRODUCT_ID),
-    );
+    await new RestoreProductHandler(
+      products,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new RestoreProductCommand(PRODUCT_ID));
     expect(products.snapshot()?.status).toBe("draft");
   });
 
   it("refuse d’archiver un produit inconnu", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new ArchiveProductHandler(products, new RecordingJournal()).execute(
+      new ArchiveProductHandler(products, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new ArchiveProductCommand("prd_absent"),
       ),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
@@ -579,5 +583,40 @@ describe("SetProductMediaHandler", () => {
     ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
     expect(editorials.replaced[0]?.media).toEqual([]);
+  });
+});
+
+describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
+  /**
+   * `archived` / `restored` ne doublonnent pas `unpublished` / `published` :
+   * dépublier retire de la vente une fiche qu'on continue de travailler,
+   * archiver la retire du référentiel. C'est la question qu'on posera au
+   * journal six mois plus tard, et deux faits distincts pour y répondre.
+   */
+  it("nomme deux faits distincts pour l’archivage et la restauration", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+    const uow = new DirectUnitOfWork();
+
+    await new ArchiveProductHandler(products, journal, uow).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
+    await new RestoreProductHandler(products, journal, uow).execute(
+      new RestoreProductCommand(PRODUCT_ID),
+    );
+
+    expect(journal.types()).toEqual(["product.archived", "product.restored"]);
+  });
+
+  it("emporte la référence et le nom — une fiche archivée sort des écrans", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new ArchiveProductHandler(products, journal, new DirectUnitOfWork()).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
+
+    expect(journal.entries[0]?.payload).toHaveProperty("sku");
+    expect(journal.entries[0]?.payload).toHaveProperty("name");
   });
 });

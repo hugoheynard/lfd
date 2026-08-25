@@ -1,3 +1,5 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -23,6 +25,8 @@ export class CreateLocationHandler implements ICommandHandler<CreateLocationComm
   constructor(
     private readonly locations: LocationRepository,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: CreateLocationCommand): Promise<string> {
@@ -33,7 +37,20 @@ export class CreateLocationHandler implements ICommandHandler<CreateLocationComm
     // donc on vérifie l'unicité sur le nom nettoyé, pas sur celui reçu.
     const location = Location.open({ id, ...payload });
     await requireFreeName(this.locations, location.name, null);
-    await this.locations.add(location);
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.locationCreated,
+        subjectType: "location",
+        subjectId: id,
+        payload: {
+          name: payload.name,
+          clickCollect: payload.clickCollect,
+          surPlace: payload.surPlace,
+          tableCount: payload.tableCount,
+        },
+      });
+      await this.locations.add(location, ticket);
+    });
     return id;
   }
 }

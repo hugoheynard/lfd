@@ -29,6 +29,6 @@ export abstract class ProductRepository {
    * références, en une transaction : l'invariant 2 n'est jamais faux, même une
    * fraction de seconde.
    */
-  abstract add(product: Product): Promise<void>;
+  abstract add(product: Product, ticket: WriteTicket): Promise<void>;
   abstract save(product: Product, ticket: WriteTicket): Promise<void>;
 }

@@ -1,3 +1,5 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { LocationRepository } from "../domain/ports/location.repository.js";
@@ -21,6 +23,8 @@ export class GenerateTableQrHandler implements ICommandHandler<GenerateTableQrCo
   constructor(
     private readonly locations: LocationRepository,
     private readonly tokens: TableTokenGenerator,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: GenerateTableQrCommand): Promise<string> {
@@ -30,7 +34,17 @@ export class GenerateTableQrHandler implements ICommandHandler<GenerateTableQrCo
     if (!location.attachQr(command.tableNumber, token)) {
       throw new LocationTableNotFoundError(command.locationId, command.tableNumber);
     }
-    await this.locations.save(location);
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.locationTableQrGenerated,
+        subjectType: "location",
+        subjectId: command.locationId,
+        // Le NUMÉRO de table, jamais le jeton : il vaut accès à la commande à
+        // cette table, et un journal se relit plus largement que la table.
+        payload: { table: command.tableNumber },
+      });
+      await this.locations.save(location, ticket);
+    });
     return token;
   }
 }

@@ -1,6 +1,8 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { changesBetween } from "../../../journal/changes.js";
 import { CategoryUnknownLocationError } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { KnownLocationsReader } from "../domain/ports/known-locations.reader.js";
@@ -38,23 +40,31 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     private readonly locations: KnownLocationsReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     await this.refuseUnknownLocations(command.channels);
+    const before = category.channelPreset;
     // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
     // lui qui sait quel contexte s'appuie sur quel canal.
     category.setChannels(command.channels, await this.contexts.active());
-    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
-    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
-    // silence qu'on prendrait pour une décision.
-    await this.categories.save(
-      category,
-      this.journal.untraced(
-        "canaux de famille — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    const changes = changesBetween({ channels: before }, { channels: category.channelPreset });
+    await this.uow.run(async () => {
+      // Régler une grille sur elle-même n'affirme rien — et l'écran renvoie la
+      // grille entière à chaque enregistrement, y compris inchangée.
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.categoryChannelsChanged,
+              subjectType: "category",
+              subjectId: category.id,
+              payload: { changes },
+            })
+          : this.journal.untraced("canaux de famille enregistrés sans modification");
+      await this.categories.save(category, ticket);
+    });
   }
 
   private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {

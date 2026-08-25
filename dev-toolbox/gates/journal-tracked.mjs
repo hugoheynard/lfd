@@ -40,32 +40,21 @@ const SCAN_ROOT = join(ROOT, "apps", "lfd-api", "src", "pim");
 const SKIP_DIRS = new Set(["__tests__", "node_modules", "dist", "client"]);
 
 /**
- * La dette **déclarée**, au 2026-08-25 : les handlers qui écrivaient déjà sans
- * tracer le jour où cette porte a été posée.
+ * La dette déclarée — **vide depuis le 2026-08-25**.
  *
- * Comptés, pas ignorés — comme le fait `code-language`. Chacun demande une
- * décision propre (quel fait nommer, quelle charge) et pas une transformation
- * mécanique ; les traiter à la chaîne produirait quatorze événements que
- * personne n'aurait pensés. Ce qui compte est que la liste ne puisse que
- * RÉTRÉCIR : un handler neuf ne peut pas s'y ajouter, et un handler tracé doit
- * en sortir — la porte le réclame.
+ * Elle a compté quatorze handlers : ceux qui écrivaient déjà sans tracer le
+ * jour où cette porte a été posée. Chacun demandait une décision propre — quel
+ * fait nommer, quelle charge utile — et les traiter à la chaîne aurait produit
+ * quatorze événements que personne n'aurait pensés. Ils ont été nommés un par
+ * un ; la liste a fait ce pour quoi elle existait, elle a RÉTRÉCI jusqu'à
+ * disparaître.
+ *
+ * On la garde vide plutôt que de la supprimer : c'est le mécanisme qui rend
+ * une dette future visible et bornée, et le supprimer obligerait à le
+ * réinventer sous pression, le jour où l'on voudra livrer un handler avant de
+ * savoir ce qu'il affirme.
  */
-const BACKLOG = new Set([
-  "ArchiveCategoryHandler",
-  "CreateCategoryHandler",
-  "MoveCategoryHandler",
-  "RenameCategoryHandler",
-  "ReorderCategoriesHandler",
-  "SetCategoryChannelsHandler",
-  "ArchiveProductHandler",
-  "CreateProductHandler",
-  "RestoreProductHandler",
-  "CreateLocationHandler",
-  "DeleteLocationHandler",
-  "GenerateTableQrHandler",
-  "RemoveTableQrHandler",
-  "UpdateLocationHandler",
-]);
+const BACKLOG = new Set([]);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {

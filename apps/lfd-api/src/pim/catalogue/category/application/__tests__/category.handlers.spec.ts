@@ -204,7 +204,12 @@ class SequentialIds extends PimIdGenerator {
 
 /** Ouvre `count` familles racines, rend leurs ids dans l'ordre de création. */
 async function openRoots(repo: InMemoryCategories, count: number): Promise<string[]> {
-  const handler = new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal());
+  const handler = new CreateCategoryHandler(
+    repo,
+    new SequentialIds(),
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  );
   const ids: string[] = [];
   for (let index = 0; index < count; index += 1) {
     ids.push(
@@ -216,12 +221,22 @@ async function openRoots(repo: InMemoryCategories, count: number): Promise<strin
 
 /** Le handler d'archivage, sans fiche active. */
 function archive(repo: InMemoryCategories): ArchiveCategoryHandler {
-  return new ArchiveCategoryHandler(repo, new StubProductCounts(), new RecordingJournal());
+  return new ArchiveCategoryHandler(
+    repo,
+    new StubProductCounts(),
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  );
 }
 
 /** …avec `count` fiches actives. */
 function archiveWith(repo: InMemoryCategories, count: number): ArchiveCategoryHandler {
-  return new ArchiveCategoryHandler(repo, new StubProductCounts(count), new RecordingJournal());
+  return new ArchiveCategoryHandler(
+    repo,
+    new StubProductCounts(count),
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  );
 }
 
 /** Le handler des canaux, avec un référentiel d'emplacements complaisant. */
@@ -270,6 +285,8 @@ function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
     allLocationsKnown(),
     registry,
     new RecordingJournal(),
+
+    new DirectUnitOfWork(),
   );
 }
 
@@ -280,6 +297,8 @@ describe("CreateCategoryHandler", () => {
       repo,
       new SequentialIds(),
       new RecordingJournal(),
+
+      new DirectUnitOfWork(),
     ).execute(new CreateCategoryCommand({ name: { fr: "Chocolats fins" } }));
 
     expect(repo.at(id).slug.fr).toBe("chocolats-fins");
@@ -296,18 +315,24 @@ describe("CreateCategoryHandler", () => {
     await archive(repo).execute(new ArchiveCategoryCommand(parent!));
 
     await expect(
-      new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal()).execute(
-        new CreateCategoryCommand({ name: { fr: "Tartes" }, parentId: parent! }),
-      ),
+      new CreateCategoryHandler(
+        repo,
+        new SequentialIds(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new CreateCategoryCommand({ name: { fr: "Tartes" }, parentId: parent! })),
     ).rejects.toBeInstanceOf(CategoryArchivedParentError);
   });
 
   it("refuse un parent inexistant", async () => {
     const repo = new InMemoryCategories();
     await expect(
-      new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal()).execute(
-        new CreateCategoryCommand({ name: { fr: "Sous-famille" }, parentId: "absent" }),
-      ),
+      new CreateCategoryHandler(
+        repo,
+        new SequentialIds(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new CreateCategoryCommand({ name: { fr: "Sous-famille" }, parentId: "absent" })),
     ).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
 });
@@ -317,7 +342,7 @@ describe("RenameCategoryHandler", () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
 
-    await new RenameCategoryHandler(repo, new RecordingJournal()).execute(
+    await new RenameCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new RenameCategoryCommand(id!, { name: { fr: "Chocolats & pralinés" } }),
     );
 
@@ -343,7 +368,7 @@ describe("ArchiveCategoryHandler", () => {
   it("refuse d’archiver une famille qui porte des sous-familles vivantes", async () => {
     const repo = new InMemoryCategories();
     const [parent, child] = await openRoots(repo, 2);
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(child!, parent!),
     );
 
@@ -355,7 +380,7 @@ describe("ArchiveCategoryHandler", () => {
   it("accepte quand les sous-familles sont elles-mêmes archivées", async () => {
     const repo = new InMemoryCategories();
     const [parent, child] = await openRoots(repo, 2);
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(child!, parent!),
     );
     await archive(repo).execute(new ArchiveCategoryCommand(child!));
@@ -408,6 +433,8 @@ describe("SetCategoryChannelsHandler", () => {
         noLocationKnown(),
         registry,
         new RecordingJournal(),
+
+        new DirectUnitOfWork(),
       ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
     ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
   });
@@ -424,6 +451,8 @@ describe("SetCategoryChannelsHandler", () => {
         noLocationKnown(),
         registry,
         new RecordingJournal(),
+
+        new DirectUnitOfWork(),
       ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
     ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
     expect(repo.at(id!).channelPreset).toEqual(before);
@@ -446,7 +475,7 @@ describe("SetCategoryChannelsHandler", () => {
     const [id] = await openRoots(repo, 1);
     await archive(repo).execute(new ArchiveCategoryCommand(id!));
 
-    await new RenameCategoryHandler(repo, new RecordingJournal()).execute(
+    await new RenameCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new RenameCategoryCommand(id!, { name: { fr: "Chocolats" } }),
     );
 
@@ -526,7 +555,7 @@ describe("le rang d’un niveau", () => {
     const repo = new InMemoryCategories();
     const [ailleurs, first, second, third] = await openRoots(repo, 4);
     // `second` s'en va : la racine garde les rangs 0 et 2 pour first et third.
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(second!, ailleurs!),
     );
 
@@ -545,7 +574,12 @@ describe("le slug est unique", () => {
    */
   it("refuse une seconde famille du même nom", async () => {
     const repo = new InMemoryCategories();
-    const handler = new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal());
+    const handler = new CreateCategoryHandler(
+      repo,
+      new SequentialIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
 
     await expect(
@@ -555,14 +589,19 @@ describe("le slug est unique", () => {
 
   it("refuse un renommage qui prend le slug d’une autre", async () => {
     const repo = new InMemoryCategories();
-    const handler = new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal());
+    const handler = new CreateCategoryHandler(
+      repo,
+      new SequentialIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
     const second = await handler.execute(
       new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }),
     );
 
     await expect(
-      new RenameCategoryHandler(repo, new RecordingJournal()).execute(
+      new RenameCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new RenameCategoryCommand(second, { name: { fr: "Pains" } }),
       ),
     ).rejects.toBeInstanceOf(CategorySlugTakenError);
@@ -575,7 +614,7 @@ describe("le slug est unique", () => {
     const [id] = await openRoots(repo, 1);
     const own = repo.at(id!).slug.fr;
 
-    await new RenameCategoryHandler(repo, new RecordingJournal()).execute(
+    await new RenameCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new RenameCategoryCommand(id!, { name: { fr: repo.at(id!).name.fr } }),
     );
 
@@ -585,7 +624,12 @@ describe("le slug est unique", () => {
   /** Une archivée garde ses fiches, donc son préfixe de SKU reste pris. */
   it("compte aussi les familles archivées", async () => {
     const repo = new InMemoryCategories();
-    const handler = new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal());
+    const handler = new CreateCategoryHandler(
+      repo,
+      new SequentialIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     const id = await handler.execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
     await archive(repo).execute(new ArchiveCategoryCommand(id));
 
@@ -600,7 +644,7 @@ describe("MoveCategoryHandler", () => {
     const repo = new InMemoryCategories();
     const [parent, moved] = await openRoots(repo, 2);
 
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(moved!, parent!),
     );
 
@@ -611,11 +655,11 @@ describe("MoveCategoryHandler", () => {
   it("remonte à la racine avec un parent nul", async () => {
     const repo = new InMemoryCategories();
     const [parent, moved] = await openRoots(repo, 2);
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(moved!, parent!),
     );
 
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(moved!, null),
     );
 
@@ -626,12 +670,12 @@ describe("MoveCategoryHandler", () => {
   it("refuse un déplacement qui créerait un cycle", async () => {
     const repo = new InMemoryCategories();
     const [grandParent, child] = await openRoots(repo, 2);
-    await new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+    await new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new MoveCategoryCommand(child!, grandParent!),
     );
 
     await expect(
-      new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+      new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new MoveCategoryCommand(grandParent!, child!),
       ),
     ).rejects.toBeInstanceOf(CategoryCycleError);
@@ -643,7 +687,7 @@ describe("MoveCategoryHandler", () => {
     await archive(repo).execute(new ArchiveCategoryCommand(parent!));
 
     await expect(
-      new MoveCategoryHandler(repo, new RecordingJournal()).execute(
+      new MoveCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new MoveCategoryCommand(moved!, parent!),
       ),
     ).rejects.toBeInstanceOf(CategoryArchivedParentError);
@@ -655,9 +699,11 @@ describe("ReorderCategoriesHandler", () => {
     const repo = new InMemoryCategories();
     const [first, second, third] = await openRoots(repo, 3);
 
-    await new ReorderCategoriesHandler(repo, new RecordingJournal()).execute(
-      new ReorderCategoriesCommand(null, [third!, first!, second!]),
-    );
+    await new ReorderCategoriesHandler(
+      repo,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new ReorderCategoriesCommand(null, [third!, first!, second!]));
 
     expect(repo.at(third!).position).toBe(0);
     expect(repo.at(first!).position).toBe(1);
@@ -670,7 +716,7 @@ describe("ReorderCategoriesHandler", () => {
     const [first] = await openRoots(repo, 3);
 
     await expect(
-      new ReorderCategoriesHandler(repo, new RecordingJournal()).execute(
+      new ReorderCategoriesHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new ReorderCategoriesCommand(null, [first!]),
       ),
     ).rejects.toBeInstanceOf(CategoryOrderMismatchError);
@@ -682,9 +728,11 @@ describe("ReorderCategoriesHandler", () => {
     const [first, second, archived] = await openRoots(repo, 3);
     await archive(repo).execute(new ArchiveCategoryCommand(archived!));
 
-    await new ReorderCategoriesHandler(repo, new RecordingJournal()).execute(
-      new ReorderCategoriesCommand(null, [second!, first!]),
-    );
+    await new ReorderCategoriesHandler(
+      repo,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new ReorderCategoriesCommand(null, [second!, first!]));
 
     expect(repo.at(second!).position).toBe(0);
     expect(repo.at(archived!).position).toBe(2);
@@ -700,6 +748,8 @@ describe("ListCategoriesHandler", () => {
       repo,
       new SequentialIds(),
       new RecordingJournal(),
+
+      new DirectUnitOfWork(),
     ).execute(new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }));
     const counts = new StubProductCounts(0, new Map([[created, 3]]));
 
@@ -712,12 +762,112 @@ describe("ListCategoriesHandler", () => {
     // Les familles sans fiche sont ABSENTES du groupBy. Un écran qui lirait
     // `undefined` afficherait « undefined fiche(s) » dans sa zone dangereuse.
     const repo = new InMemoryCategories();
-    await new CreateCategoryHandler(repo, new SequentialIds(), new RecordingJournal()).execute(
-      new CreateCategoryCommand({ name: { fr: "Pains" } }),
-    );
+    await new CreateCategoryHandler(
+      repo,
+      new SequentialIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
 
     const [row] = await new ListCategoriesHandler(repo, new StubProductCounts()).execute();
 
     expect(row?.activeProductCount).toBe(0);
+  });
+});
+
+/**
+ * Le journal des familles. Cinq verbes distincts plutôt qu'un `updated`
+ * fourre-tout : archiver retire un rayon de la vente, déplacer change ce dont
+ * une fiche hérite, renommer ne fait ni l'un ni l'autre. Ce test tient cette
+ * distinction — c'est elle qui rend l'historique lisible sans rouvrir chaque
+ * charge utile.
+ */
+describe("Ce que les familles inscrivent au journal", () => {
+  it("nomme un fait par geste — création, renommage, déplacement, rangs, canaux, archivage", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const uow = new DirectUnitOfWork();
+    const ids = new SequentialIds();
+
+    const parent = await new CreateCategoryHandler(repo, ids, journal, uow).execute(
+      new CreateCategoryCommand({ name: { fr: "Chocolats" } }),
+    );
+    const child = await new CreateCategoryHandler(repo, ids, journal, uow).execute(
+      new CreateCategoryCommand({ name: { fr: "Pralinés" } }),
+    );
+    await new RenameCategoryHandler(repo, journal, uow).execute(
+      new RenameCategoryCommand(child, { name: { fr: "Pralinés maison" } }),
+    );
+    await new MoveCategoryHandler(repo, journal, uow).execute(
+      new MoveCategoryCommand(child, parent),
+    );
+    await new ReorderCategoriesHandler(repo, journal, uow).execute(
+      new ReorderCategoriesCommand(null, [parent]),
+    );
+    await new SetCategoryChannelsHandler(repo, allLocationsKnown(), registry, journal, uow).execute(
+      new SetCategoryChannelsCommand(child, ALL_OPEN),
+    );
+    await new ArchiveCategoryHandler(repo, new StubProductCounts(), journal, uow).execute(
+      new ArchiveCategoryCommand(child),
+    );
+
+    expect(journal.types()).toEqual([
+      "category.created",
+      "category.created",
+      "category.renamed",
+      "category.moved",
+      "category.reordered",
+      "category.channels_changed",
+      "category.archived",
+    ]);
+  });
+
+  /**
+   * Un réordonnancement est UN geste sur un niveau, pas N gestes sur N sœurs :
+   * une trace par famille déplacée noierait l'historique de chacune sous des
+   * changements de rang que personne ne relit. La racine n'a pas d'id — sans
+   * l'identifiant conventionnel, tous les réordonnancements de premier niveau
+   * seraient orphelins.
+   */
+  it("range un niveau entier sous UN seul fait, porté par le parent", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const roots = await openRoots(repo, 3);
+
+    await new ReorderCategoriesHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new ReorderCategoriesCommand(null, [roots[2]!, roots[0]!, roots[1]!]),
+    );
+
+    expect(journal.entries).toHaveLength(1);
+    expect(journal.entries[0]?.subjectId).toBe("root");
+    expect(journal.entries[0]?.payload).toEqual({
+      order: [roots[2], roots[0], roots[1]],
+    });
+  });
+
+  it("n’inscrit rien pour un renommage qui ne renomme rien", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const [id] = await openRoots(repo, 1);
+
+    await new RenameCategoryHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new RenameCategoryCommand(id!, { name: { fr: "Famille 0" } }),
+    );
+
+    expect(journal.types()).toEqual([]);
+  });
+
+  /** Le parent d'AVANT est ce qu'on vient chercher : c'est de lui que la
+   *  famille tenait sa TVA et ses canaux. */
+  it("emporte le parent d’avant ET d’après dans un déplacement", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const [parent, child] = await openRoots(repo, 2);
+
+    await new MoveCategoryHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new MoveCategoryCommand(child!, parent!),
+    );
+
+    expect(journal.entries[0]?.payload).toEqual({ parentId: { from: null, to: parent } });
   });
 });

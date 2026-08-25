@@ -1,4 +1,5 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -30,6 +31,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     private readonly categories: CategoryRepository,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -58,15 +60,15 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
       position: await this.categories.nextPosition(parentId),
     });
     await requireFreeSlug(this.categories, category);
-    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
-    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
-    // silence qu'on prendrait pour une décision.
-    await this.categories.add(
-      category,
-      this.journal.untraced(
-        "création de famille — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.categoryCreated,
+        subjectType: "category",
+        subjectId: category.id,
+        payload: { name: category.name, parentId },
+      });
+      await this.categories.add(category, ticket);
+    });
     return category.id;
   }
 }

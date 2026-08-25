@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../journal/pim-journal.js";
 import type { Location } from "../entities/location.js";
 
 /**
@@ -18,8 +19,8 @@ export abstract class LocationRepository {
    * pour qui lit l'écran, et c'est l'écran qui compte ici.
    */
   abstract findByName(name: string): Promise<Location | null>;
-  abstract add(location: Location): Promise<void>;
+  abstract add(location: Location, ticket: WriteTicket): Promise<void>;
   /** Écrit l'état entier — champs ET grille de tables — en une transaction. */
-  abstract save(location: Location): Promise<void>;
-  abstract remove(id: string): Promise<void>;
+  abstract save(location: Location, ticket: WriteTicket): Promise<void>;
+  abstract remove(id: string, ticket: WriteTicket): Promise<void>;
 }

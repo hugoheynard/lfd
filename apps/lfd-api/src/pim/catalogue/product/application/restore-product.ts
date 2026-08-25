@@ -1,4 +1,5 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { ProductRepository } from "../domain/ports/product.repository.js";
@@ -14,19 +15,24 @@ export class RestoreProductHandler implements ICommandHandler<RestoreProductComm
   constructor(
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: RestoreProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
     product.restore();
-    // Dette déclarée (cf. `lint:journal-tracked`) : l'restauration d'une fiche
-    // n'a pas encore de fait nommé. Le motif est ici, greppable, plutôt
-    // que dans un silence qu'on prendrait pour une décision.
-    await this.products.save(
-      product,
-      this.journal.untraced(
-        "restauration de fiche — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    const { sku, name } = product.snapshot();
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.productRestored,
+        subjectType: "product",
+        subjectId: command.id,
+        // Le SKU et le nom voyagent avec le fait : une fiche archivée sort des
+        // écrans, et l'historique ne doit pas se réduire à un identifiant qu'on
+        // ne peut plus résoudre nulle part.
+        payload: { sku, name },
+      });
+      await this.products.save(product, ticket);
+    });
   }
 }

@@ -9,12 +9,13 @@
  * Sujet d'un événement — la chose qu'il concerne.
  *
  * Le journal a cessé d'être celui de la croissance seule : le référentiel y
- * écrit ses décisions fiscales et ses publications. Trois sujets s'ajoutent donc
- * aux trois d'origine. La colonne est un `String` : élargir ne coûte pas de
+ * écrit toutes ses décisions. Quatre sujets s'ajoutent donc aux trois
+ * d'origine. La colonne est un `String` : élargir ne coûte pas de
  * migration, et la table reste la seule — deux journaux, ce serait deux vérités
  * sur « qui a fait quoi ».
  */
-export type ActivitySubjectType = "user" | "company" | "lead" | "tva_rate" | "product" | "category";
+export type ActivitySubjectType =
+  "user" | "company" | "lead" | "tva_rate" | "product" | "category" | "location";
 
 /** Nature de l'acteur, recopiée du `RequestContext` (`actor.type`). */
 export type ActivityActorType = "customer" | "staff" | "system";

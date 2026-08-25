@@ -1,5 +1,9 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import type { Location } from "../domain/entities/location.js";
+import { changesBetween } from "../../journal/changes.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
 import { requireLocation, requireFreeName } from "./location-support.js";
 
@@ -29,11 +33,16 @@ export class UpdateLocationCommand {
  */
 @CommandHandler(UpdateLocationCommand)
 export class UpdateLocationHandler implements ICommandHandler<UpdateLocationCommand, void> {
-  constructor(private readonly locations: LocationRepository) {}
+  constructor(
+    private readonly locations: LocationRepository,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: UpdateLocationCommand): Promise<void> {
     const { id, patch } = command;
     const location = await requireLocation(this.locations, id);
+    const before = traced(location);
 
     if (patch.name !== undefined) {
       location.rename(patch.name);
@@ -54,6 +63,35 @@ export class UpdateLocationHandler implements ICommandHandler<UpdateLocationComm
       location.setTableCount(patch.tableCount);
     }
 
-    await this.locations.save(location);
+    const changes = changesBetween(before, traced(location));
+    await this.uow.run(async () => {
+      // L'écran renvoie la fiche entière à chaque enregistrement : sans ce
+      // filtre, l'historique d'un emplacement serait surtout composé de gestes
+      // qui n'ont rien changé.
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.locationUpdated,
+              subjectType: "location",
+              subjectId: id,
+              payload: { changes },
+            })
+          : this.journal.untraced("emplacement enregistré sans modification");
+      await this.locations.save(location, ticket);
+    });
   }
+}
+
+/**
+ * Ce que le journal retient d'un emplacement : ses réglages, et le NOMBRE de
+ * tables plutôt que la grille.
+ *
+ * Les tables portent les jetons de QR — les verser dans une charge utile
+ * mettrait des accès de commande à table dans un flux qu'on relit à l'écran.
+ * Et un « avant → après » de vingt lignes de tables enterrerait le seul
+ * changement qu'on cherchait.
+ */
+function traced(location: Location): Record<string, unknown> {
+  const { name, clickCollect, surPlace, baseUrl, tables } = location.snapshot();
+  return { name, clickCollect, surPlace, baseUrl, tableCount: tables.length };
 }

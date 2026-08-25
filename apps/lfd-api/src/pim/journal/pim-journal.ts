@@ -15,17 +15,35 @@
  * tient plus.
  */
 
-/** La chose dont l'événement parle. Le référentiel n'en connaît que trois. */
-export type PimSubjectType = "tva_rate" | "product" | "category";
+/** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
+export type PimSubjectType = "tva_rate" | "product" | "category" | "location";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
  * HTTP : `tax_rate.rate_changed` se relit dans six mois,
  * `PUT /commerce/vat-rates/x` non.
  *
- * On ne trace pas tout. Ces sept-là ont en commun de **changer ce qui est taxé
- * ou vendu** — le reste (une description retouchée, un libellé) n'a pas d'aval
- * et n'a rien à faire dans un journal qu'on relit pour comprendre un écart.
+ * ## Plus de trou : toute écriture du référentiel nomme son fait
+ *
+ * La liste a commencé par les seuls faits qui **changent ce qui est taxé ou
+ * vendu**, et laissait volontairement de côté ce qui n'avait « pas d'aval » :
+ * un renommage de famille, un emplacement créé, une fiche archivée. Quatorze
+ * gestes écrivaient donc sans rien affirmer, sous une dérogation comptée par
+ * `lint:journal-tracked`.
+ *
+ * Cette frontière ne tenait pas. Elle triait selon l'usage qu'on IMAGINAIT du
+ * journal — comprendre un écart de facturation — alors que la question qu'on
+ * lui pose vraiment est « qui a touché à ça, et quand ». Pour cette
+ * question-là, un renommage compte autant qu'un changement de taux : c'est
+ * souvent lui qu'on cherche, parce que c'est lui qui a fait disparaître une
+ * ligne d'un écran sans que personne ne s'en souvienne. Et une lacune de
+ * journal ne se rattrape pas : le jour où l'on constate qu'il manque un fait,
+ * les mois passés sont perdus.
+ *
+ * Le tri n'a donc pas disparu, il a changé d'endroit : le flux enregistre tout
+ * ce que le référentiel décide, et c'est la **lecture** qui choisit ce qu'elle
+ * montre — l'historique d'une fiche descend au détail, la vue générale reste
+ * sur les faits à aval.
  */
 export const PIM_EVENTS = {
   vatRateCreated: "tax_rate.created",
@@ -63,6 +81,60 @@ export const PIM_EVENTS = {
   productDeclarationSaved: "product.declaration_saved",
   productEditorialSaved: "product.editorial_saved",
   productMediaSaved: "product.media_saved",
+  /**
+   * **La famille** — l'arbre du catalogue.
+   *
+   * Cinq verbes distincts plutôt qu'un `category.updated` fourre-tout : ils ne
+   * répondent pas à la même question, et ils n'ont pas les mêmes conséquences.
+   * Archiver retire un rayon de la vente, déplacer change ce dont une fiche
+   * hérite, renommer ne fait ni l'un ni l'autre — les confondre obligerait à
+   * rouvrir chaque charge utile pour savoir laquelle des trois on lit.
+   */
+  categoryCreated: "category.created",
+  categoryRenamed: "category.renamed",
+  /** Change le parent, donc l'héritage de TVA et de canaux en aval. */
+  categoryMoved: "category.moved",
+  categoryArchived: "category.archived",
+  /**
+   * Un niveau entier renuméroté — le sujet est le **parent**, pas chaque
+   * famille déplacée. Une ligne par fratrie réordonnée : c'est un seul geste,
+   * et N traces pour N sœurs noieraient l'historique de chacune sous des
+   * changements de rang que personne ne relit.
+   */
+  categoriesReordered: "category.reordered",
+  /** Où un rayon se vend — d'où ses fiches héritent, sauf dérogation. */
+  categoryChannelsChanged: "category.channels_changed",
+  /**
+   * **La fiche** — sa naissance et sa sortie de la vente.
+   *
+   * `archived` / `restored` ne doublonnent pas `unpublished` / `published` :
+   * dépublier retire de la vente une fiche qu'on continue de travailler,
+   * archiver la retire du référentiel. C'est la différence entre « on ne le
+   * vend plus en ce moment » et « on ne le fait plus » — et c'est exactement
+   * ce qu'on vient demander au journal six mois plus tard.
+   */
+  productCreated: "product.created",
+  productArchived: "product.archived",
+  productRestored: "product.restored",
+  /**
+   * **L'emplacement** — boutique ou point de vente, et sa grille de tables.
+   *
+   * Il entre dans le journal du référentiel parce qu'il en fait partie : les
+   * familles citent les emplacements dans leur grille de canaux, et supprimer
+   * un emplacement est refusé tant qu'une famille le coche. Un journal qui
+   * expliquerait les canaux sans expliquer les emplacements qu'ils citent
+   * s'arrêterait juste avant la réponse.
+   */
+  locationCreated: "location.created",
+  locationUpdated: "location.updated",
+  locationDeleted: "location.deleted",
+  /**
+   * Un QR de table **émis** ou **retiré**. Le jeton n'est PAS dans la charge :
+   * il vaut accès à la commande à table, et un journal se lit plus largement
+   * que la table qui le porte. On trace le geste, pas le secret.
+   */
+  locationTableQrGenerated: "location.table_qr_generated",
+  locationTableQrRemoved: "location.table_qr_removed",
 } as const;
 
 /**

@@ -1,9 +1,13 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertCompleteOrder } from "../domain/services/category-tree.js";
+
+/** L'identifiant conventionnel du premier niveau, qui n'a pas de famille parente. */
+const ROOT_LEVEL = "root";
 
 export class ReorderCategoriesCommand {
   constructor(
@@ -30,6 +34,7 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
   constructor(
     private readonly categories: CategoryRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: ReorderCategoriesCommand): Promise<void> {
@@ -51,14 +56,18 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
         ranked.push(category);
       }
     });
-    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
-    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
-    // silence qu'on prendrait pour une décision.
-    await this.categories.saveAll(
-      ranked,
-      this.journal.untraced(
-        "réordonnancement de familles — aucun événement métier défini (dette journal-tracked)",
-      ),
-    );
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.categoriesReordered,
+        subjectType: "category",
+        // Le sujet est le NIVEAU réordonné, pas chacune des sœurs : c'est un
+        // seul geste. La racine n'a pas d'id — elle en reçoit un, faute de
+        // quoi tous les réordonnancements de premier niveau seraient orphelins
+        // et introuvables à la lecture.
+        subjectId: command.parentId ?? ROOT_LEVEL,
+        payload: { order: command.orderedIds },
+      });
+      await this.categories.saveAll(ranked, ticket);
+    });
   }
 }

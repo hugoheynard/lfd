@@ -1,4 +1,5 @@
-import { PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -76,6 +77,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly nutrition: NutritionRepository,
     private readonly editorials: EditorialRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
   ) {}
@@ -119,30 +121,31 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       categoryId: input.categoryId,
       defaultVariant: { id: variantId, sku: variantSku, name },
     });
-    await this.products.add(product);
+    // UNE trace pour UN geste, même si l'ouverture touche trois dépôts : la
+    // fiche naît d'un seul acte, et trois lignes de journal pour un formulaire
+    // rendraient l'historique illisible là où il doit se lire d'un trait.
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.productCreated,
+        subjectType: "product",
+        subjectId: productId,
+        payload: {
+          sku: sku.value,
+          name,
+          kind: input.kind,
+          categoryId: input.categoryId,
+          declared: declaration !== null,
+        },
+      });
+      await this.products.add(product, ticket);
 
-    if (declaration !== null) {
-      // Dette déclarée (cf. `lint:journal-tracked`) : l'ouverture d'une fiche
-      // n'a pas encore de fait nommé. Le motif est ici, greppable.
-      await this.nutrition.declare(
-        variantId,
-        declaration,
-        this.journal.untraced(
-          "création de fiche — aucun événement métier défini (dette journal-tracked)",
-        ),
-      );
-    }
-    // Pas de ligne éditoriale si personne n'a rien écrit (satellite optionnel).
-    if (!isEmptyEditorial(story) || visuals.length > 0) {
-      await this.editorials.save(
-        productId,
-        story,
-        visuals,
-        this.journal.untraced(
-          "création de fiche — aucun événement métier défini (dette journal-tracked)",
-        ),
-      );
-    }
+      if (declaration !== null) {
+        await this.nutrition.declare(variantId, declaration, ticket);
+      }
+      if (!isEmptyEditorial(story) || visuals.length > 0) {
+        await this.editorials.save(productId, story, visuals, ticket);
+      }
+    });
 
     return productId;
   }
