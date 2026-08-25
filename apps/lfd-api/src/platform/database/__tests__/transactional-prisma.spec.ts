@@ -61,6 +61,59 @@ describe("transactionalPrisma", () => {
   });
 });
 
+describe("$transaction sous une transaction ambiante", () => {
+  /**
+   * Une trentaine de dépôts appellent déjà `$transaction` pour leur propre lot.
+   * S'il visait le client de base, il ouvrirait une transaction INDÉPENDANTE :
+   * ses écritures commiteraient seules, et l'échec du journal ne les annulerait
+   * pas — la garantie serait fausse là précisément où on la croit acquise.
+   */
+  it("n'ouvre PAS une seconde transaction (forme tableau)", async () => {
+    let opened = 0;
+    const client = transactionalPrisma({
+      ...base(),
+      $transaction: async (work: (tx: object) => Promise<unknown>) => {
+        opened += 1;
+        return work({});
+      },
+    });
+
+    const results = await runInTransaction({}, () =>
+      client.$transaction([Promise.resolve("a"), Promise.resolve("b")] as never),
+    );
+
+    expect(opened).toBe(0);
+    expect(results).toEqual(["a", "b"]);
+  });
+
+  it("passe la transaction EN COURS au callback", async () => {
+    const client = transactionalPrisma(base());
+    const ambient = { product: { source: "transaction" } };
+
+    const seen = await runInTransaction(ambient, () =>
+      client.$transaction(((tx: { product: { source: string } }) =>
+        Promise.resolve(tx.product.source)) as never),
+    );
+
+    expect(seen).toBe("transaction");
+  });
+
+  it("garde le $transaction de la BASE hors transaction", async () => {
+    let opened = 0;
+    const client = transactionalPrisma({
+      ...base(),
+      $transaction: async (work: (tx: object) => Promise<unknown>) => {
+        opened += 1;
+        return work({ product: { source: "transaction" } });
+      },
+    });
+
+    await client.$transaction(() => Promise.resolve());
+
+    expect(opened).toBe(1);
+  });
+});
+
 describe("PrismaUnitOfWork", () => {
   it("ouvre une transaction et l'expose au client", async () => {
     const client = transactionalPrisma(base());

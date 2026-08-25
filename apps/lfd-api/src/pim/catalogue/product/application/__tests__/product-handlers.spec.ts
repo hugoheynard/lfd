@@ -8,6 +8,11 @@ import {
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
+import {
+  EditorialReader,
+  type ProductEditorialView,
+  type ProductMediaRecord,
+} from "../../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { SetProductMediaCommand, SetProductMediaHandler } from "../set-product-media.js";
 import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
@@ -178,6 +183,23 @@ class RecordingEditorialRepository extends EditorialRepository {
  * (l'historique existe, il ment) et un fait écrit alors que rien n'a bougé
  * (l'historique se remplit de gestes sans effet, et on cesse de le lire).
  */
+/**
+ * Lecteur doublé : la fiche part **vierge**, ce qui est le cas courant — un
+ * produit neuf n'a ni texte ni visuel. Le diff porte donc sur « rien → quelque
+ * chose », qui est précisément la première trace qu'on veut voir.
+ */
+class EmptyEditorialReader extends EditorialReader {
+  findByProduct(): Promise<ProductEditorialView | null> {
+    return Promise.resolve(null);
+  }
+  findByProducts(): Promise<ReadonlyMap<string, ProductEditorialView>> {
+    return Promise.resolve(new Map());
+  }
+  mediaOf(): Promise<readonly ProductMediaRecord[]> {
+    return Promise.resolve([]);
+  }
+}
+
 describe("l’historique d’une fiche", () => {
   it("écrit ce qui a changé, en AVANT → APRÈS", async () => {
     const products = new FakeProductRepository(seedProduct());
@@ -380,7 +402,13 @@ describe("UpdateProductEditorialHandler", () => {
   it("met à jour l’éditorial sans toucher aux médias (liste vide)", async () => {
     const products = new FakeProductRepository(seedProduct());
     const editorials = new RecordingEditorialRepository();
-    await new UpdateProductEditorialHandler(products, editorials).execute(
+    await new UpdateProductEditorialHandler(
+      products,
+      editorials,
+      new EmptyEditorialReader(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new UpdateProductEditorialCommand(PRODUCT_ID, {
         descriptionShort: { fr: "Torréfaction douce" },
       }),
@@ -506,7 +534,13 @@ describe("SetProductMediaHandler", () => {
     const products = new FakeProductRepository(seedProduct());
     const editorials = new RecordingEditorialRepository();
 
-    await new SetProductMediaHandler(products, editorials).execute(
+    await new SetProductMediaHandler(
+      products,
+      editorials,
+      new EmptyEditorialReader(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
         { role: "hero", url: "https://cdn/1.jpg", alt: { fr: "De face" } },
         { role: "gallery", url: "https://cdn/2.jpg" },
@@ -528,9 +562,13 @@ describe("SetProductMediaHandler", () => {
     const products = new FakeProductRepository(seedProduct());
     const editorials = new RecordingEditorialRepository();
 
-    await new SetProductMediaHandler(products, editorials).execute(
-      new SetProductMediaCommand(PRODUCT_ID, []),
-    );
+    await new SetProductMediaHandler(
+      products,
+      editorials,
+      new EmptyEditorialReader(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
     expect(editorials.replaced[0]?.media).toEqual([]);
   });

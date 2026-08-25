@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { Prisma } from "../../../../platform/database/client/client.js";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
@@ -120,8 +121,24 @@ function toProduct(row: ProductRow): Product {
 }
 
 /** Les colonnes du produit lui-même — les déclinaisons ont les leurs. */
+/**
+ * QUI a écrit — la colonne système d'ADR-11, enfin remplie.
+ *
+ * Ici, dans l'infrastructure, et non dans un handler : c'est le seul endroit
+ * qu'aucune écriture ne peut contourner. Un handler qui devrait y penser est un
+ * handler qui peut l'oublier, et une colonne remplie une fois sur deux est pire
+ * que vide — on la croit.
+ *
+ * `null` hors requête (un seed, un cron) : c'est exactement ce qui est vrai, et
+ * l'inventer serait pire que l'avouer.
+ */
+function writtenBy(): string | null {
+  return currentRequestContext()?.actor.id ?? null;
+}
+
 function toColumns(snapshot: ProductSnapshot) {
   return {
+    updatedBy: writtenBy(),
     name: localizedColumn(snapshot.name),
     slug: localizedColumn(snapshot.slug),
     kind: snapshot.kind,
