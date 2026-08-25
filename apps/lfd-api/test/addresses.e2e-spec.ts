@@ -315,3 +315,77 @@ describe("préférence d'acheminement (côté client)", () => {
       .expect(404);
   });
 });
+
+/**
+ * Le palier « **étendre** » de la bascule `AddressKind` (`facturation` →
+ * `billing`, `livraison` → `delivery`).
+ *
+ * Ce que ces cas tiennent, et qu'aucun test unitaire ne peut tenir : les
+ * lectures passent par de VRAIES clauses SQL (`kind IN (...)`), et trois des
+ * cinq lecteurs filtraient sur la **chaîne** `"facturation"` — invisible au
+ * gate de langue, qui ne compte que les identifiants. Un filtre oublié ne lève
+ * rien : il rend simplement une adresse absente.
+ *
+ * Le troisième cas est le plus important des trois : il fixe le fait qu'on
+ * n'écrit PAS encore le nouvel encodage. C'est la définition du palier — et
+ * sans lui, passer aux nouvelles valeurs se ferait par accident au lieu d'être
+ * le palier 2.
+ */
+describe("bascule AddressKind — les deux encodages se lisent pareil", () => {
+  it("une facturation écrite `billing` est lue comme LA facturation", async () => {
+    await ctx.prisma.address.create({
+      data: { companyId, kind: "billing", ...BILLING, isDefault: false },
+    });
+
+    const view = await addressesOf(ADMIN);
+    expect(view.billing?.ville).toBe("Paris");
+  });
+
+  it("une livraison écrite `delivery` entre dans la liste et se laisse archiver", async () => {
+    const created = await ctx.prisma.address.create({
+      data: {
+        companyId,
+        kind: "delivery",
+        label: "Boutique",
+        ligne1: "9 rue de la Roquette",
+        ligne2: "",
+        codePostal: "75011",
+        ville: "Paris",
+        pays: "France",
+        isDefault: true,
+        deliverySpecs: delivery().specs,
+      },
+      select: { id: true },
+    });
+
+    const view = await addressesOf(ADMIN);
+    expect(view.deliveries).toHaveLength(1);
+
+    // L'archivage relit la ligne pour la trouver : un filtre resté sur
+    // `livraison` seul rendrait 404 ici, pas une liste vide ailleurs.
+    await ctx
+      .asSub(ADMIN)
+      .delete(`/companies/${companyId}/delivery-addresses/${created.id}`)
+      .expect(204);
+    expect((await addressesOf(ADMIN)).deliveries).toHaveLength(0);
+  });
+
+  it("les écritures posent encore l'ANCIEN encodage — le retour arrière reste possible", async () => {
+    await ctx
+      .asSub(ADMIN)
+      .patch(`/companies/${companyId}/billing-address`)
+      .send(BILLING)
+      .expect(204);
+    await ctx
+      .asSub(ADMIN)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .send(delivery())
+      .expect(201);
+
+    const kinds = await ctx.prisma.address.findMany({
+      where: { companyId },
+      select: { kind: true },
+    });
+    expect(kinds.map((row) => row.kind).sort()).toEqual(["facturation", "livraison"]);
+  });
+});

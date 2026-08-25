@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { billingKinds } from "./address-kind-transition.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CompanyAddressReader } from "../domain/ports/company-address.reader.js";
 import {
@@ -68,7 +69,7 @@ const COMPANY_SELECT = {
   // Deux EXISTENCES pour la galerie d'avertissements — pas deux jointures
   // complètes : `take: 1` et un seul champ. La liste doit rester une liste.
   addresses: {
-    where: { kind: "facturation", archivedAt: null },
+    where: { kind: { in: billingKinds() }, archivedAt: null },
     select: { id: true },
     take: 1,
   },

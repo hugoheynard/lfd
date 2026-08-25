@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import type { MarketAdoptionView } from "@lfd/contracts";
 
+import type { AddressKind } from "../../../platform/database/client/client.js";
+
+import { isBilling } from "../../account/infrastructure/address-kind-transition.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { weekStarts } from "../domain/growth-stats.js";
@@ -15,7 +18,7 @@ const WINDOW_MS = WINDOW_WEEKS * 7 * 24 * 60 * 60 * 1000;
 interface AddressRow {
   codePostal: string;
   ville: string;
-  kind: "facturation" | "livraison";
+  kind: AddressKind;
   isDefault: boolean;
 }
 
@@ -116,7 +119,7 @@ function setZone(map: Map<string, Date[]>, codePostal: string): Date[] {
 /** Adresse représentative d'une société : facturation, sinon défaut, sinon première. */
 function pickAddress(addresses: readonly AddressRow[]): AddressRow | null {
   return (
-    addresses.find((a) => a.kind === "facturation") ??
+    addresses.find((a) => isBilling(a.kind)) ??
     addresses.find((a) => a.isDefault) ??
     addresses[0] ??
     null
