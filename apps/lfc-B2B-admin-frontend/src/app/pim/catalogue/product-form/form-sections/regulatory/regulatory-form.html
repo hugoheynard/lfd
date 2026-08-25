@@ -12,8 +12,13 @@
   [(value)]="store.weightGrams"
 />
 
-<div class="stack">
-  <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
+<fold-fieldset
+  legend="Valeurs nutritionnelles"
+  legendVariant="heading"
+  appearance="border"
+  hint="pour 100 g"
+  hintPosition="inline"
+>
   <div class="grid">
     @for (field of nutritionFields; track field.key) {
       <fold-number-input
@@ -25,7 +30,7 @@
       />
     }
   </div>
-</div>
+</fold-fieldset>
 
 <hr class="rule" />
 
@@ -64,8 +69,14 @@
       }
       <div class="groups">
         @for (group of store.groups(); track group.incoLabel) {
-          <fieldset>
-            <legend>{{ group.incoLabel }}</legend>
+          <!-- Registre EYEBROW, et écrit noir sur blanc : ces noms ne sont pas
+               des questions posées à celui qui saisit, ce sont les catégories
+               d'un référentiel réglementaire — « Fruits à coque » n'attend pas
+               de réponse, il annonce sous quelle rubrique on coche. Le micro-
+               libellé (capitales, mono dans cette app) dit cette voix-là. Il
+               était jusqu'ici le DÉFAUT du composant, donc un accident : tous
+               les autres groupes du dépôt passent `heading`. -->
+          <fold-fieldset appearance="border" [legend]="group.incoLabel">
             @for (item of group.entries; track item.code) {
               <fold-checkbox
                 size="sm"
@@ -74,7 +85,7 @@
                 (checkedChange)="store.toggleAllergen(item.code, $event)"
               />
             }
-          </fieldset>
+          </fold-fieldset>
         }
       </div>
     </div>
