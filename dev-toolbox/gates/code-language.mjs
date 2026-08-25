@@ -47,15 +47,24 @@ const SCOPE = [
   "apps/lfd-api/src/pim/locations",
   "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/vat-rates",
   "apps/lfc-B2B-admin-frontend/src/app/pim/locations",
+  // Les paquets partagés, drainés le 2026-08-25. Ce sont les plus petits et les
+  // plus lus : une dérive y voyage dans les trois apps à la fois.
+  "packages",
 ];
 
-/** Tout le reste, pour que le solde restant soit visible et non silencieux. */
+/**
+ * Tout le reste, pour que le solde restant soit visible et non silencieux.
+ *
+ * ⚠️ `packages/` n'y était pas — huit paquets sur neuf étaient déjà propres,
+ * mais personne ne le savait, et `b2b-ui` y portait un `'facturation' |
+ * 'livraison'` que rien ne comptait. Un dossier hors liste n'est pas « sans
+ * dette » : il est **sans mesure**, ce qui se lit pareil et ne vaut rien.
+ */
 const WATCHED = [
   "apps/lfd-api/src",
   "apps/lfc-B2B-admin-frontend/src/app",
   "apps/lfc-B2B-platform-frontend/src",
-  "packages/pim-contracts/src",
-  "packages/contracts/src",
+  "packages",
 ];
 
 /** Le lexique — `documentation/langue-du-code.md` §3. */
