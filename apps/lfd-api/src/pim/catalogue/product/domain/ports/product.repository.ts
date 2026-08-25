@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../../journal/pim-journal.js";
 import type { Product, ProductSnapshot } from "../entities/product.js";
 import type { VariantNutritionSnapshot, VariantSnapshot } from "../entities/variant.js";
 
@@ -29,5 +30,5 @@ export abstract class ProductRepository {
    * fraction de seconde.
    */
   abstract add(product: Product): Promise<void>;
-  abstract save(product: Product): Promise<void>;
+  abstract save(product: Product, ticket: WriteTicket): Promise<void>;
 }

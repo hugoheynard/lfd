@@ -27,8 +27,7 @@ export class UnpublishProductHandler implements ICommandHandler<UnpublishProduct
     product.unpublish();
     const { sku, name, variants } = product.snapshot();
     await this.uow.run(async () => {
-      await this.products.save(product);
-      await this.journal.record({
+      const ticket = await this.journal.trace({
         type: PIM_EVENTS.productUnpublished,
         subjectType: "product",
         subjectId: command.id,
@@ -36,6 +35,7 @@ export class UnpublishProductHandler implements ICommandHandler<UnpublishProduct
         // La portée d'un retrait : les articles qui cessent d'être vendus.
         blast: { variants: variants.length },
       });
+      await this.products.save(product, ticket);
     });
   }
 }

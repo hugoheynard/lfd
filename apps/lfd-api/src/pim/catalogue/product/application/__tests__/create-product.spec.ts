@@ -1,3 +1,4 @@
+import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { v7 as uuidV7 } from "uuid";
 
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
@@ -130,6 +131,7 @@ function setup(taken: readonly string[] = []): {
       new FakeCategoryRepository(),
       new SilentNutrition(),
       new SilentEditorial(),
+      new RecordingJournal(),
       new RealIds(),
       availability,
     ),

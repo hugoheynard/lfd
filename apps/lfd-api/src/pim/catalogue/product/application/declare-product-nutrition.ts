@@ -65,15 +65,16 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
     );
 
     await this.uow.run(async () => {
-      await this.nutrition.declare(variantId, declaration);
-      if (Object.keys(changes).length > 0) {
-        await this.journal.record({
-          type: PIM_EVENTS.productDeclarationSaved,
-          subjectType: "product",
-          subjectId: productId,
-          payload: { variantId, changes },
-        });
-      }
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.productDeclarationSaved,
+              subjectType: "product",
+              subjectId: productId,
+              payload: { variantId, changes },
+            })
+          : this.journal.untraced("section enregistrée sans modification");
+      await this.nutrition.declare(variantId, declaration, ticket);
     });
   }
 }

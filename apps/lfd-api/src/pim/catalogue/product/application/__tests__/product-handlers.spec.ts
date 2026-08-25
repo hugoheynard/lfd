@@ -460,17 +460,23 @@ describe("Archive / Restore product", () => {
   it("archive puis restaure le produit", async () => {
     const products = new FakeProductRepository(seedProduct());
 
-    await new ArchiveProductHandler(products).execute(new ArchiveProductCommand(PRODUCT_ID));
+    await new ArchiveProductHandler(products, new RecordingJournal()).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
     expect(products.snapshot()?.status).toBe("archived");
 
-    await new RestoreProductHandler(products).execute(new RestoreProductCommand(PRODUCT_ID));
+    await new RestoreProductHandler(products, new RecordingJournal()).execute(
+      new RestoreProductCommand(PRODUCT_ID),
+    );
     expect(products.snapshot()?.status).toBe("draft");
   });
 
   it("refuse d’archiver un produit inconnu", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new ArchiveProductHandler(products).execute(new ArchiveProductCommand("prd_absent")),
+      new ArchiveProductHandler(products, new RecordingJournal()).execute(
+        new ArchiveProductCommand("prd_absent"),
+      ),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
   });
 });

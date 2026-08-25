@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -74,6 +75,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly categories: CategoryRepository,
     private readonly nutrition: NutritionRepository,
     private readonly editorials: EditorialRepository,
+    private readonly journal: PimJournal,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
   ) {}
@@ -120,11 +122,26 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     await this.products.add(product);
 
     if (declaration !== null) {
-      await this.nutrition.declare(variantId, declaration);
+      // Dette déclarée (cf. `lint:journal-tracked`) : l'ouverture d'une fiche
+      // n'a pas encore de fait nommé. Le motif est ici, greppable.
+      await this.nutrition.declare(
+        variantId,
+        declaration,
+        this.journal.untraced(
+          "création de fiche — aucun événement métier défini (dette journal-tracked)",
+        ),
+      );
     }
     // Pas de ligne éditoriale si personne n'a rien écrit (satellite optionnel).
     if (!isEmptyEditorial(story) || visuals.length > 0) {
-      await this.editorials.save(productId, story, visuals);
+      await this.editorials.save(
+        productId,
+        story,
+        visuals,
+        this.journal.untraced(
+          "création de fiche — aucun événement métier défini (dette journal-tracked)",
+        ),
+      );
     }
 
     return productId;

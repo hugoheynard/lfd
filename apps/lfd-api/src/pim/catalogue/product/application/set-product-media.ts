@@ -50,15 +50,16 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
     const changes = changesBetween({ media: listOf(before) }, { media: listOf(after) });
 
     await this.uow.run(async () => {
-      await this.editorials.replaceMedia(command.id, after);
-      if (Object.keys(changes).length > 0) {
-        await this.journal.record({
-          type: PIM_EVENTS.productMediaSaved,
-          subjectType: "product",
-          subjectId: command.id,
-          payload: { changes },
-        });
-      }
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.productMediaSaved,
+              subjectType: "product",
+              subjectId: command.id,
+              payload: { changes },
+            })
+          : this.journal.untraced("section enregistrée sans modification");
+      await this.editorials.replaceMedia(command.id, after, ticket);
     });
   }
 }

@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../../journal/pim-journal.js";
 import type { Editorial, MediaItem } from "../value-objects/editorial.js";
 
 /**
@@ -17,7 +18,12 @@ export abstract class EditorialRepository {
     productId: string,
     editorial: Editorial,
     media: readonly MediaItem[],
+    ticket: WriteTicket,
   ): Promise<void>;
   /** Remplace la liste entière des visuels, dans l'ordre reçu. */
-  abstract replaceMedia(productId: string, media: readonly MediaItem[]): Promise<void>;
+  abstract replaceMedia(
+    productId: string,
+    media: readonly MediaItem[],
+    ticket: WriteTicket,
+  ): Promise<void>;
 }

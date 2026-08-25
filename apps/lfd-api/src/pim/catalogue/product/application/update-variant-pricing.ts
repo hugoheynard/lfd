@@ -43,18 +43,19 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
     const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
 
     await this.uow.run(async () => {
-      await this.products.save(product);
-      if (Object.keys(changes).length > 0) {
-        await this.journal.record({
-          type: PIM_EVENTS.productPricingSaved,
-          subjectType: "product",
-          subjectId: productId,
-          // La déclinaison est DANS la charge, pas dans le sujet : l'historique
-          // se lit par fiche, et un sujet « variante » le couperait en autant
-          // de fils qu'il y a de déclinaisons.
-          payload: { variantId, changes },
-        });
-      }
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.productPricingSaved,
+              subjectType: "product",
+              subjectId: productId,
+              // La déclinaison est DANS la charge, pas dans le sujet :
+              // l'historique se lit par fiche, et un sujet « variante » le
+              // couperait en autant de fils qu'il y a de déclinaisons.
+              payload: { variantId, changes },
+            })
+          : this.journal.untraced("section enregistrée sans modification");
+      await this.products.save(product, ticket);
     });
   }
 }

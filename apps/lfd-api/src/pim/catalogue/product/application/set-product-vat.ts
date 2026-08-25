@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRate } from "../../../commerce/application/vat-support.js";
 import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
@@ -53,8 +53,8 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     const before = product.vatByContext;
     product.setVat(command.vat, await this.contexts.active(), category.channelPreset);
     await this.uow.run(async () => {
-      await this.products.save(product);
-      await this.journalize(product.id, before, product.vatByContext);
+      const ticket = await this.journalize(product.id, before, product.vatByContext);
+      await this.products.save(product, ticket);
     });
   }
 
@@ -67,13 +67,13 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     productId: string,
     before: ContextVat,
     after: ContextVat,
-  ): Promise<void> {
+  ): Promise<WriteTicket> {
     const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
     const changed = keys.filter((key) => before[key] !== after[key]);
     if (changed.length === 0) {
-      return;
+      return this.journal.untraced("aucune dérogation de taux modifiée");
     }
-    await this.journal.record({
+    return this.journal.trace({
       type: PIM_EVENTS.productVatChanged,
       subjectType: "product",
       subjectId: productId,

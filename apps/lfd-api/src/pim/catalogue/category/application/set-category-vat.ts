@@ -68,7 +68,7 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     if (changed.length === 0) {
       return;
     }
-    await this.journal.record({
+    await this.journal.trace({
       type: PIM_EVENTS.categoryVatChanged,
       subjectType: "category",
       subjectId: categoryId,

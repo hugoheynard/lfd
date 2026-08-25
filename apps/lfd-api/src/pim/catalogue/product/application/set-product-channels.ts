@@ -1,7 +1,7 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryUnknownLocationError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -55,8 +55,8 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     const before = product.channelOverride;
     product.setChannels(command.channels, await this.contexts.active(), category.channelPreset);
     await this.uow.run(async () => {
-      await this.products.save(product);
-      await this.journalize(product.id, before, product.channelOverride);
+      const ticket = await this.journalize(product.id, before, product.channelOverride);
+      await this.products.save(product, ticket);
     });
   }
 
@@ -85,11 +85,11 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     productId: string,
     before: SalesChannels | null,
     after: SalesChannels | null,
-  ): Promise<void> {
+  ): Promise<WriteTicket> {
     if (JSON.stringify(before) === JSON.stringify(after)) {
-      return;
+      return this.journal.untraced("aucune dérogation de canaux modifiée");
     }
-    await this.journal.record({
+    return this.journal.trace({
       type: PIM_EVENTS.productChannelsChanged,
       subjectType: "product",
       subjectId: productId,

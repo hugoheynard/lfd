@@ -44,7 +44,7 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
     await this.uow.run(async () => {
       await this.rates.add(rate);
       // Pas de portée : un taux qui naît ne vise encore aucune famille.
-      await this.journal.record({
+      await this.journal.trace({
         type: PIM_EVENTS.vatRateCreated,
         subjectType: "tva_rate",
         subjectId: rate.id,

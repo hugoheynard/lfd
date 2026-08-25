@@ -54,7 +54,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
     if (before.percent !== after.percent) {
       // La portée : ce que ce taux touchait à l'instant du changement.
       const usage = (await this.rates.usageByRegime()).get(after.id);
-      await this.journal.record({
+      await this.journal.trace({
         type: PIM_EVENTS.vatRateRateChanged,
         subjectType: "tva_rate",
         subjectId: after.id,
@@ -67,7 +67,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
       });
     }
     if (before.name !== after.name) {
-      await this.journal.record({
+      await this.journal.trace({
         type: PIM_EVENTS.vatRateRenamed,
         subjectType: "tva_rate",
         subjectId: after.id,

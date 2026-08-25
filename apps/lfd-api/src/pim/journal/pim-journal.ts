@@ -114,12 +114,64 @@ export interface PimJournalEntry {
 }
 
 /**
+ * Le **laissez-passer d'écriture** : la preuve, portée par le type, qu'une
+ * trace a été inscrite.
+ *
+ * Les dépôts du référentiel l'exigent en paramètre. Il ne peut naître que dans
+ * ce module — `mint` n'est pas exporté et la marque est un symbole privé — donc
+ * la seule façon d'en obtenir un est de passer par {@link PimJournal}. Écrire
+ * sans tracer ne se refuse plus en revue ni en CI : **ça ne compile pas**.
+ *
+ * C'est la différence entre le filet (`lint:journal-tracked`, qui vérifie qu'un
+ * handler INJECTE le journal) et la garantie : injecter n'oblige pas à appeler.
+ * Un ticket, si.
+ */
+const TICKET = Symbol("pim.write-ticket");
+
+export interface WriteTicket {
+  readonly [TICKET]: true;
+}
+
+/** Frappe un laissez-passer. Privé au module : c'est toute la garantie. */
+function mint(): WriteTicket {
+  return { [TICKET]: true };
+}
+
+/**
  * Port du journal du référentiel.
  *
- * **Best-effort**, comme le journal qu'il représente : `record` n'échoue jamais
- * vers l'appelant. Une trace manquée ne doit pas annuler la décision qu'elle
- * décrit — sinon le journal devient un point de panne du métier.
+ * **Bloquant** : le référentiel a choisi que sa trace conditionne l'écriture.
+ * Elle part dans la même transaction que la décision qu'elle décrit, donc une
+ * panne de journal annule l'enregistrement. C'est la contrepartie assumée — le
+ * journal devient un point de panne du métier — et c'est ce qui rend la trace
+ * opposable plutôt que probable.
  */
 export abstract class PimJournal {
-  abstract record(entry: PimJournalEntry): Promise<void>;
+  /**
+   * Inscrit le fait, et rend le laissez-passer qui autorise l'écriture.
+   *
+   * L'ordre n'a pas d'importance pour l'atomicité (tout est dans la même
+   * transaction) ; il en a pour la LECTURE du code : on voit ce qu'on s'apprête
+   * à affirmer avant de l'écrire.
+   */
+  async trace(entry: PimJournalEntry): Promise<WriteTicket> {
+    await this.record(entry);
+    return mint();
+  }
+
+  /**
+   * Un laissez-passer **sans trace**, avec son motif.
+   *
+   * Toutes les écritures n'ont pas un fait à nommer, et certaines ne l'ont pas
+   * ENCORE (cf. la dette de `lint:journal-tracked`). La dérogation existe donc
+   * — mais il faut l'écrire, dire pourquoi, et ça se grep. Une exception
+   * lisible vaut mieux qu'une règle contournée en silence : le but n'a jamais
+   * été d'empêcher, il a toujours été de rendre visible.
+   */
+  untraced(reason: string): WriteTicket {
+    void reason;
+    return mint();
+  }
+
+  protected abstract record(entry: PimJournalEntry): Promise<void>;
 }

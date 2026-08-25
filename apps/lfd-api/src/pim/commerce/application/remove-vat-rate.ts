@@ -27,7 +27,7 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
     const { name, percent } = rate.snapshot();
     await this.uow.run(async () => {
       await this.rates.remove(command.id);
-      await this.journal.record({
+      await this.journal.trace({
         type: PIM_EVENTS.vatRateDeleted,
         subjectType: "tva_rate",
         subjectId: command.id,

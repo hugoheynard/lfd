@@ -27,8 +27,7 @@ export class PublishProductHandler implements ICommandHandler<PublishProductComm
     product.publish();
     const { sku, name, variants } = product.snapshot();
     await this.uow.run(async () => {
-      await this.products.save(product);
-      await this.journal.record({
+      const ticket = await this.journal.trace({
         type: PIM_EVENTS.productPublished,
         subjectType: "product",
         subjectId: command.id,
@@ -36,6 +35,7 @@ export class PublishProductHandler implements ICommandHandler<PublishProductComm
         // La portée d'une mise en vente : les articles qui partent avec.
         blast: { variants: variants.length },
       });
+      await this.products.save(product, ticket);
     });
   }
 }

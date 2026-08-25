@@ -48,15 +48,16 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
     const changes = changesBetween(flatten(before), flatten(after));
 
     await this.uow.run(async () => {
-      await this.editorials.save(command.id, after, []);
-      if (Object.keys(changes).length > 0) {
-        await this.journal.record({
-          type: PIM_EVENTS.productEditorialSaved,
-          subjectType: "product",
-          subjectId: command.id,
-          payload: { changes },
-        });
-      }
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.productEditorialSaved,
+              subjectType: "product",
+              subjectId: command.id,
+              payload: { changes },
+            })
+          : this.journal.untraced("section enregistrée sans modification");
+      await this.editorials.save(command.id, after, [], ticket);
     });
   }
 }

@@ -83,15 +83,19 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     // de sens ici. Enregistrer une section sans rien y changer n'écrit aucun
     // fait — sinon l'historique se remplit de gestes sans effet.
     await this.uow.run(async () => {
-      await this.products.save(product);
-      if (Object.keys(changes).length > 0) {
-        await this.journal.record({
-          type: PIM_EVENTS.productIdentitySaved,
-          subjectType: "product",
-          subjectId: id,
-          payload: { changes },
-        });
-      }
+      // La trace d'abord : c'est elle qui délivre le laissez-passer sans lequel
+      // le dépôt refuse d'écrire. Rien n'a changé ? On le DIT, et le motif se
+      // grep — un enregistrement sans effet n'a pas de fait à nommer.
+      const ticket =
+        Object.keys(changes).length > 0
+          ? await this.journal.trace({
+              type: PIM_EVENTS.productIdentitySaved,
+              subjectType: "product",
+              subjectId: id,
+              payload: { changes },
+            })
+          : this.journal.untraced("section enregistrée sans modification");
+      await this.products.save(product, ticket);
     });
   }
 }
