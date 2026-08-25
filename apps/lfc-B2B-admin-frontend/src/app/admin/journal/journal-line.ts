@@ -79,7 +79,7 @@ function sentenceOf(event: ActivityEventView): string {
     case 'product.unpublished':
       return `Produit « ${text(p['name'])} » retiré de la vente (${text(p['sku'])})`;
     default:
-      return event.type;
+      return pricingSentence(event) ?? settingSentence(event) ?? event.type;
   }
 }
 
@@ -149,4 +149,80 @@ function percent(value: unknown): string {
 /** Un compte, ou `null` s'il n'a pas été figé. Zéro EST un compte. */
 function count(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
+}
+
+/**
+ * Les actes de **tarification**.
+ *
+ * Ils portent déjà leur phrase — figée au moment de l'acte par le domaine, qui
+ * seul sait dire ce que la règle affirmait. On ne la reconstruit pas : on la
+ * lit, et on préfixe par le verbe. Une phrase recalculée aujourd'hui pour un
+ * acte d'hier raconterait l'histoire à l'envers.
+ */
+const PRICING_VERBS: Readonly<Record<string, string>> = {
+  posed: 'posée',
+  replaced: 'remplacée',
+  confirmed: 'confirmée',
+  paused: 'suspendue',
+  resumed: 'reprise',
+  archived: 'archivée',
+  renamed: 'renommée',
+};
+
+const PRICING_SUBJECTS: Readonly<Record<string, string>> = {
+  price_rule: 'Règle de prix',
+  price_floor: 'Limite de prix',
+  volume_ladder: 'Barème de volume',
+};
+
+function pricingSentence(event: ActivityEventView): string | null {
+  const [subject, act] = event.type.split('.');
+  const noun = subject === undefined ? undefined : PRICING_SUBJECTS[subject];
+  const verb = act === undefined ? undefined : PRICING_VERBS[act];
+  if (noun === undefined || verb === undefined) {
+    return null;
+  }
+  const summary = optional(event.payload['summary']);
+  const reason = optional(event.payload['reason']);
+  const said = summary === null ? '' : ` — ${summary}`;
+  // Le motif écrit par l'agent : c'est souvent la seule phrase qui explique
+  // pourquoi un prix a cessé de s'appliquer.
+  return `${noun} ${verb}${said}${reason === null ? '' : ` (${reason})`}`;
+}
+
+/** Les réglages qui décident du prix de livraison, du retrait et des heures limites. */
+function settingSentence(event: ActivityEventView): string | null {
+  const p = event.payload;
+  switch (event.type) {
+    case 'delivery_zone.created':
+      return `Zone de livraison « ${text(p['label'])} » créée`;
+    case 'delivery_zone.updated':
+      return `Zone de livraison « ${text(p['label'])} » modifiée`;
+    case 'delivery_zone.removed':
+      return 'Zone de livraison supprimée';
+    case 'pickup_address.created':
+      return `Point de retrait « ${text(p['label'])} » créé`;
+    case 'pickup_address.updated':
+      return `Point de retrait « ${text(p['label'])} » modifié`;
+    case 'pickup_address.removed':
+      return 'Point de retrait supprimé';
+    case 'pickup_address.default_set':
+      return 'Point de retrait par défaut changé';
+    case 'order_cutoff.created':
+      return `Heure limite posée à ${text(p['time'])}`;
+    case 'order_cutoff.updated':
+      return `Heure limite portée à ${text(p['time'])}`;
+    case 'order_cutoff.removed':
+      return 'Heure limite supprimée';
+    case 'volume_commitment.signed': {
+      // Une quantité est un NOMBRE : `text` la rendrait « — », et un engagement
+      // sans volume promis ne veut rien dire.
+      const promised = count(p['promisedQuantity']);
+      return `Engagement de volume signé${promised === null ? '' : ` (${promised.toString()})`}`;
+    }
+    case 'volume_commitment.closed':
+      return `Engagement de volume clos${optional(p['reason']) === null ? '' : ` (${text(p['reason'])})`}`;
+    default:
+      return null;
+  }
 }
