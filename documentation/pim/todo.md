@@ -96,10 +96,11 @@
       value-objects (`localizedText("nom", …)`). Le gate `code-language` ne les voit pas — il
       blanchit les littéraux de chaîne avant de compter, donc une clé d'union et un libellé
       d'erreur lui échappent par construction. Relevé le 2026-08-25
-- [ ] **Nommer les quatorze faits manquants** du journal du référentiel (dette affichée par
-      `lint:journal-tracked`) : ouverture/archivage/restauration d'une fiche, les six gestes sur
-      les familles, les cinq sur les emplacements. Chacun demande une décision propre — quel fait,
-      quelle charge — d'où la dette plutôt qu'une passe mécanique
+- [x] **Nommer les quatorze faits manquants** du journal du référentiel — fait le 2026-08-25.
+      `lint:journal-tracked` affiche `27/27`, la dette déclarée est vide. Chaque geste a son fait :
+      `category.{created,renamed,moved,archived,reordered,channels_changed}`,
+      `product.{created,archived,restored}`,
+      `location.{created,updated,deleted,table_qr_generated,table_qr_removed}`
 - [ ] Éditer la fiche d'un produit **existant** (aujourd'hui : seulement à la création)
 - [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)

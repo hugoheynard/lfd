@@ -29,6 +29,35 @@ puisse pas écrire sans tracer — **ça ne compile pas**.
 On fait de l'**event streaming** (audit, analytique), pas de l'event sourcing.
 On ne reconstruit jamais l'état métier depuis le journal.
 
+### La différence, concrètement
+
+Prenons un taux de TVA passé de 5,5 % à 10 %. Les deux mondes écrivent la même
+ligne — `tax_rate.rate_changed`, `{ from: 550, to: 1000 }`. Ce qui les sépare
+n'est pas ce qu'on écrit, c'est **où est la vérité**.
+
+**Chez nous (streaming).** La colonne `vat_rate.percent` vaut `1000`, et c'est
+elle qu'on lit pour facturer. Le journal est un **témoin** : si demain il est
+vide, effacé, ou en désaccord avec la colonne, la facturation continue et c'est
+la colonne qui a raison. Perdre le journal coûte la mémoire de qui a décidé
+quoi — jamais le service.
+
+**En event sourcing.** Il n'y a **pas** de colonne `percent`. Le taux courant
+est le **résultat du rejeu** de tous les faits depuis l'origine :
+`created(550)` puis `rate_changed(1000)` ⇒ 10 %. Un fait perdu, et le taux
+courant devient faux. Un fait mal formé écrit il y a deux ans, et il faut
+continuer de savoir le relire aujourd'hui (versioning, upcasting). Un fait
+erroné ne se corrige pas — on ne réécrit pas le passé : on écrit un fait
+**compensatoire**, comme une écriture d'annulation en comptabilité.
+
+Le test qui tranche, en une question : **si j'efface la table `activity_events`,
+qu'est-ce qui casse ?** Ici, l'historique — et rien d'autre. En event sourcing,
+l'application ne sait plus ce qu'elle vend.
+
+Ce qu'on emprunte quand même à l'event sourcing : l'append-only (on n'édite
+jamais une ligne écrite), l'acteur figé au moment de l'acte, l'idempotence.
+Ce qu'on ne paie pas : les projecteurs, le rejeu, le versioning perpétuel des
+charges utiles.
+
 ---
 
 ## 3. Anatomie d'une entrée
@@ -256,21 +285,89 @@ le but n'a jamais été d'empêcher, il a toujours été de **rendre visible**.
 
 Définis dans `pim/journal/pim-journal.ts` (`PIM_EVENTS`).
 
-| Fait                                                           | Émis par                       |
-| -------------------------------------------------------------- | ------------------------------ |
-| `product.identity_saved`                                       | section Identité               |
-| `product.pricing_saved`                                        | section Tarif & logistique     |
-| `product.declaration_saved`                                    | section Allergènes & nutrition |
-| `product.editorial_saved`                                      | section Communication          |
-| `product.media_saved`                                          | section Visuels                |
-| `product.published` / `product.unpublished`                    | mise en vente / retrait        |
-| `product.tva_changed` / `product.channels_changed`             | dérogations de la fiche        |
-| `category.tva_changed`                                         | TVA d'une famille              |
-| `tax_rate.created` / `.rate_changed` / `.renamed` / `.deleted` | référentiel des taux           |
+| Fait                                                           | Émis par                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| `product.identity_saved`                                       | section Identité                                        |
+| `product.pricing_saved`                                        | section Tarif & logistique                              |
+| `product.declaration_saved`                                    | section Allergènes & nutrition                          |
+| `product.editorial_saved`                                      | section Communication                                   |
+| `product.media_saved`                                          | section Visuels                                         |
+| `product.published` / `product.unpublished`                    | mise en vente / retrait                                 |
+| `product.tva_changed` / `product.channels_changed`             | dérogations de la fiche                                 |
+| `product.created` / `.archived` / `.restored`                  | ouverture et sortie d'une fiche                         |
+| `category.tva_changed`                                         | TVA d'une famille                                       |
+| `category.created` / `.renamed` / `.moved` / `.archived`       | l'arbre du catalogue                                    |
+| `category.reordered`                                           | un NIVEAU rangé (sujet = le parent, `root` à la racine) |
+| `category.channels_changed`                                    | où un rayon se vend                                     |
+| `location.created` / `.updated` / `.deleted`                   | emplacements                                            |
+| `location.table_qr_generated` / `.table_qr_removed`            | QR de table (le jeton n'est jamais dans la charge)      |
+| `tax_rate.created` / `.rate_changed` / `.renamed` / `.deleted` | référentiel des taux                                    |
+
+**Toute écriture du référentiel nomme désormais son fait** : `27/27` handlers,
+dette déclarée vide. La règle d'origine (« on ne trace que ce qui a un aval »)
+est tombée — elle triait selon l'usage qu'on imaginait du journal, alors que la
+question qu'on lui pose est « qui a touché à ça ». Le tri n'a pas disparu, il a
+changé d'endroit : le flux enregistre tout, la **lecture** choisit.
 
 ---
 
-## 10. Lire l'historique d'une fiche
+## 10. Et si on migrait `growth` sur ce format ?
+
+C'est la question naturelle une fois le PIM tracé de bout en bout. La réponse
+courte : **le format est déjà commun** — une seule table, un seul schéma de
+ligne, un seul `traceId`, une seule idempotence. Ce qui diffère n'est pas le
+journal, c'est **la garantie** et **qui émet**.
+
+### Deux différences, et une seule est un choix
+
+**1. La garantie.** Le port offre les deux (`record` best-effort,
+`recordOrFail` bloquant, cf. §7). Le PIM a choisi bloquant : son écran est
+interne, son volume faible, et une trace manquée y est pire qu'un échec. Rendre
+bloquant le chemin `order.placed` reviendrait à accepter qu'un hoquet d'`INSERT`
+dans le journal **empêche un client de commander**. Le paiement est pire encore :
+la trace vivrait dans la même transaction qu'un aller-retour Stripe, or on
+n'enferme jamais un appel réseau tiers dans une transaction interactive
+(Accelerate a une durée maximale). C'est donc un choix par chemin d'écriture,
+pas un réglage global.
+
+**2. Qui émet — et c'est là que la migration a un vrai coût.** Les faits du PIM
+sont écrits **par le handler qui écrit**, dans sa transaction. Les faits de
+`growth` sont écrits par des **abonnés** (`on-order-placed`, `on-company-activated`,
+…) qui réagissent à un événement de domaine publié par `orders`, `account`,
+`subscriptions` — après coup, hors requête (`BackgroundWork`), et par
+construction hors de la transaction qui a écrit. C'est ce qui rend `growth`
+observateur plutôt qu'auteur, et ce découplage est **voulu** : `growth` ne
+connaît d'`orders` que sa classe d'événement, jamais ses tables.
+
+Migrer « exactement sur ce format » ne veut donc pas dire déplacer du code de
+`growth` : ça veut dire **exiger le laissez-passer dans les dépôts de `b2b`** et
+tracer dans les handlers de `b2b`. Ce que `growth` en fait ensuite ne change
+pas. Et un fait de `growth` qui n'a pas d'auteur (`reco.shown`, émis sur un
+chemin de LECTURE) ne peut pas devenir bloquant : rien n'écrit, il n'y a pas de
+transaction à annuler.
+
+### Ce qui vaut la peine, et dans quel ordre
+
+Le critère n'est pas « quel module », c'est **« qui agit sur les affaires de
+quelqu'un d'autre »** — c'est là qu'on vient demander des comptes.
+
+1. 🟢 **Les mutations staff sur un compte client** (app admin : activation,
+   terme de paiement convenu, vérification KBIS, adresses). Même profil que le
+   PIM : interne, faible volume, forte exigence de responsabilité. C'est le
+   premier lot à passer sous laissez-passer.
+2. 🟡 **Les décisions contractuelles et tarifaires** (règles de prix, remises de
+   retrait, zones de livraison, gabarits récurrents). Bloquant souhaitable,
+   volume faible.
+3. 🔴 **Le chemin de commande et les webhooks de paiement.** Restent
+   best-effort + clé d'idempotence. Le client passe avant la mémoire.
+
+> Le jour où le premier lot passe, la promotion de `PimJournal` en `platform/`
+> devient obligatoire — le port porte déjà sa propre règle (« au troisième bloc
+> émetteur »), et `b2b` serait le troisième.
+
+---
+
+## 11. Lire l'historique d'une fiche
 
 La table est indexée `[subject_type, subject_id, occurred_at]`, et le lecteur
 filtre déjà sur ces colonnes.
@@ -287,13 +384,16 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## Ce qui n'est PAS journalisé
+## 12. Ce qui n'est PAS journalisé
 
 À jour au **2026-08-25**. Le chiffre exact sort de `pnpm lint:journal-tracked`.
 
-- **14 handlers du PIM** écrivent sans fait nommé (dette déclarée et comptée) :
-  ouverture / archivage / restauration d'une fiche, les six gestes sur les
-  familles, les cinq sur les emplacements.
+- ~~14 handlers du PIM écrivent sans fait nommé~~ — **plus aucun depuis le
+  2026-08-25** : `27/27`. Les quatorze gestes qui restaient (ouverture /
+  archivage / restauration d'une fiche, les six sur les familles, les cinq sur
+  les emplacements) ont chacun leur fait. La liste `BACKLOG` de la porte reste
+  en place, **vide** : c'est le mécanisme qui rendra une dette future visible et
+  bornée.
 - **Tout le B2B** — commandes, sociétés, adresses, contacts, paiements,
   abonnements, règles de prix, annuaire staff. Ce que `growth` y écrit est
   analytique et **best-effort**. Y rendre le journal bloquant reviendrait à
@@ -306,7 +406,7 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## Fichiers
+## 13. Fichiers
 
 | Rôle                             | Chemin                                                          |
 | -------------------------------- | --------------------------------------------------------------- |
