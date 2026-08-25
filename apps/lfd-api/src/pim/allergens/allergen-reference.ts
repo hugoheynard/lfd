@@ -1,4 +1,8 @@
+import type { AllergenEntry, AllergenReference, AllergenScope } from "@lfd/pim-contracts";
+
 import { ALLERGEN_MAPPINGS, incoLabel, type Lang } from "./allergen-mapping.js";
+
+export type { AllergenEntry, AllergenReference, AllergenScope };
 
 /**
  * Deux **catalogues**, une seule donnée.
@@ -11,26 +15,8 @@ import { ALLERGEN_MAPPINGS, incoLabel, type Lang } from "./allergen-mapping.js";
  * Ce n'est pas un filtre d'affichage anodin : le catalogue `eu` est la liste
  * **légale**, le catalogue `world` est la liste **interopérable**.
  */
-export type AllergenScope = "eu" | "world";
-
-export interface AllergenReferenceEntry {
-  /** Code de stockage canonique. */
-  readonly code: string;
-  /** Libellé granulaire — « Noisette ». */
-  readonly label: string;
-  /** Catégorie réglementaire, `null` hors obligation UE. */
-  readonly incoCategory: string | null;
-  /** Libellé **d'étiquette** — « Fruits à coque ». C'est lui qui fait foi. */
-  readonly incoLabel: string | null;
-}
-
-export interface AllergenReference {
-  readonly scope: AllergenScope;
-  readonly entries: readonly AllergenReferenceEntry[];
-}
-
 export function allergenReference(scope: AllergenScope, lang: Lang): AllergenReference {
-  const entries = ALLERGEN_MAPPINGS.filter(
+  const entries: AllergenEntry[] = ALLERGEN_MAPPINGS.filter(
     (mapping) => scope === "world" || mapping.incoCategory !== null,
   ).map((mapping) => ({
     code: mapping.gs1Code,

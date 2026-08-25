@@ -20,12 +20,18 @@
 //
 // ## Granularité : jamais la catégorie générique
 //
-// GS1 offre `AW` (« Cereals ») et `AN` (« Tree nuts ») ; ils ne sont PAS repris.
-// L'annexe II du règlement 1169/2011 impose de nommer la céréale et le fruit à
-// coque — « à savoir blé, seigle, orge, avoine », « à savoir amandes,
-// noisettes, noix… ». Un code générique permettrait de déclarer « contient des
-// fruits à coque » sans dire lesquels, c'est-à-dire de produire une étiquette
-// non conforme depuis une saisie qui semble complète.
+// GS1 offre `AW` (« Cereals ») et `AN` (« Tree nuts »). L'annexe II du
+// règlement 1169/2011 impose de nommer la céréale et le fruit à coque — « à
+// savoir blé, seigle, orge, avoine », « à savoir amandes, noisettes, noix… ».
+// Un code générique permettrait de déclarer « contient des fruits à coque »
+// sans dire lesquels, c'est-à-dire de produire une étiquette non conforme
+// depuis une saisie qui semble complète. `AN` est donc écarté.
+//
+// `AW` est repris pour un seul emploi, et sous un libellé qui le dit : les
+// **souches hybridées** (triticale), que l'annexe II couvre et pour lesquelles
+// GS1 n'offre rien d'autre — sa propre définition de `AW` les cite nommément.
+// Ce n'est pas une échappatoire générique : l'écran propose « Triticale »,
+// jamais « Céréales ».
 //
 // `UN` (Shellfish) est écarté pour la raison inverse : il chevauche crustacés
 // ET mollusques, donc aucune projection INCO ne peut être juste.
@@ -85,6 +91,12 @@ export const ALLERGEN_MAPPINGS: readonly AllergenMapping[] = [
   entry("GO", "gluten", "Avoine", "Oats"),
   entry("GS", "gluten", "Épeautre", "Spelt"),
   entry("GK", "gluten", "Blé de Khorasan (kamut)", "Khorasan wheat"),
+  // L'annexe II couvre aussi « leurs souches hybridées », dont le triticale, et
+  // GS1 n'a pas de code dédié : sa définition de `AW` les cite nommément. On
+  // reprend donc `AW`, mais sous le libellé de ce qu'il sert à déclarer ICI. Le
+  // laisser s'appeler « Céréales » rouvrirait la porte que la sélection de
+  // codes ferme — celle qui laisse déclarer du gluten sans dire lequel.
+  entry("AW", "gluten", "Triticale et autres souches hybridées", "Triticale and other hybrids"),
 
   // Fruits à coque — n:1. Les huit que l'annexe II énumère, ni plus ni moins.
   entry("SA", "tree_nuts", "Amandes", "Almonds"),

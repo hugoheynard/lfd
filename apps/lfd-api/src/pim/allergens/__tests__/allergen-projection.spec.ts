@@ -80,13 +80,25 @@ describe("le référentiel", () => {
 
   it("nomme les céréales et les fruits à coque, jamais leur catégorie", () => {
     // L'annexe II impose « à savoir blé, seigle, orge, avoine » et « à savoir
-    // amandes, noisettes, noix… ». Les codes GÉNÉRIQUES de GS1 permettraient de
+    // amandes, noisettes, noix… ». Le code GÉNÉRIQUE de GS1 permettrait de
     // déclarer « fruits à coque » sans dire lesquels — donc d'imprimer une
     // étiquette non conforme depuis une saisie qui a l'air complète.
-    expect(findMapping("AW")).toBeUndefined(); // Cereals (générique)
     expect(findMapping("AN")).toBeUndefined(); // Tree nuts (générique)
     expect(ALLERGEN_MAPPINGS.filter((m) => m.incoCategory === "tree_nuts")).toHaveLength(8);
-    expect(ALLERGEN_MAPPINGS.filter((m) => m.incoCategory === "gluten")).toHaveLength(6);
+  });
+
+  it("réserve `AW` aux souches hybridées, et le DIT", () => {
+    // `AW` est le code « Cereals » de GS1, donc le générique qu'on écarte
+    // partout ailleurs. Il est repris pour le seul cas que l'annexe II couvre
+    // et que GS1 ne sait pas nommer autrement — « ou leurs souches hybridées ».
+    // Ce qui l'empêche de redevenir une échappatoire est son LIBELLÉ : l'écran
+    // propose « Triticale », jamais « Céréales ».
+    const aw = findMapping("AW");
+    expect(aw?.incoCategory).toBe("gluten");
+    expect(aw?.labels.fr).toContain("Triticale");
+    expect(aw?.labels.fr).not.toContain("Céréales");
+    // Six céréales nommées, plus les hybrides.
+    expect(ALLERGEN_MAPPINGS.filter((m) => m.incoCategory === "gluten")).toHaveLength(7);
   });
 
   it("écarte le code qui chevauche deux catégories", () => {

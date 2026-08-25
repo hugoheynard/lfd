@@ -195,18 +195,9 @@ export interface Location {
   usedByCategories: number;
 }
 
-export type AllergenScope = 'eu' | 'world';
-
-export interface AllergenEntry {
-  code: string;
-  /** Libellé granulaire — « Noisette ». */
-  label: string;
-  incoCategory: string | null;
-  /** Libellé d'étiquette — « Fruits à coque ». C'est lui qui fait foi. */
-  incoLabel: string | null;
-}
-
-export interface AllergenReference {
-  scope: AllergenScope;
-  entries: AllergenEntry[];
-}
+/**
+ * Le référentiel allergènes vient du CONTRAT, pas d'ici : sa forme était
+ * déclarée deux fois pour une donnée réglementée, et deux déclarations d'une
+ * même chose finissent par ne plus dire la même.
+ */
+export type { AllergenEntry, AllergenReference, AllergenScope } from '@lfd/pim-contracts';

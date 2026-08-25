@@ -264,7 +264,7 @@ export class ProductFormStore {
   // Référentiels
   readonly categories = signal<Category[]>([]);
   readonly rates = signal<VatRate[]>([]);
-  readonly entries = signal<AllergenEntry[]>([]);
+  readonly entries = signal<readonly AllergenEntry[]>([]);
   readonly scope = signal<AllergenScope>('eu');
 
   // Champs éditables

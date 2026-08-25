@@ -17,6 +17,8 @@ export {
 
 export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 
+export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";
+
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
 
