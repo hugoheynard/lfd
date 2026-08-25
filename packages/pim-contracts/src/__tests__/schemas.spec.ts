@@ -6,8 +6,11 @@ import {
 
 describe("pim-contracts payload schemas", () => {
   it("accepte une création de catégorie minimale et refuse un nom vide", () => {
-    expect(createCategoryPayloadSchema.safeParse({ nameFr: "Pains" }).success).toBe(true);
-    expect(createCategoryPayloadSchema.safeParse({ nameFr: "" }).success).toBe(false);
+    // Le nom est LOCALISÉ depuis que les fiches parlent trois langues ; le test
+    // interrogeait encore `nameFr`, donc un champ que le schéma ignore — il
+    // échouait sur la branche « accepte », en annonçant un contrat disparu.
+    expect(createCategoryPayloadSchema.safeParse({ name: { fr: "Pains" } }).success).toBe(true);
+    expect(createCategoryPayloadSchema.safeParse({ name: { fr: "" } }).success).toBe(false);
   });
 
   it("refuse un taux de TVA non positif", () => {
