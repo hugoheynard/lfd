@@ -78,7 +78,7 @@ async function seedSociete(): Promise<{ companyId: string; addressId: string }> 
     data: {
       ...SITE,
       companyId: company.id,
-      kind: "livraison",
+      kind: "delivery",
       isDefault: true,
       deliverySpecs: {
         note: "",

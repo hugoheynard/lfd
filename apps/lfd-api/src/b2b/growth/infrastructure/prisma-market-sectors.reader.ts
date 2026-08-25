@@ -3,7 +3,6 @@ import type { MarketSectorsView } from "@lfd/contracts";
 
 import type { AddressKind } from "../../../platform/database/client/client.js";
 
-import { isBilling } from "../../account/infrastructure/address-kind-transition.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import {
@@ -82,7 +81,7 @@ export class PrismaMarketSectorsReader extends MarketSectorsReader {
 /** Adresse représentative d'une société : facturation, sinon défaut, sinon première. */
 function pickAddress(addresses: readonly AddressRow[]): AddressRow | null {
   return (
-    addresses.find((a) => isBilling(a.kind)) ??
+    addresses.find((a) => a.kind === "billing") ??
     addresses.find((a) => a.isDefault) ??
     addresses[0] ??
     null

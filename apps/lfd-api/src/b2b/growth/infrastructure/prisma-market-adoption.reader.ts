@@ -3,7 +3,6 @@ import type { MarketAdoptionView } from "@lfd/contracts";
 
 import type { AddressKind } from "../../../platform/database/client/client.js";
 
-import { isBilling } from "../../account/infrastructure/address-kind-transition.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { weekStarts } from "../domain/growth-stats.js";
@@ -119,7 +118,7 @@ function setZone(map: Map<string, Date[]>, codePostal: string): Date[] {
 /** Adresse représentative d'une société : facturation, sinon défaut, sinon première. */
 function pickAddress(addresses: readonly AddressRow[]): AddressRow | null {
   return (
-    addresses.find((a) => isBilling(a.kind)) ??
+    addresses.find((a) => a.kind === "billing") ??
     addresses.find((a) => a.isDefault) ??
     addresses[0] ??
     null

@@ -13,10 +13,6 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
-  billingKinds,
-  deliveryKinds,
-} from "../src/b2b/account/infrastructure/address-kind-transition.js";
-import {
   AddressKind,
   CompanyStatus,
   DeferredTerm,
@@ -151,11 +147,8 @@ describe("pièces d'activation staff (Porte B)", () => {
       })
       .expect(204);
 
-    // Les DEUX encodages : ce cas tient « l'adresse est enregistrée », pas la
-    // valeur qui l'écrit. Figé sur `facturation`, il passait au vert en ne
-    // trouvant rien — cf. la bascule, `documentation/langue-du-code.md`.
     const address = await ctx.prisma.address.findFirst({
-      where: { companyId, kind: { in: billingKinds() } },
+      where: { companyId, kind: AddressKind.billing },
     });
     expect(address?.ligne1).toBe("18 rue des Archives");
   });
@@ -168,7 +161,7 @@ describe("pièces d'activation staff (Porte B)", () => {
 
     expect(response.body).toHaveProperty("id");
     const count = await ctx.prisma.address.count({
-      where: { companyId, kind: { in: deliveryKinds() } },
+      where: { companyId, kind: AddressKind.delivery },
     });
     expect(count).toBe(1);
   });
@@ -196,7 +189,7 @@ describe("activation d'un compte (gate serveur)", () => {
     await ctx.prisma.address.create({
       data: {
         companyId,
-        kind: AddressKind.facturation,
+        kind: AddressKind.billing,
         label: "Siège",
         ligne1: "18 rue des Archives",
         codePostal: "75004",
@@ -252,7 +245,7 @@ describe("préférence d'acheminement", () => {
     const foreign = await ctx.prisma.address.create({
       data: {
         companyId: other.id,
-        kind: AddressKind.livraison,
+        kind: AddressKind.delivery,
         label: "Chez le voisin",
         ligne1: "1 rue Ailleurs",
         codePostal: "75001",
@@ -394,7 +387,7 @@ describe("certification du KBIS", () => {
     await ctx.prisma.address.create({
       data: {
         companyId,
-        kind: AddressKind.facturation,
+        kind: AddressKind.billing,
         label: "Siège",
         ligne1: "18 rue des Archives",
         codePostal: "75004",
@@ -480,7 +473,7 @@ describe("certification du KBIS", () => {
     await ctx.prisma.address.create({
       data: {
         companyId,
-        kind: AddressKind.facturation,
+        kind: AddressKind.billing,
         label: "Siège",
         ligne1: "18 rue des Archives",
         codePostal: "75004",

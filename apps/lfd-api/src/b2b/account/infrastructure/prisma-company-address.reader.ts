@@ -10,7 +10,6 @@ import { Injectable } from "@nestjs/common";
 import type { AddressKind } from "../../../platform/database/client/client.js";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { isBilling, isDelivery } from "./address-kind-transition.js";
 import { CompanyAddressReader } from "../domain/ports/company-address.reader.js";
 
 /** Consignes vides — pour une livraison créée sans aucune préférence encore. */
@@ -66,8 +65,10 @@ export class PrismaCompanyAddressReader extends CompanyAddressReader {
       },
     });
 
-    const billingRow = rows.find((row) => isBilling(row.kind)) ?? null;
-    const deliveries = rows.filter((row) => isDelivery(row.kind)).map((row) => toDeliveryView(row));
+    const billingRow = rows.find((row) => row.kind === "billing") ?? null;
+    const deliveries = rows
+      .filter((row) => row.kind === "delivery")
+      .map((row) => toDeliveryView(row));
 
     return {
       billing: billingRow === null ? null : toBillingView(billingRow),

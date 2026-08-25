@@ -113,19 +113,12 @@ enum UserStatus {
 
 /// À quoi sert une adresse.
 ///
-/// ⚠️ **Quatre valeurs pour deux sens** — c'est un état de PASSAGE, pas le
-/// modèle. `facturation`/`livraison` sont les valeurs historiques, encore
-/// écrites ; `billing`/`delivery` sont les valeurs cibles, déjà lues. La
-/// bascule des lignes est le palier 2, le retrait des deux anciennes le
-/// palier 3 (`documentation/langue-du-code.md` §4 quater).
-///
-/// Tant que les quatre coexistent, **rien ne doit filtrer sur une seule
-/// valeur** : la traduction passe par `address-kind-transition.ts`, et par lui
-/// seul. Un `kind: "facturation"` écrit en dur ailleurs deviendra invisible au
-/// palier 2, sans erreur — juste une adresse qui disparaît.
+/// Deux valeurs, en anglais comme le reste du code. Elles ont été
+/// `facturation`/`livraison` jusqu'au 2026-08-25 : la bascule s'est faite en
+/// trois déploiements — étendre, basculer, resserrer — parce qu'une valeur
+/// d'enum est une DONNÉE écrite en base, pas un nom
+/// (`documentation/langue-du-code.md` §4 quater).
 enum AddressKind {
-  facturation
-  livraison
   billing
   delivery
 
