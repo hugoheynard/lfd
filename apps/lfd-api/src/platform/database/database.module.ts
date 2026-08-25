@@ -12,6 +12,8 @@ import { countedPrisma, type CountedPrismaClient } from "./counted-prisma.js";
 import { PrismaService } from "./prisma.service.js";
 import { assertSchemaIsFresh } from "./schema-freshness.js";
 import { SchemaOpsCounter } from "./schema-ops.counter.js";
+import { transactionalPrisma } from "./transactional-prisma.js";
+import { UnitOfWork } from "./unit-of-work.js";
 
 /**
  * Le client **nu**, avant comptage. Il n'existe que pour être enveloppé :
@@ -93,11 +95,16 @@ class PrismaConnection implements OnModuleInit, OnModuleDestroy {
       useFactory: (config: AppConfig): PrismaService => new PrismaService(config),
     },
     {
+      // Compté, PUIS routé vers la transaction ambiante. L'ordre compte : le
+      // routage doit envelopper le comptage, sinon une écriture faite dans une
+      // transaction échapperait au compteur.
       provide: PrismaService,
       inject: [RAW_PRISMA, SchemaOpsCounter],
-      useFactory: countedPrisma,
+      useFactory: (raw: PrismaService, counter: SchemaOpsCounter): CountedPrismaClient =>
+        transactionalPrisma(countedPrisma(raw, counter)),
     },
+    UnitOfWork,
   ],
-  exports: [PrismaService, SchemaOpsCounter],
+  exports: [PrismaService, SchemaOpsCounter, UnitOfWork],
 })
 export class DatabaseModule {}

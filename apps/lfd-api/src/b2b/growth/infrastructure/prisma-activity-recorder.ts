@@ -35,7 +35,32 @@ export class PrismaActivityRecorder extends ActivityRecorder {
     super();
   }
 
+  /** Best-effort : la panne est journalisée puis avalée. */
   async record(input: RecordActivityInput): Promise<void> {
+    try {
+      await this.append(input);
+    } catch (error) {
+      this.logger.warn(`activity_event non journalisé (${input.type}) : ${messageOf(error)}`);
+    }
+  }
+
+  /**
+   * Bloquant : la panne remonte, et annule la transaction qui englobe l'appel.
+   *
+   * Rien de plus que `record` sans son `catch` — c'est bien le MÊME append, et
+   * il faut que ce soit visible : deux chemins d'écriture divergeraient, et
+   * c'est le chemin rare (celui qui doit être fiable) qui pourrirait en
+   * silence.
+   */
+  async recordOrFail(input: RecordActivityInput): Promise<void> {
+    await this.append(input);
+  }
+
+  /**
+   * L'append lui-même. Idempotent des deux côtés : un doublon (même
+   * `idempotencyKey`, émission rejouée) est un no-op, jamais une erreur.
+   */
+  private async append(input: RecordActivityInput): Promise<void> {
     const context = currentRequestContext();
     const actorType = context?.actor.type ?? "system";
     const actorId = context?.actor.id ?? null;
@@ -59,8 +84,7 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       if (isUniqueViolation(error)) {
         return; // déjà journalisé (émission rejouée) — idempotent, rien à faire.
       }
-      // Best-effort : un échec d'append ne casse JAMAIS la transaction métier.
-      this.logger.warn(`activity_event non journalisé (${input.type}) : ${messageOf(error)}`);
+      throw error;
     }
   }
 

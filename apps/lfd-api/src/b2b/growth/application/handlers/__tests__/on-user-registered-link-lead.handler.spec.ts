@@ -47,6 +47,10 @@ class CapturingRecorder extends ActivityRecorder {
     this.records.push(input);
     return Promise.resolve();
   }
+  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
+  recordOrFail(input: RecordActivityInput): Promise<void> {
+    return this.record(input);
+  }
 }
 
 describe("OnUserRegisteredLinkLead", () => {

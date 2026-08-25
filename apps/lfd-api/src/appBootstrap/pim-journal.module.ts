@@ -34,7 +34,10 @@ class ActivityJournalAdapter extends PimJournal {
    */
   async record(entry: PimJournalEntry): Promise<void> {
     const traceId = currentRequestContext()?.traceId ?? "hors-requete";
-    await this.recorder.record({
+    // BLOQUANT : le référentiel a choisi que sa trace conditionne l'écriture.
+    // Elle part dans la même transaction que la décision qu'elle décrit (cf.
+    // `UnitOfWork`), donc une panne de journal annule l'enregistrement.
+    await this.recorder.recordOrFail({
       type: entry.type,
       subjectType: entry.subjectType,
       subjectId: entry.subjectId,
