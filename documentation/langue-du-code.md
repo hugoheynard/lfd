@@ -190,23 +190,29 @@ concerné, et le chantier s'est réduit au backend et à la base.
 Le palier 1 est ce qui rend le 2 inoffensif : quand la migration réécrit les
 lignes, le container encore en place lit déjà les deux encodages.
 
-### Les deux gardes, et pourquoi ils ne se ressemblent pas
+### Un seul garde, et pourquoi le second a été retiré
 
-Toute cette sûreté tenait à l'ordre des déploiements — c'est-à-dire, sans
-garde, à la mémoire de qui déploie. Chaque migration refuse donc de partir
-trop tôt, et **les deux ne peuvent pas poser la même question** :
+Le palier 3 **garde** : « reste-t-il une ligne dans l'ancien encodage ? ». Une
+question sur les données a la même réponse partout, donc ce garde ne peut pas
+se tromper. PostgreSQL refuserait la conversion de lui-même, mais avec un
+message qui parle de types ; celui-ci parle du problème et donne le geste.
 
-- Le **palier 2** ne peut regarder que l'**horloge** : « `étendre` a-t-il fini
-  il y a moins de cinq minutes ? » Si oui, les deux sont partis ensemble, et le
-  container en place est celui d'avant le palier 1. Un `migrate deploy` prend
-  moins d'une seconde, deux déploiements sont séparés par tout un cycle de CI :
-  cinq minutes ne peuvent signifier que ça. Il ajoute « et des lignes
-  existent », sans quoi une base neuve — les e2e — ne pourrait plus appliquer
-  les trois paliers d'affilée.
-- Le **palier 3** peut regarder les **données** : « reste-t-il une ligne en
-  `facturation` ? » C'est le meilleur des deux, parce qu'il ne peut pas se
-  tromper. Postgres refuserait de lui-même la conversion, mais avec un message
-  qui parle de types ; celui-ci parle du problème et donne le geste.
+Le palier 2 en a porté un, puis l'a perdu — et c'est la leçon la plus utile de
+tout P4. Il demandait « `étendre` a-t-il fini il y a moins de cinq minutes ? »,
+faute de mieux : depuis SQL, on ne voit pas si un ancien container sert encore
+le trafic. Il a mordu **à sa première utilisation**, sur une base de
+développement, où les trois paliers arrivent forcément dans le même
+`migrate deploy` et où aucun container ne sert quoi que ce soit.
+
+Le défaut est de conception, pas de réglage : « dev rejoue toutes les
+migrations » et « la prod a déployé les deux d'un coup » ont exactement la même
+forme vue de la base. Seul l'appelant sait lequel des deux il est.
+
+Et un garde qui se déclenche sur chaque machine de développement ne se corrige
+pas, il se contourne — puis il ne protège plus rien le jour où il aurait servi.
+**L'ordre des déploiements est le travail de la chaîne de livraison**
+(`documentation/ops/pipelines.md`), pas d'une migration. Le palier 2 porte donc
+un avertissement en tête de fichier, et rien d'autre.
 
 ### Ce que la bascule a révélé
 

@@ -5,41 +5,29 @@
 -- les deux encodages. L'ancien container relira donc sans broncher les lignes
 -- que cette migration vient de réécrire.
 --
--- ## Le garde-fou, et pourquoi il vaut mieux qu'un commentaire
+-- ⚠️ **Cette migration ne doit PAS partir dans le même déploiement que
+-- `20260825090000_address_kind_etendre`.** Si les deux s'appliquent à la suite,
+-- le container qui sert encore le trafic est celui d'AVANT le palier 1 : il ne
+-- connaît que `facturation`, et ne lèverait aucune erreur — il rendrait des
+-- adresses absentes.
 --
--- Toute cette sûreté tient à UNE condition : que « étendre » soit déjà en
--- ligne. Si les deux paliers partent dans le même `main`, la migration 1 et la
--- migration 2 s'appliquent à la suite, dans le même `prisma migrate deploy` —
--- et le container qui sert encore le trafic est celui d'AVANT le palier 1,
--- qui ne connaît que `facturation`. Il ne lèverait aucune erreur : il rendrait
--- simplement des adresses absentes.
+-- ## Pourquoi cette phrase est un commentaire et non un garde SQL
 --
--- Le bloc ci-dessous refuse ce cas. `documentation/ops/pipelines.md` dit qu'une
--- migration qui échoue bloque le déploiement, et que c'est voulu : mieux vaut
--- l'ancienne version en ligne qu'une nouvelle sur une base à moitié basculée.
+-- Ce fichier a d'abord porté un garde : « refuser si `étendre` a fini il y a
+-- moins de cinq minutes ». Il a mordu à la première utilisation — sur une base
+-- de DÉVELOPPEMENT, où les trois paliers arrivent forcément dans le même
+-- `migrate deploy`, et où aucun container ne sert de trafic.
 --
--- Deux conditions, et les deux comptent :
---  · des lignes existent — sans données, il n'y a rien à protéger, et une base
---    neuve (les tests e2e) applique légitimement les trois paliers d'affilée ;
---  · « étendre » a fini il y a moins de cinq minutes — un `migrate deploy` de
---    deux migrations prend moins d'une seconde, deux déploiements successifs
---    sont séparés par tout un cycle de CI. Cinq minutes ne peuvent donc
---    signifier qu'une chose : les deux paliers sont partis ensemble.
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM "public"."addresses" LIMIT 1)
-     AND EXISTS (
-       SELECT 1
-         FROM "public"."_prisma_migrations"
-        WHERE "migration_name" = '20260825090000_address_kind_etendre'
-          AND "finished_at" > now() - interval '5 minutes'
-     )
-  THEN
-    RAISE EXCEPTION
-      'Palier 2 (basculer) refusé : le palier 1 (étendre) vient d''être appliqué dans ce même déploiement. Le code en ligne ne lit pas encore billing/delivery — basculer maintenant rendrait les adresses invisibles. Déployer d''abord le palier 1 seul, attendre qu''il serve le trafic, puis relancer.';
-  END IF;
-END
-$$;
-
+-- Le défaut est de conception, pas de réglage : depuis SQL, « dev rejoue toutes
+-- les migrations » et « la prod a déployé les deux d'un coup » ont exactement la
+-- même forme. Seul l'appelant sait lequel des deux il est. Un garde qui ne peut
+-- pas faire la différence se déclenche sur chaque machine de développement, on
+-- apprend à le contourner — et il ne protège plus rien le jour où il aurait
+-- servi. L'ordre des déploiements est le travail de la chaîne de livraison
+-- (`documentation/ops/pipelines.md`), pas d'une migration.
+--
+-- Le palier 3, lui, GARDE : sa question porte sur les données (« reste-t-il une
+-- ligne dans l'ancien encodage ? »), et une question sur les données a la même
+-- réponse partout.
 UPDATE "public"."addresses" SET "kind" = 'billing' WHERE "kind" = 'facturation';
 UPDATE "public"."addresses" SET "kind" = 'delivery' WHERE "kind" = 'livraison';
