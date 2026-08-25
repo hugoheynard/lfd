@@ -12,10 +12,6 @@ import { z } from "zod";
  * On ne partage QUE le fil : ni les entités Prisma, ni les view-models d'affichage.
  */
 
-/** À quoi sert une adresse. Aligné sur `AddressKind` (Prisma) et `AdresseKind` (front). */
-export const addressKindSchema = z.enum(["facturation", "livraison"]);
-export type AddressKind = z.infer<typeof addressKindSchema>;
-
 /** Un jour de la semaine — clé stable, indépendante de la langue d'affichage. */
 export const weekdaySchema = z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 export type Weekday = z.infer<typeof weekdaySchema>;

@@ -1,5 +1,4 @@
 export {
-  addressKindSchema,
   weekdaySchema,
   deliverySlotSchema,
   fulfillmentWindowSchema,
@@ -13,7 +12,6 @@ export {
   deliveryAddressPayloadSchema,
 } from "./address.js";
 export type {
-  AddressKind,
   Weekday,
   DeliverySlot,
   FulfillmentWindow,
