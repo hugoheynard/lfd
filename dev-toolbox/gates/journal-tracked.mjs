@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Gate : un handler de commande du **référentiel** qui écrit, journalise.
+ * Gate : un handler qui écrit un acte dont on devra répondre, le journalise.
  *
  * ## Pourquoi une porte, et pas la revue
  *
@@ -14,14 +14,28 @@
  * C'est le pire profil pour une garantie : invisible tant qu'on ne s'en sert
  * pas, inutilisable le jour où l'on s'en sert.
  *
- * ## Ce que la porte vérifie exactement
+ * ## Ce que la porte vérifie exactement — deux zones, deux disciplines
  *
- * Tout `@CommandHandler` sous `src/pim/**` qui injecte un port de dépôt
- * (`*Repository`) doit AUSSI injecter `PimJournal` et `UnitOfWork`.
+ * **Le référentiel** (`src/pim/**`) : tout `@CommandHandler` qui injecte un port
+ * de dépôt (`*Repository`) doit AUSSI injecter `PimJournal` et `UnitOfWork`.
+ * C'est un filet, pas une preuve : injecter le journal n'oblige pas à l'appeler
+ * — mais le laissez-passer (`WriteTicket`), lui, l'oblige, et il est tenu par le
+ * compilateur.
  *
- * C'est un filet, pas une preuve : injecter le journal n'oblige pas à l'appeler.
- * Ce qu'elle ferme, c'est le cas fréquent — celui qu'on oublie — pas le cas
- * malveillant, qui n'existe pas ici.
+ * **Les actes du staff sur un compte client** (`src/b2b/account/**`) : tout
+ * handler dont le nom dit qu'un agent agit sur le dossier de quelqu'un d'autre
+ * doit APPELER `publishTraced` — pas seulement injecter quelque chose. La
+ * discipline y est différente parce que le besoin l'est : les faits des comptes
+ * sont des actes nommés que l'événement porte déjà, là où ceux du référentiel
+ * portent des diffs que seul le handler sait calculer. Le handler garde donc sa
+ * ligne d'origine, et c'est l'événement qui dit ce qu'il inscrit.
+ *
+ * Et parce qu'une trace hors transaction n'engage à rien, ces handlers doivent
+ * aussi injecter `UnitOfWork` — sauf à déclarer `@hors-transaction <raison>`,
+ * qui se grep comme le reste. Un seul le fait aujourd'hui, et pour une raison
+ * qui tient : il range d'abord un fichier au stockage objet, et enfermer cet
+ * aller-retour réseau dans une transaction de base serait pire que le trou qu'on
+ * refermerait.
  *
  * ## L'échappatoire, et pourquoi elle est visible
  *
@@ -36,8 +50,21 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
-const SCAN_ROOT = join(ROOT, "apps", "lfd-api", "src", "pim");
+const SRC = join(ROOT, "apps", "lfd-api", "src");
 const SKIP_DIRS = new Set(["__tests__", "node_modules", "dist", "client"]);
+
+/**
+ * Un handler dont le NOM dit qu'un agent agit sur le compte d'un tiers.
+ *
+ * Par le nom, faute de mieux : rien dans le type ne distingue « le client
+ * modifie son adresse » de « un agent modifie l'adresse du client », et c'est
+ * pourtant toute la différence — le premier n'engage que lui. La convention
+ * `…ByStaff` porte déjà cette distinction dans les commandes ; les cinq gestes
+ * qui n'ont pas de jumeau client (certifier, activer, changer le statut,
+ * accorder un délai) sont nommés en clair.
+ */
+const STAFF_ACT =
+  /(ByStaffHandler|GrantTermsHandler|CertifyKbisHandler|RevokeKbisCertificationHandler|ChangeCompanyStatusHandler)$/;
 
 /**
  * La dette déclarée — **vide depuis le 2026-08-25**.
@@ -96,42 +123,83 @@ let checked = 0;
 let excused = 0;
 let owed = 0;
 
-for (const file of walk(SCAN_ROOT)) {
-  const source = readFileSync(file, "utf8");
-  let index = source.indexOf("@CommandHandler(");
-  while (index !== -1) {
-    const params = constructorParams(source, index);
-    if (params !== null && /\b\w*Repository\b/.test(params)) {
-      checked += 1;
-      const head = source.slice(Math.max(0, index - 1200), index);
+/** Le corps d'un handler : de son décorateur au décorateur suivant. */
+function handlerBody(source, index) {
+  const next = source.indexOf("@CommandHandler(", index + 1);
+  return source.slice(index, next === -1 ? source.length : next);
+}
+
+/** Zone 1 — le référentiel : injecter le journal et l'unité de travail. */
+function auditPim(source, index, params, handler) {
+  if (!/\b\w*Repository\b/.test(params)) {
+    return null;
+  }
+  checked += 1;
+  const traced = params.includes("PimJournal") && params.includes("UnitOfWork");
+  if (traced) {
+    return { traced: true };
+  }
+  return {
+    traced: false,
+    missing: [
+      params.includes("PimJournal") ? null : "PimJournal",
+      params.includes("UnitOfWork") ? null : "UnitOfWork",
+    ].filter(Boolean),
+    handler,
+  };
+}
+
+/** Zone 2 — les actes du staff : APPELER `publishTraced`, dans une transaction. */
+function auditStaffAct(source, index, params, handler) {
+  if (!STAFF_ACT.test(handler)) {
+    return null;
+  }
+  checked += 1;
+  // La dispense se déclare dans le commentaire qui PRÉCÈDE le décorateur, là où
+  // on la lit — pas au milieu du corps, où elle passerait inaperçue.
+  const declared = source.slice(Math.max(0, index - 1200), index) + handlerBody(source, index);
+  const missing = [
+    declared.includes("publishTraced") ? null : "un appel à publishTraced",
+    params.includes("UnitOfWork") || declared.includes("@hors-transaction") ? null : "UnitOfWork",
+  ].filter(Boolean);
+  return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
+}
+
+const ZONES = [
+  { root: join(SRC, "pim"), audit: auditPim },
+  { root: join(SRC, "b2b", "account"), audit: auditStaffAct },
+];
+
+for (const zone of ZONES) {
+  for (const file of walk(zone.root)) {
+    const source = readFileSync(file, "utf8");
+    let index = source.indexOf("@CommandHandler(");
+    while (index !== -1) {
+      const params = constructorParams(source, index);
       const named = /export class (\w+)/.exec(source.slice(index)) ?? [];
       const handler = named[1] ?? "?";
-      const traced = params.includes("PimJournal") && params.includes("UnitOfWork");
-      if (head.includes("@sans-journal")) {
-        excused += 1;
-      } else if (traced) {
-        if (BACKLOG.has(handler)) {
-          settled.push(handler);
+      const verdict = params === null ? null : zone.audit(source, index, params, handler);
+      if (verdict !== null) {
+        const head = source.slice(Math.max(0, index - 1200), index);
+        if (head.includes("@sans-journal")) {
+          excused += 1;
+        } else if (verdict.traced) {
+          if (BACKLOG.has(handler)) {
+            settled.push(handler);
+          }
+        } else if (BACKLOG.has(handler)) {
+          owed += 1;
+        } else {
+          offenders.push({ file: relative(ROOT, file), handler, missing: verdict.missing });
         }
-      } else if (BACKLOG.has(handler)) {
-        owed += 1;
-      } else {
-        offenders.push({
-          file: relative(ROOT, file),
-          handler,
-          missing: [
-            params.includes("PimJournal") ? null : "PimJournal",
-            params.includes("UnitOfWork") ? null : "UnitOfWork",
-          ].filter(Boolean),
-        });
       }
+      index = source.indexOf("@CommandHandler(", index + 1);
     }
-    index = source.indexOf("@CommandHandler(", index + 1);
   }
 }
 
 if (offenders.length > 0) {
-  console.error("\n✖ Handlers du référentiel qui écrivent SANS journaliser :\n");
+  console.error("\n✖ Handlers qui écrivent SANS journaliser :\n");
   for (const offender of offenders) {
     console.error(`  ${offender.handler} — manque ${offender.missing.join(" + ")}`);
     console.error(`    ${offender.file}\n`);
@@ -140,9 +208,10 @@ if (offenders.length > 0) {
     "Un handler qui écrit sans trace ne se voit nulle part : tsc est content,\n" +
       "les tests passent, l'écran fonctionne. Ça se découvre le jour où l'on\n" +
       "demande « qui a changé ça » — et ce jour-là, le blanc ne se comble plus.\n\n" +
-      "Soit il journalise (`PimJournal` + `UnitOfWork`, cf. les handlers de\n" +
-      "section de la fiche produit), soit il déclare `@sans-journal <raison>`\n" +
-      "dans son commentaire — visible, motivée, relisible.\n",
+      "Soit il journalise — `PimJournal` + `UnitOfWork` au référentiel,\n" +
+      "`publishTraced` sous unité de travail pour un acte du staff — soit il\n" +
+      "déclare `@sans-journal <raison>` dans son commentaire : visible,\n" +
+      "motivée, relisible.\n",
   );
   process.exit(1);
 }
