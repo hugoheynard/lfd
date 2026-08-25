@@ -9,6 +9,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldCheckboxComponent,
   FoldListboxComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
@@ -18,6 +19,7 @@ import {
   fulfillmentDestinations,
   namedDestinations,
   noPreference,
+  preferenceForSignature,
   preferenceForDestination,
   preferenceForMethod,
 } from '../fulfillment-preference.model';
@@ -43,6 +45,7 @@ import {
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldCalloutComponent,
+    FoldCheckboxComponent,
     FoldButtonComponent,
     FoldListboxComponent,
   ],
@@ -89,6 +92,15 @@ export class CompanyFulfillmentCard {
     }),
   );
 
+  /** La méthode, écrite. `null` tant que rien n'est posé — il n'y a rien à lire. */
+  protected readonly methodLabel = computed(() => {
+    const method = this.method();
+    if (method === null) {
+      return null;
+    }
+    return method === 'pickup' ? 'Retrait' : 'Livraison';
+  });
+
   /** Le libellé du champ suit la méthode — le mot juste, pas un générique. */
   protected readonly destinationLabel = computed(() =>
     this.method() === 'pickup' ? 'Point de retrait préféré' : 'Adresse de livraison préférée',
@@ -111,17 +123,33 @@ export class CompanyFulfillmentCard {
     if (this.method() === method) {
       return;
     }
-    this.preferenceChange.emit(preferenceForMethod(method));
+    this.preferenceChange.emit(preferenceForMethod(method, this.preference()));
   }
 
   protected chooseDestination(chosen: string): void {
     const method = this.method();
     if (method !== null) {
-      this.preferenceChange.emit(preferenceForDestination(method, chosen));
+      this.preferenceChange.emit(preferenceForDestination(method, chosen, this.preference()));
     }
   }
 
+  /**
+   * Le SOCLE de signature de la société — chaque adresse peut y déroger.
+   *
+   * Il vit sur la carte d'acheminement et non dans le carnet d'adresses parce
+   * que c'est une exigence du client, pas d'un lieu : « on signe toujours » se
+   * décide une fois. Il survit d'ailleurs à un changement de méthode, alors que
+   * les destinations, elles, repartent à zéro — le client qui repasse en
+   * livraison retrouve son exigence, pas l'adresse qu'il avait quittée.
+   */
+  /** Le socle tel qu'il est aujourd'hui. */
+  protected readonly signatureRequired = computed(() => this.preference().signatureRequired);
+
+  protected chooseSignature(required: boolean): void {
+    this.preferenceChange.emit(preferenceForSignature(required, this.preference()));
+  }
+
   protected clear(): void {
-    this.preferenceChange.emit(noPreference());
+    this.preferenceChange.emit(noPreference(this.preference()));
   }
 }

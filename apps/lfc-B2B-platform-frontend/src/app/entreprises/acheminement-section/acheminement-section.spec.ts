@@ -114,6 +114,25 @@ describe("section Préférences d'acheminement (client)", () => {
     expect(section['canManage']()).toBe(false);
   });
 
+  it('ÉCRIT la méthode à qui ne peut que lire', () => {
+    // « Montrer sans laisser régler » se vérifiait sur le drapeau, pas à
+    // l'écran — et à l'écran, les boutons portaient seuls la méthode. Un
+    // simple membre lisait donc « Méthode habituelle » suivi de rien.
+    const { host } = render({
+      role: 'member',
+      fulfillmentPreference: {
+        method: 'pickup',
+        pickupAddressId: null,
+        deliveryAddressId: null,
+        signatureRequired: false,
+      },
+    } as Partial<Company>);
+
+    expect(host.textContent).toContain('Méthode habituelle');
+    expect(host.textContent).toContain('Retrait');
+    expect(host.querySelector('button')).toBeNull();
+  });
+
   it('transmet la préférence choisie au service', () => {
     const { section, saved } = render();
 

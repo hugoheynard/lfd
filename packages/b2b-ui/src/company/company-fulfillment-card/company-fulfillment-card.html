@@ -1,37 +1,44 @@
 <fold-card>
   <fold-page-section title="Préférences d'acheminement" icon="truck" [description]="description()">
-    <div class="choice">
-      <span class="choice-label">Méthode habituelle</span>
-      @if (canManage()) {
-        <div class="choice-actions">
-          <button
-            foldButton
-            size="sm"
-            [emphasis]="method() === 'pickup' ? 'solid' : 'outline'"
-            [intent]="method() === 'pickup' ? 'primary' : 'neutral'"
-            (click)="chooseMethod('pickup')"
-          >
-            Retrait
-          </button>
-          @if (deliveryOffered()) {
+    @if (canManage() || methodLabel() !== null) {
+      <div class="choice">
+        <span class="choice-label">Méthode habituelle</span>
+        @if (canManage()) {
+          <div class="choice-actions">
             <button
               foldButton
               size="sm"
-              [emphasis]="method() === 'delivery' ? 'solid' : 'outline'"
-              [intent]="method() === 'delivery' ? 'primary' : 'neutral'"
-              (click)="chooseMethod('delivery')"
+              [emphasis]="method() === 'pickup' ? 'solid' : 'outline'"
+              [intent]="method() === 'pickup' ? 'primary' : 'neutral'"
+              (click)="chooseMethod('pickup')"
             >
-              Livraison
+              Retrait
             </button>
-          }
-          @if (method() !== null) {
-            <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="clear()">
-              Retirer la préférence
-            </button>
-          }
-        </div>
-      }
-    </div>
+            @if (deliveryOffered()) {
+              <button
+                foldButton
+                size="sm"
+                [emphasis]="method() === 'delivery' ? 'solid' : 'outline'"
+                [intent]="method() === 'delivery' ? 'primary' : 'neutral'"
+                (click)="chooseMethod('delivery')"
+              >
+                Livraison
+              </button>
+            }
+            @if (method() !== null) {
+              <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="clear()">
+                Retirer la préférence
+              </button>
+            }
+          </div>
+        } @else {
+          <!-- En lecture seule, la méthode est une VALEUR : les boutons la
+               portaient seuls, et un simple membre lisait donc « Méthode
+               habituelle » suivi de rien. -->
+          <span class="choice-value">{{ methodLabel() }}</span>
+        }
+      </div>
+    }
 
     @if (method() === null) {
       <p class="none">{{ noPreferenceHint() }}</p>
