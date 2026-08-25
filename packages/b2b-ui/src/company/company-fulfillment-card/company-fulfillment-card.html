@@ -10,6 +10,7 @@
               size="sm"
               [emphasis]="method() === 'pickup' ? 'solid' : 'outline'"
               [intent]="method() === 'pickup' ? 'primary' : 'neutral'"
+              [disabled]="saving()"
               (click)="chooseMethod('pickup')"
             >
               Retrait
@@ -20,13 +21,21 @@
                 size="sm"
                 [emphasis]="method() === 'delivery' ? 'solid' : 'outline'"
                 [intent]="method() === 'delivery' ? 'primary' : 'neutral'"
+                [disabled]="saving()"
                 (click)="chooseMethod('delivery')"
               >
                 Livraison
               </button>
             }
             @if (method() !== null) {
-              <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="clear()">
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                [disabled]="saving()"
+                (click)="clear()"
+              >
                 Retirer la préférence
               </button>
             }
@@ -60,7 +69,7 @@
         [label]="destinationLabel()"
         [options]="options()"
         [value]="destinationId()"
-        [disabled]="!canManage()"
+        [disabled]="!canWrite()"
         (selectionChange)="chooseDestination($event)"
       />
     }
@@ -73,7 +82,7 @@
       label="Signature exigée à la remise"
       hint="s'applique à toutes les adresses ; chacune peut y déroger"
       [checked]="signatureRequired()"
-      [disabled]="!canManage()"
+      [disabled]="!canWrite()"
       (checkedChange)="chooseSignature($event)"
     />
   </fold-page-section>

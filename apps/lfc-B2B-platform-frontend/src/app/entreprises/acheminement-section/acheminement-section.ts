@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import type { DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { CompanyFulfillmentCard } from '@lfd/b2b-ui/company';
@@ -43,6 +51,9 @@ export class AcheminementSection {
   /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */
   protected readonly deliveryOffered = DELIVERY_SERVICE_OPEN;
 
+  /** Une écriture est en vol — la carte désarme ce qui écrit le temps qu'elle dure. */
+  protected readonly saving = signal(false);
+
   /** Seul le gestionnaire règle la préférence ; les autres la lisent. */
   protected readonly canManage = computed(() => this.company().role === 'company_admin');
 
@@ -52,7 +63,21 @@ export class AcheminementSection {
     effect(() => this.addresses.loadFor(this.company().id));
   }
 
-  protected save(preference: FulfillmentPreferenceView): void {
-    this.account.preferFulfillment(this.company().id, preference);
+  /**
+   * Une écriture à la fois. Le drapeau retombe dans les deux cas — un échec qui
+   * le laisserait levé gèlerait la carte jusqu'au prochain chargement de page.
+   */
+  protected async save(preference: FulfillmentPreferenceView): Promise<void> {
+    if (this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    try {
+      // Le service a déjà annoncé le résultat ; ce qu'il rend ne sert qu'à
+      // savoir que le vol est terminé.
+      await this.account.preferFulfillment(this.company().id, preference);
+    } finally {
+      this.saving.set(false);
+    }
   }
 }

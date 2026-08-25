@@ -63,6 +63,20 @@ export class CompanyFulfillmentCard {
   readonly deliveryOffered = input(true);
   /** Peut-on régler la préférence, ou seulement la lire ? */
   readonly canManage = input(true);
+  /**
+   * Une écriture est-elle en vol ?
+   *
+   * Les trois contrôles — méthode, destination, socle de signature — écrivent
+   * la MÊME préférence, chacun sur un clic. Sans cette entrée, deux gestes
+   * rapprochés partaient en parallèle et c'est le rechargement le plus lent qui
+   * gagnait l'affichage : l'écran finissait sur l'avant-dernier choix, sans
+   * rien signaler. Le container arme ce drapeau autour de son appel, et la
+   * carte désarme ce qui écrit.
+   */
+  readonly saving = input(false);
+
+  /** Peut-on écrire, maintenant ? */
+  protected readonly canWrite = computed(() => this.canManage() && !this.saving());
 
   /** Ce que fait la préférence, dit avec les mots de l'écran qui la porte. */
   readonly description = input(
@@ -120,7 +134,7 @@ export class CompanyFulfillmentCard {
   );
 
   protected chooseMethod(method: FulfillmentMethod): void {
-    if (this.method() === method) {
+    if (this.method() === method || !this.canWrite()) {
       return;
     }
     this.preferenceChange.emit(preferenceForMethod(method, this.preference()));
@@ -128,7 +142,7 @@ export class CompanyFulfillmentCard {
 
   protected chooseDestination(chosen: string): void {
     const method = this.method();
-    if (method !== null) {
+    if (method !== null && this.canWrite()) {
       this.preferenceChange.emit(preferenceForDestination(method, chosen, this.preference()));
     }
   }
@@ -146,10 +160,16 @@ export class CompanyFulfillmentCard {
   protected readonly signatureRequired = computed(() => this.preference().signatureRequired);
 
   protected chooseSignature(required: boolean): void {
+    if (!this.canWrite()) {
+      return;
+    }
     this.preferenceChange.emit(preferenceForSignature(required, this.preference()));
   }
 
   protected clear(): void {
+    if (!this.canWrite()) {
+      return;
+    }
     this.preferenceChange.emit(noPreference(this.preference()));
   }
 }

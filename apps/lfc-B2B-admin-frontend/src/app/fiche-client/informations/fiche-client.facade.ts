@@ -53,6 +53,7 @@ export class FicheClientFacade {
   // ── Ce qui est en cours ─────────────────────────────────────────────────
   readonly creating = this.actions.creating;
   readonly granting = this.actions.granting;
+  readonly preferring = this.actions.preferring;
 
   /** Combien de pièces restent à réunir — le rail d'activation le dit. */
   /** Ce qui empêche d'activer — et non le nombre de lignes affichées. */

@@ -49,19 +49,28 @@ interface Harness {
   readonly host: HTMLElement;
   /** Ce que le container a demandé d'enregistrer. */
   readonly saved: FulfillmentPreferenceView[];
+  /** Fait retomber toutes les écritures en vol — le serveur a répondu. */
+  readonly settle: () => void;
   readonly section: AcheminementSection;
 }
 
 function render(over: Partial<Company> = {}): Harness {
   const saved: FulfillmentPreferenceView[] = [];
+  // Les écritures restent EN VOL tant qu'on ne les fait pas retomber : c'est la
+  // seule façon d'observer ce que fait un second clic pendant le premier.
+  const pending: (() => void)[] = [];
 
   TestBed.configureTestingModule({
     providers: [
       {
         provide: AccountService,
         useValue: {
-          preferFulfillment: (_id: string, preference: FulfillmentPreferenceView): void => {
+          preferFulfillment: (
+            _id: string,
+            preference: FulfillmentPreferenceView,
+          ): Promise<boolean> => {
             saved.push(preference);
+            return new Promise((resolve) => pending.push(() => resolve(true)));
           },
         },
       },
@@ -82,6 +91,9 @@ function render(over: Partial<Company> = {}): Harness {
   return {
     host: fixture.nativeElement as HTMLElement,
     saved,
+    settle: (): void => {
+      pending.splice(0).forEach((resolve) => resolve());
+    },
     section: fixture.componentInstance,
   };
 }
@@ -114,6 +126,33 @@ describe("section Préférences d'acheminement (client)", () => {
     expect(section['canManage']()).toBe(false);
   });
 
+  it("n'écrit qu'une préférence à la FOIS", async () => {
+    // Les trois contrôles écrivent la même préférence, chacun sur un clic.
+    // Deux gestes rapprochés partaient en parallèle, et c'est le rechargement
+    // le plus lent qui gagnait l'affichage : l'écran finissait sur
+    // l'avant-dernier choix sans rien signaler.
+    const { section, saved, settle } = render();
+    const pickup: FulfillmentPreferenceView = {
+      method: 'pickup',
+      pickupAddressId: null,
+      deliveryAddressId: null,
+      signatureRequired: false,
+    };
+    const delivery: FulfillmentPreferenceView = { ...pickup, method: 'delivery' };
+
+    const first = section['save'](pickup);
+    void section['save'](delivery);
+
+    expect(saved).toEqual([pickup]);
+
+    // Le vol terminé, l'écran réécrit — le drapeau retombe, il ne gèle pas.
+    settle();
+    await first;
+    void section['save'](delivery);
+
+    expect(saved).toEqual([pickup, delivery]);
+  });
+
   it('ÉCRIT la méthode à qui ne peut que lire', () => {
     // « Montrer sans laisser régler » se vérifiait sur le drapeau, pas à
     // l'écran — et à l'écran, les boutons portaient seuls la méthode. Un
@@ -136,7 +175,7 @@ describe("section Préférences d'acheminement (client)", () => {
   it('transmet la préférence choisie au service', () => {
     const { section, saved } = render();
 
-    section['save']({
+    void section['save']({
       method: 'pickup',
       pickupAddressId: null,
       deliveryAddressId: null,

@@ -32,6 +32,14 @@ export class FicheClientActions {
   readonly granting = signal(false);
   /** Une ouverture de compte est en cours. */
   readonly creating = signal(false);
+  /**
+   * Une préférence d'acheminement part à l'écriture.
+   *
+   * Trois contrôles écrivent la même préférence, chacun sur un clic : sans ce
+   * drapeau, deux gestes rapprochés se doublent et c'est le rechargement le
+   * plus lent qui gagne l'affichage.
+   */
+  readonly preferring = signal(false);
 
   /**
    * Ouvre le compte. Rend l'identifiant créé, ou `null` si rien n'a été écrit —
@@ -115,14 +123,22 @@ export class FicheClientActions {
   }
 
   /** Pose (ou retire) la préférence d'acheminement. */
-  preferFulfillment(
+  async preferFulfillment(
     company: AdminCompanyDetail,
     preference: FulfillmentPreferenceView,
   ): Promise<boolean> {
-    return this.run(
-      () => this.service.preferFulfillment(company.id, preference),
-      "Préférence d'acheminement enregistrée.",
-    );
+    if (this.preferring()) {
+      return false;
+    }
+    this.preferring.set(true);
+    try {
+      return await this.run(
+        () => this.service.preferFulfillment(company.id, preference),
+        "Préférence d'acheminement enregistrée.",
+      );
+    } finally {
+      this.preferring.set(false);
+    }
   }
 
   /** Désigne l'adresse de livraison par défaut. */

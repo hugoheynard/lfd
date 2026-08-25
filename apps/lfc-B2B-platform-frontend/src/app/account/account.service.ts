@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import type { FulfillmentPreferenceView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { Observable } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import type { CatalogueView } from '../catalogue/catalogue-view';
@@ -193,12 +193,8 @@ export class AccountService {
    * Contrairement au délai de règlement, ce n'est pas une demande adressée au
    * commercial : c'est le client qui sait où il veut être servi.
    */
-  preferFulfillment(
-    companyId: string,
-    preference: FulfillmentPreferenceView,
-    onDone?: () => void,
-  ): void {
-    this.mutate(
+  preferFulfillment(companyId: string, preference: FulfillmentPreferenceView): Promise<boolean> {
+    return this.write(
       (token) =>
         this.http.patch(
           `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/fulfillment-preference`,
@@ -206,7 +202,6 @@ export class AccountService {
           headers(token),
         ),
       "Préférence d'acheminement enregistrée.",
-      onDone,
     );
   }
 
@@ -326,6 +321,29 @@ export class AccountService {
         },
         error: (error: unknown) => this.failOperation(error),
       });
+  }
+
+  /**
+   * Comme {@link mutate}, mais la promesse **retombe dans les deux cas**.
+   *
+   * `onDone` ne se déclenche qu'au succès — c'est ce qu'il faut pour fermer un
+   * panneau, et c'est précisément ce qu'il ne faut pas pour désarmer un écran :
+   * un échec le laisserait gelé. Ce que rend la promesse ne sert donc pas à
+   * annoncer (le toast reste ici), mais à savoir que le vol est terminé.
+   */
+  private write(call: (token: string) => Observable<unknown>, success: string): Promise<boolean> {
+    this._status.set('loading');
+    return firstValueFrom(this.auth.accessToken$().pipe(switchMap(call))).then(
+      () => {
+        this.load();
+        this.notify.success(success);
+        return true;
+      },
+      (error: unknown) => {
+        this.failOperation(error);
+        return false;
+      },
+    );
   }
 
   /** Échec d'une **opération** : on toaste, sans basculer la page en erreur. */
