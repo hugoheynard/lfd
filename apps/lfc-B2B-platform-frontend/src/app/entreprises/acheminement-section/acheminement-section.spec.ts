@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import type { CompanyAddressesView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -34,7 +35,12 @@ function company(over: Partial<Company> = {}): Company {
     },
     contacts: [],
     kbis: null,
-    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+    fulfillmentPreference: {
+      method: null,
+      pickupAddressId: null,
+      deliveryAddressId: null,
+      signatureRequired: false,
+    },
     ...over,
   } as Company;
 }
@@ -111,18 +117,35 @@ describe("section Préférences d'acheminement (client)", () => {
   it('transmet la préférence choisie au service', () => {
     const { section, saved } = render();
 
-    section['save']({ method: 'pickup', pickupAddressId: null, deliveryAddressId: null });
+    section['save']({
+      method: 'pickup',
+      pickupAddressId: null,
+      deliveryAddressId: null,
+      signatureRequired: false,
+    });
 
-    expect(saved).toEqual([{ method: 'pickup', pickupAddressId: null, deliveryAddressId: null }]);
+    expect(saved).toEqual([
+      {
+        method: 'pickup',
+        pickupAddressId: null,
+        deliveryAddressId: null,
+        signatureRequired: false,
+      },
+    ]);
   });
 
-  it('MASQUE la livraison tant que le service est fermé', () => {
-    // Proposer un acheminement que la plateforme ne rend pas serait une
-    // promesse que personne ne peut tenir. Ce n'était un réglage qu'en
-    // apparence : LFC ne livre pas, c'est un fait, et `DELIVERY_SERVICE_OPEN`
-    // le dit en un seul endroit.
+  it('offre la livraison exactement quand le service est ouvert', () => {
+    // Ce qui est tenu ici n'est pas la valeur du jour — elle a déjà changé une
+    // fois — mais le fait qu'UN SEUL interrupteur la gouverne. Proposer un
+    // acheminement que la plateforme ne rend pas serait une promesse que
+    // personne ne peut tenir ; le masquer alors qu'elle le rend ferait perdre
+    // une commande. `DELIVERY_SERVICE_OPEN` tranche, pour les cinq écrans.
+    //
+    // Une valeur recopiée en dur passerait tant qu'elle coïncide — et
+    // tomberait ici au prochain basculement, c'est-à-dire au moment où ça
+    // compte.
     const { section } = render();
 
-    expect(section['deliveryOffered']).toBe(false);
+    expect(section['deliveryOffered']).toBe(DELIVERY_SERVICE_OPEN);
   });
 });
