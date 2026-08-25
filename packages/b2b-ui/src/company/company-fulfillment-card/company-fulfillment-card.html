@@ -27,6 +27,11 @@
                 Livraison
               </button>
             }
+            @if (methodSuspended()) {
+              <!-- Le bouton « Livraison » est parti avec le service : sans ce
+                   témoin, la méthode retenue n'est écrite NULLE PART. -->
+              <span class="choice-value">Livraison</span>
+            }
             @if (method() !== null) {
               <button
                 foldButton
@@ -51,6 +56,11 @@
 
     @if (method() === null) {
       <p class="none">{{ noPreferenceHint() }}</p>
+    } @else if (methodSuspended()) {
+      <fold-callout variant="warning">
+        La livraison n'est pas en service : cette préférence ne s'applique pas et les commandes
+        partent en retrait. Elle reste enregistrée pour le jour où la livraison ouvrira.
+      </fold-callout>
     } @else if (noDestination()) {
       <fold-callout variant="warning">
         @if (method() === 'pickup') {

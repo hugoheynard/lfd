@@ -115,6 +115,19 @@ export class CompanyFulfillmentCard {
     return method === 'pickup' ? 'Retrait' : 'Livraison';
   });
 
+  /**
+   * La méthode retenue n'est plus servie.
+   *
+   * Le réglage survit à la fermeture du service — on ne l'efface pas dans le
+   * dos du client, il le retrouvera à l'ouverture. Mais il ne s'applique plus,
+   * et c'est ce qu'il faut DIRE : le bouton « Livraison » disparaît avec le
+   * service, si bien qu'une préférence de livraison devenait invisible et
+   * qu'on ne pouvait plus qu'en sortir sans savoir de quoi on sortait.
+   */
+  protected readonly methodSuspended = computed(
+    () => this.method() === 'delivery' && !this.deliveryOffered(),
+  );
+
   /** Le libellé du champ suit la méthode — le mot juste, pas un générique. */
   protected readonly destinationLabel = computed(() =>
     this.method() === 'pickup' ? 'Point de retrait préféré' : 'Adresse de livraison préférée',
