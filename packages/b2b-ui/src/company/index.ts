@@ -44,6 +44,14 @@ export {
   toDeliveryPayload,
 } from './address-form.model';
 export type { AddressDraft, DraftDay, DraftDays } from './address-form.model';
+export { EMPTY_POSTAL_DRAFT, postalDraftFrom, postalIssue, toPostal } from './postal-draft.model';
+export type { FrenchPostal, PostalDraft } from './postal-draft.model';
+export {
+  EMPTY_DELIVERY_DRAFT,
+  EMPTY_DELIVERY_SPECS,
+  deliveryIssueOf,
+} from './delivery-draft.model';
+export type { DeliveryDraft, DeliverySpecsDraft } from './delivery-draft.model';
 export {
   WEEKDAYS,
   formatSlot,
@@ -61,5 +69,6 @@ export {
   noPreference,
   preferenceForDestination,
   preferenceForMethod,
+  preferenceForSignature,
 } from './fulfillment-preference.model';
 export type { FulfillmentDestination } from './fulfillment-preference.model';
