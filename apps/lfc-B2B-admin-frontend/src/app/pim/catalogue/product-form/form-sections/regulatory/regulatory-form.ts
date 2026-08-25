@@ -17,12 +17,60 @@ const SCOPES: readonly { value: AllergenScope; label: string }[] = [
   { value: 'world', label: 'Monde' },
 ];
 
-const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[] = [
-  { key: 'energyKcal', label: 'Calories (kcal)' },
-  { key: 'carbsG', label: 'Glucides (g)' },
-  { key: 'fatG', label: 'Lipides (g)' },
-  { key: 'proteinG', label: 'Protéines (g)' },
-  { key: 'glycemicIndex', label: 'Indice glycémique' },
+interface NutritionField {
+  readonly key: keyof NutritionValues;
+  readonly label: string;
+}
+
+/**
+ * La grille, **par lignes**, dans l'ordre de l'annexe XV du règlement UE
+ * 1169/2011 — celui que le tableau imprimé doit suivre.
+ *
+ * Chaque ligne appaire ce qui se lit ensemble : une valeur et sa part
+ * (« Lipides » / « dont acides gras saturés »), ou deux valeurs voisines. Une
+ * grille à plat les laissait se répartir au gré de la largeur, si bien que
+ * « dont sucres » pouvait se retrouver sous « Protéines » — un « dont » qui ne
+ * touche plus ce dont il est la part ne veut plus rien dire.
+ *
+ * L'indice glycémique n'est PAS de l'annexe XV : c'est un renseignement
+ * produit. Il tient la place libre de la première ligne plutôt que d'ouvrir une
+ * ligne à lui seul, mais son libellé ne porte aucune unité de la déclaration.
+ */
+interface NutritionRow {
+  /** La ligne se suit par son PREMIER champ — nommé, pas déduit d'un index. */
+  readonly key: keyof NutritionValues;
+  readonly fields: readonly NutritionField[];
+}
+
+const NUTRITION_ROWS: readonly NutritionRow[] = [
+  {
+    key: 'energyKcal',
+    fields: [
+      { key: 'energyKcal', label: 'Calories (kcal)' },
+      { key: 'glycemicIndex', label: 'Indice glycémique' },
+    ],
+  },
+  {
+    key: 'fatG',
+    fields: [
+      { key: 'fatG', label: 'Lipides (g)' },
+      { key: 'saturatedFatG', label: 'dont acides gras saturés (g)' },
+    ],
+  },
+  {
+    key: 'carbsG',
+    fields: [
+      { key: 'carbsG', label: 'Glucides (g)' },
+      { key: 'sugarsG', label: 'dont sucres (g)' },
+    ],
+  },
+  {
+    key: 'proteinG',
+    fields: [
+      { key: 'proteinG', label: 'Protéines (g)' },
+      { key: 'saltG', label: 'Sel (g)' },
+    ],
+  },
 ];
 
 /**
@@ -55,5 +103,5 @@ const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[]
 export class RegulatoryForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly scopes = SCOPES;
-  protected readonly nutritionFields = NUTRITION_FIELDS;
+  protected readonly nutritionRows = NUTRITION_ROWS;
 }

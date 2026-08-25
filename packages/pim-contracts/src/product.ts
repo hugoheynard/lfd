@@ -16,13 +16,24 @@ export type ProductKind = z.infer<typeof productKindSchema>;
 /** État de publication — rendu seulement (jamais un payload). */
 export type ProductStatus = "draft" | "published" | "archived";
 
-/** Valeurs nutritionnelles pour 100 g en **entrée** — chaque champ optionnel. */
+/**
+ * Valeurs nutritionnelles pour 100 g en **entrée** — chaque champ optionnel.
+ *
+ * L'ordre est celui de l'annexe XV du règlement UE 1169/2011, et ce n'est pas
+ * une préférence de lecture : le tableau imprimé doit le suivre. Les deux
+ * « dont » sont des PARTS de la ligne qui les précède — le domaine refuse
+ * qu'elles la dépassent.
+ */
 const nutritionInputShape = z
   .object({
     energyKcal: z.number().optional(),
-    carbsG: z.number().optional(),
     fatG: z.number().optional(),
+    saturatedFatG: z.number().optional(),
+    carbsG: z.number().optional(),
+    sugarsG: z.number().optional(),
     proteinG: z.number().optional(),
+    saltG: z.number().optional(),
+    /** Hors annexe XV : un renseignement produit, pas une mention obligatoire. */
     glycemicIndex: z.number().optional(),
   })
   .optional();
@@ -102,9 +113,12 @@ export type DeclareNutritionPayload = z.infer<typeof declareNutritionPayloadSche
 export interface VariantNutritionView {
   readonly mayContain: readonly string[];
   readonly energyKcal: number | null;
-  readonly carbsG: number | null;
   readonly fatG: number | null;
+  readonly saturatedFatG: number | null;
+  readonly carbsG: number | null;
+  readonly sugarsG: number | null;
   readonly proteinG: number | null;
+  readonly saltG: number | null;
   readonly glycemicIndex: number | null;
 }
 

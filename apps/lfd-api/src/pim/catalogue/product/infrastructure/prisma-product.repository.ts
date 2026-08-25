@@ -25,9 +25,12 @@ interface NutritionRow {
   allergens: unknown;
   mayContain: unknown;
   energyKcal: number | null;
-  carbsG: number | null;
   fatG: number | null;
+  saturatedFatG: number | null;
+  carbsG: number | null;
+  sugarsG: number | null;
   proteinG: number | null;
+  saltG: number | null;
   glycemicIndex: number | null;
 }
 
@@ -84,9 +87,12 @@ function toVariant(row: VariantRow): VariantSnapshot {
         : {
             mayContain: readStringArrayColumn(row.nutrition.mayContain, "nutrition.mayContain"),
             energyKcal: row.nutrition.energyKcal,
-            carbsG: row.nutrition.carbsG,
             fatG: row.nutrition.fatG,
+            saturatedFatG: row.nutrition.saturatedFatG,
+            carbsG: row.nutrition.carbsG,
+            sugarsG: row.nutrition.sugarsG,
             proteinG: row.nutrition.proteinG,
+            saltG: row.nutrition.saltG,
             glycemicIndex: row.nutrition.glycemicIndex,
           },
   };

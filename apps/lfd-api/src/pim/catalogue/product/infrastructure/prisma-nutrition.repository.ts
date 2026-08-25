@@ -19,9 +19,12 @@ export class PrismaNutritionRepository extends NutritionRepository {
       allergens: [...declaration.allergens],
       mayContain: [...declaration.mayContain],
       energyKcal: declaration.energyKcal ?? null,
-      carbsG: declaration.carbsG ?? null,
       fatG: declaration.fatG ?? null,
+      saturatedFatG: declaration.saturatedFatG ?? null,
+      carbsG: declaration.carbsG ?? null,
+      sugarsG: declaration.sugarsG ?? null,
       proteinG: declaration.proteinG ?? null,
+      saltG: declaration.saltG ?? null,
       glycemicIndex: declaration.glycemicIndex ?? null,
     };
 

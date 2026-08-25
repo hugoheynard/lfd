@@ -22,17 +22,39 @@ export class OverlappingAllergensError extends DomainError {
   }
 }
 
+export class NutritionPartExceedsWholeError extends DomainError {
+  constructor(
+    readonly part: string,
+    readonly whole: string,
+  ) {
+    super(
+      "catalogue.nutrition.part_exceeds_whole",
+      `« ${part} » ne peut pas dépasser « ${whole} » : c'en est une part.`,
+    );
+  }
+}
+
 export class NegativeNutritionValueError extends DomainError {
   constructor(readonly field: string) {
     super("catalogue.nutrition.negative", `La valeur « ${field} » ne peut pas être négative.`);
   }
 }
 
+/**
+ * Les valeurs pour 100 g, dans l'ordre de l'annexe XV (UE 1169/2011).
+ *
+ * `saturatedFatG` et `sugarsG` sont des **parts** : « dont acides gras saturés »
+ * ne peut pas dépasser les matières grasses, ni « dont sucres » les glucides.
+ */
 export interface NutritionValues {
   readonly energyKcal?: number | undefined;
-  readonly carbsG?: number | undefined;
   readonly fatG?: number | undefined;
+  readonly saturatedFatG?: number | undefined;
+  readonly carbsG?: number | undefined;
+  readonly sugarsG?: number | undefined;
   readonly proteinG?: number | undefined;
+  readonly saltG?: number | undefined;
+  /** Hors annexe XV — un renseignement produit, pas une mention obligatoire. */
   readonly glycemicIndex?: number | undefined;
 }
 
@@ -62,10 +84,19 @@ export function nutritionDeclaration(
   }
 
   assertNonNegative("énergie", values.energyKcal);
+  assertNonNegative("matières grasses", values.fatG);
+  assertNonNegative("acides gras saturés", values.saturatedFatG);
   assertNonNegative("glucides", values.carbsG);
-  assertNonNegative("lipides", values.fatG);
+  assertNonNegative("sucres", values.sugarsG);
   assertNonNegative("protéines", values.proteinG);
+  assertNonNegative("sel", values.saltG);
   assertNonNegative("indice glycémique", values.glycemicIndex);
+
+  // « dont » est une part, pas une ligne de plus. Un tableau où les saturés
+  // dépassent les matières grasses n'est pas discutable, il est impossible — et
+  // il s'imprimerait tel quel.
+  assertPartOfWhole("acides gras saturés", values.saturatedFatG, "matières grasses", values.fatG);
+  assertPartOfWhole("sucres", values.sugarsG, "glucides", values.carbsG);
 
   return { allergens: present, mayContain: traces, ...values };
 }
@@ -81,6 +112,20 @@ function dedupeAndValidate(codes: readonly string[]): string[] {
     }
   }
   return seen;
+}
+
+function assertPartOfWhole(
+  part: string,
+  partValue: number | undefined,
+  whole: string,
+  wholeValue: number | undefined,
+): void {
+  // Un tout NON RENSEIGNÉ ne contredit rien : on ne connaît pas encore la
+  // borne. C'est « 12 g de sucres pour 4 g de glucides » qu'on refuse, pas une
+  // fiche à moitié remplie.
+  if (partValue !== undefined && wholeValue !== undefined && partValue > wholeValue) {
+    throw new NutritionPartExceedsWholeError(part, whole);
+  }
 }
 
 function assertNonNegative(field: string, value: number | undefined): void {

@@ -334,6 +334,15 @@ model Company {
   preferredDeliveryAddressId String?  @map("preferred_delivery_address_id")
   preferredDeliveryAddress   Address? @relation("PreferredDelivery", fields: [preferredDeliveryAddressId], references: [id], onDelete: SetNull)
 
+  /// Exige-t-on une signature à la remise ? Le **socle** de la société : chaque
+  /// adresse peut le redéfinir (`delivery_specs.signatureRequired`, `null` =
+  /// elle hérite), et chaque commande après elle.
+  ///
+  /// Une exigence de la SOCIÉTÉ, pas du lieu — « on signe toujours » se décide
+  /// une fois. Posée par adresse, comme avant, il fallait y penser N fois puis
+  /// se souvenir de la N+1ᵉ.
+  deliverySignatureRequired Boolean @default(false) @map("delivery_signature_required")
+
   // Posé au passage `pending → active` par l'activation commerciale explicite
   // (ancre d'ancienneté commerciale, distincte de `createdAt`). `null` = jamais activé.
   activatedAt DateTime? @map("activated_at")
@@ -2960,10 +2969,16 @@ model NutritionDeclaration {
   /// à ne pas confondre avec l'absence de ligne (= non renseigné).
   allergens     Json
   mayContain    Json   @default("[]") @map("may_contain")
+  /// Ordre de l'annexe XV : énergie, matières grasses (dont saturés), glucides
+  /// (dont sucres), protéines, sel. `null` = non renseigné, jamais zéro.
   energyKcal    Float? @map("energy_kcal")
-  carbsG        Float? @map("carbs_g")
   fatG          Float? @map("fat_g")
+  saturatedFatG Float? @map("saturated_fat_g")
+  carbsG        Float? @map("carbs_g")
+  sugarsG       Float? @map("sugars_g")
   proteinG      Float? @map("protein_g")
+  saltG         Float? @map("salt_g")
+  /// Hors annexe XV — un renseignement produit, pas une mention obligatoire.
   glycemicIndex Float? @map("glycemic_index")
 
   createdAt DateTime @default(now()) @map("created_at")

@@ -19,17 +19,19 @@
   hint="pour 100 g"
   hintPosition="inline"
 >
-  <div class="grid">
-    @for (field of nutritionFields; track field.key) {
-      <fold-number-input
-        [label]="field.label"
-        [min]="0"
-        [step]="0.1"
-        [value]="store.nutrition()[field.key] ?? null"
-        (valueChange)="store.setNutrition(field.key, $event)"
-      />
-    }
-  </div>
+  @for (row of nutritionRows; track row.key) {
+    <div class="grid">
+      @for (field of row.fields; track field.key) {
+        <fold-number-input
+          [label]="field.label"
+          [min]="0"
+          [step]="0.1"
+          [value]="store.nutrition()[field.key] ?? null"
+          (valueChange)="store.setNutrition(field.key, $event)"
+        />
+      }
+    </div>
+  }
 </fold-fieldset>
 
 <hr class="rule" />

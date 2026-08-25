@@ -23,17 +23,23 @@ import type { Product, ProductKind, Variant } from '../data/models';
 /** Valeurs nutritionnelles pour 100 g (édition) ; `null` = non renseigné. */
 export interface NutritionValues {
   readonly energyKcal: number | null;
-  readonly carbsG: number | null;
   readonly fatG: number | null;
+  readonly saturatedFatG: number | null;
+  readonly carbsG: number | null;
+  readonly sugarsG: number | null;
   readonly proteinG: number | null;
+  readonly saltG: number | null;
   readonly glycemicIndex: number | null;
 }
 
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
-  carbsG: null,
   fatG: null,
+  saturatedFatG: null,
+  carbsG: null,
+  sugarsG: null,
   proteinG: null,
+  saltG: null,
   glycemicIndex: null,
 };
 
@@ -97,9 +103,12 @@ function toNutritionValues(nutrition: VariantNutritionView | null): NutritionVal
     ? EMPTY_NUTRITION
     : {
         energyKcal: nutrition.energyKcal,
-        carbsG: nutrition.carbsG,
         fatG: nutrition.fatG,
+        saturatedFatG: nutrition.saturatedFatG,
+        carbsG: nutrition.carbsG,
+        sugarsG: nutrition.sugarsG,
         proteinG: nutrition.proteinG,
+        saltG: nutrition.saltG,
         glycemicIndex: nutrition.glycemicIndex,
       };
 }

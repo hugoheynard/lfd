@@ -6,9 +6,12 @@ import type { Sku } from "../value-objects/sku.value-object.js";
 export interface VariantNutritionSnapshot {
   readonly mayContain: readonly string[];
   readonly energyKcal: number | null;
-  readonly carbsG: number | null;
   readonly fatG: number | null;
+  readonly saturatedFatG: number | null;
+  readonly carbsG: number | null;
+  readonly sugarsG: number | null;
   readonly proteinG: number | null;
+  readonly saltG: number | null;
   readonly glycemicIndex: number | null;
 }
 

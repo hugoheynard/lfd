@@ -182,9 +182,12 @@ const DEFAULT_MEDIA_ROLE = 'gallery';
 
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
-  carbsG: null,
   fatG: null,
+  saturatedFatG: null,
+  carbsG: null,
+  sugarsG: null,
   proteinG: null,
+  saltG: null,
   glycemicIndex: null,
 };
 
