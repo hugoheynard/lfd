@@ -1,11 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
-import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
 import { PricingFloor } from "../domain/entities/pricing-floor.js";
 import { floorFromRow } from "./price-rows.js";
-import { eventRow } from "./pricing-journal.writer.js";
+import { PricingActWriter } from "./pricing-act.writer.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 import type { PriceFloor } from "../domain/price-rule.js";
 
@@ -13,7 +12,7 @@ import type { PriceFloor } from "../domain/price-rule.js";
 export class PrismaPricingFloorRepository extends PricingFloorRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ids: IdGenerator,
+    private readonly acts: PricingActWriter,
   ) {
     super();
   }
@@ -53,14 +52,13 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       archiveReason: null,
     };
 
-    await this.prisma.$transaction([
+    await this.acts.around(act, () =>
       this.prisma.priceFloor.upsert({
         where: { id: state.id },
         create: { id: state.id, ...shared },
         update: shared,
       }),
-      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-    ]);
+    );
   }
 
   /** La limite **en vigueur** : une limite archivée n'en est plus une. */
@@ -86,19 +84,15 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
    * n'a rien fait.
    */
   async archive(id: string, act: PricingAct): Promise<boolean> {
-    return this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.priceFloor.updateMany({
+    // `aroundChange` et non `around` : sans lui, un archivage qui ne trouve rien
+    // écrirait quand même son acte, et le journal raconterait un geste qui n'a
+    // rien fait.
+    return this.acts.aroundChange(act, async () => {
+      const { count } = await this.prisma.priceFloor.updateMany({
         where: { id, archivedAt: null },
         data: { archivedAt: act.at, archivedBy: act.actor, archiveReason: act.reason },
       });
-      // Transaction INTERACTIVE et non tableau : sans elle, un archivage qui ne
-      // trouve rien écrirait quand même son acte, et le journal raconterait un
-      // geste qui n'a rien fait.
-      if (count === 0) {
-        return false;
-      }
-      await tx.pricingEvent.create({ data: eventRow(this.ids.next(), act) });
-      return true;
+      return count > 0;
     });
   }
 }

@@ -34,6 +34,7 @@ import { AdminPricingJournalController } from "./http/admin-pricing-journal.cont
 import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.reader.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
+import { PricingActWriter } from "./infrastructure/pricing-act.writer.js";
 import { PrismaPricingRuleRepository } from "./infrastructure/prisma-pricing-rule.repository.js";
 import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-ladder.repository.js";
 import { PrismaVolumeCommitmentRepository } from "./infrastructure/prisma-volume-commitment.repository.js";
@@ -102,6 +103,10 @@ import { PricingModule } from "./pricing.module.js";
     MercurialeBenchmarkQuery,
     SavePriceTemplateHandler,
     ApplyPriceTemplateHandler,
+    // Possède « écrire un acte » : l'état, le journal du domaine et son miroir
+    // au journal général, dans une seule transaction. Il vit ICI et pas dans le
+    // module de lecture — écrire est un geste d'administration.
+    PricingActWriter,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
     { provide: VolumeCommitmentRepository, useClass: PrismaVolumeCommitmentRepository },

@@ -1,11 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
-import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { VolumeLadderAggregate } from "../domain/entities/volume-ladder.js";
 import { VolumeLadderRepository } from "../domain/ports/volume-ladder.repository.js";
 import { OverlappingVolumeLadderError } from "../domain/pricing-errors.js";
-import { eventRow } from "./pricing-journal.writer.js";
+import { PricingActWriter } from "./pricing-act.writer.js";
 import { ladderStateFromRow } from "./volume-ladder-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 
@@ -20,7 +19,7 @@ const OVERLAP_CONSTRAINT = "volume_ladders_no_overlap";
 export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ids: IdGenerator,
+    private readonly acts: PricingActWriter,
   ) {
     super();
   }
@@ -29,7 +28,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
   async pose(ladder: VolumeLadderAggregate, act: PricingAct): Promise<void> {
     const state = ladder.toPersistence();
     try {
-      await this.prisma.$transaction([
+      await this.acts.around(act, () =>
         this.prisma.volumeLadder.create({
           data: {
             id: state.id,
@@ -48,8 +47,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
             createdBy: state.createdBy,
           },
         }),
-        this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-      ]);
+      );
     } catch (error) {
       if (isExclusionViolation(error)) {
         throw new OverlappingVolumeLadderError(error);
@@ -66,7 +64,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
   /** Une transition — suspendre, reprendre, archiver. Seul le cycle de vie bouge. */
   async update(ladder: VolumeLadderAggregate, act: PricingAct): Promise<void> {
     const { id, lifecycle } = ladder.toPersistence();
-    await this.prisma.$transaction([
+    await this.acts.around(act, () =>
       this.prisma.volumeLadder.update({
         where: { id },
         data: {
@@ -77,8 +75,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
           archiveReason: lifecycle.archiveReason,
         },
       }),
-      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-    ]);
+    );
   }
 }
 

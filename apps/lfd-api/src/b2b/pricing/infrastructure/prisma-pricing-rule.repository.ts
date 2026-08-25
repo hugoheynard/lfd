@@ -1,11 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
-import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PricingRule } from "../domain/entities/pricing-rule.js";
 import { PricingRuleRepository } from "../domain/ports/pricing-rule.repository.js";
 import { OverlappingPriceRuleError } from "../domain/pricing-errors.js";
-import { eventRow } from "./pricing-journal.writer.js";
+import { PricingActWriter } from "./pricing-act.writer.js";
 import { ruleStateFromRow, type RuleRow } from "./price-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 
@@ -29,7 +28,7 @@ const OVERLAP_CONSTRAINT = "price_rules_no_overlap";
 export class PrismaPricingRuleRepository extends PricingRuleRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ids: IdGenerator,
+    private readonly acts: PricingActWriter,
   ) {
     super();
   }
@@ -47,10 +46,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
    */
   async save(rule: PricingRule, act: PricingAct): Promise<void> {
     try {
-      await this.prisma.$transaction([
-        this.prisma.priceRule.create({ data: ruleData(rule) }),
-        this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-      ]);
+      await this.acts.around(act, () => this.prisma.priceRule.create({ data: ruleData(rule) }));
     } catch (error) {
       if (isExclusionViolation(error)) {
         throw new OverlappingPriceRuleError(rule.toPersistence().stage, error);
@@ -62,7 +58,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
   /** Une transition — pause, reprise, archivage. Seul le cycle de vie bouge. */
   async update(rule: PricingRule, act: PricingAct): Promise<void> {
     const { id, lifecycle } = rule.toPersistence();
-    await this.prisma.$transaction([
+    await this.acts.around(act, () =>
       this.prisma.priceRule.update({
         where: { id },
         data: {
@@ -73,8 +69,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
           archiveReason: lifecycle.archiveReason,
         },
       }),
-      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-    ]);
+    );
   }
 
   /**
@@ -86,10 +81,9 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
    */
   async rename(rule: PricingRule, act: PricingAct): Promise<void> {
     const { id, label } = rule.toPersistence();
-    await this.prisma.$transaction([
+    await this.acts.around(act, () =>
       this.prisma.priceRule.update({ where: { id }, data: { label } }),
-      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
-    ]);
+    );
   }
 
   /**

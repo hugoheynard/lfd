@@ -185,3 +185,45 @@ function percent(bp: number): string {
 function day(date: Date): string {
   return date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
 }
+
+/**
+ * **Le fait générique** que porte un acte tarifaire.
+ *
+ * La tarification a son propre journal — plus riche que le général : il porte le
+ * motif écrit par l'agent et la phrase figée de ce que la décision disait. On ne
+ * le remplace pas. Mais un fait qui ne vit que dans la table d'un domaine reste
+ * invisible de l'écran qui répond à « qui a fait quoi », et une remise consentie
+ * sur un prix négocié est exactement ce qu'on y cherche.
+ *
+ * D'où le miroir : **un seul écrivain**, le dépôt, dans **une seule
+ * transaction**, vers deux destinations qui ne répondent pas à la même question.
+ * Deux lignes pour un acte, jamais deux vérités — elles ne peuvent pas diverger,
+ * elles tombent ensemble.
+ */
+const FACT_PREFIX: Readonly<Record<PricingSubjectType, string>> = {
+  rule: "price_rule",
+  floor: "price_floor",
+  ladder: "volume_ladder",
+};
+
+/** Le sujet du journal général, aligné sur le préfixe du fait. */
+const FACT_SUBJECT: Readonly<Record<PricingSubjectType, string>> = FACT_PREFIX;
+
+export function pricingFactOf(act: PricingAct): {
+  readonly type: string;
+  readonly subjectType: string;
+  readonly subjectId: string;
+  readonly payload: Record<string, unknown>;
+  readonly occurredAt: Date;
+} {
+  return {
+    type: `${FACT_PREFIX[act.subjectType]}.${act.kind}`,
+    subjectType: FACT_SUBJECT[act.subjectType],
+    subjectId: act.subjectId,
+    // La phrase figée et le motif : c'est tout ce que le journal général a à
+    // dire d'un acte tarifaire. Le détail de la règle vit dans sa table, et
+    // l'y recopier ferait du journal une seconde base.
+    payload: { summary: act.summary, reason: act.reason },
+    occurredAt: act.at,
+  };
+}
