@@ -32,7 +32,7 @@ On ne reconstruit jamais l'état métier depuis le journal.
 ### La différence, concrètement
 
 Prenons un taux de TVA passé de 5,5 % à 10 %. Les deux mondes écrivent la même
-ligne — `tax_rate.rate_changed`, `{ from: 550, to: 1000 }`. Ce qui les sépare
+ligne — `vat_rate.rate_changed`, `{ from: 550, to: 1000 }`. Ce qui les sépare
 n'est pas ce qu'on écrit, c'est **où est la vérité**.
 
 **Chez nous (streaming).** La colonne `vat_rate.percent` vaut `1000`, et c'est
@@ -285,23 +285,23 @@ le but n'a jamais été d'empêcher, il a toujours été de **rendre visible**.
 
 Définis dans `pim/journal/pim-journal.ts` (`PIM_EVENTS`).
 
-| Fait                                                           | Émis par                                                |
-| -------------------------------------------------------------- | ------------------------------------------------------- |
-| `product.identity_saved`                                       | section Identité                                        |
-| `product.pricing_saved`                                        | section Tarif & logistique                              |
-| `product.declaration_saved`                                    | section Allergènes & nutrition                          |
-| `product.editorial_saved`                                      | section Communication                                   |
-| `product.media_saved`                                          | section Visuels                                         |
-| `product.published` / `product.unpublished`                    | mise en vente / retrait                                 |
-| `product.tva_changed` / `product.channels_changed`             | dérogations de la fiche                                 |
-| `product.created` / `.archived` / `.restored`                  | ouverture et sortie d'une fiche                         |
-| `category.tva_changed`                                         | TVA d'une famille                                       |
-| `category.created` / `.renamed` / `.moved` / `.archived`       | l'arbre du catalogue                                    |
-| `category.reordered`                                           | un NIVEAU rangé (sujet = le parent, `root` à la racine) |
-| `category.channels_changed`                                    | où un rayon se vend                                     |
-| `location.created` / `.updated` / `.deleted`                   | emplacements                                            |
-| `location.table_qr_generated` / `.table_qr_removed`            | QR de table (le jeton n'est jamais dans la charge)      |
-| `tax_rate.created` / `.rate_changed` / `.renamed` / `.deleted` | référentiel des taux                                    |
+| Fait                                                             | Émis par                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------------- |
+| `product.identity_saved`                                         | section Identité                                        |
+| `product.pricing_saved`                                          | section Tarif & logistique                              |
+| `product.declaration_saved`                                      | section Allergènes & nutrition                          |
+| `product.editorial_saved`                                        | section Communication                                   |
+| `product.media_saved`                                            | section Visuels                                         |
+| `product.published` / `product.unpublished`                      | mise en vente / retrait                                 |
+| `product.vat_changed` / `product.channels_changed`               | dérogations de la fiche                                 |
+| `product.created` / `.archived` / `.restored`                    | ouverture et sortie d'une fiche                         |
+| `product_category.vat_changed`                                   | TVA d'une famille                                       |
+| `product_category.created` / `.renamed` / `.moved` / `.archived` | l'arbre du catalogue                                    |
+| `product_category.reordered`                                     | un NIVEAU rangé (sujet = le parent, `root` à la racine) |
+| `product_category.channels_changed`                              | où un rayon se vend                                     |
+| `location.created` / `.updated` / `.deleted`                     | emplacements                                            |
+| `location.table_qr_generated` / `.table_qr_removed`              | QR de table (le jeton n'est jamais dans la charge)      |
+| `vat_rate.created` / `.rate_changed` / `.renamed` / `.deleted`   | référentiel des taux                                    |
 
 **Toute écriture du référentiel nomme désormais son fait** : `27/27` handlers,
 dette déclarée vide. La règle d'origine (« on ne trace que ce qui a un aval »)
@@ -351,23 +351,88 @@ transaction à annuler.
 Le critère n'est pas « quel module », c'est **« qui agit sur les affaires de
 quelqu'un d'autre »** — c'est là qu'on vient demander des comptes.
 
-1. 🟢 **Les mutations staff sur un compte client** (app admin : activation,
-   terme de paiement convenu, vérification KBIS, adresses). Même profil que le
-   PIM : interne, faible volume, forte exigence de responsabilité. C'est le
-   premier lot à passer sous laissez-passer.
+1. ✅ **Les mutations staff sur un compte client** — **fait le 2026-08-25**, cf.
+   la section suivante.
 2. 🟡 **Les décisions contractuelles et tarifaires** (règles de prix, remises de
    retrait, zones de livraison, gabarits récurrents). Bloquant souhaitable,
    volume faible.
 3. 🔴 **Le chemin de commande et les webhooks de paiement.** Restent
    best-effort + clé d'idempotence. Le client passe avant la mémoire.
 
-> Le jour où le premier lot passe, la promotion de `PimJournal` en `platform/`
-> devient obligatoire — le port porte déjà sa propre règle (« au troisième bloc
-> émetteur »), et `b2b` serait le troisième.
+---
+
+## 11. Le lot 1 : les actes du staff, sans alourdir les handlers
+
+Le référentiel journalise **dans ses handlers** : une dizaine de lignes par
+geste. C'est le prix de ses diffs — seul le handler sait ce qui a changé entre
+deux enregistrements de section. Copier ce patron sur les comptes clients aurait
+coûté la lisibilité de vingt handlers pour un bénéfice nul : leurs faits ne sont
+pas des diffs, ce sont des **actes nommés**, et l'événement les porte déjà.
+
+D'où la forme retenue : **l'événement de domaine EST le fait**.
+
+```ts
+await this.uow.run(async () => {
+  await this.companies.save(company);
+  await this.events.publishTraced(new PaymentTermsGrantedEvent(company.id, terms));
+});
+```
+
+Une ligne, celle qui existait déjà — `publish` est devenu `publishTraced`. Ce
+qui a changé est dessous : `DomainEventPublisher.publishTraced` inscrit le fait
+au journal **dans la transaction ambiante**, puis publie sur le bus. Un événement
+sait se décrire (`JournaledEvent.journalFact()`), donc la charge utile s'écrit
+une seule fois, au même endroit que le fait.
+
+```mermaid
+flowchart LR
+  H["Handler du staff<br/><i>uow.run</i>"] -->|publishTraced| P[DomainEventPublisher]
+  P -->|1· append, DANS la transaction| J["Journal<br/><i>platform/journal</i>"]
+  P -->|2· publish, best-effort| B[EventBus]
+  J --> A["ActivityRecorder.recordOrFail<br/><i>growth.activity_events</i>"]
+  B --> S["Abonnés<br/><i>projections, mails</i>"]
+```
+
+**Le journal, lui, a déménagé.** `PimJournal` vivait dans `pim/` et se donnait
+sa propre règle : « promouvoir en `platform/` au troisième bloc émetteur ». `b2b`
+est le troisième. Le port générique (`platform/journal/`) porte donc le fait nu
+et l'écriture bloquante ; `PimJournal` reste au-dessus avec ce qui lui est propre
+— le laissez-passer et la portée.
+
+### Ce qui est tracé, et ce qui ne l'est pas
+
+**Tracé (bloquant, dans la transaction)** : les dix-neuf actes d'un agent sur le
+compte d'un tiers — identité corrigée, délais de paiement accordés, statut
+changé, KBIS déposé / certifié / décertifié, activation, adresses de facturation
+et de livraison, préférence d'acheminement, carnet de contacts.
+
+**Best-effort, inchangé** : `company.declared` et `company.step_reached`. Ce sont
+des faits d'**entonnoir** — ce que le client fait chez lui. Les perdre dégrade
+une statistique ; bloquer une inscription sur un hoquet d'`INSERT` dégraderait le
+service. Ils continuent de passer par leurs abonnés.
+
+Les trois abonnés qui ne faisaient que journaliser (`on-company-activated`,
+`on-kbis-certification`) ont été **supprimés** : leur fait s'écrit maintenant à
+la source. Les garder aurait produit deux lignes pour un acte.
+
+### Ce que la porte vérifie côté comptes
+
+`lint:journal-tracked` couvre désormais deux zones et deux disciplines : au
+référentiel, injecter `PimJournal` + `UnitOfWork` ; côté comptes, **appeler**
+`publishTraced` sous unité de travail. Un handler dont le nom dit qu'un agent
+agit sur le dossier d'un tiers (`…ByStaff`, plus les cinq gestes sans jumeau
+client) ne peut plus être livré muet.
+
+Deux dispenses, déclarées et greppables :
+
+| Handler                       | Marque              | Pourquoi                                                                                                 |
+| ----------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
+| `UploadKbisByStaffHandler`    | `@hors-transaction` | Le fichier part d'abord au stockage objet ; y enfermer un aller-retour réseau coûterait plus que le trou |
+| `CreateCompanyByStaffHandler` | `@sans-journal`     | `company.declared` existe déjà avec `via: "staff"` ; le tracer ici lui donnerait deux écrivains          |
 
 ---
 
-## 11. Lire l'historique d'une fiche
+## 12. Lire l'historique d'une fiche
 
 La table est indexée `[subject_type, subject_id, occurred_at]`, et le lecteur
 filtre déjà sur ces colonnes.
@@ -384,7 +449,7 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## 12. Ce qui n'est PAS journalisé
+## 13. Ce qui n'est PAS journalisé
 
 À jour au **2026-08-25**. Le chiffre exact sort de `pnpm lint:journal-tracked`.
 
@@ -394,9 +459,10 @@ ORDER BY occurred_at DESC;
   les emplacements) ont chacun leur fait. La liste `BACKLOG` de la porte reste
   en place, **vide** : c'est le mécanisme qui rendra une dette future visible et
   bornée.
-- **Tout le B2B** — commandes, sociétés, adresses, contacts, paiements,
-  abonnements, règles de prix, annuaire staff. Ce que `growth` y écrit est
-  analytique et **best-effort**. Y rendre le journal bloquant reviendrait à
+- **Le B2B, sauf les actes du staff sur un compte client** (faits le
+  2026-08-25, cf. §11) : commandes, paiements, abonnements, règles de prix,
+  annuaire staff, et tout ce que le CLIENT fait chez lui. Ce que `growth` y écrit
+  reste analytique et **best-effort**. Y rendre le journal bloquant reviendrait à
   accepter qu'un hoquet d'append empêche un client de commander : c'est une
   décision produit, à prendre domaine par domaine.
 - **Tout ce qui ne passe pas par un handler** : un `psql`, un seed, une
@@ -406,16 +472,19 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## 13. Fichiers
+## 14. Fichiers
 
 | Rôle                             | Chemin                                                          |
 | -------------------------------- | --------------------------------------------------------------- |
 | Contexte de requête (ALS)        | `platform/context/request-context.{ts,store.ts,middleware.ts}`  |
 | Unité de travail                 | `platform/database/unit-of-work.ts`                             |
 | Routage vers la transaction      | `platform/database/{transaction.store,transactional-prisma}.ts` |
+| Port générique du journal        | `platform/journal/{journal,journal-fact}.ts`                    |
+| Événement qui EST un fait        | `JournaledEvent` + `DomainEventPublisher.publishTraced`         |
+| Faits des comptes clients        | `b2b/account/domain/events/account-facts.ts`                    |
 | Port du référentiel + ticket     | `pim/journal/pim-journal.ts`                                    |
 | Diff `avant → après`             | `pim/journal/changes.ts`                                        |
-| Branchement `pim` → journal réel | `appBootstrap/pim-journal.module.ts`                            |
+| Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                |
 | Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`         |
 | Table                            | `prisma/schema.prisma` → `model ActivityEvent`                  |
 | Porte CI                         | `dev-toolbox/gates/journal-tracked.mjs`                         |

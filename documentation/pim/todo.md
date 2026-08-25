@@ -98,7 +98,7 @@
       d'erreur lui échappent par construction. Relevé le 2026-08-25
 - [x] **Nommer les quatorze faits manquants** du journal du référentiel — fait le 2026-08-25.
       `lint:journal-tracked` affiche `27/27`, la dette déclarée est vide. Chaque geste a son fait :
-      `category.{created,renamed,moved,archived,reordered,channels_changed}`,
+      `product_category.{created,renamed,moved,archived,reordered,channels_changed}`,
       `product.{created,archived,restored}`,
       `location.{created,updated,deleted,table_qr_generated,table_qr_removed}`
 - [ ] Éditer la fiche d'un produit **existant** (aujourd'hui : seulement à la création)
@@ -141,7 +141,7 @@
   - [ ] **C5** _(après C0)_ — contexte `b2b` (TVA 20 %) = **une ligne de données** (grâce à C0)
 - [ ] **Override local au produit — disponibilité + TVA** ([`override-produit.md`](./override-produit.md), 🟡 moitié faite) :
   - [x] **O0 (TVA)** _(2026-08-24)_ — `product_context_tva` + `effectiveTva` (résolveur pur, produit → famille → rien) appelé par les DEUX projections ; le port rend le taux **par produit**
-  - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.tva_changed` ; carte vide = retour à l'héritage
+  - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.vat_changed` ; carte vide = retour à l'héritage
   - [x] **O2 (TVA)** _(2026-08-24)_ — « Redéfinir » par ligne dans l'encadré, panneau à un contexte, liseré + « Redéfini » ; part avec la section Tarif
   - [x] **O3** _(2026-08-24)_ — Shopify quitte la collection `tva-*` obsolète (S2), et le rapport le dit
   - [x] Compte d'usages : familles **et** fiches (un taux visé par une seule fiche paraissait libre)

@@ -44,7 +44,7 @@ observés — une projection d'audit, avec un seul invariant : l'immuabilité.
 | Colonne             | Pourquoi elle existe                                                 |
 | ------------------- | -------------------------------------------------------------------- |
 | `id` (ULID)         | Trie par le temps → curseur de pagination, sans index supplémentaire |
-| `type`              | Le fait, en vocabulaire métier (`tax_rate.rate_changed`)             |
+| `type`              | Le fait, en vocabulaire métier (`vat_rate.rate_changed`)             |
 | `subjectType/Id`    | Ce dont il parle — c'est la clé de « l'histoire de ce taux »         |
 | `actorId/actorName` | Le nom **figé au moment de l'acte** (cf. §4)                         |
 | `traceId`           | Corrélation : tous les faits d'une même requête se retrouvent        |
@@ -53,41 +53,56 @@ observés — une projection d'audit, avec un seul invariant : l'immuabilité.
 
 ---
 
-## 2. Comment le PIM y écrit sans voir la croissance
+## 2. Comment on y écrit sans voir la croissance
 
-La matrice des frontières interdit à `pim` d'importer `b2b`. Le référentiel
+La matrice des frontières interdit à `pim` d'importer `b2b`. Chaque émetteur
 déclare donc **son** port, et la racine de composition le branche sur le journal
 réel — le montage de `B2bCatalogDriver`, pour la même raison.
 
+**Le port a été promu en `platform/` le 2026-08-25**, comme ce doc l'avait prévu :
+« au troisième bloc émetteur ». Le troisième est arrivé — les actes du staff sur
+un compte client (`b2b/account`) — et la fiction « la croissance possède le
+journal » a cessé de tenir. `platform/journal/` porte le fait nu et l'écriture
+bloquante ; `pim/journal/` garde ce qui lui est propre, le laissez-passer et la
+portée.
+
 ```mermaid
 flowchart TD
-  H["Handler PIM<br/>UpdateTvaRateHandler"] -->|dépend de| PJ["PimJournal<br/>(port, dans pim/journal/)"]
-  PJ -.->|branché par| RM["PimJournalModule<br/>(appBootstrap, @Global)"]
-  RM -->|délègue à| AR["ActivityRecorder<br/>(b2b/growth)"]
+  HP["Handler PIM<br/>UpdateVatRateHandler"] -->|laissez-passer| PJ["PimJournal<br/><i>pim/journal/</i>"]
+  HS["Handler staff<br/>GrantTermsHandler"] -->|publishTraced| DP["DomainEventPublisher<br/><i>platform/events/</i>"]
+  PJ --> J["Journal<br/><i>platform/journal/ (port)</i>"]
+  DP --> J
+  J -.->|branché par| RM["JournalModule<br/><i>appBootstrap, @Global</i>"]
+  RM -->|délègue à| AR["ActivityRecorder<br/><i>b2b/growth</i>"]
   AR --> DB[("growth.activity_events")]
 ```
 
-**Quand promouvoir le journal en `platform/` ?** Au **troisième bloc émetteur**.
-À deux, un port et un binding de racine coûtent moins qu'un déménagement de
-quarante-trois fichiers ; à trois, la fiction « la croissance possède le
-journal » ne tient plus, et le schéma Postgres `growth` devient un nom trompeur.
+Le schéma Postgres `growth` reste, lui, un nom trompeur — il héberge le journal
+de tout le monde. Le renommer est une migration de données à trois déploiements,
+pour un bénéfice de lecture en `psql` : pas maintenant.
 
 ### Ce qu'on journalise, et ce qu'on ne journalise pas
 
-On ne trace pas tout. Les faits retenus ont en commun de **changer ce qui est
-taxé ou vendu** — le reste (une description retouchée, une position dans
-l'arbre) n'a pas d'aval, et un journal qu'on relit pour comprendre un écart n'a
-rien à y gagner.
+Cette section décrivait une règle **abandonnée le 2026-08-25** : « on ne trace
+que ce qui change ce qui est taxé ou vendu ». Elle triait selon l'usage qu'on
+imaginait du journal ; la question qu'on lui pose est « qui a touché à ça ».
+Le référentiel trace donc désormais **toutes** ses écritures, et les comptes
+clients tous les **actes du staff** — cf.
+[`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-tracabilite.md).
+Ce qui reste best-effort : les faits d'entonnoir et le parcours du client.
 
-| Type                    | Portée figée                           |
-| ----------------------- | -------------------------------------- |
-| `tax_rate.created`      | — (un taux qui naît ne vise personne)  |
-| `tax_rate.rate_changed` | `familiesEmporter`, `familiesSurPlace` |
-| `tax_rate.renamed`      | — (un nom qui change ne change rien)   |
-| `tax_rate.deleted`      | —                                      |
-| `category.tva_changed`  | —                                      |
-| `product.published`     | `variants`                             |
-| `product.unpublished`   | `variants`                             |
+La table ci-dessous garde son intérêt : elle dit quelle **portée** chaque fait
+fige.
+
+| Type                           | Portée figée                           |
+| ------------------------------ | -------------------------------------- |
+| `vat_rate.created`             | — (un taux qui naît ne vise personne)  |
+| `vat_rate.rate_changed`        | `familiesEmporter`, `familiesSurPlace` |
+| `vat_rate.renamed`             | — (un nom qui change ne change rien)   |
+| `vat_rate.deleted`             | —                                      |
+| `product_category.vat_changed` | —                                      |
+| `product.published`            | `variants`                             |
+| `product.unpublished`          | `variants`                             |
 
 Renommer et changer un taux sont **deux faits distincts** alors qu'ils passent
 par la même route. Les confondre sous « taux modifié » obligerait à ouvrir le
@@ -217,7 +232,7 @@ récent au plus ancien, donc un `skip` glisserait d'une ligne à chaque fait éc
 pendant la lecture. L'`id` étant un ULID, trier par `id` décroissant trie par le
 temps.
 
-Le **module** est dérivé du préfixe du type (`tax_rate.` → `pim`) plutôt que
+Le **module** est dérivé du préfixe du type (`vat_rate.` → `pim`) plutôt que
 stocké : la colonne n'existe pas, et l'ajouter obligerait à la remplir pour tous
 les faits déjà écrits. Le jour où un type ne se range plus sous un préfixe, c'est
 le type qu'il faut renommer.
@@ -237,10 +252,10 @@ journal est append-only. C'est le prix de l'invariant qui compte le plus,
 
 ## 6. Ce qui reste
 
-La chaîne est prouvée de bout en bout sur **un** module ; elle n'est pas
-généralisée, et c'est délibéré — étendre le journal à tous les modules avant
-d'avoir vu le premier se lire en vrai figerait un vocabulaire et un budget de
-lectures sur des suppositions.
+La chaîne est prouvée de bout en bout sur **deux** blocs : le référentiel
+(toutes ses écritures) et les actes du staff sur un compte client. Restent
+best-effort, et par décision : le parcours du client, le chemin de commande et
+les webhooks de paiement — là, le client passe avant la mémoire.
 
 Le détail, les seuils et l'ordre :
 [`../todos/todo-journal-activite.md`](../todos/todo-journal-activite.md).
