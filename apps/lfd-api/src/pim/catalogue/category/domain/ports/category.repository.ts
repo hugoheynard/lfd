@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../../journal/pim-journal.js";
 import type { Category } from "../entities/category.js";
 
 /**
@@ -28,10 +29,10 @@ export abstract class CategoryRepository {
    * chargeait l'arbre entier pour en garder une poignée.
    */
   abstract listChildren(parentId: string | null): Promise<Category[]>;
-  abstract add(category: Category): Promise<void>;
-  abstract save(category: Category): Promise<void>;
+  abstract add(category: Category, ticket: WriteTicket): Promise<void>;
+  abstract save(category: Category, ticket: WriteTicket): Promise<void>;
   /** Écrit plusieurs familles **en une transaction** — le réordonnancement. */
-  abstract saveAll(categories: readonly Category[]): Promise<void>;
+  abstract saveAll(categories: readonly Category[], ticket: WriteTicket): Promise<void>;
   /**
    * Combien de sous-familles **vivantes** ce parent porte — l'invariant
    * d'archivage. C'est bien une question sur les familles, donc elle est ici ;

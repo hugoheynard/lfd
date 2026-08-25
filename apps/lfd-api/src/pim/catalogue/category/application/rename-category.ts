@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CategoryRepository } from "../domain/ports/category.repository.js";
@@ -24,12 +25,23 @@ export class RenameCategoryCommand {
 /** Le slug suit le nom : c'est l'agrégat qui le re-dérive, plus l'appelant. */
 @CommandHandler(RenameCategoryCommand)
 export class RenameCategoryHandler implements ICommandHandler<RenameCategoryCommand, void> {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly journal: PimJournal,
+  ) {}
 
   async execute(command: RenameCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     category.rename(localizedText("nom", command.payload.name));
     await requireFreeSlug(this.categories, category);
-    await this.categories.save(category);
+    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
+    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
+    // silence qu'on prendrait pour une décision.
+    await this.categories.save(
+      category,
+      this.journal.untraced(
+        "renommage de famille — aucun événement métier défini (dette journal-tracked)",
+      ),
+    );
   }
 }

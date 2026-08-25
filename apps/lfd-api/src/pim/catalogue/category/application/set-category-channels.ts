@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CategoryUnknownLocationError } from "../domain/errors/category-errors.js";
@@ -36,6 +37,7 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     private readonly categories: CategoryRepository,
     private readonly locations: KnownLocationsReader,
     private readonly contexts: SalesContextRegistry,
+    private readonly journal: PimJournal,
   ) {}
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
@@ -44,7 +46,15 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
     // lui qui sait quel contexte s'appuie sur quel canal.
     category.setChannels(command.channels, await this.contexts.active());
-    await this.categories.save(category);
+    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
+    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
+    // silence qu'on prendrait pour une décision.
+    await this.categories.save(
+      category,
+      this.journal.untraced(
+        "canaux de famille — aucun événement métier défini (dette journal-tracked)",
+      ),
+    );
   }
 
   private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {

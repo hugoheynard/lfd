@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRate } from "../../../commerce/application/vat-support.js";
 import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/sales-context.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
@@ -43,8 +43,8 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     const before = category.vatByContext;
     category.setVat(command.vat, await this.contexts.active());
     await this.uow.run(async () => {
-      await this.categories.save(category);
-      await this.journalize(category.id, before, category.vatByContext);
+      const ticket = await this.journalize(category.id, before, category.vatByContext);
+      await this.categories.save(category, ticket);
     });
   }
 
@@ -62,13 +62,13 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     categoryId: string,
     before: ContextVat,
     after: ContextVat,
-  ): Promise<void> {
+  ): Promise<WriteTicket> {
     const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
     const changed = keys.filter((key) => before[key] !== after[key]);
     if (changed.length === 0) {
-      return;
+      return this.journal.untraced("aucune TVA de contexte modifiée");
     }
-    await this.journal.trace({
+    return this.journal.trace({
       type: PIM_EVENTS.categoryVatChanged,
       subjectType: "category",
       subjectId: categoryId,

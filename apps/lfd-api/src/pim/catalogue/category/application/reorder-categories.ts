@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import type { Category } from "../domain/entities/category.js";
@@ -26,7 +27,10 @@ export class ReorderCategoriesCommand {
  */
 @CommandHandler(ReorderCategoriesCommand)
 export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategoriesCommand, void> {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly journal: PimJournal,
+  ) {}
 
   async execute(command: ReorderCategoriesCommand): Promise<void> {
     const living = (await this.categories.listChildren(command.parentId)).filter(
@@ -47,6 +51,14 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
         ranked.push(category);
       }
     });
-    await this.categories.saveAll(ranked);
+    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
+    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
+    // silence qu'on prendrait pour une décision.
+    await this.categories.saveAll(
+      ranked,
+      this.journal.untraced(
+        "réordonnancement de familles — aucun événement métier défini (dette journal-tracked)",
+      ),
+    );
   }
 }

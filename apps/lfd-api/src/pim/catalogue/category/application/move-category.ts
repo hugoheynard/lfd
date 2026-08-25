@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
@@ -26,7 +27,10 @@ export class MoveCategoryCommand {
  */
 @CommandHandler(MoveCategoryCommand)
 export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand, void> {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly journal: PimJournal,
+  ) {}
 
   async execute(command: MoveCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
@@ -41,6 +45,14 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
     }
 
     category.moveUnder(command.parentId, await this.categories.nextPosition(command.parentId));
-    await this.categories.save(category);
+    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
+    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
+    // silence qu'on prendrait pour une décision.
+    await this.categories.save(
+      category,
+      this.journal.untraced(
+        "déplacement de famille — aucun événement métier défini (dette journal-tracked)",
+      ),
+    );
   }
 }

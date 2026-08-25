@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../journal/pim-journal.js";
 import type { VatRate } from "../entities/vat-rate.js";
 
 /**
@@ -26,10 +27,10 @@ export abstract class VatRateRepository {
   abstract findById(id: string): Promise<VatRate | null>;
   /** Le taux qui porte ce taux, s'il existe — l'unicité est fiscale. */
   abstract findByPercent(percent: number): Promise<VatRate | null>;
-  abstract add(rate: VatRate): Promise<void>;
-  abstract save(rate: VatRate): Promise<void>;
+  abstract add(rate: VatRate, ticket: WriteTicket): Promise<void>;
+  abstract save(rate: VatRate, ticket: WriteTicket): Promise<void>;
   /** Refuse (`VatRateInUseError`) si une famille vise encore ce taux. */
-  abstract remove(id: string): Promise<void>;
+  abstract remove(id: string, ticket: WriteTicket): Promise<void>;
   /**
    * Le compte d'usages par id de taux — un seul aller-retour pour toute la
    * liste, et non un `count` par ligne. Les taux sans usage en sont absents.

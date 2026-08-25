@@ -1,3 +1,4 @@
+import { PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import {
@@ -17,6 +18,7 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
   constructor(
     private readonly categories: CategoryRepository,
     private readonly products: ProductCountReader,
+    private readonly journal: PimJournal,
   ) {}
 
   /**
@@ -43,6 +45,14 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
     }
 
     category.archive();
-    await this.categories.save(category);
+    // Dette déclarée (cf. `lint:journal-tracked`) : ce geste n'a pas encore
+    // d'événement métier. Le motif est ici, greppable, plutôt que dans un
+    // silence qu'on prendrait pour une décision.
+    await this.categories.save(
+      category,
+      this.journal.untraced(
+        "archivage de famille — aucun événement métier défini (dette journal-tracked)",
+      ),
+    );
   }
 }
