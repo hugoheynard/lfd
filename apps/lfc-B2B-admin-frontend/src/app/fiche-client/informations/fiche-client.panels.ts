@@ -1,10 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import type { CompanyContactView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
-import { EMPTY_COMPANY_CONTACT_DRAFT, type CompanyContactDraft } from '@lfd/b2b-ui/company';
+import {
+  BillingAddressPanel,
+  DeliveryAddressPanel,
+  EMPTY_COMPANY_CONTACT_DRAFT,
+  type CompanyContactDraft,
+  type DeliveryAddressPanelData,
+} from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
 import { AdminDetenteurPanel } from '../panels/detenteur-panel/detenteur-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
@@ -44,15 +49,11 @@ export class FicheClientPanels {
       }).closed;
     }
     if (key === 'billing') {
-      return this.panels.open(AdminAdressePanel, {
-        data: {
-          companyId: company.id,
-          kind: 'billing',
-          // La même entrée sert à poser l'adresse et à la corriger : sans ce
-          // préremplissage, « Modifier » s'ouvrait vide et faisait retaper six
-          // champs pour en changer un.
-          billing: company.addresses.billing ?? undefined,
-        },
+      return this.panels.open(BillingAddressPanel, {
+        // La même entrée sert à poser l'adresse et à la corriger : sans ce
+        // préremplissage, « Modifier » s'ouvrait vide et faisait retaper six
+        // champs pour en changer un.
+        data: { companyId: company.id, address: company.addresses.billing },
       }).closed;
     }
     if (key === 'delivery') {
@@ -80,25 +81,12 @@ export class FicheClientPanels {
 
   /** Une adresse de livraison à créer. */
   openNewDelivery(company: AdminCompanyDetail): Promise<unknown> {
-    return this.panels.open(AdminAdressePanel, {
-      data: {
-        companyId: company.id,
-        kind: 'delivery',
-        knownContacts: knownContactsOf(company),
-      },
-    }).closed;
+    return this.panels.open(DeliveryAddressPanel, { data: deliveryData(company, null) }).closed;
   }
 
   /** Une adresse de livraison à corriger — le même panneau, prérempli. */
   openDelivery(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<unknown> {
-    return this.panels.open(AdminAdressePanel, {
-      data: {
-        companyId: company.id,
-        kind: 'delivery',
-        knownContacts: knownContactsOf(company),
-        delivery: address,
-      },
-    }).closed;
+    return this.panels.open(DeliveryAddressPanel, { data: deliveryData(company, address) }).closed;
   }
 
   /**
@@ -167,6 +155,26 @@ function toDraft(contact: CompanyContactView): CompanyContactDraft {
 }
 
 /** Le contact principal, projeté en contact de livraison connu (préremplissage). */
+/**
+ * La charge d'un panneau de livraison, montée une fois pour les deux entrées.
+ *
+ * Le **socle de signature** en fait partie et n'est pas facultatif : il dit ce
+ * que vaut « comme la société » dans le sélecteur. Tant qu'il l'était, aucune
+ * des deux entrées ne le passait, et le panneau annonçait donc « non exigée »
+ * même aux sociétés qui l'exigent.
+ */
+function deliveryData(
+  company: AdminCompanyDetail,
+  address: DeliveryAddressView | null,
+): DeliveryAddressPanelData {
+  return {
+    companyId: company.id,
+    address,
+    knownContacts: knownContactsOf(company),
+    signatureFloor: company.fulfillmentPreference.signatureRequired,
+  };
+}
+
 export function knownContactsOf(company: AdminCompanyDetail): readonly DeliveryContact[] {
   const contact = company.primaryContact;
   if (contact.firstName === '' && contact.lastName === '') {

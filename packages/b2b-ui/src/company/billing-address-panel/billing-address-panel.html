@@ -1,0 +1,13 @@
+<fold-panel-header [title]="heading()" subtitle="Une adresse postale complète." />
+
+<fold-panel-body>
+  <!-- Ni note ni point GPS : une facture se poste, elle ne se livre pas. -->
+  <lfd-address-form [fields]="fields" [value]="postal()" (valueChange)="setPostal($event)" />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || pending()" (click)="submit()">
+    Enregistrer
+  </button>
+</fold-panel-footer>

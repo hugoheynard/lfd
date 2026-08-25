@@ -11,18 +11,21 @@ import type { CartAdjustment, PickupAddressPayload, PickupAddressView } from '@l
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
+  FoldPanelBodyComponent,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
 import { HoursForm, hoursIssueOf, type HoursEntry } from '@lfd/b2b-ui/hours';
+import { AddressForm, type PostalAddress } from '@lfd/b2b-ui/address';
 import {
-  AddressFields,
-  billingDraftFrom,
-  EMPTY_ADDRESS_DRAFT,
-  isAddressValid,
+  EMPTY_POSTAL_DRAFT,
+  postalDraftFrom,
+  postalIssue,
   toBillingPayload,
-  type AddressDraft,
+  toPostal,
+  withPostal,
+  type PostalDraft,
 } from '@lfd/b2b-ui/company';
 
 import {
@@ -43,11 +46,15 @@ export interface PickupPanelData {
 
 /**
  * Panneau **Point de retrait** — crée ou édite un laboratoire de retrait (adresse
- * postale globale + drapeau « par défaut »). Container **mince** : il seede un
- * brouillon depuis `data`, délègue la saisie postale au fragment partagé
- * `lfd-address-fields` (`kind="billing"` — sans les consignes de livraison),
- * ajoute la case « par défaut », puis enchaîne la sauvegarde et ferme avec un
- * résultat vrai (la page recharge la liste).
+ * postale globale + drapeau « par défaut »).
+ *
+ * C'est une adresse de **LFC**, pas d'un client : elle n'a pas de société, et
+ * c'est ce qui la rend admin-only en écriture — une question d'appartenance,
+ * pas de permission. Elle compose donc le fragment postal `lfd-address-form`
+ * et y ajoute ce qui n'appartient qu'au vendeur : les heures de retrait, la
+ * remise, le point par défaut. (Elle réclamait auparavant le fragment de
+ * saisie d'adresse client en se déclarant `kind="billing"` pour dire
+ * « postal seulement » — elle mentait sur sa nature pour obtenir ses champs.)
  */
 @Component({
   selector: 'app-pickup-panel',
@@ -57,9 +64,10 @@ export interface PickupPanelData {
     FoldPanelFooterComponent,
     FoldButtonComponent,
     FoldCheckboxComponent,
-    AddressFields,
+    AddressForm,
     HoursForm,
     PriceAlterationField,
+    FoldPanelBodyComponent,
   ],
   templateUrl: './pickup-panel.html',
   styleUrl: './pickup-panel.scss',
@@ -71,7 +79,9 @@ export class PickupPanel {
 
   readonly data = input<PickupPanelData | undefined>(undefined);
 
-  protected readonly draft = signal<AddressDraft>(EMPTY_ADDRESS_DRAFT);
+  protected readonly draft = signal<PostalDraft>(EMPTY_POSTAL_DRAFT);
+  /** Proposé d'office au checkout. Rang du point, pas champ d'adresse. */
+  protected readonly isDefault = signal(false);
   /** Remise du point (retirer ici coûte moins cher), ou `null`. */
   protected readonly discount = signal<CartAdjustment | null>(null);
   /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
@@ -97,9 +107,12 @@ export class PickupPanel {
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouveau point de retrait' : 'Modifier le point de retrait',
   );
-  /** Postal (le fragment n'exige pas les consignes de livraison) + heures cohérentes. */
+  /** L'adresse postale, dans la langue neutre du fragment de saisie. */
+  protected readonly postal = computed(() => toPostal(this.draft()));
+
+  /** Une adresse postable, et des heures cohérentes. */
   protected readonly canSubmit = computed(
-    () => isAddressValid(this.draft(), 'billing') && this.openingIssue() === '',
+    () => postalIssue(this.draft()) === '' && this.openingIssue() === '',
   );
 
   constructor() {
@@ -109,7 +122,8 @@ export class PickupPanel {
       if (address === null) {
         return;
       }
-      this.draft.set({ ...billingDraftFrom(address), isDefault: address.isDefault });
+      this.draft.set(postalDraftFrom(address));
+      this.isDefault.set(address.isDefault);
       this.discount.set(address.discount);
       this.opening.set(openingEntries(address.opening));
     });
@@ -119,8 +133,8 @@ export class PickupPanel {
     this.discount.set(toCartAdjustment(alteration));
   }
 
-  protected setDefault(isDefault: boolean): void {
-    this.draft.update((draft) => ({ ...draft, isDefault }));
+  protected setPostal(postal: PostalAddress): void {
+    this.draft.update((draft) => withPostal(draft, postal));
   }
 
   protected async submit(): Promise<void> {
@@ -131,7 +145,7 @@ export class PickupPanel {
     this.saving.set(true);
     const payload: PickupAddressPayload = {
       ...toBillingPayload(this.draft()),
-      isDefault: this.draft().isDefault,
+      isDefault: this.isDefault(),
       discount: this.discount(),
       opening: toPickupOpening(this.opening()),
     };

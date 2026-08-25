@@ -7,7 +7,12 @@ import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
 import type { Company } from '../../account/account.model';
 import { AddressesService } from '../../entreprises/addresses.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
-import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-panel';
+import {
+  BillingAddressPanel,
+  DeliveryAddressPanel,
+  type BillingAddressPanelData,
+  type DeliveryAddressPanelData,
+} from '@lfd/b2b-ui/company';
 
 /**
  * Section **Adresses** d'une entreprise côté **client** — _container_ de la
@@ -58,32 +63,31 @@ export class AdressesSection {
   }
 
   protected editBilling(): void {
-    const data: AdressePanelData = {
+    const data: BillingAddressPanelData = {
       companyId: this.company().id,
-      kind: 'billing',
       address: this.billing(),
     };
-    this.panelHost.open(AdressePanel, { data, side: 'right' });
+    this.panelHost.open(BillingAddressPanel, { data });
   }
 
   protected addDelivery(): void {
-    const data: AdressePanelData = {
+    const data: DeliveryAddressPanelData = {
       companyId: this.company().id,
-      kind: 'delivery',
       address: null,
       knownContacts: this.knownContacts(),
+      signatureFloor: this.company().fulfillmentPreference.signatureRequired,
     };
-    this.panelHost.open(AdressePanel, { data, side: 'right' });
+    this.panelHost.open(DeliveryAddressPanel, { data });
   }
 
   protected editDelivery(address: DeliveryAddressView): void {
-    const data: AdressePanelData = {
+    const data: DeliveryAddressPanelData = {
       companyId: this.company().id,
-      kind: 'delivery',
       address,
       knownContacts: this.knownContacts(),
+      signatureFloor: this.company().fulfillmentPreference.signatureRequired,
     };
-    this.panelHost.open(AdressePanel, { data, side: 'right' });
+    this.panelHost.open(DeliveryAddressPanel, { data });
   }
 
   protected setDefault(address: DeliveryAddressView): void {

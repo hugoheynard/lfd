@@ -23,7 +23,7 @@ import { AddressView } from '../../address/address-view/address-view';
 import { HoursView } from '../../hours/hours-view/hours-view';
 import type { HoursEntry } from '../../hours/hours.model';
 import type { PostalAddress } from '../../address/address.model';
-import { postalFrom } from '../address-form.model';
+import { postalFrom } from '../postal-draft.model';
 import {
   formatDeliveryContact,
   formatGps,

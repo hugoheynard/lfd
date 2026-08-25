@@ -1,37 +1,10 @@
-<!-- Le point GPS n'a de sens qu'en livraison : c'est le livreur qui cherche
-     l'entrée, pas le comptable qui poste une facture. -->
-<lfd-address-form
-  line2Hint="bâtiment, étage, instructions de livraison…"
-  coordinatesHint="lieux difficiles à localiser"
-  [fields]="postalFields()"
-  [value]="postal()"
-  (valueChange)="setPostal($event)"
-/>
-
-@if (isDelivery()) {
-  <fold-checkbox
-    label="Adresse de livraison par défaut"
-    hint="utilisée d'office pour vos prochaines commandes"
-    [checked]="value().isDefault"
-    (checkedChange)="set('isDefault', $event)"
-  />
-
-  <hr class="sep" />
-
-  <label class="field">
-    <span class="field-label">Note pour les livreurs <em>(optionnel)</em></span>
-    <textarea
-      class="note"
-      rows="3"
-      placeholder="Code d'accès, étage, contact sur place, consignes de dépôt…"
-      [value]="value().note"
-      (input)="set('note', inputValue($event))"
-    ></textarea>
-  </label>
-
-  <fieldset class="slots">
-    <legend class="field-label">Créneaux de livraison préférés</legend>
-
+<!-- Quand et à qui : les deux moitiés d'une même question, « comment ça se
+     passe une fois sur place ». Elles gardent chacune leur nom — un groupe
+     imbriqué ne répète pas celui de son parent, il le précise, et « Créneaux
+     de livraison préférés » sous « Détail de livraison » disait deux fois le
+     même mot. -->
+<fold-fieldset legend="Détail de livraison" legendVariant="heading" appearance="border">
+  <fold-fieldset class="slots" legend="Créneaux préférés" legendVariant="heading">
     <fold-checkbox
       label="Le même créneau tous les jours"
       hint="décochez pour définir un créneau par jour"
@@ -42,13 +15,9 @@
     <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
          qu'on lui donne, c'est ici qu'on décide lesquelles. -->
     <lfd-hours-form [value]="slotEntries()" (valueChange)="setSlotEntries($event)" />
-  </fieldset>
+  </fold-fieldset>
 
-  <hr class="sep" />
-
-  <fieldset class="contact">
-    <legend class="field-label">Contact sur place à la livraison</legend>
-
+  <fold-fieldset legend="Contact sur place" legendVariant="heading">
     <fold-checkbox
       label="Pas de contact de livraison dédié"
       hint="cochez si le livreur n'a personne à prévenir sur place"
@@ -94,15 +63,20 @@
       />
 
       @if (contactIssue()) {
-        <p class="slot-issue">{{ contactIssue() }}</p>
+        <p class="contact-issue">{{ contactIssue() }}</p>
       }
     }
-  </fieldset>
+  </fold-fieldset>
+</fold-fieldset>
 
-  <fold-checkbox
-    label="Signature exigée à la remise"
-    hint="préremplit vos commandes livrées ici ; modifiable au panier"
-    [checked]="value().signatureRequired"
-    (checkedChange)="set('signatureRequired', $event)"
-  />
-}
+<!-- Trois états, et non une case : « on ne signe pas ici » et « on fait comme
+     d'habitude » sont deux réponses différentes. Les confondre figerait la
+     seconde le jour où l'habitude change — c'est-à-dire au moment précis où
+     l'héritage devait servir. -->
+<fold-listbox
+  label="Signature à la remise"
+  hint="préremplit les commandes livrées ici ; modifiable au panier"
+  [options]="signatureOptions()"
+  [value]="signatureChoice()"
+  (selectionChange)="setSignature($event)"
+/>

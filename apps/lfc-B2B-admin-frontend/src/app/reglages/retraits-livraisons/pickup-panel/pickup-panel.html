@@ -1,13 +1,13 @@
 <fold-panel-header [title]="heading()" subtitle="Adresse du laboratoire de retrait." />
 
-<div class="body">
-  <lfd-address-fields [(value)]="draft" kind="billing" />
+<fold-panel-body>
+  <lfd-address-form [value]="postal()" (valueChange)="setPostal($event)" />
 
   <fold-checkbox
     label="Point de retrait par défaut"
     hint="proposé d'office au checkout tant que la livraison n'existe pas"
-    [checked]="draft().isDefault"
-    (checkedChange)="setDefault($event)"
+    [checked]="isDefault()"
+    (checkedChange)="isDefault.set($event)"
   />
 
   <lfd-hours-form
@@ -29,7 +29,7 @@
     [value]="discountAlteration()"
     (valueChange)="setDiscount($event)"
   />
-</div>
+</fold-panel-body>
 
 <fold-panel-footer>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>

@@ -11,8 +11,9 @@ import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
 import { APP_REVISION_VALUE, B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
 import { routes } from './app.routes';
-import { LFD_NOTIFY } from '@lfd/b2b-ui/panel';
+import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
+import { AdminCompaniesService } from './comptes-clients/admin-companies.service';
 import { NotifyService } from './notify.service';
 import { provideAppIcons } from './shared/icons/app-icons';
 import { provideStaffAuth } from './auth/auth.providers';
@@ -85,5 +86,8 @@ export const appConfig: ApplicationConfig = {
     // annoncent succès et échec sans rien savoir de nos toasts ni du filtrage
     // d'erreurs de `@lfd/endpoints`.
     { provide: LFD_NOTIFY, useExisting: NotifyService },
+    // L'écriture d'adresse, côté STAFF : `/admin/companies/:id/…`, sans mur —
+    // un commercial n'est membre d'aucune des sociétés qu'il renseigne.
+    { provide: ADDRESS_WRITER, useExisting: AdminCompaniesService },
   ],
 };

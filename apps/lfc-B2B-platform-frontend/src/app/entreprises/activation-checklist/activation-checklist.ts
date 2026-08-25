@@ -6,7 +6,12 @@ import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b
 
 import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
-import { AdressePanel, type AdressePanelData } from '../../profil/adresse-panel/adresse-panel';
+import {
+  BillingAddressPanel,
+  DeliveryAddressPanel,
+  type BillingAddressPanelData,
+  type DeliveryAddressPanelData,
+} from '@lfd/b2b-ui/company';
 import { ActivationSupportPanel } from '../activation-support-panel/activation-support-panel';
 import { AddressesService } from '../addresses.service';
 import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise-identite-panel';
@@ -127,20 +132,20 @@ export class ActivationChecklist {
         side: 'right',
       });
     } else if (key === 'billing') {
-      const data: AdressePanelData = { companyId: company.id, kind: 'billing', address: null };
-      this.panelHost.open(AdressePanel, { data, side: 'right' });
+      const data: BillingAddressPanelData = { companyId: company.id, address: null };
+      this.panelHost.open(BillingAddressPanel, { data });
     } else if (key === 'delivery') {
-      const data: AdressePanelData = {
+      const data: DeliveryAddressPanelData = {
         companyId: company.id,
-        kind: 'delivery',
         address: null,
         knownContacts: [company.primaryContact, ...company.contacts].map((contact) => ({
           prenom: contact.firstName,
           nom: contact.lastName,
           telephone: contact.phone,
         })),
+        signatureFloor: company.fulfillmentPreference.signatureRequired,
       };
-      this.panelHost.open(AdressePanel, { data, side: 'right' });
+      this.panelHost.open(DeliveryAddressPanel, { data });
     } else if (key === 'payment') {
       this.panelHost.open(PaymentTermPanel, {
         data: { companyId: company.id, granted: company.grantedTerms },

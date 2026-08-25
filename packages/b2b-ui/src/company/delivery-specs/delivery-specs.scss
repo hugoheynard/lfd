@@ -1,0 +1,29 @@
+// Fragment transparent : ses blocs deviennent enfants directs du corps du
+// panneau container, qui gouverne l'espacement (gap). Comme les autres fragments.
+:host {
+  display: contents;
+}
+
+// Prénom + nom sur une ligne ; passe en colonne si trop étroit.
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+.grow {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+// Le bloc contact empile des champs de saisie : il tombe sur le rythme par
+// défaut de `fold-fieldset`, rien à dire. Les créneaux, eux, empilent une case
+// à cocher et des lignes horaires — un rythme de LISTE, pas de formulaire.
+.slots {
+  --fold-fieldset-gap: var(--fold-space-sm);
+}
+
+.contact-issue {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-alert);
+}

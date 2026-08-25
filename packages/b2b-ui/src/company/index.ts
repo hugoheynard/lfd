@@ -6,7 +6,12 @@ export { CompanyBillingCard } from './company-billing-card/company-billing-card'
 export { CompanyFulfillmentCard } from './company-fulfillment-card/company-fulfillment-card';
 export { CompanyIdentityFields } from './company-identity-fields/company-identity-fields';
 export { ContactFields } from './contact-fields/contact-fields';
-export { AddressFields } from './address-fields/address-fields';
+export { DeliverySpecs } from './delivery-specs/delivery-specs';
+export { BillingAddressPanel } from './billing-address-panel/billing-address-panel';
+export type { BillingAddressPanelData } from './billing-address-panel/billing-address-panel';
+export { DeliveryAddressPanel } from './delivery-address-panel/delivery-address-panel';
+export type { DeliveryAddressPanelData } from './delivery-address-panel/delivery-address-panel';
+export { ADDRESS_PANEL_DEFAULTS } from './address-panel.defaults';
 export { CompanyActivationChecklist } from './company-activation-checklist/company-activation-checklist';
 export type { CompanyActivationStep } from './company-activation-checklist/company-activation-checklist';
 export type {
@@ -26,31 +31,30 @@ export {
 } from './company-form.model';
 export type { CompanyIdentityDraft, CompanyContactDraft } from './company-form.model';
 export {
-  EMPTY_ADDRESS_DRAFT,
-  BLANK_DAYS,
-  billingDraftFrom,
-  deliveryDraftFrom,
-  fromSlotByDay,
-  toSlot,
-  isBadSlot,
-  slotIssueOf,
-  contactIssueOf,
+  EMPTY_POSTAL_DRAFT,
   gpsIssueOf,
-  isAddressValid,
+  postalDraftFrom,
   postalFrom,
-  postalOfDraft,
-  withPostal,
+  postalIssue,
   toBillingPayload,
-  toDeliveryPayload,
-} from './address-form.model';
-export type { AddressDraft, DraftDay, DraftDays } from './address-form.model';
-export { EMPTY_POSTAL_DRAFT, postalDraftFrom, postalIssue, toPostal } from './postal-draft.model';
+  toPostal,
+  withPostal,
+} from './postal-draft.model';
 export type { FrenchPostal, PostalDraft } from './postal-draft.model';
 export {
+  BLANK_DAYS,
+  contactIssueOf,
+  deliveryDraftFrom,
+  deliveryIssueOf,
   EMPTY_DELIVERY_DRAFT,
   EMPTY_DELIVERY_SPECS,
-  deliveryIssueOf,
+  fromSlotByDay,
+  isBadSlot,
+  slotIssueOf,
+  toDeliveryPayload,
+  toSlot,
 } from './delivery-draft.model';
+export type { DraftDay, DraftDays } from './delivery-draft.model';
 export type { DeliveryDraft, DeliverySpecsDraft } from './delivery-draft.model';
 export {
   WEEKDAYS,

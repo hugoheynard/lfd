@@ -1,0 +1,37 @@
+<fold-panel-header [title]="heading()" subtitle="Une adresse postale complète." />
+
+<fold-panel-body>
+  <!-- En TÊTE, avant l'adresse elle-même : ce n'est pas une consigne de
+       livraison, c'est le rang de cette adresse parmi les autres. On le décide
+       en ouvrant le panneau, pas après avoir tapé une rue. -->
+  <fold-checkbox
+    label="Adresse de livraison par défaut"
+    hint="utilisée d'office pour les prochaines commandes"
+    [checked]="draft().isDefault"
+    (checkedChange)="setDefault($event)"
+  />
+
+  <lfd-address-form
+    legend="Adresse postale"
+    noteLabel="Note pour les livreurs"
+    notePlaceholder="Code d'accès, étage, contact sur place, consignes de dépôt…"
+    line2Hint="bâtiment, étage, instructions de livraison…"
+    coordinatesHint="lieux difficiles à localiser"
+    [fields]="fields"
+    [value]="postal()"
+    (valueChange)="setPostal($event)"
+  />
+
+  <lfd-delivery-specs
+    [(value)]="draft"
+    [signatureFloor]="data().signatureFloor"
+    [knownContacts]="data().knownContacts"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || pending()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

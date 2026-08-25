@@ -6,7 +6,7 @@ import type {
   CompanyAddressesView,
   DeliveryAddressPayload,
 } from '@lfd/contracts';
-import type { Observable } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
@@ -48,31 +48,28 @@ export class AddressesService {
     this.reload(companyId);
   }
 
-  saveBilling(companyId: string, payload: BillingAddressPayload, onDone?: () => void): void {
-    this.mutate(
-      companyId,
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/billing-address`,
-          payload,
-          headers(token),
-        ),
-      'Adresse de facturation enregistrée.',
-      onDone,
+  // ─── Écritures pilotées par un PANNEAU (`ADDRESS_WRITER`) ──────────────────
+  // Elles rendent une promesse et n'annoncent rien : c'est `panelSubmit()` qui
+  // annonce et qui ferme. Les annoncer ici AUSSI donnerait deux toasts pour un
+  // seul geste.
+
+  saveBilling(companyId: string, payload: BillingAddressPayload): Promise<void> {
+    return this.write(companyId, (token) =>
+      this.http.patch(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/billing-address`,
+        payload,
+        headers(token),
+      ),
     );
   }
 
-  addDelivery(companyId: string, payload: DeliveryAddressPayload, onDone?: () => void): void {
-    this.mutate(
-      companyId,
-      (token) =>
-        this.http.post(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses`,
-          payload,
-          headers(token),
-        ),
-      'Adresse de livraison ajoutée.',
-      onDone,
+  addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
+    return this.write(companyId, (token) =>
+      this.http.post(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses`,
+        payload,
+        headers(token),
+      ),
     );
   }
 
@@ -80,18 +77,13 @@ export class AddressesService {
     companyId: string,
     addressId: string,
     payload: DeliveryAddressPayload,
-    onDone?: () => void,
-  ): void {
-    this.mutate(
-      companyId,
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses/${addressId}`,
-          payload,
-          headers(token),
-        ),
-      'Adresse de livraison mise à jour.',
-      onDone,
+  ): Promise<void> {
+    return this.write(companyId, (token) =>
+      this.http.patch(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses/${addressId}`,
+        payload,
+        headers(token),
+      ),
     );
   }
 
@@ -120,6 +112,24 @@ export class AddressesService {
       'Adresse par défaut mise à jour.',
       onDone,
     );
+  }
+
+  /**
+   * Écrit, puis recharge l'entreprise visée. **Rejette** en cas d'échec :
+   * l'appelant (le panneau) décide quoi en dire et s'il reste ouvert.
+   */
+  private async write(
+    companyId: string,
+    call: (token: string) => Observable<unknown>,
+  ): Promise<void> {
+    this._status.set('loading');
+    try {
+      await firstValueFrom(this.auth.accessToken$().pipe(switchMap(call)));
+    } catch (error) {
+      this._status.set('ready');
+      throw error;
+    }
+    this.reload(companyId);
   }
 
   /** GET des adresses → état. Un échec est un **état de page**. */

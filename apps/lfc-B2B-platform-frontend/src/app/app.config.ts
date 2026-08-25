@@ -5,8 +5,9 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
-import { LFD_NOTIFY } from '@lfd/b2b-ui/panel';
+import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
+import { AddressesService } from './entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
 import { provideSentry, provideWebVitals } from '@lfd/front-ops';
@@ -39,6 +40,9 @@ export const appConfig: ApplicationConfig = {
     // annoncent succès et échec sans rien savoir de nos toasts ni du filtrage
     // d'erreurs de `@lfd/endpoints`.
     { provide: LFD_NOTIFY, useExisting: NotifyService },
+    // L'écriture d'adresse, côté CLIENT : `/companies/:id/…`, murée par
+    // l'adhésion de la personne à l'entreprise.
+    { provide: ADDRESS_WRITER, useExisting: AddressesService },
     // Ce que les vraies personnes vivent, renvoyé à notre API : la sonde dit
     // que ce front est SERVI, ces trois mesures disent s'il est utilisable.
     provideWebVitals(OPS_NODE, AUTH_CONFIG.apiBaseUrl),
