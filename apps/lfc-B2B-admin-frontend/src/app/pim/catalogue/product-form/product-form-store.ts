@@ -49,6 +49,18 @@ export interface AllergenGroup {
 }
 
 /**
+ * Une catégorie INCO qui ne contient **qu'une** substance — son nom EST la
+ * substance. « Céleri » ne groupe rien ; « Fruits à coque » groupe quatre
+ * fruits. Les premières se cochent à plat, les secondes seules méritent une
+ * boîte.
+ */
+export interface AllergenChoice {
+  readonly code: string;
+  /** Le libellé d'ÉTIQUETTE, celui qui fait foi — « Anhydride sulfureux et sulfites ». */
+  readonly label: string;
+}
+
+/**
  * Un taux, en DEUX faits plutôt qu'en une phrase : « Réduit » nomme le régime,
  * « 5,5 % » le chiffre. Assemblés dans le magasin — « TVA Réduit · 5,5 % » —
  * ils forçaient l'écran à tout peindre du même poids, alors que le chiffre est
@@ -506,7 +518,8 @@ export class ProductFormStore {
     ),
   );
 
-  readonly groups = computed<AllergenGroup[]>(() => {
+  /** Le référentiel rangé par catégorie d'étiquette, dans l'ordre du registre. */
+  private readonly allergenBuckets = computed<AllergenGroup[]>(() => {
     const byLabel = new Map<string, AllergenEntry[]>();
     for (const entry of this.entries()) {
       const key = entry.incoLabel ?? 'Hors obligation UE';
@@ -522,6 +535,33 @@ export class ProductFormStore {
       entries: group,
     }));
   });
+
+  /**
+   * Les catégories qui groupent VRAIMENT — le gluten et ses quatre céréales,
+   * les fruits à coque et leurs quatre fruits. Il n'y en a que deux.
+   */
+  readonly groups = computed<AllergenGroup[]>(() =>
+    this.allergenBuckets().filter((group) => group.entries.length > 1),
+  );
+
+  /**
+   * Les douze autres, à plat.
+   *
+   * Chacune n'a qu'une substance, et son libellé d'étiquette la nomme : une
+   * boîte encadrée intitulée « Lait » contenant une seule case « Lait » était
+   * douze fois du chrome pour douze cases — l'écran disait deux fois la même
+   * chose et prenait la place de la déclaration entière. C'est le libellé
+   * RÉGLEMENTAIRE qu'on garde ici, pas le granulaire : « Anhydride sulfureux
+   * et sulfites » est ce qui doit figurer sur l'étiquette, « Sulfites » n'est
+   * que la façon dont notre référentiel l'abrège.
+   */
+  readonly singleAllergens = computed<AllergenChoice[]>(() =>
+    this.allergenBuckets()
+      .filter((group) => group.entries.length === 1)
+      .flatMap((group) =>
+        group.entries.map((entry) => ({ code: entry.code, label: entry.incoLabel ?? entry.label })),
+      ),
+  );
 
   readonly dirtySections = computed<SectionRef[]>(() => {
     if (!this.isEdit()) {

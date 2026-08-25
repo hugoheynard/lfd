@@ -35,22 +35,27 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: var(--fold-space-lg);
+}
 
-  fieldset {
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--fold-radius-md);
-    padding: var(--fold-space-md);
-    display: flex;
-    flex-direction: column;
-    gap: var(--fold-space-xs);
-  }
+/* La boîte, la légende encochée et sa typographie appartiennent maintenant à
+   `fold-fieldset`. Ne reste ici que ce qui est PROPRE à cet écran : l'écart
+   entre deux cases à cocher d'un même groupe, plus serré que le défaut parce
+   qu'un groupe INCO en aligne jusqu'à sept. */
+.groups fold-fieldset {
+  --fold-fieldset-gap: var(--fold-space-xs);
+}
 
-  legend {
-    font-size: var(--fold-text-xs);
-    font-weight: var(--fold-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: var(--fold-tracking-wide);
-    color: var(--fold-color-text-muted);
-    padding: 0 0.25rem;
-  }
+/* Les catégories d'une seule substance tiennent dans UNE boîte, qui prend donc
+   toute la largeur plutôt qu'une colonne de la grille — et ses cases se
+   répartissent à leur tour. Douze cases dans une colonne de 14 rem feraient
+   une colonne de douze lignes à côté de deux boîtes de quatre : le bloc
+   allergènes s'étirerait sur trois fois la hauteur qu'il demande. */
+.singles {
+  grid-column: 1 / -1;
+}
+
+.singles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--fold-space-xs) var(--fold-space-md);
 }

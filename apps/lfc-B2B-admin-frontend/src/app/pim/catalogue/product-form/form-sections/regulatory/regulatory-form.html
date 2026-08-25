@@ -76,7 +76,7 @@
                libellé (capitales, mono dans cette app) dit cette voix-là. Il
                était jusqu'ici le DÉFAUT du composant, donc un accident : tous
                les autres groupes du dépôt passent `heading`. -->
-          <fold-fieldset appearance="border" [legend]="group.incoLabel">
+          <fold-fieldset appearance="border" legendVariant="heading" [legend]="group.incoLabel">
             @for (item of group.entries; track item.code) {
               <fold-checkbox
                 size="sm"
@@ -85,6 +85,29 @@
                 (checkedChange)="store.toggleAllergen(item.code, $event)"
               />
             }
+          </fold-fieldset>
+        }
+
+        <!-- Les douze catégories d'une seule substance, ensemble. Chacune dans
+             sa boîte, c'était douze cadres encochés pour douze cases, et un
+             titre qui répétait mot pour mot la case qu'il contenait. -->
+        @if (store.singleAllergens().length > 0) {
+          <fold-fieldset
+            class="singles"
+            appearance="border"
+            legendVariant="heading"
+            legend="Autres allergènes"
+          >
+            <div class="singles-grid">
+              @for (item of store.singleAllergens(); track item.code) {
+                <fold-checkbox
+                  size="sm"
+                  [label]="item.label"
+                  [checked]="store.selected().includes(item.code)"
+                  (checkedChange)="store.toggleAllergen(item.code, $event)"
+                />
+              }
+            </div>
           </fold-fieldset>
         }
       </div>

@@ -2,8 +2,40 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import type { AllergenEntry } from '../../../../data/models';
 import { ProductFormStore } from '../../product-form-store';
 import { RegulatoryForm } from './regulatory-form';
+
+/** Un extrait fidèle du référentiel : deux vraies catégories, deux solitaires. */
+const REFERENCE: AllergenEntry[] = [
+  {
+    code: 'AW',
+    label: 'Blé',
+    incoCategory: 'gluten',
+    incoLabel: 'Céréales contenant du gluten',
+    provisional: false,
+  },
+  {
+    code: 'AR',
+    label: 'Seigle',
+    incoCategory: 'gluten',
+    incoLabel: 'Céréales contenant du gluten',
+    provisional: false,
+  },
+  { code: 'AM', label: 'Lait', incoCategory: 'milk', incoLabel: 'Lait', provisional: false },
+  {
+    code: 'TBD_SULPHITES',
+    label: 'Sulfites',
+    incoCategory: 'sulphites',
+    incoLabel: 'Anhydride sulfureux et sulfites',
+    provisional: true,
+  },
+];
+
+/** Les légendes des groupes d'allergènes, dans l'ordre. */
+function legends(host: HTMLElement): string[] {
+  return [...host.querySelectorAll('.groups legend')].map((l) => (l.textContent ?? '').trim());
+}
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -47,11 +79,18 @@ describe('RegulatoryForm — l’ordre de la fiche', () => {
       : [...host.querySelectorAll('*')].indexOf(element);
   }
 
-  /** Le rang du titre de bloc qui contient ce mot. */
+  /**
+   * Le rang du titre de bloc qui contient ce mot.
+   *
+   * Deux formes de titre coexistent : le `span.block-label` d'un bloc simple et
+   * la `legend` d'un `fold-fieldset`. Chercher les deux, plutôt que la forme du
+   * jour, évite que le test tombe le jour où un bloc devient un groupe — c'est
+   * l'ORDRE qu'il tient, pas le balisage.
+   */
   function headingRank(host: HTMLElement, word: string): number {
     return rankOf(
       host,
-      [...host.querySelectorAll('.block-label')].find((label) =>
+      [...host.querySelectorAll('.block-label, legend')].find((label) =>
         (label.textContent ?? '').includes(word),
       ),
     );
@@ -151,5 +190,47 @@ describe('RegulatoryForm — la grille nutritionnelle', () => {
     carbs.dispatchEvent(new Event('input'));
     expect(store.nutrition().carbsG).toBeNull();
     expect(store.nutrition().energyKcal).toBe(310);
+  });
+
+  describe('les allergènes', () => {
+    function render(): HTMLElement {
+      const store = setup();
+      store.entries.set(REFERENCE);
+      const fixture = TestBed.createComponent(RegulatoryForm);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it("n'encadre que les catégories qui groupent VRAIMENT", () => {
+      // Une boîte intitulée « Lait » contenant une seule case « Lait » disait
+      // deux fois la même chose, et douze fois de suite.
+      expect(legends(render())).toEqual(['Céréales contenant du gluten', 'Autres allergènes']);
+    });
+
+    it('garde le libellé d’ÉTIQUETTE pour une substance seule', () => {
+      // « Sulfites » est notre abrégé ; c'est « Anhydride sulfureux et
+      // sulfites » qui doit figurer sur l'emballage.
+      const text = render().textContent ?? '';
+
+      expect(text).toContain('Anhydride sulfureux et sulfites');
+      expect(text).toContain('Lait');
+    });
+
+    it('coche une substance seule sous son propre code', () => {
+      const store = setup();
+      store.entries.set(REFERENCE);
+      const fixture = TestBed.createComponent(RegulatoryForm);
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      const box = [...host.querySelectorAll('input[type="checkbox"]')].find((input) =>
+        (input.closest('label')?.textContent ?? '').includes('Anhydride'),
+      );
+
+      (box as HTMLInputElement).click();
+      fixture.detectChanges();
+
+      // Le code du référentiel, pas celui de la catégorie qui l'accueillait.
+      expect(store.selected()).toContain('TBD_SULPHITES');
+    });
   });
 });

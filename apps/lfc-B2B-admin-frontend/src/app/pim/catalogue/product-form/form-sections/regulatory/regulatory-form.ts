@@ -4,6 +4,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldFieldsetComponent,
   FoldNumberInputComponent,
 } from 'fold-ng';
 
@@ -45,6 +46,7 @@ const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[]
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCheckboxComponent,
+    FoldFieldsetComponent,
     FoldNumberInputComponent,
   ],
   templateUrl: './regulatory-form.html',
