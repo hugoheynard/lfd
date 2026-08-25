@@ -2,7 +2,7 @@ import type { ActivityModule } from "@lfd/contracts";
 
 /**
  * À quel **module** appartient un fait du journal, déduit du préfixe de son
- * type (`tax_rate.rate_changed` → `pim`).
+ * type (`vat_rate.rate_changed` → `pim`).
  *
  * Dérivé plutôt que stocké : la colonne n'existe pas, et l'ajouter obligerait à
  * la remplir pour tous les faits déjà écrits — alors que le préfixe la porte
@@ -10,7 +10,7 @@ import type { ActivityModule } from "@lfd/contracts";
  * qu'il faut renommer, pas une colonne qu'il faut ajouter.
  */
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
-  pim: ["tax_rate.", "product.", "category."],
+  pim: ["vat_rate.", "product.", "product_category."],
   commercial: ["lead.", "appointment.", "reco."],
   commandes: ["order."],
   comptes: ["user.", "company.", "subscription.", "support."],

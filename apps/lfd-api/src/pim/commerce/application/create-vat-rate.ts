@@ -45,7 +45,7 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
       // Pas de portée : un taux qui naît ne vise encore aucune famille.
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.vatRateCreated,
-        subjectType: "tva_rate",
+        subjectType: "vat_rate",
         subjectId: rate.id,
         payload: { name: payload.name, percent: payload.percent },
       });

@@ -58,8 +58,8 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
     });
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
-        type: PIM_EVENTS.categoriesReordered,
-        subjectType: "category",
+        type: PIM_EVENTS.productCategoriesReordered,
+        subjectType: "product_category",
         // Le sujet est le NIVEAU réordonné, pas chacune des sœurs : c'est un
         // seul geste. La racine n'a pas d'id — elle en reçoit un, faute de
         // quoi tous les réordonnancements de premier niveau seraient orphelins

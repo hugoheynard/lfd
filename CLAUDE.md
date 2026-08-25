@@ -549,11 +549,16 @@ pas, une exception tacite si :
   humains francophones. Ses identifiants, eux, suivent la règle.
 - **Une VALEUR de donnée n'est pas un nom.** `TVA_HANDLE_PREFIX` s'appelle
   désormais `VAT_HANDLE_PREFIX` mais vaut toujours `"tva-"` : c'est ce préfixe
-  qui rattache une collection Shopify à son taux. Même règle pour les valeurs
-  du journal (`category.tva_changed` : ce qui a été écrit à l'époque), les clés
+  qui rattache une collection Shopify à son taux. Même règle pour les clés
   d'un `jsonb`, les valeurs d'enum Postgres et les noms de dossiers de
   migration. Les renommer est une **migration**, pas un renommage — et elle se
   fait en trois déploiements (`documentation/ops/pipelines.md`).
+- **Les valeurs du journal font exception à l'exception.** `category.tva_changed`
+  a été renommé `product_category.vat_changed` le 2026-08-25, avec `tax_rate.*`
+  → `vat_rate.*`, par migration de données. Un fait mal nommé ne vieillit pas
+  bien : la seule alternative était d'apprendre deux orthographes à chaque
+  lecteur, pour toujours. Réécrire une graphie n'altère ni le fait, ni le sujet,
+  ni la charge — c'est une traduction, pas une falsification.
 
 `pnpm lint:code-language` tient la ligne : les dossiers drainés échouent au
 premier mot français, le reste est compté et affiché à chaque exécution.

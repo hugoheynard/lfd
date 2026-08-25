@@ -60,15 +60,15 @@ function forWhomOf(event: ActivityEventView): string {
 function sentenceOf(event: ActivityEventView): string {
   const p = event.payload;
   switch (event.type) {
-    case 'tax_rate.created':
+    case 'vat_rate.created':
       return `Taux de TVA « ${text(p['name'])} » créé à ${percent(p['percent'])}`;
-    case 'tax_rate.rate_changed':
+    case 'vat_rate.rate_changed':
       return `Taux de « ${text(p['name'])} » passé de ${percent(p['from'])} à ${percent(p['to'])}`;
-    case 'tax_rate.renamed':
+    case 'vat_rate.renamed':
       return `Taux « ${text(p['from'])} » renommé « ${text(p['to'])} »`;
-    case 'tax_rate.deleted':
+    case 'vat_rate.deleted':
       return `Taux de TVA « ${text(p['name'])} » supprimé (${percent(p['percent'])})`;
-    case 'category.tva_changed':
+    case 'product_category.vat_changed':
       return 'Taux de TVA d’une famille modifiés';
     case 'order.placed':
       // Le NUMÉRO d'abord : c'est par lui qu'on retrouve une commande, pas par

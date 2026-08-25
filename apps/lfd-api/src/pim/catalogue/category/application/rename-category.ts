@@ -45,8 +45,8 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
       const ticket =
         Object.keys(changes).length > 0
           ? await this.journal.trace({
-              type: PIM_EVENTS.categoryRenamed,
-              subjectType: "category",
+              type: PIM_EVENTS.productCategoryRenamed,
+              subjectType: "product_category",
               subjectId: category.id,
               payload: { changes },
             })

@@ -57,8 +57,8 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
       const ticket =
         Object.keys(changes).length > 0
           ? await this.journal.trace({
-              type: PIM_EVENTS.categoryChannelsChanged,
-              subjectType: "category",
+              type: PIM_EVENTS.productCategoryChannelsChanged,
+              subjectType: "product_category",
               subjectId: category.id,
               payload: { changes },
             })

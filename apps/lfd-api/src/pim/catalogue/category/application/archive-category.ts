@@ -49,8 +49,8 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
     category.archive();
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
-        type: PIM_EVENTS.categoryArchived,
-        subjectType: "category",
+        type: PIM_EVENTS.productCategoryArchived,
+        subjectType: "product_category",
         subjectId: category.id,
         // Le nom part avec le fait : une famille archivée disparaît des
         // écrans, et l'historique resterait illisible s'il ne portait qu'un id.

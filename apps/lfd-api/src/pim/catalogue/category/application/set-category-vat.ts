@@ -69,8 +69,8 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
       return this.journal.untraced("aucune TVA de contexte modifiée");
     }
     return this.journal.trace({
-      type: PIM_EVENTS.categoryVatChanged,
-      subjectType: "category",
+      type: PIM_EVENTS.productCategoryVatChanged,
+      subjectType: "product_category",
       subjectId: categoryId,
       payload: Object.fromEntries(
         changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),

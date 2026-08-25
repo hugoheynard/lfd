@@ -812,13 +812,13 @@ describe("Ce que les familles inscrivent au journal", () => {
     );
 
     expect(journal.types()).toEqual([
-      "category.created",
-      "category.created",
-      "category.renamed",
-      "category.moved",
-      "category.reordered",
-      "category.channels_changed",
-      "category.archived",
+      "product_category.created",
+      "product_category.created",
+      "product_category.renamed",
+      "product_category.moved",
+      "product_category.reordered",
+      "product_category.channels_changed",
+      "product_category.archived",
     ]);
   });
 

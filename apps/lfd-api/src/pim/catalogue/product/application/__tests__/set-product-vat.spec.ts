@@ -158,7 +158,7 @@ describe("SetProductVatHandler", () => {
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
-    expect(journal.types()).toEqual(["product.tva_changed"]);
+    expect(journal.types()).toEqual(["product.vat_changed"]);
   });
 
   it("rend la fiche à sa famille sur une carte VIDE", async () => {

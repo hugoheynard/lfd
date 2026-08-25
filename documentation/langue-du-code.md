@@ -147,7 +147,7 @@ bénéfice, et les mettre dans le même sac est ce qui le fait paraître infaisa
 | **Noms physiques** — `tva_rate`, `emplacement`, `tva_intracom`… | **personne** : tout passe par `@map` | ❌ pas maintenant — bénéfice `psql` seul |
 | ~~**Valeurs `AddressKind`**~~ — `facturation` / `livraison`     | le code et la base (pas le fil)      | ✅ **faite** 2026-08-25, 3 déploiements  |
 | **Clés `jsonb`** — `emporter` / `surPlace`                      | le code, la base                     | ❌ C0-d les supprime — travail jetable   |
-| **Valeurs du journal** — `category.tva_changed`                 | l'historique                         | ❌ jamais — exception nommée             |
+| ~~**Valeurs du journal**~~ — `category.tva_changed`             | l'historique                         | ✅ **faite** 2026-08-25, 1 migration     |
 
 **Les noms physiques.** Aucun code ne les lit : `@map` les a découplés, et P3
 vient d'en faire la démonstration en renommant `tvaIntracom` sans toucher à
@@ -163,12 +163,23 @@ contextes, et `sales_context.channel_key` tombe avec eux. Les renommer
 aujourd'hui, c'est écrire une migration de données que C0-d effacera. On attend
 C0-d, qui règle le problème en le supprimant.
 
-**Les valeurs du journal.** `"category.tva_changed"` est ce qui a été **écrit à
-l'époque**. Réécrire un journal pour qu'il parle la langue d'aujourd'hui lui
-retire ce qui en fait un journal. C'est une exception au même titre que
-`mercuriale`, et pour une raison plus forte : ce n'est pas un nom, c'est un fait.
-Les **clés** de `PIM_EVENTS` sont anglaises depuis P3 ; leurs valeurs ne
-bougeront pas.
+**Les valeurs du journal.** ✅ **Faites le 2026-08-25** — et ce doc disait
+« ❌ jamais ». Le raisonnement d'alors : `"category.tva_changed"` est ce qui a
+été **écrit à l'époque**, et réécrire un journal pour qu'il parle la langue
+d'aujourd'hui lui retire ce qui en fait un journal.
+
+Ce qui l'a renversé n'est pas la langue, c'est la **justesse**. `tax_rate.*` ne
+parlait pas d'une taxe quelconque, il parlait de la TVA : le jour où une autre
+taxe entre au référentiel, le même type désigne deux choses. Et `category.` ne
+dit pas de quoi — un lead a aussi une catégorie. Un fait mal nommé ne vieillit
+pas bien : plus on attend, plus il y a de lignes à traduire et de lecteurs à
+qui enseigner deux orthographes.
+
+Le renommage (`tax_rate.*` → `vat_rate.*`, `category.*` →
+`product_category.*`, `tva_changed` → `vat_changed`) s'est fait en **une**
+migration de données, clé d'idempotence comprise. Ce qu'on tient toujours :
+réécrire une **graphie** n'altère ni le fait, ni son sujet, ni sa charge — c'est
+une traduction. Réécrire ce qui s'est passé resterait interdit.
 
 **Les valeurs `AddressKind`.** ✅ **Faite le 2026-08-25**, en trois
 déploiements. C'était la seule famille qui portait encore des identifiants

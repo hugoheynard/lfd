@@ -16,11 +16,11 @@
  */
 
 /** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
-export type PimSubjectType = "tva_rate" | "product" | "category" | "location";
+export type PimSubjectType = "vat_rate" | "product" | "product_category" | "location";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
- * HTTP : `tax_rate.rate_changed` se relit dans six mois,
+ * HTTP : `vat_rate.rate_changed` se relit dans six mois,
  * `PUT /commerce/vat-rates/x` non.
  *
  * ## Plus de trou : toute écriture du référentiel nomme son fait
@@ -46,20 +46,20 @@ export type PimSubjectType = "tva_rate" | "product" | "category" | "location";
  * sur les faits à aval.
  */
 export const PIM_EVENTS = {
-  vatRateCreated: "tax_rate.created",
+  vatRateCreated: "vat_rate.created",
   /** Le taux a bougé — le seul changement de taux qui ait un aval. */
-  vatRateRateChanged: "tax_rate.rate_changed",
+  vatRateRateChanged: "vat_rate.rate_changed",
   /** Renommage / description : tracé à part, parce que c'est sans conséquence. */
-  vatRateRenamed: "tax_rate.renamed",
-  vatRateDeleted: "tax_rate.deleted",
-  categoryVatChanged: "category.tva_changed",
+  vatRateRenamed: "vat_rate.renamed",
+  vatRateDeleted: "vat_rate.deleted",
+  productCategoryVatChanged: "product_category.vat_changed",
   /**
    * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
    * précédent : l'un décide pour un rayon entier, l'autre pour une ligne, et
    * confondre les deux dans l'historique rendrait illisible la question qu'on
    * pose vraiment — « qui a décidé ça, et quand ».
    */
-  productVatChanged: "product.tva_changed",
+  productVatChanged: "product.vat_changed",
   /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
   productChannelsChanged: "product.channels_changed",
   productPublished: "product.published",
@@ -90,20 +90,20 @@ export const PIM_EVENTS = {
    * hérite, renommer ne fait ni l'un ni l'autre — les confondre obligerait à
    * rouvrir chaque charge utile pour savoir laquelle des trois on lit.
    */
-  categoryCreated: "category.created",
-  categoryRenamed: "category.renamed",
+  productCategoryCreated: "product_category.created",
+  productCategoryRenamed: "product_category.renamed",
   /** Change le parent, donc l'héritage de TVA et de canaux en aval. */
-  categoryMoved: "category.moved",
-  categoryArchived: "category.archived",
+  productCategoryMoved: "product_category.moved",
+  productCategoryArchived: "product_category.archived",
   /**
    * Un niveau entier renuméroté — le sujet est le **parent**, pas chaque
    * famille déplacée. Une ligne par fratrie réordonnée : c'est un seul geste,
    * et N traces pour N sœurs noieraient l'historique de chacune sous des
    * changements de rang que personne ne relit.
    */
-  categoriesReordered: "category.reordered",
+  productCategoriesReordered: "product_category.reordered",
   /** Où un rayon se vend — d'où ses fiches héritent, sauf dérogation. */
-  categoryChannelsChanged: "category.channels_changed",
+  productCategoryChannelsChanged: "product_category.channels_changed",
   /**
    * **La fiche** — sa naissance et sa sortie de la vente.
    *

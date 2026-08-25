@@ -63,7 +63,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
       tickets.push(
         await this.journal.trace({
           type: PIM_EVENTS.vatRateRateChanged,
-          subjectType: "tva_rate",
+          subjectType: "vat_rate",
           subjectId: after.id,
           payload: { name: after.name, from: before.percent, to: after.percent },
           // TOUS les contextes, nommés par leur clé. Le journal en listait
@@ -79,7 +79,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
       tickets.push(
         await this.journal.trace({
           type: PIM_EVENTS.vatRateRenamed,
-          subjectType: "tva_rate",
+          subjectType: "vat_rate",
           subjectId: after.id,
           payload: { from: before.name, to: after.name },
         }),

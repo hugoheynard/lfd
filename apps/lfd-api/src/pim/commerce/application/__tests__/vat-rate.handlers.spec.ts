@@ -226,12 +226,12 @@ describe("Le journal du référentiel", () => {
     );
 
     expect(journal.types()).toEqual([
-      "tax_rate.created",
-      "tax_rate.rate_changed",
-      "tax_rate.renamed",
+      "vat_rate.created",
+      "vat_rate.rate_changed",
+      "vat_rate.renamed",
     ]);
     expect(journal.entries[1]).toMatchObject({
-      subjectType: "tva_rate",
+      subjectType: "vat_rate",
       subjectId: id,
       payload: { from: 5.5, to: 10 },
       // Des comptes par CONTEXTE, pas un rayon transitif : ce que le handler
@@ -256,7 +256,7 @@ describe("Le journal du référentiel", () => {
     );
 
     // Un formulaire réenregistré à l'identique n'est pas un fait.
-    expect(journal.types()).toEqual(["tax_rate.created"]);
+    expect(journal.types()).toEqual(["vat_rate.created"]);
   });
 });
 

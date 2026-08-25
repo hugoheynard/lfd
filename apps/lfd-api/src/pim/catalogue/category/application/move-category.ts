@@ -50,8 +50,8 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
     category.moveUnder(command.parentId, await this.categories.nextPosition(command.parentId));
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
-        type: PIM_EVENTS.categoryMoved,
-        subjectType: "category",
+        type: PIM_EVENTS.productCategoryMoved,
+        subjectType: "product_category",
         subjectId: category.id,
         // Le parent AVANT et APRÈS : c'est de lui que la famille tient sa TVA
         // et ses canaux, donc c'est lui qu'on vient chercher quand un tarif a

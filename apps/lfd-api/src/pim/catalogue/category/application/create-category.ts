@@ -62,8 +62,8 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     await requireFreeSlug(this.categories, category);
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
-        type: PIM_EVENTS.categoryCreated,
-        subjectType: "category",
+        type: PIM_EVENTS.productCategoryCreated,
+        subjectType: "product_category",
         subjectId: category.id,
         payload: { name: category.name, parentId },
       });
