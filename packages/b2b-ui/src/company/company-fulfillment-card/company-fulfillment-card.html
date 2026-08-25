@@ -1,5 +1,5 @@
-<fold-page-section title="Préférences d'acheminement" icon="truck" [description]="description()">
-  <fold-card>
+<fold-card>
+  <fold-page-section title="Préférences d'acheminement" icon="truck" [description]="description()">
     <div class="choice">
       <span class="choice-label">Méthode habituelle</span>
       @if (canManage()) {
@@ -57,5 +57,17 @@
         (selectionChange)="chooseDestination($event)"
       />
     }
-  </fold-card>
-</fold-page-section>
+
+    <!-- Le SOCLE, hors du bloc conditionnel : il vaut même sans préférence
+         d'acheminement, et même en retrait — on signe aussi un retrait. Le
+         ranger sous le choix de méthode l'aurait fait disparaître avec elle. -->
+    <fold-checkbox
+      class="signature"
+      label="Signature exigée à la remise"
+      hint="s'applique à toutes les adresses ; chacune peut y déroger"
+      [checked]="signatureRequired()"
+      [disabled]="!canManage()"
+      (checkedChange)="chooseSignature($event)"
+    />
+  </fold-page-section>
+</fold-card>
