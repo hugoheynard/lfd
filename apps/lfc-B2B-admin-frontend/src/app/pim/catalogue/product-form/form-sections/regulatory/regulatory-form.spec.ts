@@ -107,3 +107,49 @@ describe('RegulatoryForm — le poids net', () => {
     expect(weight?.value).toBe('220');
   });
 });
+
+describe('RegulatoryForm — la grille nutritionnelle', () => {
+  /** Le `fold-number-input` dont le libellé contient ce mot. */
+  function inputFor(host: HTMLElement, label: string): HTMLInputElement | null {
+    const field = [...host.querySelectorAll('fold-number-input')].find((element) =>
+      (element.textContent ?? '').includes(label),
+    );
+    return field?.querySelector('input') ?? null;
+  }
+
+  it('écrit chaque champ dans SA clé — et un champ vidé rend `null`, pas zéro', () => {
+    // La grille est une collection KEYÉE : chaque champ doit reposer sa propre
+    // clé au store. Un câblage qui les confondrait passerait inaperçu à l'œil —
+    // les cinq champs se ressemblent — et écrirait les calories dans les
+    // lipides. Il faut donc taper dans DEUX champs différents : un seul, et le
+    // test passe même si la clé est écrite en dur.
+    //
+    // Le `null` compte autant : « inconnu » et « zéro » sont deux déclarations
+    // réglementaires différentes.
+    const store = setup();
+    const fixture = TestBed.createComponent(RegulatoryForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const carbs = inputFor(host, 'Glucides');
+    const calories = inputFor(host, 'Calories');
+    expect(carbs).not.toBeNull();
+    expect(calories).not.toBeNull();
+    if (carbs === null || calories === null) {
+      return;
+    }
+
+    carbs.value = '42';
+    carbs.dispatchEvent(new Event('input'));
+    calories.value = '310';
+    calories.dispatchEvent(new Event('input'));
+
+    expect(store.nutrition().carbsG).toBe(42);
+    expect(store.nutrition().energyKcal).toBe(310);
+
+    carbs.value = '';
+    carbs.dispatchEvent(new Event('input'));
+    expect(store.nutrition().carbsG).toBeNull();
+    expect(store.nutrition().energyKcal).toBe(310);
+  });
+});
