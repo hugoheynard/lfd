@@ -6,6 +6,13 @@ import {
   type IQueryHandler,
 } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import {
+  OrderCutoffCreatedEvent,
+  OrderCutoffRemovedEvent,
+  OrderCutoffUpdatedEvent,
+} from "../domain/order-cutoff.events.js";
 import { OrderCutoffRepository } from "../domain/order-cutoff.repository.js";
 import {
   CreateOrderCutoffCommand,
@@ -33,27 +40,49 @@ export class ListOrderCutoffsHandler implements IQueryHandler<
 
 @CommandHandler(CreateOrderCutoffCommand)
 export class CreateOrderCutoffHandler implements ICommandHandler<CreateOrderCutoffCommand, string> {
-  constructor(private readonly repository: OrderCutoffRepository) {}
+  constructor(
+    private readonly repository: OrderCutoffRepository,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: CreateOrderCutoffCommand): Promise<string> {
-    return this.repository.create(command.payload);
+    return await this.uow.run(async () => {
+      const cutoffId = await this.repository.create(command.payload);
+      await this.events.publishTraced(new OrderCutoffCreatedEvent(cutoffId, command.payload));
+      return cutoffId;
+    });
   }
 }
 
 @CommandHandler(UpdateOrderCutoffCommand)
 export class UpdateOrderCutoffHandler implements ICommandHandler<UpdateOrderCutoffCommand, void> {
-  constructor(private readonly repository: OrderCutoffRepository) {}
+  constructor(
+    private readonly repository: OrderCutoffRepository,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: UpdateOrderCutoffCommand): Promise<void> {
-    await this.repository.update(command.id, command.payload);
+    await this.uow.run(async () => {
+      await this.repository.update(command.id, command.payload);
+      await this.events.publishTraced(new OrderCutoffUpdatedEvent(command.id, command.payload));
+    });
   }
 }
 
 @CommandHandler(RemoveOrderCutoffCommand)
 export class RemoveOrderCutoffHandler implements ICommandHandler<RemoveOrderCutoffCommand, void> {
-  constructor(private readonly repository: OrderCutoffRepository) {}
+  constructor(
+    private readonly repository: OrderCutoffRepository,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: RemoveOrderCutoffCommand): Promise<void> {
-    await this.repository.remove(command.id);
+    await this.uow.run(async () => {
+      await this.repository.remove(command.id);
+      await this.events.publishTraced(new OrderCutoffRemovedEvent(command.id));
+    });
   }
 }

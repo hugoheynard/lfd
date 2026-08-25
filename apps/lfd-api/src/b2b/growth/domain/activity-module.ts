@@ -11,8 +11,20 @@ import type { ActivityModule } from "@lfd/contracts";
  */
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   pim: ["vat_rate.", "product.", "product_category."],
-  commercial: ["lead.", "appointment.", "reco."],
-  commandes: ["order."],
+  // La tarification négociée est du COMMERCIAL : c'est le même métier que le
+  // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.
+  commercial: [
+    "lead.",
+    "appointment.",
+    "reco.",
+    "price_rule.",
+    "price_floor.",
+    "volume_ladder.",
+    "volume_commitment.",
+  ],
+  // Zones, points de retrait et heures limites décident où et quand une
+  // commande part : ils se lisent avec les commandes, pas avec les prix.
+  commandes: ["order.", "delivery_zone.", "pickup_address.", "order_cutoff."],
   comptes: ["user.", "company.", "subscription.", "support."],
 };
 
