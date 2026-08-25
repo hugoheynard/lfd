@@ -1,3 +1,5 @@
+import { ACCOUNT_FACTS } from "../../account/domain/events/account-facts.js";
+
 /**
  * Contrat du **journal d'événements** (module croissance). C'est le point de
  * découplage : `growth/` ne consomme QUE ce contrat, jamais les tables/agrégats
@@ -8,14 +10,20 @@
 /**
  * Sujet d'un événement — la chose qu'il concerne.
  *
- * Le journal a cessé d'être celui de la croissance seule : le référentiel y
- * écrit toutes ses décisions. Quatre sujets s'ajoutent donc aux trois
- * d'origine. La colonne est un `String` : élargir ne coûte pas de
- * migration, et la table reste la seule — deux journaux, ce serait deux vérités
- * sur « qui a fait quoi ».
+ * Un `string`, et non une union. C'en était une, et elle a fini par être ce
+ * qu'elle prétendait interdire : une **seconde** liste de sujets, tenue à jour
+ * à la main, en face de celles qui décident vraiment (`PIM_EVENTS` et
+ * `ACCOUNT_FACTS`, chez leurs émetteurs). Aucun lecteur ne s'en servait — ni
+ * filtre, ni contrat d'API — donc elle ne protégeait rien qu'un émetteur ne
+ * sache déjà, et elle obligeait à un transtypage à la frontière : le pire
+ * échange possible, une garantie de façade contre un `as`.
+ *
+ * Les sujets écrits aujourd'hui : `user`, `company`, `lead` (comptes et
+ * croissance), `vat_rate`, `product`, `product_category`, `location`
+ * (référentiel). La colonne est un `String` : en ouvrir un ne coûte pas de
+ * migration.
  */
-export type ActivitySubjectType =
-  "user" | "company" | "lead" | "tva_rate" | "product" | "category" | "location";
+export type ActivitySubjectType = string;
 
 /** Nature de l'acteur, recopiée du `RequestContext` (`actor.type`). */
 export type ActivityActorType = "customer" | "staff" | "system";
@@ -28,13 +36,19 @@ export type ActivityActorType = "customer" | "staff" | "system";
 export const ACTIVITY_TYPES = {
   userRegistered: "user.registered",
   orderPlaced: "order.placed",
-  companyDeclared: "company.declared",
-  companyStepReached: "company.step_reached",
-  companyActivated: "company.activated",
-  /** Extrait KBIS **vérifié** par un agent — la porte d'activation s'ouvre. */
-  kbisCertified: "company.kbis_certified",
-  /** Vérification **retirée** — et accès coupé si le compte était actif. */
-  kbisRevoked: "company.kbis_revoked",
+  /**
+   * Les faits des **comptes clients** sont repris de chez leur émetteur
+   * (`ACCOUNT_FACTS`), ils ne sont plus redéclarés ici. Ils y étaient nés du
+   * temps où `growth` était le seul à les écrire ; depuis que les handlers des
+   * comptes inscrivent eux-mêmes leurs actes, deux listes en face l'une de
+   * l'autre ne pouvaient que diverger — et la divergence se serait vue à la
+   * lecture, sur un filtre qui ne trouve plus rien.
+   */
+  companyDeclared: ACCOUNT_FACTS.companyDeclared,
+  companyStepReached: ACCOUNT_FACTS.companyStepReached,
+  companyActivated: ACCOUNT_FACTS.companyActivated,
+  kbisCertified: ACCOUNT_FACTS.kbisCertified,
+  kbisRevoked: ACCOUNT_FACTS.kbisRevoked,
   subscriptionCreated: "subscription.created",
   /**
    * Reco **affichée** au staff dans le cockpit. Écrit en lecture (best-effort) —

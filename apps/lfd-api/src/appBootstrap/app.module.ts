@@ -14,7 +14,7 @@ import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
-import { PimJournalModule } from "./pim-journal.module.js";
+import { JournalModule } from "./journal.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { StaffNotificationsModule } from "../staff/notifications/staff-notifications.module.js";
@@ -83,7 +83,7 @@ import { AuthGuard } from "../platform/auth/auth.guard.js";
     // Le fil entre les deux, relié ici : le port est au PIM, l'adaptateur à la
     // plateforme, et seule la racine a le droit de les voir tous les deux.
     CatalogFeedModule,
-    PimJournalModule,
+    JournalModule,
     // Contextes métier.
     AccountModule,
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
