@@ -32,12 +32,12 @@ import { AddressesService } from '../../entreprises/addresses.service';
 export type AdressePanelData =
   | {
       readonly companyId: string;
-      readonly kind: 'facturation';
+      readonly kind: 'billing';
       readonly address: BillingAddressView | null;
     }
   | {
       readonly companyId: string;
-      readonly kind: 'livraison';
+      readonly kind: 'delivery';
       readonly address: DeliveryAddressView | null;
       readonly knownContacts: readonly DeliveryContact[];
     };
@@ -66,11 +66,11 @@ export class AdressePanel {
 
   protected readonly draft = signal<AddressDraft>(EMPTY_ADDRESS_DRAFT);
 
-  protected readonly kind = computed(() => this.data()?.kind ?? 'livraison');
+  protected readonly kind = computed(() => this.data()?.kind ?? 'delivery');
   protected readonly isCreate = computed(() => (this.data()?.address ?? null) === null);
   protected readonly knownContacts = computed<readonly DeliveryContact[]>(() => {
     const data = this.data();
-    return data?.kind === 'livraison' ? data.knownContacts : [];
+    return data?.kind === 'delivery' ? data.knownContacts : [];
   });
 
   constructor() {
@@ -81,15 +81,13 @@ export class AdressePanel {
         return;
       }
       this.draft.set(
-        data.kind === 'facturation'
-          ? billingDraftFrom(data.address)
-          : deliveryDraftFrom(data.address),
+        data.kind === 'billing' ? billingDraftFrom(data.address) : deliveryDraftFrom(data.address),
       );
     });
   }
 
   protected readonly heading = computed(() => {
-    if (this.kind() === 'facturation') {
+    if (this.kind() === 'billing') {
       return 'Adresse de facturation';
     }
     return this.isCreate() ? 'Nouvelle adresse de livraison' : "Modifier l'adresse de livraison";
@@ -103,7 +101,7 @@ export class AdressePanel {
       return;
     }
     const close = (): void => this.ref.close(true);
-    if (data.kind === 'facturation') {
+    if (data.kind === 'billing') {
       this.addresses.saveBilling(data.companyId, toBillingPayload(this.draft()), close);
       return;
     }

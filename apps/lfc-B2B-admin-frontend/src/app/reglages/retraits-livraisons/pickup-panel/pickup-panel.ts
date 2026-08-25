@@ -45,7 +45,7 @@ export interface PickupPanelData {
  * Panneau **Point de retrait** — crée ou édite un laboratoire de retrait (adresse
  * postale globale + drapeau « par défaut »). Container **mince** : il seede un
  * brouillon depuis `data`, délègue la saisie postale au fragment partagé
- * `lfd-address-fields` (`kind="facturation"` — sans les consignes de livraison),
+ * `lfd-address-fields` (`kind="billing"` — sans les consignes de livraison),
  * ajoute la case « par défaut », puis enchaîne la sauvegarde et ferme avec un
  * résultat vrai (la page recharge la liste).
  */
@@ -99,7 +99,7 @@ export class PickupPanel {
   );
   /** Postal (le fragment n'exige pas les consignes de livraison) + heures cohérentes. */
   protected readonly canSubmit = computed(
-    () => isAddressValid(this.draft(), 'facturation') && this.openingIssue() === '',
+    () => isAddressValid(this.draft(), 'billing') && this.openingIssue() === '',
   );
 
   constructor() {

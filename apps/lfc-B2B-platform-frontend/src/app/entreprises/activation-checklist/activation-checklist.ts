@@ -127,12 +127,12 @@ export class ActivationChecklist {
         side: 'right',
       });
     } else if (key === 'billing') {
-      const data: AdressePanelData = { companyId: company.id, kind: 'facturation', address: null };
+      const data: AdressePanelData = { companyId: company.id, kind: 'billing', address: null };
       this.panelHost.open(AdressePanel, { data, side: 'right' });
     } else if (key === 'delivery') {
       const data: AdressePanelData = {
         companyId: company.id,
-        kind: 'livraison',
+        kind: 'delivery',
         address: null,
         knownContacts: [company.primaryContact, ...company.contacts].map((contact) => ({
           prenom: contact.firstName,

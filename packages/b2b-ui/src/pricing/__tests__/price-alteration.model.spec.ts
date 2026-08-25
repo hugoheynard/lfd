@@ -70,11 +70,11 @@ describe('le format court, SANS signe', () => {
   });
 
   it('ne préfixe RIEN : le signe appartient au sens, pas au nombre', () => {
-    const majoration = formatAlteration({ direction: 'increase', mode: 'percent', bp: 2000 });
-    const remise = formatAlteration({ direction: 'decrease', mode: 'percent', bp: 2000 });
+    const surcharge = formatAlteration({ direction: 'increase', mode: 'percent', bp: 2000 });
+    const discount = formatAlteration({ direction: 'decrease', mode: 'percent', bp: 2000 });
 
-    expect(majoration).toBe('20 %');
-    expect(remise).toBe(majoration);
+    expect(surcharge).toBe('20 %');
+    expect(discount).toBe(surcharge);
   });
 });
 
@@ -82,11 +82,11 @@ describe('l’aller-retour avec le CartAdjustment du contrat', () => {
   it('perd le sens à l’aller — c’est le but', () => {
     // Le contrat ne porte QUE la grandeur : son sens vient de l'emplacement
     // qui le lit. Deux altérations opposées y deviennent donc identiques.
-    const remise = toCartAdjustment({ direction: 'decrease', mode: 'percent', bp: 2000 });
-    const majoration = toCartAdjustment({ direction: 'increase', mode: 'percent', bp: 2000 });
+    const discount = toCartAdjustment({ direction: 'decrease', mode: 'percent', bp: 2000 });
+    const surcharge = toCartAdjustment({ direction: 'increase', mode: 'percent', bp: 2000 });
 
-    expect(remise).toEqual({ mode: 'percent', bp: 2000 });
-    expect(remise).toEqual(majoration);
+    expect(discount).toEqual({ mode: 'percent', bp: 2000 });
+    expect(discount).toEqual(surcharge);
   });
 
   it('rend le sens au retour, depuis l’emplacement', () => {

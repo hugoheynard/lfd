@@ -32,7 +32,7 @@ import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.
 /** Charge d'ouverture : la société visée + le type d'adresse (Porte B). */
 export interface AdminAdressePanelData {
   readonly companyId: string;
-  readonly kind: 'facturation' | 'livraison';
+  readonly kind: 'billing' | 'delivery';
   readonly knownContacts?: readonly DeliveryContact[];
   /**
    * L'adresse de livraison à **corriger** ; absente, on en crée une.
@@ -96,7 +96,7 @@ export class AdminAdressePanel {
   private readonly editing = computed(() => this.data().delivery);
 
   protected readonly heading = computed(() => {
-    if (this.kind() === 'facturation') {
+    if (this.kind() === 'billing') {
       return this.data().billing === undefined
         ? 'Adresse de facturation'
         : 'Modifier l’adresse de facturation';
@@ -132,7 +132,7 @@ export class AdminAdressePanel {
     }
     this.submitting.set(true);
     try {
-      if (data.kind === 'facturation') {
+      if (data.kind === 'billing') {
         await this.service.saveBilling(data.companyId, toBillingPayload(this.draft()));
         this.notify.success('Adresse de facturation enregistrée.');
       } else if (data.delivery === undefined) {

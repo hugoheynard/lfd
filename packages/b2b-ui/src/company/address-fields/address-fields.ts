@@ -29,7 +29,7 @@ import {
  * pur, partagé par les panneaux d'adresse des deux frontends B2B. Un `model`
  * two-way `value` porte le brouillon ; le container garde l'en-tête, le pied et
  * la sauvegarde. Le bloc **livraison** (défaut, note, créneaux, contact, GPS) ne
- * s'affiche que pour `kind = 'livraison'`. Les messages d'erreur *de forme* sont
+ * s'affiche que pour `kind = 'delivery'`. Les messages d'erreur *de forme* sont
  * calculés ici ; la validité globale (`isAddressValid`) est au container.
  *
  * L'adresse **postale** elle-même n'est plus écrite ici : c'est
@@ -53,7 +53,7 @@ export class AddressFields {
   /** Brouillon d'adresse (two-way). */
   readonly value = model.required<AddressDraft>();
   /** Facturation (postal seul) ou livraison (postal + consignes). */
-  readonly kind = input<'facturation' | 'livraison'>('livraison');
+  readonly kind = input<'billing' | 'delivery'>('delivery');
   /** Contacts connus de l'entreprise, proposés pour préremplir le contact sur place. */
   readonly knownContacts = input<readonly DeliveryContact[]>([]);
 
@@ -62,7 +62,7 @@ export class AddressFields {
 
   /** Le point GPS ne se demande qu'en livraison. */
   protected readonly postalFields = computed(() =>
-    this.isLivraison() ? ALL_POSTAL_FIELDS : DEFAULT_POSTAL_FIELDS,
+    this.isDelivery() ? ALL_POSTAL_FIELDS : DEFAULT_POSTAL_FIELDS,
   );
 
   protected setPostal(postal: PostalAddress): void {
@@ -112,10 +112,10 @@ export class AddressFields {
     }));
   }
 
-  protected readonly isLivraison = computed(() => this.kind() === 'livraison');
+  protected readonly isDelivery = computed(() => this.kind() === 'delivery');
 
   protected readonly contactIssue = computed(() =>
-    this.isLivraison() ? contactIssueOf(this.value()) : '',
+    this.isDelivery() ? contactIssueOf(this.value()) : '',
   );
 
   /** Nom lisible d'un contact connu, pour l'option du select. */

@@ -245,9 +245,9 @@ export function gpsIssueOf(draft: AddressDraft): string {
 }
 
 /** Contrôle de forme : postal requis, plus les consignes pour une livraison. */
-export function isAddressValid(draft: AddressDraft, kind: 'facturation' | 'livraison'): boolean {
+export function isAddressValid(draft: AddressDraft, kind: 'billing' | 'delivery'): boolean {
   const postalOk = postalIssueOf(postalFrom(draft)) === '';
-  if (kind === 'facturation') {
+  if (kind === 'billing') {
     return postalOk;
   }
   return (

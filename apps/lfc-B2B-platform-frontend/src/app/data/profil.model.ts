@@ -51,7 +51,7 @@ export interface Contact {
 }
 
 /** À quoi sert une adresse. */
-export type AddressKind = 'facturation' | 'livraison';
+export type AddressKind = 'billing' | 'delivery';
 
 /** Une adresse postale (facturation ou point de livraison). */
 export interface Address {

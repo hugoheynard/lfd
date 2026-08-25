@@ -60,7 +60,7 @@ export class AdressesSection {
   protected editBilling(): void {
     const data: AdressePanelData = {
       companyId: this.company().id,
-      kind: 'facturation',
+      kind: 'billing',
       address: this.billing(),
     };
     this.panelHost.open(AdressePanel, { data, side: 'right' });
@@ -69,7 +69,7 @@ export class AdressesSection {
   protected addDelivery(): void {
     const data: AdressePanelData = {
       companyId: this.company().id,
-      kind: 'livraison',
+      kind: 'delivery',
       address: null,
       knownContacts: this.knownContacts(),
     };
@@ -79,7 +79,7 @@ export class AdressesSection {
   protected editDelivery(address: DeliveryAddressView): void {
     const data: AdressePanelData = {
       companyId: this.company().id,
-      kind: 'livraison',
+      kind: 'delivery',
       address,
       knownContacts: this.knownContacts(),
     };

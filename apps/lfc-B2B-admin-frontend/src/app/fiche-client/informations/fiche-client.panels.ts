@@ -47,7 +47,7 @@ export class FicheClientPanels {
       return this.panels.open(AdminAdressePanel, {
         data: {
           companyId: company.id,
-          kind: 'facturation',
+          kind: 'billing',
           // La même entrée sert à poser l'adresse et à la corriger : sans ce
           // préremplissage, « Modifier » s'ouvrait vide et faisait retaper six
           // champs pour en changer un.
@@ -83,7 +83,7 @@ export class FicheClientPanels {
     return this.panels.open(AdminAdressePanel, {
       data: {
         companyId: company.id,
-        kind: 'livraison',
+        kind: 'delivery',
         knownContacts: knownContactsOf(company),
       },
     }).closed;
@@ -94,7 +94,7 @@ export class FicheClientPanels {
     return this.panels.open(AdminAdressePanel, {
       data: {
         companyId: company.id,
-        kind: 'livraison',
+        kind: 'delivery',
         knownContacts: knownContactsOf(company),
         delivery: address,
       },
