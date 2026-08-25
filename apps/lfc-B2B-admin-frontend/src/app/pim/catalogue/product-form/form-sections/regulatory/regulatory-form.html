@@ -1,68 +1,23 @@
-<fold-callout
-  appearance="inset"
-  [variant]="store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'"
->
-  <fold-checkbox
-    label="Aucun allergène"
-    hint="Une affirmation explicite — différente d'un champ laissé vide."
-    [checked]="store.declaresNone()"
-    (checkedChange)="store.declareNoAllergen($event)"
+<!-- L'ordre de la fiche suit celui de la SAISIE, et il n'est pas indifférent :
+     le poids de l'unité conditionne la lecture de tout ce qui suit. La grille
+     est « pour 100 g » — sans lui, elle ne dit rien de ce qu'on vend, et qui la
+     remplit d'abord la remplit à l'aveugle. Les allergènes ferment la fiche :
+     ce sont des cases à cocher, pas des nombres, et ils n'ont besoin de rien de
+     ce qui précède. -->
+<label class="field field-weight">
+  <span class="field-label">Poids net de l’unité (g)</span>
+  <input
+    class="native-input"
+    type="number"
+    step="1"
+    min="0"
+    [value]="store.weightGrams() ?? ''"
+    (input)="store.weightGrams.set(numberValue($event))"
   />
-</fold-callout>
-
-@if (!store.declaresNone()) {
-  <div class="stack">
-    <div class="scope">
-      @for (option of scopes; track option.value) {
-        <button
-          foldButton
-          size="sm"
-          [emphasis]="store.scope() === option.value ? 'solid' : 'outline'"
-          (click)="store.changeScope(option.value)"
-        >
-          {{ option.label }}
-        </button>
-      }
-    </div>
-    @if (store.provisional()) {
-      <fold-callout appearance="inset" variant="warning">
-        Les <strong>codes</strong> de ce référentiel sont provisoires.
-      </fold-callout>
-    }
-    <div class="groups">
-      @for (group of store.groups(); track group.incoLabel) {
-        <fieldset>
-          <legend>{{ group.incoLabel }}</legend>
-          @for (item of group.entries; track item.code) {
-            <fold-checkbox
-              size="sm"
-              [label]="item.label"
-              [checked]="store.selected().includes(item.code)"
-              (checkedChange)="store.toggleAllergen(item.code, $event)"
-            />
-          }
-        </fieldset>
-      }
-    </div>
-  </div>
-}
+</label>
 
 <div class="stack">
   <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
-  <!-- Le POIDS NET vit ici, pas dans « Tarif & TVA ». La grille est « pour
-       100 g » : sans le poids de l'unité, elle ne dit rien de ce qu'on vend.
-       Isolé ailleurs dans la page, son absence ne se voyait pas en contexte. -->
-  <label class="field field-weight">
-    <span class="field-label">Poids net de l’unité (g)</span>
-    <input
-      class="native-input"
-      type="number"
-      step="1"
-      min="0"
-      [value]="store.weightGrams() ?? ''"
-      (input)="store.weightGrams.set(numberValue($event))"
-    />
-  </label>
   <div class="grid">
     @for (field of nutritionFields; track field.key) {
       <label class="field">
@@ -78,4 +33,58 @@
       </label>
     }
   </div>
+</div>
+
+<hr class="rule" />
+
+<div class="stack">
+  <span class="block-label">Allergènes</span>
+  <fold-callout
+    appearance="inset"
+    [variant]="store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'"
+  >
+    <fold-checkbox
+      label="Aucun allergène"
+      hint="Une affirmation explicite — différente d'un champ laissé vide."
+      [checked]="store.declaresNone()"
+      (checkedChange)="store.declareNoAllergen($event)"
+    />
+  </fold-callout>
+
+  @if (!store.declaresNone()) {
+    <div class="stack">
+      <div class="scope">
+        @for (option of scopes; track option.value) {
+          <button
+            foldButton
+            size="sm"
+            [emphasis]="store.scope() === option.value ? 'solid' : 'outline'"
+            (click)="store.changeScope(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      @if (store.provisional()) {
+        <fold-callout appearance="inset" variant="warning">
+          Les <strong>codes</strong> de ce référentiel sont provisoires.
+        </fold-callout>
+      }
+      <div class="groups">
+        @for (group of store.groups(); track group.incoLabel) {
+          <fieldset>
+            <legend>{{ group.incoLabel }}</legend>
+            @for (item of group.entries; track item.code) {
+              <fold-checkbox
+                size="sm"
+                [label]="item.label"
+                [checked]="store.selected().includes(item.code)"
+                (checkedChange)="store.toggleAllergen(item.code, $event)"
+              />
+            }
+          </fieldset>
+        }
+      </div>
+    </div>
+  }
 </div>

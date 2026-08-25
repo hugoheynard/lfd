@@ -39,6 +39,58 @@ describe('RegulatoryForm', () => {
   });
 });
 
+describe('RegulatoryForm — l’ordre de la fiche', () => {
+  /** Le rang d'un élément dans l'ordre du document, sous l'hôte. */
+  function rankOf(host: HTMLElement, element: Element | null | undefined): number {
+    return element === null || element === undefined
+      ? -1
+      : [...host.querySelectorAll('*')].indexOf(element);
+  }
+
+  /** Le rang du titre de bloc qui contient ce mot. */
+  function headingRank(host: HTMLElement, word: string): number {
+    return rankOf(
+      host,
+      [...host.querySelectorAll('.block-label')].find((label) =>
+        (label.textContent ?? '').includes(word),
+      ),
+    );
+  }
+
+  it('pose le poids, puis la nutrition, puis les allergènes', () => {
+    // L'ordre n'est pas une préférence d'affichage, c'est celui de la SAISIE :
+    // la grille est « pour 100 g », donc elle se remplit à l'aveugle tant que le
+    // poids de l'unité n'est pas connu. Rien dans le gabarit ne dit ça — un
+    // déplacement de bloc le casserait sans qu'aucun autre test bronche.
+    setup();
+    const fixture = TestBed.createComponent(RegulatoryForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const weight = rankOf(host, host.querySelector('.field-weight'));
+    const nutrition = headingRank(host, '100 g');
+    const allergens = headingRank(host, 'Allergènes');
+
+    expect(weight).toBeGreaterThanOrEqual(0);
+    expect(weight).toBeLessThan(nutrition);
+    expect(nutrition).toBeLessThan(allergens);
+  });
+
+  it('sépare les deux déclarations par un trait, pas par du vide', () => {
+    // L'espace dit « respire » ; le trait dit « autre sujet ». La composition
+    // (poids + nutrition) et les allergènes sont deux déclarations distinctes,
+    // et rien d'autre dans le gabarit ne le signale.
+    setup();
+    const fixture = TestBed.createComponent(RegulatoryForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const rule = rankOf(host, host.querySelector('.rule'));
+    expect(rule).toBeGreaterThan(headingRank(host, '100 g'));
+    expect(rule).toBeLessThan(headingRank(host, 'Allergènes'));
+  });
+});
+
 describe('RegulatoryForm — le poids net', () => {
   it('vit AVEC la déclaration, pas dans « Tarif & TVA »', () => {
     // La grille est « pour 100 g » : sans le poids de l'unité, elle ne dit rien

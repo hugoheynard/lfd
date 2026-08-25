@@ -1,5 +1,31 @@
 // Ce qui n'appartient qu'à la section « regulatory ».
 
+/* La section porte DEUX déclarations distinctes — ce que pèse et contient une
+   unité, puis ce qu'elle peut déclencher — et l'écart entre ses blocs devient
+   une règle explicite plutôt qu'une conséquence des marges internes de chacun.
+   Trois blocs qui se suivent sans gap déclaré se lisent comme un seul. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xl);
+}
+
+/* Le trait sépare les deux DÉCLARATIONS : la composition (poids + nutrition)
+   et les allergènes. L'espace seul ne suffisait pas — il dit « respire », pas
+   « autre sujet ». `margin: 0` parce que l'écart appartient au `gap` de l'hôte :
+   deux sources d'espacement sur le même trait finissent par diverger. */
+.rule {
+  border: 0;
+  border-block-start: 1px solid var(--fold-color-border);
+  margin: 0;
+}
+
+/* Le poids est UN nombre, pas une grille : sur un large écran, une ligne pleine
+   largeur pour trois chiffres se lit comme un champ oublié au milieu du vide. */
+.field-weight {
+  max-width: 16rem;
+}
+
 .scope {
   display: flex;
   gap: var(--fold-space-sm);
