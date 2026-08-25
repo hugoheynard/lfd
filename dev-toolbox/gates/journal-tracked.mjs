@@ -67,6 +67,26 @@ const STAFF_ACT =
   /(ByStaffHandler|GrantTermsHandler|CertifyKbisHandler|RevokeKbisCertificationHandler|ChangeCompanyStatusHandler)$/;
 
 /**
+ * Les **réglages commerciaux** : ce qu'un client paie pour être livré, ce que
+ * lui remise un retrait, à quelle heure sa commande bascule au lendemain.
+ *
+ * Tous leurs handlers sont concernés, sans exception de nom : ces modules
+ * n'ont pas de chemin client — un client ne pose pas une zone de livraison. Là
+ * où `b2b/account` mêle les deux et doit trier, ici tout est staff.
+ */
+const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
+
+/**
+ * La tarification, elle, est tenue par le COMPILATEUR : ses dépôts d'écriture
+ * exigent un `PricingAct` en paramètre, et un acte non fourni ne compile pas.
+ * C'est plus fort que cette porte, et ça couvre règles, limites et barèmes.
+ *
+ * Restaient les engagements de volume — le seul objet tarifaire sans acte, donc
+ * le seul que le compilateur ne garde pas. C'est celui-ci que la porte tient.
+ */
+const PRICING_ACT = /VolumeCommitmentHandler$/;
+
+/**
  * La dette déclarée — **vide depuis le 2026-08-25**.
  *
  * Elle a compté quatorze handlers : ceux qui écrivaient déjà sans tracer le
@@ -154,13 +174,23 @@ function auditStaffAct(source, index, params, handler) {
   if (!STAFF_ACT.test(handler)) {
     return null;
   }
+  return auditTraced(source, index, params, handler);
+}
+
+/** La vérification commune : le fait est inscrit, et il l'est dans une transaction. */
+function auditTraced(source, index, params, handler) {
   checked += 1;
-  // La dispense se déclare dans le commentaire qui PRÉCÈDE le décorateur, là où
-  // on la lit — pas au milieu du corps, où elle passerait inaperçue.
-  const declared = source.slice(Math.max(0, index - 1200), index) + handlerBody(source, index);
+  // L'appel se cherche dans le CORPS du handler, et nulle part ailleurs : la
+  // fenêtre large qu'on utilisait au début attrapait le `publishTraced` du
+  // handler PRÉCÉDENT quand deux vivent dans le même fichier — la porte était
+  // alors verte pour un handler muet, ce qu'elle existe précisément pour
+  // empêcher. La dispense, elle, se déclare dans le commentaire qui précède le
+  // décorateur, là où on la lit.
+  const body = handlerBody(source, index);
+  const head = source.slice(Math.max(0, index - 1200), index);
   const missing = [
-    declared.includes("publishTraced") ? null : "un appel à publishTraced",
-    params.includes("UnitOfWork") || declared.includes("@hors-transaction") ? null : "UnitOfWork",
+    body.includes("publishTraced") ? null : "un appel à publishTraced",
+    params.includes("UnitOfWork") || head.includes("@hors-transaction") ? null : "UnitOfWork",
   ].filter(Boolean);
   return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
 }
@@ -168,6 +198,15 @@ function auditStaffAct(source, index, params, handler) {
 const ZONES = [
   { root: join(SRC, "pim"), audit: auditPim },
   { root: join(SRC, "b2b", "account"), audit: auditStaffAct },
+  ...SETTINGS_ZONES.map((zone) => ({
+    root: join(SRC, "b2b", zone),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  })),
+  {
+    root: join(SRC, "b2b", "pricing"),
+    audit: (source, index, params, handler) =>
+      PRICING_ACT.test(handler) ? auditTraced(source, index, params, handler) : null,
+  },
 ];
 
 for (const zone of ZONES) {
