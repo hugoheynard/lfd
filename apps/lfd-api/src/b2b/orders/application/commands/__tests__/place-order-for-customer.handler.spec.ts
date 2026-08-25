@@ -1,9 +1,9 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
 import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import {
   PaymentGateway,
   type CreateIntentParams,
@@ -168,13 +168,6 @@ function payments(sink: { intent: CreateIntentParams | null } = { intent: null }
   };
 }
 
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 function repo(sink: { placed: OrderToPlace | null }): OrderRepository {
   return {
     place: (order) => {
@@ -219,7 +212,7 @@ function handler(
   sink: { placed: OrderToPlace | null },
   options: {
     readonly payments?: PaymentGateway;
-    readonly events?: FakeEvents;
+    readonly events?: RecordingPublisher;
     readonly clientBaseUrl?: string | null;
   } = {},
 ): PlaceOrderForCustomerHandler {
@@ -246,7 +239,7 @@ function handler(
     ),
     repo(sink),
     options.payments ?? payments(),
-    options.events ?? new FakeEvents(),
+    options.events ?? new RecordingPublisher(),
     new FakeConfig(clientBaseUrl),
   );
 }
@@ -292,7 +285,7 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
   });
 
   it("publie l'événement au nom de l'ACHETEUR — le journal compte des clients", async () => {
-    const events = new FakeEvents();
+    const events = new RecordingPublisher();
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders"), sink, { events }).execute(
@@ -401,7 +394,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       ),
       repo(sink),
       payments(intents),
-      new FakeEvents(),
+      new RecordingPublisher(),
       new FakeConfig("https://boutique.lfc.fr"),
     );
 

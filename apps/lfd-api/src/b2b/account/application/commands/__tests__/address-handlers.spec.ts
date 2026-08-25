@@ -1,3 +1,4 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type {
   BillingAddressPayload,
   CompanyAddressesView,
@@ -29,15 +30,9 @@ import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-addres
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
 
 /** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
-class FakeEvents extends DomainEventPublisher {
-  publish(): void {
-    // no-op
-  }
-}
-
 /** Fabrique un publisher doublé frais. */
 function events(): DomainEventPublisher {
-  return new FakeEvents();
+  return new RecordingPublisher();
 }
 
 const BILLING: BillingAddressPayload = {

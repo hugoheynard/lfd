@@ -1,22 +1,17 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import {
-  CompanyAddressNotFoundError,
-  CompanyNotFoundError,
-} from "../../domain/errors/account-errors.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
-import { CompanyAddressReader } from "../../domain/ports/company-address.reader.js";
-import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
+import {
+  CompanyIdentityCorrectedEvent,
+  KbisUploadedByStaffEvent,
+  PaymentTermsGrantedEvent,
+} from "../../domain/events/staff-acts.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import {
-  AddDeliveryAddressByStaffCommand,
-  PreferFulfillmentByStaffCommand,
-  RemoveDeliveryAddressByStaffCommand,
-  SetDefaultDeliveryByStaffCommand,
-  UpdateDeliveryAddressByStaffCommand,
-  SaveBillingAddressByStaffCommand,
   GrantTermsCommand,
   UpdateIdentityByStaffCommand,
   UploadKbisByStaffCommand,
@@ -31,6 +26,15 @@ import { ingestKbis } from "./ingest-kbis.js";
  * écrite qu'une fois, seul le mur diffère.
  */
 
+/**
+ * Dépôt de l'extrait par un agent, à la place du client.
+ *
+ * `@hors-transaction` le fichier part d'abord au stockage objet, qui n'a pas de
+ * transaction. Enfermer cet aller-retour réseau dans celle de la base coûterait
+ * plus que le trou qu'il refermerait : une panne de journal échoue la requête
+ * sans annuler le dépôt — l'agent le voit, et le fichier se redépose à la même
+ * clé.
+ */
 @CommandHandler(UploadKbisByStaffCommand)
 export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisByStaffCommand, void> {
   constructor(
@@ -48,6 +52,14 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
       this.companies,
       this.events,
     );
+    // Tracé APRÈS, et hors transaction — seul acte du lot dans ce cas. Le dépôt
+    // range d'abord le fichier au stockage objet, qui n'a pas de transaction :
+    // enfermer cet aller-retour réseau dans celle de la base serait pire que le
+    // trou qu'on refermerait. Une panne de journal échoue donc la requête sans
+    // annuler le dépôt — l'agent le voit, et le fichier se redépose.
+    await this.events.publishTraced(
+      new KbisUploadedByStaffEvent(command.companyId, command.fileName),
+    );
   }
 }
 
@@ -59,6 +71,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
   constructor(
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: UpdateIdentityByStaffCommand): Promise<void> {
@@ -70,12 +83,18 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     // Le back-office **corrige** là où le client ne fait que compléter : une
     // faute de frappe saisie au comptoir restait gravée, et le compte portait
     // une identité fausse sans recours. Un champ vide ne réécrit rien.
-    company.correctLegalIdentity({
+    const identity = {
       raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,
+    };
+    company.correctLegalIdentity(identity);
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(
+        new CompanyIdentityCorrectedEvent(command.companyId, identity),
+      );
     });
-    await this.companies.save(company);
 
     // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).
     if (command.payload.vatNumber.trim() !== "") {
@@ -86,7 +105,11 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
 
 @CommandHandler(GrantTermsCommand)
 export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, void> {
-  constructor(private readonly companies: CompanyRepository) {}
+  constructor(
+    private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: GrantTermsCommand): Promise<void> {
     const company = await this.companies.load(command.companyId);
@@ -94,129 +117,11 @@ export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, voi
       throw new CompanyNotFoundError(command.companyId);
     }
     company.grantTerms(command.grantedTerms);
-    await this.companies.save(company);
-  }
-}
-
-@CommandHandler(SaveBillingAddressByStaffCommand)
-export class SaveBillingAddressByStaffHandler implements ICommandHandler<
-  SaveBillingAddressByStaffCommand,
-  void
-> {
-  constructor(
-    private readonly addresses: CompanyAddressRepository,
-    private readonly events: DomainEventPublisher,
-  ) {}
-
-  async execute(command: SaveBillingAddressByStaffCommand): Promise<void> {
-    await this.addresses.saveBilling(command.companyId, command.payload);
-    // Pièce « facturation » franchie (journal idempotent par étape).
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "billing"));
-  }
-}
-
-@CommandHandler(AddDeliveryAddressByStaffCommand)
-export class AddDeliveryAddressByStaffHandler implements ICommandHandler<
-  AddDeliveryAddressByStaffCommand,
-  string
-> {
-  constructor(
-    private readonly addresses: CompanyAddressRepository,
-    private readonly events: DomainEventPublisher,
-  ) {}
-
-  async execute(command: AddDeliveryAddressByStaffCommand): Promise<string> {
-    const addressId = await this.addresses.addDelivery(command.companyId, command.payload);
-    // Pièce « livraison » franchie (journal idempotent par étape).
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "delivery"));
-    return addressId;
-  }
-}
-
-/**
- * Pose la préférence d'acheminement, après avoir vérifié que l'adresse désignée
- * est bien **celle de cette société**.
- *
- * Le contrôle est ici et non dans l'agrégat : c'est une question de *rattachement*
- * (deux agrégats), pas d'invariant interne. Sans lui, un identifiant recopié
- * ferait pointer la préférence d'un client sur l'adresse d'un autre — la
- * commande partirait ensuite chez le voisin, et personne ne saurait pourquoi.
- */
-@CommandHandler(PreferFulfillmentByStaffCommand)
-export class PreferFulfillmentByStaffHandler implements ICommandHandler<
-  PreferFulfillmentByStaffCommand,
-  void
-> {
-  constructor(
-    private readonly companies: CompanyRepository,
-    private readonly addresses: CompanyAddressReader,
-  ) {}
-
-  async execute(command: PreferFulfillmentByStaffCommand): Promise<void> {
-    const company = await this.companies.load(command.companyId);
-    if (company === null) {
-      throw new CompanyNotFoundError(command.companyId);
-    }
-    await this.ensureOwnDeliveryAddress(command);
-    company.preferFulfillment(command.preference);
-    await this.companies.save(company);
-  }
-
-  /** L'adresse préférée doit appartenir à la société — ou ne pas être désignée. */
-  private async ensureOwnDeliveryAddress(command: PreferFulfillmentByStaffCommand): Promise<void> {
-    const wanted = command.preference.deliveryAddressId;
-    if (command.preference.method !== "delivery" || wanted === null) {
-      return;
-    }
-    const { deliveries } = await this.addresses.read(command.companyId);
-    if (!deliveries.some((address) => address.id === wanted)) {
-      throw new CompanyAddressNotFoundError(wanted);
-    }
-  }
-}
-
-/**
- * Gestes staff sur une adresse de livraison **déjà posée** : la corriger, la
- * désigner par défaut, l'archiver.
- *
- * Aucun mur membership — l'auth staff garde la route, comme pour les autres
- * pièces. Le mur qui reste est celui du **rattachement** : chaque méthode du
- * port porte le `companyId`, et l'implémentation filtre sur (`id` ET
- * `companyId`). Une adresse d'une autre société n'est donc pas touchée, elle est
- * déclarée introuvable.
- */
-@CommandHandler(UpdateDeliveryAddressByStaffCommand)
-export class UpdateDeliveryAddressByStaffHandler implements ICommandHandler<
-  UpdateDeliveryAddressByStaffCommand,
-  void
-> {
-  constructor(private readonly addresses: CompanyAddressRepository) {}
-
-  async execute(command: UpdateDeliveryAddressByStaffCommand): Promise<void> {
-    await this.addresses.updateDelivery(command.companyId, command.addressId, command.payload);
-  }
-}
-
-@CommandHandler(SetDefaultDeliveryByStaffCommand)
-export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
-  SetDefaultDeliveryByStaffCommand,
-  void
-> {
-  constructor(private readonly addresses: CompanyAddressRepository) {}
-
-  async execute(command: SetDefaultDeliveryByStaffCommand): Promise<void> {
-    await this.addresses.setDefaultDelivery(command.companyId, command.addressId);
-  }
-}
-
-@CommandHandler(RemoveDeliveryAddressByStaffCommand)
-export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
-  RemoveDeliveryAddressByStaffCommand,
-  void
-> {
-  constructor(private readonly addresses: CompanyAddressRepository) {}
-
-  async execute(command: RemoveDeliveryAddressByStaffCommand): Promise<void> {
-    await this.addresses.archiveDelivery(command.companyId, command.addressId);
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(
+        new PaymentTermsGrantedEvent(command.companyId, command.grantedTerms),
+      );
+    });
   }
 }

@@ -16,7 +16,6 @@ import { RecomputeLeadScoresHandler } from "./application/commands/recompute-lea
 import { RefreshMarketHandler } from "./application/commands/refresh-market.handler.js";
 import { RemoveMarketNafHandler } from "./application/commands/remove-market-naf.handler.js";
 import { RemoveMarketZoneHandler } from "./application/commands/remove-market-zone.handler.js";
-import { OnCompanyActivated } from "./application/handlers/on-company-activated.handler.js";
 import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
 import { OnCompanyStepReached } from "./application/handlers/on-company-step-reached.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
@@ -86,10 +85,6 @@ import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js
 import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
 import { AdminActivityController } from "./http/admin-activity.controller.js";
 import { ReadActivityJournalHandler } from "./application/queries/read-activity-journal.handler.js";
-import {
-  OnKbisCertificationRevoked,
-  OnKbisCertified,
-} from "./application/handlers/on-kbis-certification.handler.js";
 import { ActorNamer } from "./domain/ports/actor-namer.js";
 import { PrismaAppointmentReader } from "./infrastructure/prisma-appointment.reader.js";
 import { PrismaAppointmentRepository } from "./infrastructure/prisma-appointment.repository.js";
@@ -143,8 +138,6 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: CompanyNamer, useClass: PrismaCompanyNamer },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
     ReadActivityJournalHandler,
-    OnKbisCertified,
-    OnKbisCertificationRevoked,
     { provide: ProspectReader, useClass: PrismaProspectReader },
     { provide: ActivationReader, useClass: PrismaActivationReader },
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },
@@ -191,7 +184,6 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     ListActivationsHandler,
     OnOrderPlaced,
     OnCompanyDeclared,
-    OnCompanyActivated,
     OnCompanyStepReached,
     OnSubscriptionCreated,
     OnUserRegistered,

@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
@@ -39,6 +40,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly reader: AdminCompanyReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
     private readonly staff: StaffDirectory,
   ) {}
 
@@ -77,10 +79,13 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
       name: agent?.name ?? "",
       role: agent?.role ?? "",
     });
-    await this.companies.save(company);
-
-    // Jalon de conversion : publié après persistance de la transition.
-    this.events.publish(new CompanyActivatedEvent(command.companyId, activatedAt));
+    // Jalon de conversion — et acte d'un agent sur le compte d'un tiers : la
+    // trace part dans la transaction de la transition. Un compte actif dont
+    // personne ne sait qui l'a ouvert n'est pas un état acceptable.
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(new CompanyActivatedEvent(command.companyId, activatedAt));
+    });
   }
 }
 

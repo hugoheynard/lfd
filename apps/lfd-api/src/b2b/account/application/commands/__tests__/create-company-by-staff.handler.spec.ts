@@ -1,4 +1,4 @@
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
 import {
   InvalidEmailError,
@@ -16,13 +16,6 @@ import { CreateCompanyByStaffCommand } from "../create-company-by-staff.command.
 import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 /** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
 class FakeAccess extends AccountAccessGranter {
   readonly granted: AccessToGrant[] = [];
@@ -45,7 +38,7 @@ interface Doubles {
   readonly unowned: Company[];
   /** Vrai si une écriture **avec** propriétaire a eu lieu (ne doit jamais arriver). */
   readonly owned: { count: number };
-  readonly events: FakeEvents;
+  readonly events: RecordingPublisher;
 }
 
 function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error } = {}): Doubles {
@@ -69,7 +62,7 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
     kbisLocation: () => Promise.resolve(null),
   };
 
-  const events = new FakeEvents();
+  const events = new RecordingPublisher();
   const access = new FakeAccess(
     options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );

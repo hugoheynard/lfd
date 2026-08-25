@@ -454,14 +454,17 @@ describe("certification du KBIS", () => {
       orderBy: { occurredAt: "asc" },
       select: { type: true, actorId: true, payload: true },
     });
+    // Le DÉPÔT par un agent est tracé lui aussi : c'est un acte du staff sur le
+    // dossier d'un tiers, au même titre que la vérification qui suit.
     expect(journal.map((entry) => entry.type)).toEqual([
+      "company.kbis_uploaded_by_staff",
       "company.kbis_certified",
       "company.kbis_revoked",
     ]);
     // Nominatif : « un membre du staff » n'engage personne.
     expect(journal[0]?.actorId).toBe("staff-e2e");
     // Plus aucun retrait ne suspend : le journal le dit aussi.
-    expect(journal[1]?.payload).toMatchObject({ suspended: false });
+    expect(journal[2]?.payload).toMatchObject({ suspended: false });
   });
 
   /** Un compte actif, pièces réunies et extrait vérifié — le point de départ. */

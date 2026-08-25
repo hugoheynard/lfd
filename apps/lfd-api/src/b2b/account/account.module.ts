@@ -5,11 +5,13 @@ import { AddCompanyContactHandler } from "./application/commands/add-company-con
 import {
   AddDeliveryAddressByStaffHandler,
   SaveBillingAddressByStaffHandler,
-  GrantTermsHandler,
   PreferFulfillmentByStaffHandler,
   RemoveDeliveryAddressByStaffHandler,
   SetDefaultDeliveryByStaffHandler,
   UpdateDeliveryAddressByStaffHandler,
+} from "./application/commands/admin-address.handlers.js";
+import {
+  GrantTermsHandler,
   UpdateIdentityByStaffHandler,
   UploadKbisByStaffHandler,
 } from "./application/commands/admin-company.handlers.js";

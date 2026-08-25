@@ -1,3 +1,4 @@
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { Test } from "@nestjs/testing";
 import { UserRegisteredEvent } from "../../domain/events/user-registered.event.js";
 import { CustomerPrincipalResolver } from "../customer-principal.resolver.js";
@@ -11,13 +12,6 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import type { VerifiedToken } from "../../../../platform/auth/principal.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 const token: VerifiedToken = {
   subject: "auth0|123",
   scopes: ["read:orders"],
@@ -97,7 +91,7 @@ function prismaDouble(
 
 async function resolverWith(
   double: PrismaDouble,
-  events: DomainEventPublisher = new FakeEvents(),
+  events: DomainEventPublisher = new RecordingPublisher(),
 ): Promise<CustomerPrincipalResolver> {
   const moduleRef = await Test.createTestingModule({
     providers: [
@@ -179,7 +173,7 @@ describe("CustomerPrincipalResolver", () => {
     });
 
     it("ne publie aucun événement pour un compte déjà existant", async () => {
-      const events = new FakeEvents();
+      const events = new RecordingPublisher();
       const resolver = await resolverWith(prismaDouble([activeUser]), events);
       await resolver.resolve(token);
       expect(events.published).toEqual([]);
@@ -244,7 +238,7 @@ describe("CustomerPrincipalResolver", () => {
         email: "new@client.fr",
         memberships: [],
       };
-      const events = new FakeEvents();
+      const events = new RecordingPublisher();
       const resolver = await resolverWith(prismaDouble([null, provisioned]), events);
 
       await resolver.resolve({ subject: "auth0|new", scopes: [], email: "new@client.fr" });
@@ -264,7 +258,7 @@ describe("CustomerPrincipalResolver", () => {
         auth0Sub: "auth0|race",
         memberships: [],
       };
-      const events = new FakeEvents();
+      const events = new RecordingPublisher();
       const resolver = await resolverWith(
         prismaDouble([null, provisioned], {
           createError: Object.assign(new Error("duplicate"), { code: "P2002" }),

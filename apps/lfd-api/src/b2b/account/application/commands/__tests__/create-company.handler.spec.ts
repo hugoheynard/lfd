@@ -1,4 +1,4 @@
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
 import {
   SiretAlreadyRegisteredError,
@@ -22,17 +22,10 @@ const OWNER: UserProfileRecord = {
 };
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 interface Doubles {
   readonly handler: CreateCompanyHandler;
   readonly declared: { company: Company; ownerUserId: string }[];
-  readonly events: FakeEvents;
+  readonly events: RecordingPublisher;
 }
 
 function doubles(
@@ -60,7 +53,7 @@ function doubles(
     save: () => Promise.resolve(),
   };
 
-  const events = new FakeEvents();
+  const events = new RecordingPublisher();
   return { handler: new CreateCompanyHandler(companies, profiles, events), declared, events };
 }
 

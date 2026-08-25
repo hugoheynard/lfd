@@ -1,19 +1,12 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { CreateSubscriptionPayload } from "@lfd/contracts";
 
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { SubscriptionCreatedEvent } from "../../../domain/events/subscription-created.event.js";
 import { CreateSubscriptionCommand } from "../create-subscription.command.js";
 import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 const payload: CreateSubscriptionPayload = {
   fromOrderId: null,
   recurrence: "weekly",
@@ -29,7 +22,7 @@ const payload: CreateSubscriptionPayload = {
 describe("CreateSubscriptionHandler", () => {
   it("construit un agrégat actif et le confie au port, puis renvoie l'id", async () => {
     const repo = new FakeSubscriptionRepository();
-    const handler = new CreateSubscriptionHandler(repo, new FakeEvents());
+    const handler = new CreateSubscriptionHandler(repo, new RecordingPublisher());
 
     const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload));
 
@@ -42,7 +35,7 @@ describe("CreateSubscriptionHandler", () => {
   });
 
   it("publie SubscriptionCreatedEvent (signal lead qualifié)", async () => {
-    const events = new FakeEvents();
+    const events = new RecordingPublisher();
     const handler = new CreateSubscriptionHandler(new FakeSubscriptionRepository(), events);
 
     await handler.execute(new CreateSubscriptionCommand("user_1", payload));

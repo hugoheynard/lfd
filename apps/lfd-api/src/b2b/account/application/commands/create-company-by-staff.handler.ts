@@ -53,6 +53,17 @@ export interface CompanyOpened {
  * création entière ferait perdre une saisie faite au téléphone pour une raison
  * qui ne regarde pas le commercial.
  */
+/**
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur.
+ *
+ * `company.declared` est écrit par son abonné, avec `via: "staff"` — donc « qui
+ * a ouvert ce compte » a bien une réponse. Le tracer ici en ferait un fait à
+ * deux écrivains : le chemin client passerait par l'abonné, le chemin staff par
+ * la transaction, et les lecteurs d'entonnoir (`prisma-activation.reader`)
+ * verraient deux lignes pour une même déclaration. Le passer bloquant des DEUX
+ * côtés est un autre chantier — celui du chemin d'inscription client, qu'on ne
+ * bloque pas sur un hoquet d'`INSERT`.
+ */
 @CommandHandler(CreateCompanyByStaffCommand)
 export class CreateCompanyByStaffHandler implements ICommandHandler<
   CreateCompanyByStaffCommand,

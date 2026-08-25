@@ -1,3 +1,4 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
 import type {
   BillingAddressPayload,
@@ -26,7 +27,6 @@ import {
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   type DeliveryDefaults,
@@ -131,16 +131,9 @@ function guard(
 }
 
 /** Publisher d'événements doublé : capture ce qui est publié (par extension du port, sans cast). */
-class FakeEvents extends DomainEventPublisher {
-  readonly published: object[] = [];
-  publish(event: object): void {
-    this.published.push(event);
-  }
-}
-
 /** Fabrique un publisher doublé frais. */
-function events(): FakeEvents {
-  return new FakeEvents();
+function events(): RecordingPublisher {
+  return new RecordingPublisher();
 }
 
 /** Passerelle de paiement doublée : capture l'appel `createIntent` (sans réseau). */

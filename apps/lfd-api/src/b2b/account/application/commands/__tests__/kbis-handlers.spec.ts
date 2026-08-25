@@ -1,3 +1,4 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
@@ -8,7 +9,6 @@ import {
   type KbisLocation,
   type KbisMetadata,
 } from "../../../domain/ports/company.repository.js";
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { DocumentStore } from "../../../../../platform/storage/document-store.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
@@ -51,11 +51,9 @@ describe("UploadKbisHandler", () => {
       },
       kbisLocation: () => Promise.resolve(null),
     } satisfies CompanyRepository;
-    const events = new (class extends DomainEventPublisher {
-      publish(): void {
-        // no-op : la pièce d'activation n'est pas l'objet de ce spec.
-      }
-    })();
+    // La pièce d'activation n'est pas l'objet de ce spec — le double la garde
+    // sans rien en faire.
+    const events = new RecordingPublisher();
     return { handler: new UploadKbisHandler(membership(role), store, companies, events), saved };
   }
 
