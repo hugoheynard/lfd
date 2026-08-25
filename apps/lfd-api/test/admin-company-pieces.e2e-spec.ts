@@ -13,6 +13,10 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
+  billingKinds,
+  deliveryKinds,
+} from "../src/b2b/account/infrastructure/address-kind-transition.js";
+import {
   AddressKind,
   CompanyStatus,
   DeferredTerm,
@@ -147,8 +151,11 @@ describe("pièces d'activation staff (Porte B)", () => {
       })
       .expect(204);
 
+    // Les DEUX encodages : ce cas tient « l'adresse est enregistrée », pas la
+    // valeur qui l'écrit. Figé sur `facturation`, il passait au vert en ne
+    // trouvant rien — cf. la bascule, `documentation/langue-du-code.md`.
     const address = await ctx.prisma.address.findFirst({
-      where: { companyId, kind: AddressKind.facturation },
+      where: { companyId, kind: { in: billingKinds() } },
     });
     expect(address?.ligne1).toBe("18 rue des Archives");
   });
@@ -161,7 +168,7 @@ describe("pièces d'activation staff (Porte B)", () => {
 
     expect(response.body).toHaveProperty("id");
     const count = await ctx.prisma.address.count({
-      where: { companyId, kind: AddressKind.livraison },
+      where: { companyId, kind: { in: deliveryKinds() } },
     });
     expect(count).toBe(1);
   });

@@ -10,6 +10,7 @@
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
+import { billingKinds } from "../src/b2b/account/infrastructure/address-kind-transition.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -111,7 +112,13 @@ describe("facturation — une seule, upsert", () => {
 
     const view = await addressesOf(ADMIN);
     expect(view.billing?.ville).toBe("Lyon");
-    const count = await ctx.prisma.address.count({ where: { companyId, kind: "facturation" } });
+    // Le compte porte sur les DEUX encodages : ce que ce cas tient, c'est
+    // « une seule facturation », pas la valeur qui l'écrit. Le figer sur
+    // `facturation` en faisait un test de la bascule, qui passait au vert en
+    // comptant zéro ligne.
+    const count = await ctx.prisma.address.count({
+      where: { companyId, kind: { in: billingKinds() } },
+    });
     expect(count).toBe(1);
   });
 });
@@ -317,8 +324,8 @@ describe("préférence d'acheminement (côté client)", () => {
 });
 
 /**
- * Le palier « **étendre** » de la bascule `AddressKind` (`facturation` →
- * `billing`, `livraison` → `delivery`).
+ * La bascule `AddressKind` (`facturation` → `billing`, `livraison` →
+ * `delivery`), au palier « **basculer** ».
  *
  * Ce que ces cas tiennent, et qu'aucun test unitaire ne peut tenir : les
  * lectures passent par de VRAIES clauses SQL (`kind IN (...)`), et trois des
@@ -326,10 +333,11 @@ describe("préférence d'acheminement (côté client)", () => {
  * gate de langue, qui ne compte que les identifiants. Un filtre oublié ne lève
  * rien : il rend simplement une adresse absente.
  *
- * Le troisième cas est le plus important des trois : il fixe le fait qu'on
- * n'écrit PAS encore le nouvel encodage. C'est la définition du palier — et
- * sans lui, passer aux nouvelles valeurs se ferait par accident au lieu d'être
- * le palier 2.
+ * Le cas le plus important est le DERNIER. Depuis ce palier, l'application
+ * écrit le nouvel encodage — mais l'ancien container a continué d'écrire
+ * `facturation` pendant toute la fenêtre de déploiement. Ces lignes-là existent
+ * en base et doivent se lire. C'est la seule chose qui empêche de croire le
+ * travail fini et de retirer les anciennes valeurs trop tôt.
  */
 describe("bascule AddressKind — les deux encodages se lisent pareil", () => {
   it("une facturation écrite `billing` est lue comme LA facturation", async () => {
@@ -370,7 +378,7 @@ describe("bascule AddressKind — les deux encodages se lisent pareil", () => {
     expect((await addressesOf(ADMIN)).deliveries).toHaveLength(0);
   });
 
-  it("les écritures posent encore l'ANCIEN encodage — le retour arrière reste possible", async () => {
+  it("les écritures posent le NOUVEL encodage", async () => {
     await ctx
       .asSub(ADMIN)
       .patch(`/companies/${companyId}/billing-address`)
@@ -386,6 +394,35 @@ describe("bascule AddressKind — les deux encodages se lisent pareil", () => {
       where: { companyId },
       select: { kind: true },
     });
-    expect(kinds.map((row) => row.kind).sort()).toEqual(["facturation", "livraison"]);
+    expect(kinds.map((row) => row.kind).sort()).toEqual(["billing", "delivery"]);
+  });
+
+  it("une ligne restée en `facturation`/`livraison` se lit encore", async () => {
+    // Le legs de la fenêtre de déploiement : l'ancien container écrivait encore
+    // l'ancien encodage pendant que la migration basculait les lignes. Tant que
+    // ces lignes existent, le palier 3 ne doit pas partir — et sa migration le
+    // refuse.
+    await ctx.prisma.address.create({
+      data: { companyId, kind: "facturation", ...BILLING, isDefault: false },
+    });
+    await ctx.prisma.address.create({
+      data: {
+        companyId,
+        kind: "livraison",
+        label: "Ancienne",
+        ligne1: "1 rue d'Avant",
+        ligne2: "",
+        codePostal: "75001",
+        ville: "Paris",
+        pays: "France",
+        isDefault: true,
+        deliverySpecs: delivery().specs,
+      },
+    });
+
+    const view = await addressesOf(ADMIN);
+    expect(view.billing?.ville).toBe("Paris");
+    expect(view.deliveries).toHaveLength(1);
+    expect(view.deliveries[0]?.label).toBe("Ancienne");
   });
 });

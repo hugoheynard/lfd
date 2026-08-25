@@ -20,12 +20,14 @@ import { AddressKind } from "../../../platform/database/client/client.js";
  *
  * ## Ce qui se passe aux paliers suivants
  *
- * - **Palier 2 (basculer)** : `WRITE_*` passe aux nouvelles valeurs, puis une
- *   migration réécrit les lignes. Les deux listes ne bougent pas — c'est
- *   précisément ce qui permet de lire les deux encodages pendant la fenêtre.
+ * - ~~**Palier 2 (basculer)**~~ ✅ : `WRITE_*` écrit les nouvelles valeurs et
+ *   une migration a réécrit les lignes. Les deux listes n'ont PAS bougé, et
+ *   c'est le point : l'ancien container a continué d'écrire `facturation`
+ *   pendant la fenêtre de déploiement, et ces lignes-là se lisent encore.
  * - **Palier 3 (resserrer)** : ce fichier **disparaît**, l'enum retombe à deux
  *   valeurs, et les appelants reviennent à `AddressKind.billing` /
- *   `AddressKind.delivery` en clair.
+ *   `AddressKind.delivery` en clair. Sa migration refuse de partir tant qu'une
+ *   ligne porte encore l'ancien encodage.
  */
 
 /** Les encodages qui signifient « adresse de facturation ». */
@@ -52,14 +54,14 @@ export function deliveryKinds(): AddressKind[] {
 }
 
 /**
- * Ce qu'on ÉCRIT — encore l'ancien encodage, et c'est la définition même du
- * palier « étendre » : si ce déploiement doit être annulé, la version d'avant
- * relit ses propres valeurs sans rien savoir des nouvelles.
+ * Ce qu'on ÉCRIT — le nouvel encodage depuis le palier 2. Le retour arrière
+ * reste possible : la version du palier 1 lisait déjà les deux, donc elle
+ * relirait sans broncher ce que celle-ci a écrit.
  */
-export const WRITE_BILLING: AddressKind = AddressKind.facturation;
+export const WRITE_BILLING: AddressKind = AddressKind.billing;
 
 /** Idem pour la livraison — cf. {@link WRITE_BILLING}. */
-export const WRITE_DELIVERY: AddressKind = AddressKind.livraison;
+export const WRITE_DELIVERY: AddressKind = AddressKind.delivery;
 
 /** Cette ligne est-elle une facturation, quel que soit son encodage ? */
 export function isBilling(kind: AddressKind): boolean {
