@@ -834,9 +834,27 @@ export class ProductFormStore {
     }
   }
 
+  /**
+   * Change de catalogue — et ne bascule le sélecteur QUE si la liste a suivi.
+   *
+   * Le référentiel était une liste en dur : cet appel ne pouvait pas échouer, et
+   * personne n'avait à s'en soucier. Depuis qu'il vient du serveur, un échec
+   * laisserait le bouton sur « Monde » au-dessus des entrées « UE » — un
+   * catalogue qui ment sur ce qu'il montre, et sur un champ réglementé le
+   * mensonge est celui-là même qu'on cherchait à empêcher.
+   */
   async changeScope(scope: AllergenScope): Promise<void> {
+    const previous = this.scope();
+    if (scope === previous) {
+      return;
+    }
     this.scope.set(scope);
-    await this.loadReference(scope);
+    try {
+      await this.loadReference(scope);
+    } catch (caught) {
+      this.scope.set(previous);
+      this.error.set(messageOf(caught));
+    }
   }
 
   // ── Create : un submit ; renvoie l'id créé (la page navigue) ─────────────

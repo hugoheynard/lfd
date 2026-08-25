@@ -120,10 +120,6 @@ export const ALLERGEN_MAPPINGS: readonly AllergenMapping[] = [
   entry("SO", null, "Noix de coco", "Coconut"),
 ];
 
-export const GS1_ALLERGEN_CODES: readonly string[] = ALLERGEN_MAPPINGS.map(
-  (mapping) => mapping.gs1Code,
-);
-
 /**
  * Libellés **réglementaires** des catégories — ce sont eux qui doivent figurer
  * sur l'étiquette, pas le libellé granulaire.
