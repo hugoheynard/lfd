@@ -353,9 +353,9 @@ quelqu'un d'autre »** — c'est là qu'on vient demander des comptes.
 
 1. ✅ **Les mutations staff sur un compte client** — **fait le 2026-08-25**, cf.
    la section suivante.
-2. 🟡 **Les décisions contractuelles et tarifaires** (règles de prix, remises de
-   retrait, zones de livraison, gabarits récurrents). Bloquant souhaitable,
-   volume faible.
+2. ✅ **Les décisions contractuelles et tarifaires** — **fait le 2026-08-25**,
+   cf. §12. (Les gabarits récurrents en sont sortis : ce sont les paniers du
+   CLIENT, pas une décision du staff.)
 3. 🔴 **Le chemin de commande et les webhooks de paiement.** Restent
    best-effort + clé d'idempotence. Le client passe avant la mémoire.
 
@@ -432,7 +432,79 @@ Deux dispenses, déclarées et greppables :
 
 ---
 
-## 12. Lire l'historique d'une fiche
+## 12. Le lot 2 : les décisions tarifaires
+
+Le lot 1 a trouvé un terrain nu. Le lot 2 a trouvé **deux terrains différents**,
+et c'est ce qui décide de sa forme.
+
+### La tarification avait déjà son journal
+
+Règles, limites et barèmes écrivent depuis toujours un `PricingAct` — sujet,
+geste, auteur, **motif écrit par l'agent**, et la **phrase figée** de ce que la
+décision disait — dans la même transaction que l'état. C'est plus riche que le
+journal général, et c'est tenu par le **compilateur** : les dépôts d'écriture
+exigent l'acte en paramètre.
+
+On ne l'a donc pas remplacé. Le manque était ailleurs : ce journal-là vit dans
+une table du domaine, invisible de l'écran qui répond à « qui a fait quoi ».
+Une remise consentie sur un prix négocié est exactement ce qu'on y cherche.
+
+D'où le **miroir**, posé à un seul endroit :
+
+```mermaid
+flowchart LR
+  H["Handler tarifaire"] -->|PricingAct| R["Dépôt d'écriture"]
+  R --> W["PricingActWriter<br/><i>une transaction</i>"]
+  W --> S[("état : price_rule…")]
+  W --> D[("pricing_event<br/><i>motif + phrase figée</i>")]
+  W --> J[("activity_events<br/><i>qui a fait quoi</i>")]
+```
+
+Un seul écrivain, une seule transaction, deux destinations qui ne répondent pas
+à la même question. Deux lignes pour un acte, jamais deux vérités : elles ne
+peuvent pas diverger, elles tombent ensemble.
+
+Au passage, le service a absorbé une répétition qui traînait dans quatre dépôts
+— chacun recréait sa ligne de `pricingEvent` à la main. Les deux manques avaient
+la même cause : personne ne possédait « écrire un acte ».
+
+### Les réglages qui décident du prix, eux, n'avaient rien
+
+Zones de livraison, points de retrait, heures limites : trois modules, dix
+handlers, aucune trace. Ils décident pourtant ce qu'un client paie pour être
+livré, ce que lui remise un retrait, et à quelle heure sa commande bascule au
+lendemain. Quand un client réclame — « j'ai commandé à 17 h 02 » — la question
+est ce que la règle disait **ce jour-là** ; l'état courant a peut-être changé à
+cause de cette réclamation même.
+
+Ils passent par le patron du lot 1 : un événement qui est le fait,
+`publishTraced` dans la transaction. Plus les **engagements de volume**, seul
+objet tarifaire sans acte — donc le seul que le compilateur ne gardait pas.
+
+### Ce que les charges portent, et ce qu'elles refusent
+
+| Fait                      | Porte                                  | Ne porte pas                          |
+| ------------------------- | -------------------------------------- | ------------------------------------- |
+| `delivery_zone.*`         | tarif, libellé, **nombre** de préfixes | la liste des codes postaux            |
+| `pickup_address.*`        | ville, code postal, **remise**         | l'adresse complète, les horaires      |
+| `order_cutoff.*`          | la règle entière (4 champs)            | —                                     |
+| `volume_commitment.*`     | société, volume promis, fenêtre, motif | —                                     |
+| `price_rule/floor/ladder` | phrase figée + motif                   | le détail de la règle (il a sa table) |
+
+### La porte, et un trou qu'elle avait
+
+`lint:journal-tracked` couvre désormais quatre zones. Les trois modules de
+réglages n'ont **aucune exception de nom** : un client ne pose pas une zone de
+livraison, tout y est staff. La tarification, elle, n'est gardée que sur les
+engagements — le reste est tenu par le compilateur, ce qui est plus fort.
+
+En posant cette zone, la porte s'est révélée **fausse depuis le lot 1** : elle
+cherchait l'appel à `publishTraced` dans une fenêtre large autour du handler, et
+attrapait donc celui du handler PRÉCÉDENT quand deux vivent dans le même
+fichier. Un handler muet passait au vert. Elle cherche maintenant dans le corps
+du handler, et seulement là — falsifié : retirer un appel la fait échouer.
+
+## 13. Lire l'historique d'une fiche
 
 La table est indexée `[subject_type, subject_id, occurred_at]`, et le lecteur
 filtre déjà sur ces colonnes.
@@ -449,7 +521,7 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## 13. Ce qui n'est PAS journalisé
+## 14. Ce qui n'est PAS journalisé
 
 À jour au **2026-08-25**. Le chiffre exact sort de `pnpm lint:journal-tracked`.
 
@@ -459,10 +531,10 @@ ORDER BY occurred_at DESC;
   les emplacements) ont chacun leur fait. La liste `BACKLOG` de la porte reste
   en place, **vide** : c'est le mécanisme qui rendra une dette future visible et
   bornée.
-- **Le B2B, sauf les actes du staff sur un compte client** (faits le
-  2026-08-25, cf. §11) : commandes, paiements, abonnements, règles de prix,
-  annuaire staff, et tout ce que le CLIENT fait chez lui. Ce que `growth` y écrit
-  reste analytique et **best-effort**. Y rendre le journal bloquant reviendrait à
+- **Le B2B, sauf les actes du staff et les décisions tarifaires** (§11 et §12) :
+  restent muets ou best-effort le chemin de commande, les paiements, les paniers
+  récurrents du client, l'annuaire staff, et tout ce que le CLIENT fait chez
+  lui. Ce que `growth` écrit de ces chemins reste analytique. Y rendre le journal bloquant reviendrait à
   accepter qu'un hoquet d'append empêche un client de commander : c'est une
   décision produit, à prendre domaine par domaine.
 - **Tout ce qui ne passe pas par un handler** : un `psql`, un seed, une
@@ -472,20 +544,23 @@ ORDER BY occurred_at DESC;
 
 ---
 
-## 14. Fichiers
+## 15. Fichiers
 
-| Rôle                             | Chemin                                                          |
-| -------------------------------- | --------------------------------------------------------------- |
-| Contexte de requête (ALS)        | `platform/context/request-context.{ts,store.ts,middleware.ts}`  |
-| Unité de travail                 | `platform/database/unit-of-work.ts`                             |
-| Routage vers la transaction      | `platform/database/{transaction.store,transactional-prisma}.ts` |
-| Port générique du journal        | `platform/journal/{journal,journal-fact}.ts`                    |
-| Événement qui EST un fait        | `JournaledEvent` + `DomainEventPublisher.publishTraced`         |
-| Faits des comptes clients        | `b2b/account/domain/events/account-facts.ts`                    |
-| Port du référentiel + ticket     | `pim/journal/pim-journal.ts`                                    |
-| Diff `avant → après`             | `pim/journal/changes.ts`                                        |
-| Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                |
-| Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`         |
-| Table                            | `prisma/schema.prisma` → `model ActivityEvent`                  |
-| Porte CI                         | `dev-toolbox/gates/journal-tracked.mjs`                         |
-| Preuve d'atomicité               | `apps/lfd-api/test/pim-journal-atomicity.e2e-spec.ts`           |
+| Rôle                             | Chemin                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| Contexte de requête (ALS)        | `platform/context/request-context.{ts,store.ts,middleware.ts}`           |
+| Unité de travail                 | `platform/database/unit-of-work.ts`                                      |
+| Routage vers la transaction      | `platform/database/{transaction.store,transactional-prisma}.ts`          |
+| Port générique du journal        | `platform/journal/{journal,journal-fact}.ts`                             |
+| Événement qui EST un fait        | `JournaledEvent` + `DomainEventPublisher.publishTraced`                  |
+| Faits des comptes clients        | `b2b/account/domain/events/account-facts.ts`                             |
+| Faits des réglages commerciaux   | `b2b/{delivery-zones,pickup-addresses,order-cutoffs}/domain/*.events.ts` |
+| Acte tarifaire → fait général    | `b2b/pricing/domain/pricing-act.ts` (`pricingFactOf`)                    |
+| Écriture d'un acte tarifaire     | `b2b/pricing/infrastructure/pricing-act.writer.ts`                       |
+| Port du référentiel + ticket     | `pim/journal/pim-journal.ts`                                             |
+| Diff `avant → après`             | `pim/journal/changes.ts`                                                 |
+| Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                         |
+| Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`                  |
+| Table                            | `prisma/schema.prisma` → `model ActivityEvent`                           |
+| Porte CI                         | `dev-toolbox/gates/journal-tracked.mjs`                                  |
+| Preuve d'atomicité               | `apps/lfd-api/test/pim-journal-atomicity.e2e-spec.ts`                    |
