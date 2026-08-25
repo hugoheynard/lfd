@@ -46,6 +46,23 @@ export const PIM_EVENTS = {
   productChannelsChanged: "product.channels_changed",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
+  /**
+   * Les **sections de la fiche**, une par geste d'enregistrement.
+   *
+   * Elles rompent avec la règle énoncée plus haut — « on ne trace pas tout » —
+   * et c'est délibéré. Cette règle servait un journal qu'on relit pour
+   * comprendre un écart : y verser une description retouchée n'apprenait rien.
+   * La demande a changé : savoir QUI a touché à une fiche, et à quoi, est un
+   * besoin à part entière. Les deux natures cohabitent donc dans le même flux —
+   * une seule table, une seule vérité sur qui a fait quoi — et c'est la LECTURE
+   * qui les sépare : l'historique d'édition ne se lit que depuis la fiche
+   * concernée, il ne remonte pas au flux général.
+   */
+  productIdentitySaved: "product.identity_saved",
+  productPricingSaved: "product.pricing_saved",
+  productDeclarationSaved: "product.declaration_saved",
+  productEditorialSaved: "product.editorial_saved",
+  productMediaSaved: "product.media_saved",
 } as const;
 
 /**
@@ -88,7 +105,8 @@ export interface PimJournalEntry {
   readonly subjectId: string;
   /**
    * Ce que le fait a changé — le « avant → après », en clair. Reste petit :
-   * un journal n'est pas une copie de la base.
+   * un journal n'est pas une copie de la base. Les diffs de section se
+   * calculent avec `changesBetween`, qui abrège les longs textes.
    */
   readonly payload: Record<string, unknown>;
   /** La portée directe, si le handler la connaît. */

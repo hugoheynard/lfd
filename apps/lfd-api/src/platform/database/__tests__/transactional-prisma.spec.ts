@@ -1,6 +1,6 @@
 import { transactionalPrisma } from "../transactional-prisma.js";
 import { runInTransaction } from "../transaction.store.js";
-import { UnitOfWork } from "../unit-of-work.js";
+import { PrismaUnitOfWork } from "../unit-of-work.js";
 
 /**
  * Le routage vers la transaction ambiante.
@@ -61,10 +61,10 @@ describe("transactionalPrisma", () => {
   });
 });
 
-describe("UnitOfWork", () => {
+describe("PrismaUnitOfWork", () => {
   it("ouvre une transaction et l'expose au client", async () => {
     const client = transactionalPrisma(base());
-    const uow = new UnitOfWork(client as never);
+    const uow = new PrismaUnitOfWork(client as never);
 
     const seen = await uow.run(() => Promise.resolve(client.product.source));
 
@@ -82,7 +82,7 @@ describe("UnitOfWork", () => {
         return work({ product: { source: "transaction" } });
       },
     });
-    const uow = new UnitOfWork(client as never);
+    const uow = new PrismaUnitOfWork(client as never);
 
     await uow.run(() => uow.run(() => Promise.resolve()));
 

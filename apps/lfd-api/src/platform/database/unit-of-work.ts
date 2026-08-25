@@ -19,10 +19,20 @@ import { runInTransaction, currentTransaction } from "./transaction.store.js";
  * maximal. On n'enveloppe donc que l'écriture et sa trace — jamais un appel
  * réseau tiers (Shopify, mailer), qui tiendrait la transaction ouverte le temps
  * d'un aller-retour hors de notre contrôle.
+ *
+ * Abstraite : les handlers en dépendent, l'adaptateur Prisma l'implémente. Un
+ * handler qui injecterait le client concret ne pourrait plus se tester sans
+ * base — et c'est exactement ce que ces tests-là ne doivent pas demander.
  */
+export abstract class UnitOfWork {
+  abstract run<T>(work: () => Promise<T>): Promise<T>;
+}
+
 @Injectable()
-export class UnitOfWork {
-  constructor(@Inject(PrismaService) private readonly prisma: CountedPrismaClient) {}
+export class PrismaUnitOfWork extends UnitOfWork {
+  constructor(@Inject(PrismaService) private readonly prisma: CountedPrismaClient) {
+    super();
+  }
 
   /**
    * Exécute `work` dans une transaction. Déjà dans une transaction, on **rejoint

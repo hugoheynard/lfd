@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
 import {
@@ -170,10 +171,86 @@ class RecordingEditorialRepository extends EditorialRepository {
   }
 }
 
+/**
+ * Ce que l'historique d'une fiche promet.
+ *
+ * Deux propriétés se cassent en silence : un diff qui rate le champ modifié
+ * (l'historique existe, il ment) et un fait écrit alors que rien n'a bougé
+ * (l'historique se remplit de gestes sans effet, et on cesse de le lire).
+ */
+describe("l’historique d’une fiche", () => {
+  it("écrit ce qui a changé, en AVANT → APRÈS", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new UpdateProductIdentityHandler(
+      products,
+      new FakeCategoryRepository(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new UpdateProductIdentityCommand(PRODUCT_ID, {
+        name: { fr: "Moka" },
+        kind: "daily",
+        categoryId: "cat_active",
+      }),
+    );
+
+    expect(journal.types()).toEqual(["product.identity_saved"]);
+    const changes = journal.entries[0]?.payload["changes"];
+    expect(changes).toMatchObject({ name: { to: { fr: "Moka" } } });
+  });
+
+  it("n’écrit RIEN quand la section est enregistrée sans modification", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+    const before = products.snapshot();
+
+    await new UpdateProductIdentityHandler(
+      products,
+      new FakeCategoryRepository(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new UpdateProductIdentityCommand(PRODUCT_ID, {
+        name: before?.name ?? { fr: "" },
+        kind: before?.kind ?? "daily",
+        categoryId: before?.categoryId ?? "cat_active",
+      }),
+    );
+
+    expect(journal.entries).toEqual([]);
+  });
+
+  it("nomme la DÉCLINAISON dans la charge, pas dans le sujet", async () => {
+    // L'historique se lit par fiche : un sujet « variante » le couperait en
+    // autant de fils qu'il y a de déclinaisons.
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new UpdateVariantPricingHandler(products, journal, new DirectUnitOfWork()).execute(
+      new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
+        priceCents: 260,
+        weightGrams: null,
+      }),
+    );
+
+    const entry = journal.entries[0];
+    expect(entry?.subjectType).toBe("product");
+    expect(entry?.subjectId).toBe(PRODUCT_ID);
+    expect(entry?.payload["variantId"]).toBe(VARIANT_ID);
+  });
+});
+
 describe("UpdateProductIdentityHandler", () => {
   it("met à jour nom + nature + famille en une opération", async () => {
     const products = new FakeProductRepository(seedProduct());
-    await new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
+    await new UpdateProductIdentityHandler(
+      products,
+      new FakeCategoryRepository(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new UpdateProductIdentityCommand(PRODUCT_ID, {
         name: { fr: "Moka" },
         kind: "daily",
@@ -189,7 +266,12 @@ describe("UpdateProductIdentityHandler", () => {
   it("refuse une famille archivée (rien n’est écrit)", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
           name: { fr: "Moka" },
           kind: "daily",
@@ -203,7 +285,12 @@ describe("UpdateProductIdentityHandler", () => {
   it("refuse une famille inconnue", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
           name: { fr: "Moka" },
           kind: "daily",
@@ -216,7 +303,12 @@ describe("UpdateProductIdentityHandler", () => {
   it("refuse un produit inconnu", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new UpdateProductIdentityHandler(products, new FakeCategoryRepository()).execute(
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new UpdateProductIdentityCommand("prd_absent", {
           name: { fr: "X" },
           kind: "daily",
@@ -230,7 +322,11 @@ describe("UpdateProductIdentityHandler", () => {
 describe("UpdateVariantPricingHandler", () => {
   it("met à jour tarif + poids en une opération", async () => {
     const products = new FakeProductRepository(seedProduct());
-    await new UpdateVariantPricingHandler(products).execute(
+    await new UpdateVariantPricingHandler(
+      products,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 500,
         weightGrams: 300,
@@ -250,7 +346,11 @@ describe("UpdateVariantPricingHandler", () => {
       ...seeded,
       variants: [{ ...variant, priceCents: 999 }],
     });
-    await new UpdateVariantPricingHandler(products).execute(
+    await new UpdateVariantPricingHandler(
+      products,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: null,
         weightGrams: null,
@@ -262,7 +362,11 @@ describe("UpdateVariantPricingHandler", () => {
   it("refuse une déclinaison d’un autre produit", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new UpdateVariantPricingHandler(products).execute(
+      new UpdateVariantPricingHandler(
+        products,
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new UpdateVariantPricingCommand(PRODUCT_ID, "variant_etranger", {
           priceCents: 100,
           weightGrams: null,
@@ -293,7 +397,12 @@ describe("DeclareProductNutritionHandler", () => {
   it("déclare la fiche réglementaire de la déclinaison", async () => {
     const products = new FakeProductRepository(seedProduct());
     const nutrition = new RecordingNutritionRepository();
-    await new DeclareProductNutritionHandler(products, nutrition).execute(
+    await new DeclareProductNutritionHandler(
+      products,
+      nutrition,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(
       new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
         allergens: ["GB"],
       }),
@@ -305,7 +414,12 @@ describe("DeclareProductNutritionHandler", () => {
   it("refuse une déclaration sur une déclinaison étrangère", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new DeclareProductNutritionHandler(products, new RecordingNutritionRepository()).execute(
+      new DeclareProductNutritionHandler(
+        products,
+        new RecordingNutritionRepository(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(
         new DeclareProductNutritionCommand(PRODUCT_ID, "variant_etranger", {
           allergens: [],
         }),

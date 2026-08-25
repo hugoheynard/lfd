@@ -13,7 +13,7 @@ import { PrismaService } from "./prisma.service.js";
 import { assertSchemaIsFresh } from "./schema-freshness.js";
 import { SchemaOpsCounter } from "./schema-ops.counter.js";
 import { transactionalPrisma } from "./transactional-prisma.js";
-import { UnitOfWork } from "./unit-of-work.js";
+import { PrismaUnitOfWork, UnitOfWork } from "./unit-of-work.js";
 
 /**
  * Le client **nu**, avant comptage. Il n'existe que pour être enveloppé :
@@ -103,7 +103,7 @@ class PrismaConnection implements OnModuleInit, OnModuleDestroy {
       useFactory: (raw: PrismaService, counter: SchemaOpsCounter): CountedPrismaClient =>
         transactionalPrisma(countedPrisma(raw, counter)),
     },
-    UnitOfWork,
+    { provide: UnitOfWork, useClass: PrismaUnitOfWork },
   ],
   exports: [PrismaService, SchemaOpsCounter, UnitOfWork],
 })

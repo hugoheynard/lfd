@@ -1,5 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { changesBetween } from "../../../journal/changes.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -41,7 +45,18 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
+
+  /** Ce que cette section possède — le reste de la fiche ne la regarde pas. */
+  private static identityOf(snapshot: {
+    name: LocalizedText;
+    kind: ProductKind;
+    categoryId: string;
+  }): Record<string, unknown> {
+    return { name: snapshot.name, kind: snapshot.kind, categoryId: snapshot.categoryId };
+  }
 
   async execute(command: UpdateProductIdentityCommand): Promise<void> {
     const { id, input } = command;
@@ -55,9 +70,28 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
       throw new CategoryArchivedError(input.categoryId);
     }
 
+    const before = UpdateProductIdentityHandler.identityOf(product.snapshot());
     product.rename(localizedText("nom", input.name));
     product.changeKind(input.kind);
     product.reclassify(input.categoryId);
-    await this.products.save(product);
+    const changes = changesBetween(
+      before,
+      UpdateProductIdentityHandler.identityOf(product.snapshot()),
+    );
+
+    // Écriture et trace dans la MÊME transaction : l'une sans l'autre n'a pas
+    // de sens ici. Enregistrer une section sans rien y changer n'écrit aucun
+    // fait — sinon l'historique se remplit de gestes sans effet.
+    await this.uow.run(async () => {
+      await this.products.save(product);
+      if (Object.keys(changes).length > 0) {
+        await this.journal.record({
+          type: PIM_EVENTS.productIdentitySaved,
+          subjectType: "product",
+          subjectId: id,
+          payload: { changes },
+        });
+      }
+    });
   }
 }

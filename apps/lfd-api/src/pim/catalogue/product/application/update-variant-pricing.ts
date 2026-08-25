@@ -1,5 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { changesBetween } from "../../../journal/changes.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -26,12 +29,45 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
   UpdateVariantPricingCommand,
   void
 > {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: UpdateVariantPricingCommand): Promise<void> {
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
+    const before = pricingOf(product.snapshot().variants, variantId);
     product.priceVariant(variantId, input.priceCents, input.weightGrams);
-    await this.products.save(product);
+    const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
+
+    await this.uow.run(async () => {
+      await this.products.save(product);
+      if (Object.keys(changes).length > 0) {
+        await this.journal.record({
+          type: PIM_EVENTS.productPricingSaved,
+          subjectType: "product",
+          subjectId: productId,
+          // La déclinaison est DANS la charge, pas dans le sujet : l'historique
+          // se lit par fiche, et un sujet « variante » le couperait en autant
+          // de fils qu'il y a de déclinaisons.
+          payload: { variantId, changes },
+        });
+      }
+    });
   }
+}
+
+/** Ce que la section « Tarif & logistique » possède, pour UNE déclinaison. */
+function pricingOf(
+  variants: readonly {
+    readonly id: string;
+    readonly priceCents: number | null;
+    readonly weightGrams: number | null;
+  }[],
+  variantId: string,
+): Record<string, unknown> {
+  const variant = variants.find((candidate) => candidate.id === variantId);
+  return { priceCents: variant?.priceCents ?? null, weightGrams: variant?.weightGrams ?? null };
 }
