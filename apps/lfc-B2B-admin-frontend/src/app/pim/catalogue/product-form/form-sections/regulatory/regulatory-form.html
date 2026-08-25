@@ -62,20 +62,8 @@
           </button>
         }
       </div>
-      @if (store.provisional()) {
-        <fold-callout appearance="inset" variant="warning">
-          Les <strong>codes</strong> de ce référentiel sont provisoires.
-        </fold-callout>
-      }
       <div class="groups">
         @for (group of store.groups(); track group.incoLabel) {
-          <!-- Registre EYEBROW, et écrit noir sur blanc : ces noms ne sont pas
-               des questions posées à celui qui saisit, ce sont les catégories
-               d'un référentiel réglementaire — « Fruits à coque » n'attend pas
-               de réponse, il annonce sous quelle rubrique on coche. Le micro-
-               libellé (capitales, mono dans cette app) dit cette voix-là. Il
-               était jusqu'ici le DÉFAUT du composant, donc un accident : tous
-               les autres groupes du dépôt passent `heading`. -->
           <fold-fieldset appearance="border" legendVariant="heading" [legend]="group.incoLabel">
             @for (item of group.entries; track item.code) {
               <fold-checkbox
@@ -88,9 +76,6 @@
           </fold-fieldset>
         }
 
-        <!-- Les douze catégories d'une seule substance, ensemble. Chacune dans
-             sa boîte, c'était douze cadres encochés pour douze cases, et un
-             titre qui répétait mot pour mot la case qu'il contenait. -->
         @if (store.singleAllergens().length > 0) {
           <fold-fieldset
             class="singles"

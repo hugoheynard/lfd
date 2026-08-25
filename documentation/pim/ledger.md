@@ -11,6 +11,49 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ---
 
+## 2026-08-25
+
+### Le référentiel allergènes est verrouillé sur les vrais codes GS1
+
+**PM** — Le référentiel n'est plus provisoire. Les codes qui identifient chaque allergène sont
+désormais ceux de GS1, relevés sur la source officielle, et le bandeau d'avertissement du
+formulaire disparaît avec eux. La fiche produit lit maintenant la **même** liste que celle qui
+valide l'enregistrement : ce qu'on peut cocher est ce que le serveur accepte.
+
+**Tech** — Chaque code a été relevé sur la liste T4078 publiée par GS1 puis recoupé, un par un,
+avec le vocabulaire officiel `ref.gs1.org/voc/AllergenTypeCode`. Les deux sources concordent sur
+les 29 codes retenus. Ce recoupement n'était pas de la prudence de principe : **trois codes de
+l'ancien référentiel étaient FAUX**, pas seulement incertains —
+
+- `BC` y désignait « Noisette » ; GS1 l'attribue au **céleri** (noisette = `SH`),
+- `UN` y désignait « hors obligation UE » ; c'est **Shellfish** chez GS1,
+- `AR` (« Seigle ») **n'existe pas** dans la liste (seigle = `NR`).
+
+Un code faux se déclare aussi bien qu'un bon et ne se voit qu'au contrôle. C'est précisément ce
+qu'un préfixe `TBD_` ne protégeait pas : il signalait les codes _inventés_, pas les codes
+_recopiés de travers_.
+
+- **Jamais la catégorie générique.** GS1 offre `AW` (Cereals) et `AN` (Tree nuts) ; ils sont
+  écartés. L'annexe II impose de nommer la céréale et le fruit à coque — « à savoir blé, seigle,
+  orge, avoine ». Un code générique permettrait de déclarer « contient des fruits à coque » sans
+  dire lesquels, c'est-à-dire d'imprimer une étiquette non conforme depuis une saisie qui a l'air
+  complète. Six céréales, huit fruits à coque, exactement ceux que le règlement énumère.
+- **`UN` (Shellfish) écarté** pour la raison inverse : il chevauche crustacés ET mollusques,
+  donc aucune projection INCO ne peut être juste.
+- **Le drapeau `provisional` disparaît** de bout en bout — mapping, contrat de l'endpoint, modèle
+  du front, bandeau du formulaire.
+- **Le front cesse de recopier le référentiel.** `ReferenceApi` lisait une liste en dur, jumelle
+  de celle du domaine : deux listes réglementées à tenir d'accord, dont une que personne ne
+  pensait à rouvrir. Il appelle maintenant `GET /reference/allergens`.
+- **Le référentiel se teste lui-même** : les quatorze catégories de l'annexe II sont couvertes,
+  les génériques sont absents, aucun doublon, aucun `TBD_`. Une donnée réglementée se relit une
+  fois à la main puis plus jamais — ces vérifications sont ce qui remplace la relecture.
+
+_Migration_ — aucune. `pim.nutrition_declaration` et `public.catalog_items` ne portaient **aucun**
+code allergène ; rien de stocké n'a eu à bouger.
+
+---
+
 ## 2026-08-05
 
 ### Cadrage : réconciliation de publication à trois voies (« git du catalogue »)

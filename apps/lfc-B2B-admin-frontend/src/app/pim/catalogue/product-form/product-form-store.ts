@@ -265,7 +265,6 @@ export class ProductFormStore {
   readonly categories = signal<Category[]>([]);
   readonly rates = signal<VatRate[]>([]);
   readonly entries = signal<AllergenEntry[]>([]);
-  readonly provisional = signal(false);
   readonly scope = signal<AllergenScope>('eu');
 
   // Champs éditables
@@ -1096,7 +1095,6 @@ export class ProductFormStore {
   private async loadReference(scope: AllergenScope): Promise<void> {
     const ref = await this.reference.allergens(scope);
     this.entries.set(ref.entries);
-    this.provisional.set(ref.hasProvisionalCodes);
   }
 }
 

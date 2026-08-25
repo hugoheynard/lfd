@@ -3,7 +3,7 @@ import { DomainError } from "../../../../../platform/shared/errors/app-error.js"
 
 export class UnknownAllergenError extends DomainError {
   // Surtout PAS `code` : ce nom est déjà celui du code d'erreur lu par le filtre
-  // HTTP. Le masquer ferait remonter « TBD_FISH » là où on attend
+  // HTTP. Le masquer ferait remonter « AF » là où on attend
   // « catalogue.allergen.unknown ».
   constructor(readonly allergenCode: string) {
     super(

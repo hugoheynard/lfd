@@ -1,9 +1,4 @@
-import {
-  ALLERGEN_MAPPINGS,
-  hasProvisionalCodes,
-  incoLabel,
-  type Lang,
-} from "./allergen-mapping.js";
+import { ALLERGEN_MAPPINGS, incoLabel, type Lang } from "./allergen-mapping.js";
 
 /**
  * Deux **catalogues**, une seule donnée.
@@ -27,18 +22,11 @@ export interface AllergenReferenceEntry {
   readonly incoCategory: string | null;
   /** Libellé **d'étiquette** — « Fruits à coque ». C'est lui qui fait foi. */
   readonly incoLabel: string | null;
-  readonly provisional: boolean;
 }
 
 export interface AllergenReference {
   readonly scope: AllergenScope;
   readonly entries: readonly AllergenReferenceEntry[];
-  /**
-   * Vrai tant que des codes n'ont pas été repris de la source officielle GS1.
-   * Le front en fait un bandeau : sur un champ réglementé, une donnée
-   * provisoire doit se voir.
-   */
-  readonly hasProvisionalCodes: boolean;
 }
 
 export function allergenReference(scope: AllergenScope, lang: Lang): AllergenReference {
@@ -49,8 +37,7 @@ export function allergenReference(scope: AllergenScope, lang: Lang): AllergenRef
     label: mapping.labels[lang],
     incoCategory: mapping.incoCategory,
     incoLabel: mapping.incoCategory === null ? null : incoLabel(mapping.incoCategory, lang),
-    provisional: mapping.provisional,
   }));
 
-  return { scope, entries, hasProvisionalCodes: hasProvisionalCodes() };
+  return { scope, entries };
 }

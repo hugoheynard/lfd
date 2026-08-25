@@ -204,11 +204,9 @@ export interface AllergenEntry {
   incoCategory: string | null;
   /** Libellé d'étiquette — « Fruits à coque ». C'est lui qui fait foi. */
   incoLabel: string | null;
-  provisional: boolean;
 }
 
 export interface AllergenReference {
   scope: AllergenScope;
   entries: AllergenEntry[];
-  hasProvisionalCodes: boolean;
 }

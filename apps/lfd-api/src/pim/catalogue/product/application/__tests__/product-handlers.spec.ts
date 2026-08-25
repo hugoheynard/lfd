@@ -295,7 +295,7 @@ describe("DeclareProductNutritionHandler", () => {
     const nutrition = new RecordingNutritionRepository();
     await new DeclareProductNutritionHandler(products, nutrition).execute(
       new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
-        allergens: ["TBD_BARLEY"],
+        allergens: ["GB"],
       }),
     );
     expect(nutrition.calls).toHaveLength(1);

@@ -85,9 +85,9 @@
       **à la compilation**, pas un registre runtime
 - [ ] Event store append-only : **différé** (ADR-11 révisé). Déclencheur = premier besoin d'as-of réel
 - [x] Slice **allergènes** GS1→INCO (galop d'essai, domaine pur + tests)
-- [ ] 🔴 **Peupler les vrais codes GS1** depuis `ref.gs1.org/voc/AllergenTypeCode` — les 14
-      catégories INCO sont exactes, **tous les codes sont provisoires** (`grep TBD_` + drapeau
-      `provisional`). Bloquant avant tout export GDSN/B2B réel
+- [x] **Vrais codes GS1** relevés sur T4078 et recoupés avec `ref.gs1.org/voc/AllergenTypeCode`
+      (2026-08-25). Le drapeau `provisional` et le bandeau du formulaire ont disparu avec eux ;
+      trois codes de l'ancien référentiel étaient faux, pas seulement incertains (cf. ledger)
 - [x] **Fiche réglementaire** : table `nutrition_declaration` (PK=FK, optionnelle), validation dans
       le domaine (code inconnu, chevauchement, valeurs négatives), endpoint `/reference/allergens`
       (`scope=eu|world`), formulaire de création complet côté front

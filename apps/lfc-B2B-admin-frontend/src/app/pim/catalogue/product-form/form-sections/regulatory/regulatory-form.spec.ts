@@ -6,29 +6,21 @@ import type { AllergenEntry } from '../../../../data/models';
 import { ProductFormStore } from '../../product-form-store';
 import { RegulatoryForm } from './regulatory-form';
 
-/** Un extrait fidèle du référentiel : deux vraies catégories, deux solitaires. */
+/** Un extrait fidèle du référentiel : une vraie catégorie, deux solitaires. */
 const REFERENCE: AllergenEntry[] = [
+  { code: 'UW', label: 'Blé', incoCategory: 'gluten', incoLabel: 'Céréales contenant du gluten' },
   {
-    code: 'AW',
-    label: 'Blé',
-    incoCategory: 'gluten',
-    incoLabel: 'Céréales contenant du gluten',
-    provisional: false,
-  },
-  {
-    code: 'AR',
+    code: 'NR',
     label: 'Seigle',
     incoCategory: 'gluten',
     incoLabel: 'Céréales contenant du gluten',
-    provisional: false,
   },
-  { code: 'AM', label: 'Lait', incoCategory: 'milk', incoLabel: 'Lait', provisional: false },
+  { code: 'AM', label: 'Lait', incoCategory: 'milk', incoLabel: 'Lait' },
   {
-    code: 'TBD_SULPHITES',
-    label: 'Sulfites',
+    code: 'AU',
+    label: 'Anhydride sulfureux et sulfites',
     incoCategory: 'sulphites',
     incoLabel: 'Anhydride sulfureux et sulfites',
-    provisional: true,
   },
 ];
 
@@ -230,7 +222,7 @@ describe('RegulatoryForm — la grille nutritionnelle', () => {
       fixture.detectChanges();
 
       // Le code du référentiel, pas celui de la catégorie qui l'accueillait.
-      expect(store.selected()).toContain('TBD_SULPHITES');
+      expect(store.selected()).toContain('AU');
     });
   });
 });
