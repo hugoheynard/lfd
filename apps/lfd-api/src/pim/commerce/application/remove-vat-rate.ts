@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
@@ -13,6 +14,7 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
   constructor(
     private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -23,12 +25,14 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
   async execute(command: RemoveVatRateCommand): Promise<void> {
     const rate = await requireRate(this.rates, command.id);
     const { name, percent } = rate.snapshot();
-    await this.rates.remove(command.id);
-    await this.journal.record({
-      type: PIM_EVENTS.vatRateDeleted,
-      subjectType: "tva_rate",
-      subjectId: command.id,
-      payload: { name, percent },
+    await this.uow.run(async () => {
+      await this.rates.remove(command.id);
+      await this.journal.record({
+        type: PIM_EVENTS.vatRateDeleted,
+        subjectType: "tva_rate",
+        subjectId: command.id,
+        payload: { name, percent },
+      });
     });
   }
 }

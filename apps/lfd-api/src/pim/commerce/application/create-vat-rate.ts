@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -23,6 +24,7 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
     private readonly rates: VatRateRepository,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -39,13 +41,15 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
       percent: payload.percent,
     });
     await ensureRateFree(this.rates, rate.percent, null);
-    await this.rates.add(rate);
-    // Pas de portée : un taux qui naît ne vise encore aucune famille.
-    await this.journal.record({
-      type: PIM_EVENTS.vatRateCreated,
-      subjectType: "tva_rate",
-      subjectId: rate.id,
-      payload: { name: payload.name, percent: payload.percent },
+    await this.uow.run(async () => {
+      await this.rates.add(rate);
+      // Pas de portée : un taux qui naît ne vise encore aucune famille.
+      await this.journal.record({
+        type: PIM_EVENTS.vatRateCreated,
+        subjectType: "tva_rate",
+        subjectId: rate.id,
+        payload: { name: payload.name, percent: payload.percent },
+      });
     });
     return rate.id;
   }

@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
@@ -153,6 +154,7 @@ describe("SetProductVatHandler", () => {
       rates(),
       registry,
       journal,
+      new DirectUnitOfWork(),
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
@@ -171,6 +173,7 @@ describe("SetProductVatHandler", () => {
       rates(),
       registry,
       new RecordingJournal(),
+      new DirectUnitOfWork(),
     ).execute(new SetProductVatCommand("prd_1", {}));
 
     expect(products.saved.vatByContext).toEqual({});
@@ -186,6 +189,7 @@ describe("SetProductVatHandler", () => {
         rates(),
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_absent" })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
     expect(products.saved.vatByContext).toEqual({});
@@ -201,6 +205,7 @@ describe("SetProductVatHandler", () => {
         rates(),
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(new SetProductVatCommand("prd_1", { traiteur: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductUnknownContextError);
   });
@@ -218,6 +223,7 @@ describe("SetProductVatHandler", () => {
         rates(),
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
   });
@@ -232,6 +238,7 @@ describe("SetProductVatHandler", () => {
       rates(),
       registry,
       journal,
+      new DirectUnitOfWork(),
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(journal.types()).toEqual([]);
@@ -249,6 +256,7 @@ describe("SetProductChannelsHandler", () => {
       allLocationsKnown,
       registry,
       journal,
+      new DirectUnitOfWork(),
     ).execute(new SetProductChannelsCommand("prd_1", { boutiques: {}, b2b: true }));
 
     expect(products.saved.channelOverride).toEqual({ boutiques: {}, b2b: true });
@@ -264,6 +272,7 @@ describe("SetProductChannelsHandler", () => {
       allLocationsKnown,
       registry,
       new RecordingJournal(),
+      new DirectUnitOfWork(),
     ).execute(new SetProductChannelsCommand("prd_1", null));
 
     expect(products.saved.channelOverride).toBeNull();
@@ -282,6 +291,7 @@ describe("SetProductChannelsHandler", () => {
         noLocationKnown,
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(
         new SetProductChannelsCommand("prd_1", {
           boutiques: { emp_fantome: { emporter: true, surPlace: false } },
@@ -304,6 +314,7 @@ describe("SetProductChannelsHandler", () => {
       allLocationsKnown,
       registry,
       new RecordingJournal(),
+      new DirectUnitOfWork(),
     ).execute(
       new SetProductChannelsCommand("prd_1", {
         boutiques: { emp_1: { emporter: true, surPlace: false } },
@@ -327,6 +338,7 @@ describe("SetProductChannelsHandler", () => {
         rates(),
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
   });

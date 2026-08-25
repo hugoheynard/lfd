@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
@@ -18,20 +19,23 @@ export class PublishProductHandler implements ICommandHandler<PublishProductComm
   constructor(
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: PublishProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
     product.publish();
-    await this.products.save(product);
     const { sku, name, variants } = product.snapshot();
-    await this.journal.record({
-      type: PIM_EVENTS.productPublished,
-      subjectType: "product",
-      subjectId: command.id,
-      payload: { sku, name },
-      // La portée d'une mise en vente : les articles qui partent avec.
-      blast: { variants: variants.length },
+    await this.uow.run(async () => {
+      await this.products.save(product);
+      await this.journal.record({
+        type: PIM_EVENTS.productPublished,
+        subjectType: "product",
+        subjectId: command.id,
+        payload: { sku, name },
+        // La portée d'une mise en vente : les articles qui partent avec.
+        blast: { variants: variants.length },
+      });
     });
   }
 }

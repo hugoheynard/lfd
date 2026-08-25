@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRate } from "../../../commerce/application/vat-support.js";
@@ -29,6 +30,7 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     private readonly rates: VatRateRepository,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SetCategoryVatCommand): Promise<void> {
@@ -40,8 +42,10 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     }
     const before = category.vatByContext;
     category.setVat(command.vat, await this.contexts.active());
-    await this.categories.save(category);
-    await this.journalize(category.id, before, category.vatByContext);
+    await this.uow.run(async () => {
+      await this.categories.save(category);
+      await this.journalize(category.id, before, category.vatByContext);
+    });
   }
 
   /**

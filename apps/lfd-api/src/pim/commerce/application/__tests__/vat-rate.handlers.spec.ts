@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
 import { VatRate, type VatRateSnapshot } from "../../domain/entities/vat-rate.js";
@@ -60,9 +61,12 @@ describe("CreateVatRateHandler", () => {
   it("valide le taux, insère et renvoie l’id", async () => {
     const repo = new InMemoryRepo();
 
-    const id = await new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal()).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
     expect(repo.at(id)).toEqual({
       id,
@@ -74,7 +78,12 @@ describe("CreateVatRateHandler", () => {
 
   it("refuse deux taux au même taux", async () => {
     const repo = new InMemoryRepo();
-    const handler = new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal());
+    const handler = new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     await handler.execute(new CreateVatRateCommand({ name: "A", percent: 10 }));
 
     await expect(
@@ -86,19 +95,24 @@ describe("CreateVatRateHandler", () => {
 describe("UpdateVatRateHandler", () => {
   it("jette si le taux n’existe pas", async () => {
     await expect(
-      new UpdateVatRateHandler(new InMemoryRepo(), new RecordingJournal()).execute(
-        new UpdateVatRateCommand("absent", { name: "X", percent: 20 }),
-      ),
+      new UpdateVatRateHandler(
+        new InMemoryRepo(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new UpdateVatRateCommand("absent", { name: "X", percent: 20 })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
 
   it("met à jour le nom et le taux", async () => {
     const repo = new InMemoryRepo();
-    const id = await new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal()).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, new RecordingJournal()).execute(
+    await new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }),
     );
 
@@ -116,11 +130,14 @@ describe("UpdateVatRateHandler", () => {
    */
   it("laisse réviser un taux sans changer son taux", async () => {
     const repo = new InMemoryRepo();
-    const id = await new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal()).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, new RecordingJournal()).execute(
+    await new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UpdateVatRateCommand(id, { name: "Réduit alimentaire", percent: 5.5 }),
     );
 
@@ -129,12 +146,17 @@ describe("UpdateVatRateHandler", () => {
 
   it("refuse de déplacer un taux sur le taux d’un autre", async () => {
     const repo = new InMemoryRepo();
-    const create = new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal());
+    const create = new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     const first = await create.execute(new CreateVatRateCommand({ name: "A", percent: 5.5 }));
     await create.execute(new CreateVatRateCommand({ name: "B", percent: 20 }));
 
     await expect(
-      new UpdateVatRateHandler(repo, new RecordingJournal()).execute(
+      new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new UpdateVatRateCommand(first, { name: "A", percent: 20 }),
       ),
     ).rejects.toBeInstanceOf(VatRateConflictError);
@@ -144,11 +166,14 @@ describe("UpdateVatRateHandler", () => {
 describe("RemoveVatRateHandler", () => {
   it("supprime un taux existant", async () => {
     const repo = new InMemoryRepo();
-    const id = await new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal()).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new RemoveVatRateHandler(repo, new RecordingJournal()).execute(
+    await new RemoveVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new RemoveVatRateCommand(id),
     );
 
@@ -161,7 +186,12 @@ describe("ListVatRatesHandler", () => {
     const repo = new InMemoryRepo();
     // Un SEUL générateur : deux instances repartiraient de `tva_1` chacune, et
     // le second taux écraserait le premier.
-    const create = new CreateVatRateHandler(repo, new StubIds(), new RecordingJournal());
+    const create = new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
     await create.execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     await create.execute(new CreateVatRateCommand({ name: "Normal", percent: 20 }));
     repo.usage.set("tva_1", { emporter: 3, surPlace: 1 });
@@ -182,13 +212,16 @@ describe("Le journal du référentiel", () => {
   it("distingue un taux qui bouge d’un simple renommage, et fige la portée", async () => {
     const repo = new InMemoryRepo();
     const journal = new RecordingJournal();
-    const id = await new CreateVatRateHandler(repo, new StubIds(), journal).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     // Ce que ce taux touchait à l'instant du changement.
     repo.usage.set(id, { emporter: 3, surPlace: 1, b2b: 2 });
 
-    await new UpdateVatRateHandler(repo, journal).execute(
+    await new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
       new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }),
     );
 
@@ -211,11 +244,14 @@ describe("Le journal du référentiel", () => {
   it("reste muet quand rien n’a changé", async () => {
     const repo = new InMemoryRepo();
     const journal = new RecordingJournal();
-    const id = await new CreateVatRateHandler(repo, new StubIds(), journal).execute(
-      new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }),
-    );
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, journal).execute(
+    await new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
       new UpdateVatRateCommand(id, { name: "Réduit", percent: 5.5 }),
     );
 
@@ -230,7 +266,7 @@ describe("l’unicité de la valeur du taux", () => {
     // vise — ni quelle collection de taxe leur handle commun désigne.
     const repo = new InMemoryRepo();
     const journal = new RecordingJournal();
-    const create = new CreateVatRateHandler(repo, new StubIds(), journal);
+    const create = new CreateVatRateHandler(repo, new StubIds(), journal, new DirectUnitOfWork());
     await create.execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     const other = await create.execute(new CreateVatRateCommand({ name: "Normal", percent: 20 }));
 
@@ -239,7 +275,7 @@ describe("l’unicité de la valeur du taux", () => {
     ).rejects.toBeInstanceOf(VatRateConflictError);
 
     await expect(
-      new UpdateVatRateHandler(repo, journal).execute(
+      new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
         new UpdateVatRateCommand(other, { name: "Normal", percent: 5.5 }),
       ),
     ).rejects.toBeInstanceOf(VatRateConflictError);

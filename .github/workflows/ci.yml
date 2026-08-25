@@ -203,6 +203,14 @@ jobs:
       - name: "Gate : aucun cycle d'import"
         run: pnpm lint:import-cycles
 
+      # Un handler du référentiel qui écrit sans trace ne se voit nulle part :
+      # tsc est content, les tests passent, l'écran fonctionne. Ça se découvre le
+      # jour où l'on demande « qui a changé ça » — et ce jour-là, le blanc ne se
+      # comble plus. La dette du 2026-08-25 est déclarée dans la porte ; elle ne
+      # peut que rétrécir.
+      - name: "Gate : le référentiel journalise ce qu'il écrit"
+        run: pnpm lint:journal-tracked
+
       # Admin seul pour l'instant : le front plateforme n'a pas encore de config
       # ESLint, et en fabriquer une à l'aveugle poserait une porte sans savoir ce
       # qu'elle laisse passer.

@@ -480,7 +480,7 @@ describe("PublishProductHandler", () => {
     const repo = new FakeProductRepository(seedProduct());
 
     await expect(
-      new PublishProductHandler(repo, new RecordingJournal()).execute(
+      new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
         new PublishProductCommand(PRODUCT_ID),
       ),
     ).rejects.toBeInstanceOf(ProductNotPublishableError);
@@ -495,7 +495,7 @@ describe("PublishProductHandler", () => {
       variants: [{ ...variant!, allergens: ["gluten"] }],
     });
 
-    await new PublishProductHandler(repo, new RecordingJournal()).execute(
+    await new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new PublishProductCommand(PRODUCT_ID),
     );
 
@@ -504,9 +504,11 @@ describe("PublishProductHandler", () => {
 
   it("jette si le produit n’existe pas", async () => {
     await expect(
-      new PublishProductHandler(new FakeProductRepository(null), new RecordingJournal()).execute(
-        new PublishProductCommand(PRODUCT_ID),
-      ),
+      new PublishProductHandler(
+        new FakeProductRepository(null),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new PublishProductCommand(PRODUCT_ID)),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
   });
 });
@@ -521,7 +523,7 @@ describe("UnpublishProductHandler", () => {
       variants: [{ ...variant!, allergens: [] }],
     });
 
-    await new UnpublishProductHandler(repo, new RecordingJournal()).execute(
+    await new UnpublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
       new UnpublishProductCommand(PRODUCT_ID),
     );
 

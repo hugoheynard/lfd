@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
@@ -41,6 +42,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     private readonly locations: KnownLocationsReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SetProductChannelsCommand): Promise<void> {
@@ -52,8 +54,10 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
 
     const before = product.channelOverride;
     product.setChannels(command.channels, await this.contexts.active(), category.channelPreset);
-    await this.products.save(product);
-    await this.journalize(product.id, before, product.channelOverride);
+    await this.uow.run(async () => {
+      await this.products.save(product);
+      await this.journalize(product.id, before, product.channelOverride);
+    });
   }
 
   /**

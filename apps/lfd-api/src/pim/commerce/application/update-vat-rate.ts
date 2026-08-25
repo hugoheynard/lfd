@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
@@ -17,6 +18,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
   constructor(
     private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -33,8 +35,10 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
       percent: payload.percent,
     });
     await ensureRateFree(this.rates, rate.percent, rate.id);
-    await this.rates.save(rate);
-    await this.journalize(before, rate.snapshot());
+    await this.uow.run(async () => {
+      await this.rates.save(rate);
+      await this.journalize(before, rate.snapshot());
+    });
   }
 
   /**

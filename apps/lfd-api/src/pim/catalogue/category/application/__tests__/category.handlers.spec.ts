@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
 import { VatRate } from "../../../../commerce/domain/entities/vat-rate.js";
@@ -450,9 +451,13 @@ describe("SetCategoryVatHandler", () => {
     await rates.add(VatRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const id = await sellingCategory(categories);
 
-    await new SetCategoryVatHandler(categories, rates, registry, new RecordingJournal()).execute(
-      new SetCategoryVatCommand(id, { emporter: "tva_5" }),
-    );
+    await new SetCategoryVatHandler(
+      categories,
+      rates,
+      registry,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new SetCategoryVatCommand(id, { emporter: "tva_5" }));
 
     expect(categories.at(id).vatByContext).toEqual({ emporter: "tva_5" });
   });
@@ -467,6 +472,7 @@ describe("SetCategoryVatHandler", () => {
         new InMemoryRegimes(),
         registry,
         new RecordingJournal(),
+        new DirectUnitOfWork(),
       ).execute(new SetCategoryVatCommand(id, { emporter: "tva_absent" })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
@@ -482,9 +488,13 @@ describe("SetCategoryVatHandler", () => {
     const [id] = await openRoots(categories, 1);
 
     await expect(
-      new SetCategoryVatHandler(categories, rates, registry, new RecordingJournal()).execute(
-        new SetCategoryVatCommand(id!, { emporter: "tva_5" }),
-      ),
+      new SetCategoryVatHandler(
+        categories,
+        rates,
+        registry,
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new SetCategoryVatCommand(id!, { emporter: "tva_5" })),
     ).rejects.toBeInstanceOf(CategoryVatWithoutChannelError);
   });
 });
