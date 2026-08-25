@@ -145,7 +145,7 @@ bénéfice, et les mettre dans le même sac est ce qui le fait paraître infaisa
 | Famille                                                         | Qui la lit                           | Verdict                                  |
 | --------------------------------------------------------------- | ------------------------------------ | ---------------------------------------- |
 | **Noms physiques** — `tva_rate`, `emplacement`, `tva_intracom`… | **personne** : tout passe par `@map` | ❌ pas maintenant — bénéfice `psql` seul |
-| **Valeurs `AddressKind`** — `facturation` / `livraison`         | le code, le fil, la base             | ✅ la seule qui vaille — 3 déploiements  |
+| ~~**Valeurs `AddressKind`**~~ — `facturation` / `livraison`     | le code et la base (pas le fil)      | ✅ **faite** 2026-08-25, 3 déploiements  |
 | **Clés `jsonb`** — `emporter` / `surPlace`                      | le code, la base                     | ❌ C0-d les supprime — travail jetable   |
 | **Valeurs du journal** — `category.tva_changed`                 | l'historique                         | ❌ jamais — exception nommée             |
 
@@ -170,25 +170,56 @@ retire ce qui en fait un journal. C'est une exception au même titre que
 Les **clés** de `PIM_EVENTS` sont anglaises depuis P3 ; leurs valeurs ne
 bougeront pas.
 
-**Les valeurs `AddressKind`.** La seule famille qui porte encore des
-identifiants français dans le code — les 10 que le gate compte
-(`AddressKind.livraison`). Elle vit à trois endroits à la fois : l'enum Postgres,
-`addressKindSchema` dans `@lfd/contracts` (donc le fil), et le dépôt d'adresses.
-Recette, un déploiement par étage :
+**Les valeurs `AddressKind`.** ✅ **Faite le 2026-08-25**, en trois
+déploiements. C'était la seule famille qui portait encore des identifiants
+français dans le code (`AddressKind.livraison`), et la seule dont le bénéfice
+valait le prix.
 
-1. **Étendre** — `ALTER TYPE "AddressKind" ADD VALUE 'billing'`, idem `delivery`.
-   Additif, l'ancien container ne voit rien. Le contrat accepte les quatre
-   valeurs ; les lectures normalisent ancien → nouveau, les écritures
-   continuent d'écrire l'ancien (pour qu'un retour en arrière fonctionne).
-2. **Basculer** — les écritures passent au nouveau, puis
-   `UPDATE company_address SET kind = 'billing' WHERE kind = 'facturation'`.
-3. **Resserrer** — le type est recréé sans les deux anciennes valeurs (Postgres
-   ne sait pas retirer une valeur d'enum), et le contrat se referme sur deux.
+Une découverte au passage, et c'est la plus utile de tout P4 : **le fil ne
+portait pas ce champ**. `addressKindSchema` existait dans `@lfd/contracts` mais
+n'avait aucun consommateur — l'API expose `billing` et `deliveries` comme deux
+champs distincts, le discriminant est structurel. Aucun front n'était donc
+concerné, et le chantier s'est réduit au backend et à la base.
 
-⚠️ Entre 1 et 3, le code porte du **transitoire** : un `in: [ancien, nouveau]`
-dans les `where`, un normaliseur à la frontière. C'est le prix, et c'est aussi
-le risque — un palier laissé au milieu est pire que pas commencé. Ne lancer
-l'étape 1 qu'en s'engageant sur les trois.
+| Palier        | Migration                                                          | Ce que le code fait                                             |
+| ------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- |
+| 1 · Étendre   | `ADD VALUE 'billing'`, `'delivery'` — additif, zéro ligne touchée  | les lectures acceptent les deux, les écritures gardent l'ancien |
+| 2 · Basculer  | `UPDATE addresses SET kind = 'billing' WHERE kind = 'facturation'` | les écritures passent au nouveau                                |
+| 3 · Resserrer | le type est recréé sans les anciennes valeurs                      | `address-kind-transition.ts` disparaît                          |
+
+Le palier 1 est ce qui rend le 2 inoffensif : quand la migration réécrit les
+lignes, le container encore en place lit déjà les deux encodages.
+
+### Les deux gardes, et pourquoi ils ne se ressemblent pas
+
+Toute cette sûreté tenait à l'ordre des déploiements — c'est-à-dire, sans
+garde, à la mémoire de qui déploie. Chaque migration refuse donc de partir
+trop tôt, et **les deux ne peuvent pas poser la même question** :
+
+- Le **palier 2** ne peut regarder que l'**horloge** : « `étendre` a-t-il fini
+  il y a moins de cinq minutes ? » Si oui, les deux sont partis ensemble, et le
+  container en place est celui d'avant le palier 1. Un `migrate deploy` prend
+  moins d'une seconde, deux déploiements sont séparés par tout un cycle de CI :
+  cinq minutes ne peuvent signifier que ça. Il ajoute « et des lignes
+  existent », sans quoi une base neuve — les e2e — ne pourrait plus appliquer
+  les trois paliers d'affilée.
+- Le **palier 3** peut regarder les **données** : « reste-t-il une ligne en
+  `facturation` ? » C'est le meilleur des deux, parce qu'il ne peut pas se
+  tromper. Postgres refuserait de lui-même la conversion, mais avec un message
+  qui parle de types ; celui-ci parle du problème et donne le geste.
+
+### Ce que la bascule a révélé
+
+Le gate comptait 10 occurrences. Il y en avait **15**. Trois lecteurs
+filtraient sur la **chaîne** `"facturation"` — dans `growth`, dans la fiche
+admin — et une chaîne, le gate la neutralise avant de compter : c'est
+précisément la même cécité qui avait laissé passer la prose et les libellés de
+P2. Au palier 2, chacun de ces filtres serait devenu une requête qui ne trouve
+plus rien. Pas une erreur : une adresse absente.
+
+Deux assertions de test avaient la même forme, et elles, elles sont bien
+tombées au palier 2 — parce qu'elles vérifiaient une ligne en base, pas un
+rendu.
 
 ## 5. Ce qu'on ne fera pas
 
@@ -204,25 +235,39 @@ l'étape 1 qu'en s'engageant sur les trois.
 1. ~~**P1**~~ — le lexique dans `CLAUDE.md`, plus le gate. ✅
 2. ~~**P2**~~ — l'intérieur, une passe par contexte. ✅
 3. ~~**P3**~~ — le fil, chaque champ en un seul commit. ✅
-4. **P4** — décomposé en §4 quater. Trois de ses quatre familles sont
-   **classées** : les noms physiques (invisibles au code), les clés `jsonb` (que
-   C0-d supprime), les valeurs du journal (des faits, pas des noms). Reste
-   `AddressKind`, et c'est une décision à prendre en connaissance du prix :
-   trois déploiements et du code transitoire entre les deux bouts.
+4. ~~**P4**~~ — `AddressKind` en trois déploiements ✅ ; les trois autres
+   familles classées avec leur raison (§4 quater).
 
-Le gate compte **10** identifiants restants. Ce sont exactement les
-`AddressKind.livraison` du dépôt d'adresses — le compteur ne tombera donc à zéro
-qu'au troisième déploiement de cette famille, et pas avant.
+Le gate compte **1** identifiant français, et il ne descendra pas plus bas :
+c'est la clé `livraison` de la table des routes, dans `app.routes.spec.ts`.
+C'est une **route**, donc une donnée — et les routes restent françaises par
+décision (§5). Ses voisines (`'pim/emplacements'`) portent des guillemets et
+sont donc ignorées ; celle-ci, qui est un identifiant valide, se les fait
+retirer par Prettier. Une exception écrite ne dérive pas ; la contorsion pour
+faire tomber un compteur à zéro, elle, aurait dérivé.
+
+Il ne reste ensuite qu'à drainer les dossiers un à un dans le `SCOPE` du gate —
+un dossier ajouté, c'est une promesse qu'on ne peut plus rompre sans casser la
+CI.
 
 ### Ce que le compteur a montré
 
-| Étape    | Identifiants comptés |
-| -------- | -------------------- |
-| Avant P1 | 2076                 |
-| Après P2 | 271                  |
-| Après P3 | **10**               |
+| Étape    | Identifiants comptés  |
+| -------- | --------------------- |
+| Avant P1 | 2076                  |
+| Après P2 | 271                   |
+| Après P3 | 10                    |
+| Après P4 | **1** (cf. ci-dessus) |
 
 Le saut de 271 à 10 tient à trois symboles seulement (`tvaIntracom`,
 `vatByContext`, `AdresseLivraison`) : la dette de langue se concentre sur peu de
-noms très employés, pas sur beaucoup de noms rares. C'est ce qui rend les
-paliers courts — et ce qui rend le dernier disproportionné.
+noms très employés, pas sur beaucoup de noms rares. C'est ce qui a rendu les
+paliers courts — et ce qui rendait le dernier disproportionné, jusqu'à ce qu'on
+le découpe en quatre familles dont trois ne valaient pas d'être faites.
+
+⚠️ **Zéro ne veut pas dire tout vu.** Le gate compte des identifiants ; il
+neutralise les chaînes et la prose avant de compter. P2 y a laissé deux
+libellés d'écran et une centaine de lignes de prose, P4 cinq filtres sur la
+chaîne `"facturation"`. Un renommage de mot touche trois matières, le gate n'en
+garde qu'une — c'est sa limite, et elle est délibérée : compter les chaînes
+lèverait un faux positif à chaque valeur de donnée.
