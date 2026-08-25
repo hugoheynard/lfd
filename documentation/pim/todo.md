@@ -91,6 +91,15 @@
 - [x] **Fiche réglementaire** : table `nutrition_declaration` (PK=FK, optionnelle), validation dans
       le domaine (code inconnu, chevauchement, valeurs négatives), endpoint `/reference/allergens`
       (`scope=eu|world`), formulaire de création complet côté front
+- [ ] 🟠 **Français résiduel dans le code backend**, contre la décision de langue (P1-P4) :
+      `SalesChannelKey = "emporter" | "surPlace" | "b2b"` et les libellés de champ passés aux
+      value-objects (`localizedText("nom", …)`). Le gate `code-language` ne les voit pas — il
+      blanchit les littéraux de chaîne avant de compter, donc une clé d'union et un libellé
+      d'erreur lui échappent par construction. Relevé le 2026-08-25
+- [ ] **Nommer les quatorze faits manquants** du journal du référentiel (dette affichée par
+      `lint:journal-tracked`) : ouverture/archivage/restauration d'une fiche, les six gestes sur
+      les familles, les cinq sur les emplacements. Chacun demande une décision propre — quel fait,
+      quelle charge — d'où la dette plutôt qu'une passe mécanique
 - [ ] Éditer la fiche d'un produit **existant** (aujourd'hui : seulement à la création)
 - [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)
