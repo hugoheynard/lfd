@@ -43,21 +43,12 @@
   background: var(--fold-color-warning);
 }
 
-/* Le signe REDIT ce que la couleur dit — une pastille verte et une ambre ne se
-   distinguent pas en niveaux de gris ni pour un daltonien. */
-.pr-check {
-  flex: none;
-  color: var(--fold-color-success-text);
-  font-weight: var(--fold-weight-bold);
-}
-
-.pr-list li.is-todo {
-  color: var(--fold-color-warning-text);
-  font-weight: var(--fold-weight-medium);
-}
-
-.pr-list li.is-todo .pr-check {
-  color: var(--fold-color-warning-text);
+/* La barre respire au-dessus de la liste. Rien d'autre : le compte, les glyphes
+   et les couleurs d'état appartiennent à `fold-meter` et `fold-checklist`, et
+   les repeindre ici les ferait diverger du reste du produit. */
+.pr-meter {
+  display: block;
+  margin-bottom: var(--fold-space-md);
 }
 
 .pr-cta {

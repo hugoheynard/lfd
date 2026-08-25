@@ -21,18 +21,16 @@
 }
 
 <section class="pr-block" aria-labelledby="pr-completeness">
-  <fold-element-title
-    id="pr-completeness"
-    [title]="'Complétude · ' + done() + '/' + checks().length"
-  />
+  <fold-element-title id="pr-completeness" title="Complétude" />
   <fold-card>
-    <ul class="pr-list">
-      @for (check of checks(); track check.label) {
-        <li [class.is-todo]="!check.done">
-          <span class="pr-check" aria-hidden="true">{{ check.done ? '✓' : '!' }}</span>
-          {{ check.label }}
-        </li>
-      }
-    </ul>
+    <fold-meter
+      class="pr-meter"
+      label="Complétude"
+      [value]="done()"
+      [max]="required().length"
+      [tone]="tone()"
+      showValue
+    />
+    <fold-checklist [items]="items()" [stateLabels]="stateLabels" />
   </fold-card>
 </section>
