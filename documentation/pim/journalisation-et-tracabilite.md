@@ -104,7 +104,7 @@ Un vrai enregistrement, après un renommage + reclassement :
 | `recorded_at`     | Postgres (`now()`)            | Temps d'**ingestion**. Diverge d'`occurred_at` sur un rejeu ou un traitement tardif.                                        |
 | `actor_*`         | `ActorNamer` ← guard          | **Figés au moment de l'acte.** Le journal doit dire qui a agi ce jour-là et à quel titre, pas qui porte ce nom aujourd'hui. |
 | `trace_id`        | middleware d'ingress          | Relie la ligne aux logs et aux erreurs de la même requête.                                                                  |
-| `idempotency_key` | l'adaptateur PIM              | Dérivée du `trace_id` — voir [§ 6](#6-lidempotence--pourquoi-la-trace-et-pas-lhorloge).                                     |
+| `idempotency_key` | le recorder                   | Dérivée du `trace_id` de la ligne — voir [§ 6](#6-lidempotence--pourquoi-la-trace-et-pas-lhorloge).                         |
 | `payload.changes` | le handler (`changesBetween`) | Le diff, calculé **au serveur**. Un front qui annoncerait ses modifications serait cru sur parole.                          |
 
 ---
@@ -227,6 +227,26 @@ n'idempote rien. Le `traceId`, lui :
   (violation d'unicité attrapée et ignorée) ;
 - **change entre deux requêtes** → deux corrections successives du même champ
   restent bien **deux faits**, ce qu'elles sont.
+
+### Une seule dérivation, au seul endroit qui écrit la trace
+
+La clé se calcule dans `buildActivityEventRow`, à partir du `traceId` qui part
+**sur la même ligne**. Elle se calculait aussi dans l'adaptateur de la
+plateforme, et les deux replis hors requête divergeaient — une constante d'un
+côté, une trace neuve de l'autre.
+
+Conséquence, corrigée le 2026-08-25 : hors requête (un seed, un script — et le
+seed passe par les vrais handlers), deux faits **réellement distincts** de même
+type sur le même sujet portaient la même clé. Le second disparaissait en
+silence, avalé par l'idempotence, pendant que sa ligne aurait affiché une trace
+à elle. Une clé qui prétend « même geste » là où la ligne dit « autre trace »
+est pire qu'une clé absente.
+
+Un émetteur peut toujours fournir une clé **métier** — `order.placed:<id>`,
+`company.step_reached:<étape>:<société>` — quand le fait se déduit d'un objet
+durable et qu'un rejeu ne doit jamais recompter. C'est le cas des abonnés de
+`growth`. Le défaut dérivé de la trace est pour les faits qui n'ont pas
+d'identité propre.
 
 ---
 

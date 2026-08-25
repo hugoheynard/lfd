@@ -61,3 +61,40 @@ describe("buildActivityEventRow", () => {
     expect(row.schemaVersion).toBe(3);
   });
 });
+
+/**
+ * **La clé d'idempotence quand l'émetteur n'en a pas.**
+ *
+ * Elle se dérivait ailleurs — dans l'adaptateur du journal de la plateforme —
+ * avec son propre repli hors requête. Deux dérivations, deux replis : la clé
+ * pouvait dire « même geste » là où la ligne portait une autre trace, et le
+ * second fait d'un script disparaissait en silence. Une seule dérivation
+ * désormais, ici, à partir de la trace RÉELLEMENT écrite.
+ */
+describe("buildActivityEventRow — la clé d'idempotence", () => {
+  /** Ce que la plateforme envoie : un fait, sans clé. */
+  const withoutKey: RecordActivityInput = {
+    type: "product.published",
+    subjectType: "product",
+    subjectId: "prd_1",
+    payload: {},
+  };
+
+  it("la dérive de la trace ÉCRITE sur la ligne, pas d'une trace lue ailleurs", () => {
+    const row = buildActivityEventRow(withoutKey, CONTEXT);
+
+    expect(row.idempotencyKey).toBe(`product.published:prd_1:${row.traceId}`);
+  });
+
+  it("deux traces différentes font deux faits — un script n'en perd plus", () => {
+    const first = buildActivityEventRow(withoutKey, CONTEXT);
+    const second = buildActivityEventRow(withoutKey, { ...CONTEXT, traceId: "autre-trace" });
+
+    expect(first.idempotencyKey).not.toBe(second.idempotencyKey);
+  });
+
+  /** La clé métier gagne : elle dédoublonne sur l'objet, pas sur la requête. */
+  it("respecte la clé fournie par un émetteur qui en connaît une", () => {
+    expect(buildActivityEventRow(MINIMAL, CONTEXT).idempotencyKey).toBe("order.placed:order_1");
+  });
+});

@@ -105,8 +105,27 @@ export interface RecordActivityInput {
   readonly subjectId: string;
   /** Établissement rattaché, si connu (rempli plus tard par l'identity resolution). */
   readonly establishmentId?: string | null;
-  /** Clé d'idempotence (ex. `order.placed:<id>`) : une émission rejouée est ignorée. */
-  readonly idempotencyKey: string;
+  /**
+   * Clé d'idempotence **métier**, quand l'émetteur en connaît une : une émission
+   * rejouée porte la même clé, donc la même ligne, donc rien de neuf. C'est le
+   * cas des faits qui se déduisent d'un objet durable — `order.placed:<id>`,
+   * `company.step_reached:<étape>:<société>` : les rejouer ne doit jamais
+   * recompter.
+   *
+   * **Absente**, elle se dérive du `traceId` de la requête (cf.
+   * {@link buildActivityEventRow}). C'est le bon défaut pour un fait qui n'a pas
+   * d'identité propre — deux corrections successives d'un même taux sont deux
+   * faits, et elles arrivent par deux requêtes.
+   *
+   * Elle ne se calcule surtout PAS chez l'appelant à partir du contexte : la
+   * dérivation vivait en double, ici et dans l'adaptateur du journal de la
+   * plateforme, avec deux replis différents hors requête — l'un rendait une
+   * constante, l'autre une trace neuve. Deux faits distincts d'un script ou
+   * d'un seed portaient alors la MÊME clé et le second disparaissait en
+   * silence, pendant que sa ligne aurait affiché une trace à elle. Une seule
+   * dérivation, au seul endroit qui connaît la trace réellement écrite.
+   */
+  readonly idempotencyKey?: string;
   /** Charge utile typée par `type` (montants en CENTIMES entiers, jamais de float). */
   readonly payload: Record<string, unknown>;
   /** Temps **métier** de l'événement. Défaut = l'instant du `Clock`. */
@@ -179,7 +198,10 @@ export function buildActivityEventRow(
     actorRole: context.actorRole,
     actorType: context.actorType,
     traceId: context.traceId,
-    idempotencyKey: input.idempotencyKey,
+    // La MÊME trace que la colonne, jamais une lue ailleurs : c'est ce qui
+    // interdit qu'une clé prétende « même geste » là où la ligne dit « autre
+    // trace ».
+    idempotencyKey: input.idempotencyKey ?? `${input.type}:${input.subjectId}:${context.traceId}`,
     payload: input.payload,
   };
 }

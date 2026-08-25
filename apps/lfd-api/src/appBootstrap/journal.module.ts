@@ -2,7 +2,6 @@ import { Global, Injectable, Module } from "@nestjs/common";
 
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { ActivityRecorder } from "../b2b/growth/domain/ports/activity-recorder.js";
-import { currentRequestContext } from "../platform/context/request-context.store.js";
 import { Journal } from "../platform/journal/journal.js";
 import type { JournalFact } from "../platform/journal/journal-fact.js";
 import { PimJournal, type PimJournalEntry } from "../pim/journal/pim-journal.js";
@@ -24,23 +23,21 @@ class ActivityJournal extends Journal {
   }
 
   /**
-   * La **clé d'idempotence** est bâtie sur le `traceId` et non sur l'horloge :
-   * un horodatage donne une clé neuve à chaque rejeu, donc une idempotence qui
-   * n'idempote rien. La trace, elle, survit au rejeu d'une même requête, et deux
-   * corrections successives d'un même sujet restent bien deux faits — elles
-   * arrivent par deux requêtes.
+   * Aucune clé d'idempotence n'est fournie : le recorder la dérive du `traceId`
+   * qu'il écrit lui-même. Elle se calculait ici, et c'était un doublon avec un
+   * repli différent hors requête — une constante d'un côté, une trace neuve de
+   * l'autre. Deux faits distincts d'un script partageaient alors une clé, et le
+   * second disparaissait sans erreur.
    *
    * BLOQUANT (`recordOrFail`) : l'appelant a choisi `publishTraced` ou le
    * laissez-passer du référentiel, donc il a choisi que sa trace conditionne
    * l'écriture.
    */
   async append(fact: JournalFact): Promise<void> {
-    const traceId = currentRequestContext()?.traceId ?? "hors-requete";
     await this.recorder.recordOrFail({
       type: fact.type,
       subjectType: fact.subjectType,
       subjectId: fact.subjectId,
-      idempotencyKey: `${fact.type}:${fact.subjectId}:${traceId}`,
       payload: fact.payload,
       ...(fact.occurredAt === undefined ? {} : { occurredAt: fact.occurredAt }),
     });
