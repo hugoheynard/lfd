@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
-import { Location } from "../domain/entities/location.js";
+import { Location, type LocationSnapshot } from "../domain/entities/location.js";
 import { LocationInUseError, LocationNameTakenError } from "../domain/errors/locations-errors.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
 import { violatedConstraint } from "../../catalogue/shared/infrastructure/json-readers.js";
@@ -103,6 +103,12 @@ export class PrismaLocationRepository extends LocationRepository {
    * La grille est remplacée plutôt que rapprochée ligne à ligne : elle tient en
    * quelques centaines de lignes au plus (`MAX_TABLES`), et un diff coûterait
    * plus en complexité qu'il ne gagne en écritures.
+   *
+   * Mais elle n'est réécrite QUE si l'agrégat l'a touchée. Elle l'était à
+   * chaque enregistrement : renommer un emplacement effaçait puis recréait ses
+   * lignes — **jetons de QR compris**. La survie d'un secret déjà imprimé
+   * reposait donc sur une recopie en mémoire, refaite pour rien. Un renommage
+   * ne touche plus au papier collé sur les tables.
    */
   async save(location: Location): Promise<void> {
     const snapshot = location.snapshot();
@@ -117,12 +123,17 @@ export class PrismaLocationRepository extends LocationRepository {
             baseUrl: snapshot.baseUrl,
           },
         }),
-        this.prisma.locationTable.deleteMany({ where: { locationId: snapshot.id } }),
-        this.prisma.locationTable.createMany({
-          data: tableRows(snapshot.id, snapshot.tables),
-        }),
+        ...(location.tablesChanged ? this.tableOperations(snapshot) : []),
       ]),
     );
+  }
+
+  /** Efface puis réécrit la grille — appelé seulement quand elle a bougé. */
+  private tableOperations(snapshot: LocationSnapshot) {
+    return [
+      this.prisma.locationTable.deleteMany({ where: { locationId: snapshot.id } }),
+      this.prisma.locationTable.createMany({ data: tableRows(snapshot.id, snapshot.tables) }),
+    ];
   }
 
   /**

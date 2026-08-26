@@ -47,6 +47,21 @@ export interface NewLocationInput {
  * un QR imprimé qui mène quelque part.
  */
 export class Location {
+  /**
+   * La grille a-t-elle bougé depuis la lecture ?
+   *
+   * Elle porte les **jetons de QR** — l'accès à la commande à table. La
+   * persistance la remplaçait à chaque enregistrement : renommer un emplacement
+   * effaçait puis recréait ses 200 lignes, jetons compris. Ça marche tant que
+   * `syncTables` les reporte correctement, donc la survie d'un secret imprimé
+   * reposait sur une recopie en mémoire, refaite pour rien.
+   *
+   * Faux à la reconstitution, vrai à l'ouverture (tout est à écrire), et vrai
+   * dès qu'un geste touche VRAIMENT la grille — un `setTableCount` sans salle
+   * ou un QR sur une table absente ne changent rien, donc ne marquent rien.
+   */
+  private tablesChangedValue: boolean;
+
   private constructor(
     private readonly identity: string,
     private nameValue: string,
@@ -54,7 +69,10 @@ export class Location {
     private surPlaceValue: boolean,
     private baseUrlValue: string,
     private tablesValue: readonly TableState[],
-  ) {}
+    tablesChanged: boolean,
+  ) {
+    this.tablesChangedValue = tablesChanged;
+  }
 
   static open(input: NewLocationInput): Location {
     return new Location(
@@ -64,6 +82,7 @@ export class Location {
       input.surPlace,
       input.baseUrl.trim(),
       input.surPlace ? syncTables([], input.tableCount) : [],
+      true,
     );
   }
 
@@ -75,6 +94,7 @@ export class Location {
       snapshot.surPlace,
       snapshot.baseUrl,
       snapshot.tables,
+      false,
     );
   }
 
@@ -92,6 +112,11 @@ export class Location {
 
   get tables(): readonly TableState[] {
     return this.tablesValue;
+  }
+
+  /** Vrai si la persistance doit réécrire la grille. Voir `tablesChangedValue`. */
+  get tablesChanged(): boolean {
+    return this.tablesChangedValue;
   }
 
   rename(name: string): void {
@@ -113,8 +138,9 @@ export class Location {
    */
   setSurPlace(open: boolean): void {
     this.surPlaceValue = open;
-    if (!open) {
+    if (!open && this.tablesValue.length > 0) {
       this.tablesValue = [];
+      this.tablesChangedValue = true;
     }
   }
 
@@ -127,7 +153,11 @@ export class Location {
     if (!this.surPlaceValue) {
       return;
     }
-    this.tablesValue = syncTables(this.tablesValue, count);
+    const next = syncTables(this.tablesValue, count);
+    if (next.length !== this.tablesValue.length) {
+      this.tablesValue = next;
+      this.tablesChangedValue = true;
+    }
   }
 
   /**
@@ -165,6 +195,7 @@ export class Location {
     this.tablesValue = this.tablesValue.map((table) =>
       table.number === tableNumber ? { number: table.number, ...patch } : table,
     );
+    this.tablesChangedValue = true;
     return true;
   }
 }

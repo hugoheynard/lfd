@@ -211,6 +211,25 @@ describe("fermer la salle vide la grille — en base", () => {
     expect(row.tables).toEqual([]);
   });
 
+  /**
+   * Un renommage ne doit PAS toucher au papier collé sur les tables. La grille
+   * était réécrite à chaque enregistrement — effacée puis recréée, jetons
+   * compris — si bien que la survie d'un secret déjà imprimé reposait sur une
+   * recopie en mémoire refaite pour rien.
+   */
+  it("ne touche pas aux jetons quand on ne change que le nom", async () => {
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+    const token = jsonBody<{ token: string }>(
+      await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201),
+    ).token;
+
+    await staff().put(`${LOCATIONS}/${id}`).send({ name: "Village haut" }).expect(200);
+
+    const row = await readLocation(id);
+    expect(row.name).toBe("Village haut");
+    expect(row.tables[0]).toMatchObject({ number: 1, qrCreated: true, token });
+  });
+
   it("préserve le QR d'une table conservée quand la grille rétrécit", async () => {
     const id = await createLocation({ name: "Village", surPlace: true, tableCount: 4 });
     await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201);
