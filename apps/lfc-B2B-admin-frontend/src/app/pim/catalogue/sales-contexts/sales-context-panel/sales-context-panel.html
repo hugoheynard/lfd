@@ -1,0 +1,131 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  <!-- La clé est une IDENTITÉ : trois tables la citent par clé étrangère, et
+       les taux voyagent par elle. Saisissable une fois, lue ensuite — la
+       renommer serait le chemin en deux temps vers une autre ligne. -->
+  <fold-input
+    label="Clé"
+    hint="Lettres, chiffres et tirets. Elle identifie le contexte partout, et ne changera plus."
+    placeholder="ex. traiteur"
+    required
+    [disabled]="isEdit()"
+    [value]="draftKey()"
+    (valueChange)="draftKey.set($event)"
+  />
+
+  <fold-input
+    label="Libellé"
+    hint="Ce qu'un humain lit à l'écran."
+    placeholder="ex. Traiteur"
+    required
+    [value]="draftLabel()"
+    (valueChange)="draftLabel.set($event)"
+  />
+
+  @if (isEdit()) {
+    <!-- La portée décide de la FORME des lignes déjà écrites. On la montre,
+         on ne la propose pas : le serveur refuse de la changer, et un
+         interrupteur qui répondrait 409 n'est pas un interrupteur. -->
+    <fold-callout appearance="inset" variant="info">
+      <strong
+        >{{ draftPerLocation() ? 'Vendu depuis un point de vente' : 'Vendu partout' }}.</strong
+      >
+      La portée se choisit à l'ouverture et ne change plus — elle donne leur forme aux lignes déjà
+      écrites. Pour l'autre portée, ouvrez un second contexte.
+    </fold-callout>
+  } @else {
+    <fold-checkbox
+      label="Ce contexte se vend depuis un point de vente"
+      hint="Décoché, il se vend partout — comme le B2B, où l'on commande à l'entreprise et non à une boutique. Ce choix est définitif."
+      [checked]="draftPerLocation()"
+      (checkedChange)="draftPerLocation.set($event)"
+    />
+  }
+
+  <fold-checkbox
+    label="En service"
+    hint="Hors service, il ne se règle plus et ne facture plus. Réversible."
+    [checked]="draftActive()"
+    (checkedChange)="draftActive.set($event)"
+  />
+
+  <fold-checkbox
+    label="Projeté vers Shopify"
+    hint="La boutique en tire un produit par article. Deux contextes projetés ne peuvent pas partager le même suffixe."
+    [checked]="draftProjected()"
+    (checkedChange)="draftProjected.set($event)"
+  />
+
+  @if (draftProjected()) {
+    <fold-input
+      label="Suffixe de handle"
+      hint="Vide = le handle nu, celui du contexte par défaut. Un second contexte projeté doit en porter un."
+      placeholder="ex. -traiteur"
+      [value]="draftSuffix()"
+      (valueChange)="draftSuffix.set($event)"
+    />
+  }
+
+  @if (isEdit() && !isRoot()) {
+    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide de
+         supprimer en REGARDANT l'objet. -->
+    <section class="danger">
+      <button
+        type="button"
+        class="danger-toggle"
+        [attr.aria-expanded]="dangerOpen()"
+        (click)="toggleDanger()"
+      >
+        Supprimer ce contexte
+      </button>
+
+      @if (dangerOpen()) {
+        @if (held() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Suppression impossible.</strong> «&nbsp;{{ context()?.label }}&nbsp;» est encore
+            retenu par <strong>{{ heldLabel() }}</strong
+            >. Retirez-le des grilles de canaux et des taux d'abord&nbsp;: tant qu'une seule ligne
+            le cite, la base refuse.
+            <br />
+            Vous pouvez en revanche le mettre <strong>hors service</strong> — il cesse de facturer
+            sans que rien ne soit effacé.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>Action irréversible.</strong> Rien ne vend ni ne règle «&nbsp;{{
+              context()?.key
+            }}&nbsp;», donc rien ne perd sa référence. L'historique du journal, lui, garde la trace
+            de son existence.
+          </fold-callout>
+
+          <fold-input
+            label="Retapez la clé pour confirmer"
+            [placeholder]="context()?.key ?? ''"
+            [value]="confirmKey()"
+            (valueChange)="confirmKey.set($event)"
+          />
+
+          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
+            Supprimer définitivement
+          </button>
+        }
+      }
+    </section>
+  }
+
+  @if (isRoot()) {
+    <fold-callout appearance="inset" variant="info">
+      Contexte <strong>racine</strong> : semé au démarrage, il réapparaît même supprimé directement
+      en base — sans lui, la boutique professionnelle se viderait sans qu'aucune erreur ne soit
+      levée. Son libellé et son état de service restent les vôtres.
+    </fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : 'Ouvrir le contexte' }}
+  </button>
+</footer>

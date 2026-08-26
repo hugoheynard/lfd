@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { FoldDataTableComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../../auth/permissions.store';
 import { SalesContextsPage } from '../sales-contexts-page/sales-contexts-page';
 import { SalesContextAdminStore } from '../sales-context-admin.store';
 
@@ -20,10 +21,15 @@ import { SalesContextAdminStore } from '../sales-context-admin.store';
  * il vérifie que le tableau a bien REÇU chaque gabarit.
  */
 describe('SalesContextsPage', () => {
-  function render(): { element: HTMLElement; table: FoldDataTableComponent<unknown> } {
+  function render(canWrite = true): {
+    element: HTMLElement;
+    table: FoldDataTableComponent<unknown>;
+  } {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        { provide: PermissionsStore, useValue: { can: () => canWrite } },
         {
           provide: SalesContextAdminStore,
           // Une ligne suffit : ce qu'on éprouve, c'est la projection des
@@ -74,6 +80,26 @@ describe('SalesContextsPage', () => {
 
   it('projette sa carte mobile jusqu’au tableau', () => {
     expect(table().rowCardTemplate()).not.toBeNull();
+  });
+
+  /**
+   * Écrire le registre est un geste d'ADMIN — `catalog:write`, le seul droit
+   * qu'il porte seul. Le front cache, le serveur refuse : ce test évite
+   * d'offrir un bouton qui répondrait 403, il ne protège rien.
+   */
+  it("n'offre aucun geste d'écriture sans le droit", () => {
+    const { element, table: data } = render(false);
+
+    expect(element.textContent).not.toContain('Ajouter');
+    expect(data.cellTemplate('actions')).toBeNull();
+    expect(data.columns().some((column) => column.key === 'actions')).toBe(false);
+  });
+
+  it("offre l'ouverture et les actions à qui peut écrire", () => {
+    const { element, table: data } = render(true);
+
+    expect(element.textContent).toContain('Ajouter');
+    expect(data.cellTemplate('actions')).not.toBeNull();
   });
 
   /**

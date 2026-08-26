@@ -1,7 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
-import type { SalesContextAdminView } from '@lfd/pim-contracts';
+import type {
+  CreateSalesContextPayload,
+  SalesContextAdminView,
+  UpdateSalesContextPayload,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../../data/api';
@@ -16,7 +20,10 @@ import { ListLoadState } from '../../data/list-load-state';
  * Celui-ci rend tout, hors service compris : sinon un contexte désactivé
  * disparaîtrait de l'écran qui sert justement à le regarder.
  *
- * En lecture seule, comme son cousin : un contexte se pose par migration.
+ * Il ÉCRIT aussi, depuis que le registre est réglable — mais seul l'admin passe :
+ * le serveur exige `catalog:write` sur tout ce qui n'est pas un `GET`. Le front
+ * cache les gestes, le serveur les refuse ; le second protège, le premier évite
+ * d'offrir un bouton qui répondrait 403.
  */
 @Injectable({ providedIn: 'root' })
 export class SalesContextAdminStore {
@@ -38,11 +45,28 @@ export class SalesContextAdminStore {
 
   async reload(): Promise<void> {
     await this.load.run(
-      () =>
-        firstValueFrom(
-          this.http.get<SalesContextAdminView[]>(`${this.base}/catalogue/sales-contexts`),
-        ),
+      () => firstValueFrom(this.http.get<SalesContextAdminView[]>(this.url(''))),
       (items) => this.state.set([...items].sort((a, b) => a.position - b.position)),
     );
+  }
+
+  async create(payload: CreateSalesContextPayload): Promise<void> {
+    await firstValueFrom(this.http.post(this.url(''), payload));
+    await this.reload();
+  }
+
+  async update(key: string, payload: UpdateSalesContextPayload): Promise<void> {
+    await firstValueFrom(this.http.put(this.url(key), payload));
+    await this.reload();
+  }
+
+  async remove(key: string): Promise<void> {
+    await firstValueFrom(this.http.delete(this.url(key)));
+    await this.reload();
+  }
+
+  private url(path: string): string {
+    const base = `${this.base}/catalogue/sales-contexts`;
+    return path === '' ? base : `${base}/${path}`;
   }
 }

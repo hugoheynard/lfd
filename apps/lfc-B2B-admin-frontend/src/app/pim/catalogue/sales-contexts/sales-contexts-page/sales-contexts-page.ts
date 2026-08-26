@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import type { SalesContextAdminView } from '@lfd/pim-contracts';
 
 import {
+  FoldIconComponent,
+  FoldPanelHostService,
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -13,7 +15,9 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../../auth/permissions.store';
 import { SalesContextAdminStore } from '../sales-context-admin.store';
+import { SalesContextPanel } from '../sales-context-panel/sales-context-panel';
 
 /**
  * **Contextes de vente** — le registre qui décide de ce qu'on peut vendre.
@@ -22,10 +26,11 @@ import { SalesContextAdminStore } from '../sales-context-admin.store';
  * `channel_key` devenir une identité sans que personne ne le remarque : une
  * donnée qu'on ne peut pas voir n'est pas pilotable.
  *
- * **En lecture.** Un contexte se pose par migration — l'ouvrir à un formulaire
- * rendrait possible d'en inventer un que ni la facturation ni Shopify ne savent
- * traiter. L'écran montre ce qui existe, ce que chacun implique, et lequel est
- * la racine.
+ * **L'écriture est réservée à l'administrateur** (`catalog:write`, le seul droit
+ * qu'il porte seul). Les autres rôles lisent : le bouton d'ouverture et la
+ * colonne d'actions n'apparaissent pas pour eux. Le front cache, le serveur
+ * refuse — le second protège, le premier évite d'offrir un geste qui répondrait
+ * 403.
  */
 @Component({
   selector: 'app-sales-contexts-page',
@@ -44,22 +49,36 @@ import { SalesContextAdminStore } from '../sales-context-admin.store';
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldButtonComponent,
+    FoldIconComponent,
   ],
   templateUrl: './sales-contexts-page.html',
   styleUrl: './sales-contexts-page.scss',
 })
 export class SalesContextsPage {
   private readonly store = inject(SalesContextAdminStore);
+  private readonly panelHost = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Ouvrir ou régler un contexte est un geste d'admin, et lui seul. */
+  protected readonly canWrite = computed(() => this.permissions.can('catalog:write'));
 
   protected readonly contexts = this.store.items;
   protected readonly loadError = this.store.loadError;
 
-  protected readonly columns: readonly FoldTableColumn[] = [
+  private readonly allColumns: readonly FoldTableColumn[] = [
     { key: 'label', label: 'Contexte' },
     { key: 'scope', label: 'Vendu depuis', width: '14rem' },
     { key: 'shopify', label: 'Shopify', width: '10rem' },
     { key: 'state', label: 'État', width: '9rem' },
+    { key: 'actions', label: '', width: '3.5rem' },
   ];
+
+  /** Sans le droit d'écrire, la colonne d'actions n'a rien à porter. */
+  protected readonly columns = computed(() =>
+    this.canWrite()
+      ? this.allColumns
+      : this.allColumns.filter((column) => column.key !== 'actions'),
+  );
 
   protected readonly rowKey = (row: SalesContextAdminView): string => row.key;
 
@@ -89,6 +108,14 @@ export class SalesContextsPage {
   protected readonly rootCount = computed(
     () => this.contexts().filter((context) => context.root).length,
   );
+
+  /** Ouvre le panneau — création sans charge, réglage avec. */
+  protected open(context?: SalesContextAdminView): void {
+    this.panelHost.open<boolean>(SalesContextPanel, {
+      side: 'right',
+      ...(context === undefined ? {} : { data: { context } }),
+    });
+  }
 
   protected retry(): void {
     void this.store.reload().catch(() => undefined);

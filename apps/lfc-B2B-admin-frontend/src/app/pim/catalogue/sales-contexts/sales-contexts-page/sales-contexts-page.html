@@ -2,9 +2,18 @@
   <p description>
     Le <strong>vocabulaire</strong> du catalogue : chaque manière de vendre qui a son propre
     traitement de TVA. Une famille règle un taux par contexte, la matrice de canaux dit où on le
-    vend, et Shopify en tire une collection. Ce registre se pose par migration — on le lit ici, on
-    ne l'invente pas.
+    vend, et Shopify en tire une collection. En ouvrir un est une ligne de plus ici, et rien d'autre
+    — c'est ce que le référentiel promettait, et qui s'arrêtait au bord de cet écran.
   </p>
+
+  @if (canWrite()) {
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="open()">
+      <!-- Deux libellés, un seul bouton : sur la ligne du titre en mobile,
+           « Ajouter un contexte » répéterait le titre juste à côté. -->
+      <span class="cta-full">Ajouter un contexte</span>
+      <span class="cta-short">Ajouter</span>
+    </button>
+  }
 
   @if (loadError(); as message) {
     <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
@@ -24,7 +33,7 @@
     </fold-empty-state>
   } @else {
     <fold-data-table
-      [columns]="columns"
+      [columns]="columns()"
       [rows]="contexts()"
       [rowKey]="rowKey"
       narrowLayout="cards"
@@ -58,6 +67,22 @@
           <fold-badge content="hors service" variant="warning" />
         }
       </ng-template>
+
+      @if (canWrite()) {
+        <!-- Les trois points nus : une affordance, pas un bouton. Une seule
+             action par ligne — ouvrir le contexte — donc rien à choisir dans un
+             menu ; le panneau porte le réglage ET la suppression. -->
+        <ng-template foldCell="actions" let-c>
+          <button
+            type="button"
+            class="row-open"
+            [attr.aria-label]="'Ouvrir « ' + c.label + ' »'"
+            (click)="open(c)"
+          >
+            <fold-icon name="more-vertical" size="sm" />
+          </button>
+        </ng-template>
+      }
 
       <!-- La vue mobile, projetée dans le tableau : `auto-cards` empilerait
            encore des paires libellé/valeur, donc un tableau debout. Sur un
