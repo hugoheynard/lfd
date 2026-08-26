@@ -1,17 +1,27 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { PointOfSaleView } from '@lfd/pim-contracts';
+import type { PointOfSaleKindView, PointOfSaleView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
 
-/** Ce qu'on envoie pour ouvrir une boutique — la plateforme, elle, ne se crée pas. */
-export interface ShopInput {
+/** Ce qu'on RÈGLE sur un point de vente. Le genre n'y est pas : il est figé. */
+export interface PointOfSaleInput {
   readonly label: string;
   readonly baseUrl: string;
   /** Les contextes qu'elle OFFRE. C'était deux drapeaux ; c'est une liste. */
   readonly contexts: readonly string[];
   readonly tableCount: number;
+}
+
+/**
+ * Ce qu'on envoie pour en OUVRIR un : le réglage, plus le genre.
+ *
+ * Le genre n'est que dans cette charge — il décide de la forme (adresse,
+ * tables) et ne se change plus ensuite.
+ */
+export interface OpenPointOfSaleInput extends PointOfSaleInput {
+  readonly kind: PointOfSaleKindView;
 }
 
 /**
@@ -29,11 +39,11 @@ export class PointOfSaleHttpApi {
     return firstValueFrom(this.http.get<PointOfSaleView[]>(this.url('')));
   }
 
-  openShop(input: ShopInput): Promise<{ id: string }> {
+  openPointOfSale(input: OpenPointOfSaleInput): Promise<{ id: string }> {
     return firstValueFrom(this.http.post<{ id: string }>(this.url(''), input));
   }
 
-  async update(id: string, patch: Partial<ShopInput>): Promise<void> {
+  async update(id: string, patch: Partial<PointOfSaleInput>): Promise<void> {
     await firstValueFrom(this.http.put(this.url(id), patch));
   }
 

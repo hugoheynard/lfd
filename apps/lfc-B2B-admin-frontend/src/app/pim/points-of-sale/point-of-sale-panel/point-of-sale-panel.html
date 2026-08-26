@@ -1,0 +1,101 @@
+<fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
+
+<fold-panel-body>
+  <!-- Le GENRE décide de la forme : une plateforme n'a ni adresse ni tables.
+       Il se choisit à l'ouverture et ne bouge plus — le basculer laisserait un
+       équipement sans objet. -->
+  @if (isEdit()) {
+    <fold-callout appearance="inset" variant="info">
+      <strong>{{ isShop() ? 'Boutique' : 'Plateforme' }}.</strong> Le genre se choisit à l'ouverture
+      et ne change plus&nbsp;: c'est lui qui décide de l'adresse et des tables. Pour l'autre genre,
+      ouvrez un second point de vente.
+    </fold-callout>
+  } @else {
+    <fold-listbox label="Genre" [value]="draftKind()" (selectionChange)="draftKind.set($event)">
+      <fold-option value="shop">Boutique — un lieu, une adresse, des tables</fold-option>
+      <fold-option value="platform">Plateforme — une commande en ligne</fold-option>
+    </fold-listbox>
+  }
+
+  <fold-input
+    label="Nom"
+    placeholder="ex. Village"
+    required
+    [value]="draftLabel()"
+    (valueChange)="draftLabel.set($event)"
+  />
+
+  @if (isShop()) {
+    <fold-input
+      label="URL de base — click & collect"
+      placeholder="https://…/commander"
+      [value]="draftBaseUrl()"
+      (valueChange)="draftBaseUrl.set($event)"
+    />
+  }
+
+  <!-- Ce que le point de vente OFFRE. C'étaient deux cases nommées, donc un
+       troisième contexte demandait de livrer ce panneau. La liste vient du
+       registre. -->
+  <div class="modes">
+    @for (context of offerable(); track context.key) {
+      <fold-checkbox
+        [label]="context.label"
+        [checked]="offers(context.key)"
+        (checkedChange)="setOffer(context.key, $event)"
+      />
+    } @empty {
+      <p class="muted">Aucun contexte de vente en service.</p>
+    }
+  </div>
+
+  @if (isShop()) {
+    <!-- Les tables ne dépendent PLUS d'un contexte offert : c'est de
+         l'équipement. Deux boutiques peuvent toutes deux servir en salle et une
+         seule être équipée de QR. -->
+    <fold-number-input
+      label="Nombre de tables"
+      hint="l'équipement de la boutique — retirer un contexte n'efface pas les QR"
+      [min]="0"
+      [value]="draftTables()"
+      (valueChange)="draftTables.set($event)"
+    />
+  }
+
+  <!-- La suppression est ICI, sous ce qu'on est en train de régler — plus dans
+       un menu qui rouvrait le même panneau dans un autre mode. Sans
+       `actionLabel`, la zone reste un cadre qui EXPLIQUE sans rien offrir. -->
+  @if (pointOfSale(); as target) {
+    <fold-danger-zone
+      title="Supprimer ce point de vente"
+      [actionLabel]="deleteAction()"
+      [confirmPhrase]="target.label"
+      (confirmed)="remove()"
+    >
+      @if (isRoot()) {
+        <p>
+          <strong>Cette plateforme ne se supprime pas.</strong> Sans elle, la matrice B2B n'a plus
+          de cible et la boutique professionnelle se vide sans qu'aucune erreur ne soit levée. Elle
+          est semée au démarrage&nbsp;: même effacée en base, elle reviendrait.
+        </p>
+      } @else if (usedByCategories() > 0) {
+        <p>
+          <strong>Suppression impossible.</strong> «&nbsp;{{ target.label }}&nbsp;» est encore vendu
+          par <strong>{{ usedByCategories() }} famille(s)</strong>. Décochez-le de leurs canaux
+          d'abord&nbsp;: tant qu'une seule y vend, le référentiel refuse.
+        </p>
+      } @else {
+        <p>
+          Ses <strong>tables</strong> et leurs URLs de click &amp; collect disparaissent, et les
+          <strong>QR déjà imprimés</strong> deviennent caducs — il faudra les régénérer sur un
+          nouveau point de vente.
+        </p>
+      }
+    </fold-danger-zone>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit" (click)="submit()">{{ submitLabel() }}</button>
+</fold-panel-footer>

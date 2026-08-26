@@ -5,7 +5,7 @@ import { FoldPanelRef, FoldToastService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { provideTestSalesContexts } from '../../catalogue/sales-contexts/sales-context-store.testing';
-import { ShopFormPanel } from '../shop-form-panel/shop-form-panel';
+import { PointOfSalePanel } from '../point-of-sale-panel/point-of-sale-panel';
 import { PointOfSaleStore } from '../point-of-sale-store';
 
 /**
@@ -31,6 +31,7 @@ function shop(over: Partial<PointOfSaleView> = {}): PointOfSaleView {
     contexts: ['takeaway'],
     tables: [],
     usedByCategories: 0,
+    root: false,
     ...over,
   };
 }
@@ -55,7 +56,7 @@ interface Mounted {
   stable: () => Promise<unknown>;
 }
 
-function mount(data?: { mode: 'edit' | 'delete'; shop: PointOfSaleView }): Mounted {
+function mount(data?: { pointOfSale: PointOfSaleView }): Mounted {
   const closed: unknown[] = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -65,7 +66,7 @@ function mount(data?: { mode: 'edit' | 'delete'; shop: PointOfSaleView }): Mount
       { provide: FoldPanelRef, useValue: { close: (v: unknown) => closed.push(v) } },
     ],
   });
-  const fixture = TestBed.createComponent(ShopFormPanel);
+  const fixture = TestBed.createComponent(PointOfSalePanel);
   if (data !== undefined) {
     fixture.componentRef.setInput('data', data);
   }
@@ -80,65 +81,98 @@ function mount(data?: { mode: 'edit' | 'delete'; shop: PointOfSaleView }): Mount
   };
 }
 
-describe('ShopFormPanel — supprimer une boutique encore vendue', () => {
+describe('PointOfSalePanel — la zone dangereuse', () => {
   /**
-   * Le référentiel refuse tant qu'une famille y vend. Le panneau offrait
-   * pourtant un bouton armé et laissait le refus arriver après le clic.
+   * La suppression a quitté le menu de la carte : on supprime ce qu'on est en
+   * train de regarder. La zone reste un cadre qui EXPLIQUE et n'arme rien tant
+   * que le référentiel refusera — un bouton dont on sait qu'il échouera n'a pas
+   * à être offert.
    */
-  it("dit le refus AVANT le clic, et n'offre rien à retaper", () => {
-    const { host } = mount({ mode: 'delete', shop: shop({ usedByCategories: 3 }) });
+  it("n'arme rien quand des familles y vendent encore", () => {
+    const { host } = mount({ pointOfSale: shop({ usedByCategories: 3 }) });
 
     expect(host.textContent).toContain('Suppression impossible');
     expect(host.textContent).toContain('3 famille(s)');
-    expect(host.querySelectorAll('fold-input')).toHaveLength(0);
-    expect(button(host, 'Supprimer définitivement').disabled).toBe(true);
+    expect(host.textContent).not.toContain('Supprimer définitivement');
   });
 
-  it('propose la confirmation quand personne ne le vend', () => {
-    const { host } = mount({ mode: 'delete', shop: shop({ usedByCategories: 0 }) });
+  it('arme la suppression quand personne ne le vend', () => {
+    const { host } = mount({ pointOfSale: shop({ usedByCategories: 0 }) });
 
-    expect(host.textContent).toContain('Zone dangereuse');
+    expect(host.textContent).toContain('Supprimer définitivement');
     expect(host.textContent).not.toContain('Suppression impossible');
   });
 
   /**
+   * La racine est un refus d'une AUTRE nature : il ne se lève pas en décochant.
+   * L'écran les distingue, sans quoi on chercherait longtemps quelle famille
+   * bloque.
+   */
+  it("dit que la plateforme racine ne se supprime pas, et n'arme rien", () => {
+    const { host } = mount({
+      pointOfSale: shop({ kind: 'platform', root: true, usedByCategories: 0 }),
+    });
+
+    expect(host.textContent).toContain('ne se supprime pas');
+    expect(host.textContent).not.toContain('Supprimer définitivement');
+  });
+});
+
+describe('PointOfSalePanel — un refus du référentiel', () => {
+  /**
    * Il affichait `caught.message` — donc « Http failure response for
    * http://… : 409 Conflict » là où le backend avait pris soin de dire quoi
-   * faire.
+   * faire. Le panneau RESTE ouvert : il y a quelque chose à corriger ici.
    */
   it('rend le message du référentiel, pas celui du transport', async () => {
-    const { host, store, toasts, closed, detect, stable } = mount({
-      mode: 'delete',
-      shop: shop({ usedByCategories: 0 }),
-    });
-    vi.spyOn(store, 'remove').mockRejectedValue(IN_USE);
-    const input = host.querySelector('fold-input input');
-    if (!(input instanceof HTMLInputElement)) {
-      throw new Error('champ de confirmation introuvable');
-    }
-    input.value = 'Village';
-    input.dispatchEvent(new Event('input'));
-    detect();
+    const { host, store, toasts, closed, stable } = mount({ pointOfSale: shop() });
+    vi.spyOn(store, 'update').mockRejectedValue(IN_USE);
 
-    button(host, 'Supprimer définitivement').click();
+    button(host, 'Enregistrer').click();
     await stable();
 
-    expect(toasts.toasts()[0]?.message).toContain('3 famille(s) le citent');
+    expect(toasts.toasts()[0]?.message).toContain('3 famille(s)');
     expect(toasts.toasts()[0]?.message).not.toContain('Http failure');
-    // Le panneau reste ouvert : il y a quelque chose à corriger ailleurs.
     expect(closed).toEqual([]);
   });
 });
 
-describe('ShopFormPanel — la création', () => {
+describe('PointOfSalePanel — le genre', () => {
+  it("se choisit à l'ouverture", () => {
+    const { host } = mount();
+
+    expect(host.querySelectorAll('fold-listbox')).toHaveLength(1);
+  });
+
+  /**
+   * Il décide de la forme — adresse, tables — et le basculer laisserait un
+   * équipement sans objet. On le MONTRE plutôt que de l'offrir : un
+   * interrupteur qui répondrait 409 n'est pas un interrupteur.
+   */
+  it('se montre sans se proposer au réglage', () => {
+    const { host } = mount({ pointOfSale: shop() });
+
+    expect(host.querySelectorAll('fold-listbox')).toHaveLength(0);
+    expect(host.textContent).toContain('ne change plus');
+  });
+
+  it("n'offre ni adresse ni tables à une plateforme", () => {
+    const { host } = mount({ pointOfSale: shop({ kind: 'platform', baseUrl: null }) });
+
+    expect(host.textContent).not.toContain('URL de base');
+    expect(host.textContent).not.toContain('Nombre de tables');
+  });
+});
+
+describe("PointOfSalePanel — l'ouverture", () => {
   it("n'annonce PAS un enregistrement qui n'a pas eu lieu", async () => {
     // `persist` sortait en silence sur un nom vide, et `submit` fermait quand
     // même le panneau avec `close(true)` — soit un succès pour un non-geste.
     const { host, store, closed, stable } = mount();
-    const open = vi.spyOn(store, 'openShop');
+    const open = vi.spyOn(store, 'openPointOfSale');
 
     // Le bouton est désarmé ; on force l'appel comme le ferait un raccourci.
-    button(host, 'Ajouter la boutique').click();
+    button(host, 'Ouvrir le point de vente').click();
     await stable();
 
     expect(open).not.toHaveBeenCalled();

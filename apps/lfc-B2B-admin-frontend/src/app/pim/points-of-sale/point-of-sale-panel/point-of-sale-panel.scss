@@ -1,0 +1,14 @@
+// Le corps et le pied viennent de `fold-panel-body` / `fold-panel-footer` : la
+// version maison redéfinissait à côté ce que le panneau de fold pose déjà.
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-lg);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-md);
+}

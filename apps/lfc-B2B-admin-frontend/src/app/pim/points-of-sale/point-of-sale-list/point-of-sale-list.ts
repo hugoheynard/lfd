@@ -4,16 +4,13 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
-  FoldIconComponent,
+  FoldButtonIconComponent,
   FoldInlineConfirmComponent,
   FoldPanelHostService,
-  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -22,48 +19,50 @@ import type { PointOfSaleView, TableView } from '@lfd/pim-contracts';
 import { slugify } from '../../data/sku';
 import { SalesContextStore } from '../../catalogue/sales-contexts/sales-context-store';
 import { PointOfSaleStore } from '../point-of-sale-store';
-import { ShopFormPanel, type ShopPanelData } from '../shop-form-panel/shop-form-panel';
+import {
+  PointOfSalePanel,
+  type PointOfSalePanelData,
+} from '../point-of-sale-panel/point-of-sale-panel';
 import { QrCode } from '../../../shared/qr-code/qr-code';
 import { qrSvgString } from '../../../shared/qr-code/qr';
 
 /**
- * La **liste des boutiques** — une carte chacune. Elle lit le
- * {@link PointOfSaleStore} (backend), donc création / édition / suppression se
- * voient tout de suite. Chaque carte porte un menu (modifier / supprimer) qui
- * ouvre le side-panel ; les réglages ne s'éditent plus en place. La gestion des
- * QR de table (générer / retirer / exporter) reste sur la carte.
+ * La **liste des points de vente** — une carte chacun, les deux genres mêlés.
  *
- * Les **plateformes** ne sont pas ici : elles ne s'ouvrent ni ne se ferment, et
- * {@link PlatformList} les rend en lecture.
+ * Ils étaient dans deux listes : les boutiques ici, les plateformes dans un
+ * composant en lecture seule à côté. Deux listes pour une seule notion, et la
+ * seconde disait « non modifiable » d'une chose qui, elle, se règle très bien —
+ * seule sa SUPPRESSION est interdite, et seulement pour la racine.
+ *
+ * Elle lit le {@link PointOfSaleStore}, donc ouverture / réglage / fermeture se
+ * voient tout de suite. La carte entière ouvre le réglage ; la gestion des QR de
+ * table (générer / retirer / exporter) reste sur la carte.
  */
 @Component({
-  selector: 'app-shop-list',
+  selector: 'app-point-of-sale-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldCardComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldCalloutComponent,
-    FoldIconComponent,
+    FoldButtonIconComponent,
     FoldElementTitleComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
     FoldInlineConfirmComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
-    FoldPopoverTriggerDirective,
     QrCode,
   ],
-  templateUrl: './shop-list.html',
-  styleUrl: './shop-list.scss',
+  templateUrl: './point-of-sale-list.html',
+  styleUrl: './point-of-sale-list.scss',
 })
-export class ShopList {
+export class PointOfSaleList {
   private readonly store = inject(PointOfSaleStore);
   private readonly contexts = inject(SalesContextStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
   /** Liste réactive : suit le store, donc les mutations du panel se voient direct. */
-  protected readonly shops = this.store.shops;
+  protected readonly pointsOfSale = this.store.items;
   /** Pourquoi la liste est vide — `null` = elle l'est vraiment. */
   protected readonly loadError = this.store.loadError;
 
@@ -71,14 +70,14 @@ export class ShopList {
   protected readonly error = signal<string | null>(null);
 
   /**
-   * Ce que la boutique offre, en LIBELLÉS du registre.
+   * Ce que le point de vente offre, en LIBELLÉS du registre.
    *
    * C'étaient deux drapeaux nommés ici même — « Click & collect » et « Sur
    * place ». Un troisième contexte demandait de livrer ce composant.
    */
-  protected offerLabel(shop: PointOfSaleView): string {
+  protected offerLabel(point: PointOfSaleView): string {
     const labels = new Map(this.contexts.items().map((context) => [context.key, context.label]));
-    const offered = shop.contexts.map((key) => labels.get(key) ?? key);
+    const offered = point.contexts.map((key) => labels.get(key) ?? key);
     return offered.length === 0 ? 'Aucun contexte offert' : offered.join(' · ');
   }
 
@@ -89,18 +88,15 @@ export class ShopList {
     return table.token === null ? base : `${base}&k=${table.token}`;
   }
 
-  /** Édition : side-panel prérempli sur cette boutique. */
-  protected openEdit(shop: PointOfSaleView): void {
-    this.openPanel({ mode: 'edit', shop });
-  }
-
-  /** Suppression : side-panel en zone dangereuse (confirmation par le nom). */
-  protected openDelete(shop: PointOfSaleView): void {
-    this.openPanel({ mode: 'delete', shop });
-  }
-
-  private openPanel(data: ShopPanelData): void {
-    this.panelHost.open(ShopFormPanel, { data, side: 'right' });
+  /**
+   * Ouvre le réglage de cette boutique.
+   *
+   * Un seul geste : la suppression vit dans la zone dangereuse du panneau,
+   * plus dans un menu qui rouvrait le même panneau dans un autre mode.
+   */
+  protected openEdit(pointOfSale: PointOfSaleView): void {
+    const data: PointOfSalePanelData = { pointOfSale };
+    this.panelHost.open(PointOfSalePanel, { data, side: 'right' });
   }
 
   /** Génère ou **régénère** : le backend mint un token neuf → nouveau QR,

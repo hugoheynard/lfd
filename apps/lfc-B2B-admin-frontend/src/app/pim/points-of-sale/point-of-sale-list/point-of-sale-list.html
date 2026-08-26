@@ -1,0 +1,144 @@
+@if (error(); as message) {
+  <fold-callout appearance="inset" variant="alert" role="alert">
+    {{ message }}
+  </fold-callout>
+}
+
+<!-- Trois vides, trois causes, trois gestes : rien du tout, rien parce qu'on
+     n'a pas pu lire, ou une vraie liste. Il n'y en avait AUCUN — zéro
+     emplacement rendait une page blanche, et un chargement échoué rendait
+     exactement la même. -->
+@if (pointsOfSale().length === 0) {
+  @if (loadError(); as reason) {
+    <fold-empty-state
+      tone="alert"
+      icon="places"
+      title="Points de vente illisibles"
+      [subtitle]="reason"
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-empty-state
+      icon="places"
+      title="Aucun point de vente"
+      subtitle="Ouvrez-en un : c'est lui qui apparaîtra dans la matrice de canaux d'une famille."
+    />
+  }
+}
+
+<!-- La CARTE ENTIÈRE ouvre le réglage. Il y avait un menu à deux entrées dont
+     l'une ouvrait ce panneau et l'autre le même panneau dans un autre mode :
+     deux clics et un choix pour un geste qui n'en demandait aucun. La
+     suppression a rejoint la zone dangereuse du panneau — on supprime ce qu'on
+     est en train de regarder.
+
+     Le clic vit sur la carte pour la souris ; l'icône `ghost` en tête est un
+     VRAI bouton, donc le clavier a une cible et un nom accessible. Sans elle,
+     la carte serait ouvrable à la souris seulement.
+
+     Les commandes de QR sont dans la carte : leur bloc arrête la propagation,
+     sans quoi générer un code ouvrirait aussi le panneau. -->
+@for (point of pointsOfSale(); track point.id) {
+  <fold-card class="emp" (click)="openEdit(point)">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="company"
+      iconTone="primary"
+      [title]="point.label"
+      [subtitle]="point.kind === 'shop' ? 'Boutique' : 'Plateforme'"
+    >
+      <fold-button-icon
+        titleAction
+        icon="edit"
+        size="sm"
+        tooltip="Modifier"
+        (clicked)="openEdit(point)"
+      />
+    </fold-element-title>
+
+    <div class="emp-body">
+      <!-- Lecture : les réglages en display, non éditables (édition = panel). -->
+      <fold-field-list>
+        <!-- L'adresse et les tables sont de l'équipement de BOUTIQUE : les
+             afficher vides sur une plateforme poserait deux réglages qui n'ont
+             pas de sens là, et qu'on chercherait à remplir. -->
+        @if (point.kind === 'shop') {
+          <fold-field
+            label="URL click & collect"
+            [empty]="point.baseUrl === '' || point.baseUrl === null"
+            placeholder="non renseignée"
+          >
+            <code>{{ point.baseUrl }}</code>
+          </fold-field>
+        }
+        <fold-field label="Offre">{{ offerLabel(point) }}</fold-field>
+        @if (point.kind === 'shop') {
+          <fold-field label="Tables">{{ point.tables.length }}</fold-field>
+        }
+      </fold-field-list>
+
+      <!-- Les tables sont de l'ÉQUIPEMENT, plus une conséquence du sur place. -->
+      @if (point.tables.length > 0) {
+        <!-- Un seul écran pour tout ce bloc : chaque commande de QR y arrête la
+             propagation, sinon générer un code ouvrirait aussi le panneau. Le
+             poser ici plutôt que sur cinq boutons évite qu'un sixième arrive
+             sans. -->
+        <div class="tables" (click)="$event.stopPropagation()">
+          <fold-element-title
+            [title]="'Tables — click \u0026 collect (' + point.tables.length + ')'"
+          />
+
+          <div class="tcards">
+            @for (t of point.tables; track t.number) {
+              <div class="tcard">
+                <span class="tcard-title"> {{ point.label }} · Table {{ t.number }} </span>
+                @if (t.qrCreated) {
+                  <app-qr-code [url]="tableUrl(point, t)" />
+                  <div class="tcard-actions">
+                    <button
+                      foldButton
+                      emphasis="soft"
+                      intent="neutral"
+                      size="sm"
+                      (click)="exportQr(point, t)"
+                    >
+                      Exporter (SVG)
+                    </button>
+                    <fold-inline-confirm
+                      intent="danger"
+                      message="Retirer ce QR ?"
+                      (confirmed)="removeQr(point.id, t.number)"
+                    >
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="danger"
+                        size="sm"
+                        aria-label="Retirer le QR"
+                      >
+                        ✕
+                      </button>
+                    </fold-inline-confirm>
+                  </div>
+                } @else {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    (click)="generateQr(point.id, t.number)"
+                  >
+                    Générer le QR
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (point.kind === 'shop') {
+        <p class="muted">Aucune table — définissez leur nombre en ouvrant la carte.</p>
+      }
+    </div>
+  </fold-card>
+}

@@ -2,7 +2,11 @@ import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import type { PointOfSaleView } from '@lfd/pim-contracts';
 
-import { PointOfSaleHttpApi, type ShopInput } from './point-of-sale-http-api';
+import {
+  PointOfSaleHttpApi,
+  type OpenPointOfSaleInput,
+  type PointOfSaleInput,
+} from './point-of-sale-http-api';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -49,13 +53,13 @@ export class PointOfSaleStore {
     );
   }
 
-  async openShop(input: ShopInput): Promise<{ id: string }> {
-    const created = await this.api.openShop(input);
+  async openPointOfSale(input: OpenPointOfSaleInput): Promise<{ id: string }> {
+    const created = await this.api.openPointOfSale(input);
     await this.reload();
     return created;
   }
 
-  async update(id: string, patch: Partial<ShopInput>): Promise<void> {
+  async update(id: string, patch: Partial<PointOfSaleInput>): Promise<void> {
     await this.api.update(id, patch);
     await this.reload();
   }

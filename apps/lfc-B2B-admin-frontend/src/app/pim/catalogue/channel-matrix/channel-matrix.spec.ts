@@ -25,6 +25,7 @@ const POINTS_OF_SALE: PointOfSaleView[] = [
     contexts: ['b2b'],
     tables: [],
     usedByCategories: 0,
+    root: true,
   },
   {
     id: 'emp_village',
@@ -34,6 +35,7 @@ const POINTS_OF_SALE: PointOfSaleView[] = [
     contexts: ['takeaway', 'eatIn'],
     tables: [],
     usedByCategories: 0,
+    root: false,
   },
   {
     id: 'emp_val',
@@ -43,6 +45,7 @@ const POINTS_OF_SALE: PointOfSaleView[] = [
     contexts: ['takeaway'],
     tables: [],
     usedByCategories: 0,
+    root: false,
   },
 ];
 

@@ -1,14 +1,12 @@
 <fold-page-layout icon="places" title="Points de vente">
   <p description>
-    D'où l'on vend. Les <strong>boutiques</strong> ouvrent un nombre de tables si elles servent
-    <strong>sur place</strong> ; chaque table reçoit une URL de
-    <strong>click &amp; collect</strong> (numéro verrouillé) et son QR. Les
-    <strong>plateformes</strong> — la boutique professionnelle B2B — ne s'ouvrent ni ne se
-    ferment&nbsp;: elles se règlent par les contextes qu'elles offrent.
+    D'où l'on vend. Une <strong>boutique</strong> a une adresse et, si on l'équipe, une grille de
+    tables — chacune reçoit une URL de <strong>click &amp; collect</strong> (numéro verrouillé) et
+    son QR. Une <strong>plateforme</strong> n'a ni l'une ni l'autre : on y commande en ligne. Les
+    deux déclarent les <strong>contextes de vente</strong> qu'elles offrent.
   </p>
 
-  <button pageActions foldButton size="sm" (click)="openCreate()">+ Nouvelle boutique</button>
+  <button pageActions foldButton size="sm" (click)="openCreate()">+ Nouveau point de vente</button>
 
-  <app-shop-list />
-  <app-platform-list />
+  <app-point-of-sale-list />
 </fold-page-layout>
