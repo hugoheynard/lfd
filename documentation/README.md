@@ -126,6 +126,7 @@ lignes et les trois pièges qui reviennent.
 | [`todos/todo-notifications.md`](todos/todo-notifications.md)                             | 🟡   | Le transport e-mail est branché ; **aucun e-mail ne part encore** — points d'appel, boîte de l'équipe, domaine à vérifier. Porte aussi le sondage de la cloche et **pourquoi pas de WebSocket**. |
 | [`todos/todo-types-de-demande.md`](todos/todo-types-de-demande.md)                       | 🟡   | Câblage de la taxonomie des demandes (contrat posé, persistance et UI à faire).                                                                                                                  |
 | [`todos/todo-journal-activite.md`](todos/todo-journal-activite.md)                       | 🟡   | La chaîne du journal est prouvée sur un module. Restent les émetteurs manquants (dont les dérogations de permission), la profondeur à la lecture, la promotion en `platform/`, la rétention.     |
+| [`todos/todo-droits-ecriture-backoffice.md`](todos/todo-droits-ecriture-backoffice.md)   | 🟡   | Ce que chaque domaine exige pour ÉCRIRE, à mesure qu'on le finalise. La lecture est ouverte, l'écriture se mérite — et `support` ne lit toujours pas la fiscalité.                               |
 | [`todos/todo-deploiement-en-exploitation.md`](todos/todo-deploiement-en-exploitation.md) | 🔴   | Déployer coupe l'unique container : NestJS ignore `SIGTERM`, et changer une variable ne redémarre rien.                                                                                          |
 
 ## Ailleurs dans le dépôt
