@@ -1,4 +1,4 @@
-import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../../../platform/shared/errors/app-error.js";
 
 /** La clé d'un contexte est obligatoire et suit une forme stable. */
 export class SalesContextKeyInvalidError extends DomainError {
