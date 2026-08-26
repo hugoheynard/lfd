@@ -32,19 +32,25 @@ export class CreateLocationHandler implements ICommandHandler<CreateLocationComm
     const { payload } = command;
     const id = this.ids.next();
     // Le nom exigé, l'URL trimée, la grille alignée — ou vide sans salle : tout
-    // ça est décidé PAR l'agrégat, pas recomposé ici. L'agrégat NETTOIE le nom,
-    // donc on vérifie l'unicité sur le nom nettoyé, pas sur celui reçu.
+    // ça est décidé PAR l'agrégat, pas recomposé ici. L'unicité du nom, elle,
+    // est tenue par `emplacement_name_unique` en base et traduite par le dépôt.
     const location = Location.open({ id, ...payload });
+    // Le journal lit l'AGRÉGAT, pas la charge reçue. Deux écarts, sinon : un
+    // nom entouré d'espaces s'y inscrivait tel quel alors que la base garde le
+    // nom nettoyé ; et « 12 tables » demandées sans salle s'y inscrivaient
+    // comme 12 alors que l'agrégat n'en ouvre aucune. Le journal doit dire ce
+    // qui a été écrit, pas ce qui a été demandé.
+    const created = location.snapshot();
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.locationCreated,
         subjectType: "location",
         subjectId: id,
         payload: {
-          name: payload.name,
-          clickCollect: payload.clickCollect,
-          surPlace: payload.surPlace,
-          tableCount: payload.tableCount,
+          name: created.name,
+          clickCollect: created.clickCollect,
+          surPlace: created.surPlace,
+          tableCount: created.tables.length,
         },
       });
       await this.locations.add(location, ticket);

@@ -469,6 +469,32 @@ describe("Ce que les emplacements inscrivent au journal", () => {
   });
 
   /**
+   * Le journal doit dire ce qui a été **écrit**, pas ce qui a été **demandé**.
+   *
+   * Il lisait la charge reçue. Deux écarts en découlaient, tous deux visibles
+   * ici : le nom s'y inscrivait avec ses espaces alors que l'agrégat le nettoie,
+   * et « 12 tables » demandées sans salle s'y inscrivaient comme 12 alors que
+   * l'agrégat n'en ouvre aucune. On relisait l'historique d'un emplacement qui
+   * n'a jamais existé.
+   */
+  it("inscrit à la création l'état de l'agrégat, pas la charge reçue", async () => {
+    const repo = new InMemoryLocations();
+    const journal = new RecordingJournal();
+
+    await new CreateLocationHandler(repo, new StubIds(), journal, new DirectUnitOfWork()).execute(
+      new CreateLocationCommand({
+        name: "  Village  ",
+        clickCollect: true,
+        surPlace: false,
+        baseUrl: "https://order.example",
+        tableCount: 12,
+      }),
+    );
+
+    expect(journal.entries[0]?.payload).toMatchObject({ name: "Village", tableCount: 0 });
+  });
+
+  /**
    * Le jeton vaut ACCÈS à la commande à cette table. Un journal se relit plus
    * largement que la table qui le porte : on trace le geste, pas le secret.
    */
