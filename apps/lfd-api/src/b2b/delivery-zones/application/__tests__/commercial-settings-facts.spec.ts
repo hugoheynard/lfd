@@ -83,8 +83,7 @@ function zones(): DeliveryZoneRepository {
 function pickups(): PickupAddressRepository {
   return {
     list: () => Promise.resolve([] as readonly PickupAddressView[]),
-    findById: () => Promise.resolve(null),
-    findDefault: () => Promise.resolve(null),
+    resolve: () => Promise.resolve(null),
     create: () => Promise.resolve("pickup_2"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),

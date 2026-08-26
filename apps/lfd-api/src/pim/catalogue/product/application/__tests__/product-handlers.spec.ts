@@ -48,6 +48,8 @@ function seedProduct(): ProductSnapshot {
     kind: "resale",
     categoryId: "cat_active",
     status: "draft",
+    vatByContext: {},
+    channelOverride: null,
     variants: [
       {
         id: VARIANT_ID,

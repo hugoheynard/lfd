@@ -11,6 +11,8 @@ function product(overrides: Partial<ProductRecord> = {}): ProductRecord {
     kind: "made_to_order",
     categoryId: "c1",
     status: "draft",
+    vatByContext: {},
+    channelOverride: null,
     variants: [
       {
         id: "v1",
@@ -50,6 +52,7 @@ describe("projection Shopify — la couche éditoriale", () => {
     const payload = projectProduct(
       product(),
       written({ descriptionLong: { fr: "Pâte feuilletée.\n\nFraises de Provence." } }),
+      true,
     );
 
     expect(payload.descriptionHtml).toBe("<p>Pâte feuilletée.</p><p>Fraises de Provence.</p>");
@@ -61,6 +64,7 @@ describe("projection Shopify — la couche éditoriale", () => {
     const payload = projectProduct(
       product(),
       written({ descriptionLong: { fr: "Ligne 1\nLigne 2" } }),
+      true,
     );
 
     expect(payload.descriptionHtml).toBe("<p>Ligne 1<br>Ligne 2</p>");
@@ -72,6 +76,7 @@ describe("projection Shopify — la couche éditoriale", () => {
     const payload = projectProduct(
       product(),
       written({ descriptionShort: { fr: "Tarte de saison." } }),
+      true,
     );
 
     expect(payload.descriptionHtml).toBe("<p>Tarte de saison.</p>");
@@ -81,6 +86,7 @@ describe("projection Shopify — la couche éditoriale", () => {
     const payload = projectProduct(
       product(),
       written({ descriptionShort: { fr: "Court." }, descriptionLong: { fr: "Long." } }),
+      true,
     );
 
     expect(payload.descriptionHtml).toBe("<p>Long.</p>");
@@ -95,6 +101,7 @@ describe("projection Shopify — la couche éditoriale", () => {
     const payload = projectProduct(
       product(),
       written({ descriptionLong: { fr: '<script>alert("x")</script>' } }),
+      true,
     );
 
     expect(payload.descriptionHtml).toBe(
@@ -106,7 +113,11 @@ describe("projection Shopify — la couche éditoriale", () => {
   // Le modèle annonce du markdown, rien n'en a jamais rendu. Tant que c'est vrai,
   // une astérisque tapée pour elle-même doit rester une astérisque.
   it("n’interprète pas le markdown", () => {
-    const payload = projectProduct(product(), written({ descriptionLong: { fr: "Beurre *AOP*" } }));
+    const payload = projectProduct(
+      product(),
+      written({ descriptionLong: { fr: "Beurre *AOP*" } }),
+      true,
+    );
 
     expect(payload.descriptionHtml).toBe("<p>Beurre *AOP*</p>");
   });
@@ -119,6 +130,7 @@ describe("projection Shopify — la couche éditoriale", () => {
         seoTitle: { fr: "Tarte fraises" },
         seoDescription: { fr: "La meilleure." },
       }),
+      true,
     );
 
     expect(payload.vendor).toBe("Signature");
@@ -128,7 +140,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   // Shopify assigne lui-même un vendor à la création : une marque blanche ne
   // déclare rien de plus qu'une colonne absente, et n'a rien à écraser.
   it("ne déclare pas de marque quand elle est blanche", () => {
-    expect(projectProduct(product(), written({ brand: "   " })).vendor).toBeNull();
+    expect(projectProduct(product(), written({ brand: "   " }), true).vendor).toBeNull();
   });
 
   it("part sans rien quand personne n’a écrit — la couche est optionnelle", () => {
@@ -143,7 +155,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   // compte est que l'ANCIEN texte parte, pas de savoir laquelle des deux causes l'a
   // effacé. Le contraire obligerait le canal à distinguer deux vides.
   it("traite « vidé » et « jamais écrit » de la même façon", () => {
-    const cleared = projectProduct(product(), written({ descriptionLong: { fr: "" } }));
+    const cleared = projectProduct(product(), written({ descriptionLong: { fr: "" } }), true);
     const never = projectProduct(product(), null, true);
 
     expect(cleared.descriptionHtml).toBe("");
@@ -153,7 +165,7 @@ describe("projection Shopify — la couche éditoriale", () => {
   it("change d’empreinte quand la description change", () => {
     const before = fingerprint(projectProduct(product(), null, true));
     const after = fingerprint(
-      projectProduct(product(), written({ descriptionLong: { fr: "Neuf." } })),
+      projectProduct(product(), written({ descriptionLong: { fr: "Neuf." } }), true),
     );
 
     expect(before).not.toBe(after);

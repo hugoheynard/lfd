@@ -113,20 +113,20 @@ describe("Les actes du staff au journal", () => {
     const events = new RecordingPublisher();
 
     await new GrantTermsHandler(companies(), events, new DirectUnitOfWork()).execute(
-      new GrantTermsCommand("c1", ["net_30"]),
+      new GrantTermsCommand("c1", ["monthly"]),
     );
 
     expect(events.factTypes()).toEqual(["company.payment_terms_granted"]);
     // La liste entière, pas le delta : un retrait est le même geste qu'un ajout,
     // et une liste vide est une décision lisible — « plus aucun délai ».
-    expect(events.traced[0]?.journalFact().payload).toEqual({ terms: ["net_30"] });
+    expect(events.traced[0]?.journalFact().payload).toEqual({ terms: ["monthly"] });
   });
 
   it("nomme la suspension — c'est le fait dont on demande l'auteur le jour même", async () => {
     const events = new RecordingPublisher();
 
     await new ChangeCompanyStatusHandler(companies(), events, new DirectUnitOfWork()).execute(
-      new ChangeCompanyStatusCommand("c1", "suspend"),
+      new ChangeCompanyStatusCommand("c1", "suspend", "impayés répétés"),
     );
 
     expect(events.factTypes()).toEqual(["company.status_changed"]);

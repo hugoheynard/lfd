@@ -34,6 +34,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     kind: "daily",
     categoryId: "cat_vien",
     status: "published",
+    channelOverride: null,
     variants: [variant()],
     vatByContext: {},
     ...over,

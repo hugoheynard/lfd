@@ -1,3 +1,4 @@
+import type { ProductSnapshot } from "../../../product/domain/entities/product.js";
 import { Test } from "@nestjs/testing";
 
 import { VatRateRepository } from "../../../../commerce/domain/ports/vat-rate.repository.js";
@@ -14,8 +15,27 @@ interface CategoryLike {
 }
 
 /** Une fiche réduite à ce que la résolution regarde : sa famille, sa dérogation. */
-function product(vatByContext: Readonly<Record<string, string>> = {}) {
-  return { id: "prd_1", categoryId: "cat_vien", vatByContext };
+/**
+ * Une fiche COMPLÈTE, même si le lecteur de TVA n'en regarde que trois champs.
+ *
+ * Elle ne l'était pas, et le typage des specs le disait depuis un moment : un
+ * objet à trois clés se faisait passer pour un `ProductSnapshot`. Tant que le
+ * double ment sur la forme, il peut mentir sur autre chose — et c'est le genre
+ * de dette qui ne se voit qu'en CI, là où le typecheck des specs tourne.
+ */
+function product(vatByContext: Readonly<Record<string, string>> = {}): ProductSnapshot {
+  return {
+    id: "prd_1",
+    sku: "VIE-001",
+    name: { fr: "Croissant" },
+    slug: { fr: "croissant" },
+    kind: "daily",
+    categoryId: "cat_vien",
+    status: "published",
+    variants: [],
+    vatByContext,
+    channelOverride: null,
+  };
 }
 
 async function build(

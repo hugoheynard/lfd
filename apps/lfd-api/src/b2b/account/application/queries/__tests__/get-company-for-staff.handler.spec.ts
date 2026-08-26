@@ -40,7 +40,12 @@ const detail: AdminCompanyDetailView = {
   activation: null,
   suspensionCause: null,
   contacts: [],
-  fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+  fulfillmentPreference: {
+    method: null,
+    pickupAddressId: null,
+    deliveryAddressId: null,
+    signatureRequired: false,
+  },
 };
 
 /** Reader stub : `byId` renvoie ce qu'on lui donne, `listAll` inutilisé ici. */

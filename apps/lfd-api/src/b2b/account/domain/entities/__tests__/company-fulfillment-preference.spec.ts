@@ -42,12 +42,14 @@ describe("Company — préférence d'acheminement", () => {
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: null,
+      signatureRequired: false,
     });
 
     expect(company.fulfillmentPreference).toEqual({
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: null,
+      signatureRequired: false,
     });
   });
 
@@ -61,6 +63,7 @@ describe("Company — préférence d'acheminement", () => {
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: "addr_ancienne",
+      signatureRequired: false,
     });
 
     expect(company.fulfillmentPreference.deliveryAddressId).toBeNull();
@@ -72,18 +75,21 @@ describe("Company — préférence d'acheminement", () => {
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: null,
+      signatureRequired: false,
     });
 
     company.preferFulfillment({
       method: "delivery",
       pickupAddressId: "pick_labo",
       deliveryAddressId: "addr_1",
+      signatureRequired: false,
     });
 
     expect(company.fulfillmentPreference).toEqual({
       method: "delivery",
       pickupAddressId: null,
       deliveryAddressId: "addr_1",
+      signatureRequired: false,
     });
   });
 
@@ -96,6 +102,7 @@ describe("Company — préférence d'acheminement", () => {
       method: "delivery",
       pickupAddressId: null,
       deliveryAddressId: null,
+      signatureRequired: false,
     });
 
     expect(company.fulfillmentPreference.method).toBe("delivery");
@@ -108,12 +115,14 @@ describe("Company — préférence d'acheminement", () => {
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: null,
+      signatureRequired: false,
     });
 
     expect(company.toPersistence().fulfillmentPreference).toEqual({
       method: "pickup",
       pickupAddressId: "pick_labo",
       deliveryAddressId: null,
+      signatureRequired: false,
     });
   });
 });

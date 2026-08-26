@@ -25,6 +25,8 @@ function product(): ProductRecord {
     kind: "daily",
     categoryId: "c1",
     status: "draft",
+    vatByContext: {},
+    channelOverride: null,
     variants: [
       {
         id: "v1",

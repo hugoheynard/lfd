@@ -33,7 +33,12 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     activation: null,
     suspensionCause: null,
     contacts: [],
-    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+    fulfillmentPreference: {
+      method: null,
+      pickupAddressId: null,
+      deliveryAddressId: null,
+      signatureRequired: false,
+    },
     ...over,
   };
 }
