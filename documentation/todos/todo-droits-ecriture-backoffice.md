@@ -35,6 +35,14 @@ Comptabilité ; tout le monde peut lire.
       garde du PIM) ni `tax:read` (celui de l'écran) : la règle « tout le monde
       peut lire » est fausse pour lui aujourd'hui. Deux lignes dans
       `ROLE_GRANTS`, plus le test qui fige la règle.
+- [ ] **L'écran doit DIRE le refus, pas l'escamoter.** Aujourd'hui, sans
+      `tax:write`, le bouton de création et la colonne d'actions **disparaissent** :
+      l'écran ne ment pas, mais il n'explique rien — on croit à un écran incomplet,
+      pas à un droit manquant. Cible : un **callout `info` collé sous l'en-tête**,
+      « Seuls les rôles Comptabilité et Administrateur peuvent créer ou modifier
+      un taux de TVA », et le bouton **présent mais désactivé**. Un geste visible
+      et refusé apprend où demander l'accès ; un geste absent n'apprend rien.
+      Le motif vaudra pour les autres domaines de ce document.
 - [ ] **Décider si « tout le monde lit » est une règle ou une liste.** Aujourd'hui
       chaque rôle énumère ses `read`, donc chaque nouvelle ressource se referme
       par défaut sur les rôles existants — silencieusement. Si la lecture est
