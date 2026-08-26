@@ -395,6 +395,74 @@ matrice B2B n'a plus de cible et la boutique professionnelle se vide sans qu'une
 erreur soit levée — exactement la panne silencieuse qui a justifié la garde du
 contexte `b2b`.
 
+## 4 bis. Passe adversariale (2026-08-26)
+
+Relecture des quatre tranches en cherchant ce qui casse. Une chose est ressortie,
+et elle était vicieuse.
+
+### Le trou : l'offre pouvait se retirer sous ce qui se vend
+
+Sonde, sur la vraie base : une boutique offre « sur place », une famille y vend
+« sur place », on retire l'offre → **HTTP 200, et la ligne de matrice survit.**
+
+Trois conséquences en chaîne :
+
+1. la famille vend un contexte que le point de vente n'offre plus — la
+   projection fabriquerait une fiche pour un lieu qui ne sert pas, ce que
+   `refuseUnsellableChannels` interdit pourtant à l'écriture ;
+2. la grille de l'écran ne rend **plus de case** pour un contexte non offert :
+   la ligne devient invisible, donc **indécochable** ;
+3. le point de vente devient insupprimable, avec un message qui parle de
+   familles qu'on ne voit nulle part.
+
+Le mur ne pouvait pas être une clé étrangère — l'offre et la matrice sont deux
+tables sans lien direct. C'est donc un refus lu :
+`ContextStillSoldHereError`, prononcé par `UpdatePointOfSale` sur les seuls
+contextes **retirés** (en ajouter n'a jamais posé de problème).
+
+### Ce qui a bougé en même temps
+
+- **Le genre entre dans la charge d'ouverture.** Une plateforme n'est plus un
+  cas d'exception qu'on ne peut créer qu'au boot : c'est l'autre valeur de
+  `kind`. À l'ouverture, l'adresse et les tables d'une plateforme sont
+  **ignorées** — on construit, on ne corrige pas une saisie ; posées APRÈS coup,
+  elles lèvent, parce que là c'est un geste.
+- **La vue porte `root`.** L'écran doit dire que la plateforme racine ne se
+  supprime pas ; coder `pos_b2b` dans un composant aurait remis dans le front le
+  nom en dur qu'on venait de sortir du back.
+- **Le message de refus de suppression** parlait de « familles » là où la clé
+  étrangère peut aussi venir d'une dérogation de fiche.
+
+### Les deux « B2B » qui se ressemblaient
+
+Le CONTEXTE et le POINT DE VENTE portaient le même nom sur deux écrans voisins,
+alors qu'ils ne disent pas la même chose : l'un est **comment** on vend, l'autre
+**d'où**. Et `b2b` nommait une AUDIENCE là où `takeaway` et `eatIn` nomment une
+manière — le mouton noir du registre.
+
+Les **libellés de semis** changent, les **clés** ne bougent pas :
+
+|                | Clé (identité) | Libellé                |
+| -------------- | -------------- | ---------------------- |
+| Contexte       | `b2b`          | **Vente en ligne pro** |
+| Point de vente | `pos_b2b`      | **Plateforme pro**     |
+
+Une clé est citée par trois clés étrangères et par le projecteur de la
+plateforme : la renommer est une migration de données. Un libellé se change à
+l'écran, sans rien livrer — c'est précisément la séparation que le registre
+existe pour offrir.
+
+⚠️ Sur une base déjà semée, ces libellés ne s'appliquent pas : `ensureRootContext`
+et `ensureRootPointOfSale` ne repoussent rien (`update: {}`), parce que la racine
+est ineffaçable **et non immuable**. Renommer l'existant est un geste d'écran.
+
+### Ce qui reste ouvert, et qu'il faut savoir
+
+Offrir un contexte que le registre ne connaît pas rend un **409 au message
+générique** (« requête refusée par la base ») au lieu d'un refus nommé. L'écran
+ne propose que des contextes du registre, donc un humain ne peut pas l'atteindre
+— mais un appel direct, si.
+
 ## 5. L'ordre par rapport à C0-d
 
 **d-3 reste utile telle quelle et part avant.** Elle supprime
