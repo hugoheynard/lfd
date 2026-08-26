@@ -78,3 +78,44 @@ export function sellsMode(channels: SalesChannels, mode: keyof ShopChannels): bo
 export function referencedLocations(channels: SalesChannels): string[] {
   return Object.keys(channels.boutiques);
 }
+
+/**
+ * Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend.
+ *
+ * `locationId === null` = contexte sans lieu (le B2B aujourd'hui). Ce n'est pas
+ * une absence de donnée, c'est la donnée.
+ *
+ * C'est la forme CIBLE de la matrice (C0-d) : un ensemble de paires, où lire
+ * « ce contexte est-il vendu ? » ne demande aucune branche — et où une clé
+ * étrangère peut porter ce qu'aucun `jsonb` ne pouvait tenir.
+ */
+export interface SoldChannel {
+  readonly locationId: string | null;
+  readonly context: string;
+}
+
+/**
+ * Déplie la matrice en paires.
+ *
+ * ⚠️ Code de TRANSITION (C0-d, tranche d-1) : il lit l'ANCIENNE forme, où les
+ * modes d'un lieu sont deux clés nommées et le B2B un drapeau. C'est le dernier
+ * endroit du référentiel qui connaît ces trois noms ; la bascule d-2 lit les
+ * paires directement, et d-3 supprime cette fonction avec la colonne.
+ *
+ * Un faux ne produit pas de paire : l'absence EST la donnée.
+ */
+export function soldChannels(channels: SalesChannels): SoldChannel[] {
+  const sold: SoldChannel[] = [];
+  for (const [locationId, modes] of Object.entries(channels.boutiques)) {
+    if (modes.emporter) {
+      sold.push({ locationId, context: "emporter" });
+    }
+    if (modes.surPlace) {
+      sold.push({ locationId, context: "surPlace" });
+    }
+  }
+  if (channels.b2b) {
+    sold.push({ locationId: null, context: "b2b" });
+  }
+  return sold;
+}

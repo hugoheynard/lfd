@@ -2533,6 +2533,10 @@ model Category {
   /// `CategoryLocationRef`. Écrit dans la MÊME transaction que la colonne.
   locationRefs CategoryLocationRef[]
 
+  /// Ce que cette famille vend, une ligne par (lieu, contexte) — voir
+  /// `CategoryChannel`. En service à côté de `channelPreset`, que d-3 supprime.
+  channels CategoryChannel[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
@@ -2630,6 +2634,11 @@ model SalesContext {
   /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
   locations   LocationContext[]
 
+  /// Ce qui se vend dans ce contexte. Le `Restrict` protège la clé : un contexte
+  /// encore vendu ne se supprime pas sous les familles qui le vendent.
+  categoryChannels CategoryChannel[]
+  productChannels  ProductChannel[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -2649,6 +2658,82 @@ model SalesContext {
 /// handle), et joindre sur `id` obligerait chaque lecteur à traduire.
 ///
 /// Seuls les contextes `per_location` y figurent.
+/// ⚠️ Une garantie de ce modèle n'est PAS ici : `category_channel_unique`, index
+/// unique `NULLS NOT DISTINCT` sur `(category_id, location_id, context_key)`.
+/// Sans `NULLS NOT DISTINCT`, deux lignes GLOBALES identiques seraient
+/// distinctes pour Postgres — et le seul contexte concerné, le B2B, serait le
+/// seul non protégé. Posé en SQL par `20260826160000_matrice_de_canaux_en_table` ;
+/// une `migrate dev` proposera de le supprimer : refuser la ligne.
+
+/// **Ce qu'une famille vend** — une ligne par (lieu, contexte).
+///
+/// Remplace la carte imbriquée de `channel_preset`. Deux gains qu'un `jsonb` ne
+/// pouvait pas donner : la lecture n'a plus de branche à faire selon que le
+/// contexte a un lieu ou non, et une clé étrangère porte enfin le mur qui
+/// empêche de supprimer un emplacement encore vendeur.
+model CategoryChannel {
+  id         String   @id @default(cuid())
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  /// `NULL` = contexte **sans lieu** (le B2B aujourd'hui). Ce n'est pas une
+  /// absence de donnée, c'est la donnée : on ne commande pas le B2B à une
+  /// boutique.
+  locationId String?   @map("location_id")
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([locationId])
+  @@index([contextKey])
+  @@map("category_channel")
+  @@schema("pim")
+}
+
+/// **La dérogation de canaux d'une fiche EXISTE** — sa présence est la donnée.
+///
+/// Sans cette ligne parente, « déroge et ne vend nulle part » et « hérite de sa
+/// famille » seraient tous deux zéro ligne, donc indistinguables. Un booléen sur
+/// le produit aurait laissé atteignable l'état impossible « pas de dérogation,
+/// mais des cellules » ; ici la cascade le rend inatteignable.
+model ProductChannelOverride {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  cells ProductChannel[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("product_channel_override")
+  @@schema("pim")
+}
+
+/// ⚠️ Idem : `product_channel_unique` (`NULLS NOT DISTINCT`) vit en SQL.
+
+/// Une cellule de la dérogation d'une fiche. Elle **cascade** depuis
+/// `ProductChannelOverride` : elle ne peut pas exister sans elle.
+model ProductChannel {
+  id        String                 @id @default(cuid())
+  productId String                 @map("product_id")
+  override  ProductChannelOverride @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  locationId String?   @map("location_id")
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([locationId])
+  @@index([contextKey])
+  @@map("product_channel")
+  @@schema("pim")
+}
+
 model LocationContext {
   locationId String       @map("location_id")
   location   Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
@@ -2741,6 +2826,12 @@ model Location {
   /// service à côté de `clickCollect` / `eatIn`, que la tranche d-3 supprime.
   contexts LocationContext[]
 
+  /// Les familles et les fiches qui vendent DEPUIS ce lieu — le mur `Restrict`,
+  /// enfin direct. `CategoryLocationRef` le portait par procuration faute de
+  /// pouvoir poser une clé étrangère dans du `jsonb` ; d-3 le supprime.
+  categoryChannels CategoryChannel[]
+  productChannels  ProductChannel[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -2801,6 +2892,10 @@ model Product {
   /// matrice est déjà indexée par emplacement ; seuls ses **modes** restent
   /// nommés en dur (C0-d).
   channelOverride Json? @map("channel_override")
+
+  /// La dérogation en TABLE — voir `ProductChannelOverride`. En service à côté
+  /// de la colonne ci-dessus, que la tranche d-3 supprime.
+  channelOverrideRows ProductChannelOverride?
 
   /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
   shopifyBinding ShopifyProductBinding?

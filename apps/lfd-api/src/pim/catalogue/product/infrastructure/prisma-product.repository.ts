@@ -21,6 +21,7 @@ import {
   readStringMapColumn,
   salesChannelsColumn,
 } from "../../shared/infrastructure/json-readers.js";
+import { soldChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface NutritionRow {
   allergens: unknown;
@@ -249,6 +250,7 @@ export class PrismaProductRepository extends ProductRepository {
           },
         }),
       ),
+      ...this.overrideOperations(snapshot),
       ...snapshot.variants.map((variant) =>
         this.prisma.productVariant.update({
           where: { id: variant.id },
@@ -263,5 +265,44 @@ export class PrismaProductRepository extends ProductRepository {
         }),
       ),
     ]);
+  }
+
+  /**
+   * Écrit la dérogation de canaux **en table** — la forme cible (C0-d, d-1).
+   *
+   * La ligne parente porte l'EXISTENCE de la dérogation, ses cellules ce
+   * qu'elle contient. C'est ce qui distingue « déroge et ne vend nulle part »
+   * de « hérite de sa famille » : sans elle, les deux seraient zéro ligne, donc
+   * indistinguables.
+   *
+   * Le `deleteMany` sur la parente emporte les cellules par cascade — rien à
+   * nettoyer avant de réécrire, et surtout aucune cellule ne peut survivre à la
+   * dérogation qui la portait.
+   *
+   * Personne ne la LIT encore : c'est le propre d'une tranche « étendre ».
+   */
+  private overrideOperations(snapshot: ProductSnapshot) {
+    const remove = this.prisma.productChannelOverride.deleteMany({
+      where: { productId: snapshot.id },
+    });
+    if (snapshot.channelOverride === null) {
+      return [remove];
+    }
+    const sold = soldChannels(snapshot.channelOverride);
+    return [
+      remove,
+      this.prisma.productChannelOverride.create({ data: { productId: snapshot.id } }),
+      ...(sold.length === 0
+        ? []
+        : [
+            this.prisma.productChannel.createMany({
+              data: sold.map((channel) => ({
+                productId: snapshot.id,
+                locationId: channel.locationId,
+                contextKey: channel.context,
+              })),
+            }),
+          ]),
+    ];
   }
 }

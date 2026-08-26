@@ -14,7 +14,10 @@ import {
   salesChannelsColumn,
   violatedConstraint,
 } from "../../shared/infrastructure/json-readers.js";
-import { referencedLocations } from "../../shared/domain/value-objects/sales-channels.js";
+import {
+  referencedLocations,
+  soldChannels,
+} from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
   id: string;
@@ -108,6 +111,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
         this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
         ...this.vatOperations(snapshot),
         ...this.locationOperations(snapshot),
+        ...this.channelOperations(snapshot),
       ]),
     );
   }
@@ -119,6 +123,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
         this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
         ...this.vatOperations(snapshot),
         ...this.locationOperations(snapshot),
+        ...this.channelOperations(snapshot),
       ]),
     );
   }
@@ -156,6 +161,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
           }),
           ...this.vatOperations(snapshot),
           ...this.locationOperations(snapshot),
+          ...this.channelOperations(snapshot),
         ];
       }),
     ]);
@@ -214,6 +220,35 @@ export class PrismaCategoryRepository extends CategoryRepository {
         : [
             this.prisma.categoryLocationRef.createMany({
               data: locationIds.map((locationId) => ({ categoryId: snapshot.id, locationId })),
+            }),
+          ]),
+    ];
+  }
+
+  /**
+   * Écrit ce que la famille vend, **une ligne par (lieu, contexte)** — la forme
+   * cible de la matrice (C0-d, tranche d-1).
+   *
+   * Dans la MÊME transaction que la colonne dont elle dérive, comme les taux et
+   * l'index de référence : hors transaction, l'une des deux pourrait manquer, et
+   * la table deviendrait une seconde vérité au lieu d'un miroir.
+   *
+   * Personne ne la LIT encore — c'est le propre d'une tranche « étendre ». La
+   * bascule d-2 inverse la source et le miroir.
+   */
+  private channelOperations(snapshot: CategorySnapshot) {
+    const sold = soldChannels(snapshot.channelPreset);
+    return [
+      this.prisma.categoryChannel.deleteMany({ where: { categoryId: snapshot.id } }),
+      ...(sold.length === 0
+        ? []
+        : [
+            this.prisma.categoryChannel.createMany({
+              data: sold.map((channel) => ({
+                categoryId: snapshot.id,
+                locationId: channel.locationId,
+                contextKey: channel.context,
+              })),
             }),
           ]),
     ];

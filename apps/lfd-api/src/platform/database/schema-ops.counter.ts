@@ -116,8 +116,18 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   SkuRegistry: "pim",
   Category: "pim",
   CategoryContextVat: "pim",
+  // L'index de référence des emplacements cités par la matrice `jsonb` — le
+  // `Restrict` qu'aucune clé étrangère ne pouvait porter. C0-d le remplace par
+  // `CategoryChannel`, qui le contient avec le contexte en plus.
+  CategoryLocationRef: "pim",
+  // La matrice de canaux en table (C0-d) : une ligne par (lieu, contexte).
+  CategoryChannel: "pim",
+  ProductChannelOverride: "pim",
+  ProductChannel: "pim",
   ProductContextVat: "pim",
   SalesContext: "pim",
+  // Ce qu'un point de vente offre — remplace `clickCollect` / `eatIn`.
+  LocationContext: "pim",
   VatRate: "pim",
   Location: "pim",
   LocationTable: "pim",

@@ -37,6 +37,9 @@ export abstract class PimPrismaService {
   abstract readonly vatRate: PrismaService["vatRate"];
   abstract readonly salesContext: PrismaService["salesContext"];
   abstract readonly locationContext: PrismaService["locationContext"];
+  abstract readonly categoryChannel: PrismaService["categoryChannel"];
+  abstract readonly productChannelOverride: PrismaService["productChannelOverride"];
+  abstract readonly productChannel: PrismaService["productChannel"];
   abstract readonly categoryContextVat: PrismaService["categoryContextVat"];
   abstract readonly categoryLocationRef: PrismaService["categoryLocationRef"];
   abstract readonly productContextVat: PrismaService["productContextVat"];
