@@ -29,12 +29,15 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
     const rate = await requireRate(this.rates, command.id);
     const before = rate.snapshot();
     const { payload } = command;
+
     rate.revise({
       name: payload.name,
       description: payload.description ?? "",
       percent: payload.percent,
     });
+
     await ensureRateFree(this.rates, rate.percent, rate.id);
+
     await this.uow.run(async () => {
       const ticket = await this.journalize(before, rate.snapshot());
       await this.rates.save(rate, ticket);
