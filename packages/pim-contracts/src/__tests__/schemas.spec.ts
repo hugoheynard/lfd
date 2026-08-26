@@ -22,7 +22,7 @@ describe("pim-contracts payload schemas", () => {
     const base = {
       name: "Village",
       clickCollect: true,
-      surPlace: true,
+      eatIn: true,
       baseUrl: "",
     };
     expect(createLocationPayloadSchema.safeParse({ ...base, tableCount: 12 }).success).toBe(true);

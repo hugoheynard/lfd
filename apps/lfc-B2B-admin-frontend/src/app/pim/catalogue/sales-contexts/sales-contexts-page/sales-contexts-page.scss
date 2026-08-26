@@ -3,10 +3,10 @@
 }
 
 .scope {
-  color: var(--fold-text-muted);
+  color: var(--fold-color-text-muted);
 }
 
 .root-note {
   display: block;
-  margin-block-start: var(--fold-space-4);
+  margin-block-start: var(--fold-space-lg);
 }
