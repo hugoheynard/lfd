@@ -54,25 +54,6 @@ export class RootSalesContextProtectedError extends BusinessError {
 }
 
 /**
- * `perLocation` ne se change pas après coup.
- *
- * Il décide de la FORME des lignes déjà écrites : un contexte vendu depuis des
- * lieux porte des paires `(lieu, contexte)`, un contexte global des paires
- * `(∅, contexte)`. Le basculer laisserait les anciennes lignes dans une forme
- * que plus rien ne sait lire — et les emplacements qui l'offrent pointeraient
- * un contexte qui n'a plus de lieu.
- */
-export class SalesContextScopeFrozenError extends BusinessError {
-  constructor(key: string) {
-    super(
-      "catalogue.sales_context.scope_frozen",
-      `« ${key} » : on ne change pas la portée d'un contexte après sa création. ` +
-        `Créez-en un autre, et retirez celui-ci quand plus rien ne le vend.`,
-    );
-  }
-}
-
-/**
  * Deux contextes **projetés vers Shopify** ne peuvent pas partager un suffixe
  * de handle : ils produiraient la même URL de produit.
  *

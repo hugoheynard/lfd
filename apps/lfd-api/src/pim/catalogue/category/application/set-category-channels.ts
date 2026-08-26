@@ -3,14 +3,11 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { changesBetween } from "../../../journal/changes.js";
-import { CategoryUnknownLocationError } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { KnownLocationsReader } from "../domain/ports/known-locations.reader.js";
+import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
+import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
-import {
-  referencedLocations,
-  type SalesChannels,
-} from "../../shared/domain/value-objects/sales-channels.js";
+import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { requireCategory } from "./category-support.js";
 
 export class SetCategoryChannelsCommand {
@@ -21,14 +18,13 @@ export class SetCategoryChannelsCommand {
 }
 
 /**
- * Règle où une famille se vend — et **refuse un emplacement qui n'existe pas**.
+ * Règle où une famille se vend — et **refuse ce qui ne peut pas se vendre**.
  *
- * La grille est indexée par identifiant d'emplacement dans une colonne `jsonb` :
- * aucune clé étrangère ne tient cette référence. `RemoveLocation` en tire
- * déjà la conséquence et refuse de supprimer sous une famille qui coche. Rien
- * ne gardait le sens inverse : un preset citant `emp_fantome` était accepté,
- * persisté, puis rendu INVISIBLE par l'écran — qui ignore les clés inconnues.
- * Un mur à une seule face n'est pas un mur.
+ * Deux refus, pas un seul : un point de vente qui n'existe pas (le mur inverse
+ * existait déjà — on ne supprime pas un point de vente encore vendu — mais rien
+ * ne gardait ce sens-ci), et un contexte que ce point de vente n'offre pas.
+ * Vendre « sur place » depuis une boutique sans salle produisait une fiche pour
+ * un lieu qui ne sert pas.
  */
 @CommandHandler(SetCategoryChannelsCommand)
 export class SetCategoryChannelsHandler implements ICommandHandler<
@@ -37,7 +33,7 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
 > {
   constructor(
     private readonly categories: CategoryRepository,
-    private readonly locations: KnownLocationsReader,
+    private readonly offers: PointOfSaleOfferReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -45,7 +41,7 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
-    await this.refuseUnknownLocations(command.channels);
+    await refuseUnsellableChannels(command.channels, this.offers);
     const before = category.channelPreset;
     // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
     // lui qui sait quel contexte s'appuie sur quel canal.
@@ -65,15 +61,5 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
           : this.journal.untraced("canaux de famille enregistrés sans modification");
       await this.categories.save(category, ticket);
     });
-  }
-
-  private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {
-    const cited = referencedLocations(channels);
-    const known = await this.locations.existing(cited);
-    for (const id of cited) {
-      if (!known.has(id)) {
-        throw new CategoryUnknownLocationError(id);
-      }
-    }
   }
 }

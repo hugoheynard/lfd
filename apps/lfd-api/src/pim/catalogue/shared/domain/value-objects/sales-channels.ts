@@ -1,14 +1,19 @@
-import { ROOT_POINT_OF_SALE_ID } from "../../../../points-of-sale/domain/value-objects/bootstrap-point-of-sale.js";
+import {
+  isRootPointOfSale,
+  ROOT_POINT_OF_SALE_ID,
+} from "../../../../points-of-sale/domain/value-objects/bootstrap-point-of-sale.js";
 
 /**
- * Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend.
+ * Un canal **vendu** : un contexte, et le point de vente qui le vend.
  *
- * `locationId === null` = contexte **sans lieu** (le B2B aujourd'hui). Ce n'est
- * pas une absence de donnée, c'est la donnée : on ne commande pas le B2B à une
- * boutique.
+ * `pointOfSaleId` n'est **pas nullable**, et c'est le gain de tout le chantier.
+ * C'était `locationId: string | null`, où `null` voulait dire « le B2B » — un
+ * `NULL` porteur de sens, donc une ligne absente quelque part. La plateforme
+ * professionnelle a désormais la sienne : tout canal se vend depuis un point de
+ * vente, sans exception à retenir.
  */
 export interface SoldChannel {
-  readonly locationId: string | null;
+  readonly pointOfSaleId: string;
   readonly context: string;
 }
 
@@ -18,7 +23,7 @@ export interface SoldChannel {
  * ## Ce que cette forme a remplacé
  *
  * C'était deux cartes imbriquées : `{ boutiques: Record<locationId, { emporter,
- * surPlace }>, b2b: boolean }`. Les emplacements y étaient deja une donnée
+ * surPlace }>, b2b: boolean }`. Les emplacements y étaient déjà une donnée
  * (clé = identifiant), mais les **modes** étaient deux champs nommés et le B2B
  * un drapeau. Trois conséquences, toutes payées :
  *
@@ -46,7 +51,7 @@ export function emptySalesChannels(): SalesChannels {
 
 /** La même paire, deux fois écrite ? Une seule ligne. */
 function keyOf(channel: SoldChannel): string {
-  return `${channel.locationId ?? ""} ${channel.context}`;
+  return `${channel.pointOfSaleId} ${channel.context}`;
 }
 
 /**
@@ -59,7 +64,10 @@ function keyOf(channel: SoldChannel): string {
 export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
   const seen = new Map<string, SoldChannel>();
   for (const channel of channels) {
-    seen.set(keyOf(channel), { locationId: channel.locationId, context: channel.context });
+    seen.set(keyOf(channel), {
+      pointOfSaleId: channel.pointOfSaleId,
+      context: channel.context,
+    });
   }
   return [...seen.values()].sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
 }
@@ -67,22 +75,16 @@ export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
 /**
  * Ce contexte est-il vendu **quelque part** ?
  *
- * Aucune branche, et c'est tout l'intérêt : la fonction ne sait pas lequel des
- * contextes a besoin d'un lieu, ni lequel est le B2B. Elle ne connaît aucun nom.
+ * Aucune branche, et c'est tout l'intérêt : la fonction ne connaît aucun nom de
+ * contexte, et ne se demande plus lequel aurait besoin d'un lieu.
  */
 export function sellsContext(channels: SalesChannels, contextKey: string): boolean {
   return channels.some((channel) => channel.context === contextKey);
 }
 
-/** Les identifiants d'emplacement cités — sans doublon, contextes globaux exclus. */
-export function referencedLocations(channels: SalesChannels): string[] {
-  const ids = new Set<string>();
-  for (const channel of channels) {
-    if (channel.locationId !== null) {
-      ids.add(channel.locationId);
-    }
-  }
-  return [...ids];
+/** Les points de vente cités, sans doublon. */
+export function referencedPointsOfSale(channels: SalesChannels): string[] {
+  return [...new Set(channels.map((channel) => channel.pointOfSaleId))];
 }
 
 /** Les contextes vendus, sans doublon — ce que la fiche projette. */
@@ -90,28 +92,44 @@ export function soldContexts(channels: SalesChannels): string[] {
   return [...new Set(channels.map((channel) => channel.context))];
 }
 
-/** Ce lieu vend-il ce contexte ? La question de l'écran, case par case. */
+/** Ce point de vente vend-il ce contexte ? La question de l'écran, case par case. */
 export function sellsAt(
   channels: SalesChannels,
-  locationId: string | null,
+  pointOfSaleId: string,
   contextKey: string,
 ): boolean {
   return channels.some(
-    (channel) => channel.locationId === locationId && channel.context === contextKey,
+    (channel) => channel.pointOfSaleId === pointOfSaleId && channel.context === contextKey,
   );
 }
 
 /**
- * Le **point de vente** d'un canal vendu.
+ * L'**emplacement** d'un canal, tel que la colonne héritée l'attend.
  *
- * ⚠️ Code de TRANSITION (p-1, `documentation/pim/point-de-vente.md`). Toute la
- * règle de traduction tient ici : un lieu garde son identifiant, et le `null`
- * qui voulait dire « le B2B » devient la ligne qui le dit. Elle est écrite une
- * seule fois pour que les deux dépôts — familles et fiches — ne puissent pas la
- * traduire différemment.
+ * ⚠️ Code de TRANSITION (p-2, `documentation/pim/point-de-vente.md`). Les
+ * lectures sont basculées, mais `location_id` reste écrite : pendant le
+ * déploiement, le binaire de la version précédente la LIT encore, et cesser de
+ * la remplir rendrait invisible tout ce qui est enregistré dans cette fenêtre.
  *
- * p-2 lit cette colonne, p-3 supprime `locationId` — et cette fonction avec.
+ * La règle est l'inverse exacte de celle de p-1 : une plateforme n'est pas un
+ * lieu. p-3 supprime la colonne — et cette fonction avec.
  */
-export function pointOfSaleOf(channel: SoldChannel): string {
-  return channel.locationId ?? ROOT_POINT_OF_SALE_ID;
+export function legacyLocationOf(channel: SoldChannel): string | null {
+  return isRootPointOfSale(channel.pointOfSaleId) ? null : channel.pointOfSaleId;
+}
+
+/**
+ * Le point de vente d'une LIGNE lue, colonne héritée comprise.
+ *
+ * ⚠️ Code de TRANSITION (p-2). `point_of_sale_id` est remplie depuis p-1, mais
+ * une ligne écrite par le binaire précédent PENDANT le déploiement de p-1 ne
+ * l'a pas. La retomber sur `location_id` évite de perdre ces lignes-là ; p-3
+ * les rattrape par un dernier remplissage, puis pose le `NOT NULL` — et cette
+ * fonction disparaît.
+ */
+export function pointOfSaleOfRow(row: {
+  readonly pointOfSaleId: string | null;
+  readonly locationId: string | null;
+}): string {
+  return row.pointOfSaleId ?? row.locationId ?? ROOT_POINT_OF_SALE_ID;
 }

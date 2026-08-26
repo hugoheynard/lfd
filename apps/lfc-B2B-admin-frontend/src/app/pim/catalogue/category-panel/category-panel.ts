@@ -30,7 +30,7 @@ import type { Category, SalesChannels, VatRate } from '../catalogue-api';
 import type { CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
-import { LocationStore } from '../../locations/location-store';
+import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 
 /**
  * Charge passée à `open()` : les taux disponibles, et la famille à régler —
@@ -82,7 +82,7 @@ export interface CategoryPanelData {
 export class CategoryPanel {
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
-  private readonly locationStore = inject(LocationStore);
+  private readonly pointStore = inject(PointOfSaleStore);
   private readonly categoryStore = inject(CategoryStore);
 
   readonly data = input<CategoryPanelData | undefined>(undefined);
@@ -133,8 +133,8 @@ export class CategoryPanel {
       .filter((item) => !item.isArchived && item.id !== this.existing()?.id),
   );
   /** Les points de vente à proposer — la liste du référentiel, jamais une constante. */
-  protected readonly locations = computed(() => this.locationStore.items());
-  protected readonly locationsError = computed(() => this.locationStore.loadError());
+  protected readonly pointsOfSale = computed(() => this.pointStore.items());
+  protected readonly pointsOfSaleError = computed(() => this.pointStore.loadError());
   protected readonly activeProducts = computed(() => this.existing()?.activeProductCount ?? 0);
 
   /**

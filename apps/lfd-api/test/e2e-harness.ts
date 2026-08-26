@@ -189,7 +189,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
       // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
       // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
-      // un lieu » quand `perLocation` a été ajouté sans arriver ici.
+      // un lieu » quand une colonne a été ajoutée sans arriver ici.
       await app.get(PointOfSaleReader).ensureRootPointOfSale();
       await seedE2eStaff(prisma);
       // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
@@ -290,10 +290,10 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * (`20260824150000`, puis `20260826140000` pour `perLocation`). Idempotent :
  * c'est une garantie de présence, pas une écriture.
  *
- * ⚠️ **Toute colonne ajoutée au registre doit arriver ici aussi.** Sans
- * `perLocation`, ce double recréait un B2B « vendu depuis un lieu » — plus
- * permissif que la production, et donc un test d'autant plus vert qu'il ne
- * vérifiait rien.
+ * ⚠️ **Toute colonne ajoutée au registre doit arriver ici aussi.** Un double
+ * qui oublie une colonne est plus permissif que la production, donc un test
+ * d'autant plus vert qu'il ne vérifie rien — c'est arrivé avec `perLocation`,
+ * qui recréait un B2B « vendu depuis un lieu ».
  */
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
   const contexts = [
@@ -302,7 +302,6 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       key: "takeaway",
       label: "À emporter",
       handleSuffix: "",
-      perLocation: true,
       active: true,
       shopifyProjected: true,
       position: 1,
@@ -312,7 +311,6 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       key: "eatIn",
       label: "Sur place",
       handleSuffix: "-surplace",
-      perLocation: true,
       active: true,
       shopifyProjected: false,
       position: 2,
@@ -324,7 +322,6 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       // Vide : le B2B n'est pas projeté vers Shopify, et `handleSuffix` est du
       // vocabulaire de ce canal.
       handleSuffix: "",
-      perLocation: false,
       active: true,
       shopifyProjected: false,
       position: 3,

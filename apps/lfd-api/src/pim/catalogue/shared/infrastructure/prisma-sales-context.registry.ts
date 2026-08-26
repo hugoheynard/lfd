@@ -10,7 +10,6 @@ interface SalesContextRow {
   readonly key: string;
   readonly label: string;
   readonly handleSuffix: string;
-  readonly perLocation: boolean;
   readonly active: boolean;
   readonly shopifyProjected: boolean;
   readonly position: number;
@@ -37,7 +36,6 @@ function toContext(row: SalesContextRow): SalesContext {
     key: row.key,
     label: row.label,
     handleSuffix: row.handleSuffix,
-    perLocation: row.perLocation,
     active: row.active,
     shopifyProjected: row.shopifyProjected,
     position: row.position,

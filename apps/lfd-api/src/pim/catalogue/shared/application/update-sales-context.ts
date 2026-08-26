@@ -9,7 +9,6 @@ import { ensureHandleFree, requireContext } from "./sales-context-support.js";
 
 export interface UpdateSalesContextPayload {
   readonly label: string;
-  readonly perLocation: boolean;
   readonly handleSuffix: string;
   readonly active: boolean;
   readonly shopifyProjected: boolean;
@@ -25,10 +24,7 @@ export class UpdateSalesContextCommand {
 
 /**
  * Règle un contexte de vente.
- *
- * `perLocation` figure dans la charge sans être modifiable : l'écran renvoie la
- * fiche entière, et une valeur reçue qu'on ignorerait en silence laisserait
- * croire au réglage. L'agrégat la compare et REFUSE si elle a bougé.
+
  */
 @CommandHandler(UpdateSalesContextCommand)
 export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesContextCommand, void> {
@@ -43,7 +39,6 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
     const context = await requireContext(this.contexts, key);
     const before = traced(context);
 
-    context.refuseScopeChange(payload.perLocation);
     context.revise(payload);
     await ensureHandleFree(this.contexts, context.snapshot());
 

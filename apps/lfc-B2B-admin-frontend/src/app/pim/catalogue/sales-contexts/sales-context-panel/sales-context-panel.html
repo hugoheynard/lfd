@@ -23,26 +23,6 @@
     (valueChange)="draftLabel.set($event)"
   />
 
-  @if (isEdit()) {
-    <!-- La portée décide de la FORME des lignes déjà écrites. On la montre,
-         on ne la propose pas : le serveur refuse de la changer, et un
-         interrupteur qui répondrait 409 n'est pas un interrupteur. -->
-    <fold-callout appearance="inset" variant="info">
-      <strong
-        >{{ draftPerLocation() ? 'Vendu depuis un point de vente' : 'Vendu partout' }}.</strong
-      >
-      La portée se choisit à l'ouverture et ne change plus — elle donne leur forme aux lignes déjà
-      écrites. Pour l'autre portée, ouvrez un second contexte.
-    </fold-callout>
-  } @else {
-    <fold-checkbox
-      label="Ce contexte se vend depuis un point de vente"
-      hint="Décoché, il se vend partout — comme le B2B, où l'on commande à l'entreprise et non à une boutique. Ce choix est définitif."
-      [checked]="draftPerLocation()"
-      (checkedChange)="draftPerLocation.set($event)"
-    />
-  }
-
   <fold-checkbox
     label="En service"
     hint="Hors service, il ne se règle plus et ne facture plus. Réversible."

@@ -14,8 +14,8 @@ import {
 } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
-import { CategoryUnknownLocationError } from "../../../category/domain/errors/category-errors.js";
-import { KnownLocationsReader } from "../../../category/domain/ports/known-locations.reader.js";
+import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
+import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
 
@@ -25,7 +25,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    perLocation: true,
     active: true,
     shopifyProjected: true,
     position: 1,
@@ -35,7 +34,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    perLocation: false,
     active: true,
     shopifyProjected: false,
     position: 2,
@@ -84,14 +82,15 @@ function snapshot(
   };
 }
 
-/** Tous les emplacements cités existent — le mur du `jsonb`, ouvert. */
-const allLocationsKnown: KnownLocationsReader = {
-  existing: (ids: readonly string[]) => Promise.resolve(new Set(ids)),
+/** Tous les points de vente cités existent, et offrent tout. */
+const allPointsOfSaleOffer: PointOfSaleOfferReader = {
+  offersOf: (ids: readonly string[]) =>
+    Promise.resolve(new Map(ids.map((id) => [id, new Set(["takeaway", "eatIn", "b2b"])]))),
 };
 
-/** Aucun n'existe : la fiche cite un emplacement fantôme. */
-const noLocationKnown: KnownLocationsReader = {
-  existing: () => Promise.resolve(new Set<string>()),
+/** Aucun n'existe : la fiche cite un point de vente fantôme. */
+const noPointOfSaleKnown: PointOfSaleOfferReader = {
+  offersOf: () => Promise.resolve(new Map()),
 };
 
 /** Reconstitue à chaque lecture : un test ne doit pas passer parce qu'il tient
@@ -147,8 +146,8 @@ function rates(): VatRateRepository {
 }
 
 const SELLS_ALL: SalesChannels = [
-  { locationId: "emp_1", context: "takeaway" },
-  { locationId: null, context: "b2b" },
+  { pointOfSaleId: "emp_1", context: "takeaway" },
+  { pointOfSaleId: "pos_b2b", context: "b2b" },
 ];
 
 describe("SetProductVatHandler", () => {
@@ -227,7 +226,7 @@ describe("SetProductVatHandler", () => {
     await expect(
       new SetProductVatHandler(
         products,
-        familySelling([{ locationId: "emp_1", context: "takeaway" }]),
+        familySelling([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
         rates(),
         registry,
         new RecordingJournal(),
@@ -261,23 +260,25 @@ describe("SetProductChannelsHandler", () => {
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allLocationsKnown,
+      allPointsOfSaleOffer,
       registry,
       journal,
       new DirectUnitOfWork(),
-    ).execute(new SetProductChannelsCommand("prd_1", [{ locationId: null, context: "b2b" }]));
+    ).execute(
+      new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "pos_b2b", context: "b2b" }]),
+    );
 
-    expect(products.saved.channelOverride).toEqual([{ locationId: null, context: "b2b" }]);
+    expect(products.saved.channelOverride).toEqual([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
     expect(journal.types()).toEqual(["product.channels_changed"]);
   });
 
   it("rend la fiche à sa famille avec `null`", async () => {
-    const products = new FakeProducts(snapshot({}, [{ locationId: null, context: "b2b" }]));
+    const products = new FakeProducts(snapshot({}, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]));
 
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allLocationsKnown,
+      allPointsOfSaleOffer,
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -296,16 +297,16 @@ describe("SetProductChannelsHandler", () => {
       new SetProductChannelsHandler(
         products,
         familySelling(SELLS_ALL),
-        noLocationKnown,
+        noPointOfSaleKnown,
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
       ).execute(
         new SetProductChannelsCommand("prd_1", [
-          { locationId: "emp_fantome", context: "takeaway" },
+          { pointOfSaleId: "emp_fantome", context: "takeaway" },
         ]),
       ),
-    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
+    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
   });
 
   it("EFFACE le taux d’un canal que la fiche vient de fermer", async () => {
@@ -318,12 +319,12 @@ describe("SetProductChannelsHandler", () => {
     await new SetProductChannelsHandler(
       products,
       familySelling(SELLS_ALL),
-      allLocationsKnown,
+      allPointsOfSaleOffer,
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(
-      new SetProductChannelsCommand("prd_1", [{ locationId: "emp_1", context: "takeaway" }]),
+      new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "emp_1", context: "takeaway" }]),
     );
 
     expect(products.saved.vatByContext).toEqual({});

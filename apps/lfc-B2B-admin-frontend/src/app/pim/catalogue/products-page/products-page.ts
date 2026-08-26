@@ -22,8 +22,8 @@ import {
   type FoldTableTone,
 } from 'fold-ng';
 
-import { NO_CHANNELS, locationsSelling, resolveChannels } from '../../data/channels';
-import { LocationStore } from '../../locations/location-store';
+import { NO_CHANNELS, pointsOfSaleSelling, resolveChannels } from '../../data/channels';
+import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
 import {
@@ -73,10 +73,10 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
 })
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
-  private readonly locationStore = inject(LocationStore);
+  private readonly pointStore = inject(PointOfSaleStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
-  protected readonly locations = this.locationStore.items;
+  protected readonly pointsOfSale = this.pointStore.items;
   private readonly shopify = inject(ShopifyApi);
   private readonly router = inject(Router);
 
@@ -225,7 +225,7 @@ export class ProductsPage {
    * a disparu, c'est de le savoir autrement que par la clé qu'on lui donne.
    */
   protected rowSelling(product: Product, contextKey: string): string[] {
-    return locationsSelling(this.rowChannels(product), contextKey, this.locations());
+    return pointsOfSaleSelling(this.rowChannels(product), contextKey, this.pointsOfSale());
   }
 
   protected rowInherited(product: Product): boolean {

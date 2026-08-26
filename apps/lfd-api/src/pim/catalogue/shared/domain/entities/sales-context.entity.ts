@@ -2,7 +2,6 @@ import {
   RootSalesContextProtectedError,
   SalesContextKeyInvalidError,
   SalesContextLabelRequiredError,
-  SalesContextScopeFrozenError,
 } from "../errors/sales-context-errors.js";
 import { isRootContext } from "../value-objects/bootstrap-contexts.js";
 import type { SalesContext } from "../value-objects/sales-context.js";
@@ -19,7 +18,6 @@ export interface SalesContextRevision {
 export interface NewSalesContextInput extends SalesContextRevision {
   readonly id: string;
   readonly key: string;
-  readonly perLocation: boolean;
 }
 
 /**
@@ -36,10 +34,6 @@ export interface NewSalesContextInput extends SalesContextRevision {
  * - **la clé est une identité**, pas un libellé. Trois tables la citent par clé
  *   étrangère et les taux voyagent par elle ; elle a une forme, et elle ne
  *   change jamais ;
- * - **la portée est figée** après la création. `perLocation` décide de la FORME
- *   des lignes déjà écrites — un contexte vendu depuis des lieux porte des
- *   paires `(lieu, contexte)`, un contexte global des paires `(∅, contexte)`.
- *   Le basculer laisserait les anciennes dans une forme que plus rien ne lit ;
  * - **la racine est intouchable**, sauf pour être mise hors service.
  *
  * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE contexte
@@ -50,7 +44,6 @@ export class SalesContextAggregate {
   private constructor(
     private readonly identity: string,
     private readonly keyValue: string,
-    private readonly perLocationValue: boolean,
     private labelValue: string,
     private handleSuffixValue: string,
     private activeValue: boolean,
@@ -62,7 +55,6 @@ export class SalesContextAggregate {
     return new SalesContextAggregate(
       input.id,
       requireKey(input.key),
-      input.perLocation,
       requireLabel(input.label),
       input.handleSuffix.trim(),
       input.active,
@@ -75,7 +67,6 @@ export class SalesContextAggregate {
     return new SalesContextAggregate(
       snapshot.id,
       snapshot.key,
-      snapshot.perLocation,
       snapshot.label,
       snapshot.handleSuffix,
       snapshot.active,
@@ -115,13 +106,6 @@ export class SalesContextAggregate {
     this.positionValue = revision.position;
   }
 
-  /** Refuse un changement de portée — le handler l'appelle avant de réviser. */
-  refuseScopeChange(wanted: boolean): void {
-    if (wanted !== this.perLocationValue) {
-      throw new SalesContextScopeFrozenError(this.keyValue);
-    }
-  }
-
   /** Refuse d'effacer la racine. Le reste dépend de ce qui la vend. */
   refuseRemovalIfRoot(): void {
     if (this.isRoot) {
@@ -135,7 +119,6 @@ export class SalesContextAggregate {
       key: this.keyValue,
       label: this.labelValue,
       handleSuffix: this.handleSuffixValue,
-      perLocation: this.perLocationValue,
       active: this.activeValue,
       shopifyProjected: this.shopifyProjectedValue,
       position: this.positionValue,

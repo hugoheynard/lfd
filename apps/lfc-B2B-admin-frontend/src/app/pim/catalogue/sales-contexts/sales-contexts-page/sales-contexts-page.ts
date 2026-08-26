@@ -93,14 +93,14 @@ export class SalesContextsPage {
   }
 
   /**
-   * « 2 points de vente » — ou rien pour un contexte global. Le zéro d'un
-   * contexte sans lieu n'est pas un manque : la question ne se pose pas pour
-   * lui, et l'afficher ferait croire qu'il attend qu'on l'y rattache.
+   * « 2 points de vente » — combien l'OFFRENT, plateforme comprise.
+   *
+   * Il y avait ici une branche : un contexte « global » affichait « Partout —
+   * aucun lieu requis » au lieu d'un compte. Elle est tombée avec
+   * `perLocation` (p-2). Le B2B compte désormais 1 : la plateforme
+   * professionnelle l'offre, et elle est un point de vente comme un autre.
    */
   protected scopeLabel(context: SalesContextAdminView): string {
-    if (!context.perLocation) {
-      return 'Partout — aucun lieu requis';
-    }
     const count = context.offeredByLocations;
     return count === 0 ? 'Aucun point de vente' : `${count} point(s) de vente`;
   }

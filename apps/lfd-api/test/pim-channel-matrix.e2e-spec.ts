@@ -62,29 +62,29 @@ async function aProduct(categoryId: string, nameFr: string): Promise<string> {
   return jsonBody<{ id: string }>(response).id;
 }
 
-/** Les paires écrites pour une famille, triées — « lieu:contexte », `—` = sans lieu. */
+/** Les paires écrites pour une famille, triées — « point de vente:contexte ». */
 async function categoryPairs(categoryId: string): Promise<string[]> {
   const rows = await ctx.prisma.categoryChannel.findMany({ where: { categoryId } });
-  return rows.map((row) => `${row.locationId ?? "—"}:${row.contextKey}`).sort();
+  return rows.map((row) => `${row.pointOfSaleId}:${row.contextKey}`).sort();
 }
 
 async function productPairs(productId: string): Promise<string[]> {
   const rows = await ctx.prisma.productChannel.findMany({ where: { productId } });
-  return rows.map((row) => `${row.locationId ?? "—"}:${row.contextKey}`).sort();
+  return rows.map((row) => `${row.pointOfSaleId}:${row.contextKey}`).sort();
 }
 
 async function hasOverride(productId: string): Promise<boolean> {
   return (await ctx.prisma.productChannelOverride.findUnique({ where: { productId } })) !== null;
 }
 
-describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
+describe("ce qu'une famille vend s'écrit en paires (point de vente, contexte)", () => {
   it("déplie un mode coché en une ligne", async () => {
     const location = await aLocation("Village");
     const category = await aCategory("Viennoiseries");
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
 
     expect(await categoryPairs(category)).toEqual([`${location}:takeaway`]);
@@ -97,8 +97,8 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send([
-        { locationId: location, context: "takeaway" },
-        { locationId: location, context: "eatIn" },
+        { pointOfSaleId: location, context: "takeaway" },
+        { pointOfSaleId: location, context: "eatIn" },
       ])
       .expect(200);
 
@@ -111,15 +111,15 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
    * n'est pas une absence de donnée, c'est la donnée — on ne commande pas à une
    * boutique.
    */
-  it("écrit le contexte SANS LIEU avec un location_id nul", async () => {
+  it("écrit le contexte de la plateforme sur la LIGNE de la plateforme", async () => {
     const category = await aCategory("Viennoiseries");
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: null, context: "b2b" }])
+      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
       .expect(200);
 
-    expect(await categoryPairs(category)).toEqual(["—:b2b"]);
+    expect(await categoryPairs(category)).toEqual(["pos_b2b:b2b"]);
   });
 
   it("RETIRE les lignes qu'on décoche", async () => {
@@ -129,13 +129,13 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
       staff().put(`${CATEGORIES}/${category}/channels`).send(body).expect(200);
 
     await channels([
-      { locationId: location, context: "takeaway" },
-      { locationId: location, context: "eatIn" },
-      { locationId: null, context: "b2b" },
+      { pointOfSaleId: location, context: "takeaway" },
+      { pointOfSaleId: location, context: "eatIn" },
+      { pointOfSaleId: "pos_b2b", context: "b2b" },
     ]);
     expect(await categoryPairs(category)).toHaveLength(3);
 
-    await channels([{ locationId: location, context: "takeaway" }]);
+    await channels([{ pointOfSaleId: location, context: "takeaway" }]);
     expect(await categoryPairs(category)).toEqual([`${location}:takeaway`]);
 
     await channels([]);
@@ -173,9 +173,9 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send([
-        { locationId: location, context: "takeaway" },
-        { locationId: location, context: "eatIn" },
-        { locationId: null, context: "b2b" },
+        { pointOfSaleId: location, context: "takeaway" },
+        { pointOfSaleId: location, context: "eatIn" },
+        { pointOfSaleId: "pos_b2b", context: "b2b" },
       ])
       .expect(200);
 
@@ -183,13 +183,13 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
         channels: [
-          { locationId: location, context: "takeaway" },
-          { locationId: null, context: "b2b" },
+          { pointOfSaleId: location, context: "takeaway" },
+          { pointOfSaleId: "pos_b2b", context: "b2b" },
         ],
       })
       .expect(200);
 
-    expect(await productPairs(product)).toEqual([`${location}:takeaway`, "—:b2b"]);
+    expect(await productPairs(product)).toEqual([`${location}:takeaway`, "pos_b2b:b2b"]);
   });
 
   /**
@@ -203,12 +203,12 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     const product = await aProduct(category, "Croissant");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
     await staff()
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
-        channels: [{ locationId: location, context: "takeaway" }],
+        channels: [{ pointOfSaleId: location, context: "takeaway" }],
       })
       .expect(200);
     expect(await productPairs(product)).toHaveLength(1);
@@ -232,10 +232,10 @@ describe("le mur devient direct", () => {
     const category = await aCategory("Viennoiseries");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
 
-    expect(await ctx.prisma.categoryChannel.count({ where: { locationId: location } })).toBe(1);
+    expect(await ctx.prisma.categoryChannel.count({ where: { pointOfSaleId: location } })).toBe(1);
 
     const response = await staff().delete(`${LOCATIONS}/${location}`);
     expect(response.status).toBe(409);

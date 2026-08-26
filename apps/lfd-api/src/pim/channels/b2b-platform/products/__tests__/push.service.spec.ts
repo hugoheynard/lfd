@@ -123,7 +123,9 @@ async function build(
                       new Map(products.map((p) => [p.id, category.vatByContext])),
                       // Et les canaux : ces fiches se vendent aux professionnels,
                       // sinon ce canal les écarterait.
-                      new Map(products.map((p) => [p.id, [{ locationId: null, context: "b2b" }]])),
+                      new Map(
+                        products.map((p) => [p.id, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]]),
+                      ),
                       generatedAt,
                     ),
                     candidates: publishedIds.length,

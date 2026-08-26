@@ -85,10 +85,12 @@ export function missingLocales(text: LocalizedText): readonly Locale[] {
 /** Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend. */
 export interface SoldChannel {
   /**
-   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
-   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   * Le point de vente qui vend ce contexte. **Jamais `null`** : c'était
+   * `locationId`, où `null` voulait dire « le B2B » — un `NULL` porteur de
+   * sens, donc une ligne absente quelque part. La plateforme professionnelle a
+   * la sienne depuis p-0.
    */
-  readonly locationId: string | null;
+  readonly pointOfSaleId: string;
   /** La clé du contexte, telle que le registre la porte. */
   readonly context: string;
 }

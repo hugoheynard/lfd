@@ -18,7 +18,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    perLocation: true,
     active: true,
     shopifyProjected: true,
     position: 1,
@@ -28,7 +27,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "eatIn",
     label: "Sur place",
     handleSuffix: "-surplace",
-    perLocation: true,
     active: true,
     shopifyProjected: false,
     position: 2,
@@ -38,7 +36,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    perLocation: false,
     active: true,
     shopifyProjected: false,
     position: 3,
@@ -104,8 +101,8 @@ describe("l’agrégat Category", () => {
       expect(() =>
         archived().setChannels(
           channels([
-            { locationId: "emp_1", context: "takeaway" },
-            { locationId: "emp_1", context: "eatIn" },
+            { pointOfSaleId: "emp_1", context: "takeaway" },
+            { pointOfSaleId: "emp_1", context: "eatIn" },
           ]),
           CONTEXTS,
         ),
@@ -155,26 +152,26 @@ describe("l’agrégat Category", () => {
    */
   describe("un taux ne se règle que pour un canal vendu", () => {
     it("refuse le taux d’un canal fermé", () => {
-      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
       expect(() => category.setVat({ takeaway: "tva_55", eatIn: "tva_10" }, CONTEXTS)).toThrow(
         CategoryVatWithoutChannelError,
       );
     });
 
     it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
-      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
       category.setVat({ takeaway: "tva_55" }, CONTEXTS);
       expect(category.vatByContext).toEqual({ takeaway: "tva_55" });
     });
 
     it("traite le B2B comme un canal à part entière", () => {
-      const category = selling([{ locationId: null, context: "b2b" }]);
+      const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
       expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
     it("EFFACE le taux d’un canal qu’on ferme", () => {
-      const category = selling([{ locationId: null, context: "b2b" }]);
+      const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
 
       category.setChannels(channels([]), CONTEXTS);
@@ -183,14 +180,14 @@ describe("l’agrégat Category", () => {
     });
 
     it("laisse intact le taux d’un canal qui reste vendu", () => {
-      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
       category.setVat({ takeaway: "tva_55" }, CONTEXTS);
 
       // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
       category.setChannels(
         channels([
-          { locationId: "emp_1", context: "takeaway" },
-          { locationId: "emp_2", context: "takeaway" },
+          { pointOfSaleId: "emp_1", context: "takeaway" },
+          { pointOfSaleId: "emp_2", context: "takeaway" },
         ]),
         CONTEXTS,
       );
@@ -202,7 +199,7 @@ describe("l’agrégat Category", () => {
       // Accepter la clé la persisterait sans ligne de registre en face, et
       // personne ne saurait plus dire, six mois après, ce que « traiteur »
       // facturait.
-      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
       expect(() => category.setVat({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
         CategoryUnknownContextError,
       );

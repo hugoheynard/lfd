@@ -128,13 +128,6 @@ export class CategoryRankTakenError extends BusinessError {
   }
 }
 
-/** Un preset de canaux ne référence que des emplacements qui existent. */
-export class CategoryUnknownLocationError extends BusinessError {
-  constructor(readonly locationId: string) {
-    super("catalogue.category.unknown_location", `L’emplacement « ${locationId} » n’existe pas.`);
-  }
-}
-
 /** Invariant 5 du socle : l'arbre des familles ne doit pas contenir de cycle. */
 export class CategoryCycleError extends BusinessError {
   constructor(readonly categoryId: string) {

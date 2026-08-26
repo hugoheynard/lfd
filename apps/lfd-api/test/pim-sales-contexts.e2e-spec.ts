@@ -38,7 +38,6 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 interface ContextRow {
   readonly key: string;
   readonly label: string;
-  readonly perLocation: boolean;
   readonly active: boolean;
   readonly shopifyProjected: boolean;
   readonly handleSuffix: string;
@@ -52,7 +51,6 @@ interface ContextRow {
 const NEW_CONTEXT = {
   key: "traiteur",
   label: "Traiteur",
-  perLocation: true,
   handleSuffix: "-traiteur",
   active: true,
   shopifyProjected: false,
@@ -109,15 +107,6 @@ describe("la surface d'administration montre le registre entier", () => {
 
     expect(b2b?.offeredByLocations).toBe(1);
   });
-
-  it("dit lesquels ont besoin d'un lieu", async () => {
-    const byKey = new Map((await list()).map((row) => [row.key, row.perLocation]));
-
-    expect(byKey.get("takeaway")).toBe(true);
-    expect(byKey.get("eatIn")).toBe(true);
-    // On commande à l'entreprise, pas à une boutique.
-    expect(byKey.get("b2b")).toBe(false);
-  });
 });
 
 describe("le contexte racine est ineffaçable", () => {
@@ -140,7 +129,7 @@ describe("le contexte racine est ineffaçable", () => {
     await registry().ensureRootContext();
 
     const root = (await list()).find((row) => row.key === "b2b");
-    expect(root).toMatchObject({ key: "b2b", root: true, perLocation: false, active: true });
+    expect(root).toMatchObject({ key: "b2b", root: true, active: true });
   });
 
   /**
@@ -239,29 +228,11 @@ describe("régler un contexte de vente", () => {
     });
   });
 
-  /**
-   * `perLocation` décide de la FORME des lignes déjà écrites : un contexte
-   * vendu depuis des lieux porte des paires `(lieu, contexte)`, un contexte
-   * global des paires `(∅, contexte)`. Le basculer laisserait les anciennes
-   * dans une forme que plus rien ne lit.
-   */
-  it("REFUSE de changer la portée", async () => {
-    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
-
-    const response = await staff()
-      .put(`${CONTEXTS}/traiteur`)
-      .send({ ...NEW_CONTEXT, perLocation: false, position: 4 });
-
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.sales_context.scope_frozen");
-  });
-
   it("laisse RÉGLER la racine — ineffaçable ne veut pas dire immuable", async () => {
     await staff()
       .put(`${CONTEXTS}/b2b`)
       .send({
         label: "Professionnels",
-        perLocation: false,
         handleSuffix: "",
         active: false,
         shopifyProjected: false,

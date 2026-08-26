@@ -31,8 +31,7 @@ export const ROOT_CONTEXT_KEY = "b2b";
  *   leçon vient de l'admin racine, où elle a déjà coûté ;
  * - **désactivable**, en revanche. `active = false` suspend la facturation sans
  *   détruire la définition — fermer un canal n'est pas effacer son existence.
- *
- * `perLocation: false` : on commande à l'entreprise, pas à une boutique.
+
  */
 export function bootstrapRootContext(): Omit<SalesContext, "id"> {
   return {
@@ -47,7 +46,6 @@ export function bootstrapRootContext(): Omit<SalesContext, "id"> {
     // qui protège les URL indexées), et deux contextes projetés avec le même
     // suffixe produiraient le même handle.
     handleSuffix: "",
-    perLocation: false,
     active: true,
     shopifyProjected: false,
     position: 3,

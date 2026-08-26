@@ -37,7 +37,7 @@ export class RemoveSalesContextHandler implements ICommandHandler<RemoveSalesCon
   async execute(command: RemoveSalesContextCommand): Promise<void> {
     const context = await requireContext(this.contexts, command.key);
     context.refuseRemovalIfRoot();
-    const { key, label, perLocation } = context.snapshot();
+    const { key, label } = context.snapshot();
 
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
@@ -46,7 +46,7 @@ export class RemoveSalesContextHandler implements ICommandHandler<RemoveSalesCon
         subjectId: key,
         // Après elle, la ligne n'est plus interrogeable : le journal est le seul
         // endroit où ce contexte a encore un nom.
-        payload: { key, label, perLocation },
+        payload: { key, label },
       });
       await this.contexts.remove(key, ticket);
     });

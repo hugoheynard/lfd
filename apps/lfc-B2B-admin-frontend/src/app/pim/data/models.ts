@@ -52,13 +52,14 @@ export interface VatRate {
  */
 export type VatRateUsage = Readonly<Record<string, number>>;
 
-/** Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend. */
+/** Un canal **vendu** : un contexte, et le point de vente qui le vend. */
 export interface SoldChannel {
   /**
-   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
-   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   * Jamais `null`. C'était `locationId`, où `null` voulait dire « le B2B » — un
+   * `NULL` porteur de sens, donc une ligne absente quelque part. La plateforme
+   * professionnelle est un point de vente comme un autre.
    */
-  locationId: string | null;
+  pointOfSaleId: string;
   /** La clé du contexte, telle que le registre la porte. */
   context: string;
 }

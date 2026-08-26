@@ -260,12 +260,12 @@ vivent déjà dans leur propre table. Une contrainte `CHECK` en SQL dit la règl
 Discipline `étendre / basculer / resserrer`, comme toujours
 (`documentation/ops/pipelines.md`).
 
-| Tranche            | Migration                                                                                                                                                           | Code                                                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **p-0 étendre** ✅ | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | la matrice ne lit rien encore ; l'écran Emplacements devient Points de vente, la plateforme en lecture               |
-| **p-1 étendre**    | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                      |
-| **p-2 basculer**   | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; l'écran des points de vente coche des contextes |
-| **p-3 resserrer**  | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `CHECK` sur le genre                                     | suppression du double-écriture                                                                                       |
+| Tranche             | Migration                                                                                                                                                           | Code                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **p-0 étendre** ✅  | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | la matrice ne lit rien encore ; l'écran Emplacements devient Points de vente, la plateforme en lecture              |
+| **p-1 étendre** ✅  | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                     |
+| **p-2 basculer** ✅ | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; la matrice devient (point de vente × contexte) |
+| **p-3 resserrer**   | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `emplacement` fusionne dans `point_of_sale`              | suppression du double-écriture ; l'écran des points de vente coche les contextes offerts                            |
 
 **p-0 a une valeur propre** : il rend la plateforme B2B **visible** dans
 l'administration, à côté des boutiques. Avant lui elle n'existait nulle part à
@@ -304,6 +304,42 @@ L'unicité du libellé n'a **pas** été dupliquée sur le miroir : elle vit sur
 `emplacement_name_unique`, la source. La poser des deux côtés ferait refuser le
 miroir alors que la source a accepté — un refus qu'aucun message ne saurait
 expliquer. Elle déménagera avec la source, en p-3.
+
+### p-2, tel qu'il a été livré (2026-08-26)
+
+La bascule a emporté plus que des lectures.
+
+**Le couple perd son `null`.** `SoldChannel` est passé de
+`{ locationId: string | null }` à `{ pointOfSaleId: string }`, jusque dans le
+contrat de fil. C'est le gain de tout le chantier : il n'y a plus d'exception à
+retenir, et le compilateur ne laisse plus écrire « le canal sans lieu ».
+
+**La matrice de l'écran est devenue carrée.** Une ligne par point de vente, une
+colonne par contexte. Le pied de grille — une case à part pour les contextes
+« sans lieu » — a disparu : la plateforme professionnelle est une ligne comme
+une autre, qui n'offre qu'une colonne. Une case non offerte n'est pas décochée,
+elle **n'existe pas**.
+
+**Un invariant en plus, et il manquait.** `refuseUnsellableChannels` refuse
+maintenant deux choses : un point de vente qui n'existe pas — le mur inverse
+existait déjà — et un contexte que ce point de vente **n'offre pas**. Vendre
+« sur place » depuis une boutique sans salle était accepté, et la projection
+fabriquait une fiche pour un lieu qui ne sert pas. La garde est écrite une fois
+pour les familles et les fiches : elle l'était deux fois, à l'identique, et deux
+copies finissent par ne plus refuser les mêmes choses.
+
+**Un ordre d'écran est redevenu une donnée.** Les contextes d'une fiche étaient
+rangés « ce qui n'a pas besoin d'un lieu d'abord » — une façon de mettre le B2B
+en tête sans le nommer. Ce critère est mort avec `perLocation` ; l'ordre suit
+désormais `position`, réglable à l'écran des contextes. Une déduction que
+personne ne voyait est devenue un réglage qu'on peut corriger.
+
+**Ce qui a été DÉPLACÉ vers p-3** : l'écran des points de vente ne coche pas
+encore les contextes offerts. Le faire ici aurait ouvert une seconde source
+d'écriture — `click_collect` / `sur_place` restent la source, et le miroir en
+dérive. Les deux se rejoignent en p-3, quand `emplacement` fusionne dans
+`point_of_sale` : une seule table, donc une seule vérité, et pas de fenêtre où
+deux écrans écrivent la même chose par deux chemins.
 
 ### La racine, encore
 

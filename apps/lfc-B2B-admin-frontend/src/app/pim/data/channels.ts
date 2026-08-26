@@ -1,4 +1,6 @@
-import type { Category, Location, Product, SalesChannels } from './models';
+import type { PointOfSaleView } from '@lfd/pim-contracts';
+
+import type { Category, Product, SalesChannels } from './models';
 
 /**
  * Aucun canal — le point de départ d'une fiche ou d'une famille qu'on crée.
@@ -17,49 +19,44 @@ export const NO_CHANNELS: SalesChannels = [];
  * pas. Les noms viennent de la liste qu'on lui passe, et une clé qui ne
  * désigne plus rien est simplement ignorée.
  */
-export function locationsSelling(
+export function pointsOfSaleSelling(
   channels: SalesChannels,
   contextKey: string,
-  locations: readonly Location[],
+  points: readonly PointOfSaleView[],
 ): string[] {
   const ids = new Set(
-    channels
-      .filter((channel) => channel.context === contextKey && channel.locationId !== null)
-      .map((channel) => channel.locationId),
+    channels.filter((channel) => channel.context === contextKey).map((c) => c.pointOfSaleId),
   );
-  return locations.filter((location) => ids.has(location.id)).map((location) => location.name);
+  return points.filter((point) => ids.has(point.id)).map((point) => point.label);
 }
 
-/**
- * Ce contexte est-il vendu **quelque part** ? Aucune branche : la fonction ne
- * sait pas lequel des contextes a besoin d'un lieu.
- */
+/** Ce contexte est-il vendu **quelque part** ? Aucune branche, aucun nom connu. */
 export function sellsContext(channels: SalesChannels, contextKey: string): boolean {
   return channels.some((channel) => channel.context === contextKey);
 }
 
-/** Ce lieu vend-il ce contexte ? La question de la grille, case par case. */
+/** Ce point de vente vend-il ce contexte ? La question de la grille, case par case. */
 export function sellsAt(
   channels: SalesChannels,
-  locationId: string | null,
+  pointOfSaleId: string,
   contextKey: string,
 ): boolean {
   return channels.some(
-    (channel) => channel.locationId === locationId && channel.context === contextKey,
+    (channel) => channel.pointOfSaleId === pointOfSaleId && channel.context === contextKey,
   );
 }
 
 /** Coche ou décoche une case, et rend la matrice résultante. */
 export function withCell(
   channels: SalesChannels,
-  locationId: string | null,
+  pointOfSaleId: string,
   contextKey: string,
   sold: boolean,
 ): SalesChannels {
   const without = channels.filter(
-    (channel) => !(channel.locationId === locationId && channel.context === contextKey),
+    (channel) => !(channel.pointOfSaleId === pointOfSaleId && channel.context === contextKey),
   );
-  return sold ? [...without, { locationId, context: contextKey }] : without;
+  return sold ? [...without, { pointOfSaleId, context: contextKey }] : without;
 }
 
 /** `5.5` → « 5,5 % » ; `10` → « 10 % ». Affichage FR. */

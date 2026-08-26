@@ -15,7 +15,8 @@ import {
 import {
   normalizeSalesChannels,
   type SalesChannels,
-  pointOfSaleOf,
+  legacyLocationOf,
+  pointOfSaleOfRow,
 } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
@@ -26,7 +27,11 @@ interface CategoryRow {
   position: number;
   isArchived: boolean;
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
-  channels: readonly { locationId: string | null; contextKey: string }[];
+  channels: readonly {
+    pointOfSaleId: string | null;
+    locationId: string | null;
+    contextKey: string;
+  }[];
 }
 
 /**
@@ -36,7 +41,7 @@ interface CategoryRow {
  */
 const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-  channels: { select: { locationId: true, contextKey: true } },
+  channels: { select: { pointOfSaleId: true, locationId: true, contextKey: true } },
 } as const;
 
 /**
@@ -47,10 +52,10 @@ const CATEGORY_WITH_VAT = {
  * ensembles identiques rangés différemment.
  */
 function toChannels(
-  rows: readonly { locationId: string | null; contextKey: string }[],
+  rows: readonly { pointOfSaleId: string | null; locationId: string | null; contextKey: string }[],
 ): SalesChannels {
   return normalizeSalesChannels(
-    rows.map((row) => ({ locationId: row.locationId, context: row.contextKey })),
+    rows.map((row) => ({ pointOfSaleId: pointOfSaleOfRow(row), context: row.contextKey })),
   );
 }
 
@@ -221,9 +226,9 @@ export class PrismaCategoryRepository extends CategoryRepository {
    * Elle est LUE depuis d-2 : c'est la matrice elle-même, plus un miroir de
    * `jsonb`.
    *
-   * ⚠️ `pointOfSaleId` est écrite en plus de `locationId` (p-1). Personne ne la
-   * lit encore — c'est le propre d'une tranche « étendre » — et p-3 retire la
-   * seconde.
+   * ⚠️ Depuis p-2, `point_of_sale_id` est la colonne LUE ; `location_id` reste
+   * écrite parce que le binaire de la version précédente la lit encore pendant
+   * le déploiement. p-3 la supprime.
    */
   private channelOperations(snapshot: CategorySnapshot) {
     const sold = snapshot.channelPreset;
@@ -235,8 +240,8 @@ export class PrismaCategoryRepository extends CategoryRepository {
             this.prisma.categoryChannel.createMany({
               data: sold.map((channel) => ({
                 categoryId: snapshot.id,
-                locationId: channel.locationId,
-                pointOfSaleId: pointOfSaleOf(channel),
+                pointOfSaleId: channel.pointOfSaleId,
+                locationId: legacyLocationOf(channel),
                 contextKey: channel.context,
               })),
             }),

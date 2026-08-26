@@ -40,8 +40,8 @@ function withFamily(store: ProductFormStore): void {
       position: 1,
       isArchived: false,
       channelPreset: [
-        { locationId: 'emp_rivoli', context: 'takeaway' },
-        { locationId: null, context: 'b2b' },
+        { pointOfSaleId: 'emp_rivoli', context: 'takeaway' },
+        { pointOfSaleId: 'pos_b2b', context: 'b2b' },
       ],
       vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
@@ -104,7 +104,7 @@ describe('PricingForm', () => {
   it('dit que les canaux sont redéfinis, plutôt que de parler d’héritage', () => {
     const store = setup();
     withFamily(store);
-    store.channelsOverride.set([{ locationId: null, context: 'b2b' }]);
+    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -113,7 +113,16 @@ describe('PricingForm', () => {
     expect(text).not.toContain('Hérité de la famille');
   });
 
-  it('ouvre par le B2B — le comptoir est le cas particulier ici', () => {
+  /**
+   * L'ordre est celui du REGISTRE (`position`), pas une déduction.
+   *
+   * Il était « ce qui n'a pas besoin d'un lieu d'abord » — une manière de
+   * mettre le B2B en tête sans le nommer. Ce critère est mort avec
+   * `perLocation` (p-2) : c'est le point de vente qui dit ce qu'il offre. Pour
+   * ouvrir par le B2B, on lui donne la position 0 à l'écran des contextes —
+   * une donnée qu'on corrige, plutôt qu'une déduction que personne ne voyait.
+   */
+  it('suit l’ordre du registre', () => {
     const store = setup();
     withFamily(store);
     const fixture = TestBed.createComponent(PricingForm);
@@ -121,8 +130,7 @@ describe('PricingForm', () => {
     const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row dt')]
       .map((cell) => cell.textContent?.trim() ?? '')
       .filter((label) => label !== '');
-    expect(labels[0]).toBe('B2B');
-    expect(labels).toEqual(['B2B', 'À emporter', 'Sur place']);
+    expect(labels).toEqual(['À emporter', 'Sur place', 'B2B']);
   });
 
   it('sépare le CHIFFRE du nom du régime', () => {
@@ -133,8 +141,9 @@ describe('PricingForm', () => {
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const rate = (fixture.nativeElement as HTMLElement).querySelector('.inherit-rate');
-    expect(rate?.querySelector('strong')?.textContent?.trim()).toBe('20 %');
-    expect(rate?.querySelector('.inherit-regime')?.textContent?.trim()).toBe('Normal');
+    // La première ligne est « À emporter » depuis que l'ordre suit le registre.
+    expect(rate?.querySelector('strong')?.textContent?.trim()).toBe('5,5 %');
+    expect(rate?.querySelector('.inherit-regime')?.textContent?.trim()).toBe('Réduit');
   });
 });
 
@@ -182,7 +191,7 @@ describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
     // pas vendue — et un taux pour un canal qu'elle a fermé.
     const store = setup();
     withFamily(store);
-    store.channelsOverride.set([{ locationId: null, context: 'b2b' }]);
+    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 

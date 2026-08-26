@@ -15,10 +15,10 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { locationsSelling } from '../../data/channels';
+import { pointsOfSaleSelling } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { VatRateStore } from '../vat-rates/vat-store';
-import { LocationStore } from '../../locations/location-store';
+import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 import type { Category } from '../catalogue-api';
 
@@ -68,7 +68,7 @@ import type { Category } from '../catalogue-api';
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
   private readonly vatRateStore = inject(VatRateStore);
-  private readonly locationStore = inject(LocationStore);
+  private readonly pointStore = inject(PointOfSaleStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
   /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
@@ -77,7 +77,7 @@ export class CategoriesPage {
   protected readonly showArchived = signal(false);
   protected readonly rates = this.vatRateStore.items;
   /** Les noms affichés dans les pastilles viennent du référentiel. */
-  protected readonly locations = this.locationStore.items;
+  protected readonly pointsOfSale = this.pointStore.items;
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
@@ -150,11 +150,11 @@ export class CategoriesPage {
   }
 
   protected presetEmporter(category: Category): string[] {
-    return locationsSelling(category.channelPreset, 'takeaway', this.locations());
+    return pointsOfSaleSelling(category.channelPreset, 'takeaway', this.pointsOfSale());
   }
 
   protected presetSurPlace(category: Category): string[] {
-    return locationsSelling(category.channelPreset, 'eatIn', this.locations());
+    return pointsOfSaleSelling(category.channelPreset, 'eatIn', this.pointsOfSale());
   }
 
   /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */

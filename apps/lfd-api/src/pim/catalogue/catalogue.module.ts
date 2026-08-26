@@ -31,7 +31,7 @@ import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { SalesContextRegistry } from "./shared/domain/ports/sales-context.registry.js";
 import { StartupReport } from "../../platform/startup/startup-report.service.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
-import { KnownLocationsReader } from "./category/domain/ports/known-locations.reader.js";
+import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
@@ -52,7 +52,7 @@ import { RemoveSalesContextHandler } from "./shared/application/remove-sales-con
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
-import { PrismaKnownLocationsReader } from "./category/infrastructure/prisma-known-locations.reader.js";
+import { PrismaPointOfSaleOfferReader } from "./shared/infrastructure/prisma-point-of-sale-offer.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
@@ -114,7 +114,7 @@ import {
     // interroge les produits, l'existence d'un emplacement interroge les
     // emplacements. Ni l'un ni l'autre n'est la persistance d'une famille.
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
-    { provide: KnownLocationsReader, useClass: PrismaKnownLocationsReader },
+    { provide: PointOfSaleOfferReader, useClass: PrismaPointOfSaleOfferReader },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },

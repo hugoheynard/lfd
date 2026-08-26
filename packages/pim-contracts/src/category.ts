@@ -23,13 +23,14 @@ export const renameCategoryPayloadSchema = z.object({
 });
 export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 
-/** Un canal vendu : un contexte, et le lieu depuis lequel il se vend. */
+/** Un canal vendu : un contexte, et le point de vente qui le vend. */
 export const soldChannelSchema = z.object({
   /**
-   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
-   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   * Jamais `null` : la plateforme professionnelle est un point de vente comme
+   * un autre depuis p-0 (`documentation/pim/point-de-vente.md`). Le champ
+   * s'appelait `locationId` et acceptait `null` pour dire « le B2B ».
    */
-  locationId: z.string().nullable(),
+  pointOfSaleId: z.string().min(1),
   /** La clé du contexte, telle que le registre la porte. */
   context: z.string(),
 });
@@ -73,8 +74,6 @@ export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
 export interface SalesContextView {
   readonly key: string;
   readonly label: string;
-  /** Ce contexte se vend-il depuis un point de vente ? Sinon il est global. */
-  readonly perLocation: boolean;
   readonly position: number;
 }
 
@@ -162,8 +161,6 @@ export const createSalesContextPayloadSchema = z.object({
     .trim()
     .regex(/^[a-z][a-zA-Z0-9-]*$/u, "lettres, chiffres et tirets, en commençant par une lettre"),
   label: z.string().trim().min(1),
-  /** Se vend-il DEPUIS un point de vente ? Figé après la création. */
-  perLocation: z.boolean(),
   handleSuffix: z.string().trim(),
   active: z.boolean(),
   shopifyProjected: z.boolean(),
@@ -171,13 +168,14 @@ export const createSalesContextPayloadSchema = z.object({
 export type CreateSalesContextPayload = z.infer<typeof createSalesContextPayloadSchema>;
 
 /**
- * Régler un contexte. `perLocation` y figure sans être modifiable : l'écran
- * renvoie la fiche entière, et une valeur qu'on ignorerait en silence laisserait
- * croire au réglage. Le serveur la compare et refuse si elle a bougé.
+ * Régler un contexte.
+ *
+ * `perLocation` a disparu de cette charge en p-2 : c'est le POINT DE VENTE qui
+ * dit les contextes qu'il offre, pas le contexte qui dit s'il lui faut un lieu
+ * (`documentation/pim/point-de-vente.md`).
  */
 export const updateSalesContextPayloadSchema = z.object({
   label: z.string().trim().min(1),
-  perLocation: z.boolean(),
   handleSuffix: z.string().trim(),
   active: z.boolean(),
   shopifyProjected: z.boolean(),

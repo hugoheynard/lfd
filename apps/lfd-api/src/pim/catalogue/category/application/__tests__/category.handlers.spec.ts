@@ -8,6 +8,7 @@ import {
 } from "../../../../commerce/domain/ports/vat-rate.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
+import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
 import {
   CategoryArchivedParentError,
   CategoryCycleError,
@@ -18,10 +19,9 @@ import {
   CategoryOrderMismatchError,
   CategorySlugTakenError,
   CategoryVatWithoutChannelError,
-  CategoryUnknownLocationError,
 } from "../../domain/errors/category-errors.js";
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
-import { KnownLocationsReader } from "../../domain/ports/known-locations.reader.js";
+import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
 import type {
   SalesChannels,
@@ -154,20 +154,26 @@ class StubProductCounts extends ProductCountReader {
   }
 }
 
-/** Un référentiel d'emplacements qui dit oui à tout — le cas nominal. */
-function allLocationsKnown(): KnownLocationsReader {
-  return new (class extends KnownLocationsReader {
-    existing(ids: readonly string[]): Promise<ReadonlySet<string>> {
-      return Promise.resolve(new Set(ids));
+/**
+ * Un référentiel de points de vente qui offre TOUT ce qu'on lui cite — le cas
+ * nominal. Il dit oui parce que le test n'éprouve pas l'offre ici ; celle-ci a
+ * ses propres cas, juste en dessous.
+ */
+function allPointsOfSaleOffer(): PointOfSaleOfferReader {
+  return new (class extends PointOfSaleOfferReader {
+    offersOf(ids: readonly string[]): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+      return Promise.resolve(
+        new Map(ids.map((id) => [id, new Set(["takeaway", "eatIn", "b2b", "traiteur"])])),
+      );
     }
   })();
 }
 
-/** Un référentiel VIDE : aucun identifiant cité n'existe. */
-function noLocationKnown(): KnownLocationsReader {
-  return new (class extends KnownLocationsReader {
-    existing(): Promise<ReadonlySet<string>> {
-      return Promise.resolve(new Set<string>());
+/** Un référentiel VIDE : aucun point de vente cité n'existe. */
+function noPointOfSaleKnown(): PointOfSaleOfferReader {
+  return new (class extends PointOfSaleOfferReader {
+    offersOf(): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+      return Promise.resolve(new Map());
     }
   })();
 }
@@ -205,13 +211,13 @@ class InMemoryRegimes extends VatRateRepository {
 
 /** Un ordre stable pour comparer deux ensembles de paires. */
 const byPair = (a: SoldChannel, b: SoldChannel): number =>
-  `${a.locationId ?? ""} ${a.context}`.localeCompare(`${b.locationId ?? ""} ${b.context}`);
+  `${a.pointOfSaleId} ${a.context}`.localeCompare(`${b.pointOfSaleId} ${b.context}`);
 
 /** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = [
-  { locationId: "emp_village", context: "takeaway" },
-  { locationId: "emp_village", context: "eatIn" },
-  { locationId: "emp_val", context: "takeaway" },
+  { pointOfSaleId: "emp_village", context: "takeaway" },
+  { pointOfSaleId: "emp_village", context: "eatIn" },
+  { pointOfSaleId: "emp_val", context: "takeaway" },
 ];
 
 class SequentialIds extends PimIdGenerator {
@@ -270,7 +276,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    perLocation: true,
     active: true,
     shopifyProjected: true,
     position: 1,
@@ -280,7 +285,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "eatIn",
     label: "Sur place",
     handleSuffix: "-surplace",
-    perLocation: true,
     active: true,
     shopifyProjected: false,
     position: 2,
@@ -290,7 +294,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    perLocation: false,
     active: true,
     shopifyProjected: false,
     position: 3,
@@ -310,7 +313,7 @@ const registry: SalesContextRegistry = {
 function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
   return new SetCategoryChannelsHandler(
     repo,
-    allLocationsKnown(),
+    allPointsOfSaleOffer(),
     registry,
     new RecordingJournal(),
 
@@ -460,17 +463,17 @@ describe("SetCategoryChannelsHandler", () => {
     await expect(
       new SetCategoryChannelsHandler(
         repo,
-        noLocationKnown(),
+        noPointOfSaleKnown(),
         registry,
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
       ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
-    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
+    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
   });
 
   /** L'écriture est refusée EN ENTIER : pas de preset à moitié posé. */
-  it("n’écrit rien quand un seul location est inconnu", async () => {
+  it("n’écrit rien quand un seul point de vente est inconnu", async () => {
     const repo = new InMemoryCategories();
     const [id] = await openRoots(repo, 1);
     const before = repo.at(id!).channelPreset;
@@ -478,13 +481,13 @@ describe("SetCategoryChannelsHandler", () => {
     await expect(
       new SetCategoryChannelsHandler(
         repo,
-        noLocationKnown(),
+        noPointOfSaleKnown(),
         registry,
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
       ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
-    ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
+    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
     expect(repo.at(id!).channelPreset).toEqual(before);
   });
 
@@ -834,9 +837,13 @@ describe("Ce que les familles inscrivent au journal", () => {
     await new ReorderCategoriesHandler(repo, journal, uow).execute(
       new ReorderCategoriesCommand(null, [parent]),
     );
-    await new SetCategoryChannelsHandler(repo, allLocationsKnown(), registry, journal, uow).execute(
-      new SetCategoryChannelsCommand(child, ALL_OPEN),
-    );
+    await new SetCategoryChannelsHandler(
+      repo,
+      allPointsOfSaleOffer(),
+      registry,
+      journal,
+      uow,
+    ).execute(new SetCategoryChannelsCommand(child, ALL_OPEN));
     await new ArchiveCategoryHandler(repo, new StubProductCounts(), journal, uow).execute(
       new ArchiveCategoryCommand(child),
     );

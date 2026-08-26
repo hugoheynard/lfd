@@ -67,7 +67,7 @@ interface CategoryRow {
   readonly id: string;
   readonly slug: { readonly fr: string };
   readonly channelPreset: readonly {
-    readonly locationId: string | null;
+    readonly pointOfSaleId: string;
     readonly context: string;
   }[];
   readonly vatByContext: Readonly<Record<string, string>>;
@@ -122,18 +122,18 @@ describe("le slug d'une famille est unique", () => {
   });
 });
 
-describe("un preset ne cite que des emplacements qui existent", () => {
-  it("accepte un emplacement du référentiel", async () => {
+describe("un preset ne cite que des points de vente qui existent", () => {
+  it("accepte un point de vente du référentiel", async () => {
     const category = await createCategory("Viennoiseries");
     const location = await createLocation("Village");
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }]);
+      .send([{ pointOfSaleId: location, context: "takeaway" }]);
 
     expect(response.status).toBe(200);
     expect((await readCategory(category)).channelPreset).toEqual([
-      { locationId: location, context: "takeaway" },
+      { pointOfSaleId: location, context: "takeaway" },
     ]);
   });
 
@@ -147,10 +147,12 @@ describe("un preset ne cite que des emplacements qui existent", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: "emp_fantome", context: "takeaway" }]);
+      .send([{ pointOfSaleId: "emp_fantome", context: "takeaway" }]);
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.unknown_location");
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "catalogue.channels.unknown_point_of_sale",
+    );
     expect((await readCategory(category)).channelPreset).toEqual([]);
   });
 });
@@ -181,7 +183,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
     const rate = await createRate("Réduit", 5.5);
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: null, context: "b2b" }])
+      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${category}/vat`)

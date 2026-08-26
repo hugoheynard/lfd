@@ -42,8 +42,8 @@ describe('ChannelsForm', () => {
         position: 1,
         isArchived: false,
         channelPreset: [
-          { locationId: 'emp_village', context: 'takeaway' },
-          { locationId: 'emp_val', context: 'takeaway' },
+          { pointOfSaleId: 'emp_village', context: 'takeaway' },
+          { pointOfSaleId: 'emp_val', context: 'takeaway' },
         ],
         vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55' },
         activeProductCount: 0,

@@ -147,7 +147,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
 
     expect((await readLocation(location)).usedByCategories).toBe(1);
@@ -163,7 +163,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
 
     const response = await staff().delete(`${LOCATIONS}/${location}`);
@@ -181,7 +181,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
     await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
@@ -315,21 +315,24 @@ describe("les jetons de QR d'une table", () => {
  */
 describe("la matrice de canaux suit la grille", () => {
   it("se vide quand la famille décoche, et laisse alors supprimer", async () => {
-    const location = await createLocation({ name: "Village" });
+    // Les DEUX modes : depuis p-2, on ne vend pas un contexte là où le point de
+    // vente ne l'offre pas — recocher « sur place » sur une boutique sans salle
+    // est refusé, et c'est le mur qu'on veut.
+    const location = await createLocation({ name: "Village", eatIn: true });
     const category = jsonBody<{ id: string }>(
       await staff()
         .post(CATEGORIES)
         .send({ name: { fr: "Viennoiseries" } }),
     ).id;
-    const channels = (sold: { locationId: string | null; context: string }[]) =>
+    const channels = (sold: { pointOfSaleId: string; context: string }[]) =>
       staff().put(`${CATEGORIES}/${category}/channels`).send(sold).expect(200);
 
-    await channels([{ locationId: location, context: "takeaway" }]);
+    await channels([{ pointOfSaleId: location, context: "takeaway" }]);
     expect(await refCount(location)).toBe(1);
 
     // Recocher le MÊME emplacement dans un autre contexte ne doit pas doubler
     // la référence : le dépôt efface puis réécrit, il n'ajoute pas.
-    await channels([{ locationId: location, context: "eatIn" }]);
+    await channels([{ pointOfSaleId: location, context: "eatIn" }]);
     expect(await refCount(location)).toBe(1);
 
     await channels([]);
@@ -351,7 +354,7 @@ describe("la matrice de canaux suit la grille", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "takeaway" }])
+      .send([{ pointOfSaleId: location, context: "takeaway" }])
       .expect(200);
 
     await ctx.prisma.category.delete({ where: { id: category } });

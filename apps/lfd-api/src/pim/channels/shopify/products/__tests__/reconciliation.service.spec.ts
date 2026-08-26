@@ -84,7 +84,7 @@ async function build(
           effectiveChannels: (items: readonly { id: string }[]) =>
             Promise.resolve(
               new Map(
-                items.map((item) => [item.id, [{ locationId: "emp_1", context: "takeaway" }]]),
+                items.map((item) => [item.id, [{ pointOfSaleId: "emp_1", context: "takeaway" }]]),
               ),
             ),
         },

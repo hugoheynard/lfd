@@ -143,7 +143,7 @@ describe("le miroir d'une boutique suit sa source", () => {
     ).id;
     await staff()
       .put(`/pim/catalogue/categories/${category}/channels`)
-      .send([{ locationId: id, context: "takeaway" }])
+      .send([{ pointOfSaleId: id, context: "takeaway" }])
       .expect(200);
 
     await staff().delete(`${LOCATIONS}/${id}`).expect(409);
@@ -153,7 +153,7 @@ describe("le miroir d'une boutique suit sa source", () => {
 });
 
 describe("la matrice cite un point de vente", () => {
-  async function sellFrom(cells: readonly { locationId: string | null; context: string }[]) {
+  async function sellFrom(cells: readonly { pointOfSaleId: string; context: string }[]) {
     const category = jsonBody<{ id: string }>(
       await staff()
         .post("/pim/catalogue/categories")
@@ -174,7 +174,7 @@ describe("la matrice cite un point de vente", () => {
   it("remplit `point_of_sale_id` à côté de `location_id`", async () => {
     const shop = await createLocation({ name: "Village" });
 
-    const rows = await sellFrom([{ locationId: shop, context: "takeaway" }]);
+    const rows = await sellFrom([{ pointOfSaleId: shop, context: "takeaway" }]);
 
     expect(rows).toEqual([{ locationId: shop, pointOfSaleId: shop, contextKey: "takeaway" }]);
   });
@@ -184,8 +184,48 @@ describe("la matrice cite un point de vente", () => {
    * ligne qui le dit.
    */
   it("traduit le contexte sans lieu en plateforme", async () => {
-    const rows = await sellFrom([{ locationId: null, context: "b2b" }]);
+    const rows = await sellFrom([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
 
     expect(rows).toEqual([{ locationId: null, pointOfSaleId: "pos_b2b", contextKey: "b2b" }]);
+  });
+});
+
+describe("l'offre borne ce qu'on peut vendre", () => {
+  async function sell(cells: readonly { pointOfSaleId: string; context: string }[]) {
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post("/pim/catalogue/categories")
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    return staff().put(`/pim/catalogue/categories/${category}/channels`).send(cells);
+  }
+
+  /**
+   * Une boutique sans salle ne vend pas « sur place ». C'était accepté, et la
+   * projection fabriquait ensuite une fiche pour un lieu qui ne sert pas —
+   * personne ne le voyait avant le push.
+   */
+  it("refuse un contexte que le point de vente n'offre pas", async () => {
+    const shop = await createLocation({ name: "Village", clickCollect: true, eatIn: false });
+
+    const response = await sell([{ pointOfSaleId: shop, context: "eatIn" }]);
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "catalogue.channels.context_not_offered",
+    );
+  });
+
+  it("accepte celui qu'il offre", async () => {
+    const shop = await createLocation({ name: "Village", clickCollect: true, eatIn: true });
+
+    expect((await sell([{ pointOfSaleId: shop, context: "eatIn" }])).status).toBe(200);
+  });
+
+  /** La plateforme n'offre que le contexte racine — le reste ne se vend pas là. */
+  it("refuse de vendre le comptoir depuis la plateforme", async () => {
+    const response = await sell([{ pointOfSaleId: "pos_b2b", context: "takeaway" }]);
+
+    expect(response.status).toBe(409);
   });
 });

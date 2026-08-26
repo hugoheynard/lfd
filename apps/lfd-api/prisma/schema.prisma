@@ -2568,8 +2568,12 @@ model SalesContext {
   /// a-t-il besoin d'un lieu ? » — et ne présume rien du nombre de plateformes :
   /// deux portails sont deux lignes, zéro code.
   ///
-  /// Il décide aussi de ce que `location_context` doit porter : un emplacement
-  /// n'a pas à se prononcer sur le B2B.
+  /// ⚠️ **Mort depuis p-2** : plus personne ne le lit. C'est le POINT DE VENTE
+  /// qui déclare les contextes qu'il offre — `per_location` faisait dire au
+  /// contexte (« ai-je besoin d'un lieu ? ») ce qui était une propriété du
+  /// point de vente (« quels contextes est-ce que j'offre ? »). La colonne
+  /// survit le temps d'un déploiement, pour le binaire précédent ; p-3 la
+  /// supprime.
   perLocation Boolean @default(true) @map("per_location")
 
   /// Le contexte est-il **en service** ? Un contexte hors service ne se règle

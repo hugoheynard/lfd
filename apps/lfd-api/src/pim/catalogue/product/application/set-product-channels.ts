@@ -3,14 +3,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
-import { CategoryUnknownLocationError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
-import { KnownLocationsReader } from "../../category/domain/ports/known-locations.reader.js";
+import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
+import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
 import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
-import {
-  referencedLocations,
-  type SalesChannels,
-} from "../../shared/domain/value-objects/sales-channels.js";
+import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -39,7 +36,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly locations: KnownLocationsReader,
+    private readonly offers: PointOfSaleOfferReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -48,7 +45,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
   async execute(command: SetProductChannelsCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
     if (command.channels !== null) {
-      await this.refuseUnknownLocations(command.channels);
+      await refuseUnsellableChannels(command.channels, this.offers);
     }
     const category = await requireCategory(this.categories, product.categoryId);
 
@@ -58,23 +55,6 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
       const ticket = await this.journalize(product.id, before, product.channelOverride);
       await this.products.save(product, ticket);
     });
-  }
-
-  /**
-   * La grille est indexée par identifiant d'emplacement dans une colonne
-   * `jsonb` : aucune clé étrangère ne tient cette référence. Un emplacement
-   * fantôme serait accepté, persisté, puis rendu INVISIBLE par l'écran — qui
-   * ignore les clés inconnues. Le mur existe déjà pour les familles ; une fiche
-   * qui déroge doit rencontrer le même.
-   */
-  private async refuseUnknownLocations(channels: SalesChannels): Promise<void> {
-    const cited = referencedLocations(channels);
-    const known = await this.locations.existing(cited);
-    for (const id of cited) {
-      if (!known.has(id)) {
-        throw new CategoryUnknownLocationError(id);
-      }
-    }
   }
 
   /**

@@ -66,7 +66,7 @@ function vat(percents: Record<string, number> = { takeaway: 5.5, b2b: 5.5 }) {
  * Où la fiche se vend, résolu en amont. Par défaut : chez les professionnels —
  * sans quoi ce canal l'écarte, et c'est bien le but.
  */
-function sold(channels: SalesChannels = [{ locationId: null, context: "b2b" }]) {
+function sold(channels: SalesChannels = [{ pointOfSaleId: "pos_b2b", context: "b2b" }]) {
   return new Map([["prd_1", channels]]);
 }
 
@@ -228,7 +228,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       [product()],
       [category()],
       vat(),
-      sold([{ locationId: "emp_1", context: "takeaway" }]),
+      sold([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
       AT,
     );
 

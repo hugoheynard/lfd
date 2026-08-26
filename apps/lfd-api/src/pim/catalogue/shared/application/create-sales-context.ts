@@ -9,7 +9,6 @@ import { ensureHandleFree, ensureKeyFree } from "./sales-context-support.js";
 export interface CreateSalesContextPayload {
   readonly key: string;
   readonly label: string;
-  readonly perLocation: boolean;
   readonly handleSuffix: string;
   readonly active: boolean;
   readonly shopifyProjected: boolean;
@@ -67,7 +66,6 @@ export class CreateSalesContextHandler implements ICommandHandler<
         payload: {
           key: created.key,
           label: created.label,
-          perLocation: created.perLocation,
           active: created.active,
           shopifyProjected: created.shopifyProjected,
         },

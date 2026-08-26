@@ -10,9 +10,9 @@ import { SalesContextStore } from './sales-context-store';
  * une raison qui n'a rien à voir avec ce qu'il vérifie.
  */
 export const TEST_SALES_CONTEXTS: readonly SalesContextView[] = [
-  { key: 'takeaway', label: 'À emporter', perLocation: true, position: 1 },
-  { key: 'eatIn', label: 'Sur place', perLocation: true, position: 2 },
-  { key: 'b2b', label: 'B2B', perLocation: false, position: 3 },
+  { key: 'takeaway', label: 'À emporter', position: 1 },
+  { key: 'eatIn', label: 'Sur place', position: 2 },
+  { key: 'b2b', label: 'B2B', position: 3 },
 ];
 
 /**

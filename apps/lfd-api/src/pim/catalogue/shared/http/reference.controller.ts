@@ -32,7 +32,6 @@ export class ReferenceController {
     return contexts.map((context) => ({
       key: context.key,
       label: context.label,
-      perLocation: context.perLocation,
       position: context.position,
     }));
   }

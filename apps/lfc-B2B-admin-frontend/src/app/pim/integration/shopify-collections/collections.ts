@@ -1,5 +1,7 @@
+import type { PointOfSaleView } from '@lfd/pim-contracts';
+
 import { formatPercent } from '../../data/channels';
-import type { Category, Location, Product, VatRate } from '../../data/models';
+import type { Category, Product, VatRate } from '../../data/models';
 import { generateFiches, vatTagFromPercent } from './fiches';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
@@ -52,7 +54,7 @@ export function buildCollections(
   products: readonly Product[],
   categories: readonly Category[],
   rates: readonly VatRate[],
-  locations: readonly Location[],
+  pointsOfSale: readonly PointOfSaleView[],
 ): CollectionFamily[] {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const regimeById = new Map(rates.map((r) => [r.id, r]));
@@ -63,7 +65,7 @@ export function buildCollections(
     if (category === undefined) {
       continue;
     }
-    for (const fiche of generateFiches(product, category, regimeById, locations)) {
+    for (const fiche of generateFiches(product, category, regimeById, pointsOfSale)) {
       fiches.push({
         handle: fiche.handle,
         title: fiche.title,

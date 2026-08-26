@@ -8,8 +8,10 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import type { PointOfSaleView } from '@lfd/pim-contracts';
+
 import { ChannelMatrix } from '../../../../channel-matrix/channel-matrix';
-import type { Location, SalesChannels } from '../../../../../data/models';
+import type { SalesChannels } from '../../../../../data/models';
 
 /** Ce que le panneau reçoit : la matrice courante, l'héritage, et le référentiel. */
 export interface ChannelsOverridePanelData {
@@ -17,7 +19,7 @@ export interface ChannelsOverridePanelData {
   readonly current: SalesChannels | null;
   /** Celle de la famille — la valeur à laquelle « revenir » ramène. */
   readonly inherited: SalesChannels;
-  readonly locations: readonly Location[];
+  readonly pointsOfSale: readonly PointOfSaleView[];
   /** Pourquoi la liste d'emplacements est vide, si elle l'est faute de lecture. */
   readonly unreadable: string | null;
 }

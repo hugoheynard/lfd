@@ -23,7 +23,7 @@ function category(overrides: Partial<Category> = {}): Category {
     parentId: null,
     position: 0,
     isArchived: false,
-    channelPreset: [{ locationId: 'emp_village', context: 'takeaway' }],
+    channelPreset: [{ pointOfSaleId: 'emp_village', context: 'takeaway' }],
     vatByContext: { takeaway: 'tva_55' },
     activeProductCount: 0,
     ...overrides,
@@ -218,7 +218,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
   it('ne montre que les taux des canaux vendus', async () => {
     const { host } = await setup(
       category({
-        channelPreset: channels([{ locationId: 'emp_village', context: 'takeaway' }]),
+        channelPreset: channels([{ pointOfSaleId: 'emp_village', context: 'takeaway' }]),
       }),
     );
 
@@ -228,7 +228,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
 
   it('montre le taux B2B dès que la plateforme est cochée', async () => {
     const { host } = await setup(
-      category({ channelPreset: channels([{ locationId: null, context: 'b2b' }]) }),
+      category({ channelPreset: channels([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]) }),
     );
 
     expect(rateLabels(host)).toHaveLength(1);
@@ -239,9 +239,9 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = await setup(
       category({
         channelPreset: channels([
-          { locationId: 'emp_village', context: 'takeaway' },
-          { locationId: 'emp_village', context: 'eatIn' },
-          { locationId: null, context: 'b2b' },
+          { pointOfSaleId: 'emp_village', context: 'takeaway' },
+          { pointOfSaleId: 'emp_village', context: 'eatIn' },
+          { pointOfSaleId: 'pos_b2b', context: 'b2b' },
         ]),
       }),
     );
@@ -256,12 +256,12 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = await setup(
       category({
         channelPreset: channels([
-          { locationId: 'emp_village', context: 'takeaway' },
+          { pointOfSaleId: 'emp_village', context: 'takeaway' },
           // Le contexte se coche POUR LUI-MÊME. Il partageait auparavant le
           // canal « emporter », donc il se vendait dès qu'on vendait à
           // emporter — impossible de régler l'un sans l'autre. C'est
           // exactement la limite que la matrice en paires supprime.
-          { locationId: 'emp_village', context: 'traiteur' },
+          { pointOfSaleId: 'emp_village', context: 'traiteur' },
         ]),
       }),
       [
@@ -269,7 +269,6 @@ describe('CategoryPanel — un taux par canal vendu', () => {
         {
           key: 'traiteur',
           label: 'Traiteur',
-          perLocation: true,
           position: 4,
         },
       ],
@@ -287,14 +286,13 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     TestBed.resetTestingModule();
     const { host } = await setup(
       category({
-        channelPreset: channels([{ locationId: 'emp_village', context: 'takeaway' }]),
+        channelPreset: channels([{ pointOfSaleId: 'emp_village', context: 'takeaway' }]),
       }),
       [
         ...TEST_SALES_CONTEXTS,
         {
           key: 'traiteur',
           label: 'Traiteur',
-          perLocation: true,
           position: 4,
         },
       ],
@@ -309,7 +307,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     // refuserait de supprimer un taux que plus rien ne facture.
     const { host, http, stable } = await setup(
       category({
-        channelPreset: channels([{ locationId: null, context: 'b2b' }]),
+        channelPreset: channels([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]),
         vatByContext: { takeaway: 'tva_55', eatIn: 'tva_10', b2b: 'tva_20' },
       }),
     );

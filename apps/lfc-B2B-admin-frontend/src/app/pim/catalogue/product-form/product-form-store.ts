@@ -11,9 +11,9 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { NO_CHANNELS, formatPercent, locationsSelling, sellsContext } from '../../data/channels';
+import { NO_CHANNELS, formatPercent, pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import type { SalesChannels } from '../../data/models';
-import { LocationStore } from '../../locations/location-store';
+import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
@@ -236,11 +236,11 @@ function writeText(
 export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
-  private readonly locationStore = inject(LocationStore);
+  private readonly pointStore = inject(PointOfSaleStore);
   private readonly contextStore = inject(SalesContextStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
-  readonly locations = this.locationStore.items;
+  readonly pointsOfSale = this.pointStore.items;
   private readonly reference = inject(ReferenceApi);
 
   readonly kinds = KINDS;
@@ -477,14 +477,11 @@ export class ProductFormStore {
       channels: this.orderedContexts().map((context) => ({
         key: context.key,
         label: context.label,
-        // Plus aucune branche sur le nom d'un contexte : « est-il vendu ? » se
-        // lit pareil pour tous. Un contexte SANS LIEU ne nomme aucun point de
-        // vente — non pas parce qu'il s'appelle « b2b », mais parce que le
-        // registre dit qu'il ne se vend pas depuis un lieu.
+        // Plus aucune branche, ni sur le nom d'un contexte ni sur sa forme :
+        // « est-il vendu ? » et « par qui ? » se lisent pareil pour tous. La
+        // plateforme professionnelle se nomme comme une boutique se nomme.
         sold: sellsContext(channels, context.key),
-        boutiques: context.perLocation
-          ? locationsSelling(channels, context.key, this.locations())
-          : [],
+        boutiques: pointsOfSaleSelling(channels, context.key, this.pointsOfSale()),
         rate: rateOf(context.key),
         gross: grossFor(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',
@@ -493,17 +490,19 @@ export class ProductFormStore {
   });
 
   /**
-   * Les contextes, **B2B en tête**.
+   * Les contextes dans l'ordre du REGISTRE.
    *
-   * L'ordre du registre sert la projection ; celui-ci sert la LECTURE de cette
-   * app, dont le métier est la vente aux professionnels — le comptoir y est le
-   * cas particulier. Une décision d'écran, donc écrite dans l'écran.
+   * Ils étaient rangés « ce qui n'a pas besoin d'un lieu d'abord » — une manière
+   * de mettre le B2B en tête sans le nommer, l'app vendant aux professionnels.
+   * Ce critère a disparu avec `perLocation` (p-2) : c'est le point de vente qui
+   * dit ce qu'il offre, pas le contexte qui dit s'il lui faut un lieu.
+   *
+   * Reste `position`, réglable à l'écran des contextes. L'ordre de lecture est
+   * donc devenu une donnée qu'on peut corriger, au lieu d'une déduction que
+   * personne ne voyait.
    */
   private readonly orderedContexts = computed(() =>
-    // Les contextes SANS LIEU d'abord — pas « le b2b d'abord ». L'app vend aux
-    // professionnels ; ce qui se commande sans passer par un comptoir la
-    // concerne en premier, quel que soit son nom.
-    [...this.contextStore.items()].sort((a, b) => Number(a.perLocation) - Number(b.perLocation)),
+    [...this.contextStore.items()].sort((a, b) => a.position - b.position),
   );
 
   /** Le référentiel rangé par catégorie d'étiquette, dans l'ordre du registre. */

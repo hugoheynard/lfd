@@ -63,7 +63,6 @@ export class SalesContextPanel {
 
   protected readonly draftKey = signal('');
   protected readonly draftLabel = signal('');
-  protected readonly draftPerLocation = signal(true);
   protected readonly draftSuffix = signal('');
   protected readonly draftActive = signal(true);
   protected readonly draftProjected = signal(false);
@@ -121,7 +120,6 @@ export class SalesContextPanel {
       if (target !== undefined) {
         this.draftKey.set(target.key);
         this.draftLabel.set(target.label);
-        this.draftPerLocation.set(target.perLocation);
         this.draftSuffix.set(target.handleSuffix);
         this.draftActive.set(target.active);
         this.draftProjected.set(target.shopifyProjected);
@@ -176,7 +174,6 @@ export class SalesContextPanel {
       await this.store.create({
         key: this.draftKey().trim(),
         label: this.draftLabel().trim(),
-        perLocation: this.draftPerLocation(),
         handleSuffix: this.draftSuffix().trim(),
         active: this.draftActive(),
         shopifyProjected: this.draftProjected(),
@@ -185,9 +182,6 @@ export class SalesContextPanel {
     }
     await this.store.update(target.key, {
       label: this.draftLabel().trim(),
-      // Renvoyée telle qu'elle EST, jamais telle qu'on la voudrait : le serveur
-      // la compare et refuse si elle a bougé.
-      perLocation: target.perLocation,
       handleSuffix: this.draftSuffix().trim(),
       active: this.draftActive(),
       shopifyProjected: this.draftProjected(),

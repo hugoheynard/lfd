@@ -1,6 +1,8 @@
+import type { PointOfSaleView } from '@lfd/pim-contracts';
+
 import { slugify } from '../../data/sku';
-import { locationsSelling, formatPercent, resolveChannels } from '../../data/channels';
-import type { Category, Location, Product, VatRate } from '../../data/models';
+import { pointsOfSaleSelling, formatPercent, resolveChannels } from '../../data/channels';
+import type { Category, Product, VatRate } from '../../data/models';
 
 /**
  * **Les fiches Shopify** qu'un produit engendre au push — et rien d'autre.
@@ -72,13 +74,13 @@ export function generateFiches(
   product: Product,
   category: Category,
   regimeById: ReadonlyMap<string, VatRate>,
-  locations: readonly Location[],
+  pointsOfSale: readonly PointOfSaleView[],
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
-  const emporter = locationsSelling(channels, 'takeaway', locations);
+  const emporter = pointsOfSaleSelling(channels, 'takeaway', pointsOfSale);
   if (emporter.length > 0) {
     const rate = rateOfContext(category, 'takeaway', regimeById);
     fiches.push({
@@ -91,7 +93,7 @@ export function generateFiches(
     });
   }
 
-  const surPlace = locationsSelling(channels, 'eatIn', locations);
+  const surPlace = pointsOfSaleSelling(channels, 'eatIn', pointsOfSale);
   if (surPlace.length > 0) {
     const rate = rateOfContext(category, 'eatIn', regimeById);
     fiches.push({
