@@ -60,7 +60,22 @@ class InMemoryLocations extends LocationRepository {
     this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
+  /** Combien de familles citent chaque emplacement — posé par le test. */
+  readonly referencedBy = new Map<string, number>();
+
+  /**
+   * Refuse un emplacement encore cité, **comme le vrai dépôt**, qui traduit la
+   * violation de `category_location_ref_location_id_fkey`.
+   *
+   * Le refus vivait dans le handler, avant un compte lu séparément. Il est
+   * descendu en base ; s'il ne descendait pas aussi dans le double, les tests
+   * passeraient au vert sur un dépôt plus permissif que la production.
+   */
   remove(id: string): Promise<void> {
+    const referencing = this.referencedBy.get(id) ?? 0;
+    if (referencing > 0) {
+      return Promise.reject(new LocationInUseError(id, referencing));
+    }
     this.stored.delete(id);
     return Promise.resolve();
   }
@@ -79,16 +94,10 @@ class InMemoryLocations extends LocationRepository {
   }
 }
 
-/** Combien de familles cochent l'emplacement — fixé par le test. */
+/** Combien de familles citent chaque emplacement — fixé par le test. */
 class StubUsage extends LocationUsageReader {
-  constructor(
-    private readonly count = 0,
-    private readonly byId: ReadonlyMap<string, number> = new Map(),
-  ) {
+  constructor(private readonly byId: ReadonlyMap<string, number> = new Map()) {
     super();
-  }
-  countCategoriesUsing(): Promise<number> {
-    return Promise.resolve(this.count);
   }
   countByLocation(): Promise<ReadonlyMap<string, number>> {
     return Promise.resolve(this.byId);
@@ -281,32 +290,30 @@ describe("RemoveLocationHandler", () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 1);
 
-    await new RemoveLocationHandler(
-      repo,
-      new StubUsage(),
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-    ).execute(new RemoveLocationCommand("emp_fixed"));
+    await new RemoveLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+      new RemoveLocationCommand("emp_fixed"),
+    );
 
     expect(repo.rows).toEqual([]);
   });
 });
 
+/**
+ * Le refus vient du DÉPÔT, pas du handler : les canaux d'une gamme citent
+ * l'emplacement dans un `jsonb`, et `category_location_ref` porte la clé
+ * étrangère `Restrict` qu'aucune colonne ne pouvait porter. Ces cas vérifient
+ * que le handler laisse passer le refus au lieu de l'avaler.
+ */
 describe("RemoveLocationHandler — la protection", () => {
-  it("REFUSE de supprimer un emplacement encore coché par des familles", async () => {
-    // Les canaux d'une gamme référencent l'emplacement dans un `jsonb` : aucune
-    // clé étrangère ne peut tenir cette référence, donc supprimer sous elle
-    // laisserait des grilles pointant un point de vente disparu.
+  it("laisse passer le refus d'un emplacement encore cité", async () => {
     const repo = new InMemoryLocations();
     const id = await createSurPlace(repo, 2);
+    repo.referencedBy.set(id, 3);
 
     await expect(
-      new RemoveLocationHandler(
-        repo,
-        new StubUsage(3),
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-      ).execute(new RemoveLocationCommand(id)),
+      new RemoveLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+        new RemoveLocationCommand(id),
+      ),
     ).rejects.toThrow(LocationInUseError);
 
     expect(repo.rows).toHaveLength(1);
@@ -315,27 +322,22 @@ describe("RemoveLocationHandler — la protection", () => {
   it("DIT combien de familles bloquent — sans quoi on les cherche à la main", async () => {
     const repo = new InMemoryLocations();
     const id = await createSurPlace(repo, 1);
+    repo.referencedBy.set(id, 2);
 
     await expect(
-      new RemoveLocationHandler(
-        repo,
-        new StubUsage(2),
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-      ).execute(new RemoveLocationCommand(id)),
+      new RemoveLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+        new RemoveLocationCommand(id),
+      ),
     ).rejects.toThrow(/2 famille/);
   });
 
-  it("supprime quand plus personne ne le coche", async () => {
+  it("supprime quand plus personne ne le cite", async () => {
     const repo = new InMemoryLocations();
     const id = await createSurPlace(repo, 1);
 
-    await new RemoveLocationHandler(
-      repo,
-      new StubUsage(0),
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-    ).execute(new RemoveLocationCommand(id));
+    await new RemoveLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+      new RemoveLocationCommand(id),
+    );
 
     expect(repo.rows).toEqual([]);
   });
@@ -402,7 +404,7 @@ describe("ListLocationsHandler", () => {
   it("joint le compte de familles à chaque emplacement", async () => {
     const repo = new InMemoryLocations();
     const id = await open(repo, { name: "Village" });
-    const usage = new StubUsage(0, new Map([[id, 3]]));
+    const usage = new StubUsage(new Map([[id, 3]]));
 
     const [row] = await new ListLocationsHandler(repo, usage).execute();
 
@@ -449,9 +451,7 @@ describe("Ce que les emplacements inscrivent au journal", () => {
       new GenerateTableQrCommand(id, 1),
     );
     await new RemoveTableQrHandler(repo, journal, uow).execute(new RemoveTableQrCommand(id, 1));
-    await new RemoveLocationHandler(repo, new StubUsage(), journal, uow).execute(
-      new RemoveLocationCommand(id),
-    );
+    await new RemoveLocationHandler(repo, journal, uow).execute(new RemoveLocationCommand(id));
 
     expect(journal.types()).toEqual([
       "location.created",
@@ -533,7 +533,7 @@ describe("Ce que les emplacements inscrivent au journal", () => {
     const journal = new RecordingJournal();
     const id = await open(repo, { name: "Village" });
 
-    await new RemoveLocationHandler(repo, new StubUsage(), journal, new DirectUnitOfWork()).execute(
+    await new RemoveLocationHandler(repo, journal, new DirectUnitOfWork()).execute(
       new RemoveLocationCommand(id),
     );
 

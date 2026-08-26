@@ -14,6 +14,7 @@ import {
   salesChannelsColumn,
   violatedConstraint,
 } from "../../shared/infrastructure/json-readers.js";
+import { referencedLocations } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
   id: string;
@@ -106,6 +107,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
       this.prisma.$transaction([
         this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
         ...this.vatOperations(snapshot),
+        ...this.locationOperations(snapshot),
       ]),
     );
   }
@@ -116,6 +118,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
       this.prisma.$transaction([
         this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
         ...this.vatOperations(snapshot),
+        ...this.locationOperations(snapshot),
       ]),
     );
   }
@@ -152,6 +155,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
             data: toColumns(snapshot),
           }),
           ...this.vatOperations(snapshot),
+          ...this.locationOperations(snapshot),
         ];
       }),
     ]);
@@ -182,6 +186,36 @@ export class PrismaCategoryRepository extends CategoryRepository {
           },
         }),
       ),
+    ];
+  }
+
+  /**
+   * Réécrit l'**index de référence** des emplacements cités par la grille.
+   *
+   * Il dérive de `channel_preset`, et part dans la MÊME transaction que la
+   * colonne dont il dérive : hors transaction, l'un des deux pourrait manquer,
+   * et l'index deviendrait une seconde vérité au lieu d'un miroir.
+   *
+   * Il existe pour une raison qu'aucune colonne ne peut porter : une clé
+   * étrangère ne se pose pas dans du `jsonb`. Sans lui, supprimer un
+   * emplacement ne se protégeait que par une lecture — et entre le compte et
+   * la suppression, une grille pouvait se mettre à le citer.
+   *
+   * Effacer-puis-réécrire, comme les taux : un `upsert` laisserait vivre la
+   * ligne d'un emplacement qu'on vient de décocher, et « plus référencé »
+   * ressemblerait à « référence inchangée ».
+   */
+  private locationOperations(snapshot: CategorySnapshot) {
+    const locationIds = referencedLocations(snapshot.channelPreset);
+    return [
+      this.prisma.categoryLocationRef.deleteMany({ where: { categoryId: snapshot.id } }),
+      ...(locationIds.length === 0
+        ? []
+        : [
+            this.prisma.categoryLocationRef.createMany({
+              data: locationIds.map((locationId) => ({ categoryId: snapshot.id, locationId })),
+            }),
+          ]),
     ];
   }
 

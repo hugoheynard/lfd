@@ -2529,12 +2529,45 @@ model Category {
   /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
   contextVat CategoryContextVat[]
 
+  /// L'index de référence des emplacements cités par `channelPreset` — voir
+  /// `CategoryLocationRef`. Écrit dans la MÊME transaction que la colonne.
+  locationRefs CategoryLocationRef[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
   @@index([parentId])
   @@map("category")
+  @@schema("pim")
+}
+
+/// **L'index de référence** entre une famille et les emplacements que sa grille
+/// de canaux cite.
+///
+/// Pourquoi une table alors que la donnée est déjà dans `channel_preset` : une
+/// clé étrangère ne se pose pas sur une valeur enfouie dans du `jsonb`.
+/// Supprimer un emplacement se protégeait donc par une LECTURE — compter les
+/// familles, puis supprimer — et entre les deux instants, une grille pouvait
+/// se mettre à le citer. Résultat : une famille pointant un point de vente
+/// disparu, sans erreur.
+///
+/// C'est exactement le motif de `sku_registry` : quand une contrainte ne peut
+/// pas atteindre l'invariant, un **registre** le porte. Il n'est pas une
+/// seconde source de vérité — il est écrit dans la même transaction que la
+/// colonne dont il dérive, par le seul dépôt qui écrit cette colonne.
+///
+/// `Restrict` vers l'emplacement (le mur), `Cascade` depuis la famille (la
+/// référence n'a aucun sens sans elle).
+model CategoryLocationRef {
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  locationId String   @map("location_id")
+  location   Location @relation(fields: [locationId], references: [id])
+
+  @@id([categoryId, locationId])
+  @@index([locationId])
+  @@map("category_location_ref")
   @@schema("pim")
 }
 
@@ -2658,6 +2691,11 @@ model Location {
   baseUrl      String  @default("") @map("base_url")
 
   tables LocationTable[]
+
+  /// Les familles qui citent cet emplacement dans leur grille de canaux — le
+  /// mur `Restrict` qui empêche de le supprimer sous elles. Aucune colonne
+  /// ajoutée ici ; voir `CategoryLocationRef`.
+  categoryRefs CategoryLocationRef[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

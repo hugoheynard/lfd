@@ -15,7 +15,7 @@ import type { PrismaService } from "../../../platform/database/prisma.service.js
  * depuis n'importe quel dépôt du référentiel — un mur tombé sans que personne
  * ne l'écrive.
  *
- * D'où cette **surface énumérée** : les 16 modèles du schéma, un par ligne. Le
+ * D’où cette **surface énumérée** : les modèles du schéma, un par ligne. Le
  * compilateur refuse le reste. C'est plus verbeux qu'un alias, et c'est le but —
  * ajouter un modèle au schéma sans l'ajouter ici ne le rend pas lisible par
  * accident, et l'inverse se voit en revue.
@@ -37,6 +37,7 @@ export abstract class PimPrismaService {
   abstract readonly vatRate: PrismaService["vatRate"];
   abstract readonly salesContext: PrismaService["salesContext"];
   abstract readonly categoryContextVat: PrismaService["categoryContextVat"];
+  abstract readonly categoryLocationRef: PrismaService["categoryLocationRef"];
   abstract readonly productContextVat: PrismaService["productContextVat"];
   abstract readonly location: PrismaService["location"];
   abstract readonly locationTable: PrismaService["locationTable"];

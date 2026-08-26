@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
 import { Location } from "../domain/entities/location.js";
-import { LocationNameTakenError } from "../domain/errors/locations-errors.js";
+import { LocationInUseError, LocationNameTakenError } from "../domain/errors/locations-errors.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
 import { violatedConstraint } from "../../catalogue/shared/infrastructure/json-readers.js";
 import type { TableState } from "../domain/value-objects/table.js";
@@ -125,9 +125,35 @@ export class PrismaLocationRepository extends LocationRepository {
     );
   }
 
+  /**
+   * Le **dernier mot** sur « un emplacement cité ne disparaît pas ».
+   *
+   * Le mur est la clé étrangère `Restrict` de `category_location_ref` — pas
+   * une lecture préalable. Une lecture ne tient rien : entre le compte et la
+   * suppression, une grille peut se mettre à citer l'emplacement, et la
+   * famille se retrouve à pointer un point de vente disparu.
+   *
+   * **Sans recompter.** La suppression part dans la transaction du handler ;
+   * une fois l'ordre en échec, Postgres a avorté la transaction et toute
+   * requête suivante échoue à son tour. Compter ici pour enrichir le message
+   * transformait donc le refus métier en 500. L'écran affiche déjà le compte
+   * à côté de chaque ligne.
+   */
   async remove(id: string): Promise<void> {
-    await this.prisma.location.delete({ where: { id } });
+    try {
+      await this.prisma.location.delete({ where: { id } });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new LocationInUseError(id);
+      }
+      throw error;
+    }
   }
+}
+
+/** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
+function isForeignKeyViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2003";
 }
 
 /**

@@ -52,11 +52,25 @@ export class LocationTableNotFoundError extends ResourceNotFoundError {
  * contre elle-même. Elle se satisfait en décochant, donc l'appelant peut agir.
  */
 export class LocationInUseError extends BusinessError {
-  constructor(id: string, categories: number) {
+  /**
+   * Le compte est **facultatif**, et c'est le mur qui l'explique : le refus
+   * vient de la clé étrangère `Restrict`, levée à l'intérieur de la
+   * transaction. Une fois qu'un ordre a échoué, la transaction Postgres est
+   * avortée — recompter là pour enrichir le message échouerait à son tour, et
+   * le refus métier deviendrait une erreur technique.
+   *
+   * L'écran, lui, affiche déjà le compte à côté de chaque ligne : ce message
+   * n'a qu'à dire quoi faire.
+   */
+  constructor(id: string, categories?: number) {
     super(
       "locations.location.in_use",
-      `Emplacement encore vendeur : ${String(categories)} famille(s) le cochent. ` +
-        `Décochez-le de leurs canaux avant de le supprimer (${id}).`,
+      `Emplacement encore vendeur : ${describeHolders(categories)} le citent dans leurs canaux. ` +
+        `Décochez-le avant de le supprimer (${id}).`,
     );
   }
+}
+
+function describeHolders(categories: number | undefined): string {
+  return categories === undefined ? "des familles" : `${String(categories)} famille(s)`;
 }

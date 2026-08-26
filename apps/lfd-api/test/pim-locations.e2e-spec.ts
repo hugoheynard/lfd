@@ -1,11 +1,12 @@
 /**
- * E2E des **locations** — sur un vrai Postgres.
+ * E2E des **emplacements** — sur un vrai Postgres.
  *
- * Ce que seul ce niveau prouve : la recherche de nom **insensible à la casse**
- * (`mode: "insensitive"` côté Postgres, que les doubles remplacent par un
- * `toLowerCase()` en mémoire), le comptage des grilles `jsonb` qui alimente le
- * refus de suppression, et l'écriture de l'agrégat ENTIER en une transaction —
- * champs et grille de tables ensemble.
+ * Ce que seul ce niveau prouve : l'unicité du nom **insensible à la casse**
+ * (index sur `lower(name)`, que les doubles remplacent par un `toLowerCase()`
+ * en mémoire), le mur `Restrict` de `category_location_ref` qui refuse de
+ * supprimer un emplacement encore cité, l'écriture de l'agrégat ENTIER en une
+ * transaction — champs et grille de tables ensemble — et le cycle de vie des
+ * jetons de QR, qui n'existent qu'ici.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -42,7 +43,11 @@ interface LocationRow {
   readonly id: string;
   readonly name: string;
   readonly surPlace: boolean;
-  readonly tables: readonly { readonly number: number; readonly qrCreated: boolean }[];
+  readonly tables: readonly {
+    readonly number: number;
+    readonly qrCreated: boolean;
+    readonly token: string | null;
+  }[];
   readonly usedByCategories: number;
 }
 
@@ -217,3 +222,129 @@ describe("fermer la salle vide la grille — en base", () => {
     expect(row.tables[0]?.qrCreated).toBe(true);
   });
 });
+
+/**
+ * Le **cycle de vie d'un jeton de QR** — la seule route du référentiel qui
+ * produise un secret d'accès, et la seule dont l'effet est collé sur une table
+ * en salle. Rien ne la couvrait au niveau HTTP.
+ */
+describe("les jetons de QR d'une table", () => {
+  it("pose un jeton, et la table le porte dans la liste", async () => {
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+
+    const response = await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({});
+
+    expect(response.status).toBe(201);
+    const token = jsonBody<{ token: string }>(response).token;
+    expect(token).not.toBe("");
+
+    const table = (await readLocation(id)).tables.find((row) => row.number === 1);
+    expect(table).toMatchObject({ qrCreated: true, token });
+  });
+
+  /**
+   * Le point le plus cher du module : régénérer **invalide** le QR déjà
+   * imprimé et collé sur la table. Si le jeton ne changeait pas, l'écran
+   * promettrait une invalidation qui n'a pas lieu — et un code perdu resterait
+   * valide pour toujours.
+   */
+  it("REMPLACE le jeton à la régénération — le QR imprimé cesse d'ouvrir", async () => {
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 1 });
+    const first = jsonBody<{ token: string }>(
+      await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201),
+    ).token;
+
+    const second = jsonBody<{ token: string }>(
+      await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201),
+    ).token;
+
+    expect(second).not.toBe(first);
+    expect((await readLocation(id)).tables[0]?.token).toBe(second);
+  });
+
+  it("efface le jeton quand on retire le QR", async () => {
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 1 });
+    await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201);
+
+    await staff().delete(`${LOCATIONS}/${id}/tables/1/qr`).expect(200);
+
+    expect((await readLocation(id)).tables[0]).toMatchObject({ qrCreated: false, token: null });
+  });
+
+  it("refuse une table qui n'existe pas dans cet emplacement", async () => {
+    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+
+    const response = await staff().post(`${LOCATIONS}/${id}/tables/9/qr`).send({});
+
+    expect(response.status).toBe(404);
+    expect(jsonBody<{ code: string }>(response).code).toBe("locations.table.not_found");
+  });
+
+  /**
+   * Sans salle, la grille est vide : il n'y a aucune table à équiper. C'est le
+   * même refus que pour une table hors grille — et c'est bien l'invariant de
+   * l'agrégat qui le produit, pas un contrôle du handler.
+   */
+  it("refuse d'équiper une table sur un emplacement sans salle", async () => {
+    const id = await createLocation({ name: "Village", surPlace: false, tableCount: 4 });
+
+    await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(404);
+  });
+});
+
+/**
+ * Le mur de suppression n'est plus une lecture du handler : c'est la clé
+ * étrangère `Restrict` de `category_location_ref`, l'index que le dépôt des
+ * familles écrit dans la même transaction que la colonne `channel_preset`.
+ */
+describe("l'index de référence suit la grille de canaux", () => {
+  it("se vide quand la famille décoche, et laisse alors supprimer", async () => {
+    const location = await createLocation({ name: "Village" });
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    const channels = (boutiques: Record<string, { emporter: boolean; surPlace: boolean }>) =>
+      staff().put(`${CATEGORIES}/${category}/channels`).send({ boutiques, b2b: false }).expect(200);
+
+    await channels({ [location]: { emporter: true, surPlace: false } });
+    expect(await refCount(location)).toBe(1);
+
+    // Recocher le MÊME emplacement ne doit pas doubler la ligne : le dépôt
+    // efface puis réécrit, il n'ajoute pas.
+    await channels({ [location]: { emporter: false, surPlace: true } });
+    expect(await refCount(location)).toBe(1);
+
+    await channels({});
+    expect(await refCount(location)).toBe(0);
+    await staff().delete(`${LOCATIONS}/${location}`).expect(200);
+  });
+
+  /**
+   * Supprimer la famille emporte ses références (`Cascade`) — sans quoi une
+   * famille disparue continuerait de bloquer la suppression d'un emplacement,
+   * et rien à l'écran ne dirait pourquoi.
+   */
+  it("disparaît avec la famille qui le portait", async () => {
+    const location = await createLocation({ name: "Village" });
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    await staff()
+      .put(`${CATEGORIES}/${category}/channels`)
+      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .expect(200);
+
+    await ctx.prisma.category.delete({ where: { id: category } });
+
+    expect(await refCount(location)).toBe(0);
+    await staff().delete(`${LOCATIONS}/${location}`).expect(200);
+  });
+});
+
+function refCount(locationId: string): Promise<number> {
+  return ctx.prisma.categoryLocationRef.count({ where: { locationId } });
+}
