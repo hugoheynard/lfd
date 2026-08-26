@@ -1,0 +1,7 @@
+.platform {
+  --fold-card-padding: var(--fold-space-lg);
+
+  &:not(:first-child) {
+    margin-top: var(--fold-space-md);
+  }
+}

@@ -66,7 +66,7 @@ export const pimRoutes: Routes = [
       },
       {
         path: 'emplacements',
-        title: 'Emplacements — LFC B2B admin',
+        title: 'Points de vente — LFC B2B admin',
         loadComponent: () => import('./locations/locations-page').then((m) => m.LocationsPage),
       },
       {

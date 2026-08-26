@@ -60,7 +60,7 @@ export class DocumentationPage {
     // PIM pose sur « Emplacements » et « Publication ». Les génériques d'avant
     // (`company`, `upload`) montraient deux icônes différentes pour la même
     // chose, à un rail d'écart.
-    { key: 'locations', label: 'Emplacements', icon: 'places' },
+    { key: 'locations', label: 'Points de vente', icon: 'places' },
     { key: 'shopify', label: 'Intégration Shopify', icon: 'shopify' },
   ];
 

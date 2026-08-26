@@ -1,0 +1,31 @@
+@if (loadError(); as reason) {
+  <fold-callout appearance="inset" variant="alert" role="alert">
+    Plateformes illisibles — {{ reason }}
+  </fold-callout>
+}
+
+@for (platform of platforms(); track platform.id) {
+  <fold-card class="platform">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="globe"
+      iconTone="primary"
+      [title]="platform.label"
+      subtitle="Plateforme"
+    >
+      <fold-badge titleAction content="Non modifiable" variant="neutral" />
+    </fold-element-title>
+
+    <fold-field-list>
+      <fold-field
+        label="Contextes offerts"
+        [empty]="platform.contexts.length === 0"
+        placeholder="aucun"
+      >
+        {{ offeredLabels(platform.contexts).join(' · ') }}
+      </fold-field>
+      <fold-field label="Tables">sans objet — une plateforme n'a pas de salle</fold-field>
+    </fold-field-list>
+  </fold-card>
+}
