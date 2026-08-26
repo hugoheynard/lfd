@@ -39,10 +39,10 @@ function withFamily(store: ProductFormStore): void {
       parentId: null,
       position: 1,
       isArchived: false,
-      channelPreset: {
-        boutiques: { emp_rivoli: { emporter: true, surPlace: false } },
-        b2b: true,
-      },
+      channelPreset: [
+        { locationId: 'emp_rivoli', context: 'emporter' },
+        { locationId: null, context: 'b2b' },
+      ],
       vatByContext: { emporter: 'tva_55', surPlace: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
     },
@@ -104,7 +104,7 @@ describe('PricingForm', () => {
   it('dit que les canaux sont redéfinis, plutôt que de parler d’héritage', () => {
     const store = setup();
     withFamily(store);
-    store.channelsOverride.set({ boutiques: {}, b2b: true });
+    store.channelsOverride.set([{ locationId: null, context: 'b2b' }]);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -182,7 +182,7 @@ describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
     // pas vendue — et un taux pour un canal qu'elle a fermé.
     const store = setup();
     withFamily(store);
-    store.channelsOverride.set({ boutiques: {}, b2b: true });
+    store.channelsOverride.set([{ locationId: null, context: 'b2b' }]);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 

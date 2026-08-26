@@ -23,13 +23,7 @@ function category(overrides: Partial<Category> = {}): Category {
     parentId: null,
     position: 0,
     isArchived: false,
-    channelPreset: {
-      boutiques: {
-        emp_village: { emporter: true, surPlace: false },
-        emp_val: { emporter: false, surPlace: false },
-      },
-      b2b: false,
-    },
+    channelPreset: [{ locationId: 'emp_village', context: 'emporter' }],
     vatByContext: { emporter: 'tva_55' },
     activeProductCount: 0,
     ...overrides,
@@ -198,9 +192,9 @@ describe('CategoryPanel — enregistrer', () => {
 });
 
 describe('CategoryPanel — un taux par canal vendu', () => {
-  /** Une grille vide ; `boutiques` porte des IDENTIFIANTS d'emplacement. */
-  function channels(over: Partial<Category['channelPreset']> = {}): Category['channelPreset'] {
-    return { boutiques: {}, b2b: false, ...over };
+  /** Une grille : un ensemble de PAIRES (lieu, contexte). */
+  function channels(sold: Category['channelPreset'] = []): Category['channelPreset'] {
+    return sold;
   }
 
   it("ne propose aucun taux tant qu'aucun canal n'est coché", async () => {
@@ -224,9 +218,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
   it('ne montre que les taux des canaux vendus', async () => {
     const { host } = await setup(
       category({
-        channelPreset: channels({
-          boutiques: { emp_village: { emporter: true, surPlace: false } },
-        }),
+        channelPreset: channels([{ locationId: 'emp_village', context: 'emporter' }]),
       }),
     );
 
@@ -235,7 +227,9 @@ describe('CategoryPanel — un taux par canal vendu', () => {
   });
 
   it('montre le taux B2B dès que la plateforme est cochée', async () => {
-    const { host } = await setup(category({ channelPreset: channels({ b2b: true }) }));
+    const { host } = await setup(
+      category({ channelPreset: channels([{ locationId: null, context: 'b2b' }]) }),
+    );
 
     expect(rateLabels(host)).toHaveLength(1);
     expect(rateLabels(host)[0]).toContain('B2B');
@@ -244,10 +238,11 @@ describe('CategoryPanel — un taux par canal vendu', () => {
   it('montre les trois quand tout est vendu', async () => {
     const { host } = await setup(
       category({
-        channelPreset: channels({
-          boutiques: { emp_village: { emporter: true, surPlace: true } },
-          b2b: true,
-        }),
+        channelPreset: channels([
+          { locationId: 'emp_village', context: 'emporter' },
+          { locationId: 'emp_village', context: 'surPlace' },
+          { locationId: null, context: 'b2b' },
+        ]),
       }),
     );
 
@@ -260,9 +255,14 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     TestBed.resetTestingModule();
     const { host } = await setup(
       category({
-        channelPreset: channels({
-          boutiques: { emp_village: { emporter: true, surPlace: false } },
-        }),
+        channelPreset: channels([
+          { locationId: 'emp_village', context: 'emporter' },
+          // Le contexte se coche POUR LUI-MÊME. Il partageait auparavant le
+          // canal « emporter », donc il se vendait dès qu'on vendait à
+          // emporter — impossible de régler l'un sans l'autre. C'est
+          // exactement la limite que la matrice en paires supprime.
+          { locationId: 'emp_village', context: 'traiteur' },
+        ]),
       }),
       [
         ...TEST_SALES_CONTEXTS,
@@ -279,13 +279,39 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     expect(rateLabels(host).some((label) => label.includes('Traiteur'))).toBe(true);
   });
 
+  /**
+   * L'autre moitié de la même promesse : deux contextes qui partageaient un
+   * canal ne pouvaient PAS se cocher séparément — vendre à emporter les vendait
+   * tous les deux. Ils sont maintenant indépendants.
+   */
+  it("ne vend PAS un contexte voisin qu'on n'a pas coché", async () => {
+    TestBed.resetTestingModule();
+    const { host } = await setup(
+      category({
+        channelPreset: channels([{ locationId: 'emp_village', context: 'emporter' }]),
+      }),
+      [
+        ...TEST_SALES_CONTEXTS,
+        {
+          key: 'traiteur',
+          label: 'Traiteur',
+          channelKey: 'emporter',
+          perLocation: true,
+          position: 4,
+        },
+      ],
+    );
+
+    expect(rateLabels(host).some((label) => label.includes('Traiteur'))).toBe(false);
+  });
+
   it("EFFACE le taux d'un canal qu'on ne vend pas", async () => {
     // Le garder laisserait la famille pointer un taux dont personne ne se sert :
     // le compte d'usages de l'écran des taux le compterait, et la base
     // refuserait de supprimer un taux que plus rien ne facture.
     const { host, http, stable } = await setup(
       category({
-        channelPreset: channels({ b2b: true }),
+        channelPreset: channels([{ locationId: null, context: 'b2b' }]),
         vatByContext: { emporter: 'tva_55', surPlace: 'tva_10', b2b: 'tva_20' },
       }),
     );

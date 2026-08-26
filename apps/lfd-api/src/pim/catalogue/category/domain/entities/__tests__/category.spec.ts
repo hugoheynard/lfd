@@ -50,15 +50,15 @@ const CONTEXTS: readonly SalesContext[] = [
 
 const OPEN = { id: "cat_1", name: { fr: "Chocolats fins" }, parentId: null, position: 0 };
 
-/** Une grille de canaux ; `boutiques` est indexée par IDENTIFIANT d'emplacement. */
-function channels(over: Partial<SalesChannels> = {}): SalesChannels {
-  return { boutiques: {}, b2b: false, ...over };
+/** Une grille de canaux : un ENSEMBLE DE PAIRES (lieu, contexte). */
+function channels(sold: SalesChannels = []): SalesChannels {
+  return sold;
 }
 
 /** Une famille qui vend le mode demandé, prête à porter un taux. */
-function selling(over: Partial<SalesChannels>): Category {
+function selling(sold: SalesChannels): Category {
   const category = Category.open(OPEN);
-  category.setChannels(channels(over), CONTEXTS);
+  category.setChannels(channels(sold), CONTEXTS);
   return category;
 }
 
@@ -106,7 +106,10 @@ describe("l’agrégat Category", () => {
     it("refuse les canaux", () => {
       expect(() =>
         archived().setChannels(
-          channels({ boutiques: { emp_1: { emporter: true, surPlace: true } } }),
+          channels([
+            { locationId: "emp_1", context: "emporter" },
+            { locationId: "emp_1", context: "surPlace" },
+          ]),
           CONTEXTS,
         ),
       ).toThrow(CategoryFrozenError);
@@ -140,7 +143,7 @@ describe("l’agrégat Category", () => {
     expect(snapshot.vatByContext).toEqual({});
     // Une carte VIDE, pas deux boutiques à zéro : les emplacements sont une
     // donnée, et une famille neuve n'en coche aucun.
-    expect(snapshot.channelPreset).toEqual({ boutiques: {}, b2b: false });
+    expect(snapshot.channelPreset).toEqual([]);
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {
@@ -155,45 +158,43 @@ describe("l’agrégat Category", () => {
    */
   describe("un taux ne se règle que pour un canal vendu", () => {
     it("refuse le taux d’un canal fermé", () => {
-      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
       expect(() => category.setVat({ emporter: "tva_55", surPlace: "tva_10" }, CONTEXTS)).toThrow(
         CategoryVatWithoutChannelError,
       );
     });
 
     it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
-      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
       category.setVat({ emporter: "tva_55" }, CONTEXTS);
       expect(category.vatByContext).toEqual({ emporter: "tva_55" });
     });
 
     it("traite le B2B comme un canal à part entière", () => {
-      const category = selling({ b2b: true });
+      const category = selling([{ locationId: null, context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
       expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
     it("EFFACE le taux d’un canal qu’on ferme", () => {
-      const category = selling({ b2b: true });
+      const category = selling([{ locationId: null, context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
 
-      category.setChannels(channels({ b2b: false }), CONTEXTS);
+      category.setChannels(channels([]), CONTEXTS);
 
       expect(category.vatOf("b2b")).toBeNull();
     });
 
     it("laisse intact le taux d’un canal qui reste vendu", () => {
-      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
       category.setVat({ emporter: "tva_55" }, CONTEXTS);
 
       // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
       category.setChannels(
-        channels({
-          boutiques: {
-            emp_1: { emporter: true, surPlace: false },
-            emp_2: { emporter: true, surPlace: false },
-          },
-        }),
+        channels([
+          { locationId: "emp_1", context: "emporter" },
+          { locationId: "emp_2", context: "emporter" },
+        ]),
         CONTEXTS,
       );
 
@@ -204,7 +205,7 @@ describe("l’agrégat Category", () => {
       // Accepter la clé la persisterait sans ligne de registre en face, et
       // personne ne saurait plus dire, six mois après, ce que « traiteur »
       // facturait.
-      const category = selling({ boutiques: { emp_1: { emporter: true, surPlace: false } } });
+      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
       expect(() => category.setVat({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
         CategoryUnknownContextError,
       );

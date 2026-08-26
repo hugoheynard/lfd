@@ -10,13 +10,13 @@ import { CategoryRepository } from "../domain/ports/category.repository.js";
 import {
   localizedColumn,
   readLocalizedColumn,
-  readSalesChannelsColumn,
   salesChannelsColumn,
   violatedConstraint,
 } from "../../shared/infrastructure/json-readers.js";
 import {
+  normalizeSalesChannels,
   referencedLocations,
-  soldChannels,
+  type SalesChannels,
 } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
@@ -26,14 +26,34 @@ interface CategoryRow {
   parentId: string | null;
   position: number;
   isArchived: boolean;
-  channelPreset: unknown;
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
+  channels: readonly { locationId: string | null; contextKey: string }[];
 }
 
-/** Les taux viennent de la jointure — les trois colonnes n'existent plus. */
+/**
+ * Les taux viennent de la jointure, les canaux de `category_channel`. Les deux
+ * colonnes qui les portaient — trois taux nommés, une matrice `jsonb` — ont
+ * disparu de la lecture ; la seconde reste ÉCRITE jusqu'à d-3.
+ */
 const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
+  channels: { select: { locationId: true, contextKey: true } },
 } as const;
+
+/**
+ * Les lignes de `category_channel` en paires du domaine.
+ *
+ * Normalisées à la lecture, pas seulement à l'écriture : la base ne garantit
+ * aucun ordre, et un « avant/après » de journal comparerait alors deux
+ * ensembles identiques rangés différemment.
+ */
+function toChannels(
+  rows: readonly { locationId: string | null; contextKey: string }[],
+): SalesChannels {
+  return normalizeSalesChannels(
+    rows.map((row) => ({ locationId: row.locationId, context: row.contextKey })),
+  );
+}
 
 function toCategory(row: CategoryRow): Category {
   const vatByContext: Record<string, string> = {};
@@ -47,7 +67,7 @@ function toCategory(row: CategoryRow): Category {
     parentId: row.parentId,
     position: row.position,
     isArchived: row.isArchived,
-    channelPreset: readSalesChannelsColumn(row.channelPreset, "category.channelPreset"),
+    channelPreset: toChannels(row.channels),
     vatByContext,
   });
 }
@@ -237,7 +257,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
    * bascule d-2 inverse la source et le miroir.
    */
   private channelOperations(snapshot: CategorySnapshot) {
-    const sold = soldChannels(snapshot.channelPreset);
+    const sold = snapshot.channelPreset;
     return [
       this.prisma.categoryChannel.deleteMany({ where: { categoryId: snapshot.id } }),
       ...(sold.length === 0

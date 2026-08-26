@@ -84,7 +84,7 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
 
     expect(await categoryPairs(category)).toEqual([`${location}:emporter`]);
@@ -96,7 +96,10 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: true } }, b2b: false })
+      .send([
+        { locationId: location, context: "emporter" },
+        { locationId: location, context: "surPlace" },
+      ])
       .expect(200);
 
     expect(await categoryPairs(category)).toEqual([`${location}:emporter`, `${location}:surPlace`]);
@@ -112,7 +115,7 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: {}, b2b: true })
+      .send([{ locationId: null, context: "b2b" }])
       .expect(200);
 
     expect(await categoryPairs(category)).toEqual(["—:b2b"]);
@@ -124,13 +127,17 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
     const channels = (body: object) =>
       staff().put(`${CATEGORIES}/${category}/channels`).send(body).expect(200);
 
-    await channels({ boutiques: { [location]: { emporter: true, surPlace: true } }, b2b: true });
+    await channels([
+      { locationId: location, context: "emporter" },
+      { locationId: location, context: "surPlace" },
+      { locationId: null, context: "b2b" },
+    ]);
     expect(await categoryPairs(category)).toHaveLength(3);
 
-    await channels({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false });
+    await channels([{ locationId: location, context: "emporter" }]);
     expect(await categoryPairs(category)).toEqual([`${location}:emporter`]);
 
-    await channels({ boutiques: {}, b2b: false });
+    await channels([]);
     expect(await categoryPairs(category)).toEqual([]);
   });
 });
@@ -152,10 +159,7 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     const category = await aCategory("Viennoiseries");
     const product = await aProduct(category, "Croissant");
 
-    await staff()
-      .put(`${PRODUCTS}/${product}/channels`)
-      .send({ channels: { boutiques: {}, b2b: false } })
-      .expect(200);
+    await staff().put(`${PRODUCTS}/${product}/channels`).send({ channels: [] }).expect(200);
 
     expect(await hasOverride(product)).toBe(true);
     expect(await productPairs(product)).toEqual([]);
@@ -167,13 +171,20 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     const product = await aProduct(category, "Croissant");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: true } }, b2b: true })
+      .send([
+        { locationId: location, context: "emporter" },
+        { locationId: location, context: "surPlace" },
+        { locationId: null, context: "b2b" },
+      ])
       .expect(200);
 
     await staff()
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
-        channels: { boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: true },
+        channels: [
+          { locationId: location, context: "emporter" },
+          { locationId: null, context: "b2b" },
+        ],
       })
       .expect(200);
 
@@ -191,12 +202,12 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     const product = await aProduct(category, "Croissant");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
     await staff()
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
-        channels: { boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false },
+        channels: [{ locationId: location, context: "emporter" }],
       })
       .expect(200);
     expect(await productPairs(product)).toHaveLength(1);
@@ -220,7 +231,7 @@ describe("le mur devient direct", () => {
     const category = await aCategory("Viennoiseries");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
 
     expect(await ctx.prisma.categoryChannel.count({ where: { locationId: location } })).toBe(1);

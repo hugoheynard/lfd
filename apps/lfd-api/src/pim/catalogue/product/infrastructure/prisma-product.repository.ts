@@ -16,12 +16,11 @@ import {
   isUniqueViolation,
   localizedColumn,
   readLocalizedColumn,
-  readSalesChannelsColumn,
   readStringArrayColumn,
   readStringMapColumn,
   salesChannelsColumn,
 } from "../../shared/infrastructure/json-readers.js";
-import { soldChannels } from "../../shared/domain/value-objects/sales-channels.js";
+import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface NutritionRow {
   allergens: unknown;
@@ -59,13 +58,22 @@ interface ProductRow {
   status: ProductStatus;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
-  channelOverride: unknown;
+  channelOverrideRows: {
+    readonly cells: readonly { locationId: string | null; contextKey: string }[];
+  } | null;
 }
 
-/** Les dérogations de taux voyagent AVEC le produit : elles sont à lui. */
+/**
+ * Les dérogations voyagent AVEC le produit : elles sont à lui.
+ *
+ * Celle des canaux est une **ligne parente plus ses cellules**, et non une
+ * colonne : c'est ce qui distingue « déroge et ne vend nulle part » (parente
+ * présente, zéro cellule) de « hérite de sa famille » (pas de parente).
+ */
 const PRODUCT_INCLUDE = {
   variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
+  channelOverrideRows: { select: { cells: { select: { locationId: true, contextKey: true } } } },
 } as const;
 
 function toVariant(row: VariantRow): VariantSnapshot {
@@ -113,11 +121,17 @@ function toProduct(row: ProductRow): Product {
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
     ),
-    // `null` traversé TEL QUEL : c'est « la fiche hérite », pas « matrice vide ».
+    // L'ABSENCE de ligne parente est « la fiche hérite » ; une parente sans
+    // cellule est « elle déroge, et ne vend nulle part ». Les deux se lisent.
     channelOverride:
-      row.channelOverride === null
+      row.channelOverrideRows === null
         ? null
-        : readSalesChannelsColumn(row.channelOverride, "product.channelOverride"),
+        : normalizeSalesChannels(
+            row.channelOverrideRows.cells.map((cell) => ({
+              locationId: cell.locationId,
+              context: cell.contextKey,
+            })),
+          ),
   });
 }
 
@@ -288,7 +302,7 @@ export class PrismaProductRepository extends ProductRepository {
     if (snapshot.channelOverride === null) {
       return [remove];
     }
-    const sold = soldChannels(snapshot.channelOverride);
+    const sold = snapshot.channelOverride;
     return [
       remove,
       this.prisma.productChannelOverride.create({ data: { productId: snapshot.id } }),

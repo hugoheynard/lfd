@@ -82,32 +82,29 @@ export function missingLocales(text: LocalizedText): readonly Locale[] {
   return LOCALES.filter((locale) => !filled.includes(locale));
 }
 
-/**
- * Ce qu'un point de vente propose.
- *
- * ⚠️ `emporter` / `surPlace` restent français : ce sont des **clés de données**
- * (le `jsonb` `channel_preset`, `sales_context.key`). Les renommer est une
- * migration, pas un renommage — cf. `documentation/langue-du-code.md`, palier 4.
- */
-export interface ShopChannels {
-  readonly emporter: boolean;
-  readonly surPlace: boolean;
+/** Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend. */
+export interface SoldChannel {
+  /**
+   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
+   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   */
+  readonly locationId: string | null;
+  /** La clé du contexte, telle que le registre la porte. */
+  readonly context: string;
 }
 
 /**
- * Où et comment une gamme se vend.
+ * Où et comment une gamme se vend — un **ensemble de paires**.
  *
- * Les emplacements sont une **donnée** : la carte est indexée par identifiant
- * d'emplacement, jamais par des clés fixes. Ouvrir un point de vente est une
- * ligne de plus dans le référentiel, pas une migration.
+ * Les emplacements ÉTAIENT déjà une donnée ; les **modes** ne l'étaient pas. La
+ * carte s'écrivait `{ boutiques: Record<id, { emporter, surPlace }>, b2b }`, si
+ * bien qu'un écran ne pouvait pas afficher un quatrième contexte de vente sans
+ * qu'on le livre. Les paires suppriment la distinction : un contexte de plus
+ * est une ligne de plus au registre, de bout en bout.
  *
- * Le B2B reste un booléen à part : la plateforme n'est pas un emplacement, et
- * un professionnel qui commande en gros ne consomme ni sur place ni à emporter.
+ * Une paire absente n'est pas un faux : on n'écrit que ce qui est vendu.
  */
-export interface SalesChannels {
-  readonly boutiques: Readonly<Record<string, ShopChannels>>;
-  readonly b2b: boolean;
-}
+export type SalesChannels = readonly SoldChannel[];
 
 /** Réponse standard d'une création : l'identifiant assigné par la commande (R1). */
 export interface CreatedIdResponse {

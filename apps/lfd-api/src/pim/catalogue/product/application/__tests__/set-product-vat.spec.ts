@@ -148,10 +148,10 @@ function rates(): VatRateRepository {
   } as unknown as VatRateRepository;
 }
 
-const SELLS_ALL: SalesChannels = {
-  boutiques: { emp_1: { emporter: true, surPlace: false } },
-  b2b: true,
-};
+const SELLS_ALL: SalesChannels = [
+  { locationId: "emp_1", context: "emporter" },
+  { locationId: null, context: "b2b" },
+];
 
 describe("SetProductVatHandler", () => {
   it("fait DÉROGER la fiche au taux de sa famille", async () => {
@@ -229,7 +229,7 @@ describe("SetProductVatHandler", () => {
     await expect(
       new SetProductVatHandler(
         products,
-        familySelling({ boutiques: { emp_1: { emporter: true, surPlace: false } }, b2b: false }),
+        familySelling([{ locationId: "emp_1", context: "emporter" }]),
         rates(),
         registry,
         new RecordingJournal(),
@@ -267,14 +267,14 @@ describe("SetProductChannelsHandler", () => {
       registry,
       journal,
       new DirectUnitOfWork(),
-    ).execute(new SetProductChannelsCommand("prd_1", { boutiques: {}, b2b: true }));
+    ).execute(new SetProductChannelsCommand("prd_1", [{ locationId: null, context: "b2b" }]));
 
-    expect(products.saved.channelOverride).toEqual({ boutiques: {}, b2b: true });
+    expect(products.saved.channelOverride).toEqual([{ locationId: null, context: "b2b" }]);
     expect(journal.types()).toEqual(["product.channels_changed"]);
   });
 
   it("rend la fiche à sa famille avec `null`", async () => {
-    const products = new FakeProducts(snapshot({}, { boutiques: {}, b2b: true }));
+    const products = new FakeProducts(snapshot({}, [{ locationId: null, context: "b2b" }]));
 
     await new SetProductChannelsHandler(
       products,
@@ -303,10 +303,9 @@ describe("SetProductChannelsHandler", () => {
         new RecordingJournal(),
         new DirectUnitOfWork(),
       ).execute(
-        new SetProductChannelsCommand("prd_1", {
-          boutiques: { emp_fantome: { emporter: true, surPlace: false } },
-          b2b: false,
-        }),
+        new SetProductChannelsCommand("prd_1", [
+          { locationId: "emp_fantome", context: "emporter" },
+        ]),
       ),
     ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
   });
@@ -326,10 +325,7 @@ describe("SetProductChannelsHandler", () => {
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(
-      new SetProductChannelsCommand("prd_1", {
-        boutiques: { emp_1: { emporter: true, surPlace: false } },
-        b2b: false,
-      }),
+      new SetProductChannelsCommand("prd_1", [{ locationId: "emp_1", context: "emporter" }]),
     );
 
     expect(products.saved.vatByContext).toEqual({});
@@ -339,7 +335,7 @@ describe("SetProductChannelsHandler", () => {
     // La famille vend en B2B ; cette fiche-là non, parce qu'elle a redéfini sa
     // matrice. Elle ne peut donc pas y poser un taux — sinon elle décide d'un
     // prix pour une vente qu'elle vient elle-même de fermer.
-    const products = new FakeProducts(snapshot({}, { boutiques: {}, b2b: false }));
+    const products = new FakeProducts(snapshot({}, []));
 
     await expect(
       new SetProductVatHandler(

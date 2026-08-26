@@ -23,7 +23,10 @@ import {
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
 import { KnownLocationsReader } from "../../domain/ports/known-locations.reader.js";
 import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
+import type {
+  SalesChannels,
+  SoldChannel,
+} from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
 import { CreateCategoryCommand, CreateCategoryHandler } from "../create-category.js";
 import { ListCategoriesHandler } from "../list-categories.js";
@@ -200,14 +203,16 @@ class InMemoryRegimes extends VatRateRepository {
   }
 }
 
+/** Un ordre stable pour comparer deux ensembles de paires. */
+const byPair = (a: SoldChannel, b: SoldChannel): number =>
+  `${a.locationId ?? ""} ${a.context}`.localeCompare(`${b.locationId ?? ""} ${b.context}`);
+
 /** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
-const ALL_OPEN: SalesChannels = {
-  boutiques: {
-    emp_village: { emporter: true, surPlace: true },
-    emp_val: { emporter: true, surPlace: false },
-  },
-  b2b: false,
-};
+const ALL_OPEN: SalesChannels = [
+  { locationId: "emp_village", context: "emporter" },
+  { locationId: "emp_village", context: "surPlace" },
+  { locationId: "emp_val", context: "emporter" },
+];
 
 class SequentialIds extends PimIdGenerator {
   private count = 0;
@@ -433,7 +438,9 @@ describe("SetCategoryChannelsHandler", () => {
 
     await setChannels(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN));
 
-    expect(repo.at(id!).channelPreset).toEqual(ALL_OPEN);
+    // Comparaison SANS ordre : l'agrégat normalise, et l'ordre n'a pas de sens
+    // métier — il n'en a que pour comparer deux états dans le journal.
+    expect([...repo.at(id!).channelPreset].sort(byPair)).toEqual([...ALL_OPEN].sort(byPair));
   });
 
   it("refuse une famille inexistante", async () => {

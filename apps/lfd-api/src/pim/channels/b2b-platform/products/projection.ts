@@ -5,7 +5,10 @@ import type {
   CategoryVatPercents,
   ChannelCategory,
 } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
-import type { SalesChannels } from "../../../catalogue/shared/domain/value-objects/sales-channels.js";
+import {
+  sellsContext,
+  type SalesChannels,
+} from "../../../catalogue/shared/domain/value-objects/sales-channels.js";
 
 /**
  * La clé du contexte que CE canal facture. Une constante nommée plutôt qu'une
@@ -171,7 +174,7 @@ export function projectCatalog(
     // La matrice DÉCIDE, elle ne se contente plus de décrire : une fiche qu'on
     // ne vend pas aux professionnels n'entre pas dans leur boutique, et celle
     // qui y était en sort au push suivant.
-    if (channelsByProduct.get(product.id)?.b2b !== true) {
+    if (!sellsContext(channelsByProduct.get(product.id) ?? [], B2B_CONTEXT_KEY)) {
       excluded.push({ sku: product.sku, reason: "canal_ferme" });
       continue;
     }

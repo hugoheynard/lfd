@@ -41,13 +41,10 @@ describe('ChannelsForm', () => {
         parentId: null,
         position: 1,
         isArchived: false,
-        channelPreset: {
-          boutiques: {
-            emp_village: { emporter: true, surPlace: false },
-            emp_val: { emporter: true, surPlace: false },
-          },
-          b2b: false,
-        },
+        channelPreset: [
+          { locationId: 'emp_village', context: 'emporter' },
+          { locationId: 'emp_val', context: 'emporter' },
+        ],
         vatByContext: { emporter: 'tva_55', surPlace: 'tva_55' },
         activeProductCount: 0,
       },

@@ -147,7 +147,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
 
     expect((await readLocation(location)).usedByCategories).toBe(1);
@@ -163,7 +163,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
 
     const response = await staff().delete(`${LOCATIONS}/${location}`);
@@ -181,12 +181,9 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: {}, b2b: false })
-      .expect(200);
+    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
     await staff().delete(`${LOCATIONS}/${location}`).expect(200);
   });
@@ -324,18 +321,18 @@ describe("l'index de référence suit la grille de canaux", () => {
         .post(CATEGORIES)
         .send({ name: { fr: "Viennoiseries" } }),
     ).id;
-    const channels = (boutiques: Record<string, { emporter: boolean; surPlace: boolean }>) =>
-      staff().put(`${CATEGORIES}/${category}/channels`).send({ boutiques, b2b: false }).expect(200);
+    const channels = (sold: { locationId: string | null; context: string }[]) =>
+      staff().put(`${CATEGORIES}/${category}/channels`).send(sold).expect(200);
 
-    await channels({ [location]: { emporter: true, surPlace: false } });
+    await channels([{ locationId: location, context: "emporter" }]);
     expect(await refCount(location)).toBe(1);
 
-    // Recocher le MÊME emplacement ne doit pas doubler la ligne : le dépôt
-    // efface puis réécrit, il n'ajoute pas.
-    await channels({ [location]: { emporter: false, surPlace: true } });
+    // Recocher le MÊME emplacement dans un autre contexte ne doit pas doubler
+    // la référence : le dépôt efface puis réécrit, il n'ajoute pas.
+    await channels([{ locationId: location, context: "surPlace" }]);
     expect(await refCount(location)).toBe(1);
 
-    await channels({});
+    await channels([]);
     expect(await refCount(location)).toBe(0);
     await staff().delete(`${LOCATIONS}/${location}`).expect(200);
   });
@@ -354,7 +351,7 @@ describe("l'index de référence suit la grille de canaux", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false })
+      .send([{ locationId: location, context: "emporter" }])
       .expect(200);
 
     await ctx.prisma.category.delete({ where: { id: category } });

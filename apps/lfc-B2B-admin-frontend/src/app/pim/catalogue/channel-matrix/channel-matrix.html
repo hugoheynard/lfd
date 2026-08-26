@@ -12,11 +12,15 @@
     </div>
   }
 
-  <div class="cm-table">
+  <div class="cm-table" [style.--cm-columns]="columns().length">
+    <!-- Les colonnes sont les contextes qui ont besoin d'un lieu. C'étaient
+         « À emporter » et « Sur place », écrits ici : un quatrième contexte
+         demandait de livrer ce composant. -->
     <div class="cm-row cm-row--head">
       <span class="cm-label"></span>
-      <fold-element-title class="cm-cell" title="À emporter" />
-      <fold-element-title class="cm-cell" title="Sur place" />
+      @for (context of columns(); track context.key) {
+        <fold-element-title class="cm-cell" [title]="context.label" />
+      }
     </div>
 
     <!-- Une ligne par emplacement RÉEL. C'étaient deux lignes en dur, dont
@@ -24,20 +28,15 @@
     @for (location of locations(); track location.id) {
       <div class="cm-row">
         <span class="cm-label">{{ location.name }}</span>
-        <span class="cm-cell">
-          <fold-checkbox
-            [ariaLabel]="location.name + ' — à emporter'"
-            [checked]="isOn(location.id, 'emporter')"
-            (checkedChange)="setCell(location.id, 'emporter', $event)"
-          />
-        </span>
-        <span class="cm-cell">
-          <fold-checkbox
-            [ariaLabel]="location.name + ' — sur place'"
-            [checked]="isOn(location.id, 'surPlace')"
-            (checkedChange)="setCell(location.id, 'surPlace', $event)"
-          />
-        </span>
+        @for (context of columns(); track context.key) {
+          <span class="cm-cell">
+            <fold-checkbox
+              [ariaLabel]="location.name + ' — ' + context.label"
+              [checked]="isOn(location.id, context.key)"
+              (checkedChange)="setCell(location.id, context.key, $event)"
+            />
+          </span>
+        }
       </div>
     } @empty {
       <!-- « Il n'y en a aucun » et « je n'ai pas pu les lire » rendaient la
@@ -53,18 +52,21 @@
       </div>
     }
 
-    <!-- La plateforme B2B : UNE case, pas une paire. Un professionnel qui
-         commande en gros ne consomme ni sur place ni à emporter — lui donner
-         deux colonnes inventerait un choix qui n'existe pas. -->
-    <div class="cm-row">
-      <span class="cm-label">Plateforme B2B</span>
-      <span class="cm-cell cm-cell--wide">
-        <fold-checkbox
-          ariaLabel="Plateforme B2B"
-          [checked]="channels().b2b"
-          (checkedChange)="setB2b($event)"
-        />
-      </span>
-    </div>
+    <!-- Les contextes SANS lieu : UNE case chacun, pas une paire. Un
+         professionnel qui commande en gros ne consomme ni sur place ni à
+         emporter — lui donner des colonnes inventerait un choix qui n'existe
+         pas. Le B2B était écrit ici ; il n'a plus rien de particulier. -->
+    @for (context of standalone(); track context.key) {
+      <div class="cm-row">
+        <span class="cm-label">{{ context.label }}</span>
+        <span class="cm-cell cm-cell--wide">
+          <fold-checkbox
+            [ariaLabel]="context.label"
+            [checked]="isOn(null, context.key)"
+            (checkedChange)="setCell(null, context.key, $event)"
+          />
+        </span>
+      </div>
+    }
   </div>
 </div>

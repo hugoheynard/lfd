@@ -1,93 +1,9 @@
 /**
- * Les modes qu'un point de vente propose.
- *
- * ⚠️ `emporter` et `surPlace` restent français, et ce n'est pas un oubli : ce
- * sont des **clés de données**. Elles vivent dans le `jsonb` de
- * `category.channel_preset`, et dans `sales_context.key`. Les renommer est une
- * migration — étendre, basculer, resserrer — pas un renommage
- * (`documentation/langue-du-code.md`, palier 4).
- *
- * À ne pas confondre avec `Location.eatIn`, qui a bien été traduit : là-bas
- * c'est un identifiant que le `@map` découple de sa colonne, donc gratuit. Ici
- * la valeur EST en base.
- */
-export interface ShopChannels {
-  readonly emporter: boolean;
-  readonly surPlace: boolean;
-}
-
-/**
- * Où et comment une gamme se vend.
- *
- * ## Les emplacements sont une DONNÉE, plus des clés
- *
- * C'était `{ b1: …, b2: … }` — deux boutiques nommées en dur dans un type, avec
- * leurs libellés dans une constante du front. Ouvrir un troisième point de
- * vente demandait une migration, un changement de type et une visite de tous
- * les lecteurs. Et le nom affiché avait divergé du réel : l'écran proposait
- * « Ardroit » pour un emplacement qui s'appelle « Labo » en base.
- *
- * La grille est donc indexée par **identifiant d'emplacement**. Un emplacement
- * de plus est une ligne de plus dans `pim.location`, et rien d'autre.
- *
- * ## Le B2B reste à part
- *
- * Un booléen, pas une entrée de la carte : la plateforme n'est pas un
- * emplacement, et un professionnel qui commande en gros ne consomme ni sur
- * place ni à emporter. L'y ranger obligerait à lui inventer deux modes.
- *
- * ⚠️ Ceci reste une **intention** héritée par les fiches. Le fait qu'un produit
- * SOIT publié sur la plateforme vit dans `b2b_channel_binding`, avec sa date et
- * son auteur.
- */
-export interface SalesChannels {
-  /** Par location, clé = son identifiant. Une clé absente = rien n'y est vendu. */
-  readonly boutiques: Readonly<Record<string, ShopChannels>>;
-  readonly b2b: boolean;
-}
-
-/** Défaut d'une gamme nouvellement créée : rien n'est vendu tant qu'on ne l'a pas dit. */
-export function defaultSalesChannels(): SalesChannels {
-  return { boutiques: {}, b2b: false };
-}
-
-/**
- * Reconstruit un objet **propre** aux seules formes attendues — barrière avant
- * persistance : ni clé parasite ni forme partielle ne franchit le domaine.
- *
- * Les entrées **entièrement fausses sont retirées** plutôt que gardées à zéro :
- * la carte dit ce qui est vendu, et une clé qui ne vend rien est du bruit qui
- * ferait grossir la colonne à chaque emplacement décoché.
- */
-export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
-  const boutiques: Record<string, ShopChannels> = {};
-  for (const [id, modes] of Object.entries(channels.boutiques)) {
-    if (modes.emporter || modes.surPlace) {
-      boutiques[id] = { emporter: modes.emporter, surPlace: modes.surPlace };
-    }
-  }
-  return { boutiques, b2b: channels.b2b };
-}
-
-/** Un mode est-il vendu **quelque part** ? Le taux suit le mode, pas la boutique. */
-export function sellsMode(channels: SalesChannels, mode: keyof ShopChannels): boolean {
-  return Object.values(channels.boutiques).some((modes) => modes[mode]);
-}
-
-/** Les identifiants d'emplacement que cette grille référence. */
-export function referencedLocations(channels: SalesChannels): string[] {
-  return Object.keys(channels.boutiques);
-}
-
-/**
  * Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend.
  *
- * `locationId === null` = contexte sans lieu (le B2B aujourd'hui). Ce n'est pas
- * une absence de donnée, c'est la donnée.
- *
- * C'est la forme CIBLE de la matrice (C0-d) : un ensemble de paires, où lire
- * « ce contexte est-il vendu ? » ne demande aucune branche — et où une clé
- * étrangère peut porter ce qu'aucun `jsonb` ne pouvait tenir.
+ * `locationId === null` = contexte **sans lieu** (le B2B aujourd'hui). Ce n'est
+ * pas une absence de donnée, c'est la donnée : on ne commande pas le B2B à une
+ * boutique.
  */
 export interface SoldChannel {
   readonly locationId: string | null;
@@ -95,27 +11,121 @@ export interface SoldChannel {
 }
 
 /**
- * Déplie la matrice en paires.
+ * Où et comment une gamme se vend — un **ensemble de paires**.
  *
- * ⚠️ Code de TRANSITION (C0-d, tranche d-1) : il lit l'ANCIENNE forme, où les
- * modes d'un lieu sont deux clés nommées et le B2B un drapeau. C'est le dernier
- * endroit du référentiel qui connaît ces trois noms ; la bascule d-2 lit les
- * paires directement, et d-3 supprime cette fonction avec la colonne.
+ * ## Ce que cette forme a remplacé
  *
- * Un faux ne produit pas de paire : l'absence EST la donnée.
+ * C'était deux cartes imbriquées : `{ boutiques: Record<locationId, { emporter,
+ * surPlace }>, b2b: boolean }`. Les emplacements y étaient deja une donnée
+ * (clé = identifiant), mais les **modes** étaient deux champs nommés et le B2B
+ * un drapeau. Trois conséquences, toutes payées :
+ *
+ * - un quatrième contexte de vente était **impossible** — le registre écartait
+ *   en silence toute ligne dont le canal n'était pas l'un des trois ;
+ * - lire « ce contexte est-il vendu ? » demandait de savoir lequel des trois on
+ *   regardait, donc une branche ;
+ * - aucune clé étrangère ne pouvait porter la référence à un emplacement,
+ *   enfouie dans du `jsonb` — il a fallu un registre à part pour tenir le mur.
+ *
+ * L'ensemble de paires supprime les trois d'un coup, et c'est **la forme même
+ * de la table** qui les stocke (`category_channel`, `product_channel`).
+ *
+ * ## Une clé absente n'est pas un faux
+ *
+ * On n'écrit que ce qui est vendu. L'absence de paire EST la donnée — même
+ * motif que « non réglé » pour les taux.
  */
-export function soldChannels(channels: SalesChannels): SoldChannel[] {
-  const sold: SoldChannel[] = [];
-  for (const [locationId, modes] of Object.entries(channels.boutiques)) {
-    if (modes.emporter) {
-      sold.push({ locationId, context: "emporter" });
-    }
-    if (modes.surPlace) {
-      sold.push({ locationId, context: "surPlace" });
+export type SalesChannels = readonly SoldChannel[];
+
+/** Rien n'est vendu tant qu'on ne l'a pas dit. */
+export function emptySalesChannels(): SalesChannels {
+  return [];
+}
+
+/** La même paire, deux fois écrite ? Une seule ligne. */
+function keyOf(channel: SoldChannel): string {
+  return `${channel.locationId ?? ""} ${channel.context}`;
+}
+
+/**
+ * Barrière avant persistance : dédoublonne et **ordonne**.
+ *
+ * L'ordre n'a pas de sens métier ; il en a pour la COMPARAISON. Le journal
+ * inscrit un avant/après, et deux ensembles identiques écrits dans un ordre
+ * différent produiraient un « changement » que personne n'a fait.
+ */
+export function normalizeSalesChannels(channels: SalesChannels): SalesChannels {
+  const seen = new Map<string, SoldChannel>();
+  for (const channel of channels) {
+    seen.set(keyOf(channel), { locationId: channel.locationId, context: channel.context });
+  }
+  return [...seen.values()].sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+}
+
+/**
+ * Ce contexte est-il vendu **quelque part** ?
+ *
+ * Aucune branche, et c'est tout l'intérêt : la fonction ne sait pas lequel des
+ * contextes a besoin d'un lieu, ni lequel est le B2B. Elle ne connaît aucun nom.
+ */
+export function sellsContext(channels: SalesChannels, contextKey: string): boolean {
+  return channels.some((channel) => channel.context === contextKey);
+}
+
+/** Les identifiants d'emplacement cités — sans doublon, contextes globaux exclus. */
+export function referencedLocations(channels: SalesChannels): string[] {
+  const ids = new Set<string>();
+  for (const channel of channels) {
+    if (channel.locationId !== null) {
+      ids.add(channel.locationId);
     }
   }
-  if (channels.b2b) {
-    sold.push({ locationId: null, context: "b2b" });
+  return [...ids];
+}
+
+/** Les contextes vendus, sans doublon — ce que la fiche projette. */
+export function soldContexts(channels: SalesChannels): string[] {
+  return [...new Set(channels.map((channel) => channel.context))];
+}
+
+/** Ce lieu vend-il ce contexte ? La question de l'écran, case par case. */
+export function sellsAt(
+  channels: SalesChannels,
+  locationId: string | null,
+  contextKey: string,
+): boolean {
+  return channels.some(
+    (channel) => channel.locationId === locationId && channel.context === contextKey,
+  );
+}
+
+/**
+ * La forme **héritée** de la matrice — deux cartes imbriquées.
+ *
+ * ⚠️ TRANSITION (C0-d, tranche d-2). Les colonnes `channel_preset` et
+ * `channel_override` restent ÉCRITES pour le binaire précédent ; plus personne
+ * ne les lit. C'est le dernier endroit du référentiel qui connaisse les noms
+ * `emporter`, `surPlace` et `b2b`, et la tranche d-3 l'emporte avec elles.
+ */
+export interface LegacySalesChannels {
+  readonly boutiques: Readonly<Record<string, { emporter: boolean; surPlace: boolean }>>;
+  readonly b2b: boolean;
+}
+
+/** Replie les paires dans la forme héritée. Voir {@link LegacySalesChannels}. */
+export function legacyChannels(channels: SalesChannels): LegacySalesChannels {
+  const boutiques: Record<string, { emporter: boolean; surPlace: boolean }> = {};
+  let b2b = false;
+  for (const channel of channels) {
+    if (channel.locationId === null) {
+      b2b = b2b || channel.context === "b2b";
+      continue;
+    }
+    const modes = boutiques[channel.locationId] ?? { emporter: false, surPlace: false };
+    boutiques[channel.locationId] = {
+      emporter: modes.emporter || channel.context === "emporter",
+      surPlace: modes.surPlace || channel.context === "surPlace",
+    };
   }
-  return sold;
+  return { boutiques, b2b };
 }

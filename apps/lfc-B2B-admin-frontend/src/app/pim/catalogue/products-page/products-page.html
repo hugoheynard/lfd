@@ -98,13 +98,16 @@
 
     <ng-template foldCell="channels" let-p>
       <span class="chan-pills">
-        @if (rowEmporter(p).length > 0) {
-          <fold-badge [content]="'Emporter ' + rowEmporter(p).join(' · ')" variant="accent" />
+        @if (rowSelling(p, 'emporter').length > 0) {
+          <fold-badge
+            [content]="'Emporter ' + rowSelling(p, 'emporter').join(' · ')"
+            variant="accent"
+          />
         }
-        @if (rowSurPlace(p).length > 0) {
-          <fold-badge [content]="'Salle ' + rowSurPlace(p).join(' · ')" variant="info" />
+        @if (rowSelling(p, 'surPlace').length > 0) {
+          <fold-badge [content]="'Salle ' + rowSelling(p, 'surPlace').join(' · ')" variant="info" />
         }
-        @if (rowEmporter(p).length === 0 && rowSurPlace(p).length === 0) {
+        @if (rowSelling(p, 'emporter').length === 0 && rowSelling(p, 'surPlace').length === 0) {
           <span class="muted">aucun</span>
         }
       </span>

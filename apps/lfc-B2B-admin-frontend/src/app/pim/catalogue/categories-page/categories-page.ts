@@ -15,7 +15,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { boutiquesWith } from '../../data/channels';
+import { locationsSelling } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { VatRateStore } from '../vat-rates/vat-store';
 import { LocationStore } from '../../locations/location-store';
@@ -150,11 +150,11 @@ export class CategoriesPage {
   }
 
   protected presetEmporter(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'emporter', this.locations());
+    return locationsSelling(category.channelPreset, 'emporter', this.locations());
   }
 
   protected presetSurPlace(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'surPlace', this.locations());
+    return locationsSelling(category.channelPreset, 'surPlace', this.locations());
   }
 
   /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */

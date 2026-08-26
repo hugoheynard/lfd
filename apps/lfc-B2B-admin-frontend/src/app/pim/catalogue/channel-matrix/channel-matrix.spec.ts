@@ -3,13 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import type { Location, SalesChannels } from '../../data/models';
 import { ChannelMatrix } from './channel-matrix';
 
-const CHANNELS: SalesChannels = {
-  boutiques: {
-    emp_village: { emporter: true, surPlace: true },
-    emp_val: { emporter: true, surPlace: false },
-  },
-  b2b: false,
-};
+const CHANNELS: SalesChannels = [
+  { locationId: 'emp_village', context: 'emporter' },
+  { locationId: 'emp_village', context: 'surPlace' },
+  { locationId: 'emp_val', context: 'emporter' },
+];
 
 /** Les points de vente sont une DONNÉE : la grille en reçoit la liste. */
 const EMPLACEMENTS: Location[] = [

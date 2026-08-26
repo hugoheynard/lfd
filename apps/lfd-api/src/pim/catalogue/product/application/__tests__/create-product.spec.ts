@@ -19,7 +19,7 @@ import {
   type CreateProductInput,
 } from "../create-product.js";
 
-const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
+const NO_CHANNELS: SalesChannels = [];
 
 class FakeProductRepository extends ProductRepository {
   readonly written: ProductSnapshot[] = [];

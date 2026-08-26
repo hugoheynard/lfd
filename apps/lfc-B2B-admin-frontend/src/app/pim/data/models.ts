@@ -52,31 +52,30 @@ export interface VatRate {
  */
 export type VatRateUsage = Readonly<Record<string, number>>;
 
-/**
- * Ce qu'un point de vente propose.
- *
- * ⚠️ `emporter` / `surPlace` restent français : ce sont des **clés de données**
- * (le `jsonb` `channel_preset`, `sales_context.key`). Les renommer est une
- * migration, pas un renommage — cf. `documentation/langue-du-code.md`, palier 4.
- */
-export interface ShopChannels {
-  emporter: boolean;
-  surPlace: boolean;
+/** Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend. */
+export interface SoldChannel {
+  /**
+   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
+   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   */
+  locationId: string | null;
+  /** La clé du contexte, telle que le registre la porte. */
+  context: string;
 }
 
 /**
- * Où et comment un produit se vend.
+ * Où et comment un produit se vend — un **ensemble de paires**.
  *
- * Les emplacements sont une **donnée** : la carte est indexée par identifiant,
- * jamais par des clés fixes. C'était `{ b1, b2 }`, avec des libellés en dur qui
- * avaient fini par désigner une boutique absente du référentiel.
+ * Les emplacements étaient déjà une donnée (la carte était indexée par
+ * identifiant, après avoir été `{ b1, b2 }` avec des libellés en dur qui avaient
+ * fini par désigner une boutique absente du référentiel). Les **modes**, eux,
+ * ne l'étaient pas : `{ emporter, surPlace }` plus un drapeau `b2b`. L'écran ne
+ * pouvait donc pas afficher un quatrième contexte de vente sans qu'on le livre.
  *
- * Le B2B reste un booléen à part — la plateforme n'est pas un emplacement.
+ * Les paires suppriment la distinction. Une paire absente n'est pas un faux :
+ * on ne garde que ce qui est vendu.
  */
-export interface SalesChannels {
-  boutiques: Record<string, ShopChannels>;
-  b2b: boolean;
-}
+export type SalesChannels = readonly SoldChannel[];
 
 export interface Variant {
   id: string;

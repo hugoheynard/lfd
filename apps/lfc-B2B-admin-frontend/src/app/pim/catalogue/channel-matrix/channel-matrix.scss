@@ -54,6 +54,8 @@
    modes (plus leur gouttière) plutôt que d'en laisser une vide, qui se lirait
    comme un choix non fait. La rangée est en flex, pas en grid : la largeur se
    calcule, elle ne se déclare pas en `grid-column`. */
+/* La case d'un contexte SANS lieu occupe toute la largeur des colonnes — leur
+   nombre est une donnée, d'où le `--cm-columns` posé par le gabarit. */
 .cm-cell--wide {
-  flex: 0 0 calc(var(--cm-mode-col) * 2 + 0.5rem);
+  flex: 0 0 calc(var(--cm-mode-col) * var(--cm-columns, 2) + 0.5rem * (var(--cm-columns, 2) - 1));
 }

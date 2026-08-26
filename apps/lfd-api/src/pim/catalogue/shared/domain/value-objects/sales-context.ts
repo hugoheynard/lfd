@@ -1,4 +1,4 @@
-import { sellsMode, type SalesChannels } from "./sales-channels.js";
+import { sellsContext, type SalesChannels } from "./sales-channels.js";
 
 /**
  * Une **manière de vendre** qui a son propre traitement de TVA — et donc, chez
@@ -16,16 +16,14 @@ export interface SalesContext {
   /** Suffixe de handle Shopify — **vide** pour le contexte par défaut. */
   readonly handleSuffix: string;
   /**
-   * Quel drapeau de la matrice des canaux autorise ce contexte.
+   * Quel drapeau de la matrice autorisait ce contexte.
    *
-   * De TRANSITION, et il faut être précis sur ce qui l'est : la matrice est
-   * DÉJÀ data-driven **par emplacement** (clé = identifiant, une boutique de
-   * plus est une ligne de plus). Ce qui reste fixe, ce sont les **modes** d'un
-   * location — `emporter` / `surPlace` — et le drapeau `b2b`. C'est
-   * exactement ce que cette colonne désigne, et elle mourra quand un emplacement
-   * vendra des CONTEXTES au lieu de deux modes nommés.
+   * ⚠️ **Plus lue par personne** depuis que la matrice est un ensemble de
+   * paires : un contexte est vendu si son propre nom apparaît, sans qu'aucun
+   * code n'ait à savoir lequel des trois canaux le portait. La colonne reste
+   * écrite pour le binaire précédent ; la tranche d-3 la supprime.
    */
-  readonly channelKey: SalesChannelKey;
+  readonly channelKey: string;
   /**
    * Ce contexte se vend-il **depuis un point de vente** ?
    *
@@ -42,9 +40,6 @@ export interface SalesContext {
   readonly position: number;
 }
 
-/** Les canaux que la matrice sait porter aujourd'hui. */
-export type SalesChannelKey = "emporter" | "surPlace" | "b2b";
-
 /**
  * Le taux visé par une famille, **par clé de contexte**. Une clé absente n'est
  * pas un taux nul : c'est l'absence de réglage, et les deux se distinguent.
@@ -54,12 +49,14 @@ export type ContextVat = Readonly<Record<string, string>>;
 /**
  * Ce contexte est-il vendu par cette matrice ?
  *
- * Ici plutôt que dans l'agrégat : c'est la seule jointure entre le registre et
- * la matrice, et elle disparaîtra en entier le jour où la matrice deviendra une
- * donnée à son tour.
+ * **Une ligne, et aucune branche.** Elle en avait une — « si c'est le B2B, lire
+ * le drapeau, sinon chercher le mode » — parce que la matrice séparait les deux.
+ * Depuis qu'elle est un ensemble de paires, la question ne dépend plus de quel
+ * contexte on regarde : le nom suffit, et personne n'a besoin de savoir lequel
+ * a un lieu.
  */
 export function contextIsSold(context: SalesContext, channels: SalesChannels): boolean {
-  return context.channelKey === "b2b" ? channels.b2b : sellsMode(channels, context.channelKey);
+  return sellsContext(channels, context.key);
 }
 
 /**

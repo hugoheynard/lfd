@@ -9,7 +9,7 @@ import {
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
 import {
-  defaultSalesChannels,
+  emptySalesChannels,
   normalizeSalesChannels,
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
@@ -90,7 +90,7 @@ export class Category {
       input.parentId,
       input.position,
       false,
-      defaultSalesChannels(),
+      emptySalesChannels(),
       {},
     );
   }

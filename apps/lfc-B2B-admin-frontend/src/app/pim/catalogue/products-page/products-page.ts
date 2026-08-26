@@ -22,7 +22,7 @@ import {
   type FoldTableTone,
 } from 'fold-ng';
 
-import { NO_CHANNELS, boutiquesWith, resolveChannels } from '../../data/channels';
+import { NO_CHANNELS, locationsSelling, resolveChannels } from '../../data/channels';
 import { LocationStore } from '../../locations/location-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
@@ -217,12 +217,15 @@ export class ProductsPage {
     return SYNC_VARIANTS[this.syncStatus(productId)];
   }
 
-  protected rowEmporter(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'emporter', this.locations());
-  }
-
-  protected rowSurPlace(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'surPlace', this.locations());
+  /**
+   * Les points de vente qui vendent ce contexte pour cette fiche.
+   *
+   * Les deux colonnes de la liste restent « à emporter » et « sur place » —
+   * une décision d'ÉCRAN, qui a le droit de choisir ce qu'elle affiche. Ce qui
+   * a disparu, c'est de le savoir autrement que par la clé qu'on lui donne.
+   */
+  protected rowSelling(product: Product, contextKey: string): string[] {
+    return locationsSelling(this.rowChannels(product), contextKey, this.locations());
   }
 
   protected rowInherited(product: Product): boolean {

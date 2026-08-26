@@ -23,23 +23,31 @@ export const renameCategoryPayloadSchema = z.object({
 });
 export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 
-const shopChannelsSchema = z.object({
-  emporter: z.boolean(),
-  surPlace: z.boolean(),
+/** Un canal vendu : un contexte, et le lieu depuis lequel il se vend. */
+export const soldChannelSchema = z.object({
+  /**
+   * `null` = contexte **sans lieu** — le B2B aujourd'hui. On ne commande pas à
+   * une boutique : ce n'est pas une absence de donnée, c'est la donnée.
+   */
+  locationId: z.string().nullable(),
+  /** La clé du contexte, telle que le registre la porte. */
+  context: z.string(),
 });
+export type SoldChannelPayload = z.infer<typeof soldChannelSchema>;
 
 /**
- * La matrice de vente, telle qu'elle voyage. Nommée à part parce qu'une FICHE
- * peut désormais la porter aussi : deux copies du même schéma finiraient par ne
- * plus accepter les mêmes formes.
+ * La matrice de vente, telle qu'elle voyage — un **ensemble de paires**.
+ *
+ * C'était `{ boutiques: Record<id, { emporter, surPlace }>, b2b }`. Les
+ * emplacements y étaient déjà une donnée ; les **modes** étaient deux champs
+ * nommés, et le B2B un drapeau. Un écran ne pouvait donc pas afficher un
+ * quatrième contexte sans qu'on le livre — la promesse « une ligne, zéro code »
+ * s'arrêtait au fil.
+ *
+ * Nommée à part parce qu'une FICHE la porte aussi : deux copies du même schéma
+ * finiraient par ne plus accepter les mêmes formes.
  */
-export const salesChannelsSchema = z.object({
-  /** Clé = identifiant d'emplacement. Une clé absente ⇒ rien n'y est vendu. */
-  boutiques: z.record(z.string(), shopChannelsSchema),
-  // Un booléen, pas une entrée de la carte : la plateforme n'est pas un
-  // emplacement, et un professionnel ne consomme ni sur place ni à emporter.
-  b2b: z.boolean(),
-});
+export const salesChannelsSchema = z.array(soldChannelSchema);
 
 export const setCategoryChannelsPayloadSchema = salesChannelsSchema;
 export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;

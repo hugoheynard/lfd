@@ -1,5 +1,5 @@
 import { slugify } from '../../data/sku';
-import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
+import { locationsSelling, formatPercent, resolveChannels } from '../../data/channels';
 import type { Category, Location, Product, VatRate } from '../../data/models';
 
 /**
@@ -78,7 +78,7 @@ export function generateFiches(
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
-  const emporter = boutiquesWith(channels, 'emporter', locations);
+  const emporter = locationsSelling(channels, 'emporter', locations);
   if (emporter.length > 0) {
     const rate = rateOfContext(category, 'emporter', regimeById);
     fiches.push({
@@ -91,7 +91,7 @@ export function generateFiches(
     });
   }
 
-  const surPlace = boutiquesWith(channels, 'surPlace', locations);
+  const surPlace = locationsSelling(channels, 'surPlace', locations);
   if (surPlace.length > 0) {
     const rate = rateOfContext(category, 'surPlace', regimeById);
     fiches.push({

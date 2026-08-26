@@ -2,7 +2,7 @@ export type {
   LocalizedText,
   Locale,
   TranslatedLocale,
-  ShopChannels,
+  SoldChannel,
   SalesChannels,
   CreatedIdResponse,
 } from "./shared.js";
@@ -29,6 +29,7 @@ export {
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
   salesChannelsSchema,
+  soldChannelSchema,
   setCategoryVatPayloadSchema,
 } from "./category.js";
 export type {

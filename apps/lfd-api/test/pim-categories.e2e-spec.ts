@@ -66,7 +66,10 @@ async function createRate(name: string, percent: number): Promise<string> {
 interface CategoryRow {
   readonly id: string;
   readonly slug: { readonly fr: string };
-  readonly channelPreset: { readonly boutiques: Record<string, unknown>; readonly b2b: boolean };
+  readonly channelPreset: readonly {
+    readonly locationId: string | null;
+    readonly context: string;
+  }[];
   readonly vatByContext: Readonly<Record<string, string>>;
 }
 
@@ -126,10 +129,12 @@ describe("un preset ne cite que des emplacements qui existent", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { [location]: { emporter: true, surPlace: false } }, b2b: false });
+      .send([{ locationId: location, context: "emporter" }]);
 
     expect(response.status).toBe(200);
-    expect(Object.keys((await readCategory(category)).channelPreset.boutiques)).toEqual([location]);
+    expect((await readCategory(category)).channelPreset).toEqual([
+      { locationId: location, context: "emporter" },
+    ]);
   });
 
   /**
@@ -142,11 +147,11 @@ describe("un preset ne cite que des emplacements qui existent", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: { emp_fantome: { emporter: true, surPlace: false } }, b2b: false });
+      .send([{ locationId: "emp_fantome", context: "emporter" }]);
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.unknown_location");
-    expect((await readCategory(category)).channelPreset.boutiques).toEqual({});
+    expect((await readCategory(category)).channelPreset).toEqual([]);
   });
 });
 
@@ -176,7 +181,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
     const rate = await createRate("Réduit", 5.5);
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: {}, b2b: true })
+      .send([{ locationId: null, context: "b2b" }])
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${category}/vat`)
@@ -184,10 +189,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
       .expect(200);
     expect((await readCategory(category)).vatByContext).toEqual({ b2b: rate });
 
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send({ boutiques: {}, b2b: false })
-      .expect(200);
+    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
     expect((await readCategory(category)).vatByContext).toEqual({});
   });

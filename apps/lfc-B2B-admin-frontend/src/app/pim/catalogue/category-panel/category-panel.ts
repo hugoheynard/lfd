@@ -24,7 +24,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { NO_CHANNELS, formatPercent, sellsMode } from '../../data/channels';
+import { NO_CHANNELS, formatPercent, sellsContext } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import type { Category, SalesChannels, VatRate } from '../catalogue-api';
 import type { CategoryVatDraft } from '../category-http-api';
@@ -181,17 +181,18 @@ export class CategoryPanel {
    * boutique le propose. Le B2B est une case unique.
    */
   protected readonly settableContexts = computed(() =>
-    this.contextStore.items().filter((context) => this.sells(context.channelKey)),
+    this.contextStore.items().filter((context) => this.sells(context.key)),
   );
 
   /** Aucun canal coché ⇒ la section des taux n'a rien à montrer. */
   protected readonly hasAnyChannel = computed(() => this.settableContexts().length > 0);
 
-  private sells(channelKey: string): boolean {
-    const channels = this.draftChannels();
-    return channelKey === 'b2b'
-      ? channels.b2b
-      : sellsMode(channels, channelKey === 'surPlace' ? 'surPlace' : 'emporter');
+  /**
+   * Ce contexte est-il vendu ? Aucune branche sur son nom — l'écran ne sait plus
+   * lequel est le B2B, et n'a plus à le savoir.
+   */
+  private sells(contextKey: string): boolean {
+    return sellsContext(this.draftChannels(), contextKey);
   }
 
   /** Le taux saisi pour un contexte — `''` tant qu'il n'est pas réglé. */

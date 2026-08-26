@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 
 import {
   FoldBadgeComponent,
@@ -7,15 +7,23 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import type { ShopChannels, Location, SalesChannels } from '../../data/models';
+import type { Location, SalesChannels } from '../../data/models';
+import { sellsAt, withCell } from '../../data/channels';
+import { SalesContextStore } from '../sales-contexts/sales-context-store';
 
 /**
  * L'atome de la décision « sur quels canaux se vend ce produit ».
  *
- * **Une ligne par emplacement réel**, plus une pour la plateforme B2B. Les deux
- * boutiques étaient auparavant des clés fixes (`b1`/`b2`) avec des libellés en
- * dur — et l'un des deux, « Ardroit », ne correspondait à aucun emplacement du
- * référentiel : l'écran proposait de cocher une boutique qui n'existait pas.
+ * **Tout y est une donnée.** Les colonnes sont les contextes de vente qui ont
+ * besoin d'un lieu ; les lignes, les emplacements du référentiel ; et chaque
+ * contexte SANS lieu obtient sa propre case en pied de grille.
+ *
+ * Les deux boutiques étaient des clés fixes (`b1`/`b2`) avec des libellés en
+ * dur — l'un d'eux, « Ardroit », ne désignait aucun emplacement réel. Puis les
+ * lignes sont devenues une donnée, mais pas les colonnes : « à emporter » et
+ * « sur place » restaient écrits ici, et la case B2B était un cas à part. Un
+ * quatrième contexte de vente demandait donc encore de livrer ce composant.
+ * Plus maintenant : une ligne de plus au registre suffit.
  *
  * Purement présentationnel : il montre les canaux effectifs et émet la nouvelle
  * valeur ; l'hôte décide de la sémantique héritage/override, car elle dépend du
@@ -34,6 +42,8 @@ import type { ShopChannels, Location, SalesChannels } from '../../data/models';
   styleUrl: './channel-matrix.scss',
 })
 export class ChannelMatrix {
+  private readonly contexts = inject(SalesContextStore);
+
   readonly channels = input.required<SalesChannels>();
   /** Les points de vente à proposer — la liste du référentiel. */
   readonly locations = input.required<readonly Location[]>();
@@ -50,32 +60,33 @@ export class ChannelMatrix {
   readonly channelsChange = output<SalesChannels>();
   readonly revert = output<void>();
 
-  /** Une clé absente = rien n'y est vendu ; la carte ne porte que ce qui l'est. */
-  protected isOn(locationId: string, mode: keyof ShopChannels): boolean {
-    return this.channels().boutiques[locationId]?.[mode] === true;
+  /** Les colonnes : les contextes qui se vendent depuis un lieu. */
+  protected readonly columns = computed(() =>
+    this.contexts.items().filter((context) => context.perLocation),
+  );
+
+  /**
+   * Les contextes SANS lieu — une case chacun, en pied de grille.
+   *
+   * Le B2B en était le seul, et il était écrit en dur ici. Il n'a plus rien de
+   * particulier : c'est un contexte que le registre déclare comme n'ayant pas
+   * besoin d'un point de vente.
+   */
+  protected readonly standalone = computed(() =>
+    this.contexts.items().filter((context) => !context.perLocation),
+  );
+
+  protected isOn(locationId: string | null, contextKey: string): boolean {
+    return sellsAt(this.channels(), locationId, contextKey);
   }
 
   /**
-   * Écrit une case. L'entrée devenue **entièrement fausse est retirée** plutôt
-   * que gardée à zéro : la carte dit ce qui est vendu, et une clé qui ne vend
-   * rien ferait grossir la colonne à chaque emplacement décoché — puis
-   * bloquerait sa suppression, puisque le référentiel refuse d'ôter un
-   * emplacement encore coché.
+   * Écrit une case. Une paire absente = rien n'y est vendu : décocher RETIRE la
+   * ligne plutôt que de la garder à faux, sans quoi la matrice grossirait à
+   * chaque case touchée — et bloquerait la suppression d'un emplacement que
+   * plus personne ne vend.
    */
-  protected setCell(locationId: string, mode: keyof ShopChannels, value: boolean): void {
-    const current = this.channels();
-    const before = current.boutiques[locationId] ?? { emporter: false, surPlace: false };
-    const after: ShopChannels = { ...before, [mode]: value };
-    const boutiques = { ...current.boutiques };
-    if (after.emporter || after.surPlace) {
-      boutiques[locationId] = after;
-    } else {
-      delete boutiques[locationId];
-    }
-    this.channelsChange.emit({ ...current, boutiques });
-  }
-
-  protected setB2b(value: boolean): void {
-    this.channelsChange.emit({ ...this.channels(), b2b: value });
+  protected setCell(locationId: string | null, contextKey: string, sold: boolean): void {
+    this.channelsChange.emit(withCell(this.channels(), locationId, contextKey, sold));
   }
 }

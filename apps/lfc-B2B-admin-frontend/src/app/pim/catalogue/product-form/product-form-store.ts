@@ -11,7 +11,7 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { NO_CHANNELS, boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
+import { NO_CHANNELS, formatPercent, locationsSelling, sellsContext } from '../../data/channels';
 import type { SalesChannels } from '../../data/models';
 import { LocationStore } from '../../locations/location-store';
 import { SalesContextStore } from '../sales-contexts/sales-context-store';
@@ -66,18 +66,6 @@ export interface AllergenChoice {
  * ils forçaient l'écran à tout peindre du même poids, alors que le chiffre est
  * ce qu'on cherche et le nom ce qui le qualifie.
  */
-/**
- * La clé de canal d'un contexte, ramenée aux deux modes que la matrice porte.
- *
- * Transitoire, comme la colonne `channel_key` qu'elle lit : la matrice des
- * canaux garde des clés fixes tant que sa propre refonte n'a pas eu lieu. Tout
- * ce qui n'est pas « sur place » retombe sur « à emporter » — le B2B, lui, ne
- * passe jamais par ici (il n'a pas de comptoir).
- */
-function shopMode(channelKey: string): 'emporter' | 'surPlace' {
-  return channelKey === 'surPlace' ? 'surPlace' : 'emporter';
-}
-
 export interface RateView {
   readonly name: string;
   readonly percent: string;
@@ -489,17 +477,14 @@ export class ProductFormStore {
       channels: this.orderedContexts().map((context) => ({
         key: context.key,
         label: context.label,
-        // Le B2B est un drapeau, pas une somme de boutiques : il se vend ou ne
-        // se vend pas, et son taux est le sien — 5,5 % en boutique n'entraîne
-        // rien ici. Les modes boutique, eux, nomment les points de vente.
-        sold:
-          context.channelKey === 'b2b'
-            ? channels.b2b
-            : sellsMode(channels, shopMode(context.channelKey)),
-        boutiques:
-          context.channelKey === 'b2b'
-            ? []
-            : boutiquesWith(channels, shopMode(context.channelKey), this.locations()),
+        // Plus aucune branche sur le nom d'un contexte : « est-il vendu ? » se
+        // lit pareil pour tous. Un contexte SANS LIEU ne nomme aucun point de
+        // vente — non pas parce qu'il s'appelle « b2b », mais parce que le
+        // registre dit qu'il ne se vend pas depuis un lieu.
+        sold: sellsContext(channels, context.key),
+        boutiques: context.perLocation
+          ? locationsSelling(channels, context.key, this.locations())
+          : [],
         rate: rateOf(context.key),
         gross: grossFor(context.key),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',
@@ -515,9 +500,10 @@ export class ProductFormStore {
    * cas particulier. Une décision d'écran, donc écrite dans l'écran.
    */
   private readonly orderedContexts = computed(() =>
-    [...this.contextStore.items()].sort(
-      (a, b) => Number(b.channelKey === 'b2b') - Number(a.channelKey === 'b2b'),
-    ),
+    // Les contextes SANS LIEU d'abord — pas « le b2b d'abord ». L'app vend aux
+    // professionnels ; ce qui se commande sans passer par un comptoir la
+    // concerne en premier, quel que soit son nom.
+    [...this.contextStore.items()].sort((a, b) => Number(a.perLocation) - Number(b.perLocation)),
   );
 
   /** Le référentiel rangé par catégorie d'étiquette, dans l'ordre du registre. */
