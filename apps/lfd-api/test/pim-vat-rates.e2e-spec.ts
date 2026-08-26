@@ -2,10 +2,10 @@
  * E2E des **taux de TVA** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve : l'unicité du taux tenue par un `@unique` en
- * base (les specs la font tenir par un tableau en mémoire), le `RESTRICT` qui
- * refuse de supprimer un taux qu'une famille vise encore — sur les TROIS
- * colonnes de rattachement — et le compte d'usages lu par un `_count` Prisma
- * qu'aucun double ne joue.
+ * base (les specs la font tenir par un tableau en mémoire), les DEUX `RESTRICT`
+ * qui refusent de supprimer un taux encore visé — par une famille sur l'un de
+ * ses trois contextes, ou par la seule dérogation d'une fiche — et le compte
+ * d'usages lu par un `_count` Prisma qu'aucun double ne joue.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -18,6 +18,7 @@ const stubAdminVerifier = {
 
 const RATES = "/pim/commerce/vat-rates";
 const CATEGORIES = "/pim/catalogue/categories";
+const PRODUCTS = "/pim/catalogue/products";
 
 let ctx: E2eContext;
 
@@ -76,6 +77,29 @@ async function categorySellingB2b(nameFr: string, rate: string): Promise<string>
   return id;
 }
 
+/**
+ * Une fiche de `category` qui **déroge** à sa famille pour viser `rate` en B2B.
+ *
+ * La famille vise déjà un AUTRE taux — sans quoi on ne saurait pas si c'est la
+ * dérogation ou l'héritage qui protège `rate`.
+ */
+async function productDerogatingB2b(
+  nameFr: string,
+  category: string,
+  rate: string,
+): Promise<string> {
+  const id = jsonBody<{ id: string }>(
+    await staff()
+      .post(PRODUCTS)
+      .send({ name: { fr: nameFr }, kind: "daily", categoryId: category }),
+  ).id;
+  await staff()
+    .put(`${PRODUCTS}/${id}/vat`)
+    .send({ vatByContext: { b2b: rate } })
+    .expect(200);
+  return id;
+}
+
 describe("deux taux ne portent pas le même taux", () => {
   it("refuse un doublon", async () => {
     await createRate("Réduit", 5.5);
@@ -121,6 +145,23 @@ describe("un taux visé ne se supprime pas", () => {
     expect(jsonBody<{ code: string }>(response).code).toBe("commerce.tva_rate_in_use");
   });
 
+  /**
+   * Le SECOND mur — `product_context_tva`. Il existait en base et le compte
+   * d'usages le portait déjà, mais rien ne vérifiait qu'il tienne : c'est
+   * précisément le cas où une seule fiche, et aucune famille, retient le taux.
+   */
+  it("refuse la suppression d'un taux visé par la seule DÉROGATION d'une fiche", async () => {
+    const inherited = await createRate("Réduit", 5.5);
+    const derogated = await createRate("Normal", 20);
+    const category = await categorySellingB2b("Viennoiseries", inherited);
+    await productDerogatingB2b("Chausson pommes", category, derogated);
+
+    const response = await staff().delete(`${RATES}/${derogated}`);
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("commerce.tva_rate_in_use");
+  });
+
   it("accepte la suppression d'un taux que personne ne vise", async () => {
     const rate = await createRate("Réduit", 5.5);
 
@@ -141,6 +182,19 @@ describe("le compte d'usages dit la vérité sur TOUS les contextes", () => {
     await categorySellingB2b("Viennoiseries", rate);
 
     expect((await readRate(rate)).usage).toEqual({ b2b: 1 });
+  });
+
+  /**
+   * L'écran promet ce que la base fera. Une dérogation oubliée du compte
+   * afficherait « Aucun usage » devant un taux que la base refuse de supprimer.
+   */
+  it("compte une dérogation de fiche comme n'importe quel usage", async () => {
+    const inherited = await createRate("Réduit", 5.5);
+    const derogated = await createRate("Normal", 20);
+    const category = await categorySellingB2b("Viennoiseries", inherited);
+    await productDerogatingB2b("Chausson pommes", category, derogated);
+
+    expect((await readRate(derogated)).usage).toEqual({ b2b: 1 });
   });
 
   it("ne rend AUCUNE clé pour un taux que personne ne vise", async () => {
