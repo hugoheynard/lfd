@@ -84,5 +84,3 @@ jobs:
             echo "::error::Écart entre les colonnes héritées et les tables — d-3 est bloquée."
             exit 1
           }
-        env:
-          REPORT: ${{ env.REPORT }}
