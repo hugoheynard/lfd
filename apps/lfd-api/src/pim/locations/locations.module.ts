@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { CreateLocationHandler } from "./application/create-location.js";
-import { DeleteLocationHandler } from "./application/delete-location.js";
+import { RemoveLocationHandler } from "./application/remove-location.js";
 import { GenerateTableQrHandler } from "./application/generate-table-qr.js";
 import { ListLocationsHandler } from "./application/list-locations.js";
 import { RemoveTableQrHandler } from "./application/remove-table-qr.js";
@@ -27,7 +27,7 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
   providers: [
     CreateLocationHandler,
     UpdateLocationHandler,
-    DeleteLocationHandler,
+    RemoveLocationHandler,
     GenerateTableQrHandler,
     RemoveTableQrHandler,
     ListLocationsHandler,

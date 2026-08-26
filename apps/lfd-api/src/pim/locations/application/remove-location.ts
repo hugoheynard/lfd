@@ -7,7 +7,7 @@ import { LocationRepository } from "../domain/ports/location.repository.js";
 import { LocationUsageReader } from "../domain/ports/location-usage.reader.js";
 import { requireLocation } from "./location-support.js";
 
-export class DeleteLocationCommand {
+export class RemoveLocationCommand {
   constructor(readonly id: string) {}
 }
 
@@ -20,8 +20,8 @@ export class DeleteLocationCommand {
  * disparu. Le refus est donc explicite, ici, et il DIT combien de familles
  * bloquent — sans quoi on cherche laquelle à la main.
  */
-@CommandHandler(DeleteLocationCommand)
-export class DeleteLocationHandler implements ICommandHandler<DeleteLocationCommand, void> {
+@CommandHandler(RemoveLocationCommand)
+export class RemoveLocationHandler implements ICommandHandler<RemoveLocationCommand, void> {
   constructor(
     private readonly locations: LocationRepository,
     private readonly usage: LocationUsageReader,
@@ -29,7 +29,7 @@ export class DeleteLocationHandler implements ICommandHandler<DeleteLocationComm
     private readonly uow: UnitOfWork,
   ) {}
 
-  async execute(command: DeleteLocationCommand): Promise<void> {
+  async execute(command: RemoveLocationCommand): Promise<void> {
     const location = await requireLocation(this.locations, command.id);
     const categories = await this.usage.countCategoriesUsing(command.id);
     if (categories > 0) {
@@ -41,9 +41,10 @@ export class DeleteLocationHandler implements ICommandHandler<DeleteLocationComm
         type: PIM_EVENTS.locationDeleted,
         subjectType: "location",
         subjectId: command.id,
-        // La seule suppression PHYSIQUE du référentiel : après elle, la ligne
-        // n'est plus interrogeable, et le journal est le seul endroit où
-        // l'emplacement a encore un nom.
+        // Après elle, la ligne n'est plus interrogeable : le journal est le
+        // seul endroit où l'emplacement a encore un nom. On y verse donc le
+        // nom ET le nombre de tables — c'est-à-dire combien de QR imprimés
+        // viennent de cesser d'ouvrir quoi que ce soit.
         payload: { name, tableCount: tables.length },
       });
       await this.locations.remove(command.id, ticket);

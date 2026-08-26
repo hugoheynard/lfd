@@ -24,7 +24,7 @@ export class SetCategoryChannelsCommand {
  * Règle où une famille se vend — et **refuse un emplacement qui n'existe pas**.
  *
  * La grille est indexée par identifiant d'emplacement dans une colonne `jsonb` :
- * aucune clé étrangère ne tient cette référence. `DeleteLocation` en tire
+ * aucune clé étrangère ne tient cette référence. `RemoveLocation` en tire
  * déjà la conséquence et refuse de supprimer sous une famille qui coche. Rien
  * ne gardait le sens inverse : un preset citant `emp_fantome` était accepté,
  * persisté, puis rendu INVISIBLE par l'écran — qui ignore les clés inconnues.

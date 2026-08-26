@@ -433,7 +433,7 @@ describe("SetCategoryChannelsHandler", () => {
   });
 
   /**
-   * Le mur avait une seule face : `DeleteLocation` refuse de supprimer sous
+   * Le mur avait une seule face : `RemoveLocation` refuse de supprimer sous
    * une famille qui coche, mais rien n'empêchait d'écrire un preset citant un
    * emplacement qui n’existe pas. L'écran l'aurait rendu invisible — il ignore
    * les clés inconnues — au lieu de le rendre faux.

@@ -16,7 +16,7 @@ import {
   CreateLocationHandler,
   type CreateLocationPayload,
 } from "../create-location.js";
-import { DeleteLocationCommand, DeleteLocationHandler } from "../delete-location.js";
+import { RemoveLocationCommand, RemoveLocationHandler } from "../remove-location.js";
 import { RemoveTableQrCommand, RemoveTableQrHandler } from "../remove-table-qr.js";
 import { GenerateTableQrCommand, GenerateTableQrHandler } from "../generate-table-qr.js";
 import { ListLocationsHandler } from "../list-locations.js";
@@ -276,23 +276,23 @@ describe("GenerateTableQrHandler", () => {
   });
 });
 
-describe("DeleteLocationHandler", () => {
+describe("RemoveLocationHandler", () => {
   it("supprime l’emplacement", async () => {
     const repo = new InMemoryLocations();
     await createSurPlace(repo, 1);
 
-    await new DeleteLocationHandler(
+    await new RemoveLocationHandler(
       repo,
       new StubUsage(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
-    ).execute(new DeleteLocationCommand("emp_fixed"));
+    ).execute(new RemoveLocationCommand("emp_fixed"));
 
     expect(repo.rows).toEqual([]);
   });
 });
 
-describe("DeleteLocationHandler — la protection", () => {
+describe("RemoveLocationHandler — la protection", () => {
   it("REFUSE de supprimer un emplacement encore coché par des familles", async () => {
     // Les canaux d'une gamme référencent l'emplacement dans un `jsonb` : aucune
     // clé étrangère ne peut tenir cette référence, donc supprimer sous elle
@@ -301,12 +301,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const id = await createSurPlace(repo, 2);
 
     await expect(
-      new DeleteLocationHandler(
+      new RemoveLocationHandler(
         repo,
         new StubUsage(3),
         new RecordingJournal(),
         new DirectUnitOfWork(),
-      ).execute(new DeleteLocationCommand(id)),
+      ).execute(new RemoveLocationCommand(id)),
     ).rejects.toThrow(LocationInUseError);
 
     expect(repo.rows).toHaveLength(1);
@@ -317,12 +317,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const id = await createSurPlace(repo, 1);
 
     await expect(
-      new DeleteLocationHandler(
+      new RemoveLocationHandler(
         repo,
         new StubUsage(2),
         new RecordingJournal(),
         new DirectUnitOfWork(),
-      ).execute(new DeleteLocationCommand(id)),
+      ).execute(new RemoveLocationCommand(id)),
     ).rejects.toThrow(/2 famille/);
   });
 
@@ -330,12 +330,12 @@ describe("DeleteLocationHandler — la protection", () => {
     const repo = new InMemoryLocations();
     const id = await createSurPlace(repo, 1);
 
-    await new DeleteLocationHandler(
+    await new RemoveLocationHandler(
       repo,
       new StubUsage(0),
       new RecordingJournal(),
       new DirectUnitOfWork(),
-    ).execute(new DeleteLocationCommand(id));
+    ).execute(new RemoveLocationCommand(id));
 
     expect(repo.rows).toEqual([]);
   });
@@ -449,8 +449,8 @@ describe("Ce que les emplacements inscrivent au journal", () => {
       new GenerateTableQrCommand(id, 1),
     );
     await new RemoveTableQrHandler(repo, journal, uow).execute(new RemoveTableQrCommand(id, 1));
-    await new DeleteLocationHandler(repo, new StubUsage(), journal, uow).execute(
-      new DeleteLocationCommand(id),
+    await new RemoveLocationHandler(repo, new StubUsage(), journal, uow).execute(
+      new RemoveLocationCommand(id),
     );
 
     expect(journal.types()).toEqual([
@@ -533,8 +533,8 @@ describe("Ce que les emplacements inscrivent au journal", () => {
     const journal = new RecordingJournal();
     const id = await open(repo, { name: "Village" });
 
-    await new DeleteLocationHandler(repo, new StubUsage(), journal, new DirectUnitOfWork()).execute(
-      new DeleteLocationCommand(id),
+    await new RemoveLocationHandler(repo, new StubUsage(), journal, new DirectUnitOfWork()).execute(
+      new RemoveLocationCommand(id),
     );
 
     expect(journal.entries[0]?.payload).toMatchObject({ name: "Village" });

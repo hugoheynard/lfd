@@ -11,15 +11,16 @@ import {
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateLocationCommand } from "../application/create-location.js";
-import { DeleteLocationCommand } from "../application/delete-location.js";
+import { RemoveLocationCommand } from "../application/remove-location.js";
 import { GenerateTableQrCommand } from "../application/generate-table-qr.js";
 import { ListLocationsQuery } from "../application/list-locations.js";
 import { RemoveTableQrCommand } from "../application/remove-table-qr.js";
 import { UpdateLocationCommand } from "../application/update-location.js";
 
 /**
- * Locations (boutiques : modes + tables + QR click & collect) — dispatchés sur
- * les bus CQRS.
+ * **Emplacements** — points de vente : leurs modes, leur grille de tables et
+ * les QR de commande à table. Le contrôleur ne fait que dispatcher sur les bus
+ * CQRS : commandes qui mutent, requête qui lit.
  *
  * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
@@ -61,8 +62,8 @@ export class LocationController {
   }
 
   @Delete(":id")
-  async deleteLocation(@Param("id") id: string) {
-    await this.commands.execute<DeleteLocationCommand, void>(new DeleteLocationCommand(id));
+  async removeLocation(@Param("id") id: string) {
+    await this.commands.execute<RemoveLocationCommand, void>(new RemoveLocationCommand(id));
     return { id };
   }
 

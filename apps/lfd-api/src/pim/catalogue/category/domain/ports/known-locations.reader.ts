@@ -3,7 +3,7 @@
  *
  * Les canaux d'une famille référencent l'emplacement par son identifiant, dans
  * une colonne `jsonb` : aucune clé étrangère ne peut tenir cette référence.
- * `DeleteLocation` en tire la conséquence et refuse de supprimer un
+ * `RemoveLocation` en tire la conséquence et refuse de supprimer un
  * emplacement encore coché. Mais rien ne vérifiait le sens inverse — écrire un
  * preset qui référence un emplacement qui n'existe pas était accepté, et
  * l'écran l'affichait comme absent plutôt que comme faux.
