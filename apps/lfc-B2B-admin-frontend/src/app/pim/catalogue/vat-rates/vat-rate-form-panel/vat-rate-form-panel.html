@@ -42,16 +42,16 @@
                laisser l'erreur de clé étrangère l'apprendre après coup. -->
           <fold-callout appearance="inset" variant="warning">
             <strong>Suppression impossible.</strong> «&nbsp;{{ rate()?.name }}&nbsp;» est encore
-            visé par <strong>{{ usageTotal() }} famille(s)</strong>. Réattribuez-les à un autre taux
-            d'abord&nbsp;: tant qu'une seule le vise, la base refuse la suppression.
+            visé par <strong>{{ usageTotal() }} famille(s) ou fiche(s)</strong>. Réattribuez-les à
+            un autre taux d'abord&nbsp;: tant qu'une seule le vise, la base refuse la suppression.
           </fold-callout>
         } @else {
           <fold-callout appearance="inset" variant="alert">
-            <strong>Action irréversible.</strong> Aucune famille ne vise «&nbsp;{{
-              rate()?.name
-            }}&nbsp;» ({{ percentLabel() }}), donc rien ne perd sa référence de taxe. La collection
-            de taxe correspondante restera en place côté Shopify&nbsp;: elle devient orpheline, et
-            Publication la signalera.
+            <strong>Action irréversible.</strong> Rien ne vise «&nbsp;{{ rate()?.name }}&nbsp;» ({{
+              percentLabel()
+            }}), donc rien ne perd sa référence de taxe. La collection de taxe correspondante
+            restera en place côté Shopify&nbsp;: elle devient orpheline, et Publication la
+            signalera.
           </fold-callout>
 
           <fold-input

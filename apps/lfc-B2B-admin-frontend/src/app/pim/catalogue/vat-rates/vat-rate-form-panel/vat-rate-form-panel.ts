@@ -85,7 +85,7 @@ export class VatRateFormPanel {
     return target === undefined ? '—' : formatPercent(target.percent);
   });
 
-  /** Combien de familles visent ce taux — 0 = suppression sans conséquence. */
+  /** Familles ET fiches dérogeantes qui visent ce taux — 0 = suppression sans conséquence. */
   protected readonly usageTotal = computed(() => {
     const target = this.rate();
     return target === undefined

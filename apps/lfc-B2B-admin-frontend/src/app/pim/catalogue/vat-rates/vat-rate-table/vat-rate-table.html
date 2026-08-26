@@ -23,10 +23,10 @@
        visé — la base pose un `Restrict`, elle refusera la suppression. -->
   <ng-template foldCell="usage" let-r>
     @if (usageTotal(r) === 0) {
-      <span class="muted">Aucune famille</span>
+      <span class="muted">Aucun usage</span>
     } @else {
       <span class="usage">
-        <fold-badge [content]="usageTotal(r) + ' famille(s)'" variant="neutral" />
+        <fold-badge [content]="usageTotal(r) + ' famille(s) ou fiche(s)'" variant="neutral" />
         <span class="muted">{{ usageLabel(r) }}</span>
       </span>
     }
@@ -60,7 +60,7 @@
       }
       <span class="tva-card-usage">
         @if (usageTotal(r) === 0) {
-          Aucune famille
+          Aucun usage
         } @else {
           {{ usageLabel(r) }}
         }

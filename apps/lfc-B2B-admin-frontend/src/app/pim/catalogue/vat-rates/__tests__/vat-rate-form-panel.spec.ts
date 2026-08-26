@@ -89,7 +89,10 @@ describe('VatRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
 
     // La zone dangereuse dit POURQUOI et n'offre pas le geste : le compte porte
     // désormais le contexte B2B, qu'il additionnait à zéro.
-    expect(host.textContent).toContain('1 famille(s)');
+    // « ou fiche(s) » n'est pas cosmétique : le compte inclut les DÉROGATIONS
+    // de fiches, et ne nommer que les familles envoyait chercher là où il n'y
+    // avait rien.
+    expect(host.textContent).toContain('1 famille(s) ou fiche(s)');
     expect(
       [...host.querySelectorAll('button')].some((b) =>
         (b.textContent ?? '').includes('définitivement'),

@@ -96,7 +96,11 @@ export class VatRateTable {
   }
 
   /**
-   * Combien de familles visent ce taux, **tous contextes confondus**.
+   * Combien de **décisions de TVA** visent ce taux, tous contextes confondus —
+   * familles ET fiches qui dérogent à la leur. Les deux posent le même
+   * `RESTRICT` en base, donc les deux doivent compter, et l'écran doit les
+   * NOMMER toutes les deux : « 1 famille » devant une dérogation de fiche
+   * envoyait fouiller les familles, où il n'y avait rien à trouver.
    *
    * Il additionnait deux modes sur trois : un taux que seule la plateforme B2B
    * visait totalisait zéro, donc la ligne proposait de le supprimer — et la
