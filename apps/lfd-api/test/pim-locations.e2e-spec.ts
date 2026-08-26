@@ -367,3 +367,49 @@ describe("l'index de référence suit la grille de canaux", () => {
 function refCount(locationId: string): Promise<number> {
   return ctx.prisma.categoryLocationRef.count({ where: { locationId } });
 }
+
+/**
+ * C0-d, tranche d-0 — le miroir `location_context`.
+ *
+ * Les deux colonnes restent la source ; la table est écrite à côté, dans la
+ * même transaction. Ce que ces cas prouvent, c'est qu'elle SUIT — un miroir qui
+ * dérive est pire qu'un miroir absent, puisque la bascule d-2 lira celui-ci.
+ */
+describe("un emplacement déclare les contextes qu'il offre", () => {
+  it("écrit un contexte par mode à la création", async () => {
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 2 });
+
+    expect(await offeredContexts(id)).toEqual(["emporter", "surPlace"]);
+  });
+
+  it("n'écrit rien pour un emplacement qui n'offre aucun mode", async () => {
+    const id = await createLocation({ name: "Labo", eatIn: false });
+    await staff().put(`${LOCATIONS}/${id}`).send({ clickCollect: false }).expect(200);
+
+    expect(await offeredContexts(id)).toEqual([]);
+  });
+
+  it("RETIRE le contexte quand on ferme la salle", async () => {
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 3 });
+
+    await staff().put(`${LOCATIONS}/${id}`).send({ eatIn: false }).expect(200);
+
+    expect(await offeredContexts(id)).toEqual(["emporter"]);
+  });
+
+  it("disparaît avec l'emplacement", async () => {
+    const id = await createLocation({ name: "Village", eatIn: true });
+
+    await staff().delete(`${LOCATIONS}/${id}`).expect(200);
+
+    expect(await offeredContexts(id)).toEqual([]);
+  });
+});
+
+async function offeredContexts(locationId: string): Promise<string[]> {
+  const rows = await ctx.prisma.locationContext.findMany({
+    where: { locationId },
+    orderBy: { contextKey: "asc" },
+  });
+  return rows.map((row) => row.contextKey);
+}

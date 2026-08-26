@@ -65,9 +65,41 @@ export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
 export interface SalesContextView {
   readonly key: string;
   readonly label: string;
-  /** Le canal de la matrice qui l'autorise (`emporter` / `surPlace` / `b2b`). */
+  /**
+   * Le canal de la matrice qui l'autorise (`emporter` / `surPlace` / `b2b`).
+   *
+   * De TRANSITION — `perLocation` le remplace. Les deux voyagent le temps de la
+   * bascule (C0-d, tranche d-2).
+   */
   readonly channelKey: string;
+  /** Ce contexte se vend-il depuis un point de vente ? Sinon il est global. */
+  readonly perLocation: boolean;
   readonly position: number;
+}
+
+/**
+ * Un contexte tel que l'ÉCRAN D'ADMINISTRATION le voit : hors-service compris,
+ * et sachant lequel est la racine.
+ *
+ * Distinct de {@link SalesContextView}, qui sert à dessiner la matrice et n'a
+ * donc aucune raison de connaître les contextes inactifs — les y faire entrer
+ * ferait apparaître des colonnes qu'on ne peut pas vendre.
+ */
+export interface SalesContextAdminView extends SalesContextView {
+  /** En service : réglable et facturable. */
+  readonly active: boolean;
+  /** Shopify en fait-il un produit ? Distinct de `active`. */
+  readonly shopifyProjected: boolean;
+  /** Suffixe de handle Shopify — vide pour le contexte par défaut. */
+  readonly handleSuffix: string;
+  /**
+   * **Racine** : semé au boot, ineffaçable, non renommable. L'écran l'affiche
+   * et retire le geste de suppression au lieu de le griser — un bouton grisé
+   * laisse croire qu'il existe une façon de l'activer.
+   */
+  readonly root: boolean;
+  /** Combien de points de vente l'offrent. Toujours 0 pour un contexte global. */
+  readonly offeredByLocations: number;
 }
 
 /**

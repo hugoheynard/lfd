@@ -266,6 +266,7 @@ const CONTEXTS: readonly SalesContext[] = [
     label: "À emporter",
     handleSuffix: "",
     channelKey: "emporter",
+    perLocation: true,
     active: true,
     shopifyProjected: true,
     position: 1,
@@ -276,6 +277,7 @@ const CONTEXTS: readonly SalesContext[] = [
     label: "Sur place",
     handleSuffix: "-surplace",
     channelKey: "surPlace",
+    perLocation: true,
     active: true,
     shopifyProjected: false,
     position: 2,
@@ -286,13 +288,22 @@ const CONTEXTS: readonly SalesContext[] = [
     label: "B2B",
     handleSuffix: "-b2b",
     channelKey: "b2b",
+    perLocation: false,
     active: true,
     shopifyProjected: false,
     position: 3,
   },
 ];
 
-const registry: SalesContextRegistry = { active: () => Promise.resolve(CONTEXTS) };
+const registry: SalesContextRegistry = {
+  active: () => Promise.resolve(CONTEXTS),
+  // Le reste du port ne sert qu'à la surface d'administration et au boot ; ces
+  // cas-ci n'en dépendent pas, et un double qui rendrait des valeurs inventées
+  // mentirait plus qu'il n'aiderait.
+  all: () => Promise.resolve(CONTEXTS),
+  ensureRootContext: () => Promise.resolve(),
+  offeredByLocations: () => Promise.resolve(new Map()),
+};
 
 function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
   return new SetCategoryChannelsHandler(

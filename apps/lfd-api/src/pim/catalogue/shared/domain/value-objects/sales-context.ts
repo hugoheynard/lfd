@@ -26,6 +26,15 @@ export interface SalesContext {
    * vendra des CONTEXTES au lieu de deux modes nommés.
    */
   readonly channelKey: SalesChannelKey;
+  /**
+   * Ce contexte se vend-il **depuis un point de vente** ?
+   *
+   * Il REMPLACE `channelKey`, et la différence est tout le sujet : `channelKey`
+   * nommait un drapeau, donc le code devait connaître la liste des drapeaux.
+   * Celui-ci nomme une forme — « faut-il un lieu ? » — et ne présume rien du
+   * nombre de plateformes. Les deux cohabitent le temps de la bascule (d-2).
+   */
+  readonly perLocation: boolean;
   /** En service : réglable à l'écran, et facturable. */
   readonly active: boolean;
   /** Shopify en fait un produit. **Distinct** de `active` — cf. le schéma. */

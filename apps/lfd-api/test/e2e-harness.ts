@@ -279,8 +279,14 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * « contexte inconnu » alors que rien n'est cassé.
  */
 /**
- * Les contextes de vente, à l'identique de la migration `20260824150000` qui les
- * pose. Idempotent : c'est une garantie de présence, pas une écriture.
+ * Les contextes de vente, à l'identique des migrations qui les posent
+ * (`20260824150000`, puis `20260826140000` pour `perLocation`). Idempotent :
+ * c'est une garantie de présence, pas une écriture.
+ *
+ * ⚠️ **Toute colonne ajoutée au registre doit arriver ici aussi.** Sans
+ * `perLocation`, ce double recréait un B2B « vendu depuis un lieu » — plus
+ * permissif que la production, et donc un test d'autant plus vert qu'il ne
+ * vérifiait rien.
  */
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
   const contexts = [
@@ -290,6 +296,7 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       label: "À emporter",
       handleSuffix: "",
       channelKey: "emporter",
+      perLocation: true,
       active: true,
       shopifyProjected: true,
       position: 1,
@@ -300,6 +307,7 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       label: "Sur place",
       handleSuffix: "-surplace",
       channelKey: "surPlace",
+      perLocation: true,
       active: true,
       shopifyProjected: false,
       position: 2,
@@ -310,6 +318,7 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       label: "B2B",
       handleSuffix: "-b2b",
       channelKey: "b2b",
+      perLocation: false,
       active: true,
       shopifyProjected: false,
       position: 3,

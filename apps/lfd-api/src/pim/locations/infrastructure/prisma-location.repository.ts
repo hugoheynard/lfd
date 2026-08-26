@@ -48,6 +48,26 @@ function tableRows(id: string, tables: readonly TableState[]) {
 
 const WITH_TABLES = { tables: { orderBy: { number: "asc" } } } as const;
 
+/**
+ * Les contextes qu'un emplacement offre, **dérivés de ses deux colonnes**.
+ *
+ * ⚠️ Code de TRANSITION (C0-d, tranche d-0), et les clés y sont en dur pour la
+ * dernière fois. Il existe pour remplir `location_context` sans changer le
+ * geste de l'écran : les colonnes restent la source, la table devient le
+ * miroir. La tranche d-2 inverse les deux, la d-3 supprime les colonnes — et
+ * cette fonction avec elles.
+ */
+function offeredContexts(snapshot: LocationSnapshot): string[] {
+  const offered: string[] = [];
+  if (snapshot.clickCollect) {
+    offered.push("emporter");
+  }
+  if (snapshot.eatIn) {
+    offered.push("surPlace");
+  }
+  return offered;
+}
+
 @Injectable()
 export class PrismaLocationRepository extends LocationRepository {
   constructor(private readonly prisma: PimPrismaService) {
@@ -80,6 +100,9 @@ export class PrismaLocationRepository extends LocationRepository {
           clickCollect: snapshot.clickCollect,
           eatIn: snapshot.eatIn,
           baseUrl: snapshot.baseUrl,
+          contexts: {
+            create: offeredContexts(snapshot).map((contextKey) => ({ contextKey })),
+          },
           tables: {
             create: snapshot.tables.map((table) => ({
               number: table.number,
@@ -124,8 +147,30 @@ export class PrismaLocationRepository extends LocationRepository {
           },
         }),
         ...(location.tablesChanged ? this.tableOperations(snapshot) : []),
+        ...this.contextOperations(snapshot),
       ]),
     );
+  }
+
+  /**
+   * Réécrit les contextes offerts, dans la MÊME transaction que les colonnes
+   * dont ils dérivent — sinon le miroir deviendrait une seconde vérité.
+   *
+   * Effacer-puis-réécrire : un `upsert` laisserait vivre la ligne d'un contexte
+   * qu'on vient de retirer, et « plus offert » ressemblerait à « inchangé ».
+   */
+  private contextOperations(snapshot: LocationSnapshot) {
+    const offered = offeredContexts(snapshot);
+    return [
+      this.prisma.locationContext.deleteMany({ where: { locationId: snapshot.id } }),
+      ...(offered.length === 0
+        ? []
+        : [
+            this.prisma.locationContext.createMany({
+              data: offered.map((contextKey) => ({ locationId: snapshot.id, contextKey })),
+            }),
+          ]),
+    ];
   }
 
   /** Efface puis réécrit la grille — appelé seulement quand elle a bougé. */

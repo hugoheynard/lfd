@@ -2600,6 +2600,18 @@ model SalesContext {
   /// emplacement vendra des contextes au lieu de deux modes nommés.
   channelKey String @map("channel_key")
 
+  /// Ce contexte se vend-il **depuis un point de vente**, ou globalement ?
+  ///
+  /// Remplace `channel_key`, et la différence est tout le sujet : `channel_key`
+  /// nommait un drapeau (`emporter`, `surPlace`, `b2b`), donc le code devait
+  /// connaître la liste. `per_location` nomme une **forme** — « ce contexte
+  /// a-t-il besoin d'un lieu ? » — et ne présume rien du nombre de plateformes :
+  /// deux portails sont deux lignes, zéro code.
+  ///
+  /// Il décide aussi de ce que `location_context` doit porter : un emplacement
+  /// n'a pas à se prononcer sur le B2B.
+  perLocation Boolean @default(true) @map("per_location")
+
   /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
   /// plus à l'écran et ne facture plus. Explicite, jamais implicite : la TVA est
   /// de l'argent, et un contexte activé par accident facture faux.
@@ -2615,11 +2627,39 @@ model SalesContext {
 
   categoryVat CategoryContextVat[]
   productVat  ProductContextVat[]
+  /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
+  locations   LocationContext[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("sales_context")
+  @@schema("pim")
+}
+
+/// **Ce qu'un point de vente offre.**
+///
+/// `click_collect` / `sur_place` étaient ces contextes, écrits en colonnes : en
+/// ajouter un demandait une colonne. Et rien ne reliait les deux niveaux — une
+/// famille pouvait vendre « sur place » dans un emplacement sans salle, et la
+/// projection produisait une fiche pour un lieu qui n'en a pas.
+///
+/// Jointure sur la **clé** du contexte et non son identifiant : c'est `key` que
+/// le reste du référentiel cite (`vatByContext`, la matrice, les suffixes de
+/// handle), et joindre sur `id` obligerait chaque lecteur à traduire.
+///
+/// Seuls les contextes `per_location` y figurent.
+model LocationContext {
+  locationId String       @map("location_id")
+  location   Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([locationId, contextKey])
+  @@index([contextKey])
+  @@map("location_context")
   @@schema("pim")
 }
 
@@ -2696,6 +2736,10 @@ model Location {
   /// mur `Restrict` qui empêche de le supprimer sous elles. Aucune colonne
   /// ajoutée ici ; voir `CategoryLocationRef`.
   categoryRefs CategoryLocationRef[]
+
+  /// Les contextes que ce point de vente offre — voir `LocationContext`. En
+  /// service à côté de `clickCollect` / `eatIn`, que la tranche d-3 supprime.
+  contexts LocationContext[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

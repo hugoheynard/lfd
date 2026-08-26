@@ -33,6 +33,7 @@ export class ReferenceController {
       key: context.key,
       label: context.label,
       channelKey: context.channelKey,
+      perLocation: context.perLocation,
       position: context.position,
     }));
   }
