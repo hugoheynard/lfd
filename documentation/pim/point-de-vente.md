@@ -260,16 +260,50 @@ vivent déjà dans leur propre table. Une contrainte `CHECK` en SQL dit la règl
 Discipline `étendre / basculer / resserrer`, comme toujours
 (`documentation/ops/pipelines.md`).
 
-| Tranche           | Migration                                                                                                                                                           | Code                                                                                                                 |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **p-0 étendre**   | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | rien ne lit encore ; l'écran Emplacements devient Points de vente, en lecture                                        |
-| **p-1 étendre**   | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                      |
-| **p-2 basculer**  | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; l'écran des points de vente coche des contextes |
-| **p-3 resserrer** | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `CHECK` sur le genre                                     | suppression du double-écriture                                                                                       |
+| Tranche            | Migration                                                                                                                                                           | Code                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **p-0 étendre** ✅ | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | la matrice ne lit rien encore ; l'écran Emplacements devient Points de vente, la plateforme en lecture               |
+| **p-1 étendre**    | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                      |
+| **p-2 basculer**   | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; l'écran des points de vente coche des contextes |
+| **p-3 resserrer**  | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `CHECK` sur le genre                                     | suppression du double-écriture                                                                                       |
 
 **p-0 a une valeur propre** : il rend la plateforme B2B **visible** dans
-l'administration, à côté des boutiques. Aujourd'hui elle n'existe nulle part à
-l'écran — c'est un `NULL` dans une colonne.
+l'administration, à côté des boutiques. Avant lui elle n'existait nulle part à
+l'écran — c'était un `NULL` dans une colonne.
+
+### p-0, tel qu'il a été livré (2026-08-26)
+
+Une chose s'est ajoutée en chemin, et il faut la dire : `point_of_sale` est un
+**miroir** d'`emplacement`, écrit par le dépôt des emplacements dans la MÊME
+transaction que sa source — création, renommage, changement de modes,
+suppression. La note ne le prévoyait pas ; sans lui, le miroir aurait dérivé dès
+le premier renommage, et p-1 aurait branché la matrice sur des libellés
+périmés. C'est le motif déjà employé pour `location_context`, et pour la même
+raison.
+
+Une boutique **garde l'identifiant** de son emplacement : la reprise de la
+matrice en p-1 sera une copie de colonne, pas une jointure sur une table de
+correspondance.
+
+Deux gardes tiennent la plateforme racine : le `INSERT` de la migration, et
+`ensureRootPointOfSale` au boot. La première ne suffisait pas — supprimée en
+base, la ligne ne reviendrait jamais, et c'est exactement la panne silencieuse
+que la garde du contexte `b2b` existe pour empêcher.
+
+**Une lecture a basculé plus tôt que prévu**, et c'est un trou que p-0 a créé :
+le compte « offert par N points de vente » se lisait sur `location_context`, qui
+ne connaît que les emplacements. La plateforme offrant désormais le contexte
+racine, l'écran des contextes aurait annoncé « 0 » pour le B2B **puis** refusé
+sa suppression sur une clé étrangère. Dire vert et faire rouge est exactement ce
+qu'on cherche à ne jamais faire, donc ce compte lit `point_of_sale_context` — un
+sur-ensemble de l'ancienne table, tenu dans la même transaction. Le même effet a
+fait rougir un test qui supprimait le contexte racine directement en base : la
+suppression ne passe plus, et c'est le mur qu'on voulait.
+
+L'unicité du libellé n'a **pas** été dupliquée sur le miroir : elle vit sur
+`emplacement_name_unique`, la source. La poser des deux côtés ferait refuser le
+miroir alors que la source a accepté — un refus qu'aucun message ne saurait
+expliquer. Elle déménagera avec la source, en p-3.
 
 ### La racine, encore
 
@@ -292,10 +326,12 @@ d-0 et retiré en p-3. Il vit entre les deux, et c'est assumé.
 
 ## 6. Ce que cette note ne tranche pas
 
-- **Le nom en base.** `point_of_sale` est le terme du lexique ; `emplacement`
-  disparaît comme table. Reste à décider si l'écran dit « Points de vente » ou
-  garde « Emplacements » avec la plateforme dedans — un mot d'interface, pas un
-  modèle.
+- ~~**Le nom en base.**~~ **Tranché** (2026-08-26) : `point_of_sale` en base,
+  `emplacement` disparaît comme table en p-3. L'écran dit **« Points de vente »**
+  — c'est là qu'on gère les deux genres, et « Emplacements » ne nommait que
+  l'un des deux. L'URL, elle, reste `/pim/emplacements` : renommer un chemin
+  casse les liens déjà partagés, et un mot d'interface n'a pas à traîner
+  l'espace d'URL avec lui.
 - **Ce que devient l'écran des tables** quand une boutique retire l'offre « sur
   place » : on garde les QR (§ 2), mais faut-il le DIRE à l'écran ? Probablement
   oui, et c'est une phrase, pas une règle.
