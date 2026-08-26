@@ -16,7 +16,8 @@
  */
 
 /** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
-export type PimSubjectType = "vat_rate" | "product" | "product_category" | "location";
+export type PimSubjectType =
+  "vat_rate" | "product" | "product_category" | "location" | "sales_context";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -135,6 +136,17 @@ export const PIM_EVENTS = {
    */
   locationTableQrGenerated: "location.table_qr_generated",
   locationTableQrRemoved: "location.table_qr_removed",
+  /**
+   * **Le contexte de vente** — une manière de vendre qui a son propre taux.
+   *
+   * Il est devenu réglable à l'écran, donc il doit se relire : c'est lui qui
+   * décide de ce qu'on PEUT vendre, et un contexte mis hors service arrête de
+   * facturer sans rien casser de visible. « Pourquoi le B2B ne facture plus
+   * depuis mardi » n'a de réponse que si le geste est inscrit.
+   */
+  salesContextCreated: "sales_context.created",
+  salesContextUpdated: "sales_context.updated",
+  salesContextDeleted: "sales_context.deleted",
 } as const;
 
 /**

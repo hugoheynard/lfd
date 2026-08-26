@@ -326,6 +326,13 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       position: 3,
     },
   ];
+  // Ce qu'un TEST a créé n'est pas du vocabulaire : la table est préservée par
+  // le `TRUNCATE`, donc un contexte ouvert par une suite survivrait à la
+  // suivante — qui refuserait alors sa propre clé pour une raison sans rapport
+  // avec ce qu'elle vérifie. On efface tout ce qui n'est pas semé.
+  await prisma.salesContext.deleteMany({
+    where: { key: { notIn: contexts.map((context) => context.key) } },
+  });
   for (const context of contexts) {
     await prisma.salesContext.upsert({
       where: { id: context.id },

@@ -28,8 +28,10 @@ export {
   renameCategoryPayloadSchema,
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
+  createSalesContextPayloadSchema,
   salesChannelsSchema,
   soldChannelSchema,
+  updateSalesContextPayloadSchema,
   setCategoryVatPayloadSchema,
 } from "./category.js";
 export type {
@@ -40,7 +42,9 @@ export type {
   SetCategoryChannelsPayload,
   SetCategoryVatPayload,
   CategoryView,
+  CreateSalesContextPayload,
   SalesContextAdminView,
+  UpdateSalesContextPayload,
   SalesContextView,
 } from "./category.js";
 

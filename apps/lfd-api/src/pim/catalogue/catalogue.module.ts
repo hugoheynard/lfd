@@ -46,6 +46,11 @@ import { ReferenceController } from "./shared/http/reference.controller.js";
 import { SalesContextController } from "./shared/http/sales-context.controller.js";
 import { OpsChannelParityController } from "./shared/http/ops-channel-parity.controller.js";
 import { ChannelParityReader } from "./shared/infrastructure/channel-parity.reader.js";
+import { SalesContextRepository } from "./shared/domain/ports/sales-context.repository.js";
+import { PrismaSalesContextRepository } from "./shared/infrastructure/prisma-sales-context.repository.js";
+import { CreateSalesContextHandler } from "./shared/application/create-sales-context.js";
+import { UpdateSalesContextHandler } from "./shared/application/update-sales-context.js";
+import { RemoveSalesContextHandler } from "./shared/application/remove-sales-context.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
@@ -118,6 +123,11 @@ import {
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
+    { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
+    // Le registre s'écrit — réservé à l'admin par `catalog:write`.
+    CreateSalesContextHandler,
+    UpdateSalesContextHandler,
+    RemoveSalesContextHandler,
     ChannelParityReader,
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },

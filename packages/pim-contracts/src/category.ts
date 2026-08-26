@@ -108,6 +108,10 @@ export interface SalesContextAdminView extends SalesContextView {
   readonly root: boolean;
   /** Combien de points de vente l'offrent. Toujours 0 pour un contexte global. */
   readonly offeredByLocations: number;
+  /** Familles et fiches qui le vendent — ce qui empêche de l'effacer. */
+  readonly soldBy: number;
+  /** Taux réglés dessus, famille ou fiche. Idem. */
+  readonly ratedBy: number;
 }
 
 /**
@@ -151,3 +155,39 @@ export interface CategoryView {
    */
   readonly activeProductCount: number;
 }
+
+/**
+ * Ouvrir un contexte de vente.
+ *
+ * La `key` est une IDENTITÉ, pas un libellé : trois tables la citent par clé
+ * étrangère et les taux voyagent par elle. D'où sa forme stricte — et le fait
+ * qu'aucune charge de mise à jour ne la porte.
+ */
+export const createSalesContextPayloadSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-zA-Z0-9-]*$/u, "lettres, chiffres et tirets, en commençant par une lettre"),
+  label: z.string().trim().min(1),
+  /** Se vend-il DEPUIS un point de vente ? Figé après la création. */
+  perLocation: z.boolean(),
+  handleSuffix: z.string().trim(),
+  active: z.boolean(),
+  shopifyProjected: z.boolean(),
+});
+export type CreateSalesContextPayload = z.infer<typeof createSalesContextPayloadSchema>;
+
+/**
+ * Régler un contexte. `perLocation` y figure sans être modifiable : l'écran
+ * renvoie la fiche entière, et une valeur qu'on ignorerait en silence laisserait
+ * croire au réglage. Le serveur la compare et refuse si elle a bougé.
+ */
+export const updateSalesContextPayloadSchema = z.object({
+  label: z.string().trim().min(1),
+  perLocation: z.boolean(),
+  handleSuffix: z.string().trim(),
+  active: z.boolean(),
+  shopifyProjected: z.boolean(),
+  position: z.number().int().min(0),
+});
+export type UpdateSalesContextPayload = z.infer<typeof updateSalesContextPayloadSchema>;
