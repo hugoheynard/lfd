@@ -14,7 +14,8 @@ import {
 import { ContextAnatomyDiagram } from './context-anatomy-diagram/context-anatomy-diagram';
 import { OfferDiagram } from './offer-diagram/offer-diagram';
 import { SystemDiagram } from './system-diagram/system-diagram';
-import { TwoAxesDiagram } from './two-axes-diagram/two-axes-diagram';
+import { CatalogueToToolDiagram } from './catalogue-to-tool-diagram/catalogue-to-tool-diagram';
+import { VatIntersectionDiagram } from './vat-intersection-diagram/vat-intersection-diagram';
 import { FlowDiagram } from './flow-diagram/flow-diagram';
 import { LeafPreview } from './leaf-preview/leaf-preview';
 import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
@@ -51,7 +52,8 @@ import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
     FoldTabPanelComponent,
     SystemDiagram,
     ContextAnatomyDiagram,
-    TwoAxesDiagram,
+    VatIntersectionDiagram,
+    CatalogueToToolDiagram,
     OfferDiagram,
     FlowDiagram,
     LeafPreview,

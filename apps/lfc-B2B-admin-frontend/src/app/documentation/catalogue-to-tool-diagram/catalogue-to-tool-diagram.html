@@ -1,0 +1,82 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 390"
+  role="img"
+  aria-label="De la carte au logiciel : un catalogue canonique, un adaptateur par outil qui le traduit, puis l'intégration qui le transporte"
+>
+  <defs>
+    <marker
+      id="tool-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- 1 · La carte -->
+  <g>
+    <rect class="box box-accent" x="256" y="8" width="228" height="56" rx="10" />
+    <text class="box-title on-accent" x="370" y="32">Sur place</text>
+    <text class="box-sub on-accent" x="370" y="51">une seule carte</text>
+  </g>
+  <text class="side" x="500" y="34">un taux par article,</text>
+  <text class="side" x="500" y="50">réglé une seule fois</text>
+
+  <line class="arrow" x1="370" y1="68" x2="370" y2="96" marker-end="url(#tool-arrow)" />
+
+  <!-- 2 · Le catalogue canonique -->
+  <g>
+    <rect class="box" x="216" y="100" width="308" height="52" rx="10" />
+    <text class="box-title" x="370" y="123">Catalogue canonique</text>
+    <text class="box-sub" x="370" y="141">ce qu'on y vend · les taux · les prix HT</text>
+  </g>
+
+  <!-- 3 · Les adaptateurs -->
+  <line class="arrow" x1="300" y1="156" x2="176" y2="196" marker-end="url(#tool-arrow)" />
+  <line class="arrow" x1="440" y1="156" x2="564" y2="196" marker-end="url(#tool-arrow)" />
+
+  <g>
+    <rect class="box box-adapter" x="60" y="200" width="212" height="60" rx="10" />
+    <text class="box-title" x="166" y="223">Adaptateur Shopify</text>
+    <text class="box-sub" x="166" y="241">collections, handles,</text>
+    <text class="box-sub" x="166" y="255">tags de TVA</text>
+  </g>
+  <g>
+    <rect class="box box-adapter" x="468" y="200" width="212" height="60" rx="10" />
+    <text class="box-title" x="574" y="223">Adaptateur caisse</text>
+    <text class="box-sub" x="574" y="241">familles, rayons,</text>
+    <text class="box-sub" x="574" y="255">codes de taux</text>
+  </g>
+
+  <text class="side-strong" x="370" y="228">L'adaptateur</text>
+  <text class="side-strong" x="370" y="246">TRADUIT.</text>
+
+  <!-- 4 · Les intégrations -->
+  <line class="arrow" x1="166" y1="264" x2="166" y2="292" marker-end="url(#tool-arrow)" />
+  <line class="arrow" x1="574" y1="264" x2="574" y2="292" marker-end="url(#tool-arrow)" />
+
+  <g>
+    <rect class="box box-out" x="60" y="296" width="212" height="48" rx="10" />
+    <text class="box-title" x="166" y="318">Shopify</text>
+    <text class="box-sub" x="166" y="335">le QR mène ici</text>
+  </g>
+  <g>
+    <rect class="box box-out" x="468" y="296" width="212" height="48" rx="10" />
+    <text class="box-title" x="574" y="318">Logiciel de caisse</text>
+    <text class="box-sub" x="574" y="335">le comptoir</text>
+  </g>
+
+  <text class="side-strong" x="370" y="318">L'intégration</text>
+  <text class="side-strong" x="370" y="336">TRANSPORTE.</text>
+
+  <line class="rule" x1="16" y1="360" x2="724" y2="360" />
+  <text class="foot" x="16" y="382">
+    Le point de vente choisit lesquels le servent : cette boutique-ci fait les deux, celle d'à côté
+    n'a que le comptoir.
+  </text>
+</svg>

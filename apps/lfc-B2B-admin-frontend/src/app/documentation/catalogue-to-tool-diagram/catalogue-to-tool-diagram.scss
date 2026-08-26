@@ -18,9 +18,10 @@
   stroke: var(--fold-color-primary);
 }
 
-/* Le taux est la chose PARTAGÉE : il se distingue des deux cartes sans leur
-   voler l'accent, sinon le schéma raconte que le taux est le sujet. */
-.box-vat {
+/* L'adaptateur se distingue de ce qu'il traduit et de ce qu'il alimente : c'est
+   la seule boîte de la chaîne qui soit du CODE, et le schéma sert surtout à le
+   faire voir. */
+.box-adapter {
   fill: var(--fold-color-surface-sunken, var(--fold-color-surface-raised));
   stroke: var(--fold-color-text-muted);
   stroke-width: 1.5;
@@ -57,15 +58,24 @@
   fill: var(--fold-color-text-muted);
 }
 
-.note {
-  fill: var(--fold-color-text);
-  font-size: 14px;
+.side {
+  fill: var(--fold-color-text-muted);
+  font-size: 12px;
+}
+
+.side-strong {
+  fill: var(--fold-color-text-secondary);
+  font-size: 13px;
   font-weight: 600;
   text-anchor: middle;
 }
 
-.note-sub {
-  fill: var(--fold-color-text-muted);
+.rule {
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.foot {
+  fill: var(--fold-color-text-secondary);
   font-size: 12px;
-  text-anchor: middle;
 }

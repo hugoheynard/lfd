@@ -50,26 +50,46 @@ flowchart TB
 explicite, jamais un `if` sur un nom. Le code ne connaît aucune des valeurs de
 l'étage 1.
 
-## 1 bis. La décision de modèle (2026-08-26)
+## 1 bis. Ce qui définit une carte (2026-08-26)
 
-Une carte de capacité **n'est pas** un couple (manière × logiciel).
+**Une carte se définit par où l'on CONSOMME, jamais par où l'on achète.**
 
-« Sur place par QR » et « sur place au comptoir » ne sont pas deux cartes : c'est
-**une** carte — sur place — servie par deux logiciels. La TVA ne regarde pas qui a
-saisi la commande, et tant qu'on y vend la même chose, le catalogue non plus.
+|                                                       |                                                |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| Sur place · à emporter · revendu par un professionnel | trois lieux de consommation → **trois cartes** |
+| QR · comptoir · en ligne · borne                      | trois chemins d'achat → **zéro carte**         |
 
-Les dédoubler serait exprimable, mais ferait régler le même 10 % **deux fois par
-famille** : deux valeurs à tenir d'accord, dont le désaccord ne se voit pas à
-l'écran — il se voit sur une facture.
+C'est le lieu de consommation qui commande le traitement fiscal ; le chemin
+d'achat ne l'a jamais fait. « Sur place par QR » n'est donc pas une carte : on y
+consomme sur place, exactement comme au comptoir — même carte, et donc le même
+taux **par définition**.
 
-**Le critère, une seule question** : _existe-t-il un article vendu par un chemin
-et pas par l'autre, à manière de consommation égale ?_ Non → une carte, et le
-point de vente choisit ses intégrations. Oui → deux cartes, parce que la matrice
-n'a pas d'autre endroit où l'exprimer.
+Le dédoubler aurait fait régler deux fois un 10 % qui ne peut pas différer, avec
+le risque qu'il diverge : ça ne se voit pas à l'écran, ça se voit sur une
+facture.
 
-Tranché : **non**, donc une carte. Le signal qui devra faire rouvrir la question
-est précis — le jour où un article se vendra au comptoir et pas en ligne, à
-emporter dans les deux cas.
+### Et si le catalogue devait différer selon le chemin d'achat ?
+
+Un article commandable au comptoir mais pas en scannant la table, à consommation
+égale. Ce ne serait **toujours pas** une carte de plus : ce serait une
+**restriction posée sur l'adaptateur**, là où la différence naît. Créer une carte
+pour ça dupliquerait un taux identique par construction.
+
+### Le taux vit à l'intersection
+
+Une carte ne « vaut » pas un taux. Le taux se règle sur le couple **(article,
+carte)** — `category_context_tva` et `product_context_tva` sont tous deux clés
+sur la paire :
+
+|                  | À emporter | Sur place | Vente pro   |
+| ---------------- | ---------- | --------- | ----------- |
+| Croissant        | 5,5 %      | 10 %      | 5,5 %       |
+| Café             | 10 %       | 10 %      | _non réglé_ |
+| Bouteille de vin | 20 %       | 20 %      | 20 %        |
+
+La famille pose ses taux, la fiche peut y déroger pour elle seule. **Une case
+vide n'est pas un zéro** : « non réglé » ne s'écrit pas, et un 0 % serait un
+taux — donc un mensonge fiscal.
 
 ### Ce qui en découle, et qui n'est pas encore livré
 
@@ -120,10 +140,19 @@ contextes.
 **Sans rien déployer :**
 
 ```
-1 ligne  → contexte « borne » (libellé, position, en service)
+0 ligne  → aucune carte à créer : la borne sert « sur place » ou « à emporter »
+N cases  → le point de vente déclare qu'il sert ces cartes par la borne
+0 taux   → les taux existent déjà, ils sont ceux de la consommation
+```
+
+Et si la borne servait vraiment une manière de consommer qu'on n'a pas encore,
+alors seulement :
+
+```
+1 ligne  → la carte (libellé, position, en service)
 N cases  → chaque point de vente déclare s'il l'offre
-N cases  → chaque famille coche (point de vente × borne)
-N taux   → le taux de « borne », par famille puis par fiche
+N cases  → chaque famille coche (point de vente × carte)
+N taux   → le taux, par famille puis par fiche
 ```
 
 La matrice, l'écran des contextes, le calcul du TTC, le compte d'usages et les
@@ -133,9 +162,9 @@ murs de suppression suivent seuls.
 flux de commande, un paiement, une imprimante. Le référentiel dit **quoi
 afficher** et **à quel taux** ; il ne fabrique pas de consommateur.
 
-⚠️ Et souvent, une borne n'est **même pas une carte** : si elle vend ce qu'on
-vend déjà à emporter, au même taux, c'est une **intégration de plus** sur une
-carte qui existe. Poser la question du § 1 bis avant d'en créer une.
+⚠️ Et une borne n'est **presque jamais une carte** : c'est un chemin d'achat.
+Elle sert « sur place » ou « à emporter » selon ce que le client fait ensuite —
+donc des cartes qui existent déjà. Ce qu'on ajoute, c'est un **adaptateur**.
 
 C'est la bonne frontière : **l'étendue** est de la donnée, les **consommateurs**
 sont du code. Une borne est un logiciel, pas une ligne.

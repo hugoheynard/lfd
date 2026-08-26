@@ -197,10 +197,11 @@
     <fold-tab-panel [tabs]="ref" key="contexts">
       <div class="doc-stack">
         <fold-callout appearance="inset" variant="info">
-          <strong>Un contexte de vente est une carte de capacité</strong> — une façon de vendre —
-          <strong>sur laquelle on mappe un taux de TVA</strong>. « À emporter », « sur place au
-          comptoir », « sur place par QR », « vente en ligne pro » sont des cartes. Ce ne sont ni
-          des clients, ni des logiciels.
+          <strong>Un contexte de vente est une carte de capacité</strong> — et une carte se définit
+          par <strong>où l'on consomme</strong>, jamais par où l'on achète. « À emporter », « sur
+          place », « revendu par un professionnel »&nbsp;: trois lieux de consommation, donc trois
+          traitements fiscaux, donc trois cartes. QR, comptoir, en ligne&nbsp;: trois chemins
+          d'achat, <strong>zéro carte</strong>.
         </fold-callout>
 
         <fold-card class="doc-card">
@@ -223,6 +224,28 @@
             est du code — un logiciel de caisse ne s'ajoute pas en cochant une case — mais
             <em>lequel sert chez moi</em> reste un choix du point de vente.
           </p>
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Attention au raccourci.</strong> Une carte ne « vaut » pas un taux. Le taux se
+            règle sur le couple <strong>(article, carte)</strong> — le croissant est à 5,5&nbsp;% à
+            emporter et à 10&nbsp;% sur place, et c'est la même carte « sur place » pour tous les
+            articles.
+          </fold-callout>
+        </fold-card>
+
+        <fold-card class="doc-card">
+          <fold-element-title
+            variant="title"
+            icon="tax"
+            iconTone="primary"
+            title="Où vit le taux"
+            subtitle="à l'intersection, pas sur la carte"
+          />
+          <app-vat-intersection-diagram />
+          <p>
+            Chaque famille pose ses taux, carte par carte&nbsp;; chaque fiche peut y déroger pour
+            elle seule. <strong>Une case vide n'est pas un zéro</strong>&nbsp;: « non réglé » ne
+            s'écrit pas, et un 0&nbsp;% serait un taux — donc un mensonge fiscal.
+          </p>
         </fold-card>
 
         <fold-card class="doc-card">
@@ -230,28 +253,34 @@
             variant="title"
             icon="grid"
             iconTone="primary"
-            title="Deux axes qu'il ne faut pas confondre"
-            subtitle="le taux d'un côté, les logiciels de l'autre"
+            title="De la carte au logiciel"
+            subtitle="l'adaptateur traduit, l'intégration transporte"
           />
-          <app-two-axes-diagram />
+          <app-catalogue-to-tool-diagram />
           <p>
-            <strong>Sur place</strong> est <em>une</em> carte, même si on peut y commander de deux
-            façons — en scannant la table, ou au comptoir. La TVA ne regarde pas qui a saisi la
-            commande&nbsp;: elle regarde qu'on consomme sur place. Le catalogue non plus, tant que
-            c'est la même chose qu'on vend.
+            Le référentiel décrit un <strong>catalogue canonique</strong> — ce qu'on vend, à quel
+            taux, à quel prix HT — dans son propre vocabulaire. Il ne connaît ni les « collections »
+            de Shopify ni les « rayons » d'une caisse.
           </p>
           <p>
-            Ce qui change, c'est <strong>le logiciel qui sert la carte</strong>. Et ça, c'est un
-            choix du point de vente&nbsp;: cette boutique-ci fait le QR par Shopify et le comptoir
-            par la caisse, celle d'à côté n'a que le comptoir.
+            La conversion est le métier de <strong>l'adaptateur</strong>&nbsp;: un par outil servi,
+            qui traduit le catalogue dans les mots de sa cible. L'<strong>intégration</strong>,
+            elle, ne fait que transporter le résultat — une API, un jeton, un appel. Deux étages
+            qu'on confond souvent, et qui ne vivent pas au même rythme&nbsp;: changer de logiciel de
+            caisse, c'est un adaptateur de plus, pas un catalogue de plus.
           </p>
-          <fold-callout appearance="inset" variant="info">
-            <strong>Pourquoi pas deux cartes ?</strong> « Sur place QR » et « sur place caisse »
-            seraient exprimables — mais on réglerait le même 10&nbsp;% <em>deux fois</em> par
-            famille. Deux valeurs à tenir d'accord, dont le désaccord ne se voit pas à l'écran : il
-            se voit sur une facture. On ne dédouble une carte que si les <strong>catalogues</strong>
-            diffèrent vraiment — le jour où un article se vendra au comptoir et pas en ligne.
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Donc « sur place QR » n'est pas une carte.</strong> On y consomme sur place,
+            exactement comme au comptoir — même carte, donc même taux <em>par définition</em>.
+            Dédoubler reviendrait à régler deux fois un 10&nbsp;% qui ne peut pas différer, avec le
+            risque qu'il diverge&nbsp;: ça ne se voit pas à l'écran, ça se voit sur une facture.
           </fold-callout>
+          <p>
+            Et si un jour le catalogue devait différer selon le chemin d'achat — un article
+            commandable au comptoir mais pas en scannant la table — ce ne serait toujours
+            <strong>pas</strong> une carte de plus&nbsp;: ce serait une <em>restriction</em> posée
+            sur l'adaptateur, là où la différence naît.
+          </p>
         </fold-card>
 
         <fold-card class="doc-card">

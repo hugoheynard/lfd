@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.head {
+  fill: var(--fold-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.row {
+  fill: var(--fold-color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cell {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.cell-text {
+  fill: var(--fold-color-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+/* « Non réglé » ne s'écrit pas comme un zéro : l'absence de ligne EST la
+   donnée, et un 0 % serait un taux, donc un mensonge fiscal. */
+.empty {
+  fill: var(--fold-color-text-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-anchor: middle;
+}
+
+.rule {
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.foot {
+  fill: var(--fold-color-text-secondary);
+  font-size: 12px;
+}
