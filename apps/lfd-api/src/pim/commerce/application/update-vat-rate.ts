@@ -88,6 +88,6 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
         }),
       );
     }
-    return tickets[0] ?? this.journal.untraced("taux enregistré sans modification");
+    return tickets[0] ?? this.journal.untraced("record without modification");
   }
 }
