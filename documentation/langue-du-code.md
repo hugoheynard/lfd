@@ -42,21 +42,21 @@ données**, pas des noms. Les changer, c'est une migration par champ.
 
 ## 3. Le lexique
 
-| Français        | Anglais          | Remarque                                                                 |
-| --------------- | ---------------- | ------------------------------------------------------------------------ |
-| emplacement     | `location`       | « site » est ambigu avec le site web                                     |
-| taux de TVA     | `vatRate`        | `TVA` → `VAT` partout, y compris `tvaIntracom` → `vatNumber`             |
-| tarif           | `pricing`        | l'acte de tarifer ; `price` reste le montant                             |
-| palier          | `tier`           | terme standard des grilles de prix                                       |
-| remise          | `discount`       | —                                                                        |
-| retrait         | `pickup`         | déjà utilisé par `FulfillmentMethod.pickup` — l'enum est en avance       |
-| livraison       | `delivery`       | idem                                                                     |
-| gabarit         | `template`       | —                                                                        |
-| conditionnement | `packaging`      | la table s'appelle déjà `product_packaging`                              |
-| boutique        | `shop`           | `boutiques` (la carte) → `shops`                                         |
-| à emporter      | `takeaway`       | valeur de donnée — palier 3                                              |
-| sur place       | `eatIn`          | fait pour le CHAMP `Location.eatIn` ; la **clé jsonb** reste, § 4 quater |
-| **mercuriale**  | **`mercuriale`** | **on le garde** — voir ci-dessous                                        |
+| Français        | Anglais          | Remarque                                                           |
+| --------------- | ---------------- | ------------------------------------------------------------------ |
+| emplacement     | `location`       | « site » est ambigu avec le site web                               |
+| taux de TVA     | `vatRate`        | `TVA` → `VAT` partout, y compris `tvaIntracom` → `vatNumber`       |
+| tarif           | `pricing`        | l'acte de tarifer ; `price` reste le montant                       |
+| palier          | `tier`           | terme standard des grilles de prix                                 |
+| remise          | `discount`       | —                                                                  |
+| retrait         | `pickup`         | déjà utilisé par `FulfillmentMethod.pickup` — l'enum est en avance |
+| livraison       | `delivery`       | idem                                                               |
+| gabarit         | `template`       | —                                                                  |
+| conditionnement | `packaging`      | la table s'appelle déjà `product_packaging`                        |
+| boutique        | `shop`           | `boutiques` (la carte) → `shops`                                   |
+| à emporter      | `takeaway`       | ✅ fait le 2026-08-26 (C0-d, d-3)                                  |
+| sur place       | `eatIn`          | ✅ fait le 2026-08-26 — champ ET valeur de registre                |
+| **mercuriale**  | **`mercuriale`** | **on le garde** — voir ci-dessous                                  |
 
 ### Pourquoi `mercuriale` reste
 
@@ -146,7 +146,7 @@ bénéfice, et les mettre dans le même sac est ce qui le fait paraître infaisa
 | --------------------------------------------------------------- | ------------------------------------ | ---------------------------------------- |
 | **Noms physiques** — `tva_rate`, `emplacement`, `tva_intracom`… | **personne** : tout passe par `@map` | ❌ pas maintenant — bénéfice `psql` seul |
 | ~~**Valeurs `AddressKind`**~~ — `facturation` / `livraison`     | le code et la base (pas le fil)      | ✅ **faite** 2026-08-25, 3 déploiements  |
-| **Clés `jsonb`** — `emporter` / `surPlace`                      | le code, la base                     | ❌ C0-d les supprime — travail jetable   |
+| ~~**Clés `jsonb`** — `emporter` / `surPlace`~~                  | le code, la base                     | ✅ **faite** 2026-08-26 (C0-d, d-3)      |
 | ~~**Valeurs du journal**~~ — `category.tva_changed`             | l'historique                         | ✅ **faite** 2026-08-25, 1 migration     |
 
 **Les noms physiques.** Aucun code ne les lit : `@map` les a découplés, et P3
@@ -162,12 +162,21 @@ migration** : `@map("sur_place")` découple la colonne, exactement comme P3 a
 renommé `tvaIntracom` sans toucher à `tva_intracom`. Ce qui suit ne concerne
 donc que les VALEURS.
 
-**Les clés `jsonb`.** `emporter` / `surPlace` sont les deux **modes** fixes de la
-matrice de canaux. C0-d prévoit de les faire disparaître : la matrice devient
-`Record<locationId, Record<contextKey, boolean>>`, les modes deviennent des
-contextes, et `sales_context.channel_key` tombe avec eux. Les renommer
-aujourd'hui, c'est écrire une migration de données que C0-d effacera. On attend
-C0-d, qui règle le problème en le supprimant.
+**Les clés `jsonb`.** ✅ **Faites le 2026-08-26**, et ce doc s'était trompé sur
+la moitié du travail.
+
+Il disait : « C0-d les supprime, les renommer aujourd'hui c'est écrire une
+migration que C0-d effacera. » Vrai des clés de **structure** — la matrice est
+devenue un ensemble de paires en table, et `emporter` / `surPlace` ont cessé
+d'être des noms de champs. Faux des **valeurs** de `sales_context.key`, qui
+survivaient à C0-d et seraient restées françaises pour toujours.
+
+Ce que C0-d a réellement apporté, c'est le **prix** : après sa bascule, ces
+valeurs ne vivaient plus qu'à un endroit, et tout ce qui les citait le faisait
+par clé étrangère `ON UPDATE CASCADE`. Deux `UPDATE` ont suffi, partis avec la
+tranche d-3. Le journal a suivi pour les faits dont le contexte est le sujet ;
+les charges utiles historiques, non — un fait parle le vocabulaire de son
+moment.
 
 **Les valeurs du journal.** ✅ **Faites le 2026-08-25** — et ce doc disait
 « ❌ jamais ». Le raisonnement d'alors : `"category.tva_changed"` est ce qui a
