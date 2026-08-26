@@ -50,6 +50,45 @@ flowchart TB
 explicite, jamais un `if` sur un nom. Le code ne connaît aucune des valeurs de
 l'étage 1.
 
+## 1 bis. La décision de modèle (2026-08-26)
+
+Une carte de capacité **n'est pas** un couple (manière × logiciel).
+
+« Sur place par QR » et « sur place au comptoir » ne sont pas deux cartes : c'est
+**une** carte — sur place — servie par deux logiciels. La TVA ne regarde pas qui a
+saisi la commande, et tant qu'on y vend la même chose, le catalogue non plus.
+
+Les dédoubler serait exprimable, mais ferait régler le même 10 % **deux fois par
+famille** : deux valeurs à tenir d'accord, dont le désaccord ne se voit pas à
+l'écran — il se voit sur une facture.
+
+**Le critère, une seule question** : _existe-t-il un article vendu par un chemin
+et pas par l'autre, à manière de consommation égale ?_ Non → une carte, et le
+point de vente choisit ses intégrations. Oui → deux cartes, parce que la matrice
+n'a pas d'autre endroit où l'exprimer.
+
+Tranché : **non**, donc une carte. Le signal qui devra faire rouvrir la question
+est précis — le jour où un article se vendra au comptoir et pas en ligne, à
+emporter dans les deux cas.
+
+### Ce qui en découle, et qui n'est pas encore livré
+
+Le choix des intégrations se posera sur la ligne d'offre qui existe déjà
+(`point_of_sale_context`) : « ici, à emporter passe par Shopify et par la
+caisse ».
+
+Ce qui le remplace aujourd'hui : `sales_context.shopify_projected` et
+`handle_suffix` — le vocabulaire d'UNE intégration, rangé dans la table centrale
+du catalogue. Le README du PIM pose pourtant que « le PIM ne connaît pas le
+vocabulaire des plateformes ». Un seul consommateur lit vraiment le drapeau
+(`channels/shopify/products/reconciliation.service.ts`) ; tout le reste est du
+transport.
+
+⚠️ Attention en le faisant : une colonne qui nomme un logiciel ressemble à
+`channel_key`, qu'on vient de supprimer. La différence tient en une phrase — un
+**adaptateur est un vrai logiciel**, en ajouter un est un déploiement de toute
+façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
+
 ## 2. À quoi sert un contexte de vente
 
 **Une manière de vendre qui a son propre traitement de TVA** — et qui, pour
@@ -92,8 +131,11 @@ murs de suppression suivent seuls.
 
 **Ce qui reste du code, et il faut le dire :** la borne elle-même. Un écran, un
 flux de commande, un paiement, une imprimante. Le référentiel dit **quoi
-afficher** et **à quel taux** ; il ne fabrique pas de consommateur. La borne est
-une app qui interroge le catalogue avec `context=borne`.
+afficher** et **à quel taux** ; il ne fabrique pas de consommateur.
+
+⚠️ Et souvent, une borne n'est **même pas une carte** : si elle vend ce qu'on
+vend déjà à emporter, au même taux, c'est une **intégration de plus** sur une
+carte qui existe. Poser la question du § 1 bis avant d'en créer une.
 
 C'est la bonne frontière : **l'étendue** est de la donnée, les **consommateurs**
 sont du code. Une borne est un logiciel, pas une ligne.

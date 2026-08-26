@@ -11,7 +11,10 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { ContextAnatomyDiagram } from './context-anatomy-diagram/context-anatomy-diagram';
+import { OfferDiagram } from './offer-diagram/offer-diagram';
 import { SystemDiagram } from './system-diagram/system-diagram';
+import { TwoAxesDiagram } from './two-axes-diagram/two-axes-diagram';
 import { FlowDiagram } from './flow-diagram/flow-diagram';
 import { LeafPreview } from './leaf-preview/leaf-preview';
 import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
@@ -25,6 +28,11 @@ import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
  * Commercial : c'est la troisième section à onglets de l'app, et trois façons
  * différentes de ranger la même chose obligent à réapprendre l'écran à chaque
  * changement de section.
+ *
+ * La section **Contextes de vente** répond à une question posée en clair — « à
+ * quoi ça sert, et comment j'ajoute une caisse ? ». Elle vit ici et pas dans un
+ * `.md` du dépôt parce que la personne qui se la pose est devant l'écran, pas
+ * devant l'éditeur.
  *
  * La barre reste un `fold-tabs` et non un `fold-view-nav` : ici rien ne
  * navigue — six panneaux sur la même URL. Le rail est une affaire de layout,
@@ -42,6 +50,9 @@ import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
     FoldTabsComponent,
     FoldTabPanelComponent,
     SystemDiagram,
+    ContextAnatomyDiagram,
+    TwoAxesDiagram,
+    OfferDiagram,
     FlowDiagram,
     LeafPreview,
     UpsertDiagram,
@@ -60,6 +71,7 @@ export class DocumentationPage {
     // PIM pose sur « Emplacements » et « Publication ». Les génériques d'avant
     // (`company`, `upload`) montraient deux icônes différentes pour la même
     // chose, à un rail d'écart.
+    { key: 'contexts', label: 'Contextes de vente', icon: 'sliders' },
     { key: 'locations', label: 'Points de vente', icon: 'places' },
     { key: 'shopify', label: 'Intégration Shopify', icon: 'shopify' },
   ];

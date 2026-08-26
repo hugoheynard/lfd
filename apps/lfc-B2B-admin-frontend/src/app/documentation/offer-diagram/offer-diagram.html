@@ -1,0 +1,44 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 280"
+  role="img"
+  aria-label="Chaque point de vente déclare les contextes qu'il offre ; la famille ne peut cocher que ce qui est offert"
+>
+  <!-- En-têtes de colonnes : les cartes -->
+  <text class="head" x="300" y="26">Sur place QR</text>
+  <text class="head" x="430" y="26">Sur place caisse</text>
+  <text class="head" x="560" y="26">À emporter caisse</text>
+  <text class="head" x="672" y="26">Vente pro</text>
+
+  <!-- Boutique 1 : tout -->
+  <text class="row" x="16" y="66">Boutique 1</text>
+  <text class="row-sub" x="16" y="82">équipée de QR</text>
+  <circle class="on" cx="300" cy="62" r="9" />
+  <circle class="on" cx="430" cy="62" r="9" />
+  <circle class="on" cx="560" cy="62" r="9" />
+  <text class="off" x="672" y="68">—</text>
+
+  <!-- Boutique 2 : pas de QR -->
+  <text class="row" x="16" y="126">Boutique 2</text>
+  <text class="row-sub" x="16" y="142">sans QR</text>
+  <text class="off" x="300" y="132">—</text>
+  <circle class="on" cx="430" cy="126" r="9" />
+  <circle class="on" cx="560" cy="126" r="9" />
+  <text class="off" x="672" y="132">—</text>
+
+  <!-- Plateforme pro -->
+  <text class="row" x="16" y="186">Plateforme pro</text>
+  <text class="row-sub" x="16" y="202">ni salle ni comptoir</text>
+  <text class="off" x="300" y="192">—</text>
+  <text class="off" x="430" y="192">—</text>
+  <text class="off" x="560" y="192">—</text>
+  <circle class="on" cx="672" cy="186" r="9" />
+
+  <line class="rule" x1="16" y1="222" x2="724" y2="222" />
+
+  <text class="foot" x="16" y="248">Un rond = ce point de vente OFFRE cette carte.</text>
+  <text class="foot-sub" x="16" y="268">
+    Une famille ne peut cocher que là où il y a un rond — et on ne retire pas un rond sous ce qui
+    s'y vend encore.
+  </text>
+</svg>

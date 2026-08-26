@@ -1,0 +1,69 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 330"
+  role="img"
+  aria-label="Une carte porte un taux et un catalogue ; le point de vente choisit les intégrations qui la servent"
+>
+  <defs>
+    <marker
+      id="axes-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- 1 · Le taux, dicté par la manière de consommer -->
+  <g>
+    <rect class="box box-vat" x="270" y="8" width="200" height="48" rx="10" />
+    <text class="box-title" x="370" y="30">TVA 10 %</text>
+    <text class="box-sub" x="370" y="47">on consomme sur place</text>
+  </g>
+
+  <line class="arrow" x1="370" y1="60" x2="370" y2="88" marker-end="url(#axes-arrow)" />
+
+  <!-- 2 · UNE carte -->
+  <g>
+    <rect class="box box-accent" x="256" y="92" width="228" height="56" rx="10" />
+    <text class="box-title on-accent" x="370" y="116">Sur place</text>
+    <text class="box-sub on-accent" x="370" y="135">une seule carte</text>
+  </g>
+
+  <line class="arrow" x1="370" y1="152" x2="370" y2="180" marker-end="url(#axes-arrow)" />
+
+  <!-- 3 · UN catalogue -->
+  <g>
+    <rect class="box box-out" x="256" y="184" width="228" height="44" rx="10" />
+    <text class="box-title" x="370" y="205">Un catalogue</text>
+    <text class="box-sub" x="370" y="221">ce qu'on y vend, une fois</text>
+  </g>
+
+  <!-- 4 · Plusieurs intégrations, choisies par le point de vente -->
+  <line class="arrow" x1="300" y1="232" x2="176" y2="266" marker-end="url(#axes-arrow)" />
+  <line class="arrow" x1="440" y1="232" x2="564" y2="266" marker-end="url(#axes-arrow)" />
+
+  <g>
+    <rect class="box" x="60" y="270" width="212" height="48" rx="10" />
+    <text class="box-title" x="166" y="292">QR par Shopify</text>
+    <text class="box-sub" x="166" y="309">on scanne la table</text>
+  </g>
+  <g>
+    <rect class="box" x="468" y="270" width="212" height="48" rx="10" />
+    <text class="box-title" x="574" y="292">Logiciel de caisse</text>
+    <text class="box-sub" x="574" y="309">on commande au comptoir</text>
+  </g>
+
+  <!-- La lecture du schéma -->
+  <text class="note" x="118" y="150">La TVA suit</text>
+  <text class="note" x="118" y="168">la manière</text>
+  <text class="note-sub" x="118" y="188">de consommer.</text>
+
+  <text class="note" x="622" y="150">Les intégrations</text>
+  <text class="note" x="622" y="168">sont un choix</text>
+  <text class="note-sub" x="622" y="188">du point de vente.</text>
+</svg>

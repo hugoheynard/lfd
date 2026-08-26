@@ -1,0 +1,68 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 250"
+  role="img"
+  aria-label="Un contexte de vente porte un taux de TVA, un adaptateur et une tranche de catalogue"
+>
+  <defs>
+    <marker
+      id="ctx-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- La carte, au centre -->
+  <g>
+    <rect class="box box-accent" x="270" y="96" width="200" height="60" rx="10" />
+    <text class="box-title on-accent" x="370" y="121">Sur place — QR</text>
+    <text class="box-sub on-accent" x="370" y="141">une carte de capacité</text>
+  </g>
+
+  <!-- 1 · La TVA -->
+  <line class="arrow" x1="370" y1="92" x2="370" y2="58" marker-end="url(#ctx-arrow)" />
+  <g>
+    <rect class="box" x="266" y="8" width="208" height="48" rx="10" />
+    <text class="box-title" x="370" y="30">TVA 10 %</text>
+    <text class="box-sub" x="370" y="47">la manière de consommer</text>
+  </g>
+
+  <!-- 2 · L'adaptateur -->
+  <line class="arrow" x1="266" y1="126" x2="222" y2="126" marker-end="url(#ctx-arrow)" />
+  <g>
+    <rect class="box" x="14" y="102" width="206" height="48" rx="10" />
+    <text class="box-title" x="117" y="124">Adaptateur</text>
+    <text class="box-sub" x="117" y="141">le logiciel qui la sert</text>
+  </g>
+
+  <!-- 3 · La tranche de catalogue -->
+  <line class="arrow" x1="474" y1="126" x2="518" y2="126" marker-end="url(#ctx-arrow)" />
+  <g>
+    <rect class="box" x="520" y="102" width="206" height="48" rx="10" />
+    <text class="box-title" x="623" y="124">Ce qu'on y vend</text>
+    <text class="box-sub" x="623" y="141">une colonne de la matrice</text>
+  </g>
+
+  <!-- La légende du bas : qui décide quoi -->
+  <g>
+    <rect class="legend" x="14" y="192" width="206" height="46" rx="8" />
+    <text class="legend-title" x="117" y="212">CODE</text>
+    <text class="legend-sub" x="117" y="229">un adaptateur se programme</text>
+  </g>
+  <g>
+    <rect class="legend legend-data" x="266" y="192" width="208" height="46" rx="8" />
+    <text class="legend-title" x="370" y="212">DONNÉE</text>
+    <text class="legend-sub" x="370" y="229">une carte est une ligne</text>
+  </g>
+  <g>
+    <rect class="legend legend-data" x="520" y="192" width="206" height="46" rx="8" />
+    <text class="legend-title" x="623" y="212">DONNÉE</text>
+    <text class="legend-sub" x="623" y="229">des cases à cocher</text>
+  </g>
+</svg>

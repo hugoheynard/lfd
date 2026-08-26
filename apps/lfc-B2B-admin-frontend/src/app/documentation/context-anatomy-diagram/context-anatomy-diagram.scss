@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.box {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.box-accent {
+  fill: var(--fold-color-primary);
+  stroke: var(--fold-color-primary);
+}
+
+.box-title {
+  fill: var(--fold-color-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.box-sub {
+  fill: var(--fold-color-text-secondary);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.on-accent {
+  fill: var(--fold-color-on-primary);
+}
+
+.arrow {
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+}
+
+.arrowhead {
+  fill: var(--fold-color-text-muted);
+}
+
+/* La légende dit QUI décide : le code ou la donnée. C'est la seule chose à
+   retenir du schéma, donc elle est posée à plat sous chaque colonne plutôt que
+   glissée dans une phrase. */
+.legend {
+  fill: transparent;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.legend-data {
+  stroke: var(--fold-color-primary);
+}
+
+.legend-title {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-anchor: middle;
+}
+
+.legend-sub {
+  fill: var(--fold-color-text-muted);
+  font-size: 11px;
+  text-anchor: middle;
+}
