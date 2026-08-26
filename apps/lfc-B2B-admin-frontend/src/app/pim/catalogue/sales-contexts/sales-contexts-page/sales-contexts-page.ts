@@ -5,7 +5,9 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowCardDirective,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
   type FoldTableColumn,
@@ -31,6 +33,13 @@ import { SalesContextAdminStore } from '../sales-context-admin.store';
   imports: [
     FoldPageLayoutComponent,
     FoldDataTableComponent,
+    // Sans elle, `foldCell` n'est qu'un attribut inerte sur un `ng-template` :
+    // Angular ne s'en plaint pas, le build reste vert, et les lignes rendent le
+    // vide. Le tableau des taux porte le même avertissement — je l'ai lu après.
+    FoldDataTableCellDirective,
+    // Même piège pour la carte mobile : sans cette directive, `foldRowCard`
+    // reste inerte et le téléphone affiche le vide.
+    FoldDataTableRowCardDirective,
     FoldBadgeComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -53,6 +62,16 @@ export class SalesContextsPage {
   ];
 
   protected readonly rowKey = (row: SalesContextAdminView): string => row.key;
+
+  /** « Shopify : produit au handle nu », ou rien s'il n'y est pas projeté. */
+  protected shopifyLabel(context: SalesContextAdminView): string {
+    if (!context.shopifyProjected) {
+      return 'Non projeté vers Shopify';
+    }
+    return context.handleSuffix === ''
+      ? 'Shopify — handle nu'
+      : `Shopify — handle ${context.handleSuffix}`;
+  }
 
   /**
    * « 2 points de vente » — ou rien pour un contexte global. Le zéro d'un

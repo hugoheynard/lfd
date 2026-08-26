@@ -58,6 +58,28 @@
           <fold-badge content="hors service" variant="warning" />
         }
       </ng-template>
+
+      <!-- La vue mobile, projetée dans le tableau : `auto-cards` empilerait
+           encore des paires libellé/valeur, donc un tableau debout. Sur un
+           téléphone on veut une CARTE — le contexte en tête, ce qu'il implique
+           en dessous. -->
+      <ng-template foldRowCard let-c>
+        <div class="ctx-card">
+          <span class="ctx-card-head">
+            <span class="ctx-card-name">{{ c.label }}</span>
+            @if (c.root) {
+              <fold-badge content="racine" variant="accent" />
+            }
+            @if (c.active) {
+              <fold-badge content="en service" variant="success" />
+            } @else {
+              <fold-badge content="hors service" variant="warning" />
+            }
+          </span>
+          <span class="ctx-card-line">{{ scopeLabel(c) }}</span>
+          <span class="ctx-card-line">{{ shopifyLabel(c) }}</span>
+        </div>
+      </ng-template>
     </fold-data-table>
 
     @if (rootCount() > 0) {
