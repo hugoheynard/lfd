@@ -57,6 +57,138 @@ mélangées.
 | Qu'est-ce que CE point de vente offre ? | `point_de_vente_contexte` |
 | Qu'est-ce que cette famille y vend ?    | `category_channel`        |
 
+### Le schéma d'ensemble
+
+Toutes les couches, du point de vente jusqu'à ce qui sort chez Shopify et sur la
+plateforme B2B — d'abord la forme en base, puis l'ordre de résolution.
+
+```mermaid
+erDiagram
+    POINT_OF_SALE ||--o{ POINT_OF_SALE_TABLE : "équipement (genre shop)"
+    POINT_OF_SALE ||--o{ POINT_OF_SALE_CONTEXT : "offre"
+    SALES_CONTEXT ||--o{ POINT_OF_SALE_CONTEXT : "est offert par"
+
+    POINT_OF_SALE ||--o{ CATEGORY_CHANNEL : "on y vend"
+    SALES_CONTEXT ||--o{ CATEGORY_CHANNEL : "dans ce contexte"
+    CATEGORY      ||--o{ CATEGORY_CHANNEL : "cette famille"
+
+    CATEGORY ||--o{ PRODUCT : "range"
+    PRODUCT  ||--o| PRODUCT_CHANNEL_OVERRIDE : "déroge (la ligne EXISTE)"
+    PRODUCT_CHANNEL_OVERRIDE ||--o{ PRODUCT_CHANNEL : "cellules"
+    POINT_OF_SALE ||--o{ PRODUCT_CHANNEL : ""
+    SALES_CONTEXT ||--o{ PRODUCT_CHANNEL : ""
+
+    CATEGORY      ||--o{ CATEGORY_CONTEXT_VAT : "taux par contexte"
+    SALES_CONTEXT ||--o{ CATEGORY_CONTEXT_VAT : ""
+    PRODUCT       ||--o{ PRODUCT_CONTEXT_VAT  : "déroge au taux"
+    SALES_CONTEXT ||--o{ PRODUCT_CONTEXT_VAT  : ""
+    VAT_RATE      ||--o{ CATEGORY_CONTEXT_VAT : "Restrict"
+    VAT_RATE      ||--o{ PRODUCT_CONTEXT_VAT  : "Restrict"
+
+    PRODUCT ||--o{ PRODUCT_VARIANT : "prix HT canonique"
+
+    POINT_OF_SALE {
+        string id PK
+        enum   kind "shop | platform"
+        string label
+        string base_url "NULL si platform (CHECK)"
+    }
+    SALES_CONTEXT {
+        string key PK "takeaway, eatIn, b2b"
+        string label
+        bool   shopify_projected
+        string handle_suffix
+    }
+    POINT_OF_SALE_CONTEXT {
+        string point_of_sale_id PK
+        string context_key PK
+    }
+    CATEGORY_CHANNEL {
+        string category_id PK
+        string point_of_sale_id PK "NOT NULL après p-3"
+        string context_key PK
+    }
+    PRODUCT_CHANNEL {
+        string product_id PK
+        string point_of_sale_id PK
+        string context_key PK
+    }
+    CATEGORY_CONTEXT_VAT {
+        string category_id PK
+        string context_id PK
+        string tva_rate_id FK
+    }
+    PRODUCT_CONTEXT_VAT {
+        string product_id PK
+        string context_id PK
+        string tva_rate_id FK
+    }
+```
+
+Et la même chose lue **de haut en bas**, c'est-à-dire dans l'ordre où une
+question se résout à l'exécution :
+
+```mermaid
+flowchart TD
+    subgraph L1["1 — Le référentiel : ce qui EXISTE (donnée pure)"]
+        POS["point_of_sale<br/>shop Rivoli · shop Village · <b>platform B2B</b>"]
+        CTX["sales_context<br/>takeaway · eatIn · b2b"]
+    end
+
+    subgraph L2["2 — L'offre : ce que CE point de vente propose"]
+        OFFER["point_of_sale_context<br/>(pdv × contexte)"]
+    end
+
+    subgraph L3["3 — La matrice : ce qu'on y VEND"]
+        CAT["category_channel<br/>(famille × pdv × contexte)"]
+        OVR["product_channel_override<br/>+ product_channel — la fiche déroge"]
+    end
+
+    subgraph L4["4 — Le fiscal : à QUEL TAUX"]
+        CVAT["category_context_tva"]
+        PVAT["product_context_tva — la fiche déroge"]
+        RATE["tva_rate (5,5 % · 10 % · 20 %)"]
+    end
+
+    subgraph L5["5 — Les projections : ce qui SORT"]
+        SHOP["Shopify<br/>un handle par contexte projeté"]
+        B2B["Plateforme B2B<br/>catalogue + TTC"]
+        QR["QR de table<br/>équipement d'une boutique"]
+    end
+
+    POS --> OFFER
+    CTX --> OFFER
+    OFFER -- "borne les cases cochables" --> CAT
+    CAT -- "hérité, sauf si" --> OVR
+    CTX --> CVAT
+    CVAT -- "hérité, sauf si" --> PVAT
+    RATE --> CVAT
+    RATE --> PVAT
+    OVR --> SHOP
+    OVR --> B2B
+    CAT --> SHOP
+    CAT --> B2B
+    PVAT --> SHOP
+    PVAT --> B2B
+    POS --> QR
+```
+
+**Ce que le schéma dit, et qui est tout l'enjeu :** chaque flèche est une clé
+étrangère, jamais un `if`. Ajouter un contexte de vente ou un point de vente
+ajoute des LIGNES dans les couches 1 et 2 ; les couches 3, 4 et 5 s'élargissent
+sans qu'une ligne de code change. Ce qui reste au code, c'est la **forme** des
+flèches — « une fiche hérite de sa famille », « un taux se règle par
+contexte » — jamais leur nombre.
+
+Deux héritages, et ils ont exactement la même mécanique : **l'absence de ligne
+est la donnée**. Pas de `product_channel_override` ⇒ la fiche suit sa famille ;
+pas de `product_context_tva` ⇒ elle suit le taux de sa famille.
+
+Ce qui n'est **pas** encore piloté par la donnée, et il faut le dire : le
+**prix**. Il vit sur la variante, en HT canonique, identique dans tous les
+contextes ; seul le TTC varie, par le taux. « Pas le même prix au Village qu'en
+B2B » serait une relation nouvelle, donc du code.
+
 ### Ce que ça supprime
 
 | Disparaît                       | Pourquoi                                                                       |
