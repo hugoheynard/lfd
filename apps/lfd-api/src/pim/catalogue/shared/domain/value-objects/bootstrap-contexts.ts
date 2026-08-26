@@ -38,7 +38,15 @@ export function bootstrapRootContext(): Omit<SalesContext, "id"> {
   return {
     key: ROOT_CONTEXT_KEY,
     label: "B2B",
-    handleSuffix: "-b2b",
+    // VIDE, et pas « -b2b » : `handleSuffix` est du vocabulaire Shopify — le
+    // suffixe d'URL d'un produit — et le B2B n'y est pas projeté. La plateforme
+    // professionnelle a son propre projecteur, qui ne fabrique aucun handle.
+    //
+    // ⚠️ Si le B2B devenait un jour une boutique Shopify, il lui faudrait un
+    // suffixe NON VIDE : le vide est celui du contexte par défaut (le handle nu
+    // qui protège les URL indexées), et deux contextes projetés avec le même
+    // suffixe produiraient le même handle.
+    handleSuffix: "",
     // De transition, et il vaut la clé — la bascule d-2 le supprime.
     channelKey: ROOT_CONTEXT_KEY,
     perLocation: false,

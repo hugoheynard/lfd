@@ -13,7 +13,18 @@ export interface SalesContext {
   /** Identité stable, celle que le code cite quand il doit citer (`b2b`). */
   readonly key: string;
   readonly label: string;
-  /** Suffixe de handle Shopify — **vide** pour le contexte par défaut. */
+  /**
+   * Suffixe de handle **Shopify** — vide pour le contexte par défaut, dont le
+   * handle nu protège les URL déjà indexées (C0-bis, write-once SEO).
+   *
+   * Du vocabulaire de CE canal, donc vide aussi pour un contexte qui n'y est
+   * pas projeté : le B2B a son propre projecteur, qui ne fabrique aucun handle.
+   *
+   * ⚠️ Deux contextes PROJETÉS ne peuvent pas partager un suffixe — ils
+   * produiraient le même handle. Rien ne le vérifie encore : aucun canal ne lit
+   * ce champ à ce jour, il attend C4 et ses handles suffixés. C'est là que
+   * l'invariant devra vivre, pas ici.
+   */
   readonly handleSuffix: string;
   /**
    * Quel drapeau de la matrice autorisait ce contexte.

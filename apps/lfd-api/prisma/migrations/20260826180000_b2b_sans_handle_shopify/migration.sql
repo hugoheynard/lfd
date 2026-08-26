@@ -1,0 +1,16 @@
+-- Le contexte B2B n'a pas de handle Shopify, parce qu'il n'a pas de boutique
+-- Shopify. `handle_suffix` est du vocabulaire de CE canal — le suffixe d'URL
+-- d'un produit — et le B2B n'y est pas projeté (`shopify_projected = false`) :
+-- la plateforme professionnelle a son propre projecteur, qui ne fabrique aucun
+-- handle.
+--
+-- La valeur était pré-remplie « au cas où ». Elle décrivait une appartenance
+-- qui n'existe pas, et personne ne la lisait — aucun fichier de
+-- `src/pim/channels/` ne lit `handle_suffix` à ce jour ; il attend C4 et ses
+-- handles suffixés.
+--
+-- ⚠️ Le jour où le B2B deviendrait une boutique Shopify, il lui faudra un
+-- suffixe NON VIDE : le vide est déjà celui du contexte par défaut (le handle
+-- nu, qui protège les URL indexées — cf. C0-bis), et deux contextes projetés
+-- avec le même suffixe produiraient le même handle.
+UPDATE "pim"."sales_context" SET "handle_suffix" = '' WHERE "key" = 'b2b';

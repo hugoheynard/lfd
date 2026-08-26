@@ -316,7 +316,9 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       id: "ctx_b2b",
       key: "b2b",
       label: "B2B",
-      handleSuffix: "-b2b",
+      // Vide : le B2B n'est pas projeté vers Shopify, et `handleSuffix` est du
+      // vocabulaire de ce canal.
+      handleSuffix: "",
       channelKey: "b2b",
       perLocation: false,
       active: true,
