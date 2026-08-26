@@ -77,13 +77,10 @@ describe('SalesContextsPage', () => {
   });
 
   /**
-   * Et elle doit RENDRE. Dans jsdom le conteneur mesure zéro, donc le tableau
-   * est déjà en mode cartes : ce que voit ce test est ce que voit un téléphone.
+   * Il y avait ici un cas « rend la carte, pas une ligne vide ». Il passait pour
+   * RIEN : `foldAt` sort tôt quand la largeur mesurée vaut zéro — ce qui est le
+   * cas dans jsdom — donc le tableau y rend un TABLEAU, et l'assertion lisait
+   * ses cellules. Le vrai défaut était dans la feuille de style de fold, où un
+   * test le garde désormais (fold-ng 0.17.1).
    */
-  it('rend la carte, pas une ligne vide', () => {
-    const { element } = render();
-
-    expect(element.textContent).toContain('B2B');
-    expect(element.textContent).toContain('Partout');
-  });
 });
