@@ -24,17 +24,30 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
   }
 
   async of(addressId: string): Promise<DeliveryDefaults> {
+    // La société vient avec l'adresse : la signature se résout ICI, et c'est le
+    // seul endroit où les deux étages sont visibles ensemble. Les lire en deux
+    // requêtes laisserait à l'appelant le soin de les composer — donc à chaque
+    // appelant, donc un jour à un appelant qui l'oublie.
     const row = await this.prisma.address.findUnique({
       where: { id: addressId },
-      select: { deliverySpecs: true },
+      select: {
+        deliverySpecs: true,
+        company: { select: { deliverySignatureRequired: true } },
+      },
     });
+    const floor = row?.company.deliverySignatureRequired ?? false;
     const specs = deliverySpecsSchema.safeParse(row?.deliverySpecs);
     if (!specs.success) {
-      return NO_DELIVERY_DEFAULTS;
+      // Une adresse sans consignes lisibles hérite : elle n'a jamais rien
+      // décidé, et le socle de la société est ce qu'il reste de vrai.
+      return { ...NO_DELIVERY_DEFAULTS, signatureRequired: floor };
     }
     return {
       contact: specs.data.deliveryContact,
-      signatureRequired: specs.data.signatureRequired,
+      // `null` = l'adresse hérite. C'est la seule ligne de tout ce chantier qui
+      // décide vraiment : deux états auraient figé le socle au moment où
+      // l'adresse a été créée.
+      signatureRequired: specs.data.signatureRequired ?? floor,
       // Le créneau « tous les jours » est le seul qui vaille comme
       // préremplissage : un créneau PAR JOUR dépend du jour servi, que le
       // panier ne connaît qu'après le choix de la date. Le brancher demanderait

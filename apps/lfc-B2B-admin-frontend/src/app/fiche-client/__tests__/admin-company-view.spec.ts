@@ -38,7 +38,12 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     vatNumberRequired: true,
     addresses: { billing: null, deliveries: [] },
     contacts: [],
-    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+    fulfillmentPreference: {
+      method: null,
+      pickupAddressId: null,
+      deliveryAddressId: null,
+      signatureRequired: false,
+    },
     ...over,
   };
 }
@@ -94,7 +99,12 @@ describe('admin-company-view', () => {
       vatNumberRequired: false,
       addresses: { billing: null, deliveries: [] },
       contacts: [HOLDER, ...book],
-      fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+      fulfillmentPreference: {
+        method: null,
+        pickupAddressId: null,
+        deliveryAddressId: null,
+        signatureRequired: false,
+      },
     };
   }
 

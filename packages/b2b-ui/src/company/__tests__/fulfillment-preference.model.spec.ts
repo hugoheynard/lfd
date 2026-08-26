@@ -1,4 +1,8 @@
-import type { DeliveryAddressView, PickupAddressView } from '@lfd/contracts';
+import type {
+  DeliveryAddressView,
+  FulfillmentPreferenceView,
+  PickupAddressView,
+} from '@lfd/contracts';
 
 import {
   DEFAULT_DESTINATION,
@@ -91,38 +95,61 @@ describe('destination retenue', () => {
 });
 
 describe('préférence après un geste', () => {
+  /** Une société qui livre chez elle et exige la signature. */
+  const SIGNING: FulfillmentPreferenceView = {
+    method: 'delivery',
+    pickupAddressId: null,
+    deliveryAddressId: 'addr_1',
+    signatureRequired: true,
+  };
+
   it('repart du DÉFAUT quand la méthode change', () => {
     // Une adresse de livraison ne désigne pas un point de retrait ; la garder
     // « au cas où » la ferait ressurgir des mois plus tard, non revalidée.
-    expect(preferenceForMethod('pickup')).toEqual({
+    expect(preferenceForMethod('pickup', SIGNING)).toEqual({
       method: 'pickup',
       pickupAddressId: null,
       deliveryAddressId: null,
+      signatureRequired: true,
     });
   });
 
+  it('garde le socle de signature à travers un changement de méthode', () => {
+    // Ce qu'un geste sur l'acheminement remet à zéro, ce sont les DESTINATIONS.
+    // Le socle est un autre axe : le client qui repasse en livraison retrouve
+    // son exigence, pas l'adresse qu'il avait quittée.
+    expect(preferenceForMethod('pickup', SIGNING).signatureRequired).toBe(true);
+    expect(preferenceForDestination('pickup', 'pick_1', SIGNING).signatureRequired).toBe(true);
+    expect(noPreference(SIGNING).signatureRequired).toBe(true);
+  });
+
   it('ne renseigne QUE le pointeur de la méthode choisie', () => {
-    expect(preferenceForDestination('delivery', 'addr_2')).toEqual({
+    expect(preferenceForDestination('delivery', 'addr_2', SIGNING)).toEqual({
       method: 'delivery',
       pickupAddressId: null,
       deliveryAddressId: 'addr_2',
+      signatureRequired: true,
     });
-    expect(preferenceForDestination('pickup', 'pick_1')).toEqual({
+    expect(preferenceForDestination('pickup', 'pick_1', SIGNING)).toEqual({
       method: 'pickup',
       pickupAddressId: 'pick_1',
       deliveryAddressId: null,
+      signatureRequired: true,
     });
   });
 
   it('traduit « celle par défaut » en pointeur NUL', () => {
-    expect(preferenceForDestination('pickup', DEFAULT_DESTINATION).pickupAddressId).toBeNull();
+    expect(
+      preferenceForDestination('pickup', DEFAULT_DESTINATION, SIGNING).pickupAddressId,
+    ).toBeNull();
   });
 
-  it('sait ne plus rien préférer', () => {
-    expect(noPreference()).toEqual({
+  it('sait ne plus rien préférer — sans toucher au socle', () => {
+    expect(noPreference(SIGNING)).toEqual({
       method: null,
       pickupAddressId: null,
       deliveryAddressId: null,
+      signatureRequired: true,
     });
   });
 });

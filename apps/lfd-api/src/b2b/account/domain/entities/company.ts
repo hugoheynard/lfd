@@ -412,6 +412,9 @@ export class Company {
       method: preference.method,
       pickupAddressId: preference.method === "pickup" ? preference.pickupAddressId : null,
       deliveryAddressId: preference.method === "delivery" ? preference.deliveryAddressId : null,
+      // Le socle de signature ne dépend PAS de la méthode : il tient même quand
+      // le client bascule au retrait, parce qu'il redeviendra vrai au retour.
+      signatureRequired: preference.signatureRequired,
     };
   }
 

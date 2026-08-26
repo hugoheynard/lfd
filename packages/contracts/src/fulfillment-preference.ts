@@ -29,6 +29,16 @@ export const fulfillmentPreferencePayloadSchema = z.object({
   pickupAddressId: z.string().trim().min(1).nullable().default(null),
   /** Adresse de livraison préférée ; `null` = celle par défaut de la société. */
   deliveryAddressId: z.string().trim().min(1).nullable().default(null),
+  /**
+   * Exige-t-on une signature à la remise ? Le **socle** du client : chaque
+   * adresse peut le redéfinir, et chaque commande après elle.
+   *
+   * Il vit ici parce que c'est une exigence de la SOCIÉTÉ, pas du lieu — « on
+   * signe toujours » se décide une fois, pas à chaque adresse créée. Le poser
+   * par adresse, comme avant, obligeait à y penser N fois et à se souvenir de
+   * la N+1ᵉ.
+   */
+  signatureRequired: z.boolean().default(false),
 });
 export type FulfillmentPreferencePayload = z.infer<typeof fulfillmentPreferencePayloadSchema>;
 
@@ -43,6 +53,8 @@ export interface FulfillmentPreferenceView {
   readonly method: FulfillmentMethod | null;
   readonly pickupAddressId: string | null;
   readonly deliveryAddressId: string | null;
+  /** Le socle de signature de la société — une adresse peut le redéfinir. */
+  readonly signatureRequired: boolean;
 }
 
 /** Aucune préférence posée — l'état de départ de toute société. */
@@ -50,4 +62,5 @@ export const NO_FULFILLMENT_PREFERENCE: FulfillmentPreferenceView = {
   method: null,
   pickupAddressId: null,
   deliveryAddressId: null,
+  signatureRequired: false,
 };

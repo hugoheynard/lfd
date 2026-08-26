@@ -24,7 +24,12 @@ function delivery(over: Partial<DeliveryAddressView> = {}): DeliveryAddressView 
   };
 }
 
-const NO_PREFERENCE = { method: null, pickupAddressId: null, deliveryAddressId: null } as const;
+const NO_PREFERENCE = {
+  method: null,
+  pickupAddressId: null,
+  deliveryAddressId: null,
+  signatureRequired: false,
+} as const;
 
 describe('adresses proposées au panier', () => {
   it('offre TOUJOURS la saisie à la volée, carnet ou pas', () => {
@@ -59,7 +64,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
   it('ouvre sur le point de retrait préféré', () => {
     expect(
       preferredChoice(
-        { method: 'pickup', pickupAddressId: 'pick_2', deliveryAddressId: null },
+        {
+          method: 'pickup',
+          pickupAddressId: 'pick_2',
+          deliveryAddressId: null,
+          signatureRequired: false,
+        },
         [],
         true,
       ),
@@ -70,7 +80,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
     // Un pointeur `null` dit « celui du moment », pas « celui d'alors ».
     expect(
       preferredChoice(
-        { method: 'pickup', pickupAddressId: null, deliveryAddressId: null },
+        {
+          method: 'pickup',
+          pickupAddressId: null,
+          deliveryAddressId: null,
+          signatureRequired: false,
+        },
         [],
         true,
       )?.pickupId,
@@ -82,7 +97,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
 
     expect(
       preferredChoice(
-        { method: 'delivery', pickupAddressId: null, deliveryAddressId: null },
+        {
+          method: 'delivery',
+          pickupAddressId: null,
+          deliveryAddressId: null,
+          signatureRequired: false,
+        },
         deliveries,
         true,
       )?.addressId,
@@ -93,7 +113,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
     // Un id fantôme viderait le choix sans rien expliquer au client.
     expect(
       preferredChoice(
-        { method: 'delivery', pickupAddressId: null, deliveryAddressId: 'adr_disparue' },
+        {
+          method: 'delivery',
+          pickupAddressId: null,
+          deliveryAddressId: 'adr_disparue',
+          signatureRequired: false,
+        },
         [delivery()],
         true,
       )?.addressId,
@@ -103,7 +128,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
   it('bascule sur la saisie quand le carnet est VIDE', () => {
     expect(
       preferredChoice(
-        { method: 'delivery', pickupAddressId: null, deliveryAddressId: null },
+        {
+          method: 'delivery',
+          pickupAddressId: null,
+          deliveryAddressId: null,
+          signatureRequired: false,
+        },
         [],
         true,
       )?.addressId,
@@ -115,7 +145,12 @@ describe('position de départ du panier, tirée de la préférence', () => {
     // qu'aucun écran ne peut tenir.
     expect(
       preferredChoice(
-        { method: 'delivery', pickupAddressId: null, deliveryAddressId: 'adr_1' },
+        {
+          method: 'delivery',
+          pickupAddressId: null,
+          deliveryAddressId: 'adr_1',
+          signatureRequired: false,
+        },
         [delivery()],
         false,
       ),

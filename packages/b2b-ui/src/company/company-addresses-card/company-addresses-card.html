@@ -132,10 +132,10 @@
                           <span>{{ contactName(contact) }} · {{ contact.telephone }}</span>
                         </p>
                       }
-                      @if (a.specs.signatureRequired) {
+                      @if (signatureLine(a.specs.signatureRequired); as line) {
                         <p class="detail-line">
                           <fold-icon name="edit" [size]="15" />
-                          <span>Signature exigée à la remise</span>
+                          <span>{{ line }}</span>
                         </p>
                       }
                       @if (a.specs.note) {

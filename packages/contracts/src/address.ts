@@ -116,7 +116,14 @@ export const deliverySpecsSchema = z.object({
    * **préremplissage** d'une commande — pas une contrainte : une commande peut
    * s'en écarter, et l'écart se voit (cf. la provenance sur la commande).
    */
-  signatureRequired: z.boolean().default(false),
+  /**
+   * Dérogation de CETTE adresse au socle de la société. `null` = elle hérite.
+   *
+   * Trois états et non deux : « on ne signe pas ici » et « on fait comme
+   * d'habitude » sont deux réponses différentes, et les confondre fige la
+   * seconde le jour où l'habitude change.
+   */
+  signatureRequired: z.boolean().nullable().default(null),
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
 

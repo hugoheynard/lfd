@@ -72,8 +72,15 @@ export function destinationOf(preference: FulfillmentPreferenceView): string {
  * livraison ne désigne pas un point de retrait — et la garder « au cas où » la
  * ferait ressurgir des mois plus tard, non revalidée.
  */
-export function preferenceForMethod(method: FulfillmentMethod): FulfillmentPreferenceView {
-  return { method, pickupAddressId: null, deliveryAddressId: null };
+export function preferenceForMethod(
+  method: FulfillmentMethod,
+  from: FulfillmentPreferenceView,
+): FulfillmentPreferenceView {
+  // On DÉRIVE de la préférence courante au lieu d'en rebâtir une : ce que la
+  // méthode remet à zéro se lit alors en trois lignes, et tout le reste — le
+  // socle de signature aujourd'hui, le champ d'après demain — survit sans qu'on
+  // ait à y penser. Reconstruire de zéro, c'est perdre en silence.
+  return { ...from, method, pickupAddressId: null, deliveryAddressId: null };
 }
 
 /**
@@ -83,18 +90,35 @@ export function preferenceForMethod(method: FulfillmentMethod): FulfillmentPrefe
 export function preferenceForDestination(
   method: FulfillmentMethod,
   chosen: string,
+  from: FulfillmentPreferenceView,
 ): FulfillmentPreferenceView {
   const id = chosen === DEFAULT_DESTINATION ? null : chosen;
   return {
+    ...from,
     method,
     pickupAddressId: method === 'pickup' ? id : null,
     deliveryAddressId: method === 'delivery' ? id : null,
   };
 }
 
-/** Aucune préférence : le choix se refera à chaque commande. */
-export function noPreference(): FulfillmentPreferenceView {
-  return { method: null, pickupAddressId: null, deliveryAddressId: null };
+/** La préférence après un changement du **socle de signature**. */
+export function preferenceForSignature(
+  signatureRequired: boolean,
+  from: FulfillmentPreferenceView,
+): FulfillmentPreferenceView {
+  return { ...from, signatureRequired };
+}
+
+/**
+ * Aucune préférence d'ACHEMINEMENT : le choix se refera à chaque commande.
+ *
+ * Le socle de signature survit — c'est un autre axe. « Je ne veux pas de
+ * destination par défaut » ne dit rien sur « on signe toujours », et les
+ * effacer ensemble ferait disparaître une exigence sans que personne ne l'ait
+ * demandé.
+ */
+export function noPreference(from: FulfillmentPreferenceView): FulfillmentPreferenceView {
+  return { ...from, method: null, pickupAddressId: null, deliveryAddressId: null };
 }
 
 /** « Labo Bastille (défaut) » — le défaut se dit, il ne se devine pas. */

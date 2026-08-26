@@ -6,6 +6,15 @@
  * métier (créneaux, contact sur place, point par défaut) reste chez
  * l'appelant, qui compose.
  *
+ * La **note** en fait partie, et ce n'est pas évident : de l'extérieur on
+ * l'appelle « note pour les livreurs », mais ce qu'elle décrit est le LIEU —
+ * un digicode, un étage, où déposer quand personne n'ouvre. Elle reste vraie
+ * quel que soit celui qui vient, et elle suit l'adresse quand on la réutilise.
+ * Ce qui relève vraiment de la livraison — créneaux, contact sur place, point
+ * par défaut — reste chez l'appelant. Elle n'est pas dans
+ * {@link DEFAULT_POSTAL_FIELDS} pour autant : une adresse de facturation ne se
+ * livre pas.
+ *
  * Champs absents = chaîne vide, jamais `undefined` : un formulaire n'a pas
  * d'état « pas encore de champ », il a un champ vide. Les coordonnées sont
  * elles aussi des chaînes — ce type sert de brouillon de saisie autant que de
@@ -23,11 +32,17 @@ export interface PostalAddress {
   /** Point GPS, pour les lieux qu'une adresse ne suffit pas à trouver. */
   readonly latitude: string;
   readonly longitude: string;
+  /**
+   * Consignes libres sur le lieu — ce qu'une ligne d'adresse ne peut pas dire.
+   * Distincte de {@link line2}, qui est le complément qu'on écrit sur une
+   * enveloppe ; celle-ci ne s'écrit nulle part, elle se lit sur place.
+   */
+  readonly note: string;
 }
 
 /** Les champs qu'un formulaire d'adresse peut porter, tous facultatifs. */
 export type PostalField =
-  'label' | 'line1' | 'line2' | 'postalCode' | 'city' | 'country' | 'coordinates';
+  'label' | 'line1' | 'line2' | 'postalCode' | 'city' | 'country' | 'note' | 'coordinates';
 
 /** Les six champs postaux — ce que montre un formulaire qui ne demande rien. */
 export const DEFAULT_POSTAL_FIELDS: readonly PostalField[] = [
@@ -39,8 +54,12 @@ export const DEFAULT_POSTAL_FIELDS: readonly PostalField[] = [
   'country',
 ];
 
-/** Tous les champs, coordonnées comprises. */
-export const ALL_POSTAL_FIELDS: readonly PostalField[] = [...DEFAULT_POSTAL_FIELDS, 'coordinates'];
+/** Tous les champs — note et coordonnées comprises. */
+export const ALL_POSTAL_FIELDS: readonly PostalField[] = [
+  ...DEFAULT_POSTAL_FIELDS,
+  'note',
+  'coordinates',
+];
 
 export const EMPTY_POSTAL_ADDRESS: PostalAddress = {
   label: '',
@@ -51,6 +70,7 @@ export const EMPTY_POSTAL_ADDRESS: PostalAddress = {
   country: '',
   latitude: '',
   longitude: '',
+  note: '',
 };
 
 /**

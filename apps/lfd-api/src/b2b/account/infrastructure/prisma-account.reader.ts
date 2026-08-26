@@ -67,6 +67,7 @@ export class PrismaAccountReader extends AccountReader {
                 preferredFulfillmentMethod: true,
                 preferredPickupAddressId: true,
                 preferredDeliveryAddressId: true,
+                deliverySignatureRequired: true,
                 kbisFileName: true,
                 kbisUploadedAt: true,
                 kbisCertifiedAt: true,
@@ -114,6 +115,7 @@ export class PrismaAccountReader extends AccountReader {
         method: company.preferredFulfillmentMethod,
         pickupAddressId: company.preferredPickupAddressId,
         deliveryAddressId: company.preferredDeliveryAddressId,
+        signatureRequired: company.deliverySignatureRequired,
       },
       role,
       // Le contact principal EST le détenteur : son rôle n'est pas choisi, il

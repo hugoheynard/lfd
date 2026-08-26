@@ -66,6 +66,12 @@ export class CompanyAddressesCard {
   readonly deliveries = input.required<readonly DeliveryAddressView[]>();
   /** Le gestionnaire peut éditer / ajouter / supprimer. */
   readonly canManage = input(false);
+
+  /**
+   * Le socle de signature de la société — ce dont une adresse hérite quand elle
+   * ne déroge pas.
+   */
+  readonly signatureFloor = input(false);
   /**
    * Afficher le bloc **livraison**. `false` quand le service de livraison n'existe
    * pas encore (pièce `hidden` en config) — la carte ne montre alors que la
@@ -167,5 +173,30 @@ export class CompanyAddressesCard {
   protected confirmRemove(address: DeliveryAddressView): void {
     this.confirmingId.set(null);
     this.remove.emit(address);
+  }
+
+  /**
+   * Ce qu'une adresse dit de la signature, une fois l'héritage résolu — ou
+   * `null` quand il n'y a rien à signaler.
+   *
+   * Trois cas se rendent, un se tait :
+   * - elle exige, par héritage → on nomme la source, sinon on croit que
+   *   quelqu'un l'a décidé pour CETTE adresse ;
+   * - elle exige, de son propre chef → la ligne d'avant ;
+   * - elle DÉROGE quand la société exige → c'est l'exception, et c'est
+   *   justement ce qu'un dossier client doit montrer sans qu'on aille le
+   *   chercher ;
+   * - elle n'exige rien et n'hérite rien → silence. Écrire « non exigée » sur
+   *   chaque adresse noierait le seul cas qui compte.
+   */
+  protected signatureLine(own: boolean | null): string | null {
+    const floor = this.signatureFloor();
+    if (own === null) {
+      return floor ? 'Signature exigée à la remise · préférence société' : null;
+    }
+    if (own) {
+      return 'Signature exigée à la remise';
+    }
+    return floor ? 'Signature NON exigée ici — la société l’exige ailleurs' : null;
   }
 }

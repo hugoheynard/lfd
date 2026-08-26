@@ -225,6 +225,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
         deliveryAddressId: row.preferredDeliveryAddressId,
+        signatureRequired: row.deliverySignatureRequired,
       },
     });
   }
@@ -258,6 +259,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         preferredFulfillmentMethod: state.fulfillmentPreference.method,
         preferredPickupAddressId: state.fulfillmentPreference.pickupAddressId,
         preferredDeliveryAddressId: state.fulfillmentPreference.deliveryAddressId,
+        deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
       },
     });
   }

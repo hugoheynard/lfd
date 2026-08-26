@@ -48,6 +48,7 @@ const COMPANY_SELECT = {
   preferredFulfillmentMethod: true,
   preferredPickupAddressId: true,
   preferredDeliveryAddressId: true,
+  deliverySignatureRequired: true,
   // Une seule demande ouverte suffit à lever le drapeau ; `take: 1` évite
   // de charger l'historique juste pour un booléen.
   supportRequests: {
@@ -177,6 +178,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
         deliveryAddressId: row.preferredDeliveryAddressId,
+        signatureRequired: row.deliverySignatureRequired,
       },
     };
   }
