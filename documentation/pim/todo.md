@@ -62,7 +62,8 @@
 ### Domaine & données
 
 - [x] **Langage ubiquitaire + commandes/faits + agrégats** (clôt D6) → [`00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md)
-- [ ] Tables restantes du socle : `collection`, `product_collection`, `nutrition_declaration` (PK=FK)
+- [ ] Tables restantes du socle : `collection`, `product_collection` — `nutrition_declaration` est
+      livrée (PK=FK)
 - [x] **Value object `Sku`** + générateur de SKU par défaut (port `SkuAvailability`), 35 tests
       — [ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord)
 - [x] **Catégories d'erreurs** `DomainError` / `BusinessError` / `TechnicalError`
@@ -75,12 +76,11 @@
 - [x] **Verbes catalogue** : familles (créer / renommer / archiver) et produits
       (créer avec déclinaison par défaut / renommer / archiver)
 - [x] **Back-office Angular** : écran Familles + tableau Produits (signals, zoneless, zéro `FormsModule`)
-- [ ] 🔴 **Retirer le `@Public()` du contrôleur catalogue** dès qu'Auth0 est configuré — l'API
-      catalogue est actuellement **ouverte** en local pour que le back-office fonctionne
-- [ ] Tests des handlers (dépôts en double) — seul le domaine pur est couvert aujourd'hui
-- [ ] `packages/shared-types` — le front redéclare aujourd'hui `Category` / `Product`
-- [ ] Verbes manquants : `AddVariant`, `ChangeVariantSku`, `MoveCategory` (le contrôle de cycle
-      est écrit et testable mais pas encore exposé), `PublishProduct` (gardé par les allergènes)
+- [ ] Le front redéclare `Category` / `Product` dans `pim/data/models.ts`, alors que
+      `@lfd/pim-contracts` porte déjà les vues de fil. Le contrat existe ; c'est l'écran qui ne
+      s'en sert pas encore pour ses propres modèles
+- [ ] Verbes manquants : `AddVariant`, `ChangeVariantSku`. `MoveCategory` et `PublishProduct` sont
+      exposés
 - [ ] Format du SKU (motif + longueurs + `normalize`) dans `packages/shared-types` — partage
       **à la compilation**, pas un registre runtime
 - [ ] Event store append-only : **différé** (ADR-11 révisé). Déclencheur = premier besoin d'as-of réel
@@ -91,17 +91,18 @@
 - [x] **Fiche réglementaire** : table `nutrition_declaration` (PK=FK, optionnelle), validation dans
       le domaine (code inconnu, chevauchement, valeurs négatives), endpoint `/reference/allergens`
       (`scope=eu|world`), formulaire de création complet côté front
-- [ ] 🟠 **Français résiduel dans le code backend**, contre la décision de langue (P1-P4) :
-      `SalesChannelKey = "emporter" | "surPlace" | "b2b"` et les libellés de champ passés aux
-      value-objects (`localizedText("nom", …)`). Le gate `code-language` ne les voit pas — il
-      blanchit les littéraux de chaîne avant de compter, donc une clé d'union et un libellé
-      d'erreur lui échappent par construction. Relevé le 2026-08-25
+- [ ] 🟠 **Français résiduel dans le code backend**, contre la décision de langue (P1-P4) : les
+      libellés de champ passés aux value-objects (`localizedText("nom", …)`). Le gate
+      `code-language` ne les voit pas — il blanchit les littéraux de chaîne avant de compter, donc
+      un libellé d'erreur lui échappe par construction. Relevé le 2026-08-25 ;
+      `SalesChannelKey = "emporter" | "surPlace" | "b2b"` a disparu avec la traduction des clés
 - [x] **Nommer les quatorze faits manquants** du journal du référentiel — fait le 2026-08-25.
       `lint:journal-tracked` affiche `27/27`, la dette déclarée est vide. Chaque geste a son fait :
       `product_category.{created,renamed,moved,archived,reordered,channels_changed}`,
       `product.{created,archived,restored}`,
-      `location.{created,updated,deleted,table_qr_generated,table_qr_removed}`
-- [ ] Éditer la fiche d'un produit **existant** (aujourd'hui : seulement à la création)
+      `point_of_sale.{created,updated,deleted,table_qr_generated,table_qr_removed}` — nommés
+      `location.*` à l'époque, traduits en base par la fusion des emplacements dans les points de
+      vente
 - [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)
 - [ ] Porter dans le repo les docs de cadrage restantes : pricing, disponibilité, `05-allergenes`
@@ -110,7 +111,6 @@
 - [ ] **Envoi de fichiers** (R2/S3) — aujourd'hui on saisit une URL. Décision d'infra à prendre :
       fournisseur, nommage, dérivés de taille, ADR à écrire
 - [ ] `product_certification` (labels : bio, IGP, AOP…) — `certifications` fait foi, pas de booléen
-- [ ] Éditer l'éditorial d'un produit **existant** (aujourd'hui : seulement à la création)
 
 ### Intégrations (adaptateurs `ChannelAdapter`)
 
@@ -132,13 +132,12 @@
   - [x] **C2** — `collectionAddProductsV2` (`@lfd/shopify-admin`) + `ShopifyMembershipService` (résout tag→GID, **rapporte** l'absence, ne crée pas) _(commits `f363dfb`/`d8e9d6f`)_
   - [x] **C3** — push (live) range le produit dans sa collection `tva-*` ; échec non-bloquant ; **vérifié live** (baguette-artisane → tva-5-5, productCount 1) _(+5 tests)_
   - [x] **C0-a — étendre** _(2026-08-24)_ : tables `sales_context` (registre, 3 lignes) + `category_context_tva` (jointure), reprise des taux déjà réglés. Colonnes conservées.
-  - [x] **C0-b — basculer** _(2026-08-24)_ : agrégat, dépôt, lecteur, projections Shopify/B2B et les deux écrans lisent la jointure et itèrent le registre ; `GET /reference/sales-contexts` ; `ACTIVE_SALES_CONTEXTS` supprimée. Les 3 colonnes restent ÉCRITES (`legacyTvaColumns`) pour le binaire précédent.
-  - [ ] **C0-c — resserrer** _(déploiement suivant)_ : `DROP` de `emporter_tva_id` / `sur_place_tva_id` / `b2b_tva_id` + suppression de `legacyTvaColumns`. **Ne pas livrer avec C0-b** (ops/pipelines.md : jamais un DROP de ce que le code en ligne lit encore).
-  - [ ] **C0-d** — 📐 **tranché doc-first** dans [`c0d-matrice-de-canaux.md`](./c0d-matrice-de-canaux.md) (2026-08-26) : `b2b` n'est plus nommé nulle part — le REGISTRE dit si un contexte a besoin d'un lieu (`sales_context.per_location`) ; la matrice devient un **ensemble de paires en TABLE** (pas un `jsonb` reformé), ce qui fait tomber `category_location_ref` et rend la clé étrangère directe ; le contexte `b2b` devient **racine, ineffaçable et semé au boot** (motif `ensureBootstrapAdmin`) avec un écran Contextes de vente qui n'existe pas encore, et un prérequis `d-0` apparaît — un point de vente doit DÉCLARER les contextes qu'il offre (`location_context`), sans quoi `click_collect`/`eat_in` restent en dur. ⚠️ La promesse « ajouter un contexte = une ligne, zéro code » est FAUSSE aujourd'hui : `CHANNEL_KEYS` écarte silencieusement toute 4ᵉ ligne de `sales_context`. Cousin restant, et plus étroit qu'annoncé : `channelPreset` est **déjà** indexé par emplacement (une boutique = une ligne du référentiel). Ce qui reste en dur, ce sont les **modes** d'un emplacement (`BoutiqueChannels { emporter, surPlace }`) et le drapeau `b2b`. Conséquence concrète : deux contextes qui partagent un `channel_key` ne se cochent pas séparément. La refonte = `boutiques: Record<emplacementId, Record<contextKey, boolean>>`, et `sales_context.channel_key` disparaît avec.
-  - [x] ~~**C0 — Refonte data-driven du modèle contextes (PRÉ-REQUIS à C4/C5, à faire AVANT)**~~ ([`projection-sales-context.md` §addendum](./projection-sales-context.md)) : `sales_context` (table registre) + `category_context_tva` (jointure) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId` + `ACTIVE_SALES_CONTEXTS` const ; lectures en listes `[{contextKey, tag}]` ; migration des données emporter/sur-place existantes. Règle : **ajouter un contexte = une ligne, zéro code** ; une fois testé, le modèle est **gelé**. Cousin : idem pour `channelPreset` (boutiques `b1`/`b2` fixes).
+  - [x] **C0-b — basculer** _(2026-08-24)_ : agrégat, dépôt, lecteur, projections Shopify/B2B et les deux écrans lisent la jointure et itèrent le registre ; `GET /sales-contexts/active` (alors `/reference/sales-contexts`) ; `ACTIVE_SALES_CONTEXTS` supprimée. Les 3 colonnes restent ÉCRITES (`legacyTvaColumns`) pour le binaire précédent.
   - [ ] **C0-bis — Handle publié = write-once (SEO)** : figer le handle au 1er push (binding/snapshot) ; **bloquer** le changement de `slug.fr` d'un produit publié (ou flux renommage+301) — sinon la réconciliation par handle orpheline l'ancien produit + casse le référencement ; réconciliation distingue **renommage** de **retrait+création** via `productId` ; `handleSuffix` d'un contexte figé **avant** son 1er push.
-  - [ ] **C4** _(après C0)_ — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
-  - [ ] **C5** _(après C0)_ — contexte `b2b` (TVA 20 %) = **une ligne de données** (grâce à C0)
+  - [ ] **C4** — projection Shopify **multi-contexte** : handles suffixés (`handleSuffix`) et
+        réconciliation par contexte. Le contexte « sur place » est actif et vendu depuis longtemps ;
+        ce qui manque, c'est que Shopify en fasse un second produit. Aucun canal ne lit
+        `handleSuffix` à ce jour, et l'unicité des suffixes projetés devra vivre là
 - [ ] **Override local au produit — disponibilité + TVA** ([`override-produit.md`](./override-produit.md), 🟡 moitié faite) :
   - [x] **O0 (TVA)** _(2026-08-24)_ — `product_context_tva` + `effectiveTva` (résolveur pur, produit → famille → rien) appelé par les DEUX projections ; le port rend le taux **par produit**
   - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.vat_changed` ; carte vide = retour à l'héritage
@@ -149,7 +148,6 @@
   - [x] Vestige `Product.channelsOverride` : il vaut enfin ce que le serveur dit, au lieu de `null` en dur
   - [x] **La matrice est EFFECTIVE** _(2026-08-24)_ — B2B : fiche écartée du snapshot (`canal_ferme`), donc supprimée par l'ingestion au push suivant. Shopify : poussée en **brouillon** (hors vitrine, rien de détruit) ; la réconciliation pose la même question, sinon elle annoncerait une dérive éternelle
   - [ ] À trancher : le retrait B2B doit-il aussi retirer le _binding_ de canal, ou rester une conséquence de la matrice ? (aujourd'hui : conséquence — le binding reste, la fiche revient si on rouvre le canal)
-- [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
 - [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle
