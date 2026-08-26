@@ -57,6 +57,7 @@ async function openShop(
   const response = await staff()
     .post(SHOPS)
     .send({
+      kind: "shop",
       label: "Village",
       contexts: ["takeaway"],
       baseUrl: "https://order.example",
@@ -84,6 +85,7 @@ describe("le nom d'un point de vente est unique", () => {
     const response = await staff()
       .post(SHOPS)
       .send({
+        kind: "shop",
         label: "Village",
         contexts: ["takeaway"],
         baseUrl: "",
@@ -107,6 +109,7 @@ describe("le nom d'un point de vente est unique", () => {
     const response = await staff()
       .post(SHOPS)
       .send({
+        kind: "shop",
         label: "  village ",
         contexts: ["takeaway"],
         baseUrl: "",

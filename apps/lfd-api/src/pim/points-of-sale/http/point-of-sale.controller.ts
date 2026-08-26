@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
-  openShopPayloadSchema,
+  openPointOfSalePayloadSchema,
   updatePointOfSalePayloadSchema,
-  type OpenShopPayload,
+  type OpenPointOfSalePayload,
   type PointOfSaleView,
   type UpdatePointOfSalePayload,
 } from "@lfd/pim-contracts";
@@ -13,7 +13,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CloseShopCommand } from "../application/close-shop.js";
 import { GenerateTableQrCommand } from "../application/generate-table-qr.js";
 import { ListPointsOfSaleQuery } from "../application/list-points-of-sale.js";
-import { OpenShopCommand } from "../application/open-shop.js";
+import { OpenPointOfSaleCommand } from "../application/open-point-of-sale.js";
 import { RemoveTableQrCommand } from "../application/remove-table-qr.js";
 import { UpdatePointOfSaleCommand } from "../application/update-point-of-sale.js";
 
@@ -42,13 +42,15 @@ export class PointOfSaleController {
     );
   }
 
-  /** Ouvre une BOUTIQUE. Une plateforme est semée au boot, pas créée ici. */
+  /** Ouvre un point de vente — le **genre** est dans la charge, pas dans la route. */
   @Post()
-  async openShop(
-    @Body(new ZodBody(openShopPayloadSchema))
-    body: OpenShopPayload,
+  async openPointOfSale(
+    @Body(new ZodBody(openPointOfSalePayloadSchema))
+    body: OpenPointOfSalePayload,
   ) {
-    const id = await this.commands.execute<OpenShopCommand, string>(new OpenShopCommand(body));
+    const id = await this.commands.execute<OpenPointOfSaleCommand, string>(
+      new OpenPointOfSaleCommand(body),
+    );
     return { id };
   }
 

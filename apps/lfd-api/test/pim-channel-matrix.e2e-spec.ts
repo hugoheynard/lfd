@@ -41,7 +41,7 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 async function aShop(label: string): Promise<string> {
   const response = await staff()
     .post(SHOPS)
-    .send({ label, contexts: ["takeaway", "eatIn"], baseUrl: "", tableCount: 0 });
+    .send({ kind: "shop", label, contexts: ["takeaway", "eatIn"], baseUrl: "", tableCount: 0 });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
 }

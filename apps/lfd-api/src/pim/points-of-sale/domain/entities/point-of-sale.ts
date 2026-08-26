@@ -17,12 +17,15 @@ export interface PointOfSaleSnapshot {
   readonly tables: readonly TableState[];
 }
 
-/** Ce qu'il faut pour ouvrir une BOUTIQUE. Le reste, l'agrégat le décide. */
-export interface NewShopInput {
+/** Ce qu'il faut pour ouvrir un point de vente. Le reste, l'agrégat le décide. */
+export interface NewPointOfSaleInput {
   readonly id: string;
+  readonly kind: PointOfSaleKind;
   readonly label: string;
+  /** Ignorée pour une plateforme — le genre l'interdit. */
   readonly baseUrl: string;
   readonly contexts: readonly string[];
+  /** Ignoré pour une plateforme — une grille de tables est un meuble. */
   readonly tableCount: number;
 }
 
@@ -76,15 +79,25 @@ export class PointOfSale {
     this.tablesChangedValue = tablesChanged;
   }
 
-  /** Ouvre une BOUTIQUE. Une plateforme ne s'ouvre pas : elle est semée au boot. */
-  static openShop(input: NewShopInput): PointOfSale {
+  /**
+   * Ouvre un point de vente, boutique ou plateforme.
+   *
+   * L'URL et la grille de tables ne sont pas REFUSÉES pour une plateforme, elles
+   * sont **ignorées** : ici on construit, on ne corrige pas une saisie. Un
+   * formulaire qui laisse un champ rempli en changeant de genre n'a rien fait de
+   * mal, et lever à la création obligerait l'écran à nettoyer avant d'envoyer.
+   * Les mêmes valeurs, posées APRÈS coup par `setBaseUrl` / `setTableCount`,
+   * lèvent — parce que là, c'est un geste.
+   */
+  static open(input: NewPointOfSaleInput): PointOfSale {
+    const isPlatform = input.kind === "platform";
     return new PointOfSale(
       input.id,
-      "shop",
+      input.kind,
       requireLabel(input.label),
-      input.baseUrl.trim(),
+      isPlatform ? null : input.baseUrl.trim(),
       normalizeContexts(input.contexts),
-      syncTables([], input.tableCount),
+      isPlatform ? [] : syncTables([], input.tableCount),
       true,
     );
   }

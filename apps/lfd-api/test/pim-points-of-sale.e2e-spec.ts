@@ -58,6 +58,7 @@ async function openShop(
   const response = await staff()
     .post(POINTS_OF_SALE)
     .send({
+      kind: "shop",
       label: "Village",
       contexts: ["takeaway"],
       baseUrl: "https://order.example",
@@ -161,5 +162,83 @@ describe("l'offre borne ce qu'on peut vendre", () => {
     const response = await sell([{ pointOfSaleId: "pos_b2b", context: "takeaway" }]);
 
     expect(response.status).toBe(409);
+  });
+});
+
+describe("l'offre ne se retire pas sous ce qui se vend", () => {
+  async function sellFromShop(shop: string, context: string): Promise<void> {
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post("/pim/catalogue/categories")
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    await staff()
+      .put(`/pim/catalogue/categories/${category}/channels`)
+      .send([{ pointOfSaleId: shop, context }])
+      .expect(200);
+  }
+
+  /**
+   * Le défaut que ce cas ferme, et il était vicieux : le retrait passait, la
+   * ligne de matrice survivait, la projection fabriquait une fiche pour un lieu
+   * qui ne sert plus — et l'écran ne rendait même plus la case, donc plus
+   * personne ne pouvait la décocher. Le point de vente devenait insupprimable,
+   * avec un message qui parlait de familles qu'on ne voyait nulle part.
+   */
+  it("REFUSE de cesser d'offrir un contexte encore vendu ici", async () => {
+    const shop = await openShop({ label: "Village", contexts: ["takeaway", "eatIn"] });
+    await sellFromShop(shop, "eatIn");
+
+    const response = await staff()
+      .put(`${POINTS_OF_SALE}/${shop}`)
+      .send({ contexts: ["takeaway"] });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "points_of_sale.point_of_sale.context_still_sold",
+    );
+  });
+
+  it("n'écrit rien du tout quand il refuse", async () => {
+    const shop = await openShop({ label: "Village", contexts: ["takeaway", "eatIn"] });
+    await sellFromShop(shop, "eatIn");
+
+    await staff()
+      .put(`${POINTS_OF_SALE}/${shop}`)
+      .send({ label: "Village haut", contexts: ["takeaway"] })
+      .expect(409);
+
+    const row = (await listPointsOfSale()).find((point) => point.id === shop);
+    expect(row?.label).toBe("Village");
+    expect([...(row?.contexts ?? [])].sort()).toEqual(["eatIn", "takeaway"]);
+  });
+
+  it("accepte une fois décoché", async () => {
+    const shop = await openShop({ label: "Village", contexts: ["takeaway", "eatIn"] });
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post("/pim/catalogue/categories")
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    await staff()
+      .put(`/pim/catalogue/categories/${category}/channels`)
+      .send([{ pointOfSaleId: shop, context: "eatIn" }])
+      .expect(200);
+    await staff().put(`/pim/catalogue/categories/${category}/channels`).send([]).expect(200);
+
+    await staff()
+      .put(`${POINTS_OF_SALE}/${shop}`)
+      .send({ contexts: ["takeaway"] })
+      .expect(200);
+  });
+
+  /** En AJOUTER un n'a jamais posé de problème : seuls les retraits sont examinés. */
+  it("laisse ajouter un contexte sans rien demander", async () => {
+    const shop = await openShop({ label: "Village", contexts: ["takeaway"] });
+
+    await staff()
+      .put(`${POINTS_OF_SALE}/${shop}`)
+      .send({ contexts: ["takeaway", "eatIn"] })
+      .expect(200);
   });
 });

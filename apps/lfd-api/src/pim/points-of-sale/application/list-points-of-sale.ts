@@ -3,11 +3,14 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { PointOfSaleSnapshot } from "../domain/entities/point-of-sale.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
 import { PointOfSaleUsageReader } from "../domain/ports/point-of-sale-usage.reader.js";
+import { isRootPointOfSale } from "../domain/value-objects/bootstrap-point-of-sale.js";
 
 /** Un point de vente tel que la liste le rend : son état, plus ce que l'écran doit savoir. */
 export type PointOfSaleListItem = PointOfSaleSnapshot & {
   /** Combien de familles y vendent. Zéro ⇒ supprimable. */
   readonly usedByCategories: number;
+  /** La racine ne se supprime pas — l'écran doit le DIRE, pas l'apprendre au clic. */
+  readonly root: boolean;
 };
 
 /** Lecture des points de vente — dispatchée par le `QueryBus`. Sans paramètre. */
@@ -40,7 +43,11 @@ export class ListPointsOfSaleHandler implements IQueryHandler<
     ]);
     return points.map((point) => {
       const snapshot = point.snapshot();
-      return { ...snapshot, usedByCategories: counts.get(snapshot.id) ?? 0 };
+      return {
+        ...snapshot,
+        usedByCategories: counts.get(snapshot.id) ?? 0,
+        root: isRootPointOfSale(snapshot.id),
+      };
     });
   }
 }

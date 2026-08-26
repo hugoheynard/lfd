@@ -4,9 +4,10 @@ import {
 } from "../../errors/points-of-sale-errors.js";
 import { PointOfSale } from "../point-of-sale.js";
 
-function openShop(over: Partial<Parameters<typeof PointOfSale.openShop>[0]> = {}): PointOfSale {
-  return PointOfSale.openShop({
+function openShop(over: Partial<Parameters<typeof PointOfSale.open>[0]> = {}): PointOfSale {
+  return PointOfSale.open({
     id: "pos_1",
+    kind: "shop",
     label: "Village",
     baseUrl: " https://order.example ",
     contexts: ["takeaway", "eatIn"],
@@ -76,7 +77,25 @@ describe("l'agrégat PointOfSale", () => {
     expect(openShop({ tableCount: 1 }).attachQr(9, "tok")).toBe(false);
   });
 
-  describe("le genre interdit l'équipement d'une plateforme", () => {
+  /**
+   * À l'ouverture, l'équipement d'une plateforme est **ignoré**, pas refusé :
+   * on construit, on ne corrige pas une saisie. Un formulaire qui garde un
+   * champ rempli en changeant de genre n'a rien fait de mal.
+   */
+  it("ouvre une plateforme sans URL ni tables, même si on en envoie", () => {
+    const platform = PointOfSale.open({
+      id: "pos_2",
+      kind: "platform",
+      label: "Marché",
+      baseUrl: "https://…",
+      contexts: ["b2b"],
+      tableCount: 12,
+    });
+
+    expect(platform.snapshot()).toMatchObject({ baseUrl: null, tables: [] });
+  });
+
+  describe("le genre interdit l'équipement d'une plateforme APRÈS coup", () => {
     it("refuse une URL de click & collect", () => {
       expect(() => platform().setBaseUrl("https://…")).toThrow(PlatformHasNoEquipmentError);
     });

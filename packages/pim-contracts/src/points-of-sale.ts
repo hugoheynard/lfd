@@ -18,14 +18,28 @@ const tableCountSchema = z.number().int().min(0).max(MAX_TABLES);
 /** `shop` = boutique physique ; `platform` = plateforme de commande (le B2B). */
 export type PointOfSaleKindView = "shop" | "platform";
 
-export const openShopPayloadSchema = z.object({
+export const pointOfSaleKindSchema = z.enum(["shop", "platform"]);
+
+/**
+ * Ouvrir un point de vente.
+ *
+ * Le **genre** est dans la charge et non dans la route : c'est une propriété de
+ * ce qu'on ouvre, pas deux gestes différents. Il est **figé** ensuite — il
+ * décide de la forme (URL de click & collect, grille de tables), et le
+ * basculer laisserait un équipement sans objet.
+ *
+ * `baseUrl` et `tableCount` sont ignorés pour une plateforme : le domaine les
+ * refuse, la base aussi (`point_of_sale_shop_has_base_url`).
+ */
+export const openPointOfSalePayloadSchema = z.object({
+  kind: pointOfSaleKindSchema,
   label: z.string().min(1),
   baseUrl: z.string(),
   /** Les clés de contexte offertes — le registre décide de ce qui existe. */
   contexts: z.array(z.string()),
   tableCount: tableCountSchema,
 });
-export type OpenShopPayload = z.infer<typeof openShopPayloadSchema>;
+export type OpenPointOfSalePayload = z.infer<typeof openPointOfSalePayloadSchema>;
 
 export const updatePointOfSalePayloadSchema = z.object({
   label: z.string().min(1).optional(),
@@ -60,6 +74,15 @@ export interface PointOfSaleView {
    * sait qu'il échouera n'a pas à être offert.
    */
   readonly usedByCategories: number;
+  /**
+   * Est-ce la **racine** — la plateforme sans laquelle la boutique
+   * professionnelle se vide en silence ?
+   *
+   * Elle voyage avec la vue pour que l'écran n'ait pas à connaître son
+   * identifiant : coder `pos_b2b` dans un composant remettrait dans le front le
+   * nom en dur qu'on vient de sortir du back.
+   */
+  readonly root: boolean;
 }
 
 /** Réponse de génération de QR : le token neuf minté par le serveur. */

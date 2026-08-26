@@ -6,7 +6,7 @@ import { StartupReport } from "../../platform/startup/startup-report.service.js"
 import { CloseShopHandler } from "./application/close-shop.js";
 import { GenerateTableQrHandler } from "./application/generate-table-qr.js";
 import { ListPointsOfSaleHandler } from "./application/list-points-of-sale.js";
-import { OpenShopHandler } from "./application/open-shop.js";
+import { OpenPointOfSaleHandler } from "./application/open-point-of-sale.js";
 import { RemoveTableQrHandler } from "./application/remove-table-qr.js";
 import { UpdatePointOfSaleHandler } from "./application/update-point-of-sale.js";
 import { PointOfSaleReader } from "./domain/ports/point-of-sale.reader.js";
@@ -32,7 +32,7 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
   imports: [PimDatabaseModule],
   controllers: [PointOfSaleController],
   providers: [
-    OpenShopHandler,
+    OpenPointOfSaleHandler,
     UpdatePointOfSaleHandler,
     CloseShopHandler,
     GenerateTableQrHandler,

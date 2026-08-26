@@ -5,6 +5,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { PointOfSale } from "../domain/entities/point-of-sale.js";
 import { changesBetween } from "../../journal/changes.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
+import { PointOfSaleUsageReader } from "../domain/ports/point-of-sale-usage.reader.js";
+import { ContextStillSoldHereError } from "../domain/errors/points-of-sale-errors.js";
 import { requirePointOfSale } from "./point-of-sale-support.js";
 
 export interface UpdatePointOfSalePatch {
@@ -33,9 +35,40 @@ export class UpdatePointOfSaleCommand {
 export class UpdatePointOfSaleHandler implements ICommandHandler<UpdatePointOfSaleCommand, void> {
   constructor(
     private readonly points: PointOfSaleRepository,
+    private readonly usage: PointOfSaleUsageReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
+
+  /**
+   * **On ne cesse pas d'offrir un contexte qu'on y vend encore.**
+   *
+   * Aucune clé étrangère ne tient cette règle : l'offre et la matrice sont deux
+   * tables sans lien direct. Le refus est donc une lecture — et il faut le
+   * dire, parce que sans lui la ligne de matrice survivait à l'offre, la
+   * projection fabriquait une fiche pour un lieu qui ne sert pas, et l'écran ne
+   * rendait plus la case qui aurait permis de la décocher.
+   *
+   * Seuls les contextes RETIRÉS sont examinés : en ajouter un n'a jamais posé
+   * de problème.
+   */
+  private async refuseWithdrawingWhatIsSold(
+    id: string,
+    before: readonly string[],
+    after: readonly string[],
+  ): Promise<void> {
+    const withdrawn = before.filter((key) => !after.includes(key));
+    if (withdrawn.length === 0) {
+      return;
+    }
+    const sold = await this.usage.countSoldByContext(id);
+    for (const key of withdrawn) {
+      const sellers = sold.get(key) ?? 0;
+      if (sellers > 0) {
+        throw new ContextStillSoldHereError(key, sellers);
+      }
+    }
+  }
 
   async execute(command: UpdatePointOfSaleCommand): Promise<void> {
     const { id, patch } = command;
@@ -49,6 +82,7 @@ export class UpdatePointOfSaleHandler implements ICommandHandler<UpdatePointOfSa
       pointOfSale.setBaseUrl(patch.baseUrl);
     }
     if (patch.contexts !== undefined) {
+      await this.refuseWithdrawingWhatIsSold(id, pointOfSale.snapshot().contexts, patch.contexts);
       pointOfSale.setOfferedContexts(patch.contexts);
     }
     if (patch.tableCount !== undefined) {

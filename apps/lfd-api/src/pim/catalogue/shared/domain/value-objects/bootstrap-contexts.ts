@@ -12,6 +12,26 @@ import type { SalesContext } from "./sales-context.js";
 export const ROOT_CONTEXT_KEY = "b2b";
 
 /**
+ * Le libellé de semis, et il ne dit PAS la même chose que la clé.
+ *
+ * `b2b` nomme une audience ; les deux autres contextes nomment une manière de
+ * vendre (« à emporter », « sur place »). Le libellé rétablit l'alignement : ce
+ * qui distingue ce contexte, ce n'est pas à QUI on vend, c'est qu'on commande
+ * **en ligne**, sur facture, sans consommation sur place — et c'est ça qui lui
+ * vaut son propre traitement de TVA.
+ *
+ * La CLÉ, elle, reste `b2b` : trois tables la citent par clé étrangère, le
+ * projecteur de la plateforme la cite, et `pos_b2b` la reprend. La renommer est
+ * une migration de données ; le libellé, lui, se change à l'écran sans rien
+ * livrer. C'est exactement la séparation que le registre existe pour offrir.
+ *
+ * ⚠️ Sur une base déjà semée, ce libellé ne s'applique PAS : `ensureRootContext`
+ * ne repousse rien (`update: {}`), parce que la racine est ineffaçable et non
+ * immuable. Renommer l'existant se fait à l'écran, en un geste.
+ */
+const ROOT_CONTEXT_LABEL = "Vente en ligne pro";
+
+/**
  * Le contexte racine, tel qu'il est semé s'il manque.
  *
  * ## Pourquoi une racine
@@ -36,7 +56,7 @@ export const ROOT_CONTEXT_KEY = "b2b";
 export function bootstrapRootContext(): Omit<SalesContext, "id"> {
   return {
     key: ROOT_CONTEXT_KEY,
-    label: "B2B",
+    label: ROOT_CONTEXT_LABEL,
     // VIDE, et pas « -b2b » : `handleSuffix` est du vocabulaire Shopify — le
     // suffixe d'URL d'un produit — et le B2B n'y est pas projeté. La plateforme
     // professionnelle a son propre projecteur, qui ne fabrique aucun handle.

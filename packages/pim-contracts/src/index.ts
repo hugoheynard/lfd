@@ -50,11 +50,12 @@ export type {
 
 export {
   MAX_TABLES,
-  openShopPayloadSchema,
+  openPointOfSalePayloadSchema,
+  pointOfSaleKindSchema,
   updatePointOfSalePayloadSchema,
 } from "./points-of-sale.js";
 export type {
-  OpenShopPayload,
+  OpenPointOfSalePayload,
   PointOfSaleKindView,
   PointOfSaleView,
   TableQrResponse,

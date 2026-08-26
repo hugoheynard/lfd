@@ -35,4 +35,30 @@ export class PrismaPointOfSaleUsageReader extends PointOfSaleUsageReader {
     }
     return counts;
   }
+
+  /**
+   * Familles ET dérogations de fiches, additionnées par contexte.
+   *
+   * Les deux comptent : une fiche qui déroge vend pour son propre compte, et
+   * retirer l'offre sous elle produirait la même fiche fantôme.
+   */
+  async countSoldByContext(pointOfSaleId: string): Promise<ReadonlyMap<string, number>> {
+    const [byCategory, byProduct] = await Promise.all([
+      this.prisma.categoryChannel.groupBy({
+        by: ["contextKey"],
+        where: { pointOfSaleId },
+        _count: { _all: true },
+      }),
+      this.prisma.productChannel.groupBy({
+        by: ["contextKey"],
+        where: { pointOfSaleId },
+        _count: { _all: true },
+      }),
+    ]);
+    const counts = new Map<string, number>();
+    for (const row of [...byCategory, ...byProduct]) {
+      counts.set(row.contextKey, (counts.get(row.contextKey) ?? 0) + row._count._all);
+    }
+    return counts;
+  }
 }

@@ -65,7 +65,27 @@ export class PointOfSaleInUseError extends BusinessError {
     super(
       "points_of_sale.point_of_sale.in_use",
       `Point de vente encore vendeur : ${describeHolders(categories)} le citent dans leurs ` +
-        `canaux. Décochez-le avant de le supprimer (${id}).`,
+        `canaux — familles ou dérogations de fiches. Décochez-le avant de le supprimer (${id}).`,
+    );
+  }
+}
+
+/**
+ * On ne cesse pas d'offrir un contexte qu'on y vend encore.
+ *
+ * Sans ce refus, la ligne de matrice survivait à l'offre : la famille
+ * continuait de vendre « sur place » depuis une boutique qui ne sert plus, la
+ * projection fabriquait une fiche pour un lieu qui ne l'honore pas — et l'écran
+ * ne rendait même plus la case, donc plus personne ne pouvait la décocher. Le
+ * point de vente devenait insupprimable, avec un message qui parlait de
+ * familles qu'on ne voyait nulle part.
+ */
+export class ContextStillSoldHereError extends BusinessError {
+  constructor(contextKey: string, sellers: number) {
+    super(
+      "points_of_sale.point_of_sale.context_still_sold",
+      `« ${contextKey} » est encore vendu ici par ${String(sellers)} famille(s) ou fiche(s). ` +
+        `Décochez-le de leurs canaux avant de cesser de l'offrir.`,
     );
   }
 }

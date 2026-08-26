@@ -21,4 +21,15 @@ export abstract class PointOfSaleUsageReader {
    * arriver après le geste.
    */
   abstract countByPointOfSale(): Promise<ReadonlyMap<string, number>>;
+
+  /**
+   * Ce qui se vend **ici**, contexte par contexte — familles et dérogations de
+   * fiches confondues.
+   *
+   * Sert un refus, pas un affichage : on ne cesse pas d'offrir un contexte
+   * qu'on y vend encore. Aucune clé étrangère ne peut le tenir — l'offre et la
+   * matrice sont deux tables sans lien direct — donc c'est une lecture, et elle
+   * vit dans la même transaction que l'écriture qu'elle garde.
+   */
+  abstract countSoldByContext(pointOfSaleId: string): Promise<ReadonlyMap<string, number>>;
 }
