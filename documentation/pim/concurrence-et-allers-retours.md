@@ -31,17 +31,20 @@ vraie même quand deux requêtes arrivent en même temps.**
 
 ## 2. Où l'on tient cette règle, et où on ne la tient pas
 
-| Invariant                              | Tenu par                            | Verdict |
-| -------------------------------------- | ----------------------------------- | ------- |
-| Référence produit / déclinaison unique | `sku_registry` (clé primaire)       | ✅      |
-| Un seul taux de TVA par valeur         | `tva_rate.percent @unique`          | ✅      |
-| Slug de famille unique                 | une **lecture** (`requireFreeSlug`) | ❌      |
-| Rang unique dans une fratrie           | **rien**                            | ❌      |
-| Nom d'emplacement unique               | une **lecture** (`requireFreeName`) | ❌      |
+| Invariant                                              | Tenu par                                | Verdict au constat |
+| ------------------------------------------------------ | --------------------------------------- | ------------------ |
+| Référence produit / déclinaison unique                 | `sku_registry` (clé primaire)           | ✅                 |
+| Un seul taux de TVA par valeur                         | `tva_rate.percent @unique`              | ✅                 |
+| Slug de famille unique                                 | une **lecture** (`requireFreeSlug`)     | ❌ → ✅ (§6)       |
+| Rang unique dans une fratrie                           | **rien**                                | ❌ → ✅ (§6)       |
+| Nom d'emplacement unique                               | une **lecture** (`requireFreeName`)     | ❌ → ✅ (§6)       |
+| Emplacement non supprimé sous une famille qui le coche | une **lecture** (`LocationUsageReader`) | ⚠️ (§6, ouvert)    |
 
-Les trois lignes rouges ont le même profil : une erreur métier existe
-(`CategorySlugTakenError`, `LocationNameTakenError`), un écran l'affiche, un test
-la couvre — et **rien en base ne l'empêche**.
+Les trois lignes rouges avaient le même profil : une erreur métier existait
+(`CategorySlugTakenError`, `LocationNameTakenError`), un écran l'affichait, un
+test la couvrait — et **rien en base ne l'empêchait**. Elles ont été fermées le
+2026-08-26 par des contraintes (§6). La ligne orange, elle, reste ouverte : la
+référence vit dans un `jsonb`, donc aucune contrainte ne peut la porter.
 
 ## 3. Pourquoi une lecture ne suffit pas
 
@@ -131,11 +134,11 @@ création et le renommage d'un emplacement.
 
 ## 6. Ce qui a été fait (2026-08-26)
 
-| Chantier          | Migration                                                                                                                   | Code                                                                                  | Gain                                                             |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Slug de famille   | index unique d'**expression** `((slug->>'fr'))` — la colonne est un `Json` localisé, un `@unique` ordinaire ne s'y pose pas | traduire `23505` → `CategorySlugTakenError` dans le dépôt ; retirer `requireFreeSlug` | course fermée, −1 aller-retour à la création **et** au renommage |
-| Rang de fratrie   | `UNIQUE (parent_id, position) DEFERRABLE INITIALLY DEFERRED`                                                                | rien (ou une reprise sur violation, si l'on veut créer sans échouer)                  | plus de rangs en double                                          |
-| Nom d'emplacement | `UNIQUE` sur `emplacement.name` — **insensible à la casse** (`lower(name)`), comme le dépôt le fait déjà en lecture         | traduire `23505` → `LocationNameTakenError` ; retirer `requireFreeName`               | course fermée, −1 aller-retour                                   |
+| Chantier          | Migration                                                                                                                    | Code                                                                                  | Gain                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Slug de famille   | index unique d'**expression** `((slug->>'fr'))` — la colonne est un `Json` localisé, un `@unique` ordinaire ne s'y pose pas  | traduire `23505` → `CategorySlugTakenError` dans le dépôt ; retirer `requireFreeSlug` | course fermée, −1 aller-retour à la création **et** au renommage |
+| Rang de fratrie   | index unique **partiel** `(parent_id, position) NULLS NOT DISTINCT WHERE is_archived = false` — donc **pas** différable (§4) | `saveAll` écrit en deux passes pour permuter sans collision transitoire               | plus de rangs en double                                          |
+| Nom d'emplacement | `UNIQUE` sur `emplacement.name` — **insensible à la casse** (`lower(name)`), comme le dépôt le fait déjà en lecture          | traduire `23505` → `LocationNameTakenError` ; retirer `requireFreeName`               | course fermée, −1 aller-retour                                   |
 
 **Avant d'appliquer en production, vérifier qu'aucun doublon n'existe déjà** :
 la migration échouerait — ce qui est le bon comportement. Les trois requêtes de
@@ -173,6 +176,33 @@ refus et non une reprise automatique : il faut deux personnes créant une famill
 sous le même parent à quelques millisecondes d'intervalle. Le jour où ça arrive
 vraiment, une reprise bornée (recalculer le rang, réessayer une fois) est le
 correctif — pas avant.
+
+### La suppression d'un emplacement, elle, n'a aucun filet
+
+`RemoveLocation` compte les familles qui cochent l'emplacement, puis supprime.
+C'est le motif du §3 — vérifier-puis-écrire — et cette fois **aucune contrainte
+ne peut le rattraper** : la grille de canaux d'une famille vit dans une colonne
+`jsonb`, et Postgres ne pose pas de clé étrangère sur une valeur enfouie dans du
+JSON.
+
+La fenêtre s'ouvre dans les deux sens, et les deux côtés se contrôlent par une
+lecture :
+
+| Course                                                          | Résultat                                     |
+| --------------------------------------------------------------- | -------------------------------------------- |
+| A supprime l'emplacement pendant que B le coche sur une famille | une grille pointe un point de vente disparu  |
+| B coche l'emplacement pendant que A vérifie qu'il est libre     | idem — le compte de A était vrai une seconde |
+
+Ce qui la referme vraiment : **sortir la référence du `jsonb`** vers une table
+de liaison `(category_id, location_id, …)`, où une clé étrangère `RESTRICT`
+ferait exactement ce qu'elle fait pour les taux de TVA. C'est la même direction
+que « toute dimension scalable est pilotée par la donnée », et ça dépasse de
+loin le geste de suppression.
+
+En attendant, ce qui limite les dégâts n'est pas une garantie, c'est une
+fréquence : deux gestes d'administration rares, faits par une poignée de
+personnes. **Ce n'est pas une raison de l'oublier** — c'est la raison pour
+laquelle ce paragraphe existe.
 
 ## 7. Déjà corrigé pendant ce tour
 
