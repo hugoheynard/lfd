@@ -129,3 +129,29 @@ export function legacyChannels(channels: SalesChannels): LegacySalesChannels {
   }
   return { boutiques, b2b };
 }
+
+/**
+ * Déplie la forme héritée en paires. ⚠️ TRANSITION, symétrique de
+ * {@link legacyChannels} : elle ne sert qu'à COMPARER les deux écritures le
+ * temps que la colonne existe, et part avec elle (d-3).
+ */
+export function pairsOfLegacy(legacy: LegacySalesChannels): SalesChannels {
+  const sold: SoldChannel[] = [];
+  for (const [locationId, modes] of Object.entries(legacy.boutiques)) {
+    if (modes.emporter) {
+      sold.push({ locationId, context: "emporter" });
+    }
+    if (modes.surPlace) {
+      sold.push({ locationId, context: "surPlace" });
+    }
+  }
+  if (legacy.b2b) {
+    sold.push({ locationId: null, context: "b2b" });
+  }
+  return normalizeSalesChannels(sold);
+}
+
+/** Les paires d'un ensemble, en clés comparables — l'écart se lit à l'œil. */
+export function channelKeys(channels: SalesChannels): string[] {
+  return normalizeSalesChannels(channels).map((channel) => keyOf(channel));
+}

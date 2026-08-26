@@ -1,0 +1,88 @@
+name: ops_channel_parity
+
+# Compare, EN PRODUCTION, les deux écritures de la matrice de canaux : les
+# colonnes `jsonb` héritées (encore écrites, plus lues) et les tables
+# `category_channel` / `product_channel` (lues depuis la tranche d-2).
+#
+# C'est le feu vert de la tranche d-3 de
+# `documentation/pim/c0d-matrice-de-canaux.md`, et il n'est pas négociable :
+# supprimer les colonnes sur un écart figerait la mauvaise vérité, et plus
+# personne ne saurait laquelle était la bonne.
+#
+# Une fenêtre rend l'écart possible : la migration remplit les tables depuis le
+# `jsonb`, puis le container redémarre. Entre les deux, l'ancien binaire tourne
+# encore et n'écrit que la colonne.
+#
+# Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, secret
+# GitHub donc en écriture seule. Même raison que `ops_catalog_parity`.
+#
+# ⚠️ TEMPORAIRE. Ce workflow meurt avec les colonnes, à la tranche d-3.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comparer les colonnes héritées aux tables
+        env:
+          API_BASE_URL: ${{ vars.LFD_API_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+        run: |
+          set -uo pipefail
+          report=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                   "${API_BASE_URL}/pim/admin/channel-parity" \
+                   -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
+            echo "::error::Sonde injoignable — la porte machine-à-machine a refusé."
+            exit 1
+          }
+
+          REPORT="${report}" python3 <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os
+
+          report = json.loads(os.environ["REPORT"])
+
+          print("## Parité de la matrice de canaux\n")
+          print(f"- Familles examinées : **{report['categoriesChecked']}**")
+          print(f"- Fiches examinées : **{report['productsChecked']}**\n")
+
+          if report["identical"]:
+              print("✅ **Aucun écart.** Les deux écritures disent la même chose.")
+              print("\nLa tranche d-3 peut partir : supprimer les colonnes ne perd rien.")
+              raise SystemExit(0)
+
+          print("🔴 **Des écarts subsistent.** NE PAS lancer d-3 avant de les avoir expliqués.\n")
+          print("Chaque clé s'écrit `lieu contexte` ; un lieu vide = contexte sans lieu.\n")
+
+          def table(title, drifts):
+              if not drifts:
+                  return
+              print(f"### {title}\n")
+              print("| Objet | Colonne seule | Table seule |")
+              print("| --- | --- | --- |")
+              for drift in drifts:
+                  only_col = ", ".join(f"`{key}`" for key in drift["onlyInColumn"]) or "—"
+                  only_tab = ", ".join(f"`{key}`" for key in drift["onlyInTable"]) or "—"
+                  print(f"| `{drift['id']}` | {only_col} | {only_tab} |")
+              print()
+
+          table("Familles", report["categories"])
+          table("Fiches", report["products"])
+          PY
+
+          # Le job ROUGIT sur un écart, à la différence de `ops_catalog_parity` :
+          # là-bas les écarts étaient le résultat attendu qu'on venait lire ; ici
+          # un écart est une anomalie, et c'est ce feu qui garde d-3.
+          REPORT="${report}" python3 -c "
+          import json, os, sys
+          sys.exit(0 if json.loads(os.environ['REPORT'])['identical'] else 1)
+          " || {
+            echo "::error::Écart entre les colonnes héritées et les tables — d-3 est bloquée."
+            exit 1
+          }
+        env:
+          REPORT: ${{ env.REPORT }}

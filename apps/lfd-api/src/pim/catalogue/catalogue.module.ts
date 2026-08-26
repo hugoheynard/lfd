@@ -44,6 +44,8 @@ import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { SalesContextController } from "./shared/http/sales-context.controller.js";
+import { OpsChannelParityController } from "./shared/http/ops-channel-parity.controller.js";
+import { ChannelParityReader } from "./shared/infrastructure/channel-parity.reader.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
@@ -75,6 +77,7 @@ import {
     ProductController,
     ReferenceController,
     SalesContextController,
+    OpsChannelParityController,
   ],
   providers: [
     // Familles (CQRS) — un handler par cas.
@@ -115,6 +118,7 @@ import {
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
+    ChannelParityReader,
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },

@@ -312,6 +312,27 @@ Discipline `étendre / basculer / resserrer` non négociable
 | **d-2 basculer**  | —                                                                                                                                                                                                | tout lit les tables ; `channel_key`, `SalesChannelKey`, `CHANNEL_KEYS` et `category_location_ref` tombent                                 |
 | **d-3 resserrer** | `DROP` de `channel_preset`, `channel_override`, `channel_key`, `click_collect`, `eat_in`, `category_location_ref` **+ traduction des clés** `emporter`→`takeaway`, `surPlace`→`eatIn` (cascadée) | suppression du double-écriture                                                                                                            |
 
+**d-3 ne part qu'après un `ops_channel_parity` vert.** Voir ci-dessous.
+
+### Le feu vert de d-3 : la sonde de parité
+
+Tant que les colonnes et les tables coexistent, **l'écart entre elles est la
+seule chose qui rende d-3 dangereuse** — supprimer les colonnes sur un écart
+fige la mauvaise vérité, et plus personne ne sait laquelle était la bonne.
+
+Une fenêtre les rend possibles, et elle est concrète : la migration remplit les
+tables depuis le `jsonb`, puis le container redémarre. Entre les deux, l'ancien
+binaire tourne encore et n'écrit que la colonne. Une famille modifiée là aurait
+ses canaux vides pour le nouveau code, sans qu'aucune erreur ne le dise.
+
+D'où `GET /pim/admin/channel-parity`, derrière le jeton d'exploitation, et le
+workflow `ops_channel_parity` qui la lit. Contrairement à `ops_catalog_parity`,
+**il rougit sur un écart** : là-bas les écarts étaient le résultat attendu qu'on
+venait lire, ici c'est une anomalie, et ce feu garde la tranche suivante.
+
+Elle ne compare que des clés `lieu contexte` — aucun nom, aucun prix, aucune
+donnée client n'en sort. Elle meurt avec les colonnes.
+
 `per_location` arrive en **d-0** bien qu'il remplace `channel_key` : les deux
 colonnes cohabitent le temps de la bascule, et d-0 a besoin de la distinction
 pour savoir quels contextes `location_context` doit porter. Poser la nouvelle
