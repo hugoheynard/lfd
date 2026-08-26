@@ -1,5 +1,8 @@
-// Header figé, corps scrollable, pied collé — cf. le pattern des panels.
-// Les styles des champs postaux vivent dans le fragment partagé `lfd-address-fields`.
+// L'hôte EST la colonne du panneau, et c'est porteur : le composant projeté est
+// l'enfant direct du cadre `fold-panel-host`, donc c'est lui qui doit empiler
+// en-tête / corps / pied. `fold-panel-body` se dit « élément flex de la colonne
+// du panneau » — sans cette règle, la colonne n'existe pas, le corps ne grandit
+// plus et le défilement disparaît.
 :host {
   display: flex;
   flex-direction: column;
@@ -7,67 +10,11 @@
   height: 100%;
 }
 
-.body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-  padding: var(--fold-space-lg);
-}
-
-// Les deux plages d'ouverture : un nom à gauche, deux heures à droite.
-.opening {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-.opening > legend {
-  padding: 0;
-  margin-bottom: var(--fold-space-xs);
-}
-
-.field-label {
-  font-size: var(--fold-text-sm);
-  font-weight: 600;
-  color: var(--fold-color-text);
-}
-
-.opening-hint,
-.opening-issue {
-  margin: 0;
-  font-size: var(--fold-text-sm);
-}
+// Le reste de ce fichier a suivi le balisage qui l'a quitté : la grille des
+// heures est partie dans `lfd-hours-form`, le corps et le pied dans les
+// `fold-panel-*`. Ne reste que la phrase projetée sous les plages.
 .opening-hint {
+  margin: 0;
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
-}
-.opening-hint em {
-  font-style: normal;
-  font-weight: 600;
-}
-.opening-issue {
-  color: var(--fold-color-alert);
-}
-
-.slot-row {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-}
-.slot-name {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--fold-color-text);
-}
-.dash {
-  color: var(--fold-color-text-muted);
-}
-
-// `fold-time` porte son propre habillage : ici on ne fait que la largeur.
-.time {
-  flex: none;
-  width: 9rem;
 }
