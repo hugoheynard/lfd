@@ -86,6 +86,13 @@ grille de tables, tous absurdes pour une plateforme ; l'écran des emplacements
 devrait la **cacher**, donc porter une exception ; et la supprimer par mégarde
 couperait le B2B en silence. On ferait mentir une table pour économiser une clé.
 
+> ⚠️ **Ce raisonnement était juste sur ce qu'il examinait, et faux dans sa
+> conclusion.** Fourrer la plateforme dans la table des emplacements TELLE
+> QU'ELLE EST était bien à écarter ; il n'en découlait pas qu'il fallait les
+> séparer. La bonne sortie était de créer l'entité dont `emplacement` est un CAS
+> — cf. [`point-de-vente.md`](./point-de-vente.md), qui retire `per_location` et
+> le `location_id` nullable posés ici.
+
 **B — `b2b` survit tel quel, à côté de la matrice.** Si le drapeau reste un
 booléen nommé, le registre doit continuer à dire quels contextes le chevauchent
 — donc `channel_key` survit, donc `CHANNEL_KEYS` survit. Ce n'est pas un
