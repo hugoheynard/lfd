@@ -34,13 +34,16 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
    */
   async execute(command: CreateVatRateCommand): Promise<string> {
     const { payload } = command;
+
     const rate = VatRate.open({
       id: this.ids.next(),
       name: payload.name,
       description: payload.description ?? "",
       percent: payload.percent,
     });
+
     await ensureRateFree(this.rates, rate.percent, null);
+
     await this.uow.run(async () => {
       // Pas de portée : un taux qui naît ne vise encore aucune famille.
       const ticket = await this.journal.trace({
