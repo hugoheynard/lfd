@@ -42,14 +42,14 @@ describe('construire une altération depuis la saisie', () => {
 describe('la phrase qui dit ce que ça fait', () => {
   it('nomme le sens, pas un signe', () => {
     expect(alterationSentence({ direction: 'decrease', mode: 'percent', bp: 2000 })).toBe(
-      'Vous réduisez le prix de 20 %.',
+      'Le prix baisse de 20 %.',
     );
     // `\s` et pas une espace littérale : `Intl` sépare le montant du symbole
     // par une espace fine INSÉCABLE (U+202F). C'est la bonne typographie
     // française, et une espace ordinaire dans le test ferait échouer sur un
     // caractère que personne ne voit à la relecture.
     expect(alterationSentence({ direction: 'increase', mode: 'amount', cents: 2000 })).toMatch(
-      /^Vous augmentez le prix de 20,00\s€\.$/u,
+      /^Le prix augmente de 20,00\s€\.$/u,
     );
   });
 

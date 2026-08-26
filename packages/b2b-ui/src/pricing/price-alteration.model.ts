@@ -66,8 +66,11 @@ export function alterationSentence(alteration: PriceAlteration | null): string {
   if (alteration === null) {
     return 'Le prix reste inchangé.';
   }
-  const verb = alteration.direction === 'increase' ? 'augmentez' : 'réduisez';
-  return `Vous ${verb} le prix de ${formatAlteration(alteration)}.`;
+  // Le prix est le SUJET, pas le lecteur : ce fragment sert le client qui règle
+  // sa propre remise ET le commercial qui règle celle d'un autre. « Vous
+  // réduisez » était juste dans un cas et faux dans l'autre.
+  const verb = alteration.direction === 'increase' ? 'augmente' : 'baisse';
+  return `Le prix ${verb} de ${formatAlteration(alteration)}.`;
 }
 
 /**
