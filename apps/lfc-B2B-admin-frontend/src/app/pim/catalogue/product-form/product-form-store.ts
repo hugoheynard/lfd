@@ -14,7 +14,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { NO_CHANNELS, formatPercent, pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import type { SalesChannels } from '../../data/models';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
-import { SalesContextStore } from '../sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
   AllergenScope,

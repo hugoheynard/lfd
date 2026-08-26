@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
 import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
-import { effectiveVat } from "../domain/value-objects/sales-context.js";
+import { effectiveVat } from "../domain/value-objects/context-vat.js";
+
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 
-import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
 import {
   CatalogueReader,
   type CategoryVatPercents,

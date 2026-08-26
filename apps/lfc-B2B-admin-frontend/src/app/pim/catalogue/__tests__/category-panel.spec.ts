@@ -12,7 +12,7 @@ import { CategoryStore } from '../category-store';
 import {
   TEST_SALES_CONTEXTS,
   provideTestSalesContexts,
-} from '../sales-contexts/sales-context-store.testing';
+} from '../../sales-contexts/sales-context-store.testing';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 
 function category(overrides: Partial<Category> = {}): Category {

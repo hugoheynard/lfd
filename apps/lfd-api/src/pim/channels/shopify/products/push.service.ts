@@ -11,8 +11,8 @@ import { TaxCollectionsPlan } from "../collections/tax-collections.plan.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
 import { fingerprint, projectProduct } from "./projection.js";
-import { SalesContextRegistry } from "../../../catalogue/shared/domain/ports/sales-context.registry.js";
-import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/sales-context.js";
+import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
+import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
 import { ShopifySnapshotService } from "./snapshot.service.js";
 import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
 

@@ -6,7 +6,7 @@ import { requireCategory } from "../../category/application/category-support.js"
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
-import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";

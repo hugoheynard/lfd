@@ -25,7 +25,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { SalesContextStore } from '../../catalogue/sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { PointOfSaleStore } from '../point-of-sale-store';
 
 /** Charge passée à `open()` : le point de vente à régler. Absente = ouverture. */

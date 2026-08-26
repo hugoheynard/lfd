@@ -6,7 +6,7 @@ import { changesBetween } from "../../../journal/changes.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
-import { SalesContextRegistry } from "../../shared/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { requireCategory } from "./category-support.js";
 

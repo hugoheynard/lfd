@@ -1,7 +1,7 @@
 import type { ProductSnapshot } from "../../../product/domain/entities/product.js";
 import { Test } from "@nestjs/testing";
 
-import { VatRateRepository } from "../../../../commerce/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
 import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";

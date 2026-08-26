@@ -15,11 +15,11 @@ import {
   normalizeSalesChannels,
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
+import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import {
   contextIsSold,
   type ContextVat,
-  type SalesContext,
-} from "../../../shared/domain/value-objects/sales-context.js";
+} from "../../../shared/domain/value-objects/context-vat.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";

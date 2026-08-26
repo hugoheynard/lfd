@@ -1,6 +1,6 @@
-import { Logger, Module, type OnModuleInit } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 
-import { CommerceModule } from "../commerce/commerce.module.js";
+import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
@@ -28,8 +28,7 @@ import { UpdateProductEditorialHandler } from "./product/application/update-prod
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
-import { SalesContextRegistry } from "./shared/domain/ports/sales-context.registry.js";
-import { StartupReport } from "../../platform/startup/startup-report.service.js";
+import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
@@ -43,14 +42,7 @@ import { MediaController } from "./product/http/media.controller.js";
 import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
-import { SalesContextController } from "./shared/http/sales-context.controller.js";
-import { SalesContextRepository } from "./shared/domain/ports/sales-context.repository.js";
-import { PrismaSalesContextRepository } from "./shared/infrastructure/prisma-sales-context.repository.js";
-import { CreateSalesContextHandler } from "./shared/application/create-sales-context.js";
-import { UpdateSalesContextHandler } from "./shared/application/update-sales-context.js";
-import { RemoveSalesContextHandler } from "./shared/application/remove-sales-context.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
-import { PrismaSalesContextRegistry } from "./shared/infrastructure/prisma-sales-context.registry.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaPointOfSaleOfferReader } from "./shared/infrastructure/prisma-point-of-sale-offer.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
@@ -72,14 +64,13 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [PimDatabaseModule, CommerceModule],
+  imports: [PimDatabaseModule, VatRatesModule, SalesContextsModule],
   controllers: [
     CategoryController,
     MediaController,
     MediaSweepController,
     ProductController,
     ReferenceController,
-    SalesContextController,
   ],
   providers: [
     // Familles (CQRS) — un handler par cas.
@@ -119,56 +110,16 @@ import {
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
-    { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
-    { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
-    // Le registre s'écrit — réservé à l'admin par `catalog:write`.
-    CreateSalesContextHandler,
-    UpdateSalesContextHandler,
-    RemoveSalesContextHandler,
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).
-  // Le registre sort AVEC le lecteur : les canaux itèrent les contextes, et
-  // Shopify doit savoir lesquels il projette.
-  exports: [CatalogueReader, SalesContextRegistry],
+  //
+  // Le registre des contextes n'y est plus : il a son propre module. Il sortait
+  // d'ici parce qu'il y était rangé, pas parce qu'il en dépendait — et le
+  // commentaire qui l'expliquait décrivait le symptôme, pas la raison.
+  exports: [CatalogueReader],
 })
-export class CatalogueModule implements OnModuleInit {
-  private readonly logger = new Logger(CatalogueModule.name);
-
-  constructor(
-    private readonly contexts: SalesContextRegistry,
-    private readonly startup: StartupReport,
-  ) {}
-
-  /**
-   * Garantit le contexte de vente **racine** au démarrage.
-   *
-   * Même contrat, et même raison, que l'admin racine : sans le contexte B2B,
-   * aucune TVA professionnelle ne se règle et la boutique pro se vide — **sans
-   * qu'une seule erreur soit levée**. Une panne silencieuse mérite une garde au
-   * boot ; une panne bruyante peut attendre qu'on la lise.
-   */
-  async onModuleInit(): Promise<void> {
-    try {
-      await this.contexts.ensureRootContext();
-    } catch (error) {
-      // On ne bloque PAS le boot : le prochain démarrage réessaiera, et un
-      // souci transitoire de base ne doit pas tuer l'API. Mais on ne le garde
-      // pas pour nous : sans ce rapport, la cause la plus fréquente — une
-      // migration non appliquée — se manifesterait par un catalogue B2B vide,
-      // ce qui n'oriente vers rien.
-      this.logger.error("ensureRootContext a échoué", error);
-      this.startup.report({
-        capability: "Contexte de vente racine (B2B)",
-        setting: "—",
-        consequence:
-          "le contexte B2B n'a pas pu être semé — cause la plus fréquente : une migration " +
-          "non appliquée. Symptôme visible : la boutique professionnelle se vide",
-        severity: "blocking",
-      });
-    }
-  }
-}
+export class CatalogueModule {}

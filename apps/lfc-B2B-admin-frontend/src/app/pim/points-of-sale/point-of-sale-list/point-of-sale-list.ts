@@ -17,7 +17,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import type { PointOfSaleView, TableView } from '@lfd/pim-contracts';
 import { slugify } from '../../data/sku';
-import { SalesContextStore } from '../../catalogue/sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { PointOfSaleStore } from '../point-of-sale-store';
 import {
   PointOfSalePanel,

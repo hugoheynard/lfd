@@ -1,4 +1,4 @@
-import { ROOT_CONTEXT_KEY } from "../../../catalogue/shared/domain/value-objects/bootstrap-contexts.js";
+import { ROOT_CONTEXT_KEY } from "../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
 
 /** L'identifiant du point de vente **racine** — la plateforme professionnelle. */
 export const ROOT_POINT_OF_SALE_ID = "pos_b2b";

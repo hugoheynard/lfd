@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { PointOfSaleView } from '@lfd/pim-contracts';
 
-import { provideTestSalesContexts } from '../sales-contexts/sales-context-store.testing';
+import { provideTestSalesContexts } from '../../sales-contexts/sales-context-store.testing';
 import type { SalesChannels } from '../../data/models';
 import { ChannelMatrix } from './channel-matrix';
 

@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 
 import type { ShopifyProductSnapshot } from "@lfd/shopify-admin";
-import { SalesContextRegistry } from "../../../../catalogue/shared/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";

@@ -1,11 +1,11 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { VatRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
-import { VatRate } from "../../../../commerce/domain/entities/vat-rate.js";
+import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
+import { VatRate } from "../../../../vat-rates/domain/entities/vat-rate.js";
 import {
   VatRateRepository,
   type VatRateUsage,
-} from "../../../../commerce/domain/ports/vat-rate.repository.js";
+} from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
@@ -38,8 +38,8 @@ import {
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
 import { SetCategoryVatCommand, SetCategoryVatHandler } from "../set-category-vat.js";
-import { SalesContextRegistry } from "../../../shared/domain/ports/sales-context.registry.js";
-import type { SalesContext } from "../../../shared/domain/value-objects/sales-context.js";
+import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
+import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 
 /**
  * Le faux dépôt garde des **agrégats**, pas des lignes : c'est ce que le port

@@ -12,7 +12,7 @@ import { ShopifyMembershipService } from "../membership.service.js";
 import { ShopifyCollectionsService } from "../../collections/collections.service.js";
 import { TaxCollectionsPlan } from "../../collections/tax-collections.plan.js";
 import { ShopifyPushService } from "../push.service.js";
-import { SalesContextRegistry } from "../../../../catalogue/shared/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { RecordSnapshotInput } from "../snapshot.service.js";
 import { ShopifySnapshotService } from "../snapshot.service.js";
 

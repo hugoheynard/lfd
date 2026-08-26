@@ -7,8 +7,8 @@ import type {
 } from "@lfd/pim-contracts";
 
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
-import { SalesContextRegistry } from "../../../catalogue/shared/domain/ports/sales-context.registry.js";
-import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/sales-context.js";
+import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
+import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyInspectionService } from "./inspection.service.js";
 import { fingerprint, projectProduct, type ShopifyProductPayload } from "./projection.js";

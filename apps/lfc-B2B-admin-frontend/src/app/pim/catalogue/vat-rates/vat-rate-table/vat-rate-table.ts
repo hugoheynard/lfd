@@ -14,7 +14,7 @@ import { PermissionsStore } from '../../../../auth/permissions.store';
 import { formatPercent } from '../../../data/channels';
 import { type VatRate } from '../../catalogue-api';
 import { VatRateStore } from '../vat-store';
-import { SalesContextStore } from '../../sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../../sales-contexts/sales-context-store';
 import {
   VatRateFormPanel,
   type VatRatePanelData,

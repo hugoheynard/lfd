@@ -40,7 +40,7 @@ export const pimRoutes: Routes = [
         path: 'contextes',
         title: 'Contextes de vente — LFC B2B admin',
         loadComponent: () =>
-          import('./catalogue/sales-contexts/sales-contexts-page/sales-contexts-page').then(
+          import('./sales-contexts/sales-contexts-page/sales-contexts-page').then(
             (m) => m.SalesContextsPage,
           ),
       },

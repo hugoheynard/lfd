@@ -25,7 +25,7 @@ const stubAdminVerifier = {
 const ROUTES = [
   "/pim/catalogue/products",
   "/pim/catalogue/categories",
-  "/pim/commerce/vat-rates",
+  "/pim/vat-rates",
   "/pim/points-of-sale",
   "/pim/channels/b2b/products",
 ] as const;

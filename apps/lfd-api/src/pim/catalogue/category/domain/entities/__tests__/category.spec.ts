@@ -6,7 +6,7 @@ import {
   CategoryUnknownContextError,
 } from "../../errors/category-errors.js";
 import type { SalesChannels } from "../../../../shared/domain/value-objects/sales-channels.js";
-import type { SalesContext } from "../../../../shared/domain/value-objects/sales-context.js";
+import type { SalesContext } from "../../../../../sales-contexts/domain/value-objects/sales-context.js";
 
 /**
  * Le registre, tel que la base le sert. L'agrégat ne l'invente pas : il ne peut

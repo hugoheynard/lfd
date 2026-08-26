@@ -22,7 +22,7 @@ export type PimSubjectType =
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
  * HTTP : `vat_rate.rate_changed` se relit dans six mois,
- * `PUT /commerce/vat-rates/x` non.
+ * `PUT /vat-rates/x` non.
  *
  * ## Plus de trou : toute écriture du référentiel nomme son fait
  *

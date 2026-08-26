@@ -10,7 +10,7 @@ import {
 
 import type { SalesChannels } from '../../data/models';
 import { sellsAt, withCell } from '../../data/channels';
-import { SalesContextStore } from '../sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 
 /**
  * L'atome de la décision « sur quels canaux se vend ce produit ».

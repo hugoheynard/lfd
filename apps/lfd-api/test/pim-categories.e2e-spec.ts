@@ -19,7 +19,7 @@ const stubAdminVerifier = {
 
 const CATEGORIES = "/pim/catalogue/categories";
 const SHOPS = "/pim/points-of-sale";
-const RATES = "/pim/commerce/vat-rates";
+const RATES = "/pim/vat-rates";
 
 let ctx: E2eContext;
 

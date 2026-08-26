@@ -6,8 +6,9 @@ import {
   type ShopifyStoreSettings,
 } from "@lfd/shopify-admin";
 
+import { SalesContextsModule } from "../../sales-contexts/sales-contexts.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
-import { CommerceModule } from "../../commerce/commerce.module.js";
+import { VatRatesModule } from "../../vat-rates/vat-rates.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { ShopifyCollectionsController } from "./collections/collections.controller.js";
 import { ShopifyCollectionsService } from "./collections/collections.service.js";
@@ -38,10 +39,10 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol("SHOPIFY_CREDENTIALS_SOURCE");
  * exporté (ADR-13). Supprimer ce module ne casserait rien en amont.
  */
 @Module({
-  // `CommerceModule` pour son `VatRateRepository` : les collections de taxe
+  // `VatRatesModule` pour son `VatRateRepository` : les collections de taxe
   // se dérivent des taux. Un PORT exporté, pas une table — la règle d'ADR-13
   // tient, et la dépendance va bien du canal vers le centre.
-  imports: [PimDatabaseModule, CatalogueModule, CommerceModule],
+  imports: [PimDatabaseModule, CatalogueModule, VatRatesModule, SalesContextsModule],
   // Un contrôleur par thématique, sous le préfixe module `channels/shopify`
   // (monté par `RouterModule` dans `AppModule` — un module ne pouvant pas se
   // référencer lui-même dans `RouterModule.register`) :

@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { DesiredCollection } from "@lfd/shopify-admin";
 
-import { VatRateRepository } from "../../../commerce/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
 import { vatCollectionHandle } from "./vat-handle.js";
 
 /** « 5.5 » → « 5,5 % ». Le rendu du taux dans un titre de collection. */

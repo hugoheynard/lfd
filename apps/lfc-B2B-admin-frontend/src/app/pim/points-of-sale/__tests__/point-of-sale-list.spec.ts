@@ -4,7 +4,7 @@ import type { PointOfSaleView } from '@lfd/pim-contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import { provideTestSalesContexts } from '../../catalogue/sales-contexts/sales-context-store.testing';
+import { provideTestSalesContexts } from '../../sales-contexts/sales-context-store.testing';
 import { PointOfSaleList } from '../point-of-sale-list/point-of-sale-list';
 import { PointOfSaleStore } from '../point-of-sale-store';
 

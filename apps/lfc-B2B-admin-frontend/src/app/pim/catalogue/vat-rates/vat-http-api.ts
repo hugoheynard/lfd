@@ -13,7 +13,7 @@ export interface VatRateInput {
 }
 
 /**
- * Accès **réel** aux taux de TVA — parle au backend (`commerce/vat-rates`).
+ * Accès **réel** aux taux de TVA — parle au backend (`vat-rates`).
  * Le `tag` (handle Shopify) est dérivé du taux côté serveur ; le front ne l'envoie
  * jamais. Remplace la branche LocalDb.
  */
@@ -48,8 +48,6 @@ export class VatRateHttpApi {
   }
 
   private url(path: string): string {
-    return path === ''
-      ? `${this.base}/commerce/vat-rates`
-      : `${this.base}/commerce/vat-rates/${path}`;
+    return path === '' ? `${this.base}/vat-rates` : `${this.base}/vat-rates/${path}`;
   }
 }

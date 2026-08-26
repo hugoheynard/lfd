@@ -6,7 +6,7 @@
  * aussi les contextes hors service — les deux touchent la base, pas le domaine.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { SalesContextRegistry } from "../src/pim/catalogue/shared/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../src/pim/sales-contexts/domain/ports/sales-context.registry.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
@@ -14,7 +14,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-const CONTEXTS = "/pim/catalogue/sales-contexts";
+const CONTEXTS = "/pim/sales-contexts";
 
 let ctx: E2eContext;
 
@@ -70,7 +70,7 @@ describe("la surface d'administration montre le registre entier", () => {
   });
 
   /**
-   * `GET /reference/sales-contexts` ne rend que les contextes EN SERVICE — il
+   * `GET /sales-contexts/active` ne rend que les contextes EN SERVICE — il
    * dessine la matrice, et une colonne qu'on ne peut pas vendre n'y a rien à
    * faire. L'administration, elle, doit voir ce qui est éteint : sinon un
    * contexte désactivé disparaît de l'écran qui sert à le rallumer.
@@ -86,7 +86,7 @@ describe("la surface d'administration montre le registre entier", () => {
     expect(rows.find((row) => row.key === "eatIn")?.active).toBe(false);
 
     const matrix = jsonBody<{ key: string }[]>(
-      await staff().get("/pim/reference/sales-contexts").expect(200),
+      await staff().get("/pim/sales-contexts/active").expect(200),
     );
     expect(matrix.map((row) => row.key)).not.toContain("eatIn");
   });

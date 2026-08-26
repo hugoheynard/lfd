@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { ProductFormStore } from '../../product-form-store';
-import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-store.testing';
+import { provideTestSalesContexts } from '../../../../sales-contexts/sales-context-store.testing';
 import { ChannelsForm } from './channels-form';
 
 function setup(): ProductFormStore {

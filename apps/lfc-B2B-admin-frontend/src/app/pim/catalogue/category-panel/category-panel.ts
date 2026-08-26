@@ -29,7 +29,7 @@ import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import type { Category, SalesChannels, VatRate } from '../catalogue-api';
 import type { CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
-import { SalesContextStore } from '../sales-contexts/sales-context-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 
 /**

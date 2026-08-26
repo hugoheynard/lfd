@@ -4,8 +4,9 @@ import { RouterModule } from "@nestjs/core";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { ShopifyModule } from "./channels/shopify/shopify.module.js";
-import { CommerceModule } from "./commerce/commerce.module.js";
+import { VatRatesModule } from "./vat-rates/vat-rates.module.js";
 import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
+import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
 
 /**
  * Le **référentiel produit** — un contexte du processus, plus une application.
@@ -28,8 +29,9 @@ import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
 @Module({
   imports: [
     CatalogueModule,
-    CommerceModule,
+    VatRatesModule,
     PointsOfSaleModule,
+    SalesContextsModule,
     ShopifyModule,
     B2bPlatformModule,
     // La hiérarchie de routes du référentiel, déclarée ici plutôt qu'à la
@@ -42,8 +44,9 @@ import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
         path: "pim",
         children: [
           CatalogueModule,
-          CommerceModule,
+          VatRatesModule,
           PointsOfSaleModule,
+          SalesContextsModule,
           {
             path: "channels",
             children: [
