@@ -1,9 +1,9 @@
 # C0-d — la matrice de canaux pilotée par la donnée
 
-> **Note doc-first, 2026-08-26. Aucun code écrit.** Elle tranche la seule
-> question qui coûte cher si on la tranche mal — le sort du drapeau `b2b` — et
-> elle rapporte ce que l'examen a révélé au passage : C0-d a un **prérequis**
-> qu'on ne lui connaissait pas.
+> **Note doc-first, 2026-08-26. Aucun code écrit.** Elle tranche quatre choses :
+> où va le drapeau `b2b`, sous quelle **forme** la matrice se stocke, quel
+> **prérequis** l'examen a fait apparaître, et pourquoi le contexte B2B doit
+> être **ineffaçable**.
 
 ## 1. Pourquoi maintenant : la promesse de C0 est fausse
 
@@ -23,9 +23,9 @@ function toContext(row: SalesContextRow): SalesContext | null {
 
 Le contexte n'apparaît **nulle part** : pas à l'écran, pas dans la TVA, pas
 dans les projections. Aucune erreur, aucun log — `active()` le filtre. Le
-comportement est prudent et il est même justifié dans le code (« lui prêter un
-canal par défaut ferait facturer un contexte que personne ne peut vendre »),
-mais il referme la porte que C0 disait avoir ouverte.
+comportement est prudent, et même justifié dans le code (« lui prêter un canal
+par défaut ferait facturer un contexte que personne ne peut vendre »), mais il
+referme la porte que C0 disait avoir ouverte.
 
 C'est la **dernière dimension scalable écrite en dur du référentiel**. Les
 autres constantes du PIM (`MEDIA_ROLES`, `PACKAGING_TYPES`, les types MIME
@@ -45,8 +45,6 @@ exprimable.
 
 ## 2. L'état exact, sans interprétation
 
-Les trois lignes en base, aujourd'hui :
-
 ```
  key      | channel_key | active | shopify_projected | handle_suffix
 ----------+-------------+--------+-------------------+---------------
@@ -56,8 +54,8 @@ Les trois lignes en base, aujourd'hui :
 ```
 
 `channel_key` est **l'identité**. La colonne de transition que C0-d doit
-supprimer ne porte, à cette heure, aucune information. Elle n'en porterait que
-le jour où deux contextes partageraient un canal — ce que le modèle actuel
+supprimer ne porte, à cette heure, aucune information — elle n'en porterait que
+le jour où deux contextes partageraient un canal, ce que le modèle actuel
 interdit justement d'exprimer.
 
 Et la forme qui la rend nécessaire :
@@ -76,127 +74,147 @@ interface ShopChannels {
 La matrice est **déjà** pilotée par la donnée sur un axe (les emplacements) et
 en dur sur l'autre (les modes). C'est cette asymétrie que C0-d supprime.
 
-## 3. La question : que devient `b2b` ?
+## 3. Décision 1 — où va `b2b` : le registre dit s'il faut un lieu
 
-Le drapeau n'appartient à **aucun emplacement** — un professionnel qui commande
-en gros ne consomme ni sur place ni à emporter. La cible notée au TODO
-(`Record<emplacementId, Record<contextKey, boolean>>`) ne dit pas où il va.
+Le drapeau n'appartient à aucun emplacement : un professionnel qui commande en
+gros ne consomme ni sur place ni à emporter. Trois sorties ont été écartées
+avant celle-ci.
 
-L'écran, lui, a déjà tranché à sa façon. `ChannelMatrix` affiche « une ligne par
-emplacement réel, **plus une pour la plateforme B2B** » : la présentation unifie
-ce que la donnée sépare.
+**A — la plateforme devient un pseudo-emplacement.** Cette ligne de
+`pim.emplacement` porterait `name`, `click_collect`, `eat_in`, `base_url` et une
+grille de tables, tous absurdes pour une plateforme ; l'écran des emplacements
+devrait la **cacher**, donc porter une exception ; et la supprimer par mégarde
+couperait le B2B en silence. On ferait mentir une table pour économiser une clé.
 
-### Les sorties examinées
+**B — `b2b` survit tel quel, à côté de la matrice.** Si le drapeau reste un
+booléen nommé, le registre doit continuer à dire quels contextes le chevauchent
+— donc `channel_key` survit, donc `CHANNEL_KEYS` survit. Ce n'est pas un
+compromis, c'est le renoncement.
 
-**A — la plateforme devient un pseudo-emplacement.** Une ligne dans
-`pim.emplacement`, et la matrice n'a plus qu'un seul axe.
-_Contre, et c'est rédhibitoire_ : cette ligne porterait `name`, `click_collect`,
-`eat_in`, `base_url` et une grille de tables — tous absurdes pour une
-plateforme. L'écran des emplacements devrait la **cacher**, c'est-à-dire porter
-une exception ; et la supprimer par mégarde couperait le B2B sans que rien ne
-le dise. On ferait mentir une table pour économiser une clé.
+**C — une carte `byLocation` plus une carte `platform`.** Elle marchait, mais
+`platform` **nomme une chose**, donc en suppose une seule : un second portail
+ramenait du code à écrire. C'est le péché de `CHANNEL_KEYS`, déplacé d'un cran.
 
-**B — `b2b` survit tel quel, à côté de la matrice.**
-_Contre, et c'est décisif_ : si le drapeau reste un booléen nommé, le registre
-doit continuer à dire **quels contextes le chevauchent** — donc `channel_key`
-survit, donc `CHANNEL_KEYS` survit, donc C0-d ne livre pas ce pour quoi il
-existe. Cette option n'est pas un compromis : c'est le renoncement.
+### ✅ D — le contexte déclare s'il a besoin d'un lieu
 
-**C — une carte `byLocation` plus une carte `platform`.** _Écartée après coup._
-Elle marchait, mais `platform` **nomme une chose** — donc en suppose une seule.
-Un second portail (marketplace, second grossiste) ramenait aussitôt du code à
-écrire. C'est le péché de `CHANNEL_KEYS`, déplacé d'un cran.
-
-### D — le contexte dit s'il a besoin d'un lieu ✅ **Retenue**
-
-Le bon endroit pour cette information n'est pas la matrice : c'est le
-**registre**. « Sur place » exige un lieu — on ne consomme pas en salle sans
-salle. Le B2B non : on commande à l'entreprise, pas à une boutique.
+L'information n'appartient pas à la matrice, elle appartient au **registre**.
+« Sur place » exige un lieu — on ne consomme pas en salle sans salle. Le B2B
+non : on commande à l'entreprise, pas à une boutique.
 
 ```prisma
 model SalesContext {
   key         String  @unique
   /// Ce contexte se vend-il DEPUIS un point de vente, ou globalement ?
-  /// « sur place » a besoin d'un lieu ; le B2B non — on commande à
-  /// l'entreprise, pas à une boutique. C'est la SEULE chose que le code ait
-  /// besoin de savoir, et elle ne présume rien du nombre de plateformes.
+  /// C'est la SEULE chose que le code ait besoin de savoir, et elle ne présume
+  /// rien du nombre de plateformes : deux portails = deux lignes.
   perLocation Boolean @default(true) @map("per_location")
 }
 ```
 
+**`b2b` n'apparaît alors nulle part dans le code** : c'est simplement la
+première ligne du registre à répondre non. `channel_key`, `SalesChannelKey` et
+`CHANNEL_KEYS` disparaissent tous les trois.
+
+`per_location` nomme une **forme**, pas une chose — c'est toute la différence
+avec l'option C.
+
+## 4. Décision 2 — la forme : un ensemble de paires, dans une table
+
+Le premier jet stockait deux cartes imbriquées (`byLocation` + `global`). Deux
+défauts, de même cause :
+
+- `contextIsSold` **branchait sur `perLocation`** — un `if` sur un discriminant
+  de type, ce que les règles SOLID de la maison proscrivent ;
+- deux chemins de lecture, donc une règle future qui n'en parcourrait qu'un
+  serait fausse en silence — une parade par discipline, exactement ce qu'on
+  reproche par ailleurs à `category_location_ref`.
+
+**La forme retenue est l'ensemble de paires** :
+
 ```ts
-interface SalesChannels {
-  /** Contextes ancrés dans un lieu : emplacement → contexte → vendu ? */
-  readonly byLocation: Readonly<Record<string, Readonly<Record<string, boolean>>>>;
-  /** Contextes sans lieu : contexte → vendu ? */
-  readonly global: Readonly<Record<string, boolean>>;
+/** Un canal vendu. `locationId === null` = contexte sans lieu. */
+interface SoldChannel {
+  readonly locationId: string | null;
+  readonly context: string;
 }
 ```
 
-### Pourquoi D
+```ts
+function contextIsSold(context: SalesContext, sold: readonly SoldChannel[]): boolean {
+  return sold.some((pair) => pair.context === context.key); // aucune branche
+}
+```
 
-- **Elle livre le but.** `contextIsSold` perd toute connaissance des noms de
-  contextes — plus de `context.channelKey === "b2b"` :
+`per_location` reste au registre, mais **quitte le chemin de lecture** : il ne
+sert plus qu'à _valider_ (un emplacement ne vend pas le B2B) et à _dessiner_
+l'écran. Le discriminant existe encore ; plus personne ne branche dessus pour
+lire.
 
-  ```ts
-  function contextIsSold(context: SalesContext, channels: SalesChannels): boolean {
-    return context.perLocation
-      ? Object.values(channels.byLocation).some((sold) => sold[context.key] === true)
-      : channels.global[context.key] === true;
-  }
-  ```
+### Et on vise la table directement, pas un `jsonb` reformé
 
-  `channel_key`, `SalesChannelKey` et `CHANNEL_KEYS` disparaissent tous les
-  trois. **`b2b` n'apparaît nulle part dans le code** : c'est simplement la
-  première ligne du registre avec `per_location = false`.
+L'ensemble de paires **est** la forme de la table cible :
 
-- **Elle nomme une FORME, pas une chose.** `perLocation` / `global` répond à
-  « ce contexte a-t-il besoin d'un lieu ? ». Deux plateformes, c'est deux
-  lignes `per_location = false` — zéro code. C'est la différence exacte avec
-  l'option C.
+```prisma
+model CategoryChannel {
+  categoryId String    @map("category_id")
+  /// NULL = contexte sans lieu (B2B, marketplace…).
+  locationId String?   @map("location_id")
+  location   Location? @relation(fields: [locationId], references: [id]) // Restrict
+  contextKey String    @map("context_key")
 
-- **Elle ne fait mentir aucune table.** Rien n'entre dans `pim.emplacement` qui
-  ne soit un lieu, et aucune clé réservée magique (`"platform"`) ne se cache
-  dans un dictionnaire d'identifiants.
+  @@id([categoryId, locationId, contextKey])
+}
+```
 
-- **Elle ne casse pas le mur qu'on vient de poser.** `category_location_ref`
-  (l'index de référence qui porte le `Restrict` vers l'emplacement, cf.
-  [`concurrence-et-allers-retours.md` § 6](./concurrence-et-allers-retours.md))
-  continue de dériver de `byLocation`, sans rien changer d'autre.
+Reformer le `jsonb` puis le sortir plus tard, ce serait **deux** migrations de
+données pour un seul déplacement. En visant la table dès d-1, on arrive au bout
+pour le même nombre de déploiements — et la clé étrangère vers l'emplacement
+devient **directe**.
 
-### Ce que l'écran devient
+**Conséquence majeure** : `category_location_ref` — le registre posé le
+2026-08-26 pour tenir le `Restrict` faute de pouvoir le poser dans du `jsonb`
+(cf. [`concurrence-et-allers-retours.md` § 6](./concurrence-et-allers-retours.md))
+— **disparaît**. Cette table-ci le contient, avec le contexte en plus. L'invariant
+cesse de reposer sur la discipline d'un seul dépôt.
 
-`ChannelMatrix` itère le registre au lieu de coder ses colonnes :
+### Le caillou : « hérite » ≠ « ne vend rien » — tranché
 
-| Ce qu'il lit                     | Ce qu'il rend                                             |
-| -------------------------------- | --------------------------------------------------------- |
-| contextes `per_location = true`  | les **colonnes** de la grille — une ligne par emplacement |
-| contextes `per_location = false` | une **case isolée** sous la grille, une par contexte      |
+`product.channel_override` est `NULL` = **hérite de sa famille**, et une valeur
+présente = dérogation **tout-ou-rien**. Une table de paires ne sait pas
+distinguer « déroge et ne vend nulle part » de « hérite » : dans les deux cas,
+zéro ligne.
 
-Avec les trois lignes d'aujourd'hui, cela produit **exactement l'écran actuel** :
-deux colonnes (emporter, sur place) × N emplacements, plus une case « B2B ». La
-différence n'est pas visible — elle est que plus rien n'est écrit en dur.
+Deux marqueurs possibles, et le second est retenu :
 
-### Ce que D coûte, et qu'il faut dire
+| Marqueur                                              | Défaut                                                                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| une colonne `channel_overridden Boolean`              | état impossible atteignable — drapeau faux **et** lignes présentes. Rien en base ne l'interdit                |
+| ✅ **une ligne parente**, dont les cellules dépendent | la présence de la dérogation EST une ligne ; les cellules y cascadent, donc elles ne peuvent pas lui survivre |
 
-Deux cartes, c'est deux chemins de lecture. Toute règle qui parle de « tous les
-canaux » devra parcourir les deux, et une règle future qui n'en parcourrait
-qu'un serait fausse en silence. La parade est de n'exposer **aucun accès direct
-aux deux cartes** hors du value object : tout passe par `contextIsSold`,
-`soldContexts(channels)` et `referencedLocations(channels)`. Si un appelant lit
-`channels.global` lui-même, c'est un défaut de conception, pas un usage.
+```prisma
+/// La dérogation EXISTE — sa présence est la donnée, comme l'absence de ligne
+/// vaut « non réglé » ailleurs dans le référentiel. Une dérogation sans aucune
+/// cellule est un état LÉGITIME : « ce produit ne se vend nulle part ».
+model ProductChannelOverride {
+  productId String            @id @map("product_id")
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cells     ProductChannel[]
+}
+```
 
-Et un contexte ne peut pas être les deux à la fois — `per_location` est un
-booléen, pas un ensemble. Si un jour un contexte devait se vendre à la fois
-depuis un lieu et hors lieu, ce serait un troisième état, et on le saurait
-parce qu'il ne rentrerait pas.
+Le `Cascade` rend l'état impossible **inatteignable** : une cellule sans
+dérogation ne peut pas exister, et retirer la dérogation emporte ses cellules.
+C'est la même raison qui a fait préférer une contrainte à une lecture pour la
+suppression d'un emplacement — un invariant tenu par la base bat un invariant
+tenu par la discipline.
 
-## 4. Ce que la question a révélé : le prérequis manquant
+La famille, elle, n'a pas ce problème : elle porte toujours une matrice, jamais
+un héritage. Pas de table parente côté `Category`.
 
-En cherchant où ranger `b2b`, une deuxième constante est apparue — et elle est
-sur le même axe.
+## 5. Décision 3 — le prérequis découvert : un lieu déclare ce qu'il offre
 
-**Un emplacement porte ses propres modes en dur** :
+En cherchant où ranger `b2b`, une deuxième constante est apparue, sur le même
+axe. **Un emplacement porte ses propres modes en dur** :
 
 ```prisma
 model Location {
@@ -207,11 +225,10 @@ model Location {
 
 Ce sont, en substance, **les contextes que ce point de vente offre**. Les
 laisser en colonnes pendant que la matrice devient une donnée, c'est déplacer le
-verrou sans l'ouvrir : ajouter le contexte « borne libre-service » demanderait
-encore une colonne de plus sur `emplacement`.
+verrou sans l'ouvrir : « borne libre-service » demanderait encore une colonne de
+plus sur `emplacement`.
 
-Pire, rien ne relie aujourd'hui les deux niveaux. On peut parfaitement cocher
-« sur place » pour une famille dans un emplacement dont `eat_in` est faux :
+Pire, rien ne relie aujourd'hui les deux niveaux :
 
 ```mermaid
 flowchart LR
@@ -220,67 +237,114 @@ flowchart LR
 ```
 
 Aucun code ne pose la question. Ce n'est pas un bug ouvert — personne n'a coché
-cette case — mais c'est un invariant absent, et C0-d le rendrait bien plus facile
-à violer, puisque la matrice deviendrait libre.
-
-**Conclusion : C0-d a un prérequis.** Un point de vente doit **déclarer les
-contextes qu'il offre**, avant que la matrice ne dise ce qu'on y vend :
+cette case — mais c'est un invariant absent, et C0-d le rendrait plus facile à
+violer puisque la matrice deviendrait libre.
 
 | Niveau          | Question                              | Aujourd'hui                | Cible                         |
 | --------------- | ------------------------------------- | -------------------------- | ----------------------------- |
 | Point de vente  | quels contextes ce lieu **sert-il** ? | `click_collect` / `eat_in` | `location_context` (jointure) |
-| Famille / fiche | quels contextes y **vend-on** ?       | `channel_preset` (`jsonb`) | la matrice de C0-d            |
+| Famille / fiche | quels contextes y **vend-on** ?       | `channel_preset` (`jsonb`) | `category_channel` (§ 4)      |
 
-Et la matrice ne doit accepter que ce que le point de vente offre — invariant
-d'agrégat, tenu par `Category.setChannels`, comme les taux le sont déjà.
+La matrice ne doit accepter que ce que le point de vente offre — invariant
+d'agrégat, tenu par `Category.setChannels`, comme les taux le sont déjà. Et
+`per_location` **borne ce prérequis** : seuls les contextes ancrés dans un lieu
+passent par `location_context`. Un emplacement n'a pas à se prononcer sur le B2B.
 
-Le `per_location` de l'option D **borne ce prérequis** : seuls les contextes
-ancrés dans un lieu passent par `location_context`. Un emplacement n'a pas à se
-prononcer sur le B2B, et la carte `global` n'a pas d'offre à déclarer — ce qui
-la vend, c'est l'entreprise, qui n'est pas modélisée ici.
+## 6. Décision 4 — le contexte B2B est racine, donc ineffaçable
 
-## 5. Le plan
+Un contexte de vente devient une donnée modifiable ; il faut alors se demander
+ce que coûte sa **disparition**. Pour `b2b`, la réponse est la même que pour
+l'admin racine : la plateforme cesse de fonctionner, en silence. Sans ce
+contexte, aucune TVA B2B ne se règle, la projection ne retient plus rien, et la
+boutique professionnelle se vide sans qu'une seule erreur soit levée.
 
-Trois déploiements, discipline `étendre / basculer / resserrer` non négociable
+Le motif existe déjà et il est éprouvé — `bootstrapAdmin` / `ensureBootstrapAdmin`
+(`src/staff/directory/`) : semé au boot s'il manque, **il réapparaît même
+supprimé directement en base**, et la politique de domaine refuse de l'effacer.
+`b2b` suit exactement ce contrat :
+
+- **semé au boot** par un `ensureBootstrapContexts()` appelé depuis le module,
+  comme `StaffModule` appelle `ensureBootstrapAdmin()` ;
+- **ineffaçable** et **non renommable** : c'est la `key` qui l'identifie, donc
+  la renommer serait le chemin en deux temps vers sa suppression — la leçon
+  exacte tirée de l'admin racine ;
+- **désactivable**, en revanche. `active = false` est un geste réversible et
+  visible, qui suspend la facturation sans détruire l'historique. C'est la
+  différence entre fermer un canal et effacer sa définition.
+
+Ce qui reste modifiable sur la ligne racine : son libellé d'écran, son
+`handle_suffix`, son `shopify_projected`, sa `position`. Ce qui ne l'est pas :
+`key`, `per_location`, et son existence.
+
+### L'écran « Contextes de vente »
+
+Il n'existe pas. Aujourd'hui `GET /reference/sales-contexts` sert uniquement à
+dessiner les colonnes de la matrice ; aucune surface d'administration ne montre
+le registre, alors qu'il est devenu la pièce qui décide **ce qu'on peut
+vendre**. Une donnée qu'on ne peut pas voir n'est pas pilotable — c'est
+exactement ce qui a laissé `channel_key` devenir une identité sans que personne
+ne le remarque.
+
+L'écran doit donc, au minimum :
+
+- **lister** les contextes, actifs et inactifs, dans l'ordre du registre ;
+- **marquer visiblement le contexte racine** — badge « racine », geste de
+  suppression absent et non pas grisé, comme le fait l'écran des utilisateurs
+  pour l'admin racine ;
+- **dire ce que chacun implique** : a-t-il besoin d'un lieu, est-il projeté vers
+  Shopify, quel suffixe de handle ;
+- **compter ses usages** avant d'autoriser une désactivation — combien de
+  familles et de fiches le vendent, sur le motif du compte d'usages d'un taux
+  de TVA.
+
+Il vit dans le PIM, à côté des taux et des emplacements : c'est un référentiel,
+pas un réglage.
+
+## 7. Le plan
+
+Discipline `étendre / basculer / resserrer` non négociable
 (`documentation/ops/pipelines.md`), comme `AddressKind` l'a suivie en août.
 
-| Tranche           | Migration                                                                                                                  | Code                                                                                           |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **d-0**           | colonne `sales_context.per_location` (`true` sauf `b2b`) + table `location_context`, reprise de `click_collect` / `eat_in` | l'écran des emplacements coche des contextes ; les deux colonnes restent ÉCRITES               |
-| **d-1 étendre**   | —                                                                                                                          | la nouvelle forme de `channel_preset` / `channel_override` est écrite **à côté** de l'ancienne |
-| **d-2 basculer**  | reprise des `jsonb`                                                                                                        | tout lit la nouvelle forme ; `channel_key`, `SalesChannelKey`, `CHANNEL_KEYS` tombent          |
-| **d-3 resserrer** | `DROP` de `channel_key`, `click_collect`, `eat_in`                                                                         | suppression du double-écriture                                                                 |
+| Tranche           | Migration                                                                                                         | Code                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **d-0**           | `sales_context.per_location` (`true` sauf `b2b`) + `location_context`, reprise de `click_collect` / `eat_in`      | `ensureBootstrapContexts()` ; écran Contextes de vente ; l'écran des emplacements coche des contextes ; les deux colonnes restent ÉCRITES |
+| **d-1 étendre**   | tables `category_channel`, `product_channel_override`, `product_channel`, remplies depuis les `jsonb`             | les nouvelles tables sont ÉCRITES à côté ; personne ne les lit encore                                                                     |
+| **d-2 basculer**  | —                                                                                                                 | tout lit les tables ; `channel_key`, `SalesChannelKey`, `CHANNEL_KEYS` et `category_location_ref` tombent                                 |
+| **d-3 resserrer** | `DROP` de `channel_preset`, `channel_override`, `channel_key`, `click_collect`, `eat_in`, `category_location_ref` | suppression du double-écriture                                                                                                            |
 
-`per_location` arrive en **d-0** et non en d-2, alors que c'est lui qui remplace
-`channel_key` : les deux colonnes cohabitent le temps de la bascule, et d-0 a
-besoin de la distinction pour savoir quels contextes `location_context` doit
-porter. Poser la nouvelle avant de retirer l'ancienne est la discipline même.
+`per_location` arrive en **d-0** bien qu'il remplace `channel_key` : les deux
+colonnes cohabitent le temps de la bascule, et d-0 a besoin de la distinction
+pour savoir quels contextes `location_context` doit porter. Poser la nouvelle
+avant de retirer l'ancienne est la discipline même.
 
 **Surface** : 12 fichiers backend (le cœur est `sales-channels.ts` — 80 lignes —
-`json-readers.ts` et `sales-context.ts`), les deux agrégats `Category` et
-`Product`, les deux projections Shopify et B2B, et **un** composant front de
-81 lignes (`ChannelMatrix`, qui itère déjà le registre pour ses colonnes).
+plus `json-readers.ts` et `sales-context.ts`), les deux agrégats `Category` et
+`Product`, les deux projections Shopify et B2B, et un composant front de
+81 lignes (`ChannelMatrix`, qui itère déjà le registre pour ses colonnes) — plus
+l'écran Contextes de vente, qui est du neuf.
 
-**Ce que ça rend au passage** : `category_location_ref` redevient inutile le jour
-où la matrice sera une table plutôt qu'un `jsonb` — la clé étrangère sera
-directe, et l'invariant cessera de reposer sur la discipline d'un seul dépôt.
-Ce n'est **pas** dans les tranches ci-dessus : d-1/d-2 changent la forme du
-`jsonb`, pas sa nature. Sortir la matrice du `jsonb` est un chantier distinct,
-et il n'a d'intérêt qu'après.
+**Garantie de non-régression** : avec les trois lignes d'aujourd'hui, la
+migration doit produire **exactement** le comportement actuel — deux colonnes ×
+N emplacements plus une case B2B. Elle est donc testable par parité, contexte
+par contexte, avant de toucher à l'écran.
 
-## 6. Ce que cette note ne tranche pas
+## 8. Ce que cette note ne tranche pas
 
 - **La forme finale de la clé de contexte.** `emporter` / `surPlace` restent des
   valeurs françaises en base ; C0-d les fait disparaître **en tant que clés de
   structure**, pas en tant que valeurs de `sales_context.key`. Leur traduction
   reste un geste de données à part (`langue-du-code.md` § 4 quater).
 - **Quand.** Rien n'oblige à enchaîner d-0 → d-3 d'un trait ; d-0 a une valeur
-  propre (il ferme l'incohérence du § 4) et peut vivre seul.
-- **Le sort du drapeau `shopifyProjected`**, qui est un autre axe du registre et
-  ne bouge pas ici.
-- **Ce qui vend les contextes `global`.** Aujourd'hui c'est « l'entreprise »,
-  qui n'est modélisée nulle part — et c'est très bien tant qu'il n'y en a
-  qu'une. Le jour où deux portails coexisteraient et devraient vendre des
-  catalogues DIFFÉRENTS, `global` cesserait de suffire : il faudrait un second
-  axe de scope. Ce n'est pas un travail à faire d'avance, c'est un signal à
-  reconnaître.
+  propre — il ferme l'incohérence du § 5 et rend le registre visible — et peut
+  vivre seul.
+- **Le sort de `shopifyProjected`**, autre axe du registre, qui ne bouge pas ici.
+- **Que `per_location` reste un booléen.** C'est l'hypothèse la plus fragile de
+  cette note : un contexte vendu à la fois depuis un lieu et hors lieu la
+  casserait. Aucun n'existe aujourd'hui ; la forme en paires encaisserait le
+  coup (les deux sortes de paires cohabitent), c'est la validation qui devrait
+  changer.
+- **Ce qui vend les contextes sans lieu.** Aujourd'hui « l'entreprise », qui
+  n'est modélisée nulle part — et c'est très bien tant qu'il n'y en a qu'une. Le
+  jour où deux portails devraient vendre des catalogues DIFFÉRENTS, `null` ne
+  suffirait plus : il faudrait un second axe de scope. Ce n'est pas un travail à
+  faire d'avance, c'est un signal à reconnaître.
