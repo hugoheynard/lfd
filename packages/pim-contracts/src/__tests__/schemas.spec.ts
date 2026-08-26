@@ -1,6 +1,6 @@
 import {
   createCategoryPayloadSchema,
-  createLocationPayloadSchema,
+  openPointOfSalePayloadSchema,
   vatRatePayloadSchema,
 } from "../index.js";
 
@@ -18,14 +18,29 @@ describe("pim-contracts payload schemas", () => {
     expect(vatRatePayloadSchema.safeParse({ name: "Zéro", percent: 0 }).success).toBe(false);
   });
 
-  it("borne le nombre de tables d’un emplacement", () => {
+  it("borne le nombre de tables d’une boutique", () => {
     const base = {
-      name: "Village",
-      clickCollect: true,
-      eatIn: true,
+      kind: "shop",
+      label: "Village",
       baseUrl: "",
+      contexts: ["takeaway"],
     };
-    expect(createLocationPayloadSchema.safeParse({ ...base, tableCount: 12 }).success).toBe(true);
-    expect(createLocationPayloadSchema.safeParse({ ...base, tableCount: 999 }).success).toBe(false);
+    expect(openPointOfSalePayloadSchema.safeParse({ ...base, tableCount: 12 }).success).toBe(true);
+    expect(openPointOfSalePayloadSchema.safeParse({ ...base, tableCount: 999 }).success).toBe(
+      false,
+    );
+  });
+
+  /**
+   * Le **genre** est fermé : c'est une propriété de structure, pas une donnée.
+   * Une valeur inventée doit être refusée au bord, sinon elle atteindrait un
+   * `CHECK` de base et rendrait un 500 au lieu d'un refus.
+   */
+  it("refuse un genre de point de vente inconnu", () => {
+    const base = { label: "Village", baseUrl: "", contexts: [], tableCount: 0 };
+    expect(openPointOfSalePayloadSchema.safeParse({ ...base, kind: "platform" }).success).toBe(
+      true,
+    );
+    expect(openPointOfSalePayloadSchema.safeParse({ ...base, kind: "borne" }).success).toBe(false);
   });
 });
