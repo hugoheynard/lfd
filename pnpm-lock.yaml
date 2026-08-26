@@ -103,8 +103,8 @@ catalogs:
       specifier: 5.5.6
       version: 5.5.6
     fold-ng:
-      specifier: 0.16.0
-      version: 0.16.0
+      specifier: 0.17.0
+      version: 0.17.0
     globals:
       specifier: 16.5.0
       version: 16.5.0
@@ -248,7 +248,7 @@ importers:
         version: 6.1.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.16.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.17.0(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -366,7 +366,7 @@ importers:
         version: 9.13.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.16.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.17.0(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -572,7 +572,7 @@ importers:
         version: 7.2.2
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       ts-loader:
         specifier: ^9.5.2
         version: 9.6.2(typescript@6.0.3)(webpack@5.106.2)
@@ -639,7 +639,7 @@ importers:
         version: link:../contracts
       fold-ng:
         specifier: 'catalog:'
-        version: 0.16.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.17.0(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -679,7 +679,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -719,7 +719,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -734,7 +734,7 @@ importers:
         version: link:../contracts
       fold-ng:
         specifier: 'catalog:'
-        version: 0.16.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.17.0(22cfa20ad0110e19ca254a01bdc8a053)
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -771,7 +771,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -811,7 +811,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -921,7 +921,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -961,7 +961,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1001,7 +1001,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1037,7 +1037,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1082,7 +1082,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -5507,8 +5507,8 @@ packages:
   flatted@3.4.2:
     resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
 
-  fold-ng@0.16.0:
-    resolution: {integrity: sha512-Bryy7m3BYu0+dT1oBQgthoZZDWBNFDquNr1P0gPED1/2Kgq+X7hNBQQIIfaQPsb1g8r/qxlfNZvXQ6p0Z5HN4Q==}
+  fold-ng@0.17.0:
+    resolution: {integrity: sha512-BT1OWofwTskcxFVwS2ZGZ+AUp5mmaq12guz/W8FNevY9cDU23KaST9JhZiwckYMdV6CCaP4u4UssKfO+PmM/7w==}
     peerDependencies:
       '@angular/common': ^22
       '@angular/core': ^22
@@ -12610,7 +12610,7 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  fold-ng@0.16.0(22cfa20ad0110e19ca254a01bdc8a053):
+  fold-ng@0.17.0(22cfa20ad0110e19ca254a01bdc8a053):
     dependencies:
       '@angular/common': 22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
@@ -14812,7 +14812,7 @@ snapshots:
       babel-jest: 30.4.1(@babel/core@7.29.7)
       jest-util: 30.4.1
 
-  ts-jest@29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3):
+  ts-jest@29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
