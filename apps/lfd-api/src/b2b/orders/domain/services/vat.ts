@@ -17,7 +17,7 @@
  * Une **constante de domaine**, et pas une donnée : le taux d'une prestation de
  * transport est le taux normal, il ne se paramètre pas par boutique. Les taux
  * des marchandises, eux, sont de la donnée — ils viennent du PIM, article par
- * article (cf. `documentation/pim/tva-resolution.md`).
+ * article (cf. `documentation/pim/contextes-et-points-de-vente.md`).
  *
  * Une constante `DEFAULT_FOOD_VAT_RATE` vivait ici et n'était lue que par son
  * propre test : elle nommait un « défaut alimentaire » que rien n'appliquait, ce

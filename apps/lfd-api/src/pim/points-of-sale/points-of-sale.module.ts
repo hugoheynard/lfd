@@ -26,7 +26,7 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
  * ni famille.
  *
  * Il remplace le contexte `locations`, dont il était le cas particulier
- * « boutique » (`documentation/pim/point-de-vente.md`).
+ * « boutique » (`documentation/pim/contextes-et-points-de-vente.md`).
  */
 @Module({
   imports: [PimDatabaseModule],

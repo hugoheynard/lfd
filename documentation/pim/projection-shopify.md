@@ -8,16 +8,25 @@
 >
 > Statut : **design cible**. Le push actuel (`projectProduct`) est encore en 1 produit PIM → 1 produit
 > Shopify ; ce doc décrit là où on va, et pourquoi.
+>
+> ⚠️ **Côté référentiel, le vocabulaire de ce doc a vieilli.** Ce qu'il appelle
+> un « mode » est un **contexte de vente**, et ce qui le porte n'est plus ce
+> qu'il décrit : ni colonnes de taux sur la famille, ni matrice `jsonb` par
+> boutique, ni table `emplacement`. Lire
+> [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md) pour le
+> modèle réel ; ce qui reste vrai ici, ce sont les **invariants Shopify**
+> (S1–S5) et les décisions d'adaptateur (D-SHOP-1…5).
 
 ---
 
 ## 1. Les quatre forces en présence
 
-1. **La TVA dépend du mode.** Une catégorie porte deux taux — `emporterTvaId` et `surPlaceTvaId`
-   (cf. [`data-model/06`](./data-model/06-identifiants-et-sku.md) et le modèle `Category`). Le
-   croissant est à 5,5 % à emporter, 10 % sur place.
-2. **La disponibilité dépend de la boutique.** `SalesChannels` déclare, **par boutique**, si l'article
-   se vend `emporter` et/ou `surPlace`. La boutique décide **qui sert quoi**, pas le taux.
+1. **La TVA dépend du contexte de vente.** Le taux vit à l'intersection `(article × contexte)` —
+   `category_context_tva`, et `product_context_tva` quand la fiche déroge. Le croissant est à 5,5 %
+   à emporter, 10 % sur place.
+2. **La disponibilité dépend du point de vente.** La matrice `category_channel` déclare, par couple
+   `(point de vente × contexte)`, ce qui s'y vend. Le point de vente décide **qui sert quoi**, pas
+   le taux.
 3. **Le QR est de la navigation, pas un produit.** Le QR d'une table est un **lien vers une collection
    filtrée** — « le catalogue décliné en sur place, TVA 10, de cette boutique ». Il ne désigne jamais
    un produit ; le client navigue et commande dans cette vue.
@@ -71,13 +80,15 @@ Deux rôles de collection, **jamais confondus** (le piège de « on paramètre d
 
 La boutique n'entre **pas** dans le taux. Elle joue sur deux leviers seulement :
 
-- **Disponibilité** — `SalesChannels` par boutique décide quelles fiches une boutique liste.
+- **Disponibilité** — la matrice `(point de vente × contexte)` décide quelles fiches une boutique
+  liste.
 - **Navigation** — le QR de la table pointe vers la vue **sur place scopée à sa boutique** : une
   collection `sur-place-boutique-X` (Famille C portée à la dimension boutique) qui **liste** les
   fiches sur place servies là. Aucune TVA ici — juste un listing.
 
 La commande est **estampillée** boutique + table (attributs de panier issus de l'URL du QR :
-`baseUrl?table=N&k=token`, déjà modélisé sur `Emplacement`), pour le routing/prépa.
+`baseUrl?table=N&k=token`, modélisé sur `point_of_sale` et sa grille `point_of_sale_table`), pour le
+routing/prépa.
 
 ## 6. Le SKU : partagé entre modes, clé de réconciliation
 
@@ -101,7 +112,7 @@ Cas soulevé : « la TVA sur place diffère par boutique (bar → alcool) ». Di
 
 - **Disponibilité (le cas réel).** L'alcool est à **20 % partout** ; seule la boutique-bar le
   **propose**. → fiche alcool ∈ `tva-20`, listée par `sur-place-boutique-bar`, absente des autres.
-  C'est de la **disponibilité** (`SalesChannels`), **aucun fork par boutique**, `tva-20` suffit.
+  C'est de la **disponibilité** (la matrice de canaux), **aucun fork par boutique**, `tva-20` suffit.
 - **Vraie divergence (rare, différée).** Un article **strictement identique** portant **deux taux
   selon la boutique**. Seul ce cas force un **fork par boutique** de la fiche
   (`produit × mode × boutique`), **sparse** (uniquement l'article concerné), chacun dans sa `tva-*`.
@@ -119,7 +130,7 @@ Le stub actuel (1 produit PIM → 1 produit Shopify) ne peut pas porter deux TVA
 `buildFiches(produit) → N produits Shopify`, chacun avec
 
 - son tag **`tva-*`** (le taux — Famille A) ;
-- ses tags **`sur-place-boutique-X`** (dispo, depuis `SalesChannels` — Famille C) ;
+- ses tags **`sur-place-boutique-X`** (dispo, depuis la matrice de canaux — Famille C) ;
 - le **même SKU** que le produit PIM sur toutes ses fiches (§6).
 
 Le générateur de fiches et les tags existent déjà côté `collections.ts` ; le chantier est le **push**.
@@ -134,10 +145,11 @@ s'expose en **deux** variantes Shopify (une par mode-produit). Le binding devien
 
 ### 8.3 Modèle PIM : override TVA sur place **par boutique**, différé et sparse
 
-Aujourd'hui `Category.surPlaceTvaId` est **unique** (pas de dimension boutique sur le taux) — correct
-tant qu'on est en disponibilité (§7). La vraie divergence exigerait un **override sparse**
-`(catégorie|produit, boutique) → taux`, présent **uniquement** là où ça diverge, et le générateur de
-fiches forkant `× boutique` pour ces seuls cas. **Ne pas** l'ajouter tant que le besoin n'est pas réel.
+Aujourd'hui le taux se règle par `(article × contexte)` — **sans dimension point de vente**, ce qui
+est correct tant qu'on est en disponibilité (§7). La vraie divergence exigerait un **override sparse**
+`(famille|fiche, point de vente) → taux`, présent **uniquement** là où ça diverge, et le générateur de
+fiches forkant `× boutique` pour ces seuls cas. C'est un changement de **relation**, donc code +
+migration. **Ne pas** l'ajouter tant que le besoin n'est pas réel.
 
 ### 8.4 Flow de push **par fiche** (backend, cible) — transactionnel & réversible
 

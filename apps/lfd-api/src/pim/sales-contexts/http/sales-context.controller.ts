@@ -19,18 +19,19 @@ import { SalesContextRegistry } from "../domain/ports/sales-context.registry.js"
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 
 /**
- * Les **contextes de vente**, vus depuis l'administration.
+ * Les **contextes de vente** — le registre, en lecture ET en écriture.
  *
- * Il rend DEUX vues : `active` (maigre, pour dessiner) et la liste complète
- * dessiner la matrice. Ici on rend TOUT, hors-service compris : le registre
- * décide désormais de ce qu'on peut vendre, et une donnée qu'on ne peut pas
- * voir n'est pas pilotable. C'est exactement ce qui a laissé `channel_key`
- * devenir une identité sans que personne ne le remarque.
+ * Il rend deux vues : `active` (maigre, pour dessiner les colonnes d'une
+ * matrice) et la liste complète, hors-service compris, avec ce qui retient
+ * chaque contexte. Une donnée qu'on ne peut pas voir n'est pas pilotable :
+ * c'est exactement ce qui a laissé `channel_key` devenir une identité sans que
+ * personne ne le remarque.
  *
- * **En lecture seule, et c'est une décision.** Un contexte se pose par
- * migration : l'ouvrir à un formulaire rendrait possible d'en inventer un que
- * ni Shopify ni la facturation ne savent traiter. L'écran montre, il ne crée
- * pas.
+ * ⚠️ Ce docblock disait « en lecture seule, et c'est une décision » — un
+ * contexte se posait par migration. C0-d a tranché l'inverse : le registre
+ * s'écrit d'ici, sous `catalog:write`. Ce qui reste vrai, c'est ce que
+ * l'agrégat garde — la clé est immuable, la racine ineffaçable, et un contexte
+ * encore offert ou vendu ne se supprime pas.
  */
 @AdminSurface("catalog")
 @Controller("sales-contexts")

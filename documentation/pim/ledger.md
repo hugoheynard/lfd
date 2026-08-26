@@ -88,7 +88,7 @@ un seul contexte est actif (**emporter**) → la boutique reçoit toujours 1 pro
 juste ; activer sur-place ou B2B plus tard = de la config, pas une refonte. Sur-place en ligne est
 **gelé** côté métier pour l'instant.
 
-**Tech** — Nouveau doc [`projection-sales-context.md`](./projection-sales-context.md). Unité de
+**Tech** — Nouveau doc `projection-sales-context.md` (absorbé depuis par [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)). Unité de
 projection = **(article × contexte actif)** → 1 produit Shopify + appartenance à **une** collection
 `tva-*` (override, S1/S2). Registre de contextes (`emporter` seul actif). TVA résolue en composant
 catalogue (`Category.emporterTvaId`) + commerce (`TvaRegime.tag`) derrière un port (ADR-13).

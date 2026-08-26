@@ -13,7 +13,7 @@ import { PointOfSalePanel } from './point-of-sale-panel/point-of-sale-panel';
  * L'écran s'appelait « Emplacements » et ne montrait que les boutiques. La
  * plateforme professionnelle existait pourtant : elle se lisait comme un `NULL`
  * dans la matrice de canaux, donc nulle part (p-0,
- * `documentation/pim/point-de-vente.md`).
+ * `documentation/pim/contextes-et-points-de-vente.md`).
  *
  * Ouverture, réglage et suppression passent tous par le même side-panel
  * ({@link PointOfSalePanel}) — la suppression y vit dans sa zone dangereuse,

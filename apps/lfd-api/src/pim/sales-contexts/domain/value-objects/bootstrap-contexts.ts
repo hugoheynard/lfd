@@ -7,7 +7,7 @@ import type { SalesContext } from "./sales-context.js";
  * Français en valeur, et c'est assumé : `key` est une DONNÉE en base, pas un
  * identifiant de code. Sa traduction (`b2b` n'en a pas besoin, `emporter` et
  * `surPlace` si) part avec la tranche d-3, en un `UPDATE` cascadé — cf.
- * `documentation/pim/c0d-matrice-de-canaux.md` § 7.
+ * `documentation/pim/contextes-et-points-de-vente.md` § 2.
  */
 export const ROOT_CONTEXT_KEY = "b2b";
 

@@ -9,7 +9,7 @@
  * l'on achète — c'est le lieu de consommation qui commande le traitement
  * fiscal. « Sur place par QR » n'est donc pas un contexte : on y consomme sur
  * place, comme au comptoir, donc c'est la même carte. Le chemin d'achat est
- * affaire d'adaptateur (`documentation/pim/ecrans-du-referentiel.md` § 1 bis).
+ * affaire d'adaptateur (`documentation/pim/contextes-et-points-de-vente.md` § 2).
  */
 export interface SalesContext {
   readonly id: string;
@@ -24,9 +24,8 @@ export interface SalesContext {
    * pas projeté : le B2B a son propre projecteur, qui ne fabrique aucun handle.
    *
    * ⚠️ Deux contextes PROJETÉS ne peuvent pas partager un suffixe — ils
-   * produiraient le même handle. Rien ne le vérifie encore : aucun canal ne lit
-   * ce champ à ce jour, il attend C4 et ses handles suffixés. C'est là que
-   * l'invariant devra vivre, pas ici.
+   * produiraient le même handle. `ensureHandleFree` le tient, à l'écriture.
+   * Aucun canal ne LIT encore ce champ : il attend C4 et ses handles suffixés.
    *
    * ⚠️ Ce champ et `shopifyProjected` sont le vocabulaire d'UNE intégration,
    * rangé dans le référentiel — la dernière entorse au principe « le PIM ne

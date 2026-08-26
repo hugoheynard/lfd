@@ -7,7 +7,7 @@
  * création, renommage, changement de modes, suppression — et la contrainte de
  * genre tient (une plateforme n'a pas d'URL de click & collect).
  *
- * Tranche p-0, `documentation/pim/point-de-vente.md`.
+ * Tranche p-0, `documentation/pim/contextes-et-points-de-vente.md`.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";

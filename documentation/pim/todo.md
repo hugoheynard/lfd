@@ -127,7 +127,7 @@
   - [x] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`) _(dérive locale=empreinte pleine, distante=comparable ; commits `c01273f`/`841e967`, +20 tests)_
   - [x] **S4** — refonte écran `publication-shopify` (orienté handle, statut ⚠️, diff par paire, pré-push, publier, historique/rollback) _(commit `edac08a`, 37 tests front ; POC LocalDb publication supprimé)_
   - [ ] **S5** _(diff → post-boucle)_ — webhook `products/update` → marque `remote_drift` sans poll
-- [ ] **Appartenance TVA — projection par contexte de vente** ([`projection-sales-context.md`](./projection-sales-context.md)) :
+- [ ] **Appartenance TVA — projection par contexte de vente** ([`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)) :
   - [x] **C1** — registre `ACTIVE_SALES_CONTEXTS` + `CatalogueReader.tvaTags` (catégorie→régime→tag, ADR-13) _(commit `8a72f9e`, +3 tests)_
   - [x] **C2** — `collectionAddProductsV2` (`@lfd/shopify-admin`) + `ShopifyMembershipService` (résout tag→GID, **rapporte** l'absence, ne crée pas) _(commits `f363dfb`/`d8e9d6f`)_
   - [x] **C3** — push (live) range le produit dans sa collection `tva-*` ; échec non-bloquant ; **vérifié live** (baguette-artisane → tva-5-5, productCount 1) _(+5 tests)_
@@ -138,7 +138,7 @@
         réconciliation par contexte. Le contexte « sur place » est actif et vendu depuis longtemps ;
         ce qui manque, c'est que Shopify en fasse un second produit. Aucun canal ne lit
         `handleSuffix` à ce jour, et l'unicité des suffixes projetés devra vivre là
-- [ ] **Override local au produit — disponibilité + TVA** ([`override-produit.md`](./override-produit.md), 🟡 moitié faite) :
+- [ ] **Override local au produit — disponibilité + TVA** ([`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md), 🟡 moitié faite) :
   - [x] **O0 (TVA)** _(2026-08-24)_ — `product_context_tva` + `effectiveTva` (résolveur pur, produit → famille → rien) appelé par les DEUX projections ; le port rend le taux **par produit**
   - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.vat_changed` ; carte vide = retour à l'héritage
   - [x] **O2 (TVA)** _(2026-08-24)_ — « Redéfinir » par ligne dans l'encadré, panneau à un contexte, liseré + « Redéfini » ; part avec la section Tarif

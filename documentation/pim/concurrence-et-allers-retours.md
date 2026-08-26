@@ -31,14 +31,14 @@ vraie même quand deux requêtes arrivent en même temps.**
 
 ## 2. Où l'on tient cette règle, et où on ne la tient pas
 
-| Invariant                                             | Tenu par                                | Verdict au constat |
-| ----------------------------------------------------- | --------------------------------------- | ------------------ |
-| Référence produit / déclinaison unique                | `sku_registry` (clé primaire)           | ✅                 |
-| Un seul taux de TVA par valeur                        | `tva_rate.percent @unique`              | ✅                 |
-| Slug de famille unique                                | une **lecture** (`requireFreeSlug`)     | ❌ → ✅ (§6)       |
-| Rang unique dans une fratrie                          | **rien**                                | ❌ → ✅ (§6)       |
-| Nom d'emplacement unique                              | une **lecture** (`requireFreeName`)     | ❌ → ✅ (§6)       |
-| Emplacement non supprimé sous une famille qui le cite | une **lecture** (`LocationUsageReader`) | ❌ → ✅ (§6)       |
+| Invariant                                                | Tenu par                                | Verdict au constat |
+| -------------------------------------------------------- | --------------------------------------- | ------------------ |
+| Référence produit / déclinaison unique                   | `sku_registry` (clé primaire)           | ✅                 |
+| Un seul taux de TVA par valeur                           | `tva_rate.percent @unique`              | ✅                 |
+| Slug de famille unique                                   | une **lecture** (`requireFreeSlug`)     | ❌ → ✅ (§6)       |
+| Rang unique dans une fratrie                             | **rien**                                | ❌ → ✅ (§6)       |
+| Nom de point de vente unique                             | une **lecture** (`requireFreeName`)     | ❌ → ✅ (§6)       |
+| Point de vente non supprimé sous une famille qui le cite | une **lecture** (`LocationUsageReader`) | ❌ → ✅ (§6)       |
 
 Les trois lignes rouges avaient le même profil : une erreur métier existait
 (`CategorySlugTakenError`, `LocationNameTakenError`), un écran l'affichait, un
@@ -135,11 +135,11 @@ création et le renommage d'un emplacement.
 
 ## 6. Ce qui a été fait (2026-08-26)
 
-| Chantier          | Migration                                                                                                                    | Code                                                                                  | Gain                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Slug de famille   | index unique d'**expression** `((slug->>'fr'))` — la colonne est un `Json` localisé, un `@unique` ordinaire ne s'y pose pas  | traduire `23505` → `CategorySlugTakenError` dans le dépôt ; retirer `requireFreeSlug` | course fermée, −1 aller-retour à la création **et** au renommage |
-| Rang de fratrie   | index unique **partiel** `(parent_id, position) NULLS NOT DISTINCT WHERE is_archived = false` — donc **pas** différable (§4) | `saveAll` écrit en deux passes pour permuter sans collision transitoire               | plus de rangs en double                                          |
-| Nom d'emplacement | `UNIQUE` sur `emplacement.name` — **insensible à la casse** (`lower(name)`), comme le dépôt le fait déjà en lecture          | traduire `23505` → `LocationNameTakenError` ; retirer `requireFreeName`               | course fermée, −1 aller-retour                                   |
+| Chantier              | Migration                                                                                                                              | Code                                                                                  | Gain                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Slug de famille       | index unique d'**expression** `((slug->>'fr'))` — la colonne est un `Json` localisé, un `@unique` ordinaire ne s'y pose pas            | traduire `23505` → `CategorySlugTakenError` dans le dépôt ; retirer `requireFreeSlug` | course fermée, −1 aller-retour à la création **et** au renommage |
+| Rang de fratrie       | index unique **partiel** `(parent_id, position) NULLS NOT DISTINCT WHERE is_archived = false` — donc **pas** différable (§4)           | `saveAll` écrit en deux passes pour permuter sans collision transitoire               | plus de rangs en double                                          |
+| Nom de point de vente | `UNIQUE` **insensible à la casse** (`lower(label)`), comme le dépôt le fait déjà en lecture — aujourd'hui `point_of_sale_label_unique` | traduire `23505` → `PointOfSaleLabelTakenError` ; retirer `requireFreeName`           | course fermée, −1 aller-retour                                   |
 
 **Avant d'appliquer en production, vérifier qu'aucun doublon n'existe déjà** :
 la migration échouerait — ce qui est le bon comportement. Les trois requêtes de
@@ -178,44 +178,33 @@ sous le même parent à quelques millisecondes d'intervalle. Le jour où ça arr
 vraiment, une reprise bornée (recalculer le rang, réessayer une fois) est le
 correctif — pas avant.
 
-### La suppression d'un emplacement : un registre, faute de contrainte
+### La suppression d'un point de vente : la clé étrangère, enfin directe
 
 `RemoveLocation` comptait les familles citant l'emplacement, puis supprimait.
-C'était le motif du §3 — vérifier-puis-écrire — et cette fois **aucune
-contrainte ne pouvait le rattraper** : la grille de canaux d'une famille vit
-dans une colonne `jsonb`, et Postgres ne pose pas de clé étrangère sur une
-valeur enfouie dans du JSON.
+C'était le motif du §3 — vérifier-puis-écrire — et à l'époque **aucune
+contrainte ne pouvait le rattraper** : la grille de canaux d'une famille vivait
+dans une colonne `jsonb`, et Postgres ne pose pas de clé étrangère sur une valeur
+enfouie dans du JSON. La fenêtre s'ouvrait dans les deux sens : supprimer pendant
+qu'un autre coche, ou cocher pendant qu'un autre vérifie que c'est libre.
 
-La fenêtre s'ouvrait dans les deux sens :
+Un **registre** l'a portée une journée (`category_location_ref`, le motif de
+`sku_registry` appliqué une seconde fois). Il n'existe plus, et c'est mieux : la
+matrice est devenue une vraie table (`category_channel` / `product_channel`),
+donc la clé étrangère vers le point de vente est **directe** et son `Restrict`
+tient l'invariant sans qu'aucun dépôt n'ait à s'en souvenir. Le pré-contrôle du
+handler a disparu avec son aller-retour, et le compte d'usages de l'écran est un
+`groupBy` au lieu d'une relecture de toutes les grilles `jsonb` en mémoire. Voir
+[`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md) § 8.
 
-| Course                                                          | Résultat                                     |
-| --------------------------------------------------------------- | -------------------------------------------- |
-| A supprime l'emplacement pendant que B le coche sur une famille | une grille pointe un point de vente disparu  |
-| B coche l'emplacement pendant que A vérifie qu'il est libre     | idem — le compte de A était vrai une seconde |
+Deux leçons survivent :
 
-**Fermée le 2026-08-26 par `category_location_ref`.** C'est le motif de
-`sku_registry`, appliqué une seconde fois : quand une contrainte ne peut pas
-atteindre l'invariant, un **registre** le porte. La table liste les couples
-(famille, emplacement) que la grille cite, avec un `Restrict` vers
-l'emplacement et un `Cascade` depuis la famille.
-
-Ce n'est **pas** une seconde source de vérité : le dépôt des familles l'écrit
-dans la MÊME transaction que la colonne dont elle dérive — même `$transaction`,
-même effacer-puis-réécrire que les taux. Hors transaction, l'un des deux
-pourrait manquer, et le miroir deviendrait une vérité concurrente.
-
-Trois effets de bord, tous bons à prendre :
-
-- le pré-contrôle du handler disparaît, avec son aller-retour ;
-- le compte d'usages de l'écran devient un `groupBy` au lieu d'une relecture de
-  **toutes** les grilles `jsonb` en mémoire ;
-- `LocationInUseError` n'exige plus de compte. Le relire depuis le dépôt
+- un registre est le **repli** quand une contrainte ne peut pas atteindre
+  l'invariant, jamais la cible. Si l'invariant peut redevenir une clé étrangère,
+  c'est là qu'il doit vivre ;
+- `PointOfSaleInUseError` n'exige **pas** de compte. Le relire depuis le dépôt
   échouait : la violation avorte la transaction, et toute requête suivante y
-  échoue à son tour — le refus métier devenait un 500. L'écran, lui, affiche
-  déjà le compte à côté de chaque ligne.
-
-C0-d, qui remplacera la matrice `jsonb` par une vraie table, rendra ce registre
-inutile : la clé étrangère sera alors directe. En attendant, l'invariant tient.
+  échoue à son tour — le refus métier devenait un 500. L'écran, lui, affiche déjà
+  le compte à côté de chaque ligne.
 
 ## 7. Déjà corrigé pendant ce tour
 

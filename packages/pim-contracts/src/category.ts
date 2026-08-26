@@ -27,7 +27,7 @@ export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 export const soldChannelSchema = z.object({
   /**
    * Jamais `null` : la plateforme professionnelle est un point de vente comme
-   * un autre depuis p-0 (`documentation/pim/point-de-vente.md`). Le champ
+   * un autre depuis p-0 (`documentation/pim/contextes-et-points-de-vente.md`). Le champ
    * s'appelait `locationId` et acceptait `null` pour dire « le B2B ».
    */
   pointOfSaleId: z.string().min(1),
@@ -172,7 +172,7 @@ export type CreateSalesContextPayload = z.infer<typeof createSalesContextPayload
  *
  * `perLocation` a disparu de cette charge en p-2 : c'est le POINT DE VENTE qui
  * dit les contextes qu'il offre, pas le contexte qui dit s'il lui faut un lieu
- * (`documentation/pim/point-de-vente.md`).
+ * (`documentation/pim/contextes-et-points-de-vente.md`).
  */
 export const updateSalesContextPayloadSchema = z.object({
   label: z.string().trim().min(1),
