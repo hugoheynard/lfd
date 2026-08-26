@@ -31,20 +31,21 @@ vraie même quand deux requêtes arrivent en même temps.**
 
 ## 2. Où l'on tient cette règle, et où on ne la tient pas
 
-| Invariant                                              | Tenu par                                | Verdict au constat |
-| ------------------------------------------------------ | --------------------------------------- | ------------------ |
-| Référence produit / déclinaison unique                 | `sku_registry` (clé primaire)           | ✅                 |
-| Un seul taux de TVA par valeur                         | `tva_rate.percent @unique`              | ✅                 |
-| Slug de famille unique                                 | une **lecture** (`requireFreeSlug`)     | ❌ → ✅ (§6)       |
-| Rang unique dans une fratrie                           | **rien**                                | ❌ → ✅ (§6)       |
-| Nom d'emplacement unique                               | une **lecture** (`requireFreeName`)     | ❌ → ✅ (§6)       |
-| Emplacement non supprimé sous une famille qui le coche | une **lecture** (`LocationUsageReader`) | ⚠️ (§6, ouvert)    |
+| Invariant                                             | Tenu par                                | Verdict au constat |
+| ----------------------------------------------------- | --------------------------------------- | ------------------ |
+| Référence produit / déclinaison unique                | `sku_registry` (clé primaire)           | ✅                 |
+| Un seul taux de TVA par valeur                        | `tva_rate.percent @unique`              | ✅                 |
+| Slug de famille unique                                | une **lecture** (`requireFreeSlug`)     | ❌ → ✅ (§6)       |
+| Rang unique dans une fratrie                          | **rien**                                | ❌ → ✅ (§6)       |
+| Nom d'emplacement unique                              | une **lecture** (`requireFreeName`)     | ❌ → ✅ (§6)       |
+| Emplacement non supprimé sous une famille qui le cite | une **lecture** (`LocationUsageReader`) | ❌ → ✅ (§6)       |
 
 Les trois lignes rouges avaient le même profil : une erreur métier existait
 (`CategorySlugTakenError`, `LocationNameTakenError`), un écran l'affichait, un
 test la couvrait — et **rien en base ne l'empêchait**. Elles ont été fermées le
-2026-08-26 par des contraintes (§6). La ligne orange, elle, reste ouverte : la
-référence vit dans un `jsonb`, donc aucune contrainte ne peut la porter.
+2026-08-26 par des contraintes (§6). La quatrième l'a été le même jour, mais
+autrement : sa référence vit dans un `jsonb`, où aucune contrainte ne se pose —
+c'est un **registre** qui la porte.
 
 ## 3. Pourquoi une lecture ne suffit pas
 
@@ -177,32 +178,44 @@ sous le même parent à quelques millisecondes d'intervalle. Le jour où ça arr
 vraiment, une reprise bornée (recalculer le rang, réessayer une fois) est le
 correctif — pas avant.
 
-### La suppression d'un emplacement, elle, n'a aucun filet
+### La suppression d'un emplacement : un registre, faute de contrainte
 
-`RemoveLocation` compte les familles qui cochent l'emplacement, puis supprime.
-C'est le motif du §3 — vérifier-puis-écrire — et cette fois **aucune contrainte
-ne peut le rattraper** : la grille de canaux d'une famille vit dans une colonne
-`jsonb`, et Postgres ne pose pas de clé étrangère sur une valeur enfouie dans du
-JSON.
+`RemoveLocation` comptait les familles citant l'emplacement, puis supprimait.
+C'était le motif du §3 — vérifier-puis-écrire — et cette fois **aucune
+contrainte ne pouvait le rattraper** : la grille de canaux d'une famille vit
+dans une colonne `jsonb`, et Postgres ne pose pas de clé étrangère sur une
+valeur enfouie dans du JSON.
 
-La fenêtre s'ouvre dans les deux sens, et les deux côtés se contrôlent par une
-lecture :
+La fenêtre s'ouvrait dans les deux sens :
 
 | Course                                                          | Résultat                                     |
 | --------------------------------------------------------------- | -------------------------------------------- |
 | A supprime l'emplacement pendant que B le coche sur une famille | une grille pointe un point de vente disparu  |
 | B coche l'emplacement pendant que A vérifie qu'il est libre     | idem — le compte de A était vrai une seconde |
 
-Ce qui la referme vraiment : **sortir la référence du `jsonb`** vers une table
-de liaison `(category_id, location_id, …)`, où une clé étrangère `RESTRICT`
-ferait exactement ce qu'elle fait pour les taux de TVA. C'est la même direction
-que « toute dimension scalable est pilotée par la donnée », et ça dépasse de
-loin le geste de suppression.
+**Fermée le 2026-08-26 par `category_location_ref`.** C'est le motif de
+`sku_registry`, appliqué une seconde fois : quand une contrainte ne peut pas
+atteindre l'invariant, un **registre** le porte. La table liste les couples
+(famille, emplacement) que la grille cite, avec un `Restrict` vers
+l'emplacement et un `Cascade` depuis la famille.
 
-En attendant, ce qui limite les dégâts n'est pas une garantie, c'est une
-fréquence : deux gestes d'administration rares, faits par une poignée de
-personnes. **Ce n'est pas une raison de l'oublier** — c'est la raison pour
-laquelle ce paragraphe existe.
+Ce n'est **pas** une seconde source de vérité : le dépôt des familles l'écrit
+dans la MÊME transaction que la colonne dont elle dérive — même `$transaction`,
+même effacer-puis-réécrire que les taux. Hors transaction, l'un des deux
+pourrait manquer, et le miroir deviendrait une vérité concurrente.
+
+Trois effets de bord, tous bons à prendre :
+
+- le pré-contrôle du handler disparaît, avec son aller-retour ;
+- le compte d'usages de l'écran devient un `groupBy` au lieu d'une relecture de
+  **toutes** les grilles `jsonb` en mémoire ;
+- `LocationInUseError` n'exige plus de compte. Le relire depuis le dépôt
+  échouait : la violation avorte la transaction, et toute requête suivante y
+  échoue à son tour — le refus métier devenait un 500. L'écran, lui, affiche
+  déjà le compte à côté de chaque ligne.
+
+C0-d, qui remplacera la matrice `jsonb` par une vraie table, rendra ce registre
+inutile : la clé étrangère sera alors directe. En attendant, l'invariant tient.
 
 ## 7. Déjà corrigé pendant ce tour
 
