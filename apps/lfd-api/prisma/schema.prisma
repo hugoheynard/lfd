@@ -2539,127 +2539,28 @@ model Category {
   @@schema("pim")
 }
 
-/// Taux de TVA — référence commerciale partagée. Les canaux en dérivent ce
-/// dont ils ont besoin : Shopify un handle de collection, la boutique B2B un
-/// nombre à facturer. Aucun de ces deux vocabulaires ne vit ici.
-/// Un **contexte de vente** — une manière de vendre l'article qui a son propre
-/// traitement de TVA (donc sa propre collection `tva-*` côté Shopify).
-///
-/// Une TABLE et non trois colonnes sur `category` : ajouter « B2B » ou « borne
-/// libre-service » doit être une LIGNE, pas une migration plus un déploiement.
-/// Les trois colonnes `*_tva_id` de `category` sont l'ancien modèle ; elles
-/// tombent au troisième déploiement (étendre → basculer → resserrer).
-model SalesContext {
-  id    String @id
-  /// Identité stable, lue par le code (`emporter`, `surPlace`, `b2b`).
-  key   String @unique
-  /// Ce qu'un humain lit à l'écran.
-  label String
-
-  /// Suffixe de handle Shopify. **Vide pour le contexte par défaut** : le
-  /// handle nu protège les URL déjà indexées (cf. C0-bis, write-once SEO).
-  handleSuffix String @default("") @map("handle_suffix")
-
-  /// Ce contexte se vend-il **depuis un point de vente**, ou globalement ?
-  ///
-  /// Remplace `channel_key`, et la différence est tout le sujet : `channel_key`
-  /// nommait un drapeau (`emporter`, `surPlace`, `b2b`), donc le code devait
-  /// connaître la liste. `per_location` nomme une **forme** — « ce contexte
-  /// a-t-il besoin d'un lieu ? » — et ne présume rien du nombre de plateformes :
-  /// deux portails sont deux lignes, zéro code.
-  ///
-  /// ⚠️ **Mort depuis p-2** : plus personne ne le lit. C'est le POINT DE VENTE
-  /// qui déclare les contextes qu'il offre — `per_location` faisait dire au
-  /// contexte (« ai-je besoin d'un lieu ? ») ce qui était une propriété du
-  /// point de vente (« quels contextes est-ce que j'offre ? »). La colonne
-  /// survit le temps d'un déploiement, pour le binaire précédent ; p-3 la
-  /// supprime.
-  perLocation Boolean @default(true) @map("per_location")
-
-  /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
-  /// plus à l'écran et ne facture plus. Explicite, jamais implicite : la TVA est
-  /// de l'argent, et un contexte activé par accident facture faux.
-  active Boolean @default(false)
-
-  /// Shopify en fait-il un produit ? **Distinct de `active`**, et la distinction
-  /// n'est pas théorique : le B2B est en service — il facture ses professionnels
-  /// — sans que la boutique en ligne ait à porter un second produit par article.
-  /// Les confondre activerait des handles `-b2b` le jour où on règle un taux B2B.
-  shopifyProjected Boolean @default(false) @map("shopify_projected")
-
-  position Int @default(0)
-
-  categoryVat CategoryContextVat[]
-  productVat  ProductContextVat[]
-  /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
-  locations   LocationContext[]
-  /// Idem, depuis `point_of_sale` : le miroir que la tranche p-2 lira à la
-  /// place de `location_context`, plateforme B2B comprise.
-  offeredBy   PointOfSaleContext[]
-
-  /// Ce qui se vend dans ce contexte. Le `Restrict` protège la clé : un contexte
-  /// encore vendu ne se supprime pas sous les familles qui le vendent.
-  categoryChannels CategoryChannel[]
-  productChannels  ProductChannel[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("sales_context")
-  @@schema("pim")
-}
-
-/// **Ce qu'un point de vente offre.**
-///
-/// `click_collect` / `sur_place` étaient ces contextes, écrits en colonnes : en
-/// ajouter un demandait une colonne. Et rien ne reliait les deux niveaux — une
-/// famille pouvait vendre « sur place » dans un emplacement sans salle, et la
-/// projection produisait une fiche pour un lieu qui n'en a pas.
-///
-/// Jointure sur la **clé** du contexte et non son identifiant : c'est `key` que
-/// le reste du référentiel cite (`vatByContext`, la matrice, les suffixes de
-/// handle), et joindre sur `id` obligerait chaque lecteur à traduire.
-///
-/// Seuls les contextes `per_location` y figurent.
-/// ⚠️ Une garantie de ce modèle n'est PAS ici : `category_channel_unique`, index
-/// unique `NULLS NOT DISTINCT` sur `(category_id, location_id, context_key)`.
-/// Sans `NULLS NOT DISTINCT`, deux lignes GLOBALES identiques seraient
-/// distinctes pour Postgres — et le seul contexte concerné, le B2B, serait le
-/// seul non protégé. Posé en SQL par `20260826160000_matrice_de_canaux_en_table` ;
-/// une `migrate dev` proposera de le supprimer : refuser la ligne.
-
-/// **Ce qu'une famille vend** — une ligne par (lieu, contexte).
+/// **Ce qu'une famille vend** — une ligne par (point de vente, contexte).
 ///
 /// Remplace la carte imbriquée de `channel_preset`. Deux gains qu'un `jsonb` ne
-/// pouvait pas donner : la lecture n'a plus de branche à faire selon que le
-/// contexte a un lieu ou non, et une clé étrangère porte enfin le mur qui
-/// empêche de supprimer un emplacement encore vendeur.
+/// pouvait pas donner : la lecture n'a plus de branche à faire selon le
+/// contexte, et une clé étrangère porte enfin le mur qui empêche de supprimer
+/// un point de vente encore vendeur.
 model CategoryChannel {
   id         String   @id @default(cuid())
   categoryId String   @map("category_id")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  /// `NULL` = contexte **sans lieu** (le B2B aujourd'hui). Ce n'est pas une
-  /// absence de donnée, c'est la donnée : on ne commande pas le B2B à une
-  /// boutique.
-  locationId String?   @map("location_id")
-  location   Location? @relation(fields: [locationId], references: [id])
-
-  /// **D'où l'on vend** — la colonne qui remplace `location_id`, et le `NULL`
-  /// porteur de sens avec elle : la plateforme professionnelle a sa ligne.
-  ///
-  /// ⚠️ Nullable le temps de la bascule (p-1) : le binaire de la version
-  /// précédente n'écrit que `location_id`, et un `NOT NULL` qu'il ignore ferait
-  /// échouer toutes ses écritures pendant le déploiement. p-3 la resserre.
-  pointOfSaleId String?      @map("point_of_sale_id")
-  pointOfSale   PointOfSale? @relation(fields: [pointOfSaleId], references: [id])
+  /// **D'où l'on vend.** Elle remplace `location_id`, et le `NULL` porteur de
+  /// sens avec elle : la plateforme professionnelle a sa ligne, donc tout canal
+  /// se vend depuis un point de vente — sans exception à retenir.
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
 
   contextKey String       @map("context_key")
   context    SalesContext @relation(fields: [contextKey], references: [key])
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([locationId])
   @@index([pointOfSaleId])
   @@index([contextKey])
   @@map("category_channel")
@@ -2684,7 +2585,7 @@ model ProductChannelOverride {
   @@schema("pim")
 }
 
-/// ⚠️ Idem : `product_channel_unique` (`NULLS NOT DISTINCT`) vit en SQL.
+/// ⚠️ Idem : `product_channel_unique` vit en SQL.
 
 /// Une cellule de la dérogation d'une fiche. Elle **cascade** depuis
 /// `ProductChannelOverride` : elle ne peut pas exister sans elle.
@@ -2693,44 +2594,72 @@ model ProductChannel {
   productId String                 @map("product_id")
   override  ProductChannelOverride @relation(fields: [productId], references: [productId], onDelete: Cascade)
 
-  locationId String?   @map("location_id")
-  location   Location? @relation(fields: [locationId], references: [id])
-
-  /// Idem `CategoryChannel.pointOfSaleId` — nullable jusqu'à p-3.
-  pointOfSaleId String?      @map("point_of_sale_id")
-  pointOfSale   PointOfSale? @relation(fields: [pointOfSaleId], references: [id])
+  /// Idem `CategoryChannel.pointOfSaleId`.
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
 
   contextKey String       @map("context_key")
   context    SalesContext @relation(fields: [contextKey], references: [key])
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([locationId])
   @@index([pointOfSaleId])
   @@index([contextKey])
   @@map("product_channel")
   @@schema("pim")
 }
 
-model LocationContext {
-  locationId String       @map("location_id")
-  location   Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  contextKey String       @map("context_key")
-  context    SalesContext @relation(fields: [contextKey], references: [key])
+/// Taux de TVA — référence commerciale partagée. Les canaux en dérivent ce
+/// dont ils ont besoin : Shopify un handle de collection, la boutique B2B un
+/// nombre à facturer. Aucun de ces deux vocabulaires ne vit ici.
+/// Un **contexte de vente** — une manière de vendre l'article qui a son propre
+/// traitement de TVA (donc sa propre collection `tva-*` côté Shopify).
+///
+/// Une TABLE et non trois colonnes sur `category` : ajouter « B2B » ou « borne
+/// libre-service » doit être une LIGNE, pas une migration plus un déploiement.
+/// Les trois colonnes `*_tva_id` de `category` sont l'ancien modèle ; elles
+/// tombent au troisième déploiement (étendre → basculer → resserrer).
+model SalesContext {
+  id    String @id
+  /// Identité stable, lue par le code (`emporter`, `surPlace`, `b2b`).
+  key   String @unique
+  /// Ce qu'un humain lit à l'écran.
+  label String
+
+  /// Suffixe de handle Shopify. **Vide pour le contexte par défaut** : le
+  /// handle nu protège les URL déjà indexées (cf. C0-bis, write-once SEO).
+  handleSuffix String @default("") @map("handle_suffix")
+
+  /// Le contexte est-il **en service** ? Un contexte hors service ne se règle
+  /// plus à l'écran et ne facture plus. Explicite, jamais implicite : la TVA est
+  /// de l'argent, et un contexte activé par accident facture faux.
+  active Boolean @default(false)
+
+  /// Shopify en fait-il un produit ? **Distinct de `active`**, et la distinction
+  /// n'est pas théorique : le B2B est en service — il facture ses professionnels
+  /// — sans que la boutique en ligne ait à porter un second produit par article.
+  /// Les confondre activerait des handles `-b2b` le jour où on règle un taux B2B.
+  shopifyProjected Boolean @default(false) @map("shopify_projected")
+
+  position Int @default(0)
+
+  categoryVat CategoryContextVat[]
+  productVat  ProductContextVat[]
+  /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
+  offeredBy PointOfSaleContext[]
+
+  /// Ce qui se vend dans ce contexte. Le `Restrict` protège la clé : un contexte
+  /// encore vendu ne se supprime pas sous les familles qui le vendent.
+  categoryChannels CategoryChannel[]
+  productChannels  ProductChannel[]
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@id([locationId, contextKey])
-  @@index([contextKey])
-  @@map("location_context")
+  @@map("sales_context")
   @@schema("pim")
 }
 
-/// Le taux d'une famille **pour un contexte**. Clé composite : une famille ne
-/// peut pas porter deux taux pour le même contexte, et c'est structurel.
-///
-/// **L'absence de ligne est la donnée** : « non réglé » ne s'écrit pas, il ne
-/// s'écrit rien (cf. `data-model/04`, motif de la clé partagée).
 model CategoryContextVat {
   categoryId String       @map("category_id")
   category   Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -2797,17 +2726,13 @@ enum PointOfSaleKind {
 /// porteur de sens est toujours le signe d'une ligne absente — ici, la
 /// plateforme professionnelle.
 ///
-/// ⚠️ Tranche **p-0** (`documentation/pim/point-de-vente.md`) : cette table est
-/// pour l'instant un MIROIR d'`emplacement`, écrit dans la même transaction que
-/// lui, plus une ligne pour la plateforme. Elle n'est source de rien encore ;
-/// p-1 branche la matrice dessus, p-2 bascule les lectures, p-3 supprime
-/// `emplacement`. Une boutique garde donc l'**identifiant** de son emplacement,
-/// pour que la reprise de la matrice soit une copie de colonne.
+/// Une boutique porte l'identifiant de l'emplacement dont elle vient : la
+/// fusion de p-3 a été un `RENAME`, pas une copie — les jetons de QR déjà
+/// imprimés survivent, et la matrice n'a eu aucune référence à retraduire.
 ///
-/// ⚠️ L'unicité du libellé n'est pas ici : elle vit toujours sur
-/// `emplacement_name_unique`, la source. La poser en double refuserait le
-/// miroir alors que la source a accepté — un refus qu'aucun message ne saurait
-/// expliquer. Elle déménagera avec la source, en p-3.
+/// ⚠️ L'unicité du libellé n'est pas ici : `point_of_sale_label_unique`, index
+/// sur `lower(label)` — insensible à la casse, comme la lecture de l'écran.
+/// Posée en SQL par `20260826240000_resserrer_point_de_vente`.
 model PointOfSale {
   id    String          @id
   kind  PointOfSaleKind
@@ -2821,6 +2746,10 @@ model PointOfSale {
   /// Ce que ce point de vente OFFRE — distinct de ce qu'on y vend
   /// (`category_channel`), qui est une décision de catalogue.
   contexts PointOfSaleContext[]
+
+  /// Sa grille de tables à QR. De l'**équipement**, pas un mode de vente : deux
+  /// boulangeries peuvent toutes deux servir en salle et une seule être équipée.
+  tables PointOfSaleTable[]
 
   /// Ce qu'on y vend. Le `Restrict` protège la ligne : un point de vente encore
   /// vendu ne se supprime pas sous les familles qui le vendent.
@@ -2853,55 +2782,20 @@ model PointOfSaleContext {
   @@schema("pim")
 }
 
-/// Un **emplacement** (boutique / point de vente) et ses modes. S'il fait « sur
-/// place », il ouvre une grille de tables click & collect (une URL + un QR par
-/// table). Contexte `locations` — aucune dépendance au catalogue.
-/// ⚠️ L'unicité du nom n'est pas ici : `emplacement_name_unique`, index sur
-/// `lower(name)` — insensible à la casse, comme la recherche du dépôt. Posée en
-/// SQL par `20260826090000_unicite_slug_rang_emplacement`.
-model Location {
-  id           String  @id
-  name         String
-  /// Vente à emporter en ligne.
-  clickCollect Boolean @default(false) @map("click_collect")
-  /// Consommation sur place — ouvre les tables.
-  eatIn        Boolean @default(false) @map("sur_place")
-  /// URL de base du click & collect (`baseUrl?table=N&k=token`).
-  baseUrl      String  @default("") @map("base_url")
-
-  tables LocationTable[]
-
-  /// Les contextes que ce point de vente offre — voir `LocationContext`. En
-  /// service à côté de `clickCollect` / `eatIn`, que la tranche d-3 supprime.
-  contexts LocationContext[]
-
-  /// Les familles et les fiches qui vendent DEPUIS ce lieu — le mur `Restrict`,
-  /// enfin direct. Un index de référence le portait par procuration, faute de
-  /// pouvoir poser une clé étrangère dans du `jsonb` ; il est tombé en d-3.
-  categoryChannels CategoryChannel[]
-  productChannels  ProductChannel[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("emplacement")
-  @@schema("pim")
-}
-
-/// Une **table** d’un emplacement sur place. Le `number` est verrouillé (identité
-/// de l'URL) : clé primaire composite `(location, number)`. Suppression en
-/// cascade avec l’emplacement.
-model LocationTable {
-  locationId String   @map("emplacement_id")
-  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  number     Int
-  qrCreated  Boolean  @default(false) @map("qr_created")
+/// Une **table** d'une boutique. Le `number` est verrouillé (identité de l'URL
+/// imprimée) : clé primaire composite `(point de vente, numéro)`. Suppression en
+/// cascade avec le point de vente.
+model PointOfSaleTable {
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id], onDelete: Cascade)
+  number        Int
+  qrCreated     Boolean     @default(false) @map("qr_created")
   /// Token rotatif du QR : le régénérer invalide l'ancien code imprimé.
   /// `NULL` = aucun QR généré.
-  token      String?
+  token         String?
 
-  @@id([locationId, number])
-  @@map("emplacement_table")
+  @@id([pointOfSaleId, number])
+  @@map("point_of_sale_table")
   @@schema("pim")
 }
 

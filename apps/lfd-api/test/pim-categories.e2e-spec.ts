@@ -18,7 +18,7 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
-const LOCATIONS = "/pim/locations";
+const SHOPS = "/pim/points-of-sale";
 const RATES = "/pim/commerce/vat-rates";
 
 let ctx: E2eContext;
@@ -48,10 +48,10 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function createLocation(name: string): Promise<string> {
+async function openShop(label: string): Promise<string> {
   const response = await staff()
-    .post(LOCATIONS)
-    .send({ name, clickCollect: true, eatIn: false, baseUrl: "", tableCount: 0 });
+    .post(SHOPS)
+    .send({ label, contexts: ["takeaway"], baseUrl: "", tableCount: 0 });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
 }
@@ -125,7 +125,7 @@ describe("le slug d'une famille est unique", () => {
 describe("un preset ne cite que des points de vente qui existent", () => {
   it("accepte un point de vente du référentiel", async () => {
     const category = await createCategory("Viennoiseries");
-    const location = await createLocation("Village");
+    const location = await openShop("Village");
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)

@@ -260,12 +260,12 @@ vivent déjà dans leur propre table. Une contrainte `CHECK` en SQL dit la règl
 Discipline `étendre / basculer / resserrer`, comme toujours
 (`documentation/ops/pipelines.md`).
 
-| Tranche             | Migration                                                                                                                                                           | Code                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **p-0 étendre** ✅  | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | la matrice ne lit rien encore ; l'écran Emplacements devient Points de vente, la plateforme en lecture              |
-| **p-1 étendre** ✅  | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                     |
-| **p-2 basculer** ✅ | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; la matrice devient (point de vente × contexte) |
-| **p-3 resserrer**   | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `emplacement` fusionne dans `point_of_sale`              | suppression du double-écriture ; l'écran des points de vente coche les contextes offerts                            |
+| Tranche              | Migration                                                                                                                                                           | Code                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **p-0 étendre** ✅   | `point_of_sale` + reprise des emplacements (genre `shop`) **et** de la plateforme (une ligne) ; `point_of_sale_context` rempli depuis `click_collect` / `sur_place` | la matrice ne lit rien encore ; l'écran Emplacements devient Points de vente, la plateforme en lecture              |
+| **p-1 étendre** ✅   | colonnes `point_of_sale_id` ajoutées à `category_channel` / `product_channel`, remplies                                                                             | écrites à côté de `location_id`                                                                                     |
+| **p-2 basculer** ✅  | —                                                                                                                                                                   | tout lit `point_of_sale_id` ; `per_location` et la branche tombent ; la matrice devient (point de vente × contexte) |
+| **p-3 resserrer** ✅ | `DROP` de `location_id`, `per_location`, `click_collect`, `sur_place` ; `NOT NULL` sur le point de vente ; `emplacement` fusionne dans `point_of_sale`              | suppression du double-écriture ; l'écran des points de vente coche les contextes offerts                            |
 
 **p-0 a une valeur propre** : il rend la plateforme B2B **visible** dans
 l'administration, à côté des boutiques. Avant lui elle n'existait nulle part à
@@ -340,6 +340,52 @@ d'écriture — `click_collect` / `sur_place` restent la source, et le miroir en
 dérive. Les deux se rejoignent en p-3, quand `emplacement` fusionne dans
 `point_of_sale` : une seule table, donc une seule vérité, et pas de fenêtre où
 deux écrans écrivent la même chose par deux chemins.
+
+### p-3, tel qu'il a été livré (2026-08-26)
+
+`emplacement` n'existe plus. `point_of_sale` est la table, et la boutique en est
+un genre.
+
+| Ce qui tombe                                                  | Ce qui le remplace                                              |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| `category_channel.location_id`, `product_channel.location_id` | `point_of_sale_id`, **`NOT NULL`**                              |
+| `NULLS NOT DISTINCT` sur les deux index d'unicité             | plus de colonne nullable dans la clé                            |
+| `emplacement`, `emplacement_table`, `location_context`        | `point_of_sale`, `point_of_sale_table`, `point_of_sale_context` |
+| `sales_context.per_location`                                  | `point_of_sale_context`                                         |
+| `emplacement_name_unique`                                     | `point_of_sale_label_unique`, sur `lower(label)`                |
+| `location.*` dans le journal                                  | `point_of_sale.*`, traduits **en base**                         |
+
+**Un `RENAME`, pas une copie.** La grille de tables a déménagé par
+`ALTER TABLE … RENAME` : les boutiques portent l'identifiant de leur ancien
+emplacement (p-0), donc les lignes valaient déjà. Recréer les tables aurait
+invalidé en silence les **jetons de QR déjà imprimés**.
+
+**Le journal a été traduit avec le modèle.** `location.created` et le sujet
+`location` sont des DONNÉES, dans des lignes déjà écrites : les laisser aurait
+fait un journal où la moitié des gestes portent le nom d'une table qui n'existe
+plus. Deux `UPDATE`, comme pour les clés de contexte en d-3.
+
+### L'invariant qui tombe, et c'est voulu
+
+**Retirer « sur place » n'efface plus les tables ni leurs QR.**
+
+`eatIn` faisait deux métiers : « ce lieu sert en salle » et « ce lieu a une
+grille de QR ». D'où une destruction en cascade — décocher une case détruisait
+du papier collé sur des meubles. Une grille de tables est de l'**équipement** :
+deux boulangeries peuvent toutes deux servir en salle et une seule être équipée,
+ce que le modèle précédent ne savait pas dire.
+
+Ce qui reste vrai, et qui est plus juste : une **plateforme** n'a ni URL de
+click & collect ni tables — le genre l'interdit, dans l'agrégat comme dans la
+base (`point_of_sale_shop_has_base_url`). Et un QR sur une boutique qui n'offre
+plus le sur place mène à une commande vide, pas à un mensonge : la matrice a
+déjà cessé d'y vendre.
+
+### Ce que l'écran gagne
+
+Le panneau ne coche plus « Click & collect » et « Sur place » : il rend **une
+case par contexte du registre**. Un troisième contexte n'a plus à passer par ce
+fichier — c'est la promesse de C0, tenue jusqu'au bord de l'écran.
 
 ### La racine, encore
 

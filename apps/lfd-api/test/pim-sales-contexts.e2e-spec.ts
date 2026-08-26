@@ -247,22 +247,10 @@ describe("régler un contexte de vente", () => {
 /**
  * Ouvre une boutique qui OFFRE un contexte donné, en base directe.
  *
- * Directe parce que l'écran ne sait pas l'exprimer : les contextes d'un
- * emplacement dérivent encore de `clickCollect` / `eatIn`, donc l'API ne permet
- * pas d'en offrir un troisième. Elle écrit les DEUX tables — `location_context`
- * et son miroir `point_of_sale_context` — comme le dépôt le fait dans sa
- * transaction : n'en écrire qu'une reproduirait une dérive du miroir, pas un
- * état que la production peut atteindre.
+ * Directe pour rester au plus près de ce qu'on éprouve ici — le mur de la clé
+ * étrangère — sans faire dépendre cette suite de la route des points de vente.
  */
 async function openShopOffering(contextKey: string): Promise<void> {
-  await ctx.prisma.location.create({
-    data: {
-      id: "emp_test",
-      name: "Village",
-      baseUrl: "",
-      contexts: { create: [{ contextKey }] },
-    },
-  });
   await ctx.prisma.pointOfSale.create({
     data: {
       id: "emp_test",

@@ -17,7 +17,7 @@
 
 /** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
 export type PimSubjectType =
-  "vat_rate" | "product" | "product_category" | "location" | "sales_context";
+  "vat_rate" | "product" | "product_category" | "point_of_sale" | "sales_context";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -118,24 +118,30 @@ export const PIM_EVENTS = {
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**
-   * **L'emplacement** — boutique ou point de vente, et sa grille de tables.
+   * **Le point de vente** — boutique ou plateforme, son offre et sa grille de
+   * tables.
    *
    * Il entre dans le journal du référentiel parce qu'il en fait partie : les
-   * familles citent les emplacements dans leur grille de canaux, et supprimer
-   * un emplacement est refusé tant qu'une famille le coche. Un journal qui
-   * expliquerait les canaux sans expliquer les emplacements qu'ils citent
-   * s'arrêterait juste avant la réponse.
+   * familles citent les points de vente dans leur matrice de canaux, et
+   * supprimer un point de vente est refusé tant qu'une famille y vend. Un
+   * journal qui expliquerait les canaux sans expliquer les points de vente
+   * qu'ils citent s'arrêterait juste avant la réponse.
+   *
+   * ⚠️ Ces clés s'appelaient `location.*`. Elles ont été traduites EN BASE par
+   * `20260826240000_resserrer_point_de_vente` : ce sont des données, pas des
+   * identifiants de code, et un journal où la moitié des gestes portent le nom
+   * d'une table disparue n'explique plus rien.
    */
-  locationCreated: "location.created",
-  locationUpdated: "location.updated",
-  locationDeleted: "location.deleted",
+  pointOfSaleCreated: "point_of_sale.created",
+  pointOfSaleUpdated: "point_of_sale.updated",
+  pointOfSaleDeleted: "point_of_sale.deleted",
   /**
    * Un QR de table **émis** ou **retiré**. Le jeton n'est PAS dans la charge :
    * il vaut accès à la commande à table, et un journal se lit plus largement
    * que la table qui le porte. On trace le geste, pas le secret.
    */
-  locationTableQrGenerated: "location.table_qr_generated",
-  locationTableQrRemoved: "location.table_qr_removed",
+  pointOfSaleTableQrGenerated: "point_of_sale.table_qr_generated",
+  pointOfSaleTableQrRemoved: "point_of_sale.table_qr_removed",
   /**
    * **Le contexte de vente** — une manière de vendre qui a son propre taux.
    *

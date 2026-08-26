@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
+import type { PointOfSaleView } from '@lfd/pim-contracts';
 
 import { SalesContextStore } from '../../catalogue/sales-contexts/sales-context-store';
 import { PlatformList } from '../platform-list/platform-list';
@@ -14,13 +15,7 @@ import { PointOfSaleStore } from '../point-of-sale-store';
  * montrer.
  */
 describe('PlatformList', () => {
-  interface Point {
-    readonly id: string;
-    readonly kind: 'shop' | 'platform';
-    readonly label: string;
-    readonly baseUrl: string | null;
-    readonly contexts: readonly string[];
-  }
+  type Point = PointOfSaleView;
 
   function render(points: readonly Point[], contexts: readonly { key: string; label: string }[]) {
     TestBed.resetTestingModule();
@@ -48,6 +43,8 @@ describe('PlatformList', () => {
     label: 'B2B',
     baseUrl: null,
     contexts: ['b2b'],
+    tables: [],
+    usedByCategories: 0,
   };
 
   it('affiche la plateforme avec le LIBELLÉ de ce qu’elle offre', () => {
@@ -71,7 +68,18 @@ describe('PlatformList', () => {
   /** Les boutiques sont rendues par leur propre liste — leur source d'écriture. */
   it('ignore les boutiques', () => {
     const element = render(
-      [b2b, { id: 'shop_1', kind: 'shop', label: 'Village', baseUrl: '', contexts: ['takeaway'] }],
+      [
+        b2b,
+        {
+          id: 'shop_1',
+          kind: 'shop',
+          label: 'Village',
+          baseUrl: '',
+          contexts: ['takeaway'],
+          tables: [],
+          usedByCategories: 0,
+        },
+      ],
       [],
     );
 

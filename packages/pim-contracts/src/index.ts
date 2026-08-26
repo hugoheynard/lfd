@@ -50,18 +50,17 @@ export type {
 
 export {
   MAX_TABLES,
-  createLocationPayloadSchema,
-  updateLocationPayloadSchema,
-} from "./locations.js";
+  openShopPayloadSchema,
+  updatePointOfSalePayloadSchema,
+} from "./points-of-sale.js";
 export type {
-  CreateLocationPayload,
-  UpdateLocationPayload,
-  TableView,
-  LocationView,
+  OpenShopPayload,
+  PointOfSaleKindView,
+  PointOfSaleView,
   TableQrResponse,
-} from "./locations.js";
-
-export type { PointOfSaleKindView, PointOfSaleView } from "./points-of-sale.js";
+  TableView,
+  UpdatePointOfSalePayload,
+} from "./points-of-sale.js";
 
 export {
   productKindSchema,

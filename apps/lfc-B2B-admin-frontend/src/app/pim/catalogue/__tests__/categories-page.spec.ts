@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CategoriesPage } from '../categories-page/categories-page';
 import { CategoryHttpApi } from '../category-http-api';
-import { LocationHttpApi } from '../../locations/location-http-api';
+import { PointOfSaleHttpApi } from '../../points-of-sale/point-of-sale-http-api';
 import { VatRateHttpApi } from '../vat-rates/vat-http-api';
 import type { Category } from '../../data/models';
 
@@ -31,7 +31,7 @@ async function render(rows: Category[]): Promise<HTMLElement> {
       provideRouter([]),
       { provide: CategoryHttpApi, useValue: { list: async () => rows } },
       { provide: VatRateHttpApi, useValue: { list: async () => [] } },
-      { provide: LocationHttpApi, useValue: { list: async () => [] } },
+      { provide: PointOfSaleHttpApi, useValue: { list: async () => [] } },
     ],
   });
   const fixture = TestBed.createComponent(CategoriesPage);

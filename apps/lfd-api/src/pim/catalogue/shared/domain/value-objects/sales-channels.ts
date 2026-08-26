@@ -1,8 +1,3 @@
-import {
-  isRootPointOfSale,
-  ROOT_POINT_OF_SALE_ID,
-} from "../../../../points-of-sale/domain/value-objects/bootstrap-point-of-sale.js";
-
 /**
  * Un canal **vendu** : un contexte, et le point de vente qui le vend.
  *
@@ -101,35 +96,4 @@ export function sellsAt(
   return channels.some(
     (channel) => channel.pointOfSaleId === pointOfSaleId && channel.context === contextKey,
   );
-}
-
-/**
- * L'**emplacement** d'un canal, tel que la colonne héritée l'attend.
- *
- * ⚠️ Code de TRANSITION (p-2, `documentation/pim/point-de-vente.md`). Les
- * lectures sont basculées, mais `location_id` reste écrite : pendant le
- * déploiement, le binaire de la version précédente la LIT encore, et cesser de
- * la remplir rendrait invisible tout ce qui est enregistré dans cette fenêtre.
- *
- * La règle est l'inverse exacte de celle de p-1 : une plateforme n'est pas un
- * lieu. p-3 supprime la colonne — et cette fonction avec.
- */
-export function legacyLocationOf(channel: SoldChannel): string | null {
-  return isRootPointOfSale(channel.pointOfSaleId) ? null : channel.pointOfSaleId;
-}
-
-/**
- * Le point de vente d'une LIGNE lue, colonne héritée comprise.
- *
- * ⚠️ Code de TRANSITION (p-2). `point_of_sale_id` est remplie depuis p-1, mais
- * une ligne écrite par le binaire précédent PENDANT le déploiement de p-1 ne
- * l'a pas. La retomber sur `location_id` évite de perdre ces lignes-là ; p-3
- * les rattrape par un dernier remplissage, puis pose le `NOT NULL` — et cette
- * fonction disparaît.
- */
-export function pointOfSaleOfRow(row: {
-  readonly pointOfSaleId: string | null;
-  readonly locationId: string | null;
-}): string {
-  return row.pointOfSaleId ?? row.locationId ?? ROOT_POINT_OF_SALE_ID;
 }

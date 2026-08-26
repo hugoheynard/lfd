@@ -18,11 +18,7 @@ import {
   readStringArrayColumn,
   readStringMapColumn,
 } from "../../shared/infrastructure/json-readers.js";
-import {
-  legacyLocationOf,
-  normalizeSalesChannels,
-  pointOfSaleOfRow,
-} from "../../shared/domain/value-objects/sales-channels.js";
+import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface NutritionRow {
   allergens: unknown;
@@ -61,11 +57,7 @@ interface ProductRow {
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
   channelOverrideRows: {
-    readonly cells: readonly {
-      pointOfSaleId: string | null;
-      locationId: string | null;
-      contextKey: string;
-    }[];
+    readonly cells: readonly { pointOfSaleId: string; contextKey: string }[];
   } | null;
 }
 
@@ -79,9 +71,7 @@ interface ProductRow {
 const PRODUCT_INCLUDE = {
   variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-  channelOverrideRows: {
-    select: { cells: { select: { pointOfSaleId: true, locationId: true, contextKey: true } } },
-  },
+  channelOverrideRows: { select: { cells: { select: { pointOfSaleId: true, contextKey: true } } } },
 } as const;
 
 function toVariant(row: VariantRow): VariantSnapshot {
@@ -136,7 +126,7 @@ function toProduct(row: ProductRow): Product {
         ? null
         : normalizeSalesChannels(
             row.channelOverrideRows.cells.map((cell) => ({
-              pointOfSaleId: pointOfSaleOfRow(cell),
+              pointOfSaleId: cell.pointOfSaleId,
               context: cell.contextKey,
             })),
           ),
@@ -294,8 +284,7 @@ export class PrismaProductRepository extends ProductRepository {
    * nettoyer avant de réécrire, et surtout aucune cellule ne peut survivre à la
    * dérogation qui la portait.
    *
-   * ⚠️ Depuis p-2, `point_of_sale_id` est la colonne LUE ; `location_id` reste
-   * écrite pour le binaire de la version précédente, et p-3 la supprime.
+   * `point_of_sale_id` est la seule colonne de lieu depuis p-3.
    */
   private overrideOperations(snapshot: ProductSnapshot) {
     const remove = this.prisma.productChannelOverride.deleteMany({
@@ -315,7 +304,6 @@ export class PrismaProductRepository extends ProductRepository {
               data: sold.map((channel) => ({
                 productId: snapshot.id,
                 pointOfSaleId: channel.pointOfSaleId,
-                locationId: legacyLocationOf(channel),
                 contextKey: channel.context,
               })),
             }),

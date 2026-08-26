@@ -5,7 +5,6 @@ import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { ShopifyModule } from "./channels/shopify/shopify.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
-import { LocationsModule } from "./locations/locations.module.js";
 import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
 
 /**
@@ -19,7 +18,7 @@ import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
  * fois pour tout le monde.
  *
  * Ce qui reste est le référentiel lui-même : le catalogue, ses canaux de
- * sortie, la TVA et les emplacements. Ils gardent **leur** base, par
+ * sortie, la TVA et les points de vente. Ils gardent **leur** base, par
  * `PimDatabaseModule` (non global, importé module par module).
  *
  * Le préfixe de routes (`pim`, et `channels/shopify` · `channels/b2b` en
@@ -30,7 +29,6 @@ import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
   imports: [
     CatalogueModule,
     CommerceModule,
-    LocationsModule,
     PointsOfSaleModule,
     ShopifyModule,
     B2bPlatformModule,
@@ -45,7 +43,6 @@ import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
         children: [
           CatalogueModule,
           CommerceModule,
-          LocationsModule,
           PointsOfSaleModule,
           {
             path: "channels",

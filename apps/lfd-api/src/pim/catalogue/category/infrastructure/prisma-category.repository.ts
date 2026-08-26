@@ -15,8 +15,6 @@ import {
 import {
   normalizeSalesChannels,
   type SalesChannels,
-  legacyLocationOf,
-  pointOfSaleOfRow,
 } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
@@ -27,11 +25,7 @@ interface CategoryRow {
   position: number;
   isArchived: boolean;
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
-  channels: readonly {
-    pointOfSaleId: string | null;
-    locationId: string | null;
-    contextKey: string;
-  }[];
+  channels: readonly { pointOfSaleId: string; contextKey: string }[];
 }
 
 /**
@@ -41,7 +35,7 @@ interface CategoryRow {
  */
 const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-  channels: { select: { pointOfSaleId: true, locationId: true, contextKey: true } },
+  channels: { select: { pointOfSaleId: true, contextKey: true } },
 } as const;
 
 /**
@@ -51,11 +45,9 @@ const CATEGORY_WITH_VAT = {
  * aucun ordre, et un « avant/après » de journal comparerait alors deux
  * ensembles identiques rangés différemment.
  */
-function toChannels(
-  rows: readonly { pointOfSaleId: string | null; locationId: string | null; contextKey: string }[],
-): SalesChannels {
+function toChannels(rows: readonly { pointOfSaleId: string; contextKey: string }[]): SalesChannels {
   return normalizeSalesChannels(
-    rows.map((row) => ({ pointOfSaleId: pointOfSaleOfRow(row), context: row.contextKey })),
+    rows.map((row) => ({ pointOfSaleId: row.pointOfSaleId, context: row.contextKey })),
   );
 }
 
@@ -226,9 +218,8 @@ export class PrismaCategoryRepository extends CategoryRepository {
    * Elle est LUE depuis d-2 : c'est la matrice elle-même, plus un miroir de
    * `jsonb`.
    *
-   * ⚠️ Depuis p-2, `point_of_sale_id` est la colonne LUE ; `location_id` reste
-   * écrite parce que le binaire de la version précédente la lit encore pendant
-   * le déploiement. p-3 la supprime.
+   * `point_of_sale_id` est la seule colonne de lieu depuis p-3 : `location_id`
+   * a disparu, et le `NULL` qui voulait dire « le B2B » avec elle.
    */
   private channelOperations(snapshot: CategorySnapshot) {
     const sold = snapshot.channelPreset;
@@ -241,7 +232,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
               data: sold.map((channel) => ({
                 categoryId: snapshot.id,
                 pointOfSaleId: channel.pointOfSaleId,
-                locationId: legacyLocationOf(channel),
                 contextKey: channel.context,
               })),
             }),

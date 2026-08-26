@@ -26,7 +26,7 @@ const ROUTES = [
   "/pim/catalogue/products",
   "/pim/catalogue/categories",
   "/pim/commerce/vat-rates",
-  "/pim/locations",
+  "/pim/points-of-sale",
   "/pim/channels/b2b/products",
 ] as const;
 

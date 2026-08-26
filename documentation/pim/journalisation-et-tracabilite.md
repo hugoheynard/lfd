@@ -319,8 +319,8 @@ Définis dans `pim/journal/pim-journal.ts` (`PIM_EVENTS`).
 | `product_category.created` / `.renamed` / `.moved` / `.archived` | l'arbre du catalogue                                    |
 | `product_category.reordered`                                     | un NIVEAU rangé (sujet = le parent, `root` à la racine) |
 | `product_category.channels_changed`                              | où un rayon se vend                                     |
-| `location.created` / `.updated` / `.deleted`                     | emplacements                                            |
-| `location.table_qr_generated` / `.table_qr_removed`              | QR de table (le jeton n'est jamais dans la charge)      |
+| `point_of_sale.created` / `.updated` / `.deleted`                | points de vente (boutiques et plateformes)              |
+| `point_of_sale.table_qr_generated` / `.table_qr_removed`         | QR de table (le jeton n'est jamais dans la charge)      |
 | `vat_rate.created` / `.rate_changed` / `.renamed` / `.deleted`   | référentiel des taux                                    |
 
 **Toute écriture du référentiel nomme désormais son fait** : `27/27` handlers,
@@ -548,7 +548,7 @@ ORDER BY occurred_at DESC;
 - ~~14 handlers du PIM écrivent sans fait nommé~~ — **plus aucun depuis le
   2026-08-25** : `27/27`. Les quatorze gestes qui restaient (ouverture /
   archivage / restauration d'une fiche, les six sur les familles, les cinq sur
-  les emplacements) ont chacun leur fait. La liste `BACKLOG` de la porte reste
+  les points de vente) ont chacun leur fait. La liste `BACKLOG` de la porte reste
   en place, **vide** : c'est le mécanisme qui rendra une dette future visible et
   bornée.
 - **Le B2B, sauf les actes du staff et les décisions tarifaires** (§11 et §12) :

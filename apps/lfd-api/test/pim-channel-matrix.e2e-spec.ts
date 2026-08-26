@@ -15,7 +15,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-const LOCATIONS = "/pim/locations";
+const SHOPS = "/pim/points-of-sale";
 const CATEGORIES = "/pim/catalogue/categories";
 const PRODUCTS = "/pim/catalogue/products";
 
@@ -38,10 +38,10 @@ beforeEach(async () => {
 const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
 
-async function aLocation(name: string): Promise<string> {
+async function aShop(label: string): Promise<string> {
   const response = await staff()
-    .post(LOCATIONS)
-    .send({ name, clickCollect: true, eatIn: true, baseUrl: "", tableCount: 0 });
+    .post(SHOPS)
+    .send({ label, contexts: ["takeaway", "eatIn"], baseUrl: "", tableCount: 0 });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
 }
@@ -79,7 +79,7 @@ async function hasOverride(productId: string): Promise<boolean> {
 
 describe("ce qu'une famille vend s'écrit en paires (point de vente, contexte)", () => {
   it("déplie un mode coché en une ligne", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
 
     await staff()
@@ -91,7 +91,7 @@ describe("ce qu'une famille vend s'écrit en paires (point de vente, contexte)",
   });
 
   it("écrit DEUX lignes quand un lieu vend les deux modes", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
 
     await staff()
@@ -123,7 +123,7 @@ describe("ce qu'une famille vend s'écrit en paires (point de vente, contexte)",
   });
 
   it("RETIRE les lignes qu'on décoche", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
     const channels = (body: object) =>
       staff().put(`${CATEGORIES}/${category}/channels`).send(body).expect(200);
@@ -167,7 +167,7 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
   });
 
   it("écrit les cellules de la dérogation", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
     const product = await aProduct(category, "Croissant");
     await staff()
@@ -198,7 +198,7 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
    * dérogation qui la portait — c'est la base qui le garantit, pas le dépôt.
    */
   it("efface tout quand la fiche revient à l'héritage", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
     const product = await aProduct(category, "Croissant");
     await staff()
@@ -228,7 +228,7 @@ describe("le mur devient direct", () => {
    * registre.
    */
   it("refuse de supprimer un emplacement encore vendu, depuis la table", async () => {
-    const location = await aLocation("Village");
+    const location = await aShop("Village");
     const category = await aCategory("Viennoiseries");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
@@ -237,7 +237,7 @@ describe("le mur devient direct", () => {
 
     expect(await ctx.prisma.categoryChannel.count({ where: { pointOfSaleId: location } })).toBe(1);
 
-    const response = await staff().delete(`${LOCATIONS}/${location}`);
+    const response = await staff().delete(`${SHOPS}/${location}`);
     expect(response.status).toBe(409);
   });
 });

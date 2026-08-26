@@ -23,6 +23,8 @@ const POINTS_OF_SALE: PointOfSaleView[] = [
     label: 'B2B',
     baseUrl: null,
     contexts: ['b2b'],
+    tables: [],
+    usedByCategories: 0,
   },
   {
     id: 'emp_village',
@@ -30,8 +32,18 @@ const POINTS_OF_SALE: PointOfSaleView[] = [
     label: 'Village',
     baseUrl: '',
     contexts: ['takeaway', 'eatIn'],
+    tables: [],
+    usedByCategories: 0,
   },
-  { id: 'emp_val', kind: 'shop', label: 'Val', baseUrl: '', contexts: ['takeaway'] },
+  {
+    id: 'emp_val',
+    kind: 'shop',
+    label: 'Val',
+    baseUrl: '',
+    contexts: ['takeaway'],
+    tables: [],
+    usedByCategories: 0,
+  },
 ];
 
 function render(

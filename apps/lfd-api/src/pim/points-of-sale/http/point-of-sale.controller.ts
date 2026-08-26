@@ -1,30 +1,91 @@
-import { Controller, Get } from "@nestjs/common";
-import { QueryBus } from "@nestjs/cqrs";
-import type { PointOfSaleView } from "@lfd/pim-contracts";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import {
+  openShopPayloadSchema,
+  updatePointOfSalePayloadSchema,
+  type OpenShopPayload,
+  type PointOfSaleView,
+  type UpdatePointOfSalePayload,
+} from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { CloseShopCommand } from "../application/close-shop.js";
+import { GenerateTableQrCommand } from "../application/generate-table-qr.js";
 import { ListPointsOfSaleQuery } from "../application/list-points-of-sale.js";
+import { OpenShopCommand } from "../application/open-shop.js";
+import { RemoveTableQrCommand } from "../application/remove-table-qr.js";
+import { UpdatePointOfSaleCommand } from "../application/update-point-of-sale.js";
 
 /**
- * **Points de vente** — d'où l'on vend : les boutiques et la plateforme
- * professionnelle, dans une seule liste.
+ * **Points de vente** — d'où l'on vend : les boutiques, leur offre de contextes
+ * et leur grille de QR de table, plus la plateforme professionnelle.
  *
- * **Lecture seule**, en p-0. Les boutiques s'écrivent encore par `locations`,
- * qui tient ce miroir dans sa propre transaction ; la plateforme, elle, ne
- * s'écrit nulle part — elle est semée au boot et ineffaçable.
+ * Le contrôleur ne fait que dispatcher sur les bus CQRS : commandes qui mutent,
+ * requête qui lit.
  *
- * `@AdminSurface("catalog")` dérive l'action du verbe : un `GET` demande
- * `catalog:read`, que tout rôle du back-office porte.
+ * Surface staff murée par `@AdminSurface("catalog")` : un `GET` demande
+ * `catalog:read`, tout le reste `catalog:write`.
  */
 @AdminSurface("catalog")
 @Controller("points-of-sale")
 export class PointOfSaleController {
-  constructor(private readonly queries: QueryBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
 
   @Get()
-  listPointsOfSale(): Promise<readonly PointOfSaleView[]> {
-    return this.queries.execute<ListPointsOfSaleQuery, readonly PointOfSaleView[]>(
+  listPointsOfSale(): Promise<PointOfSaleView[]> {
+    return this.queries.execute<ListPointsOfSaleQuery, PointOfSaleView[]>(
       new ListPointsOfSaleQuery(),
     );
+  }
+
+  /** Ouvre une BOUTIQUE. Une plateforme est semée au boot, pas créée ici. */
+  @Post()
+  async openShop(
+    @Body(new ZodBody(openShopPayloadSchema))
+    body: OpenShopPayload,
+  ) {
+    const id = await this.commands.execute<OpenShopCommand, string>(new OpenShopCommand(body));
+    return { id };
+  }
+
+  @Put(":id")
+  async updatePointOfSale(
+    @Param("id") id: string,
+    @Body(new ZodBody(updatePointOfSalePayloadSchema))
+    body: UpdatePointOfSalePayload,
+  ) {
+    await this.commands.execute<UpdatePointOfSaleCommand, void>(
+      new UpdatePointOfSaleCommand(id, body),
+    );
+    return { id };
+  }
+
+  @Delete(":id")
+  async closeShop(@Param("id") id: string) {
+    await this.commands.execute<CloseShopCommand, void>(new CloseShopCommand(id));
+    return { id };
+  }
+
+  @Post(":id/tables/:number/qr")
+  async generateTableQr(
+    @Param("id") id: string,
+    @Param("number", ParseIntPipe) tableNumber: number,
+  ) {
+    const token = await this.commands.execute<GenerateTableQrCommand, string>(
+      new GenerateTableQrCommand(id, tableNumber),
+    );
+    return { token };
+  }
+
+  @Delete(":id/tables/:number/qr")
+  async removeTableQr(@Param("id") id: string, @Param("number", ParseIntPipe) tableNumber: number) {
+    await this.commands.execute<RemoveTableQrCommand, void>(
+      new RemoveTableQrCommand(id, tableNumber),
+    );
+    return { id, tableNumber };
   }
 }
