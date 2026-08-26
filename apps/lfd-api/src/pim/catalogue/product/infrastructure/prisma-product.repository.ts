@@ -18,7 +18,10 @@ import {
   readStringArrayColumn,
   readStringMapColumn,
 } from "../../shared/infrastructure/json-readers.js";
-import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
+import {
+  normalizeSalesChannels,
+  pointOfSaleOf,
+} from "../../shared/domain/value-objects/sales-channels.js";
 
 interface NutritionRow {
   allergens: unknown;
@@ -284,7 +287,8 @@ export class PrismaProductRepository extends ProductRepository {
    * nettoyer avant de réécrire, et surtout aucune cellule ne peut survivre à la
    * dérogation qui la portait.
    *
-   * Personne ne la LIT encore : c'est le propre d'une tranche « étendre ».
+   * ⚠️ `pointOfSaleId` est écrite en plus de `locationId` (p-1) : personne ne la
+   * lit encore, et p-3 retire la seconde.
    */
   private overrideOperations(snapshot: ProductSnapshot) {
     const remove = this.prisma.productChannelOverride.deleteMany({
@@ -304,6 +308,7 @@ export class PrismaProductRepository extends ProductRepository {
               data: sold.map((channel) => ({
                 productId: snapshot.id,
                 locationId: channel.locationId,
+                pointOfSaleId: pointOfSaleOf(channel),
                 contextKey: channel.context,
               })),
             }),

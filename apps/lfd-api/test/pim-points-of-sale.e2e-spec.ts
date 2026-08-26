@@ -151,3 +151,41 @@ describe("le miroir d'une boutique suit sa source", () => {
     expect((await listPointsOfSale()).some((point) => point.id === id)).toBe(true);
   });
 });
+
+describe("la matrice cite un point de vente", () => {
+  async function sellFrom(cells: readonly { locationId: string | null; context: string }[]) {
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post("/pim/catalogue/categories")
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    await staff().put(`/pim/catalogue/categories/${category}/channels`).send(cells).expect(200);
+    return ctx.prisma.categoryChannel.findMany({
+      where: { categoryId: category },
+      select: { locationId: true, pointOfSaleId: true, contextKey: true },
+    });
+  }
+
+  /**
+   * ⚠️ Tranche « étendre » : personne ne LIT encore cette colonne. Le test
+   * existe pour ça — une colonne écrite que rien ne relit se remplit de travers
+   * en silence, et p-2 basculerait dessus sans que rien n'ait jamais vérifié.
+   */
+  it("remplit `point_of_sale_id` à côté de `location_id`", async () => {
+    const shop = await createLocation({ name: "Village" });
+
+    const rows = await sellFrom([{ locationId: shop, context: "takeaway" }]);
+
+    expect(rows).toEqual([{ locationId: shop, pointOfSaleId: shop, contextKey: "takeaway" }]);
+  });
+
+  /**
+   * Le cœur de la traduction : le `NULL` qui voulait dire « le B2B » devient la
+   * ligne qui le dit.
+   */
+  it("traduit le contexte sans lieu en plateforme", async () => {
+    const rows = await sellFrom([{ locationId: null, context: "b2b" }]);
+
+    expect(rows).toEqual([{ locationId: null, pointOfSaleId: "pos_b2b", contextKey: "b2b" }]);
+  });
+});

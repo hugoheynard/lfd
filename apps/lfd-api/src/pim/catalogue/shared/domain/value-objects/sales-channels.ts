@@ -1,3 +1,5 @@
+import { ROOT_POINT_OF_SALE_ID } from "../../../../points-of-sale/domain/value-objects/bootstrap-point-of-sale.js";
+
 /**
  * Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend.
  *
@@ -97,4 +99,19 @@ export function sellsAt(
   return channels.some(
     (channel) => channel.locationId === locationId && channel.context === contextKey,
   );
+}
+
+/**
+ * Le **point de vente** d'un canal vendu.
+ *
+ * ⚠️ Code de TRANSITION (p-1, `documentation/pim/point-de-vente.md`). Toute la
+ * règle de traduction tient ici : un lieu garde son identifiant, et le `null`
+ * qui voulait dire « le B2B » devient la ligne qui le dit. Elle est écrite une
+ * seule fois pour que les deux dépôts — familles et fiches — ne puissent pas la
+ * traduire différemment.
+ *
+ * p-2 lit cette colonne, p-3 supprime `locationId` — et cette fonction avec.
+ */
+export function pointOfSaleOf(channel: SoldChannel): string {
+  return channel.locationId ?? ROOT_POINT_OF_SALE_ID;
 }

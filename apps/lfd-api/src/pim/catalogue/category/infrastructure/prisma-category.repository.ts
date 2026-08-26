@@ -15,6 +15,7 @@ import {
 import {
   normalizeSalesChannels,
   type SalesChannels,
+  pointOfSaleOf,
 } from "../../shared/domain/value-objects/sales-channels.js";
 
 interface CategoryRow {
@@ -217,8 +218,12 @@ export class PrismaCategoryRepository extends CategoryRepository {
    * l'index de référence : hors transaction, l'une des deux pourrait manquer, et
    * la table deviendrait une seconde vérité au lieu d'un miroir.
    *
-   * Personne ne la LIT encore — c'est le propre d'une tranche « étendre ». La
-   * bascule d-2 inverse la source et le miroir.
+   * Elle est LUE depuis d-2 : c'est la matrice elle-même, plus un miroir de
+   * `jsonb`.
+   *
+   * ⚠️ `pointOfSaleId` est écrite en plus de `locationId` (p-1). Personne ne la
+   * lit encore — c'est le propre d'une tranche « étendre » — et p-3 retire la
+   * seconde.
    */
   private channelOperations(snapshot: CategorySnapshot) {
     const sold = snapshot.channelPreset;
@@ -231,6 +236,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
               data: sold.map((channel) => ({
                 categoryId: snapshot.id,
                 locationId: channel.locationId,
+                pointOfSaleId: pointOfSaleOf(channel),
                 contextKey: channel.context,
               })),
             }),

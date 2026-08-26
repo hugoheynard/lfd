@@ -2641,12 +2641,22 @@ model CategoryChannel {
   locationId String?   @map("location_id")
   location   Location? @relation(fields: [locationId], references: [id])
 
+  /// **D'où l'on vend** — la colonne qui remplace `location_id`, et le `NULL`
+  /// porteur de sens avec elle : la plateforme professionnelle a sa ligne.
+  ///
+  /// ⚠️ Nullable le temps de la bascule (p-1) : le binaire de la version
+  /// précédente n'écrit que `location_id`, et un `NOT NULL` qu'il ignore ferait
+  /// échouer toutes ses écritures pendant le déploiement. p-3 la resserre.
+  pointOfSaleId String?      @map("point_of_sale_id")
+  pointOfSale   PointOfSale? @relation(fields: [pointOfSaleId], references: [id])
+
   contextKey String       @map("context_key")
   context    SalesContext @relation(fields: [contextKey], references: [key])
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([locationId])
+  @@index([pointOfSaleId])
   @@index([contextKey])
   @@map("category_channel")
   @@schema("pim")
@@ -2682,12 +2692,17 @@ model ProductChannel {
   locationId String?   @map("location_id")
   location   Location? @relation(fields: [locationId], references: [id])
 
+  /// Idem `CategoryChannel.pointOfSaleId` — nullable jusqu'à p-3.
+  pointOfSaleId String?      @map("point_of_sale_id")
+  pointOfSale   PointOfSale? @relation(fields: [pointOfSaleId], references: [id])
+
   contextKey String       @map("context_key")
   context    SalesContext @relation(fields: [contextKey], references: [key])
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([locationId])
+  @@index([pointOfSaleId])
   @@index([contextKey])
   @@map("product_channel")
   @@schema("pim")
@@ -2802,6 +2817,11 @@ model PointOfSale {
   /// Ce que ce point de vente OFFRE — distinct de ce qu'on y vend
   /// (`category_channel`), qui est une décision de catalogue.
   contexts PointOfSaleContext[]
+
+  /// Ce qu'on y vend. Le `Restrict` protège la ligne : un point de vente encore
+  /// vendu ne se supprime pas sous les familles qui le vendent.
+  categoryChannels CategoryChannel[]
+  productChannels  ProductChannel[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
