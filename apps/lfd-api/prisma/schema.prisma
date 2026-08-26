@@ -2589,6 +2589,9 @@ model SalesContext {
   productVat  ProductContextVat[]
   /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
   locations   LocationContext[]
+  /// Idem, depuis `point_of_sale` : le miroir que la tranche p-2 lira à la
+  /// place de `location_context`, plateforme B2B comprise.
+  offeredBy   PointOfSaleContext[]
 
   /// Ce qui se vend dans ce contexte. Le `Restrict` protège la clé : un contexte
   /// encore vendu ne se supprime pas sous les familles qui le vendent.
@@ -2752,6 +2755,77 @@ model VatRate {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("tva_rate")
+  @@schema("pim")
+}
+
+/// Le **genre** d'un point de vente. `shop` = une boutique physique, qui a une
+/// URL de click & collect et peut être équipée d'une grille de tables ;
+/// `platform` = une plateforme de commande, la boutique professionnelle B2B
+/// aujourd'hui.
+enum PointOfSaleKind {
+  shop
+  platform
+
+  @@map("point_of_sale_kind")
+  @@schema("pim")
+}
+
+/// **D'où l'on vend** — l'entité dont `emplacement` n'était qu'un cas.
+///
+/// Elle manquait, et ça se lisait à deux endroits : `category_channel.location_id`
+/// pouvait être `NULL`, et ce `NULL` voulait dire « le B2B » ; et
+/// `sales_context.per_location` n'existait que pour distinguer ce cas. Un `NULL`
+/// porteur de sens est toujours le signe d'une ligne absente — ici, la
+/// plateforme professionnelle.
+///
+/// ⚠️ Tranche **p-0** (`documentation/pim/point-de-vente.md`) : cette table est
+/// pour l'instant un MIROIR d'`emplacement`, écrit dans la même transaction que
+/// lui, plus une ligne pour la plateforme. Elle n'est source de rien encore ;
+/// p-1 branche la matrice dessus, p-2 bascule les lectures, p-3 supprime
+/// `emplacement`. Une boutique garde donc l'**identifiant** de son emplacement,
+/// pour que la reprise de la matrice soit une copie de colonne.
+///
+/// ⚠️ L'unicité du libellé n'est pas ici : elle vit toujours sur
+/// `emplacement_name_unique`, la source. La poser en double refuserait le
+/// miroir alors que la source a accepté — un refus qu'aucun message ne saurait
+/// expliquer. Elle déménagera avec la source, en p-3.
+model PointOfSale {
+  id    String          @id
+  kind  PointOfSaleKind
+  label String
+
+  /// URL de base du click & collect. **Boutique seulement** : `NULL` pour une
+  /// plateforme, et `point_of_sale_shop_has_base_url` (SQL) le tient — le genre
+  /// n'est pas une convention de lecture, c'est une contrainte.
+  baseUrl String? @map("base_url")
+
+  /// Ce que ce point de vente OFFRE — distinct de ce qu'on y vend
+  /// (`category_channel`), qui est une décision de catalogue.
+  contexts PointOfSaleContext[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("point_of_sale")
+  @@schema("pim")
+}
+
+/// **Ce qu'un point de vente offre.** Successeur de `location_context`, qui ne
+/// savait pas parler de la plateforme faute de ligne pour elle.
+model PointOfSaleContext {
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id], onDelete: Cascade)
+
+  /// La `key` du contexte, pas son `id` : c'est elle que le reste du référentiel
+  /// cite, et une jointure sur `id` obligerait chaque lecteur à traduire.
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([pointOfSaleId, contextKey])
+  @@index([contextKey])
+  @@map("point_of_sale_context")
   @@schema("pim")
 }
 

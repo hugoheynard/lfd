@@ -99,6 +99,17 @@ describe("la surface d'administration montre le registre entier", () => {
     expect(rows.filter((row) => row.root).map((row) => row.key)).toEqual(["b2b"]);
   });
 
+  /**
+   * Le B2B est offert par la PLATEFORME, qui n'est pas un emplacement. Le
+   * compte se lisait sur `location_context`, qui ne la connaît pas : l'écran
+   * annonçait « 0 » puis la suppression échouait sur une clé étrangère.
+   */
+  it("compte la plateforme parmi les points de vente qui offrent le B2B", async () => {
+    const b2b = (await list()).find((row) => row.key === "b2b");
+
+    expect(b2b?.offeredByLocations).toBe(1);
+  });
+
   it("dit lesquels ont besoin d'un lieu", async () => {
     const byKey = new Map((await list()).map((row) => [row.key, row.perLocation]));
 
@@ -117,6 +128,12 @@ describe("le contexte racine est ineffaçable", () => {
    * panne silencieuse qui justifie la garde, pas la crainte d'un clic.
    */
   it("réapparaît au boot après une suppression directe en base", async () => {
+    // L'offre d'abord : depuis p-0, la plateforme professionnelle OFFRE le
+    // contexte racine, et cette clé étrangère est en `Restrict` — même une
+    // suppression directe en base ne passe pas par-dessus. C'est le mur qu'on
+    // voulait ; on le contourne ici pour éprouver la garde qui vient APRÈS.
+    // Le `reset` de la suite suivante resème la paire.
+    await ctx.prisma.pointOfSaleContext.deleteMany({ where: { contextKey: "b2b" } });
     await ctx.prisma.salesContext.delete({ where: { key: "b2b" } });
     expect((await list()).map((row) => row.key)).not.toContain("b2b");
 
@@ -256,6 +273,36 @@ describe("régler un contexte de vente", () => {
   });
 });
 
+/**
+ * Ouvre une boutique qui OFFRE un contexte donné, en base directe.
+ *
+ * Directe parce que l'écran ne sait pas l'exprimer : les contextes d'un
+ * emplacement dérivent encore de `clickCollect` / `eatIn`, donc l'API ne permet
+ * pas d'en offrir un troisième. Elle écrit les DEUX tables — `location_context`
+ * et son miroir `point_of_sale_context` — comme le dépôt le fait dans sa
+ * transaction : n'en écrire qu'une reproduirait une dérive du miroir, pas un
+ * état que la production peut atteindre.
+ */
+async function openShopOffering(contextKey: string): Promise<void> {
+  await ctx.prisma.location.create({
+    data: {
+      id: "emp_test",
+      name: "Village",
+      baseUrl: "",
+      contexts: { create: [{ contextKey }] },
+    },
+  });
+  await ctx.prisma.pointOfSale.create({
+    data: {
+      id: "emp_test",
+      kind: "shop",
+      label: "Village",
+      baseUrl: "",
+      contexts: { create: [{ contextKey }] },
+    },
+  });
+}
+
 describe("effacer un contexte de vente", () => {
   it("efface celui que rien ne retient", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
@@ -281,14 +328,7 @@ describe("effacer un contexte de vente", () => {
    */
   it("REFUSE celui qu'un point de vente offre encore", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
-    await ctx.prisma.location.create({
-      data: {
-        id: "emp_test",
-        name: "Village",
-        baseUrl: "",
-        contexts: { create: [{ contextKey: "traiteur" }] },
-      },
-    });
+    await openShopOffering("traiteur");
 
     const response = await staff().delete(`${CONTEXTS}/traiteur`);
 
@@ -298,14 +338,7 @@ describe("effacer un contexte de vente", () => {
 
   it("dit ce qui retient chaque contexte, AVANT le geste", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
-    await ctx.prisma.location.create({
-      data: {
-        id: "emp_test",
-        name: "Village",
-        baseUrl: "",
-        contexts: { create: [{ contextKey: "traiteur" }] },
-      },
-    });
+    await openShopOffering("traiteur");
 
     expect(await rowOf("traiteur")).toMatchObject({ offeredByLocations: 1, soldBy: 0 });
   });

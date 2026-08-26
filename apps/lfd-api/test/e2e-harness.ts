@@ -39,6 +39,7 @@ import { BackgroundWork } from "../src/platform/events/background-work.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
+import { PointOfSaleReader } from "../src/pim/points-of-sale/domain/ports/point-of-sale.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
@@ -184,6 +185,12 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // règle a vidée ne le retrouverait jamais — `migrate deploy` ne rejoue pas
       // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
       await ensureSalesContexts(prisma);
+      // La plateforme professionnelle est semée au BOOT, donc une seule fois —
+      // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
+      // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
+      // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
+      // un lieu » quand `perLocation` a été ajouté sans arriver ici.
+      await app.get(PointOfSaleReader).ensureRootPointOfSale();
       await seedE2eStaff(prisma);
       // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
       // toute suite qui commande passerait au vert sur un catalogue vide.

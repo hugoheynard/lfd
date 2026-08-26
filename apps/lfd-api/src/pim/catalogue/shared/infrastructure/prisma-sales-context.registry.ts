@@ -77,9 +77,22 @@ export class PrismaSalesContextRegistry extends SalesContextRegistry {
     });
   }
 
-  /** Compté en base — `location_context` existe précisément pour ça. */
+  /**
+   * Compté en base, sur `point_of_sale_context`.
+   *
+   * ⚠️ Pas sur `location_context`, et ce n'est pas un détail : depuis p-0, la
+   * plateforme professionnelle offre le contexte racine, et elle n'a pas de
+   * ligne dans `location_context` — qui ne connaît que les emplacements. L'écran
+   * aurait donc annoncé « offert par 0 point de vente » pour le B2B, puis
+   * refusé sa suppression sur une clé étrangère. Dire vert et faire rouge est
+   * précisément ce qu'on cherche à ne jamais faire.
+   *
+   * Les deux tables sont tenues dans la même transaction le temps de la
+   * bascule ; la nouvelle est un SUR-ensemble de l'ancienne, donc la lire
+   * n'anticipe rien — elle corrige un trou.
+   */
   async offeredByLocations(): Promise<ReadonlyMap<string, number>> {
-    const rows = await this.prisma.locationContext.groupBy({
+    const rows = await this.prisma.pointOfSaleContext.groupBy({
       by: ["contextKey"],
       _count: { _all: true },
     });

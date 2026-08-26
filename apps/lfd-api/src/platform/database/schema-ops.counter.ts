@@ -124,6 +124,10 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   SalesContext: "pim",
   // Ce qu'un point de vente offre — remplace `clickCollect` / `eatIn`.
   LocationContext: "pim",
+  // D'où l'on vend (p-0) : les boutiques ET la plateforme professionnelle,
+  // qui n'était jusqu'ici qu'un `NULL` dans la matrice.
+  PointOfSale: "pim",
+  PointOfSaleContext: "pim",
   VatRate: "pim",
   Location: "pim",
   LocationTable: "pim",

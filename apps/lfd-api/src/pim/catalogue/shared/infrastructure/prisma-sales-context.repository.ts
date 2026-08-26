@@ -122,7 +122,10 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
       await Promise.all([
         this.prisma.categoryChannel.groupBy({ by: ["contextKey"], _count: { _all: true } }),
         this.prisma.productChannel.groupBy({ by: ["contextKey"], _count: { _all: true } }),
-        this.prisma.locationContext.groupBy({ by: ["contextKey"], _count: { _all: true } }),
+        // `point_of_sale_context` et non `location_context` : la plateforme
+        // professionnelle offre le contexte racine et n'a pas de ligne dans la
+        // seconde. Cf. `PrismaSalesContextRegistry.offeredByLocations`.
+        this.prisma.pointOfSaleContext.groupBy({ by: ["contextKey"], _count: { _all: true } }),
         this.prisma.categoryContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
         this.prisma.productContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
         this.prisma.salesContext.findMany({ select: { id: true, key: true } }),

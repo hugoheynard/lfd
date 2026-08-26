@@ -6,6 +6,7 @@ import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.j
 import { ShopifyModule } from "./channels/shopify/shopify.module.js";
 import { CommerceModule } from "./commerce/commerce.module.js";
 import { LocationsModule } from "./locations/locations.module.js";
+import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
 
 /**
  * Le **référentiel produit** — un contexte du processus, plus une application.
@@ -30,6 +31,7 @@ import { LocationsModule } from "./locations/locations.module.js";
     CatalogueModule,
     CommerceModule,
     LocationsModule,
+    PointsOfSaleModule,
     ShopifyModule,
     B2bPlatformModule,
     // La hiérarchie de routes du référentiel, déclarée ici plutôt qu'à la
@@ -44,6 +46,7 @@ import { LocationsModule } from "./locations/locations.module.js";
           CatalogueModule,
           CommerceModule,
           LocationsModule,
+          PointsOfSaleModule,
           {
             path: "channels",
             children: [

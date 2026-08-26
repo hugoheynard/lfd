@@ -93,25 +93,38 @@ export class PrismaLocationRepository extends LocationRepository {
   async add(location: Location): Promise<void> {
     const snapshot = location.snapshot();
     await guardName(snapshot.name, () =>
-      this.prisma.location.create({
-        data: {
-          id: snapshot.id,
-          name: snapshot.name,
-          clickCollect: snapshot.clickCollect,
-          eatIn: snapshot.eatIn,
-          baseUrl: snapshot.baseUrl,
-          contexts: {
-            create: offeredContexts(snapshot).map((contextKey) => ({ contextKey })),
+      this.prisma.$transaction([
+        this.prisma.location.create({
+          data: {
+            id: snapshot.id,
+            name: snapshot.name,
+            clickCollect: snapshot.clickCollect,
+            eatIn: snapshot.eatIn,
+            baseUrl: snapshot.baseUrl,
+            contexts: {
+              create: offeredContexts(snapshot).map((contextKey) => ({ contextKey })),
+            },
+            tables: {
+              create: snapshot.tables.map((table) => ({
+                number: table.number,
+                qrCreated: table.qrCreated,
+                token: table.token,
+              })),
+            },
           },
-          tables: {
-            create: snapshot.tables.map((table) => ({
-              number: table.number,
-              qrCreated: table.qrCreated,
-              token: table.token,
-            })),
+        }),
+        this.prisma.pointOfSale.create({
+          data: {
+            id: snapshot.id,
+            kind: "shop",
+            label: snapshot.name,
+            baseUrl: snapshot.baseUrl,
+            contexts: {
+              create: offeredContexts(snapshot).map((contextKey) => ({ contextKey })),
+            },
           },
-        },
-      }),
+        }),
+      ]),
     );
   }
 
@@ -148,8 +161,43 @@ export class PrismaLocationRepository extends LocationRepository {
         }),
         ...(location.tablesChanged ? this.tableOperations(snapshot) : []),
         ...this.contextOperations(snapshot),
+        ...this.mirrorOperations(snapshot),
       ]),
     );
+  }
+
+  /**
+   * Le **miroir** `point_of_sale` d'une boutique, réécrit avec elle.
+   *
+   * ⚠️ Code de TRANSITION (p-0, `documentation/pim/point-de-vente.md`). La
+   * boutique s'écrit toujours ici ; `point_of_sale` la suit dans la MÊME
+   * transaction, sinon le miroir deviendrait une seconde vérité — et p-1
+   * brancherait la matrice sur des libellés périmés. Une boutique garde son
+   * identifiant d'emplacement : la reprise de la matrice sera une copie de
+   * colonne.
+   *
+   * `update` et non `updateMany` : la ligne DOIT exister — la migration a repris
+   * les boutiques, `add` en crée une. Son absence est une dérive du miroir, et
+   * elle doit se voir bruyamment plutôt que de ne rien écrire en silence.
+   *
+   * p-2 inverse les deux, p-3 supprime `emplacement` — et cette méthode.
+   */
+  private mirrorOperations(snapshot: LocationSnapshot) {
+    const offered = offeredContexts(snapshot);
+    return [
+      this.prisma.pointOfSale.update({
+        where: { id: snapshot.id },
+        data: { label: snapshot.name, baseUrl: snapshot.baseUrl },
+      }),
+      this.prisma.pointOfSaleContext.deleteMany({ where: { pointOfSaleId: snapshot.id } }),
+      ...(offered.length === 0
+        ? []
+        : [
+            this.prisma.pointOfSaleContext.createMany({
+              data: offered.map((contextKey) => ({ pointOfSaleId: snapshot.id, contextKey })),
+            }),
+          ]),
+    ];
   }
 
   /**
@@ -197,7 +245,13 @@ export class PrismaLocationRepository extends LocationRepository {
    */
   async remove(id: string): Promise<void> {
     try {
-      await this.prisma.location.delete({ where: { id } });
+      await this.prisma.$transaction([
+        // Le miroir d'abord : si l'emplacement est encore vendu, sa suppression
+        // échoue et la transaction emporte celle-ci — le miroir ne peut pas
+        // survivre seul à un refus.
+        this.prisma.pointOfSale.delete({ where: { id } }),
+        this.prisma.location.delete({ where: { id } }),
+      ]);
     } catch (error) {
       if (isForeignKeyViolation(error)) {
         throw new LocationInUseError(id);

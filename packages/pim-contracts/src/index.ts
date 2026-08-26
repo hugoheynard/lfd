@@ -61,6 +61,8 @@ export type {
   TableQrResponse,
 } from "./locations.js";
 
+export type { PointOfSaleKindView, PointOfSaleView } from "./points-of-sale.js";
+
 export {
   productKindSchema,
   createProductPayloadSchema,
