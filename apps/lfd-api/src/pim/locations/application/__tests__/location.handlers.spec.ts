@@ -146,7 +146,7 @@ function open(repo: InMemoryLocations, over: Partial<CreateLocationPayload> = {}
     new CreateLocationCommand({
       name: "Boutique",
       clickCollect: true,
-      surPlace: false,
+      eatIn: false,
       baseUrl: "",
       tableCount: 0,
       ...over,
@@ -164,7 +164,7 @@ function createSurPlace(repo: InMemoryLocations, tableCount: number) {
     new CreateLocationCommand({
       name: "Boutique",
       clickCollect: true,
-      surPlace: true,
+      eatIn: true,
       baseUrl: "https://order.example",
       tableCount,
     }),
@@ -191,7 +191,7 @@ describe("CreateLocationHandler", () => {
       new CreateLocationCommand({
         name: "En ligne",
         clickCollect: true,
-        surPlace: false,
+        eatIn: false,
         baseUrl: "",
         tableCount: 5,
       }),
@@ -212,7 +212,7 @@ describe("CreateLocationHandler", () => {
         new CreateLocationCommand({
           name: "   ",
           clickCollect: true,
-          surPlace: false,
+          eatIn: false,
           baseUrl: "",
           tableCount: 0,
         }),
@@ -247,7 +247,7 @@ describe("UpdateLocationHandler", () => {
     await createSurPlace(repo, 2);
 
     await new UpdateLocationHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new UpdateLocationCommand("emp_fixed", { surPlace: false }),
+      new UpdateLocationCommand("emp_fixed", { eatIn: false }),
     );
 
     expect(repo.rows[0]?.tables).toEqual([]);
@@ -439,7 +439,7 @@ describe("Ce que les emplacements inscrivent au journal", () => {
       new CreateLocationCommand({
         name: "Village",
         clickCollect: true,
-        surPlace: true,
+        eatIn: true,
         baseUrl: "https://order.example",
         tableCount: 2,
       }),
@@ -479,7 +479,7 @@ describe("Ce que les emplacements inscrivent au journal", () => {
       new CreateLocationCommand({
         name: "  Village  ",
         clickCollect: true,
-        surPlace: false,
+        eatIn: false,
         baseUrl: "https://order.example",
         tableCount: 12,
       }),

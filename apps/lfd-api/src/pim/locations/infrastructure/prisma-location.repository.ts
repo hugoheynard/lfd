@@ -17,7 +17,7 @@ interface LocationRow {
   id: string;
   name: string;
   clickCollect: boolean;
-  surPlace: boolean;
+  eatIn: boolean;
   baseUrl: string;
   tables: TableRow[];
 }
@@ -27,7 +27,7 @@ function toLocation(row: LocationRow): Location {
     id: row.id,
     name: row.name,
     clickCollect: row.clickCollect,
-    surPlace: row.surPlace,
+    eatIn: row.eatIn,
     baseUrl: row.baseUrl,
     tables: row.tables.map((table) => ({
       number: table.number,
@@ -78,7 +78,7 @@ export class PrismaLocationRepository extends LocationRepository {
           id: snapshot.id,
           name: snapshot.name,
           clickCollect: snapshot.clickCollect,
-          surPlace: snapshot.surPlace,
+          eatIn: snapshot.eatIn,
           baseUrl: snapshot.baseUrl,
           tables: {
             create: snapshot.tables.map((table) => ({
@@ -119,7 +119,7 @@ export class PrismaLocationRepository extends LocationRepository {
           data: {
             name: snapshot.name,
             clickCollect: snapshot.clickCollect,
-            surPlace: snapshot.surPlace,
+            eatIn: snapshot.eatIn,
             baseUrl: snapshot.baseUrl,
           },
         }),

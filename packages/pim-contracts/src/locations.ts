@@ -14,7 +14,7 @@ const tableCountSchema = z.number().int().min(0).max(MAX_TABLES);
 export const createLocationPayloadSchema = z.object({
   name: z.string().min(1),
   clickCollect: z.boolean(),
-  surPlace: z.boolean(),
+  eatIn: z.boolean(),
   baseUrl: z.string(),
   tableCount: tableCountSchema,
 });
@@ -23,7 +23,7 @@ export type CreateLocationPayload = z.infer<typeof createLocationPayloadSchema>;
 export const updateLocationPayloadSchema = z.object({
   name: z.string().min(1).optional(),
   clickCollect: z.boolean().optional(),
-  surPlace: z.boolean().optional(),
+  eatIn: z.boolean().optional(),
   baseUrl: z.string().optional(),
   tableCount: tableCountSchema.optional(),
 });
@@ -41,7 +41,7 @@ export interface LocationView {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly baseUrl: string;
   readonly tables: readonly TableView[];
   /**

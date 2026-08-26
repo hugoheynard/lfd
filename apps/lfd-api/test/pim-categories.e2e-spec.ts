@@ -51,7 +51,7 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
 async function createLocation(name: string): Promise<string> {
   const response = await staff()
     .post(LOCATIONS)
-    .send({ name, clickCollect: true, surPlace: false, baseUrl: "", tableCount: 0 });
+    .send({ name, clickCollect: true, eatIn: false, baseUrl: "", tableCount: 0 });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
 }

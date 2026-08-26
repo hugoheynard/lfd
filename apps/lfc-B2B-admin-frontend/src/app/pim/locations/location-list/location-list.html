@@ -66,13 +66,13 @@
           <code>{{ emp.baseUrl }}</code>
         </fold-field>
         <fold-field label="Modes">{{ modesLabel(emp) }}</fold-field>
-        @if (emp.surPlace) {
+        @if (emp.eatIn) {
           <fold-field label="Tables">{{ emp.tables.length }}</fold-field>
         }
       </fold-field-list>
 
       <!-- Tables : ouvertes par le sur place. Une carte QR par table. -->
-      @if (emp.surPlace && emp.tables.length > 0) {
+      @if (emp.eatIn && emp.tables.length > 0) {
         <div class="tables">
           <fold-element-title
             [title]="'Tables — click \u0026 collect (' + emp.tables.length + ')'"
@@ -124,7 +124,7 @@
             }
           </div>
         </div>
-      } @else if (emp.surPlace) {
+      } @else if (emp.eatIn) {
         <p class="muted">
           Aucune table — définissez leur nombre via
           <strong>Modifier</strong>.

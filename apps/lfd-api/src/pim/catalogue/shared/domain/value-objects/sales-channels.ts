@@ -6,6 +6,10 @@
  * `category.channel_preset`, et dans `sales_context.key`. Les renommer est une
  * migration — étendre, basculer, resserrer — pas un renommage
  * (`documentation/langue-du-code.md`, palier 4).
+ *
+ * À ne pas confondre avec `Location.eatIn`, qui a bien été traduit : là-bas
+ * c'est un identifiant que le `@map` découple de sa colonne, donc gratuit. Ici
+ * la valeur EST en base.
  */
 export interface ShopChannels {
   readonly emporter: boolean;

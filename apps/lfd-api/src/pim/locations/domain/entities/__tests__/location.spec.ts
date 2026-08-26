@@ -6,7 +6,7 @@ function open(over: Partial<Parameters<typeof Location.open>[0]> = {}): Location
     id: "emp_1",
     name: "Village",
     clickCollect: true,
-    surPlace: true,
+    eatIn: true,
     baseUrl: " https://order.example ",
     tableCount: 3,
     ...over,
@@ -20,7 +20,7 @@ describe("l'agrégat Location", () => {
   });
 
   it("n'ouvre aucune table sans salle", () => {
-    expect(open({ surPlace: false, tableCount: 12 }).snapshot().tables).toEqual([]);
+    expect(open({ eatIn: false, tableCount: 12 }).snapshot().tables).toEqual([]);
   });
 
   it("VIDE la grille quand la salle ferme", () => {
@@ -30,7 +30,7 @@ describe("l'agrégat Location", () => {
     const location = open();
     expect(location.tables).toHaveLength(3);
 
-    location.setSurPlace(false);
+    location.setEatIn(false);
 
     expect(location.snapshot().tables).toEqual([]);
   });
@@ -39,7 +39,7 @@ describe("l'agrégat Location", () => {
     // Le chemin qui restait ouvert : un patch qui coupe la salle ET envoie un
     // nombre de tables. L'ordre des appels ne doit pas décider de l'invariant.
     const location = open();
-    location.setSurPlace(false);
+    location.setEatIn(false);
 
     location.setTableCount(8);
 

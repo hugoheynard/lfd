@@ -52,12 +52,12 @@
       <fold-checkbox
         label="Sur place"
         hint="ouvre les tables"
-        [checked]="draftSurPlace()"
-        (checkedChange)="draftSurPlace.set($event)"
+        [checked]="draftEatIn()"
+        (checkedChange)="draftEatIn.set($event)"
       />
     </div>
 
-    @if (draftSurPlace()) {
+    @if (draftEatIn()) {
       <fold-number-input
         label="Nombre de tables"
         [min]="0"

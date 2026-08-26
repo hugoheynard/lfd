@@ -10,7 +10,7 @@ import { requireLocation } from "./location-support.js";
 export interface UpdateLocationPatch {
   readonly name?: string | undefined;
   readonly clickCollect?: boolean | undefined;
-  readonly surPlace?: boolean | undefined;
+  readonly eatIn?: boolean | undefined;
   readonly baseUrl?: string | undefined;
   readonly tableCount?: number | undefined;
 }
@@ -55,8 +55,8 @@ export class UpdateLocationHandler implements ICommandHandler<UpdateLocationComm
     }
     // La salle AVANT la grille : fermer vide les tables, et un `tableCount`
     // reçu dans le même patch ne doit pas les faire revenir.
-    if (patch.surPlace !== undefined) {
-      location.setSurPlace(patch.surPlace);
+    if (patch.eatIn !== undefined) {
+      location.setEatIn(patch.eatIn);
     }
     if (patch.tableCount !== undefined) {
       location.setTableCount(patch.tableCount);
@@ -91,6 +91,6 @@ export class UpdateLocationHandler implements ICommandHandler<UpdateLocationComm
  * changement qu'on cherchait.
  */
 function traced(location: Location): Record<string, unknown> {
-  const { name, clickCollect, surPlace, baseUrl, tables } = location.snapshot();
-  return { name, clickCollect, surPlace, baseUrl, tableCount: tables.length };
+  const { name, clickCollect, eatIn, baseUrl, tables } = location.snapshot();
+  return { name, clickCollect, eatIn, baseUrl, tableCount: tables.length };
 }

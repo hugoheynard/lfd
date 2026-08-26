@@ -17,7 +17,7 @@ function toLocation(row: LocationView): Location {
     id: row.id,
     name: row.name,
     clickCollect: row.clickCollect,
-    surPlace: row.surPlace,
+    eatIn: row.eatIn,
     baseUrl: row.baseUrl,
     tables: row.tables.map(toTable),
     usedByCategories: row.usedByCategories,
@@ -27,7 +27,7 @@ function toLocation(row: LocationView): Location {
 export interface LocationInput {
   readonly name: string;
   readonly clickCollect: boolean;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly baseUrl: string;
   readonly tableCount: number;
 }

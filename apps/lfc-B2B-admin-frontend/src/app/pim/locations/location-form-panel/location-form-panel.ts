@@ -74,7 +74,7 @@ export class LocationFormPanel {
   protected readonly draftName = linkedSignal(() => this.location()?.name ?? '');
   protected readonly draftBaseUrl = linkedSignal(() => this.location()?.baseUrl ?? '');
   protected readonly draftClickCollect = linkedSignal(() => this.location()?.clickCollect ?? true);
-  protected readonly draftSurPlace = linkedSignal(() => this.location()?.surPlace ?? false);
+  protected readonly draftEatIn = linkedSignal(() => this.location()?.eatIn ?? false);
   protected readonly draftTables = linkedSignal<number | null>(
     () => this.location()?.tables.length ?? 0,
   );
@@ -165,7 +165,7 @@ export class LocationFormPanel {
       name,
       baseUrl: this.draftBaseUrl(),
       clickCollect: this.draftClickCollect(),
-      surPlace: this.draftSurPlace(),
+      eatIn: this.draftEatIn(),
       tableCount: this.draftTables() ?? 0,
     };
     if (target !== undefined) {

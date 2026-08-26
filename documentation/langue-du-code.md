@@ -42,21 +42,21 @@ données**, pas des noms. Les changer, c'est une migration par champ.
 
 ## 3. Le lexique
 
-| Français        | Anglais          | Remarque                                                           |
-| --------------- | ---------------- | ------------------------------------------------------------------ |
-| emplacement     | `location`       | « site » est ambigu avec le site web                               |
-| taux de TVA     | `vatRate`        | `TVA` → `VAT` partout, y compris `tvaIntracom` → `vatNumber`       |
-| tarif           | `pricing`        | l'acte de tarifer ; `price` reste le montant                       |
-| palier          | `tier`           | terme standard des grilles de prix                                 |
-| remise          | `discount`       | —                                                                  |
-| retrait         | `pickup`         | déjà utilisé par `FulfillmentMethod.pickup` — l'enum est en avance |
-| livraison       | `delivery`       | idem                                                               |
-| gabarit         | `template`       | —                                                                  |
-| conditionnement | `packaging`      | la table s'appelle déjà `product_packaging`                        |
-| boutique        | `shop`           | `boutiques` (la carte) → `shops`                                   |
-| à emporter      | `takeaway`       | valeur de donnée — palier 3                                        |
-| sur place       | `eatIn`          | valeur de donnée — palier 3                                        |
-| **mercuriale**  | **`mercuriale`** | **on le garde** — voir ci-dessous                                  |
+| Français        | Anglais          | Remarque                                                                 |
+| --------------- | ---------------- | ------------------------------------------------------------------------ |
+| emplacement     | `location`       | « site » est ambigu avec le site web                                     |
+| taux de TVA     | `vatRate`        | `TVA` → `VAT` partout, y compris `tvaIntracom` → `vatNumber`             |
+| tarif           | `pricing`        | l'acte de tarifer ; `price` reste le montant                             |
+| palier          | `tier`           | terme standard des grilles de prix                                       |
+| remise          | `discount`       | —                                                                        |
+| retrait         | `pickup`         | déjà utilisé par `FulfillmentMethod.pickup` — l'enum est en avance       |
+| livraison       | `delivery`       | idem                                                                     |
+| gabarit         | `template`       | —                                                                        |
+| conditionnement | `packaging`      | la table s'appelle déjà `product_packaging`                              |
+| boutique        | `shop`           | `boutiques` (la carte) → `shops`                                         |
+| à emporter      | `takeaway`       | valeur de donnée — palier 3                                              |
+| sur place       | `eatIn`          | fait pour le CHAMP `Location.eatIn` ; la **clé jsonb** reste, § 4 quater |
+| **mercuriale**  | **`mercuriale`** | **on le garde** — voir ci-dessous                                        |
 
 ### Pourquoi `mercuriale` reste
 
@@ -155,6 +155,12 @@ vient d'en faire la démonstration en renommant `tvaIntracom` sans toucher à
 trois déploiements par objet sur une base de production. C'est le seul palier
 dont le doc disait déjà « en dernier, **ou jamais** » — et la raison tient
 toujours.
+
+**Un champ n'est pas une valeur.** `Location.surPlace` a été traduit en `eatIn`
+le 2026-08-26 — champ TypeScript, contrat HTTP et modèle front — **sans aucune
+migration** : `@map("sur_place")` découple la colonne, exactement comme P3 a
+renommé `tvaIntracom` sans toucher à `tva_intracom`. Ce qui suit ne concerne
+donc que les VALEURS.
 
 **Les clés `jsonb`.** `emporter` / `surPlace` sont les deux **modes** fixes de la
 matrice de canaux. C0-d prévoit de les faire disparaître : la matrice devient

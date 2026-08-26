@@ -26,7 +26,7 @@ function location(over: Partial<Location> = {}): Location {
     id: 'emp_1',
     name: 'Village',
     clickCollect: true,
-    surPlace: false,
+    eatIn: false,
     baseUrl: '',
     tables: [],
     usedByCategories: 0,

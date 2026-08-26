@@ -73,7 +73,7 @@ export class LocationList {
     if (location.clickCollect) {
       modes.push('Click & collect');
     }
-    if (location.surPlace) {
+    if (location.eatIn) {
       modes.push('Sur place');
     }
     return modes.length === 0 ? 'Aucun mode actif' : modes.join(' · ');

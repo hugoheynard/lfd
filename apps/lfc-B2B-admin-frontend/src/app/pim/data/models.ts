@@ -179,8 +179,13 @@ export interface Location {
   name: string;
   /** Vente à emporter en ligne. */
   clickCollect: boolean;
-  /** Consommation sur place (ouvre les tables). */
-  surPlace: boolean;
+  /**
+   * Consommation sur place (ouvre les tables).
+   *
+   * ⚠️ `eatIn` ici, `surPlace` dans la grille de canaux : le premier est un
+   * champ, le second une clé de donnée écrite en base. Voir `ShopChannels`.
+   */
+  eatIn: boolean;
   /** URL de base du click & collect de la boutique. */
   baseUrl: string;
   /** Tables (si sur place) — dérivées du nombre de tables. */

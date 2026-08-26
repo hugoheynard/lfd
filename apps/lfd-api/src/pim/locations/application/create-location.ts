@@ -10,7 +10,7 @@ import { LocationRepository } from "../domain/ports/location.repository.js";
 export interface CreateLocationPayload {
   readonly name: string;
   readonly clickCollect: boolean;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly baseUrl: string;
   readonly tableCount: number;
 }
@@ -49,7 +49,7 @@ export class CreateLocationHandler implements ICommandHandler<CreateLocationComm
         payload: {
           name: created.name,
           clickCollect: created.clickCollect,
-          surPlace: created.surPlace,
+          eatIn: created.eatIn,
           tableCount: created.tables.length,
         },
       });

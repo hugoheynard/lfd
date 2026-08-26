@@ -2686,7 +2686,7 @@ model Location {
   /// Vente à emporter en ligne.
   clickCollect Boolean @default(false) @map("click_collect")
   /// Consommation sur place — ouvre les tables.
-  surPlace     Boolean @default(false) @map("sur_place")
+  eatIn        Boolean @default(false) @map("sur_place")
   /// URL de base du click & collect (`baseUrl?table=N&k=token`).
   baseUrl      String  @default("") @map("base_url")
 

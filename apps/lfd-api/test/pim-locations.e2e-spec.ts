@@ -42,7 +42,7 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 interface LocationRow {
   readonly id: string;
   readonly name: string;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly tables: readonly {
     readonly number: number;
     readonly qrCreated: boolean;
@@ -52,14 +52,14 @@ interface LocationRow {
 }
 
 async function createLocation(
-  over: Partial<{ name: string; surPlace: boolean; tableCount: number }> = {},
+  over: Partial<{ name: string; eatIn: boolean; tableCount: number }> = {},
 ): Promise<string> {
   const response = await staff()
     .post(LOCATIONS)
     .send({
       name: "Village",
       clickCollect: true,
-      surPlace: false,
+      eatIn: false,
       baseUrl: "https://order.example",
       tableCount: 0,
       ...over,
@@ -85,7 +85,7 @@ describe("le nom d'un emplacement est unique", () => {
     const response = await staff().post(LOCATIONS).send({
       name: "Village",
       clickCollect: true,
-      surPlace: false,
+      eatIn: false,
       baseUrl: "",
       tableCount: 0,
     });
@@ -105,7 +105,7 @@ describe("le nom d'un emplacement est unique", () => {
     const response = await staff().post(LOCATIONS).send({
       name: "  village ",
       clickCollect: true,
-      surPlace: false,
+      eatIn: false,
       baseUrl: "",
       tableCount: 0,
     });
@@ -126,9 +126,9 @@ describe("le nom d'un emplacement est unique", () => {
   it("laisse un emplacement garder son propre nom en changeant autre chose", async () => {
     const id = await createLocation({ name: "Village" });
 
-    await staff().put(`${LOCATIONS}/${id}`).send({ name: "Village", surPlace: true }).expect(200);
+    await staff().put(`${LOCATIONS}/${id}`).send({ name: "Village", eatIn: true }).expect(200);
 
-    expect((await readLocation(id)).surPlace).toBe(true);
+    expect((await readLocation(id)).eatIn).toBe(true);
   });
 });
 
@@ -200,14 +200,14 @@ describe("fermer la salle vide la grille — en base", () => {
    * des QR imprimés qui menaient quelque part.
    */
   it("supprime les tables ET leurs QR quand on coupe le sur place", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 3 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 3 });
     await staff().post(`${LOCATIONS}/${id}/tables/2/qr`).send({}).expect(201);
     expect((await readLocation(id)).tables).toHaveLength(3);
 
-    await staff().put(`${LOCATIONS}/${id}`).send({ surPlace: false }).expect(200);
+    await staff().put(`${LOCATIONS}/${id}`).send({ eatIn: false }).expect(200);
 
     const row = await readLocation(id);
-    expect(row.surPlace).toBe(false);
+    expect(row.eatIn).toBe(false);
     expect(row.tables).toEqual([]);
   });
 
@@ -218,7 +218,7 @@ describe("fermer la salle vide la grille — en base", () => {
    * recopie en mémoire refaite pour rien.
    */
   it("ne touche pas aux jetons quand on ne change que le nom", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 2 });
     const token = jsonBody<{ token: string }>(
       await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201),
     ).token;
@@ -231,7 +231,7 @@ describe("fermer la salle vide la grille — en base", () => {
   });
 
   it("préserve le QR d'une table conservée quand la grille rétrécit", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 4 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 4 });
     await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201);
 
     await staff().put(`${LOCATIONS}/${id}`).send({ tableCount: 2 }).expect(200);
@@ -249,7 +249,7 @@ describe("fermer la salle vide la grille — en base", () => {
  */
 describe("les jetons de QR d'une table", () => {
   it("pose un jeton, et la table le porte dans la liste", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 2 });
 
     const response = await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({});
 
@@ -268,7 +268,7 @@ describe("les jetons de QR d'une table", () => {
    * valide pour toujours.
    */
   it("REMPLACE le jeton à la régénération — le QR imprimé cesse d'ouvrir", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 1 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 1 });
     const first = jsonBody<{ token: string }>(
       await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201),
     ).token;
@@ -282,7 +282,7 @@ describe("les jetons de QR d'une table", () => {
   });
 
   it("efface le jeton quand on retire le QR", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 1 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 1 });
     await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(201);
 
     await staff().delete(`${LOCATIONS}/${id}/tables/1/qr`).expect(200);
@@ -291,7 +291,7 @@ describe("les jetons de QR d'une table", () => {
   });
 
   it("refuse une table qui n'existe pas dans cet emplacement", async () => {
-    const id = await createLocation({ name: "Village", surPlace: true, tableCount: 2 });
+    const id = await createLocation({ name: "Village", eatIn: true, tableCount: 2 });
 
     const response = await staff().post(`${LOCATIONS}/${id}/tables/9/qr`).send({});
 
@@ -305,7 +305,7 @@ describe("les jetons de QR d'une table", () => {
    * l'agrégat qui le produit, pas un contrôle du handler.
    */
   it("refuse d'équiper une table sur un emplacement sans salle", async () => {
-    const id = await createLocation({ name: "Village", surPlace: false, tableCount: 4 });
+    const id = await createLocation({ name: "Village", eatIn: false, tableCount: 4 });
 
     await staff().post(`${LOCATIONS}/${id}/tables/1/qr`).send({}).expect(404);
   });

@@ -1,12 +1,23 @@
 import { LocationNameRequiredError } from "../errors/locations-errors.js";
 import { syncTables, type TableState } from "../value-objects/table.js";
 
+/**
+ * ⚠️ `eatIn`, alors que la grille de canaux d'une famille garde `surPlace` — et
+ * ce n'est pas une incohérence oubliée. Ici c'est un **identifiant** : la
+ * colonne reste `sur_place` grâce au `@map`, donc le renommage n'a coûté
+ * aucune migration (même geste que `tvaIntracom` → `vatNumber` au palier 3).
+ * Là-bas c'est une **clé de donnée**, écrite dans le `jsonb` de
+ * `channel_preset` et dans `sales_context.key` : la renommer est une migration
+ * de données, et le plan de langue la diffère parce que C0-d supprime ces deux
+ * clés au lieu de les traduire (`documentation/langue-du-code.md` § 4 quater).
+ */
+
 /** L'état complet d'un emplacement — ce que la persistance rend et reprend. */
 export interface LocationSnapshot {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly baseUrl: string;
   readonly tables: readonly TableState[];
 }
@@ -16,7 +27,7 @@ export interface NewLocationInput {
   readonly id: string;
   readonly name: string;
   readonly clickCollect: boolean;
-  readonly surPlace: boolean;
+  readonly eatIn: boolean;
   readonly baseUrl: string;
   readonly tableCount: number;
 }
@@ -66,7 +77,7 @@ export class Location {
     private readonly identity: string,
     private nameValue: string,
     private clickCollectValue: boolean,
-    private surPlaceValue: boolean,
+    private eatInValue: boolean,
     private baseUrlValue: string,
     private tablesValue: readonly TableState[],
     tablesChanged: boolean,
@@ -79,9 +90,9 @@ export class Location {
       input.id,
       requireName(input.name),
       input.clickCollect,
-      input.surPlace,
+      input.eatIn,
       input.baseUrl.trim(),
-      input.surPlace ? syncTables([], input.tableCount) : [],
+      input.eatIn ? syncTables([], input.tableCount) : [],
       true,
     );
   }
@@ -91,7 +102,7 @@ export class Location {
       snapshot.id,
       snapshot.name,
       snapshot.clickCollect,
-      snapshot.surPlace,
+      snapshot.eatIn,
       snapshot.baseUrl,
       snapshot.tables,
       false,
@@ -106,8 +117,8 @@ export class Location {
     return this.nameValue;
   }
 
-  get surPlace(): boolean {
-    return this.surPlaceValue;
+  get eatIn(): boolean {
+    return this.eatInValue;
   }
 
   get tables(): readonly TableState[] {
@@ -136,8 +147,8 @@ export class Location {
    * il est ici plutôt que dans un handler pour qu'aucun autre chemin ne puisse
    * l'oublier.
    */
-  setSurPlace(open: boolean): void {
-    this.surPlaceValue = open;
+  setEatIn(open: boolean): void {
+    this.eatInValue = open;
     if (!open && this.tablesValue.length > 0) {
       this.tablesValue = [];
       this.tablesChangedValue = true;
@@ -150,7 +161,7 @@ export class Location {
    * n'y a rien à aligner.
    */
   setTableCount(count: number): void {
-    if (!this.surPlaceValue) {
+    if (!this.eatInValue) {
       return;
     }
     const next = syncTables(this.tablesValue, count);
@@ -181,7 +192,7 @@ export class Location {
       id: this.identity,
       name: this.nameValue,
       clickCollect: this.clickCollectValue,
-      surPlace: this.surPlaceValue,
+      eatIn: this.eatInValue,
       baseUrl: this.baseUrlValue,
       tables: this.tablesValue,
     };
