@@ -39,12 +39,6 @@ class InMemoryLocations extends LocationRepository {
     const snapshot = this.stored.get(id);
     return Promise.resolve(snapshot === undefined ? null : Location.reconstitute(snapshot));
   }
-  /** Insensible à la casse, comme le vrai dépôt : sinon le double ment. */
-  findByName(name: string): Promise<Location | null> {
-    const wanted = name.trim().toLowerCase();
-    const found = [...this.stored.values()].find((row) => row.name.toLowerCase() === wanted);
-    return Promise.resolve(found === undefined ? null : Location.reconstitute(found));
-  }
   add(location: Location): Promise<void> {
     return this.save(location);
   }

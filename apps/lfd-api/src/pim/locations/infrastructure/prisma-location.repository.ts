@@ -62,19 +62,6 @@ export class PrismaLocationRepository extends LocationRepository {
     return rows.map(toLocation);
   }
 
-  /**
-   * Insensible à la casse — `mode: "insensitive"` côté Postgres, pas un
-   * `toLowerCase()` en mémoire : on ne lit pas la table entière pour trouver
-   * un nom.
-   */
-  async findByName(name: string): Promise<Location | null> {
-    const row = await this.prisma.location.findFirst({
-      where: { name: { equals: name, mode: "insensitive" } },
-      include: WITH_TABLES,
-    });
-    return row === null ? null : toLocation(row);
-  }
-
   async findById(id: string): Promise<Location | null> {
     const row = await this.prisma.location.findUnique({
       where: { id },
