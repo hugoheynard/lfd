@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, signal } from '@angular/core';
-import { FoldInputComponent, FoldListboxComponent, FoldViewToggleComponent } from 'fold-ng';
+import {
+  FoldFieldsetComponent,
+  FoldInputComponent,
+  FoldListboxComponent,
+  FoldTextareaComponent,
+  FoldViewToggleComponent,
+} from 'fold-ng';
 import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
 
 import { countryOptions } from '../countries';
@@ -32,7 +38,13 @@ const ENTRY_MODES: readonly FoldViewToggleOption[] = [
 @Component({
   selector: 'lfd-address-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldListboxComponent, FoldViewToggleComponent],
+  imports: [
+    FoldFieldsetComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+    FoldTextareaComponent,
+    FoldViewToggleComponent,
+  ],
   templateUrl: './address-form.html',
   styleUrl: './address-form.scss',
 })
@@ -45,6 +57,26 @@ export class AddressForm {
 
   readonly labelHint = input('ex. Siège, Boutique Bastille');
   readonly line2Hint = input('bâtiment, étage, digicode…');
+  /**
+   * Nom du groupe des champs postaux — vide (défaut) = **aucun** groupe.
+   *
+   * Le renseigner entoure les champs d'un `fold-fieldset` nommé. À réserver
+   * aux écrans où l'adresse voisine d'AUTRES groupes nommés : là, sans nom,
+   * elle se lit comme une suite de champs perdus entre des blocs. Là où le
+   * titre du panneau dit déjà « Adresse … », le laisser vide — deux fois le
+   * même nom vaut moins qu'une fois.
+   */
+  readonly legend = input('');
+
+  /**
+   * Libellé de la note. Neutre par défaut : ce fragment ne sait pas QUI viendra
+   * lire les consignes, et « note pour les livreurs » est un mot de l'appelant.
+   */
+  readonly noteLabel = input('Consignes d’accès');
+
+  /** Exemple montré dans le champ vide — le meilleur mode d'emploi qui soit. */
+  readonly notePlaceholder = input('Digicode, étage, où déposer…');
+
   readonly coordinatesLabel = input('Point GPS');
   readonly coordinatesHint = input('pour les lieux qu’une adresse ne suffit pas à trouver');
 

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import { FoldTimeComponent } from 'fold-ng';
+import { FoldFieldsetComponent, FoldTimeComponent } from 'fold-ng';
 
 import { hoursIssueOf, withRangePart, type HoursEntry } from '../hours.model';
 
@@ -16,7 +16,7 @@ import { hoursIssueOf, withRangePart, type HoursEntry } from '../hours.model';
 @Component({
   selector: 'lfd-hours-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldTimeComponent],
+  imports: [FoldFieldsetComponent, FoldTimeComponent],
   templateUrl: './hours-form.html',
   styleUrl: './hours-form.scss',
 })

@@ -1,72 +1,98 @@
-@if (has('label')) {
-  <fold-input
-    label="Nom de l'adresse"
-    [hint]="labelHint()"
-    optional
-    [value]="value().label"
-    (valueChange)="set('label', $event)"
-  />
-}
+<!-- Les champs postaux sont une UNITÉ : ils répondent tous à « où ? », et le
+     fieldset le dit dans le DOM plutôt que dans un commentaire. Il les entoure
+     donc toujours — la légende, elle, reste facultative : là où le titre du
+     panneau dit déjà « Adresse … », un second nom vaudrait moins qu'aucun, et
+     un groupe sans légende n'annonce rien à l'assistance technique. Ce qu'on
+     gagne quand même : le groupe possède son propre rythme au lieu de
+     l'emprunter à son parent, et il se désactive d'un seul attribut. -->
+<fold-fieldset legendVariant="heading" [legend]="legend()" appearance="border">
+  @if (has('label')) {
+    <fold-input
+      label="Nom de l'adresse"
+      [hint]="labelHint()"
+      optional
+      [value]="value().label"
+      (valueChange)="set('label', $event)"
+    />
+  }
 
-@if (has('line1')) {
-  <fold-input
-    label="Adresse"
-    placeholder="n° et voie"
-    required
-    [value]="value().line1"
-    (valueChange)="set('line1', $event)"
-  />
-}
-@if (has('line2')) {
-  <fold-input
-    label="Complément"
-    [hint]="line2Hint()"
-    optional
-    [value]="value().line2"
-    (valueChange)="set('line2', $event)"
-  />
-}
+  @if (has('line1')) {
+    <fold-input
+      label="Adresse"
+      placeholder="n° et voie"
+      required
+      [value]="value().line1"
+      (valueChange)="set('line1', $event)"
+    />
+  }
+  @if (has('line2')) {
+    <fold-input
+      label="Complément"
+      [hint]="line2Hint()"
+      optional
+      [value]="value().line2"
+      (valueChange)="set('line2', $event)"
+    />
+  }
 
-@if (has('postalCode') || has('city')) {
-  <div class="row">
-    @if (has('postalCode')) {
-      <fold-input
-        class="cp"
-        label="Code postal"
-        required
-        [value]="value().postalCode"
-        (valueChange)="set('postalCode', $event)"
-      />
-    }
-    @if (has('city')) {
-      <fold-input
-        class="ville"
-        label="Ville"
-        required
-        [value]="value().city"
-        (valueChange)="set('city', $event)"
-      />
-    }
-  </div>
-}
+  @if (has('postalCode') || has('city')) {
+    <div class="row row-postal">
+      @if (has('postalCode')) {
+        <fold-input
+          label="Code postal"
+          required
+          [value]="value().postalCode"
+          (valueChange)="set('postalCode', $event)"
+        />
+      }
+      @if (has('city')) {
+        <fold-input
+          label="Ville"
+          required
+          [value]="value().city"
+          (valueChange)="set('city', $event)"
+        />
+      }
+    </div>
+  }
 
-@if (has('country')) {
-  <fold-listbox
-    label="Pays"
-    required
-    placeholder="Choisir un pays…"
-    [options]="countryChoices()"
-    [value]="value().country"
-    (selectionChange)="set('country', $event)"
-  />
-}
+  @if (has('country')) {
+    <fold-listbox
+      label="Pays"
+      required
+      placeholder="Choisir un pays…"
+      [options]="countryChoices()"
+      [value]="value().country"
+      (selectionChange)="set('country', $event)"
+    />
+  }
+
+  @if (has('note')) {
+    <fold-textarea
+      optional
+      optionalLabel="optionnel"
+      [rows]="3"
+      [label]="noteLabel()"
+      [placeholder]="notePlaceholder()"
+      [value]="value().note"
+      (valueChange)="set('note', $event)"
+    />
+  }
+</fold-fieldset>
 
 @if (has('coordinates')) {
-  <fieldset class="coords">
-    <legend class="field-label">
-      {{ coordinatesLabel() }} <em>(optionnel — {{ coordinatesHint() }})</em>
-    </legend>
-
+  <!-- Le groupe est optionnel EN ENTIER : un point, c'est deux champs qu'on
+       donne ensemble ou pas du tout. Marquer chaque champ « optionnel » dirait
+       autre chose — que l'un pourrait manquer sans l'autre. -->
+  <fold-fieldset
+    legendVariant="heading"
+    appearance="border"
+    hintPosition="inline"
+    optional
+    optionalLabel="optionnel"
+    [legend]="coordinatesLabel()"
+    [hint]="coordinatesHint()"
+  >
     <!-- Deux façons de saisir le même point : à la main, ou collé depuis une
          carte. Le second est le geste réel — on ne tape pas des décimales, on
          les copie — mais le premier reste pour corriger une seule des deux. -->
@@ -81,7 +107,6 @@
     @if (entryMode() === 'pair') {
       <div class="row">
         <fold-input
-          class="grow"
           label="Latitude"
           optional
           placeholder="48.8566"
@@ -89,7 +114,6 @@
           (valueChange)="set('latitude', $event)"
         />
         <fold-input
-          class="grow"
           label="Longitude"
           optional
           placeholder="2.3522"
@@ -115,5 +139,5 @@
     <!-- La carte, si l'appelant en a une : ce fragment ne sait pas en dessiner,
          et n'a pas à choisir de bibliothèque à sa place. -->
     <ng-content select="[map]" />
-  </fieldset>
+  </fold-fieldset>
 }

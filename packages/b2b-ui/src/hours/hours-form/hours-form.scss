@@ -4,23 +4,13 @@
   display: contents;
 }
 
+// Le reset du fieldset, la légende et son registre, l'indice et son
+// `aria-describedby` appartiennent maintenant à `fold-fieldset`. Ce fichier ne
+// garde que ce qui est PROPRE aux plages horaires — à commencer par leur
+// rythme : une suite de lignes se serre, là où le défaut du composant est celui
+// d'un formulaire.
 .hours {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-.hours > legend {
-  padding: 0;
-  margin-bottom: var(--fold-space-xs);
-}
-
-.field-label {
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-weight: 600;
-  color: var(--fold-color-text);
+  --fold-fieldset-gap: var(--fold-space-sm);
 }
 
 // Une ligne : le nom à gauche, les deux heures et le tiret à droite.
@@ -41,11 +31,6 @@
   flex: none;
 }
 
-.hours-hint {
-  margin: 0;
-  font-size: var(--fold-text-sm, 0.875rem);
-  color: var(--fold-color-text-muted);
-}
 .hours-issue {
   margin: 0;
   font-size: var(--fold-text-sm, 0.875rem);

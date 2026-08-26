@@ -1,50 +1,36 @@
-// Fragment transparent : ses champs deviennent enfants directs du formulaire
-// container, qui gouverne l'espacement (gap).
+// Fragment transparent : ses champs deviennent enfants directs du groupe qui
+// l'accueille, lequel gouverne l'espacement (`--fold-fieldset-gap`).
 :host {
   display: contents;
 }
 
-// Code postal + ville sur une ligne ; passe en colonne si trop étroit.
+// Deux champs côte à côte. La seule chose qui change d'une rangée à l'autre est
+// leur PROPORTION — elle vit donc sur la rangée, pas en classes posées sur les
+// enfants. Un `.cp` et un `.ville` disaient « ce champ pèse 1, celui-là 3 » à
+// deux endroits éloignés de la seule ligne qui les met ensemble.
+//
+// `minmax(0, …)` et non `1fr` nu : une piste `1fr` a pour minimum la taille
+// AUTO de son contenu, donc un champ au placeholder long refuserait de
+// rétrécir et déborderait la rangée.
 .row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: var(--row-ratio, minmax(0, 1fr) minmax(0, 1fr));
   gap: var(--fold-space-md);
 }
-.cp {
-  flex: 1 1 7rem;
-  min-width: 0;
-}
-.ville {
-  flex: 3 1 10rem;
-  min-width: 0;
-}
-.grow {
-  flex: 1 1 8rem;
-  min-width: 0;
+
+// Code postal contre ville : le code est court et de longueur fixe, la ville
+// non. Un partage égal laisserait cinq chiffres au milieu du vide à côté d'un
+// nom tronqué.
+.row-postal {
+  --row-ratio: minmax(0, 1fr) minmax(0, 3fr);
 }
 
-.coords {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-.coords > legend {
-  padding: 0;
-  margin-bottom: var(--fold-space-xs);
-}
-
-.field-label {
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-weight: 600;
-  color: var(--fold-color-text);
-}
-.field-label em {
-  font-weight: 400;
-  font-style: normal;
-  color: var(--fold-color-text-muted);
+// `fields` est une entrée publique : rien n'oblige un appelant à demander le
+// code postal ET la ville. Seul des deux, un champ ne doit pas se retrouver
+// coincé dans une colonne dimensionnée pour un partage — un ratio ne veut rien
+// dire à un élément unique.
+.row:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .coords-issue {

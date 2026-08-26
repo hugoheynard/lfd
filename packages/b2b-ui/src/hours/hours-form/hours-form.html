@@ -1,11 +1,9 @@
-<fieldset class="hours">
-  @if (legend()) {
-    <legend class="field-label">{{ legend() }}</legend>
-  }
-  @if (hint()) {
-    <p class="hours-hint">{{ hint() }}</p>
-  }
-
+<!-- `legendVariant="heading"` : ce groupe EST une chose aux yeux du formulaire
+     (« Heures de retrait »), pas une section de page — son nom se lit donc au
+     même poids que les libellés voisins. Sans légende, le fragment est
+     volontairement muet : c'est l'usage imbriqué d'`lfd-address-fields`, où le
+     fieldset parent a déjà nommé le groupe. -->
+<fold-fieldset class="hours" legendVariant="heading" [legend]="legend()" [hint]="hint()">
   @for (entry of value(); track entry.key) {
     <!-- Le nom de la plage est le seul repère : chaque champ le reprend dans
          son `aria-label`, sinon l'assistance technique lit « Début » quatorze
@@ -35,4 +33,4 @@
   <!-- Ce que l'appelant veut dire sous les champs : une conséquence, un
        avertissement — le fragment ne connaît aucune des deux. -->
   <ng-content />
-</fieldset>
+</fold-fieldset>
