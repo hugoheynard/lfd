@@ -65,9 +65,9 @@ describe("Packaging", () => {
     pack.describe({
       grossWeightGrams: null,
       priceCents: null,
-      channels: ["emporter", "b2b", "emporter"],
+      channels: ["takeaway", "b2b", "takeaway"],
     });
-    expect(pack.snapshot().channels).toEqual(["b2b", "emporter"]);
+    expect(pack.snapshot().channels).toEqual(["b2b", "takeaway"]);
   });
 
   it("se reconstitue à l'identique", () => {

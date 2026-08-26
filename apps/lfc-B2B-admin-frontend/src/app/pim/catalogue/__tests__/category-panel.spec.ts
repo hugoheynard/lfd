@@ -23,8 +23,8 @@ function category(overrides: Partial<Category> = {}): Category {
     parentId: null,
     position: 0,
     isArchived: false,
-    channelPreset: [{ locationId: 'emp_village', context: 'emporter' }],
-    vatByContext: { emporter: 'tva_55' },
+    channelPreset: [{ locationId: 'emp_village', context: 'takeaway' }],
+    vatByContext: { takeaway: 'tva_55' },
     activeProductCount: 0,
     ...overrides,
   };
@@ -218,12 +218,12 @@ describe('CategoryPanel — un taux par canal vendu', () => {
   it('ne montre que les taux des canaux vendus', async () => {
     const { host } = await setup(
       category({
-        channelPreset: channels([{ locationId: 'emp_village', context: 'emporter' }]),
+        channelPreset: channels([{ locationId: 'emp_village', context: 'takeaway' }]),
       }),
     );
 
     expect(rateLabels(host)).toHaveLength(1);
-    expect(rateLabels(host)[0]).toContain('emporter');
+    expect(rateLabels(host)[0]).toContain('À emporter');
   });
 
   it('montre le taux B2B dès que la plateforme est cochée', async () => {
@@ -239,8 +239,8 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = await setup(
       category({
         channelPreset: channels([
-          { locationId: 'emp_village', context: 'emporter' },
-          { locationId: 'emp_village', context: 'surPlace' },
+          { locationId: 'emp_village', context: 'takeaway' },
+          { locationId: 'emp_village', context: 'eatIn' },
           { locationId: null, context: 'b2b' },
         ]),
       }),
@@ -256,7 +256,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = await setup(
       category({
         channelPreset: channels([
-          { locationId: 'emp_village', context: 'emporter' },
+          { locationId: 'emp_village', context: 'takeaway' },
           // Le contexte se coche POUR LUI-MÊME. Il partageait auparavant le
           // canal « emporter », donc il se vendait dès qu'on vendait à
           // emporter — impossible de régler l'un sans l'autre. C'est
@@ -269,7 +269,6 @@ describe('CategoryPanel — un taux par canal vendu', () => {
         {
           key: 'traiteur',
           label: 'Traiteur',
-          channelKey: 'emporter',
           perLocation: true,
           position: 4,
         },
@@ -288,14 +287,13 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     TestBed.resetTestingModule();
     const { host } = await setup(
       category({
-        channelPreset: channels([{ locationId: 'emp_village', context: 'emporter' }]),
+        channelPreset: channels([{ locationId: 'emp_village', context: 'takeaway' }]),
       }),
       [
         ...TEST_SALES_CONTEXTS,
         {
           key: 'traiteur',
           label: 'Traiteur',
-          channelKey: 'emporter',
           perLocation: true,
           position: 4,
         },
@@ -312,7 +310,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host, http, stable } = await setup(
       category({
         channelPreset: channels([{ locationId: null, context: 'b2b' }]),
-        vatByContext: { emporter: 'tva_55', surPlace: 'tva_10', b2b: 'tva_20' },
+        vatByContext: { takeaway: 'tva_55', eatIn: 'tva_10', b2b: 'tva_20' },
       }),
     );
 

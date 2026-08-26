@@ -43,7 +43,7 @@ interface RateRow {
   readonly id: string;
   readonly name: string;
   readonly percent: number;
-  readonly usage: { readonly emporter: number; readonly surPlace: number; readonly b2b: number };
+  readonly usage: { readonly takeaway: number; readonly eatIn: number; readonly b2b: number };
 }
 
 async function createRate(name: string, percent: number): Promise<string> {

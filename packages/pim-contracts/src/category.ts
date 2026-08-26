@@ -73,13 +73,6 @@ export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
 export interface SalesContextView {
   readonly key: string;
   readonly label: string;
-  /**
-   * Le canal de la matrice qui l'autorise (`emporter` / `surPlace` / `b2b`).
-   *
-   * De TRANSITION — `perLocation` le remplace. Les deux voyagent le temps de la
-   * bascule (C0-d, tranche d-2).
-   */
-  readonly channelKey: string;
   /** Ce contexte se vend-il depuis un point de vente ? Sinon il est global. */
   readonly perLocation: boolean;
   readonly position: number;

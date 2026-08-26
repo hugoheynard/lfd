@@ -84,7 +84,7 @@ async function build(
           effectiveChannels: (items: readonly { id: string }[]) =>
             Promise.resolve(
               new Map(
-                items.map((item) => [item.id, [{ locationId: "emp_1", context: "emporter" }]]),
+                items.map((item) => [item.id, [{ locationId: "emp_1", context: "takeaway" }]]),
               ),
             ),
         },
@@ -97,10 +97,9 @@ async function build(
             Promise.resolve([
               {
                 id: "ctx_emporter",
-                key: "emporter",
+                key: "takeaway",
                 label: "À emporter",
                 handleSuffix: "",
-                channelKey: "emporter",
                 active: true,
                 shopifyProjected: true,
                 position: 1,

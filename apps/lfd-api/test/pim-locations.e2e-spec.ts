@@ -147,7 +147,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
 
     expect((await readLocation(location)).usedByCategories).toBe(1);
@@ -163,7 +163,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
 
     const response = await staff().delete(`${LOCATIONS}/${location}`);
@@ -181,7 +181,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
     await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
@@ -313,7 +313,7 @@ describe("les jetons de QR d'une table", () => {
  * étrangère `Restrict` de `category_location_ref`, l'index que le dépôt des
  * familles écrit dans la même transaction que la colonne `channel_preset`.
  */
-describe("l'index de référence suit la grille de canaux", () => {
+describe("la matrice de canaux suit la grille", () => {
   it("se vide quand la famille décoche, et laisse alors supprimer", async () => {
     const location = await createLocation({ name: "Village" });
     const category = jsonBody<{ id: string }>(
@@ -324,12 +324,12 @@ describe("l'index de référence suit la grille de canaux", () => {
     const channels = (sold: { locationId: string | null; context: string }[]) =>
       staff().put(`${CATEGORIES}/${category}/channels`).send(sold).expect(200);
 
-    await channels([{ locationId: location, context: "emporter" }]);
+    await channels([{ locationId: location, context: "takeaway" }]);
     expect(await refCount(location)).toBe(1);
 
     // Recocher le MÊME emplacement dans un autre contexte ne doit pas doubler
     // la référence : le dépôt efface puis réécrit, il n'ajoute pas.
-    await channels([{ locationId: location, context: "surPlace" }]);
+    await channels([{ locationId: location, context: "eatIn" }]);
     expect(await refCount(location)).toBe(1);
 
     await channels([]);
@@ -351,7 +351,7 @@ describe("l'index de référence suit la grille de canaux", () => {
     ).id;
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
 
     await ctx.prisma.category.delete({ where: { id: category } });
@@ -361,8 +361,13 @@ describe("l'index de référence suit la grille de canaux", () => {
   });
 });
 
-function refCount(locationId: string): Promise<number> {
-  return ctx.prisma.categoryLocationRef.count({ where: { locationId } });
+/** Combien de FAMILLES vendent depuis ce lieu — pas combien de lignes. */
+async function refCount(locationId: string): Promise<number> {
+  const rows = await ctx.prisma.categoryChannel.groupBy({
+    by: ["categoryId"],
+    where: { locationId },
+  });
+  return rows.length;
 }
 
 /**
@@ -376,7 +381,8 @@ describe("un emplacement déclare les contextes qu'il offre", () => {
   it("écrit un contexte par mode à la création", async () => {
     const id = await createLocation({ name: "Village", eatIn: true, tableCount: 2 });
 
-    expect(await offeredContexts(id)).toEqual(["emporter", "surPlace"]);
+    // Trié par clé : « eatIn » précède « takeaway » depuis la traduction.
+    expect(await offeredContexts(id)).toEqual(["eatIn", "takeaway"]);
   });
 
   it("n'écrit rien pour un emplacement qui n'offre aucun mode", async () => {
@@ -391,7 +397,7 @@ describe("un emplacement déclare les contextes qu'il offre", () => {
 
     await staff().put(`${LOCATIONS}/${id}`).send({ eatIn: false }).expect(200);
 
-    expect(await offeredContexts(id)).toEqual(["emporter"]);
+    expect(await offeredContexts(id)).toEqual(["takeaway"]);
   });
 
   it("disparaît avec l'emplacement", async () => {

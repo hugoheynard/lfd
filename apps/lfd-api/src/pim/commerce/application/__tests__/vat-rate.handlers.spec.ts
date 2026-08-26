@@ -194,7 +194,7 @@ describe("ListVatRatesHandler", () => {
     );
     await create.execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     await create.execute(new CreateVatRateCommand({ name: "Normal", percent: 20 }));
-    repo.usage.set("tva_1", { emporter: 3, surPlace: 1 });
+    repo.usage.set("tva_1", { takeaway: 3, eatIn: 1 });
 
     const views = await new ListVatRatesHandler(repo).execute();
 
@@ -202,7 +202,7 @@ describe("ListVatRatesHandler", () => {
     // contexte reviendrait à nommer les contextes dans la réponse, donc à les
     // figer — c'est ce qui avait fait oublier le B2B pendant des mois.
     expect(views.map((view) => [view.percent, view.usage])).toEqual([
-      [5.5, { emporter: 3, surPlace: 1 }],
+      [5.5, { takeaway: 3, eatIn: 1 }],
       [20, {}],
     ]);
   });
@@ -219,7 +219,7 @@ describe("Le journal du référentiel", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     // Ce que ce taux touchait à l'instant du changement.
-    repo.usage.set(id, { emporter: 3, surPlace: 1, b2b: 2 });
+    repo.usage.set(id, { takeaway: 3, eatIn: 1, b2b: 2 });
 
     await new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
       new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }),
@@ -237,7 +237,7 @@ describe("Le journal du référentiel", () => {
       // Des comptes par CONTEXTE, pas un rayon transitif : ce que le handler
       // savait, et tous les contextes — un taux B2B qui bouge sous « 0 / 0 »
       // était une trace qui disait que ça ne touchait personne.
-      blast: { families: { emporter: 3, surPlace: 1, b2b: 2 } },
+      blast: { families: { takeaway: 3, eatIn: 1, b2b: 2 } },
     });
   });
 

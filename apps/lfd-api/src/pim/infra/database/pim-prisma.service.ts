@@ -41,7 +41,6 @@ export abstract class PimPrismaService {
   abstract readonly productChannelOverride: PrismaService["productChannelOverride"];
   abstract readonly productChannel: PrismaService["productChannel"];
   abstract readonly categoryContextVat: PrismaService["categoryContextVat"];
-  abstract readonly categoryLocationRef: PrismaService["categoryLocationRef"];
   abstract readonly productContextVat: PrismaService["productContextVat"];
   abstract readonly location: PrismaService["location"];
   abstract readonly locationTable: PrismaService["locationTable"];

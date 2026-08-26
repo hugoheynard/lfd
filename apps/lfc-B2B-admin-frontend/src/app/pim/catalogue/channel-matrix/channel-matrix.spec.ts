@@ -4,9 +4,9 @@ import type { Location, SalesChannels } from '../../data/models';
 import { ChannelMatrix } from './channel-matrix';
 
 const CHANNELS: SalesChannels = [
-  { locationId: 'emp_village', context: 'emporter' },
-  { locationId: 'emp_village', context: 'surPlace' },
-  { locationId: 'emp_val', context: 'emporter' },
+  { locationId: 'emp_village', context: 'takeaway' },
+  { locationId: 'emp_village', context: 'eatIn' },
+  { locationId: 'emp_val', context: 'takeaway' },
 ];
 
 /** Les points de vente sont une DONNÉE : la grille en reçoit la liste. */

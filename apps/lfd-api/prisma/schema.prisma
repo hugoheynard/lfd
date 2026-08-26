@@ -2520,21 +2520,14 @@ model Category {
   isArchived Boolean    @default(false) @map("is_archived")
   products   Product[]
 
-  /// Canaux de vente hérités par les produits (matrice boutiques × modes).
-  /// `{}` sur les lignes antérieures est relu comme « rien vendu » (défensif).
-  channelPreset Json @default("{}") @map("channel_preset")
-
   /// Les taux par contexte de vente. Trois colonnes fixes vivaient ici
   /// (`emporter` / `surPlace` / `b2b`) : ajouter un contexte demandait une
   /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
   contextVat CategoryContextVat[]
 
-  /// L'index de référence des emplacements cités par `channelPreset` — voir
-  /// `CategoryLocationRef`. Écrit dans la MÊME transaction que la colonne.
-  locationRefs CategoryLocationRef[]
-
   /// Ce que cette famille vend, une ligne par (lieu, contexte) — voir
-  /// `CategoryChannel`. En service à côté de `channelPreset`, que d-3 supprime.
+  /// `CategoryChannel`. Seule source depuis d-2 ; la colonne `jsonb` qui la
+  /// précédait est tombée en d-3.
   channels CategoryChannel[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -2543,35 +2536,6 @@ model Category {
 
   @@index([parentId])
   @@map("category")
-  @@schema("pim")
-}
-
-/// **L'index de référence** entre une famille et les emplacements que sa grille
-/// de canaux cite.
-///
-/// Pourquoi une table alors que la donnée est déjà dans `channel_preset` : une
-/// clé étrangère ne se pose pas sur une valeur enfouie dans du `jsonb`.
-/// Supprimer un emplacement se protégeait donc par une LECTURE — compter les
-/// familles, puis supprimer — et entre les deux instants, une grille pouvait
-/// se mettre à le citer. Résultat : une famille pointant un point de vente
-/// disparu, sans erreur.
-///
-/// C'est exactement le motif de `sku_registry` : quand une contrainte ne peut
-/// pas atteindre l'invariant, un **registre** le porte. Il n'est pas une
-/// seconde source de vérité — il est écrit dans la même transaction que la
-/// colonne dont il dérive, par le seul dépôt qui écrit cette colonne.
-///
-/// `Restrict` vers l'emplacement (le mur), `Cascade` depuis la famille (la
-/// référence n'a aucun sens sans elle).
-model CategoryLocationRef {
-  categoryId String   @map("category_id")
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  locationId String   @map("location_id")
-  location   Location @relation(fields: [locationId], references: [id])
-
-  @@id([categoryId, locationId])
-  @@index([locationId])
-  @@map("category_location_ref")
   @@schema("pim")
 }
 
@@ -2595,14 +2559,6 @@ model SalesContext {
   /// Suffixe de handle Shopify. **Vide pour le contexte par défaut** : le
   /// handle nu protège les URL déjà indexées (cf. C0-bis, write-once SEO).
   handleSuffix String @default("") @map("handle_suffix")
-
-  /// Quel drapeau de `category.channel_preset` autorise ce contexte. Colonne de
-  /// TRANSITION, assumée. La matrice est déjà data-driven **par emplacement**
-  /// (clé = identifiant) ; ce qui reste fixe, ce sont les **modes** d'un
-  /// emplacement (`emporter` / `surPlace`) et le drapeau `b2b`. Le contexte doit
-  /// donc dire lequel des trois le porte. Cette colonne disparaît quand un
-  /// emplacement vendra des contextes au lieu de deux modes nommés.
-  channelKey String @map("channel_key")
 
   /// Ce contexte se vend-il **depuis un point de vente**, ou globalement ?
   ///
@@ -2817,18 +2773,13 @@ model Location {
 
   tables LocationTable[]
 
-  /// Les familles qui citent cet emplacement dans leur grille de canaux — le
-  /// mur `Restrict` qui empêche de le supprimer sous elles. Aucune colonne
-  /// ajoutée ici ; voir `CategoryLocationRef`.
-  categoryRefs CategoryLocationRef[]
-
   /// Les contextes que ce point de vente offre — voir `LocationContext`. En
   /// service à côté de `clickCollect` / `eatIn`, que la tranche d-3 supprime.
   contexts LocationContext[]
 
   /// Les familles et les fiches qui vendent DEPUIS ce lieu — le mur `Restrict`,
-  /// enfin direct. `CategoryLocationRef` le portait par procuration faute de
-  /// pouvoir poser une clé étrangère dans du `jsonb` ; d-3 le supprime.
+  /// enfin direct. Un index de référence le portait par procuration, faute de
+  /// pouvoir poser une clé étrangère dans du `jsonb` ; il est tombé en d-3.
   categoryChannels CategoryChannel[]
   productChannels  ProductChannel[]
 
@@ -2880,21 +2831,8 @@ model Product {
   /// Les taux propres à CE produit, par contexte. Absence = il hérite.
   contextVat ProductContextVat[]
 
-  /// Où cette fiche se vend, quand elle ne suit PAS sa famille.
-  ///
-  /// `NULL` = elle hérite, et c'est le cas courant. Une matrice à moitié
-  /// redéfinie ne se lit pas — devant une case vide, on ne saurait pas dire si
-  /// la fiche n'est pas vendue là ou si sa famille ne l'y vendait pas — d'où le
-  /// tout-ou-rien, marqué par le `NULL` lui-même.
-  ///
-  /// Une colonne `jsonb`, comme `category.channel_preset` : une dérogation doit
-  /// avoir exactement la forme de ce qu'elle remplace, et suivre son sort. La
-  /// matrice est déjà indexée par emplacement ; seuls ses **modes** restent
-  /// nommés en dur (C0-d).
-  channelOverride Json? @map("channel_override")
-
-  /// La dérogation en TABLE — voir `ProductChannelOverride`. En service à côté
-  /// de la colonne ci-dessus, que la tranche d-3 supprime.
+  /// La dérogation en TABLE — voir `ProductChannelOverride`. Seule source depuis
+  /// d-2 ; la colonne `jsonb` qui la précédait est tombée en d-3.
   channelOverrideRows ProductChannelOverride?
 
   /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).

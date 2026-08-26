@@ -129,11 +129,11 @@ describe("un preset ne cite que des emplacements qui existent", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }]);
+      .send([{ locationId: location, context: "takeaway" }]);
 
     expect(response.status).toBe(200);
     expect((await readCategory(category)).channelPreset).toEqual([
-      { locationId: location, context: "emporter" },
+      { locationId: location, context: "takeaway" },
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("un preset ne cite que des emplacements qui existent", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: "emp_fantome", context: "emporter" }]);
+      .send([{ locationId: "emp_fantome", context: "takeaway" }]);
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.unknown_location");
@@ -162,7 +162,7 @@ describe("un taux ne tient que sur un canal vendu", () => {
 
     const response = await staff()
       .put(`${CATEGORIES}/${category}/vat`)
-      .send({ vatByContext: { emporter: rate } });
+      .send({ vatByContext: { takeaway: rate } });
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe(

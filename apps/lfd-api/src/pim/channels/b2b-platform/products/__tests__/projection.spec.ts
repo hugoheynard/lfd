@@ -48,7 +48,7 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
     slug: { fr: "viennoiseries" },
     parentId: null,
     position: 0,
-    vatByContext: { emporter: 5.5, b2b: 5.5 },
+    vatByContext: { takeaway: 5.5, b2b: 5.5 },
     ...over,
   };
 }
@@ -58,7 +58,7 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
  * Les tests qui parlent d'une dérogation le passent explicitement — c'est tout
  * l'intérêt de le recevoir plutôt que de le déduire.
  */
-function vat(percents: Record<string, number> = { emporter: 5.5, b2b: 5.5 }) {
+function vat(percents: Record<string, number> = { takeaway: 5.5, b2b: 5.5 }) {
   return new Map([["prd_1", percents]]);
 }
 
@@ -88,7 +88,7 @@ describe("projectCatalog", () => {
     const { snapshot } = projectCatalog(
       [product()],
       [category()],
-      vat({ emporter: 5.5, b2b: 20 }),
+      vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       AT,
     );
@@ -104,8 +104,8 @@ describe("projectCatalog", () => {
     // passer inaperçu.
     const { snapshot } = projectCatalog(
       [product()],
-      [category({ vatByContext: { emporter: 5.5, b2b: 20 } })],
-      vat({ emporter: 5.5, b2b: 20 }),
+      [category({ vatByContext: { takeaway: 5.5, b2b: 20 } })],
+      vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       AT,
     );
@@ -173,7 +173,7 @@ describe("projectCatalog", () => {
   it("pousse un produit dont la famille n’a pas de TVA, avec un taux null", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
-      [category({ vatByContext: { emporter: 5.5 } })],
+      [category({ vatByContext: { takeaway: 5.5 } })],
       vat(),
       sold(),
       AT,
@@ -228,7 +228,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       [product()],
       [category()],
       vat(),
-      sold([{ locationId: "emp_1", context: "emporter" }]),
+      sold([{ locationId: "emp_1", context: "takeaway" }]),
       AT,
     );
 

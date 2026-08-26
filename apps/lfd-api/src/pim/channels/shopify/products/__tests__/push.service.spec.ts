@@ -126,12 +126,12 @@ async function build(
               new Map(
                 items.map((item) => [
                   item.id,
-                  { boutiques: { emp_1: { emporter: true, surPlace: false } }, b2b: false },
+                  { boutiques: { emp_1: { takeaway: true, eatIn: false } }, b2b: false },
                 ]),
               ),
             ),
           vatPercents: (items: readonly { id: string }[]) =>
-            Promise.resolve(new Map(items.map((item) => [item.id, { emporter: 5.5 }]))),
+            Promise.resolve(new Map(items.map((item) => [item.id, { takeaway: 5.5 }]))),
           editorials: (ids: readonly string[]) => {
             editorialAsks.push([...ids]);
             return Promise.resolve(editorials);
@@ -148,20 +148,18 @@ async function build(
             Promise.resolve([
               {
                 id: "ctx_emporter",
-                key: "emporter",
+                key: "takeaway",
                 label: "À emporter",
                 handleSuffix: "",
-                channelKey: "emporter",
                 active: true,
                 shopifyProjected: true,
                 position: 1,
               },
               {
                 id: "ctx_sur_place",
-                key: "surPlace",
+                key: "eatIn",
                 label: "Sur place",
                 handleSuffix: "-surplace",
-                channelKey: "surPlace",
                 active: true,
                 shopifyProjected: false,
                 position: 2,

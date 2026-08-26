@@ -27,15 +27,6 @@ export interface SalesContext {
    */
   readonly handleSuffix: string;
   /**
-   * Quel drapeau de la matrice autorisait ce contexte.
-   *
-   * ⚠️ **Plus lue par personne** depuis que la matrice est un ensemble de
-   * paires : un contexte est vendu si son propre nom apparaît, sans qu'aucun
-   * code n'ait à savoir lequel des trois canaux le portait. La colonne reste
-   * écrite pour le binaire précédent ; la tranche d-3 la supprime.
-   */
-  readonly channelKey: string;
-  /**
    * Ce contexte se vend-il **depuis un point de vente** ?
    *
    * Il REMPLACE `channelKey`, et la différence est tout le sujet : `channelKey`

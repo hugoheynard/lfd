@@ -35,7 +35,7 @@ interface FicheContext {
   title: string;
   boutiques: string[];
   vatTag: string;
-  mode: 'emporter' | 'surPlace';
+  mode: 'takeaway' | 'eatIn';
   categoryId: string;
 }
 
@@ -96,7 +96,7 @@ export function buildCollections(
     label: category.name.fr,
     sub: 'à emporter',
     entries: fiches
-      .filter((f) => f.categoryId === category.id && f.mode === 'emporter')
+      .filter((f) => f.categoryId === category.id && f.mode === 'takeaway')
       .map(toEntry),
   }));
 
@@ -107,7 +107,7 @@ export function buildCollections(
       label: category.name.fr,
       sub: 'sur place',
       entries: fiches
-        .filter((f) => f.categoryId === category.id && f.mode === 'surPlace')
+        .filter((f) => f.categoryId === category.id && f.mode === 'eatIn')
         .map(toEntry),
     }))
     .filter((collection) => collection.entries.length > 0);

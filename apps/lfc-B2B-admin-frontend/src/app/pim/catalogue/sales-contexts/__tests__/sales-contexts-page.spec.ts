@@ -40,7 +40,6 @@ describe('SalesContextsPage', () => {
               {
                 key: 'b2b',
                 label: 'B2B',
-                channelKey: 'b2b',
                 perLocation: false,
                 position: 3,
                 active: true,

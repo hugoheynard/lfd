@@ -15,10 +15,9 @@ import type { SalesContext } from "../../../../shared/domain/value-objects/sales
 const CONTEXTS: readonly SalesContext[] = [
   {
     id: "ctx_emporter",
-    key: "emporter",
+    key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    channelKey: "emporter",
     perLocation: true,
     active: true,
     shopifyProjected: true,
@@ -26,10 +25,9 @@ const CONTEXTS: readonly SalesContext[] = [
   },
   {
     id: "ctx_sur_place",
-    key: "surPlace",
+    key: "eatIn",
     label: "Sur place",
     handleSuffix: "-surplace",
-    channelKey: "surPlace",
     perLocation: true,
     active: true,
     shopifyProjected: false,
@@ -40,7 +38,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    channelKey: "b2b",
     perLocation: false,
     active: true,
     shopifyProjected: false,
@@ -107,8 +104,8 @@ describe("l’agrégat Category", () => {
       expect(() =>
         archived().setChannels(
           channels([
-            { locationId: "emp_1", context: "emporter" },
-            { locationId: "emp_1", context: "surPlace" },
+            { locationId: "emp_1", context: "takeaway" },
+            { locationId: "emp_1", context: "eatIn" },
           ]),
           CONTEXTS,
         ),
@@ -116,7 +113,7 @@ describe("l’agrégat Category", () => {
     });
 
     it("refuse la TVA", () => {
-      expect(() => archived().setVat({ emporter: "tva_5" }, CONTEXTS)).toThrow(CategoryFrozenError);
+      expect(() => archived().setVat({ takeaway: "tva_5" }, CONTEXTS)).toThrow(CategoryFrozenError);
     });
 
     it("refuse le déplacement et le rang", () => {
@@ -158,16 +155,16 @@ describe("l’agrégat Category", () => {
    */
   describe("un taux ne se règle que pour un canal vendu", () => {
     it("refuse le taux d’un canal fermé", () => {
-      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
-      expect(() => category.setVat({ emporter: "tva_55", surPlace: "tva_10" }, CONTEXTS)).toThrow(
+      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      expect(() => category.setVat({ takeaway: "tva_55", eatIn: "tva_10" }, CONTEXTS)).toThrow(
         CategoryVatWithoutChannelError,
       );
     });
 
     it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
-      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
-      category.setVat({ emporter: "tva_55" }, CONTEXTS);
-      expect(category.vatByContext).toEqual({ emporter: "tva_55" });
+      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      category.setVat({ takeaway: "tva_55" }, CONTEXTS);
+      expect(category.vatByContext).toEqual({ takeaway: "tva_55" });
     });
 
     it("traite le B2B comme un canal à part entière", () => {
@@ -186,26 +183,26 @@ describe("l’agrégat Category", () => {
     });
 
     it("laisse intact le taux d’un canal qui reste vendu", () => {
-      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
-      category.setVat({ emporter: "tva_55" }, CONTEXTS);
+      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
+      category.setVat({ takeaway: "tva_55" }, CONTEXTS);
 
       // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
       category.setChannels(
         channels([
-          { locationId: "emp_1", context: "emporter" },
-          { locationId: "emp_2", context: "emporter" },
+          { locationId: "emp_1", context: "takeaway" },
+          { locationId: "emp_2", context: "takeaway" },
         ]),
         CONTEXTS,
       );
 
-      expect(category.vatOf("emporter")).toBe("tva_55");
+      expect(category.vatOf("takeaway")).toBe("tva_55");
     });
 
     it("refuse un contexte que le registre ne connaît pas", () => {
       // Accepter la clé la persisterait sans ligne de registre en face, et
       // personne ne saurait plus dire, six mois après, ce que « traiteur »
       // facturait.
-      const category = selling([{ locationId: "emp_1", context: "emporter" }]);
+      const category = selling([{ locationId: "emp_1", context: "takeaway" }]);
       expect(() => category.setVat({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
         CategoryUnknownContextError,
       );

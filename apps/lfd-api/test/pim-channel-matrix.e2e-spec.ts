@@ -9,7 +9,6 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -38,10 +37,6 @@ beforeEach(async () => {
 
 const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
-
-/** La sonde de parité passe par la porte machine-à-machine, pas par le staff. */
-const ops = (): ReturnType<E2eContext["http"]> =>
-  ctx.http().set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN);
 
 async function aLocation(name: string): Promise<string> {
   const response = await staff()
@@ -89,10 +84,10 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
 
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
 
-    expect(await categoryPairs(category)).toEqual([`${location}:emporter`]);
+    expect(await categoryPairs(category)).toEqual([`${location}:takeaway`]);
   });
 
   it("écrit DEUX lignes quand un lieu vend les deux modes", async () => {
@@ -102,12 +97,13 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send([
-        { locationId: location, context: "emporter" },
-        { locationId: location, context: "surPlace" },
+        { locationId: location, context: "takeaway" },
+        { locationId: location, context: "eatIn" },
       ])
       .expect(200);
 
-    expect(await categoryPairs(category)).toEqual([`${location}:emporter`, `${location}:surPlace`]);
+    // Triées par clé : « eatIn » précède « takeaway » depuis la traduction.
+    expect(await categoryPairs(category)).toEqual([`${location}:eatIn`, `${location}:takeaway`]);
   });
 
   /**
@@ -133,14 +129,14 @@ describe("ce qu'une famille vend s'écrit en paires (lieu, contexte)", () => {
       staff().put(`${CATEGORIES}/${category}/channels`).send(body).expect(200);
 
     await channels([
-      { locationId: location, context: "emporter" },
-      { locationId: location, context: "surPlace" },
+      { locationId: location, context: "takeaway" },
+      { locationId: location, context: "eatIn" },
       { locationId: null, context: "b2b" },
     ]);
     expect(await categoryPairs(category)).toHaveLength(3);
 
-    await channels([{ locationId: location, context: "emporter" }]);
-    expect(await categoryPairs(category)).toEqual([`${location}:emporter`]);
+    await channels([{ locationId: location, context: "takeaway" }]);
+    expect(await categoryPairs(category)).toEqual([`${location}:takeaway`]);
 
     await channels([]);
     expect(await categoryPairs(category)).toEqual([]);
@@ -177,8 +173,8 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
       .send([
-        { locationId: location, context: "emporter" },
-        { locationId: location, context: "surPlace" },
+        { locationId: location, context: "takeaway" },
+        { locationId: location, context: "eatIn" },
         { locationId: null, context: "b2b" },
       ])
       .expect(200);
@@ -187,13 +183,13 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
         channels: [
-          { locationId: location, context: "emporter" },
+          { locationId: location, context: "takeaway" },
           { locationId: null, context: "b2b" },
         ],
       })
       .expect(200);
 
-    expect(await productPairs(product)).toEqual([`${location}:emporter`, "—:b2b"]);
+    expect(await productPairs(product)).toEqual([`${location}:takeaway`, "—:b2b"]);
   });
 
   /**
@@ -207,12 +203,12 @@ describe("la dérogation d'une fiche EXISTE avant de contenir quoi que ce soit",
     const product = await aProduct(category, "Croissant");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
     await staff()
       .put(`${PRODUCTS}/${product}/channels`)
       .send({
-        channels: [{ locationId: location, context: "emporter" }],
+        channels: [{ locationId: location, context: "takeaway" }],
       })
       .expect(200);
     expect(await productPairs(product)).toHaveLength(1);
@@ -236,84 +232,12 @@ describe("le mur devient direct", () => {
     const category = await aCategory("Viennoiseries");
     await staff()
       .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
+      .send([{ locationId: location, context: "takeaway" }])
       .expect(200);
 
     expect(await ctx.prisma.categoryChannel.count({ where: { locationId: location } })).toBe(1);
 
     const response = await staff().delete(`${LOCATIONS}/${location}`);
     expect(response.status).toBe(409);
-  });
-});
-
-/**
- * La sonde de parité — le feu vert de la tranche d-3.
- *
- * Elle compare les deux écritures de la matrice : les colonnes `jsonb`
- * héritées, encore écrites, et les tables désormais lues. Un écart signifie que
- * supprimer les colonnes figerait la mauvaise vérité.
- */
-describe("la sonde de parité des canaux", () => {
-  const PARITY = "/pim/admin/channel-parity";
-
-  it("ne trouve aucun écart sur ce que l'API vient d'écrire", async () => {
-    const location = await aLocation("Village");
-    const category = await aCategory("Viennoiseries");
-    const product = await aProduct(category, "Croissant");
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([
-        { locationId: location, context: "emporter" },
-        { locationId: null, context: "b2b" },
-      ])
-      .expect(200);
-    await staff()
-      .put(`${PRODUCTS}/${product}/channels`)
-      .send({ channels: [{ locationId: location, context: "surPlace" }] })
-      .expect(200);
-
-    const report = jsonBody<{
-      identical: boolean;
-      categoriesChecked: number;
-      productsChecked: number;
-    }>(await ops().get(PARITY).expect(200));
-
-    expect(report.identical).toBe(true);
-    expect(report.categoriesChecked).toBeGreaterThan(0);
-    expect(report.productsChecked).toBeGreaterThan(0);
-  });
-
-  /**
-   * Et elle DOIT voir un écart qu'on fabrique — sinon elle serait un feu vert
-   * qui ne regarde rien, c'est-à-dire pire qu'aucun feu.
-   */
-  it("VOIT une divergence introduite directement en base", async () => {
-    const location = await aLocation("Village");
-    const category = await aCategory("Viennoiseries");
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ locationId: location, context: "emporter" }])
-      .expect(200);
-
-    // Ce que l'ancien binaire ferait dans la fenêtre : écrire la colonne seule.
-    await ctx.prisma.category.update({
-      where: { id: category },
-      data: {
-        channelPreset: {
-          boutiques: { [location]: { emporter: true, surPlace: true } },
-          b2b: false,
-        },
-      },
-    });
-
-    const report = jsonBody<{
-      identical: boolean;
-      categories: { id: string; onlyInColumn: string[] }[];
-    }>(await ops().get(PARITY).expect(200));
-
-    expect(report.identical).toBe(false);
-    expect(report.categories).toEqual([
-      { id: category, onlyInColumn: [`${location} surPlace`], onlyInTable: [] },
-    ]);
   });
 });

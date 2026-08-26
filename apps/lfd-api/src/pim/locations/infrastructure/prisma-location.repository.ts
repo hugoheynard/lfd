@@ -60,10 +60,10 @@ const WITH_TABLES = { tables: { orderBy: { number: "asc" } } } as const;
 function offeredContexts(snapshot: LocationSnapshot): string[] {
   const offered: string[] = [];
   if (snapshot.clickCollect) {
-    offered.push("emporter");
+    offered.push("takeaway");
   }
   if (snapshot.eatIn) {
-    offered.push("surPlace");
+    offered.push("eatIn");
   }
   return offered;
 }

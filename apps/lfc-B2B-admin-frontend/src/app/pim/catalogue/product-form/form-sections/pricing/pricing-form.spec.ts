@@ -21,14 +21,14 @@ function withFamily(store: ProductFormStore): void {
       name: 'Réduit',
       description: '',
       percent: 5.5,
-      usage: { emporter: 0, surPlace: 0 },
+      usage: { takeaway: 0, eatIn: 0 },
     },
     {
       id: 'tva_20',
       name: 'Normal',
       description: '',
       percent: 20,
-      usage: { emporter: 0, surPlace: 0 },
+      usage: { takeaway: 0, eatIn: 0 },
     },
   ]);
   store.categories.set([
@@ -40,10 +40,10 @@ function withFamily(store: ProductFormStore): void {
       position: 1,
       isArchived: false,
       channelPreset: [
-        { locationId: 'emp_rivoli', context: 'emporter' },
+        { locationId: 'emp_rivoli', context: 'takeaway' },
         { locationId: null, context: 'b2b' },
       ],
-      vatByContext: { emporter: 'tva_55', surPlace: 'tva_55', b2b: 'tva_20' },
+      vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
     },
   ]);
@@ -168,7 +168,7 @@ describe('PricingForm — la dérogation de la fiche', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     const emporter = [...host.querySelectorAll('.inherit-row')].find((row) =>
-      row.querySelector('dt')?.textContent?.includes('emporter'),
+      row.querySelector('dt')?.textContent?.includes('À emporter'),
     );
     expect(emporter?.textContent).toContain('5,5 %');
     expect(emporter?.textContent).not.toContain('Redéfini');
@@ -187,7 +187,9 @@ describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
     fixture.detectChanges();
 
     const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const emporter = rows.find((row) => row.querySelector('dt')?.textContent?.includes('emporter'));
+    const emporter = rows.find((row) =>
+      row.querySelector('dt')?.textContent?.includes('À emporter'),
+    );
     const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
 
     expect(emporter?.textContent).toContain('non proposé');
@@ -225,7 +227,7 @@ describe('PricingForm — le TTC par canal', () => {
         ?.textContent?.replace(/\u202f|\u00a0/g, ' ')
         .trim() ?? '';
 
-    expect(gross('emporter')).toBe('10,55 €');
+    expect(gross('À emporter')).toBe('10,55 €');
     expect(gross('B2B')).toBe('12,00 €');
 
     // Le montant est ÉTIQUETÉ : seul, « 12,00 € » se lirait aussi bien comme le

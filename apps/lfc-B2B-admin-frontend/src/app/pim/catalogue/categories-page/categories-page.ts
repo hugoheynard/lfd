@@ -150,11 +150,11 @@ export class CategoriesPage {
   }
 
   protected presetEmporter(category: Category): string[] {
-    return locationsSelling(category.channelPreset, 'emporter', this.locations());
+    return locationsSelling(category.channelPreset, 'takeaway', this.locations());
   }
 
   protected presetSurPlace(category: Category): string[] {
-    return locationsSelling(category.channelPreset, 'surPlace', this.locations());
+    return locationsSelling(category.channelPreset, 'eatIn', this.locations());
   }
 
   /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */

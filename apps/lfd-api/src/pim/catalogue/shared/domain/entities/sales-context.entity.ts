@@ -135,9 +135,6 @@ export class SalesContextAggregate {
       key: this.keyValue,
       label: this.labelValue,
       handleSuffix: this.handleSuffixValue,
-      // De transition, et il vaut la clé : plus personne ne le lit, d-3 le
-      // supprime avec la colonne.
-      channelKey: this.keyValue,
       perLocation: this.perLocationValue,
       active: this.activeValue,
       shopifyProjected: this.shopifyProjectedValue,

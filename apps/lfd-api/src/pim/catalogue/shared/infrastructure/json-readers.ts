@@ -1,10 +1,5 @@
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { LocalizedText } from "../domain/value-objects/localized-text.js";
-import {
-  legacyChannels,
-  type LegacySalesChannels,
-  type SalesChannels,
-} from "../domain/value-objects/sales-channels.js";
 
 /**
  * Lecture des colonnes `jsonb`.
@@ -60,72 +55,6 @@ export function readStringArrayColumn(value: unknown, field: string): string[] {
     }
     return entry;
   });
-}
-
-/**
- * Lecture **défensive** de la matrice de canaux. Un mode absent retombe sur
- * `false` — ce qui rend les lignes antérieures à la colonne lisibles (« rien
- * n'est vendu tant que non configuré ») ; un mode présent mais non booléen est
- * en revanche une corruption franche.
- */
-function readShopChannels(value: unknown, field: string): { emporter: boolean; surPlace: boolean } {
-  if (!isRecord(value)) {
-    throw new CorruptedRecordError(field);
-  }
-  return {
-    emporter: readModeFlag(value["emporter"], field),
-    surPlace: readModeFlag(value["surPlace"], field),
-  };
-}
-
-function readModeFlag(value: unknown, field: string): boolean {
-  if (value === undefined) {
-    return false;
-  }
-  if (typeof value !== "boolean") {
-    throw new CorruptedRecordError(field);
-  }
-  return value;
-}
-
-/**
- * ⚠️ Lecture de la colonne **héritée**, plus appelée par aucun dépôt.
- *
- * Les canaux se lisent désormais dans `category_channel` / `product_channel`.
- * Elle survit pour la reprise et pour les tests de non-régression, et part avec
- * la colonne à la tranche d-3.
- */
-export function readLegacyChannelsColumn(value: unknown, field: string): LegacySalesChannels {
-  if (!isRecord(value)) {
-    throw new CorruptedRecordError(field);
-  }
-  const raw = value["boutiques"];
-  const boutiques: Record<string, { emporter: boolean; surPlace: boolean }> = {};
-  if (isRecord(raw)) {
-    for (const [id, modes] of Object.entries(raw)) {
-      boutiques[id] = readShopChannels(modes ?? {}, field);
-    }
-  }
-  return { boutiques, b2b: readModeFlag(value["b2b"], field) };
-}
-
-/**
- * Les paires **repliées** dans la colonne héritée — encore ÉCRITE, jamais lue.
- *
- * C'est la contrepartie de « étendre, basculer, resserrer » : le binaire
- * précédent lit toujours cette colonne, donc elle doit rester juste jusqu'à sa
- * disparition (d-3).
- */
-export function salesChannelsColumn(channels: SalesChannels): {
-  boutiques: Record<string, Record<string, boolean>>;
-  b2b: boolean;
-} {
-  const legacy = legacyChannels(channels);
-  const boutiques: Record<string, Record<string, boolean>> = {};
-  for (const [id, modes] of Object.entries(legacy.boutiques)) {
-    boutiques[id] = { emporter: modes.emporter, surPlace: modes.surPlace };
-  }
-  return { boutiques, b2b: legacy.b2b };
 }
 
 /**

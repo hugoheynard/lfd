@@ -22,10 +22,9 @@ import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.j
 const CONTEXTS: readonly SalesContext[] = [
   {
     id: "ctx_emporter",
-    key: "emporter",
+    key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    channelKey: "emporter",
     perLocation: true,
     active: true,
     shopifyProjected: true,
@@ -36,7 +35,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    channelKey: "b2b",
     perLocation: false,
     active: true,
     shopifyProjected: false,
@@ -131,7 +129,7 @@ function familySelling(channels: SalesChannels): CategoryRepository {
     position: 0,
     isArchived: false,
     channelPreset: channels,
-    vatByContext: { emporter: "tva_55" },
+    vatByContext: { takeaway: "tva_55" },
   });
   return {
     findById: () => Promise.resolve(category),
@@ -149,7 +147,7 @@ function rates(): VatRateRepository {
 }
 
 const SELLS_ALL: SalesChannels = [
-  { locationId: "emp_1", context: "emporter" },
+  { locationId: "emp_1", context: "takeaway" },
   { locationId: null, context: "b2b" },
 ];
 
@@ -229,7 +227,7 @@ describe("SetProductVatHandler", () => {
     await expect(
       new SetProductVatHandler(
         products,
-        familySelling([{ locationId: "emp_1", context: "emporter" }]),
+        familySelling([{ locationId: "emp_1", context: "takeaway" }]),
         rates(),
         registry,
         new RecordingJournal(),
@@ -304,7 +302,7 @@ describe("SetProductChannelsHandler", () => {
         new DirectUnitOfWork(),
       ).execute(
         new SetProductChannelsCommand("prd_1", [
-          { locationId: "emp_fantome", context: "emporter" },
+          { locationId: "emp_fantome", context: "takeaway" },
         ]),
       ),
     ).rejects.toBeInstanceOf(CategoryUnknownLocationError);
@@ -325,7 +323,7 @@ describe("SetProductChannelsHandler", () => {
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(
-      new SetProductChannelsCommand("prd_1", [{ locationId: "emp_1", context: "emporter" }]),
+      new SetProductChannelsCommand("prd_1", [{ locationId: "emp_1", context: "takeaway" }]),
     );
 
     expect(products.saved.vatByContext).toEqual({});

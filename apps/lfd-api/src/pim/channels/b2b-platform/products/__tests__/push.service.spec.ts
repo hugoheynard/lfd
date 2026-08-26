@@ -60,7 +60,7 @@ const category = {
   slug: { fr: "viennoiseries" },
   parentId: null,
   position: 0,
-  vatByContext: { emporter: 5.5, b2b: 5.5 },
+  vatByContext: { takeaway: 5.5, b2b: 5.5 },
 };
 
 /** Enregistre les `updateMany` pour dire QUI a été estampillé. */

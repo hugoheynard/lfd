@@ -16,7 +16,6 @@ interface SalesContextRow {
   readonly key: string;
   readonly label: string;
   readonly handleSuffix: string;
-  readonly channelKey: string;
   readonly perLocation: boolean;
   readonly active: boolean;
   readonly shopifyProjected: boolean;
@@ -29,7 +28,6 @@ function toAggregate(row: SalesContextRow): SalesContextAggregate {
     key: row.key,
     label: row.label,
     handleSuffix: row.handleSuffix,
-    channelKey: row.channelKey,
     perLocation: row.perLocation,
     active: row.active,
     shopifyProjected: row.shopifyProjected,

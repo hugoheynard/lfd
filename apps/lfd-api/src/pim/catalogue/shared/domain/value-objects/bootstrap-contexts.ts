@@ -47,8 +47,6 @@ export function bootstrapRootContext(): Omit<SalesContext, "id"> {
     // qui protège les URL indexées), et deux contextes projetés avec le même
     // suffixe produiraient le même handle.
     handleSuffix: "",
-    // De transition, et il vaut la clé — la bascule d-2 le supprime.
-    channelKey: ROOT_CONTEXT_KEY,
     perLocation: false,
     active: true,
     shopifyProjected: false,

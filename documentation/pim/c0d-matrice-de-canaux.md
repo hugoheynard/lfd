@@ -1,6 +1,10 @@
 # C0-d — la matrice de canaux pilotée par la donnée
 
-> **Note doc-first, 2026-08-26. Aucun code écrit.** Elle tranche quatre choses :
+> **État : 🟢 les quatre tranches sont livrées** (d-0 à d-3, 2026-08-26). Ce
+> document garde le raisonnement ; ce qui reste ouvert est repris dans
+> [`point-de-vente.md`](./point-de-vente.md).
+>
+> _Note d'origine, doc-first._ Elle tranche quatre choses :
 > où va le drapeau `b2b`, sous quelle **forme** la matrice se stocke, quel
 > **prérequis** l'examen a fait apparaître, et pourquoi le contexte B2B doit
 > être **ineffaçable**.
@@ -312,12 +316,12 @@ pas un réglage.
 Discipline `étendre / basculer / resserrer` non négociable
 (`documentation/ops/pipelines.md`), comme `AddressKind` l'a suivie en août.
 
-| Tranche           | Migration                                                                                                                                                                                        | Code                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **d-0**           | `sales_context.per_location` (`true` sauf `b2b`) + `location_context`, reprise de `click_collect` / `eat_in`                                                                                     | `ensureBootstrapContexts()` ; écran Contextes de vente ; l'écran des emplacements coche des contextes ; les deux colonnes restent ÉCRITES |
-| **d-1 étendre**   | tables `category_channel`, `product_channel_override`, `product_channel`, remplies depuis les `jsonb`                                                                                            | les nouvelles tables sont ÉCRITES à côté ; personne ne les lit encore                                                                     |
-| **d-2 basculer**  | —                                                                                                                                                                                                | tout lit les tables ; `channel_key`, `SalesChannelKey`, `CHANNEL_KEYS` et `category_location_ref` tombent                                 |
-| **d-3 resserrer** | `DROP` de `channel_preset`, `channel_override`, `channel_key`, `click_collect`, `eat_in`, `category_location_ref` **+ traduction des clés** `emporter`→`takeaway`, `surPlace`→`eatIn` (cascadée) | suppression du double-écriture                                                                                                            |
+| Tranche                             | Migration                                                                                                                                                                              | Code                                                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **d-0**                             | `sales_context.per_location` (`true` sauf `b2b`) + `location_context`, reprise de `click_collect` / `eat_in`                                                                           | `ensureBootstrapContexts()` ; écran Contextes de vente ; l'écran des emplacements coche des contextes ; les deux colonnes restent ÉCRITES |
+| **d-1 étendre**                     | tables `category_channel`, `product_channel_override`, `product_channel`, remplies depuis les `jsonb`                                                                                  | les nouvelles tables sont ÉCRITES à côté ; personne ne les lit encore                                                                     |
+| **d-2 basculer**                    | —                                                                                                                                                                                      | tout lit les tables ; `channel_key`, `SalesChannelKey`, `CHANNEL_KEYS` et `category_location_ref` tombent                                 |
+| ~~**d-3 resserrer**~~ ✅ 2026-08-26 | `DROP` de `channel_preset`, `channel_override`, `channel_key`, `category_location_ref` **+ traduction des clés** `emporter`→`takeaway`, `surPlace`→`eatIn` (cascadée, journal compris) | la sonde de parité meurt avec les colonnes qu'elle comparait                                                                              |
 
 **d-3 ne part qu'après un `ops_channel_parity` vert.** Voir ci-dessous.
 

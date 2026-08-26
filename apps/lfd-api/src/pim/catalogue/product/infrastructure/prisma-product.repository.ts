@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
-import { Prisma } from "../../../../platform/database/client/client.js";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
@@ -18,7 +17,6 @@ import {
   readLocalizedColumn,
   readStringArrayColumn,
   readStringMapColumn,
-  salesChannelsColumn,
 } from "../../shared/infrastructure/json-readers.js";
 import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
@@ -159,13 +157,6 @@ function toColumns(snapshot: ProductSnapshot) {
     kind: snapshot.kind,
     categoryId: snapshot.categoryId,
     status: snapshot.status,
-    // `DbNull` et non `null` : en `jsonb` nullable, Prisma distingue le NULL de
-    // la COLONNE du null JSON stocké dans la valeur. C'est le premier qu'on
-    // veut — « cette fiche hérite » n'est pas « cette fiche a une matrice nulle ».
-    channelOverride:
-      snapshot.channelOverride === null
-        ? Prisma.DbNull
-        : salesChannelsColumn(snapshot.channelOverride),
   };
 }
 

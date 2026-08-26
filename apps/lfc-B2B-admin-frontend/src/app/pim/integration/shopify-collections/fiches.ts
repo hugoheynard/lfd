@@ -21,7 +21,7 @@ export function vatTagFromPercent(percent: number): string {
   return `tva-${percent.toString().replace('.', '-')}`;
 }
 
-export type FicheMode = 'emporter' | 'surPlace';
+export type FicheMode = 'takeaway' | 'eatIn';
 
 export interface GeneratedFiche {
   mode: FicheMode;
@@ -78,11 +78,11 @@ export function generateFiches(
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
-  const emporter = locationsSelling(channels, 'emporter', locations);
+  const emporter = locationsSelling(channels, 'takeaway', locations);
   if (emporter.length > 0) {
-    const rate = rateOfContext(category, 'emporter', regimeById);
+    const rate = rateOfContext(category, 'takeaway', regimeById);
     fiches.push({
-      mode: 'emporter',
+      mode: 'takeaway',
       title: product.name.fr,
       handle,
       boutiques: emporter,
@@ -91,11 +91,11 @@ export function generateFiches(
     });
   }
 
-  const surPlace = locationsSelling(channels, 'surPlace', locations);
+  const surPlace = locationsSelling(channels, 'eatIn', locations);
   if (surPlace.length > 0) {
-    const rate = rateOfContext(category, 'surPlace', regimeById);
+    const rate = rateOfContext(category, 'eatIn', regimeById);
     fiches.push({
-      mode: 'surPlace',
+      mode: 'eatIn',
       title: `${product.name.fr} (sur place)`,
       handle: `${handle}-sur-place`,
       boutiques: surPlace,

@@ -30,7 +30,7 @@ describe('ChannelsForm', () => {
         name: 'Réduit',
         description: '',
         percent: 5.5,
-        usage: { emporter: 0, surPlace: 0 },
+        usage: { takeaway: 0, eatIn: 0 },
       },
     ]);
     store.categories.set([
@@ -42,10 +42,10 @@ describe('ChannelsForm', () => {
         position: 1,
         isArchived: false,
         channelPreset: [
-          { locationId: 'emp_village', context: 'emporter' },
-          { locationId: 'emp_val', context: 'emporter' },
+          { locationId: 'emp_village', context: 'takeaway' },
+          { locationId: 'emp_val', context: 'takeaway' },
         ],
-        vatByContext: { emporter: 'tva_55', surPlace: 'tva_55' },
+        vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55' },
         activeProductCount: 0,
       },
     ]);

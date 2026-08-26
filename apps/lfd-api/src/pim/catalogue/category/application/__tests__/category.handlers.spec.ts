@@ -209,9 +209,9 @@ const byPair = (a: SoldChannel, b: SoldChannel): number =>
 
 /** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = [
-  { locationId: "emp_village", context: "emporter" },
-  { locationId: "emp_village", context: "surPlace" },
-  { locationId: "emp_val", context: "emporter" },
+  { locationId: "emp_village", context: "takeaway" },
+  { locationId: "emp_village", context: "eatIn" },
+  { locationId: "emp_val", context: "takeaway" },
 ];
 
 class SequentialIds extends PimIdGenerator {
@@ -267,10 +267,9 @@ function archiveWith(repo: InMemoryCategories, count: number): ArchiveCategoryHa
 const CONTEXTS: readonly SalesContext[] = [
   {
     id: "ctx_emporter",
-    key: "emporter",
+    key: "takeaway",
     label: "À emporter",
     handleSuffix: "",
-    channelKey: "emporter",
     perLocation: true,
     active: true,
     shopifyProjected: true,
@@ -278,10 +277,9 @@ const CONTEXTS: readonly SalesContext[] = [
   },
   {
     id: "ctx_sur_place",
-    key: "surPlace",
+    key: "eatIn",
     label: "Sur place",
     handleSuffix: "-surplace",
-    channelKey: "surPlace",
     perLocation: true,
     active: true,
     shopifyProjected: false,
@@ -292,7 +290,6 @@ const CONTEXTS: readonly SalesContext[] = [
     key: "b2b",
     label: "B2B",
     handleSuffix: "-b2b",
-    channelKey: "b2b",
     perLocation: false,
     active: true,
     shopifyProjected: false,
@@ -536,9 +533,9 @@ describe("SetCategoryVatHandler", () => {
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
-    ).execute(new SetCategoryVatCommand(id, { emporter: "tva_5" }));
+    ).execute(new SetCategoryVatCommand(id, { takeaway: "tva_5" }));
 
-    expect(categories.at(id).vatByContext).toEqual({ emporter: "tva_5" });
+    expect(categories.at(id).vatByContext).toEqual({ takeaway: "tva_5" });
   });
 
   it("refuse un taux fantôme", async () => {
@@ -552,7 +549,7 @@ describe("SetCategoryVatHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
-      ).execute(new SetCategoryVatCommand(id, { emporter: "tva_absent" })),
+      ).execute(new SetCategoryVatCommand(id, { takeaway: "tva_absent" })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
 
@@ -573,7 +570,7 @@ describe("SetCategoryVatHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
-      ).execute(new SetCategoryVatCommand(id!, { emporter: "tva_5" })),
+      ).execute(new SetCategoryVatCommand(id!, { takeaway: "tva_5" })),
     ).rejects.toBeInstanceOf(CategoryVatWithoutChannelError);
   });
 });

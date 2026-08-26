@@ -73,13 +73,13 @@ async function build(
 describe("PrismaCatalogueReader.vatPercents", () => {
   it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
     const reader = await build(
-      { vatByContext: { emporter: "r1", surPlace: "r2" } },
+      { vatByContext: { takeaway: "r1", eatIn: "r2" } },
       { r1: 5.5, r2: 10 },
     );
 
     const rates = await reader.vatPercents([product()]);
 
-    expect(rates.get("prd_1")).toEqual({ emporter: 5.5, surPlace: 10 });
+    expect(rates.get("prd_1")).toEqual({ takeaway: 5.5, eatIn: 10 });
   });
 
   it("laisse la DÉROGATION de la fiche gagner, contexte par contexte", async () => {
@@ -87,33 +87,30 @@ describe("PrismaCatalogueReader.vatPercents", () => {
     // comptoir. Écrire la fusion à deux endroits finirait par facturer deux
     // taux différents pour le même article.
     const reader = await build(
-      { vatByContext: { emporter: "r1", b2b: "r1" } },
+      { vatByContext: { takeaway: "r1", b2b: "r1" } },
       { r1: 5.5, r2: 20 },
     );
 
     const rates = await reader.vatPercents([product({ b2b: "r2" })]);
 
-    expect(rates.get("prd_1")).toEqual({ emporter: 5.5, b2b: 20 });
+    expect(rates.get("prd_1")).toEqual({ takeaway: 5.5, b2b: 20 });
   });
 
   it("ne rend AUCUNE clé pour un contexte non réglé sur la catégorie", async () => {
     // L'absence de clé, plutôt qu'une clé à `null` : « non réglé » ne s'écrit
     // pas, et un appelant qui itère la carte ne voit que ce qui existe.
-    const reader = await build({ vatByContext: { emporter: "r1" } }, { r1: 5.5 });
+    const reader = await build({ vatByContext: { takeaway: "r1" } }, { r1: 5.5 });
 
     const rates = await reader.vatPercents([product()]);
 
-    expect(rates.get("prd_1")).toEqual({ emporter: 5.5 });
-    expect("surPlace" in (rates.get("prd_1") ?? {})).toBe(false);
+    expect(rates.get("prd_1")).toEqual({ takeaway: 5.5 });
+    expect("eatIn" in (rates.get("prd_1") ?? {})).toBe(false);
   });
 
   it("écarte le contexte dont le taux a disparu, plutôt que d’en inventer un", async () => {
-    const reader = await build(
-      { vatByContext: { emporter: "r1", surPlace: "r_parti" } },
-      { r1: 5.5 },
-    );
+    const reader = await build({ vatByContext: { takeaway: "r1", eatIn: "r_parti" } }, { r1: 5.5 });
 
-    expect((await reader.vatPercents([product()])).get("prd_1")).toEqual({ emporter: 5.5 });
+    expect((await reader.vatPercents([product()])).get("prd_1")).toEqual({ takeaway: 5.5 });
   });
 
   /**

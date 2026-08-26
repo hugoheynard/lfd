@@ -292,10 +292,9 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
   const contexts = [
     {
       id: "ctx_emporter",
-      key: "emporter",
+      key: "takeaway",
       label: "À emporter",
       handleSuffix: "",
-      channelKey: "emporter",
       perLocation: true,
       active: true,
       shopifyProjected: true,
@@ -303,10 +302,9 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
     },
     {
       id: "ctx_sur_place",
-      key: "surPlace",
+      key: "eatIn",
       label: "Sur place",
       handleSuffix: "-surplace",
-      channelKey: "surPlace",
       perLocation: true,
       active: true,
       shopifyProjected: false,
@@ -319,7 +317,6 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       // Vide : le B2B n'est pas projeté vers Shopify, et `handleSuffix` est du
       // vocabulaire de ce canal.
       handleSuffix: "",
-      channelKey: "b2b",
       perLocation: false,
       active: true,
       shopifyProjected: false,

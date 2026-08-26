@@ -68,7 +68,7 @@ const registry = (): SalesContextRegistry => ctx.app.get(SalesContextRegistry);
 
 describe("la surface d'administration montre le registre entier", () => {
   it("rend les trois contextes, dans l'ordre du registre", async () => {
-    expect((await list()).map((row) => row.key)).toEqual(["emporter", "surPlace", "b2b"]);
+    expect((await list()).map((row) => row.key)).toEqual(["takeaway", "eatIn", "b2b"]);
   });
 
   /**
@@ -79,18 +79,18 @@ describe("la surface d'administration montre le registre entier", () => {
    */
   it("rend AUSSI les contextes hors service, que la matrice ignore", async () => {
     await ctx.prisma.salesContext.update({
-      where: { key: "surPlace" },
+      where: { key: "eatIn" },
       data: { active: false },
     });
 
     const rows = await list();
-    expect(rows.map((row) => row.key)).toContain("surPlace");
-    expect(rows.find((row) => row.key === "surPlace")?.active).toBe(false);
+    expect(rows.map((row) => row.key)).toContain("eatIn");
+    expect(rows.find((row) => row.key === "eatIn")?.active).toBe(false);
 
     const matrix = jsonBody<{ key: string }[]>(
       await staff().get("/pim/reference/sales-contexts").expect(200),
     );
-    expect(matrix.map((row) => row.key)).not.toContain("surPlace");
+    expect(matrix.map((row) => row.key)).not.toContain("eatIn");
   });
 
   it("désigne le B2B comme racine, et lui seul", async () => {
@@ -102,8 +102,8 @@ describe("la surface d'administration montre le registre entier", () => {
   it("dit lesquels ont besoin d'un lieu", async () => {
     const byKey = new Map((await list()).map((row) => [row.key, row.perLocation]));
 
-    expect(byKey.get("emporter")).toBe(true);
-    expect(byKey.get("surPlace")).toBe(true);
+    expect(byKey.get("takeaway")).toBe(true);
+    expect(byKey.get("eatIn")).toBe(true);
     // On commande à l'entreprise, pas à une boutique.
     expect(byKey.get("b2b")).toBe(false);
   });
@@ -160,7 +160,7 @@ describe("ouvrir un contexte de vente", () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
 
     const rows = await list();
-    expect(rows.map((row) => row.key)).toEqual(["emporter", "surPlace", "b2b", "traiteur"]);
+    expect(rows.map((row) => row.key)).toEqual(["takeaway", "eatIn", "b2b", "traiteur"]);
     expect(rows.at(-1)).toMatchObject({ key: "traiteur", label: "Traiteur", root: false });
   });
 
