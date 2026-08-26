@@ -266,7 +266,13 @@ describe('CategoryPanel — un taux par canal vendu', () => {
       }),
       [
         ...TEST_SALES_CONTEXTS,
-        { key: 'traiteur', label: 'Traiteur', channelKey: 'emporter', position: 4 },
+        {
+          key: 'traiteur',
+          label: 'Traiteur',
+          channelKey: 'emporter',
+          perLocation: true,
+          position: 4,
+        },
       ],
     );
 

@@ -35,6 +35,16 @@ export const pimRoutes: Routes = [
           import('./catalogue/vat-rates/vat-rates-page').then((m) => m.VatRatesPage),
       },
       {
+        // Le registre décide de ce qu'on peut VENDRE, mais il ne porte aucun
+        // taux : `catalog:read` suffit, `tax:read` serait un mur pour rien.
+        path: 'contextes',
+        title: 'Contextes de vente — LFC B2B admin',
+        loadComponent: () =>
+          import('./catalogue/sales-contexts/sales-contexts-page/sales-contexts-page').then(
+            (m) => m.SalesContextsPage,
+          ),
+      },
+      {
         path: 'collections',
         title: 'Collections — LFC B2B admin',
         loadComponent: () =>

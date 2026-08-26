@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.scope {
+  color: var(--fold-text-muted);
+}
+
+.root-note {
+  display: block;
+  margin-block-start: var(--fold-space-4);
+}

@@ -101,6 +101,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   { key: 'collections', label: 'Collections', link: '/pim/collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: '/pim/publication', icon: 'publish' },
   { key: 'locations', label: 'Emplacements', link: '/pim/emplacements', icon: 'places' },
+  { key: 'contexts', label: 'Contextes de vente', link: '/pim/contextes', icon: 'places' },
   { key: 'integration', label: 'Intégrations', link: '/pim/integration', icon: 'integrations' },
 ];
 

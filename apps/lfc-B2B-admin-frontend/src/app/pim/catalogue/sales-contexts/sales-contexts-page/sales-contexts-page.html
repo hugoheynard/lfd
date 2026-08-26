@@ -1,0 +1,72 @@
+<fold-page-layout icon="places" title="Contextes de vente">
+  <p description>
+    Le <strong>vocabulaire</strong> du catalogue : chaque manière de vendre qui a son propre
+    traitement de TVA. Une famille règle un taux par contexte, la matrice de canaux dit où on le
+    vend, et Shopify en tire une collection. Ce registre se pose par migration — on le lit ici, on
+    ne l'invente pas.
+  </p>
+
+  @if (loadError(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  @if (contexts().length === 0) {
+    <fold-empty-state
+      [tone]="loadError() ? 'alert' : 'neutral'"
+      icon="places"
+      [title]="loadError() ? 'Registre illisible' : 'Aucun contexte de vente'"
+      [subtitle]="
+        loadError() ??
+        'Le registre est vide — plus rien ne peut se vendre. Une migration manque sans doute.'
+      "
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-data-table
+      [columns]="columns"
+      [rows]="contexts()"
+      [rowKey]="rowKey"
+      narrowLayout="cards"
+      zebra
+    >
+      <ng-template foldCell="label" let-c>
+        <strong>{{ c.label }}</strong>
+        @if (c.root) {
+          <!-- Le geste de suppression n'est pas grisé, il est ABSENT : un bouton
+               grisé laisse chercher la façon de l'activer. -->
+          <fold-badge content="racine" variant="accent" />
+        }
+      </ng-template>
+
+      <ng-template foldCell="scope" let-c>
+        <span class="scope">{{ scopeLabel(c) }}</span>
+      </ng-template>
+
+      <ng-template foldCell="shopify" let-c>
+        @if (c.shopifyProjected) {
+          <fold-badge [content]="'produit ' + (c.handleSuffix || 'nu')" variant="neutral" />
+        } @else {
+          <span class="scope">—</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="state" let-c>
+        @if (c.active) {
+          <fold-badge content="en service" variant="success" />
+        } @else {
+          <fold-badge content="hors service" variant="warning" />
+        }
+      </ng-template>
+    </fold-data-table>
+
+    @if (rootCount() > 0) {
+      <fold-callout class="root-note" appearance="inset" variant="info">
+        Un contexte <strong>racine</strong> est semé au démarrage et réapparaît même supprimé
+        directement en base. Sans lui, la boutique professionnelle se viderait sans qu'aucune erreur
+        ne soit levée. Il reste <strong>désactivable</strong> — fermer un canal n'est pas effacer sa
+        définition.
+      </fold-callout>
+    }
+  }
+</fold-page-layout>
