@@ -20,7 +20,7 @@ import { SalesContextAdminStore } from '../sales-context-admin.store';
  * il vérifie que le tableau a bien REÇU chaque gabarit.
  */
 describe('SalesContextsPage', () => {
-  function table(): FoldDataTableComponent<unknown> {
+  function render(): { element: HTMLElement; table: FoldDataTableComponent<unknown> } {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -56,8 +56,13 @@ describe('SalesContextsPage', () => {
     if (found === null) {
       throw new Error('tableau introuvable');
     }
-    return found.componentInstance as FoldDataTableComponent<unknown>;
+    return {
+      element: fixture.nativeElement as HTMLElement,
+      table: found.componentInstance as FoldDataTableComponent<unknown>,
+    };
   }
+
+  const table = (): FoldDataTableComponent<unknown> => render().table;
 
   it('projette une cellule par colonne jusqu’au tableau', () => {
     const data = table();
@@ -69,5 +74,16 @@ describe('SalesContextsPage', () => {
 
   it('projette sa carte mobile jusqu’au tableau', () => {
     expect(table().rowCardTemplate()).not.toBeNull();
+  });
+
+  /**
+   * Et elle doit RENDRE. Dans jsdom le conteneur mesure zéro, donc le tableau
+   * est déjà en mode cartes : ce que voit ce test est ce que voit un téléphone.
+   */
+  it('rend la carte, pas une ligne vide', () => {
+    const { element } = render();
+
+    expect(element.textContent).toContain('B2B');
+    expect(element.textContent).toContain('Partout');
   });
 });
