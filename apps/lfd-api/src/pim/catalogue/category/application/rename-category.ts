@@ -8,7 +8,7 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { requireCategory, requireFreeSlug } from "./category-support.js";
+import { requireCategory } from "./category-support.js";
 
 export interface RenameCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -37,7 +37,6 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
     const category = await requireCategory(this.categories, command.id);
     const before = category.name;
     category.rename(localizedText("nom", command.payload.name));
-    await requireFreeSlug(this.categories, category);
     const changes = changesBetween({ name: before }, { name: category.name });
     await this.uow.run(async () => {
       // Un renommage qui ne renomme rien n'est pas un fait : le geste existe

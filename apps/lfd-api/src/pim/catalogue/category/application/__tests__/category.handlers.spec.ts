@@ -60,8 +60,23 @@ class InMemoryCategories extends CategoryRepository {
   add(category: Category): Promise<void> {
     return this.save(category);
   }
+  /**
+   * Refuse un slug déjà pris — comme le vrai dépôt, qui traduit la violation de
+   * `category_slug_fr_unique`.
+   *
+   * Le contrôle vivait dans le handler ; il est descendu en base le jour où
+   * l'on a constaté qu'une lecture ne garde rien. Le double doit suivre : sans
+   * ça, il accepterait ce que la production refuse, et les tests d'unicité
+   * passeraient au vert sur un dépôt plus permissif que le vrai.
+   */
   save(category: Category): Promise<void> {
     const snapshot = category.snapshot();
+    const holder = [...this.stored.values()].find(
+      (row) => row.slug.fr === snapshot.slug.fr && row.id !== snapshot.id,
+    );
+    if (holder !== undefined) {
+      return Promise.reject(new CategorySlugTakenError(snapshot.slug.fr));
+    }
     this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }

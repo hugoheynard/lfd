@@ -1,7 +1,4 @@
-import {
-  LocationNameTakenError,
-  LocationNotFoundError,
-} from "../domain/errors/locations-errors.js";
+import { LocationNotFoundError } from "../domain/errors/locations-errors.js";
 import type { Location } from "../domain/entities/location.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
 
@@ -18,22 +15,4 @@ export async function requireLocation(
     throw new LocationNotFoundError(id);
   }
   return location;
-}
-
-/**
- * Exige que le nom soit **libre**.
- *
- * L'agrégat ne voit que lui-même : il sait exiger un nom non vide, pas qu'un
- * voisin le porte déjà. Même forme que « le parent doit exister » côté famille
- * — une règle qui parle des autres, donc tenue par le handler.
- */
-export async function requireFreeName(
-  locations: LocationRepository,
-  name: string,
-  exceptId: string | null,
-): Promise<void> {
-  const holder = await locations.findByName(name);
-  if (holder !== null && holder.id !== exceptId) {
-    throw new LocationNameTakenError(name, holder.id);
-  }
 }

@@ -48,8 +48,21 @@ class InMemoryLocations extends LocationRepository {
   add(location: Location): Promise<void> {
     return this.save(location);
   }
+  /**
+   * Refuse un nom déjà pris, **insensible à la casse** — comme le vrai dépôt,
+   * qui traduit la violation de `emplacement_name_unique` (index sur
+   * `lower(name)`). Un double plus permissif que la production ferait passer
+   * au vert des tests d'unicité qui ne tiennent rien.
+   */
   save(location: Location): Promise<void> {
     const snapshot = location.snapshot();
+    const wanted = snapshot.name.toLowerCase();
+    const holder = [...this.stored.values()].find(
+      (row) => row.name.toLowerCase() === wanted && row.id !== snapshot.id,
+    );
+    if (holder !== undefined) {
+      return Promise.reject(new LocationNameTakenError(snapshot.name));
+    }
     this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }

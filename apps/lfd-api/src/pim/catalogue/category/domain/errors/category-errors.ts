@@ -98,13 +98,32 @@ export class CategoryHasActiveChildrenError extends BusinessError {
  * silence : « Pains » et « Pains », c'est une faute de saisie, pas un besoin.
  */
 export class CategorySlugTakenError extends BusinessError {
-  constructor(
-    readonly slugFr: string,
-    readonly takenBy: string,
-  ) {
+  /**
+   * Plus de `takenBy` : l'unicité est tenue par la base, et une violation de
+   * contrainte ne dit pas QUI détient la valeur. Le donner obligerait à une
+   * lecture de plus, pour un identifiant que personne n'affichait.
+   */
+  constructor(readonly slugFr: string) {
     super(
       "catalogue.category.slug_taken",
       `Une autre famille porte déjà ce nom (slug « ${slugFr} »).`,
+    );
+  }
+}
+
+/**
+ * Deux familles ont visé le **même rang** sous le même parent, au même instant.
+ *
+ * Ce n'est pas une faute de l'utilisateur : c'est une course, et elle se résout
+ * en refaisant le geste. Distincte du slug pour cette raison — dire « ce nom est
+ * pris » à quelqu'un dont le nom est libre enverrait chercher un problème qui
+ * n'existe pas.
+ */
+export class CategoryRankTakenError extends BusinessError {
+  constructor(readonly parentId: string | null) {
+    super(
+      "catalogue.category.rank_taken",
+      "Une autre famille vient de prendre cette place. Recommencez.",
     );
   }
 }

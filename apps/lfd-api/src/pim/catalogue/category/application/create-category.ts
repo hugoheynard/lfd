@@ -11,7 +11,7 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { requireCategory, requireFreeSlug } from "./category-support.js";
+import { requireCategory } from "./category-support.js";
 
 export interface CreateCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -46,6 +46,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
   async execute(command: CreateCategoryCommand): Promise<string> {
     const { payload } = command;
     const parentId = payload.parentId ?? null;
+
     if (parentId !== null) {
       const parent = await requireCategory(this.categories, parentId);
       if (parent.isArchived) {
@@ -59,7 +60,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
       parentId,
       position: await this.categories.nextPosition(parentId),
     });
-    await requireFreeSlug(this.categories, category);
+
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.productCategoryCreated,

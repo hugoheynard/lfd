@@ -70,35 +70,46 @@ Et le contrôle est fait **hors transaction** — même l'ouvrir dedans ne suffi
 pas : en `READ COMMITTED`, A ne voit pas la ligne non encore validée de B. Seule
 une contrainte décide.
 
-## 4. Le cas du rang — et pourquoi la contrainte doit être **différée**
+## 4. Le cas du rang — et pourquoi la contrainte n'est PAS différée
 
 `CreateCategory` calcule `max(position) + 1` puis insère. Deux créations
 simultanées sous le même parent lisent le même `max` et écrivent le **même
 rang**. L'affichage retombe alors sur l'ordre d'insertion — précisément ce que
 `ReorderCategories` dit vouloir éviter.
 
-Une contrainte `UNIQUE (parent_id, position)` ferme la course. Mais elle a une
-subtilité, et c'est elle qui décide de la forme :
+Une contrainte sur `(parent_id, position)` ferme la course. Deux propriétés de
+la table décident ensuite de sa forme, et elles tirent dans des sens opposés.
 
-**le réordonnancement PERMUTE les rangs.** Faire passer une famille de 1 à 0
+**Une famille archivée garde son rang** et sort du réordonnancement. Sans le
+filtre `WHERE is_archived = false`, un rang libéré par un archivage resterait
+occupé par un fantôme : renuméroter la fratrie vivante échouerait sur une ligne
+que plus personne ne voit. La contrainte doit donc être **partielle**.
+
+**Le réordonnancement permute les rangs.** Faire passer une famille de 1 à 0
 oblige à écrire deux lignes ; entre les deux, deux familles portent le rang 0.
-Une contrainte vérifiée à chaque `UPDATE` sauterait au premier. Il la faut donc
-`DEFERRABLE INITIALLY DEFERRED` — vérifiée au `COMMIT`, ce que la transaction de
-`saveAll` rend possible.
+On voudrait donc **différer** la vérification au `COMMIT`.
 
-C'est le genre de détail qui, découvert après la migration, fait croire que la
-contrainte « ne marche pas » et pousse à la retirer.
+Les deux ne sont pas compatibles : Postgres ne peut différer qu'une
+**contrainte**, et une contrainte ne s'adosse qu'à un index total sur des
+colonnes — pas à un index partiel. Il a fallu choisir, et le filtre l'emporte
+(sans lui, la contrainte serait fausse). La permutation est donc résolue côté
+écriture : `saveAll` gare les rangs hors de la plage utilisée, puis pose les
+rangs définitifs (§6).
+
+Et `NULLS NOT DISTINCT`, sans quoi les familles **racine** (`parent_id` NULL)
+échapperaient à tout : deux NULL sont distincts par défaut, donc le premier
+niveau — celui qu'on voit en ouvrant l'écran — aurait été le seul non protégé.
 
 ## 5. Les allers-retours de `CreateCategory`
 
 Pour une création sous un parent, quatre allers-retours avant l'insertion :
 
-| #   | Appel                    | Ce qu'il garde                            | Verdict     |
-| --- | ------------------------ | ----------------------------------------- | ----------- |
-| 1   | `findById(parentId)`     | le parent existe **et n'est pas archivé** | à garder    |
-| 2   | `nextPosition(parentId)` | `max(position) + 1`                       | à garder    |
-| 3   | `findBySlugFr(slug)`     | le slug est libre                         | à remplacer |
-| 4   | `add(category, ticket)`  | l'écriture + la ligne de journal          | —           |
+| #   | Appel                    | Ce qu'il garde                            | Verdict      |
+| --- | ------------------------ | ----------------------------------------- | ------------ |
+| 1   | `findById(parentId)`     | le parent existe **et n'est pas archivé** | à garder     |
+| 2   | `nextPosition(parentId)` | `max(position) + 1`                       | à garder     |
+| 3   | ~~`findBySlugFr(slug)`~~ | le slug est libre                         | **supprimé** |
+| 4   | `add(category, ticket)`  | l'écriture + la ligne de journal          | —            |
 
 **Le 1** est une règle métier qu'aucune clé étrangère ne porte : une FK dit que
 le parent existe, pas qu'il est vivant.
@@ -112,12 +123,13 @@ sous-requête `MAX(position)+1` dans l'`INSERT`) économise l'aller-retour mais
 retire au domaine la propriété du rang. Sur un geste d'administration rare et une
 requête indexée sur `parent_id`, l'échange n'en vaut pas la peine.
 
-**Le 3** est le seul vraiment inutile — et son problème n'est pas le coût, c'est
-qu'il ne garantit rien (cf. §3). Le remplacer par une contrainte fait les deux
-d'un coup : un aller-retour de moins **et** la course fermée. Le renommage
-d'une famille, qui appelle le même helper, en profite pareillement.
+**Le 3** était le seul vraiment inutile — et son problème n'était pas le coût,
+c'est qu'il ne garantissait rien (cf. §3). Remplacé par la contrainte le
+2026-08-26 : un aller-retour de moins **et** la course fermée. Le renommage
+d'une famille, qui appelait le même helper, en profite pareillement — comme la
+création et le renommage d'un emplacement.
 
-## 6. Ce qu'il faudrait faire, et ce que ça coûte
+## 6. Ce qui a été fait (2026-08-26)
 
 | Chantier          | Migration                                                                                                                   | Code                                                                                  | Gain                                                             |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -125,9 +137,42 @@ d'une famille, qui appelle le même helper, en profite pareillement.
 | Rang de fratrie   | `UNIQUE (parent_id, position) DEFERRABLE INITIALLY DEFERRED`                                                                | rien (ou une reprise sur violation, si l'on veut créer sans échouer)                  | plus de rangs en double                                          |
 | Nom d'emplacement | `UNIQUE` sur `emplacement.name` — **insensible à la casse** (`lower(name)`), comme le dépôt le fait déjà en lecture         | traduire `23505` → `LocationNameTakenError` ; retirer `requireFreeName`               | course fermée, −1 aller-retour                                   |
 
-**Avant de poser une contrainte, vérifier que la base de production n'a pas déjà
-un doublon** : la migration échouerait, et sur une table de prod ça se prépare
-(requête de détection, puis correction manuelle).
+**Avant d'appliquer en production, vérifier qu'aucun doublon n'existe déjà** :
+la migration échouerait — ce qui est le bon comportement. Les trois requêtes de
+détection sont en tête du fichier de migration.
+
+### Ce que la pose a appris
+
+**Le réordonnancement écrit maintenant en deux passes.** Une permutation passe
+forcément par un état où deux familles visent la même place (0 ↔ 1), et un index
+unique est vérifié à chaque `UPDATE`. Le premier passage gare donc les rangs
+hors de la plage utilisée (négatifs), le second pose les rangs définitifs. Deux
+fois plus d'écritures sur un geste rare — le prix d'une contrainte qui tient
+aussi quand deux personnes rangent la même fratrie en même temps.
+
+**Distinguer QUELLE contrainte a sauté demande de lire le message du pilote.**
+`meta.target` ne nomme que les contraintes du **schéma Prisma** ; pour les
+nôtres, posées en SQL, Prisma rend une forme tronquée
+(`["(slug ->> 'fr'::text"]`) inutilisable pour décider. Le message d'origine de
+Postgres, lui, dit `unique constraint "category_slug_fr_unique"`. C'est du texte,
+donc fragile — mais une famille a **deux** contraintes, et les confondre ferait
+dire à l'écran « ce nom est pris » à quelqu'un dont le nom est libre.
+
+**Les doubles de test ont dû apprendre la règle.** Le contrôle vivait dans le
+handler ; en descendant en base, il est sorti du champ des tests unitaires. Les
+faux dépôts refusent donc maintenant un doublon, comme le vrai — sans quoi ils
+accepteraient ce que la production refuse, et les tests d'unicité passeraient au
+vert sur un dépôt plus permissif que le vrai.
+
+### Ce qui reste ouvert
+
+Deux créations simultanées sous le même parent visent le même rang : la
+contrainte refuse la seconde avec `catalogue.category.rank_taken` — « une autre
+famille vient de prendre cette place, recommencez ». C'est **volontairement** un
+refus et non une reprise automatique : il faut deux personnes créant une famille
+sous le même parent à quelques millisecondes d'intervalle. Le jour où ça arrive
+vraiment, une reprise bornée (recalculer le rang, réessayer une fois) est le
+correctif — pas avant.
 
 ## 7. Déjà corrigé pendant ce tour
 

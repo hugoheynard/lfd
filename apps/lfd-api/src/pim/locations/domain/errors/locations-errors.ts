@@ -20,10 +20,9 @@ export class LocationNameRequiredError extends BusinessError {
  * par identifiant : elle, elle s'y retrouve. Pas l'humain devant.
  */
 export class LocationNameTakenError extends BusinessError {
-  constructor(
-    override readonly name: string,
-    readonly takenBy: string,
-  ) {
+  /** Plus de `takenBy` : la base tient l'unicité, et une contrainte ne dit pas
+   *  qui détient le nom. */
+  constructor(override readonly name: string) {
     super("locations.location.name_taken", `Un autre location porte déjà le nom « ${name} ».`);
   }
 }

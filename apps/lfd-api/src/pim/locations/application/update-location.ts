@@ -5,7 +5,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { Location } from "../domain/entities/location.js";
 import { changesBetween } from "../../journal/changes.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
-import { requireLocation, requireFreeName } from "./location-support.js";
+import { requireLocation } from "./location-support.js";
 
 export interface UpdateLocationPatch {
   readonly name?: string | undefined;
@@ -46,7 +46,6 @@ export class UpdateLocationHandler implements ICommandHandler<UpdateLocationComm
 
     if (patch.name !== undefined) {
       location.rename(patch.name);
-      await requireFreeName(this.locations, location.name, location.id);
     }
     if (patch.clickCollect !== undefined) {
       location.setClickCollect(patch.clickCollect);

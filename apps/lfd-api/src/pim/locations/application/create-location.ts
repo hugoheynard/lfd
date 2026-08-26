@@ -6,7 +6,6 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
 import { Location } from "../domain/entities/location.js";
 import { LocationRepository } from "../domain/ports/location.repository.js";
-import { requireFreeName } from "./location-support.js";
 
 export interface CreateLocationPayload {
   readonly name: string;
@@ -36,7 +35,6 @@ export class CreateLocationHandler implements ICommandHandler<CreateLocationComm
     // ça est décidé PAR l'agrégat, pas recomposé ici. L'agrégat NETTOIE le nom,
     // donc on vérifie l'unicité sur le nom nettoyé, pas sur celui reçu.
     const location = Location.open({ id, ...payload });
-    await requireFreeName(this.locations, location.name, null);
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.locationCreated,

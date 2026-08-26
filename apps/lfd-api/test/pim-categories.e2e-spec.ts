@@ -227,3 +227,63 @@ describe("l'archivage regarde ce qui pend en dessous", () => {
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.category.archived_parent");
   });
 });
+
+/**
+ * **Les contraintes d'unicité posées en SQL** (migration
+ * `20260826090000_unicite_slug_rang_emplacement`).
+ *
+ * Aucun test unitaire ne peut les toucher : les doubles remplacent le dépôt, et
+ * ce sont justement les cas où le double serait plus permissif que la
+ * production. Ce qui se joue ici est ce que Postgres refuse, et ce que le dépôt
+ * en fait — un refus métier lisible, pas un `persistence.duplicate` générique.
+ */
+describe("les rangs d'une fratrie", () => {
+  it("permute sans buter sur la contrainte — l'écriture passe en deux temps", async () => {
+    const first = await createCategory("Pains");
+    const second = await createCategory("Viennoiseries");
+    const third = await createCategory("Chocolats");
+
+    // Une permutation passe forcément par un état où deux familles visent la
+    // même place. Le dépôt gare donc les rangs avant de poser les définitifs :
+    // sans ça, cet appel échouerait sur `category_sibling_rank_unique`.
+    await staff()
+      .put(`${CATEGORIES}/reorder`)
+      .send({ parentId: null, orderedIds: [third, first, second] })
+      .expect(200);
+
+    const rows = await ctx.prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: { position: "asc" },
+      select: { id: true, position: true },
+    });
+    expect(rows.map((row) => row.id)).toEqual([third, first, second]);
+    expect(rows.map((row) => row.position)).toEqual([0, 1, 2]);
+  });
+
+  /**
+   * Une famille archivée GARDE son rang et sort du réordonnancement. Sans le
+   * filtre partiel de l'index, la fratrie vivante ne pourrait plus se renuméroter
+   * sans buter sur une ligne que plus personne ne voit.
+   */
+  it("se renumérote même quand une archivée occupe encore un rang", async () => {
+    const first = await createCategory("Pains");
+    const second = await createCategory("Viennoiseries");
+    const third = await createCategory("Chocolats");
+    await staff().put(`${CATEGORIES}/${second}/archive`).send({}).expect(200);
+
+    await staff()
+      .put(`${CATEGORIES}/reorder`)
+      .send({ parentId: null, orderedIds: [third, first] })
+      .expect(200);
+
+    const living = await ctx.prisma.category.findMany({
+      where: { parentId: null, isArchived: false },
+      orderBy: { position: "asc" },
+      select: { id: true, position: true },
+    });
+    // `third` prend le rang 0, `first` le rang 1 — celui que l'archivée occupe
+    // toujours de son côté.
+    expect(living.map((row) => row.id)).toEqual([third, first]);
+    expect(living.map((row) => row.position)).toEqual([0, 1]);
+  });
+});

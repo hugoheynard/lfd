@@ -2501,6 +2501,14 @@ model SkuRegistry {
   @@schema("pim")
 }
 
+/// ⚠️ Deux garanties de ce modèle ne sont PAS ici : `category_slug_fr_unique`
+/// (index d'expression sur `slug->>'fr'` — la colonne est un `Json` localisé) et
+/// `category_sibling_rank_unique` (index partiel `NULLS NOT DISTINCT` sur
+/// `(parent_id, position)`, hors familles archivées). Aucune n'est exprimable
+/// dans ce schéma ; elles sont posées en SQL par la migration
+/// `20260826090000_unicite_slug_rang_emplacement`, comme
+/// `price_rules_no_overlap` avant elles. Une `migrate dev` proposera de les
+/// supprimer : refuser la ligne.
 model Category {
   id         String     @id
   name       Json
@@ -2636,6 +2644,9 @@ model VatRate {
 /// Un **emplacement** (boutique / point de vente) et ses modes. S'il fait « sur
 /// place », il ouvre une grille de tables click & collect (une URL + un QR par
 /// table). Contexte `locations` — aucune dépendance au catalogue.
+/// ⚠️ L'unicité du nom n'est pas ici : `emplacement_name_unique`, index sur
+/// `lower(name)` — insensible à la casse, comme la recherche du dépôt. Posée en
+/// SQL par `20260826090000_unicite_slug_rang_emplacement`.
 model Location {
   id           String  @id
   name         String

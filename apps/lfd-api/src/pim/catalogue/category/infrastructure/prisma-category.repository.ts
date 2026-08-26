@@ -2,12 +2,17 @@ import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { Category, type CategorySnapshot } from "../domain/entities/category.js";
+import {
+  CategoryRankTakenError,
+  CategorySlugTakenError,
+} from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import {
   localizedColumn,
   readLocalizedColumn,
   readSalesChannelsColumn,
   salesChannelsColumn,
+  violatedConstraint,
 } from "../../shared/infrastructure/json-readers.js";
 
 interface CategoryRow {
@@ -97,30 +102,49 @@ export class PrismaCategoryRepository extends CategoryRepository {
 
   async add(category: Category): Promise<void> {
     const snapshot = category.snapshot();
-    await this.prisma.$transaction([
-      this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
-      ...this.vatOperations(snapshot),
-    ]);
+    await guard(snapshot, () =>
+      this.prisma.$transaction([
+        this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
+        ...this.vatOperations(snapshot),
+      ]),
+    );
   }
 
   async save(category: Category): Promise<void> {
     const snapshot = category.snapshot();
-    await this.prisma.$transaction([
-      this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
-      ...this.vatOperations(snapshot),
-    ]);
+    await guard(snapshot, () =>
+      this.prisma.$transaction([
+        this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
+        ...this.vatOperations(snapshot),
+      ]),
+    );
   }
 
   /**
    * Une seule transaction : une fratrie à moitié renumérotée porterait des
    * rangs en double, et l'ordre affiché deviendrait celui de l'insertion.
+   *
+   * **En deux passes**, depuis que `category_sibling_rank_unique` garde les
+   * rangs. Une permutation passe forcément par un état où deux familles visent
+   * la même place (0 ↔ 1), et la contrainte est vérifiée à chaque `UPDATE` —
+   * elle sauterait sur le premier. Le premier passage GARE donc les rangs hors
+   * de la plage utilisée (négatifs, distincts entre eux), le second pose les
+   * rangs définitifs. Deux fois plus d'écritures sur un geste rare : c'est le
+   * prix d'une contrainte qui, elle, tient aussi quand deux personnes rangent
+   * la même fratrie en même temps.
    */
   async saveAll(categories: readonly Category[]): Promise<void> {
     if (categories.length === 0) {
       return;
     }
-    await this.prisma.$transaction(
-      categories.flatMap((category) => {
+    await this.prisma.$transaction([
+      ...categories.map((category, index) =>
+        this.prisma.category.update({
+          where: { id: category.snapshot().id },
+          data: { position: -(index + 1) },
+        }),
+      ),
+      ...categories.flatMap((category) => {
         const snapshot = category.snapshot();
         return [
           this.prisma.category.update({
@@ -130,7 +154,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
           ...this.vatOperations(snapshot),
         ];
       }),
-    );
+    ]);
   }
 
   /**
@@ -172,5 +196,33 @@ export class PrismaCategoryRepository extends CategoryRepository {
       select: { position: true },
     });
     return last === null ? 0 : last.position + 1;
+  }
+}
+
+/**
+ * Traduit les violations d'unicité en refus métier.
+ *
+ * Les deux contraintes vivent en SQL (cf. la migration
+ * `20260826090000_unicite_slug_rang_emplacement`) parce qu'aucune n'est
+ * exprimable dans le schéma Prisma : l'une porte sur une **expression**
+ * (`slug->>'fr'`, la colonne est un `Json` localisé), l'autre est **partielle**
+ * et `NULLS NOT DISTINCT`.
+ *
+ * On les distingue : l'une se corrige en changeant de nom, l'autre en
+ * recommençant. Les confondre ferait dire à l'écran « ce nom est pris » à
+ * quelqu'un dont le nom est libre.
+ */
+async function guard<T>(snapshot: CategorySnapshot, write: () => Promise<T>): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    const constraint = violatedConstraint(error);
+    if (constraint === "category_slug_fr_unique") {
+      throw new CategorySlugTakenError(snapshot.slug.fr);
+    }
+    if (constraint === "category_sibling_rank_unique") {
+      throw new CategoryRankTakenError(snapshot.parentId);
+    }
+    throw error;
   }
 }

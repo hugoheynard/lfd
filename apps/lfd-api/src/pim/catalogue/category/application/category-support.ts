@@ -1,4 +1,4 @@
-import { CategoryNotFoundError, CategorySlugTakenError } from "../domain/errors/category-errors.js";
+import { CategoryNotFoundError } from "../domain/errors/category-errors.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 
@@ -12,23 +12,4 @@ export async function requireCategory(
     throw new CategoryNotFoundError(id);
   }
   return category;
-}
-
-/**
- * Exige que le slug dérivé soit **libre**.
- *
- * L'agrégat dérive le slug de son nom et ne le laisse pas entrer par
- * l'extérieur ; il ne peut donc pas savoir si un voisin le porte déjà. C'est la
- * même forme que « le parent doit exister » : une règle qui porte sur les
- * autres, donc tenue par le handler, après que l'agrégat a dérivé.
- */
-export async function requireFreeSlug(
-  categories: CategoryRepository,
-  category: Category,
-): Promise<void> {
-  const slugFr = category.slug.fr;
-  const holder = await categories.findBySlugFr(slugFr);
-  if (holder !== null && holder.id !== category.id) {
-    throw new CategorySlugTakenError(slugFr, holder.id);
-  }
 }
