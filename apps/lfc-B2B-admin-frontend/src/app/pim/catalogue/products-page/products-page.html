@@ -50,12 +50,7 @@
     [empty]="emptyState"
   >
     <div foldToolbar class="table-toolbar">
-      <fold-element-title
-        class="toolbar-title"
-        variant="bar"
-        icon="grid"
-        title="Catalogue"
-      />
+      <fold-element-title class="toolbar-title" variant="bar" icon="grid" title="Catalogue" />
 
       <fold-search
         class="toolbar-search"
@@ -129,11 +124,7 @@
     <ng-template foldCell="actions" let-p>
       <div class="row-actions">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
-          <fold-button-icon
-            foldPopoverTrigger
-            icon="more-vertical"
-            tooltip="Actions"
-          />
+          <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
 
           <fold-dropdown-item icon="edit" (selected)="openProduct(p)">
             Ouvrir la fiche
