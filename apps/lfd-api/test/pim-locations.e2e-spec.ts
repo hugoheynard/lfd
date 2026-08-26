@@ -68,13 +68,13 @@ async function readLocation(id: string): Promise<LocationRow> {
   expect(response.status).toBe(200);
   const row = jsonBody<LocationRow[]>(response).find((item) => item.id === id);
   if (row === undefined) {
-    throw new Error(`location ${id} absent de la liste`);
+    throw new Error(`emplacement ${id} absent de la liste`);
   }
   return row;
 }
 
 describe("le nom d'un emplacement est unique", () => {
-  it("refuse un second location du même nom", async () => {
+  it("refuse un second emplacement du même nom", async () => {
     await createLocation({ name: "Village" });
 
     const response = await staff().post(LOCATIONS).send({
@@ -164,7 +164,7 @@ describe("l'usage d'un emplacement voyage avec la liste", () => {
     const response = await staff().delete(`${LOCATIONS}/${location}`);
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("locations.location_in_use");
+    expect(jsonBody<{ code: string }>(response).code).toBe("locations.location.in_use");
   });
 
   it("accepte la suppression une fois décoché", async () => {

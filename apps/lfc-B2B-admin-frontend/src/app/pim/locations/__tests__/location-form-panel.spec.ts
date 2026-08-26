@@ -16,7 +16,7 @@ import type { Location } from '../../data/models';
 const IN_USE = {
   status: 409,
   error: {
-    code: 'locations.location_in_use',
+    code: 'locations.location.in_use',
     message: 'Emplacement encore vendeur : 3 famille(s) le cochent.',
   },
 };

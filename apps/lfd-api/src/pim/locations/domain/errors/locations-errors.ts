@@ -23,14 +23,14 @@ export class LocationNameTakenError extends BusinessError {
   /** Plus de `takenBy` : la base tient l'unicité, et une contrainte ne dit pas
    *  qui détient le nom. */
   constructor(override readonly name: string) {
-    super("locations.location.name_taken", `Un autre location porte déjà le nom « ${name} ».`);
+    super("locations.location.name_taken", `Un autre emplacement porte déjà le nom « ${name} ».`);
   }
 }
 
 /** L’emplacement visé n'existe pas (→ 404). */
 export class LocationNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
-    super("locations.location_not_found", `Location introuvable : ${id}.`);
+    super("locations.location.not_found", `Emplacement introuvable : ${id}.`);
   }
 }
 
@@ -38,7 +38,7 @@ export class LocationNotFoundError extends ResourceNotFoundError {
 export class LocationTableNotFoundError extends ResourceNotFoundError {
   constructor(locationId: string, tableNumber: number) {
     super(
-      "locations.table_not_found",
+      "locations.table.not_found",
       `Table ${tableNumber} introuvable dans l'emplacement ${locationId}.`,
     );
   }
@@ -54,7 +54,7 @@ export class LocationTableNotFoundError extends ResourceNotFoundError {
 export class LocationInUseError extends BusinessError {
   constructor(id: string, categories: number) {
     super(
-      "locations.location_in_use",
+      "locations.location.in_use",
       `Emplacement encore vendeur : ${String(categories)} famille(s) le cochent. ` +
         `Décochez-le de leurs canaux avant de le supprimer (${id}).`,
     );
