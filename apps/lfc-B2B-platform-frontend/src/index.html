@@ -4,7 +4,13 @@
     <meta charset="utf-8" />
     <title>La Folie Coffee — B2B</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- `viewport-fit=cover` : sans lui, iOS n'expose PAS `env(safe-area-inset-*)`
+         et la barre de marque se cale sous l'encoche au lieu de l'englober. La
+         barre du client lit déjà cette variable. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- La teinte que le système peint autour de l'app (barre d'état Android,
+         chrome du navigateur) : l'encre de marque, comme l'en-tête. -->
+    <meta name="theme-color" content="#12307f" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <!-- La marque de l'app cliente : le bonhomme seul, sans le mot. Déclarée
          après le .ico, elle le supplante sur tout navigateur moderne. -->
