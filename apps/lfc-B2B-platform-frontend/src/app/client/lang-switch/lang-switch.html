@@ -1,0 +1,12 @@
+@for (l of locales; track l.code) {
+  <button
+    class="pill"
+    type="button"
+    [class.on]="locale.current() === l.code"
+    [attr.aria-pressed]="locale.current() === l.code"
+    [attr.title]="l.name"
+    (click)="pick(l.code)"
+  >
+    {{ l.code }}
+  </button>
+}

@@ -96,6 +96,30 @@
   --fold-color-success-border: var(--lfc-moss-100);
   --fold-color-success-text: var(--lfc-moss-700);
 
+  /* ── Statut : les crans que le thème DOIT clore ──
+     Un rôle qu'un thème ne déclare pas n'est pas « absent » : il prend la valeur
+     du thème voisin dont le sélecteur matche aussi (ici `navi`, posé sur
+     `<html>`). Ces dix-sept-là fuyaient en graphite. */
+  --fold-color-on-info: var(--lfc-paper-50);
+  --fold-color-warning: var(--lfc-butter-500);
+  --fold-color-on-warning: var(--lfc-butter-900);
+  --fold-color-warning-surface: var(--lfc-butter-100);
+  --fold-color-warning-border: #f0dcae;
+  --fold-color-warning-text: var(--lfc-butter-800);
+  --fold-color-alert: var(--lfc-brick-700);
+  --fold-color-on-alert: var(--lfc-paper-50);
+  --fold-color-alert-surface: #fbeae7;
+  --fold-color-alert-border: #eccac3;
+  --fold-color-on-success: var(--lfc-paper-50);
+
+  /* ── Fonds de structure et voiles ── */
+  --fold-color-bg-rail-primary: var(--lfc-ink-800);
+  --fold-color-bg-rail-secondary: var(--lfc-ink-900);
+  --fold-color-bg-rail-tertiary: var(--lfc-ink-950);
+  --fold-color-glass: rgb(255 253 248 / 72%);
+  --fold-color-glass-border: var(--lfc-paper-300);
+  --fold-color-scrim: rgb(8 24 66 / 45%);
+
   /* ── Rôles hors catalogue fold (candidats à proposer) ── */
   --lfc-color-primary-vivid: var(--lfc-ink-600);
   /* Sur fond de marque : le second niveau de texte, et la tuile d'icône. La réf
@@ -188,19 +212,84 @@
 }
 
 /* Le chrome de l'app : en-tête bleu profond, texte crème.
-   Règle de clôture (navi 2) : ce sous-bloc redéclare `text`, il redéclare donc
-   TOUS ses crans — y compris ceux qu'il ne change pas en apparence. */
+   RÈGLE DE CLÔTURE (navi 2), appliquée ici à la lettre et pas seulement au
+   texte : ce sous-bloc déclare TOUS les rôles que le sous-bloc chrome de `navi`
+   déclare. Un rôle omis n'est pas « hérité du bloc de tête » — le sélecteur
+   `[data-theme="navi"] [data-surface="chrome"]` a la MÊME spécificité et matche
+   le même élément (l'app tourne sous `<html data-theme="navi">`). Ce qu'on
+   n'écrit pas ici, navi l'écrit à notre place. */
 [data-theme='lfc-app'] [data-surface='chrome'] {
+  /* ── Fonds ── */
   --fold-color-bg-page: var(--lfc-ink-800);
-  --fold-color-surface-raised: #2a4a9e;
+  --fold-color-bg-header: var(--lfc-ink-800);
+  --fold-color-bg-rail-primary: var(--lfc-ink-800);
+  --fold-color-bg-rail-secondary: var(--lfc-ink-900);
+  --fold-color-bg-rail-tertiary: var(--lfc-ink-950);
+
+  /* ── Surfaces posées SUR l'encre ── */
   --fold-color-surface-card: #2a4a9e;
+  --fold-color-surface-raised: #2a4a9e;
+  --fold-color-surface-subtle: #2a4a9e;
+  --fold-color-surface-sunken: var(--lfc-ink-900);
+  --fold-color-surface-band: var(--lfc-ink-900);
+  --fold-color-surface-hover: rgb(250 245 236 / 16%);
+
+  /* ── Texte : les quatre crans, clos ── */
   --fold-color-text: var(--lfc-paper-50);
   --fold-color-text-secondary: var(--lfc-ink-300);
   --fold-color-text-muted: var(--lfc-ink-300);
   --fold-color-text-faded: rgb(169 191 232 / 72%);
-  --lfc-color-text-subtle: var(--lfc-ink-300);
+
+  /* ── Bordures et voiles ── */
   --fold-color-border: rgb(250 245 236 / 28%);
   --fold-color-border-subtle: rgb(250 245 236 / 16%);
+  --fold-color-glass: rgb(250 245 236 / 10%);
+  --fold-color-glass-border: rgb(250 245 236 / 22%);
+  --fold-color-scrim: rgb(8 24 66 / 55%);
+
+  /* ── Marque : sur l'encre, le solide de marque est le PAPIER ──
+     `primary` veut dire « le remplissage qui porte l'action ». Sur fond bleu, ce
+     remplissage ne peut pas être bleu : il devient crème, et `on-primary`
+     redevient l'encre. Un composant qui écrit
+     `background: primary; color: on-primary` marche donc des deux côtés sans
+     savoir où il est — c'est tout l'intérêt du sous-bloc. */
+  --fold-color-primary: var(--lfc-paper-50);
+  --fold-color-primary-strong: var(--lfc-paper-100);
+  --fold-color-on-primary: var(--lfc-ink-800);
+  --fold-color-primary-surface: rgb(250 245 236 / 16%);
+  --fold-color-primary-border: rgb(250 245 236 / 28%);
+  --fold-color-primary-text: var(--lfc-ink-300);
+
+  /* ── Statut : la base garde sa teinte, ses fonds deviennent des voiles ── */
+  --fold-color-info: var(--lfc-azure-500);
+  --fold-color-on-info: var(--lfc-paper-50);
+  --fold-color-info-surface: rgb(250 245 236 / 12%);
+  --fold-color-info-border: rgb(250 245 236 / 24%);
+  --fold-color-info-text: var(--lfc-ink-300);
+  --fold-color-warning: var(--lfc-butter-500);
+  --fold-color-on-warning: var(--lfc-butter-900);
+  --fold-color-warning-surface: rgb(217 154 43 / 22%);
+  --fold-color-warning-border: rgb(217 154 43 / 44%);
+  --fold-color-warning-text: #f0dcae;
+  --fold-color-alert: #d4655a;
+  --fold-color-on-alert: var(--lfc-paper-50);
+  --fold-color-alert-surface: rgb(212 101 90 / 22%);
+  --fold-color-alert-border: rgb(212 101 90 / 44%);
+  --fold-color-alert-text: #f2b7b0;
+  --fold-color-success: #3fa877;
+  --fold-color-on-success: var(--lfc-ink-950);
+  --fold-color-success-surface: rgb(63 168 119 / 22%);
+  --fold-color-success-border: rgb(63 168 119 / 44%);
+  --fold-color-success-text: #a6e0c4;
+
+  /* ── Rôles hors catalogue : clos ici aussi ── */
+  --lfc-color-primary-vivid: var(--lfc-paper-50);
+  --lfc-color-on-primary-muted: var(--lfc-ink-300);
+  --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
+  --lfc-color-accent: var(--lfc-butter-500);
+  --lfc-color-on-accent: var(--lfc-butter-900);
+  --lfc-color-accent-surface: rgb(217 154 43 / 22%);
+  --lfc-color-accent-text: #f0dcae;
+  --lfc-color-text-subtle: var(--lfc-ink-300);
   --lfc-color-border-strong: rgb(250 245 236 / 40%);
-  --fold-color-surface-hover: rgb(250 245 236 / 16%);
 }
