@@ -17,6 +17,14 @@ export {
 
 export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 
+export { mediaItemPayloadSchema, setMediaPayloadSchema } from "./media.js";
+export type {
+  AttachedMediaView,
+  MediaFactsView,
+  SetMediaPayload,
+  UploadedMediaView,
+} from "./media.js";
+
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";
 
 export { vatRatePayloadSchema } from "./commerce.js";
@@ -33,6 +41,8 @@ export {
   soldChannelSchema,
   updateSalesContextPayloadSchema,
   setCategoryVatPayloadSchema,
+  categoryEditorialPayloadSchema,
+  setCategoryMediaPayloadSchema,
 } from "./category.js";
 export type {
   CreateCategoryPayload,
@@ -42,6 +52,11 @@ export type {
   SetCategoryChannelsPayload,
   SetCategoryVatPayload,
   CategoryView,
+  CategoryDetailView,
+  CategoryEditorialPayload,
+  CategoryEditorialView,
+  CategoryMediaView,
+  SetCategoryMediaPayload,
   CreateSalesContextPayload,
   SalesContextAdminView,
   UpdateSalesContextPayload,
@@ -88,8 +103,6 @@ export type {
   ProductEditorialView,
   ProductDetailView,
   ProductMediaView,
-  MediaFactsView,
-  UploadedMediaView,
   SetProductMediaPayload,
   SetProductChannelsPayload,
   SetProductVatPayload,

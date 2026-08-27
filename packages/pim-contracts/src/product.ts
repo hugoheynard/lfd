@@ -3,6 +3,7 @@ import { z } from "zod";
 import { salesChannelsSchema } from "./category.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
+import { mediaItemPayloadSchema, setMediaPayloadSchema, type AttachedMediaView } from "./media.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**
@@ -68,16 +69,7 @@ export const createProductPayloadSchema = z.object({
   mayContain: z.array(z.string()).optional(),
   nutrition: nutritionInputShape,
   editorial: z.object(editorialShape).optional(),
-  media: z
-    .array(
-      z.object({
-        role: z.string(),
-        url: z.string(),
-        name: z.string().optional(),
-        alt: optionalLocalizedTextSchema,
-      }),
-    )
-    .optional(),
+  media: z.array(mediaItemPayloadSchema).optional(),
 });
 export type CreateProductPayload = z.infer<typeof createProductPayloadSchema>;
 
@@ -186,44 +178,11 @@ export interface ProductEditorialView {
 }
 
 /**
- * Ce qu'on a constaté d'un visuel qu'on héberge. Tout est nullable : un visuel
- * saisi par son URL n'a rien de tout ça, et `null` veut dire « pas mesuré »,
- * jamais « zéro » — un écran ne doit pas le coercer en dimension.
+ * Un visuel attaché à un PRODUIT. Un alias, et c'est voulu : la forme est celle
+ * de {@link AttachedMediaView}, la nommer ici garde les appelants lisibles sans
+ * inventer un second contrat.
  */
-export interface MediaFactsView {
-  readonly width: number | null;
-  readonly height: number | null;
-  readonly bytes: number | null;
-  readonly contentType: string | null;
-}
-
-/** Un visuel attaché à un produit, tel que l'écran le lit et le renvoie. */
-export interface ProductMediaView extends MediaFactsView {
-  /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
-  readonly role: string;
-  readonly url: string;
-  /** L'étiquette de la bibliothèque — courte, non traduite, faite pour
-   *  RETROUVER. Distincte du texte alternatif, qui DÉCRIT l'image à qui ne la
-   *  voit pas : deux informations, deux publics. `''` = pas nommé.
-   *
-   *  Elle vit sur la VUE du visuel attaché et pas sur les faits techniques :
-   *  un dépôt ne rend pas de nom, puisque personne ne l'a encore donné. */
-  readonly name: string;
-  readonly alt: LocalizedText;
-}
-
-/**
- * Ce que rend un dépôt d'image : l'entrée de bibliothèque créée.
- *
- * L'écran n'a plus qu'à l'ajouter à sa liste et à enregistrer la section. Les
- * dimensions viennent d'ici et **ne repartent pas** dans l'enregistrement : le
- * serveur les a mesurées, il les relira lui-même au rattachement plutôt que de
- * les redemander à un navigateur qui pourrait en dire autre chose.
- */
-export interface UploadedMediaView extends MediaFactsView {
-  readonly id: string;
-  readonly url: string;
-}
+export type ProductMediaView = AttachedMediaView;
 
 /** Détail enrichi (socle + éditorial + visuels) — pour la page d'édition. */
 export type ProductDetailView = ProductView & {
@@ -273,14 +232,6 @@ export const setProductVatPayloadSchema = z.object({
 });
 export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
 
-export const setProductMediaPayloadSchema = z.object({
-  media: z.array(
-    z.object({
-      role: z.string().min(1),
-      url: z.string().min(1),
-      name: z.string().optional(),
-      alt: optionalLocalizedTextSchema,
-    }),
-  ),
-});
+/** La liste entière des visuels d'une fiche — {@link setMediaPayloadSchema}. */
+export const setProductMediaPayloadSchema = setMediaPayloadSchema;
 export type SetProductMediaPayload = z.infer<typeof setProductMediaPayloadSchema>;

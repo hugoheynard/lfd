@@ -2530,6 +2530,11 @@ model Category {
   /// précédait est tombée en d-3.
   channels CategoryChannel[]
 
+  /// Les textes de la famille. Satellite OPTIONNEL (ADR-13) : rien de
+  /// renseigné ⇒ pas de ligne, et non une ligne de colonnes nulles.
+  editorial CategoryEditorial?
+  media     CategoryMedia[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
@@ -2646,7 +2651,7 @@ model SalesContext {
   categoryVat CategoryContextVat[]
   productVat  ProductContextVat[]
   /// Les points de vente qui offrent ce contexte — l'autre bout de la jointure.
-  offeredBy PointOfSaleContext[]
+  offeredBy   PointOfSaleContext[]
 
   /// Ce qui se vend dans ce contexte. Le `Restrict` protège la clé : un contexte
   /// encore vendu ne se supprime pas sous les familles qui le vendent.
@@ -2657,6 +2662,43 @@ model SalesContext {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("sales_context")
+  @@schema("pim")
+}
+
+/// Les textes d'une famille — descriptions et référencement, tous localisés.
+///
+/// Quatre colonnes contre sept pour `product_editorial` : un récit, un accord et
+/// une marque parlent d'un PRODUIT, pas du rayon où on le range. Les copier
+/// aurait offert trois champs que personne ne saurait remplir.
+model CategoryEditorial {
+  categoryId String   @id @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  descriptionShort Json? @map("description_short")
+  descriptionLong  Json? @map("description_long")
+  seoTitle         Json? @map("seo_title")
+  seoDescription   Json? @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("category_editorial")
+  @@schema("pim")
+}
+
+/// Un visuel attaché à une famille. Jumeau exact de `product_media` : la
+/// bibliothèque `media_asset` est la même, et un même fichier peut donc servir
+/// une famille et une fiche sans être déposé deux fois.
+model CategoryMedia {
+  categoryId String     @map("category_id")
+  mediaId    String     @map("media_id")
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  media      MediaAsset @relation(fields: [mediaId], references: [id])
+  role       MediaRole
+  position   Int        @default(0)
+
+  @@id([categoryId, mediaId])
+  @@index([categoryId])
+  @@map("category_media")
   @@schema("pim")
 }
 
@@ -3175,6 +3217,11 @@ model MediaAsset {
   bytes       Int?
 
   products ProductMedia[]
+
+  /// Les FAMILLES qui portent ce visuel. Sa présence change une règle
+  /// d'exploitation : le ramassage d'orphelins ne peut plus conclure d'un
+  /// `products: none` qu'un objet ne sert plus — il servirait encore ici.
+  categories CategoryMedia[]
 
   createdAt DateTime @default(now()) @map("created_at")
 

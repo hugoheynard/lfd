@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { localizedTextSchema } from "./localized.js";
+import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
+import { setMediaPayloadSchema, type AttachedMediaView } from "./media.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**
@@ -182,3 +183,54 @@ export const updateSalesContextPayloadSchema = z.object({
   position: z.number().int().min(0),
 });
 export type UpdateSalesContextPayload = z.infer<typeof updateSalesContextPayloadSchema>;
+
+/**
+ * La couche **éditoriale** d'une famille — ce qu'on en dit, dans les trois
+ * langues.
+ *
+ * Quatre champs, contre sept pour une fiche : `story`, `pairing` et `brand`
+ * n'ont pas de sens ici. Un récit et un accord parlent d'un produit ; une marque
+ * est portée par ce qu'on vend, pas par le rayon où on le range. Copier la forme
+ * du produit aurait offert trois champs que personne ne saurait remplir.
+ *
+ * Chaque champ est **facultatif et localisé** : une famille sans description
+ * n'est pas une famille avec une description vide. C'est aussi pourquoi un texte
+ * vide n'écrit pas de ligne du tout (satellite optionnel, ADR-13).
+ */
+const categoryEditorialShape = {
+  descriptionShort: optionalLocalizedTextSchema,
+  descriptionLong: optionalLocalizedTextSchema,
+  seoTitle: optionalLocalizedTextSchema,
+  seoDescription: optionalLocalizedTextSchema,
+};
+
+export const categoryEditorialPayloadSchema = z.object(categoryEditorialShape);
+export type CategoryEditorialPayload = z.infer<typeof categoryEditorialPayloadSchema>;
+
+/** La liste entière des visuels d'une famille, dans son ordre. */
+export const setCategoryMediaPayloadSchema = setMediaPayloadSchema;
+export type SetCategoryMediaPayload = z.infer<typeof setCategoryMediaPayloadSchema>;
+
+/** L'éditorial rendu. `null` par champ = jamais renseigné, pas « vide ». */
+export interface CategoryEditorialView {
+  readonly descriptionShort: LocalizedText | null;
+  readonly descriptionLong: LocalizedText | null;
+  readonly seoTitle: LocalizedText | null;
+  readonly seoDescription: LocalizedText | null;
+}
+
+/** Un visuel attaché à une famille. Même forme que pour une fiche. */
+export type CategoryMediaView = AttachedMediaView;
+
+/**
+ * Une famille **enrichie** — pour sa page, et pour elle seule.
+ *
+ * Distincte de {@link CategoryView}, et c'est le point : la LISTE ne porte ni
+ * textes ni visuels. Les y mettre coûterait, à chaque affichage de la liste, une
+ * jointure par famille sur la bibliothèque de médias, pour des colonnes
+ * qu'aucune ligne n'affiche.
+ */
+export type CategoryDetailView = CategoryView & {
+  readonly editorial: CategoryEditorialView | null;
+  readonly media: readonly CategoryMediaView[];
+};
