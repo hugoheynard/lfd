@@ -1,0 +1,114 @@
+import type { ClientCopy } from './client-copy.model';
+
+/** La langue de référence : c'est elle que la maquette écrit. */
+export const FR: ClientCopy = {
+  chrome: {
+    back: 'Retour',
+    lang: 'Langue',
+    kickerWelcome: 'Bienvenue',
+    kickerLogin: 'Connexion',
+    kickerEntered: 'Compte créé',
+    kickerRappel: 'Rappel',
+    deskKicker: 'Val d’Isère · commande en ligne',
+  },
+  foot: {
+    place: 'Le Labo · Route de la Balme, Val d’Isère',
+    hours: 'Ouvert de 7 h à 19 h',
+  },
+  hero: {
+    welcomeTitle: 'Votre commande en station, réservée en deux minutes.',
+    welcomeIntro: 'Vous choisissez, nous préparons.',
+    loginTitle: 'Content de vous revoir.',
+    loginIntroAsk: 'Entrez votre e-mail, on vous envoie un lien.',
+    loginIntroSent: 'Un lien de connexion vient de partir.',
+    enteredTitle: 'Vous êtes connecté.',
+    enteredIntro:
+      'Compte créé sans mot de passe, sans formulaire d’entreprise. La commande commence maintenant.',
+    rappelTitle: 'On vous rappelle quand ?',
+    rappelIntro: 'On appelle depuis le fournil, jamais depuis un centre.',
+  },
+  aside: {
+    proof: [
+      'Inscription rapide.',
+      'Votre espace évolue en fonction de vos besoins.',
+      'Tarifs pro, livraison en station, facturation mensuelle sur demande.',
+    ],
+    address: 'Le Labo · Route de la Balme — ouvert de 7 h à 19 h.',
+  },
+  signup: {
+    eyebrow: 'Première visite ? 3 infos et c’est parti',
+    alreadyLead: 'Déjà client ?',
+    alreadyLink: 'Se connecter en un lien',
+    pitch:
+      'Un prénom, un e-mail, un numéro. C’est tout — le reste attendra que vous en ayez besoin.',
+    firstName: 'Prénom',
+    firstNamePlaceholder: 'Votre prénom',
+    tel: 'Téléphone',
+    telPlaceholder: '06 00 00 00 00',
+    telHint: 'Pour qu’un coursier qui cherche la porte puisse appeler.',
+    email: 'E-mail',
+    emailPlaceholder: 'vous@exemple.fr',
+    open: 'S’inscrire',
+    submit: 'Créer mon compte',
+    fine: 'Pas de mot de passe : on vous envoie un lien à chaque connexion.',
+    fineInline: 'Pas de mot de passe : un lien vous est envoyé à chaque connexion.',
+    legal:
+      'En créant un compte, vous acceptez nos conditions de vente. Aucun document d’entreprise n’est demandé à l’inscription.',
+  },
+  login: {
+    email: 'Votre e-mail',
+    emailPlaceholder: 'vous@exemple.fr',
+    send: 'Recevoir mon lien',
+    fine: 'Aucun mot de passe à retenir : le lien vous connecte directement.',
+    sentTitle: 'Lien envoyé',
+    sentBody: 'Ouvrez le message envoyé à {email} — le lien est valable une heure.',
+    simulate: 'Simuler le clic sur le lien',
+    resent: 'Un nouveau lien vient de partir.',
+    resend: 'Renvoyer',
+    editEmail: 'Changer d’adresse',
+  },
+  entered: {
+    title: 'Compte actif',
+    sub: 'Trois champs, aucun document. Le KBIS attendra que vous en ayez besoin.',
+    next: 'Maquette : la suite, c’est « On vous sert comment ? » — retrait ou coursier.',
+  },
+  rappel: {
+    asapGroup: 'Dès que possible',
+    asapTitle: 'Dans les 15 minutes',
+    asapSub: 'Le fournil décroche — c’est le plus rapide.',
+    todayGroup: 'Aujourd’hui',
+    note: 'Entre 12 h et 14 h on est au four : on ne prend pas d’appel, et on préfère le dire.',
+    phone: 'On vous rappellera au {phone}.',
+    ctaIdle: 'Choisissez un moment',
+    ctaReady: 'Demander le rappel',
+    slotFree: 'disponible',
+    slotFull: 'complet',
+    slotOven: 'au four',
+  },
+  doors: {
+    or: 'ou',
+    alreadyTitle: 'Déjà client ?',
+    alreadySub: 'Se connecter en un lien',
+    firstTitle: 'Première visite ?',
+    firstSub: 'Prénom, e-mail, téléphone',
+  },
+  event: {
+    badge: 'Traiteur',
+    title: 'Un event,\non prépare tout.',
+    pitch:
+      'Séminaire, anniversaire, sortie de club : le nombre, l’heure, le lieu — on s’occupe du reste.',
+    cta: 'Un devis ›',
+    pending:
+      'L’écran de demande de devis arrive au prochain lot — la carte est branchée, pas sa suite.',
+  },
+  pro: {
+    title: 'Intéressé par l’espace pro ?',
+    bookedTitle: 'Rappel demandé',
+    pitch:
+      'Tarifs négociés, livraison en station, facturation mensuelle. On vous explique en deux minutes.',
+    cta: 'Demander à être rappelé',
+    booked: 'Rappel demandé · {slot}',
+    at: 'Au',
+    cancel: 'Annuler',
+  },
+};

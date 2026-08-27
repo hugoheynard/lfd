@@ -123,8 +123,9 @@
      titre blanc coincé sous la barre. Une feuille pleine hauteur garantit
      exactement la course qu'il faut pour l'escamoter. (C'est le `min-height:
      100%` de la réf, exprimé contre l'écran puisque le porte-page, lui, se
-     dimensionne sur son contenu.) */
-  min-height: calc(100dvh - var(--fold-shell-header-height, 56px));
+     dimensionne sur son contenu. La hauteur de barre vient du shell, qui la
+     publie sous `--lfc-header-height`.) */
+  min-height: calc(100dvh - var(--lfc-header-height, 56px));
   /* La crème revient sur la feuille : c'est elle qui garantit un aplat continu
      sous la lèvre, quelle que soit la position de défilement. La retirer
      rendait le fond tributaire de la scène, et le passage bleu → crème s'en

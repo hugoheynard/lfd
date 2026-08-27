@@ -2,10 +2,8 @@
   <fold-card class="panel">
     <div class="sent">
       <span class="sent-icon" aria-hidden="true"><fold-icon name="mail" size="lg" /></span>
-      <h2 class="sent-title">Lien envoyé</h2>
-      <p class="sent-body">
-        Ouvrez le message envoyé à <strong>{{ email() }}</strong> — le lien est valable une heure.
-      </p>
+      <h2 class="sent-title">{{ t().login.sentTitle }}</h2>
+      <p class="sent-body">{{ sentLine() }}</p>
       <button
         foldButton
         class="cta accent"
@@ -16,19 +14,21 @@
         type="button"
         (click)="entered.emit()"
       >
-        Simuler le clic sur le lien
+        {{ t().login.simulate }}
       </button>
     </div>
   </fold-card>
 
   @if (resent()) {
-    <fold-callout variant="success" announce>Un nouveau lien vient de partir.</fold-callout>
+    <fold-callout variant="success" announce>{{ t().login.resent }}</fold-callout>
   }
 
   <div class="quiet-actions">
-    <button class="quiet" type="button" (click)="resend()">Renvoyer</button>
+    <button class="quiet" type="button" (click)="resend()">{{ t().login.resend }}</button>
     <span class="dot" aria-hidden="true">·</span>
-    <button class="quiet muted" type="button" (click)="editEmail()">Changer d'adresse</button>
+    <button class="quiet muted" type="button" (click)="editEmail()">
+      {{ t().login.editEmail }}
+    </button>
   </div>
 } @else {
   <fold-card class="panel">
@@ -36,9 +36,9 @@
       <fold-input
         size="lg"
         type="email"
-        label="Votre e-mail"
+        [label]="t().login.email"
         autocomplete="email"
-        placeholder="vous@exemple.fr"
+        [placeholder]="t().login.emailPlaceholder"
         [autofocus]="true"
         [(value)]="email"
       />
@@ -52,19 +52,19 @@
         type="submit"
         [disabled]="!looksValid()"
       >
-        Recevoir mon lien
+        {{ t().login.send }}
       </button>
     </form>
   </fold-card>
 
-  <p class="fine">Aucun mot de passe à retenir : le lien vous connecte directement.</p>
+  <p class="fine">{{ t().login.fine }}</p>
 }
 
 <app-rule-ou />
 
 <app-door-card
   icon="edit"
-  title="Première visite ?"
-  sub="Prénom, e-mail, téléphone"
+  [title]="t().doors.firstTitle"
+  [sub]="t().doors.firstSub"
   (opened)="wantsSignup.emit()"
 />

@@ -1,5 +1,5 @@
 <section class="group">
-  <p class="eyebrow">Dès que possible</p>
+  <p class="eyebrow">{{ t().rappel.asapGroup }}</p>
   <button
     class="asap"
     type="button"
@@ -10,16 +10,16 @@
   >
     <span class="ring" aria-hidden="true"><span class="core"></span></span>
     <span class="asap-text">
-      <span class="asap-title">Dans les 15 minutes</span>
-      <span class="asap-sub">Le fournil décroche — c'est le plus rapide.</span>
+      <span class="asap-title">{{ t().rappel.asapTitle }}</span>
+      <span class="asap-sub">{{ t().rappel.asapSub }}</span>
     </span>
   </button>
 </section>
 
 <section class="group">
-  <p class="eyebrow" id="rappel-today">Aujourd'hui</p>
+  <p class="eyebrow" id="rappel-today">{{ t().rappel.todayGroup }}</p>
   <div class="grid" role="radiogroup" aria-labelledby="rappel-today">
-    @for (slot of slots; track slot.id) {
+    @for (slot of slots(); track slot.id) {
       <button
         class="slot"
         type="button"

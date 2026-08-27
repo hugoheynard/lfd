@@ -64,6 +64,9 @@ $photo: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1574862612
 
 .over-title,
 .in-title {
+  /* Le titre tient sur deux lignes, et le dictionnaire les sépare par un retour
+     plutôt que par une balise : une traduction n'a pas à connaître le HTML. */
+  white-space: pre-line;
   font-family: var(--fold-font-label);
   font-size: 1.4375rem;
   font-weight: var(--lfc-weight-black);

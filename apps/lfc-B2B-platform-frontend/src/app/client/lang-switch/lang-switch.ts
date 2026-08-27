@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 
 import { ClientLocale, LOCALES, type LocaleCode } from '../client-locale.service';
+import { ClientCopyService } from '../copy/client-copy.service';
 
 /** Les trois langues en segments — le libellé court, la valeur canonique. */
 const OPTIONS: readonly FoldViewToggleOption[] = LOCALES.map((l) => ({
@@ -42,6 +43,7 @@ export class LangSwitch {
   readonly size = input<'sm' | 'md'>('sm');
 
   protected readonly locale = inject(ClientLocale);
+  protected readonly t = inject(ClientCopyService).t;
   protected readonly options = OPTIONS;
 
   /** `valueChange` parle `string` : on ne relaie que ce qui est une de nos langues. */

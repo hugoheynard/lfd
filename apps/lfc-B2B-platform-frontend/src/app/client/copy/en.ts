@@ -1,0 +1,116 @@
+import type { ClientCopy } from './client-copy.model';
+
+/**
+ * Anglais. Val d'Isère reçoit autant de britanniques que d'italiens ; laisser
+ * `EN` cliquable et muet aurait été pire que de ne pas l'offrir.
+ *
+ * « Fournil » devient *bakery* (le lieu), « coursier » *courier* — pas *driver*,
+ * qui laisserait croire à une plateforme de livraison.
+ */
+export const EN: ClientCopy = {
+  chrome: {
+    back: 'Back',
+    lang: 'Language',
+    kickerWelcome: 'Welcome',
+    kickerLogin: 'Sign in',
+    kickerEntered: 'Account created',
+    kickerRappel: 'Call back',
+    deskKicker: 'Val d’Isère · order online',
+  },
+  foot: {
+    place: 'Le Labo · Route de la Balme, Val d’Isère',
+    hours: 'Open 7am to 7pm',
+  },
+  hero: {
+    welcomeTitle: 'Your resort order, ready in two minutes.',
+    welcomeIntro: 'You choose, we prepare.',
+    loginTitle: 'Good to see you again.',
+    loginIntroAsk: 'Enter your email and we’ll send you a link.',
+    loginIntroSent: 'A sign-in link is on its way.',
+    enteredTitle: 'You’re signed in.',
+    enteredIntro: 'Account created with no password and no company paperwork. Ordering starts now.',
+    rappelTitle: 'When shall we call ?',
+    rappelIntro: 'We call from the bakery, never from a call centre.',
+  },
+  aside: {
+    proof: [
+      'Quick sign-up.',
+      'Your account grows with what you need.',
+      'Trade prices, resort delivery, monthly invoicing on request.',
+    ],
+    address: 'Le Labo · Route de la Balme — open 7am to 7pm.',
+  },
+  signup: {
+    eyebrow: 'First time ? 3 details and you’re in',
+    alreadyLead: 'Already a customer ?',
+    alreadyLink: 'Sign in with a link',
+    pitch: 'A first name, an email, a number. That’s all — the rest can wait until you need it.',
+    firstName: 'First name',
+    firstNamePlaceholder: 'Your first name',
+    tel: 'Phone',
+    telPlaceholder: '06 00 00 00 00',
+    telHint: 'So a courier looking for your door can call you.',
+    email: 'Email',
+    emailPlaceholder: 'you@example.com',
+    open: 'Sign up',
+    submit: 'Create my account',
+    fine: 'No password : we send you a link every time you sign in.',
+    fineInline: 'No password : a link is sent to you every time you sign in.',
+    legal:
+      'By creating an account you accept our terms of sale. No company paperwork is required to sign up.',
+  },
+  login: {
+    email: 'Your email',
+    emailPlaceholder: 'you@example.com',
+    send: 'Send me the link',
+    fine: 'No password to remember : the link signs you straight in.',
+    sentTitle: 'Link sent',
+    sentBody: 'Open the message sent to {email} — the link is valid for one hour.',
+    simulate: 'Simulate clicking the link',
+    resent: 'A new link is on its way.',
+    resend: 'Resend',
+    editEmail: 'Change address',
+  },
+  entered: {
+    title: 'Account active',
+    sub: 'Three fields, no paperwork. Company documents can wait until you need them.',
+    next: 'Prototype : next comes « How shall we serve you ? » — pickup or courier.',
+  },
+  rappel: {
+    asapGroup: 'As soon as possible',
+    asapTitle: 'Within 15 minutes',
+    asapSub: 'The bakery picks up — that’s the fastest.',
+    todayGroup: 'Today',
+    note: 'Between noon and 2pm we’re at the oven : we don’t take calls, and we’d rather say so.',
+    phone: 'We’ll call you on {phone}.',
+    ctaIdle: 'Pick a time',
+    ctaReady: 'Request the call',
+    slotFree: 'available',
+    slotFull: 'full',
+    slotOven: 'at the oven',
+  },
+  doors: {
+    or: 'or',
+    alreadyTitle: 'Already a customer ?',
+    alreadySub: 'Sign in with a link',
+    firstTitle: 'First time ?',
+    firstSub: 'First name, email, phone',
+  },
+  event: {
+    badge: 'Catering',
+    title: 'An event,\nwe handle it all.',
+    pitch: 'Seminar, birthday, club outing : the headcount, the time, the place — we do the rest.',
+    cta: 'Get a quote ›',
+    pending:
+      'The quote request screen lands in the next batch — the card is wired, its sequel isn’t.',
+  },
+  pro: {
+    title: 'Interested in a trade account ?',
+    bookedTitle: 'Call requested',
+    pitch: 'Negotiated prices, resort delivery, monthly invoicing. We’ll explain in two minutes.',
+    cta: 'Ask us to call you',
+    booked: 'Call requested · {slot}',
+    at: 'On',
+    cancel: 'Cancel',
+  },
+};

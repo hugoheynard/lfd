@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
 
-import { CALL_SLOTS, type CallSlot } from '../call-slots';
+import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
+import { CALL_SLOTS, type CallSlot, isClosed } from '../call-slots';
 
 /** Le choix « dès que possible », distinct des créneaux nommés. */
 const ASAP = 'asap';
@@ -25,16 +34,31 @@ export class RappelPanel {
   readonly phone = input.required<string>();
   readonly booked = output<string>();
 
-  protected readonly slots = CALL_SLOTS;
+  protected readonly t = inject(ClientCopyService).t;
   protected readonly asap = ASAP;
   protected readonly picked = signal<string | null>(null);
 
+  /** Chaque créneau porte déjà son heure ; la langue n'habille que son état. */
+  protected readonly slots = computed(() =>
+    CALL_SLOTS.map((slot) => ({
+      ...slot,
+      closed: isClosed(slot),
+      sub: this.t().rappel[
+        slot.state === 'free' ? 'slotFree' : slot.state === 'full' ? 'slotFull' : 'slotOven'
+      ],
+    })),
+  );
+
   protected readonly ctaLabel = computed(() =>
-    this.picked() ? 'Demander le rappel' : 'Choisissez un moment',
+    this.picked() ? this.t().rappel.ctaReady : this.t().rappel.ctaIdle,
+  );
+
+  protected readonly phoneLine = computed(() =>
+    fill(this.t().rappel.phone, { phone: this.phone() }),
   );
 
   protected pick(slot: CallSlot): void {
-    if (!slot.closed) {
+    if (!isClosed(slot)) {
       this.picked.set(slot.id);
     }
   }
@@ -44,7 +68,7 @@ export class RappelPanel {
     if (id === null) {
       return;
     }
-    const slot = this.slots.find((s) => s.id === id);
-    this.booked.emit(slot ? slot.label : 'dans les 15 minutes');
+    const slot = CALL_SLOTS.find((s) => s.id === id);
+    this.booked.emit(slot ? slot.label : this.t().rappel.asapTitle);
   }
 }

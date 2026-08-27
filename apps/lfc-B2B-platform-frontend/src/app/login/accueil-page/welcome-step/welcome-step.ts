@@ -17,6 +17,7 @@ import {
   FoldInputComponent,
 } from 'fold-ng';
 
+import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { EventCard } from '../../../client/event-card/event-card';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
@@ -72,6 +73,8 @@ export class WelcomeStep {
   readonly cancelledCallback = output<void>();
 
   /** Le formulaire est ouvert — vrai dès qu'on a demandé à s'inscrire. */
+  protected readonly t = inject(ClientCopyService).t;
+
   protected readonly expanded = signal(false);
 
   /** `aria-controls` a besoin d'un identifiant, et le rendu serveur d'un stable. */
@@ -91,7 +94,11 @@ export class WelcomeStep {
   );
 
   protected readonly proTitle = computed(() =>
-    this.bookedSlot() ? 'Rappel demandé' : 'Intéressé par l’espace pro ?',
+    this.bookedSlot() ? this.t().pro.bookedTitle : this.t().pro.title,
+  );
+
+  protected readonly bookedLine = computed(() =>
+    fill(this.t().pro.booked, { slot: this.bookedSlot() ?? '' }),
   );
 
   /** Déplie, et pose le curseur dans le premier champ — sinon il faut viser. */

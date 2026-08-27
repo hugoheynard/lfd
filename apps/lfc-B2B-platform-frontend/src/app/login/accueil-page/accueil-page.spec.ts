@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { fill } from '../../client/copy/client-copy.service';
+import { FR } from '../../client/copy/fr';
 import { AccueilPage } from './accueil-page';
 
 /**
@@ -58,10 +60,10 @@ describe('AccueilPage', () => {
   });
 
   it("ouvre sur l'accueil visiteur, sans retour possible", () => {
-    expect(text()).toContain('Première visite ?');
+    expect(text()).toContain(FR.signup.eyebrow);
     // Le sur-titre et le retour vivent dans l'en-tête du shell : l'écran les
     // PUBLIE, il ne les dessine plus.
-    expect(chrome.kicker()).toBe('Bienvenue');
+    expect(chrome.kicker()).toBe(FR.chrome.kickerWelcome);
     expect(chrome.back()).toBeNull();
   });
 
@@ -69,7 +71,7 @@ describe('AccueilPage', () => {
     // Le pli lui-même est une affaire de largeur, donc de CSS — ce que le test
     // vérifie, c'est le CONTRAT que le CSS suit : l'état annoncé aux
     // technologies d'assistance, et le champ qui prend le curseur.
-    const open = button("S'inscrire");
+    const open = button(FR.signup.open);
     expect(open.getAttribute('aria-expanded')).toBe('false');
     expect(open.getAttribute('aria-controls')).toBe(
       el().querySelector('.fields')?.getAttribute('id'),
@@ -78,72 +80,72 @@ describe('AccueilPage', () => {
     open.click();
     fixture.detectChanges();
 
-    expect(button("S'inscrire").getAttribute('aria-expanded')).toBe('true');
+    expect(button(FR.signup.open).getAttribute('aria-expanded')).toBe('true');
   });
 
   it("refuse la création tant que les trois champs n'y sont pas", () => {
-    expect(button('Créer mon compte').disabled).toBe(true);
+    expect(button(FR.signup.submit).disabled).toBe(true);
 
     type(FIRST, 'Pierre');
     type(TEL, '06 12 44 09 87');
-    expect(button('Créer mon compte').disabled).toBe(true);
+    expect(button(FR.signup.submit).disabled).toBe(true);
 
     type(MAIL, 'pierre@brasserie-marchand.fr');
-    expect(button('Créer mon compte').disabled).toBe(false);
+    expect(button(FR.signup.submit).disabled).toBe(false);
   });
 
   it('les trois champs remplis ouvrent le compte', () => {
     fillSignup();
-    click('Créer mon compte');
+    click(FR.signup.submit);
 
-    expect(text()).toContain('Compte actif');
-    expect(chrome.kicker()).toBe('Compte créé');
+    expect(text()).toContain(FR.entered.title);
+    expect(chrome.kicker()).toBe(FR.chrome.kickerEntered);
   });
 
   it('« Déjà client ? » mène à la connexion, et le retour ramène', () => {
-    click('Déjà client ?');
-    expect(chrome.kicker()).toBe('Connexion');
-    expect(text()).toContain('Content de vous revoir.');
+    click(FR.doors.alreadyTitle);
+    expect(chrome.kicker()).toBe(FR.chrome.kickerLogin);
+    expect(text()).toContain(FR.hero.loginTitle);
 
     const back = chrome.back();
     expect(back).not.toBeNull();
     back?.();
     fixture.detectChanges();
-    expect(text()).toContain('Première visite ?');
+    expect(text()).toContain(FR.signup.eyebrow);
   });
 
   it("le lien envoyé rappelle l'adresse exacte", () => {
-    click('Déjà client ?');
+    click(FR.doors.alreadyTitle);
     type(0, 'pierre@brasserie-marchand.fr');
-    click('Recevoir mon lien');
+    click(FR.login.send);
 
-    expect(text()).toContain('Lien envoyé');
+    expect(text()).toContain(FR.login.sentTitle);
     expect(text()).toContain('pierre@brasserie-marchand.fr');
   });
 
   it('le créneau « au four » reste affiché, et refuse le doigt', () => {
-    click('Demander à être rappelé');
+    click(FR.pro.cta);
 
     const closed = Array.from(el().querySelectorAll('button.slot')).find((b) =>
       (b.textContent ?? '').includes('12 h – 14 h'),
     ) as HTMLButtonElement | undefined;
 
     expect(closed).toBeDefined();
-    expect(closed?.textContent).toContain('au four');
+    expect(closed?.textContent).toContain(FR.rappel.slotOven);
     expect(closed?.disabled).toBe(true);
   });
 
   it("un créneau confirmé remonte dans l'encart pro, et s'annule", () => {
-    click('Demander à être rappelé');
-    expect(button('Choisissez un moment').disabled).toBe(true);
+    click(FR.pro.cta);
+    expect(button(FR.rappel.ctaIdle).disabled).toBe(true);
 
     click('14 h – 15 h');
-    click('Demander le rappel');
+    click(FR.rappel.ctaReady);
 
-    expect(text()).toContain('Rappel demandé · 14 h – 15 h');
+    expect(text()).toContain(fill(FR.pro.booked, { slot: '14 h – 15 h' }));
     expect(text()).toContain('06 12 44 09 87');
 
-    click('Annuler');
-    expect(text()).toContain('Intéressé par l’espace pro ?');
+    click(FR.pro.cancel);
+    expect(text()).toContain(FR.pro.title);
   });
 });

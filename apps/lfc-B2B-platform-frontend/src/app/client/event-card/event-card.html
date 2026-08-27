@@ -1,14 +1,12 @@
 <button class="card" type="button" (click)="opened.emit()">
   <span class="photo">
     <span class="veil" aria-hidden="true"></span>
-    <span class="badge">Traiteur</span>
-    <span class="over-title">Un event,<br />on prépare tout.</span>
+    <span class="badge">{{ t().event.badge }}</span>
+    <span class="over-title">{{ t().event.title }}</span>
   </span>
   <span class="body">
-    <span class="in-title">Un event,<br />on prépare tout.</span>
-    <span class="pitch">
-      Séminaire, anniversaire, sortie de club : le nombre, l'heure, le lieu — on s'occupe du reste.
-    </span>
-    <span class="cta">Un devis ›</span>
+    <span class="in-title">{{ t().event.title }}</span>
+    <span class="pitch">{{ t().event.pitch }}</span>
+    <span class="cta">{{ t().event.cta }}</span>
   </span>
 </button>

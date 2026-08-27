@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
 
 /**
@@ -26,6 +27,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 })
 export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
+  protected readonly t = inject(ClientCopyService).t;
 
   protected goBack(): void {
     this.chrome.back()?.();

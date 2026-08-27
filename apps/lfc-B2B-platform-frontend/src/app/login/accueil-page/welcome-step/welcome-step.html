@@ -1,43 +1,43 @@
 <div class="head">
-  <p class="eyebrow">Première visite ? 3 infos et c'est parti</p>
+  <p class="eyebrow">{{ t().signup.eyebrow }}</p>
   <p class="already">
-    Déjà client ?
-    <button class="link" type="button" (click)="wantsLogin.emit()">Se connecter en un lien</button>
+    {{ t().signup.alreadyLead }}
+    <button class="link" type="button" (click)="wantsLogin.emit()">
+      {{ t().signup.alreadyLink }}
+    </button>
   </p>
 </div>
 
 <fold-card class="signup">
   <form class="form" [class.folded]="!expanded()" (submit)="$event.preventDefault(); submit()">
-    <p class="pitch">
-      Un prénom, un e-mail, un numéro. C'est tout — le reste attendra que vous en ayez besoin.
-    </p>
+    <p class="pitch">{{ t().signup.pitch }}</p>
 
     <div #fields class="fields" [id]="fieldsId">
       <fold-input
         class="f-first"
         size="lg"
-        label="Prénom"
+        [label]="t().signup.firstName"
         autocomplete="given-name"
-        placeholder="Votre prénom"
+        [placeholder]="t().signup.firstNamePlaceholder"
         [(value)]="firstName"
       />
       <fold-input
         class="f-tel"
         size="lg"
         type="tel"
-        label="Téléphone"
+        [label]="t().signup.tel"
         autocomplete="tel"
-        placeholder="06 00 00 00 00"
-        hint="Pour qu'un coursier qui cherche la porte puisse appeler."
+        [placeholder]="t().signup.telPlaceholder"
+        [hint]="t().signup.telHint"
         [(value)]="tel"
       />
       <fold-input
         class="f-mail"
         size="lg"
         type="email"
-        label="E-mail"
+        [label]="t().signup.email"
         autocomplete="email"
-        placeholder="vous@exemple.fr"
+        [placeholder]="t().signup.emailPlaceholder"
         [(value)]="email"
       />
     </div>
@@ -57,7 +57,7 @@
         [attr.aria-controls]="fieldsId"
         (click)="expand()"
       >
-        S'inscrire
+        {{ t().signup.open }}
       </button>
       <button
         foldButton
@@ -68,16 +68,14 @@
         type="submit"
         [disabled]="!complete()"
       >
-        Créer mon compte
+        {{ t().signup.submit }}
       </button>
-      <span class="fine-inline">
-        Pas de mot de passe : un lien vous est envoyé à chaque connexion.
-      </span>
+      <span class="fine-inline">{{ t().signup.fineInline }}</span>
     </div>
   </form>
 </fold-card>
 
-<p class="fine">Pas de mot de passe : on vous envoie un lien à chaque connexion.</p>
+<p class="fine">{{ t().signup.fine }}</p>
 
 <app-rule-ou class="only-narrow" />
 
@@ -85,41 +83,36 @@
   class="only-narrow"
   tone="solid"
   icon="arrow-right"
-  title="Déjà client ?"
-  sub="Se connecter en un lien"
+  [title]="t().doors.alreadyTitle"
+  [sub]="t().doors.alreadySub"
   (opened)="wantsLogin.emit()"
 />
 
 <app-event-card (opened)="wantsQuote.emit()" />
 
 @if (quotePending()) {
-  <fold-callout variant="info">
-    L'écran de demande de devis arrive au prochain lot — la carte est branchée, pas sa suite.
-  </fold-callout>
+  <fold-callout variant="info">{{ t().event.pending }}</fold-callout>
 }
 
 <section class="pro">
   <div class="pro-head">
     <h2 class="pro-title">{{ proTitle() }}</h2>
 
-    @if (bookedSlot(); as slot) {
+    @if (bookedSlot()) {
       <div class="booked">
         <span class="booked-tick" aria-hidden="true">✓</span>
         <span class="booked-text">
-          <span class="booked-when">Rappel demandé · {{ slot }}</span>
-          <span class="booked-phone"
-            >Au <span class="num">{{ phone() }}</span></span
-          >
+          <span class="booked-when">{{ bookedLine() }}</span>
+          <span class="booked-phone">
+            {{ t().pro.at }} <span class="num">{{ phone() }}</span>
+          </span>
         </span>
         <button class="booked-cancel" type="button" (click)="cancelledCallback.emit()">
-          Annuler
+          {{ t().pro.cancel }}
         </button>
       </div>
     } @else {
-      <p class="pro-pitch">
-        Tarifs négociés, livraison en station, facturation mensuelle. On vous explique en deux
-        minutes.
-      </p>
+      <p class="pro-pitch">{{ t().pro.pitch }}</p>
     }
   </div>
 
@@ -132,12 +125,9 @@
       type="button"
       (click)="wantsCallback.emit()"
     >
-      Demander à être rappelé
+      {{ t().pro.cta }}
     </button>
   }
 </section>
 
-<p class="legal">
-  En créant un compte, vous acceptez nos conditions de vente. Aucun document d'entreprise n'est
-  demandé à l'inscription.
-</p>
+<p class="legal">{{ t().signup.legal }}</p>

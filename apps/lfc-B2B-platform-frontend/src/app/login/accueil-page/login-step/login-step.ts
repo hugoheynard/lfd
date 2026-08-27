@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -7,6 +14,7 @@ import {
   FoldInputComponent,
 } from 'fold-ng';
 
+import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
 
@@ -38,12 +46,18 @@ export class LoginStep {
   /** L'écran a basculé entre « demander » et « envoyé » — le chrome suit. */
   readonly sentChange = output<boolean>();
 
+  protected readonly t = inject(ClientCopyService).t;
+
   protected readonly sent = signal(false);
   protected readonly resent = signal(false);
   protected readonly email = signal('');
 
   /** Une adresse plausible suffit : le vrai verdict, c'est le lien qui arrive. */
   protected readonly looksValid = computed(() => /.+@.+\..+/.test(this.email().trim()));
+
+  protected readonly sentLine = computed(() =>
+    fill(this.t().login.sentBody, { email: this.email() }),
+  );
 
   protected send(): void {
     if (this.looksValid()) {

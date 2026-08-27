@@ -11,7 +11,7 @@
       </span>
       <span class="brand">
         <span class="brand-name">La Folie Coffee</span>
-        <span class="brand-kicker">Val d'Isère · commande en ligne</span>
+        <span class="brand-kicker">{{ t().chrome.deskKicker }}</span>
       </span>
       <app-lang-switch size="md" />
     </div>
@@ -21,14 +21,14 @@
 
     @if (showProof()) {
       <ul class="proof">
-        @for (point of PROOF; track point) {
+        @for (point of t().aside.proof; track point) {
           <li class="proof-item">
             <span class="proof-tick" aria-hidden="true">✓</span>
             <span>{{ point }}</span>
           </li>
         }
       </ul>
-      <p class="address">Le Labo · Route de la Balme — ouvert de 7 h à 19 h.</p>
+      <p class="address">{{ t().aside.address }}</p>
     }
   </div>
 

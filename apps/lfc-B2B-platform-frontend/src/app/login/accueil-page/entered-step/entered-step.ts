@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+
+import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { FoldCalloutComponent, FoldCardComponent, FoldIconComponent } from 'fold-ng';
 
 /**
@@ -12,4 +14,6 @@ import { FoldCalloutComponent, FoldCardComponent, FoldIconComponent } from 'fold
   templateUrl: './entered-step.html',
   styleUrl: './entered-step.scss',
 })
-export class EnteredStep {}
+export class EnteredStep {
+  protected readonly t = inject(ClientCopyService).t;
+}

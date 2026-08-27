@@ -6,8 +6,12 @@
      plutôt qu'en entrée, pour pouvoir y ajouter l'encoche du téléphone. 44 px de
      pastille + 14 px de respiration, et la barre d'état par-dessus quand le
      navigateur la déclare (app installée). */
-  --fold-shell-header-height: calc(env(safe-area-inset-top, 0px) + 58px);
-  --fold-shell-header-height-mobile: calc(env(safe-area-inset-top, 0px) + 58px);
+  /* La hauteur de la barre, nommée UNE fois et publiée sous un nom applicatif :
+     les deux crans de fold en dérivent, et les écrans la lisent sans avoir à
+     connaître les rouages du shell. */
+  --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 58px);
+  --fold-shell-header-height: var(--lfc-header-height);
+  --fold-shell-header-height-mobile: var(--lfc-header-height);
 }
 
 /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
@@ -109,8 +113,7 @@
    rangée cachée garderait sa hauteur. */
 @media (min-width: 900px) {
   :host(.bar-narrow-only) {
-    --fold-shell-header-height: 0px;
-    --fold-shell-header-height-mobile: 0px;
+    --lfc-header-height: 0px;
   }
 
   :host(.bar-narrow-only) /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la

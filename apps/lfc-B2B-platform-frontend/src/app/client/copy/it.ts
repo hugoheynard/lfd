@@ -1,0 +1,121 @@
+import type { ClientCopy } from './client-copy.model';
+
+/**
+ * Italien. Val d'Isère est frontalière : la clientèle italienne n'est pas un
+ * public de passage, c'est un public de saison.
+ *
+ * Deux partis pris de traduction : « fournil » devient *laboratorio* (le lieu,
+ * pas le métier — c'est ainsi que la boutique se nomme, « Le Labo »), et
+ * « coursier » devient *corriere*, qui dit la livraison en station sans laisser
+ * croire à une messagerie.
+ */
+export const IT: ClientCopy = {
+  chrome: {
+    back: 'Indietro',
+    lang: 'Lingua',
+    kickerWelcome: 'Benvenuto',
+    kickerLogin: 'Accesso',
+    kickerEntered: 'Account creato',
+    kickerRappel: 'Richiamo',
+    deskKicker: 'Val d’Isère · ordina online',
+  },
+  foot: {
+    place: 'Le Labo · Route de la Balme, Val d’Isère',
+    hours: 'Aperto dalle 7 alle 19',
+  },
+  hero: {
+    welcomeTitle: 'Il tuo ordine in stazione, pronto in due minuti.',
+    welcomeIntro: 'Tu scegli, noi prepariamo.',
+    loginTitle: 'Bentornato.',
+    loginIntroAsk: 'Inserisci la tua e-mail, ti mandiamo un link.',
+    loginIntroSent: 'Il link di accesso è appena partito.',
+    enteredTitle: 'Sei connesso.',
+    enteredIntro:
+      'Account creato senza password e senza moduli aziendali. L’ordine comincia adesso.',
+    rappelTitle: 'Quando ti richiamiamo ?',
+    rappelIntro: 'Chiamiamo dal laboratorio, mai da un call center.',
+  },
+  aside: {
+    proof: [
+      'Iscrizione rapida.',
+      'Il tuo spazio cresce insieme alle tue esigenze.',
+      'Prezzi professionali, consegna in stazione, fatturazione mensile su richiesta.',
+    ],
+    address: 'Le Labo · Route de la Balme — aperto dalle 7 alle 19.',
+  },
+  signup: {
+    eyebrow: 'Prima volta ? 3 informazioni e si parte',
+    alreadyLead: 'Sei già cliente ?',
+    alreadyLink: 'Accedi con un link',
+    pitch: 'Un nome, una e-mail, un numero. Tutto qui — il resto aspetterà che ti serva.',
+    firstName: 'Nome',
+    firstNamePlaceholder: 'Il tuo nome',
+    tel: 'Telefono',
+    telPlaceholder: '06 00 00 00 00',
+    telHint: 'Perché un corriere che cerca la porta possa chiamarti.',
+    email: 'E-mail',
+    emailPlaceholder: 'tu@esempio.it',
+    open: 'Iscriviti',
+    submit: 'Crea il mio account',
+    fine: 'Nessuna password : ti mandiamo un link a ogni accesso.',
+    fineInline: 'Nessuna password : a ogni accesso ti arriva un link.',
+    legal:
+      'Creando un account accetti le nostre condizioni di vendita. All’iscrizione non chiediamo alcun documento aziendale.',
+  },
+  login: {
+    email: 'La tua e-mail',
+    emailPlaceholder: 'tu@esempio.it',
+    send: 'Ricevi il mio link',
+    fine: 'Nessuna password da ricordare : il link ti collega direttamente.',
+    sentTitle: 'Link inviato',
+    sentBody: 'Apri il messaggio inviato a {email} — il link vale un’ora.',
+    simulate: 'Simula il clic sul link',
+    resent: 'È appena partito un nuovo link.',
+    resend: 'Rinvia',
+    editEmail: 'Cambia indirizzo',
+  },
+  entered: {
+    title: 'Account attivo',
+    sub: 'Tre campi, nessun documento. La visura aspetterà che ti serva.',
+    next: 'Prototipo : il passo successivo è « Come te lo serviamo ? » — ritiro o corriere.',
+  },
+  rappel: {
+    asapGroup: 'Prima possibile',
+    asapTitle: 'Entro 15 minuti',
+    asapSub: 'Risponde il laboratorio — è la via più rapida.',
+    todayGroup: 'Oggi',
+    note: 'Tra le 12 e le 14 siamo al forno : non rispondiamo al telefono, e preferiamo dirlo.',
+    phone: 'Ti richiamiamo al {phone}.',
+    ctaIdle: 'Scegli un momento',
+    ctaReady: 'Richiedi il richiamo',
+    slotFree: 'disponibile',
+    slotFull: 'esaurito',
+    slotOven: 'al forno',
+  },
+  doors: {
+    or: 'oppure',
+    alreadyTitle: 'Sei già cliente ?',
+    alreadySub: 'Accedi con un link',
+    firstTitle: 'Prima volta ?',
+    firstSub: 'Nome, e-mail, telefono',
+  },
+  event: {
+    badge: 'Catering',
+    title: 'Un evento,\npensiamo a tutto.',
+    pitch:
+      'Seminario, compleanno, uscita di club : il numero, l’ora, il luogo — al resto pensiamo noi.',
+    cta: 'Un preventivo ›',
+    pending:
+      'La schermata di richiesta preventivo arriva nel prossimo lotto — la scheda è collegata, il seguito no.',
+  },
+  pro: {
+    title: 'Ti interessa lo spazio professionale ?',
+    bookedTitle: 'Richiamo richiesto',
+    pitch:
+      'Prezzi concordati, consegna in stazione, fatturazione mensile. Te lo spieghiamo in due minuti.',
+    cta: 'Chiedi di essere richiamato',
+    booked: 'Richiamo richiesto · {slot}',
+    at: 'Al',
+    cancel: 'Annulla',
+  },
+};

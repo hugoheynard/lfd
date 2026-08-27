@@ -5,7 +5,7 @@
 <fold-app-shell mobileNav="none" scroll="scroll" footerBehavior="scroll">
   <div header class="bar">
     @if (chrome.back()) {
-      <button class="back" type="button" aria-label="Retour" (click)="goBack()">
+      <button class="back" type="button" [attr.aria-label]="t().chrome.back" (click)="goBack()">
         <fold-icon name="chevron-left" />
       </button>
     }
@@ -28,7 +28,7 @@
        un pied de page est du contenu qu'on fait défiler pour rien. -->
   <div footer class="foot">
     <span class="foot-brand">La Folie Coffee</span>
-    <span class="foot-place">Le Labo · Route de la Balme, Val d'Isère</span>
-    <span class="foot-hours">Ouvert de 7 h à 19 h</span>
+    <span class="foot-place">{{ t().foot.place }}</span>
+    <span class="foot-hours">{{ t().foot.hours }}</span>
   </div>
 </fold-app-shell>

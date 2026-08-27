@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+
+import { ClientCopyService } from '../copy/client-copy.service';
 
 /**
  * La porte traiteur : séminaire, anniversaire, sortie de club.
@@ -15,4 +17,6 @@ import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 })
 export class EventCard {
   readonly opened = output<void>();
+
+  protected readonly t = inject(ClientCopyService).t;
 }

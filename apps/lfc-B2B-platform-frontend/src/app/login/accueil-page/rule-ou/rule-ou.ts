@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+
+import { ClientCopyService } from '../../../client/copy/client-copy.service';
 
 /** Le filet « ou » qui sépare la voie principale de la porte de secours. */
 @Component({
@@ -7,4 +9,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   templateUrl: './rule-ou.html',
   styleUrl: './rule-ou.scss',
 })
-export class RuleOu {}
+export class RuleOu {
+  protected readonly t = inject(ClientCopyService).t;
+}

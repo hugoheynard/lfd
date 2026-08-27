@@ -10,6 +10,7 @@ import {
 import { FoldSurfaceDirective } from 'fold-ng';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { LangSwitch } from '../../client/lang-switch/lang-switch';
 
 import { KNOWN_PHONE } from './call-slots';
@@ -21,23 +22,6 @@ import { WelcomeStep } from './welcome-step/welcome-step';
 /** Les trois temps de l'entrée, plus le panneau qui se pose par-dessus. */
 type Step = 'welcome' | 'login' | 'entered';
 
-/** Ce que la colonne d'argument promet — visible au-delà du pli seulement. */
-const PROOF = [
-  'Inscription rapide.',
-  'Votre espace évolue en fonction de vos besoins.',
-  'Tarifs pro, livraison en station, facturation mensuelle sur demande.',
-] as const;
-
-/**
- * L'accueil de l'app CLIENT — la page d'entrée, pas un formulaire de connexion.
- *
- * Elle porte tout le bleu (le chrome : barre de marque fixe + accroche) et la
- * feuille crème (le corps). Le contenu du corps change ; la barre, non — c'est
- * ce qui en fait le chrome.
- *
- * ⚠️ **Maquette.** Rien ne part sur le réseau : ni le compte, ni le lien, ni la
- * demande de rappel. Les écrans, eux, sont ceux de la réf.
- */
 @Component({
   selector: 'app-accueil-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,8 +32,9 @@ const PROOF = [
 export class AccueilPage {
   private readonly chrome = inject(ClientChrome);
 
+  protected readonly t = inject(ClientCopyService).t;
+
   protected readonly phone = KNOWN_PHONE;
-  protected readonly PROOF = PROOF;
 
   protected readonly step = signal<Step>('welcome');
   protected readonly panelOpen = signal(false);
@@ -62,46 +47,47 @@ export class AccueilPage {
 
   /** Le sur-titre du chrome dit où on est, pas où on va. */
   protected readonly kicker = computed(() => {
+    const c = this.t().chrome;
     if (this.panelOpen()) {
-      return 'Rappel';
+      return c.kickerRappel;
     }
     switch (this.step()) {
       case 'login':
-        return 'Connexion';
+        return c.kickerLogin;
       case 'entered':
-        return 'Compte créé';
+        return c.kickerEntered;
       default:
-        return 'Bienvenue';
+        return c.kickerWelcome;
     }
   });
 
   protected readonly heading = computed(() => {
+    const h = this.t().hero;
     if (this.panelOpen()) {
-      return 'On vous rappelle quand ?';
+      return h.rappelTitle;
     }
     switch (this.step()) {
       case 'login':
-        return 'Content de vous revoir.';
+        return h.loginTitle;
       case 'entered':
-        return 'Vous êtes connecté.';
+        return h.enteredTitle;
       default:
-        return 'Votre commande en station, réservée en deux minutes.';
+        return h.welcomeTitle;
     }
   });
 
   protected readonly intro = computed(() => {
+    const h = this.t().hero;
     if (this.panelOpen()) {
-      return 'On appelle depuis le fournil, jamais depuis un centre.';
+      return h.rappelIntro;
     }
     switch (this.step()) {
       case 'login':
-        return this.linkSent()
-          ? 'Un lien de connexion vient de partir.'
-          : 'Entrez votre e-mail, on vous envoie un lien.';
+        return this.linkSent() ? h.loginIntroSent : h.loginIntroAsk;
       case 'entered':
-        return 'Compte créé sans mot de passe, sans formulaire d’entreprise. La commande commence maintenant.';
+        return h.enteredIntro;
       default:
-        return 'Vous choisissez, nous préparons.';
+        return h.welcomeIntro;
     }
   });
 
