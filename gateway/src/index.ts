@@ -46,6 +46,15 @@ const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
 interface Env {
   LFD_BACKEND?: Fetcher;
   /**
+   * L'origine du front CLIENT, servi sous `/pro`. Une variable et non un
+   * binding : un projet Pages ne peut pas être la cible d'un *service binding*,
+   * et un front statique n'a de toute façon rien à cacher.
+   *
+   * Absente, `/pro` rend un 503 explicite — même doctrine que les bindings : une
+   * erreur de configuration se dit, elle ne se rattrape pas en silence.
+   */
+  PRO_FRONT_ORIGIN?: string;
+  /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
    * empêcher une requête de passer — OPS observe, il n'arbitre rien.
@@ -79,14 +88,14 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   if (target === undefined) {
     return gatewayFault(404, `rien ne répond sur « ${url.pathname} »`, "unrouted", url.pathname);
   }
-  const node = target.kind === "backend" ? target.backend : "dev";
-  const forwardedPath = target.kind === "backend" ? target.path : url.pathname;
+  const node = nodeOf(target);
+  const forwardedPath = target.kind === "url" ? url.pathname : target.path;
   const destination = destinationFor(target, url, env);
   if (destination === undefined) {
     // Binding déclaré nulle part : c'est une ERREUR DE CONFIGURATION, pas un
     // incident réseau. On le dit en 503 plutôt que de retomber sur un appel
     // public — ce serait rouvrir en silence la porte qu'on veut fermer.
-    return gatewayFault(503, `backend non relié « ${url.pathname} »`, node, forwardedPath);
+    return gatewayFault(503, `nœud non relié « ${url.pathname} »`, node, forwardedPath);
   }
   try {
     const forward = withTraceContext(
@@ -156,9 +165,31 @@ interface Destination {
   readonly send: (request: Request) => Promise<Response>;
 }
 
+/** Le nœud qu'OPS retiendra — le déployable visé, pas la surface demandée. */
+function nodeOf(target: Target): TrafficObservation["node"] {
+  switch (target.kind) {
+    case "backend":
+      return target.backend;
+    case "front":
+      return target.front;
+    default:
+      return "dev";
+  }
+}
+
 function destinationFor(target: Target, url: URL, env: Env): Destination | undefined {
   if (target.kind === "url") {
     return { url: new URL(url.pathname + url.search, target.url).toString(), send: fetch };
+  }
+  if (target.kind === "front") {
+    const origin = env.PRO_FRONT_ORIGIN;
+    if (origin === undefined || origin === "") {
+      return undefined;
+    }
+    // Le préfixe est DÉJÀ retiré : Pages sert depuis sa racine, et c'est
+    // l'app qui porte `/pro` dans son `base href`. Les deux moitiés doivent
+    // rester d'accord — l'une sans l'autre, ce sont des 404 sur tous les assets.
+    return { url: new URL(target.path + url.search, origin).toString(), send: fetch };
   }
   const binding = bindingFor(target.backend, env);
   if (binding === undefined) {

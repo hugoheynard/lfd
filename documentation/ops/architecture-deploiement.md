@@ -192,3 +192,46 @@ sous-domaines **sans toucher aux backends**.
 - [`secrets-et-variables.md`](secrets-et-variables.md) — où vit chaque valeur
 - [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) — le mur, ce qu'il tient et ce qu'il ne tient pas
 - [`runbook.md`](runbook.md) — déployer, revenir en arrière, rouvrir une porte
+
+## Le front client sous `lafoliecoffee.info/pro`
+
+`/pro` est un **chemin**, pas un sous-domaine. Le choix a un coût qu'il vaut
+mieux connaître :
+
+|              | Sous-domaine `pro.`                         | Chemin `/pro`                                            |
+| ------------ | ------------------------------------------- | -------------------------------------------------------- |
+| Cloudflare   | un domaine personnalisé sur le projet Pages | une route de zone + la passerelle qui porte le préfixe   |
+| L'app        | rien à changer                              | `baseHref: "/pro/"` dans la config de build `cloudflare` |
+| Coque native | rien à changer                              | une build jumelle `capacitor`, `base href` à `/`         |
+
+Les deux moitiés — le préfixe retiré par la passerelle, le `base href` porté par
+l'app — doivent rester d'accord. L'une sans l'autre, ce sont des 404 sur tous
+les assets.
+
+### Ce qui est fait, et ce qui ne l'est pas
+
+✅ Côté dépôt, tout est en place : `FRONT_PREFIXES` dans `gateway/src/routes.ts`,
+la variable `PRO_FRONT_ORIGIN`, et la build de l'app sous `/pro`. Quatre tests
+couvrent le routage, dont le cas `/production` qui ne doit PAS être capté.
+
+🔴 Côté compte, **rien** — et pas par oubli :
+
+1. **Le token ne peut pas.** `CLOUDFLARE_LFD_GATEWAY` est
+   « Account · Workers Scripts · Edit » (cf. l'en-tête de
+   `deploy_lfd_gateway.yml`). Créer une route de zone demande en plus
+   **« Zone · Workers Routes · Edit »** sur `lafoliecoffee.info`. Déclarer la
+   route avant d'élargir le token **casserait le déploiement de la passerelle**,
+   qui fonctionne aujourd'hui : le bloc `[[routes]]` est donc écrit dans
+   `wrangler.toml` mais commenté.
+2. **La zone ne sert rien.** Vérifié le 2026-08-27 : `dig lafoliecoffee.info`
+   ne rend ni `A` ni `CNAME`, et l'appel HTTP n'aboutit pas. Une route Worker
+   sans enregistrement proxifié à l'apex ne reçoit jamais de trafic — il faut un
+   enregistrement, fût-il le `AAAA 100::` que Cloudflare utilise pour les
+   adresses servies uniquement par un Worker.
+3. **Puis décommenter la route** et déployer la passerelle.
+
+### Ce qui bouge le jour où ça répond
+
+Une seule ligne côté app : `server.url` dans
+`apps/lfc-B2B-platform-frontend/capacitor.config.ts`, qui pointe encore sur
+`https://lfc-b2b.pages.dev`. La note l'attend déjà sur place.

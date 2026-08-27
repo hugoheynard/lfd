@@ -1,4 +1,4 @@
-import type { BackendKey } from "./routes";
+import type { BackendKey, FrontKey } from "./routes";
 
 /**
  * Ce que la gateway **observe** de son propre trafic — la troisième source
@@ -40,11 +40,12 @@ export const TRAFFIC_DATASET = "lfc_gateway_traffic";
 export type TrafficOrigin = "upstream" | "gateway";
 
 /**
- * Le nœud visé. Deux valeurs hors backends : `unrouted` (aucun préfixe ne
- * correspond — le 404 de la gateway) et `dev` (routage par sous-domaine, qui
- * n'existe qu'en local et ne désigne aucun nœud de production).
+ * Le nœud visé — backends ET fronts servis par la zone. Deux valeurs hors
+ * nœuds : `unrouted` (aucun préfixe ne correspond — le 404 de la gateway) et
+ * `dev` (routage par sous-domaine, qui n'existe qu'en local et ne désigne aucun
+ * nœud de production).
  */
-export type TrafficNode = BackendKey | "unrouted" | "dev";
+export type TrafficNode = BackendKey | FrontKey | "unrouted" | "dev";
 
 export interface TrafficObservation {
   readonly node: TrafficNode;

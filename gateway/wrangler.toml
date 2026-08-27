@@ -40,6 +40,37 @@ compatibility_date = "2026-07-01"
 ip = "127.0.0.1"
 port = 8787
 
+# ── Le front CLIENT, servi sous /pro ───────────────────────────────────────────
+# `lafoliecoffee.info/pro` est un CHEMIN, pas un sous-domaine. Un sous-domaine se
+# réglerait par un domaine personnalisé sur le projet Pages, sans une ligne de
+# code ; un chemin oblige la passerelle à le porter, et l'app à connaître son
+# préfixe (`baseHref: "/pro/"`, cf. sa configuration de build `cloudflare`). Les
+# deux moitiés doivent rester d'accord : l'une sans l'autre, ce sont des 404 sur
+# tous les assets.
+#
+# Une VARIABLE et non un service binding : un projet Pages ne peut pas être la
+# cible d'un binding, et un front statique n'a rien à cacher — l'argument de
+# non-contournement des backends ne s'applique pas ici.
+#
+# ⚠️ IL MANQUE TROIS CHOSES, toutes hors du dépôt, pour que l'adresse réponde :
+#   1. le token `CLOUDFLARE_LFD_GATEWAY` est « Account · Workers Scripts · Edit »
+#      (cf. l'en-tête de deploy_lfd_gateway.yml) : il ne peut PAS créer de route
+#      de zone. Y ajouter « Zone · Workers Routes · Edit » sur lafoliecoffee.info ;
+#   2. la zone n'a AUCUN enregistrement à l'apex — vérifié : `dig lafoliecoffee.info`
+#      ne rend rien, et l'appel HTTP n'aboutit pas. Une route Worker sans
+#      enregistrement proxifié ne reçoit jamais de trafic ;
+#   3. alors seulement, décommenter le bloc `routes` ci-dessous.
+#
+# Le poser AVANT (1) casserait le déploiement de la passerelle, qui marche
+# aujourd'hui — c'est pourquoi il est écrit mais inerte.
+#
+# [[routes]]
+# pattern = "lafoliecoffee.info/pro*"
+# zone_name = "lafoliecoffee.info"
+
+[vars]
+PRO_FRONT_ORIGIN = "https://lfc-b2b.pages.dev"
+
 # Service bindings vers les backends : appels INTERNES au compte, sans passer par
 # le réseau public. C'est la pièce qui rend la passerelle non contournable — une
 # fois `workers_dev = false` posé sur les deux backends, ils n'auront plus aucune

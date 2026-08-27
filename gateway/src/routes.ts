@@ -51,6 +51,25 @@ export const API_PREFIXES = {
 
 export type BackendKey = keyof typeof API_PREFIXES;
 
+/**
+ * Le préfixe qui désigne un FRONT servi par la zone, retiré avant transmission.
+ *
+ * `lafoliecoffee.info/pro` est un CHEMIN, pas un sous-domaine — c'est ce qui a
+ * été demandé, et la nuance a un coût : un sous-domaine se règle par un domaine
+ * personnalisé sur le projet Pages, sans une ligne de code ; un chemin oblige la
+ * passerelle à le porter, et l'app à connaître son préfixe (`base href`).
+ *
+ * ⚠️ Contrairement aux backends, la destination est un `fetch()` PUBLIC et non
+ * un *service binding* : un projet Pages ne peut pas être la cible d'un binding.
+ * L'argument de non-contournement ne s'applique pas ici — un front statique est
+ * public par nature, et son adresse `pages.dev` le restera de toute façon.
+ */
+export const FRONT_PREFIXES = {
+  pro: "/pro",
+} as const;
+
+export type FrontKey = keyof typeof FRONT_PREFIXES;
+
 /** Table dev : sous-domaine `*.localhost` → serveur local. */
 const local = (port: number): string => `http://127.0.0.1:${port}`;
 
@@ -63,7 +82,8 @@ const DEV_ROUTES: Readonly<Record<string, string>> = {
 /** Une destination résolue : soit une URL publique (dev), soit un backend interne. */
 export type Target =
   | { readonly kind: "url"; readonly url: string }
-  | { readonly kind: "backend"; readonly backend: BackendKey; readonly path: string };
+  | { readonly kind: "backend"; readonly backend: BackendKey; readonly path: string }
+  | { readonly kind: "front"; readonly front: FrontKey; readonly path: string };
 
 /**
  * Résout la destination d'une requête. `undefined` ⇒ rien ne répond ici.
@@ -81,6 +101,14 @@ export function resolveTarget(hostname: string, pathname: string): Target | unde
     const path = stripPrefix(pathname, prefix);
     if (path !== undefined) {
       return { kind: "backend", backend, path };
+    }
+  }
+  // Les fronts APRÈS les API : un préfixe d'API ne doit jamais pouvoir être
+  // capté par un front, quelle que soit l'ordre d'écriture des deux tables.
+  for (const [front, prefix] of entriesOf(FRONT_PREFIXES)) {
+    const path = stripPrefix(pathname, prefix);
+    if (path !== undefined) {
+      return { kind: "front", front, path };
     }
   }
   return undefined;

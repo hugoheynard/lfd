@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 
-import { API_PREFIXES, resolveTarget } from "../routes";
+import { API_PREFIXES, FRONT_PREFIXES, resolveTarget } from "../routes";
 
 /**
  * Le résolveur porte **toutes** les décisions de la gateway : `index.ts` ne
@@ -49,6 +49,33 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
 
   it("rend undefined sur un chemin hors périmètre", () => {
     expect(resolveTarget("gw.example", "/favicon.ico")).toBeUndefined();
+  });
+});
+
+describe("resolveTarget — le front client sous /pro", () => {
+  it("route le préfixe, et retire le préfixe", () => {
+    const target = resolveTarget("lafoliecoffee.info", `${FRONT_PREFIXES.pro}/bienvenue`);
+    expect(target).toEqual({ kind: "front", front: "pro", path: "/bienvenue" });
+  });
+
+  it("le préfixe nu mène à la racine du front, pas à la chaîne vide", () => {
+    // `/pro` seul doit rendre `/`, sinon l'URL construite côté Pages est invalide.
+    expect(resolveTarget("lafoliecoffee.info", FRONT_PREFIXES.pro)).toEqual({
+      kind: "front",
+      front: "pro",
+      path: "/",
+    });
+  });
+
+  it("ne vole pas un chemin qui COMMENCE par le préfixe sans lui appartenir", () => {
+    // `/production` n'est pas `/pro` : sans cette garde, tout chemin préfixé
+    // partirait chez le front dès qu'il partagerait ses trois lettres.
+    expect(resolveTarget("lafoliecoffee.info", "/production")).toBeUndefined();
+  });
+
+  it("l'API garde la priorité sur le front", () => {
+    const target = resolveTarget("lafoliecoffee.info", `${API_PREFIXES.lfd}/health`);
+    expect(target?.kind).toBe("backend");
   });
 });
 
