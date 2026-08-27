@@ -12,6 +12,7 @@ import { CallbackBlock } from '../../client/callback-block/callback-block';
 import { Router } from '@angular/router';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { ClientIdentity } from '../../client/client-identity.service';
 import { ClientOrder, type ServiceChoice } from '../../client/client-order.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
@@ -64,7 +65,9 @@ export class CommandePage {
 
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly phone = MOCK_CLIENT.phone;
+  private readonly identity = inject(ClientIdentity);
+
+  protected readonly phone = this.identity.phone;
 
   protected readonly panelOpen = signal(false);
   protected readonly bookedSlot = signal<string | null>(null);
@@ -78,7 +81,7 @@ export class CommandePage {
   protected readonly heading = computed(() =>
     this.panelOpen()
       ? this.t().hero.rappelTitle
-      : fill(this.t().commande.title, { name: MOCK_CLIENT.firstName }),
+      : fill(this.t().commande.title, { name: this.identity.firstName() }),
   );
 
   protected readonly intro = computed(() =>

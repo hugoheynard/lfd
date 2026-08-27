@@ -92,14 +92,14 @@
       <span class="field">
         <span class="field-label">{{ t().addressDialog.name }}</span>
         <span class="field-value">
-          {{ client.firstName }} Vallet
+          {{ client.fullName() }}
           <span class="field-tag">{{ t().addressDialog.fromAccount }}</span>
         </span>
       </span>
       <span class="field">
         <span class="field-label">{{ t().addressDialog.phone }}</span>
         <span class="field-value">
-          <span class="num">{{ client.phone }}</span>
+          <span class="num">{{ client.phone() }}</span>
           <button class="field-edit" type="button">{{ t().addressDialog.edit }}</button>
         </span>
       </span>

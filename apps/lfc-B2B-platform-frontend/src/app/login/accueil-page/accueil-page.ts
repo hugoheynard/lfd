@@ -12,7 +12,7 @@ import { AuthFacade, type PendingProfile } from '../../auth/auth.facade';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
-import { MOCK_CLIENT } from '../../client/mock-client';
+import { ClientIdentity } from '../../client/client-identity.service';
 
 import { RappelPanel } from './rappel-panel/rappel-panel';
 import { WelcomeStep } from './welcome-step/welcome-step';
@@ -46,7 +46,7 @@ export class AccueilPage {
 
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly phone = MOCK_CLIENT.phone;
+  protected readonly phone = inject(ClientIdentity).phone;
 
   protected readonly panelOpen = signal(false);
   protected readonly bookedSlot = signal<string | null>(null);

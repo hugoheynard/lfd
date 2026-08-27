@@ -13,7 +13,7 @@ import { formatEuro, formatRate } from '../../client/cart-total';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientOrders } from '../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
-import { MOCK_CLIENT } from '../../client/mock-client';
+import { ClientIdentity } from '../../client/client-identity.service';
 import { VAT_SALE } from '../../client/mock-shop';
 
 /**
@@ -36,6 +36,7 @@ export class ConfirmationPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly orders = inject(ClientOrders);
+  private readonly identity = inject(ClientIdentity);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly order = this.orders.latest;
@@ -47,7 +48,7 @@ export class ConfirmationPage {
   protected readonly titleLines = computed(() => this.t().done.title.split('\n'));
 
   protected readonly mailLine = computed(() =>
-    fill(this.t().done.mailLine, { email: MOCK_CLIENT.email }),
+    fill(this.t().done.mailLine, { email: this.identity.email() }),
   );
 
   protected readonly piecesLabel = computed(() =>

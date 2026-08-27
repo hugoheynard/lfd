@@ -12,7 +12,7 @@ import { FoldButtonComponent, FoldIconComponent, FoldInputComponent } from 'fold
 import { ClientDialog } from '../../../client/client-dialog/client-dialog';
 import type { ServiceChoice } from '../../../client/client-order.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { MOCK_CLIENT } from '../../../client/mock-client';
+import { ClientIdentity } from '../../../client/client-identity.service';
 import {
   type DeliveryZone,
   type OrderSlot,
@@ -51,7 +51,8 @@ export class AddressDialog {
   readonly done = output<ServiceChoice>();
 
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly client = MOCK_CLIENT;
+  /** Prérempli depuis le COMPTE : c'est là que vivent le nom et le numéro. */
+  protected readonly client = inject(ClientIdentity);
   protected readonly book = SAVED_ADDRESSES;
 
   /** 0 : où. 1 : quand. */
