@@ -1,0 +1,145 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 30rem;
+  margin-inline: auto;
+  background: var(--fold-color-primary);
+  font-family: var(--fold-font-sans);
+}
+
+/* ── La barre de marque, fixe ─────────────────────────────────────────────── */
+
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  /* 50 px dans la réf, dont l'encoche : ici la barre d'état du téléphone si le
+     navigateur la déclare, et 14 px de respiration sinon. */
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px 0;
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+}
+
+.back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  box-shadow: var(--lfc-shadow-logo);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: var(--lfc-leading-display);
+}
+
+.brand-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-kicker {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── Le corps qui défile, sur fond de marque ──────────────────────────────── */
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* Le fond de la zone qui défile est l'encre de marque. Le `chrome` ne
+     s'applique qu'à l'accroche : s'il couvrait tout le corps, la feuille crème
+     hériterait de ses rôles repeints et chaque `fold-card` qu'elle porte
+     virerait au bleu. */
+  background: var(--fold-color-primary);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 20px 26px;
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+}
+
+.hero-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  line-height: 1.04;
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+
+  &.big {
+    font-size: var(--fold-text-2xl);
+    line-height: var(--lfc-leading-display);
+  }
+}
+
+.hero-intro {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── La feuille crème : le contenu manipulable ────────────────────────────── */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: var(--fold-space-xl) var(--fold-space-lg) 26px;
+  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+}
+
+/* La feuille remplit ce qui reste : c'est ce qui permet au CTA du panneau de
+   rappel d'aller se poser en bas (`margin-top: auto`) plutôt que de flotter
+   sous le dernier créneau. */
+.sheet > * {
+  flex: 1;
+}

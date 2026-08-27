@@ -1,0 +1,198 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── Dès que possible ─────────────────────────────────────────────────────── */
+
+.asap {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: 14px 15px;
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+
+  &.on {
+    border-color: var(--lfc-color-primary-vivid);
+    background: var(--fold-color-primary-surface);
+  }
+}
+
+.ring {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 2px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-pill);
+
+  .asap.on & {
+    border-color: var(--lfc-color-primary-vivid);
+  }
+}
+
+.core {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--fold-radius-pill);
+  background: transparent;
+
+  .asap.on & {
+    background: var(--lfc-color-primary-vivid);
+  }
+}
+
+.asap-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.asap-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+.asap-sub {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── Les créneaux ─────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  height: 52px;
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: 13px;
+  background: var(--fold-color-surface-card);
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+
+  &.on {
+    border-color: var(--lfc-color-primary-vivid);
+    background: var(--fold-color-primary-surface);
+
+    .slot-label {
+      color: var(--fold-color-primary);
+    }
+
+    .slot-sub {
+      color: var(--lfc-color-primary-vivid);
+    }
+  }
+
+  /* Fermé : la case reste, elle dit pourquoi, et elle refuse le doigt. */
+  &.closed {
+    background: var(--fold-color-surface-sunken);
+    cursor: not-allowed;
+
+    .slot-label,
+    .slot-sub {
+      color: var(--fold-color-text-faded);
+    }
+  }
+}
+
+.slot-label {
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.slot-sub {
+  font-size: var(--fold-text-2xs);
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── L'explication ────────────────────────────────────────────────────────── */
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-info-surface);
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-info-text);
+}
+
+.note-dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-info);
+}
+
+.phone {
+  margin: 0;
+  padding-inline: 2px;
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.cta {
+  min-height: 50px;
+  margin-top: auto;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}

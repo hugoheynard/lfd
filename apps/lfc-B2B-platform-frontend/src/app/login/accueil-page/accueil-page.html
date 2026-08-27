@@ -1,0 +1,52 @@
+<!-- La barre de marque : elle ne bouge pas d'un écran à l'autre, et c'est ce qui
+     en fait le chrome. Elle est FIXE ; tout le reste défile sous elle. -->
+<header class="bar" foldSurface="chrome">
+  @if (canGoBack()) {
+    <button class="back" type="button" aria-label="Retour" (click)="back()">
+      <fold-icon name="chevron-left" />
+    </button>
+  }
+  <span class="mark" aria-hidden="true">LFC</span>
+  <span class="brand">
+    <span class="brand-name">La Folie Coffee</span>
+    <span class="brand-kicker">{{ kicker() }}</span>
+  </span>
+</header>
+
+<!-- Le corps défile sur le bleu : l'accroche d'abord, puis la feuille crème qui
+     monte sur le chrome — d'où son rayon haut. -->
+<main class="scroll">
+  <div class="hero" foldSurface="chrome">
+    <h1 class="hero-title" [class.big]="bigHeading()">{{ heading() }}</h1>
+    <p class="hero-intro">{{ intro() }}</p>
+  </div>
+
+  <div class="sheet">
+    @if (panelOpen()) {
+      <app-rappel-panel [phone]="phone" (booked)="book($event)" />
+    } @else {
+      @switch (step()) {
+        @case ('welcome') {
+          <app-welcome-step
+            [phone]="phone"
+            [bookedSlot]="bookedSlot()"
+            (signedUp)="goTo('entered')"
+            (wantsLogin)="goTo('login')"
+            (wantsCallback)="openPanel()"
+            (cancelledCallback)="bookedSlot.set(null)"
+          />
+        }
+        @case ('login') {
+          <app-login-step
+            (entered)="goTo('entered')"
+            (wantsSignup)="goTo('welcome')"
+            (sentChange)="linkSent.set($event)"
+          />
+        }
+        @case ('entered') {
+          <app-entered-step />
+        }
+      }
+    }
+  </div>
+</main>

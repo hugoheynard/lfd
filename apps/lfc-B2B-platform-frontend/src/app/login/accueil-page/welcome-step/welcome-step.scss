@@ -1,0 +1,175 @@
+/* Deux familles de contrôles sur cet écran, et la règle qui les départage :
+   ce qui a un CHÂSSIS (le CTA, le bouton de rappel) est un `foldButton` ; ce que
+   la réf dessine en TEXTE NU (« Annuler ») reste un `<button>` habillé de
+   tokens — l'enrober de fold lui donnerait une pastille que la réf ne montre
+   pas. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.signup {
+  --fold-card-padding: 17px 16px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pitch {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+/* Le CTA de l'app cliente : pleine largeur, 50 px, display en capitales.
+   `foldButton` porte la couleur, l'état et le focus ; on n'ajoute que la voix. */
+.cta {
+  min-height: 50px;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.fine {
+  margin: 0;
+  padding-inline: 2px;
+  font-size: var(--fold-text-xs);
+  line-height: 1.5;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── L'encart pro ─────────────────────────────────────────────────────────── */
+
+.pro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: start;
+  padding: 14px 15px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary-surface);
+}
+
+.pro-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.pro-pitch {
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-primary-text);
+}
+
+/* Le bloc titre → corps respire à 6 px ; dans le corps, l'argument et son bouton
+   à 11 px. Deux gaps plutôt qu'une marge posée par l'enfant. */
+.pro-body {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 11px;
+}
+
+.pro-cta {
+  min-height: 38px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+/* ── Le rappel obtenu ─────────────────────────────────────────────────────── */
+
+.booked {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.booked-tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-md);
+}
+
+.booked-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.booked-when {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-extrabold);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.booked-phone {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--fold-color-primary-text);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.booked-cancel {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-alert-text);
+  font-family: inherit;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}

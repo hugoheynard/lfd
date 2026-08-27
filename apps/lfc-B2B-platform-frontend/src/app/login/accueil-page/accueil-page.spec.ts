@@ -1,0 +1,121 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { AccueilPage } from './accueil-page';
+
+/**
+ * L'écran est piloté par le DOM : ses membres sont `protected`, et ce qui compte
+ * est ce que voit la personne qui l'utilise.
+ */
+describe('AccueilPage', () => {
+  let fixture: ComponentFixture<AccueilPage>;
+
+  const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+  const text = (): string => el().textContent ?? '';
+
+  const button = (label: string): HTMLButtonElement => {
+    const found = Array.from(el().querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes(label),
+    );
+    if (!found) {
+      throw new Error(`Aucun bouton « ${label} » à l'écran.`);
+    }
+    return found;
+  };
+
+  const click = (label: string): void => {
+    button(label).click();
+    fixture.detectChanges();
+  };
+
+  const type = (index: number, value: string): void => {
+    const input = el().querySelectorAll('input')[index];
+    if (!input) {
+      throw new Error(`Pas de champ n°${index} à l'écran.`);
+    }
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+
+  const fillSignup = (): void => {
+    type(0, 'Pierre');
+    type(1, 'pierre@brasserie-marchand.fr');
+    type(2, '06 12 44 09 87');
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [AccueilPage] });
+    fixture = TestBed.createComponent(AccueilPage);
+    fixture.detectChanges();
+  });
+
+  it("ouvre sur l'accueil visiteur, sans retour possible", () => {
+    expect(text()).toContain('Première visite ?');
+    expect(text()).toContain('Bienvenue');
+    expect(el().querySelector('.back')).toBeNull();
+  });
+
+  it("refuse la création tant que les trois champs n'y sont pas", () => {
+    expect(button('Créer mon compte').disabled).toBe(true);
+
+    type(0, 'Pierre');
+    type(1, 'pierre@brasserie-marchand.fr');
+    expect(button('Créer mon compte').disabled).toBe(true);
+
+    type(2, '06 12 44 09 87');
+    expect(button('Créer mon compte').disabled).toBe(false);
+  });
+
+  it('les trois champs remplis ouvrent le compte', () => {
+    fillSignup();
+    click('Créer mon compte');
+
+    expect(text()).toContain('Compte actif');
+    expect(text()).toContain('Compte créé');
+  });
+
+  it('« Déjà client ? » mène à la connexion, et le retour ramène', () => {
+    click('Déjà client ?');
+    expect(text()).toContain('Connexion');
+    expect(text()).toContain('Content de vous revoir.');
+
+    (el().querySelector('.back') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(text()).toContain('Première visite ?');
+  });
+
+  it("le lien envoyé rappelle l'adresse exacte", () => {
+    click('Déjà client ?');
+    type(0, 'pierre@brasserie-marchand.fr');
+    click('Recevoir mon lien');
+
+    expect(text()).toContain('Lien envoyé');
+    expect(text()).toContain('pierre@brasserie-marchand.fr');
+  });
+
+  it('le créneau « au four » reste affiché, et refuse le doigt', () => {
+    click('Demander à être rappelé');
+
+    const closed = Array.from(el().querySelectorAll('button.slot')).find((b) =>
+      (b.textContent ?? '').includes('12 h – 14 h'),
+    ) as HTMLButtonElement | undefined;
+
+    expect(closed).toBeDefined();
+    expect(closed?.textContent).toContain('au four');
+    expect(closed?.disabled).toBe(true);
+  });
+
+  it("un créneau confirmé remonte dans l'encart pro, et s'annule", () => {
+    click('Demander à être rappelé');
+    expect(button('Choisissez un moment').disabled).toBe(true);
+
+    click('14 h – 15 h');
+    click('Demander le rappel');
+
+    expect(text()).toContain('Rappel demandé · 14 h – 15 h');
+    expect(text()).toContain('06 12 44 09 87');
+
+    click('Annuler');
+    expect(text()).toContain('Intéressé par l’espace pro ?');
+  });
+});

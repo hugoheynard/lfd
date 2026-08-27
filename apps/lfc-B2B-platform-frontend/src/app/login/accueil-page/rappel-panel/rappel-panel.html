@@ -1,0 +1,62 @@
+<section class="group">
+  <p class="eyebrow">Dès que possible</p>
+  <button
+    class="asap"
+    type="button"
+    role="radio"
+    [attr.aria-checked]="picked() === asap"
+    [class.on]="picked() === asap"
+    (click)="picked.set(asap)"
+  >
+    <span class="ring" aria-hidden="true"><span class="core"></span></span>
+    <span class="asap-text">
+      <span class="asap-title">Dans les 15 minutes</span>
+      <span class="asap-sub">Le fournil décroche — c'est le plus rapide.</span>
+    </span>
+  </button>
+</section>
+
+<section class="group">
+  <p class="eyebrow" id="rappel-today">Aujourd'hui</p>
+  <div class="grid" role="radiogroup" aria-labelledby="rappel-today">
+    @for (slot of slots; track slot.id) {
+      <button
+        class="slot"
+        type="button"
+        role="radio"
+        [class.on]="picked() === slot.id"
+        [class.closed]="slot.closed"
+        [disabled]="slot.closed"
+        [attr.aria-checked]="picked() === slot.id"
+        (click)="pick(slot)"
+      >
+        <span class="slot-label">{{ slot.label }}</span>
+        <span class="slot-sub">{{ slot.sub }}</span>
+      </button>
+    }
+  </div>
+</section>
+
+<p class="note">
+  <span class="note-dot" aria-hidden="true"></span>
+  <span> Entre 12 h et 14 h on est au four : on ne prend pas d'appel, et on préfère le dire. </span>
+</p>
+
+<p class="phone">
+  On vous rappellera au <span class="num">{{ phone() }}</span
+  >.
+</p>
+
+<button
+  foldButton
+  class="cta"
+  emphasis="solid"
+  intent="primary"
+  size="lg"
+  block
+  type="button"
+  [disabled]="picked() === null"
+  (click)="confirm()"
+>
+  {{ ctaLabel() }}
+</button>

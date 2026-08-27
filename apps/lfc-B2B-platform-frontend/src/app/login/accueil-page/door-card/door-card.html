@@ -1,0 +1,8 @@
+<button class="door" type="button" (click)="opened.emit()">
+  <span class="icon" aria-hidden="true"><fold-icon [name]="icon()" /></span>
+  <span class="text">
+    <span class="title">{{ title() }}</span>
+    <span class="sub">{{ sub() }}</span>
+  </span>
+  <fold-icon class="chevron" name="chevron-right" aria-hidden="true" />
+</button>

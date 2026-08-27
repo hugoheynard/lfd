@@ -26,14 +26,15 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login-page').then((m) => m.LoginPage),
   },
   {
-    // Refonte de l'app CLIENT (handoff design) : connexion par lien e-mail, sans
-    // mot de passe. Maquette — elle ne remplace `/login` (Auth0) que le jour où
-    // le backend saura émettre et vérifier un lien.
-    path: 'connexion',
-    title: 'Connexion — La Folie Coffee',
-    loadComponent: () =>
-      import('./login/connexion-page/connexion-page').then((m) => m.ConnexionPage),
+    // Refonte de l'app CLIENT (handoff design) : la page d'entrée — inscription
+    // en trois champs, connexion par lien e-mail, rappel commercial. Maquette,
+    // rien ne part sur le réseau. Elle ne remplace `/login` (Auth0) que le jour
+    // où le backend saura émettre et vérifier un lien.
+    path: 'bienvenue',
+    title: 'Bienvenue — La Folie Coffee',
+    loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
   },
+  { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
   {
     path: 'boutique',
     title: 'Boutique — La Folie Coffee B2B',

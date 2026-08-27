@@ -1,0 +1,70 @@
+@if (sent()) {
+  <fold-card class="panel">
+    <div class="sent">
+      <span class="sent-icon" aria-hidden="true"><fold-icon name="mail" size="lg" /></span>
+      <h2 class="sent-title">Lien envoyé</h2>
+      <p class="sent-body">
+        Ouvrez le message envoyé à <strong>{{ email() }}</strong> — le lien est valable une heure.
+      </p>
+      <button
+        foldButton
+        class="cta accent"
+        emphasis="solid"
+        intent="primary"
+        size="lg"
+        block
+        type="button"
+        (click)="entered.emit()"
+      >
+        Simuler le clic sur le lien
+      </button>
+    </div>
+  </fold-card>
+
+  @if (resent()) {
+    <fold-callout variant="success" announce>Un nouveau lien vient de partir.</fold-callout>
+  }
+
+  <div class="quiet-actions">
+    <button class="quiet" type="button" (click)="resend()">Renvoyer</button>
+    <span class="dot" aria-hidden="true">·</span>
+    <button class="quiet muted" type="button" (click)="editEmail()">Changer d'adresse</button>
+  </div>
+} @else {
+  <fold-card class="panel">
+    <form class="form" (submit)="$event.preventDefault(); send()">
+      <fold-input
+        size="lg"
+        type="email"
+        label="Votre e-mail"
+        autocomplete="email"
+        placeholder="vous@exemple.fr"
+        [autofocus]="true"
+        [(value)]="email"
+      />
+      <button
+        foldButton
+        class="cta"
+        emphasis="solid"
+        intent="primary"
+        size="lg"
+        block
+        type="submit"
+        [disabled]="!looksValid()"
+      >
+        Recevoir mon lien
+      </button>
+    </form>
+  </fold-card>
+
+  <p class="fine">Aucun mot de passe à retenir : le lien vous connecte directement.</p>
+}
+
+<app-rule-ou />
+
+<app-door-card
+  icon="edit"
+  title="Première visite ?"
+  sub="Prénom, e-mail, téléphone"
+  (opened)="wantsSignup.emit()"
+/>

@@ -1,0 +1,97 @@
+<p class="eyebrow">Première visite ?</p>
+
+<fold-card class="signup">
+  <form class="form" (submit)="$event.preventDefault(); submit()">
+    <p class="pitch">
+      Un prénom, un e-mail, un numéro. C'est tout — le reste attendra que vous en ayez besoin.
+    </p>
+
+    <div class="fields">
+      <fold-input
+        size="lg"
+        label="Prénom"
+        autocomplete="given-name"
+        placeholder="Votre prénom"
+        [(value)]="firstName"
+      />
+      <fold-input
+        size="lg"
+        type="email"
+        label="E-mail"
+        autocomplete="email"
+        placeholder="vous@exemple.fr"
+        [(value)]="email"
+      />
+      <fold-input
+        size="lg"
+        type="tel"
+        label="Téléphone"
+        autocomplete="tel"
+        placeholder="06 00 00 00 00"
+        hint="Pour qu'un livreur qui cherche la porte puisse appeler."
+        [(value)]="tel"
+      />
+    </div>
+
+    <button
+      foldButton
+      class="cta"
+      emphasis="solid"
+      intent="primary"
+      size="lg"
+      block
+      type="submit"
+      [disabled]="!complete()"
+    >
+      Créer mon compte
+    </button>
+  </form>
+</fold-card>
+
+<p class="fine">Pas de mot de passe : on vous envoie un lien à chaque connexion.</p>
+
+<app-rule-ou />
+
+<app-door-card
+  tone="solid"
+  icon="arrow-right"
+  title="Déjà client ?"
+  sub="Se connecter en un lien"
+  (opened)="wantsLogin.emit()"
+/>
+
+<section class="pro">
+  <h2 class="pro-title">{{ proTitle() }}</h2>
+
+  @if (bookedSlot(); as slot) {
+    <div class="booked">
+      <span class="booked-tick" aria-hidden="true">✓</span>
+      <span class="booked-text">
+        <span class="booked-when">Rappel demandé · {{ slot }}</span>
+        <span class="booked-phone"
+          >Au <span class="num">{{ phone() }}</span></span
+        >
+      </span>
+      <button class="booked-cancel" type="button" (click)="cancelledCallback.emit()">
+        Annuler
+      </button>
+    </div>
+  } @else {
+    <div class="pro-body">
+      <p class="pro-pitch">
+        Tarifs négociés, livraison en station, facturation mensuelle. On vous explique en deux
+        minutes.
+      </p>
+      <button
+        foldButton
+        class="pro-cta"
+        emphasis="solid"
+        intent="primary"
+        type="button"
+        (click)="wantsCallback.emit()"
+      >
+        Demander à être rappelé
+      </button>
+    </div>
+  }
+</section>
