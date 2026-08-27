@@ -1,7 +1,8 @@
 <div class="screen">
-  <!-- Bandeau de marque : c'est le chrome de l'app cliente, pas un en-tête de
-       page. Le sous-bloc `chrome` du thème y repeint surfaces et texte. -->
-  <div class="chrome" foldSurface="chrome">
+  <!-- Tout le bleu est le CHROME, et le chrome est l'en-tête : la barre de
+       marque qui ne bouge pas d'un écran à l'autre, et l'accroche qui, elle, dit
+       où on est. Le sous-bloc `chrome` du thème y repeint surfaces et texte. -->
+  <header class="chrome" foldSurface="chrome">
     <div class="chrome-bar">
       <span class="mark" aria-hidden="true">LFC</span>
       <span class="brand">
@@ -14,9 +15,10 @@
       <h1 class="hero-title">{{ heading() }}</h1>
       <p class="hero-intro">{{ intro() }}</p>
     </div>
-  </div>
+  </header>
 
-  <!-- La feuille crème : tout le contenu manipulable de l'écran. -->
+  <!-- La feuille crème est le CORPS : elle monte sur le chrome, d'où le rayon
+       haut, et porte tout ce qui se manipule. -->
   <main class="sheet">
     @switch (step()) {
       @case ('ask') {

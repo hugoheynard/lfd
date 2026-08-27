@@ -1,7 +1,7 @@
 :host {
   display: block;
   min-height: 100dvh;
-  background: var(--lfc-ink-800);
+  background: var(--fold-color-primary);
   font-family: var(--fold-font-sans);
 }
 
@@ -13,7 +13,7 @@
   margin-inline: auto;
 }
 
-/* ── Chrome : la bande de marque, encre bleue ─────────────────────────────── */
+/* ── L'en-tête : tout le bleu ─────────────────────────────────────────────── */
 
 .chrome {
   flex: none;
@@ -95,7 +95,7 @@
   color: var(--fold-color-text-muted);
 }
 
-/* ── Feuille crème : le contenu manipulable ───────────────────────────────── */
+/* ── Le corps : la feuille crème, montée sur le chrome ────────────────────── */
 
 .sheet {
   flex: 1;
