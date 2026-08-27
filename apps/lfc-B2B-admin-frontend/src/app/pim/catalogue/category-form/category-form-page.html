@@ -1,0 +1,91 @@
+<!-- Pas d'icône devant le titre : le titre EST le nom de la famille, et une
+     icône « edit » y ajouterait le geste plutôt que la chose. -->
+<fold-page-layout [title]="store.pageTitle()" headerBleed separator>
+  <fold-back-link pageEyebrow icon="arrow-back" label="Catégories" routerLink="/pim/categories" />
+
+  @if (store.isArchived()) {
+    <fold-badge titleBadge [content]="archivedLabel()" variant="neutral" radius="pill" />
+  }
+
+  @if (!store.isEdit()) {
+    <p description>
+      Un nom suffit pour créer la famille ; ses canaux et ses taux se règlent ensuite, section par
+      section.
+    </p>
+  }
+
+  @if (store.error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  @if (store.loading()) {
+    <fold-loading message="Chargement de la famille…" />
+  } @else if (store.notFound()) {
+    <fold-empty-state
+      title="Famille introuvable"
+      subtitle="Cette famille n'existe pas ou a été supprimée."
+    />
+  } @else if (store.isEdit()) {
+    @if (store.isArchived()) {
+      <fold-callout appearance="inset" variant="info">
+        Cette famille est <strong>archivée</strong> : ses réglages sont gelés. Seul son nom se
+        corrige — une faute de frappe ne doit pas obliger à la ressusciter.
+      </fold-callout>
+    }
+
+    <fold-aside-layout asideRightLabel="Résumé">
+      <!-- UNE carte PAR section : un bord ferme, là où un simple filet dans une
+           carte unique se lit comme un trou plutôt que comme une frontière. -->
+      <div class="sections">
+        @for (section of sections(); track section.key) {
+          <fold-card>
+            <fold-page-section
+              [title]="section.label"
+              separator
+              collapsible
+              [open]="sectionOpen(section.key)()"
+              (openChange)="setSectionOpen(section.key, $event)"
+            >
+              <span sectionSubtitle>{{ section.description }}</span>
+              <app-section-state
+                sectionActions
+                [section]="section.key"
+                (save)="saveSection($event)"
+              />
+              @switch (section.key) {
+                @case ('identite') {
+                  <app-category-identity-form />
+                }
+                @case ('canaux') {
+                  <app-category-channels-form />
+                }
+              }
+            </fold-page-section>
+          </fold-card>
+        }
+      </div>
+
+      <app-category-summary-rail asideRight (archived)="archive()" />
+    </fold-aside-layout>
+  } @else {
+    <!-- La création reste un geste UNIQUE : la famille n'existe pas encore,
+         donc aucune section ne peut s'enregistrer seule. -->
+    <fold-card>
+      <app-category-identity-form />
+    </fold-card>
+
+    <div class="save-bar">
+      @if (!store.isValid()) {
+        <small class="muted">Un nom en français suffit.</small>
+      }
+      <div class="save-actions">
+        <button foldButton emphasis="soft" intent="neutral" routerLink="/pim/categories">
+          Annuler
+        </button>
+        <button foldButton [disabled]="!store.isValid() || store.busy()" (click)="submit()">
+          Créer la famille
+        </button>
+      </div>
+    </div>
+  }
+</fold-page-layout>

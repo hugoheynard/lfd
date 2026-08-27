@@ -1,0 +1,22 @@
+.sr-block + .sr-block {
+  margin-top: var(--fold-space-lg);
+}
+
+/* Deux colonnes : l'étiquette étroite, la valeur libre. Une liste de
+   définitions et non un tableau — ce sont des paires, pas des lignes. */
+.sr-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--fold-space-2xs) var(--fold-space-md);
+  margin: 0;
+
+  dt {
+    color: var(--fold-color-text-secondary);
+    font-size: var(--fold-font-size-sm);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}

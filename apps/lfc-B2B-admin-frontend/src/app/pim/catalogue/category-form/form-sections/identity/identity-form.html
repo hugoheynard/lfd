@@ -1,0 +1,42 @@
+@if (untranslated()) {
+  <fold-callout appearance="inset" variant="warning">
+    Cette famille n'est <strong>pas traduite partout</strong>. Son nom sera lu en français dans les
+    langues manquantes — le client verra donc du français sur une boutique italienne.
+  </fold-callout>
+}
+
+<!-- Le sélecteur appartient au NOM, et ne fait basculer que lui : le parent ne
+     se traduit pas, et un sélecteur de section l'aurait fait basculer avec. -->
+<app-lang-switch
+  [lang]="store.name.locale()"
+  (langChange)="store.name.locale.set($event)"
+  [missing]="store.name.missing()"
+  [hint]="store.name.hint()"
+  ariaLabel="Langue du nom"
+/>
+
+<div class="grid">
+  <fold-input
+    [label]="store.name.label()"
+    placeholder="ex. Viennoiseries"
+    [required]="store.name.locale() === sourceLocale"
+    [value]="store.name.value()"
+    (valueChange)="store.name.set($event)"
+  />
+
+  <!-- Le déplacement d'une famille archivée est refusé par le référentiel :
+       le champ est ABSENT, pas grisé. Un champ grisé laisse croire qu'il existe
+       une façon de l'activer. -->
+  @if (!store.isArchived()) {
+    <fold-listbox
+      label="Parent"
+      [value]="store.parentId()"
+      (selectionChange)="store.parentId.set($event)"
+    >
+      <fold-option value="">— Racine —</fold-option>
+      @for (parent of store.parents(); track parent.id) {
+        <fold-option [value]="parent.id">{{ parent.name.fr }}</fold-option>
+      }
+    </fold-listbox>
+  }
+</div>

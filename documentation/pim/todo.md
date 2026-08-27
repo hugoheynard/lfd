@@ -64,6 +64,18 @@
       le tableau se lit dans une langue au choix, et les lignes qui **retombent** sur
       le français sont marquées — sans quoi basculer le sélecteur ne changerait rien à
       l'œil et passerait pour une panne
+- [x] **La famille a sa PAGE** _(c-0, 2026-08-27)_ — le side-panel est supprimé,
+      remplacé par `categories/:id` et `categories/nouveau` sur le gabarit de la
+      fiche produit : une carte par section, enregistrement **par section**, rail
+      droit « Résumé ». Le panneau tenait à trois réglages ; il ne tient plus dès
+      qu'une famille porte des descriptions et des visuels
+  - [x] `SectionState` ne connaît plus la fiche produit — jeton `SECTION_EDITING`,
+        quatre membres, et le typage fin par générique
+  - [ ] **c-1 — descriptions** : table `category_editorial` (courte, longue, SEO),
+        miroir de `product_editorial` ; section « Communication » sur la page
+  - [ ] **c-2 — médias** : table `category_media` joignant la bibliothèque
+        `MediaAsset` **existante** (`role` + `position`), comme `product_media` ;
+        section « Visuels », composants de la fiche produit réutilisés
 - [ ] Converger `ProductFormStore` sur `shared/lang-switch/localized-field.ts` — le
       même motif de saisie traduisible y est écrit à la main, en plus ancien. Deux
       copies d'une règle (« vider une traduction l'EFFACE, la source ne s'efface

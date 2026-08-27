@@ -1,0 +1,41 @@
+<app-channel-matrix
+  [channels]="store.channels()"
+  [pointsOfSale]="pointsOfSale()"
+  [unreadable]="pointsOfSaleError()"
+  [showState]="false"
+  (channelsChange)="store.channels.set($event)"
+/>
+<p class="muted">Les fiches de la famille en héritent, sauf réglage propre.</p>
+
+<section class="block">
+  <fold-element-title variant="eyebrow" icon="tax" title="Taux de TVA" />
+
+  <!-- Un taux ne se règle que pour un canal qu'on vend : afficher les autres
+       demanderait de trancher pour une vente qui n'a pas lieu, et laisserait la
+       famille pointer un taux dont personne ne se sert. -->
+  @if (hasAnyChannel()) {
+    <div class="grid vat-pickers">
+      <!-- UNE liste par contexte VENDU, itérée depuis le registre : un contexte
+           de plus est une ligne de données, pas un bloc de gabarit. -->
+      @for (context of store.settableContexts(); track context.key) {
+        <fold-listbox
+          [label]="context.label"
+          [value]="vatOf(context.key)"
+          (selectionChange)="setVatOf(context.key, $event)"
+        >
+          <fold-option value="">— Non réglé —</fold-option>
+          @for (rate of rates(); track rate.id) {
+            <fold-option [value]="rate.id">{{ rateLabel(rate) }}</fold-option>
+          }
+        </fold-listbox>
+      }
+    </div>
+    <p class="muted">
+      Le mode de consommation décide du taux, pas la boutique : c'est la loi, identique dans les
+      deux. Vendre à un professionnel n'est ni l'un ni l'autre, d'où le taux B2B. Les taux se gèrent
+      dans <a routerLink="/pim/tva">Taux de TVA</a>.
+    </p>
+  } @else {
+    <p class="muted">Cochez un canal ci-dessus pour lui régler un taux.</p>
+  }
+</section>

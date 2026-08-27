@@ -87,6 +87,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/tva': 'tax:read',
   'pim/collections': null,
   'pim/publication': null,
+  // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
+  // n'ouvre rien de plus — le référentiel garde chaque écriture de son côté.
+  'pim/categories/nouveau': null,
+  'pim/categories/:id': null,
   'pim/categories': null,
   'pim/emplacements': null,
   // Le registre décide de ce qu'on peut VENDRE, mais ne porte aucun taux :

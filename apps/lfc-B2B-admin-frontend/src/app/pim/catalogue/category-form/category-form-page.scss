@@ -1,0 +1,32 @@
+/* Les sections, UNE carte chacune. L'écart se resserre parce que le bord fait
+   le travail : entre deux cartes il ne sépare plus deux sujets, il les espace. */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* La page possède DÉJÀ la gouttière : `fold-page-layout` la paye sur son hôte.
+   Laisser `fold-aside-layout` payer la sienne par-dessus l'insérerait deux fois
+   — voyant dès que le rail porte une bande, qui flotterait au lieu d'atteindre
+   le bord. */
+fold-aside-layout {
+  --fold-aside-layout-pad: 0;
+}
+
+/* La barre de création, à la place du pied de panneau. Elle n'existe qu'au
+   premier enregistrement : passé lui, chaque section enregistre la sienne. */
+.save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-xl);
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.save-actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+}

@@ -58,6 +58,20 @@ export const pimRoutes: Routes = [
         loadComponent: () =>
           import('./publication/publication-page/publication-page').then((m) => m.PublicationPage),
       },
+      // `nouveau` AVANT `:id`, sinon le paramètre l'avale et la création
+      // ouvrirait une famille dont l'identifiant serait « nouveau ».
+      {
+        path: 'categories/nouveau',
+        title: 'Nouvelle catégorie — LFC B2B admin',
+        loadComponent: () =>
+          import('./catalogue/category-form/category-form-page').then((m) => m.CategoryFormPage),
+      },
+      {
+        path: 'categories/:id',
+        title: 'Éditer une catégorie — LFC B2B admin',
+        loadComponent: () =>
+          import('./catalogue/category-form/category-form-page').then((m) => m.CategoryFormPage),
+      },
       {
         path: 'categories',
         title: 'Catégories — LFC B2B admin',

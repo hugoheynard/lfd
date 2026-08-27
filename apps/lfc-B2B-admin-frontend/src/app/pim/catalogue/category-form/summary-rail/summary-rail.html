@@ -1,0 +1,66 @@
+@if (store.hasPendingChanges()) {
+  <!-- Chaque section s'enregistre seule : il n'y a donc PAS de garde de
+       navigation, et rien ne retient au départ. Le rail est le seul endroit qui
+       puisse dire, en permanence, qu'un brouillon attend. -->
+  <section class="sr-block">
+    <fold-callout appearance="inset" variant="warning">
+      Des modifications ne sont <strong>pas enregistrées</strong>. Le bouton se trouve à droite du
+      titre de chaque section.
+    </fold-callout>
+  </section>
+}
+
+<section class="sr-block">
+  <fold-element-title title="Ce qu'elle porte" variant="bar" />
+  <fold-card>
+    <dl class="sr-facts">
+      <dt>Fiches actives</dt>
+      <dd>{{ ficheLabel() }}</dd>
+
+      <dt>Vendue depuis</dt>
+      <dd>
+        @if (sellingPoints().length === 0) {
+          <span class="muted">Aucun point de vente</span>
+        } @else {
+          {{ sellingPoints().length }} point(s) de vente
+        }
+      </dd>
+
+      <dt>Traduction</dt>
+      <dd>
+        @if (missingNames().length === 0) {
+          <fold-status-badge status="active" label="Complète" />
+        } @else {
+          <!-- `pending` : la traduction n'est pas en échec, elle est en attente. -->
+          <fold-status-badge
+            status="pending"
+            [label]="'à remplir : ' + missingNames().join(', ')"
+          />
+        }
+      </dd>
+    </dl>
+  </fold-card>
+</section>
+
+@if (store.isEdit() && !store.isArchived()) {
+  <section class="sr-block">
+    <fold-danger-zone
+      title="Archiver cette famille"
+      [actionLabel]="canArchive() ? 'Archiver la famille' : undefined"
+      (confirmed)="archived.emit()"
+    >
+      @if (store.activeProducts() > 0) {
+        <p>
+          <strong>Archivage impossible.</strong> Cette famille porte encore
+          <strong>{{ store.activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou
+          archivez-les d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
+        </p>
+      } @else {
+        <p>
+          La famille sortira des listes&nbsp;: elle ne portera plus de nouvelle fiche et disparaîtra
+          des choix de parent. Ses réglages — canaux et taux — sont conservés.
+        </p>
+      }
+    </fold-danger-zone>
+  </section>
+}

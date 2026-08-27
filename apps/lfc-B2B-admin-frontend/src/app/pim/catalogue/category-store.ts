@@ -20,41 +20,6 @@ function sameText(a: LocalizedText, b: LocalizedText): boolean {
 }
 
 /**
- * Ce qu'un écran de réglage écrit d'un coup. `id: null` = création ;
- * `parentId: null` = la racine.
- */
-export interface CategorySettingsDraft {
-  readonly id: string | null;
-  /**
-   * Le nom **dans toutes ses langues**, pas seulement en français.
-   *
-   * C'était `nameFr: string`, et le store recollait les traductions par-dessus
-   * en relisant la famille en mémoire — une reconstruction qui n'avait lieu
-   * qu'au renommage, jamais à la création. Un écran qui édite trois langues a
-   * l'objet complet sous la main : il l'envoie, plutôt que de le faire
-   * réassembler par la couche du dessous à partir d'un fragment.
-   */
-  readonly name: LocalizedText;
-  /**
-   * Tout ce qui n'est PAS le nom — `null` pour une famille **gelée**.
-   *
-   * Une famille archivée n'accepte que son renommage : le référentiel refuse
-   * ses canaux, ses taux et son déplacement. Les rendre absents d'un bloc,
-   * plutôt que de laisser l'appelant les envoyer quand même, met la règle dans
-   * le TYPE — l'écran ne peut plus demander ce qu'on sait refusé, et un
-   * renommage ne peut plus partir devant trois écritures qui échoueront.
-   */
-  readonly settings: CategoryMutableSettings | null;
-}
-
-/** Les réglages qu'une famille vivante accepte. */
-export interface CategoryMutableSettings {
-  readonly parentId: string | null;
-  readonly channels: SalesChannels;
-  readonly vat: CategoryVatDraft;
-}
-
-/**
  * Source **réactive** unique des familles — remplace le signal LocalDb. Les
  * lecteurs (pages, collections, publication) lisent `items()` ; toute mutation
  * passe par ce store, qui écrit au backend puis relit, si bien que la liste se
@@ -93,63 +58,43 @@ export class CategoryStore {
   }
 
   /**
-   * Le réglage complet d'une famille — **une seule relecture**.
+   * Le nom et le parent, ensemble — la section « Identité » d'une page.
    *
-   * Le référentiel découpe par section : un verbe pour le nom, un pour le
-   * parent, un pour les canaux, un pour les taux. L'écran, lui, n'a qu'un
-   * bouton. Quand chaque méthode du store relisait la liste entière derrière
-   * son écriture, enregistrer coûtait jusqu'à quatre `PUT` et quatre `GET` —
-   * l'écran se félicitait de ne plus écrire à chaque frappe, le store lui
-   * reprenait ce qu'il avait gagné.
-   *
-   * Séquentiel et non parallèle : un refus doit arrêter la suite plutôt que
-   * laisser quatre requêtes se croiser et une famille à moitié réglée. Et les
-   * canaux passent AVANT les taux — fermer un canal efface son taux côté
-   * référentiel, donc l'inverse écraserait ce qu'on vient de régler.
-   *
-   * Rend l'identifiant : en création, l'appelant ne l'a pas encore.
+   * Deux verbes côté référentiel, un seul geste à l'écran, et **aucune écriture
+   * pour rien** : chacun ne part que si sa valeur a bougé. La comparaison se
+   * fait sur la liste en mémoire, qui peut ne pas contenir la famille (page
+   * ouverte par un lien direct) ; dans ce cas on ÉCRIT, parce que ne pas savoir
+   * n'est pas savoir que non.
    */
-  async saveSettings(draft: CategorySettingsDraft): Promise<string> {
-    const id = draft.id === null ? await this.openNew(draft) : await this.reword(draft.id, draft);
-    if (draft.settings !== null) {
-      await this.api.setChannels(id, draft.settings.channels);
-      await this.api.setVat(id, draft.settings.vat);
+  async renameAndMove(id: string, name: LocalizedText, parentId: string | null): Promise<void> {
+    const current = this.state().find((item) => item.id === id);
+    if (current === undefined || !sameText(current.name, name)) {
+      await this.api.rename(id, name);
+    }
+    if (current === undefined || current.parentId !== parentId) {
+      await this.api.move(id, parentId);
     }
     await this.reload();
-    return id;
   }
 
-  private async openNew(draft: CategorySettingsDraft): Promise<string> {
-    const parentId = draft.settings?.parentId ?? null;
-    const created = await this.api.create(
-      parentId === null ? { name: draft.name } : { name: draft.name, parentId },
-    );
+  /** La matrice de canaux d'une famille. */
+  async setChannels(id: string, channels: SalesChannels): Promise<void> {
+    await this.api.setChannels(id, channels);
+    await this.reload();
+  }
+
+  /** Les taux, par clé de contexte. À écrire APRÈS les canaux : fermer un canal
+   *  efface son taux côté référentiel. */
+  async setVat(id: string, vat: CategoryVatDraft): Promise<void> {
+    await this.api.setVat(id, vat);
+    await this.reload();
+  }
+
+  /** Ouvre une famille et rend son identifiant. */
+  async openNew(name: LocalizedText, parentId: string | null): Promise<string> {
+    const created = await this.api.create(parentId === null ? { name } : { name, parentId });
+    await this.reload();
     return created.id;
-  }
-
-  /**
-   * Renomme et déplace — **seulement si ça a bougé**. On n'écrit pas pour rien.
-   *
-   * La comparaison se fait sur la liste en mémoire, qui peut ne pas contenir la
-   * famille (premier chargement pas encore revenu, écran ouvert par un lien
-   * direct). Dans ce cas on ÉCRIT, au lieu de conclure « rien n'a changé » :
-   * ne pas savoir n'est pas savoir que non. Un enregistrement silencieusement
-   * sans effet, qui rend la main comme un succès, est plus coûteux qu'une
-   * écriture de trop.
-   */
-  private async reword(id: string, draft: CategorySettingsDraft): Promise<string> {
-    const current = this.state().find((item) => item.id === id);
-    if (current === undefined || !sameText(current.name, draft.name)) {
-      await this.api.rename(id, draft.name);
-    }
-    // Le déplacement ne concerne que les vivantes : `settings` est absent sinon.
-    if (draft.settings !== null) {
-      const { parentId } = draft.settings;
-      if (current === undefined || current.parentId !== parentId) {
-        await this.api.move(id, parentId);
-      }
-    }
-    return id;
   }
 
   async archive(id: string): Promise<void> {

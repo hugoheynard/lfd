@@ -19,7 +19,6 @@ import {
   FoldDataTableRowCardDirective,
   FoldIconComponent,
   FoldPageLayoutComponent,
-  FoldPanelHostService,
   FoldToggleIconComponent,
   type FoldIconName,
   type FoldTableColumn,
@@ -28,10 +27,10 @@ import {
 import { LangSwitch } from '../../../shared/lang-switch/lang-switch';
 import { LOCALE_NAMES } from '../../../shared/lang-switch/locale-names';
 import { pointsOfSaleSelling, sellsContext } from '../../data/channels';
+import { Router, RouterLink } from '@angular/router';
+
 import { CategoryStore } from '../category-store';
-import { VatRateStore } from '../vat-rates/vat-store';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
-import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 import type { Category } from '../catalogue-api';
 
 /**
@@ -63,6 +62,7 @@ import type { Category } from '../catalogue-api';
   imports: [
     // Un seul gabarit de pastilles pour la colonne ET la carte.
     NgTemplateOutlet,
+    RouterLink,
     FoldPageLayoutComponent,
     FoldElementTitleComponent,
     FoldCalloutComponent,
@@ -82,15 +82,13 @@ import type { Category } from '../catalogue-api';
 })
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
-  private readonly vatRateStore = inject(VatRateStore);
   private readonly pointStore = inject(PointOfSaleStore);
-  private readonly panelHost = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
 
   /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
   protected readonly categories = this.categoryStore.items;
   /** Les archivées sont hors de vue tant qu'on ne les rappelle pas. */
   protected readonly showArchived = signal(false);
-  protected readonly rates = this.vatRateStore.items;
   /** Les noms affichés dans les pastilles viennent du référentiel. */
   protected readonly pointsOfSale = this.pointStore.items;
 
@@ -225,15 +223,14 @@ export class CategoriesPage {
     return pointsOfSaleSelling(category.channelPreset, 'eatIn', this.pointsOfSale());
   }
 
-  /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */
+  /**
+   * Ouvre la famille — sur sa PAGE, plus dans un panneau.
+   *
+   * Le panneau tenait à trois réglages ; il ne tient plus dès qu'une famille
+   * porte des descriptions et des visuels. Un seul chemin, donc : le clic d'une
+   * ligne et le bouton d'ajout mènent au même écran.
+   */
   protected open(category: Category): void {
-    const data: CategoryPanelData = { category, rates: this.rates() };
-    this.panelHost.open(CategoryPanel, { data, side: 'right' });
-  }
-
-  /** Le même panneau, sans famille : il crée. */
-  protected openCreate(): void {
-    const data: CategoryPanelData = { rates: this.rates() };
-    this.panelHost.open(CategoryPanel, { data, side: 'right' });
+    void this.router.navigate(['/pim/categories', category.id]);
   }
 }
