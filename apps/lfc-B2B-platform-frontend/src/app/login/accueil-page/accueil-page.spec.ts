@@ -58,7 +58,7 @@ describe('AccueilPage', () => {
   });
 
   it("ouvre sur l'accueil visiteur, sans retour possible", () => {
-    expect(text()).toContain('Première visite, 3 infos');
+    expect(text()).toContain('Première visite ?');
     // Le sur-titre et le retour vivent dans l'en-tête du shell : l'écran les
     // PUBLIE, il ne les dessine plus.
     expect(chrome.kicker()).toBe('Bienvenue');
@@ -93,7 +93,7 @@ describe('AccueilPage', () => {
     expect(back).not.toBeNull();
     back?.();
     fixture.detectChanges();
-    expect(text()).toContain('Première visite, 3 infos');
+    expect(text()).toContain('Première visite ?');
   });
 
   it("le lien envoyé rappelle l'adresse exacte", () => {

@@ -85,7 +85,7 @@ export class AccueilPage {
       case 'entered':
         return 'Vous êtes connecté.';
       default:
-        return 'Le pain de la station, réservé en deux minutes.';
+        return 'Votre commande en station, réservée en deux minutes.';
     }
   });
 

@@ -22,7 +22,8 @@
   flex-direction: column;
   flex: none;
   gap: var(--fold-space-md);
-  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-2xl);
+  /* De l'air au-dessus de l'accroche : elle ne doit pas coller à la barre. */
+  padding: var(--fold-space-lg) var(--fold-space-xl) var(--fold-space-2xl);
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
@@ -41,13 +42,16 @@
   width: 46px;
   height: 46px;
   border-radius: var(--fold-radius-md);
+  padding: 6px;
+  overflow: hidden;
   background: var(--lfc-paper-0);
-  color: var(--lfc-ink-800);
   box-shadow: var(--lfc-shadow-logo);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-base);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
 }
 
 .brand {
@@ -128,16 +132,18 @@
   top: 0;
   z-index: 1;
   flex: none;
-  height: var(--lfc-radius-sheet);
-  /* L'encre DERRIÈRE la crème : c'est elle qu'on aperçoit dans les deux angles,
-     et c'est ce qui raccorde la feuille à la barre. */
+  /* Deux étages dans un seul élément : une bande d'encre, puis le bord arrondi
+     de la feuille. La bande fait un cran d'espacement — le même que celui qui
+     sépare les blocs de la feuille — pour que l'encre reste franchement visible
+     une fois la feuille amarrée, et pas seulement dans les deux angles. */
+  height: calc(var(--fold-space-xl) + var(--lfc-radius-sheet));
   background: var(--fold-color-primary);
 }
 
 .lip::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: var(--fold-space-xl) 0 0;
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
 }
@@ -146,8 +152,9 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  /* Le haut est déjà porté par la lèvre : on ne compte ici que le reste. */
-  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-3xl);
+  /* Le haut est entièrement porté par la lèvre — sa moitié crème fait déjà la
+     respiration au-dessus du premier bloc. */
+  padding: 0 var(--fold-space-xl) var(--fold-space-3xl);
 }
 
 /* L'étape remplit la scène : c'est ce qui permet au CTA du panneau de rappel

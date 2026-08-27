@@ -18,8 +18,16 @@
 
   --fold-radius-xs: 7px;
   --fold-color-surface-sunken: var(--fold-color-surface-hover);
+  /* `sm` lit `--fold-text-xs` pour ses segments. On descend d'un cran : trois
+     langues, une pastille de marque et un nom en 21 px ne tiennent pas ensemble
+     sur 390 px sinon — et c'est le nom qui se faisait tronquer. */
+  --fold-text-xs: var(--fold-text-2xs);
 
   font-family: var(--fold-font-label);
   font-weight: var(--fold-weight-extrabold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
+  /* La hauteur des segments, sans toucher à leur largeur : fold fixe leur
+     rembourrage en rem, mais `all: unset` leur fait hériter l'interligne. C'est
+     donc lui qui remonte les pastilles aux 26 px de la réf. */
+  line-height: 1.85;
 }
