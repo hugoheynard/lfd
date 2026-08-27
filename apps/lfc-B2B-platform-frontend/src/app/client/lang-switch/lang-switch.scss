@@ -1,47 +1,4 @@
 :host {
   flex: none;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--fold-color-border);
-  border-radius: 9px;
-  background: var(--fold-color-surface-hover);
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-
-  /* `primary` = le remplissage qui porte l'action. Le sous-bloc `chrome` en
-     inverse la valeur, donc cette paire marche des deux côtés sans savoir où
-     elle est : crème sur l'encre, encre sur le papier. */
-  &.on {
-    background: var(--fold-color-primary);
-    color: var(--fold-color-on-primary);
-  }
-}
-
-:host(.md) {
-  gap: 3px;
-  padding: 3px;
-  border-radius: 11px;
-
-  .pill {
-    height: 30px;
-    padding: 0 12px;
-    border-radius: 8px;
-  }
+  display: block;
 }
