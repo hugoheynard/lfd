@@ -99,7 +99,7 @@ export const IT: ClientCopy = {
     pickupBadge: 'Ritiro',
     pickupTitle: 'Passo io\na prenderlo',
     pickupDetail: 'Al Labo o in una delle botteghe della stazione.',
-    pickupNote: 'Pronto in 20 min',
+    pickupNote: 'Domani dalle 6',
     pickupDetailWide: 'Al Labo o al villaggio, domani all’ora che scelgo io.',
     pickupCta: 'Scegliere un punto di ritiro',
     pickupNoteWide: 'Fino a −10 %',
@@ -133,6 +133,8 @@ export const IT: ClientCopy = {
   },
   shop: {
     changeService: 'Cambia',
+    pickService: 'Dove viene servito?',
+    pickServiceHint: 'Prezzo e orario dipendono da questo — lo dica prima di pagare.',
     searchPlaceholder: 'Cerca una baguette, un éclair…',
     clearSearch: 'Cancella la ricerca',
     allShelves: 'Tutto',

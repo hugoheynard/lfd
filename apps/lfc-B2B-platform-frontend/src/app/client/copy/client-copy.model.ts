@@ -135,6 +135,9 @@ export interface ClientCopy {
   };
   readonly shop: {
     readonly changeService: string;
+    /** Pour qui visite le rayon AVANT d'avoir dit où il est servi. */
+    readonly pickService: string;
+    readonly pickServiceHint: string;
     readonly searchPlaceholder: string;
     readonly clearSearch: string;
     readonly allShelves: string;
