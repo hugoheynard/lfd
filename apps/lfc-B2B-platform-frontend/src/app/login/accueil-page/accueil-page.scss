@@ -116,10 +116,20 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  /* PAS de fond ici : la crème est portée par la lèvre et par la scène. Peinte
-     sur la feuille, elle passait DERRIÈRE la bande d'encre de la lèvre, et le
-     moindre pixel fractionnaire la laissait affleurer — un liseré clair entre
-     l'accroche et la bande, qui n'existait qu'à l'arrondi près. */
+  /* La feuille fait AU MOINS un écran de haut. Sans ça, la course de
+     défilement vaut la hauteur du contenu moins celle de l'écran — et depuis
+     que le formulaire se replie, ce reste est plus court que l'accroche : on ne
+     pouvait plus la faire sortir entièrement, et il restait toujours un bout de
+     titre blanc coincé sous la barre. Une feuille pleine hauteur garantit
+     exactement la course qu'il faut pour l'escamoter. (C'est le `min-height:
+     100%` de la réf, exprimé contre l'écran puisque le porte-page, lui, se
+     dimensionne sur son contenu.) */
+  min-height: calc(100dvh - var(--fold-shell-header-height, 56px));
+  /* La crème revient sur la feuille : c'est elle qui garantit un aplat continu
+     sous la lèvre, quelle que soit la position de défilement. La retirer
+     rendait le fond tributaire de la scène, et le passage bleu → crème s'en
+     trouvait haché. */
+  background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
 
@@ -141,6 +151,11 @@
      une fois la feuille amarrée, et pas seulement dans les deux angles. */
   height: calc(var(--fold-space-xl) + var(--lfc-radius-sheet));
   background: var(--fold-color-primary);
+  /* Un pixel d'encre AU-DESSUS de la lèvre. La crème de la feuille court
+     derrière elle ; aux hauteurs fractionnaires — et elles le sont presque
+     toujours — elle affleurait d'un demi-pixel et se lisait comme un liseré
+     clair sur le bleu. Cette ombre bouche la fuite sans rien déplacer. */
+  box-shadow: 0 -1px 0 0 var(--fold-color-primary);
 }
 
 .lip::after {
@@ -155,7 +170,6 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  background: var(--fold-color-bg-page);
   /* Le haut est entièrement porté par la lèvre — sa moitié crème fait déjà la
      respiration au-dessus du premier bloc. */
   /* Le bas est large à dessein : sur un téléphone, la barre d'URL qui se replie
