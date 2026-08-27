@@ -23,8 +23,8 @@ type Step = 'welcome' | 'login' | 'entered';
 
 /** Ce que la colonne d'argument promet — visible au-delà du pli seulement. */
 const PROOF = [
-  'Trois champs, pas de mot de passe.',
-  'Le KBIS attend que vous en ayez besoin — vous commandez pendant la vérification.',
+  'Inscription rapide.',
+  'Votre espace évolue en fonction de vos besoins.',
   'Tarifs pro, livraison en station, facturation mensuelle sur demande.',
 ] as const;
 
