@@ -1,5 +1,9 @@
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
-import type { LocalizedText } from "../domain/value-objects/localized-text.js";
+import {
+  LOCALES,
+  SOURCE_LOCALE,
+  type LocalizedText,
+} from "../domain/value-objects/localized-text.js";
 
 /**
  * Lecture des colonnes `jsonb`.
@@ -60,12 +64,32 @@ export function readStringArrayColumn(value: unknown, field: string): string[] {
 /**
  * Sens inverse : `LocalizedText` → valeur écrivable en `jsonb`.
  *
- * Une interface aux clés fixes n'est pas assignable à l'objet JSON attendu par Prisma
- * (pas d'index signature). On produit donc explicitement un `Record`, plutôt que de
- * forcer le type — le compilateur a raison, c'est la conversion qui manquait.
+ * Une interface aux clés fixes n'est pas assignable à l'objet JSON attendu par
+ * Prisma (pas d'index signature). On produit donc explicitement un `Record`,
+ * plutôt que de forcer le type — le compilateur a raison, c'est la conversion
+ * qui manquait.
+ *
+ * Elle se bouclait sur `fr` et `en`, **écrits en dur**. L'italien est entré dans
+ * {@link LOCALES} sans passer ici : toute traduction italienne était donc jetée
+ * à l'écriture, en silence, sur les noms comme sur les textes et les
+ * alternatives d'image. L'écran l'affichait, l'enregistrement l'acceptait, et
+ * la relecture suivante rendait deux langues sur trois.
+ *
+ * D'où la boucle : ouvrir une langue de plus ne touche plus ce fichier. C'est le
+ * miroir exact de {@link optionalLocalizedColumn}, qui, lui, lisait déjà toutes
+ * les langues — l'asymétrie était la panne.
  */
 export function localizedColumn(text: LocalizedText): Record<string, string> {
-  return text.en === undefined ? { fr: text.fr } : { fr: text.fr, en: text.en };
+  const column: Record<string, string> = {};
+  for (const locale of LOCALES) {
+    const value = (text[locale] ?? "").trim();
+    if (value !== "") {
+      column[locale] = value;
+    }
+  }
+  // La langue source est garantie par le type ; on la repose pour que le
+  // `Record` la porte même si un appelant a laissé passer un blanc.
+  return { ...column, [SOURCE_LOCALE]: text[SOURCE_LOCALE] };
 }
 
 /** Violation d'unicité Prisma — le `23505` de Postgres, vu depuis l'ORM. */
@@ -124,4 +148,32 @@ function nameFromDriverMessage(meta: object): string | null {
     return null;
   }
   return /unique constraint "([^"]+)"/u.exec(message)?.[1] ?? null;
+}
+
+/**
+ * Relit une colonne `jsonb` localisée **facultative** — toutes ses langues, ou
+ * `null` si la colonne est absente, illisible, ou sans langue source.
+ *
+ * Distincte de {@link readLocalizedColumn}, qui exige la valeur : ici l'absence
+ * est un cas normal (une famille sans description). Partagée parce que deux
+ * agrégats portent désormais des textes facultatifs, et qu'une seconde copie
+ * finirait par ne plus lire les mêmes langues.
+ */
+export function optionalLocalizedColumn(value: unknown): LocalizedText | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const row = value as Record<string, unknown>;
+  const source = row[SOURCE_LOCALE];
+  if (typeof source !== "string" || source.trim() === "") {
+    return null;
+  }
+  const text: Record<string, string> = {};
+  for (const locale of LOCALES) {
+    const raw = row[locale];
+    if (typeof raw === "string" && raw.trim() !== "") {
+      text[locale] = raw;
+    }
+  }
+  return { ...text, [SOURCE_LOCALE]: source };
 }
