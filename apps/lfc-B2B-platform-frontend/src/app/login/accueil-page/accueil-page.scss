@@ -1,20 +1,17 @@
 :host {
   display: flex;
-  flex: 1;
+  flex: 1 0 auto;
   flex-direction: column;
-  min-height: 0;
   font-family: var(--fold-font-sans);
 }
 
 .frame {
   display: flex;
-  flex: 1;
+  flex: 1 0 auto;
   flex-direction: column;
-  min-height: 0;
-  /* Le liseré d'encre de chaque côté : c'est lui qui raccorde la feuille à la
-     barre de marque. La feuille ne touche jamais le bord, donc ses coins hauts
-     restent visibles quoi qu'il arrive. */
-  padding-inline: var(--fold-space-sm);
+  /* L'encre ne se voit qu'AUTOUR des coins hauts de la feuille — deux petits
+     angles, et la bande au-dessus. Pas de liseré latéral : la feuille tient le
+     bord. */
   background: var(--fold-color-primary);
 }
 
@@ -25,8 +22,7 @@
   flex-direction: column;
   flex: none;
   gap: var(--fold-space-md);
-  /* 12 px ici + 8 px de liseré = les 20 px de la réf, mesurés depuis le bord. */
-  padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-2xl);
+  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-2xl);
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
@@ -114,44 +110,68 @@
 
 .sheet {
   display: flex;
-  flex: 1;
+  flex: 1 0 auto;
   flex-direction: column;
-  /* Le TRANSFERT DE SCROLL : la feuille garde sa forme, c'est son contenu qui
-     bouge. Sans cela, elle glissait sous la barre et ses coins hauts sortaient
-     de l'écran au premier geste. */
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--fold-space-2xl) var(--fold-space-lg) var(--fold-space-3xl);
-  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
 
-/* L'étape remplit la feuille : c'est ce qui permet au CTA du panneau de rappel
+/* LA LÈVRE — le bord haut de la feuille, détaché en élément propre.
+   Il n'y a qu'UN défilement sur l'écran, celui du shell : l'accroche part la
+   première, puis le contenu de la feuille continue. Rien à transférer, rien à
+   enchaîner, donc rien à casser sur un écran tactile — l'ordre vient de la
+   position, pas d'une règle.
+   Ce qui bouge, c'est le bord : `sticky` l'amarre sous la barre dès que
+   l'accroche est passée, et la feuille garde ses coins pour toujours. */
+.lip {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex: none;
+  height: var(--lfc-radius-sheet);
+  /* L'encre DERRIÈRE la crème : c'est elle qu'on aperçoit dans les deux angles,
+     et c'est ce qui raccorde la feuille à la barre. */
+  background: var(--fold-color-primary);
+}
+
+.lip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+  background: var(--fold-color-bg-page);
+}
+
+.stage {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  /* Le haut est déjà porté par la lèvre : on ne compte ici que le reste. */
+  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-3xl);
+}
+
+/* L'étape remplit la scène : c'est ce qui permet au CTA du panneau de rappel
    d'aller se poser en bas (`margin-top: auto`) plutôt que de flotter sous le
    dernier créneau. */
-.sheet > * {
+.stage > * {
   flex: 1 0 auto;
 }
 
 /* ── Au-delà du pli : deux colonnes ───────────────────────────────────────── */
 
 @media (min-width: 900px) {
-  /* Deux colonnes de pleine hauteur, chacune avec son propre défilement : le
-     liseré et les coins n'ont plus de sens quand la feuille tient le bord. */
+  /* Deux colonnes qui s'étirent à la même hauteur : le défilement reste celui
+     de la page, et l'adresse peut se poser au bas de la colonne d'encre. */
   .frame {
     display: grid;
     grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
-    padding-inline: 0;
   }
 
   .aside {
     position: relative;
     gap: 0;
-    min-height: 0;
     padding: 46px 44px;
-    overflow: hidden auto;
+    overflow: hidden;
   }
 
   .brand-row {
@@ -213,8 +233,13 @@
     color: var(--lfc-color-on-primary-muted);
   }
 
-  .sheet {
+  /* Au-delà du pli, la feuille occupe sa colonne : plus de bord arrondi, donc
+     plus de lèvre à amarrer. */
+  .lip {
+    display: none;
+  }
+
+  .stage {
     padding: 46px 52px;
-    border-radius: 0;
   }
 }

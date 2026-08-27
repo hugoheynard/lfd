@@ -1,7 +1,8 @@
-<!-- `scroll="stage"` : le shell ne défile PAS. La zone de contenu est un cadre
-     fixe, et c'est l'écran qui ouvre sa propre boîte de défilement là où il le
-     veut — ici dans la feuille crème, pour que sa forme ne bouge jamais. -->
-<fold-app-shell mobileNav="none" scroll="stage">
+<!-- Le shell garde son défilement, même si l'écran ouvre le sien : c'est le
+     FILET. Si jamais la hauteur d'un écran ne se borne pas, la page défile
+     comme avant — dégradée, pas coupée. Avec `stage`, la même erreur clipperait
+     le contenu en silence. -->
+<fold-app-shell mobileNav="none" scroll="scroll">
   <div header class="bar">
     @if (chrome.back()) {
       <button class="back" type="button" aria-label="Retour" (click)="goBack()">

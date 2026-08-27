@@ -31,33 +31,40 @@
   </div>
 
   <main class="sheet">
-    @if (panelOpen()) {
-      <app-rappel-panel [phone]="phone" (booked)="book($event)" />
-    } @else {
-      @switch (step()) {
-        @case ('welcome') {
-          <app-welcome-step
-            [phone]="phone"
-            [bookedSlot]="bookedSlot()"
-            (signedUp)="goTo('entered')"
-            (wantsLogin)="goTo('login')"
-            (wantsCallback)="openPanel()"
-            [quotePending]="quotePending()"
-            (wantsQuote)="openQuote()"
-            (cancelledCallback)="bookedSlot.set(null)"
-          />
-        }
-        @case ('login') {
-          <app-login-step
-            (entered)="goTo('entered')"
-            (wantsSignup)="goTo('welcome')"
-            (sentChange)="linkSent.set($event)"
-          />
-        }
-        @case ('entered') {
-          <app-entered-step />
+    <!-- La lèvre : le bord haut de la feuille, qui s'amarre sous la barre quand
+         l'accroche est passée. C'est elle qui garde les coins et le liseré
+         d'encre, à n'importe quelle position de défilement. -->
+    <span class="lip" aria-hidden="true"></span>
+
+    <div class="stage">
+      @if (panelOpen()) {
+        <app-rappel-panel [phone]="phone" (booked)="book($event)" />
+      } @else {
+        @switch (step()) {
+          @case ('welcome') {
+            <app-welcome-step
+              [phone]="phone"
+              [bookedSlot]="bookedSlot()"
+              (signedUp)="goTo('entered')"
+              (wantsLogin)="goTo('login')"
+              (wantsCallback)="openPanel()"
+              [quotePending]="quotePending()"
+              (wantsQuote)="openQuote()"
+              (cancelledCallback)="bookedSlot.set(null)"
+            />
+          }
+          @case ('login') {
+            <app-login-step
+              (entered)="goTo('entered')"
+              (wantsSignup)="goTo('welcome')"
+              (sentChange)="linkSent.set($event)"
+            />
+          }
+          @case ('entered') {
+            <app-entered-step />
+          }
         }
       }
-    }
+    </div>
   </main>
 </div>
