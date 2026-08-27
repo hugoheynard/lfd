@@ -18,6 +18,38 @@
   }
 }
 
+/* Rien n'a encore été choisi : l'invite prend la place du rappel, et le beurre
+   pâle dit qu'il reste quelque chose à faire. */
+.ask {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--lfc-color-accent-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--lfc-color-accent-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ask-title {
+  display: block;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-accent);
+}
+
+.ask-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-accent-text);
+}
+
 /* Le rappel du service : à l'ENCRE, parce que c'est le cadre de la commande et
    pas une de ses lignes. */
 .service {

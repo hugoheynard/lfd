@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
@@ -134,6 +127,14 @@ export class RayonPage {
   /** La barre du bas ne porte que le montant : le verbe est dans son titre. */
   protected readonly totalLabel = computed(() => formatEuro(this.cart.totals().total));
 
+  /**
+   * On peut VISITER le rayon sans avoir dit où l'on est servi — c'est ce que
+   * « je visite la boutique » promet. Le mode reste exigé pour régler : le
+   * décompte le réclame (remise, frais), et le bouton mène alors à la question
+   * au lieu de la sauter.
+   */
+  protected readonly needsService = computed(() => this.choice() === null);
+
   protected readonly piece = computed(() => {
     const id = this.openPiece();
     return id === null ? null : productById(id);
@@ -148,14 +149,6 @@ export class RayonPage {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     this.chrome.back.set((): void => this.backToService());
-    effect(() => {
-      // Le catalogue dépend du mode : ce qui est en stock, à quelle heure et à
-      // quel prix. Sans mode, il n'y a pas de rayon à montrer — on renvoie à la
-      // question plutôt que d'inventer une réponse.
-      if (this.order.choice() === null) {
-        void this.router.navigate(['/commande']);
-      }
-    });
   }
 
   protected pickShelf(id: string): void {
@@ -188,6 +181,10 @@ export class RayonPage {
    * colonne de droite n'est pas sauter une étape, c'est ne pas en inventer une.
    */
   protected pay(): void {
+    if (this.needsService()) {
+      this.backToService();
+      return;
+    }
     if (this.orders.place() !== null) {
       void this.router.navigate(['/commande/confirmee']);
     }

@@ -23,6 +23,35 @@
   cursor: pointer;
 }
 
+/* L'invite : elle DEMANDE le mode au lieu de le rappeler. Deux lignes, donc plus
+   haute que la barre de contexte — et le beurre pâle, parce qu'il reste quelque
+   chose à faire. */
+.context.ask {
+  height: auto;
+  padding: 10px var(--fold-space-md);
+  border-color: var(--lfc-color-accent-border);
+  background: var(--lfc-color-accent-surface);
+}
+
+.ask-title {
+  display: block;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-accent);
+}
+
+.ask-hint {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-color-accent-text);
+  white-space: normal;
+}
+
 .badge {
   flex: none;
   padding: 3px 8px;
@@ -40,6 +69,8 @@
   flex: 1;
   min-width: 0;
   text-align: left;
+  /* L'invite y met deux lignes : elle ne doit pas être coupée par l'ellipse de
+     la barre de contexte. */
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-secondary);
   white-space: nowrap;

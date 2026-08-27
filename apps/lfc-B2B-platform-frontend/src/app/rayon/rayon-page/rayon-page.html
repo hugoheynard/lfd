@@ -8,6 +8,16 @@
     <span class="where">{{ service.place }} · {{ service.slot }}</span>
     <span class="change">{{ t().shop.changeService }}</span>
   </button>
+} @else {
+  <!-- Visiter d'abord, choisir ensuite : la barre demande le mode au lieu de le
+       rappeler, et rien n'est bloqué avant le règlement. -->
+  <button class="context ask" type="button" (click)="backToService()">
+    <span class="where">
+      <span class="ask-title">{{ t().shop.pickService }}</span>
+      <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
+    </span>
+    <span class="change">{{ t().shop.changeService }}</span>
+  </button>
 }
 
 <div class="shop">
@@ -86,7 +96,7 @@
     </div>
     <app-cart-summary />
     <button class="pay" type="button" [disabled]="cart.isEmpty()" (click)="pay()">
-      {{ payLabel() }}
+      {{ needsService() ? t().shop.pickService : payLabel() }}
     </button>
     <p class="pay-hint">{{ t().cart.payHint }}</p>
   </aside>

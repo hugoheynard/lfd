@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientLocale } from '../../client/client-locale.service';
@@ -92,9 +93,24 @@ describe('CommandePage', () => {
   it('une porte sans écran le DIT, au lieu de ne rien faire', () => {
     expect(text()).not.toContain(FR.commande.pending);
 
-    click(FR.commande.browseTitle);
+    click(FR.commande.againAction);
 
     expect(text()).toContain(FR.commande.pending);
+  });
+
+  it('« je visite la boutique » mène au rayon, sans rien demander avant', () => {
+    // Regarder d'abord, décider ensuite : c'est ce que la ligne promet, et le
+    // rayon demande le mode en tête plutôt que de barrer la route.
+    const router = TestBed.inject(Router);
+    const gone: unknown[] = [];
+    vi.spyOn(router, 'navigate').mockImplementation((commands: unknown) => {
+      gone.push(commands);
+      return Promise.resolve(true);
+    });
+
+    click(FR.commande.browseTitle);
+
+    expect(gone).toEqual([['/commande/boutique']]);
   });
 
   it("l'urgence propose le rappel ET l'appel direct", () => {

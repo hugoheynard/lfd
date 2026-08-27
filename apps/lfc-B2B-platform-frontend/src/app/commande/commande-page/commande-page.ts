@@ -135,6 +135,15 @@ export class CommandePage {
     void this.router.navigate(['/commande/boutique']);
   }
 
+  /**
+   * Visiter le rayon SANS choisir : le mode reste à prendre, et la boutique le
+   * demande en tête plutôt que de barrer la route. C'est ce que la ligne promet
+   * — regarder d'abord, décider ensuite.
+   */
+  protected browse(): void {
+    void this.router.navigate(['/commande/boutique']);
+  }
+
   protected openPanel(): void {
     this.pending.set(false);
     this.panelOpen.set(true);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { formatEuro } from '../../client/cart-total';
@@ -33,20 +33,28 @@ export class PanierPage {
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
 
-  protected readonly payLabel = computed(() =>
-    fill(this.t().cart.pay, { total: formatEuro(this.cart.totals().total) }),
-  );
+  /**
+   * Le bouton nomme la SUITE, et elle dépend de ce qui manque : un panier vide
+   * renvoie au rayon, un panier sans mode de service renvoie à la question, et
+   * un panier prêt porte le montant.
+   */
+  protected readonly ctaLabel = computed(() => {
+    if (this.cart.isEmpty()) {
+      return this.t().cart.browse;
+    }
+    if (this.choice() === null) {
+      return this.t().shop.pickService;
+    }
+    return fill(this.t().cart.pay, { total: formatEuro(this.cart.totals().total) });
+  });
 
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerCart);
     this.chrome.back.set((): void => this.backToShop());
-    effect(() => {
-      // Sans mode de service, il n'y a pas de panier à relire : on renvoie à la
-      // question, comme le rayon le fait.
-      if (this.order.choice() === null) {
-        void this.router.navigate(['/commande']);
-      }
-    });
+  }
+
+  protected pickService(): void {
+    void this.router.navigate(['/commande']);
   }
 
   protected backToShop(): void {
@@ -61,6 +69,12 @@ export class PanierPage {
   protected proceed(): void {
     if (this.cart.isEmpty()) {
       this.backToShop();
+      return;
+    }
+    // Régler exige le mode : c'est lui qui porte la remise et les frais. On mène
+    // à la question plutôt que de facturer un panier sans destination.
+    if (this.choice() === null) {
+      void this.router.navigate(['/commande']);
       return;
     }
     if (this.orders.place() !== null) {

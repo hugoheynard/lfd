@@ -11,6 +11,11 @@
         <span class="slot-note">{{ t().cart.slotNote }}</span>
       </p>
     </section>
+  } @else {
+    <button class="ask" type="button" (click)="pickService()">
+      <span class="ask-title">{{ t().shop.pickService }}</span>
+      <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
+    </button>
   }
 
   <app-cart-summary />
@@ -19,7 +24,7 @@
 <div class="foot">
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir. -->
   <button class="pay" type="button" (click)="proceed()">
-    {{ cart.isEmpty() ? t().cart.browse : payLabel() }}
+    {{ ctaLabel() }}
   </button>
   <p class="hint">{{ t().cart.payHint }}</p>
 </div>
