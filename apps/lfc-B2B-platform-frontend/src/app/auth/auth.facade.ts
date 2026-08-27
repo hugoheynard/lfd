@@ -1,4 +1,5 @@
 import { Injectable, PLATFORM_ID, computed, inject } from '@angular/core';
+
 import { isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -7,6 +8,7 @@ import { NEVER, of } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
+import { appBaseUrl } from './app-base-url';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -126,12 +128,17 @@ export class AuthFacade {
       .subscribe();
   }
 
-  /** Déconnexion Auth0 puis retour à l'origine (le guard renverra vers /login). */
+  /**
+   * Déconnexion Auth0 puis retour à l'app (le guard renverra vers /login).
+   *
+   * `appBaseUrl()` et non l'origine nue : sous `/pro`, une origine nue déposerait
+   * la personne à la racine du domaine, hors de l'app.
+   */
   logout(): void {
     if (!this.isBrowser) {
       return;
     }
-    void this.auth0?.logout({ logoutParams: { returnTo: window.location.origin } }).subscribe();
+    void this.auth0?.logout({ logoutParams: { returnTo: appBaseUrl() } }).subscribe();
   }
 
   /**
