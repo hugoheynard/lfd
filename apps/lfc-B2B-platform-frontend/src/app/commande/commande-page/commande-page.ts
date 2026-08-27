@@ -79,10 +79,6 @@ export class CommandePage {
     this.t().commande.nowTitle,
   ]);
 
-  protected readonly orderLine = computed(() =>
-    fill(this.t().commande.qrSub, { order: MOCK_CLIENT.lastOrder }),
-  );
-
   constructor() {
     effect(() => {
       this.chrome.kicker.set(

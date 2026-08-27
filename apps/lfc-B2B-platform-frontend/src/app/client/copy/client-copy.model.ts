@@ -139,10 +139,6 @@ export interface ClientCopy {
     readonly cateringNote: string;
     readonly browseTitle: string;
     readonly browseSub: string;
-    readonly qrTitle: string;
-    /** `{order}` est remplacé par le numéro de commande. */
-    readonly qrSub: string;
-    readonly qrAction: string;
     readonly againTitle: string;
     readonly againSub: string;
     readonly againAction: string;

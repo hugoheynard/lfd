@@ -89,11 +89,6 @@ describe('CommandePage', () => {
     expect(chrome.bellCount()).toBe(MOCK_CLIENT.unread);
   });
 
-  it('rappelle la commande prête, avec son numéro', () => {
-    expect(text()).toContain(fill(FR.commande.qrSub, { order: MOCK_CLIENT.lastOrder }));
-    expect(text()).toContain(FR.commande.qrAction);
-  });
-
   it('une porte sans écran le DIT, au lieu de ne rien faire', () => {
     expect(text()).not.toContain(FR.commande.pending);
 
