@@ -116,7 +116,10 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  background: var(--fold-color-bg-page);
+  /* PAS de fond ici : la crème est portée par la lèvre et par la scène. Peinte
+     sur la feuille, elle passait DERRIÈRE la bande d'encre de la lèvre, et le
+     moindre pixel fractionnaire la laissait affleurer — un liseré clair entre
+     l'accroche et la bande, qui n'existait qu'à l'arrondi près. */
   color: var(--fold-color-text);
 }
 
@@ -152,6 +155,7 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
+  background: var(--fold-color-bg-page);
   /* Le haut est entièrement porté par la lèvre — sa moitié crème fait déjà la
      respiration au-dessus du premier bloc. */
   /* Le bas est large à dessein : sur un téléphone, la barre d'URL qui se replie
@@ -251,5 +255,13 @@
 
   .stage {
     padding: 46px 52px;
+  }
+
+  /* La colonne est large, la LECTURE ne doit pas l'être. On borne l'étape entière
+     plutôt que chaque bloc : le formulaire, la carte traiteur et l'encart pro
+     partagent alors la même colonne de mesure, et un bloc ajouté demain en
+     hérite sans qu'on y pense. */
+  .stage > * {
+    max-width: 560px;
   }
 }
