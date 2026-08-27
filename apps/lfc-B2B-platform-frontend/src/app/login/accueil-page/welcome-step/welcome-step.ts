@@ -1,8 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldIdService,
   FoldInputComponent,
 } from 'fold-ng';
 
@@ -18,6 +29,16 @@ import { RuleOu } from '../rule-ou/rule-ou';
  * Chaque champ a une raison énonçable à voix haute, et le téléphone la dit
  * sous lui. Pas de mot de passe, pas de KBIS : le compte s'ouvre **incomplet**,
  * ce qui n'est pas la même chose qu'inactif.
+ *
+ * En pile, les champs sont **repliés** : on voit d'abord la promesse et deux
+ * portes — s'inscrire, ou se connecter — sans rien faire défiler. Trois champs
+ * dépliés d'entrée auraient poussé « Déjà client ? » sous la ligne de flottaison,
+ * et un client qui a déjà un compte n'a rien à faire dans un formulaire.
+ *
+ * Le pli n'existe qu'en pile : au-delà, la colonne a la place, et la réf montre
+ * le formulaire ouvert. C'est donc le CSS qui décide, pas un `matchMedia` —
+ * l'état plié vit dans le DOM des deux côtés, seule sa mise en page change, et
+ * le rendu serveur ne peut pas se tromper de largeur.
  */
 @Component({
   selector: 'app-welcome-step',
@@ -50,6 +71,14 @@ export class WelcomeStep {
   readonly wantsQuote = output<void>();
   readonly cancelledCallback = output<void>();
 
+  /** Le formulaire est ouvert — vrai dès qu'on a demandé à s'inscrire. */
+  protected readonly expanded = signal(false);
+
+  /** `aria-controls` a besoin d'un identifiant, et le rendu serveur d'un stable. */
+  protected readonly fieldsId = inject(FoldIdService).next('signup-fields');
+
+  private readonly fields = viewChild<ElementRef<HTMLElement>>('fields');
+
   protected readonly firstName = signal('');
   protected readonly email = signal('');
   protected readonly tel = signal('');
@@ -64,6 +93,12 @@ export class WelcomeStep {
   protected readonly proTitle = computed(() =>
     this.bookedSlot() ? 'Rappel demandé' : 'Intéressé par l’espace pro ?',
   );
+
+  /** Déplie, et pose le curseur dans le premier champ — sinon il faut viser. */
+  protected expand(): void {
+    this.expanded.set(true);
+    queueMicrotask(() => this.fields()?.nativeElement.querySelector('input')?.focus());
+  }
 
   protected submit(): void {
     if (this.complete()) {

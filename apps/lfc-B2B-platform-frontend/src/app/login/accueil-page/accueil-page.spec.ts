@@ -65,6 +65,22 @@ describe('AccueilPage', () => {
     expect(chrome.back()).toBeNull();
   });
 
+  it("le formulaire est replié, et « S'inscrire » l'ouvre", () => {
+    // Le pli lui-même est une affaire de largeur, donc de CSS — ce que le test
+    // vérifie, c'est le CONTRAT que le CSS suit : l'état annoncé aux
+    // technologies d'assistance, et le champ qui prend le curseur.
+    const open = button("S'inscrire");
+    expect(open.getAttribute('aria-expanded')).toBe('false');
+    expect(open.getAttribute('aria-controls')).toBe(
+      el().querySelector('.fields')?.getAttribute('id'),
+    );
+
+    open.click();
+    fixture.detectChanges();
+
+    expect(button("S'inscrire").getAttribute('aria-expanded')).toBe('true');
+  });
+
   it("refuse la création tant que les trois champs n'y sont pas", () => {
     expect(button('Créer mon compte').disabled).toBe(true);
 

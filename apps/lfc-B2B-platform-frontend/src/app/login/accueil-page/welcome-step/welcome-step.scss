@@ -84,6 +84,12 @@ fold-input {
   gap: var(--fold-space-lg);
 }
 
+/* Le bouton qui déplie n'existe qu'en pile ; celui qui valide, qu'une fois
+   déplié. En deçà de `display: none`, aucun des deux ne prend la tabulation. */
+.cta-open {
+  display: none;
+}
+
 .submit {
   display: flex;
   flex-direction: column;
@@ -243,6 +249,17 @@ fold-input {
 
 /* ── Au-delà du pli ───────────────────────────────────────────────────────── */
 
+@media (max-width: 899px) {
+  .folded .fields,
+  .folded .cta-submit {
+    display: none;
+  }
+
+  .folded .cta-open {
+    display: inline-flex;
+  }
+}
+
 @media (min-width: 900px) {
   :host {
     gap: 22px;
@@ -268,8 +285,6 @@ fold-input {
 
   .signup {
     --fold-card-padding: 28px 30px;
-
-    max-width: 560px;
   }
 
   .form {
@@ -311,7 +326,6 @@ fold-input {
     flex-direction: row;
     align-items: center;
     gap: 18px;
-    max-width: 560px;
     padding: 20px 24px;
     border-radius: var(--lfc-radius-2xl);
   }

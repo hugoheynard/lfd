@@ -7,12 +7,12 @@
 </div>
 
 <fold-card class="signup">
-  <form class="form" (submit)="$event.preventDefault(); submit()">
+  <form class="form" [class.folded]="!expanded()" (submit)="$event.preventDefault(); submit()">
     <p class="pitch">
       Un prénom, un e-mail, un numéro. C'est tout — le reste attendra que vous en ayez besoin.
     </p>
 
-    <div class="fields">
+    <div #fields class="fields" [id]="fieldsId">
       <fold-input
         class="f-first"
         size="lg"
@@ -43,9 +43,25 @@
     </div>
 
     <div class="submit">
+      <!-- Deux boutons, un seul montré à la fois : le pli est une affaire de
+           largeur, et seul le CSS la connaît sans risquer de se tromper au rendu
+           serveur. Celui qui est caché sort aussi de l'ordre de tabulation. -->
       <button
         foldButton
-        class="cta"
+        class="cta cta-open"
+        emphasis="solid"
+        intent="primary"
+        size="lg"
+        type="button"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-controls]="fieldsId"
+        (click)="expand()"
+      >
+        S'inscrire
+      </button>
+      <button
+        foldButton
+        class="cta cta-submit"
         emphasis="solid"
         intent="primary"
         size="lg"
