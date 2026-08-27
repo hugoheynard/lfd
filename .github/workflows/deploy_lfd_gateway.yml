@@ -28,12 +28,23 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read # lire le verdict des autres workflows
 
 jobs:
   deploy_lfd_gateway:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      # ── La porte ────────────────────────────────────────────────────────────
+      # Jusqu'au 2026-08-27, ce déploiement partait dès le push sur `main`, sans
+      # rien savoir de la CI : elle tournait EN MÊME TEMPS, et son verdict
+      # arrivait après coup. Un commit rouge se déployait quand même.
+      - name: Attendre que la CI soit verte
+        if: github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/attendre-un-run
+        with:
+          workflow: ci.yml
 
       - uses: pnpm/action-setup@v6
 

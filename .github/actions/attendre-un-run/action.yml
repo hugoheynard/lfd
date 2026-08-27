@@ -1,0 +1,97 @@
+name: Attendre un run
+description: >
+  Bloque tant qu'un autre workflow n'a pas fini SUR LE MÊME COMMIT, et échoue
+  s'il est rouge. C'est ce qui rend un déploiement subordonné à la CI, et un
+  front subordonné au backend.
+
+# POURQUOI UNE ATTENTE ET PAS `workflow_run` — la question se reposera.
+#
+# `workflow_run` serait gratuit (le runner ne tourne pas pendant l'attente) mais
+# il s'exécute TOUJOURS dans la version du fichier présente sur la branche par
+# défaut, ici `dev`. On déploierait donc le commit de `main` avec la recette de
+# `dev` : une modification de recette partirait en production sans jamais passer
+# par `main`. Il perd aussi les filtres `paths:`, qui sont la raison pour
+# laquelle un commit de documentation ne redéploie pas quatre applications.
+#
+# Le prix payé ici est donc assumé : le runner attend, et ces minutes sont
+# facturées. Concrètement, la durée de la CI (~5 min) par déploiement.
+
+inputs:
+  workflow:
+    description: "Nom du fichier du workflow attendu (ex. ci.yml)"
+    required: true
+  exiger:
+    description: >
+      "true" : le run DOIT exister, son absence est une erreur (cas de la CI,
+      qui tourne sur tous les push). "false" : s'il n'a pas démarré au bout du
+      délai de grâce, c'est qu'il n'est pas concerné par ce commit — on passe.
+    required: false
+    default: "true"
+  minutes:
+    description: "Abandon au bout de N minutes d'attente"
+    required: false
+    default: "30"
+  grace:
+    description: >
+      Secondes accordées au run pour APPARAÎTRE. GitHub crée tous les runs d'un
+      push en quelques secondes ; au-delà, l'absence est concluante.
+    required: false
+    default: "90"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKFLOW: ${{ inputs.workflow }}
+        EXIGER: ${{ inputs.exiger }}
+        MINUTES: ${{ inputs.minutes }}
+        GRACE: ${{ inputs.grace }}
+      run: |
+        set -uo pipefail
+        limite=$(( MINUTES * 60 ))
+        attendu=0
+
+        echo "Attente de « ${WORKFLOW} » sur ${GITHUB_SHA:0:7}…"
+
+        while : ; do
+          etat=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW}/runs?head_sha=${GITHUB_SHA}&per_page=1" \
+            --jq '.workflow_runs[0] // empty | "\(.status)|\(.conclusion)|\(.html_url)"' 2>/dev/null) || etat=""
+
+          if [ -z "${etat}" ]; then
+            # Aucun run pour ce commit. Soit il n'a pas encore été créé, soit ce
+            # workflow n'est pas concerné (ses filtres `paths:` n'ont pas mordu).
+            if [ "${attendu}" -ge "${GRACE}" ]; then
+              if [ "${EXIGER}" = "true" ]; then
+                echo "::error::« ${WORKFLOW} » n'a pas tourné sur ce commit. Un déploiement non contrôlé serait pire qu'un déploiement absent."
+                exit 1
+              fi
+              echo "« ${WORKFLOW} » n'est pas concerné par ce commit — rien à attendre."
+              exit 0
+            fi
+          else
+            statut="${etat%%|*}"
+            reste="${etat#*|}"
+            conclusion="${reste%%|*}"
+            url="${reste##*|}"
+
+            if [ "${statut}" = "completed" ]; then
+              if [ "${conclusion}" = "success" ]; then
+                echo "« ${WORKFLOW} » est vert."
+                exit 0
+              fi
+              echo "::error::« ${WORKFLOW} » a conclu « ${conclusion} » → ${url}"
+              exit 1
+            fi
+          fi
+
+          if [ "${attendu}" -ge "${limite}" ]; then
+            echo "::error::Toujours rien après ${MINUTES} min d'attente de « ${WORKFLOW} »."
+            exit 1
+          fi
+
+          sleep 15
+          attendu=$(( attendu + 15 ))
+        done
