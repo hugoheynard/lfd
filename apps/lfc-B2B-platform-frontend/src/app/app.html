@@ -1,4 +1,8 @@
-@if (auth.isLoading()) {
+@if (clientRoute()) {
+  <!-- App CLIENT : elle apporte son propre shell (route parente `ClientShell`),
+       donc le chrome pro ne l'enveloppe pas — et elle n'attend pas Auth0. -->
+  <router-outlet />
+} @else if (auth.isLoading()) {
   <!-- SDK Auth0 en train de résoudre la session : squelette neutre (aussi le
        rendu pré-généré du build statique, avant hydratation navigateur). -->
   <div class="app-boot" role="status" aria-label="Chargement">

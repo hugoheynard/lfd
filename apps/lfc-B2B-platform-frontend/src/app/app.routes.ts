@@ -1,6 +1,7 @@
 import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
+import { ClientShell } from './client/client-shell/client-shell';
 import { FEATURE_DASHBOARD } from './feature-flags';
 
 /**
@@ -26,15 +27,24 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login-page').then((m) => m.LoginPage),
   },
   {
-    // Refonte de l'app CLIENT (handoff design) : la page d'entrée — inscription
-    // en trois champs, connexion par lien e-mail, rappel commercial. Maquette,
-    // rien ne part sur le réseau. Elle ne remplace `/login` (Auth0) que le jour
-    // où le backend saura émettre et vérifier un lien.
-    path: 'bienvenue',
-    title: 'Bienvenue — La Folie Coffee',
-    loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
+    // Refonte de l'app CLIENT (handoff design). Route PARENTE : le shell client
+    // (barre de marque bleue, pas de rail) enveloppe ses écrans, exactement
+    // comme le shell pro enveloppe les siens. Si aucun enfant ne correspond, le
+    // routeur revient en arrière et essaie les routes pro qui suivent.
+    path: '',
+    component: ClientShell,
+    children: [
+      {
+        // La page d'entrée : inscription en trois champs, connexion par lien
+        // e-mail, rappel commercial. Maquette — rien ne part sur le réseau, et
+        // `/login` (Auth0) reste la porte réelle en attendant.
+        path: 'bienvenue',
+        title: 'Bienvenue — La Folie Coffee',
+        loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
+      },
+      { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
+    ],
   },
-  { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
   {
     path: 'boutique',
     title: 'Boutique — La Folie Coffee B2B',

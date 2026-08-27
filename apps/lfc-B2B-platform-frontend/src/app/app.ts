@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import {
   FoldAppShellComponent,
   FoldButtonIconComponent,
@@ -22,6 +24,9 @@ import { ContactPanel } from './contact/contact-panel/contact-panel';
 import { CartService } from './data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
 import { SiteFooter } from './footer/site-footer';
+
+/** Les URL servies par le shell CLIENT. À tenir en phase avec `app.routes.ts`. */
+const CLIENT_PATHS = new Set(['/bienvenue', '/connexion']);
 
 @Component({
   selector: 'app-root',
@@ -61,6 +66,30 @@ export class App {
 
   /** Tiroir mobile — le rail primaire devient off-canvas ≤768px. */
   protected readonly mobileNavOpen = signal(false);
+
+  private readonly router = inject(Router);
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  /**
+   * Les écrans de l'app CLIENT portent leur PROPRE shell (barre de marque bleue,
+   * pas de rail) : le chrome pro ne doit pas les envelopper.
+   *
+   * Le choix se fait sur la ROUTE, pas sur l'authentification. Le déduire de la
+   * session était faux dans les deux sens : une personne connectée qui ouvre un
+   * écran client héritait du rail pro, et le jour où un écran client demandera
+   * une session, il le perdrait.
+   */
+  protected readonly clientRoute = computed(() => {
+    const [path] = this.url().split('?');
+    return path !== undefined && CLIENT_PATHS.has(path);
+  });
 
   private readonly panelHost = inject(FoldPanelHostService);
   protected readonly cart = inject(CartService);

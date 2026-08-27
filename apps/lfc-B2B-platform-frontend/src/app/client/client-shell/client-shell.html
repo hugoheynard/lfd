@@ -1,0 +1,18 @@
+<fold-app-shell mobileNav="none" scroll="scroll">
+  <div header class="bar">
+    @if (chrome.back()) {
+      <button class="back" type="button" aria-label="Retour" (click)="goBack()">
+        <fold-icon name="chevron-left" />
+      </button>
+    }
+    <span class="mark" aria-hidden="true">LFC</span>
+    <span class="brand">
+      <span class="brand-name">La Folie Coffee</span>
+      @if (chrome.kicker(); as kicker) {
+        <span class="brand-kicker">{{ kicker }}</span>
+      }
+    </span>
+  </div>
+
+  <router-outlet />
+</fold-app-shell>

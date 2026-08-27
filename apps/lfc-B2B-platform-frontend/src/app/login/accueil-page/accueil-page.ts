@@ -1,5 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+
+import { FoldSurfaceDirective } from 'fold-ng';
+
+import { ClientChrome } from '../../client/client-chrome.service';
 
 import { KNOWN_PHONE } from './call-slots';
 import { EnteredStep } from './entered-step/entered-step';
@@ -23,12 +33,13 @@ type Step = 'welcome' | 'login' | 'entered';
 @Component({
   selector: 'app-accueil-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { 'data-theme': 'lfc-app' },
-  imports: [FoldIconComponent, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
+  imports: [FoldSurfaceDirective, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
   templateUrl: './accueil-page.html',
   styleUrl: './accueil-page.scss',
 })
 export class AccueilPage {
+  private readonly chrome = inject(ClientChrome);
+
   protected readonly phone = KNOWN_PHONE;
 
   protected readonly step = signal<Step>('welcome');
@@ -37,7 +48,7 @@ export class AccueilPage {
   protected readonly bookedSlot = signal<string | null>(null);
 
   /** Le retour n'existe que là où on est venu de quelque part. */
-  protected readonly canGoBack = computed(() => this.panelOpen() || this.step() === 'login');
+  private readonly canGoBack = computed(() => this.panelOpen() || this.step() === 'login');
 
   /** Le sur-titre du chrome dit où on est, pas où on va. */
   protected readonly kicker = computed(() => {
@@ -87,7 +98,15 @@ export class AccueilPage {
   /** Le titre d'accueil est le plus long : il descend d'un cran ailleurs. */
   protected readonly bigHeading = computed(() => !this.panelOpen() && this.step() === 'welcome');
 
-  protected back(): void {
+  constructor() {
+    // L'en-tête appartient au shell ; l'écran lui dit seulement quoi afficher.
+    effect(() => {
+      this.chrome.kicker.set(this.kicker());
+      this.chrome.back.set(this.canGoBack() ? (): void => this.back() : null);
+    });
+  }
+
+  private back(): void {
     if (this.panelOpen()) {
       this.panelOpen.set(false);
       return;

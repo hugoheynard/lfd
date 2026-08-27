@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { ClientChrome } from '../../client/client-chrome.service';
 import { AccueilPage } from './accueil-page';
 
 /**
@@ -8,6 +9,7 @@ import { AccueilPage } from './accueil-page';
  */
 describe('AccueilPage', () => {
   let fixture: ComponentFixture<AccueilPage>;
+  let chrome: ClientChrome;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const text = (): string => el().textContent ?? '';
@@ -46,13 +48,16 @@ describe('AccueilPage', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [AccueilPage] });
     fixture = TestBed.createComponent(AccueilPage);
+    chrome = TestBed.inject(ClientChrome);
     fixture.detectChanges();
   });
 
   it("ouvre sur l'accueil visiteur, sans retour possible", () => {
     expect(text()).toContain('Première visite ?');
-    expect(text()).toContain('Bienvenue');
-    expect(el().querySelector('.back')).toBeNull();
+    // Le sur-titre et le retour vivent dans l'en-tête du shell : l'écran les
+    // PUBLIE, il ne les dessine plus.
+    expect(chrome.kicker()).toBe('Bienvenue');
+    expect(chrome.back()).toBeNull();
   });
 
   it("refuse la création tant que les trois champs n'y sont pas", () => {
@@ -71,15 +76,17 @@ describe('AccueilPage', () => {
     click('Créer mon compte');
 
     expect(text()).toContain('Compte actif');
-    expect(text()).toContain('Compte créé');
+    expect(chrome.kicker()).toBe('Compte créé');
   });
 
   it('« Déjà client ? » mène à la connexion, et le retour ramène', () => {
     click('Déjà client ?');
-    expect(text()).toContain('Connexion');
+    expect(chrome.kicker()).toBe('Connexion');
     expect(text()).toContain('Content de vous revoir.');
 
-    (el().querySelector('.back') as HTMLButtonElement).click();
+    const back = chrome.back();
+    expect(back).not.toBeNull();
+    back?.();
     fixture.detectChanges();
     expect(text()).toContain('Première visite ?');
   });

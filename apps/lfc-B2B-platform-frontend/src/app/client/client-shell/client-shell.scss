@@ -1,0 +1,76 @@
+:host {
+  display: block;
+  height: 100dvh;
+
+  /* La rangée d'en-tête du shell est un nombre fixe : on la lui donne en CSS
+     plutôt qu'en entrée, pour pouvoir y ajouter l'encoche du téléphone. 44 px de
+     pastille + 14 px de respiration, et la barre d'état par-dessus quand le
+     navigateur la déclare (app installée). */
+  --fold-shell-header-height: calc(env(safe-area-inset-top, 0px) + 58px);
+  --fold-shell-header-height-mobile: calc(env(safe-area-inset-top, 0px) + 58px);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: env(safe-area-inset-top, 0px) 20px 0;
+}
+
+.back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  box-shadow: var(--lfc-shadow-logo);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: var(--lfc-leading-display);
+}
+
+.brand-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-kicker {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
