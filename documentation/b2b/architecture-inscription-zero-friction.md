@@ -149,6 +149,17 @@ comme pour les clients.
 La connexion `lfc-staff`, elle, ne gagne pas de passkey et ne change pas de
 mécanique.
 
+**Les mots de passe du staff restent valides.** Les passkeys s'activent par
+CONNEXION, et même là où elles le sont, elles s'ajoutent sans rien remplacer :
+« Passkeys do not replace or invalidate a user's existing credentials ». Ce qui
+change pour le staff, c'est l'écran — refait, et coupé en deux temps par le flux
+« identifiant d'abord ». Rien d'autre. Le seul mécanisme capable d'enfermer
+quelqu'un dehors est le basculement de domaine décrit juste au-dessus, et il ne
+touche pas les identifiants : il touche l'émetteur.
+
+⚠️ Si le tenant est encore en Classic Universal Login avec une page de connexion
+personnalisée en HTML, elle serait perdue au passage. À regarder avant.
+
 ## Rappel de contrainte
 
 Le tiers gratuit inclut **une** connexion base de données, que
