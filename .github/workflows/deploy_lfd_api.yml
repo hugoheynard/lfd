@@ -29,7 +29,11 @@ on:
 
 concurrency:
   group: deploy_lfd_api
-  cancel-in-progress: true
+  # PAS d'annulation en vol, contrairement aux fronts. Ce déploiement applique
+  # les migrations : l'interrompre entre `migrate deploy` et le swap du Worker
+  # laisserait une base en avance sur le binaire qui la lit. Un push plus récent
+  # attend son tour.
+  cancel-in-progress: false
 
 permissions:
   contents: read
