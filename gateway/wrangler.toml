@@ -36,6 +36,22 @@ name = "lfd-gateway"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# 🔴 NE PAS RETIRER. Déclarer une `route` de zone SUFFIT à éteindre le
+# sous-domaine `workers.dev` : wrangler le met à `false` dès qu'un Worker a des
+# routes et que rien ne dit le contraire. Or cette adresse EST l'API publique —
+# `LFD_API_URL` est compilée DANS les bundles des deux fronts.
+#
+# Constaté en production le 2026-08-27, dans la demi-heure : le déploiement de
+# la passerelle a réussi, puis l'API, le back-office et la boutique ont tous
+# échoué, et le navigateur rendait « error code: 1042 » — que le front présente
+# comme une erreur CORS, puisqu'une réponse absente n'a pas d'en-tête
+# `Access-Control-Allow-Origin`.
+#
+# Autrement dit : ajouter la route `/pro` a coupé tout le reste. Les deux
+# adresses doivent coexister tant que les fronts ne sont pas reconstruits
+# contre la zone.
+workers_dev = true
+
 [dev]
 ip = "127.0.0.1"
 port = 8787
