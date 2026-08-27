@@ -1,6 +1,6 @@
 # Inscription client « zéro friction » — la première entrée
 
-**Statut** : 📐 décidé, pas encore codé — 2026-08-27
+**Statut** : 🟡 tenant CONFIGURÉ, code à écrire — 2026-08-27
 **Portée** : **la surface CLIENT uniquement** (`lfc-b2b-customers`). Le staff
 (`lfc-staff`) ne change pas — voir « Ce qui déborde sur le staff ».
 
@@ -20,22 +20,31 @@ Les passkeys sont incluses dans **tous** les plans Auth0, gratuit compris. Elles
 pas : le « mot de passe plus tard » tient sans rien renégocier. Limite : 20
 passkeys par personne — le téléphone, le portable, l'ordinateur du fournil.
 
-### Relevé du tenant — 2026-08-27
+### État du tenant — 2026-08-27
 
-Lu dans `lafoliedouce` (EU-2, production), en lecture seule :
+`lafoliedouce` (EU-2, production). Les deux réglages manquants ont été posés
+ce jour, avec l'accord explicite du propriétaire du compte :
 
-| Point                                      | État                                                     |
-| ------------------------------------------ | -------------------------------------------------------- |
-| Passkey sur `lfc-b2b-customers`            | **Disponible**, marquée _recommandée_, pas encore active |
-| Password sur `lfc-b2b-customers`           | **Active** — les deux coexisteront                       |
-| « Requires username » désactivé            | ✅ fait                                                  |
-| **Identifier First login flow**            | ⏳ **le seul prérequis en attente**                      |
-| Custom Login Page désactivée               | ✅ fait                                                  |
-| Universal Login Experience                 | ✅ **déjà le Nouveau**                                   |
-| Domaine personnalisé                       | Aucun — et le tenant n'en fait PAS un prérequis          |
-| `Disable Sign Ups` sur la connexion client | Désactivé : l'inscription publique est ouverte           |
+| Point                                      | État                                                 |
+| ------------------------------------------ | ---------------------------------------------------- |
+| Passkey sur `lfc-b2b-customers`            | ✅ **ACTIVE** (posée le 2026-08-27)                  |
+| Password sur `lfc-b2b-customers`           | **Active** — les deux coexisteront                   |
+| « Requires username » désactivé            | ✅ fait                                              |
+| **Identifier First login flow**            | ✅ **activé** (posé le 2026-08-27) — prérequis READY |
+| Custom Login Page désactivée               | ✅ fait                                              |
+| Universal Login Experience                 | ✅ **déjà le Nouveau**                               |
+| Domaine personnalisé                       | Aucun — et le tenant n'en fait PAS un prérequis      |
+| `Disable Sign Ups` sur la connexion client | Désactivé : l'inscription publique est ouverte       |
 
-**Un seul interrupteur sépare le tenant des passkeys.**
+**Le tenant est prêt.** Ce qui reste est du code, plus de la configuration.
+
+⚠️ Deux effets immédiats, en production :
+
+- l'écran de connexion demande désormais **l'e-mail d'abord**, le mot de passe
+  ensuite — pour le staff comme pour les clients. Mêmes identifiants ;
+- les prompts personnalisés d'Universal Login ont été réinitialisés par le
+  changement de flux. Ils étaient aux valeurs par défaut d'Auth0 (« Welcome »,
+  `${clientName}`) — vérifié avant de valider, rien n'a été perdu.
 
 ### Pourquoi pas le passwordless d'Auth0
 
