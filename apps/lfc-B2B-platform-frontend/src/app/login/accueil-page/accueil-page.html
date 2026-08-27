@@ -1,4 +1,4 @@
-<app-client-page [heading]="heading()" [intro]="intro()" [big]="bigHeading()">
+<app-client-page [heading]="heading()" [intro]="intro()" [big]="!panelOpen()">
   <div aside-foot class="aside-foot">
     @if (showProof()) {
       <ul class="proof">
@@ -16,29 +16,15 @@
   @if (panelOpen()) {
     <app-rappel-panel [phone]="phone" (booked)="book($event)" />
   } @else {
-    @switch (step()) {
-      @case ('welcome') {
-        <app-welcome-step
-          [phone]="phone"
-          [bookedSlot]="bookedSlot()"
-          (signedUp)="goTo('entered')"
-          (wantsLogin)="goTo('login')"
-          (wantsCallback)="openPanel()"
-          [quotePending]="quotePending()"
-          (wantsQuote)="openQuote()"
-          (cancelledCallback)="bookedSlot.set(null)"
-        />
-      }
-      @case ('login') {
-        <app-login-step
-          (entered)="goTo('entered')"
-          (wantsSignup)="goTo('welcome')"
-          (sentChange)="linkSent.set($event)"
-        />
-      }
-      @case ('entered') {
-        <app-entered-step />
-      }
-    }
+    <app-welcome-step
+      [phone]="phone"
+      [bookedSlot]="bookedSlot()"
+      (signedUp)="signUp($event)"
+      (wantsLogin)="signIn($event)"
+      (wantsCallback)="openPanel()"
+      [quotePending]="quotePending()"
+      (wantsQuote)="openQuote()"
+      (cancelledCallback)="bookedSlot.set(null)"
+    />
   }
 </app-client-page>

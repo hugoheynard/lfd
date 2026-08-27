@@ -1,4 +1,4 @@
-import { Injectable, PLATFORM_ID, computed, inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 
 import { isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -78,12 +78,26 @@ export class AuthFacade {
    */
   readonly authEmail = computed(() => this.authUser()?.email ?? null);
 
+  /**
+   * Le profil saisi AVANT le départ chez Auth0, retrouvé au retour.
+   *
+   * Prénom et téléphone n'existent nulle part chez Auth0 : ils sont saisis sur
+   * notre page, puis la personne part poser sa passkey — un vrai rechargement de
+   * page, qui efface toute mémoire vive. `appState` fait l'aller-retour avec
+   * elle, et c'est le seul endroit prévu pour ça.
+   *
+   * ⚠️ Rien de secret n'a sa place ici : le SDK range l'`appState` dans le
+   * stockage du navigateur le temps de la redirection.
+   */
+  readonly pendingProfile = signal<PendingProfile | null>(null);
+
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
     // nouveau chargement de page), le SDK émet l'`appState` passé à
     // `loginWithRedirect`. On s'abonne ici, au constructeur, car `login()`
     // n'est pas rappelé sur ce second chargement.
     this.auth0?.appState$.subscribe((state: unknown) => {
+      this.pendingProfile.set(readProfile(state));
       const target = readTarget(state);
       if (target) {
         void this.router.navigateByUrl(target);
@@ -111,9 +125,16 @@ export class AuthFacade {
     );
   }
 
-  /** Redirige vers Auth0 ; `target` sera restauré au retour (`appState`). */
-  login(target: string): void {
-    void this.auth0?.loginWithRedirect({ appState: { target } }).subscribe();
+  /**
+   * Redirige vers Auth0 ; `target` sera restauré au retour (`appState`).
+   *
+   * `hint` préremplit l'identifiant sur l'écran d'Auth0 : quelqu'un qui vient de
+   * taper son e-mail chez nous n'a pas à le retaper chez lui.
+   */
+  login(target: string, hint?: string): void {
+    void this.auth0
+      ?.loginWithRedirect({ appState: { target }, authorizationParams: loginHint(hint) })
+      .subscribe();
   }
 
   /**
@@ -122,9 +143,12 @@ export class AuthFacade {
    * de compte dépend de la connection Auth0 (`lfc-b2b-customers`, sign-ups
    * activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
    */
-  register(target: string): void {
+  register(target: string, profile?: PendingProfile): void {
     void this.auth0
-      ?.loginWithRedirect({ appState: { target }, authorizationParams: { screen_hint: 'signup' } })
+      ?.loginWithRedirect({
+        appState: { target, profile },
+        authorizationParams: { screen_hint: 'signup', ...loginHint(profile?.email) },
+      })
       .subscribe();
   }
 
@@ -163,6 +187,18 @@ export class AuthFacade {
   }
 }
 
+/** Ce que l'app retient d'une personne le temps de l'aller-retour Auth0. */
+export interface PendingProfile {
+  readonly firstName: string;
+  readonly email: string;
+  readonly phone: string;
+}
+
+/** `login_hint` seulement s'il y a quelque chose à souffler. */
+function loginHint(email: string | undefined): { login_hint?: string } {
+  return email !== undefined && email.trim() !== '' ? { login_hint: email.trim() } : {};
+}
+
 /** Prédicat de garde : `state` porte-t-il un `target` chaîne ? (sans cast). */
 function hasTarget(state: unknown): state is { target: unknown } {
   return typeof state === 'object' && state !== null && 'target' in state;
@@ -174,4 +210,38 @@ function readTarget(state: unknown): string | null {
     return state.target;
   }
   return null;
+}
+
+/** Prédicat de garde : `state` porte-t-il un `profile` ? (sans cast). */
+function hasProfile(state: unknown): state is { profile: unknown } {
+  return typeof state === 'object' && state !== null && 'profile' in state;
+}
+
+/** Un objet quelconque, dont les champs restent à vérifier un par un. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readString(source: Record<string, unknown>, key: string): string {
+  const value = source[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/**
+ * Extrait le profil de l'`appState`. Il revient du stockage du navigateur : on
+ * vérifie ses trois champs plutôt que de lui faire confiance. Sans e-mail il n'y
+ * a rien à poser, donc rien à retenir.
+ */
+function readProfile(state: unknown): PendingProfile | null {
+  if (!hasProfile(state) || !isRecord(state.profile)) {
+    return null;
+  }
+  const email = readString(state.profile, 'email');
+  return email === ''
+    ? null
+    : {
+        firstName: readString(state.profile, 'firstName'),
+        email,
+        phone: readString(state.profile, 'phone'),
+      };
 }

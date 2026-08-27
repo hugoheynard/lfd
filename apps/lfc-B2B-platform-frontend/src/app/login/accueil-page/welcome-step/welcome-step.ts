@@ -17,6 +17,7 @@ import {
   FoldInputComponent,
 } from 'fold-ng';
 
+import type { PendingProfile } from '../../../auth/auth.facade';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
 import { EventCard } from '../../../client/event-card/event-card';
@@ -68,8 +69,11 @@ export class WelcomeStep {
   /** Le numéro sur lequel le fournil rappellera. */
   readonly phone = input.required<string>();
 
-  readonly signedUp = output<void>();
-  readonly wantsLogin = output<void>();
+  /** Les trois champs. Le composant les COLLECTE ; il ne les envoie nulle part. */
+  readonly signedUp = output<PendingProfile>();
+
+  /** L'e-mail déjà tapé, s'il y en a un : il préremplira l'écran d'Auth0. */
+  readonly wantsLogin = output<string>();
   readonly wantsCallback = output<void>();
   readonly wantsQuote = output<void>();
   readonly cancelledCallback = output<void>();
@@ -103,7 +107,11 @@ export class WelcomeStep {
 
   protected submit(): void {
     if (this.complete()) {
-      this.signedUp.emit();
+      this.signedUp.emit({
+        firstName: this.firstName().trim(),
+        email: this.email().trim(),
+        phone: this.tel().trim(),
+      });
     }
   }
 }

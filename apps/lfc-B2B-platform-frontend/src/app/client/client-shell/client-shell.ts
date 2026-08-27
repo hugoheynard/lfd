@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { ClientOnboarding } from '../client-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
 
@@ -28,6 +29,13 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
   protected readonly t = inject(ClientCopyService).t;
+
+  constructor() {
+    // Instancié pour son EFFET, pas pour son API : c'est lui qui repose prénom
+    // et téléphone au retour d'Auth0. Un service `providedIn: 'root'` que
+    // personne n'injecte ne s'exécute jamais.
+    inject(ClientOnboarding);
+  }
 
   protected goBack(): void {
     this.chrome.back()?.();

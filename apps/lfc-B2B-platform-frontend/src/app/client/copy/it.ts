@@ -49,7 +49,7 @@ export const IT: ClientCopy = {
   signup: {
     eyebrow: 'Prima volta ? 3 informazioni e si parte',
     alreadyLead: 'Sei già cliente ?',
-    alreadyLink: 'Accedi con un link',
+    alreadyLink: 'Accedere',
     pitch: 'Un nome, una e-mail, un numero. Tutto qui — il resto aspetterà che ti serva.',
     firstName: 'Nome',
     firstNamePlaceholder: 'Il tuo nome',
@@ -60,8 +60,8 @@ export const IT: ClientCopy = {
     emailPlaceholder: 'tu@esempio.it',
     open: 'Iscriviti',
     submit: 'Crea il mio account',
-    fine: 'Nessuna password : ti mandiamo un link a ogni accesso.',
-    fineInline: 'Nessuna password : a ogni accesso ti arriva un link.',
+    fine: 'Nessuna password : il suo dispositivo la riconosce.',
+    fineInline: 'Nessuna password : il suo dispositivo la riconosce.',
     legal:
       'Creando un account accetti le nostre condizioni di vendita. All’iscrizione non chiediamo alcun documento aziendale.',
   },
@@ -99,7 +99,7 @@ export const IT: ClientCopy = {
   doors: {
     or: 'oppure',
     alreadyTitle: 'Sei già cliente ?',
-    alreadySub: 'Accedi con un link',
+    alreadySub: 'Il suo dispositivo la riconosce',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',
   },

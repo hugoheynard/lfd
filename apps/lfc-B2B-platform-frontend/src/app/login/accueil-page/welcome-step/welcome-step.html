@@ -2,7 +2,7 @@
   <p class="eyebrow">{{ t().signup.eyebrow }}</p>
   <p class="already">
     {{ t().signup.alreadyLead }}
-    <button class="link" type="button" (click)="wantsLogin.emit()">
+    <button class="link" type="button" (click)="wantsLogin.emit(email())">
       {{ t().signup.alreadyLink }}
     </button>
   </p>
@@ -85,7 +85,7 @@
   icon="arrow-right"
   [title]="t().doors.alreadyTitle"
   [sub]="t().doors.alreadySub"
-  (opened)="wantsLogin.emit()"
+  (opened)="wantsLogin.emit(email())"
 />
 
 <app-event-card (opened)="wantsQuote.emit()" />

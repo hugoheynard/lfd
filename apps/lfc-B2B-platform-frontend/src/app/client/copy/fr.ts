@@ -41,7 +41,7 @@ export const FR: ClientCopy = {
   signup: {
     eyebrow: 'Première visite ? 3 infos et c’est parti',
     alreadyLead: 'Déjà client ?',
-    alreadyLink: 'Se connecter en un lien',
+    alreadyLink: 'Se connecter',
     pitch:
       'Un prénom, un e-mail, un numéro. C’est tout — le reste attendra que vous en ayez besoin.',
     firstName: 'Prénom',
@@ -53,8 +53,8 @@ export const FR: ClientCopy = {
     emailPlaceholder: 'vous@exemple.fr',
     open: 'S’inscrire',
     submit: 'Créer mon compte',
-    fine: 'Pas de mot de passe : on vous envoie un lien à chaque connexion.',
-    fineInline: 'Pas de mot de passe : un lien vous est envoyé à chaque connexion.',
+    fine: 'Pas de mot de passe : votre appareil vous reconnaît.',
+    fineInline: 'Pas de mot de passe : votre appareil vous reconnaît.',
     legal:
       'En créant un compte, vous acceptez nos conditions de vente. Aucun document d’entreprise n’est demandé à l’inscription.',
   },
@@ -92,7 +92,7 @@ export const FR: ClientCopy = {
   doors: {
     or: 'ou',
     alreadyTitle: 'Déjà client ?',
-    alreadySub: 'Se connecter en un lien',
+    alreadySub: 'Votre appareil vous reconnaît',
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
   },

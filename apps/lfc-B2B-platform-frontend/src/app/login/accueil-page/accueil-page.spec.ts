@@ -1,5 +1,8 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+
+import { AuthFacade, type PendingProfile } from '../../auth/auth.facade';
 
 import { ClientChrome } from '../../client/client-chrome.service';
 import { fill } from '../../client/copy/client-copy.service';
@@ -53,10 +56,25 @@ describe('AccueilPage', () => {
     type(MAIL, 'pierre@brasserie-marchand.fr');
   };
 
+  /** Ce que l'écran demande à Auth0 — la seule chose qu'on veuille observer. */
+  let asked: { kind: 'register' | 'login'; target: string; payload: unknown }[];
+
   beforeEach(() => {
-    // L'écran de fin porte un `routerLink` vers la commande : sans routeur, la
-    // dernière étape ne peut pas se construire.
-    TestBed.configureTestingModule({ imports: [AccueilPage], providers: [provideRouter([])] });
+    asked = [];
+    const auth = {
+      isAuthenticated: signal(false),
+      pendingProfile: signal<PendingProfile | null>(null),
+      register: (target: string, profile?: PendingProfile): void => {
+        asked.push({ kind: 'register', target, payload: profile });
+      },
+      login: (target: string, hint?: string): void => {
+        asked.push({ kind: 'login', target, payload: hint });
+      },
+    };
+    TestBed.configureTestingModule({
+      imports: [AccueilPage],
+      providers: [provideRouter([]), { provide: AuthFacade, useValue: auth }],
+    });
     fixture = TestBed.createComponent(AccueilPage);
     chrome = TestBed.inject(ClientChrome);
     fixture.detectChanges();
@@ -102,33 +120,34 @@ describe('AccueilPage', () => {
     expect(button(FR.signup.submit).disabled).toBe(false);
   });
 
-  it('les trois champs remplis ouvrent le compte', () => {
+  it('les trois champs partent chez Auth0, avec la personne', () => {
+    // Prénom et téléphone n'existent nulle part chez Auth0 : ils voyagent avec
+    // elle, et se poseront sur le compte au retour.
     fillSignup();
     click(FR.signup.submit);
 
-    expect(text()).toContain(FR.entered.title);
-    expect(chrome.kicker()).toBe(FR.chrome.kickerEntered);
+    expect(asked).toEqual([
+      {
+        kind: 'register',
+        target: '/commande',
+        payload: {
+          firstName: 'Pierre',
+          email: 'pierre@brasserie-marchand.fr',
+          phone: '06 12 44 09 87',
+        },
+      },
+    ]);
   });
 
-  it('« Déjà client ? » mène à la connexion, et le retour ramène', () => {
+  it("« Déjà client ? » souffle l'e-mail déjà tapé à l'écran de connexion", () => {
+    // Ce n'est plus un lien à attendre : Auth0 reconnaît la passkey. Mais qui
+    // vient de taper son adresse chez nous n'a pas à la retaper chez lui.
+    type(MAIL, 'pierre@brasserie-marchand.fr');
     click(FR.doors.alreadyTitle);
-    expect(chrome.kicker()).toBe(FR.chrome.kickerLogin);
-    expect(text()).toContain(FR.hero.loginTitle);
 
-    const back = chrome.back();
-    expect(back).not.toBeNull();
-    back?.();
-    fixture.detectChanges();
-    expect(text()).toContain(FR.signup.eyebrow);
-  });
-
-  it("le lien envoyé rappelle l'adresse exacte", () => {
-    click(FR.doors.alreadyTitle);
-    type(0, 'pierre@brasserie-marchand.fr');
-    click(FR.login.send);
-
-    expect(text()).toContain(FR.login.sentTitle);
-    expect(text()).toContain('pierre@brasserie-marchand.fr');
+    expect(asked).toEqual([
+      { kind: 'login', target: '/commande', payload: 'pierre@brasserie-marchand.fr' },
+    ]);
   });
 
   it('le créneau « au four » reste affiché, et refuse le doigt', () => {
