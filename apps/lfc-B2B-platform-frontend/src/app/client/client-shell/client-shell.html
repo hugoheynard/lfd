@@ -2,7 +2,7 @@
      FILET. Si jamais la hauteur d'un écran ne se borne pas, la page défile
      comme avant — dégradée, pas coupée. Avec `stage`, la même erreur clipperait
      le contenu en silence. -->
-<fold-app-shell mobileNav="none" scroll="scroll">
+<fold-app-shell mobileNav="none" scroll="scroll" footerBehavior="scroll">
   <div header class="bar">
     @if (chrome.back()) {
       <button class="back" type="button" aria-label="Retour" (click)="goBack()">
@@ -22,4 +22,13 @@
   </div>
 
   <router-outlet />
+
+  <!-- Le pied de l'app : une encre PLUS PROFONDE que la barre, pour fermer la
+       page sans la répéter. Il n'apparaît qu'au-delà du pli — sur un téléphone,
+       un pied de page est du contenu qu'on fait défiler pour rien. -->
+  <div footer class="foot">
+    <span class="foot-brand">La Folie Coffee</span>
+    <span class="foot-place">Le Labo · Route de la Balme, Val d'Isère</span>
+    <span class="foot-hours">Ouvert de 7 h à 19 h</span>
+  </div>
 </fold-app-shell>

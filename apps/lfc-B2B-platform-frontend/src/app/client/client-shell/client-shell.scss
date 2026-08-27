@@ -10,6 +10,19 @@
   --fold-shell-header-height-mobile: calc(env(safe-area-inset-top, 0px) + 58px);
 }
 
+/* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
+   zone au-delà du contenu montre l'arrière-plan du conteneur de défilement, pas
+   celui de la page : c'était le crème du shell, qui passait pour du blanc. On le
+   met à l'encre de marque, pour que le rebond prolonge la barre au lieu de
+   trouer l'écran.
+
+   Le sélecteur est volontairement `:host fold-app-shell` : le composant se peint
+   lui-même en `:host`, à égale spécificité — il faut donc un cran de plus pour
+   le reprendre depuis le parent, sans `!important`. */
+:host fold-app-shell {
+  background: var(--fold-color-primary);
+}
+
 .bar {
   display: flex;
   align-items: center;
@@ -100,7 +113,59 @@
     --fold-shell-header-height-mobile: 0px;
   }
 
-  :host(.bar-narrow-only) .bar {
+  :host(.bar-narrow-only) /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
+   zone au-delà du contenu montre l'arrière-plan du conteneur de défilement, pas
+   celui de la page : c'était le crème du shell, qui passait pour du blanc. On le
+   met à l'encre de marque, pour que le rebond prolonge la barre au lieu de
+   trouer l'écran.
+
+   Le sélecteur est volontairement `:host fold-app-shell` : le composant se peint
+   lui-même en `:host`, à égale spécificité — il faut donc un cran de plus pour
+   le reprendre depuis le parent, sans `!important`. */
+:host fold-app-shell {
+    background: var(--fold-color-primary);
+  }
+
+  .bar {
     display: none;
+  }
+}
+
+/* ── Le pied de page ──────────────────────────────────────────────────────── */
+
+/* Absent en pile : un pied de page sur un téléphone, c'est du contenu qu'on fait
+   défiler pour rien. La rangée du shell se replie d'elle-même quand son contenu
+   ne prend pas de place. */
+.foot {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .foot {
+    display: flex;
+    align-items: baseline;
+    gap: var(--fold-space-lg);
+    padding: var(--fold-space-lg) 44px;
+    /* Un cran SOUS l'encre de la barre : le pied ferme la page, il ne la
+       répète pas. fold peint la rangée en `bg-header` ; on la recouvre. */
+    background: var(--lfc-ink-950);
+    font-size: var(--fold-text-sm);
+  }
+
+  .foot-brand {
+    font-family: var(--fold-font-label);
+    font-weight: var(--fold-weight-extrabold);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+    color: var(--fold-color-text);
+  }
+
+  .foot-place {
+    color: var(--fold-color-text-muted);
+  }
+
+  .foot-hours {
+    margin-left: auto;
+    color: var(--fold-color-text-muted);
   }
 }
