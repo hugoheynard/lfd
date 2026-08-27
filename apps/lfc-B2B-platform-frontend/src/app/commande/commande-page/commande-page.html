@@ -30,7 +30,7 @@
             [detailWide]="t().commande.pickupDetailWide"
             [ctaLabel]="t().commande.pickupCta"
             [noteWide]="t().commande.pickupNoteWide"
-            (chosen)="notYet()"
+            (chosen)="openDialog('pickup')"
           />
           <app-offer-card
             shape="hero"
@@ -44,7 +44,7 @@
             [detailWide]="t().commande.deliveryDetailWide"
             [ctaLabel]="t().commande.deliveryCta"
             [noteWide]="t().commande.deliveryNoteWide"
-            (chosen)="notYet()"
+            (chosen)="openDialog('address')"
           />
         </app-section-panel>
 
@@ -100,6 +100,10 @@
         <fold-callout variant="info">{{ t().commande.pending }}</fold-callout>
       }
 
+      @if (settled(); as choice) {
+        <fold-callout variant="success">{{ choice }}</fold-callout>
+      }
+
       <app-callback-block
         [title]="t().commande.urgenceTitle"
         [pitch]="t().commande.urgencePitch"
@@ -111,5 +115,17 @@
         (cancelled)="bookedSlot.set(null)"
       />
     </div>
+
+    <app-pickup-dialog
+      [open]="dialog() === 'pickup'"
+      (closed)="dialog.set(null)"
+      (chosen)="settlePickup($event.name)"
+    />
+
+    <app-address-dialog
+      [open]="dialog() === 'address'"
+      (closed)="dialog.set(null)"
+      (chosen)="settleDelivery($event)"
+    />
   }
 </app-client-page>

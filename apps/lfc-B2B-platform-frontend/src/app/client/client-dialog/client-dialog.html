@@ -1,0 +1,28 @@
+<!-- `(close)` couvre les deux sorties que le natif gère seul : `Escape`, et
+     l'appel programmé. L'écran reste donc la seule source de vérité. -->
+<dialog #dlg class="dlg" (close)="closed.emit()" (click)="onBackdrop($event)">
+  <div class="panel">
+    <div class="head">
+      <div class="titles">
+        <p class="kicker">{{ kicker() }}</p>
+        <h2 class="title">{{ title() }}</h2>
+      </div>
+      <button
+        class="close"
+        type="button"
+        [attr.aria-label]="t().dialog.close"
+        (click)="closed.emit()"
+      >
+        <fold-icon name="close" />
+      </button>
+    </div>
+
+    <div class="body">
+      <ng-content />
+    </div>
+
+    <div class="foot">
+      <ng-content select="[dialog-foot]" />
+    </div>
+  </div>
+</dialog>

@@ -1,0 +1,106 @@
+.dlg {
+  width: min(600px, calc(100vw - 32px));
+  max-height: min(860px, calc(100dvh - 48px));
+  padding: 0;
+  border: 0;
+  border-radius: var(--lfc-radius-3xl);
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-sans);
+  overflow: clip;
+
+  &::backdrop {
+    background: rgb(8 24 66 / 56%);
+  }
+
+  &[open] {
+    animation: dialog-in var(--lfc-motion-pop);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dlg[open] {
+    animation: none;
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  padding: 26px 28px 24px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+  flex: none;
+}
+
+.titles {
+  min-width: 0;
+}
+
+.kicker {
+  margin: 0 0 5px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-title);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+/* Le corps DÉFILE, l'en-tête et le pied restent : sur un portable posé à plat,
+   le carnet d'adresses et le formulaire dépassent vite la hauteur utile, et le
+   bouton qui porte le tarif ne doit jamais sortir de l'écran. */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: var(--fold-space-lg);
+}
+
+.foot {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  padding-top: var(--fold-space-lg);
+}
+
+/* Vide, le pied ne prend pas de place. */
+.foot:empty {
+  display: none;
+}

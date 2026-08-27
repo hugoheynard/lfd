@@ -1,0 +1,44 @@
+<app-client-dialog
+  [open]="open()"
+  [kicker]="t().pickupDialog.kicker"
+  [title]="t().pickupDialog.title"
+  (closed)="closed.emit()"
+>
+  <p class="lead">{{ lead() }}</p>
+
+  <div class="points" role="radiogroup" [attr.aria-label]="t().pickupDialog.title">
+    @for (row of points(); track row.point.id) {
+      <button
+        class="point"
+        type="button"
+        role="radio"
+        [class.on]="pickedId() === row.point.id"
+        [attr.aria-checked]="pickedId() === row.point.id"
+        (click)="pickedId.set(row.point.id)"
+      >
+        <span class="ring" aria-hidden="true"><span class="core"></span></span>
+        <span class="text">
+          <span class="line">
+            <span class="name">{{ row.point.name }}</span>
+            <span class="tag">{{ row.tag }}</span>
+          </span>
+          <span class="where">{{ row.point.address }} · {{ row.ready }}</span>
+        </span>
+        <span class="offer" [class.deal]="row.point.discount > 0">{{ row.offer }}</span>
+      </button>
+    }
+  </div>
+
+  <button
+    dialog-foot
+    foldButton
+    class="cta"
+    emphasis="solid"
+    intent="primary"
+    size="lg"
+    type="button"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+  </button>
+</app-client-dialog>

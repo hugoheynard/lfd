@@ -1,0 +1,119 @@
+.lead {
+  margin: 0 0 var(--fold-space-lg);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.point {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  text-align: start;
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary-surface);
+  }
+}
+
+.ring {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 2px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-pill);
+}
+
+.core {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--fold-radius-pill);
+  background: none;
+}
+
+.point.on {
+  .ring {
+    border-color: var(--fold-color-primary);
+  }
+
+  .core {
+    background: var(--fold-color-primary);
+  }
+}
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+.tag {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+}
+
+.where {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* L'offre n'est une PASTILLE que lorsqu'il y a quelque chose à gagner. Le prix
+   boutique se dit en gris : ce n'est pas une punition, c'est le prix. */
+.offer {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+  white-space: nowrap;
+
+  &.deal {
+    padding: 4px 10px;
+    border-radius: var(--fold-radius-pill);
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+    font-family: var(--fold-font-label);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+  }
+}
+
+.cta {
+  min-width: 240px;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}

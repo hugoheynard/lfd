@@ -1,0 +1,379 @@
+:host {
+  display: block;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* Le filet sépare le CARNET de la saisie : deux façons de répondre à la même
+   question, et il faut qu'on voie qu'on quitte l'une pour l'autre. */
+.rule {
+  margin-top: var(--fold-space-lg);
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.book {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  text-align: start;
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary-surface);
+  }
+}
+
+.ring {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 2px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-pill);
+}
+
+.core {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--fold-radius-pill);
+  background: none;
+}
+
+.entry.on {
+  .ring {
+    border-color: var(--fold-color-primary);
+  }
+
+  .core {
+    background: var(--fold-color-primary);
+  }
+}
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.label {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+/* ⚠️ PAS `.default` : `fold-input` porte cette classe sur son hôte (c'est son
+   cran de taille), et la règle repeignait donc tous les champs du dialogue en
+   capitales d'Archivo. Un nom de classe générique dans un composant qui en
+   accueille d'autres finit toujours par en toucher un. */
+.default-tag {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-primary-vivid);
+}
+
+.where {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.fee {
+  flex: none;
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── La saisie ────────────────────────────────────────────────────────────── */
+
+/* Le libellé nomme, il n'insiste pas — même pis-aller que sur l'écran d'entrée :
+   `fold-label` n'expose pas sa graisse, on redéclare donc les deux tokens dont
+   il descend. ⚠️ À proposer à fold sous la forme d'un rôle propre au libellé. */
+fold-input {
+  --fold-weight-semibold: var(--fold-weight-regular);
+  --fold-color-text-secondary: var(--fold-color-text-muted);
+
+  display: block;
+}
+
+.street {
+  margin-bottom: var(--fold-space-md);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--fold-space-md);
+  margin-bottom: var(--fold-space-md);
+}
+
+/* ── La carte de zone ─────────────────────────────────────────────────────── */
+
+/* Le cœur du dialogue. Les frais dépendent de la ZONE, jamais du panier : la
+   carte le dit avec le moyen et le délai, pour qu'un tarif reste une explication
+   et pas une surprise. */
+.zone {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 15px;
+  border: 1px solid transparent;
+  border-radius: var(--lfc-radius-xl);
+  margin-bottom: var(--fold-space-lg);
+}
+
+.zone-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-sm);
+}
+
+.zone-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.zone-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.zone-note {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+}
+
+.zone-fee {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+}
+
+.zone[data-tone='ink'] {
+  border-color: var(--fold-color-primary-border);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary);
+
+  .zone-tile {
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+
+  .zone-note {
+    color: var(--fold-color-primary-text);
+  }
+}
+
+.zone[data-tone='accent'] {
+  border-color: var(--lfc-color-accent-border);
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+
+  .zone-tile {
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+  }
+
+  .zone-note {
+    color: var(--lfc-color-accent-text);
+  }
+}
+
+/* Hors zone : ni alarme ni faute — on dit ce qu'on ne fait pas, et ce qui reste. */
+.zone[data-tone='none'] {
+  border-color: var(--fold-color-border);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+
+  .zone-note {
+    color: var(--fold-color-text-muted);
+  }
+}
+
+/* ── Qui reçoit ───────────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.field-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+  font-size: var(--fold-text-lg);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.field-tag,
+.field-edit {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.field-tag {
+  color: var(--lfc-color-text-subtle);
+}
+
+.field-edit {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.why {
+  margin: 0 0 var(--fold-space-lg);
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── L'interrupteur ───────────────────────────────────────────────────────── */
+
+/* fold n'a pas d'interrupteur — sa case à cocher répond à une autre question
+   (« ceci est-il vrai ? » plutôt que « garde-t-on ça ? »). ⚠️ Candidat à lui
+   proposer ; en attendant, un `role="switch"` natif fait le travail. */
+.save {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  text-align: start;
+  cursor: pointer;
+}
+
+.track {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 42px;
+  height: 24px;
+  padding: 3px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-border-strong);
+  transition: background 180ms ease;
+}
+
+.knob {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-0);
+  transition: transform 180ms ease;
+}
+
+.save[aria-checked='true'] {
+  .track {
+    background: var(--fold-color-primary);
+  }
+
+  .knob {
+    transform: translateX(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .knob {
+    transition: none;
+  }
+}
+
+.save-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.save-title {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+}
+
+.save-note {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+}
+
+.cta {
+  min-width: 240px;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}

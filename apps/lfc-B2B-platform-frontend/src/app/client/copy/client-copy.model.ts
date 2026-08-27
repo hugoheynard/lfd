@@ -156,6 +156,51 @@ export interface ClientCopy {
     readonly urgenceCta: string;
     readonly pending: string;
   };
+  readonly dialog: {
+    readonly close: string;
+  };
+  readonly pickupDialog: {
+    readonly kicker: string;
+    readonly title: string;
+    /** `{pct}` est remplacé par la remise du meilleur point. */
+    readonly lead: string;
+    readonly habit: string;
+    /** `{time}` est remplacé par l'heure de mise à disposition. */
+    readonly readyFrom: string;
+    /** `{pct}` est remplacé par la remise du point. */
+    readonly discountTag: string;
+    readonly shopPrice: string;
+    readonly cta: string;
+    /** `{pct}` est remplacé par la remise retenue. */
+    readonly ctaDiscount: string;
+  };
+  readonly addressDialog: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly bookGroup: string;
+    readonly defaultTag: string;
+    readonly otherGroup: string;
+    readonly street: string;
+    readonly streetPlaceholder: string;
+    readonly postcode: string;
+    readonly postcodePlaceholder: string;
+    readonly city: string;
+    readonly cityUnknown: string;
+    readonly outOfZone: string;
+    readonly outOfZoneNote: string;
+    readonly whoGroup: string;
+    readonly name: string;
+    readonly fromAccount: string;
+    readonly phone: string;
+    readonly edit: string;
+    readonly whyPhone: string;
+    readonly saveToBook: string;
+    readonly saveOn: string;
+    readonly saveOff: string;
+    /** `{fee}` est remplacé par le tarif de la zone. */
+    readonly cta: string;
+    readonly ctaBlocked: string;
+  };
   readonly pro: {
     readonly title: string;
     readonly bookedTitle: string;

@@ -15,8 +15,10 @@ import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
 import { RappelPanel } from '../../login/accueil-page/rappel-panel/rappel-panel';
 
+import { AddressDialog, type DeliveryChoice } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
+import { PickupDialog } from './pickup-dialog/pickup-dialog';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
@@ -38,9 +40,11 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
   selector: 'app-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AddressDialog,
     CallbackBlock,
     ClientPage,
     FoldCalloutComponent,
+    PickupDialog,
     OfferCard,
     OfferCarousel,
     RappelPanel,
@@ -62,6 +66,12 @@ export class CommandePage {
 
   /** La destination touchée dont l'écran n'existe pas encore. */
   protected readonly pending = signal(false);
+
+  /** Le dialogue ouvert, s'il y en a un. Un seul à la fois, par construction. */
+  protected readonly dialog = signal<'pickup' | 'address' | null>(null);
+
+  /** Ce que le dialogue a retenu, montré en clair sous les deux portes. */
+  protected readonly settled = signal<string | null>(null);
 
   protected readonly heading = computed(() =>
     this.panelOpen()
@@ -100,6 +110,26 @@ export class CommandePage {
   /** ⚠️ Maquette : la porte est branchée, son écran arrive au prochain lot. */
   protected notYet(): void {
     this.pending.set(true);
+  }
+
+  protected openDialog(which: 'pickup' | 'address'): void {
+    this.pending.set(false);
+    this.settled.set(null);
+    this.dialog.set(which);
+  }
+
+  /**
+   * ⚠️ Maquette : la suite du parcours (la boutique, puis le panier) n'existe
+   * pas encore. On retient donc le choix à l'écran plutôt que d'y mener.
+   */
+  protected settlePickup(name: string): void {
+    this.settled.set(name);
+    this.dialog.set(null);
+  }
+
+  protected settleDelivery(choice: DeliveryChoice): void {
+    this.settled.set(`${choice.line} · ${choice.zone.fee} €`);
+    this.dialog.set(null);
   }
 
   protected openPanel(): void {

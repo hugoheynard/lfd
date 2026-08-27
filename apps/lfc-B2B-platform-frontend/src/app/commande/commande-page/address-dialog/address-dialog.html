@@ -1,0 +1,134 @@
+<app-client-dialog
+  [open]="open()"
+  [kicker]="t().addressDialog.kicker"
+  [title]="t().addressDialog.title"
+  (closed)="closed.emit()"
+>
+  <p class="eyebrow">{{ t().addressDialog.bookGroup }}</p>
+  <div class="book" role="radiogroup" [attr.aria-label]="t().addressDialog.bookGroup">
+    @for (address of book; track address.id) {
+      <button
+        class="entry"
+        type="button"
+        role="radio"
+        [class.on]="picked() === address.id"
+        [attr.aria-checked]="picked() === address.id"
+        (click)="picked.set(address.id)"
+      >
+        <span class="ring" aria-hidden="true"><span class="core"></span></span>
+        <span class="text">
+          <span class="line">
+            <span class="label">{{ address.label }}</span>
+            @if (address.isDefault) {
+              <span class="default-tag">{{ t().addressDialog.defaultTag }}</span>
+            }
+          </span>
+          <span class="where">{{ address.street }}, {{ address.postcode }}</span>
+        </span>
+        <span class="fee">{{ fee(address) }}</span>
+      </button>
+    }
+  </div>
+
+  <p class="eyebrow rule">{{ t().addressDialog.otherGroup }}</p>
+
+  <fold-input
+    class="street"
+    size="lg"
+    [label]="t().addressDialog.street"
+    autocomplete="street-address"
+    [placeholder]="t().addressDialog.streetPlaceholder"
+    [value]="street()"
+    (valueChange)="onStreet($event)"
+  />
+
+  <div class="row">
+    <fold-input
+      class="postcode"
+      size="lg"
+      [label]="t().addressDialog.postcode"
+      autocomplete="postal-code"
+      inputmode="numeric"
+      [placeholder]="t().addressDialog.postcodePlaceholder"
+      [value]="postcode()"
+      (valueChange)="onPostcode($event)"
+    />
+    <!-- La ville est DÉDUITE : un champ en lecture seule dit mieux qu'un champ
+         vide qu'il n'y a rien à taper ici. -->
+    <fold-input
+      class="city"
+      size="lg"
+      readonly
+      [label]="t().addressDialog.city"
+      [placeholder]="t().addressDialog.cityUnknown"
+      [value]="city()"
+    />
+  </div>
+
+  @if (zone(); as z) {
+    <div class="zone" [attr.data-tone]="z.tone">
+      <span class="zone-tile" aria-hidden="true"><fold-icon name="truck" /></span>
+      <span class="zone-text">
+        <span class="zone-name">{{ z.label }}</span>
+        <span class="zone-note">{{ z.note }}</span>
+      </span>
+      <span class="zone-fee">{{ z.fee }} €</span>
+    </div>
+  } @else {
+    <div class="zone" data-tone="none">
+      <span class="zone-text">
+        <span class="zone-name">{{ t().addressDialog.outOfZone }}</span>
+        <span class="zone-note">{{ t().addressDialog.outOfZoneNote }}</span>
+      </span>
+    </div>
+  }
+
+  <p class="eyebrow">{{ t().addressDialog.whoGroup }}</p>
+  <div class="row">
+    <span class="field">
+      <span class="field-label">{{ t().addressDialog.name }}</span>
+      <span class="field-value">
+        {{ client.firstName }} Vallet
+        <span class="field-tag">{{ t().addressDialog.fromAccount }}</span>
+      </span>
+    </span>
+    <span class="field">
+      <span class="field-label">{{ t().addressDialog.phone }}</span>
+      <span class="field-value">
+        <span class="num">{{ client.phone }}</span>
+        <button class="field-edit" type="button">{{ t().addressDialog.edit }}</button>
+      </span>
+    </span>
+  </div>
+  <p class="why">{{ t().addressDialog.whyPhone }}</p>
+
+  <button
+    class="save"
+    type="button"
+    role="switch"
+    [attr.aria-checked]="saveToBook()"
+    (click)="saveToBook.set(!saveToBook())"
+  >
+    <span class="track" aria-hidden="true"><span class="knob"></span></span>
+    <span class="save-text">
+      <span class="save-title">{{ t().addressDialog.saveToBook }}</span>
+      <span class="save-note">
+        {{ saveToBook() ? t().addressDialog.saveOn : t().addressDialog.saveOff }}
+      </span>
+    </span>
+  </button>
+
+  <button
+    dialog-foot
+    foldButton
+    class="cta"
+    emphasis="solid"
+    intent="warning"
+    size="lg"
+    type="button"
+    [disabled]="!ready()"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+  </button>
+</app-client-dialog>
