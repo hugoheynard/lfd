@@ -50,6 +50,15 @@ export const routes: Routes = [
         title: 'Bienvenue — La Folie Coffee',
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
+      {
+        // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
+        // question du parcours, avant le catalogue — ce qui est en stock, à
+        // quelle heure et à quel prix dépend du mode de service.
+        path: 'commande',
+        title: 'Commander — La Folie Coffee',
+        loadComponent: () =>
+          import('./commande/commande-page/commande-page').then((m) => m.CommandePage),
+      },
       { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
     ],
   },

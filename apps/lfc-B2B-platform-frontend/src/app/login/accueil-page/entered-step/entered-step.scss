@@ -52,3 +52,12 @@
   line-height: var(--lfc-leading-note);
   color: var(--fold-color-text-secondary);
 }
+
+.cta {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  text-decoration: none;
+}

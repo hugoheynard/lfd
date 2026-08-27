@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { ClientChrome } from '../../client/client-chrome.service';
 import { fill } from '../../client/copy/client-copy.service';
@@ -53,7 +54,9 @@ describe('AccueilPage', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AccueilPage] });
+    // L'écran de fin porte un `routerLink` vers la commande : sans routeur, la
+    // dernière étape ne peut pas se construire.
+    TestBed.configureTestingModule({ imports: [AccueilPage], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(AccueilPage);
     chrome = TestBed.inject(ClientChrome);
     fixture.detectChanges();

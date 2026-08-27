@@ -1,0 +1,183 @@
+/* Les photos sont des visuels de banque servis par le site public : à remplacer
+   par les pièces réelles photographiées (cf. `03-operations-datees.md` pour le
+   cadrage attendu). */
+$photo-pickup: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1595801106239-faefa2cdcf75.jpg');
+$photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1574862612701-5b2869e3485b.jpg');
+
+:host {
+  display: block;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-2xl);
+  overflow: clip;
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--lfc-shadow-card);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+}
+
+.photo {
+  position: relative;
+  display: block;
+  height: 106px;
+  background: var(--fold-color-surface-band) center / cover;
+}
+
+/* Le voile part FORT du bord d'attaque et se dissipe : le titre doit tenir sur
+   n'importe quelle photo, y compris celle qu'on n'a pas encore prise. */
+.veil {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.badge {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.title {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  /* Le titre tient sur deux lignes, et le dictionnaire les sépare par un retour
+     plutôt que par une balise : une traduction n'a pas à connaître le HTML. */
+  white-space: pre-line;
+  font-family: var(--fold-font-label);
+  font-size: 1.375rem;
+  font-weight: var(--lfc-weight-black);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--lfc-paper-50);
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding: 14px 16px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.detail {
+  font-size: var(--fold-text-md);
+  line-height: 1.5;
+  color: var(--fold-color-text-secondary);
+}
+
+.note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--fold-radius-pill);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+}
+
+.dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--fold-radius-pill);
+}
+
+.chevron {
+  flex: none;
+  color: var(--fold-color-text-faded);
+}
+
+/* ── Le retrait : l'encre de marque ───────────────────────────────────────── */
+
+:host([data-mode='pickup']) {
+  .photo {
+    background-image: $photo-pickup;
+  }
+
+  .veil {
+    background: linear-gradient(90deg, rgb(18 48 127 / 86%), rgb(18 48 127 / 12%));
+  }
+
+  .badge {
+    background: var(--lfc-paper-50);
+    color: var(--fold-color-primary);
+  }
+
+  .note {
+    background: var(--fold-color-primary-surface);
+    color: var(--lfc-color-primary-vivid);
+  }
+
+  .dot {
+    background: var(--fold-color-info);
+  }
+}
+
+/* ── Le coursier : le beurre ──────────────────────────────────────────────── */
+
+:host([data-mode='delivery']) {
+  .photo {
+    background-image: $photo-delivery;
+  }
+
+  .veil {
+    background: linear-gradient(90deg, rgb(61 42 5 / 84%), rgb(61 42 5 / 10%));
+  }
+
+  .badge {
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+  }
+
+  .note {
+    background: var(--lfc-color-accent-surface);
+    color: var(--lfc-color-accent-text);
+  }
+
+  .dot {
+    background: var(--lfc-color-accent);
+  }
+}
+
+/* Au-delà du pli, la colonne est plus large : la photo reprend de la hauteur
+   pour que le rapport de cadrage tienne. */
+@media (min-width: 900px) {
+  .photo {
+    height: 132px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}

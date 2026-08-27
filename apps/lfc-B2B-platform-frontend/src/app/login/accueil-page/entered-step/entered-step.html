@@ -9,3 +9,9 @@
 </fold-card>
 
 <fold-callout variant="info">{{ t().entered.next }}</fold-callout>
+
+<!-- La seule sortie de l'écran : elle mène à la vraie première question du
+     parcours, « On vous sert comment ? ». -->
+<a foldButton class="cta" emphasis="solid" intent="primary" size="lg" block routerLink="/commande">
+  {{ t().entered.cta }}
+</a>

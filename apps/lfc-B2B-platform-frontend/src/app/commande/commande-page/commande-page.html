@@ -1,0 +1,69 @@
+<app-client-page [heading]="heading()" [intro]="intro()">
+  <div aside-foot class="aside-foot"></div>
+
+  @if (panelOpen()) {
+    <app-rappel-panel [phone]="phone" (booked)="book($event)" />
+  } @else {
+    <div class="stack">
+      <app-mode-card
+        mode="pickup"
+        [badge]="t().commande.pickupBadge"
+        [title]="t().commande.pickupTitle"
+        [detail]="t().commande.pickupDetail"
+        [note]="t().commande.pickupNote"
+        (chosen)="notYet()"
+      />
+      <app-mode-card
+        mode="delivery"
+        [badge]="t().commande.deliveryBadge"
+        [title]="t().commande.deliveryTitle"
+        [detail]="t().commande.deliveryDetail"
+        [note]="t().commande.deliveryNote"
+        (chosen)="notYet()"
+      />
+
+      <app-shortcut-row
+        class="browse"
+        tone="primary"
+        icon="search"
+        [title]="t().commande.browseTitle"
+        [sub]="t().commande.browseSub"
+        (opened)="notYet()"
+      />
+
+      <app-shortcut-row
+        class="pickup-ready"
+        tone="card"
+        icon="qr-code"
+        [title]="t().commande.qrTitle"
+        [sub]="orderLine()"
+        [action]="t().commande.qrAction"
+        (opened)="notYet()"
+      />
+
+      <app-shortcut-row
+        tone="draft"
+        icon="reload"
+        [title]="t().commande.againTitle"
+        [sub]="t().commande.againSub"
+        [action]="t().commande.againAction"
+        (opened)="notYet()"
+      />
+
+      @if (pending()) {
+        <fold-callout variant="info">{{ t().commande.pending }}</fold-callout>
+      }
+
+      <app-callback-block
+        [title]="t().commande.urgenceTitle"
+        [pitch]="t().commande.urgencePitch"
+        [cta]="t().commande.urgenceCta"
+        [phone]="phone"
+        [bookedSlot]="bookedSlot()"
+        [showPhone]="true"
+        (wantsCallback)="openPanel()"
+        (cancelled)="bookedSlot.set(null)"
+      />
+    </div>
+  }
+</app-client-page>

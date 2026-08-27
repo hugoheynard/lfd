@@ -1,0 +1,132 @@
+:host {
+  display: block;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-lg);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+}
+
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--fold-radius-md);
+}
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  /* Le numéro de commande vit dans cette ligne : les chiffres s'y alignent. */
+  font-variant-numeric: tabular-nums;
+}
+
+.action {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lfc-color-primary-vivid);
+}
+
+.chevron {
+  flex: none;
+}
+
+/* ── L'appel : l'encre pleine ─────────────────────────────────────────────── */
+
+:host([data-tone='primary']) {
+  .row {
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+
+  .tile {
+    background: var(--lfc-color-on-primary-tile);
+    color: var(--fold-color-on-primary);
+  }
+
+  .sub,
+  .chevron {
+    color: var(--lfc-color-on-primary-muted);
+  }
+}
+
+/* ── La proposition : la carte crème ──────────────────────────────────────── */
+
+:host([data-tone='card']) {
+  .row {
+    border-color: var(--fold-color-border);
+    background: var(--fold-color-surface-card);
+    box-shadow: var(--lfc-shadow-card);
+  }
+
+  .tile {
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+
+  .sub {
+    color: var(--lfc-color-text-subtle);
+  }
+
+  .chevron {
+    color: var(--fold-color-text-faded);
+  }
+}
+
+/* ── Le rappel : le trait pointillé ───────────────────────────────────────── */
+
+/* Le pointillé n'est pas une décoration : il dit que ce bloc parle d'une
+   commande DÉJÀ passée, pas d'une nouvelle à composer. */
+:host([data-tone='draft']) {
+  .row {
+    border: 1px dashed var(--lfc-color-border-strong);
+    background: var(--fold-color-surface-card);
+  }
+
+  .tile {
+    background: var(--fold-color-primary-surface);
+    color: var(--lfc-color-primary-vivid);
+  }
+
+  .sub {
+    color: var(--lfc-color-text-subtle);
+  }
+
+  .chevron {
+    color: var(--fold-color-text-faded);
+  }
+}

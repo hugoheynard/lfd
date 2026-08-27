@@ -1,0 +1,17 @@
+<button class="card" type="button" (click)="chosen.emit()">
+  <span class="photo">
+    <span class="veil" aria-hidden="true"></span>
+    <span class="badge">{{ badge() }}</span>
+    <span class="title">{{ title() }}</span>
+  </span>
+  <span class="body">
+    <span class="text">
+      <span class="detail">{{ detail() }}</span>
+      <span class="note">
+        <span class="dot" aria-hidden="true"></span>
+        {{ note() }}
+      </span>
+    </span>
+    <fold-icon class="chevron" name="chevron-right" aria-hidden="true" />
+  </span>
+</button>
