@@ -26,6 +26,3 @@ export const CALL_SLOTS: readonly CallSlot[] = [
   { id: 'c5', label: '15 h – 16 h', state: 'full' },
   { id: 'c6', label: '16 h – 17 h', state: 'free' },
 ];
-
-/** Le numéro connu du visiteur — maquette, il viendra du compte. */
-export const KNOWN_PHONE = '06 12 44 09 87';

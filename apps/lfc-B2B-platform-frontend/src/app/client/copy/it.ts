@@ -17,6 +17,7 @@ export const IT: ClientCopy = {
     kickerLogin: 'Accesso',
     kickerEntered: 'Account creato',
     kickerRappel: 'Richiamo',
+    kickerCommande: 'Ordine',
     deskKicker: 'Val d’Isère · ordina online',
   },
   foot: {
@@ -77,7 +78,8 @@ export const IT: ClientCopy = {
   entered: {
     title: 'Account attivo',
     sub: 'Tre campi, nessun documento. La visura aspetterà che ti serva.',
-    next: 'Prototipo : il passo successivo è « Come te lo serviamo ? » — ritiro o corriere.',
+    next: 'Poi : ritiro o corriere, e la bottega.',
+    cta: 'Ordinare',
   },
   rappel: {
     asapGroup: 'Prima possibile',
@@ -107,6 +109,32 @@ export const IT: ClientCopy = {
     cta: 'Un preventivo ›',
     pending:
       'La schermata di richiesta preventivo arriva nel prossimo lotto — la scheda è collegata, il seguito no.',
+  },
+  commande: {
+    title: 'Buongiorno {name}. Come glielo serviamo ?',
+    intro: 'Lei sceglie, noi prepariamo.',
+    pickupBadge: 'Ritiro',
+    pickupTitle: 'Passo io\na prenderlo',
+    pickupDetail: 'Al Labo o in una delle botteghe della stazione.',
+    pickupNote: 'Pronto in 20 min',
+    deliveryBadge: 'Corriere',
+    deliveryTitle: 'Glielo\nportiamo noi',
+    deliveryDetail: 'Domani, nella fascia oraria che sceglie lei.',
+    deliveryNote: 'Ordini entro le 18',
+    browseTitle: 'Visito la bottega',
+    browseSub: 'Per vedere i prodotti e decidere dopo',
+    qrTitle: 'Ritirare il mio ordine',
+    qrSub: 'Ordine {order} · pronto al Labo',
+    qrAction: 'Il mio QR',
+    againTitle: 'Come sabato scorso ?',
+    againSub: '2 traditions, 4 croissant, 1 ski al pralinato · ritiro al Labo',
+    againAction: 'Rifare',
+    urgenceTitle: 'Un’urgenza, un’aggiunta ?',
+    urgencePitch:
+      'Una dimenticanza su un ordine in corso, una sfornata da allungare : si risolve al telefono. Diciamo di no di rado.',
+    urgenceCta: 'Farsi richiamare',
+    pending:
+      'Il seguito del percorso arriva nel prossimo lotto — la scheda è collegata, la sua schermata no.',
   },
   pro: {
     title: 'Ti interessa lo spazio professionale ?',

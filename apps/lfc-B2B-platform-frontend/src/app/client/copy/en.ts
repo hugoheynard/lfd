@@ -15,6 +15,7 @@ export const EN: ClientCopy = {
     kickerLogin: 'Sign in',
     kickerEntered: 'Account created',
     kickerRappel: 'Call back',
+    kickerCommande: 'Order',
     deskKicker: 'Val d’Isère · order online',
   },
   foot: {
@@ -74,7 +75,8 @@ export const EN: ClientCopy = {
   entered: {
     title: 'Account active',
     sub: 'Three fields, no paperwork. Company documents can wait until you need them.',
-    next: 'Prototype : next comes « How shall we serve you ? » — pickup or courier.',
+    next: 'Next : pickup or courier, then the shop.',
+    cta: 'Order now',
   },
   rappel: {
     asapGroup: 'As soon as possible',
@@ -103,6 +105,32 @@ export const EN: ClientCopy = {
     cta: 'Get a quote ›',
     pending:
       'The quote request screen lands in the next batch — the card is wired, its sequel isn’t.',
+  },
+  commande: {
+    title: 'Hello {name}. How shall we serve you ?',
+    intro: 'You choose, we bake.',
+    pickupBadge: 'Pickup',
+    pickupTitle: 'I’ll come\nand get it',
+    pickupDetail: 'At the Labo, or any of our resort shops.',
+    pickupNote: 'Ready in 20 min',
+    deliveryBadge: 'Courier',
+    deliveryTitle: 'We bring it\nto you',
+    deliveryDetail: 'Tomorrow, in the time slot you pick.',
+    deliveryNote: 'Order before 6 pm',
+    browseTitle: 'Show me the shop',
+    browseSub: 'Browse the counter and decide afterwards',
+    qrTitle: 'Collect my order',
+    qrSub: 'Order {order} · ready at the Labo',
+    qrAction: 'My QR',
+    againTitle: 'Same as last Saturday ?',
+    againSub: '2 traditions, 4 croissants, 1 praline ski · pickup at the Labo',
+    againAction: 'Reorder',
+    urgenceTitle: 'Something urgent, something extra ?',
+    urgencePitch:
+      'A forgotten item on a running order, one more batch : the phone sorts it out. We rarely say no.',
+    urgenceCta: 'Call me back',
+    pending:
+      'The rest of the journey lands in the next batch — the card is wired, its screen is not.',
   },
   pro: {
     title: 'Interested in a trade account ?',

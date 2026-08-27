@@ -39,13 +39,10 @@
 
 <p class="note">
   <span class="note-dot" aria-hidden="true"></span>
-  <span> Entre 12 h et 14 h on est au four : on ne prend pas d'appel, et on préfère le dire. </span>
+  <span>{{ t().rappel.note }}</span>
 </p>
 
-<p class="phone">
-  On vous rappellera au <span class="num">{{ phone() }}</span
-  >.
-</p>
+<p class="phone">{{ phoneLine() }}</p>
 
 <button
   foldButton

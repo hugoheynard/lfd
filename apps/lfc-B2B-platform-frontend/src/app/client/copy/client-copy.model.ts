@@ -18,6 +18,7 @@ export interface ClientCopy {
     readonly kickerLogin: string;
     readonly kickerEntered: string;
     readonly kickerRappel: string;
+    readonly kickerCommande: string;
     readonly deskKicker: string;
   };
   readonly foot: {
@@ -74,6 +75,7 @@ export interface ClientCopy {
     readonly title: string;
     readonly sub: string;
     readonly next: string;
+    readonly cta: string;
   };
   readonly rappel: {
     readonly asapGroup: string;
@@ -102,6 +104,34 @@ export interface ClientCopy {
     readonly title: string;
     readonly pitch: string;
     readonly cta: string;
+    readonly pending: string;
+  };
+  readonly commande: {
+    /** `{name}` est remplacé par le prénom du client reconnu. */
+    readonly title: string;
+    readonly intro: string;
+    readonly pickupBadge: string;
+    /** Deux lignes, séparées par un retour : la carte les rend telles quelles. */
+    readonly pickupTitle: string;
+    readonly pickupDetail: string;
+    readonly pickupNote: string;
+    readonly deliveryBadge: string;
+    /** Deux lignes, séparées par un retour. */
+    readonly deliveryTitle: string;
+    readonly deliveryDetail: string;
+    readonly deliveryNote: string;
+    readonly browseTitle: string;
+    readonly browseSub: string;
+    readonly qrTitle: string;
+    /** `{order}` est remplacé par le numéro de commande. */
+    readonly qrSub: string;
+    readonly qrAction: string;
+    readonly againTitle: string;
+    readonly againSub: string;
+    readonly againAction: string;
+    readonly urgenceTitle: string;
+    readonly urgencePitch: string;
+    readonly urgenceCta: string;
     readonly pending: string;
   };
   readonly pro: {

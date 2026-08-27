@@ -10,8 +10,8 @@ import {
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
+import { MOCK_CLIENT } from '../../client/mock-client';
 
-import { KNOWN_PHONE } from './call-slots';
 import { EnteredStep } from './entered-step/entered-step';
 import { LoginStep } from './login-step/login-step';
 import { RappelPanel } from './rappel-panel/rappel-panel';
@@ -32,7 +32,7 @@ export class AccueilPage {
 
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly phone = KNOWN_PHONE;
+  protected readonly phone = MOCK_CLIENT.phone;
 
   protected readonly step = signal<Step>('welcome');
   protected readonly panelOpen = signal(false);

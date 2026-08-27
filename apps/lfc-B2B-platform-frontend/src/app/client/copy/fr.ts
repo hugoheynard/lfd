@@ -9,6 +9,7 @@ export const FR: ClientCopy = {
     kickerLogin: 'Connexion',
     kickerEntered: 'Compte créé',
     kickerRappel: 'Rappel',
+    kickerCommande: 'Commande',
     deskKicker: 'Val d’Isère · commande en ligne',
   },
   foot: {
@@ -70,7 +71,8 @@ export const FR: ClientCopy = {
   entered: {
     title: 'Compte actif',
     sub: 'Trois champs, aucun document. Le KBIS attendra que vous en ayez besoin.',
-    next: 'Maquette : la suite, c’est « On vous sert comment ? » — retrait ou coursier.',
+    next: 'La suite : retrait ou coursier, puis la boutique.',
+    cta: 'Commander',
   },
   rappel: {
     asapGroup: 'Dès que possible',
@@ -100,6 +102,32 @@ export const FR: ClientCopy = {
     cta: 'Un devis ›',
     pending:
       'L’écran de demande de devis arrive au prochain lot — la carte est branchée, pas sa suite.',
+  },
+  commande: {
+    title: 'Bonjour {name}. On vous sert comment ?',
+    intro: 'Vous choisissez, nous préparons.',
+    pickupBadge: 'Retrait',
+    pickupTitle: 'Je passe\nle prendre',
+    pickupDetail: 'Au Labo ou dans une boutique de station.',
+    pickupNote: 'Prêt en 20 min',
+    deliveryBadge: 'Coursier',
+    deliveryTitle: 'On vous\nl’apporte',
+    deliveryDetail: 'Demain, au créneau que vous choisissez.',
+    deliveryNote: 'Commandez avant 18 h',
+    browseTitle: 'Je visite la boutique',
+    browseSub: 'Pour voir les produits et décider ensuite',
+    qrTitle: 'Retirer ma commande',
+    qrSub: 'Commande {order} · prête au Labo',
+    qrAction: 'Mon QR',
+    againTitle: 'Comme samedi dernier ?',
+    againSub: '2 traditions, 4 croissants, 1 ski praliné · retrait au Labo',
+    againAction: 'Refaire',
+    urgenceTitle: 'Une urgence, un ajout ?',
+    urgencePitch:
+      'Un oubli sur une commande en cours, une fournée à rallonger : ça se règle au téléphone. On dit rarement non.',
+    urgenceCta: 'Être rappelé',
+    pending:
+      'La suite du parcours arrive au prochain lot — la carte est branchée, pas encore son écran.',
   },
   pro: {
     title: 'Intéressé par l’espace pro ?',

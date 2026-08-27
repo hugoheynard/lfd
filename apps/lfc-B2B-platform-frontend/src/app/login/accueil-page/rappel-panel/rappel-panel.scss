@@ -184,11 +184,11 @@
   margin: 0;
   padding-inline: 2px;
   font-size: var(--fold-text-xs);
-  color: var(--lfc-color-text-subtle);
-}
-
-.num {
+  /* Le numéro est DANS la phrase traduite : les chiffres tabulaires se posent
+     donc sur la ligne entière plutôt que sur un `span` qu'on ne peut plus y
+     glisser. */
   font-variant-numeric: tabular-nums;
+  color: var(--lfc-color-text-subtle);
 }
 
 .cta {
