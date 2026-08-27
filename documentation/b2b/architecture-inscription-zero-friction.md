@@ -20,6 +20,23 @@ Les passkeys sont incluses dans **tous** les plans Auth0, gratuit compris. Elles
 pas : le « mot de passe plus tard » tient sans rien renégocier. Limite : 20
 passkeys par personne — le téléphone, le portable, l'ordinateur du fournil.
 
+### Relevé du tenant — 2026-08-27
+
+Lu dans `lafoliedouce` (EU-2, production), en lecture seule :
+
+| Point                                      | État                                                     |
+| ------------------------------------------ | -------------------------------------------------------- |
+| Passkey sur `lfc-b2b-customers`            | **Disponible**, marquée _recommandée_, pas encore active |
+| Password sur `lfc-b2b-customers`           | **Active** — les deux coexisteront                       |
+| « Requires username » désactivé            | ✅ fait                                                  |
+| **Identifier First login flow**            | ⏳ **le seul prérequis en attente**                      |
+| Custom Login Page désactivée               | ✅ fait                                                  |
+| Universal Login Experience                 | ✅ **déjà le Nouveau**                                   |
+| Domaine personnalisé                       | Aucun — et le tenant n'en fait PAS un prérequis          |
+| `Disable Sign Ups` sur la connexion client | Désactivé : l'inscription publique est ouverte           |
+
+**Un seul interrupteur sépare le tenant des passkeys.**
+
 ### Pourquoi pas le passwordless d'Auth0
 
 1. Une connexion passwordless **ne porte pas de mot de passe**, et le mot de passe
@@ -133,12 +150,15 @@ Trois phrases affirment aujourd'hui l'inverse de ce qui sera vrai :
 s'activent bien sur la seule connexion client, mais leurs prérequis touchent tout
 le monde :
 
-- **Nouvel Universal Login** — nécessaire à WebAuthn. Change l'écran de connexion
-  du staff aussi.
-- **Flux « identifiant d'abord »** — même remarque.
-- **Domaine personnalisé** — obligatoire (une passkey est liée à un domaine, et
-  `*.auth0.com` ne convient pas). Inclus dans le gratuit, mais **une carte est
-  demandée pour la validation** (jamais débitée).
+- **Nouvel Universal Login** — nécessaire à WebAuthn. **Déjà actif** : rien à
+  basculer, donc rien à casser pour le staff.
+- **Flux « identifiant d'abord »** — le seul réglage à activer. Il change l'écran
+  du staff aussi : l'e-mail d'abord, le mot de passe ensuite. Mêmes identifiants.
+- **Domaine personnalisé** — **PAS un prérequis**, contrairement à ce que cette
+  note affirmait. Le tenant ne le liste pas. Sans lui, la passkey s'enregistre
+  sous `lafoliedouce.eu.auth0.com` : elle fonctionne, mais elle apparaît au nom
+  d'Auth0 dans le trousseau de la personne, pas au vôtre. Question de marque, pas
+  de faisabilité — traitable plus tard.
 
 Et la conséquence à ne pas manquer : **un domaine personnalisé change le `iss` des
 jetons**. `AccessTokenVerifier` contrôle l'émetteur (`auth.config.ts`), et les
@@ -160,17 +180,19 @@ touche pas les identifiants : il touche l'émetteur.
 ⚠️ Si le tenant est encore en Classic Universal Login avec une page de connexion
 personnalisée en HTML, elle serait perdue au passage. À regarder avant.
 
-## Rappel de contrainte
+## Une alerte retirée
 
-Le tiers gratuit inclut **une** connexion base de données, que
-`lfc-b2b-customers` consomme. Provisionner `lfc-staff` en prod franchira la
-limite — à trancher avant, pas pendant.
+Cette note avertissait que le tiers gratuit n'autorisait **qu'une** connexion base
+de données, et que provisionner `lfc-staff` franchirait la limite. **C'est faux** :
+le tenant en porte déjà **trois** — `lfc-b2b-customers`, `lfc-staff` et le
+`Username-Password-Authentication` par défaut. La page de tarifs annonce ce
+chiffre, Auth0 ne l'oppose pas.
 
 ## Ce qui reste ouvert
 
-- **L'état du tenant n'a pas été lu** : domaine personnalisé, Nouvel Universal
-  Login, flux « identifiant d'abord ». À vérifier au tableau de bord avant la
-  première ligne de code.
+- **Le domaine personnalisé** reste à décider — pas pour faire marcher les
+  passkeys, mais pour qu'elles portent votre nom. Il demande une carte (jamais
+  débitée) et changerait le `iss` des jetons : basculement d'un bloc.
 - **La passkey depuis un appareil voisin** (QR) couvrirait une partie du
   changement d'écosystème tant que l'ancien téléphone est là. Non vérifié.
 - **Le téléphone n'est pas vérifié.** Il sert au coursier qui cherche la porte,
