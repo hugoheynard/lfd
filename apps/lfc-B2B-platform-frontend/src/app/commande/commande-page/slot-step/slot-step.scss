@@ -1,20 +1,14 @@
 :host {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  font-family: var(--fold-font-sans);
-  background: var(--fold-color-bg-page);
-  color: var(--fold-color-text);
+  gap: var(--fold-space-lg);
 }
 
-.body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-lg);
+.intro {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
 }
 
 .group {
@@ -83,21 +77,4 @@
 
 .slot.closed .sub {
   color: var(--fold-color-text-faded);
-}
-
-/* Le pied ne défile pas : le bouton qui porte le créneau retenu doit rester
-   sous le pouce, quelle que soit la hauteur de la grille. */
-.foot {
-  flex: none;
-  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-xl);
-  border-top: 1px solid var(--fold-color-border);
-  background: var(--fold-color-bg-page);
-}
-
-.cta {
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-cta);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-cta);
-  text-transform: uppercase;
 }

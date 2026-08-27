@@ -201,9 +201,7 @@ export interface ClientCopy {
     readonly cta: string;
     readonly ctaBlocked: string;
   };
-  readonly slotPanel: {
-    readonly pickupTitle: string;
-    readonly deliveryTitle: string;
+  readonly slotStep: {
     /** `{place}` est remplacé par le point de retrait ou l'adresse. */
     readonly pickupIntro: string;
     readonly deliveryIntro: string;
@@ -215,7 +213,7 @@ export interface ClientCopy {
     readonly secondBatch: string;
     readonly laboOnly: string;
     readonly ctaIdle: string;
-    /** `{slot}` est remplacé par le créneau retenu. */
+    /** Le créneau tenu, on va composer : le bouton nomme la SUITE. */
     readonly cta: string;
   };
   readonly pro: {

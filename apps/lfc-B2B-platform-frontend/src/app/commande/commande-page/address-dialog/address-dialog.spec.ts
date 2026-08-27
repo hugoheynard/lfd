@@ -72,22 +72,25 @@ describe('AddressDialog', () => {
     expect(cta().disabled).toBe(true);
   });
 
-  it("remonte l'adresse, sa zone et le choix du carnet", () => {
-    const seen: { line: string; fee: number; saved: boolean }[] = [];
-    fixture.componentInstance.chosen.subscribe((choice) =>
-      seen.push({ line: choice.line, fee: choice.zone.fee, saved: choice.saveToBook }),
-    );
+  it('le bouton mène au CRÉNEAU, puis au panier', () => {
+    let done = 0;
+    fixture.componentInstance.done.subscribe(() => (done += 1));
 
     type('.street', '12 rue du Coin Ferrand');
     type('.postcode', '73130');
+    cta().click();
+    fixture.detectChanges();
 
-    const save = el().querySelector('.save');
-    if (save instanceof HTMLButtonElement) {
-      save.click();
-      fixture.detectChanges();
-    }
+    // Le second volet rappelle l'adresse : on ne perd pas ce qu'on vient de dire.
+    expect(el().querySelector('app-slot-step')?.textContent).toContain(
+      '12 rue du Coin Ferrand, 73130',
+    );
+    expect(cta().disabled).toBe(true);
+
+    (el().querySelectorAll('button.slot')[0] as HTMLButtonElement).click();
+    fixture.detectChanges();
     cta().click();
 
-    expect(seen).toEqual([{ line: '12 rue du Coin Ferrand, 73130', fee: 50, saved: true }]);
+    expect(done).toBe(1);
   });
 });

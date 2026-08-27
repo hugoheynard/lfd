@@ -100,10 +100,6 @@
         <fold-callout variant="info">{{ t().commande.pending }}</fold-callout>
       }
 
-      @if (settled(); as choice) {
-        <fold-callout variant="success">{{ choice }}</fold-callout>
-      }
-
       <app-callback-block
         [title]="t().commande.urgenceTitle"
         [pitch]="t().commande.urgencePitch"
@@ -119,13 +115,13 @@
     <app-pickup-dialog
       [open]="dialog() === 'pickup'"
       (closed)="dialog.set(null)"
-      (chosen)="settlePickup($event.name)"
+      (done)="fillBasket()"
     />
 
     <app-address-dialog
       [open]="dialog() === 'address'"
       (closed)="dialog.set(null)"
-      (chosen)="settleDelivery($event)"
+      (done)="fillBasket()"
     />
   }
 </app-client-page>

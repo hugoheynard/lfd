@@ -190,9 +190,7 @@ export const EN: ClientCopy = {
     cta: 'Pick my slot · €{fee}',
     ctaBlocked: 'Choose an address',
   },
-  slotPanel: {
-    pickupTitle: 'When are you coming ?',
-    deliveryTitle: 'Tomorrow, when ?',
+  slotStep: {
     pickupIntro: 'To collect {place}. The slot keeps the batch for you.',
     deliveryIntro: 'Delivered {place}. The courier leaves as the slot opens.',
     amGroup: 'Morning · out of the oven',
@@ -203,7 +201,7 @@ export const EN: ClientCopy = {
     secondBatch: 'second batch',
     laboOnly: 'Labo only',
     ctaIdle: 'Pick a slot',
-    cta: 'Keep {slot}',
+    cta: 'Fill my basket',
   },
   pro: {
     title: 'Interested in a trade account ?',

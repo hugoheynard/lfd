@@ -188,9 +188,7 @@ export const FR: ClientCopy = {
     cta: 'Choisir mon créneau · {fee} €',
     ctaBlocked: 'Choisissez une adresse',
   },
-  slotPanel: {
-    pickupTitle: 'Vous passez quand ?',
-    deliveryTitle: 'Demain, quand ?',
+  slotStep: {
     pickupIntro: 'À retirer {place}. Le créneau vous garde la fournée.',
     deliveryIntro: 'Livré {place}. Le coursier part à l’ouverture du créneau.',
     amGroup: 'Matin · sortie de fournée',
@@ -201,7 +199,7 @@ export const FR: ClientCopy = {
     secondBatch: 'seconde fournée',
     laboOnly: 'Labo seulement',
     ctaIdle: 'Choisissez un créneau',
-    cta: 'Garder {slot}',
+    cta: 'Remplir mon panier',
   },
   pro: {
     title: 'Intéressé par l’espace pro ?',

@@ -3,6 +3,16 @@
 <dialog #dlg class="dlg" (close)="closed.emit()" (click)="onBackdrop($event)">
   <div class="panel">
     <div class="head">
+      @if (canBack()) {
+        <button
+          class="back"
+          type="button"
+          [attr.aria-label]="t().chrome.back"
+          (click)="back.emit()"
+        >
+          <fold-icon name="chevron-left" />
+        </button>
+      }
       <div class="titles">
         <p class="kicker">{{ kicker() }}</p>
         <h2 class="title">{{ title() }}</h2>
@@ -18,7 +28,12 @@
     </div>
 
     <div class="body">
-      <ng-content />
+      <!-- Le rail dimensionne ses volets depuis le CONTENEUR : ils sont projetés
+           et portent l'encapsulation du dialogue qui les compose, donc aucune
+           règle écrite ici ne les atteindrait. -->
+      <div class="track" [style.transform]="shift()">
+        <ng-content />
+      </div>
     </div>
 
     <div class="foot">

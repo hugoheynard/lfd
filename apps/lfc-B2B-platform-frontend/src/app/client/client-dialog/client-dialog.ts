@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -23,6 +24,10 @@ import { ClientCopyService } from '../copy/client-copy.service';
  *
  * Le voile et l'entrée sont ceux de la réf : `scale(.96) → 1` en 260 ms, et
  * rien du tout pour qui a demandé moins d'animation.
+ *
+ * Il porte aussi ses ÉTAPES. Un dialogue qui pose deux temps d'une même
+ * question — où, puis quand — les fait glisser l'un vers l'autre plutôt que de
+ * se fermer pour rouvrir ailleurs : on ne perd pas ce qu'on vient de choisir.
  */
 @Component({
   selector: 'app-client-dialog',
@@ -39,9 +44,24 @@ export class ClientDialog {
 
   readonly title = input.required<string>();
 
+  /** L'étape montrée, en partant de zéro. Le reste attend sur le côté. */
+  readonly step = input(0);
+
+  /** Le retour n'existe que là où on est venu de quelque part. */
+  readonly canBack = input(false);
+
   readonly closed = output<void>();
+  readonly back = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
+
+  /**
+   * Le décalage du rail. Calculé ici plutôt que passé en propriété
+   * personnalisée au CSS : une valeur écrite en clair se lit dans l'inspecteur
+   * telle qu'elle sera interpolée, sans indirection à dérouler quand une
+   * transition se comporte mal.
+   */
+  protected readonly shift = computed(() => `translateX(${this.step() * -100}%)`);
 
   private readonly host = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
 

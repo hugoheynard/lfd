@@ -1,0 +1,24 @@
+<p class="intro">{{ intro() }}</p>
+
+@for (group of groups(); track group.id) {
+  <section class="group">
+    <p class="eyebrow" [id]="'slots-' + group.id">{{ group.title }}</p>
+    <div class="grid" role="radiogroup" [attr.aria-labelledby]="'slots-' + group.id">
+      @for (slot of group.slots; track slot.id) {
+        <button
+          class="slot"
+          type="button"
+          role="radio"
+          [class.on]="pickedId() === slot.id"
+          [class.closed]="!slot.open"
+          [disabled]="!slot.open"
+          [attr.aria-checked]="pickedId() === slot.id"
+          (click)="pick(slot)"
+        >
+          <span class="hour">{{ slot.label }}</span>
+          <span class="sub">{{ slot.sub }}</span>
+        </button>
+      }
+    </div>
+  </section>
+}

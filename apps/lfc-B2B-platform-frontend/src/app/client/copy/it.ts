@@ -195,9 +195,7 @@ export const IT: ClientCopy = {
     cta: 'Scegliere la fascia · {fee} €',
     ctaBlocked: 'Scelga un indirizzo',
   },
-  slotPanel: {
-    pickupTitle: 'Quando passa ?',
-    deliveryTitle: 'Domani, a che ora ?',
+  slotStep: {
     pickupIntro: 'Da ritirare {place}. La fascia le tiene la sfornata.',
     deliveryIntro: 'Consegnato {place}. Il corriere parte all’apertura della fascia.',
     amGroup: 'Mattina · appena sfornato',
@@ -208,7 +206,7 @@ export const IT: ClientCopy = {
     secondBatch: 'seconda sfornata',
     laboOnly: 'Solo al Labo',
     ctaIdle: 'Scelga una fascia',
-    cta: 'Tenere {slot}',
+    cta: 'Riempire il carrello',
   },
   pro: {
     title: 'Ti interessa lo spazio professionale ?',

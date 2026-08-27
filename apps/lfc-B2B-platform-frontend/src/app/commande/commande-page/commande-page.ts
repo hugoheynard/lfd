@@ -6,21 +6,21 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldCalloutComponent } from 'fold-ng';
 
 import { CallbackBlock } from '../../client/callback-block/callback-block';
+import { Router } from '@angular/router';
+
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
-import type { OrderSlot } from '../../client/mock-station';
 import { RappelPanel } from '../../login/accueil-page/rappel-panel/rappel-panel';
 
-import { AddressDialog, type DeliveryChoice } from './address-dialog/address-dialog';
+import { AddressDialog } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
 import { PickupDialog } from './pickup-dialog/pickup-dialog';
-import { SlotPanel, type SlotRequest } from './slot-panel/slot-panel';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
@@ -58,7 +58,7 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
 })
 export class CommandePage {
   private readonly chrome = inject(ClientChrome);
-  private readonly panels = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -72,9 +72,6 @@ export class CommandePage {
 
   /** Le dialogue ouvert, s'il y en a un. Un seul à la fois, par construction. */
   protected readonly dialog = signal<'pickup' | 'address' | null>(null);
-
-  /** Ce que le dialogue a retenu, montré en clair sous les deux portes. */
-  protected readonly settled = signal<string | null>(null);
 
   protected readonly heading = computed(() =>
     this.panelOpen()
@@ -117,7 +114,6 @@ export class CommandePage {
 
   protected openDialog(which: 'pickup' | 'address'): void {
     this.pending.set(false);
-    this.settled.set(null);
     this.dialog.set(which);
   }
 
@@ -125,27 +121,15 @@ export class CommandePage {
    * ⚠️ Maquette : la suite du parcours (la boutique, puis le panier) n'existe
    * pas encore. On retient donc le choix à l'écran plutôt que d'y mener.
    */
-  protected settlePickup(name: string): void {
-    this.askSlot({ mode: 'pickup', place: name });
-  }
-
-  protected settleDelivery(choice: DeliveryChoice): void {
-    this.askSlot({ mode: 'delivery', place: `${choice.line} · ${choice.zone.fee} €` });
-  }
-
   /**
-   * Le lieu choisi, reste l'heure. Le panneau se substitue au dialogue plutôt
-   * que de s'empiler dessus : ce sont deux temps d'une même question, pas deux
-   * questions.
+   * Le lieu ET l'heure sont pris : il ne reste qu'à composer. La boutique est
+   * une route de l'app pro — c'est bien elle qu'on veut, et son garde
+   * d'authentification dira ce qu'il a à dire tant que le compte client n'existe
+   * pas. ⚠️ Maquette : c'est le point de jonction avec la vraie inscription.
    */
-  private askSlot(request: SlotRequest): void {
+  protected fillBasket(): void {
     this.dialog.set(null);
-    const ref = this.panels.open<SlotRequest, OrderSlot>(SlotPanel, { data: request });
-    void ref.closed.then((slot) => {
-      if (slot) {
-        this.settled.set(`${request.place} · ${slot.label}`);
-      }
-    });
+    void this.router.navigate(['/boutique']);
   }
 
   protected openPanel(): void {
