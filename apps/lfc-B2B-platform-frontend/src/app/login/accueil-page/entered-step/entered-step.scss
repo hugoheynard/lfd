@@ -1,5 +1,9 @@
+/* L'étape remplit la scène de `app-client-page` : c'est ce qui permet à un
+   dernier bloc d'aller se poser en bas (`margin-top: auto`) plutôt que de
+   flotter sous l'avant-dernier. */
 :host {
   display: flex;
+  flex: 1 0 auto;
   flex-direction: column;
   gap: var(--fold-space-xl);
 }

@@ -7,11 +7,9 @@ import {
   signal,
 } from '@angular/core';
 
-import { FoldSurfaceDirective } from 'fold-ng';
-
 import { ClientChrome } from '../../client/client-chrome.service';
+import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
-import { LangSwitch } from '../../client/lang-switch/lang-switch';
 
 import { KNOWN_PHONE } from './call-slots';
 import { EnteredStep } from './entered-step/entered-step';
@@ -25,7 +23,7 @@ type Step = 'welcome' | 'login' | 'entered';
 @Component({
   selector: 'app-accueil-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective, LangSwitch, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
+  imports: [ClientPage, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
   templateUrl: './accueil-page.html',
   styleUrl: './accueil-page.scss',
 })

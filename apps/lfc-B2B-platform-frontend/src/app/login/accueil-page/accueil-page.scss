@@ -2,226 +2,21 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  font-family: var(--fold-font-sans);
-}
-
-.frame {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  /* L'encre ne se voit qu'AUTOUR des coins hauts de la feuille — deux petits
-     angles, et la bande au-dessus. Pas de liseré latéral : la feuille tient le
-     bord. */
-  background: var(--fold-color-primary);
-}
-
-/* ── La colonne d'argument (en pile : la simple accroche) ─────────────────── */
-
-.aside {
-  display: flex;
-  flex-direction: column;
-  flex: none;
-  gap: var(--fold-space-md);
-  /* De l'air au-dessus de l'accroche : elle ne doit pas coller à la barre. */
-  padding: var(--fold-space-lg) var(--fold-space-xl) var(--fold-space-2xl);
-  background: var(--fold-color-bg-page);
-  color: var(--fold-color-text);
-}
-
-/* La marque n'est ici qu'au-delà du pli — la barre du shell la porte en deçà. */
-.brand-row {
-  display: none;
-  align-items: center;
-  gap: 12px;
-}
-
-.mark {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: var(--fold-radius-md);
-  padding: 6px;
-  overflow: hidden;
-  background: var(--lfc-paper-0);
-  box-shadow: var(--lfc-shadow-logo);
-
-  img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-}
-
-.brand {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  line-height: 1.04;
-}
-
-.brand-name {
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xl);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-display);
-  text-transform: uppercase;
-}
-
-.brand-kicker {
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-kicker);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-kicker);
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
-.hero-title {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-screen-sm);
-  font-weight: var(--lfc-weight-black);
-  line-height: 1.04;
-  letter-spacing: var(--lfc-tracking-display);
-  text-transform: uppercase;
-  text-wrap: balance;
-
-  &.big {
-    font-size: var(--fold-text-2xl);
-    line-height: var(--lfc-leading-display);
-  }
-}
-
-.hero-intro {
-  margin: 0;
-  font-size: var(--fold-text-base);
-  line-height: var(--lfc-leading-body);
-  color: var(--fold-color-text-muted);
 }
 
 /* Les preuves et l'adresse n'existent qu'au-delà du pli : en pile, elles
    repousseraient le formulaire sous la ligne de flottaison. */
-.proof,
-.address {
+.aside-foot {
   display: none;
 }
 
-/* ── La feuille crème ─────────────────────────────────────────────────────── */
-
-.sheet {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  /* La feuille fait AU MOINS un écran de haut. Sans ça, la course de
-     défilement vaut la hauteur du contenu moins celle de l'écran — et depuis
-     que le formulaire se replie, ce reste est plus court que l'accroche : on ne
-     pouvait plus la faire sortir entièrement, et il restait toujours un bout de
-     titre blanc coincé sous la barre. Une feuille pleine hauteur garantit
-     exactement la course qu'il faut pour l'escamoter. (C'est le `min-height:
-     100%` de la réf, exprimé contre l'écran puisque le porte-page, lui, se
-     dimensionne sur son contenu. La hauteur de barre vient du shell, qui la
-     publie sous `--lfc-header-height`.) */
-  min-height: calc(100dvh - var(--lfc-header-height, 56px));
-  /* La crème revient sur la feuille : c'est elle qui garantit un aplat continu
-     sous la lèvre, quelle que soit la position de défilement. La retirer
-     rendait le fond tributaire de la scène, et le passage bleu → crème s'en
-     trouvait haché. */
-  background: var(--fold-color-bg-page);
-  color: var(--fold-color-text);
-}
-
-/* LA LÈVRE — le bord haut de la feuille, détaché en élément propre.
-   Il n'y a qu'UN défilement sur l'écran, celui du shell : l'accroche part la
-   première, puis le contenu de la feuille continue. Rien à transférer, rien à
-   enchaîner, donc rien à casser sur un écran tactile — l'ordre vient de la
-   position, pas d'une règle.
-   Ce qui bouge, c'est le bord : `sticky` l'amarre sous la barre dès que
-   l'accroche est passée, et la feuille garde ses coins pour toujours. */
-.lip {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  flex: none;
-  /* Deux étages dans un seul élément : une bande d'encre, puis le bord arrondi
-     de la feuille. La bande fait un cran d'espacement — le même que celui qui
-     sépare les blocs de la feuille — pour que l'encre reste franchement visible
-     une fois la feuille amarrée, et pas seulement dans les deux angles. */
-  height: calc(var(--fold-space-xl) + var(--lfc-radius-sheet));
-  background: var(--fold-color-primary);
-  /* Un pixel d'encre AU-DESSUS de la lèvre. La crème de la feuille court
-     derrière elle ; aux hauteurs fractionnaires — et elles le sont presque
-     toujours — elle affleurait d'un demi-pixel et se lisait comme un liseré
-     clair sur le bleu. Cette ombre bouche la fuite sans rien déplacer. */
-  box-shadow: 0 -1px 0 0 var(--fold-color-primary);
-}
-
-.lip::after {
-  content: '';
-  position: absolute;
-  inset: var(--fold-space-xl) 0 0;
-  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
-  background: var(--fold-color-bg-page);
-}
-
-.stage {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  /* Le haut est entièrement porté par la lèvre — sa moitié crème fait déjà la
-     respiration au-dessus du premier bloc. */
-  /* Le bas est large à dessein : sur un téléphone, la barre d'URL qui se replie
-     et la barre de geste mangent une trentaine de pixels que le viewport ne
-     déclare pas toujours. Le dernier bouton ne doit pas s'y perdre. */
-  padding: 0 var(--fold-space-xl) var(--fold-space-5xl);
-}
-
-/* L'étape remplit la scène : c'est ce qui permet au CTA du panneau de rappel
-   d'aller se poser en bas (`margin-top: auto`) plutôt que de flotter sous le
-   dernier créneau. */
-.stage > * {
-  flex: 1 0 auto;
-}
-
-/* ── Au-delà du pli : deux colonnes ───────────────────────────────────────── */
-
 @media (min-width: 900px) {
-  /* Deux colonnes qui s'étirent à la même hauteur : le défilement reste celui
-     de la page, et l'adresse peut se poser au bas de la colonne d'encre. */
-  .frame {
-    display: grid;
-    grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
-  }
-
-  .aside {
-    position: relative;
-    gap: 0;
-    padding: 46px 44px;
-    overflow: hidden;
-  }
-
-  .brand-row {
+  /* Le pied de colonne prend toute la hauteur restante : c'est ce qui permet à
+     l'adresse d'aller se poser tout en bas. */
+  .aside-foot {
     display: flex;
-  }
-
-  .hero-title {
-    margin: 52px 0 14px;
-
-    &.big {
-      font-size: 2.75rem;
-      line-height: 0.98;
-      letter-spacing: -0.035em;
-    }
-  }
-
-  .hero-intro {
-    max-width: 30em;
-    margin-bottom: 34px;
-    font-size: 0.96875rem;
-    line-height: 1.6;
+    flex: 1;
+    flex-direction: column;
   }
 
   .proof {
@@ -260,23 +55,5 @@
     padding-top: 34px;
     font-size: var(--lfc-text-note);
     color: var(--lfc-color-on-primary-muted);
-  }
-
-  /* Au-delà du pli, la feuille occupe sa colonne : plus de bord arrondi, donc
-     plus de lèvre à amarrer. */
-  .lip {
-    display: none;
-  }
-
-  .stage {
-    padding: 46px 52px;
-  }
-
-  /* La colonne est large, la LECTURE ne doit pas l'être. On borne l'étape entière
-     plutôt que chaque bloc : le formulaire, la carte traiteur et l'encart pro
-     partagent alors la même colonne de mesure, et un bloc ajouté demain en
-     hérite sans qu'on y pense. */
-  .stage > * {
-    max-width: 560px;
   }
 }

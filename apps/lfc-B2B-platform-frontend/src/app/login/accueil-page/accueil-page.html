@@ -1,24 +1,5 @@
-<!-- Une seule structure, deux mises en page. En pile : l'accroche sur le bleu,
-     puis la feuille crème qui monte dessus. Au-delà du pli : deux colonnes, la
-     marque et l'argument à gauche sur le bleu, la feuille à droite. -->
-<div class="frame">
-  <div class="aside" foldSurface="chrome">
-    <!-- La marque n'apparaît ici qu'au-delà du pli : en deçà, c'est la barre du
-         shell qui la porte, et la répéter ferait doublon. -->
-    <div class="brand-row">
-      <span class="mark" aria-hidden="true">
-        <img src="brand/lfc-mark.png" alt="" />
-      </span>
-      <span class="brand">
-        <span class="brand-name">La Folie Coffee</span>
-        <span class="brand-kicker">{{ t().chrome.deskKicker }}</span>
-      </span>
-      <app-lang-switch size="md" />
-    </div>
-
-    <h1 class="hero-title" [class.big]="bigHeading()">{{ heading() }}</h1>
-    <p class="hero-intro">{{ intro() }}</p>
-
+<app-client-page [heading]="heading()" [intro]="intro()" [big]="bigHeading()">
+  <div aside-foot class="aside-foot">
     @if (showProof()) {
       <ul class="proof">
         @for (point of t().aside.proof; track point) {
@@ -32,41 +13,32 @@
     }
   </div>
 
-  <main class="sheet">
-    <!-- La lèvre : le bord haut de la feuille, qui s'amarre sous la barre quand
-         l'accroche est passée. C'est elle qui garde les coins et le liseré
-         d'encre, à n'importe quelle position de défilement. -->
-    <span class="lip" aria-hidden="true"></span>
-
-    <div class="stage">
-      @if (panelOpen()) {
-        <app-rappel-panel [phone]="phone" (booked)="book($event)" />
-      } @else {
-        @switch (step()) {
-          @case ('welcome') {
-            <app-welcome-step
-              [phone]="phone"
-              [bookedSlot]="bookedSlot()"
-              (signedUp)="goTo('entered')"
-              (wantsLogin)="goTo('login')"
-              (wantsCallback)="openPanel()"
-              [quotePending]="quotePending()"
-              (wantsQuote)="openQuote()"
-              (cancelledCallback)="bookedSlot.set(null)"
-            />
-          }
-          @case ('login') {
-            <app-login-step
-              (entered)="goTo('entered')"
-              (wantsSignup)="goTo('welcome')"
-              (sentChange)="linkSent.set($event)"
-            />
-          }
-          @case ('entered') {
-            <app-entered-step />
-          }
-        }
+  @if (panelOpen()) {
+    <app-rappel-panel [phone]="phone" (booked)="book($event)" />
+  } @else {
+    @switch (step()) {
+      @case ('welcome') {
+        <app-welcome-step
+          [phone]="phone"
+          [bookedSlot]="bookedSlot()"
+          (signedUp)="goTo('entered')"
+          (wantsLogin)="goTo('login')"
+          (wantsCallback)="openPanel()"
+          [quotePending]="quotePending()"
+          (wantsQuote)="openQuote()"
+          (cancelledCallback)="bookedSlot.set(null)"
+        />
       }
-    </div>
-  </main>
-</div>
+      @case ('login') {
+        <app-login-step
+          (entered)="goTo('entered')"
+          (wantsSignup)="goTo('welcome')"
+          (sentChange)="linkSent.set($event)"
+        />
+      }
+      @case ('entered') {
+        <app-entered-step />
+      }
+    }
+  }
+</app-client-page>

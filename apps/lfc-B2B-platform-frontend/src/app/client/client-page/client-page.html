@@ -1,0 +1,38 @@
+<!-- Une seule structure, deux mises en page. En pile : l'accroche sur le bleu,
+     puis la feuille crème qui monte dessus. Au-delà du pli : deux colonnes, la
+     marque et l'argument à gauche sur le bleu, la feuille à droite. -->
+<div class="frame">
+  <div class="aside" foldSurface="chrome">
+    <!-- La marque n'apparaît ici qu'au-delà du pli : en deçà, c'est la barre du
+         shell qui la porte, et la répéter ferait doublon. -->
+    <div class="brand-row">
+      <span class="mark" aria-hidden="true">
+        <img src="brand/lfc-mark.png" alt="" />
+      </span>
+      <span class="brand">
+        <span class="brand-name">La Folie Coffee</span>
+        <span class="brand-kicker">{{ t().chrome.deskKicker }}</span>
+      </span>
+      <app-lang-switch size="md" />
+    </div>
+
+    <h1 class="hero-title" [class.big]="big()">{{ heading() }}</h1>
+    <p class="hero-intro">{{ intro() }}</p>
+
+    <!-- L'hôte doit être STATIQUE : un `@if` autour de lui enverrait son contenu
+         dans l'étage, la projection se décidant à la compilation. Ce qui varie
+         se décide donc à l'intérieur. -->
+    <ng-content select="[aside-foot]" />
+  </div>
+
+  <main class="sheet">
+    <!-- La lèvre : le bord haut de la feuille, qui s'amarre sous la barre quand
+         l'accroche est passée. C'est elle qui garde les coins et le liseré
+         d'encre, à n'importe quelle position de défilement. -->
+    <span class="lip" aria-hidden="true"></span>
+
+    <div class="stage">
+      <ng-content />
+    </div>
+  </main>
+</div>
