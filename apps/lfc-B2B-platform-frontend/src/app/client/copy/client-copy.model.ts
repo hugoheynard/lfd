@@ -122,11 +122,18 @@ export interface ClientCopy {
     readonly pickupTitle: string;
     readonly pickupDetail: string;
     readonly pickupNote: string;
+    /** Au-delà du pli : le bouton nomme l'action, la condition porte la remise. */
+    readonly pickupDetailWide: string;
+    readonly pickupCta: string;
+    readonly pickupNoteWide: string;
     readonly deliveryBadge: string;
     /** Deux lignes, séparées par un retour. */
     readonly deliveryTitle: string;
     readonly deliveryDetail: string;
     readonly deliveryNote: string;
+    readonly deliveryDetailWide: string;
+    readonly deliveryCta: string;
+    readonly deliveryNoteWide: string;
     readonly eventBadge: string;
     /** Deux lignes, séparées par un retour. */
     readonly eventTitle: string;
@@ -142,6 +149,8 @@ export interface ClientCopy {
     readonly againTitle: string;
     readonly againSub: string;
     readonly againAction: string;
+    /** La phrase de reprise, au bureau : elle porte le rappel dans son texte. */
+    readonly againLead: string;
     readonly urgenceTitle: string;
     readonly urgencePitch: string;
     readonly urgenceCta: string;

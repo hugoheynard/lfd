@@ -104,6 +104,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Masquée quand le menu la remplace en pile — la règle du pli la rend. */
+.mark.wide-only {
+  display: none;
+}
+
 .mark {
   flex: none;
   display: grid;
@@ -166,21 +171,20 @@
     --lfc-header-height: 0px;
   }
 
-  :host(.bar-narrow-only) /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
-   zone au-delà du contenu montre l'arrière-plan du conteneur de défilement, pas
-   celui de la page : c'était le crème du shell, qui passait pour du blanc. On le
-   met à l'encre de marque, pour que le rebond prolonge la barre au lieu de
-   trouer l'écran.
-
-   Le sélecteur est volontairement `:host fold-app-shell` : le composant se peint
-   lui-même en `:host`, à égale spécificité — il faut donc un cran de plus pour
-   le reprendre depuis le parent, sans `!important`. */
-:host fold-app-shell {
-    background: var(--fold-color-primary);
+  /* ⚠️ Scopé à l'écran qui le DEMANDE. Sans le `:host(...)`, la règle valait
+     pour tout le monde et la barre était toujours absente au-delà du pli —
+     `barOnDesktop` n'y réglait plus que la hauteur de la rangée, jamais la
+     visibilité. Aucun écran ne l'avait vu parce que les deux disaient non. */
+  :host(.bar-narrow-only) .bar {
+    display: none;
   }
 
-  .bar {
+  .menu.narrow-only {
     display: none;
+  }
+
+  .mark.wide-only {
+    display: grid;
   }
 }
 

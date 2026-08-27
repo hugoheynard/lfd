@@ -10,12 +10,22 @@
       <button class="back" type="button" [attr.aria-label]="t().chrome.back" (click)="goBack()">
         <fold-icon name="chevron-left" />
       </button>
-    } @else if (chrome.menu()) {
-      <button class="menu" type="button" [attr.aria-label]="t().chrome.menu" (click)="openMenu()">
-        <fold-icon name="menu" />
-      </button>
     } @else {
-      <span class="mark" aria-hidden="true">
+      <!-- Le menu est une affordance de POCHE : au-delà du pli, la barre a la
+           place de nommer ses destinations, et c'est la marque qui reprend le
+           coin. Les deux vivent dans le DOM, le CSS choisit — le pli est une
+           affaire de largeur, que le rendu serveur ne connaît pas. -->
+      @if (chrome.menu()) {
+        <button
+          class="menu narrow-only"
+          type="button"
+          [attr.aria-label]="t().chrome.menu"
+          (click)="openMenu()"
+        >
+          <fold-icon name="menu" />
+        </button>
+      }
+      <span class="mark" [class.wide-only]="!!chrome.menu()" aria-hidden="true">
         <img src="brand/lfc-mark.png" alt="" />
       </span>
     }

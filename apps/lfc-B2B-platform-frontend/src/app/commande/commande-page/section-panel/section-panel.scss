@@ -86,3 +86,48 @@
     color: var(--lfc-color-on-accent);
   }
 }
+
+/* ── Au-delà du pli ───────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  /* Le puits cesse d'être une carte pour devenir la PAGE : plus de coins, plus
+     de marge, et ses deux offres se partagent la largeur. Son en-tête remonte
+     dans l'accroche, qui le porte déjà en sur-titre. */
+  :host([data-tone='well']) {
+    border-radius: 0;
+    padding: 0;
+
+    .head,
+    .sub {
+      display: none;
+    }
+
+    .offers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      /* Le filet entre les deux moitiés est le puits lui-même, vu par
+         l'interstice — pas une bordure à peindre. */
+      gap: 2px;
+      margin-top: 0;
+    }
+  }
+
+  /* La bande garde son en-tête : elle nomme ce qu'elle contient, et personne
+     d'autre ne le fait pour elle. */
+  :host([data-tone='band']) {
+    border-inline: 0;
+    border-radius: 0;
+    padding: 26px 44px 34px;
+
+    .title {
+      font-size: var(--lfc-text-heading);
+    }
+
+    .offers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--fold-space-lg);
+      margin-top: 16px;
+    }
+  }
+}

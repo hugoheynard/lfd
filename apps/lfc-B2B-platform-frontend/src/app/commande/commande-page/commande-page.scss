@@ -23,8 +23,68 @@ app-offer-carousel {
   margin-bottom: var(--fold-space-xs);
 }
 
+/* En pile, les deux raccourcis restent deux blocs — et la boutique passe
+   DEVANT la reprise : on propose d'abord de voir, ensuite de refaire. */
+.resume {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resume .browse {
+  order: -1;
+}
+
 /* L'encart de rappel ferme l'écran : il se pose en bas plutôt que de flotter
    sous le dernier raccourci. */
 app-callback-block {
   margin-top: auto;
+}
+
+/* ── Au-delà du pli ───────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  /* Le rail s'efface (`display: contents`) et ses deux panneaux deviennent des
+     enfants de la pile : la barre de reprise peut alors venir s'intercaler
+     entre les moitiés et la bande, comme dans la réf. */
+  .stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .resume {
+    order: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--fold-space-lg);
+    padding: 18px 44px;
+    background: var(--lfc-color-surface-well);
+  }
+
+  /* Dans la barre, la reprise parle à gauche et l'action répond à droite. */
+  .resume .browse {
+    order: 0;
+    flex: none;
+  }
+
+  app-section-panel[data-tone='band'] {
+    order: 2;
+  }
+
+  /* La maquette et l'encart de rappel ferment la page, sur la crème. */
+  .pending-slot,
+  app-callback-block {
+    order: 3;
+    margin: 0;
+  }
+
+  app-callback-block {
+    margin: 28px 44px 40px;
+  }
+
+  fold-callout {
+    margin: 28px 44px 0;
+  }
 }

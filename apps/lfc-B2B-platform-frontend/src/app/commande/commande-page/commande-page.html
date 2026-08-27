@@ -1,4 +1,11 @@
-<app-client-page [heading]="heading()" [intro]="intro()" [big]="!panelOpen()" [centred]="true">
+<app-client-page
+  layout="stacked"
+  [heading]="heading()"
+  [intro]="intro()"
+  [introWide]="t().commande.newOrderSub"
+  [kicker]="t().commande.newOrderTitle"
+  [big]="!panelOpen()"
+>
   <div aside-foot class="aside-foot"></div>
 
   @if (panelOpen()) {
@@ -13,15 +20,20 @@
           [sub]="t().commande.newOrderSub"
         >
           <app-offer-card
+            shape="hero"
             tone="ink"
             photo="labo"
             [badge]="t().commande.pickupBadge"
             [title]="t().commande.pickupTitle"
             [detail]="t().commande.pickupDetail"
             [note]="t().commande.pickupNote"
+            [detailWide]="t().commande.pickupDetailWide"
+            [ctaLabel]="t().commande.pickupCta"
+            [noteWide]="t().commande.pickupNoteWide"
             (chosen)="notYet()"
           />
           <app-offer-card
+            shape="hero"
             tone="butter"
             photo="coursier"
             noteTone="accent"
@@ -29,12 +41,16 @@
             [title]="t().commande.deliveryTitle"
             [detail]="t().commande.deliveryDetail"
             [note]="t().commande.deliveryNote"
+            [detailWide]="t().commande.deliveryDetailWide"
+            [ctaLabel]="t().commande.deliveryCta"
+            [noteWide]="t().commande.deliveryNoteWide"
             (chosen)="notYet()"
           />
         </app-section-panel>
 
         <app-section-panel tone="band" sign="★" [title]="t().commande.nowTitle">
           <app-offer-card
+            shape="row"
             tone="vivid"
             photo="noel"
             [badge]="t().commande.eventBadge"
@@ -44,6 +60,7 @@
             (chosen)="notYet()"
           />
           <app-offer-card
+            shape="row"
             tone="butter"
             photo="coursier"
             [badge]="t().commande.cateringBadge"
@@ -55,22 +72,29 @@
         </app-section-panel>
       </app-offer-carousel>
 
-      <app-shortcut-row
-        tone="warm"
-        icon="search"
-        [title]="t().commande.browseTitle"
-        [sub]="t().commande.browseSub"
-        (opened)="notYet()"
-      />
+      <div class="resume">
+        <app-shortcut-row
+          class="again"
+          tone="draft"
+          shape="bar"
+          icon="reload"
+          [lead]="t().commande.againLead"
+          [title]="t().commande.againTitle"
+          [sub]="t().commande.againSub"
+          [action]="t().commande.againAction"
+          (opened)="notYet()"
+        />
 
-      <app-shortcut-row
-        tone="draft"
-        icon="reload"
-        [title]="t().commande.againTitle"
-        [sub]="t().commande.againSub"
-        [action]="t().commande.againAction"
-        (opened)="notYet()"
-      />
+        <app-shortcut-row
+          class="browse"
+          tone="warm"
+          shape="bar"
+          icon="search"
+          [title]="t().commande.browseTitle"
+          [sub]="t().commande.browseSub"
+          (opened)="notYet()"
+        />
+      </div>
 
       @if (pending()) {
         <fold-callout variant="info">{{ t().commande.pending }}</fold-callout>

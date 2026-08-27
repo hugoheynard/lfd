@@ -76,16 +76,17 @@
    les deux sections d'un coup, et un carrousel qu'on ne fait pas glisser à la
    souris est une mauvaise affaire. */
 @media (min-width: 900px) {
-  .track {
-    grid-auto-flow: row;
-    grid-auto-columns: auto;
-    gap: var(--fold-space-lg);
-    margin-inline: 0;
-    padding-inline: 0;
-    overflow-x: visible;
-  }
-
   .dots {
     display: none;
+  }
+}
+
+/* Au-delà du pli, le rail DISPARAÎT en tant que boîte : ses panneaux deviennent
+   des enfants directs de la pile, ce qui permet à l'écran de les ordonner avec
+   le reste — la barre de reprise vient s'intercaler entre les deux. */
+@media (min-width: 900px) {
+  :host,
+  .track {
+    display: contents;
   }
 }

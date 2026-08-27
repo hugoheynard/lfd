@@ -36,6 +36,12 @@
   min-width: 0;
 }
 
+/* Le mot d'amorce n'existe qu'en barre : au doigt, le raccourci est un bloc et
+   n'a rien à amorcer. */
+.lead {
+  display: none;
+}
+
 .title {
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-note);
@@ -141,5 +147,90 @@
 
   .chevron {
     color: var(--fold-color-text-faded);
+  }
+}
+
+/* ── Au-delà du pli : la forme `bar` ──────────────────────────────────────── */
+
+/* Le raccourci cesse d'être un bloc pour devenir une PHRASE dans une barre. Il
+   perd donc son châssis : c'est la barre qui porte le fond, lui ne porte plus
+   que ses mots. */
+@media (min-width: 900px) {
+  :host([data-shape='bar']) {
+    display: flex;
+    align-items: center;
+
+    .row {
+      gap: 11px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    .text {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .lead,
+    .sub {
+      display: inline;
+      font-size: var(--fold-text-md);
+      font-weight: var(--fold-weight-regular);
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--lfc-color-on-well-muted);
+    }
+
+    .title {
+      font-family: var(--fold-font-sans);
+      font-size: var(--fold-text-md);
+      font-weight: var(--fold-weight-bold);
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--lfc-color-on-well);
+    }
+
+    .action,
+    .chevron {
+      display: none;
+    }
+  }
+
+  /* La reprise : une pastille ronde, et la phrase à côté. */
+  :host([data-shape='bar'][data-tone='draft']) .tile {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--fold-radius-pill);
+    background: var(--lfc-color-on-well-tile);
+    color: var(--lfc-color-on-well);
+  }
+
+  /* La boutique redevient un BOUTON : c'est la seule action de la barre, et sur
+     le puits un aplat de beurre écraserait la phrase d'à côté. */
+  :host([data-shape='bar'][data-tone='warm']) {
+    .row {
+      height: 42px;
+      padding: 0 20px;
+      border: 1px solid var(--fold-color-border);
+      border-radius: var(--fold-radius-md);
+    }
+
+    .tile,
+    .sub {
+      display: none;
+    }
+
+    .title {
+      font-family: var(--fold-font-label);
+      font-size: var(--fold-text-xs);
+      font-weight: var(--fold-weight-extrabold);
+      letter-spacing: var(--lfc-tracking-label);
+      text-transform: uppercase;
+      color: var(--lfc-color-on-well);
+    }
   }
 }

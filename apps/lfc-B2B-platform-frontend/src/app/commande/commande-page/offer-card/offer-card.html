@@ -1,15 +1,42 @@
 <button class="card" type="button" (click)="chosen.emit()">
-  <span class="photo">
-    <span class="veil" aria-hidden="true"></span>
+  <!-- La photo est un FOND et rien d'autre : elle ne porte plus le titre, sinon
+       la forme `hero` — où elle occupe toute la carte — n'aurait aucun moyen de
+       le poser ailleurs qu'en bas. -->
+  <span class="photo" aria-hidden="true">
+    <span class="veil"></span>
+  </span>
+
+  <span class="head">
     <span class="badge">{{ badge() }}</span>
     <span class="title">{{ title() }}</span>
   </span>
+
   <span class="body">
     <span class="text">
+      <!-- Couchée, la carte n'a que 142 px de photo : le titre ne peut plus y
+           tenir et redescend dans le corps. Les deux exemplaires vivent dans le
+           DOM, le CSS en cache un — le pli est une affaire de largeur, et le
+           rendu serveur ne la connaît pas. -->
+      <span class="title row-only">{{ title() }}</span>
       <span class="detail">{{ detail() }}</span>
-      <span class="note" [attr.data-note-tone]="noteTone()">
-        <span class="dot" aria-hidden="true"></span>
-        {{ note() }}
+      @if (detailWide(); as line) {
+        <span class="detail wide-only">{{ line }}</span>
+      }
+
+      <span class="actions">
+        @if (ctaLabel(); as label) {
+          <span class="cta">{{ label }}</span>
+        }
+        <span class="note" [attr.data-note-tone]="noteTone()">
+          <span class="dot" aria-hidden="true"></span>
+          {{ note() }}
+        </span>
+        @if (noteWide(); as line) {
+          <span class="note wide-only" [attr.data-note-tone]="noteTone()">
+            <span class="dot" aria-hidden="true"></span>
+            {{ line }}
+          </span>
+        }
       </span>
     </span>
     <fold-icon class="chevron" name="chevron-right" aria-hidden="true" />

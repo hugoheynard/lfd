@@ -86,9 +86,10 @@ export class CommandePage {
       );
       this.chrome.back.set(this.panelOpen() ? (): void => this.panelOpen.set(false) : null);
     });
-    // Comme l'accueil : au-delà du pli, la marque remonte dans la colonne d'encre
-    // de l'écran, et la barre du shell s'efface plutôt que de faire doublon.
-    this.chrome.barOnDesktop.set(false);
+    // Contrairement à l'accueil, la barre RESTE au-delà du pli : le gabarit
+    // `stacked` n'a pas de colonne d'encre où loger la marque, et la réf montre
+    // bien une barre d'app en haut de l'écran de bureau.
+    this.chrome.barOnDesktop.set(true);
     // Ici on est reconnu : la pastille de marque cède la place au menu, qui mène
     // à ses affaires. ⚠️ Maquette — le menu n'a pas encore d'écran.
     this.chrome.menu.set((): void => this.notYet());

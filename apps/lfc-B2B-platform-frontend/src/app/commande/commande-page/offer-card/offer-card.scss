@@ -10,6 +10,7 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -28,6 +29,9 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
   }
 }
 
+/* `relative` est STRUCTUREL, pas décoratif : le voile se cale en `inset: 0`
+   dessus. Sans lui, son référent devient la carte entière et le dégradé passe
+   par-dessus le corps. */
 .photo {
   position: relative;
   display: block;
@@ -43,10 +47,22 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
   display: block;
 }
 
-.badge {
+/* L'en-tête occupe exactement le bandeau, et range ses deux pièces à ses deux
+   bords. Il est POSÉ dessus plutôt que dedans : c'est ce qui lui permet de
+   redescendre dans le flux quand la photo devient un fond de demi-page. */
+.head {
   position: absolute;
-  left: 16px;
-  top: 14px;
+  inset: 0 0 auto;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 106px;
+  padding: 14px 16px;
+}
+
+.badge {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
@@ -59,10 +75,6 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
 }
 
 .title {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 14px;
   /* Le titre tient sur deux lignes, et le dictionnaire les sépare par un retour
      plutôt que par une balise : une traduction n'a pas à connaître le HTML. */
   white-space: pre-line;
@@ -117,6 +129,21 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
 .chevron {
   flex: none;
   color: var(--fold-color-text-faded);
+}
+
+/* Les actions : en pile, il n'y a que la condition. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cta,
+.detail.wide-only,
+.note.wide-only,
+.title.row-only {
+  display: none;
 }
 
 /* ── La condition ─────────────────────────────────────────────────────────── */
@@ -199,14 +226,220 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
   background-position: center 55%;
 }
 
-/* Au-delà du pli, la colonne est plus large : la photo reprend de la hauteur
-   pour que le rapport de cadrage tienne. */
+/* ── Au-delà du pli : trois formes ────────────────────────────────────────── */
+
 @media (min-width: 900px) {
-  .photo {
-    height: 132px;
+  /* La forme `stack` garde la sienne, avec plus d'air pour la photo. */
+  :host([data-shape='stack']) {
+    .photo,
+    .head {
+      height: 132px;
+    }
+
+    .title {
+      font-size: 1.5rem;
+    }
   }
 
-  .title {
-    font-size: 1.5rem;
+  /* LA DEMI-PAGE. La photo devient le fond, et la décision occupe l'écran :
+     plus de cadre, plus de coins, plus d'ombre — le bord de la carte est le
+     bord de la page. */
+  :host([data-shape='hero']) {
+    height: 100%;
+
+    .card {
+      justify-content: flex-end;
+      height: 100%;
+      min-height: 372px;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    .photo {
+      position: absolute;
+      inset: 0;
+      height: auto;
+    }
+
+    /* Le voile descend au lieu de traverser : sur une demi-page, un dégradé
+       latéral laisserait le bas de la photo manger le texte. */
+    .veil {
+      background: linear-gradient(
+        180deg,
+        rgb(8 24 66 / 32%) 0%,
+        rgb(8 24 66 / 72%) 62%,
+        rgb(8 24 66 / 90%) 100%
+      );
+    }
+
+    .head {
+      position: relative;
+      inset: auto;
+      gap: 14px;
+      height: auto;
+      padding: 0 40px 16px;
+    }
+
+    .title {
+      font-size: clamp(1.75rem, 3vw, 2.375rem);
+      letter-spacing: -0.03em;
+    }
+
+    .body {
+      position: relative;
+      z-index: 1;
+      align-items: flex-start;
+      padding: 0 40px 40px;
+    }
+
+    .text {
+      gap: 18px;
+    }
+
+    .detail {
+      max-width: 30em;
+      font-size: var(--lfc-text-block);
+      color: var(--lfc-color-on-well-muted);
+    }
+
+    /* Le bureau en dit plus : il a la place d'annoncer les deux adresses déjà
+       enregistrées là où le doigt n'avait que le créneau. */
+    .detail:not(.wide-only):has(~ .detail.wide-only) {
+      display: none;
+    }
+
+    .detail.wide-only {
+      display: block;
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      height: 46px;
+      padding: 0 22px;
+      border-radius: var(--fold-radius-md);
+      font-family: var(--fold-font-label);
+      font-size: var(--fold-text-sm);
+      font-weight: var(--lfc-weight-black);
+      letter-spacing: var(--lfc-tracking-label);
+      text-transform: uppercase;
+    }
+
+    /* La condition change de registre au bureau : le doigt veut le délai, le
+       bureau porte la remise, juste à côté du bouton qui l'applique. */
+    .note {
+      height: 46px;
+      padding: 0 16px;
+      font-family: var(--fold-font-label);
+      font-size: var(--fold-text-xs);
+      font-weight: var(--lfc-weight-black);
+      letter-spacing: var(--lfc-tracking-label);
+      text-transform: uppercase;
+    }
+
+    .note .dot {
+      display: none;
+    }
+
+    .note:not(.wide-only):has(~ .note.wide-only) {
+      display: none;
+    }
+
+    .note.wide-only {
+      display: inline-flex;
+    }
+
+    .chevron {
+      display: none;
+    }
+  }
+
+  /* Le retrait : le bouton est de PAPIER, la condition porte le beurre. */
+  :host([data-shape='hero'][data-tone='ink']) {
+    .cta {
+      background: var(--lfc-paper-50);
+      color: var(--fold-color-primary);
+    }
+
+    .note.wide-only {
+      background: var(--lfc-color-accent);
+      color: var(--lfc-color-on-accent);
+    }
+  }
+
+  /* Le coursier : les deux s'échangent — le beurre agit, le papier informe. */
+  :host([data-shape='hero'][data-tone='butter']) {
+    .veil {
+      background: linear-gradient(
+        180deg,
+        rgb(35 22 2 / 30%) 0%,
+        rgb(35 22 2 / 70%) 62%,
+        rgb(35 22 2 / 90%) 100%
+      );
+    }
+
+    .cta {
+      background: var(--lfc-color-accent);
+      color: var(--lfc-color-on-accent);
+    }
+
+    .note.wide-only {
+      border: 1px solid var(--fold-color-border);
+      background: none;
+      color: var(--lfc-paper-50);
+    }
+  }
+
+  /* LA CARTE COUCHÉE : ce qui accompagne, pas ce qui décide. La photo devient
+     une bande à gauche, et le texte prend toute la hauteur. */
+  :host([data-shape='row']) {
+    .card {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .photo {
+      flex: none;
+      width: 142px;
+      height: auto;
+    }
+
+    .head {
+      inset: 0 auto auto 0;
+      width: 142px;
+      height: auto;
+      padding: 12px;
+    }
+
+    /* Seul le badge reste sur la photo ; le titre est repris par le corps. */
+    .head .title {
+      display: none;
+    }
+
+    .title.row-only {
+      display: block;
+      /* La coupe du dictionnaire sert la carte HAUTE, où le titre est large et
+         court. Couchée, la colonne est large : on rend la coupe au navigateur. */
+      white-space: normal;
+      font-size: var(--lfc-text-heading);
+      color: var(--fold-color-text);
+    }
+
+    .body {
+      flex: 1;
+      align-items: flex-start;
+      min-width: 0;
+      padding: 16px 18px;
+    }
+
+    .text {
+      gap: 8px;
+    }
+
+    .chevron {
+      display: none;
+    }
   }
 }

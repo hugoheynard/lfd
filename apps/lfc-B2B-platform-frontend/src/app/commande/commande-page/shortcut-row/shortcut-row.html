@@ -1,6 +1,9 @@
 <button class="row" type="button" (click)="opened.emit()">
   <span class="tile" aria-hidden="true"><fold-icon [name]="icon()" /></span>
   <span class="text">
+    @if (lead(); as word) {
+      <span class="lead">{{ word }}</span>
+    }
     <span class="title">{{ title() }}</span>
     <span class="sub">{{ sub() }}</span>
   </span>

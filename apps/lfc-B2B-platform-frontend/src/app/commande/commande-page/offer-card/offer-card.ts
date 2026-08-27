@@ -14,6 +14,15 @@ export type OfferNoteTone = 'info' | 'accent';
 export type OfferPhoto = 'labo' | 'coursier' | 'noel';
 
 /**
+ * La forme que prend la carte AU-DELÀ DU PLI. En pile, il n'y en a qu'une.
+ *
+ * `stack` empile la photo puis le texte. `hero` fait de la photo le fond d'une
+ * demi-page — la décision occupe l'écran. `row` couche la carte, photo à
+ * gauche : c'est ce qui accompagne, pas ce qui décide.
+ */
+export type OfferShape = 'stack' | 'hero' | 'row';
+
+/**
  * Une offre proposée en pleine largeur : un mode de service, une opération
  * datée, le traiteur.
  *
@@ -29,7 +38,11 @@ export type OfferPhoto = 'labo' | 'coursier' | 'noel';
   selector: 'app-offer-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldIconComponent],
-  host: { '[attr.data-tone]': 'tone()', '[attr.data-photo]': 'photo()' },
+  host: {
+    '[attr.data-tone]': 'tone()',
+    '[attr.data-photo]': 'photo()',
+    '[attr.data-shape]': 'shape()',
+  },
   templateUrl: './offer-card.html',
   styleUrl: './offer-card.scss',
 })
@@ -50,6 +63,20 @@ export class OfferCard {
   readonly note = input.required<string>();
 
   readonly noteTone = input<OfferNoteTone>('info');
+
+  readonly shape = input<OfferShape>('stack');
+
+  /**
+   * Ce que dit le bouton, en forme `hero` — le bureau nomme l'action au lieu de
+   * la laisser deviner à un chevron.
+   */
+  readonly ctaLabel = input<string | null>(null);
+
+  /** Le détail de bureau, quand il en dit plus que celui du téléphone. */
+  readonly detailWide = input<string | null>(null);
+
+  /** La condition de bureau : le bureau porte la remise, le doigt le délai. */
+  readonly noteWide = input<string | null>(null);
 
   readonly chosen = output<void>();
 }

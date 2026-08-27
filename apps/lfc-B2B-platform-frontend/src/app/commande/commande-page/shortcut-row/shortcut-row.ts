@@ -12,6 +12,12 @@ import { FoldIconComponent, type FoldIconName } from 'fold-ng';
 export type ShortcutTone = 'warm' | 'card' | 'draft';
 
 /**
+ * La forme AU-DELÀ DU PLI. `row` reste une ligne de carte ; `bar` se fond dans
+ * une barre horizontale, où le raccourci n'est plus un bloc mais une phrase.
+ */
+export type ShortcutShape = 'row' | 'bar';
+
+/**
  * Une ligne d'action sous les deux portes : visiter la boutique, retirer une
  * commande prête, refaire celle de samedi.
  *
@@ -23,12 +29,16 @@ export type ShortcutTone = 'warm' | 'card' | 'draft';
   selector: 'app-shortcut-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldIconComponent],
-  host: { '[attr.data-tone]': 'tone()' },
+  host: { '[attr.data-tone]': 'tone()', '[attr.data-shape]': 'shape()' },
   templateUrl: './shortcut-row.html',
   styleUrl: './shortcut-row.scss',
 })
 export class ShortcutRow {
   readonly tone = input<ShortcutTone>('card');
+  readonly shape = input<ShortcutShape>('row');
+
+  /** Ce qui précède le titre quand il devient une phrase. Bureau seulement. */
+  readonly lead = input<string | null>(null);
   readonly icon = input.required<FoldIconName>();
   readonly title = input.required<string>();
   readonly sub = input.required<string>();
