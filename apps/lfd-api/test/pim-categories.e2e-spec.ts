@@ -9,6 +9,7 @@
  * d'erreurs traduit — et c'est un **409** qui sort, avec son code.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { MediaLibrary } from "../src/pim/catalogue/product/domain/ports/media-library.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -289,5 +290,171 @@ describe("les rangs d'une fratrie", () => {
     // toujours de son côté.
     expect(living.map((row) => row.id)).toEqual([third, first]);
     expect(living.map((row) => row.position)).toEqual([0, 1]);
+  });
+});
+
+/** La famille enrichie, telle que sa page la reçoit. */
+interface DetailBody {
+  editorial: {
+    descriptionShort: Record<string, string> | null;
+    descriptionLong: Record<string, string> | null;
+    seoTitle: Record<string, string> | null;
+  } | null;
+  media: { url: string; name: string; alt: Record<string, string> }[];
+}
+
+const detail = async (id: string): Promise<DetailBody> =>
+  jsonBody<DetailBody>(await staff().get(`${CATEGORIES}/${id}`).expect(200));
+
+describe("les textes d'une famille", () => {
+  it("retient les trois langues, et les rend sur la page", async () => {
+    const id = await createCategory("Viennoiseries");
+
+    await staff()
+      .put(`${CATEGORIES}/${id}/editorial`)
+      .send({
+        descriptionShort: { fr: "Du beurre.", en: "Butter.", it: "Burro." },
+        seoTitle: { fr: "Viennoiseries artisanales" },
+      })
+      .expect(200);
+
+    const body = await detail(id);
+    expect(body.editorial?.descriptionShort).toEqual({
+      fr: "Du beurre.",
+      en: "Butter.",
+      it: "Burro.",
+    });
+    expect(body.editorial?.seoTitle).toEqual({ fr: "Viennoiseries artisanales" });
+    // Jamais renseigné ⇒ `null`, et non une chaîne vide qui passerait pour écrite.
+    expect(body.editorial?.descriptionLong).toBeNull();
+  });
+
+  /**
+   * Satellite OPTIONNEL (ADR-13) : « aucune description » doit être l'absence de
+   * ligne, pas une ligne de quatre colonnes nulles. Sans ça, la première frappe
+   * créerait une ligne que plus rien n'effacerait, et la page recevrait un objet
+   * plein de `null` là où elle attend `null` — deux absences pour une réalité.
+   */
+  it("efface la ligne quand on vide tout", async () => {
+    const id = await createCategory("Pains");
+    await staff()
+      .put(`${CATEGORIES}/${id}/editorial`)
+      .send({ descriptionShort: { fr: "Un texte." } })
+      .expect(200);
+    expect(await ctx.prisma.categoryEditorial.count({ where: { categoryId: id } })).toBe(1);
+
+    await staff().put(`${CATEGORIES}/${id}/editorial`).send({}).expect(200);
+
+    expect(await ctx.prisma.categoryEditorial.count({ where: { categoryId: id } })).toBe(0);
+    expect((await detail(id)).editorial).toBeNull();
+  });
+
+  it("refuse une traduction sans français — la langue source est requise", async () => {
+    const id = await createCategory("Chocolats");
+    await staff()
+      .put(`${CATEGORIES}/${id}/editorial`)
+      .send({ descriptionShort: { en: "Chocolate." } })
+      .expect(400);
+  });
+});
+
+describe("les visuels d'une famille", () => {
+  const image = (url: string, role = "gallery"): Record<string, unknown> => ({ url, role });
+
+  it("remplace la liste entière et retient son ORDRE", async () => {
+    const id = await createCategory("Viennoiseries");
+
+    await staff()
+      .put(`${CATEGORIES}/${id}/media`)
+      .send({ media: [image("https://x/a.jpg"), image("https://x/b.jpg")] })
+      .expect(200);
+    await staff()
+      .put(`${CATEGORIES}/${id}/media`)
+      .send({ media: [image("https://x/b.jpg"), image("https://x/a.jpg")] })
+      .expect(200);
+
+    const body = await detail(id);
+    // Un REMPLACEMENT : deux visuels, pas quatre. Et l'ordre reçu fait foi.
+    expect(body.media.map((item) => item.url)).toEqual(["https://x/b.jpg", "https://x/a.jpg"]);
+  });
+
+  it("retient le texte alternatif dans ses trois langues", async () => {
+    const id = await createCategory("Pains");
+    await staff()
+      .put(`${CATEGORIES}/${id}/media`)
+      .send({
+        media: [
+          {
+            url: "https://x/pain.jpg",
+            role: "hero",
+            name: "pain-de-campagne",
+            alt: { fr: "Un pain", en: "A loaf", it: "Un pane" },
+          },
+        ],
+      })
+      .expect(200);
+
+    const body = await detail(id);
+    expect(body.media[0]?.alt).toEqual({ fr: "Un pain", en: "A loaf", it: "Un pane" });
+    expect(body.media[0]?.name).toBe("pain-de-campagne");
+  });
+
+  /**
+   * 400 et non 409 : la règle du dépôt fait de `DomainError` une entrée
+   * invalide et de `BusinessError` un conflit d'état. Deux « hero » dans la même
+   * charge, c'est la charge qui est mal formée — rien en base ne s'y oppose.
+   */
+  it("refuse deux visuels « hero » — le rôle est unique", async () => {
+    const id = await createCategory("Chocolats");
+    await staff()
+      .put(`${CATEGORIES}/${id}/media`)
+      .send({ media: [image("https://x/a.jpg", "hero"), image("https://x/b.jpg", "hero")] })
+      .expect(400);
+  });
+});
+
+/**
+ * Le ramassage d'orphelins concluait d'un « aucune FICHE ne le porte » qu'un
+ * objet R2 ne servait plus. Depuis que les familles portent des visuels, cette
+ * déduction est fausse — et sa conséquence est une suppression définitive dans
+ * le bucket, sur une image qu'un écran affiche encore.
+ *
+ * Le test passe par le vrai dépôt Prisma : le double en mémoire de la spec
+ * unitaire du balayeur remplace précisément la requête en cause, donc il ne
+ * peut rien en dire.
+ */
+describe("le ramassage d'orphelins connaît les DEUX porteurs", () => {
+  const OLD = new Date("2020-01-01T00:00:00Z");
+  const CUTOFF = new Date("2030-01-01T00:00:00Z");
+
+  /** Une image hébergée, assez ancienne pour être hors délai de grâce. */
+  async function hostedAsset(id: string, key: string): Promise<void> {
+    await ctx.prisma.mediaAsset.create({
+      data: { id, url: `https://cdn/${key}`, alt: { fr: "x" }, storageKey: key, createdAt: OLD },
+    });
+  }
+
+  it("ne réclame pas une image qu'une famille affiche", async () => {
+    const categoryId = await createCategory("Viennoiseries");
+    await hostedAsset("media_tenue", "tenue.jpg");
+    await ctx.prisma.categoryMedia.create({
+      data: { categoryId, mediaId: "media_tenue", role: "gallery", position: 0 },
+    });
+
+    const library = ctx.app.get(MediaLibrary);
+
+    expect(await library.findOrphanKeys(CUTOFF, 10)).not.toContain("tenue.jpg");
+    expect(await library.isStillOrphan("tenue.jpg", CUTOFF)).toBe(false);
+  });
+
+  it("réclame bien celle que plus personne ne porte", async () => {
+    // Le contre-exemple : sans lui, un `where` trop strict ferait passer le test
+    // précédent en ne réclamant JAMAIS rien.
+    await hostedAsset("media_libre", "libre.jpg");
+
+    const library = ctx.app.get(MediaLibrary);
+
+    expect(await library.findOrphanKeys(CUTOFF, 10)).toContain("libre.jpg");
+    expect(await library.isStillOrphan("libre.jpg", CUTOFF)).toBe(true);
   });
 });

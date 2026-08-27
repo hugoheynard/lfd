@@ -48,14 +48,21 @@ export class PrismaMediaLibrary extends MediaLibrary {
   }
 
   async findOrphanKeys(before: Date, limit: number): Promise<readonly string[]> {
-    // Les LIGNES délaissées : hébergées, sans fiche, et posées avant le délai.
-    // Elles ne prouvent encore rien sur l'objet — plusieurs lignes partagent une
-    // clé, et il suffit qu'UNE seule soit rattachée pour que l'objet serve.
+    // Les LIGNES délaissées : hébergées, sans AUCUN porteur, et posées avant le
+    // délai. Elles ne prouvent encore rien sur l'objet — plusieurs lignes
+    // partagent une clé, et il suffit qu'UNE seule soit rattachée pour que
+    // l'objet serve.
+    //
+    // DEUX porteurs depuis que les familles ont des visuels, et l'oubli du
+    // second ne se serait vu qu'en production : la requête aurait déclaré
+    // orphelin un objet qu'une famille affiche, et le ramassage l'aurait
+    // supprimé de R2. Un `none` par relation, jamais un seul.
     const rows = await this.prisma.mediaAsset.findMany({
       where: {
         storageKey: { not: null },
         createdAt: { lt: before },
         products: { none: {} },
+        categories: { none: {} },
       },
       select: { storageKey: true },
       orderBy: { createdAt: "asc" },
@@ -70,13 +77,17 @@ export class PrismaMediaLibrary extends MediaLibrary {
   }
 
   async isStillOrphan(storageKey: string, before: Date): Promise<boolean> {
-    // UNE requête pour les deux disqualifications : une fiche qui porte la clé,
-    // ou une inscription trop fraîche (quelqu'un vient de déposer ce fichier et
-    // n'a pas encore enregistré sa section).
+    // UNE requête pour les disqualifications : un PORTEUR quelconque — fiche ou
+    // famille — ou une inscription trop fraîche (quelqu'un vient de déposer ce
+    // fichier et n'a pas encore enregistré sa section).
     const readers = await this.prisma.mediaAsset.count({
       where: {
         storageKey,
-        OR: [{ products: { some: {} } }, { createdAt: { gte: before } }],
+        OR: [
+          { products: { some: {} } },
+          { categories: { some: {} } },
+          { createdAt: { gte: before } },
+        ],
       },
     });
     return readers === 0;

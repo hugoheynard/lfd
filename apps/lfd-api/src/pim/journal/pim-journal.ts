@@ -105,6 +105,10 @@ export const PIM_EVENTS = {
   productCategoriesReordered: "product_category.reordered",
   /** Où un rayon se vend — d'où ses fiches héritent, sauf dérogation. */
   productCategoryChannelsChanged: "product_category.channels_changed",
+  /** Les textes d'une famille — descriptions et référencement. */
+  productCategoryEditorialSaved: "product_category.editorial_saved",
+  /** Ses visuels : la liste entière, l'ordre compris. */
+  productCategoryMediaSaved: "product_category.media_saved",
   /**
    * **La fiche** — sa naissance et sa sortie de la vente.
    *

@@ -116,6 +116,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   SkuRegistry: "pim",
   Category: "pim",
   CategoryContextVat: "pim",
+  // Les deux satellites d'une famille : ses textes, et ses rattachements à la
+  // bibliothèque de médias. Optionnels tous les deux — pas de ligne quand rien
+  // n'est renseigné.
+  CategoryEditorial: "pim",
+  CategoryMedia: "pim",
   // La matrice de canaux en table (C0-d) : une ligne par (lieu, contexte).
   CategoryChannel: "pim",
   ProductChannelOverride: "pim",

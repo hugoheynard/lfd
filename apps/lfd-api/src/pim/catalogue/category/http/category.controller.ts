@@ -7,12 +7,17 @@ import {
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
   setCategoryVatPayloadSchema,
+  categoryEditorialPayloadSchema,
+  setCategoryMediaPayloadSchema,
+  type CategoryDetailView,
+  type CategoryEditorialPayload,
   type CategoryView,
   type CreateCategoryPayload,
   type MoveCategoryPayload,
   type RenameCategoryPayload,
   type ReorderCategoriesPayload,
   type SetCategoryChannelsPayload,
+  type SetCategoryMediaPayload,
   type SetCategoryVatPayload,
 } from "@lfd/pim-contracts";
 
@@ -20,7 +25,10 @@ import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveCategoryCommand } from "../application/archive-category.js";
 import { CreateCategoryCommand } from "../application/create-category.js";
+import { GetCategoryDetailQuery, type CategoryDetail } from "../application/get-category-detail.js";
 import { ListCategoriesQuery, type CategoryListItem } from "../application/list-categories.js";
+import { SetCategoryMediaCommand } from "../application/set-category-media.js";
+import { UpdateCategoryEditorialCommand } from "../application/update-category-editorial.js";
 import { MoveCategoryCommand } from "../application/move-category.js";
 import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
@@ -46,6 +54,18 @@ export class CategoryController {
   @Get()
   listCategories(): Promise<CategoryView[]> {
     return this.queries.execute<ListCategoriesQuery, CategoryListItem[]>(new ListCategoriesQuery());
+  }
+
+  /**
+   * Une famille ENRICHIE — pour sa page. La liste ne porte ni textes ni visuels :
+   * les y mettre coûterait une jointure par ligne pour des colonnes qu'aucune
+   * ligne n'affiche.
+   */
+  @Get(":id")
+  getCategory(@Param("id") id: string): Promise<CategoryDetailView> {
+    return this.queries.execute<GetCategoryDetailQuery, CategoryDetail>(
+      new GetCategoryDetailQuery(id),
+    );
   }
 
   @Post()
@@ -120,6 +140,35 @@ export class CategoryController {
   @Put(":id/archive")
   async archiveCategory(@Param("id") id: string) {
     await this.commands.execute<ArchiveCategoryCommand, void>(new ArchiveCategoryCommand(id));
+    return { id };
+  }
+
+  /** Section **Communication** : les textes, dans leurs trois langues. */
+  @Put(":id/editorial")
+  async editCategoryEditorial(
+    @Param("id") id: string,
+    @Body(new ZodBody(categoryEditorialPayloadSchema)) body: CategoryEditorialPayload,
+  ) {
+    await this.commands.execute<UpdateCategoryEditorialCommand, void>(
+      new UpdateCategoryEditorialCommand(id, body),
+    );
+    return { id };
+  }
+
+  /**
+   * Section **Visuels** : la liste entière, dans son ordre.
+   *
+   * Un `PUT` de remplacement comme les autres sections — l'écran envoie ce
+   * qu'il affiche. Réordonner et retirer sont le même geste pour qui l'exécute.
+   */
+  @Put(":id/media")
+  async setCategoryMedia(
+    @Param("id") id: string,
+    @Body(new ZodBody(setCategoryMediaPayloadSchema)) body: SetCategoryMediaPayload,
+  ) {
+    await this.commands.execute<SetCategoryMediaCommand, void>(
+      new SetCategoryMediaCommand(id, body.media),
+    );
     return { id };
   }
 }

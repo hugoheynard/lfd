@@ -7,7 +7,14 @@ import { ArchiveCategoryHandler } from "./category/application/archive-category.
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
 import { CreateCategoryHandler } from "./category/application/create-category.js";
 import { CreateProductHandler } from "./product/application/create-product.js";
+import { GetCategoryDetailHandler } from "./category/application/get-category-detail.js";
 import { ListCategoriesHandler } from "./category/application/list-categories.js";
+import { SetCategoryMediaHandler } from "./category/application/set-category-media.js";
+import { UpdateCategoryEditorialHandler } from "./category/application/update-category-editorial.js";
+import { CategoryEditorialReader } from "./category/domain/ports/category-editorial-reader.js";
+import { CategoryEditorialRepository } from "./category/domain/ports/category-editorial.repository.js";
+import { PrismaCategoryEditorialReader } from "./category/infrastructure/prisma-category-editorial.reader.js";
+import { PrismaCategoryEditorialRepository } from "./category/infrastructure/prisma-category-editorial.repository.js";
 import { MoveCategoryHandler } from "./category/application/move-category.js";
 import { ReorderCategoriesHandler } from "./category/application/reorder-categories.js";
 import { RenameCategoryHandler } from "./category/application/rename-category.js";
@@ -80,6 +87,9 @@ import {
     SetCategoryVatHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
+    GetCategoryDetailHandler,
+    UpdateCategoryEditorialHandler,
+    SetCategoryMediaHandler,
     MoveCategoryHandler,
     ReorderCategoriesHandler,
     // Produits (CQRS) — un handler par cas.
@@ -113,6 +123,8 @@ import {
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
+    { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).

@@ -5,40 +5,21 @@ import {
 } from "../../../shared/domain/value-objects/localized-text.js";
 
 /**
- * Les visuels ne sont plus d'ici : une famille en porte aussi. Réexportés pour
- * que les appelants de cette fiche n'aient pas à savoir qu'ils ont déménagé.
+ * Ce qu'on DIT d'une famille — quatre textes, tous localisés.
+ *
+ * Quatre, et non les sept d'une fiche : un récit, un accord et une marque
+ * parlent d'un produit, pas du rayon où on le range. Les copier aurait offert
+ * trois champs que personne ne saurait remplir, et qu'un jour quelqu'un aurait
+ * remplis de travers faute de savoir ce qu'on y attendait.
  */
-export {
-  MEDIA_ROLES,
-  DuplicateMediaRoleError,
-  MissingMediaUrlError,
-  isMediaRole,
-  mediaItems,
-  type MediaRole,
-  type MediaItem,
-  type MediaInput,
-} from "../../../shared/domain/value-objects/media.js";
-
-export interface Editorial {
+export interface CategoryEditorial {
   readonly descriptionShort?: LocalizedText | undefined;
   readonly descriptionLong?: LocalizedText | undefined;
-  readonly story?: LocalizedText | undefined;
-  readonly pairing?: LocalizedText | undefined;
-  readonly brand?: string | undefined;
   readonly seoTitle?: LocalizedText | undefined;
   readonly seoDescription?: LocalizedText | undefined;
 }
 
-export interface EditorialInput {
-  readonly descriptionShort?: LocalizedText | undefined;
-  readonly descriptionLong?: LocalizedText | undefined;
-  readonly story?: LocalizedText | undefined;
-  readonly pairing?: LocalizedText | undefined;
-  /** Un nom propre, donc pas de traduction : « La Folie Coffee » l'est partout. */
-  readonly brand?: string | undefined;
-  readonly seoTitle?: LocalizedText | undefined;
-  readonly seoDescription?: LocalizedText | undefined;
-}
+export type CategoryEditorialInput = CategoryEditorial;
 
 /**
  * Un champ vide n'est pas une valeur : il ne doit pas créer de `{ fr: "" }`.
@@ -55,20 +36,16 @@ function optionalText(field: string, raw: LocalizedText | undefined): LocalizedT
   return localizedText(field, raw);
 }
 
-export function editorial(input: EditorialInput): Editorial {
-  const brand = input.brand?.trim();
+export function categoryEditorial(input: CategoryEditorialInput): CategoryEditorial {
   return {
     descriptionShort: optionalText("résumé", input.descriptionShort),
     descriptionLong: optionalText("description", input.descriptionLong),
-    story: optionalText("récit", input.story),
-    pairing: optionalText("accord", input.pairing),
-    ...(brand === undefined || brand === "" ? {} : { brand }),
     seoTitle: optionalText("titre SEO", input.seoTitle),
     seoDescription: optionalText("description SEO", input.seoDescription),
   };
 }
 
 /** Rien de renseigné ⇒ pas de ligne du tout (satellite optionnel, ADR-13). */
-export function isEmptyEditorial(value: Editorial): boolean {
+export function isEmptyCategoryEditorial(value: CategoryEditorial): boolean {
   return Object.values(value).every((entry) => entry === undefined);
 }

@@ -1,47 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import {
-  LOCALES,
-  SOURCE_LOCALE,
-  type LocalizedText,
-} from "../../shared/domain/value-objects/localized-text.js";
+import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
+import { optionalLocalizedColumn as localizedOf } from "../../shared/infrastructure/json-readers.js";
 import {
   EditorialReader,
   type ProductEditorialView,
   type ProductMediaRecord,
 } from "../domain/ports/editorial-reader.js";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * Relit une colonne `jsonb` localisée — TOUTES ses langues ; `null` si absente
- * ou illisible.
- *
- * Elle ne rendait que le français, et n'importe quelle autre langue déjà en base
- * était donc invisible à l'application : ni affichable, ni modifiable, et
- * écrasée au premier enregistrement. Une colonne qu'on lit à moitié se perd en
- * silence.
- */
-function localizedOf(value: unknown): LocalizedText | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-  const source = value[SOURCE_LOCALE];
-  if (typeof source !== "string" || source.trim() === "") {
-    return null;
-  }
-  const text: Record<string, string> = {};
-  for (const locale of LOCALES) {
-    const raw = value[locale];
-    if (typeof raw === "string" && raw.trim() !== "") {
-      text[locale] = raw;
-    }
-  }
-  return { ...text, [SOURCE_LOCALE]: source };
-}
 
 /** Ligne `product_editorial` → vue à plat. Les textes sont localisés, la vue non. */
 function viewOf(row: {
