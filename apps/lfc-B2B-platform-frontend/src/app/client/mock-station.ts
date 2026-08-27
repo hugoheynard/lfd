@@ -11,6 +11,11 @@
 export interface PickupPoint {
   readonly id: string;
   readonly name: string;
+  /**
+   * Le même lieu au complément : « au Labo ». La ligne de remise du panier le
+   * lit tel quel — coller « Remise » devant `name` donnerait « Remise Le Labo ».
+   */
+  readonly at: string;
   readonly address: string;
   /** L'heure à partir de laquelle la commande est prête. */
   readonly readyFrom: string;
@@ -25,6 +30,7 @@ export const PICKUP_POINTS: readonly PickupPoint[] = [
   {
     id: 'labo',
     name: 'Le Labo',
+    at: 'au Labo',
     address: 'Route de la Balme, Val d’Isère',
     readyFrom: '7 h',
     discount: 10,
@@ -34,6 +40,7 @@ export const PICKUP_POINTS: readonly PickupPoint[] = [
   {
     id: 'village',
     name: 'Le Village',
+    at: 'au Village',
     address: '4 avenue Olympique',
     readyFrom: '9 h',
     discount: 0,
@@ -82,6 +89,8 @@ export function zoneOf(postcode: string): DeliveryZone | null {
 export interface SavedAddress {
   readonly id: string;
   readonly label: string;
+  /** Le complément, comme pour un point de retrait : « au chalet », « au bureau ». */
+  readonly at: string;
   readonly street: string;
   readonly postcode: string;
   readonly isDefault: boolean;
@@ -91,6 +100,7 @@ export const SAVED_ADDRESSES: readonly SavedAddress[] = [
   {
     id: 'chalet',
     label: 'Le Chalet',
+    at: 'au chalet',
     street: '18 chemin des Barmettes',
     postcode: '73150',
     isDefault: true,
@@ -98,6 +108,7 @@ export const SAVED_ADDRESSES: readonly SavedAddress[] = [
   {
     id: 'bureau',
     label: 'Bureau',
+    at: 'au bureau',
     street: '4 avenue Olympique',
     postcode: '73150',
     isDefault: false,
