@@ -53,8 +53,8 @@ export const EN: ClientCopy = {
     emailPlaceholder: 'you@example.com',
     open: 'Sign up',
     submit: 'Create my account',
-    fine: 'No password : your device recognises you.',
-    fineInline: 'No password : your device recognises you.',
+    fine: 'A password to open the door, then your device recognises you.',
+    fineInline: 'A password to open the door, then your device recognises you.',
     legal:
       'By creating an account you accept our terms of sale. No company paperwork is required to sign up.',
   },
@@ -74,7 +74,7 @@ export const EN: ClientCopy = {
   doors: {
     or: 'or',
     alreadyTitle: 'Already a customer ?',
-    alreadySub: 'Your device recognises you',
+    alreadySub: 'Password, or your device',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',
   },

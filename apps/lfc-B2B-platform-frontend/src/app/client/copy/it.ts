@@ -55,8 +55,8 @@ export const IT: ClientCopy = {
     emailPlaceholder: 'tu@esempio.it',
     open: 'Iscriviti',
     submit: 'Crea il mio account',
-    fine: 'Nessuna password : il suo dispositivo la riconosce.',
-    fineInline: 'Nessuna password : il suo dispositivo la riconosce.',
+    fine: 'Una password per aprire, poi il suo dispositivo la riconosce.',
+    fineInline: 'Una password per aprire, poi il suo dispositivo la riconosce.',
     legal:
       'Creando un account accetti le nostre condizioni di vendita. All’iscrizione non chiediamo alcun documento aziendale.',
   },
@@ -76,7 +76,7 @@ export const IT: ClientCopy = {
   doors: {
     or: 'oppure',
     alreadyTitle: 'Sei già cliente ?',
-    alreadySub: 'Il suo dispositivo la riconosce',
+    alreadySub: 'Password, o il suo dispositivo',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',
   },

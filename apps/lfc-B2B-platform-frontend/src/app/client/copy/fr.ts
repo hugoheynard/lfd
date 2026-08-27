@@ -48,8 +48,8 @@ export const FR: ClientCopy = {
     emailPlaceholder: 'vous@exemple.fr',
     open: 'S’inscrire',
     submit: 'Créer mon compte',
-    fine: 'Pas de mot de passe : votre appareil vous reconnaît.',
-    fineInline: 'Pas de mot de passe : votre appareil vous reconnaît.',
+    fine: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
+    fineInline: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
     legal:
       'En créant un compte, vous acceptez nos conditions de vente. Aucun document d’entreprise n’est demandé à l’inscription.',
   },
@@ -69,7 +69,7 @@ export const FR: ClientCopy = {
   doors: {
     or: 'ou',
     alreadyTitle: 'Déjà client ?',
-    alreadySub: 'Votre appareil vous reconnaît',
+    alreadySub: 'Mot de passe, ou votre appareil',
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
   },

@@ -1,14 +1,17 @@
 # Inscription client « zéro friction » — la première entrée
 
-**Statut** : 🟡 tenant CONFIGURÉ, code à écrire — 2026-08-27
+**Statut** : 🟢 branché et vérifié — 2026-08-27
+**Correction du 2026-08-27** : la passkey n'arrive PAS à l'inscription. Voir
+« Ce que le tenant fait vraiment ».
 **Portée** : **la surface CLIENT uniquement** (`lfc-b2b-customers`). Le staff
 (`lfc-staff`) ne change pas — voir « Ce qui déborde sur le staff ».
 
 ## La décision
 
-Un visiteur donne **prénom, e-mail, téléphone**. Rien d'autre. Il crée une
-**passkey** — Face ID, empreinte, code de l'appareil — et il est dans son espace
-immédiatement, sans passer par sa boîte mail.
+Un visiteur donne **prénom, e-mail, téléphone**. Rien d'autre. Il pose un mot de
+passe, il est dans son espace immédiatement — sans passer par sa boîte mail — et
+c'est **à la connexion suivante** qu'Auth0 lui propose sa **passkey** (Face ID,
+empreinte, code de l'appareil).
 
 Les passkeys vivent sur la **connexion base de données client déjà en place**.
 Une seule identité, un seul `sub`, aucun _account linking_.
@@ -82,10 +85,11 @@ sequenceDiagram
 
     V->>F: prénom · e-mail · téléphone
     F->>F: retient les trois champs
-    F->>U: signup, e-mail prérempli
-    U->>V: « créez votre passkey »
-    V-->>U: biométrie / code de l'appareil
+    F->>U: signup sur lfc-b2b-customers, e-mail prérempli
+    U->>V: « choisissez un mot de passe »
+    V-->>U: mot de passe
     U-->>F: retour avec jetons
+    Note over U,V: À la connexion SUIVANTE :<br/>« créez une passkey » (enrôlement progressif)
     F->>A: 1re requête portant le JWT
     Note over A: CustomerPrincipalResolver :<br/>provisioning au vol → User active
     F->>A: PATCH /me/profile (prénom, téléphone)
@@ -96,6 +100,37 @@ sequenceDiagram
 
 La personne est entrée à l'étape 6. L'e-mail arrive après, et ne barre la route à
 personne.
+
+## Ce que le tenant fait vraiment — relevé du 2026-08-27
+
+Cette note affirmait que l'inscription poserait une passkey. **C'est faux**, et
+la cause n'est pas un réglage manquant : tout est en place.
+
+| Point                                 | État relevé                              |
+| ------------------------------------- | ---------------------------------------- |
+| Passkey sur `lfc-b2b-customers`       | ACTIVE, prérequis `READY`                |
+| UI passkey                            | Bouton + autofill                        |
+| Enrôlement **progressif**             | Activé                                   |
+| Enrôlement local                      | Activé                                   |
+| Password sur la même connexion        | ACTIVE                                   |
+| Connexions activées sur l'application | `lfc-b2b-customers` **seule** (+ Google) |
+
+Le réglage le dit lui-même : _« Prompt users to create a passkey **after they log
+in** »_. Quand passkey et mot de passe **coexistent**, Auth0 inscrit au mot de
+passe et propose la passkey au retour suivant. La biométrie arrive, un écran plus
+tard.
+
+**Décision du 2026-08-27 : on garde le mot de passe.** Le rendre passkey-first
+demanderait de désactiver Password sur la connexion — et tous les clients n'ont
+pas de biométrie. Le mot de passe n'est donc pas une dette : c'est le chemin de
+ceux dont l'appareil ne sait pas les reconnaître, et le filet de récupération de
+tous les autres.
+
+⚠️ **La connexion est nommée explicitement** (`connection: 'lfc-b2b-customers'`)
+à la connexion comme à l'inscription. Elle l'était déjà par la configuration de
+l'application ; l'écrire la protège du jour où une autre base sera activée.
+Conséquence assumée : la porte « Continue with Google » disparaît du parcours —
+une identité par personne, un seul `sub`, aucun rattachement de comptes.
 
 ## L'e-mail n'est pas facultatif
 
@@ -147,11 +182,15 @@ inventer, aucun jeton maison**. C'est Auth0 qui tient la porte.
 
 Trois phrases affirment aujourd'hui l'inverse de ce qui sera vrai :
 
-| Ce que la page dit                                                       | Ce qui sera vrai                                              |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| « Pas de mot de passe : on vous envoie un lien **à chaque connexion**. » | Pas de mot de passe : **votre appareil vous reconnaît**.      |
-| « le lien est valable **une heure** »                                    | Aucun lien à attendre pour entrer.                            |
-| « Déjà client ? **Se connecter en un lien** »                            | « Se connecter » → Universal Login, qui reconnaît la passkey. |
+| Ce que la page disait                             | Ce qu'elle dit depuis le 2026-08-27                                              |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| « on vous envoie un lien **à chaque connexion** » | « Un mot de passe pour ouvrir, puis votre appareil vous reconnaît. »             |
+| « le lien est valable **une heure** »             | Aucun lien à attendre pour entrer.                                               |
+| « Déjà client ? **Se connecter en un lien** »     | « Se connecter » → Universal Login (mot de passe, ou passkey si elle est posée). |
+
+⚠️ Une première correction avait écrit « **Pas** de mot de passe : votre appareil
+vous reconnaît ». C'était l'erreur inverse, et elle promettait au visiteur un
+écran qu'il n'allait pas voir.
 
 ## Ce qui déborde sur le staff
 
