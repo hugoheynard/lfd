@@ -1,4 +1,4 @@
-import { PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
+import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
@@ -176,7 +176,20 @@ function destinationFor(target: Target, url: URL, env: Env): Destination | undef
     // Le préfixe est DÉJÀ retiré : Pages sert depuis sa racine, et c'est
     // l'app qui porte `/pro` dans son `base href`. Les deux moitiés doivent
     // rester d'accord — l'une sans l'autre, ce sont des 404 sur tous les assets.
-    return { url: new URL(target.path + url.search, PRO_FRONT_ORIGIN).toString(), send: fetch };
+    const destination = new URL(target.path + url.search, PRO_FRONT_ORIGIN).toString();
+    // On FABRIQUE la requête sortante au lieu de recopier l'entrante : recopier
+    // emporterait le `Host` de la zone, et le sous-appel reviendrait ici même.
+    // `redirect: "manual"` pour relayer une redirection de l'hébergeur telle
+    // quelle, plutôt que de la suivre depuis la passerelle.
+    return {
+      url: destination,
+      send: (forward) =>
+        fetch(destination, {
+          method: forward.method,
+          headers: frontHeaders(forward.headers),
+          redirect: "manual",
+        }),
+    };
   }
   const binding = bindingFor(target.backend, env);
   if (binding === undefined) {

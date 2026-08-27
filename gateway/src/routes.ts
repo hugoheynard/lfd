@@ -78,6 +78,45 @@ export type BackendKey = keyof typeof API_PREFIXES;
  * et deux endroits qui écrivent l'adresse à la main le paieraient une deuxième.
  */
 export const PRO_FRONT_ORIGIN = PROD_FRONT_ORIGINS.b2bFront;
+
+/**
+ * Les seuls en-têtes qu'on transmet à l'hébergeur du front.
+ *
+ * ⚠️ Ce n'est PAS de l'hygiène, c'est ce qui empêche la boucle. Recopier la
+ * requête entrante recopie son `Host` — celui de la zone — et le sous-appel
+ * repart alors vers la zone, donc vers cette passerelle, indéfiniment. Le
+ * runtime coupe, `fetch` lève, et on rend un 502 qui accuse l'upstream d'être
+ * injoignable alors qu'il n'a jamais été appelé. Constaté en production le
+ * 2026-08-27, à la première requête sur `/pro`.
+ *
+ * Les backends n'ont pas ce problème : ils passent par un *service binding*, qui
+ * ne résout aucun DNS. Le front est le premier `fetch()` public de la
+ * passerelle, et donc le premier à pouvoir se mordre la queue.
+ *
+ * Un hébergeur de fichiers statiques n'a de toute façon besoin de rien d'autre :
+ * ni trace, ni IP client, ni cookie.
+ */
+export const FRONT_FORWARDED_HEADERS = [
+  "accept",
+  "accept-encoding",
+  "accept-language",
+  "user-agent",
+  "if-none-match",
+  "if-modified-since",
+  "range",
+] as const;
+
+/** Ne garde de `headers` que ce qu'un hébergeur de fichiers statiques sait lire. */
+export function frontHeaders(headers: Headers): Headers {
+  const kept = new Headers();
+  for (const name of FRONT_FORWARDED_HEADERS) {
+    const value = headers.get(name);
+    if (value !== null && value !== "") {
+      kept.set(name, value);
+    }
+  }
+  return kept;
+}
 export const FRONT_PREFIXES = {
   pro: "/pro",
 } as const;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 
-import { API_PREFIXES, FRONT_PREFIXES, resolveTarget } from "../routes";
+import { API_PREFIXES, FRONT_PREFIXES, frontHeaders, resolveTarget } from "../routes";
 
 /**
  * Le résolveur porte **toutes** les décisions de la gateway : `index.ts` ne
@@ -76,6 +76,50 @@ describe("resolveTarget — le front client sous /pro", () => {
   it("l'API garde la priorité sur le front", () => {
     const target = resolveTarget("lafoliecoffee.info", `${API_PREFIXES.lfd}/health`);
     expect(target?.kind).toBe("backend");
+  });
+});
+
+describe("frontHeaders — ce qui part chez l'hébergeur du front", () => {
+  it("ne transmet PAS le Host de la zone", () => {
+    // C'est la garde anti-boucle : avec le `Host` de la zone, le sous-appel
+    // revient sur cette passerelle et le runtime finit par couper — un 502 qui
+    // accuse l'upstream alors qu'il n'a jamais été appelé.
+    const kept = frontHeaders(new Headers({ host: "lafoliecoffee.info", accept: "text/html" }));
+    expect(kept.get("host")).toBeNull();
+    expect(kept.get("accept")).toBe("text/html");
+  });
+
+  it("ne transmet ni cookie, ni IP client, ni trace", () => {
+    // Un hébergeur de fichiers statiques n'en a aucun usage, et les lui envoyer
+    // étend la surface pour rien.
+    const kept = frontHeaders(
+      new Headers({
+        cookie: "session=x",
+        "cf-connecting-ip": "203.0.113.1",
+        traceparent: "00-a-b-01",
+        authorization: "Bearer x",
+      }),
+    );
+    expect([...kept.keys()]).toEqual([]);
+  });
+
+  it("garde ce qui sert à négocier et à revalider", () => {
+    const kept = frontHeaders(
+      new Headers({
+        "accept-encoding": "br",
+        "accept-language": "it",
+        "user-agent": "curl/8",
+        "if-none-match": '"abc"',
+        range: "bytes=0-1",
+      }),
+    );
+    expect([...kept.keys()].sort()).toEqual([
+      "accept-encoding",
+      "accept-language",
+      "if-none-match",
+      "range",
+      "user-agent",
+    ]);
   });
 });
 
