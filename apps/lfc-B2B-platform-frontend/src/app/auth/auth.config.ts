@@ -53,6 +53,26 @@ export interface AuthConfig {
   readonly adminBaseUrl: string;
 }
 
+/**
+ * La connexion Auth0 des CLIENTS — celle qui porte la passkey.
+ *
+ * Elle est nommée EXPLICITEMENT à chaque redirection, et ce n'est pas une
+ * précaution de style : sans elle, c'est la configuration de l'application qui
+ * tranche parmi les connexions activées, et le tenant en porte trois. Une
+ * inscription qui atterrit sur une base voisine se voit offrir un mot de passe
+ * là où on attendait Face ID — l'écran ne ment pas, il répond simplement pour
+ * une autre connexion.
+ *
+ * Ce n'est pas un secret : le nom d'une connexion voyage déjà en clair dans
+ * l'URL d'autorisation.
+ *
+ * ⚠️ Conséquence assumée : la porte « Continue with Google » disparaît de ce
+ * parcours. Une identité par personne, un seul `sub`, aucun rattachement de
+ * comptes — c'est la décision de la note d'inscription, et le social la
+ * contredisait en silence.
+ */
+export const CUSTOMER_CONNECTION = 'lfc-b2b-customers';
+
 export const AUTH_CONFIG: AuthConfig = {
   domain: AUTH_ENV.domain,
   clientId: AUTH_ENV.clientId,

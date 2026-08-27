@@ -9,6 +9,7 @@ import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
+import { CUSTOMER_CONNECTION } from './auth.config';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -133,21 +134,29 @@ export class AuthFacade {
    */
   login(target: string, hint?: string): void {
     void this.auth0
-      ?.loginWithRedirect({ appState: { target }, authorizationParams: loginHint(hint) })
+      ?.loginWithRedirect({
+        appState: { target },
+        authorizationParams: { connection: CUSTOMER_CONNECTION, ...loginHint(hint) },
+      })
       .subscribe();
   }
 
   /**
    * Comme {@link login}, mais ouvre directement l'onglet **inscription** de
-   * l'Universal Login (`screen_hint: 'signup'`). L'ouverture réelle des créations
-   * de compte dépend de la connection Auth0 (`lfc-b2b-customers`, sign-ups
-   * activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
+   * l'Universal Login (`screen_hint: 'signup'`). La connexion est NOMMÉE : c'est
+   * elle qui porte la passkey, et la laisser deviner par l'application fait
+   * retomber l'écran sur un mot de passe. L'ouverture réelle des créations de
+   * compte dépend de cette connexion (sign-ups activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
    */
   register(target: string, profile?: PendingProfile): void {
     void this.auth0
       ?.loginWithRedirect({
         appState: { target, profile },
-        authorizationParams: { screen_hint: 'signup', ...loginHint(profile?.email) },
+        authorizationParams: {
+          connection: CUSTOMER_CONNECTION,
+          screen_hint: 'signup',
+          ...loginHint(profile?.email),
+        },
       })
       .subscribe();
   }
