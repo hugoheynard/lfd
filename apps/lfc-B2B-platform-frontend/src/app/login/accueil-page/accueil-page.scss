@@ -154,7 +154,10 @@
   flex-direction: column;
   /* Le haut est entièrement porté par la lèvre — sa moitié crème fait déjà la
      respiration au-dessus du premier bloc. */
-  padding: 0 var(--fold-space-xl) var(--fold-space-3xl);
+  /* Le bas est large à dessein : sur un téléphone, la barre d'URL qui se replie
+     et la barre de geste mangent une trentaine de pixels que le viewport ne
+     déclare pas toujours. Le dernier bouton ne doit pas s'y perdre. */
+  padding: 0 var(--fold-space-xl) var(--fold-space-5xl);
 }
 
 /* L'étape remplit la scène : c'est ce qui permet au CTA du panneau de rappel
