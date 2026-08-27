@@ -13,9 +13,11 @@
 .bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* Serré à dessein : la pastille, le nom en 21 px et trois langues doivent
+     tenir sur 390 px sans que le nom soit rogné. */
+  gap: var(--fold-space-sm);
   height: 100%;
-  padding: env(safe-area-inset-top, 0px) 20px 0;
+  padding: env(safe-area-inset-top, 0px) var(--fold-space-lg) 0;
 }
 
 .brand {
@@ -42,13 +44,16 @@
   width: 44px;
   height: 44px;
   border-radius: var(--fold-radius-md);
+  padding: 5px;
+  overflow: hidden;
   background: var(--lfc-paper-0);
-  color: var(--lfc-ink-800);
   box-shadow: var(--lfc-shadow-logo);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-md);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
 }
 
 .brand {
@@ -61,7 +66,13 @@
 
 .brand-name {
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xl);
+  /* Le nom ne se laisse PAS rogner : il rétrécit d'abord.
+     Ce qui reste pour lui, c'est la largeur moins le fixe de la barre —
+     2 × 18 px de marge, 44 px de pastille, 2 × 8 px d'écart, 104 px de langues,
+     soit ~200 px — et « LA FOLIE COFFEE » en Archivo 900 mesure 9 px de large
+     par pixel de corps. D'où `(100vw - 200px) / 9`, plafonné au cran de la réf.
+     La réf, elle, coupait au-delà de 390 px de large. */
+  font-size: clamp(1rem, calc(11.1vw - 23px), var(--fold-text-xl));
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
