@@ -2,9 +2,17 @@
   display: block;
 }
 
+/* Le rail dimensionne ses panneaux depuis le CONTENEUR — `grid-auto-columns`,
+   pas une règle sur les enfants. C'est le seul moyen fiable ici : les panneaux
+   sont du contenu PROJETÉ, ils portent l'encapsulation de la page qui les
+   compose, et aucun `.track > *` écrit ici ne les atteint. Une largeur qui ne
+   prend pas laisse le flex les comprimer, et un rail qui tient entièrement à
+   l'écran n'a plus rien à faire défiler. */
 .track {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  align-items: start;
   gap: var(--fold-space-md);
   /* Le rail SAIGNE jusqu'au bord de la feuille : le panneau suivant doit se
      laisser deviner à droite, sinon rien ne dit qu'il y en a un. Les marges
@@ -20,13 +28,6 @@
   &::-webkit-scrollbar {
     display: none;
   }
-}
-
-/* Chaque panneau occupe la largeur utile, et s'accroche à gauche. */
-.track > * {
-  flex: none;
-  width: 100%;
-  scroll-snap-align: start;
 }
 
 .dots {
@@ -70,8 +71,8 @@
    souris est une mauvaise affaire. */
 @media (min-width: 900px) {
   .track {
-    display: grid;
-    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
     gap: var(--fold-space-lg);
     margin-inline: 0;
     padding-inline: 0;

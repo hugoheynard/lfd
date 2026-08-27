@@ -35,5 +35,13 @@ export class ClientPage {
   /** Le cran haut du titre — réservé à l'écran d'entrée, le plus long. */
   readonly big = input(false);
 
+  /**
+   * Au-delà du pli, la colonne de contenu se CENTRE dans sa moitié plutôt que de
+   * se ranger à gauche. C'est une entrée et pas une règle générale : l'écran
+   * d'entrée aligne sa feuille sur la colonne d'argument d'en face, alors qu'un
+   * écran qui n'a plus rien à argumenter n'a plus rien à aligner.
+   */
+  readonly centred = input(false);
+
   protected readonly t = inject(ClientCopyService).t;
 }

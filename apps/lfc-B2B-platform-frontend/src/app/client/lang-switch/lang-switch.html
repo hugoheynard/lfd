@@ -1,8 +1,21 @@
-<fold-view-toggle
-  [ariaLabel]="t().chrome.lang"
-  activeStyle="solid"
-  [size]="size()"
-  [options]="options"
-  [value]="locale.current()"
-  (valueChange)="pick($event)"
-/>
+@if (compact()) {
+  <button
+    class="globe"
+    type="button"
+    [title]="name()"
+    [attr.aria-label]="t().chrome.lang + ' — ' + name()"
+    (click)="cycle()"
+  >
+    <fold-icon name="globe" />
+    <span class="code" aria-hidden="true">{{ code() }}</span>
+  </button>
+} @else {
+  <fold-view-toggle
+    [ariaLabel]="t().chrome.lang"
+    activeStyle="solid"
+    [size]="size()"
+    [options]="options"
+    [value]="locale.current()"
+    (valueChange)="pick($event)"
+  />
+}

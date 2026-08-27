@@ -4,21 +4,39 @@
      le contenu en silence. -->
 <fold-app-shell mobileNav="none" scroll="scroll" footerBehavior="scroll">
   <div header class="bar">
+    <!-- Un seul occupant à gauche, et l'ordre dit la priorité : d'où l'on
+         revient prime sur ce qu'on peut ouvrir, qui prime sur la marque. -->
     @if (chrome.back()) {
       <button class="back" type="button" [attr.aria-label]="t().chrome.back" (click)="goBack()">
         <fold-icon name="chevron-left" />
       </button>
+    } @else if (chrome.menu()) {
+      <button class="menu" type="button" [attr.aria-label]="t().chrome.menu" (click)="openMenu()">
+        <fold-icon name="menu" />
+      </button>
+    } @else {
+      <span class="mark" aria-hidden="true">
+        <img src="brand/lfc-mark.png" alt="" />
+      </span>
     }
-    <span class="mark" aria-hidden="true">
-      <img src="brand/lfc-mark.png" alt="" />
-    </span>
     <span class="brand">
       <span class="brand-name">La Folie Coffee</span>
       @if (chrome.kicker(); as kicker) {
         <span class="brand-kicker">{{ kicker }}</span>
       }
     </span>
-    <app-lang-switch />
+    <!-- La barre d'un client reconnu porte déjà le menu et la cloche : le
+         sélecteur s'y réduit à un globe, faute de place pour trois segments. -->
+    <app-lang-switch [compact]="!!chrome.bell()" />
+
+    @if (chrome.bell()) {
+      <button class="bell" type="button" [attr.aria-label]="bellLabel()" (click)="openBell()">
+        <fold-icon name="bell" />
+        @if (chrome.bellCount(); as count) {
+          <span class="badge" aria-hidden="true">{{ count }}</span>
+        }
+      </button>
+    }
   </div>
 
   <router-outlet />

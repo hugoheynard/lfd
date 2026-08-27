@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
@@ -31,5 +31,20 @@ export class ClientShell {
 
   protected goBack(): void {
     this.chrome.back()?.();
+  }
+
+  protected openMenu(): void {
+    this.chrome.menu()?.();
+  }
+
+  /** Le compte fait partie du NOM du bouton : sans lui, la pastille est muette. */
+  protected readonly bellLabel = computed(() => {
+    const count = this.chrome.bellCount();
+    const label = this.t().chrome.notifications;
+    return count > 0 ? `${label} — ${count}` : label;
+  });
+
+  protected openBell(): void {
+    this.chrome.bell()?.();
   }
 }

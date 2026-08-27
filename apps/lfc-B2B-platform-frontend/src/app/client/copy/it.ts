@@ -12,6 +12,8 @@ import type { ClientCopy } from './client-copy.model';
 export const IT: ClientCopy = {
   chrome: {
     back: 'Indietro',
+    menu: 'Menu',
+    notifications: 'Notifiche',
     lang: 'Lingua',
     kickerWelcome: 'Benvenuto',
     kickerLogin: 'Accesso',

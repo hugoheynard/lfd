@@ -70,6 +70,11 @@ describe('AccueilPage', () => {
     expect(chrome.back()).toBeNull();
   });
 
+  it("garde la pastille de marque : un visiteur n'a ni menu ni cloche", () => {
+    expect(chrome.menu()).toBeNull();
+    expect(chrome.bell()).toBeNull();
+  });
+
   it("le formulaire est replié, et « S'inscrire » l'ouvre", () => {
     // Le pli lui-même est une affaire de largeur, donc de CSS — ce que le test
     // vérifie, c'est le CONTRAT que le CSS suit : l'état annoncé aux

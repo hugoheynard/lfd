@@ -13,6 +13,8 @@
 export interface ClientCopy {
   readonly chrome: {
     readonly back: string;
+    readonly menu: string;
+    readonly notifications: string;
     readonly lang: string;
     readonly kickerWelcome: string;
     readonly kickerLogin: string;

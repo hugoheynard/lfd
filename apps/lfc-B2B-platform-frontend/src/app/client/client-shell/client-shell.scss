@@ -54,6 +54,56 @@
   cursor: pointer;
 }
 
+/* Le bouton de menu prend la place de la pastille de marque, et son gabarit :
+   c'est le même trou dans la barre, occupé par autre chose. */
+.menu {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+/* La cloche partage le gabarit du menu — même trou dans la barre, de l'autre
+   côté. Sa pastille DÉBORDE, et son liseré reprend le fond de la barre : c'est
+   ce qui la détache de l'encre sans lui donner d'ombre. */
+.bell {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border: 2px solid var(--fold-color-bg-header);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  font-variant-numeric: tabular-nums;
+}
+
 .mark {
   flex: none;
   display: grid;

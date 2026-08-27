@@ -22,6 +22,22 @@ export class ClientChrome {
   readonly back = signal<(() => void) | null>(null);
 
   /**
+   * Ce que fait le bouton de menu — `null` quand l'écran n'en a pas.
+   *
+   * Sa présence décide aussi de ce que porte la barre : la réf donne la pastille
+   * de MARQUE au visiteur, qui a besoin de savoir où il est, et le MENU à qui
+   * est reconnu, qui a besoin d'accéder à ses affaires. Un booléen de plus
+   * aurait pu se désaccorder de la fonction ; ici il n'y a rien à accorder.
+   */
+  readonly menu = signal<(() => void) | null>(null);
+
+  /** Ce que fait la cloche — `null` quand l'écran n'en porte pas. */
+  readonly bell = signal<(() => void) | null>(null);
+
+  /** Le nombre de non-lues. Zéro : la cloche reste, sa pastille disparaît. */
+  readonly bellCount = signal(0);
+
+  /**
    * L'écran garde-t-il la barre au-delà du pli ?
    *
    * L'accueil dit non : en desktop, la réf lui donne deux colonnes et la marque

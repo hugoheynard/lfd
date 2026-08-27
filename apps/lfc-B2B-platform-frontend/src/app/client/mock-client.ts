@@ -10,4 +10,6 @@ export const MOCK_CLIENT = {
   phone: '06 12 44 09 87',
   /** La commande prête à retirer, celle que l'écran d'accueil rappelle. */
   lastOrder: '#4821',
+  /** Les notifications non lues, que la cloche annonce. */
+  unread: 5,
 } as const;

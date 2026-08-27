@@ -31,3 +31,39 @@
      donc lui qui remonte les pastilles aux 26 px de la réf. */
   line-height: 1.85;
 }
+
+/* ── Le mode compact : un globe qui porte sa langue ───────────────────────── */
+
+.globe {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+/* Le code déborde du bouton, en bas à droite : il se lit comme une étiquette
+   POSÉE sur le globe, pas comme un second glyphe à l'intérieur. Le liseré
+   reprend le fond de la barre pour le détacher proprement. */
+.code {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  height: 15px;
+  padding: 0 4px;
+  border: 2px solid var(--fold-color-bg-header);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-text);
+  color: var(--fold-color-bg-header);
+  font-family: var(--fold-font-label);
+  font-size: 0.53125rem;
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.06em;
+}

@@ -104,6 +104,11 @@ export class AccueilPage {
     // Au-delà du pli, la marque remonte dans la colonne bleue de cet écran : la
     // barre du shell s'efface plutôt que de faire doublon.
     this.chrome.barOnDesktop.set(false);
+    // Un visiteur n'a pas de menu : il a besoin de savoir OÙ il est, donc la
+    // barre garde la pastille de marque.
+    this.chrome.menu.set(null);
+    // Ni cloche : on ne notifie pas quelqu'un dont on n'a pas encore le compte.
+    this.chrome.bell.set(null);
   }
 
   private back(): void {

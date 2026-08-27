@@ -1,5 +1,9 @@
 :host {
   display: block;
+  /* Le panneau s'accroche à gauche du rail qui le porte. La propriété est
+     INERTE hors d'un conteneur qui déclare l'accrochage — elle peut donc vivre
+     ici, là où le rail ne peut pas l'atteindre. */
+  scroll-snap-align: start;
   border: 1px solid transparent;
   border-radius: 22px;
   padding: 15px 14px;

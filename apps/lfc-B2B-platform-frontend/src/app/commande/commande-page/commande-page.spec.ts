@@ -81,6 +81,14 @@ describe('CommandePage', () => {
     expect(dots[1]?.getAttribute('aria-label')).toBe(FR.commande.nowTitle);
   });
 
+  it('demande au chrome le menu et la cloche, pas la pastille de marque', () => {
+    // La barre appartient au shell, mais c'est l'ÉCRAN qui dit ce qu'elle porte :
+    // à qui est reconnu, un menu et ses non-lues plutôt que la marque.
+    expect(chrome.menu()).not.toBeNull();
+    expect(chrome.bell()).not.toBeNull();
+    expect(chrome.bellCount()).toBe(MOCK_CLIENT.unread);
+  });
+
   it('rappelle la commande prête, avec son numéro', () => {
     expect(text()).toContain(fill(FR.commande.qrSub, { order: MOCK_CLIENT.lastOrder }));
     expect(text()).toContain(FR.commande.qrAction);

@@ -93,6 +93,11 @@ export class CommandePage {
     // Comme l'accueil : au-delà du pli, la marque remonte dans la colonne d'encre
     // de l'écran, et la barre du shell s'efface plutôt que de faire doublon.
     this.chrome.barOnDesktop.set(false);
+    // Ici on est reconnu : la pastille de marque cède la place au menu, qui mène
+    // à ses affaires. ⚠️ Maquette — le menu n'a pas encore d'écran.
+    this.chrome.menu.set((): void => this.notYet());
+    this.chrome.bell.set((): void => this.notYet());
+    this.chrome.bellCount.set(MOCK_CLIENT.unread);
   }
 
   /** ⚠️ Maquette : la porte est branchée, son écran arrive au prochain lot. */
