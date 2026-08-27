@@ -1,0 +1,183 @@
+/* La photo est un visuel de banque servi par le site public : à remplacer par la
+   pièce réelle photographiée (cf. `03-operations-datees.md` pour le cadrage). */
+$photo: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1574862612701-5b2869e3485b.jpg');
+
+:host {
+  display: block;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lfc-radius-2xl);
+  overflow: hidden;
+  background: var(--lfc-soot-900);
+  box-shadow: 0 8px 22px -14px rgb(35 32 26 / 50%);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+}
+
+.photo {
+  position: relative;
+  display: block;
+  height: 138px;
+  background: #3a2a14 $photo center 45% / cover;
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: linear-gradient(
+    180deg,
+    rgb(35 25 10 / 10%) 0%,
+    rgb(35 25 10 / 44%) 46%,
+    rgb(28 20 8 / 90%) 100%
+  );
+}
+
+.badge {
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.over-title,
+.in-title {
+  font-family: var(--fold-font-label);
+  font-size: 1.4375rem;
+  font-weight: var(--lfc-weight-black);
+  line-height: 0.96;
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+/* Empilée : le titre se pose SUR la photo, sous le voile. */
+.over-title {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  color: var(--lfc-paper-0);
+}
+
+.in-title {
+  display: none;
+  color: var(--fold-color-text);
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  background: var(--fold-color-surface-card);
+}
+
+.pitch {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-secondary);
+}
+
+.cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Couchée : la photo devient une bande, et le titre redescend dans le corps. */
+@media (min-width: 900px) {
+  .card {
+    flex-direction: row;
+    border: 1px solid var(--fold-color-border);
+    background: var(--fold-color-surface-card);
+    box-shadow: 0 6px 18px -12px rgb(35 32 26 / 35%);
+  }
+
+  .photo {
+    flex: none;
+    width: 196px;
+    height: auto;
+  }
+
+  .veil {
+    background: linear-gradient(
+      90deg,
+      rgb(28 20 8 / 28%) 0%,
+      rgb(28 20 8 / 6%) 60%,
+      rgb(255 253 248 / 18%) 100%
+    );
+  }
+
+  .badge {
+    top: 11px;
+    left: 11px;
+  }
+
+  .over-title {
+    display: none;
+  }
+
+  .in-title {
+    display: block;
+    font-size: 1.375rem;
+    line-height: 0.98;
+  }
+
+  .body {
+    flex: 1;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 20px 22px;
+  }
+
+  .pitch {
+    flex: none;
+    font-size: var(--fold-text-md);
+    line-height: 1.5;
+  }
+
+  .cta {
+    height: 38px;
+    padding: 0 17px;
+    border-radius: 11px;
+    font-size: var(--fold-text-xs);
+  }
+}

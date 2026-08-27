@@ -1,13 +1,24 @@
 /* Deux familles de contrôles sur cet écran, et la règle qui les départage :
    ce qui a un CHÂSSIS (le CTA, le bouton de rappel) est un `foldButton` ; ce que
-   la réf dessine en TEXTE NU (« Annuler ») reste un `<button>` habillé de
-   tokens — l'enrober de fold lui donnerait une pastille que la réf ne montre
-   pas. */
+   la réf dessine en TEXTE NU (« Annuler », « Se connecter en un lien ») reste un
+   `<button>` habillé de tokens — l'enrober de fold lui donnerait une pastille
+   que la réf ne montre pas.
+
+   Le pli est à 900 px. En deçà : une pile, la porte « Déjà client ? » en carte
+   bleue. Au-delà : le formulaire s'étale, et la porte redevient un lien dans la
+   ligne de titre — elle n'a plus à crier, elle est à côté. */
 
 :host {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .eyebrow {
@@ -18,6 +29,25 @@
   letter-spacing: var(--lfc-tracking-eyebrow);
   text-transform: uppercase;
   color: var(--lfc-color-text-subtle);
+}
+
+/* Le rappel « déjà client » de la ligne de titre n'existe qu'au-delà du pli :
+   en deçà, c'est la carte bleue qui porte la porte. */
+.already {
+  display: none;
+  margin: 0;
+  font-size: var(--fold-text-md);
+  color: var(--fold-color-text-muted);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font: inherit;
+  font-weight: var(--fold-weight-semibold);
+  cursor: pointer;
 }
 
 .signup {
@@ -38,20 +68,38 @@
 }
 
 .fields {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 11px;
 }
 
-/* Le CTA de l'app cliente : pleine largeur, 50 px, display en capitales.
-   `foldButton` porte la couleur, l'état et le focus ; on n'ajoute que la voix. */
+.submit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Le CTA de l'app cliente : 50 px, display en capitales. `foldButton` porte la
+   couleur, l'état et le focus ; on n'ajoute que la voix. */
 .cta {
+  /* Pas de `block` sur le bouton : sa largeur change avec le pli, et c'est la
+     page qui la décide — `block` la figerait à 100 % des deux côtés. */
+  width: 100%;
   min-height: 50px;
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-cta);
   text-transform: uppercase;
+}
+
+/* La même phrase, deux places : sous la carte en pile, à côté du bouton une fois
+   qu'il y a de la largeur. Une seule des deux est visible à la fois. */
+.fine-inline {
+  display: none;
+  max-width: 22em;
+  font-size: var(--lfc-text-note);
+  line-height: 1.5;
+  color: var(--lfc-color-text-subtle);
 }
 
 .fine {
@@ -62,16 +110,31 @@
   color: var(--lfc-color-text-subtle);
 }
 
+.legal {
+  display: none;
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-faded);
+}
+
 /* ── L'encart pro ─────────────────────────────────────────────────────────── */
 
 .pro {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   align-items: start;
+  gap: 11px;
   padding: 14px 15px;
   border-radius: var(--fold-radius-lg);
   background: var(--fold-color-primary-surface);
+}
+
+.pro-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .pro-title {
@@ -91,16 +154,8 @@
   color: var(--fold-color-primary-text);
 }
 
-/* Le bloc titre → corps respire à 6 px ; dans le corps, l'argument et son bouton
-   à 11 px. Deux gaps plutôt qu'une marge posée par l'enfant. */
-.pro-body {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  gap: 11px;
-}
-
 .pro-cta {
+  flex: none;
   min-height: 38px;
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-xs);
@@ -172,4 +227,103 @@
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* ── Au-delà du pli ───────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  :host {
+    gap: 22px;
+  }
+
+  .head {
+    display: flex;
+  }
+
+  .already {
+    display: block;
+  }
+
+  .only-narrow,
+  .fine {
+    display: none;
+  }
+
+  .fine-inline,
+  .legal {
+    display: block;
+  }
+
+  .signup {
+    --fold-card-padding: 28px 30px;
+
+    max-width: 560px;
+  }
+
+  .form {
+    gap: 22px;
+  }
+
+  .pitch {
+    font-size: var(--lfc-text-block);
+    line-height: 1.6;
+  }
+
+  /* Prénom et téléphone tiennent la même ligne, l'e-mail prend toute la largeur.
+     L'ordre du DOM est déjà celui-là : la grille ne réordonne rien, donc l'œil
+     et la tabulation suivent le même chemin. */
+  .fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .f-mail {
+    grid-column: 1 / -1;
+  }
+
+  .submit {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .cta {
+    flex: none;
+    width: auto;
+    min-height: 52px;
+    padding-inline: 30px;
+    font-size: var(--lfc-text-cta);
+  }
+
+  .pro {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    max-width: 560px;
+    padding: 20px 24px;
+    border-radius: var(--lfc-radius-2xl);
+  }
+
+  .pro-head {
+    flex: 1;
+    gap: 5px;
+  }
+
+  .pro-title {
+    font-size: var(--fold-text-md);
+  }
+
+  .pro-pitch {
+    font-size: var(--fold-text-md);
+    line-height: var(--lfc-leading-body);
+  }
+
+  .pro-cta {
+    min-height: 42px;
+    padding-inline: 20px;
+  }
+
+  .legal {
+    margin-top: auto;
+  }
 }

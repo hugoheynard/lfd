@@ -10,6 +10,7 @@ import {
 import { FoldSurfaceDirective } from 'fold-ng';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { LangSwitch } from '../../client/lang-switch/lang-switch';
 
 import { KNOWN_PHONE } from './call-slots';
 import { EnteredStep } from './entered-step/entered-step';
@@ -19,6 +20,13 @@ import { WelcomeStep } from './welcome-step/welcome-step';
 
 /** Les trois temps de l'entrée, plus le panneau qui se pose par-dessus. */
 type Step = 'welcome' | 'login' | 'entered';
+
+/** Ce que la colonne d'argument promet — visible au-delà du pli seulement. */
+const PROOF = [
+  'Trois champs, pas de mot de passe.',
+  'Le KBIS attend que vous en ayez besoin — vous commandez pendant la vérification.',
+  'Tarifs pro, livraison en station, facturation mensuelle sur demande.',
+] as const;
 
 /**
  * L'accueil de l'app CLIENT — la page d'entrée, pas un formulaire de connexion.
@@ -33,7 +41,7 @@ type Step = 'welcome' | 'login' | 'entered';
 @Component({
   selector: 'app-accueil-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
+  imports: [FoldSurfaceDirective, LangSwitch, EnteredStep, LoginStep, RappelPanel, WelcomeStep],
   templateUrl: './accueil-page.html',
   styleUrl: './accueil-page.scss',
 })
@@ -41,11 +49,13 @@ export class AccueilPage {
   private readonly chrome = inject(ClientChrome);
 
   protected readonly phone = KNOWN_PHONE;
+  protected readonly PROOF = PROOF;
 
   protected readonly step = signal<Step>('welcome');
   protected readonly panelOpen = signal(false);
   protected readonly linkSent = signal(false);
   protected readonly bookedSlot = signal<string | null>(null);
+  protected readonly quotePending = signal(false);
 
   /** Le retour n'existe que là où on est venu de quelque part. */
   private readonly canGoBack = computed(() => this.panelOpen() || this.step() === 'login');
@@ -98,12 +108,18 @@ export class AccueilPage {
   /** Le titre d'accueil est le plus long : il descend d'un cran ailleurs. */
   protected readonly bigHeading = computed(() => !this.panelOpen() && this.step() === 'welcome');
 
+  /** L'argument n'accompagne que l'inscription : on ne vend plus à qui entre. */
+  protected readonly showProof = computed(() => this.bigHeading());
+
   constructor() {
     // L'en-tête appartient au shell ; l'écran lui dit seulement quoi afficher.
     effect(() => {
       this.chrome.kicker.set(this.kicker());
       this.chrome.back.set(this.canGoBack() ? (): void => this.back() : null);
     });
+    // Au-delà du pli, la marque remonte dans la colonne bleue de cet écran : la
+    // barre du shell s'efface plutôt que de faire doublon.
+    this.chrome.barOnDesktop.set(false);
   }
 
   private back(): void {
@@ -121,6 +137,11 @@ export class AccueilPage {
 
   protected openPanel(): void {
     this.panelOpen.set(true);
+  }
+
+  /** ⚠️ Maquette : la demande de devis traiteur n'a pas encore son écran. */
+  protected openQuote(): void {
+    this.quotePending.set(true);
   }
 
   protected book(slot: string): void {

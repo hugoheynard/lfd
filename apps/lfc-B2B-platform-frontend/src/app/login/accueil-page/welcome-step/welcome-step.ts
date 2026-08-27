@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldCardComponent,
+  FoldInputComponent,
+} from 'fold-ng';
 
+import { EventCard } from '../../../client/event-card/event-card';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
 
@@ -16,7 +22,15 @@ import { RuleOu } from '../rule-ou/rule-ou';
 @Component({
   selector: 'app-welcome-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCardComponent, FoldInputComponent, DoorCard, RuleOu],
+  imports: [
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCardComponent,
+    FoldInputComponent,
+    DoorCard,
+    EventCard,
+    RuleOu,
+  ],
   templateUrl: './welcome-step.html',
   styleUrl: './welcome-step.scss',
 })
@@ -24,12 +38,16 @@ export class WelcomeStep {
   /** Le créneau de rappel déjà obtenu, s'il y en a un. */
   readonly bookedSlot = input<string | null>(null);
 
+  /** La demande de devis traiteur a été faite, mais son écran n'existe pas. */
+  readonly quotePending = input(false);
+
   /** Le numéro sur lequel le fournil rappellera. */
   readonly phone = input.required<string>();
 
   readonly signedUp = output<void>();
   readonly wantsLogin = output<void>();
   readonly wantsCallback = output<void>();
+  readonly wantsQuote = output<void>();
   readonly cancelledCallback = output<void>();
 
   protected readonly firstName = signal('');

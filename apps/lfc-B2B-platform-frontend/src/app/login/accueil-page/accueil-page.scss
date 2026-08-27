@@ -5,29 +5,74 @@
   font-family: var(--fold-font-sans);
 }
 
-/* ── Le corps qui défile, sur fond de marque ──────────────────────────────── */
-
-.scroll {
+.frame {
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
   /* Le défilement appartient au shell (`scroll="scroll"`) : la page COULE
-     dedans, elle n'ouvre pas sa propre boîte de scroll — sinon deux barres se
-     superposeraient et le panneau ancré au cadre partirait avec le contenu.
-     Le fond est l'encre de marque. Le `chrome` ne
-     s'applique qu'à l'accroche : s'il couvrait tout le corps, la feuille crème
-     hériterait de ses rôles repeints et chaque `fold-card` qu'elle porte
-     virerait au bleu. */
+     dedans, elle n'ouvre pas sa propre boîte — sinon deux barres se
+     superposeraient. Le fond est l'encre de marque. */
   background: var(--fold-color-primary);
 }
 
-.hero {
+/* ── La colonne d'argument (en pile : la simple accroche) ─────────────────── */
+
+.aside {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 6px 20px 26px;
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
+}
+
+/* La marque n'est ici qu'au-delà du pli — la barre du shell la porte en deçà. */
+.brand-row {
+  display: none;
+  align-items: center;
+  gap: 12px;
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  box-shadow: var(--lfc-shadow-logo);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-base);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+}
+
+.brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1.04;
+}
+
+.brand-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+.brand-kicker {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
 }
 
 .hero-title {
@@ -53,12 +98,19 @@
   color: var(--fold-color-text-muted);
 }
 
-/* ── La feuille crème : le contenu manipulable ────────────────────────────── */
+/* Les preuves et l'adresse n'existent qu'au-delà du pli : en pile, elles
+   repousseraient le formulaire sous la ligne de flottaison. */
+.proof,
+.address {
+  display: none;
+}
+
+/* ── La feuille crème ─────────────────────────────────────────────────────── */
 
 .sheet {
   display: flex;
-  flex-direction: column;
   flex: 1 0 auto;
+  flex-direction: column;
   padding: var(--fold-space-xl) var(--fold-space-lg) 26px;
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
@@ -70,4 +122,84 @@
    dernier créneau. */
 .sheet > * {
   flex: 1 0 auto;
+}
+
+/* ── Au-delà du pli : deux colonnes ───────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  .frame {
+    display: grid;
+    grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+  }
+
+  .aside {
+    position: relative;
+    gap: 0;
+    padding: 46px 44px;
+    overflow: hidden;
+  }
+
+  .brand-row {
+    display: flex;
+  }
+
+  .hero-title {
+    margin: 52px 0 14px;
+
+    &.big {
+      font-size: 2.75rem;
+      line-height: 0.98;
+      letter-spacing: -0.035em;
+    }
+  }
+
+  .hero-intro {
+    max-width: 30em;
+    margin-bottom: 34px;
+    font-size: 0.96875rem;
+    line-height: 1.6;
+  }
+
+  .proof {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .proof-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: var(--lfc-text-block);
+    line-height: 1.5;
+    color: var(--lfc-color-on-primary-muted);
+  }
+
+  .proof-tick {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--fold-radius-pill);
+    background: var(--lfc-color-on-primary-tile);
+    color: var(--fold-color-text);
+    font-size: var(--fold-text-sm);
+  }
+
+  .address {
+    display: block;
+    margin: auto 0 0;
+    padding-top: 34px;
+    font-size: var(--lfc-text-note);
+    color: var(--lfc-color-on-primary-muted);
+  }
+
+  .sheet {
+    padding: 46px 52px;
+    border-radius: 0;
+  }
 }

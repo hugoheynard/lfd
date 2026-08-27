@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { LangSwitch } from '../lang-switch/lang-switch';
 
 /**
  * Le shell de l'app CLIENT : la barre de marque bleue, et rien d'autre.
@@ -18,8 +19,8 @@ import { ClientChrome } from '../client-chrome.service';
 @Component({
   selector: 'app-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { 'data-theme': 'lfc-app' },
-  imports: [FoldAppShellComponent, FoldIconComponent, RouterOutlet],
+  host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
+  imports: [FoldAppShellComponent, FoldIconComponent, LangSwitch, RouterOutlet],
   templateUrl: './client-shell.html',
   styleUrl: './client-shell.scss',
 })

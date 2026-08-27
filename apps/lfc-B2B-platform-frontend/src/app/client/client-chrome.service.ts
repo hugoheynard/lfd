@@ -20,4 +20,13 @@ export class ClientChrome {
 
   /** Ce que fait la flèche de retour — `null` quand il n'y a pas de retour. */
   readonly back = signal<(() => void) | null>(null);
+
+  /**
+   * L'écran garde-t-il la barre au-delà du pli ?
+   *
+   * L'accueil dit non : en desktop, la réf lui donne deux colonnes et la marque
+   * remonte dans la colonne bleue. Une barre au-dessus ferait doublon. Les
+   * écrans qui n'en disent rien la gardent.
+   */
+  readonly barOnDesktop = signal(true);
 }

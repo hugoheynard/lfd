@@ -1,4 +1,10 @@
-<p class="eyebrow">Première visite ?</p>
+<div class="head">
+  <p class="eyebrow">Première visite, 3 infos et c'est parti</p>
+  <p class="already">
+    Déjà client ?
+    <button class="link" type="button" (click)="wantsLogin.emit()">Se connecter en un lien</button>
+  </p>
+</div>
 
 <fold-card class="signup">
   <form class="form" (submit)="$event.preventDefault(); submit()">
@@ -8,6 +14,7 @@
 
     <div class="fields">
       <fold-input
+        class="f-first"
         size="lg"
         label="Prénom"
         autocomplete="given-name"
@@ -15,6 +22,17 @@
         [(value)]="firstName"
       />
       <fold-input
+        class="f-tel"
+        size="lg"
+        type="tel"
+        label="Téléphone"
+        autocomplete="tel"
+        placeholder="06 00 00 00 00"
+        hint="Pour qu'un coursier qui cherche la porte puisse appeler."
+        [(value)]="tel"
+      />
+      <fold-input
+        class="f-mail"
         size="lg"
         type="email"
         label="E-mail"
@@ -22,37 +40,33 @@
         placeholder="vous@exemple.fr"
         [(value)]="email"
       />
-      <fold-input
-        size="lg"
-        type="tel"
-        label="Téléphone"
-        autocomplete="tel"
-        placeholder="06 00 00 00 00"
-        hint="Pour qu'un livreur qui cherche la porte puisse appeler."
-        [(value)]="tel"
-      />
     </div>
 
-    <button
-      foldButton
-      class="cta"
-      emphasis="solid"
-      intent="primary"
-      size="lg"
-      block
-      type="submit"
-      [disabled]="!complete()"
-    >
-      Créer mon compte
-    </button>
+    <div class="submit">
+      <button
+        foldButton
+        class="cta"
+        emphasis="solid"
+        intent="primary"
+        size="lg"
+        type="submit"
+        [disabled]="!complete()"
+      >
+        Créer mon compte
+      </button>
+      <span class="fine-inline">
+        Pas de mot de passe : un lien vous est envoyé à chaque connexion.
+      </span>
+    </div>
   </form>
 </fold-card>
 
 <p class="fine">Pas de mot de passe : on vous envoie un lien à chaque connexion.</p>
 
-<app-rule-ou />
+<app-rule-ou class="only-narrow" />
 
 <app-door-card
+  class="only-narrow"
   tone="solid"
   icon="arrow-right"
   title="Déjà client ?"
@@ -60,38 +74,54 @@
   (opened)="wantsLogin.emit()"
 />
 
-<section class="pro">
-  <h2 class="pro-title">{{ proTitle() }}</h2>
+<app-event-card (opened)="wantsQuote.emit()" />
 
-  @if (bookedSlot(); as slot) {
-    <div class="booked">
-      <span class="booked-tick" aria-hidden="true">✓</span>
-      <span class="booked-text">
-        <span class="booked-when">Rappel demandé · {{ slot }}</span>
-        <span class="booked-phone"
-          >Au <span class="num">{{ phone() }}</span></span
-        >
-      </span>
-      <button class="booked-cancel" type="button" (click)="cancelledCallback.emit()">
-        Annuler
-      </button>
-    </div>
-  } @else {
-    <div class="pro-body">
+@if (quotePending()) {
+  <fold-callout variant="info">
+    L'écran de demande de devis arrive au prochain lot — la carte est branchée, pas sa suite.
+  </fold-callout>
+}
+
+<section class="pro">
+  <div class="pro-head">
+    <h2 class="pro-title">{{ proTitle() }}</h2>
+
+    @if (bookedSlot(); as slot) {
+      <div class="booked">
+        <span class="booked-tick" aria-hidden="true">✓</span>
+        <span class="booked-text">
+          <span class="booked-when">Rappel demandé · {{ slot }}</span>
+          <span class="booked-phone"
+            >Au <span class="num">{{ phone() }}</span></span
+          >
+        </span>
+        <button class="booked-cancel" type="button" (click)="cancelledCallback.emit()">
+          Annuler
+        </button>
+      </div>
+    } @else {
       <p class="pro-pitch">
         Tarifs négociés, livraison en station, facturation mensuelle. On vous explique en deux
         minutes.
       </p>
-      <button
-        foldButton
-        class="pro-cta"
-        emphasis="solid"
-        intent="primary"
-        type="button"
-        (click)="wantsCallback.emit()"
-      >
-        Demander à être rappelé
-      </button>
-    </div>
+    }
+  </div>
+
+  @if (!bookedSlot()) {
+    <button
+      foldButton
+      class="pro-cta"
+      emphasis="solid"
+      intent="primary"
+      type="button"
+      (click)="wantsCallback.emit()"
+    >
+      Demander à être rappelé
+    </button>
   }
 </section>
+
+<p class="legal">
+  En créant un compte, vous acceptez nos conditions de vente. Aucun document d'entreprise n'est
+  demandé à l'inscription.
+</p>

@@ -1,12 +1,36 @@
-<!-- Le corps défile sur le bleu : l'accroche d'abord, puis la feuille crème qui
-     monte sur le chrome — d'où son rayon haut. -->
-<div class="scroll">
-  <div class="hero" foldSurface="chrome">
+<!-- Une seule structure, deux mises en page. En pile : l'accroche sur le bleu,
+     puis la feuille crème qui monte dessus. Au-delà du pli : deux colonnes, la
+     marque et l'argument à gauche sur le bleu, la feuille à droite. -->
+<div class="frame">
+  <div class="aside" foldSurface="chrome">
+    <!-- La marque n'apparaît ici qu'au-delà du pli : en deçà, c'est la barre du
+         shell qui la porte, et la répéter ferait doublon. -->
+    <div class="brand-row">
+      <span class="mark" aria-hidden="true">LFC</span>
+      <span class="brand">
+        <span class="brand-name">La Folie Coffee</span>
+        <span class="brand-kicker">Val d'Isère · commande en ligne</span>
+      </span>
+      <app-lang-switch size="md" />
+    </div>
+
     <h1 class="hero-title" [class.big]="bigHeading()">{{ heading() }}</h1>
     <p class="hero-intro">{{ intro() }}</p>
+
+    @if (showProof()) {
+      <ul class="proof">
+        @for (point of PROOF; track point) {
+          <li class="proof-item">
+            <span class="proof-tick" aria-hidden="true">✓</span>
+            <span>{{ point }}</span>
+          </li>
+        }
+      </ul>
+      <p class="address">Le Labo · Route de la Balme — ouvert de 7 h à 19 h.</p>
+    }
   </div>
 
-  <div class="sheet">
+  <main class="sheet">
     @if (panelOpen()) {
       <app-rappel-panel [phone]="phone" (booked)="book($event)" />
     } @else {
@@ -18,6 +42,8 @@
             (signedUp)="goTo('entered')"
             (wantsLogin)="goTo('login')"
             (wantsCallback)="openPanel()"
+            [quotePending]="quotePending()"
+            (wantsQuote)="openQuote()"
             (cancelledCallback)="bookedSlot.set(null)"
           />
         }
@@ -33,5 +59,5 @@
         }
       }
     }
-  </div>
+  </main>
 </div>

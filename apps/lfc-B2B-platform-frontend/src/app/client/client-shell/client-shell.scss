@@ -18,6 +18,10 @@
   padding: env(safe-area-inset-top, 0px) 20px 0;
 }
 
+.brand {
+  flex: 1;
+}
+
 .back {
   flex: none;
   display: grid;
@@ -73,4 +77,19 @@
   letter-spacing: var(--lfc-tracking-kicker);
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
+}
+
+/* Un écran peut demander que la barre s'efface au-delà du pli — l'accueil le
+   fait, parce que sa colonne bleue porte déjà la marque. On replie la rangée
+   d'en-tête à zéro plutôt que de la masquer : le shell est une grille, une
+   rangée cachée garderait sa hauteur. */
+@media (min-width: 900px) {
+  :host(.bar-narrow-only) {
+    --fold-shell-header-height: 0px;
+    --fold-shell-header-height-mobile: 0px;
+  }
+
+  :host(.bar-narrow-only) .bar {
+    display: none;
+  }
 }
