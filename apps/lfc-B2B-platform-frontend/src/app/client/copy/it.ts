@@ -16,8 +16,6 @@ export const IT: ClientCopy = {
     notifications: 'Notifiche',
     lang: 'Lingua',
     kickerWelcome: 'Benvenuto',
-    kickerLogin: 'Accesso',
-    kickerEntered: 'Account creato',
     kickerRappel: 'Richiamo',
     kickerCommande: 'Nuovo ordine',
     deskKicker: 'Val d’Isère · ordina online',
@@ -29,12 +27,6 @@ export const IT: ClientCopy = {
   hero: {
     welcomeTitle: 'Il tuo ordine in stazione, pronto in due minuti.',
     welcomeIntro: 'Tu scegli, noi prepariamo.',
-    loginTitle: 'Bentornato.',
-    loginIntroAsk: 'Inserisci la tua e-mail, ti mandiamo un link.',
-    loginIntroSent: 'Il link di accesso è appena partito.',
-    enteredTitle: 'Sei connesso.',
-    enteredIntro:
-      'Account creato senza password e senza moduli aziendali. L’ordine comincia adesso.',
     rappelTitle: 'Quando ti richiamiamo ?',
     rappelIntro: 'Chiamiamo dal laboratorio, mai da un call center.',
   },
@@ -64,24 +56,6 @@ export const IT: ClientCopy = {
     fineInline: 'Nessuna password : il suo dispositivo la riconosce.',
     legal:
       'Creando un account accetti le nostre condizioni di vendita. All’iscrizione non chiediamo alcun documento aziendale.',
-  },
-  login: {
-    email: 'La tua e-mail',
-    emailPlaceholder: 'tu@esempio.it',
-    send: 'Ricevi il mio link',
-    fine: 'Nessuna password da ricordare : il link ti collega direttamente.',
-    sentTitle: 'Link inviato',
-    sentBody: 'Apri il messaggio inviato a {email} — il link vale un’ora.',
-    simulate: 'Simula il clic sul link',
-    resent: 'È appena partito un nuovo link.',
-    resend: 'Rinvia',
-    editEmail: 'Cambia indirizzo',
-  },
-  entered: {
-    title: 'Account attivo',
-    sub: 'Tre campi, nessun documento. La visura aspetterà che ti serva.',
-    next: 'Poi : ritiro o corriere, e la bottega.',
-    cta: 'Ordinare',
   },
   rappel: {
     asapGroup: 'Prima possibile',

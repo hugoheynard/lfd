@@ -17,8 +17,6 @@ export interface ClientCopy {
     readonly notifications: string;
     readonly lang: string;
     readonly kickerWelcome: string;
-    readonly kickerLogin: string;
-    readonly kickerEntered: string;
     readonly kickerRappel: string;
     readonly kickerCommande: string;
     readonly deskKicker: string;
@@ -30,11 +28,6 @@ export interface ClientCopy {
   readonly hero: {
     readonly welcomeTitle: string;
     readonly welcomeIntro: string;
-    readonly loginTitle: string;
-    readonly loginIntroAsk: string;
-    readonly loginIntroSent: string;
-    readonly enteredTitle: string;
-    readonly enteredIntro: string;
     readonly rappelTitle: string;
     readonly rappelIntro: string;
   };
@@ -59,25 +52,6 @@ export interface ClientCopy {
     readonly fine: string;
     readonly fineInline: string;
     readonly legal: string;
-  };
-  readonly login: {
-    readonly email: string;
-    readonly emailPlaceholder: string;
-    readonly send: string;
-    readonly fine: string;
-    readonly sentTitle: string;
-    /** `{email}` est remplacé par l'adresse saisie. */
-    readonly sentBody: string;
-    readonly simulate: string;
-    readonly resent: string;
-    readonly resend: string;
-    readonly editEmail: string;
-  };
-  readonly entered: {
-    readonly title: string;
-    readonly sub: string;
-    readonly next: string;
-    readonly cta: string;
   };
   readonly rappel: {
     readonly asapGroup: string;

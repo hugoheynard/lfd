@@ -8,8 +8,6 @@ export const FR: ClientCopy = {
     notifications: 'Notifications',
     lang: 'Langue',
     kickerWelcome: 'Bienvenue',
-    kickerLogin: 'Connexion',
-    kickerEntered: 'Compte créé',
     kickerRappel: 'Rappel',
     kickerCommande: 'Nouvelle commande',
     deskKicker: 'Val d’Isère · commande en ligne',
@@ -21,12 +19,6 @@ export const FR: ClientCopy = {
   hero: {
     welcomeTitle: 'Votre commande en station, réservée en deux minutes.',
     welcomeIntro: 'Vous choisissez, nous préparons.',
-    loginTitle: 'Content de vous revoir.',
-    loginIntroAsk: 'Entrez votre e-mail, on vous envoie un lien.',
-    loginIntroSent: 'Un lien de connexion vient de partir.',
-    enteredTitle: 'Vous êtes connecté.',
-    enteredIntro:
-      'Compte créé sans mot de passe, sans formulaire d’entreprise. La commande commence maintenant.',
     rappelTitle: 'On vous rappelle quand ?',
     rappelIntro: 'On appelle depuis le fournil, jamais depuis un centre.',
   },
@@ -57,24 +49,6 @@ export const FR: ClientCopy = {
     fineInline: 'Pas de mot de passe : votre appareil vous reconnaît.',
     legal:
       'En créant un compte, vous acceptez nos conditions de vente. Aucun document d’entreprise n’est demandé à l’inscription.',
-  },
-  login: {
-    email: 'Votre e-mail',
-    emailPlaceholder: 'vous@exemple.fr',
-    send: 'Recevoir mon lien',
-    fine: 'Aucun mot de passe à retenir : le lien vous connecte directement.',
-    sentTitle: 'Lien envoyé',
-    sentBody: 'Ouvrez le message envoyé à {email} — le lien est valable une heure.',
-    simulate: 'Simuler le clic sur le lien',
-    resent: 'Un nouveau lien vient de partir.',
-    resend: 'Renvoyer',
-    editEmail: 'Changer d’adresse',
-  },
-  entered: {
-    title: 'Compte actif',
-    sub: 'Trois champs, aucun document. Le KBIS attendra que vous en ayez besoin.',
-    next: 'La suite : retrait ou coursier, puis la boutique.',
-    cta: 'Commander',
   },
   rappel: {
     asapGroup: 'Dès que possible',
