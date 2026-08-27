@@ -1,51 +1,47 @@
 # Inscription client « zéro friction » — la première entrée
 
 **Statut** : 📐 décidé, pas encore codé — 2026-08-27
-**Concerne** : app cliente (`/bienvenue`), `lfd-api` (surface publique), tenant Auth0
+**Portée** : **la surface CLIENT uniquement** (`lfc-b2b-customers`). Le staff
+(`lfc-staff`) ne change pas — voir « Ce qui déborde sur le staff ».
 
 ## La décision
 
-Un visiteur donne **prénom, e-mail, téléphone**. Rien d'autre. Il reçoit un lien
-par e-mail ; le suivre lui ouvre son espace.
+Un visiteur donne **prénom, e-mail, téléphone**. Rien d'autre. Il crée une
+**passkey** — Face ID, empreinte, code de l'appareil — et il est dans son espace
+immédiatement, sans passer par sa boîte mail.
 
-Sous le capot, ce lien est le **ticket `password-change` d'Auth0 déjà émis par
-`Auth0IdentityGateway`**, sur l'**unique connexion base de données client**.
+Les passkeys vivent sur la **connexion base de données client déjà en place**.
+Une seule identité, un seul `sub`, aucun _account linking_.
+
+### Ce que ça coûte : rien
+
+Les passkeys sont incluses dans **tous** les plans Auth0, gratuit compris. Elles
+**coexistent** avec les mots de passe sur la même connexion, et ne les invalident
+pas : le « mot de passe plus tard » tient sans rien renégocier. Limite : 20
+passkeys par personne — le téléphone, le portable, l'ordinateur du fournil.
 
 ### Pourquoi pas le passwordless d'Auth0
 
-Trois faits, dans cet ordre :
+1. Une connexion passwordless **ne porte pas de mot de passe**, et le mot de passe
+   est au programme. La même personne aurait **deux identités, deux `sub`**.
+2. Les rattacher demande l'_account linking_, **absent du tiers gratuit**.
+3. Le lien magique n'existe qu'en Classic Login. Sur le Nouvel Universal Login,
+   le passwordless e-mail est un **code**, pas un lien.
 
-1. Une connexion passwordless **ne porte pas de mot de passe**. C'est un type de
-   connexion distinct d'une connexion base de données.
-2. Le mot de passe est au programme (décision produit du 2026-08-27). Une même
-   personne aurait donc **deux identités et deux `sub`**, à rattacher par
-   _account linking_.
-3. L'account linking **n'est pas dans le tiers gratuit** d'Auth0. Le tenant est
-   sur le gratuit.
+### Pourquoi pas un mot de passe généré pour la personne
 
-Le passwordless d'Auth0 aurait donc coûté un abonnement pour résoudre un problème
-créé par le passwordless lui-même. Et le lien magique n'existe qu'en Classic
-Login : sur le Nouvel Universal Login, le passwordless e-mail est un **code**, pas
-un lien.
+Le montage marche : on génère le mot de passe, on le garde, et au clic sur notre
+lien le backend s'authentifie à sa place (_Resource Owner Password Grant_). Il est
+écarté pour trois raisons cumulées :
 
-> ⚠️ Le gratuit inclut **une** connexion base de données. `lfc-b2b-customers` la
-> consomme. Provisionner `lfc-staff` en prod franchira la limite — à trancher
-> avant, pas pendant.
+- il faudrait **détenir les mots de passe** de tous les clients — un identifiant
+  complet et réutilisable, pas un jeton à durée de vie ;
+- il faudrait **écrire quand même** le lien à usage unique, son expiration et sa
+  limite de débit, c'est-à-dire la branche « jeton maison » **en plus** du risque ;
+- le grant par mot de passe court-circuite la détection de force brute et tout
+  second facteur futur. OAuth 2.1 le retire.
 
-## Ce que la décision change au produit
-
-Le lien n'est **pas un lien de connexion**. C'est un lien de **première entrée**,
-qui se termine par « posez votre mot de passe ». Trois conséquences que l'app
-cliente affirme aujourd'hui à tort :
-
-| Ce que dit `/bienvenue`                                                  | Ce qui sera vrai                                                                |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| « Pas de mot de passe : on vous envoie un lien **à chaque connexion**. » | Un lien **à la première entrée**. Ensuite, le mot de passe.                     |
-| « le lien est valable **une heure** »                                    | **7 jours** (`PASSWORD_TICKET_TTL_SECONDS`).                                    |
-| « Déjà client ? **Se connecter en un lien** »                            | « Se connecter » → Universal Login. Le lien devient le « mot de passe oublié ». |
-
-C'est le prix assumé du gratuit et de l'identité unique. Il se paie **une fois par
-personne**, pas à chaque visite.
+Tout ça pour supprimer **un écran, une fois par personne**.
 
 ## Le flux
 
@@ -54,78 +50,119 @@ sequenceDiagram
     autonumber
     participant V as Visiteur
     participant F as App cliente
-    participant A as lfd-api (public)
-    participant M as Auth0 (Management)
+    participant U as Auth0 (Universal Login)
+    participant A as lfd-api
     participant R as Resend
 
     V->>F: prénom · e-mail · téléphone
-    F->>A: POST /signup
-    Note over A: Réponse TOUJOURS identique,<br/>quelle que soit l'adresse
-    A->>M: créer l'identité (connexion client)
-    M-->>A: sub
-    A->>A: User local (sub, prénom, tél) · status invited
-    A->>M: ticket password-change (7 j)
-    M-->>A: url
-    A->>R: mail « première entrée » (porte l'url)
-    A-->>F: 202 — « regardez votre boîte »
-    V->>M: suit le lien, pose son mot de passe
-    M-->>V: e-mail vérifié · session
-    V->>A: 1re requête portant le JWT
-    Note over A: CustomerPrincipalResolver :<br/>invited → active
+    F->>F: retient les trois champs
+    F->>U: signup, e-mail prérempli
+    U->>V: « créez votre passkey »
+    V-->>U: biométrie / code de l'appareil
+    U-->>F: retour avec jetons
+    F->>A: 1re requête portant le JWT
+    Note over A: CustomerPrincipalResolver :<br/>provisioning au vol → User active
+    F->>A: PATCH /me/profile (prénom, téléphone)
+    par En parallèle, sans bloquer
+        A->>R: mail de bienvenue — VÉRIFIE l'adresse
+    end
 ```
+
+La personne est entrée à l'étape 6. L'e-mail arrive après, et ne barre la route à
+personne.
+
+## L'e-mail n'est pas facultatif
+
+Une passkey prouve l'accès à **l'appareil**. Elle ne prouve pas l'accès à la
+**boîte**. Et comme l'e-mail est le seul recours le jour où l'appareil disparaît,
+il ne peut pas rester non vérifié.
+
+C'est le point à ne pas rogner : on n'économise pas l'envoi, on économise
+**l'attente**.
+
+## Quand la personne change de téléphone
+
+Trois cas, par ordre de fréquence :
+
+1. **Même écosystème** (iPhone → iPhone, Android → Android) : la passkey est
+   synchronisée par le trousseau de la plateforme. Rien à faire, rien à dire.
+2. **Plusieurs appareils enrôlés** : les 19 autres passkeys fonctionnent.
+3. **Changement d'écosystème, ou appareil unique perdu** : la passkey ne suit pas.
+   Le **ticket `password-change` existant** redevient ce qu'il a toujours été — le
+   chemin de récupération. Lien par e-mail, on reprend la main, on pose un mot de
+   passe ou on enrôle une nouvelle passkey.
+
+Le ticket reste donc dans le dépôt et garde tout son sens. Il n'est simplement
+plus sur le chemin de tout le monde : c'est un filet, pas une porte.
 
 ## Ce qu'on réutilise, ce qu'on écrit
 
-**Réutilisé tel quel** — c'est l'intérêt de cette branche :
+**Réutilisé tel quel** — c'est tout l'intérêt de cette branche :
 
-- `Auth0IdentityGateway.openIdentity()` : création idempotente sur l'e-mail +
-  émission du ticket.
-- `GrantAccountAccess` : les trois branches (inconnue / `invited` / `active`)
-  sont déjà écrites et testées.
-- `CustomerPrincipalResolver` : provisioning au vol, et `invited → active` à la
-  première requête.
+- `CustomerPrincipalResolver` : provisioning au vol du `User` à la première
+  requête, idempotent, avec son `UserRegisteredEvent`.
+- `PATCH /me/profile` (`me.controller.ts`) : déjà écrit, déjà testé.
+- `Auth0IdentityGateway` + `GrantAccountAccess` : inchangés, pour la récupération
+  et pour l'ouverture d'accès par le staff.
 - `@lfd/mailer` : Resend, disjoncteur, journal, webhook de rebond.
 
-**À écrire** :
+**À écrire** — peu de choses, et c'est le signe que la branche est la bonne :
 
-- une route **publique** `POST /signup` (`@Public()`), la première de la surface
-  client ;
-- un gabarit de mail `customer.first-entry` — `customer.access-opened` parle la
-  langue d'une invitation par un commercial, pas celle d'un visiteur ;
-- la pose du **prénom** et du **téléphone** sur le `User` à la création : ils
-  n'existent nulle part dans Auth0, et ne doivent pas attendre un second écran.
+- côté front : retenir les trois champs le temps de l'aller-retour Auth0, puis les
+  poser par `PATCH /me/profile` au retour ;
+- un gabarit `customer.welcome` qui **vérifie l'adresse** ;
+- corriger la copie de `/bienvenue` (voir plus bas).
 
-## Les gardes d'une route publique
+**Ce qu'on n'écrit PAS**, et qu'il aurait fallu écrire dans les autres branches :
+aucune route publique, donc **aucune garde d'énumération, aucune limite de débit à
+inventer, aucun jeton maison**. C'est Auth0 qui tient la porte.
 
-C'est la première porte ouverte de la surface client. Trois règles, non
-négociables :
+## Ce que la copie de `/bienvenue` doit dire
 
-1. **La réponse ne dit jamais si l'adresse est connue.** Même code, même délai,
-   même phrase. Une inscription qui répond « déjà pris » est un annuaire.
-2. **Le lien ne sort que par l'e-mail.** Jamais dans la réponse HTTP, jamais dans
-   un log. (`IssuePasswordLink` le renvoie dans la réponse — c'est légitime pour
-   une remise de la main à la main par le staff, ça ne l'est pas ici.)
-3. **Débit limité** par adresse et par IP. Sans quoi la route est un canon à
-   e-mails signé de votre domaine, et c'est votre réputation d'expéditeur qui
-   paie.
+Trois phrases affirment aujourd'hui l'inverse de ce qui sera vrai :
 
-## Les deux durées
+| Ce que la page dit                                                       | Ce qui sera vrai                                              |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| « Pas de mot de passe : on vous envoie un lien **à chaque connexion**. » | Pas de mot de passe : **votre appareil vous reconnaît**.      |
+| « le lien est valable **une heure** »                                    | Aucun lien à attendre pour entrer.                            |
+| « Déjà client ? **Se connecter en un lien** »                            | « Se connecter » → Universal Login, qui reconnaît la passkey. |
 
-Elles coexistent déjà et ne parlent pas de la même chose :
+## Ce qui déborde sur le staff
 
-- **7 jours** — le ticket Auth0 (`PASSWORD_TICKET_TTL_SECONDS`) : la durée de vie
-  du **lien**.
-- **14 jours** — `INVITATION_LIFETIME_DAYS` : la durée de vie de l'**invitation**,
-  comptée sur le `createdAt` du membership.
+⚠️ **Trois réglages sont au niveau du TENANT, pas de la connexion.** Les passkeys
+s'activent bien sur la seule connexion client, mais leurs prérequis touchent tout
+le monde :
 
-Pour une inscription en self-service il n'y a pas de membership : seule la
-première compte. Le second lien s'obtient en redemandant, ce qui remet 7 jours.
+- **Nouvel Universal Login** — nécessaire à WebAuthn. Change l'écran de connexion
+  du staff aussi.
+- **Flux « identifiant d'abord »** — même remarque.
+- **Domaine personnalisé** — obligatoire (une passkey est liée à un domaine, et
+  `*.auth0.com` ne convient pas). Inclus dans le gratuit, mais **une carte est
+  demandée pour la validation** (jamais débitée).
+
+Et la conséquence à ne pas manquer : **un domaine personnalisé change le `iss` des
+jetons**. `AccessTokenVerifier` contrôle l'émetteur (`auth.config.ts`), et les
+trois fronts pointent vers le même tenant. Le basculement doit se faire **d'un
+bloc** — fronts et backend ensemble — sinon la vérification tombe, pour le staff
+comme pour les clients.
+
+La connexion `lfc-staff`, elle, ne gagne pas de passkey et ne change pas de
+mécanique.
+
+## Rappel de contrainte
+
+Le tiers gratuit inclut **une** connexion base de données, que
+`lfc-b2b-customers` consomme. Provisionner `lfc-staff` en prod franchira la
+limite — à trancher avant, pas pendant.
 
 ## Ce qui reste ouvert
 
+- **L'état du tenant n'a pas été lu** : domaine personnalisé, Nouvel Universal
+  Login, flux « identifiant d'abord ». À vérifier au tableau de bord avant la
+  première ligne de code.
+- **La passkey depuis un appareil voisin** (QR) couvrirait une partie du
+  changement d'écosystème tant que l'ancien téléphone est là. Non vérifié.
 - **Le téléphone n'est pas vérifié.** Il sert au coursier qui cherche la porte,
-  pas à l'authentification. Le SMS comme second canal reste à décider.
+  pas à l'authentification.
 - **La révocation des invitations périmées** n'est toujours pas branchée
   (cf. `architecture-compte-client-cycle-de-vie.md` §8).
-- **Le fournisseur d'e-mail d'Auth0** n'entre pas en jeu ici : c'est nous qui
-  envoyons, par Resend. Rien à configurer côté tenant.
