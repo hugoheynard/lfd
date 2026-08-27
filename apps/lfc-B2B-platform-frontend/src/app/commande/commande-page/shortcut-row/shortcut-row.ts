@@ -4,10 +4,12 @@ import { FoldIconComponent, type FoldIconName } from 'fold-ng';
 /**
  * Le registre d'un raccourci — ce qu'il pèse sur l'écran.
  *
- * `primary` appelle (l'encre pleine), `card` propose (la carte crème), `draft`
- * rappelle (le trait pointillé, parce qu'il parle d'une commande passée).
+ * `warm` appelle (l'aplat de beurre intense), `card` propose (la carte crème),
+ * `draft` rappelle (le trait pointillé, parce qu'il parle d'une commande déjà
+ * passée). La réf donne le ton chaud à « je visite la boutique » et non l'encre :
+ * sous un puits d'encre, un second bloc d'encre se serait lu comme sa suite.
  */
-export type ShortcutTone = 'primary' | 'card' | 'draft';
+export type ShortcutTone = 'warm' | 'card' | 'draft';
 
 /**
  * Une ligne d'action sous les deux portes : visiter la boutique, retirer une

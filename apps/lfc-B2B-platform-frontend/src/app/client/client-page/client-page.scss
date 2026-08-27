@@ -88,6 +88,11 @@
   line-height: 1.04;
   letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
+  /* La COUPE vient du dictionnaire : une phrase qui porte un retour le garde,
+     et `balance` répartit ce qui reste. C'est ce qui donne les trois lignes de
+     la réf — « Bonjour Pierre. » seule, puis la question sur deux — sans qu'un
+     gabarit ait à connaître le français. Inerte pour un titre sans retour. */
+  white-space: pre-line;
   text-wrap: balance;
 
   &.big {

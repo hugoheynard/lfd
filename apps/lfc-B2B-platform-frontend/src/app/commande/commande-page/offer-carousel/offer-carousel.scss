@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.track {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+  /* Le rail SAIGNE jusqu'au bord de la feuille : le panneau suivant doit se
+     laisser deviner à droite, sinon rien ne dit qu'il y en a un. Les marges
+     négatives annulent le rembourrage de l'étage, le rembourrage les rend à
+     l'intérieur du rail. */
+  margin-inline: calc(var(--fold-space-xl) * -1);
+  padding-inline: var(--fold-space-xl);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Chaque panneau occupe la largeur utile, et s'accroche à gauche. */
+.track > * {
+  flex: none;
+  width: 100%;
+  scroll-snap-align: start;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-border-strong);
+  cursor: pointer;
+  transition:
+    width 280ms ease,
+    background 280ms ease;
+
+  /* La cible tactile fait 44 px sans que le point en fasse autant : c'est le
+     pseudo-élément qui la porte. */
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -18px -6px;
+  }
+
+  &.on {
+    width: 26px;
+    background: var(--fold-color-text);
+  }
+}
+
+/* Le rail devient une grille au-delà du pli : la colonne a la place de montrer
+   les deux sections d'un coup, et un carrousel qu'on ne fait pas glisser à la
+   souris est une mauvaise affaire. */
+@media (min-width: 900px) {
+  .track {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-lg);
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow-x: visible;
+  }
+
+  .dots {
+    display: none;
+  }
+}

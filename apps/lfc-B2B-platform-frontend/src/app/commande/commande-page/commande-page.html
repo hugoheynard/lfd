@@ -1,30 +1,62 @@
-<app-client-page [heading]="heading()" [intro]="intro()">
+<app-client-page [heading]="heading()" [intro]="intro()" [big]="!panelOpen()">
   <div aside-foot class="aside-foot"></div>
 
   @if (panelOpen()) {
     <app-rappel-panel [phone]="phone" (booked)="book($event)" />
   } @else {
     <div class="stack">
-      <app-mode-card
-        mode="pickup"
-        [badge]="t().commande.pickupBadge"
-        [title]="t().commande.pickupTitle"
-        [detail]="t().commande.pickupDetail"
-        [note]="t().commande.pickupNote"
-        (chosen)="notYet()"
-      />
-      <app-mode-card
-        mode="delivery"
-        [badge]="t().commande.deliveryBadge"
-        [title]="t().commande.deliveryTitle"
-        [detail]="t().commande.deliveryDetail"
-        [note]="t().commande.deliveryNote"
-        (chosen)="notYet()"
-      />
+      <app-offer-carousel [labels]="sections()" [dotsLabel]="t().commande.sectionsLabel">
+        <app-section-panel
+          tone="well"
+          sign="+"
+          [title]="t().commande.newOrderTitle"
+          [sub]="t().commande.newOrderSub"
+        >
+          <app-offer-card
+            tone="ink"
+            photo="labo"
+            [badge]="t().commande.pickupBadge"
+            [title]="t().commande.pickupTitle"
+            [detail]="t().commande.pickupDetail"
+            [note]="t().commande.pickupNote"
+            (chosen)="notYet()"
+          />
+          <app-offer-card
+            tone="butter"
+            photo="coursier"
+            noteTone="accent"
+            [badge]="t().commande.deliveryBadge"
+            [title]="t().commande.deliveryTitle"
+            [detail]="t().commande.deliveryDetail"
+            [note]="t().commande.deliveryNote"
+            (chosen)="notYet()"
+          />
+        </app-section-panel>
+
+        <app-section-panel tone="band" sign="★" [title]="t().commande.nowTitle">
+          <app-offer-card
+            tone="vivid"
+            photo="noel"
+            [badge]="t().commande.eventBadge"
+            [title]="t().commande.eventTitle"
+            [detail]="t().commande.eventDetail"
+            [note]="t().commande.eventNote"
+            (chosen)="notYet()"
+          />
+          <app-offer-card
+            tone="butter"
+            photo="coursier"
+            [badge]="t().commande.cateringBadge"
+            [title]="t().commande.cateringTitle"
+            [detail]="t().commande.cateringDetail"
+            [note]="t().commande.cateringNote"
+            (chosen)="notYet()"
+          />
+        </app-section-panel>
+      </app-offer-carousel>
 
       <app-shortcut-row
-        class="browse"
-        tone="primary"
+        tone="warm"
         icon="search"
         [title]="t().commande.browseTitle"
         [sub]="t().commande.browseSub"
@@ -32,7 +64,6 @@
       />
 
       <app-shortcut-row
-        class="pickup-ready"
         tone="card"
         icon="qr-code"
         [title]="t().commande.qrTitle"

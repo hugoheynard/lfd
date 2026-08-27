@@ -15,7 +15,9 @@ import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
 import { RappelPanel } from '../../login/accueil-page/rappel-panel/rappel-panel';
 
-import { ModeCard } from './mode-card/mode-card';
+import { OfferCard } from './offer-card/offer-card';
+import { OfferCarousel } from './offer-carousel/offer-carousel';
+import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
 /**
@@ -35,7 +37,16 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
 @Component({
   selector: 'app-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallbackBlock, ClientPage, FoldCalloutComponent, ModeCard, RappelPanel, ShortcutRow],
+  imports: [
+    CallbackBlock,
+    ClientPage,
+    FoldCalloutComponent,
+    OfferCard,
+    OfferCarousel,
+    RappelPanel,
+    SectionPanel,
+    ShortcutRow,
+  ],
   templateUrl: './commande-page.html',
   styleUrl: './commande-page.scss',
 })
@@ -61,6 +72,12 @@ export class CommandePage {
   protected readonly intro = computed(() =>
     this.panelOpen() ? this.t().hero.rappelIntro : this.t().commande.intro,
   );
+
+  /** Les deux sections du carrousel, nommées pour les technologies d'assistance. */
+  protected readonly sections = computed(() => [
+    this.t().commande.newOrderTitle,
+    this.t().commande.nowTitle,
+  ]);
 
   protected readonly orderLine = computed(() =>
     fill(this.t().commande.qrSub, { order: MOCK_CLIENT.lastOrder }),

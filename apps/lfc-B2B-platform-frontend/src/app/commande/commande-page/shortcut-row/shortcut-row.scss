@@ -65,22 +65,35 @@
   flex: none;
 }
 
-/* ── L'appel : l'encre pleine ─────────────────────────────────────────────── */
+/* ── L'appel : le beurre intense ──────────────────────────────────────────── */
 
-:host([data-tone='primary']) {
+:host([data-tone='warm']) {
   .row {
-    background: var(--fold-color-primary);
-    color: var(--fold-color-on-primary);
+    padding: 14px 16px;
+    border-radius: var(--lfc-radius-xl);
+    background: var(--lfc-color-accent-deep);
+    color: var(--lfc-color-on-accent-deep);
+    box-shadow: 0 6px 18px -10px rgb(90 61 7 / 60%);
   }
 
   .tile {
-    background: var(--lfc-color-on-primary-tile);
-    color: var(--fold-color-on-primary);
+    width: 34px;
+    height: 34px;
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
   }
 
-  .sub,
+  .title {
+    font-size: var(--lfc-text-block);
+    font-weight: var(--lfc-weight-black);
+  }
+
+  .sub {
+    color: var(--lfc-color-on-accent-deep-muted);
+  }
+
   .chevron {
-    color: var(--lfc-color-on-primary-muted);
+    color: var(--lfc-color-on-accent-deep-faded);
   }
 }
 

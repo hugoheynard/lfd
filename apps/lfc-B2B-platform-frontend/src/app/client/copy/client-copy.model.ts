@@ -110,6 +110,11 @@ export interface ClientCopy {
     /** `{name}` est remplacé par le prénom du client reconnu. */
     readonly title: string;
     readonly intro: string;
+    /** Le nom du groupe de points du carrousel, pour les lecteurs d'écran. */
+    readonly sectionsLabel: string;
+    readonly newOrderTitle: string;
+    readonly newOrderSub: string;
+    readonly nowTitle: string;
     readonly pickupBadge: string;
     /** Deux lignes, séparées par un retour : la carte les rend telles quelles. */
     readonly pickupTitle: string;
@@ -120,6 +125,16 @@ export interface ClientCopy {
     readonly deliveryTitle: string;
     readonly deliveryDetail: string;
     readonly deliveryNote: string;
+    readonly eventBadge: string;
+    /** Deux lignes, séparées par un retour. */
+    readonly eventTitle: string;
+    readonly eventDetail: string;
+    readonly eventNote: string;
+    readonly cateringBadge: string;
+    /** Deux lignes, séparées par un retour. */
+    readonly cateringTitle: string;
+    readonly cateringDetail: string;
+    readonly cateringNote: string;
     readonly browseTitle: string;
     readonly browseSub: string;
     readonly qrTitle: string;

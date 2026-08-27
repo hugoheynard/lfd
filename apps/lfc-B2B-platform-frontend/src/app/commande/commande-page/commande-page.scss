@@ -14,17 +14,13 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  gap: var(--fold-space-md);
+  gap: 10px;
 }
 
-/* Les deux portes forment un groupe ; les raccourcis en sont détachés d'un cran
-   pour qu'on ne les lise pas comme une troisième porte. */
-.browse {
-  margin-top: var(--fold-space-sm);
-}
-
-.pickup-ready {
-  margin-top: var(--fold-space-xs);
+/* Le carrousel garde ses points comme respiration : c'est lui qui sépare les
+   sections des raccourcis, pas une marge de plus. */
+app-offer-carousel {
+  margin-bottom: var(--fold-space-xs);
 }
 
 /* L'encart de rappel ferme l'écran : il se pose en bas plutôt que de flotter

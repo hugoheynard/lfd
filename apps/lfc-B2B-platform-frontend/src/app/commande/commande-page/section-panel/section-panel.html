@@ -1,0 +1,12 @@
+<div class="head">
+  <span class="tile" aria-hidden="true">{{ sign() }}</span>
+  <h2 class="title">{{ title() }}</h2>
+</div>
+
+@if (sub(); as line) {
+  <p class="sub">{{ line }}</p>
+}
+
+<div class="offers">
+  <ng-content />
+</div>

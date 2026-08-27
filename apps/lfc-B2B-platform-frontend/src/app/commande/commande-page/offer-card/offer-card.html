@@ -7,7 +7,7 @@
   <span class="body">
     <span class="text">
       <span class="detail">{{ detail() }}</span>
-      <span class="note">
+      <span class="note" [attr.data-note-tone]="noteTone()">
         <span class="dot" aria-hidden="true"></span>
         {{ note() }}
       </span>

@@ -1,8 +1,9 @@
-/* Les photos sont des visuels de banque servis par le site public : à remplacer
-   par les pièces réelles photographiées (cf. `03-operations-datees.md` pour le
-   cadrage attendu). */
-$photo-pickup: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1595801106239-faefa2cdcf75.jpg');
-$photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1574862612701-5b2869e3485b.jpg');
+/* Les photos sont des visuels de banque : à remplacer par les pièces réelles
+   photographiées (cf. `03-operations-datees.md` pour le cadrage attendu). Le
+   traiteur et le coursier partagent la même — c'est le choix de la réf. */
+$photo-labo: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1595801106239-faefa2cdcf75.jpg');
+$photo-coursier: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1574862612701-5b2869e3485b.jpg');
+$photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?fm=jpg&q=70&w=1100&auto=format&fit=crop');
 
 :host {
   display: block;
@@ -31,7 +32,7 @@ $photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1
   position: relative;
   display: block;
   height: 106px;
-  background: var(--fold-color-surface-band) center / cover;
+  background: var(--fold-color-surface-band) center 45% / cover;
 }
 
 /* Le voile part FORT du bord d'attaque et se dissipe : le titre doit tenir sur
@@ -118,13 +119,30 @@ $photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1
   color: var(--fold-color-text-faded);
 }
 
-/* ── Le retrait : l'encre de marque ───────────────────────────────────────── */
+/* ── La condition ─────────────────────────────────────────────────────────── */
 
-:host([data-mode='pickup']) {
-  .photo {
-    background-image: $photo-pickup;
+.note[data-note-tone='info'] {
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+
+  .dot {
+    background: var(--fold-color-info);
   }
+}
 
+.note[data-note-tone='accent'] {
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+
+  .dot {
+    background: var(--lfc-color-accent);
+  }
+}
+
+/* ── Les tons ─────────────────────────────────────────────────────────────── */
+
+/* L'encre de marque : le retrait, la maison. */
+:host([data-tone='ink']) {
   .veil {
     background: linear-gradient(90deg, rgb(18 48 127 / 86%), rgb(18 48 127 / 12%));
   }
@@ -133,24 +151,28 @@ $photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1
     background: var(--lfc-paper-50);
     color: var(--fold-color-primary);
   }
+}
 
-  .note {
-    background: var(--fold-color-primary-surface);
-    color: var(--lfc-color-primary-vivid);
+/* L'encre VIVE sur le puits : l'opération datée, celle qui doit se remarquer. */
+:host([data-tone='vivid']) {
+  .veil {
+    background: linear-gradient(90deg, rgb(8 24 66 / 86%), rgb(8 24 66 / 14%));
   }
 
+  .badge {
+    background: var(--lfc-color-primary-vivid);
+    color: var(--lfc-paper-50);
+  }
+
+  /* Sa condition reprend le bleu vif de la pastille plutôt que l'azur des
+     autres : c'est la même voix qui parle en haut et en bas de la carte. */
   .dot {
-    background: var(--fold-color-info);
+    background: var(--lfc-color-primary-vivid);
   }
 }
 
-/* ── Le coursier : le beurre ──────────────────────────────────────────────── */
-
-:host([data-mode='delivery']) {
-  .photo {
-    background-image: $photo-delivery;
-  }
-
+/* Le beurre : ce qui sort de la maison — le coursier, le traiteur. */
+:host([data-tone='butter']) {
   .veil {
     background: linear-gradient(90deg, rgb(61 42 5 / 84%), rgb(61 42 5 / 10%));
   }
@@ -159,15 +181,22 @@ $photo-delivery: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1
     background: var(--lfc-color-accent);
     color: var(--lfc-color-on-accent);
   }
+}
 
-  .note {
-    background: var(--lfc-color-accent-surface);
-    color: var(--lfc-color-accent-text);
-  }
+/* ── Les pièces ───────────────────────────────────────────────────────────── */
 
-  .dot {
-    background: var(--lfc-color-accent);
-  }
+:host([data-photo='labo']) .photo {
+  background-image: $photo-labo;
+}
+
+:host([data-photo='coursier']) .photo {
+  background-image: $photo-coursier;
+}
+
+:host([data-photo='noel']) .photo {
+  background-color: var(--lfc-ink-950);
+  background-image: $photo-noel;
+  background-position: center 55%;
 }
 
 /* Au-delà du pli, la colonne est plus large : la photo reprend de la hauteur

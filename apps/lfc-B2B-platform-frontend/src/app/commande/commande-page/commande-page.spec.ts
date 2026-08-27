@@ -50,13 +50,35 @@ describe('CommandePage', () => {
   it('nomme chaque mode DEUX FOIS — le fournil, puis le client', () => {
     // C'est l'invariant de la carte : la pastille porte le mot du bon de
     // commande, le titre celui du client. Perdre l'un des deux la vide.
-    const pickup = el().querySelector('app-mode-card[data-mode="pickup"]');
+    const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
     expect(pickup?.textContent).toContain(FR.commande.pickupBadge);
     expect(pickup?.textContent).toContain('Je passe');
 
-    const delivery = el().querySelector('app-mode-card[data-mode="delivery"]');
+    const delivery = el().querySelector('app-offer-card[data-tone="butter"]');
     expect(delivery?.textContent).toContain(FR.commande.deliveryBadge);
     expect(delivery?.textContent).toContain('l’apporte');
+  });
+
+  it('range les offres en DEUX sections, au même gabarit', () => {
+    // L'opération datée n'est pas une bannière sous les modes de service : elle
+    // est une section du même carrousel, avec des cartes de même taille. C'est
+    // ce qui lui donne le droit d'ouvrir une commande.
+    const panels = el().querySelectorAll('app-section-panel');
+    expect(panels.length).toBe(2);
+    expect(panels[0]?.getAttribute('data-tone')).toBe('well');
+    expect(panels[0]?.textContent).toContain(FR.commande.newOrderTitle);
+    expect(panels[1]?.getAttribute('data-tone')).toBe('band');
+    expect(panels[1]?.textContent).toContain(FR.commande.eventBadge);
+
+    expect(el().querySelectorAll('app-offer-card').length).toBe(4);
+  });
+
+  it('donne un point par section, le premier actif', () => {
+    const dots = Array.from(el().querySelectorAll('button.dot'));
+    expect(dots.length).toBe(2);
+    expect(dots[0]?.getAttribute('aria-selected')).toBe('true');
+    expect(dots[0]?.getAttribute('aria-label')).toBe(FR.commande.newOrderTitle);
+    expect(dots[1]?.getAttribute('aria-label')).toBe(FR.commande.nowTitle);
   });
 
   it('rappelle la commande prête, avec son numéro', () => {

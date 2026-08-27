@@ -47,6 +47,9 @@
   --lfc-butter-100: #f6e8cd;
   --lfc-butter-900: #3d2a05;
   --lfc-butter-800: #5a3d07;
+  --lfc-butter-300: #e6d3a5;
+  --lfc-butter-200: #f0dcae;
+  --lfc-butter-400: #e6c98a;
 
   /* ── Primitives : statut ── */
   --lfc-brick-700: #8f2c1f;
@@ -133,6 +136,21 @@
   /* Ne passe pas AA en texte courant : sur-titres capitalisés UNIQUEMENT. */
   --lfc-color-text-subtle: var(--lfc-soot-500);
   --lfc-color-border-strong: var(--lfc-paper-400);
+  /* LE PUITS — l'encre la plus profonde, celle qui creuse un bloc DANS la feuille
+     crème au lieu de se poser dessus. La réf s'en sert pour le panneau
+     « nouvelle commande » : ce qu'on y met est le sujet de l'écran, pas une
+     option parmi d'autres. fold n'a pas ce rôle (candidat à proposer). */
+  --lfc-color-surface-well: var(--lfc-ink-950);
+  --lfc-color-on-well: var(--lfc-paper-50);
+  --lfc-color-on-well-muted: var(--lfc-ink-300);
+  --lfc-color-on-well-tile: rgb(250 245 236 / 18%);
+  /* Le beurre INTENSE : un aplat chaud qui porte du texte clair. Distinct de
+     `accent-surface`, qui est le beurre pâle porteur de texte sombre. */
+  --lfc-color-accent-deep: var(--lfc-butter-800);
+  --lfc-color-on-accent-deep: var(--lfc-paper-0);
+  --lfc-color-on-accent-deep-muted: var(--lfc-butter-200);
+  --lfc-color-on-accent-deep-faded: var(--lfc-butter-400);
+  --lfc-color-accent-border: var(--lfc-butter-300);
 
   /* ── Typographie : les deux familles ── */
   --fold-font-sans: 'Outfit', system-ui, sans-serif;

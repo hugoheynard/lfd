@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  border: 1px solid transparent;
+  border-radius: 22px;
+  padding: 15px 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--fold-radius-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  line-height: 1;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: 0.96875rem;
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+/* La sous-ligne s'aligne sur le TITRE, pas sur la tuile : c'est la question que
+   pose l'en-tête, pas une légende de l'icône. */
+.sub {
+  margin: 5px 0 0;
+  padding-left: 33px;
+  font-size: var(--lfc-text-note);
+  line-height: 1.5;
+}
+
+.offers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 13px;
+}
+
+/* ── Le puits : l'encre profonde, creusée dans la feuille ─────────────────── */
+
+:host([data-tone='well']) {
+  background: var(--lfc-color-surface-well);
+  color: var(--lfc-color-on-well);
+
+  .tile {
+    background: var(--lfc-color-on-well-tile);
+    color: var(--lfc-color-on-well);
+  }
+
+  .sub {
+    color: var(--lfc-color-on-well-muted);
+  }
+}
+
+/* ── La bande : le beurre pâle, posé sur la feuille ───────────────────────── */
+
+:host([data-tone='band']) {
+  /* Dans la bande, les cartes reprennent sa bordure chaude plutôt que la
+     bordure neutre de la feuille. On redéclare le TOKEN plutôt que d'aller
+     percer l'encapsulation des cartes : elles le lisent déjà, et rien de ce qui
+     vit dans la bande ne veut la bordure neutre. */
+  --fold-color-border: var(--lfc-color-accent-border);
+  border-color: var(--lfc-color-accent-border);
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-on-accent);
+
+  .tile {
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+  }
+}

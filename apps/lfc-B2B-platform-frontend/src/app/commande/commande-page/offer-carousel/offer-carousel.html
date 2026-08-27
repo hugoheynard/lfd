@@ -1,0 +1,17 @@
+<div #track class="track" (scroll)="onScroll()">
+  <ng-content />
+</div>
+
+<div class="dots" role="tablist" [attr.aria-label]="dotsLabel()">
+  @for (label of labels(); track label; let i = $index) {
+    <button
+      class="dot"
+      type="button"
+      role="tab"
+      [class.on]="active() === i"
+      [attr.aria-selected]="active() === i"
+      [attr.aria-label]="label"
+      (click)="go(i)"
+    ></button>
+  }
+</div>
