@@ -1,0 +1,150 @@
+<div class="screen">
+  <!-- Bandeau de marque : c'est le chrome de l'app cliente, pas un en-tête de
+       page. Le sous-bloc `chrome` du thème y repeint surfaces et texte. -->
+  <div class="chrome" foldSurface="chrome">
+    <div class="chrome-bar">
+      <span class="mark" aria-hidden="true">LFC</span>
+      <span class="brand">
+        <span class="brand-name">La Folie Coffee</span>
+        <span class="brand-kicker">{{ kicker() }}</span>
+      </span>
+    </div>
+
+    <div class="hero">
+      <h1 class="hero-title">{{ heading() }}</h1>
+      <p class="hero-intro">{{ intro() }}</p>
+    </div>
+  </div>
+
+  <!-- La feuille crème : tout le contenu manipulable de l'écran. -->
+  <main class="sheet">
+    @switch (step()) {
+      @case ('ask') {
+        <fold-card>
+          <form class="ask" (submit)="$event.preventDefault(); sendLink()">
+            <fold-input
+              label="Votre e-mail"
+              type="email"
+              autocomplete="email"
+              placeholder="vous@exemple.fr"
+              [autofocus]="true"
+              [(value)]="email"
+            />
+            <button
+              foldButton
+              class="cta"
+              emphasis="solid"
+              intent="primary"
+              size="lg"
+              block
+              type="submit"
+              [disabled]="!emailLooksValid()"
+            >
+              Recevoir mon lien
+            </button>
+          </form>
+        </fold-card>
+
+        <p class="fine">Aucun mot de passe à retenir : le lien vous connecte directement.</p>
+
+        <div class="rule">
+          <span class="rule-line"></span>
+          <span class="rule-label">ou</span>
+          <span class="rule-line"></span>
+        </div>
+
+        <fold-card
+          interactive
+          ariaLabel="Première visite — créer un compte"
+          (activated)="openSignup()"
+        >
+          <div class="door">
+            <span class="door-icon" aria-hidden="true"><fold-icon name="edit" /></span>
+            <span class="door-text">
+              <span class="door-title">Première visite ?</span>
+              <span class="door-sub">Prénom, e-mail, téléphone</span>
+            </span>
+            <fold-icon name="chevron-right" aria-hidden="true" />
+          </div>
+        </fold-card>
+
+        @if (signupPending()) {
+          <fold-callout variant="info">
+            L'écran d'inscription arrive au prochain lot — pour l'instant, seule la connexion par
+            lien est dessinée.
+          </fold-callout>
+        }
+      }
+
+      @case ('sent') {
+        <fold-card>
+          <div class="sent">
+            <span class="sent-icon" aria-hidden="true"><fold-icon name="mail" size="lg" /></span>
+            <h2 class="sent-title">Lien envoyé</h2>
+            <p class="sent-body">
+              Ouvrez le message envoyé à <strong>{{ email() }}</strong> — le lien est valable une
+              heure.
+            </p>
+            <button
+              foldButton
+              class="cta cta-accent"
+              emphasis="solid"
+              intent="primary"
+              size="lg"
+              block
+              type="button"
+              (click)="simulateLinkClick()"
+            >
+              Simuler le clic sur le lien
+            </button>
+          </div>
+        </fold-card>
+
+        @if (resent()) {
+          <fold-callout variant="success" announce>Un nouveau lien vient de partir.</fold-callout>
+        }
+
+        <div class="sent-actions">
+          <button
+            foldButton
+            emphasis="soft"
+            intent="primary"
+            size="sm"
+            type="button"
+            (click)="resend()"
+          >
+            Renvoyer
+          </button>
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            type="button"
+            (click)="editEmail()"
+          >
+            Changer d'adresse
+          </button>
+        </div>
+      }
+
+      @case ('connected') {
+        <fold-card>
+          <div class="done">
+            <span class="done-icon" aria-hidden="true"><fold-icon name="check" /></span>
+            <span class="done-text">
+              <span class="done-title">Compte reconnu</span>
+              <span class="done-sub">
+                Sans mot de passe, sans formulaire. La commande commence maintenant.
+              </span>
+            </span>
+          </div>
+        </fold-card>
+
+        <fold-callout variant="info">
+          Maquette : l'entrée dans l'app se branchera sur l'écran « On vous sert comment ? ».
+        </fold-callout>
+      }
+    }
+  </main>
+</div>

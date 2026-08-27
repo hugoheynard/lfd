@@ -26,6 +26,15 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login-page').then((m) => m.LoginPage),
   },
   {
+    // Refonte de l'app CLIENT (handoff design) : connexion par lien e-mail, sans
+    // mot de passe. Maquette — elle ne remplace `/login` (Auth0) que le jour où
+    // le backend saura émettre et vérifier un lien.
+    path: 'connexion',
+    title: 'Connexion — La Folie Coffee',
+    loadComponent: () =>
+      import('./login/connexion-page/connexion-page').then((m) => m.ConnexionPage),
+  },
+  {
     path: 'boutique',
     title: 'Boutique — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
