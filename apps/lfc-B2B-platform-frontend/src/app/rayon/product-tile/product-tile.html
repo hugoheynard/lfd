@@ -1,0 +1,62 @@
+<div class="tile">
+  <div class="media">
+    <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
+      <img [src]="'products/' + product().image + '.svg'" alt="" />
+    </button>
+
+    @if (product().signature) {
+      <!-- L'étoile en pile, le mot au-delà du pli : à 112 px de large, un badge
+           écrit mangerait la moitié de la photo. -->
+      <span class="star narrow-only" aria-hidden="true">★</span>
+      <span class="signature wide-only">{{ t().product.signature }}</span>
+    }
+
+    <!-- LE GESTE RAPIDE, en pile : la pastille porte la quantité. Le retrait se
+         fait dans la fiche, où la cible est assez grande pour être visée. -->
+    <button
+      class="quick narrow-only"
+      type="button"
+      [class.filled]="quantity() > 0"
+      [attr.aria-label]="addLabel()"
+      (click)="added.emit()"
+    >
+      @if (quantity() > 0) {
+        {{ quantity() }}
+      } @else {
+        <fold-icon name="plus" />
+      }
+    </button>
+  </div>
+
+  <button class="body" type="button" (click)="opened.emit()">
+    <span class="name">{{ product().name }}</span>
+    <span class="note wide-only">{{ product().note }}</span>
+  </button>
+
+  <div class="foot">
+    <span class="price">{{ price() }}</span>
+
+    <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
+         de porter trois cibles au lieu d'une. -->
+    @if (quantity() > 0) {
+      <span class="rail wide-only">
+        <button type="button" [attr.aria-label]="removeLabel()" (click)="removed.emit()">
+          <fold-icon name="minus" />
+        </button>
+        <span class="qty">{{ quantity() }}</span>
+        <button type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
+          <fold-icon name="plus" />
+        </button>
+      </span>
+    } @else {
+      <button
+        class="add wide-only"
+        type="button"
+        [attr.aria-label]="addLabel()"
+        (click)="added.emit()"
+      >
+        {{ t().shop.add }}
+      </button>
+    }
+  </div>
+</div>

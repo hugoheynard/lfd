@@ -1,0 +1,137 @@
+.photo {
+  display: block;
+  height: 214px;
+  background: var(--fold-color-surface-band);
+  position: relative;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.signature {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  padding: 3px 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: var(--fold-space-lg) 0 0;
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-border-subtle);
+  overflow: clip;
+}
+
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding: 11px 14px;
+  background: var(--fold-color-surface-card);
+
+  dt {
+    font-size: var(--lfc-text-note);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    flex: none;
+    white-space: nowrap;
+    font-size: var(--lfc-text-note);
+    font-weight: var(--fold-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--fold-color-text);
+  }
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+}
+
+/* 44 px par cible : c'est ICI qu'on retire, et une cible de retrait doit être
+   aussi facile à viser qu'une cible d'ajout. */
+.rail {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-primary);
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--fold-radius-sm);
+    background: none;
+    color: var(--fold-color-on-primary);
+    cursor: pointer;
+  }
+
+  button:disabled {
+    color: var(--lfc-color-on-primary-muted);
+    cursor: not-allowed;
+  }
+
+  fold-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.qty {
+  min-width: 26px;
+  text-align: center;
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}

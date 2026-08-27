@@ -1,0 +1,25 @@
+<div class="page">
+  @if (choice(); as service) {
+    <section class="service">
+      <p class="service-kicker">
+        {{ service.mode === 'pickup' ? t().cart.pickupGroup : t().cart.deliveryGroup }}
+      </p>
+      <h1 class="service-place">{{ service.place }}</h1>
+      <p class="service-address">{{ service.address }}</p>
+      <p class="service-slot">
+        <span class="slot">{{ service.slot }}</span>
+        <span class="slot-note">{{ t().cart.slotNote }}</span>
+      </p>
+    </section>
+  }
+
+  <app-cart-summary />
+</div>
+
+<div class="foot">
+  <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir. -->
+  <button class="pay" type="button" (click)="proceed()">
+    {{ cart.isEmpty() ? t().cart.browse : payLabel() }}
+  </button>
+  <p class="hint">{{ t().cart.payHint }}</p>
+</div>

@@ -1,0 +1,34 @@
+@if (story(); as story) {
+  <app-client-dialog
+    placement="sheet"
+    [open]="true"
+    [kicker]="story.tag"
+    [title]="lines()[0] ?? ''"
+    (closed)="closed.emit()"
+  >
+    <span dialog-media class="pack">
+      <img [src]="'products/' + image() + '.svg'" alt="" />
+    </span>
+
+    <div class="sheet">
+      @if (lines()[1]; as second) {
+        <p class="second">{{ second }}</p>
+      }
+
+      <p class="body">{{ story.body }}</p>
+
+      <dl class="facts">
+        @for (fact of story.facts; track fact.key) {
+          <div class="fact">
+            <dt>{{ fact.value }}</dt>
+            <dd>{{ fact.key }}</dd>
+          </div>
+        }
+      </dl>
+
+      <p class="caption">{{ story.caption }}</p>
+    </div>
+
+    <button dialog-foot class="cta" type="button" (click)="closed.emit()">{{ story.cta }}</button>
+  </app-client-dialog>
+}

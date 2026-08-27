@@ -1,0 +1,65 @@
+@if (linesShown()) {
+  @if (cart.isEmpty()) {
+    <p class="empty">{{ t().shop.cartEmpty }}</p>
+  } @else {
+    <ul class="lines">
+      @for (line of lines(); track line.id) {
+        <li class="line">
+          <span class="qty">{{ line.quantity }}</span>
+          <span class="what">
+            <span class="name">{{ line.name }}</span>
+            <span class="unit">{{ line.unit }}</span>
+          </span>
+          <span class="sum">{{ line.sum }}</span>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (upsellLabel(); as label) {
+    <button class="upsell" type="button" (click)="addUpsell()">
+      <span class="sign" aria-hidden="true"><fold-icon name="plus" /></span>
+      <span class="pitch">
+        <span class="pitch-title">{{ label }}</span>
+        <span class="pitch-line">{{ t().shop.upsellLine }}</span>
+      </span>
+    </button>
+  }
+}
+
+<dl class="count">
+  <div class="row">
+    <dt>{{ t().cart.subtotal }}</dt>
+    <dd>{{ money(totals().subtotal) }}</dd>
+  </div>
+
+  @if (discountLabel(); as label) {
+    <div class="row saved">
+      <dt>{{ label }}</dt>
+      <dd>−{{ money(totals().discount) }}</dd>
+    </div>
+  }
+
+  @if (feeLabel(); as label) {
+    <div class="row">
+      <dt>{{ label }}</dt>
+      <dd>{{ money(totals().fee) }}</dd>
+    </div>
+  }
+
+  <!-- Une ligne par taux RÉELLEMENT au panier. Pas de salé, pas de ligne à
+       10 % : une ligne à zéro fait douter du calcul. -->
+  @for (vat of vatLines(); track vat.label) {
+    <div class="row vat">
+      <dt>
+        {{ vat.label }} <span class="scope">· {{ vat.scope }}</span>
+      </dt>
+      <dd>{{ vat.amount }}</dd>
+    </div>
+  }
+
+  <div class="row grand">
+    <dt>{{ t().cart.total }}</dt>
+    <dd>{{ money(totals().total) }}</dd>
+  </div>
+</dl>

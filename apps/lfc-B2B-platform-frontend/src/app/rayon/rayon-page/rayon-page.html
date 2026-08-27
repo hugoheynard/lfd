@@ -1,0 +1,113 @@
+<!-- LA BARRE DE CONTEXTE. Le mode n'est jamais une étape passée : il tient sur
+     une ligne, et « Changer » ramène à la question sans perdre le panier. -->
+@if (choice(); as service) {
+  <button class="context" type="button" (click)="backToService()">
+    <span class="badge">{{
+      service.mode === 'pickup' ? t().cart.pickupGroup : t().cart.deliveryGroup
+    }}</span>
+    <span class="where">{{ service.place }} · {{ service.slot }}</span>
+    <span class="change">{{ t().shop.changeService }}</span>
+  </button>
+}
+
+<div class="shop">
+  <div class="search">
+    <label class="field">
+      <fold-icon name="search" aria-hidden="true" />
+      <input
+        type="search"
+        [value]="query()"
+        [attr.placeholder]="t().shop.searchPlaceholder"
+        [attr.aria-label]="t().shop.searchPlaceholder"
+        (input)="search($event)"
+      />
+      @if (query() !== '') {
+        <button
+          class="clear"
+          type="button"
+          [attr.aria-label]="t().shop.clearSearch"
+          (click)="query.set('')"
+        >
+          <fold-icon name="close" />
+        </button>
+      }
+    </label>
+    <span class="count wide-only">{{ countLabel() }}</span>
+  </div>
+
+  <nav class="shelves" [attr.aria-label]="t().shop.shelvesGroup">
+    <p class="shelves-title wide-only">{{ t().shop.shelvesGroup }}</p>
+    <div class="chips">
+      @for (item of shelves(); track item.id) {
+        <button
+          type="button"
+          [class.on]="query() === '' && shelf() === item.id"
+          [attr.aria-pressed]="query() === '' && shelf() === item.id"
+          (click)="pickShelf(item.id)"
+        >
+          {{ item.label }}
+        </button>
+      }
+    </div>
+  </nav>
+
+  <div class="head">
+    <h1>{{ heading() }}</h1>
+    <span class="count narrow-only">{{ countLabel() }}</span>
+  </div>
+
+  <app-shelf-banner class="banner" [shelf]="shelf()" (opened)="openStory.set(shelf())" />
+
+  <div class="grid">
+    @if (products().length === 0) {
+      <div class="none">
+        <p class="none-title">{{ t().shop.emptyTitle }}</p>
+        <p class="none-hint">{{ t().shop.emptyHint }}</p>
+      </div>
+    }
+    @for (piece of products(); track piece.id) {
+      <app-product-tile
+        [product]="piece"
+        [quantity]="cart.quantityOf(piece.id)"
+        (opened)="openPiece.set(piece.id)"
+        (added)="cart.add(piece.id)"
+        (removed)="cart.remove(piece.id)"
+      />
+    }
+  </div>
+
+  <!-- LE PANIER PERMANENT, au-delà du pli seulement. En pile, c'est la barre du
+       bas qui en tient lieu : 320 px de colonne sur 390 px d'écran, il ne
+       resterait rien pour le rayon. -->
+  <aside class="basket wide-only">
+    <div class="basket-head">
+      <h2>{{ t().shop.cartTitle }}</h2>
+      <span>{{ cartLabel() }}</span>
+    </div>
+    <app-cart-summary />
+    <button class="pay" type="button" [disabled]="cart.isEmpty()" (click)="pay()">
+      {{ payLabel() }}
+    </button>
+    <p class="pay-hint">{{ t().cart.payHint }}</p>
+  </aside>
+</div>
+
+@if (!cart.isEmpty()) {
+  <app-cart-bar
+    class="cartbar narrow-only"
+    [label]="cartLabel()"
+    [where]="whereLabel()"
+    [total]="totalLabel()"
+    (opened)="goToCart()"
+  />
+}
+
+<app-product-sheet
+  [product]="piece()"
+  [quantity]="pieceQuantity()"
+  (closed)="openPiece.set(null)"
+  (added)="cart.add(openPiece() ?? '')"
+  (removed)="cart.remove(openPiece() ?? '')"
+/>
+
+<app-rayon-sheet [shelf]="openStory()" (closed)="openStory.set(null)" />

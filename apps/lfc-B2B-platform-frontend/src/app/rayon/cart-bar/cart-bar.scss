@@ -1,0 +1,62 @@
+:host {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: block;
+  margin-top: auto;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  width: 100%;
+  padding: 11px 8px 11px var(--fold-space-lg);
+  border: 0;
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-card);
+  cursor: pointer;
+}
+
+.text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+  white-space: nowrap;
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.total {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 15px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

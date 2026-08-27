@@ -1,0 +1,255 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  overflow: clip;
+}
+
+.media {
+  position: relative;
+  flex: none;
+  height: 84px;
+  background: var(--fold-color-surface-band);
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.star {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.signature {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* La pastille d'ajout : 30 px visibles, mais une zone d'appui de 44 px obtenue
+   par un pseudo-élément — la cible réelle ne se lit pas à l'œil. */
+.quick {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+
+  fold-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+}
+
+.quick.filled {
+  background: var(--lfc-color-primary-vivid);
+  color: var(--fold-color-on-primary);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--fold-space-sm) 9px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  line-height: 1.14;
+  color: var(--fold-color-text);
+  /* Onze pixels de large pour « Chausson aux pommes » : le nom se coupe plutôt
+     que de déborder de la tuile. */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.note {
+  font-size: var(--fold-text-xs);
+  line-height: 1.35;
+  color: var(--lfc-color-text-subtle);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: 5px 9px 9px;
+}
+
+.price {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.rail {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-primary);
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: var(--fold-color-on-primary);
+    cursor: pointer;
+  }
+
+  fold-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.qty {
+  min-width: 18px;
+  text-align: center;
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wide-only {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .media {
+    height: 104px;
+  }
+
+  .narrow-only {
+    display: none;
+  }
+
+  .signature.wide-only,
+  .add.wide-only {
+    display: inline-flex;
+  }
+
+  .rail.wide-only {
+    display: inline-flex;
+  }
+
+  .note.wide-only {
+    display: block;
+  }
+
+  .name {
+    font-size: var(--lfc-text-note);
+  }
+
+  .body {
+    padding: 11px 12px 0;
+  }
+
+  .foot {
+    padding: 10px 12px 12px;
+  }
+}

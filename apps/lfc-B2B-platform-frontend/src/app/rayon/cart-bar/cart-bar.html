@@ -1,0 +1,9 @@
+<button class="bar" type="button" (click)="opened.emit()">
+  <span class="text">
+    <span class="title">{{ label() }}</span>
+    @if (where() !== '') {
+      <span class="sub">{{ where() }}</span>
+    }
+  </span>
+  <span class="total">{{ total() }} →</span>
+</button>

@@ -1,0 +1,67 @@
+@if (order(); as done) {
+  <div class="page">
+    <span class="tick" aria-hidden="true"><fold-icon name="check" /></span>
+
+    <h1 class="title">
+      @for (line of titleLines(); track line) {
+        <span>{{ line }}</span>
+      }
+    </h1>
+    <p class="intro">{{ t().done.intro }}</p>
+    <p class="ref">{{ t().done.kicker }} · {{ done.reference }}</p>
+
+    <!-- L'adresse est NOMMÉE : c'est la seule façon de s'apercevoir qu'elle est
+         fausse avant d'attendre un reçu qui n'arrivera pas. -->
+    <section class="mail">
+      <span class="mail-icon" aria-hidden="true"><fold-icon name="mail" /></span>
+      <span class="mail-text">
+        <span class="mail-title">{{ t().done.mailTitle }}</span>
+        <span class="mail-line">{{ mailLine() }}</span>
+      </span>
+    </section>
+
+    <dl class="recap">
+      <div class="row">
+        <dt>
+          {{ done.service.mode === 'pickup' ? t().done.recapPickup : t().done.recapDelivery }}
+        </dt>
+        <dd>{{ done.service.place }} · {{ done.service.slot }}</dd>
+      </div>
+      <div class="row">
+        <dt>{{ t().done.recapContent }}</dt>
+        <dd>{{ piecesLabel() }}</dd>
+      </div>
+      @if (discountLabel(); as label) {
+        <div class="row saved">
+          <dt>{{ label }}</dt>
+          <dd>−{{ money(done.totals.discount) }}</dd>
+        </div>
+      }
+      @for (vat of vatLines(); track vat.label) {
+        <div class="row vat">
+          <dt>
+            {{ vat.label }} <span class="scope">· {{ vat.scope }}</span>
+          </dt>
+          <dd>{{ vat.amount }}</dd>
+        </div>
+      }
+      <div class="row paid">
+        <dt>{{ t().done.paidOnline }}</dt>
+        <dd>{{ money(done.totals.total) }}</dd>
+      </div>
+    </dl>
+
+    <div class="actions">
+      <button class="qr" type="button" (click)="notYet()">{{ t().done.qr }}</button>
+      <div class="pair">
+        <button class="edit" type="button" (click)="notYet()">{{ t().done.edit }}</button>
+        <button class="cancel" type="button" (click)="notYet()">{{ t().done.cancel }}</button>
+      </div>
+      <p class="deadline">{{ t().done.deadline }}</p>
+      @if (pending()) {
+        <p class="pending">{{ t().done.pending }}</p>
+      }
+      <button class="back" type="button" (click)="backToShop()">‹ {{ t().cart.back }}</button>
+    </div>
+  </div>
+}

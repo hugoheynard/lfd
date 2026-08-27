@@ -1,0 +1,108 @@
+:host {
+  display: block;
+}
+
+.banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  height: 62px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--fold-color-surface-band);
+  overflow: clip;
+  cursor: pointer;
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Le voile latéral : le texte tient à gauche, la photo respire à droite. */
+.veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgb(18 48 127 / 94%) 4%,
+    rgb(18 48 127 / 60%) 58%,
+    rgb(18 48 127 / 12%)
+  );
+}
+
+.text {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  line-height: 1.04;
+  color: var(--lfc-paper-50);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  line-height: 1.35;
+  color: var(--lfc-ink-100);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cta {
+  position: relative;
+  flex: none;
+  padding: 5px 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Au bureau, la carte passe en PORTRAIT : le voile descend au lieu de traverser,
+   et le titre s'assoit dans le bas de l'image. */
+@media (min-width: 900px) {
+  .banner {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    height: 104px;
+    padding: 11px 13px;
+    border-radius: var(--fold-radius-lg);
+  }
+
+  .veil {
+    background: linear-gradient(180deg, rgb(18 48 127 / 24%) 0%, rgb(18 48 127 / 92%) 100%);
+  }
+
+  .cta {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+}

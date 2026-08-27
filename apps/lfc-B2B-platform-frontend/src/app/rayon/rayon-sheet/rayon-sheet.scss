@@ -1,0 +1,84 @@
+.pack {
+  display: block;
+  height: 176px;
+  background: var(--fold-color-surface-band);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* La seconde ligne du titre : elle appartient au titre, elle en garde le
+   gabarit — le dialogue n'en porte qu'une. */
+.second {
+  margin: 2px 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-title);
+}
+
+.body {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-base);
+  line-height: 1.62;
+  color: var(--fold-color-text-secondary);
+}
+
+/* Quatre chiffres en 2×2 : c'est la forme qui les rend comparables. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fold-space-sm);
+  margin: var(--fold-space-lg) 0 0;
+}
+
+.fact {
+  padding: 12px 13px;
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-sunken);
+
+  dt {
+    font-family: var(--fold-font-label);
+    font-size: var(--lfc-text-heading);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-block);
+    color: var(--fold-color-text);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: var(--fold-text-xs);
+    line-height: 1.35;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.caption {
+  margin: var(--fold-space-lg) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-text-subtle);
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  cursor: pointer;
+}

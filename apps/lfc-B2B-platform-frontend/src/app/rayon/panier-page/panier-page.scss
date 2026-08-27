@@ -1,0 +1,127 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  flex: 1;
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-xl);
+}
+
+@media (min-width: 900px) {
+  .page,
+  .foot {
+    width: min(640px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* Le rappel du service : à l'ENCRE, parce que c'est le cadre de la commande et
+   pas une de ses lignes. */
+.service {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+.service-kicker {
+  margin: 0 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.service-place {
+  margin: 0 0 6px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-title);
+}
+
+.service-address {
+  margin: 0 0 10px;
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.service-slot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+}
+
+/* Le créneau en pastille crème : c'est le fait qu'on relit, pas la phrase. */
+.slot {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-50);
+  color: var(--lfc-ink-800);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-note {
+  min-width: 0;
+  font-size: var(--lfc-text-note);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.foot {
+  position: sticky;
+  bottom: 0;
+  flex: none;
+  padding: 11px var(--fold-space-lg) 26px;
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-card);
+}
+
+.pay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pay:disabled {
+  background: var(--fold-color-surface-band);
+  color: var(--fold-color-text-faded);
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 9px 0 0;
+  text-align: center;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-text-subtle);
+}

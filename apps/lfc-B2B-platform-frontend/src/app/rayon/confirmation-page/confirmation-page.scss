@@ -1,0 +1,274 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px var(--fold-space-lg) var(--fold-space-2xl);
+}
+
+@media (min-width: 900px) {
+  .page {
+    width: min(640px, 100%);
+    margin-inline: auto;
+    padding-top: 40px;
+  }
+}
+
+.tick {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 13px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+
+  fold-icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-display);
+  color: var(--fold-color-text);
+}
+
+.intro {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+.ref {
+  margin: 4px 0 15px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.mail {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-info-surface);
+}
+
+.mail-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+
+  fold-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.mail-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mail-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.mail-line {
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-info-text);
+}
+
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 0;
+  padding: 15px 16px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+
+  dt {
+    font-size: var(--lfc-text-note);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    flex: none;
+    margin: 0;
+    white-space: nowrap;
+    font-size: var(--lfc-text-note);
+    font-weight: var(--fold-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--fold-color-text);
+  }
+}
+
+.saved dt,
+.saved dd {
+  color: var(--lfc-color-accent-text);
+}
+
+.vat {
+  dt,
+  dd {
+    font-size: var(--fold-text-xs);
+    color: var(--lfc-color-text-subtle);
+  }
+}
+
+.scope {
+  color: var(--fold-color-text-faded);
+}
+
+.paid {
+  padding-top: 11px;
+  border-top: 1px solid var(--fold-color-border);
+
+  dt {
+    font-family: var(--fold-font-label);
+    font-size: var(--lfc-text-note);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-cta);
+    text-transform: uppercase;
+    color: var(--fold-color-text);
+  }
+
+  dd {
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xl);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-block);
+  }
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin-top: 16px;
+}
+
+.qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pair {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+/* MODIFIER et ANNULER ne sont pas la même chose et ne se ressemblent donc pas :
+   l'une reprend l'encre, l'autre porte la couleur de ce qui défait. */
+.edit,
+.cancel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--fold-color-surface-card);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.edit {
+  border: 1.5px solid var(--fold-color-primary);
+  color: var(--fold-color-primary);
+}
+
+.cancel {
+  border: 1.5px solid var(--fold-color-alert-border);
+  color: var(--fold-color-alert-text);
+}
+
+.deadline {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-color-text-subtle);
+}
+
+.pending {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-info-surface);
+  color: var(--fold-color-info-text);
+  font-size: var(--fold-text-sm);
+  text-align: center;
+}
+
+.back {
+  align-self: center;
+  margin-top: var(--fold-space-sm);
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-semibold);
+  cursor: pointer;
+}

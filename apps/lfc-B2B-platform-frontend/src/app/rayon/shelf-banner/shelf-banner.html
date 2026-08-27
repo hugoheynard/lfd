@@ -1,0 +1,9 @@
+<button class="banner" type="button" (click)="opened.emit()">
+  <img [src]="'products/' + image() + '.svg'" alt="" />
+  <span class="veil" aria-hidden="true"></span>
+  <span class="text">
+    <span class="title">{{ story().tag }}</span>
+    <span class="sub">{{ story().sub }}</span>
+  </span>
+  <span class="cta">{{ t().shop.learnMore }} ›</span>
+</button>

@@ -1,0 +1,48 @@
+@if (product(); as piece) {
+  <app-client-dialog
+    placement="sheet"
+    [open]="true"
+    [kicker]="shelf()"
+    [title]="piece.name"
+    (closed)="closed.emit()"
+  >
+    <span dialog-media class="photo">
+      <img [src]="'products/' + piece.image + '.svg'" alt="" />
+      @if (piece.signature) {
+        <span class="signature">{{ t().product.signature }}</span>
+      }
+    </span>
+
+    <div class="sheet">
+      <p class="note">{{ piece.note }}</p>
+
+      <dl class="facts">
+        @for (fact of facts(); track fact.key) {
+          <div class="fact">
+            <dt>{{ fact.key }}</dt>
+            <dd>{{ fact.value }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+
+    <div dialog-foot class="foot">
+      <span class="rail">
+        <button
+          type="button"
+          [disabled]="quantity() === 0"
+          [attr.aria-label]="removeLabel()"
+          (click)="removed.emit()"
+        >
+          <fold-icon name="minus" />
+        </button>
+        <span class="qty">{{ quantity() }}</span>
+        <button type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
+          <fold-icon name="plus" />
+        </button>
+      </span>
+
+      <button class="cta" type="button" (click)="added.emit()">{{ cta() }}</button>
+    </div>
+  </app-client-dialog>
+}

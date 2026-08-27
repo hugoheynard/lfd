@@ -1,0 +1,214 @@
+:host {
+  display: block;
+}
+
+.empty {
+  margin: 0;
+  padding: 22px 4px;
+  text-align: center;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-color-text-subtle);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  overflow: clip;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 15px;
+
+  & + & {
+    border-top: 1px solid var(--fold-color-border-subtle);
+  }
+}
+
+.qty {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: var(--fold-space-sm);
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.unit {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.sum {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* La relance : une PROPOSITION, pas une ligne de panier. D'où le beurre pâle,
+   qui la distingue de ce qui est déjà commandé. */
+.upsell {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--lfc-color-accent-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-accent-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sign {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--fold-space-sm);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+
+  fold-icon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.pitch {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pitch-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--lfc-color-on-accent);
+}
+
+.pitch-line {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-color-accent-text);
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 14px 0 0;
+  padding: 15px 16px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+
+  dt {
+    font-size: var(--fold-text-base);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    flex: none;
+    margin: 0;
+    white-space: nowrap;
+    font-size: var(--lfc-text-block);
+    font-variant-numeric: tabular-nums;
+    color: var(--fold-color-text);
+  }
+}
+
+/* Ce qui est ÉCONOMISÉ se lit dans le beurre : une remise n'est pas une ligne
+   de plus, c'est de l'argent rendu. */
+.saved dt,
+.saved dd {
+  color: var(--lfc-color-accent-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.vat {
+  dt,
+  dd {
+    font-size: var(--lfc-text-note);
+    color: var(--lfc-color-text-subtle);
+  }
+
+  dd {
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.scope {
+  color: var(--fold-color-text-faded);
+}
+
+/* Le filet AVANT le total : il sépare ce qui explique de ce qu'on paie. */
+.grand {
+  padding-top: 11px;
+  border-top: 1px solid var(--fold-color-border);
+
+  dt {
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-md);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-cta);
+    text-transform: uppercase;
+    color: var(--fold-color-text);
+  }
+
+  dd {
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xl);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-block);
+  }
+}

@@ -1,0 +1,395 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  /* Le rail des rayons déborde volontairement de la feuille pour partir du bord
+     de l'écran ; il ne doit pas pour autant ouvrir un défilement de PAGE. */
+  overflow-x: clip;
+  background: var(--fold-color-bg-page);
+}
+
+/* ── La barre de contexte ─────────────────────────────────────────────────── */
+
+.context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: var(--fold-space-md) var(--fold-space-lg) 0;
+  padding: 0 var(--fold-space-md);
+  height: 40px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  cursor: pointer;
+}
+
+.badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.where {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.change {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-primary-vivid);
+}
+
+/* ── La grille de l'écran ─────────────────────────────────────────────────── */
+
+.shop {
+  display: grid;
+  /* `minmax(0, 1fr)` et pas `auto` : le rail des rayons ne se coupe PAS
+     (`white-space: nowrap`), donc sa largeur minimale est celle de ses six
+     pastilles bout à bout. Une colonne `auto` s'y ajuste et pousse tout l'écran
+     hors du cadre par la droite. Le zéro autorise la colonne à être plus étroite
+     que son contenu, et c'est le rail qui défile — lui seul. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'search' 'chips' 'head' 'banner' 'grid';
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-2xl);
+}
+
+.search {
+  grid-area: search;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+
+  fold-icon {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    color: var(--lfc-color-text-subtle);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    background: none;
+    font-family: var(--fold-font-sans);
+    font-size: var(--fold-text-base);
+    color: var(--fold-color-text);
+  }
+
+  /* La croix native de `type=search` doublerait la nôtre, sans son gabarit. */
+  input::-webkit-search-cancel-button {
+    appearance: none;
+  }
+}
+
+.clear {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-band);
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+
+  fold-icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.shelves {
+  grid-area: chips;
+  min-width: 0;
+}
+
+.shelves-title {
+  margin: 0 0 11px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* En pile, les rayons défilent à l'horizontale ; la marge négative les fait
+   partir du bord de l'écran, et le `scroll-padding` rend son inset au premier
+   d'entre eux. */
+.chips {
+  display: flex;
+  gap: 7px;
+  margin-inline: calc(-1 * var(--fold-space-lg));
+  padding-inline: var(--fold-space-lg);
+  overflow-x: auto;
+  scroll-padding-inline: var(--fold-space-lg);
+
+  button {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--fold-radius-pill);
+    background: var(--fold-color-surface-card);
+    color: var(--fold-color-text-secondary);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xs);
+    font-weight: var(--fold-weight-extrabold);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  button.on {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+}
+
+.head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+
+  h1 {
+    margin: 0;
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xs);
+    font-weight: var(--fold-weight-extrabold);
+    letter-spacing: var(--lfc-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--lfc-color-text-subtle);
+  }
+}
+
+.count {
+  flex: none;
+  white-space: nowrap;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-faded);
+}
+
+/* La bannière et la barre du panier sont des composants : l'écran ne leur donne
+   que leur PLACE dans la grille, jamais leur peinture. */
+.banner {
+  grid-area: banner;
+}
+
+/* ── La vitrine ───────────────────────────────────────────────────────────── */
+
+.grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--fold-space-sm);
+  align-items: stretch;
+}
+
+.none {
+  grid-column: 1 / -1;
+  padding: 26px var(--fold-space-lg);
+  text-align: center;
+}
+
+.none-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.none-hint {
+  margin: 5px 0 0;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── Le pli ───────────────────────────────────────────────────────────────── */
+
+.wide-only {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .narrow-only {
+    display: none;
+  }
+
+  .context {
+    margin: var(--fold-space-lg) 26px 0;
+  }
+
+  /* Trois colonnes, et le panier PERMANENT à droite : au bureau, ce qu'on a
+     déjà pris n'a pas à se mériter un écran. La colonne de gauche empile les
+     rayons puis la carte de rayon — il y a la place pour une vraie liste. */
+  .shop {
+    grid-template-columns: 250px minmax(0, 1fr) 320px;
+    grid-template-areas:
+      'chips search basket'
+      'banner head basket'
+      'banner grid basket';
+    align-items: start;
+    gap: 20px;
+    padding: 20px 26px 24px;
+  }
+
+  .shelves {
+    padding: 15px 16px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--lfc-radius-xl);
+    background: var(--fold-color-surface-card);
+  }
+
+  .shelves-title.wide-only {
+    display: block;
+  }
+
+  .chips {
+    flex-direction: column;
+    gap: 4px;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow-x: visible;
+
+    button {
+      justify-content: flex-start;
+      border-color: transparent;
+      background: none;
+      border-radius: 9px;
+    }
+  }
+
+  .banner {
+    align-self: start;
+  }
+
+  .count.wide-only {
+    display: inline;
+  }
+
+  .head h1 {
+    font-family: var(--fold-font-label);
+    font-size: var(--lfc-text-heading);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: -0.024em;
+    color: var(--fold-color-text);
+  }
+
+  .grid {
+    gap: 11px;
+  }
+
+  .basket.wide-only {
+    display: block;
+    position: sticky;
+    top: 20px;
+    grid-area: basket;
+    padding: 17px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--lfc-radius-xl);
+    background: var(--fold-color-surface-card);
+  }
+
+  .basket-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 13px;
+
+    h2 {
+      margin: 0;
+      font-family: var(--fold-font-label);
+      font-size: var(--lfc-text-cta);
+      font-weight: var(--lfc-weight-black);
+      letter-spacing: var(--lfc-tracking-block);
+      text-transform: uppercase;
+    }
+
+    span {
+      flex: none;
+      font-size: var(--fold-text-xs);
+      color: var(--lfc-color-text-subtle);
+      white-space: nowrap;
+    }
+  }
+
+  .pay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 50px;
+    margin-top: 15px;
+    border: 0;
+    border-radius: var(--fold-radius-lg);
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-md);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-cta);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .pay:disabled {
+    background: var(--fold-color-surface-band);
+    color: var(--fold-color-text-faded);
+    cursor: not-allowed;
+  }
+
+  .pay-hint {
+    margin: 9px 0 0;
+    text-align: center;
+    font-size: var(--fold-text-xs);
+    line-height: var(--lfc-leading-note);
+    color: var(--lfc-color-text-subtle);
+  }
+}
