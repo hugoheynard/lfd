@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { Router, provideRouter } from '@angular/router';
+import { describe, expect, it, vi } from 'vitest';
 
 import { CategoriesPage } from '../categories-page/categories-page';
 import { CategoryHttpApi } from '../category-http-api';
@@ -27,10 +27,13 @@ function category(overrides: Partial<Category> = {}): Category {
 /** Le rendu, et de quoi le RELANCER : basculer une langue demande un second tour. */
 interface Rendered {
   readonly host: HTMLElement;
+  /** Les navigations demandées — la page ouvre une famille en naviguant. */
+  readonly routed: unknown[][];
   readonly detect: () => void;
 }
 
 async function render(rows: Category[]): Promise<Rendered> {
+  const routed: unknown[][] = [];
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
@@ -40,12 +43,22 @@ async function render(rows: Category[]): Promise<Rendered> {
       { provide: PointOfSaleHttpApi, useValue: { list: async () => [] } },
     ],
   });
+  // Le VRAI routeur, espionné. Le remplacer casse `provideRouter` — son
+  // `rootRoute` lit l'instance réelle — et la page en a besoin pour ses
+  // `routerLink`.
+  vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(
+    (commands: readonly unknown[]) => {
+      routed.push([...commands]);
+      return Promise.resolve(true);
+    },
+  );
   const fixture = TestBed.createComponent(CategoriesPage);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
   return {
     host: fixture.nativeElement as HTMLElement,
+    routed,
     detect: () => fixture.detectChanges(),
   };
 }
@@ -170,5 +183,30 @@ describe('CategoriesPage — les canaux par défaut', () => {
 
     expect(rows(host)[0]).toContain('B2B');
     expect(rows(host)[0]).not.toContain('Aucun canal');
+  });
+});
+
+describe('CategoriesPage — ouvrir une famille', () => {
+  it('la LIGNE entière ouvre la page, pas seulement les trois points', async () => {
+    // `clickable` de fold fait de la ligne la commande : elle prend le focus et
+    // répond à Entrée. Le gabarit portait un `<button>` maison dans la dernière
+    // colonne — une cible de la taille de trois points, sur une ligne large
+    // comme l'écran.
+    const { host, routed } = await render([category()]);
+
+    const row = host.querySelector('tbody tr');
+    expect(row).not.toBeNull();
+    (row as HTMLElement).click();
+
+    expect(routed).toContainEqual(['/pim/categories', 'cat_1']);
+  });
+
+  it("n'imbrique AUCUN bouton dans la ligne cliquable", async () => {
+    // Un contrôle dans un contrôle, c'est deux cibles pour un seul geste — et un
+    // lecteur d'écran qui annonce le bouton en oubliant la ligne.
+    const { host } = await render([category()]);
+
+    const row = host.querySelector('tbody tr');
+    expect(row?.querySelectorAll('button')).toHaveLength(0);
   });
 });

@@ -9,24 +9,11 @@
   font-size: var(--fold-text-md);
 }
 
-/* Les trois points nus en bout de ligne : une affordance discrète, pas un
-   bouton. Même geste que le tableau des taux de TVA. */
-.row-open {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--fold-space-xs);
-  border: 0;
-  border-radius: var(--fold-radius-sm);
-  background: none;
-  cursor: pointer;
+/* Les trois points nus en bout de ligne : une affordance, plus un bouton —
+   `clickable` a fait de la ligne entière la commande, et un contrôle imbriqué
+   dans un autre donnerait deux cibles pour un seul geste. */
+.cell-more {
   color: var(--fold-color-text-muted);
-
-  &:hover,
-  &:focus-visible {
-    background: var(--fold-color-surface-hover);
-    color: var(--fold-color-text);
-  }
 }
 
 /* La carte de la vue téléphone. Même cadre que les cartes de taux (bordure

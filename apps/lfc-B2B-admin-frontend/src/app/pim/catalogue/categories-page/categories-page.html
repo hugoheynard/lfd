@@ -38,6 +38,9 @@
     narrowLayout="cards"
     rowCardChrome="none"
     zebra
+    toolbarSurface="accent"
+    clickable
+    (rowClick)="open($event)"
     [empty]="emptyState()"
   >
     <!-- L'en-tête du TABLEAU, projeté dans la bande ACCENT de la table —
@@ -86,17 +89,13 @@
       />
     </ng-template>
 
-    <!-- Les trois points nus : une affordance, pas un bouton. Une seule action
-         par ligne — ouvrir la famille — donc rien à choisir dans un menu. -->
-    <ng-template foldCell="actions" let-c>
-      <button
-        type="button"
-        class="row-open"
-        [attr.aria-label]="'Ouvrir « ' + displayName(c) + ' »'"
-        (click)="open(c)"
-      >
-        <fold-icon name="more-vertical" size="sm" />
-      </button>
+    <!-- Les trois points nus : une AFFORDANCE, pas un bouton.
+         `clickable` fait de la LIGNE entière la commande — elle prend le focus,
+         répond à Entrée et à Espace, et porte le curseur. Y laisser un `<button>`
+         imbriquerait un contrôle dans un autre : deux cibles pour un seul geste,
+         et un lecteur d'écran qui annonce le bouton en oubliant la ligne. -->
+    <ng-template foldCell="actions">
+      <fold-icon class="cell-more" name="more-vertical" size="sm" aria-hidden="true" />
     </ng-template>
 
     <!-- Sur téléphone, une CARTE : `auto-cards` empilerait des paires

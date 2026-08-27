@@ -226,9 +226,10 @@ export class CategoriesPage {
   /**
    * Ouvre la famille — sur sa PAGE, plus dans un panneau.
    *
-   * Le panneau tenait à trois réglages ; il ne tient plus dès qu'une famille
-   * porte des descriptions et des visuels. Un seul chemin, donc : le clic d'une
-   * ligne et le bouton d'ajout mènent au même écran.
+   * Appelée par `(rowClick)` de fold : la ligne entière est la commande, au
+   * clavier comme à la souris. Le gabarit portait un `<button>` maison dans la
+   * dernière colonne — une cible de la taille de trois points, quand la ligne
+   * fait la largeur de l'écran.
    */
   protected open(category: Category): void {
     void this.router.navigate(['/pim/categories', category.id]);
