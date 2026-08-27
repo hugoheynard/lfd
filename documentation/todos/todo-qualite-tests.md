@@ -170,3 +170,44 @@ document.
 **Ce qu'il ne faut pas faire** : ajouter un `retry` sur la CI. Le flake ne
 coûte aujourd'hui qu'un relancement ; le masquer coûterait le jour où il cesse
 d'être un flake.
+
+## 5. Aucune commande locale ne reproduit ce que la CI exige
+
+_Relevé le 2026-08-27, après un lot recalé en production._
+
+Le dépôt porte **quatorze gardes** dans `dev-toolbox/gates/`, dont **douze sont
+exigées par la CI** — tokens fold, typographie fold, langue des identifiants,
+liens de routeur, neutralité du modèle PIM, cycles d'import, journalisation,
+frontières de contexte, jointures inter-schémas, dépendances catalogue, fichiers
+d'app déployée, événements suivis.
+
+Il n'existe **aucune commande qui les lance toutes**. `pnpm lint` fait
+`turbo run lint`, c'est-à-dire ESLint par app — et rien d'autre. Chaque garde a
+son script (`pnpm lint:fold-tokens`, …), qu'il faut connaître et appeler une par
+une.
+
+Conséquence observée : une session entière de travail vérifiée par ESLint,
+`tsc`, les tests et le build AOT — quatre portes réelles, toutes vertes — et
+recalée par la treizième, jamais lancée. Deux littéraux de CSS
+(`line-height: 1`, un repli de `var()`). Le lot portait une migration ; sans la
+garde de déploiement, il partait en production.
+
+Deux de ces gardes auraient d'ailleurs signalé, avant le push, quatre problèmes
+de tokens trouvés autrement : deux à la main en auditant token par token, deux
+par la CI.
+
+À faire :
+
+- un `pnpm verify` (ou `lint:gates`) qui enchaîne **exactement** ce que la CI
+  exige, dans le même ordre — la liste vit alors à UN endroit, et la CI l'appelle
+  au lieu d'énumérer douze étapes ;
+- le jour où ce script existe, la CI doit l'invoquer plutôt que de répéter la
+  liste : deux énumérations divergent, et c'est celle qu'on ne lance pas
+  localement qui gagne.
+
+⚠️ En attendant : lancer les douze avant tout push d'un lot qui touche du SCSS,
+des tokens, des routes ou le modèle du référentiel.
+
+⚠️ Piège de lecture au passage : ces gardes n'ont pas toutes la même sortie —
+certaines impriment `✓`, d'autres `✅`, d'autres une phrase. Un script qui les
+agrège doit lire le **code de sortie**, jamais le texte.
