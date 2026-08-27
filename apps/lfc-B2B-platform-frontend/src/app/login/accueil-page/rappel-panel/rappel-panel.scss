@@ -1,13 +1,13 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-lg);
+  gap: var(--fold-space-xl);
 }
 
 .group {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: var(--fold-space-md);
 }
 
 .eyebrow {
@@ -95,7 +95,7 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: var(--fold-space-md);
 }
 
 .slot {

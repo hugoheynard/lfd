@@ -1,17 +1,17 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-xl);
 }
 
 .panel {
-  --fold-card-padding: 17px 16px;
+  --fold-card-padding: var(--fold-space-lg);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--fold-space-lg);
 }
 
 .cta {

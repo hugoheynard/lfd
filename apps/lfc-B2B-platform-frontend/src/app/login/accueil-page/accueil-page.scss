@@ -20,8 +20,8 @@
 .aside {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 6px 20px 26px;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-2xl);
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
@@ -111,7 +111,7 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  padding: var(--fold-space-xl) var(--fold-space-lg) 26px;
+  padding: var(--fold-space-2xl) var(--fold-space-xl) var(--fold-space-3xl);
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);

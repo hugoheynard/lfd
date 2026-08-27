@@ -11,7 +11,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-xl);
 }
 
 .head {
@@ -51,13 +51,13 @@
 }
 
 .signup {
-  --fold-card-padding: 17px 16px;
+  --fold-card-padding: var(--fold-space-lg);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--fold-space-lg);
 }
 
 .pitch {
@@ -69,13 +69,13 @@
 
 .fields {
   display: grid;
-  gap: 11px;
+  gap: var(--fold-space-lg);
 }
 
 .submit {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--fold-space-lg);
 }
 
 /* Le CTA de l'app cliente : 50 px, display en capitales. `foldButton` porte la
