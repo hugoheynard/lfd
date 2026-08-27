@@ -1,0 +1,103 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--fold-font-sans);
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  height: 56px;
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: 13px;
+  background: var(--fold-color-surface-card);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary-surface);
+  }
+
+  /* Complet : visible, inerte, et il DIT pourquoi. Le retirer de la grille
+     ferait un trou qu'on lirait comme un bug. */
+  &.closed {
+    border-color: var(--fold-color-border-subtle);
+    background: var(--fold-color-surface-sunken);
+    color: var(--fold-color-text-faded);
+    cursor: not-allowed;
+  }
+}
+
+.hour {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.slot.on .hour {
+  color: var(--fold-color-primary);
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+}
+
+.slot.closed .sub {
+  color: var(--fold-color-text-faded);
+}
+
+/* Le pied ne défile pas : le bouton qui porte le créneau retenu doit rester
+   sous le pouce, quelle que soit la hauteur de la grille. */
+.foot {
+  flex: none;
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-xl);
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-bg-page);
+}
+
+.cta {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}

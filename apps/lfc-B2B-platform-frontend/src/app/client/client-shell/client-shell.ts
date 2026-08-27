@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
+import { FoldAppShellComponent, FoldIconComponent, FoldPanelHostComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
 import { ClientCopyService } from '../copy/client-copy.service';
@@ -21,7 +21,13 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   selector: 'app-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
-  imports: [FoldAppShellComponent, FoldIconComponent, LangSwitch, RouterOutlet],
+  imports: [
+    FoldAppShellComponent,
+    FoldIconComponent,
+    FoldPanelHostComponent,
+    LangSwitch,
+    RouterOutlet,
+  ],
   templateUrl: './client-shell.html',
   styleUrl: './client-shell.scss',
 })

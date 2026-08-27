@@ -103,3 +103,41 @@ export const SAVED_ADDRESSES: readonly SavedAddress[] = [
     isDefault: false,
   },
 ];
+
+/**
+ * Ce qu'un créneau dit de lui-même. Ce ne sont pas cinq façons d'écrire
+ * « libre » : la sortie du four et la seconde fournée expliquent POURQUOI cette
+ * heure-là est bonne, et « Labo seulement » dit une restriction sans la punir.
+ */
+export type OrderSlotState = 'first-batch' | 'free' | 'full' | 'second-batch' | 'labo-only';
+
+/** Le moment de la journée — le fournil travaille en deux temps. */
+export type DayPart = 'am' | 'pm';
+
+export interface OrderSlot {
+  readonly id: string;
+  readonly label: string;
+  readonly part: DayPart;
+  readonly state: OrderSlotState;
+}
+
+/**
+ * Les créneaux de demain. Le complet reste AFFICHÉ et inerte, comme le créneau
+ * « au four » du rappel : un trou dans une grille se lit comme un bug, un
+ * « complet » se lit comme une boulangerie qui a du succès.
+ */
+export const ORDER_SLOTS: readonly OrderSlot[] = [
+  { id: 'a1', label: '7 h – 8 h', part: 'am', state: 'first-batch' },
+  { id: 'a2', label: '8 h – 9 h', part: 'am', state: 'full' },
+  { id: 'a3', label: '9 h – 10 h', part: 'am', state: 'free' },
+  { id: 'a4', label: '10 h – 11 h', part: 'am', state: 'free' },
+  { id: 'p1', label: '16 h – 17 h', part: 'pm', state: 'second-batch' },
+  { id: 'p2', label: '17 h – 18 h', part: 'pm', state: 'free' },
+  { id: 'p3', label: '18 h – 19 h', part: 'pm', state: 'full' },
+  { id: 'p4', label: '19 h – 20 h', part: 'pm', state: 'labo-only' },
+];
+
+/** Complet : le créneau reste là, il ne se prend pas. */
+export function isSlotOpen(slot: OrderSlot): boolean {
+  return slot.state !== 'full';
+}

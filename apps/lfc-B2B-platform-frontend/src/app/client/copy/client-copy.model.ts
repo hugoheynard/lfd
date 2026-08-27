@@ -201,6 +201,23 @@ export interface ClientCopy {
     readonly cta: string;
     readonly ctaBlocked: string;
   };
+  readonly slotPanel: {
+    readonly pickupTitle: string;
+    readonly deliveryTitle: string;
+    /** `{place}` est remplacé par le point de retrait ou l'adresse. */
+    readonly pickupIntro: string;
+    readonly deliveryIntro: string;
+    readonly amGroup: string;
+    readonly pmGroup: string;
+    readonly firstBatch: string;
+    readonly free: string;
+    readonly full: string;
+    readonly secondBatch: string;
+    readonly laboOnly: string;
+    readonly ctaIdle: string;
+    /** `{slot}` est remplacé par le créneau retenu. */
+    readonly cta: string;
+  };
   readonly pro: {
     readonly title: string;
     readonly bookedTitle: string;

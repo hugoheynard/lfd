@@ -51,6 +51,13 @@
 
   <router-outlet />
 
+  <!-- L'app cliente a SON hôte de panneaux. Celui de l'app pro vit dans la
+       branche authentifiée du composant racine, que la route cliente ne
+       traverse pas — un panneau ouvert d'ici n'avait donc nulle part où se
+       rendre. Le poser dans ce shell le met aussi dans le sous-arbre du thème
+       client, ce qui règle la question de la couleur au passage. -->
+  <fold-panel-host />
+
   <!-- Le pied de l'app : une encre PLUS PROFONDE que la barre, pour fermer la
        page sans la répéter. Il n'apparaît qu'au-delà du pli — sur un téléphone,
        un pied de page est du contenu qu'on fait défiler pour rien. -->

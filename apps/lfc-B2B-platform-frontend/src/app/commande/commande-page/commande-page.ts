@@ -6,19 +6,21 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FoldCalloutComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { CallbackBlock } from '../../client/callback-block/callback-block';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
+import type { OrderSlot } from '../../client/mock-station';
 import { RappelPanel } from '../../login/accueil-page/rappel-panel/rappel-panel';
 
 import { AddressDialog, type DeliveryChoice } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
 import { PickupDialog } from './pickup-dialog/pickup-dialog';
+import { SlotPanel, type SlotRequest } from './slot-panel/slot-panel';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
@@ -56,6 +58,7 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
 })
 export class CommandePage {
   private readonly chrome = inject(ClientChrome);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -123,13 +126,26 @@ export class CommandePage {
    * pas encore. On retient donc le choix à l'écran plutôt que d'y mener.
    */
   protected settlePickup(name: string): void {
-    this.settled.set(name);
-    this.dialog.set(null);
+    this.askSlot({ mode: 'pickup', place: name });
   }
 
   protected settleDelivery(choice: DeliveryChoice): void {
-    this.settled.set(`${choice.line} · ${choice.zone.fee} €`);
+    this.askSlot({ mode: 'delivery', place: `${choice.line} · ${choice.zone.fee} €` });
+  }
+
+  /**
+   * Le lieu choisi, reste l'heure. Le panneau se substitue au dialogue plutôt
+   * que de s'empiler dessus : ce sont deux temps d'une même question, pas deux
+   * questions.
+   */
+  private askSlot(request: SlotRequest): void {
     this.dialog.set(null);
+    const ref = this.panels.open<SlotRequest, OrderSlot>(SlotPanel, { data: request });
+    void ref.closed.then((slot) => {
+      if (slot) {
+        this.settled.set(`${request.place} · ${slot.label}`);
+      }
+    });
   }
 
   protected openPanel(): void {
