@@ -19,6 +19,9 @@ export interface ClientCopy {
     readonly kickerWelcome: string;
     readonly kickerRappel: string;
     readonly kickerCommande: string;
+    readonly kickerShop: string;
+    readonly kickerCart: string;
+    readonly kickerDone: string;
     readonly deskKicker: string;
   };
   readonly foot: {
@@ -128,6 +131,82 @@ export interface ClientCopy {
     readonly urgenceTitle: string;
     readonly urgencePitch: string;
     readonly urgenceCta: string;
+    readonly pending: string;
+  };
+  readonly shop: {
+    readonly changeService: string;
+    readonly searchPlaceholder: string;
+    readonly clearSearch: string;
+    readonly allShelves: string;
+    readonly allShelvesTitle: string;
+    /** `{query}` est remplacé par ce qui a été cherché. */
+    readonly resultsFor: string;
+    /** `{count}` est remplacé par le nombre de références montrées. */
+    readonly pieces: string;
+    readonly learnMore: string;
+    readonly emptyTitle: string;
+    readonly emptyHint: string;
+    readonly shelvesGroup: string;
+    readonly add: string;
+    /** `{name}` est remplacé par le nom de la pièce. */
+    readonly addAria: string;
+    readonly removeAria: string;
+    /** `{count}` est remplacé par le nombre de pièces au panier. */
+    readonly cartBar: string;
+    readonly cartTitle: string;
+    readonly cartEmpty: string;
+    /** `{name}` est remplacé par la gourmandise proposée. */
+    readonly upsell: string;
+    readonly upsellLine: string;
+  };
+  readonly product: {
+    readonly signature: string;
+    readonly unitPrice: string;
+    readonly oven: string;
+    readonly pickupAt: string;
+    readonly deliverTo: string;
+    /** `{price}` est remplacé par le prix de ce qui est au stepper. */
+    readonly cta: string;
+  };
+  readonly cart: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly intro: string;
+    readonly pickupGroup: string;
+    readonly deliveryGroup: string;
+    readonly slotNote: string;
+    readonly subtotal: string;
+    /** `{at}` porte le complément du lieu, `{pct}` la remise. */
+    readonly discount: string;
+    readonly fee: string;
+    /** `{rate}` est remplacé par le taux réel. */
+    readonly vat: string;
+    readonly vatSweet: string;
+    readonly vatSale: string;
+    readonly total: string;
+    /** `{total}` est remplacé par le montant dû. */
+    readonly pay: string;
+    readonly payHint: string;
+    readonly browse: string;
+    readonly back: string;
+  };
+  readonly done: {
+    readonly kicker: string;
+    readonly title: string;
+    readonly intro: string;
+    readonly mailTitle: string;
+    /** `{email}` est remplacé par l'adresse du compte. */
+    readonly mailLine: string;
+    readonly recapPickup: string;
+    readonly recapDelivery: string;
+    readonly recapContent: string;
+    /** `{count}` est remplacé par le nombre de pièces. */
+    readonly recapPieces: string;
+    readonly paidOnline: string;
+    readonly qr: string;
+    readonly edit: string;
+    readonly cancel: string;
+    readonly deadline: string;
     readonly pending: string;
   };
   readonly dialog: {
