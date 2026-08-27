@@ -10,35 +10,49 @@
   </section>
 }
 
-<section class="sr-block">
-  <fold-element-title title="Ce qu'elle porte" variant="bar" />
+<section class="sr-block" aria-labelledby="sr-carries">
+  <fold-element-title id="sr-carries" title="Ce qu'elle porte" />
   <fold-card>
-    <dl class="sr-facts">
-      <dt>Fiches actives</dt>
-      <dd>{{ ficheLabel() }}</dd>
+    <!-- Le chiffre AVANT son mot, et en grand : c'est la seule donnée du rail
+         qu'on vient chercher du regard. Une ligne « Fiches actives · 2 » la
+         range au même niveau que le reste et oblige à la lire. -->
+    <p class="sr-figure">
+      <span class="sr-figure-value">{{ ficheCount() }}</span>
+      <span class="sr-figure-unit">{{ ficheWord() }}</span>
+    </p>
 
-      <dt>Vendue depuis</dt>
-      <dd>
-        @if (sellingPoints().length === 0) {
-          <span class="muted">Aucun point de vente</span>
-        } @else {
-          {{ sellingPoints().length }} point(s) de vente
-        }
-      </dd>
+    <div class="sr-sub">
+      <span class="sr-sub-label">Vendue depuis</span>
+      @if (sellingPoints().length === 0) {
+        <span class="sr-none">Aucun point de vente</span>
+      } @else {
+        <!-- Les NOMS, pas le compte : « 2 points de vente » oblige à ouvrir la
+             section pour savoir lesquels. -->
+        <span class="sr-chips">
+          @for (point of sellingPoints(); track point.id) {
+            <fold-badge [content]="point.label" variant="neutral" />
+          }
+        </span>
+      }
+    </div>
+  </fold-card>
+</section>
 
-      <dt>Traduction</dt>
-      <dd>
-        @if (missingNames().length === 0) {
-          <fold-status-badge status="active" label="Complète" />
-        } @else {
-          <!-- `pending` : la traduction n'est pas en échec, elle est en attente. -->
-          <fold-status-badge
-            status="pending"
-            [label]="'à remplir : ' + missingNames().join(', ')"
-          />
-        }
-      </dd>
-    </dl>
+<section class="sr-block" aria-labelledby="sr-completeness">
+  <fold-element-title id="sr-completeness" title="Complétude" />
+  <fold-card>
+    <!-- La barre ne mesure QUE le requis. Les traductions et les textes se
+         voient dans la liste sans peser : les compter ferait d'une famille
+         parfaitement utilisable une famille à moitié pleine. -->
+    <fold-meter
+      class="sr-meter"
+      label="Complétude"
+      [value]="done()"
+      [max]="total()"
+      [tone]="tone()"
+      showValue
+    />
+    <fold-checklist [items]="items()" [stateLabels]="stateLabels" />
   </fold-card>
 </section>
 
@@ -49,11 +63,12 @@
       [actionLabel]="canArchive() ? 'Archiver la famille' : undefined"
       (confirmed)="archived.emit()"
     >
-      @if (store.activeProducts() > 0) {
+      @if (ficheCount() > 0) {
         <p>
           <strong>Archivage impossible.</strong> Cette famille porte encore
-          <strong>{{ store.activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou
-          archivez-les d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
+          <strong>{{ ficheCount() }} {{ ficheWord() }}</strong
+          >. Déplacez-les ou archivez-les d'abord&nbsp;: tant qu'une seule reste, le référentiel
+          refuse.
         </p>
       } @else {
         <p>

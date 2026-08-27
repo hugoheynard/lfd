@@ -251,7 +251,8 @@ describe('CategoryFormPage — la zone dangereuse du rail', () => {
     const { host } = await edit(category({ activeProductCount: 3 }));
 
     expect(host.textContent).toContain('Archivage impossible');
-    expect(host.textContent).toContain('3 fiche(s) active(s)');
+    // Accordé : « 3 fiches actives », pas « 3 fiche(s) active(s) ».
+    expect(host.textContent).toContain('3 fiches actives');
     expect(() => button(host, 'Archiver la famille')).toThrow();
   });
 
@@ -417,5 +418,65 @@ describe('CategoryFormPage — les visuels', () => {
     detect();
 
     expect(store.media.items()[0]?.alt).toEqual({ fr: 'https://x/neuve.jpg' });
+  });
+});
+
+describe('CategoryFormPage — le rail', () => {
+  /** Le texte de la carte « Ce qu'elle porte ». */
+  function carries(host: HTMLElement): string {
+    const block = host.querySelector('[aria-labelledby="sr-carries"]');
+    return (block?.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  function checklist(host: HTMLElement): string[] {
+    return [...host.querySelectorAll('fold-checklist li')].map((row) =>
+      (row.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    );
+  }
+
+  it('accorde le mot au chiffre — « fiche active », pas « fiche(s) »', async () => {
+    // Le chiffre et son unité sont DEUX éléments — l'espace vient du `gap`, pas
+    // du texte, donc `textContent` les colle. On lit donc chacun pour ce qu'il
+    // est plutôt que d'assener une chaîne que le rendu ne produit pas.
+    const { host } = await edit(category({ activeProductCount: 1 }));
+    const block = host.querySelector('[aria-labelledby="sr-carries"]');
+    expect(block?.querySelector('.sr-figure-value')?.textContent?.trim()).toBe('1');
+    expect(block?.querySelector('.sr-figure-unit')?.textContent?.trim()).toBe('fiche active');
+  });
+
+  it('accorde aussi le pluriel', async () => {
+    const { host } = await edit(category({ activeProductCount: 4 }));
+    const unit = host.querySelector('.sr-figure-unit');
+    expect(unit?.textContent?.trim()).toBe('fiches actives');
+  });
+
+  it('NOMME les points de vente au lieu de les compter', async () => {
+    // « 2 points de vente » oblige à ouvrir la section pour savoir lesquels.
+    const { host } = await edit(category());
+    expect(carries(host)).toContain('Village');
+  });
+
+  /**
+   * La barre ne mesure QUE le requis. Compter les traductions ferait d'une
+   * famille parfaitement utilisable une famille à moitié pleine, et la barre
+   * annoncerait un manque là où il n'y en a pas.
+   */
+  it('ne compte pas les traductions dans la complétude', async () => {
+    const { host } = await edit(category({ vatByContext: { takeaway: 'tva_55' } }));
+
+    // Trois lignes requises — nom, canal, TVA — toutes remplies par la fixture.
+    // Six lignes AU TOTAL dans la liste : la barre en ignore trois.
+    const meter = host.querySelector('fold-meter');
+    expect((meter?.textContent ?? '').replace(/\s+/g, '')).toContain('3/3');
+    expect(checklist(host).length).toBeGreaterThan(3);
+    // Les traductions manquantes sont pourtant BIEN listées, sans peser.
+    expect(checklist(host).some((row) => row.includes('anglais'))).toBe(true);
+  });
+
+  it('ne liste aucune traduction tant que le nom français est vide', async () => {
+    // Un nom qu'on n'a pas écrit ne « manque » dans aucune langue : le lister
+    // remplirait la complétude de gris avant la première frappe.
+    const { host } = await mount([], null);
+    expect(checklist(host).some((row) => row.includes('anglais'))).toBe(false);
   });
 });

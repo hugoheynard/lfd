@@ -2,21 +2,61 @@
   margin-top: var(--fold-space-lg);
 }
 
-/* Deux colonnes : l'étiquette étroite, la valeur libre. Une liste de
-   définitions et non un tableau — ce sont des paires, pas des lignes. */
-.sr-facts {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--fold-space-2xs) var(--fold-space-md);
+/* Le chiffre-héros. Ligne de base commune avec son unité, et des chiffres à
+   chasse fixe : sans `tabular-nums`, passer de 9 à 10 fiches décale l'unité. */
+.sr-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
   margin: 0;
+}
 
-  dt {
-    color: var(--fold-color-text-secondary);
-    font-size: var(--fold-font-size-sm);
-  }
+.sr-figure-value {
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-semibold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
 
-  dd {
-    margin: 0;
-    text-align: right;
-  }
+.sr-figure-unit {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+/* Le second fait, sous un filet : il appartient à la même carte que le chiffre
+   — c'est la même famille qu'on décrit — mais il ne se lit pas d'un coup d'œil,
+   et le poser sur la même ligne les mettrait à égalité. */
+.sr-sub {
+  margin-top: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
+}
+
+.sr-sub-label {
+  display: block;
+  margin-bottom: var(--fold-space-xs);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.sr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.sr-none {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* La barre respire au-dessus de la liste qu'elle résume. */
+.sr-meter {
+  display: block;
+  margin-bottom: var(--fold-space-md);
 }
