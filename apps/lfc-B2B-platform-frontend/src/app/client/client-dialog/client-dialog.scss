@@ -31,6 +31,50 @@
   }
 }
 
+/* La feuille MONTANTE : en pile, elle occupe la largeur et s'amarre en bas, avec
+   les coins hauts de la feuille crème. Au-delà du pli, elle redevient une boîte
+   centrée — un panneau collé au bas d'un écran de bureau serait perdu. */
+:host([data-placement='sheet']) .dlg {
+  width: min(600px, 100vw);
+  max-height: min(860px, calc(100dvh - 40px));
+  margin-bottom: 0;
+  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+}
+
+:host([data-placement='sheet']) .dlg[open] {
+  animation: sheet-in var(--lfc-motion-screen);
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host([data-placement='sheet']) .dlg[open] {
+    animation: none;
+  }
+}
+
+@media (min-width: 900px) {
+  :host([data-placement='sheet']) .dlg {
+    width: min(600px, calc(100vw - 32px));
+    margin-bottom: auto;
+    border-radius: var(--lfc-radius-3xl);
+  }
+}
+
+/* Le packshot borde la feuille : il déborde le padding du panneau. */
+.media {
+  flex: none;
+  margin: -26px -28px var(--fold-space-lg);
+}
+
+.media:empty {
+  display: none;
+}
+
 .panel {
   display: flex;
   flex-direction: column;

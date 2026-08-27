@@ -2,6 +2,12 @@
      l'appel programmé. L'écran reste donc la seule source de vérité. -->
 <dialog #dlg class="dlg" (close)="closed.emit()" (click)="onBackdrop($event)">
   <div class="panel">
+    <!-- Le packshot passe AVANT le titre : sur une feuille qui parle d'une pièce,
+         la pièce est le titre. Vide, l'emplacement ne prend pas de place. -->
+    <div class="media">
+      <ng-content select="[dialog-media]" />
+    </div>
+
     <div class="head">
       @if (canBack()) {
         <button

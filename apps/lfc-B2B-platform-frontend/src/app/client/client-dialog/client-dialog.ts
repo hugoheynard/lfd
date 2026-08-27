@@ -33,11 +33,22 @@ import { ClientCopyService } from '../copy/client-copy.service';
   selector: 'app-client-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldIconComponent],
+  host: { '[attr.data-placement]': 'placement()' },
   templateUrl: './client-dialog.html',
   styleUrl: './client-dialog.scss',
 })
 export class ClientDialog {
   readonly open = input.required<boolean>();
+
+  /**
+   * D'où la surface arrive.
+   *
+   * `centre` est la DÉCISION qui interrompt — celle qu'on prend avant de
+   * continuer. `sheet` est la feuille MONTANTE : elle en dit plus sur ce qu'on
+   * regarde déjà, sans prétendre changer de sujet. La réf leur donne deux
+   * entrées différentes, et c'est cette différence-là qui les distingue.
+   */
+  readonly placement = input<'centre' | 'sheet'>('centre');
 
   /** Le sur-titre : de quel chemin ce dialogue est l'étape. */
   readonly kicker = input.required<string>();
