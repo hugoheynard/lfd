@@ -48,9 +48,12 @@ port = 8787
 # deux moitiés doivent rester d'accord : l'une sans l'autre, ce sont des 404 sur
 # tous les assets.
 #
-# Une VARIABLE et non un service binding : un projet Pages ne peut pas être la
-# cible d'un binding, et un front statique n'a rien à cacher — l'argument de
-# non-contournement des backends ne s'applique pas ici.
+# L'origine du front n'est PAS une variable d'ici : elle est lue dans
+# `@lfd/endpoints`, la même constante que la liste CORS. Le nom du projet Pages
+# est `lfc-b2b`, mais Cloudflare a suffixé son sous-domaine en silence — c'est
+# `lfc-b2b-eu7.pages.dev` qui sert, et l'autre rend une build plus ancienne. Le
+# dépôt a déjà payé ce piège une fois ; deux endroits qui écrivent l'adresse à la
+# main le paieraient une deuxième.
 #
 # ⚠️ IL MANQUE TROIS CHOSES, toutes hors du dépôt, pour que l'adresse réponde :
 #   1. le token `CLOUDFLARE_LFD_GATEWAY` est « Account · Workers Scripts · Edit »
@@ -67,9 +70,6 @@ port = 8787
 # [[routes]]
 # pattern = "lafoliecoffee.info/pro*"
 # zone_name = "lafoliecoffee.info"
-
-[vars]
-PRO_FRONT_ORIGIN = "https://lfc-b2b.pages.dev"
 
 # Service bindings vers les backends : appels INTERNES au compte, sans passer par
 # le réseau public. C'est la pièce qui rend la passerelle non contournable — une

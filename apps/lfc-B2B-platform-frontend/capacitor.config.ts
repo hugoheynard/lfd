@@ -15,8 +15,9 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * Contrepartie assumée, la même que l'admin : **aucun mode hors-ligne**.
  *
  * ⚠️ `server.url` pointera sur `https://lafoliecoffee.info/pro` dès que la zone
- * y routera le projet Pages. En attendant, l'adresse du projet lui-même. Les
- * deux servent la même build ; c'est la seule ligne à changer.
+ * y routera le projet Pages. En attendant, l'adresse du projet lui-même — celle
+ * que nos déploiements mettent à jour, cf. la note sous `url`. C'est la seule
+ * ligne à changer.
  *
  * Pour passer en mode embarqué (App Store, ou vrai hors-ligne) : retirer le
  * bloc `server`, lancer `pnpm build:capacitor` — cette configuration-là garde
@@ -31,7 +32,11 @@ const config: CapacitorConfig = {
   // chemin existe — et c'est elle qui servira au basculement en mode embarqué.
   webDir: 'dist/lfc-b2b-platform-frontend/browser',
   server: {
-    url: 'https://lfc-b2b.pages.dev',
+    // ⚠️ `lfc-b2b-eu7`, PAS `lfc-b2b` : Cloudflare a suffixé le sous-domaine du
+    // projet Pages en silence, et `lfc-b2b.pages.dev` rend une build PLUS
+    // ANCIENNE qu'aucun déploiement ne met à jour. Vérifié le 2026-08-27 : les
+    // deux répondent 200, avec des bundles différents.
+    url: 'https://lfc-b2b-eu7.pages.dev',
     // Pas de HTTP en clair : la WebView doit refuser un downgrade, comme le
     // ferait Safari. C'est le défaut, on l'écrit pour que ça reste vrai.
     cleartext: false,

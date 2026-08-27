@@ -1,4 +1,4 @@
-import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
+import { DEV_PORTS, GATEWAY_SUBDOMAINS, PROD_FRONT_ORIGINS } from "@lfd/endpoints";
 
 /**
  * Où va une requête — **la seule décision de la gateway**, isolée ici pour
@@ -64,6 +64,20 @@ export type BackendKey = keyof typeof API_PREFIXES;
  * L'argument de non-contournement ne s'applique pas ici — un front statique est
  * public par nature, et son adresse `pages.dev` le restera de toute façon.
  */
+
+/**
+ * L'origine du front client — **la même constante que le CORS**, et pas une
+ * variable de la passerelle.
+ *
+ * Ce n'est pas une économie de câblage, c'est une immunité. Le nom du projet
+ * Pages est `lfc-b2b`, mais Cloudflare a suffixé son sous-domaine en silence :
+ * l'adresse servie est `lfc-b2b-eu7.pages.dev`, et `lfc-b2b.pages.dev` rend une
+ * build PLUS ANCIENNE qu'aucun déploiement ne met à jour. Vérifié le
+ * 2026-08-27 : les deux répondent 200 avec des bundles différents. Le dépôt
+ * avait déjà payé ce piège une fois — une panne CORS complète et silencieuse —
+ * et deux endroits qui écrivent l'adresse à la main le paieraient une deuxième.
+ */
+export const PRO_FRONT_ORIGIN = PROD_FRONT_ORIGINS.b2bFront;
 export const FRONT_PREFIXES = {
   pro: "/pro",
 } as const;

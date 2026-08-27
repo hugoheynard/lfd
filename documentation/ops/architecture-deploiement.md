@@ -230,6 +230,27 @@ couvrent le routage, dont le cas `/production` qui ne doit PAS être capté.
    adresses servies uniquement par un Worker.
 3. **Puis décommenter la route** et déployer la passerelle.
 
+### Deux pièges désamorcés en écrivant ceci
+
+**L'adresse du projet Pages.** Le nom est `lfc-b2b`, mais Cloudflare a suffixé
+son sous-domaine en silence : c'est `lfc-b2b-eu7.pages.dev` qui sert, et
+`lfc-b2b.pages.dev` rend une build **plus ancienne** qu'aucun déploiement ne met
+à jour. Vérifié le 2026-08-27 — les deux répondent 200, avec des `main-*.js`
+différents. La passerelle ne réécrit donc pas l'adresse : elle lit
+`PROD_FRONT_ORIGINS.b2bFront`, **la même constante que la liste CORS**. Le dépôt
+a déjà payé ce piège une fois par une panne CORS complète et silencieuse ; deux
+endroits qui écrivent l'adresse à la main le paieraient une deuxième.
+
+**L'origine vue par le navigateur.** Servie sous `lafoliecoffee.info/pro`, l'app
+présente `https://lafoliecoffee.info` — une origine n'a pas de chemin. Cette
+entrée est ajoutée à `PROD_CORS_ORIGINS`.
+
+🔴 **Auth0 a le même besoin, et il n'est pas dans ce dépôt.** `redirect_uri` vaut
+`window.location.origin` : `https://lafoliecoffee.info` doit figurer dans les URL
+de rappel autorisées de l'application Auth0. Oubliée, la connexion échoue **au
+retour**, après avoir semblé partir — le genre de panne qu'on diagnostique une
+heure.
+
 ### Ce qui bouge le jour où ça répond
 
 Une seule ligne côté app : `server.url` dans

@@ -1,4 +1,4 @@
-import { resolveTarget } from "./routes";
+import { PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
@@ -45,15 +45,6 @@ const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
 interface Env {
   LFD_BACKEND?: Fetcher;
-  /**
-   * L'origine du front CLIENT, servi sous `/pro`. Une variable et non un
-   * binding : un projet Pages ne peut pas être la cible d'un *service binding*,
-   * et un front statique n'a de toute façon rien à cacher.
-   *
-   * Absente, `/pro` rend un 503 explicite — même doctrine que les bindings : une
-   * erreur de configuration se dit, elle ne se rattrape pas en silence.
-   */
-  PRO_FRONT_ORIGIN?: string;
   /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
@@ -182,14 +173,10 @@ function destinationFor(target: Target, url: URL, env: Env): Destination | undef
     return { url: new URL(url.pathname + url.search, target.url).toString(), send: fetch };
   }
   if (target.kind === "front") {
-    const origin = env.PRO_FRONT_ORIGIN;
-    if (origin === undefined || origin === "") {
-      return undefined;
-    }
     // Le préfixe est DÉJÀ retiré : Pages sert depuis sa racine, et c'est
     // l'app qui porte `/pro` dans son `base href`. Les deux moitiés doivent
     // rester d'accord — l'une sans l'autre, ce sont des 404 sur tous les assets.
-    return { url: new URL(target.path + url.search, origin).toString(), send: fetch };
+    return { url: new URL(target.path + url.search, PRO_FRONT_ORIGIN).toString(), send: fetch };
   }
   const binding = bindingFor(target.backend, env);
   if (binding === undefined) {

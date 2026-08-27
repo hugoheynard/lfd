@@ -180,6 +180,21 @@ const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
 const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
 
 /**
+ * L'app CLIENT servie par la ZONE, sous `lafoliecoffee.info/pro`.
+ *
+ * Le navigateur envoie l'origine du site réellement visité, et une origine n'a
+ * pas de chemin : c'est `https://lafoliecoffee.info` qu'il présente, pas
+ * `…/pro`. Sans cette entrée, tous les appels d'API seraient refusés — la même
+ * panne complète et silencieuse que `lfc-b2b-eu7` a déjà causée.
+ *
+ * ⚠️ Auth0 a le même besoin, et lui n'est pas dans ce dépôt : `redirect_uri`
+ * vaut `window.location.origin`, donc `https://lafoliecoffee.info` doit être
+ * déclarée dans les URL de rappel autorisées de l'application Auth0. Oubliée,
+ * la connexion échoue au retour, après avoir semblé partir.
+ */
+const ZONE_CLIENT_FRONT = "https://lafoliecoffee.info";
+
+/**
  * Origines CORS autorisées **en prod**. Une seule liste, pour la même raison
  * qu'en dev : une seule API, trois fronts. Liste **fermée** → un site tiers
  * reste refusé.
@@ -190,6 +205,7 @@ export const PROD_CORS_ORIGINS: string[] = [
   PROD_FRONT_ORIGINS.pimFront,
   LEGACY_B2B_FRONT,
   LEGACY_B2B_ADMIN_FRONT,
+  ZONE_CLIENT_FRONT,
 ];
 
 /**
