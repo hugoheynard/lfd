@@ -85,3 +85,12 @@
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
+
+/* Le titre est projeté DANS la bande accent de la table : il en prend toute la
+   largeur restante, ce qui pousse le sélecteur de langue à droite. Son encre est
+   déjà inversée par `[data-surface="accent"]` — rien à redéfinir ici. */
+fold-element-title[foldToolbar] {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}

@@ -24,7 +24,13 @@ function category(overrides: Partial<Category> = {}): Category {
   };
 }
 
-async function render(rows: Category[]): Promise<HTMLElement> {
+/** Le rendu, et de quoi le RELANCER : basculer une langue demande un second tour. */
+interface Rendered {
+  readonly host: HTMLElement;
+  readonly detect: () => void;
+}
+
+async function render(rows: Category[]): Promise<Rendered> {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
@@ -38,7 +44,10 @@ async function render(rows: Category[]): Promise<HTMLElement> {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return {
+    host: fixture.nativeElement as HTMLElement,
+    detect: () => fixture.detectChanges(),
+  };
 }
 
 /** Le texte de chaque ligne rendue par le tableau. */
@@ -50,7 +59,7 @@ function rows(host: HTMLElement): string[] {
 
 describe('CategoriesPage — les archivées', () => {
   it('les masque par défaut', async () => {
-    const host = await render([
+    const { host } = await render([
       category(),
       category({ id: 'cat_2', name: { fr: 'Anciennes' }, isArchived: true }),
     ]);
@@ -61,7 +70,7 @@ describe('CategoriesPage — les archivées', () => {
   });
 
   it("n'offre l'œil que s'il y a quelque chose à rappeler", async () => {
-    const host = await render([category()]);
+    const { host } = await render([category()]);
 
     expect(host.querySelectorAll('fold-toggle-icon')).toHaveLength(0);
   });
@@ -69,10 +78,82 @@ describe('CategoriesPage — les archivées', () => {
   it("le vide ne ment pas : il dit que des archivées attendent derrière l'œil", async () => {
     // « Aucune catégorie » inviterait à en créer une alors qu'il y en a — et
     // que la page en cache l'unique exemplaire.
-    const host = await render([category({ isArchived: true })]);
+    const { host } = await render([category({ isArchived: true })]);
 
     expect(host.textContent).toContain('Aucune famille active');
     expect(host.textContent).not.toContain('Commencez par');
+  });
+});
+
+describe('CategoriesPage — la langue de lecture', () => {
+  /** Le segment du sélecteur, par son libellé. */
+  function lang(root: HTMLElement, code: string): HTMLButtonElement {
+    const found = [...root.querySelectorAll<HTMLButtonElement>('app-lang-switch .vt-btn')].find(
+      (b) => (b.textContent ?? '').trim() === code,
+    );
+    if (found === undefined) {
+      throw new Error(`Langue « ${code} » absente du sélecteur.`);
+    }
+    return found;
+  }
+
+  const traduite = category({
+    id: 'cat_2',
+    name: { fr: 'Pains', en: 'Breads', it: 'Pane' },
+    slug: { fr: 'pains' },
+  });
+
+  it('lit les noms dans la langue choisie', async () => {
+    const { host, detect } = await render([traduite]);
+    expect(rows(host)[0]).toContain('Pains');
+
+    lang(host, 'IT').click();
+    detect();
+
+    expect(rows(host)[0]).toContain('Pane');
+    expect(rows(host)[0]).not.toContain('Pains');
+  });
+
+  it('marque les lignes qui retombent sur le français', async () => {
+    // Sans marque, une ligne traduite et une ligne non traduite sont le MÊME
+    // texte à l'écran : basculer le sélecteur semblerait sans effet.
+    const { host, detect } = await render([category(), traduite]);
+
+    lang(host, 'EN').click();
+    detect();
+
+    const viennoiseries = rows(host).find((row) => row.includes('Viennoiseries'));
+    const breads = rows(host).find((row) => row.includes('Breads'));
+    expect(viennoiseries).toContain('anglais à remplir');
+    expect(breads).not.toContain('à remplir');
+  });
+
+  /** L'avertissement posé au-dessus du tableau, s'il y en a un. */
+  function avertissement(host: HTMLElement): string | null {
+    const callout = host.querySelector('fold-callout');
+    return callout === null ? null : (callout.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  it('compte, au-dessus du tableau, la famille non traduite', async () => {
+    const { host } = await render([category(), traduite]);
+    expect(avertissement(host)).toContain('Une famille');
+  });
+
+  it('accorde le compte au pluriel', async () => {
+    const { host } = await render([category(), category({ id: 'cat_9', name: { fr: 'Tartes' } })]);
+    expect(avertissement(host)).toContain('2 familles');
+  });
+
+  it('se tait quand tout est traduit', async () => {
+    const { host } = await render([traduite]);
+    expect(avertissement(host)).toBeNull();
+  });
+
+  it('ne compte pas les archivées qu’on ne montre pas', async () => {
+    // Le compte porte sur ce qui est AFFICHÉ : annoncer une famille non
+    // traduite qu'on ne peut pas voir n'appelle aucun geste.
+    const { host } = await render([traduite, category({ id: 'cat_3', isArchived: true })]);
+    expect(avertissement(host)).toBeNull();
   });
 });
 
@@ -83,7 +164,7 @@ describe('CategoriesPage — les canaux par défaut', () => {
     // La pastille ne s'affichait jamais, et une famille vendue uniquement en
     // B2B se lisait « Aucun canal ». Le typage ne l'a pas vu : le contexte d'un
     // `ng-template` est `any`.
-    const host = await render([
+    const { host } = await render([
       category({ channelPreset: [{ pointOfSaleId: 'pos_b2b', context: 'b2b' }] }),
     ]);
 

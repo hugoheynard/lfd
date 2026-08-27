@@ -18,6 +18,19 @@
     Ajouter une catégorie
   </button>
 
+  <!-- Le compte AVANT le tableau : le repli affiche du français partout, donc
+       rien, dans les lignes, ne dit combien il en manque. -->
+  @if (untranslated() > 0) {
+    <fold-callout appearance="inset" variant="warning">
+      @if (untranslated() === 1) {
+        <strong>Une famille</strong> n'est pas traduite partout.
+      } @else {
+        <strong>{{ untranslated() }} familles</strong> ne sont pas traduites partout.
+      }
+      Leur nom est lu en français dans les langues manquantes.
+    </fold-callout>
+  }
+
   <fold-data-table
     [columns]="columns"
     [rows]="visible()"
@@ -27,8 +40,30 @@
     zebra
     [empty]="emptyState()"
   >
+    <!-- L'en-tête du TABLEAU, projeté dans la bande ACCENT de la table —
+         distinct de celui de la page : le sélecteur ne commande que la lecture
+         des noms de cette liste. Les fiches, les canaux et les taux ne se
+         traduisent pas, et un sélecteur de page les aurait fait basculer avec.
+
+         Variante `bar`, pas `title` : sur la bande accent l'encre est inversée,
+         et `title` rend son encre PRIMAIRE — donc du navy sur du navy. -->
+    <fold-element-title foldToolbar variant="bar" title="Liste des catégories produit">
+      <app-lang-switch
+        titleAction
+        [lang]="lang()"
+        (langChange)="lang.set($event)"
+        [missing]="missingLangs()"
+        ariaLabel="Langue de lecture des noms"
+      />
+    </fold-element-title>
+
     <ng-template foldCell="name" let-c>
-      <strong>{{ c.name.fr }}</strong>
+      <strong>{{ displayName(c) }}</strong>
+      @if (fallsBack(c)) {
+        <!-- Sans cette marque, une ligne traduite et une ligne qui retombe sur
+               le français sont identiques à l'écran. -->
+        <fold-badge [content]="langName() + ' à remplir'" variant="warning" />
+      }
       @if (c.isArchived) {
         <fold-badge content="archivée" variant="neutral" />
       }
@@ -57,7 +92,7 @@
       <button
         type="button"
         class="row-open"
-        [attr.aria-label]="'Ouvrir « ' + c.name.fr + ' »'"
+        [attr.aria-label]="'Ouvrir « ' + displayName(c) + ' »'"
         (click)="open(c)"
       >
         <fold-icon name="more-vertical" size="sm" />
@@ -72,11 +107,11 @@
       <button
         type="button"
         class="cat-card"
-        [attr.aria-label]="'Ouvrir « ' + c.name.fr + ' »'"
+        [attr.aria-label]="'Ouvrir « ' + displayName(c) + ' »'"
         (click)="open(c)"
       >
         <span class="cat-card-head">
-          <span class="cat-card-name">{{ c.name.fr }}</span>
+          <span class="cat-card-name">{{ displayName(c) }}</span>
           @if (c.isArchived) {
             <fold-badge content="archivée" variant="neutral" />
           }

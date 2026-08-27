@@ -9,6 +9,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { SOURCE_LOCALE } from '@lfd/pim-contracts';
+
 import {
   FoldButtonComponent,
   FoldDangerZoneComponent,
@@ -23,6 +25,8 @@ import {
   FoldCalloutComponent,
 } from 'fold-ng';
 
+import { LangSwitch } from '../../../shared/lang-switch/lang-switch';
+import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
 import { NO_CHANNELS, formatPercent, sellsContext } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
@@ -74,6 +78,7 @@ export interface CategoryPanelData {
     FoldCalloutComponent,
     FoldDangerZoneComponent,
     FoldElementTitleComponent,
+    LangSwitch,
     ChannelMatrix,
   ],
   templateUrl: './category-panel.html',
@@ -153,7 +158,19 @@ export class CategoryPanel {
    * « Enregistrer » précoce parte avec un nom vide, donc désarmé. La valeur est
    * ici juste dès la première lecture, et reste modifiable.
    */
-  protected readonly draftName = linkedSignal(() => this.existing()?.name.fr ?? '');
+  /**
+   * Le nom, traduisible. Le panneau n'écrit plus la mécanique des trois
+   * langues : elle est la même que pour le nom d'une fiche, et deux copies
+   * finissent par ne plus dire la même chose de « traduit ».
+   */
+  protected readonly name = localizedField({
+    source: () => this.existing()?.name ?? { fr: '' },
+    label: 'Nom',
+    subject: 'Le nom manque',
+  });
+
+  /** La langue source est la seule obligatoire — les autres sont facultatives. */
+  protected readonly sourceLocale = SOURCE_LOCALE;
   protected readonly draftChannels = linkedSignal<SalesChannels>(
     () => this.existing()?.channelPreset ?? NO_CHANNELS,
   );
@@ -204,7 +221,12 @@ export class CategoryPanel {
     this.draftVat.update((current) => ({ ...current, [contextKey]: rateId }));
   }
 
-  protected readonly canSubmit = computed(() => !this.busy() && this.draftName().trim() !== '');
+  /**
+   * Le français décide, pas le champ affiché. Sans ça, basculer sur l'italien
+   * d'une famille non traduite désarmait « Enregistrer » alors que le nom
+   * existe — et le réarmait en revenant sur FR, sans que rien n'ait changé.
+   */
+  protected readonly canSubmit = computed(() => !this.busy() && this.name.filled());
 
   protected rateLabel(rate: VatRate): string {
     return `${rate.name} · ${formatPercent(rate.percent)}`;
@@ -224,7 +246,7 @@ export class CategoryPanel {
     await this.run(async () => {
       await this.categoryStore.saveSettings({
         id: this.existing()?.id ?? null,
-        nameFr: this.draftName().trim(),
+        name: this.name.text(),
         settings: this.isFrozen()
           ? null
           : {

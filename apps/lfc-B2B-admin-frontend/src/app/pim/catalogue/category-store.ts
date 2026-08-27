@@ -1,11 +1,23 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
-import { SOURCE_LOCALE, writeLocalized, type LocalizedText } from '@lfd/pim-contracts';
+import { LOCALES, type LocalizedText } from '@lfd/pim-contracts';
 
 import type { Category, SalesChannels } from '../data/models';
 import { CategoryHttpApi, type CategoryVatDraft } from './category-http-api';
 import { ListLoadState } from '../data/list-load-state';
+
+/**
+ * Deux noms disent-ils la même chose, **dans toutes les langues** ?
+ *
+ * La comparaison porte sur {@link LOCALES}, jamais sur les clés présentes : un
+ * nom dont on vient d'effacer l'italien n'a plus la clé, l'autre l'a encore, et
+ * comparer les clés présentes de chaque côté conclurait « identiques » — donc
+ * ne renverrait rien et laisserait la traduction effacée en base.
+ */
+function sameText(a: LocalizedText, b: LocalizedText): boolean {
+  return LOCALES.every((locale) => (a[locale] ?? '') === (b[locale] ?? ''));
+}
 
 /**
  * Ce qu'un écran de réglage écrit d'un coup. `id: null` = création ;
@@ -13,7 +25,16 @@ import { ListLoadState } from '../data/list-load-state';
  */
 export interface CategorySettingsDraft {
   readonly id: string | null;
-  readonly nameFr: string;
+  /**
+   * Le nom **dans toutes ses langues**, pas seulement en français.
+   *
+   * C'était `nameFr: string`, et le store recollait les traductions par-dessus
+   * en relisant la famille en mémoire — une reconstruction qui n'avait lieu
+   * qu'au renommage, jamais à la création. Un écran qui édite trois langues a
+   * l'objet complet sous la main : il l'envoie, plutôt que de le faire
+   * réassembler par la couche du dessous à partir d'un fragment.
+   */
+  readonly name: LocalizedText;
   /**
    * Tout ce qui n'est PAS le nom — `null` pour une famille **gelée**.
    *
@@ -101,7 +122,7 @@ export class CategoryStore {
   private async openNew(draft: CategorySettingsDraft): Promise<string> {
     const parentId = draft.settings?.parentId ?? null;
     const created = await this.api.create(
-      parentId === null ? { name: { fr: draft.nameFr } } : { name: { fr: draft.nameFr }, parentId },
+      parentId === null ? { name: draft.name } : { name: draft.name, parentId },
     );
     return created.id;
   }
@@ -118,12 +139,8 @@ export class CategoryStore {
    */
   private async reword(id: string, draft: CategorySettingsDraft): Promise<string> {
     const current = this.state().find((item) => item.id === id);
-    if (current === undefined || current.name.fr !== draft.nameFr) {
-      // On repart du nom EXISTANT : renommer en français ne doit pas effacer
-      // les traductions qu'on ne montre pas encore. Un `{ fr }` nu remplaçait
-      // l'objet entier, donc chaque renommage perdait l'anglais en silence.
-      const base: LocalizedText = current?.name ?? { fr: draft.nameFr };
-      await this.api.rename(id, writeLocalized(base, SOURCE_LOCALE, draft.nameFr));
+    if (current === undefined || !sameText(current.name, draft.name)) {
+      await this.api.rename(id, draft.name);
     }
     // Le déplacement ne concerne que les vivantes : `settings` est absent sinon.
     if (draft.settings !== null) {

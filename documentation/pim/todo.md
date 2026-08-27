@@ -58,6 +58,16 @@
       `src/server.ts` du gate `no-direct-env`
 - [ ] Lib `packages/shared-types` (DTOs partagés front/back, source de vérité TS)
 - [ ] Lib UI `packages/ui` (design system, à venir)
+- [x] **Le nom d'une famille se saisit en FR/EN/IT** _(2026-08-27)_ — le contrat le
+      portait déjà (`LocalizedText`, colonnes `Json`), l'écran n'en montrait que le
+      français : `CategorySettingsDraft.nameFr` a été remplacé par le texte complet,
+      le tableau se lit dans une langue au choix, et les lignes qui **retombent** sur
+      le français sont marquées — sans quoi basculer le sélecteur ne changerait rien à
+      l'œil et passerait pour une panne
+- [ ] Converger `ProductFormStore` sur `shared/lang-switch/localized-field.ts` — le
+      même motif de saisie traduisible y est écrit à la main, en plus ancien. Deux
+      copies d'une règle (« vider une traduction l'EFFACE, la source ne s'efface
+      pas ») finissent par ne plus dire la même chose de « traduit »
 
 ### Domaine & données
 

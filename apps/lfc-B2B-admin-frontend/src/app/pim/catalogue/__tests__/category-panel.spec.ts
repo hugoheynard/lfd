@@ -460,3 +460,84 @@ describe('CategoryPanel — une famille archivée est gelée', () => {
     expect(http.move).not.toHaveBeenCalled();
   });
 });
+
+describe('CategoryPanel — les trois langues du nom', () => {
+  /** Le segment du sélecteur de langue, par son libellé — « FR », « EN », « IT ». */
+  function lang(root: HTMLElement, code: string): HTMLButtonElement {
+    const found = [...root.querySelectorAll<HTMLButtonElement>('app-lang-switch .vt-btn')].find(
+      (b) => (b.textContent ?? '').trim() === code,
+    );
+    if (found === undefined) {
+      throw new Error(`Langue « ${code} » absente du sélecteur.`);
+    }
+    return found;
+  }
+
+  function write(root: HTMLElement, value: string): void {
+    const input = root.querySelector('fold-input input');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('Champ « Nom » introuvable.');
+    }
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
+
+  it("écrire en anglais n'efface pas le français", async () => {
+    // La régression que ce test ferme : un `{ fr }` nu remontait au référentiel
+    // et remplaçait l'objet entier, donc chaque saisie perdait les autres.
+    const { host, http, detect, stable } = await setup(category());
+
+    lang(host, 'EN').click();
+    detect();
+    write(host, 'Pastries');
+    detect();
+
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.rename).toHaveBeenCalledWith('cat_1', { fr: 'Viennoiseries', en: 'Pastries' });
+  });
+
+  it('montre le champ VIDE dans une langue non traduite, pas le repli français', async () => {
+    // Le repli est bon pour LIRE et faux pour SAISIR : préremplir « Viennoiseries »
+    // dans le champ italien ferait enregistrer du français comme une traduction.
+    const { host, detect } = await setup(category());
+
+    lang(host, 'IT').click();
+    detect();
+
+    const input = host.querySelector<HTMLInputElement>('fold-input input');
+    expect(input?.value).toBe('');
+  });
+
+  it('laisse « Enregistrer » armé quand on regarde une langue non traduite', async () => {
+    // C'est le français qui décide, pas le champ affiché — sinon le bouton se
+    // désarme en basculant, alors que rien n'a changé et que le nom existe.
+    const { host, detect } = await setup(category());
+
+    lang(host, 'IT').click();
+    detect();
+
+    expect(button(host, 'Enregistrer').disabled).toBe(false);
+  });
+
+  it('avertit que la famille n’est pas traduite partout', async () => {
+    const { host } = await setup(category());
+    expect(host.textContent).toContain('pas traduite partout');
+  });
+
+  it('se tait quand les trois langues sont là', async () => {
+    // Un avertissement permanent cesse d'être lu : il ne paraît que s'il manque
+    // vraiment quelque chose.
+    const { host } = await setup(
+      category({ name: { fr: 'Viennoiseries', en: 'Pastries', it: 'Paste' } }),
+    );
+    expect(host.textContent).not.toContain('pas traduite partout');
+  });
+
+  it('ne crie pas au manque de traduction sur une famille qu’on est en train de créer', async () => {
+    // Rien n'est écrit : elle n'est pas « mal traduite », elle n'existe pas.
+    const { host } = await setupCreate();
+    expect(host.textContent).not.toContain('pas traduite partout');
+  });
+});

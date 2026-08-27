@@ -1,12 +1,34 @@
 <fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
 
 <fold-panel-body>
+  <!-- L'avertissement AVANT le champ, et pas sous lui : ce qui manque décide
+       s'il faut basculer le sélecteur, donc il doit se lire d'abord. Il ne
+       paraît qu'une fois le français posé — tant qu'il est vide, la famille
+       n'est pas « mal traduite », elle n'est pas encore écrite. -->
+  @if (name.filled() && name.missing().length > 0) {
+    <fold-callout appearance="inset" variant="warning">
+      Cette famille n'est <strong>pas traduite partout</strong>. Son nom sera lu en français dans
+      les langues manquantes — le client verra donc du français sur une boutique italienne.
+    </fold-callout>
+  }
+
+  <!-- Le sélecteur appartient à CE champ, et ne fait basculer que lui : le
+       parent, les canaux et les taux ne se traduisent pas. Un sélecteur en tête
+       de panneau les aurait fait basculer avec, ou l'aurait laissé croire. -->
+  <app-lang-switch
+    [lang]="name.locale()"
+    (langChange)="name.locale.set($event)"
+    [missing]="name.missing()"
+    [hint]="name.hint()"
+    ariaLabel="Langue du nom"
+  />
+
   <fold-input
-    label="Nom"
+    [label]="name.label()"
     placeholder="ex. Viennoiseries"
-    required
-    [value]="draftName()"
-    (valueChange)="draftName.set($event)"
+    [required]="name.locale() === sourceLocale"
+    [value]="name.value()"
+    (valueChange)="name.set($event)"
   />
 
   @if (isFrozen()) {

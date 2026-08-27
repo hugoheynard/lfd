@@ -2,7 +2,17 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import {
+  LOCALES,
+  SOURCE_LOCALE,
+  missingLocales,
+  readLocalized,
+  type Locale,
+} from '@lfd/pim-contracts';
+
+import {
   FoldBadgeComponent,
+  FoldCalloutComponent,
+  FoldElementTitleComponent,
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -15,6 +25,8 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { LangSwitch } from '../../../shared/lang-switch/lang-switch';
+import { LOCALE_NAMES } from '../../../shared/lang-switch/locale-names';
 import { pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { VatRateStore } from '../vat-rates/vat-store';
@@ -52,7 +64,10 @@ import type { Category } from '../catalogue-api';
     // Un seul gabarit de pastilles pour la colonne ET la carte.
     NgTemplateOutlet,
     FoldPageLayoutComponent,
+    FoldElementTitleComponent,
+    FoldCalloutComponent,
     FoldButtonComponent,
+    LangSwitch,
     FoldToggleIconComponent,
     FoldBadgeComponent,
     FoldIconComponent,
@@ -78,6 +93,58 @@ export class CategoriesPage {
   protected readonly rates = this.vatRateStore.items;
   /** Les noms affichés dans les pastilles viennent du référentiel. */
   protected readonly pointsOfSale = this.pointStore.items;
+
+  /**
+   * La langue dans laquelle le tableau LIT les noms. Une lecture, jamais une
+   * saisie : on ne traduit pas depuis une ligne, on regarde ce qui est traduit.
+   * Le nom n'est d'ailleurs que la colonne concernée — le parent en hérite, le
+   * reste (fiches, canaux) n'est pas traduisible et ne bascule pas.
+   */
+  protected readonly lang = signal<Locale>(SOURCE_LOCALE);
+
+  /**
+   * Les langues incomplètes **quelque part** dans la liste affichée — l'union,
+   * pas l'intersection : une seule famille non traduite en italien suffit à
+   * marquer IT, sinon le point ne s'allumerait qu'une fois tout perdu.
+   */
+  protected readonly missingLangs = computed<readonly Locale[]>(() => {
+    const seen = new Set<Locale>();
+    for (const category of this.visible()) {
+      for (const locale of missingLocales(category.name)) {
+        seen.add(locale);
+      }
+    }
+    return LOCALES.filter((locale) => seen.has(locale));
+  });
+
+  /** Combien de familles affichées manquent d'au moins une traduction. */
+  protected readonly untranslated = computed(
+    () => this.visible().filter((category) => missingLocales(category.name).length > 0).length,
+  );
+
+  /** Le nom d'une famille dans la langue lue — repli sur le français. */
+  protected displayName(category: Category): string {
+    return readLocalized(category.name, this.lang());
+  }
+
+  /**
+   * Cette famille est-elle NON traduite dans la langue lue ?
+   *
+   * Le repli rend le français, donc une ligne traduite et une ligne non traduite
+   * s'affichent pareil : sans marque, basculer le sélecteur donnerait un tableau
+   * inchangé, et on conclurait que le sélecteur ne marche pas.
+   */
+  protected fallsBack(category: Category): boolean {
+    return (category.name[this.lang()] ?? '') === '';
+  }
+
+  /** Le nom de la langue lue, pour la marque des lignes non traduites. */
+  protected readonly langName = computed(() => LOCALE_NAMES[this.lang()]);
+
+  /** La plateforme professionnelle vend-elle cette famille ? */
+  protected sellsB2b(category: Category): boolean {
+    return sellsContext(category.channelPreset, 'b2b');
+  }
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
@@ -140,24 +207,14 @@ export class CategoriesPage {
     if (category.parentId === null) {
       return '—';
     }
-    return this.categories().find((item) => item.id === category.parentId)?.name.fr ?? '—';
+    const parent = this.categories().find((item) => item.id === category.parentId);
+    return parent === undefined ? '—' : this.displayName(parent);
   }
 
   /** Le compte de fiches en TAG, jamais en blanc : une carte lit mal un vide. */
   protected ficheLabel(category: Category): string {
     const count = category.activeProductCount;
     return count === 0 ? 'Aucune fiche' : `${count} fiche(s)`;
-  }
-
-  /**
-   * La plateforme professionnelle vend-elle cette famille ?
-   *
-   * Le gabarit lisait `channelPreset.b2b` — une propriété sur un TABLEAU depuis
-   * que la matrice est une liste de paires, donc toujours `undefined`. Le
-   * typage ne l'a pas vu : le contexte d'un `ng-template` est `any`.
-   */
-  protected sellsB2b(category: Category): boolean {
-    return sellsContext(category.channelPreset, 'b2b');
   }
 
   protected presetEmporter(category: Category): string[] {
