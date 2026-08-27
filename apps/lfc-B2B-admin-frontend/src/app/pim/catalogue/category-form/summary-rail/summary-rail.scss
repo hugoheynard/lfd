@@ -14,7 +14,7 @@
 .sr-figure-value {
   font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-semibold);
-  line-height: 1;
+  line-height: var(--fold-leading-none);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
 }
@@ -30,7 +30,7 @@
 .sr-sub {
   margin-top: var(--fold-space-md);
   padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .sr-sub-label {
