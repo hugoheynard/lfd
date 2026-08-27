@@ -98,6 +98,10 @@
 
   /* ── Rôles hors catalogue fold (candidats à proposer) ── */
   --lfc-color-primary-vivid: var(--lfc-ink-600);
+  /* Sur fond de marque : le second niveau de texte, et la tuile d'icône. La réf
+     les nomme (« texte secondaire sur fond bleu ») ; fold n'a que `on-primary`. */
+  --lfc-color-on-primary-muted: var(--lfc-ink-300);
+  --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
   --lfc-color-accent: var(--lfc-butter-500);
   --lfc-color-on-accent: var(--lfc-butter-900);
   --lfc-color-accent-surface: var(--lfc-butter-100);
@@ -106,9 +110,57 @@
   --lfc-color-text-subtle: var(--lfc-soot-500);
   --lfc-color-border-strong: var(--lfc-paper-400);
 
-  /* ── Typographie : fold prête deux crans, on les habille ── */
+  /* ── Typographie : les deux familles ── */
   --fold-font-sans: 'Outfit', system-ui, sans-serif;
   --fold-font-label: 'Archivo', system-ui, sans-serif;
+
+  /* ── Tailles : l'échelle fold recalée sur la réf ──
+     Les huit crans de fold prennent les valeurs de la réf ; les rôles que la
+     réf nomme et que l'échelle ne porte pas (le sur-titre du chrome, le CTA, un
+     titre d'écran) sont des `--lfc-text-*`. Recaler `lg` sur 15px n'est pas
+     cosmétique : c'est ce cran que `fold-input` lit pour la valeur d'un champ. */
+  --fold-text-2xs: 0.65625rem; /* 10.5px — badge, pastille, séparateur */
+  --fold-text-xs: 0.71875rem; /* 11.5px — aide, horodatage, sur-titre */
+  --fold-text-sm: 0.75rem; /* 12px — label de champ */
+  --fold-text-md: 0.8125rem; /* 13px — texte courant */
+  --fold-text-base: 0.84375rem; /* 13.5px — texte courant haut */
+  --fold-text-lg: 0.9375rem; /* 15px — valeur d'un champ */
+  --fold-text-xl: 1.3125rem; /* 21px — titre de marque */
+  --fold-text-2xl: 1.875rem; /* 30px — titre d'écran */
+  --lfc-text-kicker: 0.59375rem; /* 9.5px — sur-titre du chrome */
+  --lfc-text-note: 0.78125rem; /* 12.5px — argument d'encart */
+  --lfc-text-block: 0.875rem; /* 14px — titre de bloc, CTA */
+  --lfc-text-cta: 0.90625rem; /* 14.5px — CTA pleine largeur */
+  --lfc-text-heading: 1rem; /* 16px — titre d'état */
+  --lfc-text-screen-sm: 1.75rem; /* 28px — titre d'écran secondaire */
+
+  /* ── Graisses : la réf ne connaît que 800 et 900 en display ── */
+  --lfc-weight-black: 900;
+
+  /* ── Interlettrages nommés par la réf, absents de l'échelle fold ── */
+  --lfc-tracking-display: -0.03em; /* titre d'écran */
+  --lfc-tracking-block: -0.015em; /* titre de bloc */
+  --lfc-tracking-cta: 0.02em;
+  --lfc-tracking-label: 0.04em; /* titre d'encart, bouton secondaire */
+  --lfc-tracking-eyebrow: 0.1em; /* sur-titre de section */
+  --lfc-tracking-kicker: 0.2em; /* sur-titre du chrome */
+
+  /* ── Interlignes de la réf ── */
+  --lfc-leading-display: 1.02;
+  --lfc-leading-title: 1.1;
+  --lfc-leading-tight: 1.4;
+  --lfc-leading-note: 1.45;
+  --lfc-leading-body: 1.55;
+
+  /* ── Espace : l'échelle de la réf ──
+     Deux crans seulement diffèrent de fold (`lg` 18 au lieu de 16, `xl` 22 au
+     lieu de 20), mais ce sont ceux qui rythment la feuille crème. */
+  --fold-space-xs: 0.25rem; /* 4px */
+  --fold-space-sm: 0.5rem; /* 8px — gap de grille de tuiles */
+  --fold-space-md: 0.75rem; /* 12px — gap de liste de cartes */
+  --fold-space-lg: 1.125rem; /* 18px — padding de feuille */
+  --fold-space-xl: 1.375rem; /* 22px — padding de haut de feuille */
+  --fold-space-2xl: 2rem; /* 32px */
 
   /* ── Rayons : l'échelle de la réf, cran par cran ──
      Les quatre crans que fold porte (`sm` `md` `lg` `pill`) sont RECÂBLÉS aux
