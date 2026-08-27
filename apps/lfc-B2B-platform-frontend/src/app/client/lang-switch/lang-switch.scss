@@ -1,4 +1,25 @@
+/* `fold-view-toggle` n'expose pas de variables à lui : il lit les TOKENS. Les
+   redéclarer sur cet hôte suffit donc à lui donner la forme de la réf, et ça
+   n'affecte que ce composant — les propriétés personnalisées descendent, elles
+   ne remontent pas.
+
+   Ce qu'on change et pourquoi :
+   - la pastille interne passe de 3 px (`radius-xs`, le cran des micro-éléments)
+     à 7 px : la réf dessine des pastilles, pas des rectangles ;
+   - le boîtier prend le voile de survol plutôt que le creux. `surface-hover`
+     vaut un lavis de crème sur l'encre et un beige sur le papier — donc le
+     contrôle reste juste des DEUX côtés du chrome, sans le savoir ;
+   - la voix est celle du display : `all: unset` sur les segments les fait
+     hériter de la famille, de la graisse et de l'interlettrage posés ici. */
+
 :host {
   flex: none;
   display: block;
+
+  --fold-radius-xs: 7px;
+  --fold-color-surface-sunken: var(--fold-color-surface-hover);
+
+  font-family: var(--fold-font-label);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: 0.08em;
 }
