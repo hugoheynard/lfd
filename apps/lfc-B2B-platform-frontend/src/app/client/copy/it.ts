@@ -19,7 +19,7 @@ export const IT: ClientCopy = {
     kickerLogin: 'Accesso',
     kickerEntered: 'Account creato',
     kickerRappel: 'Richiamo',
-    kickerCommande: 'Ordine',
+    kickerCommande: 'Nuovo ordine',
     deskKicker: 'Val d’Isère · ordina online',
   },
   foot: {

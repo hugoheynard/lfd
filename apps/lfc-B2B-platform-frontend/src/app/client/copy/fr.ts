@@ -11,7 +11,7 @@ export const FR: ClientCopy = {
     kickerLogin: 'Connexion',
     kickerEntered: 'Compte créé',
     kickerRappel: 'Rappel',
-    kickerCommande: 'Commande',
+    kickerCommande: 'Nouvelle commande',
     deskKicker: 'Val d’Isère · commande en ligne',
   },
   foot: {
