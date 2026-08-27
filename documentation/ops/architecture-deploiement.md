@@ -214,21 +214,20 @@ les assets.
 la variable `PRO_FRONT_ORIGIN`, et la build de l'app sous `/pro`. Quatre tests
 couvrent le routage, dont le cas `/production` qui ne doit PAS être capté.
 
-🔴 Côté compte, **rien** — et pas par oubli :
+✅ Côté compte, fait le 2026-08-27 :
 
-1. **Le token ne peut pas.** `CLOUDFLARE_LFD_GATEWAY` est
-   « Account · Workers Scripts · Edit » (cf. l'en-tête de
-   `deploy_lfd_gateway.yml`). Créer une route de zone demande en plus
-   **« Zone · Workers Routes · Edit »** sur `lafoliecoffee.info`. Déclarer la
-   route avant d'élargir le token **casserait le déploiement de la passerelle**,
-   qui fonctionne aujourd'hui : le bloc `[[routes]]` est donc écrit dans
-   `wrangler.toml` mais commenté.
-2. **La zone ne sert rien.** Vérifié le 2026-08-27 : `dig lafoliecoffee.info`
-   ne rend ni `A` ni `CNAME`, et l'appel HTTP n'aboutit pas. Une route Worker
-   sans enregistrement proxifié à l'apex ne reçoit jamais de trafic — il faut un
-   enregistrement, fût-il le `AAAA 100::` que Cloudflare utilise pour les
-   adresses servies uniquement par un Worker.
-3. **Puis décommenter la route** et déployer la passerelle.
+1. **Le token pouvait déjà.** `LFD_GATEWAY` porte « Account · Workers Scripts ·
+   Edit » **et** « All zones · Workers Routes · Edit » — vérifié dans le résumé
+   du token. L'en-tête de `deploy_lfd_gateway.yml` n'annonçait que la première ;
+   la note était incomplète, pas le token. Corrigée.
+2. **La zone a un apex.** `AAAA lafoliecoffee.info → 100::`, **proxifié**.
+   L'adresse appartient au bloc de rebut IPv6 : elle ne mène nulle part et n'a
+   pas à mener quelque part, puisque c'est le Worker qui répond. Sans elle, une
+   route de zone ne reçoit jamais de trafic.
+3. **La route est déclarée** dans `gateway/wrangler.toml`.
+
+⚠️ Elle ne s'attache qu'au **déploiement** de la passerelle : tant que le
+dépôt n'est pas poussé, `lafoliecoffee.info/pro` ne répond pas.
 
 ### Deux pièges désamorcés en écrivant ceci
 

@@ -10,7 +10,11 @@ name: deploy_lfd_gateway
 # existent. On peut déjà le déployer sans risque (il ne capte aucun trafic).
 #
 # Secrets requis (Settings → Secrets and variables → Actions) :
-#   CLOUDFLARE_LFD_GATEWAY — token « Account · Workers Scripts · Edit »
+#   CLOUDFLARE_LFD_GATEWAY — token « Account · Workers Scripts · Edit » ET
+#     « All zones · Workers Routes · Edit ». Le second a longtemps manqué à cette
+#     note alors que le token le portait : vérifié au tableau de bord le
+#     2026-08-27. Il est nécessaire depuis que `wrangler.toml` déclare une route
+#     de zone (`lafoliecoffee.info/pro*`) — sans lui, le déploiement échoue.
 #     (+ « Zone · Workers Routes · Edit » le jour où on posera les routes prod).
 #   CLOUDFLARE_ACCOUNT_ID — l'account id partagé.
 

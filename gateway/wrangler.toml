@@ -55,21 +55,17 @@ port = 8787
 # dépôt a déjà payé ce piège une fois ; deux endroits qui écrivent l'adresse à la
 # main le paieraient une deuxième.
 #
-# ⚠️ IL MANQUE TROIS CHOSES, toutes hors du dépôt, pour que l'adresse réponde :
-#   1. le token `CLOUDFLARE_LFD_GATEWAY` est « Account · Workers Scripts · Edit »
-#      (cf. l'en-tête de deploy_lfd_gateway.yml) : il ne peut PAS créer de route
-#      de zone. Y ajouter « Zone · Workers Routes · Edit » sur lafoliecoffee.info ;
-#   2. la zone n'a AUCUN enregistrement à l'apex — vérifié : `dig lafoliecoffee.info`
-#      ne rend rien, et l'appel HTTP n'aboutit pas. Une route Worker sans
-#      enregistrement proxifié ne reçoit jamais de trafic ;
-#   3. alors seulement, décommenter le bloc `routes` ci-dessous.
-#
-# Le poser AVANT (1) casserait le déploiement de la passerelle, qui marche
-# aujourd'hui — c'est pourquoi il est écrit mais inerte.
-#
-# [[routes]]
-# pattern = "lafoliecoffee.info/pro*"
-# zone_name = "lafoliecoffee.info"
+# Vérifié dans le tableau de bord le 2026-08-27 :
+#   1. le token `LFD_GATEWAY` porte « Account · Workers Scripts · Edit » ET
+#      « All zones · Workers Routes · Edit ». L'en-tête de deploy_lfd_gateway.yml
+#      n'annonçait que la première — il a été corrigé ;
+#   2. la zone a désormais un enregistrement à l'apex : `AAAA lafoliecoffee.info
+#      → 100::`, PROXIFIÉ. L'adresse est celle du bloc de rebut IPv6 : elle ne
+#      mène nulle part et n'a pas à mener quelque part, puisque c'est le Worker
+#      qui répond. Sans elle, une route de zone ne reçoit jamais de trafic.
+[[routes]]
+pattern = "lafoliecoffee.info/pro*"
+zone_name = "lafoliecoffee.info"
 
 # Service bindings vers les backends : appels INTERNES au compte, sans passer par
 # le réseau public. C'est la pièce qui rend la passerelle non contournable — une
