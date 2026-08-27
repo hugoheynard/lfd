@@ -60,6 +60,7 @@ export const FR: ClientCopy = {
     todayGroup: 'Aujourd’hui',
     note: 'Entre 12 h et 14 h on est au four : on ne prend pas d’appel, et on préfère le dire.',
     phone: 'On vous rappellera au {phone}.',
+    phoneUnknown: 'On vous rappelle au numéro de votre compte.',
     ctaIdle: 'Choisissez un moment',
     ctaReady: 'Demander le rappel',
     slotFree: 'disponible',
@@ -84,6 +85,7 @@ export const FR: ClientCopy = {
   },
   commande: {
     title: 'Bonjour {name}.\nOn vous sert comment ?',
+    titleAnonymous: 'Bonjour.\nOn vous sert comment ?',
     intro: 'Vous choisissez, nous préparons.',
     sectionsLabel: 'Sections',
     newOrderTitle: 'Nouvelle commande',
@@ -181,6 +183,7 @@ export const FR: ClientCopy = {
     intro: 'Votre commande entre dans la fournée de demain matin.',
     mailTitle: 'Reçu envoyé par e-mail',
     mailLine: 'À {email} — la facture et le QR de retrait sont dedans.',
+    mailLineNoAddress: 'À l’adresse de votre compte — la facture et le QR de retrait sont dedans.',
     recapPickup: 'Retrait',
     recapDelivery: 'Livraison',
     recapContent: 'Contenu',

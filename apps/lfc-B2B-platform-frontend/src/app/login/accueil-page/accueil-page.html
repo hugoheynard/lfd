@@ -14,10 +14,10 @@
   </div>
 
   @if (panelOpen()) {
-    <app-rappel-panel [phone]="phone()" (booked)="book($event)" />
+    <app-rappel-panel [phone]="phone() ?? ''" (booked)="book($event)" />
   } @else {
     <app-welcome-step
-      [phone]="phone()"
+      [phone]="phone() ?? ''"
       [bookedSlot]="bookedSlot()"
       (signedUp)="signUp($event)"
       (wantsLogin)="signIn($event)"

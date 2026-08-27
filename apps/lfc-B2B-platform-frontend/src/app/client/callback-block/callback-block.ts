@@ -29,6 +29,7 @@ export class CallbackBlock {
   readonly cta = input.required<string>();
 
   /** Le numéro connu — celui qu'on rappellera. */
+  /** Le numéro du compte. Vide quand on ne le connaît pas — le lien disparaît. */
   readonly phone = input.required<string>();
 
   /** Le créneau retenu, ou `null` tant que rien n'est demandé. */

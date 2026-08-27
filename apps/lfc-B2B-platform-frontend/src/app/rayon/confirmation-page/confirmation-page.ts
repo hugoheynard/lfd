@@ -47,9 +47,13 @@ export class ConfirmationPage {
   /** Le titre tient sur deux lignes dans le dictionnaire : elles sont voulues. */
   protected readonly titleLines = computed(() => this.t().done.title.split('\n'));
 
-  protected readonly mailLine = computed(() =>
-    fill(this.t().done.mailLine, { email: this.identity.email() }),
-  );
+  /** L'adresse est NOMMÉE quand on la connaît, désignée quand on ne la sait pas. */
+  protected readonly mailLine = computed(() => {
+    const email = this.identity.email();
+    return email === null
+      ? this.t().done.mailLineNoAddress
+      : fill(this.t().done.mailLine, { email });
+  });
 
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),

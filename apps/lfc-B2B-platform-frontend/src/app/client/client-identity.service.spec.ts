@@ -48,6 +48,23 @@ describe('ClientIdentity', () => {
     expect(identity.phone()).toBe(MOCK_CLIENT.phone);
   });
 
+  it('reconnu SANS profil : aucun nom d’emprunt, on salue sans nommer', () => {
+    // « Bonjour Pierre » à quelqu'un de connecté n'est pas un repli : c'est le
+    // nom d'un autre, et ça masque un profil qui n'est jamais arrivé.
+    identity.setRecognised(true);
+
+    expect(identity.firstName()).toBeNull();
+    expect(identity.phone()).toBeNull();
+    expect(identity.email()).toBeNull();
+  });
+
+  it('reconnu AVEC profil : c’est le compte qui parle', () => {
+    identity.setRecognised(true);
+    identity.apply(PROFILE);
+
+    expect(identity.firstName()).toBe('Camille');
+  });
+
   it('sans nom de famille, le nom complet ne traîne pas d’espace', () => {
     identity.apply({ ...PROFILE, lastName: '' });
 

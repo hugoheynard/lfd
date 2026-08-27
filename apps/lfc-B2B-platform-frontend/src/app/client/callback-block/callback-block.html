@@ -7,7 +7,9 @@
       <span class="booked-text">
         <span class="booked-when">{{ bookedLine() }}</span>
         <span class="booked-phone">
-          {{ t().pro.at }} <span class="num">{{ phone() }}</span>
+          @if (phone() !== '') {
+            {{ t().pro.at }} <span class="num">{{ phone() }}</span>
+          }
         </span>
       </span>
       <button class="booked-cancel" type="button" (click)="cancelled.emit()">
@@ -32,7 +34,9 @@
       {{ cta() }}
     </button>
     @if (showPhone()) {
-      <a class="tel" [href]="telHref()">{{ phone() }}</a>
+      @if (phone() !== '') {
+        <a class="tel" [href]="telHref()">{{ phone() }}</a>
+      }
     }
   </div>
 }

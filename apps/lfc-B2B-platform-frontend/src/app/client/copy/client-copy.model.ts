@@ -64,6 +64,8 @@ export interface ClientCopy {
     readonly note: string;
     /** `{phone}` est remplacé par le numéro connu. */
     readonly phone: string;
+    /** Quand le compte n'en porte pas encore — on demande au lieu de supposer. */
+    readonly phoneUnknown: string;
     readonly ctaIdle: string;
     readonly ctaReady: string;
     readonly slotFree: string;
@@ -88,6 +90,8 @@ export interface ClientCopy {
   readonly commande: {
     /** `{name}` est remplacé par le prénom du client reconnu. */
     readonly title: string;
+    /** La même salutation quand le prénom n'est pas connu — on ne l'invente pas. */
+    readonly titleAnonymous: string;
     readonly intro: string;
     /** Le nom du groupe de points du carrousel, pour les lecteurs d'écran. */
     readonly sectionsLabel: string;
@@ -200,6 +204,8 @@ export interface ClientCopy {
     readonly mailTitle: string;
     /** `{email}` est remplacé par l'adresse du compte. */
     readonly mailLine: string;
+    /** Quand l'adresse n'est pas connue de l'écran — on ne la devine pas. */
+    readonly mailLineNoAddress: string;
     readonly recapPickup: string;
     readonly recapDelivery: string;
     readonly recapContent: string;

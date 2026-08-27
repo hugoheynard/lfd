@@ -31,6 +31,7 @@ const ASAP = 'asap';
   styleUrl: './rappel-panel.scss',
 })
 export class RappelPanel {
+  /** Le numéro du compte. Vide quand on ne le connaît pas — on n'en invente pas. */
   readonly phone = input.required<string>();
   readonly booked = output<string>();
 
@@ -53,9 +54,10 @@ export class RappelPanel {
     this.picked() ? this.t().rappel.ctaReady : this.t().rappel.ctaIdle,
   );
 
-  protected readonly phoneLine = computed(() =>
-    fill(this.t().rappel.phone, { phone: this.phone() }),
-  );
+  protected readonly phoneLine = computed(() => {
+    const phone = this.phone();
+    return phone === '' ? this.t().rappel.phoneUnknown : fill(this.t().rappel.phone, { phone });
+  });
 
   protected pick(slot: CallSlot): void {
     if (!isClosed(slot)) {

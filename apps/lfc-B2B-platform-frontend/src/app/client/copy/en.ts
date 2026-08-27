@@ -65,6 +65,7 @@ export const EN: ClientCopy = {
     todayGroup: 'Today',
     note: 'Between noon and 2pm we’re at the oven : we don’t take calls, and we’d rather say so.',
     phone: 'We’ll call you on {phone}.',
+    phoneUnknown: 'We call the number on your account.',
     ctaIdle: 'Pick a time',
     ctaReady: 'Request the call',
     slotFree: 'available',
@@ -88,6 +89,7 @@ export const EN: ClientCopy = {
   },
   commande: {
     title: 'Hello {name}.\nHow shall we serve you ?',
+    titleAnonymous: 'Hello.\nHow can we serve you?',
     intro: 'You choose, we bake.',
     sectionsLabel: 'Sections',
     newOrderTitle: 'New order',
@@ -185,6 +187,7 @@ export const EN: ClientCopy = {
     intro: 'Your order joins tomorrow morning’s batch.',
     mailTitle: 'Receipt sent by e-mail',
     mailLine: 'To {email} — the invoice and the collection QR are inside.',
+    mailLineNoAddress: 'To your account address — the invoice and the collection QR are inside.',
     recapPickup: 'Collection',
     recapDelivery: 'Delivery',
     recapContent: 'Contents',

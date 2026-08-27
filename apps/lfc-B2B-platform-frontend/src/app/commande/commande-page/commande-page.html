@@ -9,7 +9,7 @@
   <div aside-foot class="aside-foot"></div>
 
   @if (panelOpen()) {
-    <app-rappel-panel [phone]="phone()" (booked)="book($event)" />
+    <app-rappel-panel [phone]="phone() ?? ''" (booked)="book($event)" />
   } @else {
     <div class="stack">
       <app-offer-carousel [labels]="sections()" [dotsLabel]="t().commande.sectionsLabel">
@@ -104,7 +104,7 @@
         [title]="t().commande.urgenceTitle"
         [pitch]="t().commande.urgencePitch"
         [cta]="t().commande.urgenceCta"
-        [phone]="phone()"
+        [phone]="phone() ?? ''"
         [bookedSlot]="bookedSlot()"
         [showPhone]="true"
         (wantsCallback)="openPanel()"

@@ -78,11 +78,20 @@ export class CommandePage {
   /** Le dialogue ouvert, s'il y en a un. Un seul à la fois, par construction. */
   protected readonly dialog = signal<'pickup' | 'address' | null>(null);
 
-  protected readonly heading = computed(() =>
-    this.panelOpen()
-      ? this.t().hero.rappelTitle
-      : fill(this.t().commande.title, { name: this.identity.firstName() }),
-  );
+  /**
+   * Le prénom quand on le connaît — et une salutation sans nom sinon. On ne
+   * salue jamais quelqu'un du prénom d'un autre : c'est ce que faisait le repli
+   * sur la maquette une fois la personne connectée.
+   */
+  protected readonly heading = computed(() => {
+    if (this.panelOpen()) {
+      return this.t().hero.rappelTitle;
+    }
+    const name = this.identity.firstName();
+    return name === null
+      ? this.t().commande.titleAnonymous
+      : fill(this.t().commande.title, { name });
+  });
 
   protected readonly intro = computed(() =>
     this.panelOpen() ? this.t().hero.rappelIntro : this.t().commande.intro,
