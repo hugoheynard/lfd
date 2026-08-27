@@ -124,6 +124,10 @@ overrides:
   "@angular/ssr": 22.1.4
 
 onlyBuiltDependencies:
+  # `@capacitor/assets` embarque sharp, dont le binaire natif se compile à
+  # l'installation. Sans autorisation, pnpm saute le script et l'outil échoue à
+  # la première image sur une trace qui parle de plateformes, pas de permissions.
+  - sharp
   - esbuild
   - "@parcel/watcher"
   - lmdb

@@ -13,7 +13,7 @@
     "dev": "pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
     "postinstall": "pnpm config:auth",
     "build:capacitor": "pnpm config:auth && ng build --configuration capacitor",
-    "cap:icons": "capacitor-assets generate --assetPath resources",
+    "cap:icons": "node scripts/native-assets.mjs",
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios",
     "ios:open": "cap open ios"
@@ -49,7 +49,6 @@
     "@angular/build": "catalog:",
     "@angular/cli": "catalog:",
     "@angular/compiler-cli": "catalog:",
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "catalog:",
     "@types/node": "catalog:",
     "jsdom": "catalog:",

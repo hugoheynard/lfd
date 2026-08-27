@@ -29,3 +29,11 @@ Thumbs.db
 /test-results
 /playwright-report
 /blob-report
+
+# Coque native (Capacitor) — GÉNÉRÉE, jamais versionnée.
+# `pnpm ios:add` la refait à l'identique : l'identifiant et le nom d'app
+# viennent de `capacitor.config.ts`, et les icônes de `resources/` via
+# `pnpm cap:icons`. Ce qu'un Xcode local y ajoute (équipe de signature, profils)
+# est propre à la machine et n'a rien à faire dans le dépôt.
+/ios
+/android

@@ -11,7 +11,25 @@ recette ci-dessous les refait à l'identique.
 | `icon-background.png`            | 1024², opaque — l'arrière-plan de la même icône adaptative.                                                                                                                                      |
 | `splash.png` / `splash-dark.png` | 2732², opaques — papier et encre.                                                                                                                                                                |
 
-Puis : `pnpm cap:icons`.
+## La séquence
+
+```
+pnpm ios:add     # crée ios/ — non versionné, cf. .gitignore
+pnpm cap:icons   # pose l'icône et l'écran de lancement dans le catalogue
+pnpm ios:open    # ouvre Xcode
+```
+
+⚠️ `pnpm cap:icons` n'appelle PAS `@capacitor/assets` : il embarque
+`sharp@0.32.6`, dont le binaire natif n'existe plus en prébuild pour cette
+plateforme et refuse de se compiler. L'outil échoue à la première image sur une
+trace qui parle de plateformes, jamais de la vraie cause.
+
+Et il se trouve qu'aucun redimensionnement n'est nécessaire : le catalogue iOS
+moderne ne demande qu'UNE icône (1024²) et un écran de lancement (2732²), que
+`resources/` porte déjà à ces tailles exactes. `scripts/native-assets.mjs`
+vérifie les dimensions et copie — sans dépendance, sans binaire natif, et avec
+un échec qui dit ce qui ne va pas. Le jour où Android arrive, il faudra un vrai
+redimensionneur pour ses densités.
 
 ## D'où vient le dessin
 
