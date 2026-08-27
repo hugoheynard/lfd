@@ -2,7 +2,7 @@ import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { ClientShell } from './client/client-shell/client-shell';
-import { FEATURE_DASHBOARD } from './feature-flags';
+import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
 /**
  * Accueil `/` : le tableau de bord quand son feature flag est actif, sinon une
@@ -18,6 +18,92 @@ const homeRoute: Route = FEATURE_DASHBOARD
       loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage),
     }
   : { path: '', pathMatch: 'full', redirectTo: 'boutique' };
+
+/**
+ * L'espace PRO hérité, derrière son drapeau.
+ *
+ * Les composants restent dans le dépôt et continuent de compiler ; ce sont leurs
+ * ADRESSES qui disparaissent. Une route absente n'est pas une route protégée :
+ * ce qui garde les données, c'est le garde d'authentification et le mur de la
+ * société côté API — ici on ne fait que borner la navigation le temps de montrer
+ * l'app cliente.
+ */
+const proRoutes: Routes = FEATURE_PRO_SPACE
+  ? [
+      {
+        path: 'boutique',
+        title: 'Boutique — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
+      },
+      homeRoute,
+      {
+        path: 'panier',
+        title: 'Panier — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () => import('./cart/cart-page/cart-page').then((m) => m.CartPage),
+      },
+      {
+        path: 'mes-paniers',
+        title: 'Mes paniers — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./cart/saved-baskets-page/saved-baskets-page').then((m) => m.SavedBasketsPage),
+      },
+      {
+        path: 'mes-paniers/:id',
+        title: 'Panier enregistré — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./cart/basket-detail-page/basket-detail-page').then((m) => m.BasketDetailPage),
+      },
+      {
+        path: 'commandes',
+        title: 'Mes commandes — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
+      },
+      {
+        // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
+        // suite d'un identifiant, et le lien de règlement ouvrirait le détail.
+        path: 'commandes/:id/regler',
+        title: 'Régler ma commande — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
+      },
+      {
+        path: 'commandes/:id',
+        title: 'Commande — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./commandes/commande-page/commande-page').then((m) => m.CommandePage),
+      },
+      {
+        path: 'entreprises',
+        title: 'Mes entreprises — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./entreprises/entreprises-page/entreprises-page').then((m) => m.EntreprisesPage),
+      },
+      {
+        // « Mon profil » a été scindée : la personne est passée dans Réglages, les
+        // sociétés dans « Mes entreprises ». La redirection garde les liens et
+        // signets existants valides.
+        path: 'profil',
+        redirectTo: 'entreprises',
+        pathMatch: 'full',
+      },
+      {
+        path: 'reglages',
+        title: 'Réglages — La Folie Coffee B2B',
+        canActivate: [authenticatedGuard],
+        loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
+      },
+    ]
+  : [];
 
 export const routes: Routes = [
   {
@@ -82,76 +168,6 @@ export const routes: Routes = [
       { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
     ],
   },
-  {
-    path: 'boutique',
-    title: 'Boutique — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () => import('./boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
-  },
-  homeRoute,
-  {
-    path: 'panier',
-    title: 'Panier — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () => import('./cart/cart-page/cart-page').then((m) => m.CartPage),
-  },
-  {
-    path: 'mes-paniers',
-    title: 'Mes paniers — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./cart/saved-baskets-page/saved-baskets-page').then((m) => m.SavedBasketsPage),
-  },
-  {
-    path: 'mes-paniers/:id',
-    title: 'Panier enregistré — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./cart/basket-detail-page/basket-detail-page').then((m) => m.BasketDetailPage),
-  },
-  {
-    path: 'commandes',
-    title: 'Mes commandes — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
-  },
-  {
-    // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
-    // suite d'un identifiant, et le lien de règlement ouvrirait le détail.
-    path: 'commandes/:id/regler',
-    title: 'Régler ma commande — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
-  },
-  {
-    path: 'commandes/:id',
-    title: 'Commande — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./commandes/commande-page/commande-page').then((m) => m.CommandePage),
-  },
-  {
-    path: 'entreprises',
-    title: 'Mes entreprises — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./entreprises/entreprises-page/entreprises-page').then((m) => m.EntreprisesPage),
-  },
-  {
-    // « Mon profil » a été scindée : la personne est passée dans Réglages, les
-    // sociétés dans « Mes entreprises ». La redirection garde les liens et
-    // signets existants valides.
-    path: 'profil',
-    redirectTo: 'entreprises',
-    pathMatch: 'full',
-  },
-  {
-    path: 'reglages',
-    title: 'Réglages — La Folie Coffee B2B',
-    canActivate: [authenticatedGuard],
-    loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
-  },
+  ...proRoutes,
   { path: '**', redirectTo: '' },
 ];
