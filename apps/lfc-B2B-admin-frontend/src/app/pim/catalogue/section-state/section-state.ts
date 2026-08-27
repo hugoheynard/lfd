@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
-import { ProductFormStore, type FormSection } from '../product-form-store';
+
+import { SECTION_EDITING } from './section-editing';
 
 /**
  * L'état d'une section, à droite de son titre — en permanence.
@@ -26,14 +27,14 @@ import { ProductFormStore, type FormSection } from '../product-form-store';
   templateUrl: './section-state.html',
   styleUrl: './section-state.scss',
 })
-export class SectionState {
-  protected readonly store = inject(ProductFormStore);
+export class SectionState<TSection extends string> {
+  protected readonly store = inject(SECTION_EDITING);
 
   /** La section dont cet indicateur porte l'état. */
-  readonly section = input.required<FormSection>();
+  readonly section = input.required<TSection>();
 
   /** Demande d'enregistrement — la page sait quel appel correspond. */
-  readonly save = output<FormSection>();
+  readonly save = output<TSection>();
 
   protected readonly saving = computed(
     () => this.store.statusText(this.section()) === 'Enregistrement…',

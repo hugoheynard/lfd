@@ -38,7 +38,8 @@ import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
-import { SectionState } from './section-state/section-state';
+import { SECTION_EDITING } from '../section-state/section-editing';
+import { SectionState } from '../section-state/section-state';
 
 /**
  * Les libellés d'état — exhaustifs par construction : un `Record<ProductStatus,
@@ -77,7 +78,9 @@ interface PageSection {
 @Component({
   selector: 'app-product-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ProductFormStore],
+  // Le store est aussi l'hôte d'édition des sections : `useExisting` et non
+  // `useClass`, sinon l'indicateur lirait un SECOND store, vierge et muet.
+  providers: [ProductFormStore, { provide: SECTION_EDITING, useExisting: ProductFormStore }],
   imports: [
     FoldPageLayoutComponent,
     FoldBackLinkComponent,
