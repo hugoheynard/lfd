@@ -1,0 +1,145 @@
+/* Thème `lfc-app` — l'app CLIENT de La Folie Coffee (encre bleue + papier chaud).
+   Source : `design_handoff_app_client/01-tokens-fold.md`.
+
+   Deux écarts assumés avec le handoff, parce que fold-ng est un autre dépôt et
+   que son catalogue de rôles fait autorité :
+
+   1. Les rôles que fold possède déjà sont RECÂBLÉS ici (`--fold-color-*`) — le
+      thème ne fait que changer leurs valeurs, jamais leur nom.
+   2. Les rôles que le handoff INVENTE (`primary-vivid`, les quatre `accent-*`,
+      `text-subtle`, `border-strong`) n'existent pas dans fold : ils vivent en
+      `--lfc-*` en attendant d'être proposés au catalogue fold. Les nommer
+      `--fold-*` ici mentirait sur leur propriétaire.
+
+   Le thème est POSÉ PAR ÉCRAN (`data-theme="lfc-app"` sur l'hôte routé) tant que
+   la refonte client n'est pas terminée : `<html data-theme="navi">` continue de
+   servir l'espace pro existant. Basculer l'app entière = déplacer l'attribut
+   dans `index.html`, rien d'autre. */
+
+[data-theme='lfc-app'] {
+  /* ── Primitives : encre bleue (la marque) ── */
+  --lfc-ink-950: #081842;
+  --lfc-ink-900: #0d2464;
+  --lfc-ink-800: #12307f;
+  --lfc-ink-600: #1b4bc4;
+  --lfc-ink-300: #a9bfe8;
+  --lfc-ink-100: #c3d0ee;
+  --lfc-ink-50: #e5ecfb;
+  --lfc-ink-700-text: #33477a;
+
+  /* ── Primitives : papier chaud (la page) ── */
+  --lfc-paper-0: #fffdf8;
+  --lfc-paper-50: #faf5ec;
+  --lfc-paper-100: #f2ece0;
+  --lfc-paper-200: #e8e0cf;
+  --lfc-paper-300: #e5dcc9;
+  --lfc-paper-400: #d8cdb6;
+
+  /* ── Primitives : encre chaude (le texte) ── */
+  --lfc-soot-900: #23201a;
+  --lfc-soot-700: #5c5548;
+  --lfc-soot-600: #6f6858;
+  --lfc-soot-500: #8b8272;
+  --lfc-soot-400: #a49a86;
+
+  /* ── Primitives : beurre (l'argent, la signature, l'événement) ── */
+  --lfc-butter-500: #d99a2b;
+  --lfc-butter-100: #f6e8cd;
+  --lfc-butter-900: #3d2a05;
+  --lfc-butter-800: #5a3d07;
+
+  /* ── Primitives : statut ── */
+  --lfc-brick-700: #8f2c1f;
+  --lfc-azure-500: #2f7fd4;
+  --lfc-moss-600: #1a7a4f;
+  --lfc-moss-700: #175f40;
+  --lfc-moss-100: #c9ddd0;
+
+  /* ── Rôles fold : marque ── */
+  --fold-color-primary: var(--lfc-ink-800);
+  --fold-color-primary-strong: var(--lfc-ink-900);
+  --fold-color-on-primary: var(--lfc-paper-50);
+  --fold-color-primary-surface: var(--lfc-ink-50);
+  --fold-color-primary-border: var(--lfc-ink-100);
+  --fold-color-primary-text: var(--lfc-ink-700-text);
+  --fold-color-brand: var(--lfc-ink-800);
+  --fold-color-on-brand: var(--lfc-paper-50);
+
+  /* ── Rôles fold : surfaces ── */
+  --fold-color-bg-page: var(--lfc-paper-50);
+  --fold-color-bg-header: var(--lfc-ink-800);
+  --fold-color-surface-card: var(--lfc-paper-0);
+  --fold-color-surface-sunken: var(--lfc-paper-100);
+  --fold-color-surface-band: var(--lfc-paper-200);
+  --fold-color-surface-subtle: var(--lfc-paper-100);
+  --fold-color-surface-raised: var(--lfc-paper-0);
+  --fold-color-surface-hover: var(--lfc-paper-100);
+
+  /* ── Rôles fold : bordures ── */
+  --fold-color-border: var(--lfc-paper-300);
+  --fold-color-border-subtle: #ebe3d2;
+
+  /* ── Rôles fold : texte ── */
+  --fold-color-text: var(--lfc-soot-900);
+  --fold-color-text-secondary: var(--lfc-soot-700);
+  --fold-color-text-muted: var(--lfc-soot-600);
+  --fold-color-text-faded: var(--lfc-soot-400);
+
+  /* ── Rôles fold : statut ── */
+  --fold-color-info: var(--lfc-azure-500);
+  --fold-color-info-surface: var(--lfc-ink-50);
+  --fold-color-info-border: var(--lfc-ink-100);
+  --fold-color-info-text: var(--lfc-ink-700-text);
+  --fold-color-alert-text: var(--lfc-brick-700);
+  --fold-color-success: var(--lfc-moss-600);
+  --fold-color-success-surface: #eef6f1;
+  --fold-color-success-border: var(--lfc-moss-100);
+  --fold-color-success-text: var(--lfc-moss-700);
+
+  /* ── Rôles hors catalogue fold (candidats à proposer) ── */
+  --lfc-color-primary-vivid: var(--lfc-ink-600);
+  --lfc-color-accent: var(--lfc-butter-500);
+  --lfc-color-on-accent: var(--lfc-butter-900);
+  --lfc-color-accent-surface: var(--lfc-butter-100);
+  --lfc-color-accent-text: var(--lfc-butter-800);
+  /* Ne passe pas AA en texte courant : sur-titres capitalisés UNIQUEMENT. */
+  --lfc-color-text-subtle: var(--lfc-soot-500);
+  --lfc-color-border-strong: var(--lfc-paper-400);
+
+  /* ── Typographie : fold prête deux crans, on les habille ── */
+  --fold-font-sans: 'Outfit', system-ui, sans-serif;
+  --fold-font-label: 'Archivo', system-ui, sans-serif;
+
+  /* ── Rayons que l'échelle fold (xs…lg) ne porte pas ── */
+  --lfc-radius-xl: 1rem; /* 16px — carte de notification / produit */
+  --lfc-radius-2xl: 1.125rem; /* 18px — carte de contenu */
+  --lfc-radius-3xl: 1.25rem; /* 20px — carte de promo */
+  --lfc-radius-sheet: 1.625rem; /* 26px — coin haut de la feuille crème */
+
+  /* ── Ombres de l'app client ── */
+  --lfc-shadow-card: 0 2px 10px -6px rgb(35 32 26 / 18%);
+  --lfc-shadow-promo: 0 10px 26px -14px rgb(35 32 26 / 50%);
+  --lfc-shadow-logo: 0 2px 8px -4px rgb(10 20 50 / 40%);
+
+  /* ── Mouvement ── */
+  --lfc-motion-tap: transform 130ms cubic-bezier(0.4, 0, 1, 1);
+  --lfc-motion-screen: 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Le chrome de l'app : en-tête bleu profond, texte crème.
+   Règle de clôture (navi 2) : ce sous-bloc redéclare `text`, il redéclare donc
+   TOUS ses crans — y compris ceux qu'il ne change pas en apparence. */
+[data-theme='lfc-app'] [data-surface='chrome'] {
+  --fold-color-bg-page: var(--lfc-ink-800);
+  --fold-color-surface-raised: #2a4a9e;
+  --fold-color-surface-card: #2a4a9e;
+  --fold-color-text: var(--lfc-paper-50);
+  --fold-color-text-secondary: var(--lfc-ink-300);
+  --fold-color-text-muted: var(--lfc-ink-300);
+  --fold-color-text-faded: rgb(169 191 232 / 72%);
+  --lfc-color-text-subtle: var(--lfc-ink-300);
+  --fold-color-border: rgb(250 245 236 / 28%);
+  --fold-color-border-subtle: rgb(250 245 236 / 16%);
+  --lfc-color-border-strong: rgb(250 245 236 / 40%);
+  --fold-color-surface-hover: rgb(250 245 236 / 16%);
+}

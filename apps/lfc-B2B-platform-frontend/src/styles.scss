@@ -1,3 +1,9 @@
+/* Thème de l'app CLIENT (encre bleue + papier chaud). Défini globalement, mais
+   posé écran par écran via `data-theme="lfc-app"` tant que la refonte n'a pas
+   remplacé l'espace pro — cf. l'en-tête du partial. Le bloc est plus spécifique
+   que le `:root` de fold : son rang dans le fichier ne change rien. */
+@use './styles/lfc-app-theme';
+
 /* fold-ng design tokens — the single source of truth (primitives + scales +
    semantic). The `navi` theme is selected via `data-theme="navi"` on <html>;
    the app-shell paints the navy chrome + ivory page from these. Imported in the
