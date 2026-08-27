@@ -15,7 +15,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { pointsOfSaleSelling } from '../../data/channels';
+import { pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { VatRateStore } from '../vat-rates/vat-store';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
@@ -147,6 +147,17 @@ export class CategoriesPage {
   protected ficheLabel(category: Category): string {
     const count = category.activeProductCount;
     return count === 0 ? 'Aucune fiche' : `${count} fiche(s)`;
+  }
+
+  /**
+   * La plateforme professionnelle vend-elle cette famille ?
+   *
+   * Le gabarit lisait `channelPreset.b2b` — une propriété sur un TABLEAU depuis
+   * que la matrice est une liste de paires, donc toujours `undefined`. Le
+   * typage ne l'a pas vu : le contexte d'un `ng-template` est `any`.
+   */
+  protected sellsB2b(category: Category): boolean {
+    return sellsContext(category.channelPreset, 'b2b');
   }
 
   protected presetEmporter(category: Category): string[] {

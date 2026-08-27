@@ -105,7 +105,7 @@
        noierait. -->
   <ng-template #channelBadges let-c>
     <span class="chan-pills">
-      @if (c.channelPreset.b2b) {
+      @if (sellsB2b(c)) {
         <fold-badge content="B2B" variant="success" />
       }
       @if (presetEmporter(c).length > 0) {
@@ -114,9 +114,7 @@
       @if (presetSurPlace(c).length > 0) {
         <fold-badge [content]="'Salle ' + presetSurPlace(c).join(' · ')" variant="info" />
       }
-      @if (
-        !c.channelPreset.b2b && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0
-      ) {
+      @if (!sellsB2b(c) && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0) {
         <!-- « aucun » seul se lisait sous l'en-tête de colonne, qui fournissait
              le nom ; la carte n'a pas d'en-tête, il fallait le porter ici. -->
         <span class="muted">Aucun canal</span>

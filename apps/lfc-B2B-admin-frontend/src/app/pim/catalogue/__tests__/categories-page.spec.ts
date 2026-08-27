@@ -75,3 +75,19 @@ describe('CategoriesPage — les archivées', () => {
     expect(host.textContent).not.toContain('Commencez par');
   });
 });
+
+describe('CategoriesPage — les canaux par défaut', () => {
+  it('affiche la pastille B2B d’une famille vendue en B2B', async () => {
+    // Le gabarit lisait `channelPreset.b2b` — une propriété sur un TABLEAU
+    // depuis que la matrice est une liste de paires, donc toujours `undefined`.
+    // La pastille ne s'affichait jamais, et une famille vendue uniquement en
+    // B2B se lisait « Aucun canal ». Le typage ne l'a pas vu : le contexte d'un
+    // `ng-template` est `any`.
+    const host = await render([
+      category({ channelPreset: [{ pointOfSaleId: 'pos_b2b', context: 'b2b' }] }),
+    ]);
+
+    expect(rows(host)[0]).toContain('B2B');
+    expect(rows(host)[0]).not.toContain('Aucun canal');
+  });
+});
