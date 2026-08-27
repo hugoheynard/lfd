@@ -1,17 +1,20 @@
 :host {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   font-family: var(--fold-font-sans);
 }
 
 .frame {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1;
   flex-direction: column;
-  /* Le défilement appartient au shell (`scroll="scroll"`) : la page COULE
-     dedans, elle n'ouvre pas sa propre boîte — sinon deux barres se
-     superposeraient. Le fond est l'encre de marque. */
+  min-height: 0;
+  /* Le liseré d'encre de chaque côté : c'est lui qui raccorde la feuille à la
+     barre de marque. La feuille ne touche jamais le bord, donc ses coins hauts
+     restent visibles quoi qu'il arrive. */
+  padding-inline: var(--fold-space-sm);
   background: var(--fold-color-primary);
 }
 
@@ -20,8 +23,10 @@
 .aside {
   display: flex;
   flex-direction: column;
+  flex: none;
   gap: var(--fold-space-md);
-  padding: var(--fold-space-sm) var(--fold-space-xl) var(--fold-space-2xl);
+  /* 12 px ici + 8 px de liseré = les 20 px de la réf, mesurés depuis le bord. */
+  padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-2xl);
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
 }
@@ -109,9 +114,15 @@
 
 .sheet {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1;
   flex-direction: column;
-  padding: var(--fold-space-2xl) var(--fold-space-xl) var(--fold-space-3xl);
+  /* Le TRANSFERT DE SCROLL : la feuille garde sa forme, c'est son contenu qui
+     bouge. Sans cela, elle glissait sous la barre et ses coins hauts sortaient
+     de l'écran au premier geste. */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--fold-space-2xl) var(--fold-space-lg) var(--fold-space-3xl);
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
@@ -127,16 +138,20 @@
 /* ── Au-delà du pli : deux colonnes ───────────────────────────────────────── */
 
 @media (min-width: 900px) {
+  /* Deux colonnes de pleine hauteur, chacune avec son propre défilement : le
+     liseré et les coins n'ont plus de sens quand la feuille tient le bord. */
   .frame {
     display: grid;
     grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+    padding-inline: 0;
   }
 
   .aside {
     position: relative;
     gap: 0;
+    min-height: 0;
     padding: 46px 44px;
-    overflow: hidden;
+    overflow: hidden auto;
   }
 
   .brand-row {
