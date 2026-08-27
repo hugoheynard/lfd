@@ -1,1 +1,8 @@
+# Une seule page HTML, et un routeur côté navigateur : toute adresse profonde
+# doit rendre `index.html` avec un 200, jamais un 404.
+#
+# ⚠️ L'app est publiée sous `/pro` (base href `/pro/`), mais Pages, lui, sert
+# depuis SA racine : la passerelle retire le préfixe avant de transmettre. Ce
+# fichier voit donc des chemins SANS `/pro`. Si un jour le préfixe n'était plus
+# retiré, c'est ici qu'il faudrait l'écrire.
 /*    /index.html   200

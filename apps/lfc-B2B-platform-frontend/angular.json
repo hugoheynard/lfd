@@ -77,7 +77,27 @@
                   "maximumWarning": "7kB",
                   "maximumError": "10kB"
                 }
-              ]
+              ],
+              "baseHref": "/pro/"
+            },
+            "capacitor": {
+              "outputMode": "static",
+              "ssr": false,
+              "server": false,
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1050kB",
+                  "maximumError": "1300kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "7kB",
+                  "maximumError": "10kB"
+                }
+              ],
+              "baseHref": "/"
             }
           },
           "defaultConfiguration": "production"
