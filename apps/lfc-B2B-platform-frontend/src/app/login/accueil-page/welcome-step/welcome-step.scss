@@ -67,6 +67,18 @@
   color: var(--fold-color-text-secondary);
 }
 
+/* Le libellé d'un champ nomme, il n'insiste pas : la réf le pose en gris moyen
+   et en graisse normale. `fold-label` le rend en `weight-semibold` /
+   `text-secondary`, et n'expose pas d'entrée pour ça — on redéclare donc les
+   deux tokens sur `fold-input`, d'où ils descendent jusqu'au libellé.
+
+   ⚠️ Détourner un CRAN d'échelle (`semibold`) plutôt qu'un rôle est un pis-aller
+   assumé : à proposer à fold sous la forme d'un rôle propre au libellé. */
+fold-input {
+  --fold-weight-semibold: var(--fold-weight-regular);
+  --fold-color-text-secondary: var(--fold-color-text-muted);
+}
+
 .fields {
   display: grid;
   gap: var(--fold-space-lg);
