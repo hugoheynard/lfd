@@ -1,11 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import {
-  FoldButtonIconComponent,
-  FoldCalloutComponent,
-  FoldFileDropzoneComponent,
-  FoldPanelHostService,
-} from 'fold-ng';
+import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+
+import { MediaGallery } from '../../../media-gallery/media-gallery';
 
 import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
 import { SOURCE_LOCALE } from '@lfd/pim-contracts';
@@ -17,25 +14,6 @@ import {
   type AltTextPanelResult,
 } from './alt-text-panel/alt-text-panel';
 import { ProductFormStore } from '../../product-form-store';
-import type { MediaSlot } from '../../../product-http-api';
-
-/** Le plus grand diviseur commun — pour réduire un ratio à sa forme lisible. */
-function gcd(a: number, b: number): number {
-  return b === 0 ? a : gcd(b, a % b);
-}
-
-/** Le format, tel qu'on le nomme — « image/jpeg » est un type MIME, pas un mot. */
-function formatOf(contentType: string): string {
-  const subtype = contentType.split('/')[1] ?? contentType;
-  return subtype.toUpperCase();
-}
-
-/** Le poids d'un fichier, en unités qu'un humain lit. */
-function formatBytes(bytes: number): string {
-  return bytes < 1024 * 1024
-    ? `${String(Math.round(bytes / 1024))} ko`
-    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
 
 /**
  * Panneau **Visuels** — dépôt de fichier vers la bibliothèque média, puis
@@ -54,9 +32,9 @@ function formatBytes(bytes: number): string {
 @Component({
   selector: 'app-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LangSwitch, FoldButtonIconComponent, FoldCalloutComponent, FoldFileDropzoneComponent],
+  imports: [LangSwitch, FoldCalloutComponent, MediaGallery],
   templateUrl: './visuals-form.html',
-  styleUrls: ['../form-section.scss', './visuals-form.scss'],
+  styleUrls: ['../form-section.scss'],
 })
 export class VisualsForm {
   protected readonly store = inject(ProductFormStore);
@@ -80,56 +58,12 @@ export class VisualsForm {
     return missing;
   });
 
-  /** Cette image a-t-elle un trou — pas de description, ou pas dans une langue ? */
-  protected incomplete(index: number): boolean {
-    return this.store.mediaAltMissing(index).length > 0;
-  }
-
-  /**
-   * La FORME du fichier, réduite — « 4:3 », « 16:9 », « 1:1 ».
-   *
-   * La vignette recadre pour que la galerie reste homogène : c'est le bon
-   * arbitrage pour comparer des images, mais il cache la forme réelle du
-   * fichier. La pastille la rend, sans quoi on découvrirait en boutique qu'un
-   * visuel était un portrait.
-   *
-   * Rien à dire d'une image non mesurée : une pastille vide vaudrait mieux que
-   * rien, mais une pastille FAUSSE serait pire que les deux.
-   */
-  protected ratioOf(slot: MediaSlot): string | undefined {
-    const { width, height } = slot;
-    if (typeof width !== 'number' || typeof height !== 'number' || width <= 0 || height <= 0) {
-      return undefined;
-    }
-    const divisor = gcd(width, height);
-    const w = width / divisor;
-    const h = height / divisor;
-    // Réduit, un capteur donne parfois « 4288:2848 » : illisible, donc on
-    // retombe sur une décimale plutôt que d'afficher une fraction de recensement.
-    return w <= 32 && h <= 32 ? `${String(w)}:${String(h)}` : `${(width / height).toFixed(2)}:1`;
-  }
-
-  /**
-   * Résolution, poids, format — ce qu'on a CONSTATÉ dans les octets au dépôt.
-   *
-   * Le repli couvre les visuels d'avant la mesure, pas des images d'ailleurs :
-   * tout fichier entre par le dépôt et vit chez nous. On dit qu'on ne sait pas
-   * plutôt que d'inventer « 0 × 0 ».
-   */
-  protected metaOf(slot: MediaSlot): string {
-    const { width, height, bytes, contentType } = slot;
-    if (typeof width !== 'number' || typeof height !== 'number') {
-      return 'Dimensions inconnues';
-    }
-    const parts = [`${String(width)} × ${String(height)}`];
-    if (typeof bytes === 'number') {
-      parts.push(formatBytes(bytes));
-    }
-    if (typeof contentType === 'string' && contentType !== '') {
-      parts.push(formatOf(contentType));
-    }
-    return parts.join(' · ');
-  }
+  /** Les index dont la description est incomplète — la galerie les liserait. */
+  protected readonly incompleteIndexes = computed(() =>
+    this.store
+      .media()
+      .flatMap((_, index) => (this.store.mediaAltMissing(index).length > 0 ? [index] : [])),
+  );
 
   /** Les langues qui manquent à CETTE image, nommées ; rien quand tout y est. */
   protected untranslated(index: number): string | undefined {
@@ -139,8 +73,6 @@ export class VisualsForm {
       : missing.map((locale) => LOCALE_NAMES[locale]).join(' et ');
   }
 
-  /** Un seul fichier à la fois : `fold-file-dropzone` remet son champ à zéro
-   *  lui-même, donc redéposer le MÊME fichier après un refus fonctionne. */
   /**
    * Ouvre le panneau du texte alternatif — les trois langues d'un coup.
    *
@@ -170,12 +102,5 @@ export class VisualsForm {
         this.store.setMediaName(index, result.name);
         this.store.setMediaAltText(index, result.alt);
       });
-  }
-
-  protected pick(files: readonly File[]): void {
-    const file = files[0];
-    if (file !== undefined) {
-      void this.store.uploadMedia(file);
-    }
   }
 }

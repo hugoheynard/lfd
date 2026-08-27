@@ -71,11 +71,19 @@
       qu'une famille porte des descriptions et des visuels
   - [x] `SectionState` ne connaît plus la fiche produit — jeton `SECTION_EDITING`,
         quatre membres, et le typage fin par générique
-  - [ ] **c-1 — descriptions** : table `category_editorial` (courte, longue, SEO),
-        miroir de `product_editorial` ; section « Communication » sur la page
-  - [ ] **c-2 — médias** : table `category_media` joignant la bibliothèque
-        `MediaAsset` **existante** (`role` + `position`), comme `product_media` ;
-        section « Visuels », composants de la fiche produit réutilisés
+  - [x] **c-1 — descriptions** _(2026-08-27)_ — `category_editorial` (résumé,
+        description, titre et description SEO), tous localisés ; `PUT :id/editorial`
+        et section « Communication ». QUATRE champs et non les sept d'une fiche :
+        récit, accord et marque parlent d'un produit, pas du rayon
+  - [x] **c-2 — médias** _(2026-08-27)_ — `category_media` joignant la
+        bibliothèque `MediaAsset` **existante** ; `PUT :id/media` en remplacement,
+        et la galerie de la fiche produit extraite en `media-gallery/` plutôt que
+        dupliquée. Le ramassage d'orphelins connaît désormais les DEUX porteurs —
+        sans quoi il aurait supprimé de R2 des images qu'une famille affiche
+  - [ ] `category-form-store.ts` est à 315 lignes (limite ≲300). La coupe
+        naturelle est un `channels-draft.ts`, symétrique de `editorial-draft` et
+        `media-draft` : canaux, contextes réglables et taux à enregistrer sont un
+        seul sujet
 - [ ] Converger `ProductFormStore` sur `shared/lang-switch/localized-field.ts` — le
       même motif de saisie traduisible y est écrit à la main, en plus ancien. Deux
       copies d'une règle (« vider une traduction l'EFFACE, la source ne s'efface

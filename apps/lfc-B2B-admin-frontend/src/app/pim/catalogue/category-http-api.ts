@@ -1,6 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { CategoryView, LocalizedText, SalesChannels } from '@lfd/pim-contracts';
+import type {
+  CategoryDetailView,
+  CategoryEditorialPayload,
+  CategoryMediaView,
+  CategoryView,
+  LocalizedText,
+  SalesChannels,
+  UploadedMediaView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -32,6 +40,12 @@ function toCategory(row: CategoryView): Category {
  */
 export type CategoryVatDraft = Readonly<Record<string, string>>;
 
+/** La famille telle que SA page la reçoit — socle, textes, visuels. */
+export interface CategoryDetail extends Category {
+  readonly editorial: CategoryDetailView['editorial'];
+  readonly media: readonly CategoryMediaView[];
+}
+
 /** Retire les contextes laissés vides — le serveur n'accepte que du réglé. */
 function settledOnly(draft: CategoryVatDraft): Record<string, string> {
   return Object.fromEntries(Object.entries(draft).filter(([, id]) => id !== ''));
@@ -50,6 +64,18 @@ export class CategoryHttpApi {
   async list(): Promise<Category[]> {
     const rows = await firstValueFrom(this.http.get<CategoryView[]>(this.url('categories')));
     return rows.map(toCategory);
+  }
+
+  /**
+   * Une famille ENRICHIE — pour sa page. La liste ne porte ni textes ni visuels :
+   * les y mettre coûterait une jointure par ligne sur la bibliothèque de médias,
+   * pour des colonnes qu'aucune ligne n'affiche.
+   */
+  async detail(id: string): Promise<CategoryDetail> {
+    const row = await firstValueFrom(
+      this.http.get<CategoryDetailView>(this.url(`categories/${id}`)),
+    );
+    return { ...toCategory(row), editorial: row.editorial, media: [...row.media] };
   }
 
   create(payload: { name: LocalizedText; parentId?: string | undefined }): Promise<{ id: string }> {
@@ -95,6 +121,42 @@ export class CategoryHttpApi {
     return this.put(`categories/${id}/vat`, {
       vatByContext: settledOnly(ids),
     });
+  }
+
+  /** Les textes de la famille — les quatre champs partent ensemble. */
+  setEditorial(id: string, editorial: CategoryEditorialPayload): Promise<void> {
+    return this.put(`categories/${id}/editorial`, editorial);
+  }
+
+  /**
+   * Les visuels : la liste ENTIÈRE, dans son ordre. Ce qu'on n'envoie pas est
+   * détaché — c'est un remplacement, comme pour une fiche.
+   *
+   * Les faits techniques ne repartent PAS : le serveur les a mesurés au dépôt et
+   * les relira lui-même. Un navigateur pourrait en dire autre chose.
+   */
+  setMedia(id: string, media: readonly CategoryMediaView[]): Promise<void> {
+    return this.put(`categories/${id}/media`, {
+      media: media.map((slot) => ({
+        role: slot.role,
+        url: slot.url,
+        name: slot.name,
+        ...(slot.alt === undefined ? {} : { alt: slot.alt }),
+      })),
+    });
+  }
+
+  /**
+   * Dépose un fichier dans la BIBLIOTHÈQUE — pas sur une famille.
+   *
+   * La route est celle du catalogue, pas celle des fiches : un visuel existe
+   * avant d'être attaché, et le même fichier sert une famille et une fiche sans
+   * être déposé deux fois.
+   */
+  uploadMedia(file: File): Promise<UploadedMediaView> {
+    const body = new FormData();
+    body.append('file', file);
+    return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
   }
 
   private async put(path: string, body: unknown): Promise<void> {

@@ -1,21 +1,22 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import type { LocalizedText, SalesChannels } from '@lfd/pim-contracts';
+import type { CategoryMediaView, LocalizedText, SalesChannels } from '@lfd/pim-contracts';
 
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
 import { NO_CHANNELS, sellsContext } from '../../data/channels';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
-import type { Category } from '../catalogue-api';
-import type { CategoryVatDraft } from '../category-http-api';
+import { CategoryHttpApi, type CategoryDetail, type CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
 import type { SectionEditing } from '../section-state/section-editing';
+import { sectionTracking } from '../section-state/section-tracking';
+import { editorialDraft } from './editorial-draft';
+import { mediaDraft } from './media-draft';
 
 /** Les sections ENREGISTRABLES de la page, dans l'ordre de lecture. */
-export type CategorySection = 'identite' | 'canaux';
+export type CategorySection = 'identite' | 'canaux' | 'communication' | 'visuels';
 
-/** L'état momentané d'un enregistrement — vide quand il ne s'est rien passé. */
-type SaveState = 'saving' | 'saved' | 'error';
+const SECTIONS: readonly CategorySection[] = ['identite', 'canaux', 'communication', 'visuels'];
 
 /**
  * L'état d'édition d'UNE famille, le temps d'une page.
@@ -32,6 +33,7 @@ type SaveState = 'saving' | 'saved' | 'error';
 @Injectable()
 export class CategoryFormStore implements SectionEditing {
   private readonly categories = inject(CategoryStore);
+  private readonly api = inject(CategoryHttpApi);
   private readonly contexts = inject(SalesContextStore);
   private readonly notify = inject(NotifyService);
 
@@ -46,12 +48,11 @@ export class CategoryFormStore implements SectionEditing {
 
   /** La famille ENREGISTRÉE — elle ne bouge qu'au chargement ou à un
    *  enregistrement réussi, et c'est elle qui dit ce qui a changé. */
-  private readonly saved = signal<Category | null>(null);
+  private readonly saved = signal<CategoryDetail | null>(null);
   readonly isArchived = computed(() => this.saved()?.isArchived ?? false);
   readonly activeProducts = computed(() => this.saved()?.activeProductCount ?? 0);
 
-  /** La source du champ traduisible — posée explicitement, jamais dérivée de la
-   *  liste : une relecture de liste ne doit pas écraser une saisie en cours. */
+  /** Posée explicitement : une relecture ne doit pas écraser une saisie. */
   private readonly savedName = signal<LocalizedText>({ fr: '' });
   readonly name = localizedField({
     source: () => this.savedName(),
@@ -64,22 +65,26 @@ export class CategoryFormStore implements SectionEditing {
   readonly channels = signal<SalesChannels>(NO_CHANNELS);
   readonly vat = signal<CategoryVatDraft>({});
 
+  /** Les quatre textes, et la langue qu'on rédige. */
+  readonly editorial = editorialDraft();
+
+  /** Les visuels, dans leur ordre d'affichage — qui EST l'ordre enregistré. */
+  readonly media = mediaDraft(this.api);
+
   /** Les parents proposables — ni la famille elle-même, ni une archivée. */
   readonly parents = computed(() =>
     this.categories.items().filter((item) => !item.isArchived && item.id !== this.id()),
   );
 
-  /**
-   * Les contextes réglables : ceux dont le canal est vendu. Un taux ne se règle
-   * que pour une vente qui a lieu — sinon la famille pointerait un taux dont
-   * personne ne se sert, et ce taux deviendrait indéboulonnable.
-   */
+  /** Les contextes réglables : ceux dont le canal est vendu. Un taux posé sur
+   *  une vente qui n'a pas lieu rendrait ce taux indéboulonnable. */
   readonly settableContexts = computed(() =>
     this.contexts.items().filter((context) => sellsContext(this.channels(), context.key)),
   );
 
-  private readonly baseline = signal<Partial<Record<CategorySection, string>>>({});
-  private readonly statusMap = signal<Partial<Record<CategorySection, SaveState>>>({});
+  /** Le suivi « modifié / enregistré », extrait : il ne compare que des
+   *  empreintes, et n'a rien de métier. */
+  private readonly tracking = sectionTracking<CategorySection>((section) => this.snapshot(section));
 
   /** Le titre de la page — le nom de la famille, jamais le geste. */
   readonly pageTitle = computed(() =>
@@ -102,63 +107,83 @@ export class CategoryFormStore implements SectionEditing {
     }
     this.loading.set(true);
     try {
-      if (this.categories.items().length === 0) {
-        await this.categories.reload();
-      }
-      const found = this.categories.items().find((item) => item.id === id);
-      if (found === undefined) {
-        this.notFound.set(true);
-        return;
-      }
-      this.adopt(found);
+      // Le DÉTAIL, pas la liste : elle ne porte ni textes ni visuels. Et la
+      // liste reste chargée en parallèle — elle sert les parents proposables.
+      const [detail] = await Promise.all([
+        this.api.detail(id),
+        this.categories.items().length === 0 ? this.categories.reload() : Promise.resolve(),
+      ]);
+      this.adopt(detail);
+    } catch {
+      // Un 404 du référentiel et une panne réseau se ressemblent ici ; l'écran
+      // dit « introuvable » plutôt que d'ouvrir un formulaire vide qui
+      // enregistrerait sur un identifiant fantôme.
+      this.notFound.set(true);
     } finally {
       this.loading.set(false);
     }
   }
 
   /** Pose l'état enregistré ET les brouillons qui en dérivent, d'un coup. */
-  private adopt(category: Category | null): void {
+  private adopt(category: CategoryDetail | null): void {
     this.saved.set(category);
     this.savedName.set(category?.name ?? { fr: '' });
     this.parentId.set(category?.parentId ?? '');
     this.channels.set(category?.channelPreset ?? NO_CHANNELS);
     this.vat.set({ ...(category?.vatByContext ?? {}) });
-    this.baseline.set({ identite: this.snapshot('identite'), canaux: this.snapshot('canaux') });
+    this.editorial.adopt(category?.editorial ?? null);
+    this.media.adopt(category?.media ?? []);
+    this.tracking.rebase(SECTIONS);
   }
 
   // ── Ce qui a changé ───────────────────────────────────────────────────────
 
-  /**
-   * L'empreinte d'une section. Un tableau POSITIONNEL, et {@link revert} le lit
-   * dans le même ordre : ajouter un champ d'un côté sans l'autre casserait
-   * l'annulation en silence. Les deux se lisent ensemble ou pas du tout.
-   */
+  /** L'empreinte d'une section. {@link revert} la lit dans le MÊME ordre : les
+   *  deux se modifient ensemble ou pas du tout. */
   private snapshot(section: CategorySection): string {
-    if (section === 'identite') {
-      return JSON.stringify([this.name.text(), this.parentId()]);
+    switch (section) {
+      case 'identite':
+        return JSON.stringify([this.name.text(), this.parentId()]);
+      case 'canaux':
+        return JSON.stringify([sortedChannels(this.channels()), this.vat()]);
+      case 'communication':
+        return JSON.stringify(this.editorial.texts());
+      case 'visuels':
+        // L'ORDRE compte, et il est celui du tableau : réordonner EST une
+        // modification. Ni dimensions ni poids — ils décrivent le fichier, pas
+        // la décision, et bougeraient sans que personne n'ait rien édité.
+        return JSON.stringify(
+          this.media.items().map((item) => ({ url: item.url, name: item.name, alt: item.alt })),
+        );
     }
-    return JSON.stringify([sortedChannels(this.channels()), this.vat()]);
   }
 
   isDirty(section: string): boolean {
-    if (!isSection(section)) {
-      return false;
-    }
-    const base = this.baseline()[section];
-    return base !== undefined && base !== this.snapshot(section);
+    return isSection(section) && this.tracking.isDirty(section);
   }
 
-  readonly hasPendingChanges = computed(() => this.isDirty('identite') || this.isDirty('canaux'));
+  readonly hasPendingChanges = computed(() =>
+    SECTIONS.some((section) => this.tracking.isDirty(section)),
+  );
 
+  /** Retour à la dernière valeur enregistrée — le pendant de {@link snapshot}. */
   revert(section: string): void {
     if (!isSection(section)) {
       return;
     }
-    const raw = this.baseline()[section];
+    const raw = this.tracking.saved(section);
     if (raw === undefined) {
       return;
     }
     const value: unknown = JSON.parse(raw);
+    if (section === 'communication') {
+      this.editorial.adopt(value as ReturnType<typeof this.editorial.texts>);
+      return;
+    }
+    if (section === 'visuels') {
+      this.media.adopt(value as readonly CategoryMediaView[]);
+      return;
+    }
     if (!Array.isArray(value)) {
       return;
     }
@@ -172,19 +197,7 @@ export class CategoryFormStore implements SectionEditing {
   }
 
   statusText(section: string): string {
-    if (!isSection(section)) {
-      return '';
-    }
-    switch (this.statusMap()[section]) {
-      case 'saving':
-        return 'Enregistrement…';
-      case 'saved':
-        return 'Enregistré ✓';
-      case 'error':
-        return 'Échec';
-      default:
-        return '';
-    }
+    return isSection(section) ? this.tracking.statusText(section) : '';
   }
 
   // ── Écritures ─────────────────────────────────────────────────────────────
@@ -202,6 +215,14 @@ export class CategoryFormStore implements SectionEditing {
     await this.write(section, async () => {
       if (section === 'identite') {
         await this.categories.renameAndMove(id, this.name.text(), this.emptyToNull());
+        return;
+      }
+      if (section === 'communication') {
+        await this.api.setEditorial(id, this.editorial.payload());
+        return;
+      }
+      if (section === 'visuels') {
+        await this.api.setMedia(id, this.media.items());
         return;
       }
       // Les canaux AVANT les taux : fermer un canal efface son taux côté
@@ -245,34 +266,32 @@ export class CategoryFormStore implements SectionEditing {
   /** Le corps commun : l'état momentané, la relecture, le refus rendu lisible. */
   private async write(section: CategorySection, action: () => Promise<void>): Promise<void> {
     this.busy.set(true);
-    this.mark(section, 'saving');
+    this.tracking.mark(section, 'saving');
     try {
       await action();
-      await this.categories.reload();
-      const fresh = this.categories.items().find((item) => item.id === this.id());
+      const id = this.id();
+      // La LISTE est relue aussi : le nom d'une famille y figure, et l'écran
+      // d'où l'on vient doit le voir changer sans recharger la page.
+      const [fresh] = await Promise.all([
+        id === null ? Promise.resolve(null) : this.api.detail(id),
+        this.categories.reload(),
+      ]);
       this.adopt(fresh ?? this.saved());
-      this.mark(section, 'saved');
+      this.tracking.mark(section, 'saved');
     } catch (caught) {
-      this.mark(section, 'error');
+      this.tracking.mark(section, 'error');
       this.notify.refused(caught, "Le référentiel a refusé l'enregistrement.");
     } finally {
       this.busy.set(false);
     }
   }
 
-  private mark(section: CategorySection, state: SaveState): void {
-    this.statusMap.update((current) => ({ ...current, [section]: state }));
-  }
-
   private emptyToNull(): string | null {
     return this.parentId() === '' ? null : this.parentId();
   }
 
-  /**
-   * Les taux à enregistrer — **seulement ceux qu'on montre**. L'agrégat refuse
-   * un taux posé sur un canal fermé ; envoyer le taux d'un champ qu'on vient de
-   * masquer ferait échouer l'enregistrement entier.
-   */
+  /** Les taux à enregistrer — **seulement ceux qu'on montre**. Envoyer celui
+   *  d'un champ qu'on vient de masquer ferait tout échouer. */
   private vatToSave(): CategoryVatDraft {
     const draft = this.vat();
     return Object.fromEntries(
@@ -292,5 +311,5 @@ function sortedChannels(channels: SalesChannels): SalesChannels {
 
 /** Le jeton d'édition parle `string` ; on rétrécit au bord, sans conversion. */
 function isSection(value: string): value is CategorySection {
-  return value === 'identite' || value === 'canaux';
+  return SECTIONS.some((section) => section === value);
 }

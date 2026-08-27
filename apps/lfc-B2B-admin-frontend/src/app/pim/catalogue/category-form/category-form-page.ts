@@ -19,7 +19,9 @@ import { SECTION_EDITING } from '../section-state/section-editing';
 import { SectionState } from '../section-state/section-state';
 import { CategoryFormStore, type CategorySection } from './category-form-store';
 import { CategoryChannelsForm } from './form-sections/channels/channels-form';
+import { CategoryCommunicationForm } from './form-sections/communication/communication-form';
 import { CategoryIdentityForm } from './form-sections/identity/identity-form';
+import { CategoryVisualsForm } from './form-sections/visuals/visuals-form';
 import { CategorySummaryRail } from './summary-rail/summary-rail';
 
 /** L'espace de noms des plis de CET écran — une famille se replie comme une
@@ -63,6 +65,8 @@ interface PageSection {
     SectionState,
     CategoryIdentityForm,
     CategoryChannelsForm,
+    CategoryCommunicationForm,
+    CategoryVisualsForm,
     CategorySummaryRail,
   ],
   templateUrl: './category-form-page.html',
@@ -96,6 +100,16 @@ export class CategoryFormPage {
       key: 'canaux',
       label: 'Canaux & TVA',
       description: 'Ce que la famille vend, d’où, et à quel taux. Ses fiches en héritent.',
+    },
+    {
+      key: 'communication',
+      label: 'Communication',
+      description: 'Ce qu’on dit de la famille, dans les trois langues.',
+    },
+    {
+      key: 'visuels',
+      label: 'Visuels',
+      description: 'Les images de la famille, et leur description pour qui ne les voit pas.',
     },
   ];
 

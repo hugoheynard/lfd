@@ -1,0 +1,37 @@
+<!-- Le sélecteur de CETTE section : les quatre textes basculent ensemble. -->
+<app-lang-switch
+  [lang]="store.editorial.locale()"
+  (langChange)="store.editorial.locale.set($event)"
+  [missing]="store.editorial.missing()"
+  [hint]="missingHint()"
+  ariaLabel="Langue des textes"
+/>
+
+<div class="stack">
+  @for (field of fields; track field.key) {
+    @if (field.long) {
+      <!-- Un `<textarea>` natif : `fold-input` est une ligne, et une description
+           de rayon en fait trois. -->
+      <label class="field">
+        <span class="field-label">{{ labelOf(field.label) }}</span>
+        <textarea
+          class="native-input native-textarea"
+          rows="3"
+          [value]="value(field.key)"
+          (input)="set(field.key, textValue($event))"
+        ></textarea>
+      </label>
+    } @else {
+      <fold-input
+        [label]="labelOf(field.label)"
+        [value]="value(field.key)"
+        (valueChange)="set(field.key, $event)"
+      />
+    }
+  }
+</div>
+
+<p class="muted">
+  Vider le champ FRANÇAIS efface le texte dans toutes les langues : sans version source, un texte
+  n'existe pas — c'est aussi ce que le référentiel refuserait.
+</p>

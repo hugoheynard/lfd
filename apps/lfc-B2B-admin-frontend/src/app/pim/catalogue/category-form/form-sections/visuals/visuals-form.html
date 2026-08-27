@@ -1,0 +1,22 @@
+<!-- Le sélecteur de CETTE section : il ne fait basculer que les textes
+     alternatifs. Le nom d'un fichier, ses dimensions et l'image elle-même ne se
+     traduisent pas. -->
+<app-lang-switch
+  [lang]="locale()"
+  (langChange)="locale.set($event)"
+  [missing]="store.media.missing()"
+  ariaLabel="Langue des textes alternatifs"
+/>
+
+@if (missingHint(); as hint) {
+  <fold-callout appearance="inset" variant="warning">{{ hint }}</fold-callout>
+}
+
+<app-media-gallery
+  [slots]="store.media.items()"
+  [locale]="locale()"
+  [incomplete]="incompleteIndexes()"
+  [busy]="store.media.uploading()"
+  (edit)="edit($event)"
+  (picked)="pick($event)"
+/>

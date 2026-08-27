@@ -5,6 +5,7 @@ import { FoldPanelHostService, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CategoryFormPage } from '../category-form-page';
+import { CategoryFormStore } from '../category-form-store';
 import { CategoryHttpApi } from '../../category-http-api';
 import { CategoryStore } from '../../category-store';
 import { PointOfSaleHttpApi } from '../../../points-of-sale/point-of-sale-http-api';
@@ -34,6 +35,10 @@ function category(overrides: Partial<Category> = {}): Category {
  */
 interface HttpSpy {
   list: ReturnType<typeof vi.fn>;
+  detail: ReturnType<typeof vi.fn>;
+  setEditorial: ReturnType<typeof vi.fn>;
+  setMedia: ReturnType<typeof vi.fn>;
+  uploadMedia: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   rename: ReturnType<typeof vi.fn>;
   move: ReturnType<typeof vi.fn>;
@@ -45,6 +50,9 @@ interface HttpSpy {
 interface Mounted {
   host: HTMLElement;
   http: HttpSpy;
+  /** Le store de la PAGE. Il est fourni par le composant, pas par le TestBed :
+   *  `TestBed.inject` ne le voit donc pas. */
+  store: CategoryFormStore;
   routed: unknown[][];
   detect: () => void;
   stable: () => Promise<unknown>;
@@ -53,6 +61,26 @@ interface Mounted {
 async function mount(rows: Category[], id: string | null): Promise<Mounted> {
   const http: HttpSpy = {
     list: vi.fn(async () => rows),
+    // La page lit le DÉTAIL, pas la liste : elle porte textes et visuels, que
+    // la liste ne transporte pas. Une famille absente REJETTE, comme un 404 du
+    // référentiel — c'est ce que l'écran traduit en « introuvable ».
+    detail: vi.fn(async (id: string) => {
+      const found = rows.find((row) => row.id === id);
+      if (found === undefined) {
+        throw new Error('404');
+      }
+      return { ...found, editorial: null, media: [] };
+    }),
+    setEditorial: vi.fn(async () => undefined),
+    setMedia: vi.fn(async () => undefined),
+    uploadMedia: vi.fn(async () => ({
+      id: 'media_1',
+      url: 'https://x/neuve.jpg',
+      width: 800,
+      height: 600,
+      bytes: 1024,
+      contentType: 'image/jpeg',
+    })),
     create: vi.fn(async () => ({ id: 'cat_neuve' })),
     rename: vi.fn(async () => undefined),
     move: vi.fn(async () => undefined),
@@ -121,6 +149,7 @@ async function mount(rows: Category[], id: string | null): Promise<Mounted> {
   return {
     host: fixture.nativeElement as HTMLElement,
     http,
+    store: fixture.componentRef.injector.get(CategoryFormStore),
     routed,
     detect: () => fixture.detectChanges(),
     stable: settle,
@@ -293,5 +322,100 @@ describe('CategoryFormPage — introuvable', () => {
     const { host } = await mount([], 'cat_absente');
 
     expect(host.textContent).toContain('Famille introuvable');
+  });
+});
+
+describe('CategoryFormPage — les textes', () => {
+  /** Le champ d'un libellé donné — `fold-input` ou `<textarea>` natif. */
+  function field(root: HTMLElement, label: string): HTMLElement {
+    const wrappers = [...root.querySelectorAll('fold-input, label.field')];
+    const found = wrappers.find((box) => (box.textContent ?? '').includes(label));
+    const control = found?.querySelector('input, textarea');
+    if (!(control instanceof HTMLElement)) {
+      throw new Error(`Champ « ${label} » introuvable.`);
+    }
+    return control;
+  }
+
+  function fill(control: HTMLElement, value: string): void {
+    if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+      control.value = value;
+      control.dispatchEvent(new Event('input'));
+    }
+  }
+
+  it("n'envoie que les champs RÉDIGÉS — un champ vide n'est pas une valeur", async () => {
+    const { host, http, detect, stable } = await edit(category());
+
+    fill(field(host, 'Résumé'), 'Du beurre, de la farine.');
+    detect();
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.setEditorial).toHaveBeenCalledWith('cat_1', {
+      descriptionShort: { fr: 'Du beurre, de la farine.' },
+    });
+  });
+
+  it('écrit dans la langue affichée sans toucher aux autres', async () => {
+    const { host, http, detect, stable } = await edit(category());
+
+    fill(field(host, 'Résumé'), 'Du beurre.');
+    detect();
+    // Le sélecteur des TEXTES, pas celui du nom : deux sections, deux langues.
+    const section = host.querySelector('app-category-communication-form');
+    const it = [...(section?.querySelectorAll<HTMLButtonElement>('.vt-btn') ?? [])].find(
+      (b) => (b.textContent ?? '').trim() === 'IT',
+    );
+    it?.click();
+    detect();
+    fill(field(host, 'Résumé'), 'Burro.');
+    detect();
+
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.setEditorial).toHaveBeenCalledWith('cat_1', {
+      descriptionShort: { fr: 'Du beurre.', it: 'Burro.' },
+    });
+  });
+
+  it('ne se dit pas « non traduite » quand aucun texte n’est écrit', async () => {
+    // Une famille sans textes ne manque de rien : compter les langues sur des
+    // champs vides ferait s'allumer les trois points ambre en permanence.
+    const { host } = await edit(category());
+    const section = host.querySelector('app-category-communication-form');
+    expect(section?.querySelectorAll('.vt-dot')).toHaveLength(0);
+  });
+});
+
+describe('CategoryFormPage — les visuels', () => {
+  it('ajoute le fichier déposé et envoie la liste ENTIÈRE', async () => {
+    const { host, http, store, detect, stable } = await edit(category());
+
+    const dropzone = host.querySelector('fold-file-dropzone input[type="file"]');
+    expect(dropzone).not.toBeNull();
+
+    // On passe par le store : déposer un vrai `File` dans un `input` demande un
+    // `DataTransfer`, indisponible en environnement de test.
+    await store.media.upload(new File([''], 'a.jpg'));
+    detect();
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.setMedia).toHaveBeenCalledWith('cat_1', [
+      expect.objectContaining({ url: 'https://x/neuve.jpg', role: 'gallery' }),
+    ]);
+  });
+
+  it('donne à une image sans description une alternative de repli', async () => {
+    // La colonne est obligatoire côté référentiel : une chaîne vide passerait
+    // pour une alternative rédigée. L'URL vaut mieux — elle se VOIT.
+    const { store, detect } = await edit(category());
+
+    await store.media.upload(new File([''], 'a.jpg'));
+    detect();
+
+    expect(store.media.items()[0]?.alt).toEqual({ fr: 'https://x/neuve.jpg' });
   });
 });

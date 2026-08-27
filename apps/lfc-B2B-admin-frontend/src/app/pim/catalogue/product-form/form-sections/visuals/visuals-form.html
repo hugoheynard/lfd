@@ -16,60 +16,11 @@
   <fold-callout appearance="inset" variant="warning">{{ hint }}</fold-callout>
 }
 
-<div class="media">
-  @for (slot of store.media(); track $index) {
-    <div class="media-tile" [class.is-incomplete]="incomplete($index)">
-      <div class="media-thumb">
-        @if (slot.url !== '') {
-          <img [src]="slot.url" [alt]="store.mediaAlt($index)" loading="lazy" />
-        }
-        <!-- La forme RÉELLE du fichier, que le recadrage ne montre plus. -->
-        @if (ratioOf(slot); as ratio) {
-          <span class="media-ratio">{{ ratio }}</span>
-        }
-      </div>
-
-      <div class="media-caption">
-        <!-- Le NOM, et le menu qui ouvre le reste. Le nom identifie le fichier
-             pour l'équipe ; le texte alternatif décrit l'image à qui ne la voit
-             pas. Deux informations, deux publics, deux lignes. -->
-        <div class="media-row">
-          @if (slot.name.trim(); as name) {
-            <span class="media-name">{{ name }}</span>
-          } @else {
-            <span class="media-name is-unset">Sans nom</span>
-          }
-          <fold-button-icon
-            class="media-menu"
-            icon="more-vertical"
-            tooltip="Modifier ce visuel"
-            (clicked)="editMedia($index)"
-          />
-        </div>
-
-        <span class="media-meta">{{ metaOf(slot) }}</span>
-
-        @if (store.mediaAlt($index).trim(); as alt) {
-          <span class="media-alt">{{ alt }}</span>
-        } @else {
-          <span class="media-alt is-unset">Sans description</span>
-        }
-      </div>
-    </div>
-  } @empty {
-    <p class="media-empty">Aucun visuel. Déposez une image pour commencer.</p>
-  }
-
-  <!-- La dernière tuile est le dépôt, à la place qu'occuperait l'image
-       suivante : le geste est là où le regard finit, pas en bas de section. -->
-  <fold-file-dropzone
-    class="media-drop"
-    accept="image/png,image/jpeg,image/webp"
-    [multiple]="false"
-    label="Déposer une image"
-    hint="ou parcourir"
-    [busy]="store.uploading()"
-    busyLabel="Dépôt…"
-    (filesPicked)="pick($event)"
-  />
-</div>
+<app-media-gallery
+  [slots]="store.media()"
+  [locale]="store.mediaLocale()"
+  [incomplete]="incompleteIndexes()"
+  [busy]="store.uploading()"
+  (edit)="editMedia($event)"
+  (picked)="store.uploadMedia($event)"
+/>
