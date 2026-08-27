@@ -26,7 +26,7 @@ import { FEATURE_DASHBOARD } from './feature-flags';
 import { SiteFooter } from './footer/site-footer';
 
 /** Les URL servies par le shell CLIENT. À tenir en phase avec `app.routes.ts`. */
-const CLIENT_PATHS = new Set(['/bienvenue', '/connexion']);
+const CLIENT_PATHS = new Set(['/', '/bienvenue', '/connexion']);
 
 @Component({
   selector: 'app-root',

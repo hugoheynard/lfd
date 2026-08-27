@@ -35,6 +35,14 @@ export const routes: Routes = [
     component: ClientShell,
     children: [
       {
+        // LA RACINE : qui arrive sur le site tombe ici. Une redirection plutôt
+        // qu'un doublon de route — l'écran garde une adresse à lui, qu'on peut
+        // partager, et `/` ne devient pas un second nom pour la même chose.
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'bienvenue',
+      },
+      {
         // La page d'entrée : inscription en trois champs, connexion par lien
         // e-mail, rappel commercial. Maquette — rien ne part sur le réseau, et
         // `/login` (Auth0) reste la porte réelle en attendant.
