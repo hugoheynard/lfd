@@ -1,0 +1,142 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 11px;
+  padding: 14px 15px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary-surface);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.pitch {
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-primary-text);
+}
+
+/* ── Les actions ──────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}
+
+.cta {
+  flex: none;
+  min-height: 38px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+/* Quand l'appel direct accompagne le rappel, les deux se partagent la ligne —
+   et passent l'un sous l'autre plutôt que de se rogner. */
+.actions.two .cta,
+.tel {
+  flex: 1 1 130px;
+}
+
+.tel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-primary);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ── Le rappel obtenu ─────────────────────────────────────────────────────── */
+
+.booked {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.booked-tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-md);
+}
+
+.booked-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.booked-when {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-extrabold);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.booked-phone {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--fold-color-primary-text);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.booked-cancel {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-alert-text);
+  font-family: inherit;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}

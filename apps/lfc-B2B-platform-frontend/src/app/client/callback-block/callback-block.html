@@ -1,0 +1,38 @@
+<div class="head">
+  <h2 class="title">{{ heading() }}</h2>
+
+  @if (bookedSlot()) {
+    <div class="booked">
+      <span class="booked-tick" aria-hidden="true">✓</span>
+      <span class="booked-text">
+        <span class="booked-when">{{ bookedLine() }}</span>
+        <span class="booked-phone">
+          {{ t().pro.at }} <span class="num">{{ phone() }}</span>
+        </span>
+      </span>
+      <button class="booked-cancel" type="button" (click)="cancelled.emit()">
+        {{ t().pro.cancel }}
+      </button>
+    </div>
+  } @else {
+    <p class="pitch">{{ pitch() }}</p>
+  }
+</div>
+
+@if (!bookedSlot()) {
+  <div class="actions" [class.two]="showPhone()">
+    <button
+      foldButton
+      class="cta"
+      emphasis="solid"
+      intent="primary"
+      type="button"
+      (click)="wantsCallback.emit()"
+    >
+      {{ cta() }}
+    </button>
+    @if (showPhone()) {
+      <a class="tel" [href]="telHref()">{{ phone() }}</a>
+    }
+  </div>
+}

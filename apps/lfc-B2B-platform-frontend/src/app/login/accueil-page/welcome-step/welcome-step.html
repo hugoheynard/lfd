@@ -94,40 +94,14 @@
   <fold-callout variant="info">{{ t().event.pending }}</fold-callout>
 }
 
-<section class="pro">
-  <div class="pro-head">
-    <h2 class="pro-title">{{ proTitle() }}</h2>
-
-    @if (bookedSlot()) {
-      <div class="booked">
-        <span class="booked-tick" aria-hidden="true">✓</span>
-        <span class="booked-text">
-          <span class="booked-when">{{ bookedLine() }}</span>
-          <span class="booked-phone">
-            {{ t().pro.at }} <span class="num">{{ phone() }}</span>
-          </span>
-        </span>
-        <button class="booked-cancel" type="button" (click)="cancelledCallback.emit()">
-          {{ t().pro.cancel }}
-        </button>
-      </div>
-    } @else {
-      <p class="pro-pitch">{{ t().pro.pitch }}</p>
-    }
-  </div>
-
-  @if (!bookedSlot()) {
-    <button
-      foldButton
-      class="pro-cta"
-      emphasis="solid"
-      intent="primary"
-      type="button"
-      (click)="wantsCallback.emit()"
-    >
-      {{ t().pro.cta }}
-    </button>
-  }
-</section>
+<app-callback-block
+  [title]="t().pro.title"
+  [pitch]="t().pro.pitch"
+  [cta]="t().pro.cta"
+  [phone]="phone()"
+  [bookedSlot]="bookedSlot()"
+  (wantsCallback)="wantsCallback.emit()"
+  (cancelled)="cancelledCallback.emit()"
+/>
 
 <p class="legal">{{ t().signup.legal }}</p>

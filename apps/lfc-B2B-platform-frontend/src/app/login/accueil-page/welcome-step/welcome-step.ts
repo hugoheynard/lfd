@@ -17,7 +17,8 @@ import {
   FoldInputComponent,
 } from 'fold-ng';
 
-import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
+import { ClientCopyService } from '../../../client/copy/client-copy.service';
+import { CallbackBlock } from '../../../client/callback-block/callback-block';
 import { EventCard } from '../../../client/event-card/event-card';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
@@ -49,6 +50,7 @@ import { RuleOu } from '../rule-ou/rule-ou';
     FoldCalloutComponent,
     FoldCardComponent,
     FoldInputComponent,
+    CallbackBlock,
     DoorCard,
     EventCard,
     RuleOu,
@@ -91,14 +93,6 @@ export class WelcomeStep {
       this.firstName().trim() !== '' &&
       /.+@.+\..+/.test(this.email().trim()) &&
       this.tel().trim() !== '',
-  );
-
-  protected readonly proTitle = computed(() =>
-    this.bookedSlot() ? this.t().pro.bookedTitle : this.t().pro.title,
-  );
-
-  protected readonly bookedLine = computed(() =>
-    fill(this.t().pro.booked, { slot: this.bookedSlot() ?? '' }),
   );
 
   /** Déplie, et pose le curseur dans le premier champ — sinon il faut viser. */
