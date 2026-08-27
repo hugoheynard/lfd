@@ -12,6 +12,7 @@ import { CallbackBlock } from '../../client/callback-block/callback-block';
 import { Router } from '@angular/router';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { ClientOrder, type ServiceChoice } from '../../client/client-order.service';
 import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
@@ -59,6 +60,7 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
 export class CommandePage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
+  private readonly order = inject(ClientOrder);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -118,18 +120,16 @@ export class CommandePage {
   }
 
   /**
-   * ⚠️ Maquette : la suite du parcours (la boutique, puis le panier) n'existe
-   * pas encore. On retient donc le choix à l'écran plutôt que d'y mener.
+   * Le lieu ET l'heure sont pris : il ne reste qu'à composer.
+   *
+   * Le choix est PUBLIÉ avant la navigation, parce que le rayon en dépend pour
+   * exister : il porte le mode dans sa barre, la remise dans son décompte, et
+   * sans lui il renvoie ici même.
    */
-  /**
-   * Le lieu ET l'heure sont pris : il ne reste qu'à composer. La boutique est
-   * une route de l'app pro — c'est bien elle qu'on veut, et son garde
-   * d'authentification dira ce qu'il a à dire tant que le compte client n'existe
-   * pas. ⚠️ Maquette : c'est le point de jonction avec la vraie inscription.
-   */
-  protected fillBasket(): void {
+  protected fillBasket(choice: ServiceChoice): void {
+    this.order.choice.set(choice);
     this.dialog.set(null);
-    void this.router.navigate(['/boutique']);
+    void this.router.navigate(['/commande/boutique']);
   }
 
   protected openPanel(): void {

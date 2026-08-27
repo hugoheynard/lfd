@@ -115,13 +115,13 @@
     <app-pickup-dialog
       [open]="dialog() === 'pickup'"
       (closed)="dialog.set(null)"
-      (done)="fillBasket()"
+      (done)="fillBasket($event)"
     />
 
     <app-address-dialog
       [open]="dialog() === 'address'"
       (closed)="dialog.set(null)"
-      (done)="fillBasket()"
+      (done)="fillBasket($event)"
     />
   }
 </app-client-page>

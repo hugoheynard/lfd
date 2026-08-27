@@ -10,6 +10,7 @@ import {
 import { FoldButtonComponent, FoldIconComponent, FoldInputComponent } from 'fold-ng';
 
 import { ClientDialog } from '../../../client/client-dialog/client-dialog';
+import type { ServiceChoice } from '../../../client/client-order.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../../client/mock-client';
 import {
@@ -47,7 +48,7 @@ export class AddressDialog {
   readonly closed = output<void>();
 
   /** L'adresse ET l'heure sont prises : il ne reste qu'à composer le panier. */
-  readonly done = output<void>();
+  readonly done = output<ServiceChoice>();
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly client = MOCK_CLIENT;
@@ -139,7 +140,34 @@ export class AddressDialog {
       this.step.set(1);
       return;
     }
-    this.done.emit();
+    const zone = this.zone();
+    const slot = this.slot();
+    if (!zone || !slot) {
+      return;
+    }
+    this.done.emit({
+      mode: 'delivery',
+      place: this.placeName(),
+      at: this.placeAt(),
+      address: this.line(),
+      // Le coursier ne remise pas : la remise appartient au point de retrait.
+      discount: 0,
+      fee: zone.fee,
+      slot: slot.label,
+    });
+  }
+
+  /** Le nom de l'adresse : celui du carnet, ou la zone quand on vient de la saisir. */
+  private placeName(): string {
+    const id = this.picked();
+    const address = id === null ? null : SAVED_ADDRESSES.find((a) => a.id === id);
+    return address?.label ?? this.zone()?.city ?? '';
+  }
+
+  private placeAt(): string {
+    const id = this.picked();
+    const address = id === null ? null : SAVED_ADDRESSES.find((a) => a.id === id);
+    return address?.at ?? 'à cette adresse';
   }
 
   /** Revenir à l'adresse ne perd pas l'heure : on ne la redemande pas. */

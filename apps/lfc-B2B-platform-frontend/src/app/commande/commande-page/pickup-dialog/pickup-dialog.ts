@@ -10,6 +10,7 @@ import {
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientDialog } from '../../../client/client-dialog/client-dialog';
+import type { ServiceChoice } from '../../../client/client-order.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { type OrderSlot, PICKUP_POINTS } from '../../../client/mock-station';
 import { SlotStep } from '../slot-step/slot-step';
@@ -36,8 +37,13 @@ export class PickupDialog {
   readonly open = input.required<boolean>();
   readonly closed = output<void>();
 
-  /** Le lieu ET l'heure sont pris : il ne reste qu'à composer le panier. */
-  readonly done = output<void>();
+  /**
+   * Le lieu ET l'heure sont pris : il ne reste qu'à composer le panier.
+   *
+   * Le dialogue REMONTE ce qu'il a fait choisir plutôt que de l'écrire lui-même
+   * quelque part : il sait ce qu'il a demandé, pas ce que l'app en fera.
+   */
+  readonly done = output<ServiceChoice>();
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -93,8 +99,19 @@ export class PickupDialog {
       this.step.set(1);
       return;
     }
-    if (this.slot()) {
-      this.done.emit();
+    const point = this.picked();
+    const slot = this.slot();
+    if (point && slot) {
+      this.done.emit({
+        mode: 'pickup',
+        place: point.name,
+        at: point.at,
+        address: point.address,
+        discount: point.discount,
+        // Le retrait est TOUJOURS gratuit : pas de frais, donc pas de ligne.
+        fee: 0,
+        slot: slot.label,
+      });
     }
   }
 

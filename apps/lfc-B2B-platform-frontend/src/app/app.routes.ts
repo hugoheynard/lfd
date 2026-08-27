@@ -59,6 +59,26 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./commande/commande-page/commande-page').then((m) => m.CommandePage),
       },
+      {
+        // LE RAYON. Il vit sous `commande/` et pas à la racine parce qu'il est la
+        // SUITE d'une commande en cours : sans mode de service, il n'a rien à
+        // montrer et renvoie à la question. `/boutique` reste la boutique PRO —
+        // deux produits, deux catalogues, deux adresses.
+        path: 'commande/boutique',
+        title: 'Boutique — La Folie Coffee',
+        loadComponent: () => import('./rayon/rayon-page/rayon-page').then((m) => m.RayonPage),
+      },
+      {
+        path: 'commande/panier',
+        title: 'Mon panier — La Folie Coffee',
+        loadComponent: () => import('./rayon/panier-page/panier-page').then((m) => m.PanierPage),
+      },
+      {
+        path: 'commande/confirmee',
+        title: 'Commande confirmée — La Folie Coffee',
+        loadComponent: () =>
+          import('./rayon/confirmation-page/confirmation-page').then((m) => m.ConfirmationPage),
+      },
       { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
     ],
   },
