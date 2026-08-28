@@ -50,7 +50,12 @@ export class EspacePage {
     this.chrome.kicker.set('');
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
-    this.chrome.bell.set(() => undefined);
+    // Pas de cloche ici. La réf en dessine une avec trois non-lues, mais le
+    // modèle d'événement est le cas 4 et il n'existe pas : un bouton qui ne
+    // ferait rien, ou qui ne saurait dire que « bientôt », occuperait 48 px de
+    // la barre d'un téléphone au détriment du nom de la maison. Elle revient
+    // avec ce qu'elle annoncera.
+    this.chrome.bell.set(null);
     this.chrome.bellCount.set(0);
     this.chrome.barOnDesktop.set(true);
   }

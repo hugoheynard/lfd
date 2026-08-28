@@ -35,9 +35,14 @@
         <span class="brand-kicker">{{ kicker }}</span>
       }
     </span>
-    <!-- La barre d'un client reconnu porte déjà le menu et la cloche : le
-         sélecteur s'y réduit à un globe, faute de place pour trois segments. -->
-    <app-lang-switch [compact]="!!chrome.bell()" />
+    <!-- La barre d'un client reconnu porte déjà le menu et le panier : le
+         sélecteur s'y réduit à un globe, faute de place pour trois segments.
+         ⚠️ La condition est le CLIENT RECONNU, pas la cloche. Elle l'a été, du
+         temps où la cloche était le seul autre occupant — et le jour où un
+         écran a cessé d'en poser une, les trois segments sont revenus manger la
+         place du panier. Un proxy finit toujours par se désaccorder de ce qu'il
+         représentait. -->
+    <app-lang-switch [compact]="chrome.menu()" />
 
     @if (chrome.bell()) {
       <button class="bell" type="button" [attr.aria-label]="bellLabel()" (click)="openBell()">
@@ -46,6 +51,24 @@
           <span class="badge" aria-hidden="true">{{ count }}</span>
         }
       </button>
+    }
+
+    <!-- Le panier vit ICI et plus dans le menu : une quantité qui change en
+         permanence appartient au chrome permanent, pas à une liste qu'on
+         parcourt. Il ne paraît qu'à un client reconnu — la même condition que
+         le menu, parce que c'est la même chose : avoir des affaires ici. -->
+    @if (chrome.menu()) {
+      <app-client-cart-pill />
+
+      <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
+           qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
+           interdit d'ouvrir un déroulant qui ne mène nulle part. -->
+      <span class="who wide-only">
+        @if (identity.firstName(); as name) {
+          <span class="who-name">{{ name }}</span>
+        }
+        <span class="who-chip" aria-hidden="true">{{ initials() }}</span>
+      </span>
     }
   </div>
 

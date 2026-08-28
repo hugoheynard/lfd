@@ -3,9 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { ClientIdentity } from '../client-identity.service';
 import { ClientFoot } from '../client-foot/client-foot';
 import { ClientMenu } from '../client-nav/client-menu/client-menu';
 import { ClientBand } from '../client-nav/client-band/client-band';
+import { ClientCartPill } from '../client-nav/client-cart-pill/client-cart-pill';
 import { ClientOnboarding } from '../client-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
@@ -27,6 +29,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
   imports: [
     ClientBand,
+    ClientCartPill,
     ClientFoot,
     ClientMenu,
     FoldAppShellComponent,
@@ -39,6 +42,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 })
 export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
+  protected readonly identity = inject(ClientIdentity);
   protected readonly t = inject(ClientCopyService).t;
 
   constructor() {
@@ -47,6 +51,9 @@ export class ClientShell {
     // personne n'injecte ne s'exécute jamais.
     inject(ClientOnboarding);
   }
+
+  /** L'initiale, ou un point d'interrogation : on ne devine pas un nom. */
+  protected readonly initials = computed(() => this.identity.firstName()?.charAt(0) ?? '?');
 
   protected goBack(): void {
     this.chrome.back()?.();

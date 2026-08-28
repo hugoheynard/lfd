@@ -9,7 +9,7 @@
   /* La hauteur de la barre, nommée UNE fois et publiée sous un nom applicatif :
      les deux crans de fold en dérivent, et les écrans la lisent sans avoir à
      connaître les rouages du shell. */
-  --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 58px);
+  --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 64px);
   --fold-shell-header-height: var(--lfc-header-height);
   --fold-shell-header-height-mobile: var(--lfc-header-height);
 
@@ -147,12 +147,16 @@
 .brand-name {
   font-family: var(--fold-font-label);
   /* Le nom ne se laisse PAS rogner : il rétrécit d'abord.
-     Ce qui reste pour lui, c'est la largeur moins le fixe de la barre —
-     2 × 18 px de marge, 44 px de pastille, 2 × 8 px d'écart, 104 px de langues,
-     soit ~200 px — et « LA FOLIE COFFEE » en Archivo 900 mesure 9 px de large
-     par pixel de corps. D'où `(100vw - 200px) / 9`, plafonné au cran de la réf.
-     La réf, elle, coupait au-delà de 390 px de large. */
-  font-size: clamp(1rem, calc(11.1vw - 23px), var(--fold-text-xl));
+     Ce qui reste pour lui, c'est la largeur moins le fixe de la barre — et ce
+     fixe a grandi depuis que le panier y vit : 2 × 18 px de marge, 40 px de
+     menu, 40 px de langue, 40 px de cloche, 66 px de panier et leurs écarts,
+     soit ~260 px — le budget vise l'écran le PLUS chargé (celui qui porte la
+     cloche), sinon le nom s'y coupe de deux pixels. « LA
+     FOLIE COFFEE » en Archivo 900 mesure 9 px de large par pixel de corps,
+     d'où `(100vw - 260px) / 9`, plafonné au cran de la réf. Le plancher
+     descend d'un cran pour la même raison : à 375 px, quatre commandes et un
+     nom entier ne tiennent pas ensemble à 16 px. */
+  font-size: clamp(0.75rem, calc(11.1vw - 29px), var(--fold-text-xl));
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
@@ -168,6 +172,42 @@
   letter-spacing: var(--lfc-tracking-kicker);
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
+}
+
+/* ── L'identité, en fin de rangée ────────────────────────────────────────── */
+
+.who {
+  display: none;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  height: 40px;
+  padding: 0 var(--fold-space-xs) 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+}
+
+.who-name {
+  font-size: var(--fold-text-base);
+  color: var(--fold-color-text);
+  white-space: nowrap;
+}
+
+/* La pastille d'initiales prend le papier : sur l'encre, c'est le contraste qui
+   la détache, pas une bordure de plus. */
+.who-chip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-paper-50);
+  color: var(--lfc-ink-800);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
 }
 
 /* Un écran peut demander que la barre s'efface au-delà du pli — l'accueil le
@@ -199,5 +239,11 @@
 
   .mark.wide-only {
     display: grid;
+  }
+
+  /* Le nom ne paraît qu'ici. En deçà, le menu pleine page porte déjà le salut
+     et l'identité : le répéter dans la barre coûterait la place du panier. */
+  .who.wide-only {
+    display: flex;
   }
 }

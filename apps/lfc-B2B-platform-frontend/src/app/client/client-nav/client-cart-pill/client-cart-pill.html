@@ -1,0 +1,7 @@
+<a class="pill" routerLink="/commande/panier" [attr.aria-label]="label()">
+  <fold-icon class="glyph" name="basket" />
+  @if (!cart.isEmpty()) {
+    <span class="count" aria-hidden="true">{{ cart.count() }}</span>
+    <span class="total wide-only" aria-hidden="true">{{ total() }}</span>
+  }
+</a>

@@ -1,0 +1,57 @@
+:host {
+  display: block;
+}
+
+/* Vide, le panier tient le gabarit des trois autres blocs de la barre — 38 px.
+   Plein, il s'élargit de sa pastille et de son total. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  height: 38px;
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  text-decoration: none;
+}
+
+.glyph {
+  flex: none;
+}
+
+/* La pastille est CRÈME, pas caramel : le caramel de la barre est réservé à ce
+   qui réclame une action, et un panier en cours n'en réclame pas encore une. */
+.count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-50);
+  color: var(--lfc-ink-800);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  display: none;
+  flex: none;
+  padding-right: var(--fold-space-xs);
+  font-size: var(--fold-text-md);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Le total ne paraît qu'où il y a la place. En deçà, la pastille suffit : le
+   montant se lit dans le panier, qui est à une touche. */
+@media (min-width: 1100px) {
+  .total {
+    display: inline;
+  }
+}
