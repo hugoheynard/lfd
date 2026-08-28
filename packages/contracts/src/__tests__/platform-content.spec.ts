@@ -1,3 +1,4 @@
+import { DEFAULT_FOOTER_CONTENT } from "../platform-content.defaults.js";
 import { footerContentSchema, legalIdentitySchema } from "../platform-content.js";
 
 describe("l'identité légale", () => {
@@ -72,5 +73,33 @@ describe("le pied de page", () => {
     expect(
       footerContentSchema.safeParse({ identity: {}, fr: noCity, en: locale, it: locale }).success,
     ).toBe(false);
+  });
+});
+
+describe("le contenu de départ", () => {
+  it("satisfait son propre schéma — sinon le repli du serveur casse en silence", () => {
+    // Le défaut est servi tant que personne n'a rien enregistré, ET c'est le
+    // repli du front quand le réseau ne répond pas. S'il était invalide,
+    // l'erreur ne se verrait qu'en production, au pire moment.
+    expect(footerContentSchema.safeParse(DEFAULT_FOOTER_CONTENT).success).toBe(true);
+  });
+
+  it("n'invente AUCUN numéro d'immatriculation", () => {
+    // Un SIRET plausible sur un site marchand est une mention légale fausse.
+    // Le back-office est là pour le saisir ; le rendu omet ce qui est vide.
+    expect(DEFAULT_FOOTER_CONTENT.identity.siret).toBe("");
+    expect(DEFAULT_FOOTER_CONTENT.identity.rcs).toBe("");
+    expect(DEFAULT_FOOTER_CONTENT.identity.vat).toBe("");
+  });
+
+  it("porte les trois langues, chacune avec ses quatre sections", () => {
+    for (const locale of ["fr", "en", "it"] as const) {
+      const content = DEFAULT_FOOTER_CONTENT[locale];
+      expect(content.brand.tagline).not.toBe("");
+      expect(content.houses.items.length).toBeGreaterThan(0);
+      expect(content.order.links.length).toBeGreaterThan(0);
+      expect(content.help.links.length).toBeGreaterThan(0);
+      expect(content.legal.links.length).toBeGreaterThan(0);
+    }
   });
 });

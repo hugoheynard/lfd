@@ -5,6 +5,7 @@ import { AppService } from "./app.service.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
+import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
@@ -68,6 +69,7 @@ import { AuthGuard } from "../platform/auth/auth.guard.js";
     PickupAddressesModule,
     CatalogModule,
     DeliveryZonesModule,
+    PlatformContentModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
     // La résolution d'accès staff, reliée : le port est technique, l'adaptateur

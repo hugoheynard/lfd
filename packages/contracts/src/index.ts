@@ -609,3 +609,4 @@ export type {
   FooterContentPayload,
   FooterContentView,
 } from "./platform-content.js";
+export { DEFAULT_FOOTER_CONTENT } from "./platform-content.defaults.js";
