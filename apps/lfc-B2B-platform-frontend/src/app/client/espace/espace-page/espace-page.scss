@@ -1,0 +1,235 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-4xl);
+}
+
+/* ── Le titre, et l'action à côté ───────────────────────────────────────── */
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.04;
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.lead {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-base);
+  color: var(--fold-color-text-muted);
+}
+
+/* La carte caramel du cas 2, à l'identique : c'est la même action, elle doit
+   se reconnaître d'un écran à l'autre. */
+.new-order {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-accent-deep);
+  text-decoration: none;
+}
+
+.new-order-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-on-primary-tile);
+}
+
+.new-order-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-order-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.new-order-sub {
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-on-accent-deep-muted);
+}
+
+/* ── La ligne « ce qui attend / qui répond » ────────────────────────────── */
+
+.row {
+  display: grid;
+  gap: var(--fold-space-xl);
+}
+
+/* ── La consultation — bureau seulement ────────────────────────────────── */
+
+.consult {
+  display: none;
+}
+
+.block-head {
+  margin: 0 0 var(--fold-space-md);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.habit {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary-surface);
+}
+
+.habit-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+.habit-titles {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.habit-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.habit-sub {
+  font-size: var(--fold-text-md);
+  color: var(--fold-color-text-muted);
+}
+
+.habit-action {
+  flex: none;
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.pro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0;
+  margin: 0;
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  font-size: var(--fold-text-base);
+}
+
+.pro dt {
+  padding: var(--fold-space-sm) 0;
+  color: var(--fold-color-text-muted);
+}
+
+.pro dd {
+  margin: 0;
+  padding: var(--fold-space-sm) 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.pro-good {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.pro-state {
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-info-surface);
+  color: var(--fold-color-info-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+@media (min-width: 900px) {
+  .page {
+    gap: var(--fold-space-2xl);
+    padding: var(--fold-space-2xl) 44px var(--fold-space-5xl);
+  }
+
+  .head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--fold-space-2xl);
+  }
+
+  .titles {
+    min-width: 0;
+  }
+
+  .new-order {
+    flex: none;
+  }
+
+  /* 3/4 · 1/4, et les deux colonnes exactement à la même hauteur : c'est le
+     `stretch` (par défaut ici) qui fait de la carte contact une carte pleine
+     hauteur et non un encart résiduel à côté du puits. */
+  .row {
+    grid-template-columns: 3fr minmax(0, 1fr);
+  }
+
+  .consult {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--fold-space-2xl);
+  }
+}

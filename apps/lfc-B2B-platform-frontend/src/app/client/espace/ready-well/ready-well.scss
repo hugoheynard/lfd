@@ -1,0 +1,185 @@
+.well {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-xl);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-surface-well);
+  color: var(--lfc-color-on-well);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.tick {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--lfc-color-on-well-tile);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-color-on-well-tile);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+/* Le badge annonce un nombre d'ACTIONS, pas de notifications — d'où le bleu vif
+   et non le beurre, qui est réservé à ce qui presse. */
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-primary-vivid);
+  color: var(--lfc-color-on-well);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  /* La glose n'existe qu'au-delà du pli : sur un téléphone, le titre et son
+     badge disent déjà tout ce que la ligne répéterait. */
+  display: none;
+  margin: 0;
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-on-well-muted);
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  /* Trois cartes visibles au maximum. La quatrième défile ici, dans le puits. */
+  max-height: 250px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-lg);
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-on-well-tile);
+}
+
+/* La carte PRINCIPALE porte la crème pleine : dans un puits sombre, c'est le
+   contraste et non la taille qui dit laquelle vient en premier. */
+.card.is-primary {
+  background: var(--lfc-paper-50);
+  color: var(--lfc-soot-900);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.card-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.card.is-primary .card-tile {
+  background: var(--lfc-color-surface-well);
+  color: var(--lfc-paper-50);
+}
+
+.card-title {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.card-badge {
+  flex: none;
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.card-line {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-on-well-muted);
+}
+
+.card.is-primary .card-line {
+  color: var(--lfc-soot-600);
+}
+
+.card-action {
+  align-self: flex-start;
+  margin-top: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-color-on-well-tile);
+  color: var(--lfc-color-on-well);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.card.is-primary .card-action {
+  background: var(--lfc-color-primary-vivid);
+  color: var(--lfc-paper-50);
+}
+
+/* Au-delà du pli, la hauteur ne manque pas : le plafond de la zone saute, les
+   cartes se rangent en ligne et le titre gagne sa glose. */
+@media (min-width: 900px) {
+  .note {
+    display: block;
+  }
+
+  .zone {
+    flex-direction: row;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .card {
+    flex: 1;
+    min-width: 0;
+  }
+}

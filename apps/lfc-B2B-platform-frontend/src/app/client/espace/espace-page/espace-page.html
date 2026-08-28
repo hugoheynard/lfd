@@ -1,0 +1,55 @@
+<div class="page">
+  <header class="head">
+    <div class="titles">
+      <h1 class="title">{{ hello() }}<br />{{ espace.todayLine() }}</h1>
+      <p class="lead">{{ espace.lead() }}</p>
+    </div>
+    <!-- Neuf fois sur dix on lance l'app pour commander, pas pour relire un QR :
+         l'action garde sa place au premier coup d'œil. -->
+    <a class="new-order" routerLink="/commande">
+      <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
+      <span class="new-order-titles">
+        <span class="new-order-title">{{ t().nav.newOrder }}</span>
+        <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
+      </span>
+    </a>
+  </header>
+
+  <!-- La ligne « ce qui attend / qui répond ». Les deux colonnes sont à la MÊME
+       hauteur : c'est le `stretch` qui fait du contact une carte pleine hauteur
+       et non un encart résiduel à côté du puits. -->
+  <div class="row">
+    <app-ready-well />
+    <app-contact-card />
+  </div>
+
+  <!-- La consultation. Le bureau a la colonne pour, le téléphone non — et il
+       n'a pas la place d'un second niveau. -->
+  <div class="consult">
+    <section class="block">
+      <h2 class="block-head">{{ t().espace.habitsHead }}</h2>
+      <div class="habit">
+        <span class="habit-tile" aria-hidden="true"><fold-icon name="repeat" /></span>
+        <span class="habit-titles">
+          <span class="habit-title">{{ t().commande.againTitle }}</span>
+          <span class="habit-sub">{{ t().commande.againSub }}</span>
+        </span>
+        <a class="habit-action" routerLink="/commande">{{ t().commande.againAction }}</a>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="block-head">{{ t().espace.proHead }}</h2>
+      <dl class="pro">
+        <dt>{{ t().espace.proDiscount }}</dt>
+        <dd class="pro-good">−10 %</dd>
+        <dt>{{ t().espace.proMonth }}</dt>
+        <dd>312,40 €</dd>
+        <dt>{{ t().espace.proKbis }}</dt>
+        <dd>
+          <span class="pro-state">{{ t().espace.proKbisState }}</span>
+        </dd>
+      </dl>
+    </section>
+  </div>
+</div>

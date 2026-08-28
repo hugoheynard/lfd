@@ -1,0 +1,80 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--fold-space-xl);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--fold-shadow-sm);
+}
+
+.kicker {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.title {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  line-height: 1.12;
+  text-transform: uppercase;
+  /* Le titre tient sur deux lignes, et la coupe est dans la COPIE — c'est elle
+     qui sait où la phrase se plie sans se casser. */
+  white-space: pre-line;
+  color: var(--fold-color-text);
+}
+
+.who {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-md);
+  line-height: 1.5;
+  color: var(--fold-color-text-muted);
+}
+
+.call,
+.write {
+  display: grid;
+  place-items: center;
+  border-radius: var(--fold-radius-md);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.call {
+  /* Ce qui pousse le bouton au bas de la carte, et donc la carte à la hauteur
+     du puits : la ligne 3/4 · 1/4 est en `stretch`, pas en `start`. */
+  margin-top: auto;
+  height: 44px;
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+.write {
+  margin-top: var(--fold-space-sm);
+  height: 40px;
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}
+
+@media (min-width: 900px) {
+  .call {
+    height: 42px;
+  }
+
+  .write {
+    height: 36px;
+  }
+}

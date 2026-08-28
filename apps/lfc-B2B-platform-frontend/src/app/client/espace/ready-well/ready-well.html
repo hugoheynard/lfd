@@ -1,0 +1,36 @@
+<section class="well">
+  <header class="head">
+    <span class="tick" aria-hidden="true"></span>
+    <h2 class="title">{{ t().espace.wellTitle }}</h2>
+    @if (espace.count(); as count) {
+      <span class="badge">{{ count }}</span>
+    }
+    <p class="note">{{ t().espace.wellNote }}</p>
+  </header>
+
+  <!-- La zone est défilante, trois cartes au maximum. À trois elle ne défile
+       pas ; à la quatrième elle défile ICI, au lieu d'allonger l'accueil. -->
+  <div class="zone">
+    @for (card of espace.cards(); track card.id) {
+      <article class="card" [class.is-primary]="card.primary">
+        <div class="card-head">
+          <span class="card-tile" aria-hidden="true">
+            @if (card.icon) {
+              <fold-icon [name]="card.icon" size="sm" />
+            } @else {
+              {{ espace.cartPieces() }}
+            }
+          </span>
+          <h3 class="card-title">{{ card.title }}</h3>
+          @if (card.badge) {
+            <span class="card-badge">{{ card.badge }}</span>
+          }
+        </div>
+        @for (line of card.lines; track line) {
+          <p class="card-line">{{ line }}</p>
+        }
+        <a class="card-action" [routerLink]="card.route">{{ card.action }}</a>
+      </article>
+    }
+  </div>
+</section>

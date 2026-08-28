@@ -137,6 +137,16 @@ export const routes: Routes = [
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
+        // L'ACCUEIL DU CLIENT RECONNU. Il répond à une seule question — qu'est-ce
+        // qui m'attend aujourd'hui ? — et c'est là qu'on atterrit après la
+        // connexion, sauf pendant le parcours de première commande, qui a sa
+        // propre suite d'écrans.
+        path: 'mon-espace',
+        title: 'Mon espace — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/espace/espace-page/espace-page').then((m) => m.EspacePage),
+      },
+      {
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.
