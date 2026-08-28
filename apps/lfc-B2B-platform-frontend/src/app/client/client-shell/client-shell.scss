@@ -42,17 +42,25 @@
   --fold-shell-subheader-height-mobile: auto;
 }
 
-/* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
-   zone au-delà du contenu montre l'arrière-plan du conteneur de défilement, pas
-   celui de la page : c'était le crème du shell, qui passait pour du blanc. On le
-   met à l'encre de marque, pour que le rebond prolonge la barre au lieu de
-   trouer l'écran.
+/* Le fond que découvre le REBOND ÉLASTIQUE du contenu — la zone au-delà du
+   défilement montre l'arrière-plan du conteneur, pas celui de la page.
+
+   Il vaut la CRÈME, et il l'a valu, puis l'encre, puis la crème à nouveau : ce
+   fond doit être celui de ce qui commence juste en dessous de la bande, et ce
+   qui commence là a changé. Du temps où le contenu démarrait sous la barre
+   bleue, l'encre prolongeait la barre ; depuis que la lèvre a posé la feuille
+   crème par-dessus, l'encre perce un trou bleu en plein milieu de la feuille dès
+   qu'on tire vers le haut.
+
+   ⚠️ Le rebond du DOCUMENT est une autre affaire, et il reste à l'encre : c'est
+   celui de l'encoche, réglé sur `body` dans `styles.scss`. Deux rebonds, deux
+   fonds, et les confondre en casse toujours un.
 
    Le sélecteur est volontairement `:host fold-app-shell` : le composant se peint
    lui-même en `:host`, à égale spécificité — il faut donc un cran de plus pour
    le reprendre depuis le parent, sans `!important`. */
 :host fold-app-shell {
-  background: var(--fold-color-primary);
+  background: var(--lfc-paper-50);
 }
 
 .bar {
