@@ -16,11 +16,14 @@
 
 .tick {
   flex: none;
+  display: grid;
+  place-items: center;
   width: 26px;
   height: 26px;
   border: 1px solid var(--lfc-color-on-well-tile);
   border-radius: var(--fold-radius-sm);
   background: var(--lfc-color-on-well-tile);
+  color: var(--lfc-color-on-well);
 }
 
 .title {
