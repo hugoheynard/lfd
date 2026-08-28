@@ -3,22 +3,18 @@
      commence au crème. C'est le shell qui le place ; l'écran n'écrit que ce
      qu'il y a dedans. -->
 <ng-template clientBanner>
-  <div class="banner">
-    <div class="titles">
-      <h1 class="title">{{ hello() }}<br />{{ espace.todayLine() }}</h1>
-      <p class="lead">{{ espace.lead() }}</p>
-    </div>
+  <app-client-banner-block [title]="bannerTitle()" [lead]="espace.lead()">
     <!-- Neuf fois sur dix on lance l'app pour commander, pas pour relire un QR :
          l'action garde sa place au premier coup d'œil. Il lui faut ce poids
          pour tenir face à un titre de 38 px sur le registre sombre. -->
-    <a class="new-order" routerLink="/nouvelle-commande">
+    <a banner-action class="new-order" routerLink="/nouvelle-commande">
       <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
       <span class="new-order-titles">
         <span class="new-order-title">{{ t().nav.newOrder }}</span>
         <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
       </span>
     </a>
-  </div>
+  </app-client-banner-block>
 </ng-template>
 
 <div class="page">

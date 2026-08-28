@@ -10,36 +10,12 @@
   padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-4xl);
 }
 
-/* ── Le bandeau, dans la descente ────────────────────────────────────────
-   ⚠️ Ces règles habillent un gabarit rendu DANS un autre composant (la bande
-   du shell). Elles l'atteignent parce qu'une vue intégrée garde l'attribut
-   d'encapsulation du composant qui l'a DÉCLARÉE — celui-ci. Ce qui ne
-   marcherait pas, c'est un sélecteur ancré sur `:host` : l'écran n'est plus un
-   ancêtre du bandeau. */
-
-.banner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
-}
-
-.title {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-screen-sm);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-display);
-  line-height: 1.04;
-  text-transform: uppercase;
-  color: var(--fold-color-text);
-}
-
-.lead {
-  margin: var(--fold-space-sm) 0 0;
-  font-size: var(--fold-text-base);
-  color: var(--lfc-color-on-primary-muted);
-}
+/* ── L'action du bandeau ─────────────────────────────────────────────────
+   ⚠️ Ces règles habillent un élément rendu DANS un autre composant (le bloc de
+   bandeau, lui-même dans la bande du shell). Elles l'atteignent parce qu'un
+   nœud projeté garde l'attribut d'encapsulation du composant qui l'a DÉCLARÉ —
+   celui-ci. Ce qui ne marcherait pas, c'est un sélecteur ancré sur `:host` :
+   l'écran n'est plus un ancêtre de ce qu'il projette. */
 
 /* La carte caramel du cas 2, à l'identique : c'est la même action, elle doit se
    reconnaître d'un écran à l'autre. */
@@ -208,22 +184,6 @@
   .page {
     gap: var(--fold-space-2xl);
     padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-5xl);
-  }
-
-  .banner {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--fold-space-2xl);
-    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-3xl);
-  }
-
-  .titles {
-    min-width: 0;
-  }
-
-  .title {
-    font-size: var(--lfc-text-screen);
   }
 
   /* 76 px : il faut ce poids pour tenir face à un titre de 38 px sur le

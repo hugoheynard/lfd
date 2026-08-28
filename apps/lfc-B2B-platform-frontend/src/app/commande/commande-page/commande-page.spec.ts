@@ -1,5 +1,8 @@
+import { Component, effect, inject, viewChild, ViewContainerRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+
+import { ClientBanner } from '../../client/client-nav/client-banner';
 
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientLocale } from '../../client/client-locale.service';
@@ -10,11 +13,27 @@ import { MOCK_CLIENT } from '../../client/mock-client';
 import { CommandePage } from './commande-page';
 
 /**
+ * Le shell fournit au bandeau l'endroit où atterrir. Sans lui, le gabarit que
+ * l'écran déclare ne se rend NULLE PART — c'est le comportement voulu, mais il
+ * faut le reproduire ici pour vérifier ce que l'écran y met.
+ */
+@Component({ standalone: true, template: '<ng-container #slot />' })
+class BannerSlotHost {
+  private readonly slot = viewChild.required('slot', { read: ViewContainerRef });
+
+  constructor() {
+    const banner = inject(ClientBanner);
+    effect(() => banner.slot.set(this.slot()));
+  }
+}
+
+/**
  * L'écran est piloté par le DOM : ses membres sont `protected`, et ce qui compte
  * est ce que voit la personne qui l'utilise.
  */
 describe('CommandePage', () => {
   let fixture: ComponentFixture<CommandePage>;
+  let banner: HTMLElement;
   let chrome: ClientChrome;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -37,13 +56,21 @@ describe('CommandePage', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [CommandePage] });
+    const slot = TestBed.createComponent(BannerSlotHost);
+    slot.detectChanges();
+    banner = slot.nativeElement as HTMLElement;
     fixture = TestBed.createComponent(CommandePage);
     chrome = TestBed.inject(ClientChrome);
     fixture.detectChanges();
   });
 
   it('accueille par son prénom, et pose une seule question', () => {
-    expect(text()).toContain(fill(FR.commande.title, { name: MOCK_CLIENT.firstName }));
+    // Le salut n'est plus dans l'écran : il est dans la DESCENTE, que le shell
+    // place au-dessus de la sous-barre. L'écran ne fait que l'y publier.
+    fixture.detectChanges();
+    expect(banner.textContent ?? '').toContain(
+      fill(FR.commande.title, { name: MOCK_CLIENT.firstName }),
+    );
     expect(chrome.kicker()).toBe(FR.chrome.kickerCommande);
     expect(chrome.back()).toBeNull();
   });

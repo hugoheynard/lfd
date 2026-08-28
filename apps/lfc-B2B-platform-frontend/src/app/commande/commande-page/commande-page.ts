@@ -6,15 +6,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { CallbackBlock } from '../../client/callback-block/callback-block';
-import { Router } from '@angular/router';
-
+import { ClientBannerBlock } from '../../client/client-nav/client-banner-block/client-banner-block';
+import { ClientBannerOutlet } from '../../client/client-nav/client-banner';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientIdentity } from '../../client/client-identity.service';
 import { ClientOrder, type ServiceChoice } from '../../client/client-order.service';
-import { ClientPage } from '../../client/client-page/client-page';
 import { ClientCopyService, fill } from '../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../client/mock-client';
 import { RappelPanel } from '../../login/accueil-page/rappel-panel/rappel-panel';
@@ -46,7 +46,8 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
   imports: [
     AddressDialog,
     CallbackBlock,
-    ClientPage,
+    ClientBannerBlock,
+    ClientBannerOutlet,
     FoldCalloutComponent,
     PickupDialog,
     OfferCard,

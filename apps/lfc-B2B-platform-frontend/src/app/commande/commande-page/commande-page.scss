@@ -2,12 +2,17 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
+  background: var(--fold-color-bg-page);
 }
 
-/* L'écran n'a rien à poser au bas de la colonne d'encre : pas de preuves à
-   faire à qui est déjà entré. */
-.aside-foot {
-  display: none;
+/* L'écran ne porte plus de châssis : son accroche est passée dans la descente
+   du shell, et ce qui reste est la feuille crème. La gouttière est celle de
+   toutes les autres surfaces — une seule valeur, sur l'hôte du shell. */
+.page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
 }
 
 .stack {

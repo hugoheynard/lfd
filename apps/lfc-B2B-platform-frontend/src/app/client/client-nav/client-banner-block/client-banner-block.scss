@@ -1,0 +1,65 @@
+:host {
+  display: block;
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.04;
+  text-transform: uppercase;
+  /* Le titre tient sur deux lignes, et la coupe est dans la COPIE — c'est elle
+     qui sait où la phrase se plie sans se casser. */
+  white-space: pre-line;
+  color: var(--fold-color-text);
+}
+
+.lead {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-base);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+@media (min-width: 900px) {
+  .banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--fold-space-2xl);
+    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-3xl);
+  }
+
+  .titles {
+    min-width: 0;
+  }
+
+  /* 38 px sur le registre sombre : c'est le poids qu'il faut pour qu'un titre
+     tienne face à une carte d'action de 76 px. */
+  .title {
+    font-size: var(--lfc-text-screen);
+  }
+
+  /* SANS ACTION, le texte se centre. Un titre seul aligné à gauche laisse une
+     moitié de bandeau vide qui ne dit rien ; avec une action, la lecture va
+     d'un bord à l'autre.
+
+     ⚠️ La condition porte sur `.titles`, PAS sur l'action projetée. Un
+     `:has([banner-action])` ne marcherait jamais : Angular ajoute son attribut
+     d'encapsulation à chaque compound du sélecteur, et le nœud projeté porte
+     celui du composant qui l'a DÉCLARÉ, pas le nôtre — la règle serait donc
+     toujours vraie, et le bandeau toujours centré. `:only-child` interroge un
+     élément qui nous appartient et compte ses voisins, quels qu'ils soient. */
+  .titles:only-child {
+    margin-inline: auto;
+    text-align: center;
+  }
+}

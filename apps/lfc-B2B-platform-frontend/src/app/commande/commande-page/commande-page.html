@@ -1,13 +1,11 @@
-<app-client-page
-  layout="stacked"
-  [heading]="heading()"
-  [intro]="intro()"
-  [introWide]="t().commande.newOrderSub"
-  [kicker]="t().commande.newOrderTitle"
-  [big]="!panelOpen()"
->
-  <div aside-foot class="aside-foot"></div>
+<!-- L'accroche va dans la DESCENTE, sous la barre et au-dessus de la
+     sous-barre. Elle ne porte pas d'action : le bandeau la centre de lui-même,
+     et l'écran entier EST l'action. -->
+<ng-template clientBanner>
+  <app-client-banner-block [title]="heading()" [lead]="intro()" />
+</ng-template>
 
+<div class="page">
   @if (panelOpen()) {
     <app-rappel-panel [phone]="phone() ?? ''" (booked)="book($event)" />
   } @else {
@@ -124,4 +122,4 @@
       (done)="fillBasket($event)"
     />
   }
-</app-client-page>
+</div>

@@ -1,0 +1,11 @@
+<div class="banner">
+  <div class="titles">
+    <h1 class="title">{{ title() }}</h1>
+    @if (lead()) {
+      <p class="lead">{{ lead() }}</p>
+    }
+  </div>
+  <!-- L'action, s'il y en a une. Son absence n'est pas gérée ici mais en CSS
+       (`:has`) : c'est une question de mise en page, pas d'état. -->
+  <ng-content select="[banner-action]" />
+</div>
