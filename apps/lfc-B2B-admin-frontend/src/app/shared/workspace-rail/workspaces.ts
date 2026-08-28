@@ -112,13 +112,39 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
  * prix. Toutes deux sous `settings:read`, le droit qui ouvre déjà l'espace :
  * le répéter serait une condition toujours vraie, donc jamais relue.
  */
+/**
+ * Les vues du **B2B**, rangées par SECTION.
+ *
+ * Le contenu de plateforme y entre plutôt que d'ouvrir un espace à lui : ce
+ * qu'on édite ici, ce sont les textes de la VITRINE B2B — le même contexte que
+ * son catalogue et sa tarification. Un espace séparé aurait fait deux portes
+ * pour une seule maison.
+ *
+ * Trois sections d'une vue chacune pour l'instant. Elles ne sont pas
+ * décoratives : elles disent les trois natures de ce qu'on règle ici — ce qu'on
+ * vend, à quel prix, et ce qu'on en dit — et chacune grandira de son côté.
+ */
 export const B2B_VIEWS: readonly WorkspaceView[] = [
-  { key: 'catalogue', label: 'Catalogue', link: '/b2b/catalogue', icon: 'package' },
+  {
+    key: 'catalogue',
+    label: 'Catalogue',
+    link: '/b2b/catalogue',
+    icon: 'package',
+    section: 'Catalogue',
+  },
   {
     key: 'tarification',
     label: 'Tarification B2B',
     link: '/b2b/tarification',
     icon: 'tag',
+    section: 'Tarification',
+  },
+  {
+    key: 'app-layout',
+    label: 'App layout',
+    link: '/b2b/contenu/app-layout',
+    icon: 'grid',
+    section: 'Contenu',
   },
 ];
 
@@ -152,35 +178,12 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
   },
 ];
 
-/**
- * Les vues du **Contenu de plateforme**.
- *
- * Le premier espace à déclarer des SECTIONS, et c'est ce qui les a fait
- * exister : les textes d'une plateforme se rangent par SURFACE — le châssis de
- * l'app, les pages, les e-mails — et une liste plate cesserait de dire ce qui va
- * avec quoi dès la deuxième famille.
- *
- * Une seule vue pour l'instant, sous sa section : elle annonce ce qui vient, au
- * lieu de laisser croire que « app-layout » est tout le contenu de la
- * plateforme.
- */
-export const CONTENU_VIEWS: readonly WorkspaceView[] = [
-  {
-    key: 'app-layout',
-    label: 'App layout',
-    link: '/contenu/app-layout',
-    icon: 'grid',
-    section: 'Application',
-  },
-];
-
 /** Le catalogue, par clé. */
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
   admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
-  contenu: { key: 'contenu', title: 'Contenu', icon: 'edit', views: CONTENU_VIEWS },
 } as const satisfies Record<string, Workspace>;
 
 /** Une clé d'espace de travail — fermée, donc une faute de frappe ne compile pas. */

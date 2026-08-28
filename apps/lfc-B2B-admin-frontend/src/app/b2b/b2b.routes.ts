@@ -19,6 +19,22 @@ export const b2bRoutes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'catalogue' },
       {
+        // LE CONTENU DE PLATEFORME — les textes de la vitrine. Sous le B2B et
+        // non dans un espace à lui : c'est le même contexte que son catalogue
+        // et sa tarification, et un espace séparé aurait fait deux portes pour
+        // une seule maison.
+        path: 'contenu',
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'app-layout' },
+          {
+            path: 'app-layout',
+            title: 'App layout — LFC B2B admin',
+            loadComponent: () =>
+              import('../contenu/app-layout/app-layout-page').then((m) => m.AppLayoutPage),
+          },
+        ],
+      },
+      {
         path: 'catalogue',
         title: 'Catalogue B2B — LFC B2B admin',
         loadComponent: () => import('./catalogue/catalogue-page').then((m) => m.CataloguePage),

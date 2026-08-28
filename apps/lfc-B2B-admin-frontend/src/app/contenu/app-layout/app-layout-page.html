@@ -45,23 +45,26 @@
           [value]="identity().capital"
           (valueChange)="setIdentity('capital', $event)"
         />
+        <!-- ⚠️ AUCUN gabarit qui ressemble à un vrai numéro. Le dossier de
+             design en portait un jeu « plausible » ; l'afficher en gris dans le
+             champ inviterait à le recopier, et une mention légale fausse ne se
+             rattrape pas en disant qu'elle n'était qu'un exemple. Le format se
+             dit dans l'aide, pas dans un faux. -->
         <fold-input
           label="SIRET"
-          hint="14 chiffres"
-          placeholder="812 456 789 00021"
+          hint="14 chiffres — les espaces de lecture sont acceptés"
           [value]="identity().siret"
           (valueChange)="setIdentity('siret', $event)"
         />
         <fold-input
           label="RCS"
-          placeholder="RCS Chambéry 812 456 789"
+          hint="La ville du greffe, puis le numéro"
           [value]="identity().rcs"
           (valueChange)="setIdentity('rcs', $event)"
         />
         <fold-input
           label="TVA intracommunautaire"
-          hint="Deux lettres puis onze caractères"
-          placeholder="FR45812456789"
+          hint="Deux lettres de pays, puis onze caractères"
           [value]="identity().vat"
           (valueChange)="setIdentity('vat', $event)"
         />
@@ -73,8 +76,8 @@
         />
         <fold-input
           label="Téléphone composable"
-          hint="Sans espace ni séparateur"
-          placeholder="+33479061240"
+          hint="Le lien du bouton d’appel — préfixe « tel: » compris"
+          placeholder="tel:+33479061240"
           [value]="identity().phoneHref"
           (valueChange)="setIdentity('phoneHref', $event)"
         />
@@ -105,7 +108,7 @@
     <fold-card>
       <fold-element-title title="Pied de page" subtitle="Quatre colonnes, puis le bandeau légal.">
         <fold-view-toggle
-          titleActions
+          titleAction
           [options]="localeOptions"
           [value]="locale()"
           (valueChange)="pickLocale($event)"

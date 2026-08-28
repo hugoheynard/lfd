@@ -32,11 +32,10 @@ const OPEN = 'open';
 type ScreenAccess = StaffPermission | null | typeof OPEN;
 
 const SCREENS: Readonly<Record<string, ScreenAccess>> = {
-  // CONTENU PLATEFORME — les textes de la vitrine. Même droit que les Réglages :
-  // éditer ce que lisent les clients est un geste de paramétrage. La vue hérite
-  // du parent, comme les autres espaces à vues.
-  contenu: 'settings:read',
-  'contenu/app-layout': null,
+  // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
+  // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
+  // groupement, et la table n'inventorie que ce qui s'affiche.
+  'b2b/contenu/app-layout': null,
   'commercial/comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',
