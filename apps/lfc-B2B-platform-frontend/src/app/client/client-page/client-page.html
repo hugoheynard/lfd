@@ -16,15 +16,8 @@
       <app-lang-switch size="md" />
     </div>
 
-    @if (kicker(); as line) {
-      <p class="hero-kicker">{{ line }}</p>
-    }
-
     <h1 class="hero-title" [class.big]="big()">{{ heading() }}</h1>
     <p class="hero-intro">{{ intro() }}</p>
-    @if (introWide(); as line) {
-      <p class="hero-intro wide-only">{{ line }}</p>
-    }
 
     <!-- L'hôte doit être STATIQUE : un `@if` autour de lui enverrait son contenu
          dans l'étage, la projection se décidant à la compilation. Ce qui varie
