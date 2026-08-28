@@ -36,14 +36,18 @@
     />
   </fold-well>
 
-  <section class="history">
-    <header class="history-head">
-      <h2 class="history-title">{{ t().orders.historyHead }}</h2>
+  <!-- Une vraie SECTION, nommée par son titre : la page se lit alors comme un
+       plan pour un lecteur d'écran, et non comme une suite de `div`. Le
+       gabarit de tête est projeté parce qu'il porte le registre de la maison —
+       des capitales que le titre par défaut de fold ne sait pas encore dire. -->
+  <fold-page-section class="history">
+    <div sectionHeader class="history-head">
+      <h2 class="history-title" id="history-head">{{ t().orders.historyHead }}</h2>
       <p class="history-note">{{ t().orders.historyNote }}</p>
-    </header>
+    </div>
 
     <app-history-table [orders]="history" (problemRaised)="report($event)" />
-  </section>
+  </fold-page-section>
 </div>
 
 <app-report-sheet

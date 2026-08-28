@@ -74,16 +74,10 @@
 
 /* ── L'historique ──────────────────────────────────────────────────────── */
 
+/* Le rythme de la section est un jeton : la tête et le corps se règlent d'ici,
+   sans qu'un sélecteur aille chercher à l'intérieur du composant. */
 .history {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-}
-
-.history-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
+  --fold-page-section-gap: var(--fold-space-md);
 }
 
 /* Le pendant du titre du puits, au caractère près : même grain, même graisse,

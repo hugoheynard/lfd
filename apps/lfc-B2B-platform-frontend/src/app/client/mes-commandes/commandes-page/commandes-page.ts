@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldIconComponent, FoldPageSectionComponent } from 'fold-ng';
 
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 
@@ -44,6 +44,7 @@ import { TrackCard } from '../track-card/track-card';
     ClientBannerBlock,
     ClientBannerOutlet,
     FoldIconComponent,
+    FoldPageSectionComponent,
     FoldScrollIndicatorComponent,
     FoldWellComponent,
     HistoryTable,
