@@ -94,15 +94,41 @@
    c'est le même trou dans la barre, occupé par autre chose. */
 .menu {
   flex: none;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   width: 40px;
   height: 40px;
+  /* ⚠️ Le navigateur donne `1px 6px` à tout `<button>`. Personne ne l'avait
+     remis à zéro parce que le glyphe était centré et que ça ne se voyait pas :
+     depuis que le troisième trait se range sur un bord, la boîte de contenu ne
+     fait plus 38 px mais 26, et les mesures de la réf tombent à côté. */
+  padding: 0;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
   color: var(--fold-color-text);
   cursor: pointer;
+}
+
+.menu span {
+  display: block;
+  width: 19px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--fold-color-text);
+}
+
+/* Le troisième trait est plus court et porte le beurre. Il est rangé à DROITE
+   et décalé d'un pixel vers l'intérieur plutôt que centré : aligné, il se
+   lirait comme un trait raté ; décalé, il se lit comme un accent. */
+.menu span:last-child {
+  width: 12px;
+  align-self: flex-end;
+  margin-right: 10.5px;
+  background: var(--lfc-color-accent);
 }
 
 /* La cloche partage le gabarit du menu — même trou dans la barre, de l'autre

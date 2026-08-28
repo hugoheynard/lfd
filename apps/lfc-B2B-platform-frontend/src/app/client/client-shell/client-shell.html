@@ -22,7 +22,12 @@
           [attr.aria-label]="t().chrome.menu"
           (click)="openMenu()"
         >
-          <fold-icon name="menu" />
+          <!-- Trois traits dessinés, et pas le glyphe générique : le troisième
+               est plus court et CHAUD. C'est ce qui distingue ce menu-ci d'une
+               icône de menu, et il le dit sans pastille ni compteur. -->
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
         </button>
       }
       <span class="mark" [class.wide-only]="!!chrome.menu()" aria-hidden="true">
