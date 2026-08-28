@@ -18,12 +18,12 @@ const AT_THE_LABO: ServiceChoice = {
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
-  { path: 'commande/boutique', children: [] },
+  { path: 'mon-espace', children: [] },
   { path: 'commande/panier', children: [] },
 ];
 
 /** L'ordre que la réf FIGE, et qu'aucune surface n'a le droit de réarranger. */
-const ORDER = ['shop', 'cart', 'orders', 'invoices', 'account'];
+const ORDER = ['espace', 'orders', 'invoices', 'baskets', 'account'];
 
 describe('Les destinations du menu', () => {
   beforeEach(() => {
@@ -36,30 +36,16 @@ describe('Les destinations du menu', () => {
     const nav = TestBed.inject(ClientNav);
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
 
-    const cart = TestBed.inject(ClientCart);
-    cart.add('croissant');
+    TestBed.inject(ClientCart).add('croissant');
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
   });
 
-  it('ne montre AUCUNE pastille sur un panier vide — pas une pastille à zéro', () => {
+  it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {
     const nav = TestBed.inject(ClientNav);
-    const cart = nav.items().find((i) => i.id === 'cart');
-    expect(cart?.count).toBe('');
-    expect(cart?.countShort).toBe('');
-  });
-
-  it('écrit le compteur long avec le montant, et le court sans', () => {
-    const cart = TestBed.inject(ClientCart);
-    cart.add('croissant');
-    cart.add('croissant');
-
-    const item = TestBed.inject(ClientNav)
-      .items()
-      .find((i) => i.id === 'cart');
-    expect(item?.countShort).toBe('2');
-    // Le long porte le montant : seul le menu pleine page a la largeur de l'écrire.
-    expect(item?.count).toContain('2 · ');
-    expect(item?.count).toContain('€');
+    TestBed.inject(ClientCart).add('croissant');
+    // Une quantité qui change en permanence appartient au chrome permanent : si
+    // le panier revenait ici, il y aurait deux endroits où lire le même nombre.
+    expect(nav.items().some((i) => i.id === 'cart')).toBe(false);
   });
 
   it('compte les commandes réellement passées, pas une valeur tenue à part', () => {
@@ -81,6 +67,14 @@ describe('Les destinations du menu', () => {
     expect(invoices?.count).toContain('1');
   });
 
+  it('compte les gabarits récurrents SANS les marquer — ils n’appellent rien', () => {
+    const baskets = TestBed.inject(ClientNav)
+      .items()
+      .find((i) => i.id === 'baskets');
+    expect(baskets?.countShort).toBe('2');
+    expect(baskets?.warn).toBe(false);
+  });
+
   it('suit la NAVIGATION — l’onglet actif ne reste pas figé sur la première page', async () => {
     const nav = TestBed.inject(ClientNav);
     const router = TestBed.inject(Router);
@@ -90,13 +84,13 @@ describe('Les destinations du menu', () => {
     await router.navigateByUrl('/commande/panier');
     expect(nav.current()).toBe('/commande/panier');
 
-    await router.navigateByUrl('/commande/boutique');
-    expect(nav.current()).toBe('/commande/boutique');
+    await router.navigateByUrl('/mon-espace');
+    expect(nav.current()).toBe('/mon-espace');
   });
 
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {
     const nav = TestBed.inject(ClientNav);
-    expect(nav.items().find((i) => i.id === 'shop')?.ready).toBe(true);
+    expect(nav.items().find((i) => i.id === 'espace')?.ready).toBe(true);
     expect(nav.items().find((i) => i.id === 'account')?.ready).toBe(false);
   });
 });

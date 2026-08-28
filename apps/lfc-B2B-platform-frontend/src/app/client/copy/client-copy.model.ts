@@ -51,14 +51,18 @@ export interface ClientCopy {
   readonly nav: {
     /** Les cinq destinations, dans l'ordre — cf. `ClientNav`. */
     readonly destinations: {
-      readonly shop: string;
-      readonly cart: string;
+      readonly espace: string;
       readonly orders: string;
       readonly invoices: string;
+      readonly baskets: string;
       readonly account: string;
     };
     /** `{n}` est remplacé par le nombre de factures en attente. */
     readonly invoicesDue: string;
+    /** `{n}` est remplacé par le nombre de gabarits de panier récurrent. */
+    readonly basketsCount: string;
+    /** Le nom du panier dans la barre — il n'est plus une destination du menu. */
+    readonly cart: string;
     /** Ce que porte une destination dont l'écran n'existe pas encore. */
     readonly soon: string;
     readonly close: string;

@@ -3,15 +3,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
-import { formatEuro } from '../cart-total';
-import { ClientCart } from '../client-cart.service';
 import { ClientOrders } from '../client-orders.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { MOCK_CLIENT } from '../mock-client';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'shop' | 'cart' | 'orders' | 'invoices' | 'account';
+  readonly id: 'espace' | 'orders' | 'invoices' | 'baskets' | 'account';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
@@ -24,12 +22,20 @@ interface Destination {
   readonly ready: boolean;
 }
 
-/** L'ordre, et il est le même partout. Voir `07-accueil-connecte.md`. */
+/**
+ * L'ordre, et il est le même partout. Voir `07-accueil-connecte.md`.
+ *
+ * Le PANIER n'en fait pas partie : il vit dans la barre d'app, où il est
+ * atteignable depuis n'importe quel écran sans ouvrir de menu. Un panier a une
+ * quantité qui change en permanence — il appartient au chrome permanent, pas à
+ * une liste de destinations qu'on parcourt. La boutique non plus : on n'y va
+ * pas, on y arrive par une commande.
+ */
 const DESTINATIONS: readonly Destination[] = [
-  { id: 'shop', route: '/commande/boutique', ready: true },
-  { id: 'cart', route: '/commande/panier', ready: true },
+  { id: 'espace', route: '/mon-espace', ready: true },
   { id: 'orders', route: '/mes-commandes', ready: false },
   { id: 'invoices', route: '/mes-factures', ready: false },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false },
   { id: 'account', route: '/mon-compte', ready: false },
 ];
 
@@ -64,7 +70,6 @@ export interface NavItem {
  */
 @Injectable({ providedIn: 'root' })
 export class ClientNav {
-  private readonly cart = inject(ClientCart);
   private readonly orders = inject(ClientOrders);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
@@ -101,16 +106,6 @@ export class ClientNav {
   readonly pending = computed(() => this.items().filter((i) => i.countShort !== '').length);
 
   private counts(id: Destination['id']): Pick<NavItem, 'count' | 'countShort' | 'warn'> {
-    if (id === 'cart') {
-      const pieces = this.cart.count();
-      return pieces === 0
-        ? EMPTY
-        : {
-            count: `${pieces} · ${formatEuro(this.cart.totals().total)}`,
-            countShort: String(pieces),
-            warn: false,
-          };
-    }
     if (id === 'orders') {
       const placed = this.orders.all().length;
       return placed === 0
@@ -119,8 +114,8 @@ export class ClientNav {
     }
     if (id === 'invoices') {
       // Annoté large à dessein : `MOCK_CLIENT` est figé `as const`, donc son
-      // littéral `1` ferait passer le test à zéro pour une comparaison morte.
-      // Le jour où le compte porte vraiment ce nombre, le garde est déjà là.
+      // littéral ferait passer le test à zéro pour une comparaison morte. Le
+      // jour où le compte porte vraiment ce nombre, le garde est déjà là.
       const due: number = MOCK_CLIENT.invoicesDue;
       return due === 0
         ? EMPTY
@@ -128,6 +123,16 @@ export class ClientNav {
             count: this.t().nav.invoicesDue.replace('{n}', String(due)),
             countShort: String(due),
             warn: true,
+          };
+    }
+    if (id === 'baskets') {
+      const models: number = MOCK_CLIENT.recurringBaskets;
+      return models === 0
+        ? EMPTY
+        : {
+            count: this.t().nav.basketsCount.replace('{n}', String(models)),
+            countShort: String(models),
+            warn: false,
           };
     }
     return EMPTY;

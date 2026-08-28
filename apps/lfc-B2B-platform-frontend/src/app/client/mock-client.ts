@@ -1,7 +1,7 @@
 /**
  * Le client reconnu de la maquette.
  *
- * ⚠️ Ces cinq faits viendront du compte. Ils sont rassemblés ici, et pas
+ * ⚠️ Ces six faits viendront du compte. Ils sont rassemblés ici, et pas
  * disséminés dans les écrans, pour que le jour où le compte arrive il n'y ait
  * qu'un endroit à débrancher.
  */
@@ -15,4 +15,6 @@ export const MOCK_CLIENT = {
   /** Les factures qui attendent un règlement — le seul compteur du menu qui
    *  n'ait pas encore de modèle derrière lui. */
   invoicesDue: 1,
+  /** Les gabarits de panier récurrent — le compteur de la quatrième destination. */
+  recurringBaskets: 2,
 } as const;
