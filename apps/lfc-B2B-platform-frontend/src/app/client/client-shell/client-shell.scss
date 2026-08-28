@@ -24,7 +24,13 @@
      plus étroite que la colonne, et le centrage de la colonne au-delà — la
      même valeur pour tout le monde, à toutes les largeurs. */
   --lfc-gutter: var(--fold-space-lg);
-  --lfc-column: 1180px;
+  /* La borne est la largeur LOGIQUE d'un MacBook Pro 14 pouces — la machine sur
+     laquelle l'app est regardée. En deçà, rien ne borne : la page occupe la
+     fenêtre entière moins la gouttière. Au-delà (16 pouces, écran externe), la
+     colonne se centre plutôt que de laisser une ligne de texte traverser un
+     27 pouces. La réf est dessinée à 1180, mais 1180 est la largeur de sa
+     FENÊTRE de démonstration, pas une décision de mise en page. */
+  --lfc-column: 1512px;
   --lfc-inset: max(var(--lfc-gutter), calc((100% - var(--lfc-column)) / 2 + var(--lfc-gutter)));
 
   /* La bande est dimensionnée par son CONTENU, pas par un nombre : elle porte
