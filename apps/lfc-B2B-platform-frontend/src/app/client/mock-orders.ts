@@ -236,11 +236,3 @@ export const MOCK_HISTORY: readonly HistoryOrder[] = [
     who: 'Karim Bel',
   },
 ];
-
-/** Les deux régimes rappelés au-dessus de l'historique — ceux de l'écran 08. */
-export const MOCK_ORDER_TOTALS = {
-  accountTotal: 248.6,
-  accountNote: '3 commandes portées à la facture de mars',
-  cardTotal: 34.8,
-  cardNote: '2 commandes réglées à la commande',
-} as const;

@@ -24,6 +24,8 @@ export interface OrdersCopy {
    * montre déjà, et une consigne de geste sous un titre lit comme une notice.
    */
   readonly wellHint: string;
+  /** Le libellé d'un point de défilement — `{n}` est le rang du suivi. */
+  readonly wellDot: string;
   readonly wellNone: string;
   readonly wellNoneHint: string;
   /** `{n}` est remplacé par l'avancement en pour-cent. */
@@ -85,8 +87,6 @@ export interface OrdersCopy {
   readonly wordPlaceholder: string;
   readonly send: string;
   readonly reportFoot: string;
-  readonly tileAccount: string;
-  readonly tileCard: string;
 }
 
 export const ORDERS_FR: OrdersCopy = {
@@ -95,6 +95,7 @@ export const ORDERS_FR: OrdersCopy = {
   liveCount: '{n} suivis en cours',
   wellHead: 'Mes suivis',
   wellHint: '{n} en cours',
+  wellDot: 'Aller au suivi {n}',
   wellNone: 'Rien en cours',
   wellNoneHint: 'Vos commandes vivantes s’affichent ici, du panier à la remise.',
   progress: 'Avancement : {n} %',
@@ -157,8 +158,6 @@ export const ORDERS_FR: OrdersCopy = {
   send: 'Envoyer au Labo',
   reportFoot:
     'Camille et Malik reçoivent le message avec la commande, le mode et la photo — rien à réexpliquer.',
-  tileAccount: 'Période en cours',
-  tileCard: 'Réglé à la commande',
 };
 
 export const ORDERS_EN: OrdersCopy = {
@@ -167,6 +166,7 @@ export const ORDERS_EN: OrdersCopy = {
   liveCount: '{n} orders in progress',
   wellHead: 'My tracking',
   wellHint: '{n} in progress',
+  wellDot: 'Go to tracking {n}',
   wellNone: 'Nothing in progress',
   wellNoneHint: 'Live orders show up here, from basket to handover.',
   progress: 'Progress: {n}%',
@@ -229,8 +229,6 @@ export const ORDERS_EN: OrdersCopy = {
   send: 'Send to Le Labo',
   reportFoot:
     'Camille and Malik get the message with the order, the mode and the photo — nothing to explain twice.',
-  tileAccount: 'Current period',
-  tileCard: 'Paid at checkout',
 };
 
 export const ORDERS_IT: OrdersCopy = {
@@ -239,6 +237,7 @@ export const ORDERS_IT: OrdersCopy = {
   liveCount: '{n} ordini in corso',
   wellHead: 'I miei tracciamenti',
   wellHint: '{n} in corso',
+  wellDot: 'Andare al tracciamento {n}',
   wellNone: 'Niente in corso',
   wellNoneHint: 'Gli ordini in corso compaiono qui, dal carrello alla consegna.',
   progress: 'Avanzamento: {n} %',
@@ -301,6 +300,4 @@ export const ORDERS_IT: OrdersCopy = {
   send: 'Inviare al Labo',
   reportFoot:
     'Camille e Malik ricevono il messaggio con l’ordine, la modalità e la foto — niente da rispiegare.',
-  tileAccount: 'Periodo in corso',
-  tileCard: 'Pagato all’ordine',
 };

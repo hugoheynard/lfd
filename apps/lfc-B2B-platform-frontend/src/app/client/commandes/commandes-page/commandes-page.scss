@@ -113,6 +113,51 @@
   scroll-snap-align: start;
 }
 
+/* Les points de défilement, en pied de puits. La cible fait 24 px de haut pour
+   rester atteignable au doigt, la marque visible n'en fait que 4. */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-md);
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.dot::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 4px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-well-muted);
+  opacity: 0.55;
+  transition: width var(--lfc-motion-tap);
+}
+
+/* Actif : une BARRE chaude. La couleur seule ne suffirait pas sur le bleu nuit
+   — c'est la longueur qui se voit d'abord. */
+.dot.on::after {
+  width: 18px;
+  background: var(--lfc-color-accent);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot::after {
+    transition: none;
+  }
+}
+
 /* ── L'historique ──────────────────────────────────────────────────────── */
 
 .history {
@@ -142,45 +187,6 @@
   color: var(--fold-color-text-muted);
 }
 
-.tiles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--fold-space-sm);
-}
-
-.tile {
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-surface-card);
-}
-
-.tile-label {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
-}
-
-.tile-value {
-  margin: 2px 0 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-heading);
-  font-weight: var(--lfc-weight-black);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.tile-note {
-  margin: 2px 0 0;
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-note);
-  color: var(--fold-color-text-muted);
-}
-
 @media (min-width: 900px) {
   .page {
     gap: var(--fold-space-2xl);
@@ -204,17 +210,5 @@
      n'aurait plus rien annoncé au quatrième suivi. */
   .rail-card {
     width: calc(50% - var(--fold-space-md) / 2 - 44px);
-  }
-
-  .history-head {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--fold-space-xl);
-  }
-
-  .tiles {
-    flex: none;
-    grid-template-columns: repeat(2, minmax(180px, 220px));
   }
 }

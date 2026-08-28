@@ -29,35 +29,36 @@
       <!-- Un DÉFILEMENT, pas une grille : deux cartes visibles et la troisième
            qui dépasse. C'est ce qui permet d'en avoir cinq sans allonger la
            page. `align-items: stretch` les met à la même hauteur. -->
-      <div class="rail">
+      <div #rail class="rail" (scroll)="onScroll()">
         @for (order of tracked; track order.reference) {
           <app-track-card class="rail-card" [order]="order" />
         }
       </div>
+
+      <!-- L'INDICATEUR : il dit où l'on en est dans une pile qu'on ne voit pas
+           entièrement. Le point actif prend la forme d'une BARRE chaude — un
+           point plus foncé se confondrait avec les autres sur le bleu nuit. -->
+      @if (tracked.length > 1) {
+        <div class="dots">
+          @for (order of tracked; track order.reference; let i = $index) {
+            <button
+              class="dot"
+              type="button"
+              [class.on]="at() === i"
+              [attr.aria-label]="dotLabel(i)"
+              [attr.aria-current]="at() === i"
+              (click)="goTo(i)"
+            ></button>
+          }
+        </div>
+      }
     }
   </section>
 
   <section class="history">
     <header class="history-head">
-      <div class="history-titles">
-        <h2 class="history-title">{{ t().orders.historyHead }}</h2>
-        <p class="history-note">{{ t().orders.historyNote }}</p>
-      </div>
-
-      <!-- Les deux régimes, rappelés au-dessus des lignes : ce sont les mêmes
-           chiffres que le relevé, et les mélanger serait faux. -->
-      <div class="tiles">
-        <div class="tile">
-          <p class="tile-label">{{ t().orders.tileAccount }}</p>
-          <p class="tile-value">{{ accountTotal }}</p>
-          <p class="tile-note">{{ accountNote }}</p>
-        </div>
-        <div class="tile">
-          <p class="tile-label">{{ t().orders.tileCard }}</p>
-          <p class="tile-value">{{ cardTotal }}</p>
-          <p class="tile-note">{{ cardNote }}</p>
-        </div>
-      </div>
+      <h2 class="history-title">{{ t().orders.historyHead }}</h2>
+      <p class="history-note">{{ t().orders.historyNote }}</p>
     </header>
 
     <app-history-table [orders]="history" (problemRaised)="report($event)" />
