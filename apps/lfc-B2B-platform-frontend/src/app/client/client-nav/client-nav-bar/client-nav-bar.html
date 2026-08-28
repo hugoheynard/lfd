@@ -1,0 +1,25 @@
+<nav class="bar" [attr.aria-label]="t().chrome.menu">
+  @for (item of nav.items(); track item.id) {
+    @if (item.ready) {
+      <a
+        class="tab"
+        [routerLink]="item.route"
+        [class.is-on]="current() === item.route"
+        [attr.aria-current]="current() === item.route ? 'page' : null"
+      >
+        <span class="tab-label">{{ item.label }}</span>
+        @if (item.countShort) {
+          <span class="tab-count" [class.is-warn]="item.warn">{{ item.countShort }}</span>
+        }
+      </a>
+    } @else {
+      <!-- L'écran n'existe pas encore. La destination GARDE SA PLACE — la réf
+           interdit que l'ordre des cinq bouge d'une surface à l'autre — mais
+           elle ne se clique pas et se dit telle qu'elle est. -->
+      <span class="tab is-soon">
+        <span class="tab-label">{{ item.label }}</span>
+        <span class="tab-count">{{ t().nav.soon }}</span>
+      </span>
+    }
+  }
+</nav>

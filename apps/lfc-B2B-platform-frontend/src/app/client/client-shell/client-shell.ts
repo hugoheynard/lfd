@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { ClientMenu } from '../client-nav/client-menu/client-menu';
+import { ClientNavBar } from '../client-nav/client-nav-bar/client-nav-bar';
 import { ClientOnboarding } from '../client-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
@@ -22,7 +24,14 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   selector: 'app-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
-  imports: [FoldAppShellComponent, FoldIconComponent, LangSwitch, RouterOutlet],
+  imports: [
+    ClientMenu,
+    ClientNavBar,
+    FoldAppShellComponent,
+    FoldIconComponent,
+    LangSwitch,
+    RouterOutlet,
+  ],
   templateUrl: './client-shell.html',
   styleUrl: './client-shell.scss',
 })
@@ -41,8 +50,17 @@ export class ClientShell {
     this.chrome.back()?.();
   }
 
+  /**
+   * Le menu de poche est ouvert ?
+   *
+   * L'état vit ICI et pas dans l'écran : le menu est du chrome, il survit à la
+   * navigation, et un écran qui le porterait le refermerait en se démontant —
+   * pile au moment où on vient de s'en servir pour partir ailleurs.
+   */
+  protected readonly menuOpen = signal(false);
+
   protected openMenu(): void {
-    this.chrome.menu()?.();
+    this.menuOpen.set(true);
   }
 
   /** Le compte fait partie du NOM du bouton : sans lui, la pastille est muette. */

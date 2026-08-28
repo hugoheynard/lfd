@@ -49,7 +49,18 @@
     }
   </div>
 
+  <!-- LA SOUS-BARRE. Elle n'existe que pour un client reconnu — un visiteur n'a
+       pas de destinations à parcourir — et la bande du shell se replie d'elle-
+       même quand rien n'y est projeté. -->
+  @if (chrome.menu()) {
+    <app-client-nav-bar subheader />
+  }
+
   <router-outlet />
+
+  <!-- Le menu de poche : toujours dans l'arbre, ouvert par la barre. Il se
+       ferme tout seul au-delà du pli, où la sous-barre le remplace. -->
+  <app-client-menu [open]="menuOpen()" (closed)="menuOpen.set(false)" />
 
   <!-- Le pied de l'app : une encre PLUS PROFONDE que la barre, pour fermer la
        page sans la répéter. Il n'apparaît qu'au-delà du pli — sur un téléphone,

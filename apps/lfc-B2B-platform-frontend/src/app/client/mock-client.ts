@@ -1,7 +1,7 @@
 /**
  * Le client reconnu de la maquette.
  *
- * ⚠️ Ces quatre faits viendront du compte. Ils sont rassemblés ici, et pas
+ * ⚠️ Ces cinq faits viendront du compte. Ils sont rassemblés ici, et pas
  * disséminés dans les écrans, pour que le jour où le compte arrive il n'y ait
  * qu'un endroit à débrancher.
  */
@@ -12,4 +12,7 @@ export const MOCK_CLIENT = {
   email: 'pierre@chalet-barmettes.fr',
   /** Les notifications non lues, que la cloche annonce. */
   unread: 5,
+  /** Les factures qui attendent un règlement — le seul compteur du menu qui
+   *  n'ait pas encore de modèle derrière lui. */
+  invoicesDue: 1,
 } as const;

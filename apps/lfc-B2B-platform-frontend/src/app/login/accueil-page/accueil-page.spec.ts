@@ -89,7 +89,7 @@ describe('AccueilPage', () => {
   });
 
   it("garde la pastille de marque : un visiteur n'a ni menu ni cloche", () => {
-    expect(chrome.menu()).toBeNull();
+    expect(chrome.menu()).toBe(false);
     expect(chrome.bell()).toBeNull();
   });
 

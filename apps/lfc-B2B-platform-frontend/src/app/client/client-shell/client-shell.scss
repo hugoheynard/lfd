@@ -12,6 +12,12 @@
   --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 58px);
   --fold-shell-header-height: var(--lfc-header-height);
   --fold-shell-header-height-mobile: var(--lfc-header-height);
+
+  /* La sous-barre est REPLIÉE par défaut, et dépliée au-delà du pli (plus bas).
+     C'est le sens de lecture : le téléphone est le cas courant de cette app, et
+     c'est lui qui n'a pas de bande. Sa hauteur, 52 px, est celle de la réf. */
+  --fold-shell-subheader-height: 0px;
+  --fold-shell-subheader-height-mobile: 0px;
 }
 
 /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
@@ -177,6 +183,17 @@
      visibilité. Aucun écran ne l'avait vu parce que les deux disaient non. */
   :host(.bar-narrow-only) .bar {
     display: none;
+  }
+}
+
+/* Le pli de la NAVIGATION, et il n'est pas celui de la mise en page : la réf le
+   pose à 1100 px, la largeur en dessous de laquelle les cinq onglets ne tiennent
+   plus dans la bande. Entre 900 et 1100, la page est déjà en deux colonnes mais
+   la navigation reste au pouce — d'où deux seuils, et pas un. */
+@media (min-width: 1100px) {
+  :host {
+    --fold-shell-subheader-height: 52px;
+    --fold-shell-subheader-height-mobile: 52px;
   }
 
   .menu.narrow-only {

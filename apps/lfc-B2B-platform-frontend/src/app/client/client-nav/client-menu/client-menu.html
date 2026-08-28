@@ -1,0 +1,74 @@
+<!-- `(close)` couvre les deux sorties que le natif gère seul : `Escape` et
+     l'appel programmé — l'écran reste la seule source de vérité. -->
+<dialog #dlg class="menu" (close)="closed.emit()">
+  <div class="bar">
+    <button class="close" type="button" [attr.aria-label]="t().nav.close" (click)="closed.emit()">
+      <fold-icon name="close" />
+    </button>
+    <span class="bar-label">{{ t().chrome.menu }}</span>
+  </div>
+
+  <div class="body">
+    <h2 class="hello">{{ hello() }}</h2>
+    <!-- La ligne d'identité. À un seul espace, la réf veut un SOUS-TITRE
+         statique et pas un déroulant qui ne mène nulle part : c'est l'adresse
+         du compte qui la porte. -->
+    @if (identity.email(); as email) {
+      <p class="who"><span class="who-rule" aria-hidden="true"></span>{{ email }}</p>
+    }
+
+    <a class="new-order" routerLink="/commande" (click)="closed.emit()">
+      <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
+      <span class="new-order-titles">
+        <span class="new-order-title">{{ t().nav.newOrder }}</span>
+        <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
+      </span>
+      <fold-icon class="new-order-caret" name="chevron-right" />
+    </a>
+
+    <nav class="dests" [attr.aria-label]="t().chrome.menu">
+      @for (item of nav.items(); track item.id; let i = $index) {
+        <button
+          class="dest"
+          type="button"
+          [class.is-on]="current() === item.route"
+          [disabled]="!item.ready"
+          [attr.aria-current]="current() === item.route ? 'page' : null"
+          (click)="go(item.route)"
+        >
+          <span class="dest-rank" aria-hidden="true">{{ rank(i) }}</span>
+          <span class="dest-label">{{ item.label }}</span>
+          @if (!item.ready) {
+            <span class="dest-soon">{{ t().nav.soon }}</span>
+          } @else if (item.count) {
+            <span class="dest-count" [class.is-warn]="item.warn">{{ item.count }}</span>
+          } @else if (current() === item.route) {
+            <span class="dest-dot" aria-hidden="true"></span>
+          }
+        </button>
+      }
+    </nav>
+
+    <p class="house-head">{{ t().nav.house }}</p>
+    <ul class="house">
+      @for (link of t().nav.houseLinks; track link[0]) {
+        <li class="house-row">
+          <span class="house-label">{{ link[0] }}</span>
+          <span class="house-note">{{ link[1] }}</span>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="lang-row">
+      <span class="lang-label">{{ t().chrome.lang }}</span>
+      <app-lang-switch />
+    </div>
+    <!-- La déconnexion ne vit ici QUE parce que le pouce n'a pas d'autre endroit
+         où l'atteindre : en desktop c'est une action de compte, et la réf la
+         garde hors de la navigation. -->
+    <button class="logout" type="button" (click)="logout()">{{ t().nav.logout }}</button>
+    <p class="address">{{ t().nav.address }}</p>
+  </div>
+</dialog>

@@ -86,7 +86,7 @@ export class AccueilPage {
     this.chrome.barOnDesktop.set(false);
     // Un visiteur n'a pas de menu : il a besoin de savoir OÙ il est, donc la
     // barre garde la pastille de marque.
-    this.chrome.menu.set(null);
+    this.chrome.menu.set(false);
     // Ni cloche : on ne notifie pas quelqu'un dont on n'a pas encore le compte.
     this.chrome.bell.set(null);
   }

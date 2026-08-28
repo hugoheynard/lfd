@@ -1,0 +1,79 @@
+/* Sous le pli de navigation, la bande n'existe pas : le shell a replié sa
+   rangée à zéro et c'est le menu pleine page qui porte les destinations. Il faut
+   le dire ici aussi — une rangée de zéro ne rogne pas ce qu'on y met. */
+:host {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  :host {
+    display: block;
+    height: 100%;
+  }
+}
+
+/* Le puits sous la barre : un cran PLUS PROFOND que l'encre de marque, pour que
+   la bande se lise comme une assise et non comme une seconde barre. */
+.bar {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding: 0 22px;
+  background: var(--lfc-color-surface-well);
+  overflow-x: auto;
+}
+
+.tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  /* 22 px de part et d'autre : la mesure de la réf, celle qui pose les cinq
+     onglets de 123 à 927 px dans les 1106 px utiles. */
+  padding: 0 22px;
+  /* Le filet de l'actif est RÉSERVÉ, pas ajouté : posé transparent, il ne
+     décale pas le texte quand l'onglet devient courant. */
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--lfc-color-on-primary-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab.is-on {
+  border-bottom-color: var(--lfc-color-accent);
+  background: rgb(250 245 236 / 7%);
+  color: var(--lfc-color-on-well);
+}
+
+.tab.is-soon {
+  opacity: 0.5;
+}
+
+.tab-label {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.tab-count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-well-tile);
+  color: var(--lfc-color-on-well-muted);
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab-count.is-warn {
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}

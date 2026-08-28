@@ -22,14 +22,19 @@ export class ClientChrome {
   readonly back = signal<(() => void) | null>(null);
 
   /**
-   * Ce que fait le bouton de menu — `null` quand l'écran n'en a pas.
+   * L'écran donne-t-il accès au menu ?
    *
-   * Sa présence décide aussi de ce que porte la barre : la réf donne la pastille
-   * de MARQUE au visiteur, qui a besoin de savoir où il est, et le MENU à qui
-   * est reconnu, qui a besoin d'accéder à ses affaires. Un booléen de plus
-   * aurait pu se désaccorder de la fonction ; ici il n'y a rien à accorder.
+   * Un booléen, et plus une fonction : tant que le menu n'existait pas, l'écran
+   * était le seul à savoir quoi ouvrir. Maintenant qu'il y en a un, et un seul,
+   * c'est le SHELL qui l'ouvre — l'écran n'a plus à dire quoi faire, seulement
+   * s'il y a lieu de le faire.
+   *
+   * Ce fait décide aussi de ce que porte la barre : la réf donne la pastille de
+   * MARQUE au visiteur, qui a besoin de savoir où il est, et le MENU à qui est
+   * reconnu, qui a besoin d'accéder à ses affaires. Il commande enfin la
+   * sous-barre de bureau, qui porte les mêmes destinations en permanence.
    */
-  readonly menu = signal<(() => void) | null>(null);
+  readonly menu = signal(false);
 
   /** Ce que fait la cloche — `null` quand l'écran n'en porte pas. */
   readonly bell = signal<(() => void) | null>(null);

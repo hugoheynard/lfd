@@ -116,7 +116,7 @@ export class CommandePage {
     this.chrome.barOnDesktop.set(true);
     // Ici on est reconnu : la pastille de marque cède la place au menu, qui mène
     // à ses affaires. ⚠️ Maquette — le menu n'a pas encore d'écran.
-    this.chrome.menu.set((): void => this.notYet());
+    this.chrome.menu.set(true);
     this.chrome.bell.set((): void => this.notYet());
     this.chrome.bellCount.set(MOCK_CLIENT.unread);
   }

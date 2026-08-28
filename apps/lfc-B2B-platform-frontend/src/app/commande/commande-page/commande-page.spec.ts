@@ -85,7 +85,7 @@ describe('CommandePage', () => {
   it('demande au chrome le menu et la cloche, pas la pastille de marque', () => {
     // La barre appartient au shell, mais c'est l'ÉCRAN qui dit ce qu'elle porte :
     // à qui est reconnu, un menu et ses non-lues plutôt que la marque.
-    expect(chrome.menu()).not.toBeNull();
+    expect(chrome.menu()).toBe(true);
     expect(chrome.bell()).not.toBeNull();
     expect(chrome.bellCount()).toBe(MOCK_CLIENT.unread);
   });

@@ -1,0 +1,330 @@
+/* Le menu occupe la page ENTIÈRE : pas de voile, rien qui transparaisse. Le
+   `<dialog>` natif est centré et dimensionné par le contenu — on le déborde
+   explicitement, et son `::backdrop` n'a plus rien à peindre. */
+.menu {
+  position: fixed;
+  inset: 0;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.menu::backdrop {
+  background: var(--fold-color-primary);
+}
+
+/* Le menu peint sa propre encre : ses enfants doivent lire les rôles du chrome,
+   pas ceux de la page crème. */
+.menu {
+  --fold-color-text: var(--lfc-paper-50);
+  --fold-color-text-muted: var(--lfc-ink-300);
+  --fold-color-border: rgb(250 245 236 / 22%);
+  --fold-color-surface-hover: rgb(250 245 236 / 14%);
+}
+
+/* ── La rangée du haut : la croix et le mot ─────────────────────────────── */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  padding: calc(env(safe-area-inset-top, 0px) + var(--fold-space-lg)) var(--fold-space-xl)
+    var(--fold-space-md);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.bar-label {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── Le corps ───────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--fold-space-xl);
+}
+
+.hello {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.04;
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: var(--fold-space-md) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* Le tiret de la réf : un trait beurre, pas une puce. */
+.who-rule {
+  flex: none;
+  width: 26px;
+  height: 3px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+}
+
+/* ── L'action, avant les destinations ───────────────────────────────────── */
+
+.new-order {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-xl);
+  padding: var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  text-decoration: none;
+}
+
+.new-order-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--fold-radius-md);
+  background: rgb(61 42 5 / 14%);
+}
+
+.new-order-titles {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-order-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.new-order-sub {
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-accent-text);
+}
+
+.new-order-caret {
+  flex: none;
+}
+
+/* ── Les cinq destinations ──────────────────────────────────────────────── */
+
+.dests {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--fold-space-xl);
+}
+
+.dest {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+  padding: var(--fold-space-lg) 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dest:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.dest-rank {
+  flex: none;
+  width: 22px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  font-variant-numeric: tabular-nums;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.dest.is-on .dest-rank {
+  color: var(--lfc-color-accent);
+}
+
+.dest-label {
+  min-width: 0;
+  flex: 1;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.dest-count,
+.dest-soon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--fold-space-md);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-primary-tile);
+  color: var(--lfc-color-on-primary-muted);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dest-count.is-warn {
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+/* La pastille du rayon en cours : un point, pas un compteur — il n'y a rien à
+   compter, seulement à situer. */
+.dest-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+}
+
+/* ── « La maison » : de la consultation, en bas de casse ────────────────── */
+
+.house-head {
+  margin: var(--fold-space-2xl) 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.house {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-md) 0;
+  font-size: var(--fold-text-base);
+}
+
+.house-label {
+  min-width: 0;
+  flex: 1;
+  color: var(--fold-color-text);
+}
+
+.house-note {
+  flex: none;
+  color: var(--lfc-color-on-primary-muted);
+  white-space: nowrap;
+}
+
+/* ── Le pied : langue, sortie, adresse ──────────────────────────────────── */
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  margin-top: auto;
+  padding: var(--fold-space-2xl) var(--fold-space-xl)
+    calc(env(safe-area-inset-bottom, 0px) + var(--fold-space-xl));
+}
+
+.lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+}
+
+.lang-label {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.logout {
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.address {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+/* Le menu est une affordance de POCHE. Au-delà du pli, la sous-barre porte les
+   mêmes destinations en permanence : il n'y a plus rien à ouvrir. */
+@media (min-width: 1100px) {
+  .menu {
+    display: none;
+  }
+}

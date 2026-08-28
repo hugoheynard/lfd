@@ -28,6 +28,36 @@ export interface ClientCopy {
     readonly place: string;
     readonly hours: string;
   };
+  readonly nav: {
+    /** Les cinq destinations, dans l'ordre — cf. `ClientNav`. */
+    readonly destinations: {
+      readonly shop: string;
+      readonly cart: string;
+      readonly orders: string;
+      readonly invoices: string;
+      readonly account: string;
+    };
+    /** `{n}` est remplacé par le nombre de factures en attente. */
+    readonly invoicesDue: string;
+    /** Ce que porte une destination dont l'écran n'existe pas encore. */
+    readonly soon: string;
+    readonly close: string;
+    readonly newOrder: string;
+    readonly newOrderSub: string;
+    readonly house: string;
+    /** Les trois liens « la maison » : libellé, puis sa note à droite. */
+    readonly houseLinks: readonly [
+      readonly [string, string],
+      readonly [string, string],
+      readonly [string, string],
+    ];
+    readonly logout: string;
+    readonly address: string;
+    /** Le salut du menu. `{name}` est remplacé par le prénom reconnu. */
+    readonly hello: string;
+    /** Le même, quand le compte ne porte pas encore de prénom. */
+    readonly helloAnonymous: string;
+  };
   readonly hero: {
     readonly welcomeTitle: string;
     readonly welcomeIntro: string;
