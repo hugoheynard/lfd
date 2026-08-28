@@ -121,13 +121,14 @@
   background: var(--fold-color-text);
 }
 
-/* Le troisième trait est plus court et porte le beurre. Il est rangé à DROITE
-   et décalé d'un pixel vers l'intérieur plutôt que centré : aligné, il se
-   lirait comme un trait raté ; décalé, il se lit comme un accent. */
+/* Le troisième trait est plus court et porte le beurre. Il s'aligne À GAUCHE
+   sur les deux autres — 9,5 px, la moitié de ce qui reste quand un trait de
+   19 px se centre dans les 38 px du bouton. Le bord partagé est ce qui en fait
+   un accent et non un trait raté : c'est la longueur qui varie, pas la marge. */
 .menu span:last-child {
   width: 12px;
-  align-self: flex-end;
-  margin-right: 10.5px;
+  align-self: flex-start;
+  margin-left: 9.5px;
   background: var(--lfc-color-accent);
 }
 

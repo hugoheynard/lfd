@@ -32,7 +32,7 @@
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
   background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
+  color: var(--lfc-paper-0);
   text-decoration: none;
 }
 
@@ -45,7 +45,7 @@
   border-radius: var(--fold-radius-md);
   /* La tuile se creuse DANS le beurre : un voile de sa propre encre, pas un
      voile de papier — sur un aplat clair, le papier ne creuse rien. */
-  background: color-mix(in srgb, var(--lfc-color-on-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--lfc-color-on-accent) 18%, transparent);
 }
 
 .new-order-titles {
@@ -64,12 +64,13 @@
 
 .new-order-sub {
   font-size: var(--fold-text-md);
-  /* ⚠️ PAS `accent-text` : c'est l'un des rôles que le sous-bloc `chrome`
-     inverse, et le bandeau est dans le chrome — il y vaut un beurre PÂLE, donc
-     illisible sur l'aplat beurre. On le dérive de `on-accent`, qui n'est pas
-     inversé (le titre juste au-dessus le prouve), adouci pour rester un second
-     niveau. */
-  color: color-mix(in srgb, var(--lfc-color-on-accent) 72%, transparent);
+  /* Le second niveau du blanc, pas une autre couleur : sur un aplat beurre, un
+     brun clair et un blanc voilé se ressemblent, mais seul le second dit qu'il
+     appartient à la même ligne que le titre.
+     ⚠️ Ne PAS revenir à `accent-text` : c'est l'un des rôles que le sous-bloc
+     `chrome` inverse, et le bandeau est dans le chrome — il y vaut un beurre
+     pâle, illisible sur du beurre. */
+  color: color-mix(in srgb, var(--lfc-paper-0) 86%, transparent);
 }
 
 /* ── La ligne « ce qui attend / qui répond » ────────────────────────────── */
