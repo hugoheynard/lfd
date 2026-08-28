@@ -35,10 +35,10 @@
           <span class="mode-pieces">{{ row.pieces }}</span>
         </td>
         <td class="cell date">{{ row.order.date }}</td>
-        <td class="cell">
+        <td class="cell status">
           <span class="tag" [attr.data-status]="row.order.status">{{ row.status }}</span>
         </td>
-        <td class="cell">
+        <td class="cell pay">
           <span class="tag" [attr.data-payment]="row.order.payment">{{ row.payment }}</span>
         </td>
         <td class="cell num total">{{ row.total }}</td>
