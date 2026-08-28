@@ -18,7 +18,9 @@
   display: flex;
   align-items: stretch;
   height: 52px;
-  padding: 0 22px;
+  /* On retranche le rembourrage de l'onglet : ce qui doit s'aligner sur le
+     titre, c'est le LIBELLÉ, pas le bord de la zone cliquable. */
+  padding: 0 max(0px, calc(var(--lfc-inset) - 22px));
   background: var(--lfc-color-surface-well);
   box-shadow: 0 6px 14px -8px var(--lfc-ink-950);
   overflow-x: auto;

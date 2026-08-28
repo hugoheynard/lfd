@@ -13,6 +13,20 @@
   --fold-shell-header-height: var(--lfc-header-height);
   --fold-shell-header-height-mobile: var(--lfc-header-height);
 
+  /* ── LA GOUTTIÈRE, et il n'y en a qu'une ───────────────────────────────
+     Quatre surfaces portent du contenu — la barre, le bandeau, la sous-barre,
+     la page (et le pied) — et elles avaient trois bords gauches différents :
+     la barre collée au bord, la page centrée dans une colonne de 1180. En
+     dessous de 1180 ça ne se voyait pas ; au-delà, la page se décalait toute
+     seule et l'écran avait l'air centré.
+
+     `max()` fait les deux d'un coup : la gouttière tant que la fenêtre est
+     plus étroite que la colonne, et le centrage de la colonne au-delà — la
+     même valeur pour tout le monde, à toutes les largeurs. */
+  --lfc-gutter: var(--fold-space-lg);
+  --lfc-column: 1180px;
+  --lfc-inset: max(var(--lfc-gutter), calc((100% - var(--lfc-column)) / 2 + var(--lfc-gutter)));
+
   /* La bande est dimensionnée par son CONTENU, pas par un nombre : elle porte
      un bandeau qui change d'un écran à l'autre, et la sous-barre qui n'existe
      qu'au-delà du pli. `auto` est une taille de piste valide, et la variable de
@@ -42,7 +56,7 @@
      tenir sur 390 px sans que le nom soit rogné. */
   gap: var(--fold-space-sm);
   height: 100%;
-  padding: env(safe-area-inset-top, 0px) var(--fold-space-lg) 0;
+  padding: env(safe-area-inset-top, 0px) var(--lfc-inset) 0;
 }
 
 .brand {
@@ -215,6 +229,10 @@
    d'en-tête à zéro plutôt que de la masquer : le shell est une grille, une
    rangée cachée garderait sa hauteur. */
 @media (min-width: 900px) {
+  :host {
+    --lfc-gutter: 26px;
+  }
+
   :host(.bar-narrow-only) {
     --lfc-header-height: 0px;
   }

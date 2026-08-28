@@ -7,9 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xl);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-4xl);
+  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-4xl);
 }
 
 /* ── Le bandeau, dans la descente ────────────────────────────────────────
@@ -23,9 +21,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-2xl);
+  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
 }
 
 .title {
@@ -211,7 +207,7 @@
 @media (min-width: 900px) {
   .page {
     gap: var(--fold-space-2xl);
-    padding: var(--fold-space-2xl) 44px var(--fold-space-5xl);
+    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-5xl);
   }
 
   .banner {
@@ -219,7 +215,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--fold-space-2xl);
-    padding: var(--fold-space-2xl) 44px var(--fold-space-3xl);
+    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-3xl);
   }
 
   .titles {

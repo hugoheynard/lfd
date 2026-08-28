@@ -16,9 +16,7 @@
 }
 
 .foot {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--fold-space-4xl) 44px var(--fold-space-xl);
+  padding: var(--fold-space-4xl) var(--lfc-inset) var(--fold-space-xl);
 }
 
 .cols {
