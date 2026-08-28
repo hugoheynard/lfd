@@ -11,14 +11,27 @@
   margin: 0;
   border: 0;
   padding: 0;
-  background: var(--fold-color-primary);
+  /* Les deux bleus, mais pas en bandes : un RADIAL ancré juste au-dessus du
+     bouton qui vient d'ouvrir le menu. La surface s'éclaire d'où on l'a
+     touchée et s'enfonce vers le bas — le linéaire, lui, aurait redit la
+     descente de la barre, qui n'est pas ici et ne va pas dans ce sens.
+     L'ellipse déborde volontairement le cadre (120 % / 88 %, ancrée à −6 %) :
+     on n'en voit que le versant, jamais le centre, donc jamais de halo. */
+  background: radial-gradient(
+    120% 88% at 10% -6%,
+    var(--lfc-ink-800) 0%,
+    var(--lfc-ink-900) 46%,
+    var(--lfc-ink-950) 100%
+  );
   color: var(--fold-color-on-primary);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .menu::backdrop {
-  background: var(--fold-color-primary);
+  /* Le voile prend l'encre la plus profonde : il n'est visible qu'aux marges
+     que le dialogue ne couvre pas, et il doit y prolonger le BAS du dégradé. */
+  background: var(--lfc-ink-950);
 }
 
 /* Le menu peint sa propre encre : ses enfants doivent lire les rôles du chrome,

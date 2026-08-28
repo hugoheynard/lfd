@@ -21,7 +21,9 @@
    l'écran n'est plus un ancêtre de ce qu'il projette. */
 
 /* La carte caramel du cas 2, à l'identique : c'est la même action, elle doit se
-   reconnaître d'un écran à l'autre. */
+   reconnaître d'un écran à l'autre. Le beurre PLEIN et pas le beurre profond :
+   sur le registre sombre, c'est le seul aplat clair de l'écran, et c'est à ça
+   qu'on doit le repérer avant tout le reste. */
 .new-order {
   display: flex;
   align-items: center;
@@ -29,8 +31,8 @@
   min-height: 62px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
-  background: var(--lfc-color-accent-deep);
-  color: var(--lfc-color-on-accent-deep);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
   text-decoration: none;
 }
 
@@ -41,7 +43,9 @@
   width: 36px;
   height: 36px;
   border-radius: var(--fold-radius-md);
-  background: var(--lfc-color-on-primary-tile);
+  /* La tuile se creuse DANS le beurre : un voile de sa propre encre, pas un
+     voile de papier — sur un aplat clair, le papier ne creuse rien. */
+  background: color-mix(in srgb, var(--lfc-color-on-accent) 14%, transparent);
 }
 
 .new-order-titles {
@@ -60,7 +64,12 @@
 
 .new-order-sub {
   font-size: var(--fold-text-md);
-  color: var(--lfc-color-on-accent-deep-muted);
+  /* ⚠️ PAS `accent-text` : c'est l'un des rôles que le sous-bloc `chrome`
+     inverse, et le bandeau est dans le chrome — il y vaut un beurre PÂLE, donc
+     illisible sur l'aplat beurre. On le dérive de `on-accent`, qui n'est pas
+     inversé (le titre juste au-dessus le prouve), adouci pour rester un second
+     niveau. */
+  color: color-mix(in srgb, var(--lfc-color-on-accent) 72%, transparent);
 }
 
 /* ── La ligne « ce qui attend / qui répond » ────────────────────────────── */
