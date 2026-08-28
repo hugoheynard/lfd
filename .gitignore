@@ -76,5 +76,16 @@ secrets.json
 storybook-static/
 *storybook.log
 
-# Claude Code local agent state
-.claude/
+# Claude Code — ce qui est PARTAGÉ suit le dépôt, ce qui est LOCAL reste dehors.
+#
+# Les règles de permission et les agents décrivent COMMENT on travaille sur ce
+# dépôt : ils valent pour tout le monde, au même titre que la config ESLint. Le
+# reste (sessions, caches, réglages personnels) est de l'état de machine.
+#
+# ⚠️ `.claude/*` et non `.claude/` : git ne peut PAS ré-inclure un fichier dont
+# un répertoire parent est exclu. Avec la forme répertoire, les `!` ci-dessous
+# seraient sans effet — et silencieusement.
+.claude/*
+!.claude/settings.json
+!.claude/agents/
+.claude/settings.local.json
