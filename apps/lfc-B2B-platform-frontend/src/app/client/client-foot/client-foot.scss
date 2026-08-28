@@ -177,6 +177,11 @@
 }
 
 .legal-text {
+  display: flex;
+  flex-wrap: wrap;
+  /* Un espace entre les mentions, et RIEN d'autre : le séparateur était écrit
+     dans la phrase, donc il restait quand la mention d'à côté disparaissait. */
+  gap: var(--fold-space-sm);
   margin: 0;
   max-width: 62ch;
   font-size: var(--fold-text-sm);

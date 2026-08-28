@@ -15,46 +15,7 @@ export const FR: ClientCopy = {
     kickerDone: 'Confirmée',
     deskKicker: 'Val d’Isère · commande en ligne',
   },
-  foot: {
-    tagline: 'Boulangerie d’altitude',
-    pitch:
-      'Pain au levain, viennoiserie au beurre AOP et pâtisserie de station, cuits chaque nuit au Labo, route de la Balme. Livrés dans la station avant l’ouverture des remontées.',
-    housesHead: 'Les maisons',
-    houses: [
-      {
-        name: 'Le Labo',
-        street: 'Route de la Balme',
-        city: '73150 Val d’Isère',
-        hours: '7 h – 19 h, tous les jours',
-      },
-      {
-        name: 'Le Village',
-        street: '4 avenue Olympique',
-        city: '73150 Val d’Isère',
-        hours: '9 h – 20 h, tous les jours',
-      },
-    ],
-    orderHead: 'Commander',
-    orderLinks: [
-      'Retrait au Labo ou au Village',
-      'Coursier dans la station',
-      'Traiteur et événements',
-      'Ouvrir un compte pro',
-      'Nos rayons et nos méthodes',
-      'Opérations Pâques et Noël',
-    ],
-    helpHead: 'Aide et contact',
-    phoneHours: '7 h – 19 h · ajouts jusqu’à 18 h',
-    helpLinks: [
-      'Prendre rendez-vous',
-      'Suivre ma commande',
-      'Questions fréquentes',
-      'Signaler un problème',
-    ],
-    legalPay: 'Paiement sécurisé CB et Apple Pay, virement pour les comptes pro.',
-    legalVat: 'Prix TTC, TVA 5,5 % ou 10 % selon les produits.',
-    legalLinks: ['Mentions légales', 'CGV', 'Confidentialité', 'Cookies', 'Accessibilité'],
-  },
+
   nav: {
     destinations: {
       espace: 'Mon espace',

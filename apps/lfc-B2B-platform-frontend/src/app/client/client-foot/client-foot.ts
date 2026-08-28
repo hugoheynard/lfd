@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { ClientCopyService } from '../copy/client-copy.service';
-import { LEGAL_IDENTITY, LEGAL_YEAR } from './legal-identity';
+import { ClientContent } from '../client-content.service';
+import { LEGAL_YEAR } from './legal-identity';
 
 /**
  * Le pied de page de l'app — quatre colonnes et une barre légale.
@@ -26,7 +26,26 @@ import { LEGAL_IDENTITY, LEGAL_YEAR } from './legal-identity';
   styleUrl: './client-foot.scss',
 })
 export class ClientFoot {
-  protected readonly t = inject(ClientCopyService).t;
-  protected readonly legal = LEGAL_IDENTITY;
+  private readonly content = inject(ClientContent);
+
+  /** Les textes, servis par l'API — le contenu de départ tant qu'elle n'a pas répondu. */
+  protected readonly foot = this.content.footer;
+
+  /** L'identité légale, saisie depuis le back-office. Ce qui est vide est OMIS. */
+  protected readonly legal = this.content.identity;
+
   protected readonly year = LEGAL_YEAR;
+
+  /**
+   * Les mentions d'immatriculation RENSEIGNÉES, dans l'ordre de la barre.
+   *
+   * Elles étaient absentes du code parce qu'on n'invente pas un numéro
+   * d'immatriculation. Elles ne le sont plus : elles se saisissent, et la barre
+   * les montre dès qu'elles existent. Ce qui reste vide ne laisse pas de trou —
+   * une barre courte se lit, un tiret qui traîne se remarque.
+   */
+  protected readonly mentions = computed(() => {
+    const id = this.legal();
+    return [id.company, id.capital, id.siret, id.rcs, id.vat].filter((value) => value !== '');
+  });
 }

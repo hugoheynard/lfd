@@ -10,14 +10,6 @@
  * rechargement — trois dictionnaires en mémoire coûtent quelques kilo-octets et
  * répondent au doigt.
  */
-/** Une maison au pied de page : l'adresse COMPLÈTE, c'est ce qu'on copie dans un GPS. */
-export interface FootHouse {
-  readonly name: string;
-  readonly street: string;
-  readonly city: string;
-  readonly hours: string;
-}
-
 export interface ClientCopy {
   readonly chrome: {
     readonly back: string;
@@ -32,22 +24,7 @@ export interface ClientCopy {
     readonly kickerDone: string;
     readonly deskKicker: string;
   };
-  readonly foot: {
-    /** Ce qu'on fabrique, et à quelle heure c'est livré. */
-    readonly tagline: string;
-    readonly pitch: string;
-    readonly housesHead: string;
-    readonly houses: readonly [FootHouse, FootHouse];
-    readonly orderHead: string;
-    /** Six entrées qui doublent la navigation PAR INTENTION, pas par rubrique. */
-    readonly orderLinks: readonly string[];
-    readonly helpHead: string;
-    readonly phoneHours: string;
-    readonly helpLinks: readonly string[];
-    readonly legalPay: string;
-    readonly legalVat: string;
-    readonly legalLinks: readonly string[];
-  };
+
   readonly nav: {
     /** Les cinq destinations, dans l'ordre — cf. `ClientNav`. */
     readonly destinations: {

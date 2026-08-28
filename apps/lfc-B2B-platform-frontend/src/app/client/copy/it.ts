@@ -23,46 +23,7 @@ export const IT: ClientCopy = {
     kickerDone: 'Confermato',
     deskKicker: 'Val d’Isère · ordina online',
   },
-  foot: {
-    tagline: 'Panificio d’alta quota',
-    pitch:
-      'Pane a lievitazione naturale, viennoiserie al burro AOP e pasticceria di stazione, cotti ogni notte al Labo, route de la Balme. Consegnati in stazione prima dell’apertura degli impianti.',
-    housesHead: 'Le case',
-    houses: [
-      {
-        name: 'Le Labo',
-        street: 'Route de la Balme',
-        city: '73150 Val d’Isère',
-        hours: '7 – 19, tutti i giorni',
-      },
-      {
-        name: 'Le Village',
-        street: '4 avenue Olympique',
-        city: '73150 Val d’Isère',
-        hours: '9 – 20, tutti i giorni',
-      },
-    ],
-    orderHead: 'Ordinare',
-    orderLinks: [
-      'Ritiro al Labo o al Village',
-      'Corriere in stazione',
-      'Catering ed eventi',
-      'Aprire un account pro',
-      'I nostri banchi e i nostri metodi',
-      'Operazioni Pasqua e Natale',
-    ],
-    helpHead: 'Aiuto e contatti',
-    phoneHours: '7 – 19 · aggiunte fino alle 18',
-    helpLinks: [
-      'Fissare un appuntamento',
-      'Seguire il mio ordine',
-      'Domande frequenti',
-      'Segnalare un problema',
-    ],
-    legalPay: 'Pagamento sicuro con carta e Apple Pay, bonifico per gli account pro.',
-    legalVat: 'Prezzi IVA inclusa, 5,5 % o 10 % secondo i prodotti.',
-    legalLinks: ['Note legali', 'Condizioni', 'Privacy', 'Cookie', 'Accessibilità'],
-  },
+
   nav: {
     destinations: {
       espace: 'Il mio spazio',

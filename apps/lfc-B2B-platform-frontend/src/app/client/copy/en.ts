@@ -21,41 +21,7 @@ export const EN: ClientCopy = {
     kickerDone: 'Confirmed',
     deskKicker: 'Val d’Isère · order online',
   },
-  foot: {
-    tagline: 'Mountain bakery',
-    pitch:
-      'Sourdough bread, AOP-butter viennoiserie and resort pastry, baked every night at Le Labo, route de la Balme. Delivered around the resort before the lifts open.',
-    housesHead: 'The bakeries',
-    houses: [
-      {
-        name: 'Le Labo',
-        street: 'Route de la Balme',
-        city: '73150 Val d’Isère',
-        hours: '7 am – 7 pm, every day',
-      },
-      {
-        name: 'Le Village',
-        street: '4 avenue Olympique',
-        city: '73150 Val d’Isère',
-        hours: '9 am – 8 pm, every day',
-      },
-    ],
-    orderHead: 'Order',
-    orderLinks: [
-      'Pickup at Le Labo or Le Village',
-      'Courier around the resort',
-      'Catering and events',
-      'Open a trade account',
-      'Our counters and our methods',
-      'Easter and Christmas operations',
-    ],
-    helpHead: 'Help and contact',
-    phoneHours: '7 am – 7 pm · additions until 6 pm',
-    helpLinks: ['Book an appointment', 'Track my order', 'Frequent questions', 'Report a problem'],
-    legalPay: 'Secure card and Apple Pay payment, bank transfer for trade accounts.',
-    legalVat: 'Prices include VAT, at 5.5% or 10% depending on the product.',
-    legalLinks: ['Legal notice', 'Terms', 'Privacy', 'Cookies', 'Accessibility'],
-  },
+
   nav: {
     destinations: {
       espace: 'My space',
