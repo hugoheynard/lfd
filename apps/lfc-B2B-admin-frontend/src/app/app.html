@@ -235,16 +235,37 @@
           <fold-icon [name]="ws.icon" size="sm" />
           <span>{{ ws.title }}</span>
         </div>
-        @for (item of ws.items; track item.key) {
-          <a
-            fold-menu-item
-            [icon]="item.icon"
-            [label]="item.label"
-            [routerLink]="item.link"
-            routerLinkActive
-            #wsRla="routerLinkActive"
-            [active]="wsRla.isActive"
-          ></a>
+        <!-- Les vues, groupées par section quand l'espace en déclare. Un espace
+             qui n'en déclare pas rend UN groupe sans titre — donc exactement ce
+             qu'il rendait avant que les sections existent. -->
+        @for (group of workspaceGroups(); track $index) {
+          @if (group.label; as label) {
+            <fold-menu-section [label]="label">
+              @for (item of group.items; track item.key) {
+                <a
+                  fold-menu-item
+                  [icon]="item.icon"
+                  [label]="item.label"
+                  [routerLink]="item.link"
+                  routerLinkActive
+                  #sectionRla="routerLinkActive"
+                  [active]="sectionRla.isActive"
+                ></a>
+              }
+            </fold-menu-section>
+          } @else {
+            @for (item of group.items; track item.key) {
+              <a
+                fold-menu-item
+                [icon]="item.icon"
+                [label]="item.label"
+                [routerLink]="item.link"
+                routerLinkActive
+                #wsRla="routerLinkActive"
+                [active]="wsRla.isActive"
+              ></a>
+            }
+          }
         }
       </fold-menu>
     }

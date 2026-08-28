@@ -8,6 +8,21 @@ export interface WorkspaceRailItem {
   /** Chemin **absolu** — le rail est rendu par la racine, pas par la page. */
   readonly link: string;
   readonly icon: FoldIconName;
+  /**
+   * Le groupe sous lequel ranger cette vue, quand l'espace en a plusieurs.
+   *
+   * Facultatif, et c'est le point : un espace de quelques vues n'a rien à
+   * grouper, et lui poser un titre de section au-dessus d'une liste de trois
+   * serait de la coquille. Les quatre espaces existants n'en portent aucune et
+   * se rendent exactement comme avant.
+   */
+  readonly section?: string;
+}
+
+/** Un groupe de vues dans le rail — sans titre quand l'espace n'en groupe pas. */
+export interface WorkspaceRailGroup {
+  readonly label: string | undefined;
+  readonly items: readonly WorkspaceRailItem[];
 }
 
 /** Ce qu'un espace de travail publie : son nom et ses vues. */
@@ -16,6 +31,28 @@ export interface WorkspaceRail {
   readonly title: string;
   readonly icon: FoldIconName;
   readonly items: readonly WorkspaceRailItem[];
+}
+
+/**
+ * Range les vues par section, dans l'ordre où elles sont déclarées.
+ *
+ * Fonction PURE et exportée : c'est elle qui porte la règle, elle se teste sans
+ * Angular, et la racine n'a plus qu'à rendre ce qu'elle rend. Les vues sans
+ * section se regroupent avec leurs voisines immédiates — l'ordre de la table
+ * est la seule chose qui décide, donc ce qu'on lit dans `workspaces.ts` est ce
+ * qu'on voit dans le rail.
+ */
+export function groupRailItems(items: readonly WorkspaceRailItem[]): readonly WorkspaceRailGroup[] {
+  const groups: WorkspaceRailGroup[] = [];
+  for (const item of items) {
+    const last = groups.at(-1);
+    if (last !== undefined && last.label === item.section) {
+      groups[groups.length - 1] = { label: last.label, items: [...last.items, item] };
+      continue;
+    }
+    groups.push({ label: item.section, items: [item] });
+  }
+  return groups;
 }
 
 /**

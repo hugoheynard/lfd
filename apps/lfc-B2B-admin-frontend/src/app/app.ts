@@ -15,6 +15,7 @@ import {
   FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldMenuSectionComponent,
   FoldNavGroupComponent,
   FoldNavLauncherComponent,
   FoldNavTileComponent,
@@ -32,7 +33,7 @@ import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
-import { WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
+import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
 
 /**
@@ -79,6 +80,7 @@ const ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
     FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldMenuSectionComponent,
     FoldNavGroupComponent,
     FoldNavLauncherComponent,
     FoldNavTileComponent,
@@ -112,6 +114,17 @@ export class App {
    * l'espace publie (cf. `provideWorkspaceRail`).
    */
   protected readonly workspace = inject(WorkspaceRailStore).rail;
+
+  /**
+   * Les vues de l'espace ouvert, rangées par section.
+   *
+   * Le groupement est une fonction PURE, testée à part : la racine ne fait que
+   * rendre ce qu'elle rend, et la règle — l'ordre de la table décide — vit à un
+   * seul endroit.
+   */
+  protected readonly workspaceGroups = computed(() =>
+    groupRailItems(this.workspace()?.items ?? []),
+  );
 
   /**
    * Les vues de chaque espace, pour le LANCEUR mobile — qui les montre toutes,
