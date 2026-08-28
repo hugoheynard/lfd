@@ -1,0 +1,58 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="t().invoices.title" [lead]="t().invoices.lead">
+    <button banner-action class="year-csv" type="button">
+      <fold-icon name="download" />{{ t().invoices.csvYear }}
+    </button>
+  </app-client-banner-block>
+</ng-template>
+
+<div class="page">
+  <!-- TROIS MONTANTS AVANT TOUTE LIGNE : c'est ce qu'on vient chercher. -->
+  <div class="tiles">
+    <div class="tile open">
+      <p class="tile-label">{{ t().invoices.tileOpen }}</p>
+      <p class="tile-value">{{ openTotal }}</p>
+      <p class="tile-note">{{ openNote }}</p>
+    </div>
+    <div class="tile">
+      <p class="tile-label">{{ t().invoices.tileClosed }}</p>
+      <p class="tile-value">{{ closedTotal }}</p>
+      <p class="tile-note">{{ closedNote }}</p>
+    </div>
+    <div class="tile">
+      <p class="tile-label">{{ t().invoices.tilePerOrder }}</p>
+      <p class="tile-value">{{ perOrderTotal }}</p>
+      <p class="tile-note">{{ perOrderNote }}</p>
+    </div>
+  </div>
+
+  <!-- L'ENCART D'HONNÊTETÉ, en première ligne et pas en note : appeler
+       « factures » une liste de commandes ferait chercher un PDF qui n'existe
+       pas. -->
+  <p class="honesty">{{ t().invoices.honesty }}</p>
+
+  <!-- Les deux en-têtes de colonne portent leur total d'exercice, et seulement
+       le leur : les additionner serait faux. -->
+  <div class="ledger-head">
+    <span class="ledger-rail"></span>
+    <div class="ledger-cols">
+      <div class="ledger-col">
+        <span class="ledger-title">{{ t().invoices.colAccount }}</span>
+        <span class="ledger-total">{{ accountGrandTotal }}</span>
+      </div>
+      <div class="ledger-col">
+        <span class="ledger-title">{{ t().invoices.colPerOrder }}</span>
+        <span class="ledger-total">{{ perOrderGrandTotal }}</span>
+      </div>
+    </div>
+  </div>
+
+  @for (exercise of years(); track exercise.year) {
+    <!-- L'EXERCICE COUPE : une seule rupture, en capitales et filet plein. Ce
+         n'est pas un niveau de navigation, c'est une respiration. -->
+    <p class="year">{{ exercise.year }}</p>
+    @for (month of exercise.months; track month.month) {
+      <app-ledger-month class="month" [month]="month" />
+    }
+  }
+</div>

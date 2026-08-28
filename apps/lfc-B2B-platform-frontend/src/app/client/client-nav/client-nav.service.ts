@@ -34,7 +34,7 @@ interface Destination {
 const DESTINATIONS: readonly Destination[] = [
   { id: 'espace', route: '/mon-espace', ready: true },
   { id: 'orders', route: '/mes-commandes', ready: true },
-  { id: 'invoices', route: '/mes-factures', ready: false },
+  { id: 'invoices', route: '/mes-factures', ready: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: false },
   { id: 'account', route: '/mon-compte', ready: false },
 ];

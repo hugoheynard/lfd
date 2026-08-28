@@ -1,0 +1,364 @@
+/* En pile, un mois est une CARTE : le rail en tête, les deux registres à
+   l'intérieur. Au bureau, il redevient une rangée du registre — 150 px de rail
+   puis deux colonnes égales, les cotes de la réf. */
+:host {
+  display: block;
+}
+
+/* ── Le rail du mois ───────────────────────────────────────────────────── */
+
+.rail {
+  position: relative;
+  padding: var(--fold-space-md) var(--fold-space-md) var(--fold-space-md) var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+}
+
+/* Le filet vertical de 3 px : c'est lui qui fait du rail une carte plutôt
+   qu'une étiquette, et il prend le ton du mois. */
+.rail::before {
+  content: '';
+  position: absolute;
+  top: var(--fold-space-sm);
+  bottom: var(--fold-space-sm);
+  left: 0;
+  width: 3px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-400);
+}
+
+:host(.open) .rail {
+  border-color: var(--fold-color-primary-border);
+  background: var(--fold-color-primary-surface);
+}
+
+:host(.open) .rail::before {
+  background: var(--fold-color-primary);
+}
+
+.rail-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.rail-month {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+.rail-year {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+:host(.open) .rail-year,
+:host(.open) .rail-close {
+  color: var(--fold-color-primary-text);
+}
+
+.rail-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--fold-space-xs);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-accent-deep);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+}
+
+/* La date de clôture est écrite en CLAIR : « clôture le 31/03 » pour le mois
+   ouvert, « close depuis le 28/02 » pour les autres. */
+.rail-close {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.rail-csv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  width: 100%;
+  min-height: 34px;
+  margin-top: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: transparent;
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.rail-csv:hover {
+  background: var(--fold-color-primary-surface);
+}
+
+/* ── Les registres ─────────────────────────────────────────────────────── */
+
+.registers {
+  display: grid;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-md);
+}
+
+.doc {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  align-items: center;
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-left: 4px solid var(--lfc-color-accent-deep);
+  border-radius: var(--lfc-radius-xl);
+  background: linear-gradient(122deg, var(--lfc-paper-0), var(--lfc-paper-100));
+  box-shadow: var(--lfc-shadow-card);
+}
+
+/* La vignette : la page qu'on va recevoir, avec sa propre ombre. */
+.doc-thumb {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 44px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 3px;
+  background: var(--lfc-paper-0);
+  box-shadow: var(--lfc-shadow-card);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  color: var(--fold-color-text-muted);
+}
+
+.doc-lines {
+  min-width: 0;
+}
+
+.doc-top {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: 0;
+}
+
+.doc-ref {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-state {
+  padding: 2px 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.doc-state.paid {
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}
+
+.doc-note {
+  margin: 3px 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Le montant COLLÉ au bouton : on lit ce qu'on télécharge. */
+.doc-total {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.doc-cta {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  min-height: 38px;
+  border: 0;
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.doc-pending {
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+}
+
+.cols {
+  display: grid;
+  gap: var(--fold-space-md);
+}
+
+.col {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+}
+
+.col-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.col-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* Chaque colonne porte SON total. Aucun total ne les mélange : ce serait faux. */
+.col-total {
+  flex: none;
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.col-meta {
+  margin: 2px 0 var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.lines {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding: 5px 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-xs);
+}
+
+.line-ref {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.line-day {
+  flex: 1;
+  min-width: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.line-method {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}
+
+.line-amount {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.void {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-md);
+  color: var(--fold-color-text-faded);
+  text-align: center;
+}
+
+/* Au bureau, la rangée du registre : 150 px de rail, puis deux colonnes égales
+   — les cotes mesurées de la réf (150 / 473 / 473). */
+@media (min-width: 900px) {
+  :host {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: var(--fold-space-lg);
+    align-items: start;
+  }
+
+  .registers {
+    margin-top: 0;
+  }
+
+  .cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .doc {
+    grid-template-columns: auto 1fr auto auto;
+  }
+
+  .doc-total,
+  .doc-cta {
+    grid-column: auto;
+  }
+
+  .doc-cta {
+    padding: 0 var(--fold-space-md);
+  }
+}

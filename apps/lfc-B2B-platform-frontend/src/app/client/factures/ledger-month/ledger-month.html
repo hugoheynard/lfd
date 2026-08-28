@@ -1,0 +1,90 @@
+<!-- LE RAIL est une carte, pas une étiquette : c'est là que la période se lit,
+     donc c'est là que l'export vit. Une barre d'outils générale obligerait à
+     choisir des dates avant d'exporter un mois. -->
+<div class="rail">
+  <div class="rail-top">
+    <span class="rail-month">{{ month().month }}</span>
+    <span class="rail-year">{{ month().year }}</span>
+  </div>
+  @if (month().open) {
+    <span class="rail-state"
+      ><span class="dot" aria-hidden="true"></span>{{ t().invoices.current }}</span
+    >
+  }
+  <p class="rail-close">{{ month().closing }}</p>
+  <button class="rail-csv" type="button">
+    <fold-icon name="download" />{{ t().invoices.csv }}
+  </button>
+</div>
+
+<div class="registers">
+  <!-- LA FACTURE DÉPOSÉE : la seule chose de l'écran qui ressemble à un objet
+       plutôt qu'à une ligne. Elle n'est pas réclamée, elle est RENDUE — datée,
+       nommée, chiffrée, en un geste. -->
+  @if (month().invoice; as invoice) {
+    <div class="doc">
+      <span class="doc-thumb" aria-hidden="true">PDF</span>
+      <div class="doc-lines">
+        <p class="doc-top">
+          <span class="doc-ref">{{ invoice.reference }}</span>
+          <span class="doc-state" [class.paid]="invoice.settled">
+            {{ invoice.settled ? t().invoices.statePaid : t().invoices.stateDue }}
+          </span>
+        </p>
+        <p class="doc-note">{{ invoice.filed }} · {{ invoice.due }}</p>
+      </div>
+      <p class="doc-total">{{ invoiceTotal() }}</p>
+      <button class="doc-cta" type="button">
+        <fold-icon name="download" />{{ t().invoices.invoiceDownload }}
+      </button>
+    </div>
+  } @else {
+    <!-- Aucun bouton grisé : le mois ouvert n'a pas de facture et le dit. -->
+    <p class="doc-pending">{{ t().invoices.invoicePending }}</p>
+  }
+
+  <div class="cols">
+    <section class="col">
+      <header class="col-head">
+        <h3 class="col-title">{{ t().invoices.colAccount }}</h3>
+        <p class="col-total">{{ account().total }}</p>
+      </header>
+      <p class="col-meta">{{ account().count }}</p>
+      <ul class="lines">
+        @for (order of account().orders; track order.reference) {
+          <li class="line">
+            <span class="line-ref">{{ order.reference }}</span>
+            <span class="line-day">{{ order.day }}</span>
+            <span class="line-amount">{{ order.amount }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="col">
+      <header class="col-head">
+        <h3 class="col-title">{{ t().invoices.colPerOrder }}</h3>
+        @if (perOrder(); as register) {
+          <p class="col-total">{{ register.total }}</p>
+        }
+      </header>
+      @if (perOrder(); as register) {
+        <p class="col-meta">{{ register.count }}</p>
+        <ul class="lines">
+          @for (order of register.orders; track order.reference) {
+            <li class="line">
+              <span class="line-ref">{{ order.reference }}</span>
+              <span class="line-day">{{ order.day }}</span>
+              <span class="line-method">{{ order.method }}</span>
+              <span class="line-amount">{{ order.amount }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <!-- Un mois sans régime à la commande le DIT. Une cellule absente se
+             lirait comme une donnée manquante. -->
+        <p class="void">{{ t().invoices.noneCell }}</p>
+      }
+    </section>
+  </div>
+</div>

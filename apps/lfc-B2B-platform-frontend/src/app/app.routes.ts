@@ -155,6 +155,15 @@ export const routes: Routes = [
           import('./client/commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
       },
       {
+        // LE RELEVÉ, et l'écran le dit. La plateforme n'émet aucune facture :
+        // elle rassemble les commandes telles qu'elles partent en comptabilité,
+        // et le comptable dépose le PDF après la clôture.
+        path: 'mes-factures',
+        title: 'Mes factures — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/factures/factures-page/factures-page').then((m) => m.FacturesPage),
+      },
+      {
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.
