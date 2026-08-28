@@ -1,7 +1,12 @@
 @if (title()) {
   <header class="head">
     <ng-content select="[wellLead]" />
-    <fold-element-title class="titles" [title]="title()" [subtitle]="subtitle()">
+    <fold-element-title
+      class="titles"
+      [title]="title()"
+      [subtitle]="subtitle()"
+      [variant]="titleVariant()"
+    >
       <!-- Re-projected under the SAME name fold uses. A slot renamed on the
            way through would never match: the inner component selects on the
            attribute the caller wrote, not on the one we forwarded it with. -->

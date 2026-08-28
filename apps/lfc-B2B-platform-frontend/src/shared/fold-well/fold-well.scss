@@ -7,6 +7,18 @@
   border-radius: var(--fold-well-radius, var(--fold-radius-xl));
   background: var(--fold-well-bg, var(--fold-color-surface-sunken));
   color: var(--fold-well-color, var(--fold-color-text));
+
+  /* ⚠️ LE PUITS CHANGE LE SOL, DONC IL DOIT CHANGER L'ENCRE.
+     Hériter `color` ne suffit pas : les composants de fold posent leur propre
+     couleur depuis les jetons de texte, et un titre réglé sur `--fold-color-text`
+     reste en encre sombre sur un puits bleu nuit — c'est exactement ce qu'on a
+     perdu en passant la tête à `fold-element-title`. On redéfinit donc les
+     jetons ICI, pour tout ce que le puits contient, plutôt que d'aller
+     restyler l'intérieur d'un composant qu'on ne possède pas. */
+  --fold-color-text: var(--fold-well-color, var(--fold-color-text));
+  --fold-color-text-secondary: var(--fold-well-color-muted, var(--fold-color-text-secondary));
+  --fold-color-text-muted: var(--fold-well-color-muted, var(--fold-color-text-muted));
+  --fold-color-text-subtle: var(--fold-well-color-muted, var(--fold-color-text-subtle));
 }
 
 .head {

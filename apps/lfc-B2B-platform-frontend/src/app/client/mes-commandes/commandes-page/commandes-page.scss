@@ -19,6 +19,7 @@
 .well {
   --fold-well-bg: var(--lfc-color-surface-well);
   --fold-well-color: var(--lfc-color-on-well);
+  --fold-well-color-muted: var(--lfc-color-on-well-muted);
   --fold-well-radius: var(--lfc-radius-2xl);
   --fold-well-padding: var(--fold-space-lg);
 }
