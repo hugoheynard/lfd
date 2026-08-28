@@ -18,8 +18,8 @@
      laisser deviner à droite, sinon rien ne dit qu'il y en a un. Les marges
      négatives annulent le rembourrage de l'étage, le rembourrage les rend à
      l'intérieur du rail. */
-  margin-inline: calc(var(--fold-space-xl) * -1);
-  padding-inline: var(--fold-space-xl);
+  margin-inline: calc(var(--lfc-inset) * -1);
+  padding-inline: var(--lfc-inset);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -28,7 +28,7 @@
      et le panneau se retrouve collé au bord de l'écran pendant que tous les
      autres blocs de la feuille restent en retrait. `scroll-padding` dit au
      défilement où se trouve vraiment le début. */
-  scroll-padding-inline: var(--fold-space-xl);
+  scroll-padding-inline: var(--lfc-inset);
   scrollbar-width: none;
 
   &::-webkit-scrollbar {

@@ -22,6 +22,15 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   styleUrl: './client-banner-block.scss',
 })
 export class ClientBannerBlock {
+  /**
+   * Le sur-titre, en capitales — de quel chemin cet écran est l'étape.
+   *
+   * Il double celui de la barre, et c'est voulu : la barre est du chrome qu'on
+   * ne regarde pas, le bandeau est le début de la page. Vide, il ne prend pas
+   * de place.
+   */
+  readonly kicker = input('');
+
   /** Le titre. Un retour à la ligne y est rendu tel quel. */
   readonly title = input.required<string>();
 

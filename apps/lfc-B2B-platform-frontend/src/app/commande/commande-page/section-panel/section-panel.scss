@@ -117,7 +117,7 @@
   :host([data-tone='band']) {
     border-inline: 0;
     border-radius: 0;
-    padding: 26px 44px 34px;
+    padding: 26px var(--lfc-inset) 34px;
 
     .title {
       font-size: var(--lfc-text-heading);

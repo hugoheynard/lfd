@@ -9,6 +9,16 @@
   padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
 }
 
+.kicker {
+  margin: 0 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
 .title {
   margin: 0;
   font-family: var(--fold-font-label);

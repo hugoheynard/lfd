@@ -49,6 +49,16 @@ app-callback-block {
 /* ── Au-delà du pli ───────────────────────────────────────────────────────── */
 
 @media (min-width: 900px) {
+  /* LA PAGE NE PAD PLUS. Les deux moitiés de service sont une image pleine
+     largeur qui doit toucher la sous-barre : l'encre de la descente continue
+     dans le voile du retrait, sans une bande de crème entre les deux. Une
+     gouttière sur la page l'aurait interdit, donc ce sont les blocs QUI EN
+     VEULENT une qui se la donnent — et ils la prennent tous à la même source
+     que le reste de l'app. */
+  .page {
+    padding: 0;
+  }
+
   /* Le rail s'efface (`display: contents`) et ses deux panneaux deviennent des
      enfants de la pile : la barre de reprise peut alors venir s'intercaler
      entre les moitiés et la bande, comme dans la réf. */
@@ -64,7 +74,7 @@ app-callback-block {
     align-items: center;
     justify-content: space-between;
     gap: var(--fold-space-lg);
-    padding: 18px 44px;
+    padding: 18px var(--lfc-inset);
     background: var(--lfc-color-surface-well);
   }
 
@@ -86,10 +96,10 @@ app-callback-block {
   }
 
   app-callback-block {
-    margin: 28px 44px 40px;
+    margin: 28px var(--lfc-inset) 40px;
   }
 
   fold-callout {
-    margin: 28px 44px 0;
+    margin: 28px var(--lfc-inset) 0;
   }
 }

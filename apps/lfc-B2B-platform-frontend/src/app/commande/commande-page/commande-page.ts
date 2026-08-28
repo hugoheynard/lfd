@@ -60,7 +60,9 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
   styleUrl: './commande-page.scss',
 })
 export class CommandePage {
-  private readonly chrome = inject(ClientChrome);
+  /** Protégé et non privé : le bandeau lit le MÊME sur-titre que la barre. Deux
+   *  sources se seraient désaccordées le jour où le panneau de rappel s'ouvre. */
+  protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly order = inject(ClientOrder);
 
