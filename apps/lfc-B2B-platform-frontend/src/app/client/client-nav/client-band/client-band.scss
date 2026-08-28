@@ -44,6 +44,9 @@
      sur la couture qu'on veut invisible. Le chevauchement la bouche sans rien
      déplacer, et il est de la MÊME encre, donc il ne se voit pas. */
   margin-top: -1px;
+  /* Au-DESSUS de la région de contenu : les angles de la fenêtre débordent sous
+     la bande, et ce qui défile passe DERRIÈRE eux. */
+  z-index: 2;
   /* ⚠️ `bg-header` et PAS `primary` : dans la région `chrome`, `primary` est
      inversé au papier. */
   background: var(--fold-color-bg-header);
@@ -69,6 +72,44 @@
 
 @media (min-width: 900px) {
   .lip {
+    display: none;
+  }
+}
+
+/* ── La fenêtre ─────────────────────────────────────────────────────────────
+   Le bord bas de la crème reçoit deux angles CONCAVES, alignés sur la
+   gouttière : ce qui remonte semble entrer dans une ouverture arrondie au lieu
+   d'être tranché net. La forme vient de la carte, qui a son propre arrondi —
+   une coupe franche la contredit à l'endroit exact où l'œil la cherche.
+
+   Ces angles ne sont que de la crème et du vide, donc ils ne dépendent pas de
+   ce qui défile dessous : ils marchent sur une carte sombre comme sur la crème
+   de la page. Entre eux, rien à peindre — l'ouverture commence tout de suite ;
+   au-delà d'eux non plus — c'est la gouttière, et la page y est déjà crème. */
+.lip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: var(--lfc-radius-window);
+  background:
+    radial-gradient(
+        circle var(--lfc-radius-window) at 100% 100%,
+        transparent var(--lfc-radius-window),
+        var(--lfc-paper-50) calc(var(--lfc-radius-window) + 0.5px)
+      )
+      left var(--lfc-inset) top / var(--lfc-radius-window) var(--lfc-radius-window) no-repeat,
+    radial-gradient(
+        circle var(--lfc-radius-window) at 0 100%,
+        transparent var(--lfc-radius-window),
+        var(--lfc-paper-50) calc(var(--lfc-radius-window) + 0.5px)
+      )
+      right var(--lfc-inset) top / var(--lfc-radius-window) var(--lfc-radius-window) no-repeat;
+}
+
+@media (min-width: 900px) {
+  .lip::before {
     display: none;
   }
 }
