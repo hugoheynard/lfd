@@ -60,6 +60,21 @@ app-callback-block {
      que le reste de l'app. */
   .page {
     padding: 0;
+    /* Bornée à la colonne, et centrée. Sans ça, « pleine largeur » voulait dire
+       pleine FENÊTRE : sur un grand écran les deux images traversaient tout le
+       verre pendant que le reste de l'app s'arrêtait à la colonne.
+
+       Les blocs qui se donnent une gouttière la lisent contre leur propre
+       largeur, qui devient celle de la colonne : elle retombe donc sur la
+       gouttière simple, et leur texte s'aligne au pixel sur celui de la barre
+       et du bandeau. Ce qui saigne saigne jusqu'au bord de la COLONNE. */
+    /* ⚠️ `width: 100%` est INDISPENSABLE, et pas une ceinture : une marge auto
+       sur l'axe transverse DÉSACTIVE l'étirement d'un enfant flex. Sans elle,
+       la page se contracte sur son contenu et se centre — mesuré 1004 px de
+       large dans une fenêtre de 2000, au lieu des 1512 de la colonne. */
+    width: 100%;
+    max-width: var(--lfc-column);
+    margin-inline: auto;
   }
 
   /* Le rail s'efface (`display: contents`) et ses deux panneaux deviennent des
