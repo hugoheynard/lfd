@@ -35,8 +35,7 @@ function isLocale(value: string): value is ContentLocale {
 }
 
 /**
- * **App layout** — les textes du châssis de l'app cliente, à commencer par le
- * pied de page.
+ * **App footer** — les textes du pied de page de l'app cliente.
  *
  * Deux natures sur le même écran, et elles sont séparées à dessein :
  *
@@ -51,7 +50,7 @@ function isLocale(value: string): value is ContentLocale {
  * c'est qu'une colonne est vide ou qu'un pitch écrase sa voisine.
  */
 @Component({
-  selector: 'app-app-layout-page',
+  selector: 'app-app-footer-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -64,10 +63,10 @@ function isLocale(value: string): value is ContentLocale {
     FoldViewToggleComponent,
     FooterPreview,
   ],
-  templateUrl: './app-layout-page.html',
-  styleUrl: './app-layout-page.scss',
+  templateUrl: './app-footer-page.html',
+  styleUrl: './app-footer-page.scss',
 })
-export class AppLayoutPage {
+export class AppFooterPage {
   private readonly api = inject(PlatformContentService);
   private readonly notify = inject(NotifyService);
 

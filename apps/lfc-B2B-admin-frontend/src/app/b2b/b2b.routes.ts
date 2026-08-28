@@ -25,12 +25,12 @@ export const b2bRoutes: Routes = [
         // une seule maison.
         path: 'contenu',
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'app-layout' },
+          { path: '', pathMatch: 'full', redirectTo: 'app-footer' },
           {
-            path: 'app-layout',
-            title: 'App layout — LFC B2B admin',
+            path: 'app-footer',
+            title: 'App footer — LFC B2B admin',
             loadComponent: () =>
-              import('../contenu/app-layout/app-layout-page').then((m) => m.AppLayoutPage),
+              import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
         ],
       },

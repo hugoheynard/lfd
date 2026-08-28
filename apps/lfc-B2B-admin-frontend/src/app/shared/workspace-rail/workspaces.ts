@@ -140,9 +140,9 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     section: 'Tarification',
   },
   {
-    key: 'app-layout',
-    label: 'App layout',
-    link: '/b2b/contenu/app-layout',
+    key: 'app-footer',
+    label: 'App footer',
+    link: '/b2b/contenu/app-footer',
     icon: 'grid',
     section: 'Contenu',
   },

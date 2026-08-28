@@ -35,7 +35,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
   // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
   // groupement, et la table n'inventorie que ce qui s'affiche.
-  'b2b/contenu/app-layout': null,
+  'b2b/contenu/app-footer': null,
   'commercial/comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',
