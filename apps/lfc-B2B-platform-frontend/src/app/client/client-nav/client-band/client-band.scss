@@ -38,6 +38,12 @@
   display: block;
   position: relative;
   height: calc(var(--fold-space-xl) + var(--lfc-radius-sheet));
+  /* UN PIXEL DE CHEVAUCHEMENT en haut. Les hauteurs sont fractionnaires — la
+     descente se termine à 247,85 — et à ces bords-là le fond du dessous
+     affleure d'un demi-pixel : ça se lit comme un filet clair en travers, pile
+     sur la couture qu'on veut invisible. Le chevauchement la bouche sans rien
+     déplacer, et il est de la MÊME encre, donc il ne se voit pas. */
+  margin-top: -1px;
   /* ⚠️ `bg-header` et PAS `primary` : dans la région `chrome`, `primary` est
      inversé au papier. */
   background: var(--fold-color-bg-header);
@@ -53,7 +59,9 @@
 .lip::after {
   content: '';
   position: absolute;
-  inset: var(--fold-space-xl) 0 0;
+  /* Et un pixel en bas, pour la même raison : la crème de la lèvre déborde sur
+     celle de la page, qui est la même couleur. */
+  inset: var(--fold-space-xl) 0 -1px;
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   /* Le crème NOMMÉ : `bg-page` vaut l'encre ici, c'est le sous-bloc chrome. */
   background: var(--lfc-paper-50);
