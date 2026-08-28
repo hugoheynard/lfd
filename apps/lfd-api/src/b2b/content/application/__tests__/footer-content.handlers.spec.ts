@@ -11,24 +11,24 @@ class FakeContentRepository extends PlatformContentRepository {
   saved: { content: FooterContent; staffUserId: string } | null = null;
   revision = 0;
 
-  async readFooter(): Promise<FooterContentView> {
-    return {
+  readFooter(): Promise<FooterContentView> {
+    return Promise.resolve({
       content: DEFAULT_FOOTER_CONTENT,
       revision: this.revision,
       updatedAt: new Date(0).toISOString(),
       updatedBy: null,
-    };
+    });
   }
 
-  async saveFooter(content: FooterContent, staffUserId: string): Promise<FooterContentView> {
+  saveFooter(content: FooterContent, staffUserId: string): Promise<FooterContentView> {
     this.saved = { content, staffUserId };
     this.revision += 1;
-    return {
+    return Promise.resolve({
       content,
       revision: this.revision,
       updatedAt: new Date(0).toISOString(),
       updatedBy: staffUserId,
-    };
+    });
   }
 }
 

@@ -105,7 +105,8 @@ describe("l'écriture staff", () => {
   it("refuse en 400 un contenu à qui il manque une langue", async () => {
     // Le refus doit traverser le pipe Zod et le filtre d'erreurs : un 500 ici
     // voudrait dire que la validation a lâché plus loin que prévu.
-    const { it: _dropped, ...withoutItalian } = edited();
+    const withoutItalian: Record<string, unknown> = { ...edited() };
+    delete withoutItalian["it"];
     await staff().put("/admin/content/footer").send(withoutItalian).expect(400);
   });
 
