@@ -107,9 +107,11 @@
 
 .rail-card {
   flex: none;
-  /* La largeur laisse VOIR la suivante : 82 % collait la première au bord et la
-     deuxième disparaissait derrière. */
-  width: min(300px, 76%);
+  /* Assez large pour qu'une carte se lise seule — quatre étapes de timeline et
+     une rangée de deux boutons ont besoin de cette largeur — et assez étroite
+     pour laisser voir la TRANCHE de la suivante. C'est cette tranche qui dit
+     qu'il y en a d'autres ; sans elle, le puits redevient muet. */
+  width: min(340px, 88%);
   scroll-snap-align: start;
 }
 

@@ -162,26 +162,33 @@
 
 /* ── Le stepper ────────────────────────────────────────────────────────── */
 
+/* COUCHÉ des deux côtés du pli. Il était en pile sur le téléphone — la timeline
+   verticale du dossier — mais la carte de suivi n'est pas une page de détail :
+   quatre étapes empilées y prenaient la moitié de la hauteur pour dire ce qu'une
+   rangée dit d'un coup d'œil. Horizontal, il montre aussi la DISTANCE qui reste,
+   ce qu'une pile ne fait pas. */
 .steps {
   display: grid;
-  gap: var(--fold-space-md);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   margin: 0;
   padding: var(--fold-space-lg) var(--fold-space-md);
   list-style: none;
 }
 
-/* En pile — la timeline du téléphone : la pastille tient sa colonne, le filet
-   descend derrière elle, le texte occupe le reste. */
+/* La pastille en tête, le texte DESSOUS — et le texte est cadré à gauche sous
+   sa propre pastille, jamais centré : centré, un libellé de deux mots déborde
+   sur la colonne voisine et on ne sait plus à quelle étape il appartient. */
 .step {
   position: relative;
   display: grid;
-  grid-template-columns: 24px 1fr;
-  column-gap: var(--fold-space-sm);
-  align-items: baseline;
+  grid-template-rows: 24px auto auto;
+  justify-items: start;
+  padding-right: var(--fold-space-xs);
+  min-width: 0;
 }
 
 .dot {
-  grid-row: 1 / span 2;
   display: grid;
   place-items: center;
   width: 24px;
@@ -216,10 +223,10 @@
    l'avancement sans lire les libellés. */
 .link {
   position: absolute;
-  top: 24px;
-  left: 11px;
-  width: 2px;
-  height: calc(100% - 24px + var(--fold-space-md));
+  top: 11px;
+  left: 24px;
+  width: calc(100% - 24px);
+  height: 2px;
   background: var(--lfc-paper-400);
 }
 
@@ -228,10 +235,15 @@
 }
 
 .step-label {
+  margin-top: var(--fold-space-sm);
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
+  line-height: var(--lfc-leading-tight);
   color: var(--fold-color-text-muted);
+  /* Quatre colonnes dans 300 px : un libellé long se coupe plutôt que d'élargir
+     sa colonne et de décaler tout le filet. */
+  overflow-wrap: anywhere;
 }
 
 .step.done .step-label,
@@ -244,10 +256,11 @@
 }
 
 .step-at {
-  grid-column: 2;
-  font-size: var(--fold-text-xs);
+  font-size: var(--fold-text-2xs);
   font-variant-numeric: tabular-nums;
+  line-height: var(--lfc-leading-tight);
   color: var(--fold-color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .step.current .step-at {
@@ -374,37 +387,14 @@
    horizontal. C'est la même information, lue dans le sens où la carte est
    large. */
 @media (min-width: 900px) {
-  .steps {
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 0;
-  }
-
+  /* La carte a la largeur : les libellés reprennent le grain courant. */
   .step {
-    grid-template-columns: 1fr;
-    grid-template-rows: 24px auto auto;
-    justify-items: start;
     padding-right: var(--fold-space-sm);
-  }
-
-  .dot {
-    grid-row: 1;
-  }
-
-  .link {
-    top: 11px;
-    left: 24px;
-    width: calc(100% - 24px);
-    height: 2px;
   }
 
   .step-label,
   .step-at {
-    grid-column: 1;
-  }
-
-  .step-label {
-    margin-top: var(--fold-space-sm);
+    font-size: var(--fold-text-xs);
   }
 
   .act.square {
