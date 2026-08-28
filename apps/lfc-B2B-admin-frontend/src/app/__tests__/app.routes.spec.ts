@@ -32,6 +32,11 @@ const OPEN = 'open';
 type ScreenAccess = StaffPermission | null | typeof OPEN;
 
 const SCREENS: Readonly<Record<string, ScreenAccess>> = {
+  // CONTENU PLATEFORME — les textes de la vitrine. Même droit que les Réglages :
+  // éditer ce que lisent les clients est un geste de paramétrage. La vue hérite
+  // du parent, comme les autres espaces à vues.
+  contenu: 'settings:read',
+  'contenu/app-layout': null,
   'commercial/comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',

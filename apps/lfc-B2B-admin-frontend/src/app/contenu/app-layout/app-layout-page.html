@@ -1,0 +1,231 @@
+<fold-page-layout icon="grid" title="App layout">
+  <p description>
+    Les textes du châssis de l’app cliente. Tout est en <strong>trois langues</strong> — un
+    enregistrement les écrit ensemble, jamais l’une sans les autres.
+  </p>
+
+  @if (loading()) {
+    <fold-loading message="Lecture du contenu…" />
+  } @else {
+    @if (revision() === 0) {
+      <fold-callout variant="info">
+        Personne n’a encore enregistré ce pied de page : ce que vous voyez est le contenu de départ,
+        celui que la vitrine sert aujourd’hui.
+      </fold-callout>
+    }
+
+    <!-- L'APERÇU EN TÊTE : on vient corriger un texte en le voyant à sa place.
+         Il montre la disposition, pas les couleurs — ce qu'aucun formulaire ne
+         dit, c'est qu'une colonne est vide ou qu'un pitch écrase sa voisine. -->
+    <fold-card>
+      <fold-element-title
+        title="Aperçu"
+        subtitle="La disposition, pas les couleurs — quatre colonnes et le bandeau légal."
+      />
+      <app-footer-preview [content]="current()" [identity]="identity()" />
+    </fold-card>
+
+    <!-- L'IDENTITÉ, hors du sélecteur de langue : un SIRET ne se traduit pas, et
+         le ranger sous le switch inviterait à le ressaisir trois fois. -->
+    <fold-card>
+      <fold-element-title
+        title="Identité légale"
+        subtitle="La même dans les trois langues. Ce qui reste vide n’est pas affiché."
+      />
+      <div class="grid">
+        <fold-input
+          label="Raison sociale"
+          placeholder="La Folie Coffee SAS"
+          [value]="identity().company"
+          (valueChange)="setIdentity('company', $event)"
+        />
+        <fold-input
+          label="Capital"
+          placeholder="capital 40 000 €"
+          [value]="identity().capital"
+          (valueChange)="setIdentity('capital', $event)"
+        />
+        <fold-input
+          label="SIRET"
+          hint="14 chiffres"
+          placeholder="812 456 789 00021"
+          [value]="identity().siret"
+          (valueChange)="setIdentity('siret', $event)"
+        />
+        <fold-input
+          label="RCS"
+          placeholder="RCS Chambéry 812 456 789"
+          [value]="identity().rcs"
+          (valueChange)="setIdentity('rcs', $event)"
+        />
+        <fold-input
+          label="TVA intracommunautaire"
+          hint="Deux lettres puis onze caractères"
+          placeholder="FR45812456789"
+          [value]="identity().vat"
+          (valueChange)="setIdentity('vat', $event)"
+        />
+        <fold-input
+          label="Téléphone"
+          placeholder="04 79 06 12 40"
+          [value]="identity().phone"
+          (valueChange)="setIdentity('phone', $event)"
+        />
+        <fold-input
+          label="Téléphone composable"
+          hint="Sans espace ni séparateur"
+          placeholder="+33479061240"
+          [value]="identity().phoneHref"
+          (valueChange)="setIdentity('phoneHref', $event)"
+        />
+        <fold-input
+          label="E-mail"
+          placeholder="contact@lafoliecoffee.fr"
+          [value]="identity().email"
+          (valueChange)="setIdentity('email', $event)"
+        />
+        <fold-input
+          label="Instagram"
+          optional
+          [value]="identity().instagram"
+          (valueChange)="setIdentity('instagram', $event)"
+        />
+        <fold-input
+          label="Facebook"
+          optional
+          [value]="identity().facebook"
+          (valueChange)="setIdentity('facebook', $event)"
+        />
+      </div>
+    </fold-card>
+
+    <!-- LA COPIE, sous le sélecteur. Les quatre sections dans l'ordre où la
+         vitrine les empile : un écran qui les réordonnerait ferait deviner au
+         rédacteur ce qu'il est en train de changer. -->
+    <fold-card>
+      <fold-element-title title="Pied de page" subtitle="Quatre colonnes, puis le bandeau légal.">
+        <fold-view-toggle
+          titleActions
+          [options]="localeOptions"
+          [value]="locale()"
+          (valueChange)="pickLocale($event)"
+        />
+      </fold-element-title>
+
+      <section class="block">
+        <h3 class="block-head">① La marque</h3>
+        <fold-input
+          label="Accroche"
+          placeholder="Boulangerie d’altitude"
+          [value]="current().brand.tagline"
+          (valueChange)="setBrand('tagline', $event)"
+        />
+        <fold-input
+          label="Ce qu’on fabrique"
+          [value]="current().brand.pitch"
+          (valueChange)="setBrand('pitch', $event)"
+        />
+      </section>
+
+      <section class="block">
+        <h3 class="block-head">② Les maisons</h3>
+        <fold-input
+          label="Titre de la colonne"
+          [value]="current().houses.head"
+          (valueChange)="setHead('houses', $event)"
+        />
+        @for (house of current().houses.items; track $index) {
+          <div class="grid">
+            <fold-input
+              label="Nom"
+              [value]="house.name"
+              (valueChange)="setHouse($index, 'name', $event)"
+            />
+            <fold-input
+              label="Rue"
+              [value]="house.street"
+              (valueChange)="setHouse($index, 'street', $event)"
+            />
+            <fold-input
+              label="Code postal et ville"
+              hint="C’est ce qu’on copie dans un GPS"
+              [value]="house.city"
+              (valueChange)="setHouse($index, 'city', $event)"
+            />
+            <fold-input
+              label="Horaires"
+              [value]="house.hours"
+              (valueChange)="setHouse($index, 'hours', $event)"
+            />
+          </div>
+        }
+      </section>
+
+      <section class="block">
+        <h3 class="block-head">③ Commander</h3>
+        <fold-input
+          label="Titre de la colonne"
+          [value]="current().order.head"
+          (valueChange)="setHead('order', $event)"
+        />
+        @for (link of current().order.links; track $index) {
+          <fold-input
+            [label]="'Entrée ' + ($index + 1)"
+            [value]="link"
+            (valueChange)="setLink('order', $index, $event)"
+          />
+        }
+      </section>
+
+      <section class="block">
+        <h3 class="block-head">④ Aide et contact</h3>
+        <fold-input
+          label="Titre de la colonne"
+          [value]="current().help.head"
+          (valueChange)="setHead('help', $event)"
+        />
+        <fold-input
+          label="Horaires du téléphone"
+          [value]="current().help.phoneHours"
+          (valueChange)="setPhoneHours($event)"
+        />
+        @for (link of current().help.links; track $index) {
+          <fold-input
+            [label]="'Entrée ' + ($index + 1)"
+            [value]="link"
+            (valueChange)="setLink('help', $index, $event)"
+          />
+        }
+      </section>
+
+      <section class="block">
+        <h3 class="block-head">Le bandeau légal</h3>
+        <fold-input
+          label="Moyens de paiement"
+          [value]="current().legal.pay"
+          (valueChange)="setLegal('pay', $event)"
+        />
+        <fold-input
+          label="Régimes de TVA"
+          [value]="current().legal.vat"
+          (valueChange)="setLegal('vat', $event)"
+        />
+        <div class="grid">
+          @for (link of current().legal.links; track $index) {
+            <fold-input
+              [label]="'Mention ' + ($index + 1)"
+              [value]="link"
+              (valueChange)="setLegalLink($index, $event)"
+            />
+          }
+        </div>
+      </section>
+    </fold-card>
+
+    <div class="actions">
+      <button foldButton [loading]="saving()" (click)="save()">
+        Enregistrer les trois langues
+      </button>
+    </div>
+  }
+</fold-page-layout>

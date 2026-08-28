@@ -1,0 +1,64 @@
+<div class="preview" role="img" aria-label="Aperçu de la disposition du pied de page">
+  <div class="cols">
+    <!-- ① La marque — 1,6 fr : elle a plus à dire que les trois listes. -->
+    <section class="col brand">
+      <span class="mark"></span>
+      <p class="line strong">{{ content().brand.tagline }}</p>
+      <p class="pitch">{{ content().brand.pitch }}</p>
+      <div class="pills">
+        <span class="pill"></span>
+        <span class="pill"></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <p class="head">{{ content().houses.head }}</p>
+      @for (house of content().houses.items; track house.name) {
+        <p class="line strong">{{ house.name }}</p>
+        <p class="line">{{ house.street }}</p>
+        <p class="line">{{ house.city }}</p>
+        <p class="line">{{ house.hours }}</p>
+      }
+    </section>
+
+    <section class="col">
+      <p class="head">{{ content().order.head }}</p>
+      @for (link of content().order.links; track link) {
+        <p class="line">{{ link }}</p>
+      }
+    </section>
+
+    <section class="col">
+      <p class="head">{{ content().help.head }}</p>
+      <!-- Le téléphone en premier et en grand : l'information la plus demandée
+           d'un pied de page de commerce. Vide, la ligne disparaît. -->
+      @if (identity().phone) {
+        <p class="line phone">{{ identity().phone }}</p>
+      }
+      <p class="line">{{ content().help.phoneHours }}</p>
+      @for (link of content().help.links; track link) {
+        <p class="line">{{ link }}</p>
+      }
+      @if (identity().email) {
+        <p class="line">{{ identity().email }}</p>
+      }
+    </section>
+  </div>
+
+  <div class="legal">
+    <p class="legal-text">
+      <!-- Ce qui est vide ne laisse pas de trou : la vitrine omet, l'aperçu
+           aussi. C'est ce qui permet de voir, ici, ce qui manque encore. -->
+      @for (mention of mentions(); track mention) {
+        <span class="mention">{{ mention }}</span>
+      }
+      <span class="mention">{{ content().legal.pay }}</span>
+      <span class="mention">{{ content().legal.vat }}</span>
+    </p>
+    <p class="legal-links">
+      @for (link of content().legal.links; track link) {
+        <span class="mention">{{ link }}</span>
+      }
+    </p>
+  </div>
+</div>

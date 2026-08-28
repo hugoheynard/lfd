@@ -1,0 +1,32 @@
+/* Une grille qui se replie seule : les champs d'identité et les maisons ont la
+   même nature — des paires courtes — et n'ont pas à décider de leur largeur. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding-top: var(--fold-space-lg);
+}
+
+.block + .block {
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Les sections sont NUMÉROTÉES comme la vitrine les empile : le numéro n'est
+   pas décoratif, il dit où le texte atterrira. */
+.block-head {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

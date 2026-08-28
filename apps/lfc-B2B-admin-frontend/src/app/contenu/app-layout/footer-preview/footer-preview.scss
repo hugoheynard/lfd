@@ -1,0 +1,115 @@
+/* L'aperçu montre la FORME, pas la peau. Tout est en gris de surface : des
+   couleurs de vitrine ici en feraient une seconde implémentation du pied de
+   page, qui dériverait au premier ajustement. */
+.preview {
+  padding: var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+  container-type: inline-size;
+}
+
+.cols {
+  display: grid;
+  /* Les proportions de la vitrine — 1,6 fr pour la marque. C'est ce qu'on vient
+     vérifier ici : qu'un pitch trop long n'écrase pas ses voisines. */
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: var(--fold-space-lg);
+}
+
+.col {
+  min-width: 0;
+}
+
+.head {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.line {
+  margin: 0;
+  font-size: var(--fold-text-2xs);
+  line-height: 1.6;
+  color: var(--fold-color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.line.strong {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.line.phone {
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.pitch {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-2xs);
+  line-height: 1.6;
+  color: var(--fold-color-text-muted);
+}
+
+/* La pastille de marque et les deux réseaux : des blocs, pas des images. Ce
+   qu'on vérifie, c'est qu'ils occupent leur place. */
+.mark {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-hover);
+}
+
+.pills {
+  display: flex;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-sm);
+}
+
+.pill {
+  width: 52px;
+  height: 16px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+}
+
+.legal {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-lg);
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.legal-text,
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin: 0;
+}
+
+.legal-links {
+  flex: none;
+}
+
+.mention {
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Sous la largeur d'un pied de page réel, les quatre colonnes n'ont plus de
+   sens : l'aperçu s'empile plutôt que de mentir sur la disposition. */
+@container (max-width: 640px) {
+  .cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}

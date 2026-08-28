@@ -152,12 +152,35 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
   },
 ];
 
+/**
+ * Les vues du **Contenu de plateforme**.
+ *
+ * Le premier espace à déclarer des SECTIONS, et c'est ce qui les a fait
+ * exister : les textes d'une plateforme se rangent par SURFACE — le châssis de
+ * l'app, les pages, les e-mails — et une liste plate cesserait de dire ce qui va
+ * avec quoi dès la deuxième famille.
+ *
+ * Une seule vue pour l'instant, sous sa section : elle annonce ce qui vient, au
+ * lieu de laisser croire que « app-layout » est tout le contenu de la
+ * plateforme.
+ */
+export const CONTENU_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'app-layout',
+    label: 'App layout',
+    link: '/contenu/app-layout',
+    icon: 'grid',
+    section: 'Application',
+  },
+];
+
 /** Le catalogue, par clé. */
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
   admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
+  contenu: { key: 'contenu', title: 'Contenu', icon: 'edit', views: CONTENU_VIEWS },
 } as const satisfies Record<string, Workspace>;
 
 /** Une clé d'espace de travail — fermée, donc une faute de frappe ne compile pas. */
