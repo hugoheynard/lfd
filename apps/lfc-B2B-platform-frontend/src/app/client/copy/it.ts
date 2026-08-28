@@ -1,4 +1,7 @@
 import type { ClientCopy } from './client-copy.model';
+import { ACCOUNT_IT } from './screens/account.it';
+import { INVOICES_IT } from './screens/invoices.copy';
+import { ORDERS_IT } from './screens/orders.copy';
 
 /**
  * Italien. Val d'Isère est frontalière : la clientèle italienne n'est pas un
@@ -312,6 +315,9 @@ export const IT: ClientCopy = {
     ctaIdle: 'Scelga una fascia',
     cta: 'Riempire il carrello',
   },
+  orders: ORDERS_IT,
+  invoices: INVOICES_IT,
+  account: ACCOUNT_IT,
   pro: {
     title: 'Ti interessa lo spazio professionale ?',
     bookedTitle: 'Richiamo richiesto',

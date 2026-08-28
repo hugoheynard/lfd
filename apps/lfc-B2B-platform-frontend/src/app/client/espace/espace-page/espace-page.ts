@@ -7,6 +7,7 @@ import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientBannerBlock } from '../../client-nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../client-nav/client-banner';
+import { NewOrderAction } from '../../client-nav/new-order-action/new-order-action';
 import { MOCK_EVENT } from '../../mock-event';
 import { ContactCard } from '../contact-card/contact-card';
 import { EventBanner } from '../event-banner/event-banner';
@@ -38,6 +39,7 @@ import { ReadyWell } from '../ready-well/ready-well';
     ContactCard,
     EventBanner,
     FoldIconComponent,
+    NewOrderAction,
     ReadyWell,
     RouterLink,
   ],

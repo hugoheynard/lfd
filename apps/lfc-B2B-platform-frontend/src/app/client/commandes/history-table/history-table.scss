@@ -1,0 +1,390 @@
+/* Le tableau se lit en colonnes au bureau et en cartes sur un téléphone, avec
+   UN SEUL balisage : `thead` disparaît, chaque rangée devient une grille et les
+   cellules reprennent leur libellé. Deux tables jumelles auraient divergé au
+   premier ajout de colonne. */
+:host {
+  display: block;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── En pile (téléphone) ───────────────────────────────────────────────── */
+
+thead {
+  display: none;
+}
+
+.group {
+  display: block;
+  margin-bottom: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  overflow: clip;
+}
+
+.group.open {
+  background: var(--fold-color-surface-sunken);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 4px var(--fold-space-sm);
+  align-items: center;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.cell {
+  min-width: 0;
+  padding: 0;
+}
+
+.ref {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.ref-num {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+}
+
+.origin {
+  padding: 2px 7px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
+}
+
+.by {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+}
+
+.org {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.who {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+}
+
+.mode-label {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
+.mode-pieces {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.date {
+  grid-column: 1;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Le total ne se coupe JAMAIS sur deux lignes : c'est un bug, pas une
+   adaptation. */
+.total {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Les deux familles de pastilles du back-office, reprises telles quelles : le
+   statut d'un côté, le règlement de l'autre. */
+.tag[data-status='ready'],
+.tag[data-payment='account'] {
+  background: var(--fold-color-info-surface);
+  color: var(--fold-color-info-text);
+}
+
+.tag[data-status='route'],
+.tag[data-payment='due'] {
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+}
+
+.tag[data-status='done'],
+.tag[data-status='delivered'],
+.tag[data-payment='card'] {
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}
+
+.caret {
+  grid-row: 1;
+  grid-column: 3;
+  text-align: right;
+}
+
+.toggle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+/* ── Le dépli ──────────────────────────────────────────────────────────── */
+
+.detail-row {
+  display: block;
+}
+
+.detail {
+  display: block;
+  padding: 0 var(--fold-space-md) var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.detail-grid {
+  display: grid;
+  gap: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px var(--fold-space-md);
+  margin: 0;
+}
+
+.facts dt {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.facts dd {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
+.acts {
+  display: grid;
+  gap: var(--fold-space-sm);
+}
+
+.act {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  min-height: 44px;
+  padding: 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-strong);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+/* Bordé, jamais un aplat : l'action est offerte, pas encouragée. */
+.act.danger {
+  border-color: var(--fold-color-alert-border);
+  color: var(--fold-color-alert-text);
+}
+
+.rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-sunken);
+}
+
+.rate-label {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+/* ⚠️ CONTRASTE : le couple beurre clair / bordure crème donnait 2,17:1 et
+   1,32:1 sur ce fond — la note était illisible alors même que la cible était
+   juste. L'étoile pleine passe au caramel profond, la vide au gris de texte, et
+   le GLYPHE change avec l'état pour que la lecture ne repose pas sur la
+   couleur. */
+.star {
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.star.on {
+  color: var(--lfc-color-accent-deep);
+}
+
+/* ── En colonnes (bureau) ──────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  .tbl {
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--lfc-radius-xl);
+    background: var(--fold-color-surface-card);
+    overflow: clip;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  thead th {
+    padding: var(--fold-space-sm) var(--fold-space-md);
+    border-bottom: 1px solid var(--fold-color-border);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-2xs);
+    font-weight: var(--fold-weight-extrabold);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--lfc-color-text-subtle);
+  }
+
+  thead th.num {
+    text-align: right;
+  }
+
+  .group {
+    display: table-row-group;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .row {
+    display: table-row;
+  }
+
+  .row:hover {
+    background: var(--fold-color-surface-sunken);
+  }
+
+  .cell {
+    display: table-cell;
+    padding: var(--fold-space-sm) var(--fold-space-md);
+    border-top: 1px solid var(--fold-color-border-subtle);
+    vertical-align: middle;
+  }
+
+  .by,
+  .mode {
+    display: table-cell;
+  }
+
+  /* Deux étages dans une cellule : l'enseigne au-dessus, la personne dessous. */
+  .org,
+  .who,
+  .mode-label,
+  .mode-pieces {
+    display: block;
+  }
+
+  .num {
+    text-align: right;
+  }
+
+  .detail-row {
+    display: table-row;
+  }
+
+  .detail {
+    display: table-cell;
+    padding: 0 var(--fold-space-md) var(--fold-space-md);
+    border-top: 0;
+    background: var(--fold-color-surface-sunken);
+  }
+
+  /* Le détail à gauche, les actions à droite — et la note sous les actions,
+     dans la même colonne : elle appartient au geste, pas au relevé. */
+  .detail-grid {
+    grid-template-columns: 1fr minmax(260px, 320px);
+    align-items: start;
+  }
+
+  .acts {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+
+  .rate {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}

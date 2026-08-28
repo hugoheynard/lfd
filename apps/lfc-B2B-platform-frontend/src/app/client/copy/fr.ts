@@ -1,4 +1,7 @@
 import type { ClientCopy } from './client-copy.model';
+import { ACCOUNT_FR } from './screens/account.fr';
+import { INVOICES_FR } from './screens/invoices.copy';
+import { ORDERS_FR } from './screens/orders.copy';
 
 /** La langue de référence : c'est elle que la maquette écrit. */
 export const FR: ClientCopy = {
@@ -304,6 +307,9 @@ export const FR: ClientCopy = {
     ctaIdle: 'Choisissez un créneau',
     cta: 'Remplir mon panier',
   },
+  orders: ORDERS_FR,
+  invoices: INVOICES_FR,
+  account: ACCOUNT_FR,
   pro: {
     title: 'Intéressé par l’espace pro ?',
     bookedTitle: 'Rappel demandé',

@@ -1,0 +1,52 @@
+<app-client-dialog
+  placement="sheet"
+  [open]="open()"
+  [kicker]="t().orders.reportKicker + ' ' + reference()"
+  [title]="t().orders.reportTitle"
+  (closed)="close()"
+>
+  <div class="sheet">
+    <p class="lead">{{ t().orders.reportLead }}</p>
+
+    <h3 class="head">{{ t().orders.reasonHead }}</h3>
+    <div class="reasons">
+      @for (item of reasons(); track item) {
+        <button
+          class="reason"
+          type="button"
+          [class.on]="reason() === item"
+          [attr.aria-pressed]="reason() === item"
+          (click)="pick(item)"
+        >
+          {{ item }}
+        </button>
+      }
+    </div>
+
+    <h3 class="head">{{ t().orders.photoHead }}</h3>
+    <button class="drop" type="button">
+      <fold-icon name="upload" />
+      <span>{{ t().orders.photoHint }}</span>
+    </button>
+
+    <h3 class="head">{{ t().orders.wordHead }}</h3>
+    <textarea
+      class="word"
+      rows="3"
+      [attr.aria-label]="t().orders.wordHead"
+      [placeholder]="t().orders.wordPlaceholder"
+      [value]="word()"
+      (input)="write($any($event.target).value)"
+    ></textarea>
+  </div>
+
+  <div dialog-foot class="foot">
+    <button class="send" type="button" [disabled]="!ready()" (click)="close()">
+      {{ t().orders.send }}
+    </button>
+    <!-- La phrase qui explique POURQUOI c'est si court. Sans elle, trois champs
+         ressemblent à un formulaire bâclé ; avec elle, ils disent qu'on sait
+         déjà le reste. -->
+    <p class="note">{{ t().orders.reportFoot }}</p>
+  </div>
+</app-client-dialog>

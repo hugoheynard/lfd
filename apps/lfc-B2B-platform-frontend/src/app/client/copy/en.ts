@@ -1,4 +1,7 @@
 import type { ClientCopy } from './client-copy.model';
+import { ACCOUNT_EN } from './screens/account.en';
+import { INVOICES_EN } from './screens/invoices.copy';
+import { ORDERS_EN } from './screens/orders.copy';
 
 /**
  * Anglais. Val d'Isère reçoit autant de britanniques que d'italiens ; laisser
@@ -307,6 +310,9 @@ export const EN: ClientCopy = {
     ctaIdle: 'Pick a slot',
     cta: 'Fill my basket',
   },
+  orders: ORDERS_EN,
+  invoices: INVOICES_EN,
+  account: ACCOUNT_EN,
   pro: {
     title: 'Interested in a trade account ?',
     bookedTitle: 'Call requested',

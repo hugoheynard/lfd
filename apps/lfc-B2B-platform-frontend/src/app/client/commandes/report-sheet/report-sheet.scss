@@ -1,0 +1,103 @@
+.sheet {
+  display: grid;
+  gap: var(--fold-space-sm);
+}
+
+.lead {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+.head {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.reasons {
+  display: grid;
+  gap: var(--fold-space-xs);
+}
+
+/* 44 px : le plancher tactile. Une liste de raisons qu'on rate au doigt
+   renvoie l'utilisateur au téléphone, et c'est précisément ce qu'on évite. */
+.reason {
+  min-height: 44px;
+  padding: 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.reason.on {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-weight: var(--fold-weight-bold);
+}
+
+.drop {
+  display: grid;
+  place-items: center;
+  gap: var(--fold-space-xs);
+  height: 132px;
+  border: 1px dashed var(--fold-color-border-strong);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  cursor: pointer;
+}
+
+.word {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-family: inherit;
+  font-size: var(--fold-text-sm);
+  resize: vertical;
+}
+
+.foot {
+  display: grid;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}
+
+.send {
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  cursor: pointer;
+}
+
+.send:disabled {
+  background: var(--fold-color-surface-band);
+  color: var(--fold-color-text-faded);
+  cursor: default;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+  text-align: center;
+}

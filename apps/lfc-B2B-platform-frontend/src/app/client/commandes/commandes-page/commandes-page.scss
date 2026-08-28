@@ -1,0 +1,202 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  /* Pas de rembourrage en haut : la LÈVRE du shell le porte déjà. */
+  padding: 0 var(--lfc-inset) var(--fold-space-4xl);
+}
+
+/* ── Le puits des suivis ───────────────────────────────────────────────── */
+
+.well {
+  padding: var(--fold-space-lg);
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--lfc-color-surface-well);
+  color: var(--lfc-color-on-well);
+}
+
+.well-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+}
+
+.well-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-well-tile);
+}
+
+.well-titles {
+  min-width: 0;
+}
+
+.well-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.well-hint {
+  margin: 2px 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-on-well-muted);
+}
+
+.well-empty {
+  padding: var(--fold-space-xl) 0;
+  text-align: center;
+}
+
+.well-empty-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+}
+
+.well-empty-hint {
+  margin: 4px 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-on-well-muted);
+}
+
+/* Un défilement horizontal, pas une grille. `align-items: stretch` met les
+   cartes à la même hauteur — c'est la moitié du contrat ; l'autre moitié est le
+   `margin-top:auto` de leur pied. Le rembourrage négatif fait affleurer les
+   cartes aux bords du puits sans couper l'ombre. */
+.rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--fold-space-md);
+  margin: 0 calc(var(--fold-space-lg) * -1);
+  padding: 0 var(--fold-space-lg) var(--fold-space-xs);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* ⚠️ `flex: none` sur le conteneur, pas seulement sur les cartes : un
+     défilement horizontal placé dans une colonne flex se fait comprimer, et ses
+     enfants sont rognés sans que rien ne le signale. */
+  flex: none;
+}
+
+.rail-card {
+  flex: none;
+  width: min(300px, 82%);
+  scroll-snap-align: start;
+}
+
+/* ── L'historique ──────────────────────────────────────────────────────── */
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.history-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.history-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+.history-note {
+  margin: 2px 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fold-space-sm);
+}
+
+.tile {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+}
+
+.tile-label {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.tile-value {
+  margin: 2px 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tile-note {
+  margin: 2px 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+}
+
+@media (min-width: 900px) {
+  .page {
+    gap: var(--fold-space-2xl);
+    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-5xl);
+  }
+
+  .well {
+    padding: var(--fold-space-xl);
+  }
+
+  .rail {
+    margin: 0 calc(var(--fold-space-xl) * -1);
+    padding: 0 var(--fold-space-xl) var(--fold-space-xs);
+  }
+
+  /* DEUX cartes visibles, et la troisième qui dépasse : c'est le débordement
+     qui dit qu'il y en a d'autres. Une grille de trois aurait tout montré et
+     n'aurait plus rien annoncé au quatrième suivi. */
+  .rail-card {
+    width: calc(50% - var(--fold-space-md) / 2);
+  }
+
+  .history-head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--fold-space-xl);
+  }
+
+  .tiles {
+    flex: none;
+    grid-template-columns: repeat(2, minmax(180px, 220px));
+  }
+}

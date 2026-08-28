@@ -1,0 +1,67 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="t().orders.title" [lead]="t().orders.lead">
+    <app-new-order-action banner-action />
+  </app-client-banner-block>
+</ng-template>
+
+<div class="page">
+  <!-- LE PUITS DES SUIVIS. Il dit qu'il y a autre chose à droite : sans lui, le
+       débordement passe pour un accident de mise en page. -->
+  <section class="well">
+    <header class="well-head">
+      <span class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
+      <div class="well-titles">
+        <h2 class="well-title">{{ t().orders.wellHead }}</h2>
+        <p class="well-hint">{{ wellHint() }}</p>
+      </div>
+    </header>
+
+    @if (tracked.length === 0) {
+      <div class="well-empty">
+        <p class="well-empty-title">{{ t().orders.wellNone }}</p>
+        <p class="well-empty-hint">{{ t().orders.wellNoneHint }}</p>
+      </div>
+    } @else {
+      <!-- Un DÉFILEMENT, pas une grille : deux cartes visibles et la troisième
+           qui dépasse. C'est ce qui permet d'en avoir cinq sans allonger la
+           page. `align-items: stretch` les met à la même hauteur. -->
+      <div class="rail">
+        @for (order of tracked; track order.reference) {
+          <app-track-card class="rail-card" [order]="order" />
+        }
+      </div>
+    }
+  </section>
+
+  <section class="history">
+    <header class="history-head">
+      <div class="history-titles">
+        <h2 class="history-title">{{ t().orders.historyHead }}</h2>
+        <p class="history-note">{{ t().orders.historyNote }}</p>
+      </div>
+
+      <!-- Les deux régimes, rappelés au-dessus des lignes : ce sont les mêmes
+           chiffres que le relevé, et les mélanger serait faux. -->
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-label">{{ t().orders.tileAccount }}</p>
+          <p class="tile-value">{{ accountTotal }}</p>
+          <p class="tile-note">{{ accountNote }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-label">{{ t().orders.tileCard }}</p>
+          <p class="tile-value">{{ cardTotal }}</p>
+          <p class="tile-note">{{ cardNote }}</p>
+        </div>
+      </div>
+    </header>
+
+    <app-history-table [orders]="history" (problemRaised)="report($event)" />
+  </section>
+</div>
+
+<app-report-sheet
+  [open]="reported() !== null"
+  [reference]="reported()?.reference ?? ''"
+  (closed)="reported.set(null)"
+/>

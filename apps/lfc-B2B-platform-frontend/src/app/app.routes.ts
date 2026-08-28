@@ -147,6 +147,14 @@ export const routes: Routes = [
           import('./client/espace/espace-page/espace-page').then((m) => m.EspacePage),
       },
       {
+        // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
+        // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
+        path: 'mes-commandes',
+        title: 'Mes commandes — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
+      },
+      {
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.

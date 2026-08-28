@@ -10,6 +10,10 @@
  * rechargement — trois dictionnaires en mémoire coûtent quelques kilo-octets et
  * répondent au doigt.
  */
+import type { AccountCopy } from './screens/account.copy';
+import type { InvoicesCopy } from './screens/invoices.copy';
+import type { OrdersCopy } from './screens/orders.copy';
+
 export interface ClientCopy {
   readonly chrome: {
     readonly back: string;
@@ -346,6 +350,16 @@ export interface ClientCopy {
     /** Le créneau tenu, on va composer : le bouton nomme la SUITE. */
     readonly cta: string;
   };
+  /**
+   * Les trois écrans du dossier client. Leur copie vit à côté de leur écran et
+   * pas ici : sept cartes, un registre et un tableau font, à eux trois, plus de
+   * phrases que tout le reste de l'app réuni. Le garde-fou ne bouge pas — les
+   * trois langues restent obligatoires, chacune sur son interface.
+   */
+  readonly orders: OrdersCopy;
+  readonly invoices: InvoicesCopy;
+  readonly account: AccountCopy;
+
   readonly pro: {
     readonly title: string;
     readonly bookedTitle: string;

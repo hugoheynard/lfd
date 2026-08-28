@@ -1,0 +1,375 @@
+/* La carte est un OBJET : elle a sa surface, son en-tête coloré, son pied. Elle
+   s'étire à la hauteur de sa voisine parce que le défilement l'étire — aucune
+   hauteur n'est écrite ici, et c'est ce qui la garde juste quand une commande
+   porte trois lignes de plus. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--lfc-shadow-card);
+  overflow: clip;
+}
+
+/* ── L'en-tête, teinté par le mode ─────────────────────────────────────── */
+
+.head {
+  position: relative;
+  padding: var(--fold-space-md) var(--fold-space-md) var(--fold-space-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  isolation: isolate;
+}
+
+:host([data-mode='courier']) .head {
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-accent-deep);
+}
+
+/* Le halo : il éclaire l'en-tête depuis son coin, comme la réf. Un dégradé
+   linéaire aurait fait une bande ; un radial fait une lumière. */
+.head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 140% at 88% 0%, rgb(217 154 43 / 34%), transparent 62%);
+}
+
+.head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.chip {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: var(--fold-radius-pill);
+  background: rgb(250 245 236 / 18%);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+:host([data-mode='courier']) .chip {
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+.ref {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
+}
+
+.title {
+  margin: var(--fold-space-md) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: var(--lfc-leading-title);
+  text-wrap: balance;
+}
+
+.sub {
+  margin: 5px 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  opacity: 0.86;
+}
+
+.bar {
+  height: 6px;
+  margin-top: var(--fold-space-md);
+  border-radius: var(--fold-radius-pill);
+  background: rgb(250 245 236 / 24%);
+  overflow: clip;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fold-color-on-primary);
+}
+
+:host([data-mode='courier']) .bar-fill {
+  background: var(--lfc-color-on-accent-deep);
+}
+
+.total {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Le stepper ────────────────────────────────────────────────────────── */
+
+.steps {
+  display: grid;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: var(--fold-space-lg) var(--fold-space-md);
+  list-style: none;
+}
+
+/* En pile — la timeline du téléphone : la pastille tient sa colonne, le filet
+   descend derrière elle, le texte occupe le reste. */
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  column-gap: var(--fold-space-sm);
+  align-items: baseline;
+}
+
+.dot {
+  grid-row: 1 / span 3;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--lfc-paper-400);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-2xs);
+}
+
+.step.done .dot {
+  border-color: transparent;
+  background: var(--fold-color-primary);
+}
+
+.step.current .dot {
+  border-color: transparent;
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+.pip {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--fold-radius-pill);
+  background: currentcolor;
+}
+
+/* Le filet PART de la pastille et va à la suivante. Il est peint par l'étape
+   franchie, jamais par celle qui attend : c'est ce qui fait qu'on lit
+   l'avancement sans lire les libellés. */
+.link {
+  position: absolute;
+  top: 24px;
+  left: 11px;
+  width: 2px;
+  height: calc(100% - 24px + var(--fold-space-md));
+  background: var(--lfc-paper-400);
+}
+
+.step.done .link {
+  background: var(--fold-color-primary);
+}
+
+.step-label {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text-muted);
+}
+
+.step.done .step-label,
+.step.current .step-label {
+  color: var(--fold-color-text);
+}
+
+.step.current .step-label {
+  font-weight: var(--lfc-weight-black);
+}
+
+.step-at {
+  grid-column: 2;
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.step.current .step-at {
+  color: var(--lfc-color-accent-deep);
+  font-weight: var(--fold-weight-bold);
+}
+
+.step-note {
+  grid-column: 2;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── Le pied ───────────────────────────────────────────────────────────── */
+
+.foot {
+  display: grid;
+  gap: var(--fold-space-sm);
+  /* CE QUI ÉGALISE LES CARTES : le pied tombe en bas, la hauteur vient du
+     défilement qui étire. Aucune valeur en dur, donc rien à corriger le jour
+     où une carte porte une ligne de plus. */
+  margin-top: auto;
+  padding: 0 var(--fold-space-md) var(--fold-space-md);
+}
+
+.slab {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  border-radius: var(--lfc-radius-xl);
+}
+
+.slab.courier {
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+}
+
+.slab.pickup {
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}
+
+.initial {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+.slab-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.slab-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.slab-note {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+}
+
+/* La rangée d'actions : principale à gauche, secondaire à droite. Le carré de
+   l'avion garde sa largeur, le bouton principal prend le reste. */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: var(--fold-space-sm);
+}
+
+.actions.pickup-actions {
+  grid-template-columns: 1fr auto;
+}
+
+.act {
+  display: grid;
+  place-items: center;
+  /* 46 px : le plancher tactile de la réf, tenu des deux côtés du pli. */
+  min-height: 46px;
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--lfc-radius-xl);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.act.main {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+:host([data-mode='courier']) .act.main {
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-accent-deep);
+}
+
+.act.ghost {
+  border-color: var(--fold-color-border-strong);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+}
+
+.act.square {
+  width: 52px;
+  border-color: var(--fold-color-border-strong);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+}
+
+/* Au-delà du pli, le stepper se couche : quatre colonnes reliées par un filet
+   horizontal. C'est la même information, lue dans le sens où la carte est
+   large. */
+@media (min-width: 900px) {
+  .steps {
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 0;
+  }
+
+  .step {
+    grid-template-columns: 1fr;
+    grid-template-rows: 24px auto auto auto;
+    justify-items: start;
+    padding-right: var(--fold-space-sm);
+  }
+
+  .dot {
+    grid-row: 1;
+  }
+
+  .link {
+    top: 11px;
+    left: 24px;
+    width: calc(100% - 24px);
+    height: 2px;
+  }
+
+  .step-label,
+  .step-at,
+  .step-note {
+    grid-column: 1;
+  }
+
+  .step-label {
+    margin-top: var(--fold-space-sm);
+  }
+
+  .act.square {
+    width: 52px;
+    min-height: 52px;
+  }
+
+  .actions.pickup-actions .act.main {
+    min-height: 52px;
+  }
+}

@@ -1,0 +1,83 @@
+:host {
+  display: block;
+}
+
+/* Le beurre PLEIN et pas le beurre profond : sur le registre sombre, c'est le
+   seul aplat clair de l'écran, et c'est à ça qu'on doit le repérer avant tout
+   le reste. */
+.new-order {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  min-height: 62px;
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-accent-action);
+  color: var(--lfc-paper-0);
+  text-decoration: none;
+}
+
+.new-order-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fold-radius-md);
+  /* La tuile se creuse DANS le beurre : un voile de sa propre encre, pas un
+     voile de papier — sur un aplat clair, le papier ne creuse rien. */
+  background: color-mix(in srgb, var(--lfc-color-on-accent) 18%, transparent);
+}
+
+.new-order-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-order-title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.new-order-sub {
+  font-size: var(--fold-text-md);
+  /* Le second niveau du blanc, pas une autre couleur : sur un aplat beurre, un
+     brun clair et un blanc voilé se ressemblent, mais seul le second dit qu'il
+     appartient à la même ligne que le titre.
+     ⚠️ Ne PAS revenir à `accent-text` : c'est l'un des rôles que le sous-bloc
+     `chrome` inverse, et le bandeau est dans le chrome — il y vaut un beurre
+     pâle, illisible sur du beurre. */
+  color: color-mix(in srgb, var(--lfc-paper-0) 86%, transparent);
+}
+
+/* 76 px : il faut ce poids pour tenir face à un titre de 38 px sur le registre
+   sombre — un bouton de 62 px y disparaît. */
+@media (min-width: 900px) {
+  /* Au bureau, l'action est un item de la ligne du bandeau : elle garde sa
+     largeur au lieu de s'étirer avec le titre. */
+  :host {
+    flex: none;
+  }
+
+  .new-order {
+    min-height: 76px;
+    padding: var(--fold-space-lg) var(--fold-space-xl);
+  }
+
+  .new-order-tile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .new-order-title {
+    font-size: var(--lfc-text-banner-cta);
+  }
+
+  .new-order-sub {
+    font-size: var(--lfc-text-note);
+  }
+}

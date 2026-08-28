@@ -1,0 +1,10 @@
+<!-- Neuf fois sur dix on lance l'app pour commander : l'action garde sa place au
+     premier coup d'œil, et il lui faut ce poids pour tenir face à un titre de
+     38 px sur le registre sombre. -->
+<a class="new-order" routerLink="/nouvelle-commande">
+  <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
+  <span class="new-order-titles">
+    <span class="new-order-title">{{ t().nav.newOrder }}</span>
+    <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
+  </span>
+</a>

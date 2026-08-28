@@ -1,0 +1,111 @@
+<table class="tbl">
+  <thead>
+    <tr>
+      <th scope="col">{{ t().orders.colOrder }}</th>
+      <th scope="col">{{ t().orders.colBy }}</th>
+      <th scope="col">{{ t().orders.colMode }}</th>
+      <th scope="col">{{ t().orders.colDate }}</th>
+      <th scope="col">{{ t().orders.colStatus }}</th>
+      <th scope="col">{{ t().orders.colPayment }}</th>
+      <th scope="col" class="num">{{ t().orders.colTotal }}</th>
+      <th scope="col">
+        <span class="sr">{{ t().orders.expand }}</span>
+      </th>
+    </tr>
+  </thead>
+
+  @for (row of rows(); track row.order.reference) {
+    <tbody class="group" [class.open]="row.open">
+      <tr class="row">
+        <td class="cell ref">
+          <span class="ref-num">{{ row.order.reference }}</span>
+          <!-- La pastille d'origine ne dit que l'EXCEPTION : une commande passée
+               dans l'app n'a rien à annoncer, et l'écrire partout ferait
+               disparaître les deux qui comptent. -->
+          @if (row.order.origin !== '') {
+            <span class="origin">{{ row.order.origin }}</span>
+          }
+        </td>
+        <td class="cell by">
+          <span class="org">{{ row.order.org }}</span>
+          <span class="who">{{ row.order.who }}</span>
+        </td>
+        <td class="cell mode">
+          <span class="mode-label">{{ row.order.mode }}</span>
+          <span class="mode-pieces">{{ row.pieces }}</span>
+        </td>
+        <td class="cell date">{{ row.order.date }}</td>
+        <td class="cell">
+          <span class="tag" [attr.data-status]="row.order.status">{{ row.status }}</span>
+        </td>
+        <td class="cell">
+          <span class="tag" [attr.data-payment]="row.order.payment">{{ row.payment }}</span>
+        </td>
+        <td class="cell num total">{{ row.total }}</td>
+        <td class="cell caret">
+          <button
+            class="toggle"
+            type="button"
+            [attr.aria-expanded]="row.open"
+            [attr.aria-label]="row.open ? t().orders.collapse : t().orders.expand"
+            (click)="toggle(row.order.reference)"
+          >
+            <fold-icon [name]="row.open ? 'chevron-up' : 'chevron-down'" />
+          </button>
+        </td>
+      </tr>
+
+      @if (row.open) {
+        <tr class="detail-row">
+          <td class="detail" colspan="8">
+            <div class="detail-grid">
+              <dl class="facts">
+                <dt>{{ t().orders.detailSlot }}</dt>
+                <dd>{{ row.order.slot }}</dd>
+                <dt>{{ t().orders.detailMode }}</dt>
+                <dd>{{ row.order.mode }}</dd>
+                <dt>{{ t().orders.detailPayment }}</dt>
+                <!-- Le règlement dit aussi OÙ : « portée à la facture de mars ».
+                     C'est le lien explicite avec le relevé. -->
+                <dd>{{ row.payment }} · {{ row.paymentNote }}</dd>
+              </dl>
+
+              <div class="acts">
+                <button class="act" type="button">
+                  <fold-icon name="download" />{{ t().orders.purchaseOrder }}
+                </button>
+                <button class="act" type="button">
+                  <fold-icon name="repeat" />{{ t().orders.reorder }}
+                </button>
+                <button class="act danger" type="button" (click)="problemRaised.emit(row.order)">
+                  {{ t().orders.problem }}
+                </button>
+              </div>
+
+              <!-- La note vit LÀ OÙ LA COMMANDE VIT, jamais dans une pop-up qui
+                   interrompt. Le glyphe change avec l'état — plein ou vide — pour
+                   que la lecture ne repose pas sur la seule couleur. -->
+              <div class="rate">
+                <p class="rate-label">{{ rateLabel(row.rate) }}</p>
+                <div class="stars">
+                  @for (star of stars; track star) {
+                    <button
+                      class="star"
+                      type="button"
+                      [class.on]="star <= row.rate"
+                      [attr.aria-label]="starLabel(star)"
+                      [attr.aria-pressed]="star <= row.rate"
+                      (click)="rate(row.order.reference, star)"
+                    >
+                      {{ star <= row.rate ? '★' : '☆' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  }
+</table>

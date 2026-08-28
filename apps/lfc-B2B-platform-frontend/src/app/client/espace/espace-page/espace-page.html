@@ -4,16 +4,7 @@
      qu'il y a dedans. -->
 <ng-template clientBanner>
   <app-client-banner-block [title]="bannerTitle()" [lead]="espace.lead()">
-    <!-- Neuf fois sur dix on lance l'app pour commander, pas pour relire un QR :
-         l'action garde sa place au premier coup d'œil. Il lui faut ce poids
-         pour tenir face à un titre de 38 px sur le registre sombre. -->
-    <a banner-action class="new-order" routerLink="/nouvelle-commande">
-      <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
-      <span class="new-order-titles">
-        <span class="new-order-title">{{ t().nav.newOrder }}</span>
-        <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
-      </span>
-    </a>
+    <app-new-order-action banner-action />
   </app-client-banner-block>
 </ng-template>
 
