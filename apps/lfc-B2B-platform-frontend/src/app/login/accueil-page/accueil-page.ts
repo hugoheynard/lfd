@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 
 import { AuthFacade, type PendingProfile } from '../../auth/auth.facade';
 import { ClientChrome } from '../../client/client-chrome.service';
-import { ClientPage } from '../../client/client-page/client-page';
+import { ClientPage } from '../../client/shell-bienvenue/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../client/client-identity.service';
 

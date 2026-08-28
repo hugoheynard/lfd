@@ -1,7 +1,7 @@
 import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
-import { ClientShell } from './client/client-shell/client-shell';
+import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
 /**
@@ -150,7 +150,7 @@ export const routes: Routes = [
         path: 'mon-espace',
         title: 'Mon espace — La Folie Coffee',
         loadComponent: () =>
-          import('./client/espace/espace-page/espace-page').then((m) => m.EspacePage),
+          import('./client/mon-espace/espace-page/espace-page').then((m) => m.EspacePage),
       },
       {
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
@@ -158,7 +158,9 @@ export const routes: Routes = [
         path: 'mes-commandes',
         title: 'Mes commandes — La Folie Coffee',
         loadComponent: () =>
-          import('./client/commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
+          import('./client/mes-commandes/commandes-page/commandes-page').then(
+            (m) => m.CommandesPage,
+          ),
       },
       {
         // LE RELEVÉ, et l'écran le dit. La plateforme n'émet aucune facture :
@@ -167,7 +169,7 @@ export const routes: Routes = [
         path: 'mes-factures',
         title: 'Mes factures — La Folie Coffee',
         loadComponent: () =>
-          import('./client/factures/factures-page/factures-page').then((m) => m.FacturesPage),
+          import('./client/mes-factures/factures-page/factures-page').then((m) => m.FacturesPage),
       },
       {
         // LE DOSSIER, écrit pour celui qui le possède. Sept cartes et pas sept
@@ -176,7 +178,7 @@ export const routes: Routes = [
         path: 'mon-compte',
         title: 'Mon compte — La Folie Coffee',
         loadComponent: () =>
-          import('./client/compte/compte-page/compte-page').then((m) => m.ComptePage),
+          import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
       },
       {
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
@@ -185,7 +187,9 @@ export const routes: Routes = [
         path: 'nouvelle-commande',
         title: 'Commander — La Folie Coffee',
         loadComponent: () =>
-          import('./commande/commande-page/commande-page').then((m) => m.CommandePage),
+          import('./client/nouvelle-commande/commande-page/commande-page').then(
+            (m) => m.CommandePage,
+          ),
       },
       {
         // LE RAYON. Il vit sous `commande/` et pas à la racine parce qu'il est la
@@ -194,18 +198,22 @@ export const routes: Routes = [
         // deux produits, deux catalogues, deux adresses.
         path: 'nouvelle-commande/boutique',
         title: 'Boutique — La Folie Coffee',
-        loadComponent: () => import('./rayon/rayon-page/rayon-page').then((m) => m.RayonPage),
+        loadComponent: () =>
+          import('./client/rayon/rayon-page/rayon-page').then((m) => m.RayonPage),
       },
       {
         path: 'nouvelle-commande/panier',
         title: 'Mon panier — La Folie Coffee',
-        loadComponent: () => import('./rayon/panier-page/panier-page').then((m) => m.PanierPage),
+        loadComponent: () =>
+          import('./client/rayon/panier-page/panier-page').then((m) => m.PanierPage),
       },
       {
         path: 'nouvelle-commande/confirmee',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>
-          import('./rayon/confirmation-page/confirmation-page').then((m) => m.ConfirmationPage),
+          import('./client/rayon/confirmation-page/confirmation-page').then(
+            (m) => m.ConfirmationPage,
+          ),
       },
       { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
       // Les anciennes adresses restent valides : un lien partagé ou un signet

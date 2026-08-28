@@ -25,7 +25,7 @@ import {
 } from 'fold-ng';
 
 import { AccountService } from './account/account.service';
-import { ClientShell } from './client/client-shell/client-shell';
+import { ClientShell } from './client/shell/client-shell';
 import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './legacy/cart/cart-panel/cart-panel';
 import { ContactPanel } from './legacy/contact/contact-panel/contact-panel';
