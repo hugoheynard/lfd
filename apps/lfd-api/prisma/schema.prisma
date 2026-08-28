@@ -1044,6 +1044,41 @@ model DeliveryZone {
   @@schema("public")
 }
 
+/// Le **contenu de plateforme** — les textes de la vitrine, tenus par le staff.
+///
+/// Ils vivaient compilés dans le bundle du front client, en trois dictionnaires
+/// `fr/en/it.ts` : un mot à corriger demandait un développeur, une revue et un
+/// déploiement. Ils sont désormais une donnée.
+///
+/// `content` est du **JSON** et c'est un choix, pas un raccourci : la forme est
+/// l'affaire du contrat (`footerContentSchema`), validée au bord par Zod, et
+/// tout l'intérêt est qu'elle bouge quand la vitrine bouge — sans une migration
+/// par paragraphe ajouté. Ce que la base garantit, c'est qu'il y a UNE ligne par
+/// bloc et qu'on sait quand elle a changé.
+model PlatformContent {
+  /// Le bloc : `footer` aujourd'hui, d'autres ensuite. Clé NATURELLE et pas un
+  /// cuid — il y a une ligne par bloc, et son nom est connu à l'avance.
+  key String @id
+
+  /// Les trois langues, dans la forme du contrat.
+  content Json
+
+  /// Monte à chaque enregistrement. De quoi dire à un rédacteur que quelqu'un
+  /// d'autre a écrit pendant qu'il avait l'écran ouvert.
+  revision Int @default(1)
+
+  /// Le NOM de la personne, pas son identifiant : cette valeur est lue par du
+  /// personnel qui n'a pas l'annuaire staff sous les yeux — et il vit de toute
+  /// façon dans une autre base.
+  updatedBy String? @map("updated_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_content")
+  @@schema("public")
+}
+
 /// Utilisateur **staff** (back-office) — l'annuaire des personnes qui opèrent la
 /// suite : identité, **rôle**, et l'état de sa connexion. Source de vérité
 /// **locale** : on ne dépend pas d'Auth0 pour administrer sa propre suite.

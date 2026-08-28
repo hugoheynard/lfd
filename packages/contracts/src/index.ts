@@ -590,3 +590,20 @@ export type {
 } from "./activity-journal.js";
 
 export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
+export {
+  contentLocales,
+  contentLocaleSchema,
+  footerHouseSchema,
+  footerLinkSchema,
+  footerLocaleContentSchema,
+  footerContentSchema,
+  footerContentPayloadSchema,
+} from "./platform-content.js";
+export type {
+  ContentLocale,
+  FooterHouse,
+  FooterLocaleContent,
+  FooterContent,
+  FooterContentPayload,
+  FooterContentView,
+} from "./platform-content.js";
