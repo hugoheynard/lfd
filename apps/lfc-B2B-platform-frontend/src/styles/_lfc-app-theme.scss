@@ -131,6 +131,11 @@
   --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
   --lfc-color-accent: var(--lfc-butter-500);
   --lfc-color-on-accent: var(--lfc-butter-900);
+  /* Le beurre de l'ACTION, d'un cran sous celui des pastilles : il porte du
+     texte clair sur une grande surface, et le beurre plein y est trop haut. Un
+     mélange plutôt qu'une primitive de plus — c'est le même beurre, assombri
+     de sa propre encre. */
+  --lfc-color-accent-action: color-mix(in srgb, var(--lfc-butter-500) 85%, var(--lfc-butter-900));
   --lfc-color-accent-surface: var(--lfc-butter-100);
   --lfc-color-accent-text: var(--lfc-butter-800);
   /* Ne passe pas AA en texte courant : sur-titres capitalisés UNIQUEMENT. */
@@ -309,6 +314,11 @@
   --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
   --lfc-color-accent: var(--lfc-butter-500);
   --lfc-color-on-accent: var(--lfc-butter-900);
+  /* Le beurre de l'ACTION, d'un cran sous celui des pastilles : il porte du
+     texte clair sur une grande surface, et le beurre plein y est trop haut. Un
+     mélange plutôt qu'une primitive de plus — c'est le même beurre, assombri
+     de sa propre encre. */
+  --lfc-color-accent-action: color-mix(in srgb, var(--lfc-butter-500) 85%, var(--lfc-butter-900));
   --lfc-color-accent-surface: rgb(217 154 43 / 22%);
   --lfc-color-accent-text: #f0dcae;
   --lfc-color-text-subtle: var(--lfc-ink-300);

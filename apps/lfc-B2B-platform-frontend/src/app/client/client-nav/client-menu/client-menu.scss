@@ -125,8 +125,10 @@
   margin-top: var(--fold-space-xl);
   padding: var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
+  /* Le MÊME bouton que dans le bandeau — c'est la même action, elle doit se
+     reconnaître d'un écran à l'autre, et les deux sont sur le registre sombre. */
+  background: var(--lfc-color-accent-action);
+  color: var(--lfc-paper-0);
   text-decoration: none;
 }
 
@@ -137,7 +139,7 @@
   width: 44px;
   height: 44px;
   border-radius: var(--fold-radius-md);
-  background: rgb(61 42 5 / 14%);
+  background: color-mix(in srgb, var(--lfc-color-on-accent) 18%, transparent);
 }
 
 .new-order-titles {
@@ -157,7 +159,7 @@
 
 .new-order-sub {
   font-size: var(--fold-text-md);
-  color: var(--lfc-color-accent-text);
+  color: color-mix(in srgb, var(--lfc-paper-0) 86%, transparent);
 }
 
 .new-order-caret {
