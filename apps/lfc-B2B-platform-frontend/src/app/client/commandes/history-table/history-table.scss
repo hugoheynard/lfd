@@ -26,17 +26,18 @@ thead {
   display: none;
 }
 
+/* En pile, une commande est une CARTE — au même titre qu'un suivi, et donc avec
+   le même matériau : rayon d'objet et ombre portée. Elle était réglée sur le
+   rayon des éléments INTÉRIEURS à une carte, sans ombre : posée sous le puits,
+   elle se lisait comme un encart et non comme une commande. */
 .group {
   display: block;
-  margin-bottom: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-md);
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--lfc-radius-xl);
+  border-radius: var(--lfc-radius-2xl);
   background: var(--fold-color-surface-card);
+  box-shadow: var(--lfc-shadow-card);
   overflow: clip;
-}
-
-.group.open {
-  background: var(--fold-color-surface-sunken);
 }
 
 .row {
@@ -186,10 +187,14 @@ thead {
   display: block;
 }
 
+/* Le dépli est un TIROIR dans la carte : c'est lui qui se creuse, pas la carte
+   qui change de matière. Repeindre la carte entière lui faisait changer de
+   nature au clic — on ne savait plus si on regardait le même objet. */
 .detail {
   display: block;
   padding: 0 var(--fold-space-md) var(--fold-space-md);
   border-top: 1px solid var(--fold-color-border-subtle);
+  background: var(--fold-color-surface-sunken);
 }
 
 .detail-grid {
@@ -320,12 +325,16 @@ thead {
     text-align: right;
   }
 
+  /* Au bureau la carte redevient une rangée : elle rend tout ce qui faisait
+     d'elle un objet — bord, rayon, ombre. Un tableau dont chaque ligne porte
+     une ombre n'est plus un tableau. */
   .group {
     display: table-row-group;
     margin: 0;
     border: 0;
     border-radius: 0;
     background: none;
+    box-shadow: none;
   }
 
   .row {
