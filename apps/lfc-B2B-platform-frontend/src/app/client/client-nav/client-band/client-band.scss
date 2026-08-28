@@ -26,3 +26,41 @@
 .descent:empty {
   display: none;
 }
+
+/* ── La lèvre ───────────────────────────────────────────────────────────────
+   Deux étages dans un seul élément : une bande d'encre, puis le bord arrondi de
+   la feuille. La bande fait un cran d'espacement, pour que l'encre reste
+   franchement visible sous la descente et pas seulement dans les deux angles.
+
+   Elle n'existe qu'en pile. Au-delà du pli, la page vient au contraire TOUCHER
+   la sous-barre — les deux moitiés de service en dépendent. */
+.lip {
+  display: block;
+  position: relative;
+  height: calc(var(--fold-space-xl) + var(--lfc-radius-sheet));
+  /* ⚠️ `bg-header` et PAS `primary` : dans la région `chrome`, `primary` est
+     inversé au papier. */
+  background: var(--fold-color-bg-header);
+}
+
+/* Avec un bandeau au-dessus, la descente se termine sur l'encre la plus
+   profonde : la bande de la lèvre doit la continuer, sinon le raccord fait une
+   marche à l'endroit précis où l'on veut qu'il n'y en ait pas. */
+.descent:not(:empty) ~ .lip {
+  background: var(--lfc-ink-950);
+}
+
+.lip::after {
+  content: '';
+  position: absolute;
+  inset: var(--fold-space-xl) 0 0;
+  border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+  /* Le crème NOMMÉ : `bg-page` vaut l'encre ici, c'est le sous-bloc chrome. */
+  background: var(--lfc-paper-50);
+}
+
+@media (min-width: 900px) {
+  .lip {
+    display: none;
+  }
+}

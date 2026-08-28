@@ -12,7 +12,10 @@
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
-  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
+  /* Pas de rembourrage en haut : la LÈVRE du shell le porte déjà — sa moitié
+     crème fait la respiration au-dessus du premier bloc. En ajouter un
+     deuxième donnerait deux fois la même chose. */
+  padding: 0 var(--lfc-inset) var(--fold-space-2xl);
 }
 
 .stack {
