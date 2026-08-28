@@ -87,19 +87,58 @@
           [value]="identity().email"
           (valueChange)="setIdentity('email', $event)"
         />
-        <fold-input
-          label="Instagram"
-          optional
-          [value]="identity().instagram"
-          (valueChange)="setIdentity('instagram', $event)"
-        />
-        <fold-input
-          label="Facebook"
-          optional
-          [value]="identity().facebook"
-          (valueChange)="setIdentity('facebook', $event)"
-        />
       </div>
+
+      <!-- LES RÉSEAUX — une ligne par canal, et non deux champs fixes. Ajouter
+           TikTok demandait jusqu'ici une colonne, un déploiement et une reprise
+           des deux fronts : le nombre de canaux est une dimension qui bouge, il
+           se range en donnée. Le vocabulaire, lui, reste fermé — un menu, pas
+           un libellé libre, pour que la vitrine sache quel mot écrire. -->
+      <fold-fieldset
+        legend="Réseaux"
+        hint="Une ligne par canal. Sans ligne, la vitrine n’affiche aucune pastille."
+        optional
+      >
+        @for (social of identity().socials; track $index) {
+          <div class="social-row">
+            <fold-select
+              label="Canal"
+              [value]="social.channel"
+              (valueChange)="setSocialChannel($index, $event)"
+            >
+              @for (option of channelOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </fold-select>
+            <fold-input
+              label="Lien"
+              placeholder="https://"
+              [value]="social.url"
+              (valueChange)="setSocialUrl($index, $event)"
+            />
+            <fold-button-icon
+              icon="close"
+              size="sm"
+              tone="critical"
+              tooltip="Retirer ce canal"
+              (clicked)="removeSocial($index)"
+            />
+          </div>
+        }
+        <div class="row-add">
+          <!-- Désactivé quand les six canaux sont pris : un canal ne figure
+               qu'une fois, et une ligne qu'on ne pourrait pas enregistrer n'a
+               pas à s'ouvrir. -->
+          <button
+            foldButton
+            variant="ghost"
+            [disabled]="freeChannel() === null"
+            (click)="addSocial()"
+          >
+            Ajouter un canal
+          </button>
+        </div>
+      </fold-fieldset>
     </fold-card>
 
     <!-- LA COPIE, sous le sélecteur. Les quatre sections dans l'ordre où la
@@ -117,17 +156,34 @@
 
       <section class="block">
         <h3 class="block-head">① La marque</h3>
-        <fold-input
-          label="Accroche"
-          placeholder="Boulangerie d’altitude"
-          [value]="current().brand.tagline"
-          (valueChange)="setBrand('tagline', $event)"
-        />
-        <fold-input
-          label="Ce qu’on fabrique"
-          [value]="current().brand.pitch"
-          (valueChange)="setBrand('pitch', $event)"
-        />
+        <fold-fieldset legend="La marque">
+          <!-- LE LOGO tel qu'il paraît, et non un champ : c'est un fichier
+               livré avec l'app, pas un texte. Il est là parce que la colonne
+               commence par lui — un titre qu'on relit sans sa marque au-dessus
+               se juge mal. -->
+          <div class="brand-mark">
+            <img src="brand/lfc-mark.png" alt="" width="40" height="40" />
+            <span class="brand-mark-note">Le logo est livré avec l’app.</span>
+          </div>
+          <fold-input
+            label="Titre"
+            hint="Le nom d’enseigne — le même dans les trois langues, et au copyright"
+            [value]="identity().brandName"
+            (valueChange)="setIdentity('brandName', $event)"
+          />
+          <fold-input
+            label="Accroche"
+            placeholder="Boulangerie d’altitude"
+            [value]="current().brand.tagline"
+            (valueChange)="setBrand('tagline', $event)"
+          />
+          <fold-textarea
+            label="Description"
+            [rows]="4"
+            [value]="current().brand.pitch"
+            (valueChange)="setBrand('pitch', $event)"
+          />
+        </fold-fieldset>
       </section>
 
       <section class="block">

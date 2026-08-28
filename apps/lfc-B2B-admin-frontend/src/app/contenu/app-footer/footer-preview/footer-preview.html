@@ -2,13 +2,27 @@
   <div class="cols">
     <!-- ① La marque — 1,6 fr : elle a plus à dire que les trois listes. -->
     <section class="col brand">
-      <span class="mark"></span>
-      <p class="line strong">{{ content().brand.tagline }}</p>
-      <p class="pitch">{{ content().brand.pitch }}</p>
-      <div class="pills">
-        <span class="pill"></span>
-        <span class="pill"></span>
+      <!-- La MARQUE telle que la vitrine l'empile : le logo et le titre sur une
+           rangée, l'accroche sous le titre. L'aperçu les alignait en pile, ce
+           qui décalait la colonne d'un cran par rapport aux trois autres et
+           faisait juger l'écran sur une disposition qui n'existe pas. -->
+      <div class="brand-row">
+        <span class="mark"></span>
+        <span class="brand-id">
+          <span class="line strong">{{ identity().brandName }}</span>
+          <span class="line">{{ content().brand.tagline }}</span>
+        </span>
       </div>
+      <p class="pitch">{{ content().brand.pitch }}</p>
+      <!-- Une pastille par canal enregistré : c'est ici qu'on voit qu'on en a
+           ajouté six là où la vitrine en tenait deux. -->
+      @if (identity().socials.length > 0) {
+        <div class="pills">
+          @for (social of identity().socials; track social.channel) {
+            <span class="pill"></span>
+          }
+        </div>
+      }
     </section>
 
     <section class="col">

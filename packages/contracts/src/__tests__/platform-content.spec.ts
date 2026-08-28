@@ -22,6 +22,33 @@ describe("l'identité légale", () => {
     expect(legalIdentitySchema.safeParse({ vat: "FR458" }).success).toBe(false);
   });
 
+  it("retient le nom d'enseigne d'un contenu enregistré avant qu'il existe", () => {
+    // Le champ est arrivé après la mise en service : une ligne déjà en base ne
+    // le porte pas. Elle doit continuer à se lire — sans quoi le pied de page
+    // entier retomberait sur le contenu de départ pour un mot manquant.
+    expect(legalIdentitySchema.parse({}).brandName).toBe("La Folie Coffee");
+  });
+
+  it("refuse deux fois le même réseau, et accepte l'absence de réseau", () => {
+    expect(legalIdentitySchema.parse({}).socials).toEqual([]);
+    expect(
+      legalIdentitySchema.safeParse({
+        socials: [
+          { channel: "instagram", url: "https://a" },
+          { channel: "tiktok", url: "https://b" },
+        ],
+      }).success,
+    ).toBe(true);
+    expect(
+      legalIdentitySchema.safeParse({
+        socials: [
+          { channel: "instagram", url: "https://a" },
+          { channel: "instagram", url: "https://b" },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
   it("refuse une adresse e-mail qui n'en est pas une, mais pas l'absence", () => {
     expect(legalIdentitySchema.safeParse({ email: "" }).success).toBe(true);
     expect(legalIdentitySchema.safeParse({ email: "contact@lafoliecoffee.fr" }).success).toBe(true);

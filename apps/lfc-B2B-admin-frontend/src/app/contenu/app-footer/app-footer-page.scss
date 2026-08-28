@@ -30,3 +30,40 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* Une ligne de réseau : le canal tient sa largeur, le lien prend le reste, le
+   retrait s'aligne sur la BOÎTE et non sur le bloc — sans quoi la croix se
+   centre sur l'étiquette et flotte au-dessus du champ. */
+.social-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) 1fr auto;
+  align-items: end;
+  gap: var(--fold-space-sm);
+}
+
+.row-add {
+  display: flex;
+}
+
+/* Le logo et sa note : ce n'est pas un champ, et il ne doit pas en avoir l'air. */
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.brand-mark img {
+  border-radius: var(--fold-radius-sm);
+  object-fit: contain;
+}
+
+.brand-mark-note {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .social-row {
+    grid-template-columns: 1fr auto;
+  }
+}

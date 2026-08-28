@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { contentLocales } from "./platform-content.defaults.js";
+import { contentLocales, socialChannels } from "./platform-content.defaults.js";
 
 /**
  * **Le contenu de plateforme** — les textes de la vitrine, tenus par le staff.
@@ -28,6 +28,20 @@ export const contentLocaleSchema = z.enum(contentLocales);
 export type ContentLocale = z.infer<typeof contentLocaleSchema>;
 
 /**
+ * Un **réseau social** : le canal, et où il pointe.
+ *
+ * Le canal vient d'une liste fermée pour que le rendu sache quoi écrire et
+ * quelle icône poser ; l'URL est libre parce qu'aucune plateforme ne garantit
+ * la forme de ses adresses de profil dans le temps.
+ */
+export const socialLinkSchema = z.object({
+  channel: z.enum(socialChannels),
+  url: z.string().trim().min(1).max(300),
+});
+export type SocialLink = z.infer<typeof socialLinkSchema>;
+export type SocialChannel = SocialLink["channel"];
+
+/**
  * L'**identité légale**, la même dans les trois langues.
  *
  * Tous les champs acceptent le VIDE, et ce n'est pas une facilité : tant qu'un
@@ -42,6 +56,16 @@ export type ContentLocale = z.infer<typeof contentLocaleSchema>;
  * la validité réelle se vérifie ailleurs.
  */
 export const legalIdentitySchema = z.object({
+  /**
+   * Le **nom d'enseigne** — celui qui titre la colonne de marque et signe le
+   * copyright. Il vit ici, avec ce qui ne se traduit pas : « La Folie Coffee »
+   * s'écrit pareil en italien, et le ranger sous le sélecteur de langue
+   * inviterait à le ressaisir trois fois pour trois fois la même chaîne.
+   *
+   * Il était compilé dans le gabarit du pied de page, en dur. C'est exactement
+   * le genre de mot que cet écran existe pour sortir du code.
+   */
+  brandName: z.string().trim().max(80).default("La Folie Coffee"),
   /** La raison sociale, forme juridique comprise. */
   company: z.string().trim().max(160).default(""),
   /** Le capital social, tel qu'il s'écrit — « 40 000 € ». */
@@ -75,8 +99,27 @@ export const legalIdentitySchema = z.object({
     .max(160)
     .refine((v) => v === "" || z.string().email().safeParse(v).success, "adresse invalide")
     .default(""),
-  instagram: z.string().trim().max(300).default(""),
-  facebook: z.string().trim().max(300).default(""),
+  /**
+   * Les **réseaux**, une ligne par canal.
+   *
+   * C'étaient deux champs fixes, `instagram` et `facebook` : ajouter TikTok
+   * demandait une colonne de plus, un déploiement et une modification des deux
+   * fronts. Le nombre de canaux est une dimension qui bouge — elle se range en
+   * DONNÉE. Le vocabulaire, lui, reste fermé ({@link socialChannels}) : c'est
+   * ce qui permet au rendu de porter un mot et une icône par canal.
+   *
+   * Un canal ne paraît qu'une fois. Deux lignes Instagram ne veulent rien dire
+   * dans un pied de page, et laisser passer le doublon ferait afficher deux
+   * pastilles identiques pointant ailleurs.
+   */
+  socials: z
+    .array(socialLinkSchema)
+    .max(8)
+    .default([])
+    .refine(
+      (list) => new Set(list.map((entry) => entry.channel)).size === list.length,
+      "un canal ne peut pas figurer deux fois",
+    ),
 });
 export type LegalIdentity = z.infer<typeof legalIdentitySchema>;
 

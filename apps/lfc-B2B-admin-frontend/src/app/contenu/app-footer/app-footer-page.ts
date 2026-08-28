@@ -4,17 +4,27 @@ import type {
   FooterContent,
   FooterLocaleContent,
   LegalIdentity,
+  SocialChannel,
 } from '@lfd/contracts';
 // Les VALEURS par `content-values`, qui ne tire pas zod (cf. le front client).
-import { contentLocales, DEFAULT_FOOTER_CONTENT } from '@lfd/contracts/content-values';
+import {
+  contentLocales,
+  DEFAULT_FOOTER_CONTENT,
+  socialChannelLabels,
+  socialChannels,
+} from '@lfd/contracts/content-values';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldFieldsetComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldSelectComponent,
+  FoldTextareaComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -29,9 +39,22 @@ const LOCALE_OPTIONS: readonly FoldViewToggleOption[] = contentLocales.map((code
   label: code.toUpperCase(),
 }));
 
-/** Garde de type : évite un `as` là où une vérification suffit. */
+/** Les canaux, avec leur mot — l'ordre du contrat est celui du menu déroulant. */
+const CHANNEL_OPTIONS = socialChannels.map((channel) => ({
+  value: channel,
+  label: socialChannelLabels[channel],
+}));
+
+/** Les champs d'identité qui sont du TEXTE — `socials` est une liste, pas une ligne. */
+type IdentityTextField = Exclude<keyof LegalIdentity, 'socials'>;
+
+/** Gardes de type : évitent un `as` là où une vérification suffit. */
 function isLocale(value: string): value is ContentLocale {
   return (contentLocales as readonly string[]).includes(value);
+}
+
+function isChannel(value: string): value is SocialChannel {
+  return (socialChannels as readonly string[]).includes(value);
 }
 
 /**
@@ -54,12 +77,16 @@ function isLocale(value: string): value is ContentLocale {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
+    FoldFieldsetComponent,
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldSelectComponent,
+    FoldTextareaComponent,
     FoldViewToggleComponent,
     FooterPreview,
   ],
@@ -71,6 +98,7 @@ export class AppFooterPage {
   private readonly notify = inject(NotifyService);
 
   protected readonly localeOptions = LOCALE_OPTIONS;
+  protected readonly channelOptions = CHANNEL_OPTIONS;
   protected readonly locale = signal<ContentLocale>('fr');
 
   protected readonly loading = signal(true);
@@ -115,9 +143,57 @@ export class AppFooterPage {
     }
   }
 
+  /**
+   * Le premier canal encore libre, ou `null` s'ils y sont tous.
+   *
+   * C'est lui qui pré-remplit une ligne ajoutée : un canal ne peut figurer
+   * qu'une fois, et proposer un doublon pour le faire refuser ensuite par le
+   * serveur ferait perdre la saisie de l'URL au passage.
+   */
+  protected readonly freeChannel = computed<SocialChannel | null>(() => {
+    const taken = new Set(this.identity().socials.map((social) => social.channel));
+    return socialChannels.find((channel) => !taken.has(channel)) ?? null;
+  });
+
   /** Écrit un champ d'identité, sans toucher au reste du brouillon. */
-  protected setIdentity(field: keyof LegalIdentity, value: string): void {
+  protected setIdentity(field: IdentityTextField, value: string): void {
     this.draft.update((draft) => ({ ...draft, identity: { ...draft.identity, [field]: value } }));
+  }
+
+  /** Remplace la liste des réseaux — l'unique chemin d'écriture des trois gestes. */
+  private setSocials(next: LegalIdentity['socials']): void {
+    this.draft.update((draft) => ({ ...draft, identity: { ...draft.identity, socials: next } }));
+  }
+
+  protected addSocial(): void {
+    const channel = this.freeChannel();
+    if (channel !== null) {
+      this.setSocials([...this.identity().socials, { channel, url: '' }]);
+    }
+  }
+
+  protected removeSocial(index: number): void {
+    this.setSocials(this.identity().socials.filter((_, i) => i !== index));
+  }
+
+  protected setSocialChannel(index: number, value: string): void {
+    if (!isChannel(value)) {
+      return;
+    }
+    // Le passage par une constante n'est pas décoratif : TypeScript ne retient
+    // pas l'affinement d'un PARAMÈTRE à l'intérieur d'une closure.
+    const channel = value;
+    this.setSocials(
+      this.identity().socials.map((social, i) => (i === index ? { ...social, channel } : social)),
+    );
+  }
+
+  protected setSocialUrl(index: number, value: string): void {
+    this.setSocials(
+      this.identity().socials.map((social, i) =>
+        i === index ? { ...social, url: value } : social,
+      ),
+    );
   }
 
   /**

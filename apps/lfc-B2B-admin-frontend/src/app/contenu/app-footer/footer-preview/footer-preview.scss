@@ -15,6 +15,9 @@
      vérifier ici : qu'un pitch trop long n'écrase pas ses voisines. */
   grid-template-columns: 1.6fr 1fr 1fr 1fr;
   gap: var(--fold-space-lg);
+  /* Les colonnes commencent EN HAUT : une colonne courte étirée sur la hauteur
+     de sa voisine ne dit rien du pied de page réel. */
+  align-items: start;
 }
 
 .col {
@@ -56,10 +59,26 @@
   color: var(--fold-color-text-muted);
 }
 
-/* La pastille de marque et les deux réseaux : des blocs, pas des images. Ce
-   qu'on vérifie, c'est qu'ils occupent leur place. */
+/* La rangée d'identité — logo à gauche, titre et accroche empilés à droite,
+   comme la vitrine. Alignée en haut sur le logo. */
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-xs);
+}
+
+.brand-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* La pastille de marque et les réseaux : des blocs, pas des images. Ce qu'on
+   vérifie, c'est qu'ils occupent leur place. */
 .mark {
   display: block;
+  flex: none;
   width: 26px;
   height: 26px;
   border-radius: var(--fold-radius-sm);

@@ -592,6 +592,7 @@ export type {
 export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
 export {
   contentLocaleSchema,
+  socialLinkSchema,
   legalIdentitySchema,
   footerHouseSchema,
   footerLinkSchema,
@@ -601,6 +602,8 @@ export {
 } from "./platform-content.js";
 export type {
   ContentLocale,
+  SocialLink,
+  SocialChannel,
   LegalIdentity,
   FooterHouse,
   FooterLocaleContent,
@@ -608,4 +611,9 @@ export type {
   FooterContentPayload,
   FooterContentView,
 } from "./platform-content.js";
-export { contentLocales, DEFAULT_FOOTER_CONTENT } from "./platform-content.defaults.js";
+export {
+  contentLocales,
+  socialChannels,
+  socialChannelLabels,
+  DEFAULT_FOOTER_CONTENT,
+} from "./platform-content.defaults.js";

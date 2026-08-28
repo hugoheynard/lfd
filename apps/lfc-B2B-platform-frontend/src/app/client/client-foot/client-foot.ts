@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
+import { socialChannelLabels } from '@lfd/contracts/content-values';
+
 import { ClientContent } from '../client-content.service';
 import { LEGAL_YEAR } from './legal-identity';
 
@@ -35,6 +37,22 @@ export class ClientFoot {
   protected readonly legal = this.content.identity;
 
   protected readonly year = LEGAL_YEAR;
+
+  /**
+   * Les réseaux enregistrés, avec le mot qui les nomme.
+   *
+   * C'étaient deux pastilles écrites en dur, Instagram et Facebook. Le nombre
+   * de canaux bouge — il se lit dans la donnée. Le LIBELLÉ, lui, ne s'invente
+   * pas ici : il vient du contrat, pour que le back-office et la vitrine
+   * écrivent le même mot.
+   */
+  protected readonly socials = computed(() =>
+    this.legal().socials.map((social) => ({
+      channel: social.channel,
+      url: social.url,
+      label: socialChannelLabels[social.channel],
+    })),
+  );
 
   /**
    * Les mentions d'immatriculation RENSEIGNÉES, dans l'ordre de la barre.

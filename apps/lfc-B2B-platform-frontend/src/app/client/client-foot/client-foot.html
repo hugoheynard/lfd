@@ -4,17 +4,22 @@
       <div class="brand-row">
         <span class="mark" aria-hidden="true"><img src="brand/lfc-mark.png" alt="" /></span>
         <span class="brand">
-          <span class="brand-name">La Folie Coffee</span>
+          <span class="brand-name">{{ legal().brandName }}</span>
           <span class="brand-kicker">{{ foot().brand.tagline }}</span>
         </span>
       </div>
       <p class="pitch">{{ foot().brand.pitch }}</p>
-      <div class="social">
-        <a class="social-pill" [href]="legal().instagram" rel="noopener" target="_blank"
-          >Instagram</a
-        >
-        <a class="social-pill" [href]="legal().facebook" rel="noopener" target="_blank">Facebook</a>
-      </div>
+      <!-- Une pastille par canal enregistré. Aucun canal, aucune rangée : une
+           barre de réseaux vide dit qu'on n'en a pas, pas qu'on les a perdus. -->
+      @if (socials().length > 0) {
+        <div class="social">
+          @for (social of socials(); track social.channel) {
+            <a class="social-pill" [href]="social.url" rel="noopener" target="_blank">{{
+              social.label
+            }}</a>
+          }
+        </div>
+      }
     </section>
 
     <section class="col">
@@ -63,7 +68,7 @@
       }
       <span class="mention">{{ foot().legal.pay }}</span>
       <span class="mention">{{ foot().legal.vat }}</span>
-      <span class="mention">© {{ year }} La Folie Coffee.</span>
+      <span class="mention">© {{ year }} {{ legal().brandName }}.</span>
     </p>
     <nav class="legal-links" aria-label="Mentions">
       @for (link of foot().legal.links; track link) {

@@ -13,6 +13,36 @@ import type { FooterContent, FooterLocaleContent } from "./platform-content.js";
 export const contentLocales = ["fr", "en", "it"] as const;
 
 /**
+ * Les **canaux sociaux** connus, et le mot qui les nomme à l'écran.
+ *
+ * Une liste fermée, et non un libellé libre : un pied de page qui affiche
+ * « Insta » sur une page et « Instagram » sur l'autre a déjà divergé, et un
+ * canal nommé librement ne peut porter ni icône ni gabarit d'URL. Ce qui est
+ * ouvert, c'est le NOMBRE de lignes — pas leur vocabulaire.
+ *
+ * ⚠️ Ils vivent ici pour la même raison que les langues : ce module n'importe
+ * que des types, donc les deux fronts peuvent lire la liste sans embarquer zod.
+ */
+export const socialChannels = [
+  "instagram",
+  "facebook",
+  "tiktok",
+  "linkedin",
+  "youtube",
+  "x",
+] as const;
+
+/** Le mot affiché pour chaque canal — le pied de page en fait sa pastille. */
+export const socialChannelLabels: Readonly<Record<(typeof socialChannels)[number], string>> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  youtube: "YouTube",
+  x: "X",
+};
+
+/**
  * Le **contenu de départ** du pied de page — celui qui était compilé dans le
  * bundle du front client, repris mot pour mot.
  *
@@ -187,6 +217,7 @@ const IT: FooterLocaleContent = {
 
 export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   identity: {
+    brandName: "La Folie Coffee",
     company: "La Folie Coffee SAS",
     capital: "capital 40 000 €",
     // Les trois qui ne s'inventent pas. Ils se saisissent au back-office.
@@ -196,8 +227,10 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
     phone: "04 79 06 12 40",
     phoneHref: "tel:+33479061240",
     email: "contact@lafoliecoffee.fr",
-    instagram: "https://www.instagram.com/",
-    facebook: "https://www.facebook.com/",
+    socials: [
+      { channel: "instagram", url: "https://www.instagram.com/" },
+      { channel: "facebook", url: "https://www.facebook.com/" },
+    ],
   },
   fr: FR,
   en: EN,
