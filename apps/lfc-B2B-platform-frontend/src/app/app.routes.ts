@@ -15,7 +15,7 @@ const homeRoute: Route = FEATURE_DASHBOARD
       pathMatch: 'full',
       title: 'Tableau de bord — La Folie Coffee B2B',
       canActivate: [authenticatedGuard],
-      loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage),
+      loadComponent: () => import('./legacy/dashboard/dashboard-page').then((m) => m.DashboardPage),
     }
   : { path: '', pathMatch: 'full', redirectTo: 'boutique' };
 
@@ -35,35 +35,39 @@ const proRoutes: Routes = FEATURE_PRO_SPACE
         title: 'Boutique — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
+          import('./legacy/boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
       },
       homeRoute,
       {
         path: 'panier',
         title: 'Panier — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
-        loadComponent: () => import('./cart/cart-page/cart-page').then((m) => m.CartPage),
+        loadComponent: () => import('./legacy/cart/cart-page/cart-page').then((m) => m.CartPage),
       },
       {
         path: 'mes-paniers',
         title: 'Mes paniers — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./cart/saved-baskets-page/saved-baskets-page').then((m) => m.SavedBasketsPage),
+          import('./legacy/cart/saved-baskets-page/saved-baskets-page').then(
+            (m) => m.SavedBasketsPage,
+          ),
       },
       {
         path: 'mes-paniers/:id',
         title: 'Panier enregistré — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./cart/basket-detail-page/basket-detail-page').then((m) => m.BasketDetailPage),
+          import('./legacy/cart/basket-detail-page/basket-detail-page').then(
+            (m) => m.BasketDetailPage,
+          ),
       },
       {
         path: 'commandes',
         title: 'Mes commandes — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
+          import('./legacy/commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
       },
       {
         // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
@@ -72,21 +76,23 @@ const proRoutes: Routes = FEATURE_PRO_SPACE
         title: 'Régler ma commande — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
+          import('./legacy/commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },
       {
         path: 'commandes/:id',
         title: 'Commande — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./commandes/commande-page/commande-page').then((m) => m.CommandePage),
+          import('./legacy/commandes/commande-page/commande-page').then((m) => m.CommandePage),
       },
       {
         path: 'entreprises',
         title: 'Mes entreprises — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
         loadComponent: () =>
-          import('./entreprises/entreprises-page/entreprises-page').then((m) => m.EntreprisesPage),
+          import('./legacy/entreprises/entreprises-page/entreprises-page').then(
+            (m) => m.EntreprisesPage,
+          ),
       },
       {
         // « Mon profil » a été scindée : la personne est passée dans Réglages, les
@@ -100,7 +106,7 @@ const proRoutes: Routes = FEATURE_PRO_SPACE
         path: 'reglages',
         title: 'Réglages — La Folie Coffee B2B',
         canActivate: [authenticatedGuard],
-        loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
+        loadComponent: () => import('./legacy/reglages/reglages-page').then((m) => m.ReglagesPage),
       },
     ]
   : [];

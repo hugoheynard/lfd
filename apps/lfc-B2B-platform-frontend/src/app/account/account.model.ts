@@ -18,7 +18,12 @@ import type { FulfillmentPreferenceView, AssignableRole, CompanyMemberRole } fro
  * formulaire.
  */
 
-import type { CatalogueView } from '../catalogue/catalogue-view';
+// ⚠️ SEULE dépendance du code vivant vers l'héritage, et elle est réelle : la
+// vue de catalogue préférée est persistée dans le profil (`nav_prefs` côté
+// API), donc le type n'est pas hérité — c'est son écran qui l'est. Le jour où
+// l'ancien espace part, ce type sort de `legacy/` plutôt que de disparaître
+// avec lui.
+import type { CatalogueView } from '../legacy/catalogue/catalogue-view';
 
 /** Où en est une entreprise dans son cycle commercial. */
 export type CompanyStatus = 'pending' | 'active' | 'suspended';

@@ -27,11 +27,11 @@ import {
 import { AccountService } from './account/account.service';
 import { ClientShell } from './client/client-shell/client-shell';
 import { AuthFacade } from './auth/auth.facade';
-import { CartPanel } from './cart/cart-panel/cart-panel';
-import { ContactPanel } from './contact/contact-panel/contact-panel';
-import { CartService } from './data/cart.service';
+import { CartPanel } from './legacy/cart/cart-panel/cart-panel';
+import { ContactPanel } from './legacy/contact/contact-panel/contact-panel';
+import { CartService } from './legacy/data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
-import { SiteFooter } from './footer/site-footer';
+import { SiteFooter } from './legacy/footer/site-footer';
 
 /**
  * L'écran courant est-il servi par le shell CLIENT ?

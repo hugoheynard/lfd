@@ -7,7 +7,7 @@ import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
-import { AddressesService } from './entreprises/addresses.service';
+import { AddressesService } from './legacy/entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
 import { provideSentry, provideWebVitals } from '@lfd/front-ops';
