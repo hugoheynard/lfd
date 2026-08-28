@@ -46,6 +46,10 @@ const config: CapacitorConfig = {
     // réserve les marges (`env(safe-area-inset-top)` dans la barre de marque),
     // et `viewport-fit=cover` dans `index.html` qui les rend disponibles.
     contentInset: 'never',
+    // Ce que le natif peint DERRIÈRE la WebView — le temps du chargement, et
+    // sous la bande de sécurité. Blanc par défaut, ce qui donnait un bandeau
+    // clair au-dessus d'une app bleue.
+    backgroundColor: '#12307f',
   },
 };
 

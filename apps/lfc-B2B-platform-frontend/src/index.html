@@ -1,5 +1,10 @@
 <!doctype html>
-<html lang="fr" data-theme="navi">
+<!-- Le thème de l'app CLIENT est posé ICI, sur la racine, et plus seulement sur
+     le shell : la bande de sécurité du haut (encoche, heure iOS) et le rebond
+     élastique appartiennent au CANEVAS, pas à un composant — sans tokens à ce
+     niveau, ils se peignaient en blanc au-dessus d'une app bleue. L'espace pro
+     est derrière `FEATURE_PRO_SPACE`, donc plus rien ne rend sous `navi`. -->
+<html lang="fr" data-theme="lfc-app">
   <head>
     <meta charset="utf-8" />
     <title>La Folie Coffee — B2B</title>
@@ -11,6 +16,15 @@
     <!-- La teinte que le système peint autour de l'app (barre d'état Android,
          chrome du navigateur) : l'encre de marque, comme l'en-tête. -->
     <meta name="theme-color" content="#12307f" />
+    <!-- App installée sur l'écran d'accueil : la WebView occupe l'écran entier,
+         encoche comprise, et `black-translucent` rend l'heure et les icônes
+         d'iOS en BLANC par-dessus notre encre. Sans ces deux lignes, iOS réserve
+         une bande blanche à texte noir au-dessus de l'app. C'est le CSS qui
+         réserve la marge (`env(safe-area-inset-top)`, déjà lu par la barre de
+         marque) — sinon le contenu passerait sous l'horloge. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="La Folie Coffee" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <!-- La marque de l'app cliente : le bonhomme seul, sans le mot. Déclarée
          après le .ico, elle le supplante sur tout navigateur moderne. -->

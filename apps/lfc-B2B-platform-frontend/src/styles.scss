@@ -35,7 +35,12 @@ body {
 }
 
 body {
-  background: var(--fold-color-bg-page);
+  /* L'ENCRE, et pas la couleur de page. Ce fond ne se voit que là où l'app ne
+     peint pas : la bande de sécurité sous l'encoche, et le rebond élastique en
+     haut comme en bas. Le crème est posé par les écrans eux-mêmes, qui occupent
+     toute la hauteur. Une page blanche au-dessus d'une barre bleue se lit comme
+     un bug d'affichage, pas comme une marge. */
+  background: var(--fold-color-primary);
   color: var(--fold-color-text);
   font-family:
     system-ui,
