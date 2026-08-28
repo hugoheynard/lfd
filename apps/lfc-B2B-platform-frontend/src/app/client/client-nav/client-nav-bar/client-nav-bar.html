@@ -4,8 +4,8 @@
       <a
         class="tab"
         [routerLink]="item.route"
-        [class.is-on]="current() === item.route"
-        [attr.aria-current]="current() === item.route ? 'page' : null"
+        [class.is-on]="nav.current() === item.route"
+        [attr.aria-current]="nav.current() === item.route ? 'page' : null"
       >
         <span class="tab-label">{{ item.label }}</span>
         @if (item.countShort) {

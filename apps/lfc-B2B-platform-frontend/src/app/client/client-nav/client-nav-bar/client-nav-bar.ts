@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientNav } from '../client-nav.service';
@@ -34,7 +34,4 @@ import { ClientNav } from '../client-nav.service';
 export class ClientNavBar {
   protected readonly nav = inject(ClientNav);
   protected readonly t = inject(ClientCopyService).t;
-  private readonly router = inject(Router);
-
-  protected readonly current = computed(() => this.router.url.split('?')[0] ?? '');
 }

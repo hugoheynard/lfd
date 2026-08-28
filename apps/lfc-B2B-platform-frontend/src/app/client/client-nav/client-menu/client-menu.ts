@@ -64,7 +64,6 @@ export class ClientMenu {
   });
 
   /** Ce qui est en cours, pour le point beurre : l'URL, pas un état gardé à part. */
-  protected readonly current = computed(() => this.router.url.split('?')[0] ?? '');
 
   /** Le numéro d'ordre, `01`–`05` — la voix du menu pleine page. */
   protected rank(index: number): string {

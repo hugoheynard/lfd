@@ -1,4 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map } from 'rxjs';
 
 import { formatEuro } from '../cart-total';
 import { ClientCart } from '../client-cart.service';
@@ -64,6 +67,27 @@ export class ClientNav {
   private readonly cart = inject(ClientCart);
   private readonly orders = inject(ClientOrders);
   private readonly t = inject(ClientCopyService).t;
+  private readonly router = inject(Router);
+
+  /**
+   * L'adresse courante, en SIGNAL.
+   *
+   * `Router.url` est une propriété nue : un `computed()` qui la lirait ne se
+   * recalculerait jamais, et l'onglet actif resterait figé sur celui de la
+   * première page — un défaut qui ne se voit qu'en naviguant, donc jamais dans
+   * un rendu isolé.
+   *
+   * Elle vit ici et pas dans les deux composants : le menu et la sous-barre
+   * doivent souligner LA MÊME destination, et deux dérivations séparées sont
+   * deux occasions de diverger.
+   */
+  readonly current = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects.split('?')[0] ?? ''),
+    ),
+    { initialValue: this.router.url.split('?')[0] ?? '' },
+  );
 
   readonly items = computed<readonly NavItem[]>(() =>
     DESTINATIONS.map((d) => ({

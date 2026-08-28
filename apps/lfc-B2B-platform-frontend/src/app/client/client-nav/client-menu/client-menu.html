@@ -31,9 +31,9 @@
         <button
           class="dest"
           type="button"
-          [class.is-on]="current() === item.route"
+          [class.is-on]="nav.current() === item.route"
           [disabled]="!item.ready"
-          [attr.aria-current]="current() === item.route ? 'page' : null"
+          [attr.aria-current]="nav.current() === item.route ? 'page' : null"
           (click)="go(item.route)"
         >
           <span class="dest-rank" aria-hidden="true">{{ rank(i) }}</span>
@@ -42,7 +42,7 @@
             <span class="dest-soon">{{ t().nav.soon }}</span>
           } @else if (item.count) {
             <span class="dest-count" [class.is-warn]="item.warn">{{ item.count }}</span>
-          } @else if (current() === item.route) {
+          } @else if (nav.current() === item.route) {
             <span class="dest-dot" aria-hidden="true"></span>
           }
         </button>
