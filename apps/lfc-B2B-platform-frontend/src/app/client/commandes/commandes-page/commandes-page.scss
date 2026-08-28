@@ -47,12 +47,20 @@
 /* C'est le TITRE d'une section, pas un sur-titre. Il était réglé sur
    `text-kicker` — 9,5 px : les capitales y étaient bien là, mais si petites
    qu'on ne les lisait pas comme un titre. Le grain de bloc lui rend sa voix. */
+/* ⚠️ INTERLETTRAGE : `tracking-block` vaut −0,015 em, et le resserrement des
+   capitales appartient aux GRANDS corps — c'est le parti de la réf pour les
+   titres d'écran, où des capitales serrées font un bloc. À 14 px il ne reste
+   plus assez de blanc entre les fûts : le mot se soude. Sur le puits sombre, la
+   halation du crème le rattrapait ; sur le crème, l'encre le montrait — d'où
+   deux titres qui ne se rendaient pas pareil alors que leurs règles étaient
+   identiques au caractère près. À ce corps-là, les capitales veulent un
+   interlettrage positif, celui de `tracking-label`. */
 .well-title {
   margin: 0;
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-block);
+  letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
 }
 
@@ -188,12 +196,15 @@
   gap: var(--fold-space-md);
 }
 
+/* Le pendant du titre du puits, au caractère près : même grain, même graisse,
+   même interlettrage. Les deux sections d'un écran ne se lisent comme deux
+   sections que si leurs titres se ressemblent. */
 .history-title {
   margin: 0;
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-block);
+  letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
 }
 
