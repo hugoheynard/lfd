@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  type ActivatedRouteSnapshot,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { filter, map } from 'rxjs';
 import {
   FoldAppShellComponent,
@@ -18,6 +25,7 @@ import {
 } from 'fold-ng';
 
 import { AccountService } from './account/account.service';
+import { ClientShell } from './client/client-shell/client-shell';
 import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
 import { ContactPanel } from './contact/contact-panel/contact-panel';
@@ -25,8 +33,19 @@ import { CartService } from './data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
 import { SiteFooter } from './footer/site-footer';
 
-/** Les URL servies par le shell CLIENT. À tenir en phase avec `app.routes.ts`. */
-const CLIENT_PATHS = new Set(['/', '/bienvenue', '/connexion']);
+/**
+ * L'écran courant est-il servi par le shell CLIENT ?
+ *
+ * On le DEMANDE au routeur au lieu de tenir une liste d'adresses. La liste avait
+ * l'air plus simple, et elle a dérivé au premier écran ajouté : `/commande` et
+ * la boutique cliente n'y étaient pas, donc le chrome PRO — rail, en-tête,
+ * lanceur mobile — venait s'enrouler autour d'eux dès qu'on était connecté.
+ * Un fait déduit de l'arbre de routes ne peut pas se désaccorder de l'arbre de
+ * routes.
+ */
+export function servedByClientShell(route: ActivatedRouteSnapshot): boolean {
+  return route.component === ClientShell || route.children.some(servedByClientShell);
+}
 
 @Component({
   selector: 'app-root',
@@ -85,10 +104,13 @@ export class App {
    * session était faux dans les deux sens : une personne connectée qui ouvre un
    * écran client héritait du rail pro, et le jour où un écran client demandera
    * une session, il le perdrait.
+   *
+   * `url()` n'est pas lu pour sa valeur mais pour sa DÉPENDANCE : c'est lui qui
+   * fait recalculer à chaque navigation, et l'état du routeur qui répond.
    */
   protected readonly clientRoute = computed(() => {
-    const [path] = this.url().split('?');
-    return path !== undefined && CLIENT_PATHS.has(path);
+    this.url();
+    return servedByClientShell(this.router.routerState.snapshot.root);
   });
 
   private readonly panelHost = inject(FoldPanelHostService);
