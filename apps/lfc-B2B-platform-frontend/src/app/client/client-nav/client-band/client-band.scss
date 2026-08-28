@@ -1,0 +1,28 @@
+:host {
+  display: block;
+  /* La descente commence à l'encre de la barre : sans ça, un bandeau absent
+     laisserait voir le fond de région du shell entre la barre et la sous-barre.
+     ⚠️ `bg-header` et PAS `primary` : la bande est dans la région `chrome`, où
+     `primary` est inversé au papier — la nommer ici peindrait la descente en
+     crème. */
+  background: var(--fold-color-bg-header);
+}
+
+/* Le dégradé qui va de l'encre de la barre à celle de la sous-barre. Il
+   s'arrête EXACTEMENT sur `--lfc-ink-950`, qui est aussi le fond de la
+   sous-barre juste en dessous : c'est ce qui fait la couture à zéro. */
+.descent {
+  background: linear-gradient(
+    to bottom,
+    var(--lfc-ink-800) 0%,
+    var(--lfc-ink-900) 55%,
+    var(--lfc-ink-950) 100%
+  );
+  color: var(--fold-color-text);
+}
+
+/* Aucun bandeau projeté : la descente ne prend pas de place. Les commentaires
+   ne comptent pas pour `:empty`, et l'ancre n'est que ça. */
+.descent:empty {
+  display: none;
+}

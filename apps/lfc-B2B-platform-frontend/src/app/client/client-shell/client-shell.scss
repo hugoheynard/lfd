@@ -13,11 +13,13 @@
   --fold-shell-header-height: var(--lfc-header-height);
   --fold-shell-header-height-mobile: var(--lfc-header-height);
 
-  /* La sous-barre est REPLIÉE par défaut, et dépliée au-delà du pli (plus bas).
-     C'est le sens de lecture : le téléphone est le cas courant de cette app, et
-     c'est lui qui n'a pas de bande. Sa hauteur, 52 px, est celle de la réf. */
-  --fold-shell-subheader-height: 0px;
-  --fold-shell-subheader-height-mobile: 0px;
+  /* La bande est dimensionnée par son CONTENU, pas par un nombre : elle porte
+     un bandeau qui change d'un écran à l'autre, et la sous-barre qui n'existe
+     qu'au-delà du pli. `auto` est une taille de piste valide, et la variable de
+     fold est interpolée telle quelle dans `grid-template-rows` — la rangée se
+     comporte donc comme celle du pied, qui se replie quand elle est vide. */
+  --fold-shell-subheader-height: auto;
+  --fold-shell-subheader-height-mobile: auto;
 }
 
 /* Le fond que découvre le REBOND ÉLASTIQUE. Quand on tire fort vers le haut, la
@@ -191,11 +193,6 @@
    plus dans la bande. Entre 900 et 1100, la page est déjà en deux colonnes mais
    la navigation reste au pouce — d'où deux seuils, et pas un. */
 @media (min-width: 1100px) {
-  :host {
-    --fold-shell-subheader-height: 52px;
-    --fold-shell-subheader-height-mobile: 52px;
-  }
-
   .menu.narrow-only {
     display: none;
   }

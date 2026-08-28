@@ -12,12 +12,20 @@
   padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-4xl);
 }
 
-/* ── Le titre, et l'action à côté ───────────────────────────────────────── */
+/* ── Le bandeau, dans la descente ────────────────────────────────────────
+   ⚠️ Ces règles habillent un gabarit rendu DANS un autre composant (la bande
+   du shell). Elles l'atteignent parce qu'une vue intégrée garde l'attribut
+   d'encapsulation du composant qui l'a DÉCLARÉE — celui-ci. Ce qui ne
+   marcherait pas, c'est un sélecteur ancré sur `:host` : l'écran n'est plus un
+   ancêtre du bandeau. */
 
-.head {
+.banner {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-2xl);
 }
 
 .title {
@@ -34,16 +42,17 @@
 .lead {
   margin: var(--fold-space-sm) 0 0;
   font-size: var(--fold-text-base);
-  color: var(--fold-color-text-muted);
+  color: var(--lfc-color-on-primary-muted);
 }
 
-/* La carte caramel du cas 2, à l'identique : c'est la même action, elle doit
-   se reconnaître d'un écran à l'autre. */
+/* La carte caramel du cas 2, à l'identique : c'est la même action, elle doit se
+   reconnaître d'un écran à l'autre. */
 .new-order {
   display: flex;
   align-items: center;
   gap: var(--fold-space-lg);
-  padding: var(--fold-space-lg);
+  min-height: 62px;
+  padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
   background: var(--lfc-color-accent-deep);
   color: var(--lfc-color-on-accent-deep);
@@ -54,8 +63,8 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--fold-radius-md);
   background: var(--lfc-color-on-primary-tile);
 }
@@ -205,19 +214,41 @@
     padding: var(--fold-space-2xl) 44px var(--fold-space-5xl);
   }
 
-  .head {
+  .banner {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--fold-space-2xl);
+    padding: var(--fold-space-2xl) 44px var(--fold-space-3xl);
   }
 
   .titles {
     min-width: 0;
   }
 
+  .title {
+    font-size: var(--lfc-text-screen);
+  }
+
+  /* 76 px : il faut ce poids pour tenir face à un titre de 38 px sur le
+     registre sombre — un bouton de 62 px y disparaît. */
   .new-order {
     flex: none;
+    min-height: 76px;
+    padding: var(--fold-space-lg) var(--fold-space-xl);
+  }
+
+  .new-order-tile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .new-order-title {
+    font-size: var(--lfc-text-banner-cta);
+  }
+
+  .new-order-sub {
+    font-size: var(--lfc-text-note);
   }
 
   /* 3/4 · 1/4, et les deux colonnes exactement à la même hauteur : c'est le

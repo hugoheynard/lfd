@@ -5,7 +5,7 @@ import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 import { ClientChrome } from '../client-chrome.service';
 import { ClientFoot } from '../client-foot/client-foot';
 import { ClientMenu } from '../client-nav/client-menu/client-menu';
-import { ClientNavBar } from '../client-nav/client-nav-bar/client-nav-bar';
+import { ClientBand } from '../client-nav/client-band/client-band';
 import { ClientOnboarding } from '../client-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
@@ -26,9 +26,9 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
   imports: [
+    ClientBand,
     ClientFoot,
     ClientMenu,
-    ClientNavBar,
     FoldAppShellComponent,
     FoldIconComponent,
     LangSwitch,

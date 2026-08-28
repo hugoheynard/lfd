@@ -83,7 +83,7 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
-  color: var(--fold-color-on-primary);
+  color: var(--fold-color-text);
 }
 
 .brand-kicker {
@@ -113,7 +113,7 @@
   padding: var(--fold-space-sm) var(--fold-space-lg);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
-  color: var(--fold-color-on-primary);
+  color: var(--fold-color-text);
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-extrabold);
@@ -140,7 +140,7 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
-  color: var(--fold-color-on-primary);
+  color: var(--fold-color-text);
 }
 
 /* ── Les listes ─────────────────────────────────────────────────────────── */
@@ -156,7 +156,7 @@
   font-size: var(--lfc-text-cta);
   font-weight: var(--fold-weight-semibold);
   font-variant-numeric: tabular-nums;
-  color: var(--fold-color-on-primary);
+  color: var(--fold-color-text);
   text-decoration: none;
 }
 

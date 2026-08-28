@@ -5,6 +5,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientBannerOutlet } from '../../client-nav/client-banner';
 import { ContactCard } from '../contact-card/contact-card';
 import { ClientEspace } from '../espace.service';
 import { ReadyWell } from '../ready-well/ready-well';
@@ -28,7 +29,7 @@ import { ReadyWell } from '../ready-well/ready-well';
 @Component({
   selector: 'app-espace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ContactCard, FoldIconComponent, ReadyWell, RouterLink],
+  imports: [ClientBannerOutlet, ContactCard, FoldIconComponent, ReadyWell, RouterLink],
   templateUrl: './espace-page.html',
   styleUrl: './espace-page.scss',
 })

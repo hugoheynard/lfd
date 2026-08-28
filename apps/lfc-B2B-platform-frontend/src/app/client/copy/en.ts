@@ -68,7 +68,7 @@ export const EN: ClientCopy = {
     soon: 'Soon',
     close: 'Close the menu',
     newOrder: 'New order',
-    newOrderSub: 'Pickup or courier · in two taps',
+    newOrderSub: 'Pickup or courier, you choose',
     house: 'The bakery',
     houseLinks: [
       ['Our counters and our methods', '6 notes'],

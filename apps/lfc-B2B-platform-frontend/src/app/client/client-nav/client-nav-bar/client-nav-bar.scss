@@ -1,6 +1,6 @@
-/* Sous le pli de navigation, la bande n'existe pas : le shell a replié sa
-   rangée à zéro et c'est le menu pleine page qui porte les destinations. Il faut
-   le dire ici aussi — une rangée de zéro ne rogne pas ce qu'on y met. */
+/* Sous le pli de navigation, la bande n'existe pas : c'est le menu pleine page
+   qui porte les destinations. Il faut le dire ici — la rangée du shell est
+   dimensionnée par son contenu, elle ne rogne rien. */
 :host {
   display: none;
 }
@@ -8,41 +8,72 @@
 @media (min-width: 1100px) {
   :host {
     display: block;
-    height: 100%;
   }
 }
 
-/* Le puits sous la barre : un cran PLUS PROFOND que l'encre de marque, pour que
-   la bande se lise comme une assise et non comme une seconde barre. */
+/* La fin de la descente, et son fond plat : la même encre que le bas du dégradé
+   du bandeau au-dessus, d'où une couture à zéro. L'ombre descendante fait
+   passer le crème visiblement SOUS le menu — barre, descente, menu, page. */
 .bar {
   display: flex;
   align-items: stretch;
-  height: 100%;
+  height: 52px;
   padding: 0 22px;
   background: var(--lfc-color-surface-well);
+  box-shadow: 0 6px 14px -8px var(--lfc-ink-950);
   overflow-x: auto;
 }
 
 .tab {
+  position: relative;
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--fold-space-sm);
   /* 22 px de part et d'autre : la mesure de la réf, celle qui pose les cinq
-     onglets de 123 à 927 px dans les 1106 px utiles. */
+     onglets de 123 à 930 px dans les 1106 px utiles. */
   padding: 0 22px;
-  /* Le filet de l'actif est RÉSERVÉ, pas ajouté : posé transparent, il ne
-     décale pas le texte quand l'onglet devient courant. */
-  border-bottom: 3px solid transparent;
-  background: none;
   color: var(--lfc-color-on-primary-muted);
   text-decoration: none;
   white-space: nowrap;
 }
 
+/* LE FILET, et il n'est pas une bordure. Une `border-bottom` qui n'existe que
+   sur l'actif décale le texte de tous les autres onglets au changement ; posé
+   en élément absolu que TOUS les onglets portent — transparent en inactif —
+   il ne décale plus rien. Encastré de 14 px : il souligne le mot, pas la zone
+   cliquable. */
+.tab::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 3px;
+  border-radius: var(--fold-radius-pill) var(--fold-radius-pill) 0 0;
+  background: transparent;
+}
+
+/* LE LAVIS MONTANT, à la place d'un aplat translucide : la couleur du filet
+   remonte dans l'onglet et s'éteint. C'est ce qui rattache le menu à la
+   descente au lieu de l'y poser. */
 .tab.is-on {
-  border-bottom-color: var(--lfc-color-accent);
-  background: rgb(250 245 236 / 7%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--lfc-color-accent) 16%, transparent),
+    transparent 70%
+  );
+  color: var(--lfc-color-on-well);
+}
+
+.tab.is-on::after {
+  background: var(--lfc-color-accent);
+}
+
+/* Un survol discret sur les inactifs, qui n'imite JAMAIS l'actif : ni filet, ni
+   lavis chaud — sinon le survol raconte qu'on y est déjà. */
+.tab:not(.is-on):not(.is-soon):hover {
+  background: color-mix(in srgb, var(--lfc-paper-50) 6%, transparent);
   color: var(--lfc-color-on-well);
 }
 
@@ -50,14 +81,18 @@
   opacity: 0.5;
 }
 
+/* Même graisse en actif et en inactif : c'est la COULEUR qui parle. */
 .tab-label {
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
+  letter-spacing: var(--lfc-tracking-eyebrow);
   text-transform: uppercase;
 }
 
+/* Les compteurs ont trois niveaux, et l'ordre des règles est leur hiérarchie :
+   crème discret par défaut, caramel pour ce qui réclame une action, caramel
+   plein sur l'onglet ouvert. */
 .tab-count {
   flex: none;
   display: inline-flex;
@@ -74,6 +109,11 @@
 }
 
 .tab-count.is-warn {
+  background: color-mix(in srgb, var(--lfc-color-accent) 90%, transparent);
+  color: var(--lfc-color-on-accent);
+}
+
+.tab.is-on .tab-count {
   background: var(--lfc-color-accent);
   color: var(--lfc-color-on-accent);
 }

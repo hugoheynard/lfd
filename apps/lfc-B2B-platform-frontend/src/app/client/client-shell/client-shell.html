@@ -49,11 +49,11 @@
     }
   </div>
 
-  <!-- LA SOUS-BARRE. Elle n'existe que pour un client reconnu — un visiteur n'a
-       pas de destinations à parcourir — et la bande du shell se replie d'elle-
-       même quand rien n'y est projeté. -->
+  <!-- LA DESCENTE : le bandeau de l'écran, puis la sous-barre. Elle n'existe
+       que pour un client reconnu — un visiteur n'a pas de destinations à
+       parcourir — et la bande du shell se replie quand rien n'y est projeté. -->
   @if (chrome.menu()) {
-    <app-client-nav-bar subheader />
+    <app-client-band subheader />
   }
 
   <router-outlet />

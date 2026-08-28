@@ -75,7 +75,7 @@ export const IT: ClientCopy = {
     soon: 'Presto',
     close: 'Chiudi il menu',
     newOrder: 'Nuovo ordine',
-    newOrderSub: 'Ritiro o corriere · in due tocchi',
+    newOrderSub: 'Ritiro o corriere, scegliete voi',
     house: 'La casa',
     houseLinks: [
       ['I nostri banchi e i nostri metodi', '6 schede'],

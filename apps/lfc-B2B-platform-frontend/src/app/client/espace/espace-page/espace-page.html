@@ -1,11 +1,16 @@
-<div class="page">
-  <header class="head">
+<!-- Le bandeau va dans la DESCENTE, sous la barre et au-dessus de la
+     sous-barre : le salut et l'action sont sur le registre bleu, le travail
+     commence au crème. C'est le shell qui le place ; l'écran n'écrit que ce
+     qu'il y a dedans. -->
+<ng-template clientBanner>
+  <div class="banner">
     <div class="titles">
       <h1 class="title">{{ hello() }}<br />{{ espace.todayLine() }}</h1>
       <p class="lead">{{ espace.lead() }}</p>
     </div>
     <!-- Neuf fois sur dix on lance l'app pour commander, pas pour relire un QR :
-         l'action garde sa place au premier coup d'œil. -->
+         l'action garde sa place au premier coup d'œil. Il lui faut ce poids
+         pour tenir face à un titre de 38 px sur le registre sombre. -->
     <a class="new-order" routerLink="/commande">
       <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
       <span class="new-order-titles">
@@ -13,8 +18,10 @@
         <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
       </span>
     </a>
-  </header>
+  </div>
+</ng-template>
 
+<div class="page">
   <!-- La ligne « ce qui attend / qui répond ». Les deux colonnes sont à la MÊME
        hauteur : c'est le `stretch` qui fait du contact une carte pleine hauteur
        et non un encart résiduel à côté du puits. -->
