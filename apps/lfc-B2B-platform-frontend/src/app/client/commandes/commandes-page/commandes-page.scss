@@ -115,13 +115,16 @@
 
 /* Les points de défilement, en pied de puits.
 
-   RONDS, et tous de la même taille : c'est la couleur et le halo qui disent
-   l'actif, pas une forme différente. Une barre au milieu de points changeait de
-   nature d'un élément à l'autre — on lisait deux objets là où il n'y en a
-   qu'un. La cible fait 22 px de haut pour rester atteignable au doigt ; la
-   marque visible, elle, n'en fait que six. */
+   Les inactifs sont des POINTS ronds, l'actif est un TRAIT chaud. La différence
+   de forme est ce qui se voit en premier : sur le bleu nuit, une simple nuance
+   se rate, une longueur non. Le trait dit aussi la direction — on est sur un
+   rail, pas dans une liste.
+
+   La cible fait 22 px de haut pour rester atteignable au doigt ; la marque
+   visible, elle, n'en fait que six. */
 .dots {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 0;
   margin-top: var(--fold-space-sm);
@@ -147,16 +150,20 @@
   background: var(--lfc-color-on-well-muted);
   opacity: 0.45;
   transition:
-    background var(--lfc-motion-tap),
-    box-shadow var(--lfc-motion-tap);
+    width var(--lfc-motion-tap),
+    background var(--lfc-motion-tap);
 }
 
-/* L'actif garde son diamètre et gagne un HALO : sur le bleu nuit, l'auréole se
-   voit avant la teinte, et elle ne déplace pas ses voisins. */
+/* L'actif s'allonge. Sa cible s'élargit avec lui : un trait de 18 px dans une
+   case de 16 px déborderait sur ses voisines. */
+.dot.on {
+  width: 26px;
+}
+
 .dot.on::after {
+  width: 18px;
   background: var(--lfc-color-accent);
   opacity: 1;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lfc-color-accent) 26%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
