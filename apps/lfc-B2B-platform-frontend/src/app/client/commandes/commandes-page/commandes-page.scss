@@ -113,20 +113,25 @@
   scroll-snap-align: start;
 }
 
-/* Les points de défilement, en pied de puits. La cible fait 24 px de haut pour
-   rester atteignable au doigt, la marque visible n'en fait que 4. */
+/* Les points de défilement, en pied de puits.
+
+   RONDS, et tous de la même taille : c'est la couleur et le halo qui disent
+   l'actif, pas une forme différente. Une barre au milieu de points changeait de
+   nature d'un élément à l'autre — on lisait deux objets là où il n'y en a
+   qu'un. La cible fait 22 px de haut pour rester atteignable au doigt ; la
+   marque visible, elle, n'en fait que six. */
 .dots {
   display: flex;
   justify-content: center;
-  gap: var(--fold-space-xs);
-  margin-top: var(--fold-space-md);
+  gap: 0;
+  margin-top: var(--fold-space-sm);
 }
 
 .dot {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 24px;
+  width: 16px;
+  height: 22px;
   padding: 0;
   border: 0;
   background: none;
@@ -137,19 +142,21 @@
   content: '';
   display: block;
   width: 6px;
-  height: 4px;
+  height: 6px;
   border-radius: var(--fold-radius-pill);
   background: var(--lfc-color-on-well-muted);
-  opacity: 0.55;
-  transition: width var(--lfc-motion-tap);
+  opacity: 0.45;
+  transition:
+    background var(--lfc-motion-tap),
+    box-shadow var(--lfc-motion-tap);
 }
 
-/* Actif : une BARRE chaude. La couleur seule ne suffirait pas sur le bleu nuit
-   — c'est la longueur qui se voit d'abord. */
+/* L'actif garde son diamètre et gagne un HALO : sur le bleu nuit, l'auréole se
+   voit avant la teinte, et elle ne déplace pas ses voisins. */
 .dot.on::after {
-  width: 18px;
   background: var(--lfc-color-accent);
   opacity: 1;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lfc-color-accent) 26%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

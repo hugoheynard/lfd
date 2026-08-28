@@ -15,27 +15,60 @@
 
 /* ── L'en-tête, teinté par le mode ─────────────────────────────────────── */
 
+/* Le fond de l'en-tête n'est pas un aplat : il descend d'un bleu vers l'autre,
+   en diagonale, pour que le bas raccorde au crème de la carte plutôt que de s'y
+   heurter. */
 .head {
   position: relative;
   padding: var(--fold-space-md) var(--fold-space-md) var(--fold-space-lg);
-  background: var(--fold-color-primary);
+  background: linear-gradient(158deg, var(--lfc-ink-800) 0%, var(--lfc-ink-900) 100%);
   color: var(--fold-color-on-primary);
   isolation: isolate;
 }
 
 :host([data-mode='courier']) .head {
-  background: var(--lfc-color-accent-deep);
+  background: linear-gradient(158deg, #a06a16 0%, var(--lfc-color-accent-deep) 100%);
   color: var(--lfc-color-on-accent-deep);
 }
 
-/* Le halo : il éclaire l'en-tête depuis son coin, comme la réf. Un dégradé
-   linéaire aurait fait une bande ; un radial fait une lumière. */
+/* LE HALO — deux lumières, pas une.
+
+   La première tombe du coin haut-droit et s'éteint en TROIS temps : un cœur
+   pâle, un corps beurre, puis rien. Un seul arrêt donnait un anneau visible là
+   où la transparence tombait d'un coup — c'est ce liseré qui faisait « collé »
+   plutôt qu'« éclairé ».
+
+   La seconde monte du coin bas-gauche, en froid, et ne sert qu'à empêcher le
+   bloc d'être plat : sans elle, la moitié basse de l'en-tête est une surface
+   morte que l'œil lit comme un aplat. */
 .head::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(120% 140% at 88% 0%, rgb(217 154 43 / 34%), transparent 62%);
+  background:
+    radial-gradient(
+      74% 104% at 100% -6%,
+      rgb(240 220 174 / 30%) 0%,
+      rgb(217 154 43 / 17%) 34%,
+      rgb(217 154 43 / 5%) 58%,
+      transparent 76%
+    ),
+    radial-gradient(58% 76% at 2% 106%, rgb(27 75 196 / 26%), transparent 72%);
+}
+
+/* Sur le coursier, la lumière chaude ferait doublon avec son propre fond : elle
+   passe au crème, et la contre-lumière du bas reste froide pour tenir le
+   contraste. */
+:host([data-mode='courier']) .head::before {
+  background:
+    radial-gradient(
+      74% 104% at 100% -6%,
+      rgb(250 245 236 / 26%) 0%,
+      rgb(250 245 236 / 11%) 36%,
+      transparent 74%
+    ),
+    radial-gradient(58% 76% at 2% 106%, rgb(61 42 5 / 24%), transparent 72%);
 }
 
 .head-top {
@@ -226,7 +259,9 @@
 
 .foot {
   display: grid;
-  gap: var(--fold-space-sm);
+  /* L'encart et sa rangée d'actions sont deux temps, pas une pile : ils
+     respirent plus que deux lignes d'un même bloc. */
+  gap: var(--fold-space-md);
   /* CE QUI ÉGALISE LES CARTES : le pied tombe en bas, la hauteur vient du
      défilement qui étire. Aucune valeur en dur, donc rien à corriger le jour
      où une carte porte une ligne de plus. */
