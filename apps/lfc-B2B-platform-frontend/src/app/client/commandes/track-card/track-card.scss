@@ -45,6 +45,15 @@
   gap: var(--fold-space-sm);
 }
 
+/* Le mode et le numéro forment une seule identité : on lit « retrait #4821 »
+   d'un trait, sans traverser la carte. */
+.ident {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
 .chip {
   flex: none;
   padding: 3px 9px;
@@ -69,6 +78,17 @@
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   opacity: 0.82;
+}
+
+/* Le montant tient le coin. `flex:none` + `nowrap` : un prix qui se coupe sur
+   deux lignes est un bug, pas une adaptation. */
+.total {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .title {
@@ -107,14 +127,6 @@
   background: var(--lfc-color-on-accent-deep);
 }
 
-.total {
-  margin: var(--fold-space-sm) 0 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-md);
-  font-weight: var(--lfc-weight-black);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── Le stepper ────────────────────────────────────────────────────────── */
 
 .steps {
@@ -136,7 +148,7 @@
 }
 
 .dot {
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 2;
   display: grid;
   place-items: center;
   width: 24px;
@@ -210,13 +222,6 @@
   font-weight: var(--fold-weight-bold);
 }
 
-.step-note {
-  grid-column: 2;
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-note);
-  color: var(--fold-color-text-muted);
-}
-
 /* ── Le pied ───────────────────────────────────────────────────────────── */
 
 .foot {
@@ -247,13 +252,17 @@
   color: var(--fold-color-primary-text);
 }
 
+/* Une TUILE carrée, pas une pastille — même famille que la tuile de section du
+   puits. Le rond est réservé aux personnes et aux états ; ici, l'initiale du
+   coursier comme le glyphe du QR sont des repères de bloc, et deux formes pour
+   un même rôle font hésiter sur ce qu'on regarde. */
 .initial {
   flex: none;
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: var(--fold-radius-pill);
+  border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-card);
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-sm);
@@ -338,7 +347,7 @@
 
   .step {
     grid-template-columns: 1fr;
-    grid-template-rows: 24px auto auto auto;
+    grid-template-rows: 24px auto auto;
     justify-items: start;
     padding-right: var(--fold-space-sm);
   }
@@ -355,8 +364,7 @@
   }
 
   .step-label,
-  .step-at,
-  .step-note {
+  .step-at {
     grid-column: 1;
   }
 

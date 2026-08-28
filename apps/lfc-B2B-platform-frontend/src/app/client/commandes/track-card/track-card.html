@@ -2,16 +2,21 @@
      l'éclaire. C'est ce qui permet de distinguer un retrait d'une livraison
      dans un défilement, sans lire une seule ligne. -->
 <header class="head">
+  <!-- La pastille et la référence forment UNE identité, à gauche ; le montant
+       tient le coin droit. Séparer la référence de son mode obligeait à
+       traverser la carte pour savoir de quelle commande on parle. -->
   <div class="head-top">
-    <span class="chip">{{ order().kind }}</span>
-    <span class="ref">{{ order().reference }}</span>
+    <span class="ident">
+      <span class="chip">{{ order().kind }}</span>
+      <span class="ref">{{ order().reference }}</span>
+    </span>
+    <span class="total">{{ total() }}</span>
   </div>
   <h3 class="title">{{ order().title }}</h3>
   <p class="sub">{{ order().sub }}</p>
   <div class="bar" role="img" [attr.aria-label]="progressLabel()">
     <span class="bar-fill" [style.width.%]="order().percent"></span>
   </div>
-  <p class="total">{{ total() }}</p>
 </header>
 
 <!-- LE STEPPER. Trois états, une seule couleur d'accent : le passé en bleu avec
@@ -32,7 +37,6 @@
       }
       <span class="step-label">{{ step.label }}</span>
       <span class="step-at">{{ step.at }}</span>
-      <span class="step-note">{{ step.note }}</span>
     </li>
   }
 </ol>

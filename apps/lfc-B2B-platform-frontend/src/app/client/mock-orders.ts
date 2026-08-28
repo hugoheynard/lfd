@@ -11,13 +11,19 @@
  * une maquette qui invente ses propres montants ne se compare plus à la réf.
  */
 
-/** Ce qu'une étape de commande dit — le MÉTIER, jamais le logiciel. */
+/**
+ * Une étape franchie, ou à franchir.
+ *
+ * Deux lignes et pas trois : la phrase d'ambiance (« pétrissage puis
+ * façonnage ») a été retirée. Répétée sous chacune des quatre étapes de
+ * chacune des trois cartes, elle faisait douze lignes de commentaire pour zéro
+ * information — l'étape et son heure disent déjà tout ce qu'on vient chercher.
+ */
 export interface TrackStep {
+  /** Le MÉTIER, jamais le logiciel : « au fournil », pas « PROCESSING ». */
   readonly label: string;
   /** L'heure réelle, ou la fenêtre à venir. */
   readonly at: string;
-  /** La phrase concrète : « pétrissage puis façonnage », pas « PROCESSING ». */
-  readonly note: string;
 }
 
 /** Le mode de service décide de la couleur de l'en-tête ET du pied de carte. */
@@ -70,10 +76,10 @@ export interface HistoryOrder {
 }
 
 const PICKUP_STEPS: readonly TrackStep[] = [
-  { label: 'Panier validé', at: 'hier · 18 h 42', note: '7 articles · retrait au Labo' },
-  { label: 'Au fournil', at: 'aujourd’hui · 4 h 15', note: 'Pétrissage puis façonnage' },
-  { label: 'Prête', at: 'aujourd’hui · 6 h 58', note: 'Gardée au frais, au comptoir' },
-  { label: 'Retirée', at: 'à venir · 7 h – 8 h', note: 'Présentez votre QR' },
+  { label: 'Panier validé', at: 'hier · 18 h 42' },
+  { label: 'Au fournil', at: 'aujourd’hui · 4 h 15' },
+  { label: 'Prête', at: 'aujourd’hui · 6 h 58' },
+  { label: 'Retirée', at: 'à venir · 7 h – 8 h' },
 ];
 
 export const MOCK_TRACKED: readonly TrackedOrder[] = [
@@ -103,10 +109,10 @@ export const MOCK_TRACKED: readonly TrackedOrder[] = [
     pieces: 4,
     percent: 82,
     steps: [
-      { label: 'Panier validé', at: 'hier · 19 h 10', note: '4 articles · coursier au chalet' },
-      { label: 'Au fournil', at: 'aujourd’hui · 4 h 40', note: 'Pétrissage puis façonnage' },
-      { label: 'En route', at: 'aujourd’hui · 7 h 04', note: 'Malik a quitté Le Labo' },
-      { label: 'Livrée', at: 'à venir · ~7 h 40', note: 'Il appelle s’il ne trouve pas' },
+      { label: 'Panier validé', at: 'hier · 19 h 10' },
+      { label: 'Au fournil', at: 'aujourd’hui · 4 h 40' },
+      { label: 'En route', at: 'aujourd’hui · 7 h 04' },
+      { label: 'Livrée', at: 'à venir · ~7 h 40' },
     ],
     at: 2,
     pickup: '',
@@ -124,10 +130,10 @@ export const MOCK_TRACKED: readonly TrackedOrder[] = [
     pieces: 6,
     percent: 34,
     steps: [
-      { label: 'Panier validé', at: 'hier · 20 h 05', note: '6 articles · coursier au bureau' },
-      { label: 'Au fournil', at: 'aujourd’hui · 4 h 40', note: 'Pétrissage puis façonnage' },
-      { label: 'En route', at: 'à venir · ~7 h 20', note: 'Le coursier est attribué au départ' },
-      { label: 'Livrée', at: 'à venir · ~7 h 55', note: 'Il appelle s’il ne trouve pas' },
+      { label: 'Panier validé', at: 'hier · 20 h 05' },
+      { label: 'Au fournil', at: 'aujourd’hui · 4 h 40' },
+      { label: 'En route', at: 'à venir · ~7 h 20' },
+      { label: 'Livrée', at: 'à venir · ~7 h 55' },
     ],
     at: 1,
     pickup: '',

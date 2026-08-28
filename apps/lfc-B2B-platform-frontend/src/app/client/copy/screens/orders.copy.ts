@@ -14,8 +14,15 @@
 export interface OrdersCopy {
   readonly title: string;
   readonly lead: string;
+  /** Le sur-titre du bandeau — `{n}` est remplacé par le nombre de suivis. */
+  readonly liveCount: string;
   readonly wellHead: string;
-  /** `{n}` est remplacé par le nombre de commandes vivantes. */
+  /**
+   * Le compte, sous le titre du puits — `{n}` commandes vivantes.
+   *
+   * Il ne dit plus « faites glisser » : le débordement de la troisième carte le
+   * montre déjà, et une consigne de geste sous un titre lit comme une notice.
+   */
   readonly wellHint: string;
   readonly wellNone: string;
   readonly wellNoneHint: string;
@@ -85,8 +92,9 @@ export interface OrdersCopy {
 export const ORDERS_FR: OrdersCopy = {
   title: 'Mes commandes',
   lead: 'Ce qui est en route, puis tout ce qui est passé — avec son état de règlement.',
+  liveCount: '{n} suivis en cours',
   wellHead: 'Mes suivis',
-  wellHint: '{n} commandes vivent en même temps — faites glisser',
+  wellHint: '{n} en cours',
   wellNone: 'Rien en cours',
   wellNoneHint: 'Vos commandes vivantes s’affichent ici, du panier à la remise.',
   progress: 'Avancement : {n} %',
@@ -156,8 +164,9 @@ export const ORDERS_FR: OrdersCopy = {
 export const ORDERS_EN: OrdersCopy = {
   title: 'My orders',
   lead: 'What is on its way, then everything that is past — with how it was settled.',
+  liveCount: '{n} orders in progress',
   wellHead: 'My tracking',
-  wellHint: '{n} orders are live at once — slide across',
+  wellHint: '{n} in progress',
   wellNone: 'Nothing in progress',
   wellNoneHint: 'Live orders show up here, from basket to handover.',
   progress: 'Progress: {n}%',
@@ -227,8 +236,9 @@ export const ORDERS_EN: OrdersCopy = {
 export const ORDERS_IT: OrdersCopy = {
   title: 'I miei ordini',
   lead: 'Quello che è in arrivo, poi tutto quello che è passato — con il suo stato di pagamento.',
+  liveCount: '{n} ordini in corso',
   wellHead: 'I miei tracciamenti',
-  wellHint: '{n} ordini sono in corso insieme — fai scorrere',
+  wellHint: '{n} in corso',
   wellNone: 'Niente in corso',
   wellNoneHint: 'Gli ordini in corso compaiono qui, dal carrello alla consegna.',
   progress: 'Avanzamento: {n} %',

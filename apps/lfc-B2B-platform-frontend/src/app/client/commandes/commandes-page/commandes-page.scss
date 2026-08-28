@@ -27,13 +27,16 @@
   margin-bottom: var(--fold-space-lg);
 }
 
+/* Un CARRÉ arrondi, pas une pastille : la pastille est ronde partout ailleurs
+   dans l'app et y signifie un état ou une personne. Ici c'est une tuile de
+   section — la même famille que la tuile de « nouvelle commande ». */
 .well-glyph {
   flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--fold-radius-pill);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-md);
   background: var(--lfc-color-on-well-tile);
 }
 
@@ -41,12 +44,15 @@
   min-width: 0;
 }
 
+/* C'est le TITRE d'une section, pas un sur-titre. Il était réglé sur
+   `text-kicker` — 9,5 px : les capitales y étaient bien là, mais si petites
+   qu'on ne les lisait pas comme un titre. Le grain de bloc lui rend sa voix. */
 .well-title {
   margin: 0;
   font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-kicker);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
   text-transform: uppercase;
 }
 
@@ -76,14 +82,21 @@
 
 /* Un défilement horizontal, pas une grille. `align-items: stretch` met les
    cartes à la même hauteur — c'est la moitié du contrat ; l'autre moitié est le
-   `margin-top:auto` de leur pied. Le rembourrage négatif fait affleurer les
-   cartes aux bords du puits sans couper l'ombre. */
+   `margin-top:auto` de leur pied.
+
+   LE DÉCALAGE : le rail déborde le puits à gauche seulement, et garde son
+   rembourrage à droite. La carte suivante entre donc dans ce rembourrage au
+   lieu d'être coupée net au bord — c'est cette tranche visible qui dit qu'il y
+   a autre chose, là où une carte affleurant le bord se lit comme la dernière.
+   `scroll-padding` fait le reste : une carte accrochée s'arrête au même
+   décalage, jamais collée au bord. */
 .rail {
   display: flex;
   align-items: stretch;
   gap: var(--fold-space-md);
   margin: 0 calc(var(--fold-space-lg) * -1);
   padding: 0 var(--fold-space-lg) var(--fold-space-xs);
+  scroll-padding-inline: var(--fold-space-lg);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   /* ⚠️ `flex: none` sur le conteneur, pas seulement sur les cartes : un
@@ -94,7 +107,9 @@
 
 .rail-card {
   flex: none;
-  width: min(300px, 82%);
+  /* La largeur laisse VOIR la suivante : 82 % collait la première au bord et la
+     deuxième disparaissait derrière. */
+  width: min(300px, 76%);
   scroll-snap-align: start;
 }
 
@@ -179,13 +194,16 @@
   .rail {
     margin: 0 calc(var(--fold-space-xl) * -1);
     padding: 0 var(--fold-space-xl) var(--fold-space-xs);
+    scroll-padding-inline: var(--fold-space-xl);
   }
 
-  /* DEUX cartes visibles, et la troisième qui dépasse : c'est le débordement
-     qui dit qu'il y en a d'autres. Une grille de trois aurait tout montré et
+  /* DEUX cartes visibles, et la TRANCHE de la troisième : c'est ce débordement
+     qui dit qu'il y en a d'autres. Retirer 44 px de la moitié réserve
+     exactement cette tranche — à 50 % pile, la deuxième affleurait le bord et
+     le puits redevenait muet. Une grille de trois aurait tout montré et
      n'aurait plus rien annoncé au quatrième suivi. */
   .rail-card {
-    width: calc(50% - var(--fold-space-md) / 2);
+    width: calc(50% - var(--fold-space-md) / 2 - 44px);
   }
 
   .history-head {

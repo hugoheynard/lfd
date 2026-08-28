@@ -1,5 +1,9 @@
 <ng-template clientBanner>
-  <app-client-banner-block [title]="t().orders.title" [lead]="t().orders.lead">
+  <app-client-banner-block
+    [kicker]="liveCount()"
+    [title]="t().orders.title"
+    [lead]="t().orders.lead"
+  >
     <app-new-order-action banner-action />
   </app-client-banner-block>
 </ng-template>

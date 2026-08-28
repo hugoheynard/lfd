@@ -66,6 +66,17 @@ export class CommandesPage {
   /** La commande dont on signale un problème — `null` referme la feuille. */
   protected readonly reported = signal<HistoryOrder | null>(null);
 
+  /**
+   * Le sur-titre du bandeau : combien de commandes VIVENT en ce moment.
+   *
+   * Il n'est pas le même que l'indice du puits, et c'est voulu : celui-ci
+   * compte, celui-là explique qu'on peut faire glisser. Le premier se lit avant
+   * même d'avoir descendu — c'est la raison pour laquelle on a ouvert l'écran.
+   */
+  protected readonly liveCount = computed(() =>
+    this.t().orders.liveCount.replace('{n}', String(this.tracked.length)),
+  );
+
   protected readonly wellHint = computed(() =>
     this.t().orders.wellHint.replace('{n}', String(this.tracked.length)),
   );
