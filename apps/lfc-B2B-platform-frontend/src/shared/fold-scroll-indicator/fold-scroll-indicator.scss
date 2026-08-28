@@ -1,0 +1,90 @@
+/* The indicator themes itself from two custom properties so a host on any
+   surface can retune it without reaching inside: `--fold-scroll-indicator-color`
+   for the resting marks, `--fold-scroll-indicator-active` for the live one. */
+:host {
+  display: block;
+
+  --_color: var(--fold-scroll-indicator-color, var(--fold-color-text-muted));
+  --_active: var(--fold-scroll-indicator-active, var(--fold-color-primary));
+  --_dot: 6px;
+  --_dash: 18px;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The BOX is the tap target, the mark inside is what you see. A six-pixel dot
+   is not a target; a 22px box is. */
+.slot {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+:host([data-interactive]) .slot {
+  cursor: pointer;
+}
+
+.mark {
+  display: block;
+  width: var(--_dot);
+  height: var(--_dot);
+  border-radius: var(--fold-radius-pill);
+  background: var(--_color);
+  opacity: 0.45;
+  /* THE SIZE TRANSFER. Both the leaving mark and the arriving one animate their
+     width on the same curve, so the length appears to travel between them
+     rather than to blink out here and blink in there. The ease-out overshoot of
+     this curve is what makes it read as a movement instead of a resize. */
+  transition:
+    width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 200ms ease,
+    opacity 200ms ease;
+}
+
+.slot.on .mark {
+  background: var(--_active);
+  opacity: 1;
+}
+
+/* ── morse ─────────────────────────────────────────────────────────────────
+   Dots, and the live one stretches into a dash. The SHAPE carries the state,
+   which is what lets the indicator work on a dark ground where a hue shift
+   would be missed. The slot widens with its mark, or the dash would run under
+   its neighbours. */
+:host([data-variant='morse']) .slot.on {
+  width: 26px;
+}
+
+:host([data-variant='morse']) .slot.on .mark {
+  width: var(--_dash);
+}
+
+/* ── lines ─────────────────────────────────────────────────────────────────
+   Every mark is a dash: the items read as segments of one track rather than as
+   siblings. Nothing moves — only the fill changes — so this is the variant for
+   steps, where a travelling length would suggest a position that is not one. */
+:host([data-variant='lines']) .slot {
+  width: 22px;
+}
+
+:host([data-variant='lines']) .mark {
+  width: 16px;
+}
+
+/* ── dots ──────────────────────────────────────────────────────────────────
+   The quiet one. Colour alone, for a light surface where colour is enough. */
+
+@media (prefers-reduced-motion: reduce) {
+  .mark {
+    transition: none;
+  }
+}

@@ -7,6 +7,8 @@
  * primitive) is consumed by both the banner carousel and the product card.
  */
 export * from './fold-action';
+export * from './fold-scroll-indicator';
+export * from './fold-well';
 export * from './fold-banner-carousel';
 export * from './fold-product-card';
 // Carte produit **app-owned** (mise en page libre dans ce repo), distincte de la

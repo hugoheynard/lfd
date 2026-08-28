@@ -13,23 +13,28 @@
 
 /* ── Le puits des suivis ───────────────────────────────────────────────── */
 
+/* Le puits est un composant partagé ; l'écran ne fait que lui donner sa peau.
+   Ces quatre propriétés sont son contrat de thème — pas un sélecteur qui
+   irait chercher à l'intérieur. */
 .well {
-  padding: var(--fold-space-lg);
-  border-radius: var(--lfc-radius-2xl);
-  background: var(--lfc-color-surface-well);
-  color: var(--lfc-color-on-well);
+  --fold-well-bg: var(--lfc-color-surface-well);
+  --fold-well-color: var(--lfc-color-on-well);
+  --fold-well-radius: var(--lfc-radius-2xl);
+  --fold-well-padding: var(--fold-space-lg);
 }
 
-.well-head {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin-bottom: var(--fold-space-lg);
+/* L'indicateur hérite du même contrat : il ne sait pas qu'il est sur du bleu
+   nuit, on le lui dit. */
+.dots {
+  --fold-scroll-indicator-color: var(--lfc-color-on-well-muted);
+  --fold-scroll-indicator-active: var(--lfc-color-accent);
+
+  margin-top: var(--fold-space-sm);
 }
 
-/* Un CARRÉ arrondi, pas une pastille : la pastille est ronde partout ailleurs
-   dans l'app et y signifie un état ou une personne. Ici c'est une tuile de
-   section — la même famille que la tuile de « nouvelle commande ». */
+/* Un CARRÉ arrondi, pas une pastille : le rond est réservé aux personnes et aux
+   états. C'est la silhouette d'un `fold-avatar square` — le jour où le puits
+   parle d'une personne, l'avatar prend cette place sans rien déplacer. */
 .well-glyph {
   flex: none;
   display: grid;
@@ -38,36 +43,6 @@
   height: 32px;
   border-radius: var(--fold-radius-md);
   background: var(--lfc-color-on-well-tile);
-}
-
-.well-titles {
-  min-width: 0;
-}
-
-/* C'est le TITRE d'une section, pas un sur-titre. Il était réglé sur
-   `text-kicker` — 9,5 px : les capitales y étaient bien là, mais si petites
-   qu'on ne les lisait pas comme un titre. Le grain de bloc lui rend sa voix. */
-/* ⚠️ INTERLETTRAGE : `tracking-block` vaut −0,015 em, et le resserrement des
-   capitales appartient aux GRANDS corps — c'est le parti de la réf pour les
-   titres d'écran, où des capitales serrées font un bloc. À 14 px il ne reste
-   plus assez de blanc entre les fûts : le mot se soude. Sur le puits sombre, la
-   halation du crème le rattrapait ; sur le crème, l'encre le montrait — d'où
-   deux titres qui ne se rendaient pas pareil alors que leurs règles étaient
-   identiques au caractère près. À ce corps-là, les capitales veulent un
-   interlettrage positif, celui de `tracking-label`. */
-.well-title {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-}
-
-.well-hint {
-  margin: 2px 0 0;
-  font-size: var(--fold-text-xs);
-  color: var(--lfc-color-on-well-muted);
 }
 
 .well-empty {
@@ -88,98 +63,12 @@
   color: var(--lfc-color-on-well-muted);
 }
 
-/* Un défilement horizontal, pas une grille. `align-items: stretch` met les
-   cartes à la même hauteur — c'est la moitié du contrat ; l'autre moitié est le
-   `margin-top:auto` de leur pied.
-
-   LE DÉCALAGE : le rail déborde le puits à gauche seulement, et garde son
-   rembourrage à droite. La carte suivante entre donc dans ce rembourrage au
-   lieu d'être coupée net au bord — c'est cette tranche visible qui dit qu'il y
-   a autre chose, là où une carte affleurant le bord se lit comme la dernière.
-   `scroll-padding` fait le reste : une carte accrochée s'arrête au même
-   décalage, jamais collée au bord. */
-.rail {
-  display: flex;
-  align-items: stretch;
-  gap: var(--fold-space-md);
-  margin: 0 calc(var(--fold-space-lg) * -1);
-  padding: 0 var(--fold-space-lg) var(--fold-space-xs);
-  scroll-padding-inline: var(--fold-space-lg);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  /* ⚠️ `flex: none` sur le conteneur, pas seulement sur les cartes : un
-     défilement horizontal placé dans une colonne flex se fait comprimer, et ses
-     enfants sont rognés sans que rien ne le signale. */
-  flex: none;
-}
-
+/* Les cartes portent leur largeur et leur accroche : elles sont le balisage de
+   CET écran, et c'est ici qu'on décide de la tranche laissée à la suivante. */
 .rail-card {
   flex: none;
-  /* Assez large pour qu'une carte se lise seule — quatre étapes de timeline et
-     une rangée de deux boutons ont besoin de cette largeur — et assez étroite
-     pour laisser voir la TRANCHE de la suivante. C'est cette tranche qui dit
-     qu'il y en a d'autres ; sans elle, le puits redevient muet. */
   width: min(340px, 88%);
   scroll-snap-align: start;
-}
-
-/* Les points de défilement, en pied de puits.
-
-   Les inactifs sont des POINTS ronds, l'actif est un TRAIT chaud. La différence
-   de forme est ce qui se voit en premier : sur le bleu nuit, une simple nuance
-   se rate, une longueur non. Le trait dit aussi la direction — on est sur un
-   rail, pas dans une liste.
-
-   La cible fait 22 px de haut pour rester atteignable au doigt ; la marque
-   visible, elle, n'en fait que six. */
-.dots {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin-top: var(--fold-space-sm);
-}
-
-.dot {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 22px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-.dot::after {
-  content: '';
-  display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-color-on-well-muted);
-  opacity: 0.45;
-  transition:
-    width var(--lfc-motion-tap),
-    background var(--lfc-motion-tap);
-}
-
-/* L'actif s'allonge. Sa cible s'élargit avec lui : un trait de 18 px dans une
-   case de 16 px déborderait sur ses voisines. */
-.dot.on {
-  width: 26px;
-}
-
-.dot.on::after {
-  width: 18px;
-  background: var(--lfc-color-accent);
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dot::after {
-    transition: none;
-  }
 }
 
 /* ── L'historique ──────────────────────────────────────────────────────── */
@@ -221,13 +110,7 @@
   }
 
   .well {
-    padding: var(--fold-space-xl);
-  }
-
-  .rail {
-    margin: 0 calc(var(--fold-space-xl) * -1);
-    padding: 0 var(--fold-space-xl) var(--fold-space-xs);
-    scroll-padding-inline: var(--fold-space-xl);
+    --fold-well-padding: var(--fold-space-xl);
   }
 
   /* DEUX cartes visibles, et la TRANCHE de la troisième : c'est ce débordement

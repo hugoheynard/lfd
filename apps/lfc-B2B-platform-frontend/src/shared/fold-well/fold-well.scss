@@ -1,0 +1,50 @@
+/* The well is themable from outside — a host chooses its ground and its ink
+   without reaching in, which is what lets the same component sit on a dark
+   region here and a sunken card there. */
+:host {
+  display: block;
+  padding: var(--fold-well-padding, var(--fold-space-lg));
+  border-radius: var(--fold-well-radius, var(--fold-radius-xl));
+  background: var(--fold-well-bg, var(--fold-color-surface-sunken));
+  color: var(--fold-well-color, var(--fold-color-text));
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+}
+
+.titles {
+  min-width: 0;
+  flex: 1;
+}
+
+/* ── The rail ──────────────────────────────────────────────────────────────
+   It bleeds past the well's LEFT padding and keeps the right one. The next
+   item therefore enters that right padding instead of being cut at the edge —
+   and that visible sliver is the whole message: there is more. An item flush
+   to the edge reads as the last one.
+
+   `scroll-padding` makes a snapped item stop at the same offset, so the rail
+   never parks a card against the bezel. */
+:host([data-scrollable]) .body {
+  display: flex;
+  align-items: stretch;
+  gap: var(--fold-space-md);
+  margin-left: calc(var(--fold-well-padding, var(--fold-space-lg)) * -1);
+  padding-left: var(--fold-well-padding, var(--fold-space-lg));
+  padding-bottom: var(--fold-space-xs);
+  scroll-padding-inline-start: var(--fold-well-padding, var(--fold-space-lg));
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* ⚠️ A horizontal scroller inside a flex COLUMN gets compressed and clips its
+     children with nothing to show for it. `flex: none` is the guard. */
+  flex: none;
+}
+
+/* The items themselves carry `scroll-snap-align` and their width: they are the
+   CALLER's markup, they wear the caller's encapsulation, and no selector
+   written here would reach them. Piercing with `::ng-deep` would have — and
+   would also have let the well silently restyle anything dropped into it. */

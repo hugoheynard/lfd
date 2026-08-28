@@ -11,14 +11,8 @@
 <div class="page">
   <!-- LE PUITS DES SUIVIS. Il dit qu'il y a autre chose à droite : sans lui, le
        débordement passe pour un accident de mise en page. -->
-  <section class="well">
-    <header class="well-head">
-      <span class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
-      <div class="well-titles">
-        <h2 class="well-title">{{ t().orders.wellHead }}</h2>
-        <p class="well-hint">{{ wellHint() }}</p>
-      </div>
-    </header>
+  <fold-well #rail class="well" scrollable [title]="t().orders.wellHead" [subtitle]="wellHint()">
+    <span wellLead class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
 
     @if (tracked.length === 0) {
       <div class="well-empty">
@@ -26,34 +20,21 @@
         <p class="well-empty-hint">{{ t().orders.wellNoneHint }}</p>
       </div>
     } @else {
-      <!-- Un DÉFILEMENT, pas une grille : deux cartes visibles et la troisième
-           qui dépasse. C'est ce qui permet d'en avoir cinq sans allonger la
-           page. `align-items: stretch` les met à la même hauteur. -->
-      <div #rail class="rail" (scroll)="onScroll()">
-        @for (order of tracked; track order.reference) {
-          <app-track-card class="rail-card" [order]="order" />
-        }
-      </div>
-
-      <!-- L'INDICATEUR : il dit où l'on en est dans une pile qu'on ne voit pas
-           entièrement. Le point actif prend la forme d'une BARRE chaude — un
-           point plus foncé se confondrait avec les autres sur le bleu nuit. -->
-      @if (tracked.length > 1) {
-        <div class="dots">
-          @for (order of tracked; track order.reference; let i = $index) {
-            <button
-              class="dot"
-              type="button"
-              [class.on]="at() === i"
-              [attr.aria-label]="dotLabel(i)"
-              [attr.aria-current]="at() === i"
-              (click)="goTo(i)"
-            ></button>
-          }
-        </div>
+      @for (order of tracked; track order.reference) {
+        <app-track-card class="rail-card" [order]="order" />
       }
     }
-  </section>
+
+    <fold-scroll-indicator
+      wellFoot
+      class="dots"
+      variant="morse"
+      [count]="tracked.length"
+      [active]="rail.active()"
+      [markerLabel]="t().orders.wellDot"
+      (picked)="rail.goTo($event)"
+    />
+  </fold-well>
 
   <section class="history">
     <header class="history-head">

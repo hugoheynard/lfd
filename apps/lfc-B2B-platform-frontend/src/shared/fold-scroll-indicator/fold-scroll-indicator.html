@@ -1,0 +1,22 @@
+@if (markers().length > 0) {
+  <div class="track">
+    @for (index of markers(); track index) {
+      @if (interactive()) {
+        <button
+          class="slot"
+          type="button"
+          [class.on]="index === active()"
+          [attr.aria-label]="label(index)"
+          [attr.aria-current]="index === active() ? 'true' : null"
+          (click)="pick(index)"
+        >
+          <span class="mark"></span>
+        </button>
+      } @else {
+        <span class="slot" [class.on]="index === active()">
+          <span class="mark"></span>
+        </span>
+      }
+    }
+  </div>
+}
