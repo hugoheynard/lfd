@@ -593,6 +593,7 @@ export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
 export {
   contentLocales,
   contentLocaleSchema,
+  legalIdentitySchema,
   footerHouseSchema,
   footerLinkSchema,
   footerLocaleContentSchema,
@@ -601,6 +602,7 @@ export {
 } from "./platform-content.js";
 export type {
   ContentLocale,
+  LegalIdentity,
   FooterHouse,
   FooterLocaleContent,
   FooterContent,
