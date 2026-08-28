@@ -1,0 +1,65 @@
+<div class="foot">
+  <div class="cols">
+    <section class="col brand-col">
+      <div class="brand-row">
+        <span class="mark" aria-hidden="true"><img src="brand/lfc-mark.png" alt="" /></span>
+        <span class="brand">
+          <span class="brand-name">La Folie Coffee</span>
+          <span class="brand-kicker">{{ t().foot.tagline }}</span>
+        </span>
+      </div>
+      <p class="pitch">{{ t().foot.pitch }}</p>
+      <div class="social">
+        <a class="social-pill" [href]="legal.instagram" rel="noopener" target="_blank">Instagram</a>
+        <a class="social-pill" [href]="legal.facebook" rel="noopener" target="_blank">Facebook</a>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2 class="col-head">{{ t().foot.housesHead }}</h2>
+      @for (house of t().foot.houses; track house.name) {
+        <!-- L'adresse COMPLÈTE, code postal compris : c'est ce qu'on copie dans
+             un GPS, et une adresse tronquée n'y sert à rien. -->
+        <address class="house">
+          <span class="house-name">{{ house.name }}</span>
+          <span class="house-line">{{ house.street }}</span>
+          <span class="house-line">{{ house.city }}</span>
+          <span class="house-line">{{ house.hours }}</span>
+        </address>
+      }
+    </section>
+
+    <nav class="col" [attr.aria-label]="t().foot.orderHead">
+      <h2 class="col-head">{{ t().foot.orderHead }}</h2>
+      @for (link of t().foot.orderLinks; track link) {
+        <span class="link">{{ link }}</span>
+      }
+    </nav>
+
+    <section class="col">
+      <h2 class="col-head">{{ t().foot.helpHead }}</h2>
+      <!-- Le téléphone en premier et en grand : c'est l'information la plus
+           demandée d'un pied de page de commerce. -->
+      <a class="phone" [href]="legal.phoneHref">{{ legal.phone }}</a>
+      <p class="phone-hours">{{ t().foot.phoneHours }}</p>
+      @for (link of t().foot.helpLinks; track link) {
+        <span class="link">{{ link }}</span>
+      }
+      <a class="link email" [href]="'mailto:' + legal.email">{{ legal.email }}</a>
+    </section>
+  </div>
+
+  <!-- La barre légale. ⚠️ Elle ne porte PAS encore SIRET, RCS ni TVA
+       intracommunautaire : voir `legal-identity.ts`. -->
+  <div class="legal">
+    <p class="legal-text">
+      {{ legal.company }} · {{ legal.capital }} · {{ t().foot.legalPay }} {{ t().foot.legalVat }} ©
+      {{ year }} La Folie Coffee.
+    </p>
+    <nav class="legal-links" aria-label="Mentions">
+      @for (link of t().foot.legalLinks; track link) {
+        <span class="link">{{ link }}</span>
+      }
+    </nav>
+  </div>
+</div>

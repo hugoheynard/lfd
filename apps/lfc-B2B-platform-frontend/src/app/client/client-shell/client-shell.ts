@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
+import { ClientFoot } from '../client-foot/client-foot';
 import { ClientMenu } from '../client-nav/client-menu/client-menu';
 import { ClientNavBar } from '../client-nav/client-nav-bar/client-nav-bar';
 import { ClientOnboarding } from '../client-onboarding.service';
@@ -25,6 +26,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
   imports: [
+    ClientFoot,
     ClientMenu,
     ClientNavBar,
     FoldAppShellComponent,

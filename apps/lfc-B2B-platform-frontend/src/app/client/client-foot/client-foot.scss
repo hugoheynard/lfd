@@ -1,0 +1,199 @@
+/* Le pied n'existe qu'au bureau : sur un téléphone, la navigation pleine page
+   et la carte contact couvrent les mêmes besoins sans imposer 300 px de
+   défilement mort. La rangée du shell se replie d'elle-même quand son contenu
+   ne prend pas de place. */
+:host {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  :host {
+    display: block;
+    /* La MÊME teinte que la barre — règle de région du handoff navi 2. C'est ce
+       qui fait qu'il ferme la page au lieu d'y ajouter un bloc. */
+    background: var(--fold-color-bg-header);
+  }
+}
+
+.foot {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--fold-space-4xl) 44px var(--fold-space-xl);
+}
+
+.cols {
+  display: grid;
+  /* La marque a plus à dire que les trois listes : 1.6fr, la mesure de la réf. */
+  grid-template-columns: 1.6fr minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 34px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.col-head {
+  margin: 0 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+/* ── La marque ──────────────────────────────────────────────────────────── */
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  overflow: hidden;
+}
+
+.mark img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.04;
+}
+
+.brand-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  color: var(--fold-color-on-primary);
+}
+
+.brand-kicker {
+  margin-top: 2px;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.pitch {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-md);
+  line-height: 1.55;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.social {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-md);
+}
+
+.social-pill {
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* ── Les maisons ────────────────────────────────────────────────────────── */
+
+.house {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--fold-space-lg);
+  font-style: normal;
+  font-size: var(--fold-text-md);
+  line-height: 1.5;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.house-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-base);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-on-primary);
+}
+
+/* ── Les listes ─────────────────────────────────────────────────────────── */
+
+.link {
+  font-size: var(--fold-text-md);
+  line-height: 1.9;
+  color: var(--lfc-color-on-primary-muted);
+  text-decoration: none;
+}
+
+.phone {
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-on-primary);
+  text-decoration: none;
+}
+
+.phone-hours {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+/* ── La barre légale ────────────────────────────────────────────────────── */
+
+.legal {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-2xl);
+  margin-top: var(--fold-space-2xl);
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.legal-text {
+  margin: 0;
+  max-width: 62ch;
+  font-size: var(--fold-text-sm);
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.legal-links {
+  display: flex;
+  flex: none;
+  gap: var(--fold-space-lg);
+}
+
+.legal-links .link {
+  font-size: var(--fold-text-sm);
+  line-height: 1.6;
+}

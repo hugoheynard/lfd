@@ -10,6 +10,14 @@
  * rechargement — trois dictionnaires en mémoire coûtent quelques kilo-octets et
  * répondent au doigt.
  */
+/** Une maison au pied de page : l'adresse COMPLÈTE, c'est ce qu'on copie dans un GPS. */
+export interface FootHouse {
+  readonly name: string;
+  readonly street: string;
+  readonly city: string;
+  readonly hours: string;
+}
+
 export interface ClientCopy {
   readonly chrome: {
     readonly back: string;
@@ -25,8 +33,20 @@ export interface ClientCopy {
     readonly deskKicker: string;
   };
   readonly foot: {
-    readonly place: string;
-    readonly hours: string;
+    /** Ce qu'on fabrique, et à quelle heure c'est livré. */
+    readonly tagline: string;
+    readonly pitch: string;
+    readonly housesHead: string;
+    readonly houses: readonly [FootHouse, FootHouse];
+    readonly orderHead: string;
+    /** Six entrées qui doublent la navigation PAR INTENTION, pas par rubrique. */
+    readonly orderLinks: readonly string[];
+    readonly helpHead: string;
+    readonly phoneHours: string;
+    readonly helpLinks: readonly string[];
+    readonly legalPay: string;
+    readonly legalVat: string;
+    readonly legalLinks: readonly string[];
   };
   readonly nav: {
     /** Les cinq destinations, dans l'ordre — cf. `ClientNav`. */
@@ -57,6 +77,41 @@ export interface ClientCopy {
     readonly hello: string;
     /** Le même, quand le compte ne porte pas encore de prénom. */
     readonly helloAnonymous: string;
+  };
+  readonly espace: {
+    /** La seconde ligne du titre, indexée par le NOMBRE d'actions (1, 2, 3). */
+    readonly today: readonly [string, string, string];
+    /** Quand rien n'attend — le titre ne compte plus, il accueille. */
+    readonly todayNone: string;
+    /** Ce que sont ces choses, en une ligne. */
+    readonly lead: string;
+    readonly leadNone: string;
+    readonly wellTitle: string;
+    readonly wellNote: string;
+    readonly pickupTitle: string;
+    /** `{ref}` est remplacé par le numéro de commande. */
+    readonly pickupRef: string;
+    /** `{at}` le lieu prépositionnel, `{slot}` le créneau. */
+    readonly pickupWhen: string;
+    readonly pickupAction: string;
+    readonly cartTitle: string;
+    readonly cartBadge: string;
+    readonly cartWhen: string;
+    readonly cartAction: string;
+    readonly invoiceTitle: string;
+    readonly invoiceDue: string;
+    readonly invoiceAction: string;
+    readonly contactKicker: string;
+    readonly contactTitle: string;
+    readonly contactWho: string;
+    readonly call: string;
+    readonly write: string;
+    readonly habitsHead: string;
+    readonly proHead: string;
+    readonly proDiscount: string;
+    readonly proMonth: string;
+    readonly proKbis: string;
+    readonly proKbisState: string;
   };
   readonly hero: {
     readonly welcomeTitle: string;

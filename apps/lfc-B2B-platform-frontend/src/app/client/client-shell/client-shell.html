@@ -62,12 +62,8 @@
        ferme tout seul au-delà du pli, où la sous-barre le remplace. -->
   <app-client-menu [open]="menuOpen()" (closed)="menuOpen.set(false)" />
 
-  <!-- Le pied de l'app : une encre PLUS PROFONDE que la barre, pour fermer la
-       page sans la répéter. Il n'apparaît qu'au-delà du pli — sur un téléphone,
-       un pied de page est du contenu qu'on fait défiler pour rien. -->
-  <div footer class="foot">
-    <span class="foot-brand">La Folie Coffee</span>
-    <span class="foot-place">{{ t().foot.place }}</span>
-    <span class="foot-hours">{{ t().foot.hours }}</span>
-  </div>
+  <!-- Le pied de l'app. Il n'apparaît qu'au-delà du pli — sur un téléphone, un
+       pied de page est du contenu qu'on fait défiler pour rien — et il se peint
+       lui-même : la rangée du shell se replie quand il ne prend pas de place. -->
+  <app-client-foot footer />
 </fold-app-shell>
