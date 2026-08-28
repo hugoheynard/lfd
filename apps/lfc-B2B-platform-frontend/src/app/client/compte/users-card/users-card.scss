@@ -1,0 +1,215 @@
+:host {
+  display: block;
+}
+
+.card-head {
+  margin-bottom: var(--fold-space-md);
+}
+
+.card-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La carte du détenteur : dégradé bleu et halo caramel, comme la carte de
+   compte en plus petit — c'est la même personne des deux côtés. */
+.holder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  min-height: 75px;
+  padding: var(--fold-space-md);
+  border: 0;
+  border-radius: var(--lfc-radius-xl);
+  background: linear-gradient(122deg, var(--lfc-ink-800), var(--lfc-ink-900));
+  color: var(--lfc-color-on-well);
+  text-align: left;
+  cursor: pointer;
+  isolation: isolate;
+  overflow: clip;
+}
+
+.holder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(80% 130% at 92% 0%, rgb(217 154 43 / 28%), transparent 60%);
+}
+
+.holder-initials {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-well-tile);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+.holder-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.holder-kicker {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-well-muted);
+}
+
+.holder-name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.holder-mail {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-on-well-muted);
+  overflow-wrap: anywhere;
+}
+
+.holder-tag {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-well-tile);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.people {
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--fold-space-sm) 0;
+  border: 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.initials {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-secondary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+}
+
+.initials[data-space='active'] {
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}
+
+.initials[data-space='invited'] {
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+}
+
+.person-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.person-name {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.person-line {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-secondary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag[data-space='active'] {
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}
+
+.tag[data-space='invited'] {
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--fold-space-md);
+  border: 1px dashed var(--fold-color-border-strong);
+  border-radius: var(--lfc-radius-xl);
+  background: none;
+  color: var(--fold-color-text-secondary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.note {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+}

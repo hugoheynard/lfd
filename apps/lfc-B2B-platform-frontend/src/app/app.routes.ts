@@ -164,6 +164,15 @@ export const routes: Routes = [
           import('./client/factures/factures-page/factures-page').then((m) => m.FacturesPage),
       },
       {
+        // LE DOSSIER, écrit pour celui qui le possède. Sept cartes et pas sept
+        // écrans : le back-office a des onglets parce qu'un commercial y passe
+        // la journée ; un client y passe deux fois par an.
+        path: 'mon-compte',
+        title: 'Mon compte — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/compte/compte-page/compte-page').then((m) => m.ComptePage),
+      },
+      {
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.

@@ -1,0 +1,25 @@
+<p class="sub">{{ t().account.kbisHead }}</p>
+
+<!-- L'ÉTAT D'ABORD : le KBIS est daté deux fois, et le second l'est PAR
+     QUELQU'UN. Une vérification anonyme n'engage personne. -->
+<div class="kbis-state">
+  <span class="kbis-check" aria-hidden="true"><fold-icon name="check" /></span>
+  <span class="kbis-verified">{{ kbisVerified() }}</span>
+  <span class="kbis-tag">{{ t().account.kbisUpToDate }}</span>
+</div>
+
+<div class="kbis-file">
+  <span class="kbis-thumb" aria-hidden="true">PDF</span>
+  <span class="kbis-lines">
+    <span class="kbis-name">{{ account.kbis.file }}</span>
+    <span class="kbis-meta">{{ kbisFiled() }}</span>
+  </span>
+  <span class="kbis-acts">
+    <button class="inline" type="button">{{ t().account.kbisOpen }}</button>
+    <button class="inline" type="button">{{ t().account.kbisReplace }}</button>
+  </span>
+</div>
+
+<p class="kbis-fresh">{{ t().account.kbisFreshness }} · {{ t().account.kbisGauge }}</p>
+<div class="gauge" aria-hidden="true"><span class="gauge-fill"></span></div>
+<p class="note">{{ t().account.kbisNote }}</p>

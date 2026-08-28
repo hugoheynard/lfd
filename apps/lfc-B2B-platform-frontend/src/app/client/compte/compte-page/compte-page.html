@@ -1,0 +1,164 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="t().account.title" [lead]="t().account.lead">
+    <span banner-action class="state">
+      <span class="state-dot" aria-hidden="true"></span>{{ t().account.state }}
+    </span>
+  </app-client-banner-block>
+</ng-template>
+
+<div class="page">
+  <app-account-card class="member" />
+
+  <div class="body">
+    <!-- LE SOMMAIRE fait défiler, il ne change pas d'écran — et il le dit. -->
+    <nav class="summary" [attr.aria-label]="t().account.summaryHead">
+      <p class="summary-head">{{ t().account.summaryHead }}</p>
+      <ol class="summary-list">
+        @for (entry of summary(); track entry.key) {
+          <li>
+            <a class="summary-link" [href]="'#' + entry.anchor">
+              <span class="summary-num">{{ entry.number }}</span
+              >{{ entry.label }}
+            </a>
+          </li>
+        }
+      </ol>
+      <p class="summary-note">{{ t().account.summaryNote }}</p>
+    </nav>
+
+    <div class="cards">
+      <section class="card identity" id="compte-identity">
+        <h2 class="card-title">{{ t().account.sections.identity }}</h2>
+        <dl class="facts">
+          <dt>{{ t().account.identityBrand }}</dt>
+          <dd>
+            {{ account.brand }}<button class="inline" type="button">{{ t().account.edit }}</button>
+          </dd>
+          <dt>{{ t().account.identityCompany }}</dt>
+          <dd>{{ account.company }}</dd>
+          <dt>{{ t().account.identityForm }}</dt>
+          <dd>{{ account.legalForm }}</dd>
+          <dt>{{ t().account.identitySiret }}</dt>
+          <dd class="num">{{ account.siret }}</dd>
+          <dt>{{ t().account.identityVat }}</dt>
+          <dd class="num">{{ account.vat }}</dd>
+        </dl>
+        <!-- La règle est ÉCRITE, pas grisée. -->
+        <p class="note">{{ t().account.identityNote }}</p>
+      </section>
+
+      <section class="card kbis" id="compte-kbis">
+        <h2 class="card-title">{{ t().account.sections.kbis }}</h2>
+        <app-kbis-card />
+      </section>
+
+      <section class="card users" id="compte-users">
+        <app-users-card />
+      </section>
+
+      <section class="card addresses" id="compte-addresses">
+        <h2 class="card-title">{{ t().account.sections.addresses }}</h2>
+        <!-- En rangée, on voit d'un coup qu'il y a UNE facturation et PLUSIEURS
+             livraisons. Empilées, les deux blocs se confondaient. -->
+        <div class="address-row">
+          <div class="sub-card billing">
+            <p class="sub-head">{{ t().account.billingHead }}</p>
+            <p class="sub-line">{{ account.billing }}</p>
+            <p class="note">{{ t().account.billingNote }}</p>
+          </div>
+          <div class="sub-card">
+            <p class="sub-head">{{ t().account.deliveryHead }} · {{ deliveryCount() }}</p>
+            @for (address of deliveries; track address.label) {
+              <div class="delivery">
+                <span class="delivery-label">{{ address.label }}</span>
+                @if (address.primary) {
+                  <span class="delivery-tag">{{ t().account.addressDefault }}</span>
+                }
+                <span class="delivery-line">
+                  {{ address.line }} · {{ address.zone }} · {{ address.fee }}
+                </span>
+              </div>
+            }
+            <button class="dashed" type="button">
+              <fold-icon name="plus" />{{ t().account.addressAdd }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card payment" id="compte-payment">
+        <h2 class="card-title">{{ t().account.sections.payment }}</h2>
+        <!-- DEUX RÉGIMES ET PAS PLUS, et ils se lisent côte à côte : l'absence
+             de crédit ne doit pas ressembler à un refus. -->
+        <div class="pay-grid">
+          <div class="pay">
+            <p class="pay-head">
+              {{ t().account.termMonthly
+              }}<span class="pay-tag on">{{ t().account.stateActive }}</span>
+            </p>
+            <p class="pay-note">{{ t().account.termMonthlySub }}</p>
+          </div>
+          <div class="pay">
+            <p class="pay-head">
+              {{ t().account.termOrder
+              }}<span class="pay-tag">{{ t().account.stateAvailable }}</span>
+            </p>
+            <p class="pay-note">{{ t().account.termOrderSub }}</p>
+          </div>
+          <div class="pay">
+            <p class="pay-head">
+              {{ t().account.sepaHead
+              }}<button class="inline" type="button">{{ t().account.change }}</button>
+            </p>
+            <p class="pay-note">{{ account.sepa }}</p>
+          </div>
+          <div class="pay">
+            <p class="pay-head">
+              {{ t().account.cardHead
+              }}<button class="inline" type="button">{{ t().account.change }}</button>
+            </p>
+            <p class="pay-note">{{ account.card }}</p>
+          </div>
+        </div>
+        <p class="note">{{ t().account.paymentNote }}</p>
+      </section>
+
+      <section class="card preferences" id="compte-preferences">
+        <h2 class="card-title">{{ t().account.sections.preferences }}</h2>
+        <dl class="facts">
+          <dt>{{ t().account.prefPickup }}</dt>
+          <dd>
+            {{ account.pickupHabit
+            }}<button class="inline" type="button">{{ t().account.edit }}</button>
+          </dd>
+          <dt>{{ t().account.prefLang }}</dt>
+          <dd>
+            {{ account.language
+            }}<button class="inline" type="button">{{ t().account.edit }}</button>
+          </dd>
+        </dl>
+        <p class="sub-head">{{ t().account.prefNotify }}</p>
+        <ul class="switches">
+          <li>
+            <span>{{ t().account.prefDeliveries }}</span
+            ><span class="pill on" aria-hidden="true"></span>
+          </li>
+          <li>
+            <span>{{ t().account.prefInvoices }}</span
+            ><span class="pill on" aria-hidden="true"></span>
+          </li>
+          <li>
+            <span>{{ t().account.prefEvents }}</span
+            ><span class="pill" aria-hidden="true"></span>
+          </li>
+        </ul>
+        <p class="note">{{ t().account.prefNote }}</p>
+      </section>
+
+      <section class="card data" id="compte-data">
+        <h2 class="card-title">{{ t().account.sections.data }}</h2>
+        <app-data-card />
+      </section>
+    </div>
+  </div>
+</div>

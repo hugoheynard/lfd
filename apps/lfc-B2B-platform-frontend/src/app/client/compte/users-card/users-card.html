@@ -1,0 +1,42 @@
+<header class="card-head">
+  <h2 class="card-title">
+    {{ t().account.sections.users }} <span class="count">({{ count }})</span>
+  </h2>
+</header>
+
+<!-- LE DÉTENTEUR est sorti de la liste : il occupe une carte à lui. La
+     hiérarchie est dans le fond, pas dans une pastille de plus. -->
+@if (holder; as person) {
+  <button class="holder" type="button" (click)="open(person)">
+    <span class="holder-initials" aria-hidden="true">{{ person.initials }}</span>
+    <span class="holder-lines">
+      <span class="holder-kicker">{{ t().account.usersHolder }}</span>
+      <span class="holder-name">{{ person.name }}</span>
+      <span class="holder-mail">{{ person.email }}</span>
+    </span>
+    <span class="holder-tag">{{ t().account.usersAllRights }}</span>
+  </button>
+}
+
+<ul class="people">
+  @for (row of rows(); track row.user.id) {
+    <li>
+      <button class="person" type="button" (click)="open(row.user)">
+        <span class="initials" [attr.data-space]="row.user.space" aria-hidden="true">
+          {{ row.user.initials }}
+        </span>
+        <span class="person-lines">
+          <span class="person-name">{{ row.user.name }}</span>
+          <span class="person-line">{{ row.line }}</span>
+        </span>
+        <span class="tag" [attr.data-space]="row.user.space">{{ row.tag }}</span>
+      </button>
+    </li>
+  }
+</ul>
+
+<button class="add" type="button"><fold-icon name="plus" />{{ t().account.usersAdd }}</button>
+
+<p class="note">{{ t().account.usersNote }}</p>
+
+<app-user-panel [user]="opened()" (closed)="opened.set(null)" />

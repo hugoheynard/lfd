@@ -47,8 +47,15 @@ export class ClientDialog {
    * continuer. `sheet` est la feuille MONTANTE : elle en dit plus sur ce qu'on
    * regarde déjà, sans prétendre changer de sujet. La réf leur donne deux
    * entrées différentes, et c'est cette différence-là qui les distingue.
+   *
+   * `side` est la même feuille montante sur un téléphone, et un TIROIR DROIT
+   * au-delà du pli : la fiche d'une personne se lit à côté de la liste dont elle
+   * sort, pas par-dessus. Un seul placement pour les deux formes, et donc un
+   * seul état d'ouverture — c'est ce que le dossier de design demande
+   * expressément, deux surfaces jumelles ayant chacune leur drapeau étant la
+   * façon connue de les voir se désynchroniser.
    */
-  readonly placement = input<'centre' | 'sheet'>('centre');
+  readonly placement = input<'centre' | 'sheet' | 'side'>('centre');
 
   /** Le sur-titre : de quel chemin ce dialogue est l'étape. */
   readonly kicker = input.required<string>();

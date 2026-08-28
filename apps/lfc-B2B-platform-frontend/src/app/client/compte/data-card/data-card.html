@@ -1,0 +1,38 @@
+<div class="data-row">
+  <div class="exports">
+    <button class="export" type="button">
+      <span class="export-lines">
+        <span class="export-title">{{ t().account.dataExportOrders }}</span>
+        <span class="export-note">{{ t().account.dataExportOrdersSub }}</span>
+      </span>
+      <fold-icon name="chevron-right" />
+    </button>
+    <button class="export" type="button">
+      <span class="export-lines">
+        <span class="export-title">{{ t().account.dataExportPersonal }}</span>
+        <span class="export-note">{{ t().account.dataExportPersonalSub }}</span>
+      </span>
+      <fold-icon name="chevron-right" />
+    </button>
+    <p class="note">{{ t().account.dataKeep }}</p>
+  </div>
+
+  <!-- LA ZONE SENSIBLE a son propre territoire, à l'écart des exports :
+       deux gestes irréversibles, chacun avec sa conséquence énoncée et
+       son bouton BORDÉ — un aplat rouge invite au clic. -->
+  <div class="danger">
+    <p class="danger-head">
+      <span class="danger-bullet" aria-hidden="true">!</span>{{ t().account.dangerHead }}
+    </p>
+    <div class="danger-item">
+      <p class="danger-title">{{ t().account.transferHead }}</p>
+      <p class="danger-body">{{ t().account.transferBody }}</p>
+      <button class="danger-cta" type="button">{{ t().account.transferCta }}</button>
+    </div>
+    <div class="danger-item">
+      <p class="danger-title">{{ t().account.closeHead }}</p>
+      <p class="danger-body">{{ t().account.closeBody }}</p>
+      <button class="danger-cta" type="button">{{ t().account.closeCta }}</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,79 @@
+@if (user(); as person) {
+  <app-client-dialog
+    placement="side"
+    [open]="open()"
+    [kicker]="t().account.panelKicker"
+    [title]="person.name"
+    (closed)="closed.emit()"
+  >
+    <div class="panel">
+      <header class="identity">
+        <span class="initials" [attr.data-space]="person.space" aria-hidden="true">
+          {{ person.initials }}
+        </span>
+        <div class="identity-lines">
+          <p class="role">{{ person.role }}</p>
+          <span class="tag" [attr.data-space]="person.space">{{ tag() }}</span>
+        </div>
+      </header>
+
+      <h3 class="head">{{ t().account.panelContact }}</h3>
+      <dl class="facts">
+        <dt>E-mail</dt>
+        <dd>{{ person.email }}</dd>
+        <dt>{{ t().account.panelPhone }}</dt>
+        <dd [class.absent]="person.phone === ''">{{ phone() }}</dd>
+        <dt>{{ t().account.panelRole }}</dt>
+        <dd>{{ person.role }}</dd>
+      </dl>
+
+      <h3 class="head">{{ t().account.panelCan }}</h3>
+      <ul class="rights">
+        @for (right of rights(); track right.label) {
+          <li class="right">
+            <span>{{ right.label }}</span>
+            <span class="answer" [class.yes]="right.granted">
+              {{ right.granted ? t().account.yes : t().account.no }}
+            </span>
+          </li>
+        }
+      </ul>
+
+      <!-- LE BLOC D'ESPACE change de NATURE, pas de libellé : trois situations
+           différentes appellent trois encarts différents. -->
+      @switch (person.space) {
+        @case ('contact') {
+          <div class="space contact">
+            <p class="space-head">{{ t().account.spaceContactHead }}</p>
+            <p class="space-body">{{ t().account.spaceContactBody }}</p>
+            <button class="space-cta" type="button">{{ t().account.spaceInvite }}</button>
+            <p class="space-note">{{ t().account.spaceInviteNote }}</p>
+          </div>
+        }
+        @case ('invited') {
+          <div class="space invited">
+            <p class="space-head">{{ t().account.spaceInvitedHead }}</p>
+            <p class="space-body">{{ invitedOn() }}</p>
+            <div class="space-pair">
+              <button class="space-cta" type="button">{{ t().account.spaceResend }}</button>
+              <button class="space-ghost" type="button">{{ t().account.spaceCancel }}</button>
+            </div>
+          </div>
+        }
+        @default {
+          <div class="space active">
+            <p class="space-head">{{ t().account.spaceActiveHead }}</p>
+            <p class="space-body">{{ activeSince() }}</p>
+            @if (person.holder) {
+              <!-- Dire POURQUOI vaut mieux que griser : un bouton mort se lit
+                   comme une panne, une phrase se lit comme une règle. -->
+              <p class="space-note">{{ t().account.spaceSelf }}</p>
+            } @else {
+              <button class="space-danger" type="button">{{ t().account.spaceRevoke }}</button>
+            }
+          </div>
+        }
+      }
+    </div>
+  </app-client-dialog>
+}

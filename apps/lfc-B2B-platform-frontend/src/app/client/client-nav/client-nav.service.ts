@@ -36,7 +36,7 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'orders', route: '/mes-commandes', ready: true },
   { id: 'invoices', route: '/mes-factures', ready: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: false },
-  { id: 'account', route: '/mon-compte', ready: false },
+  { id: 'account', route: '/mon-compte', ready: true },
 ];
 
 /** Une destination prête à être dessinée, dans l'une ou l'autre des deux formes. */

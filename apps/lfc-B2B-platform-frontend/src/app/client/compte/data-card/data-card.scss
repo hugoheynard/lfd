@@ -1,0 +1,146 @@
+:host {
+  display: block;
+}
+
+/* Les tons et le rythme de la carte : le composant est projeté DANS une carte
+   de la page, mais il porte sa propre encapsulation — il redit donc les deux ou
+   trois règles de texte dont il a besoin plutôt que d'espérer les hériter. */
+.note {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  /* `text-muted` (5,9:1) et non `text-subtle` (3,73:1) : c'est du texte courant
+     en bas de casse, pas un sur-titre. */
+  color: var(--fold-color-text-muted);
+}
+
+.inline {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font-family: inherit;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+/* ── Mes données ───────────────────────────────────────────────────────── */
+
+.data-row {
+  display: grid;
+  gap: var(--fold-space-lg);
+}
+
+.exports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.export {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  min-height: 52px;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.export-title {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.export-note {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* La zone sensible a son propre TERRITOIRE : un encadré à part, à l'écart des
+   deux lignes d'export. Le geste est irréversible — il ne se range pas dans une
+   liste d'actions ordinaires. */
+.danger {
+  padding: var(--fold-space-md);
+  border: 1px solid #e3c9c4;
+  border-radius: var(--lfc-radius-xl);
+  background: #fbf1ef;
+}
+
+.danger-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-alert-text);
+}
+
+.danger-bullet {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-alert-text);
+  color: var(--lfc-paper-0);
+  font-size: 10px;
+  font-weight: var(--lfc-weight-black);
+}
+
+.danger-item + .danger-item {
+  margin-top: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid #e3c9c4;
+}
+
+.danger-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.danger-body {
+  margin: 4px 0 var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-secondary);
+}
+
+/* Bordé, jamais un aplat : l'action est offerte, jamais encouragée. */
+.danger-cta {
+  min-height: 40px;
+  padding: 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-alert-text);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-alert-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  /* Les exports à gauche, la zone sensible à droite : elle a son territoire, à
+     l'écart des deux lignes ordinaires. */
+  .data-row {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+}

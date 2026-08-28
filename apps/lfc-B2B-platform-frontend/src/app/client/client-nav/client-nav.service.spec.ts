@@ -91,6 +91,9 @@ describe('Les destinations du menu', () => {
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {
     const nav = TestBed.inject(ClientNav);
     expect(nav.items().find((i) => i.id === 'espace')?.ready).toBe(true);
-    expect(nav.items().find((i) => i.id === 'account')?.ready).toBe(false);
+    // Les paniers récurrents sont la dernière destination sans écran. Le drapeau
+    // ne retire PAS l'entrée : l'ordre des cinq ne bouge jamais d'une surface à
+    // l'autre, et l'habitude du pouce avec.
+    expect(nav.items().find((i) => i.id === 'baskets')?.ready).toBe(false);
   });
 });

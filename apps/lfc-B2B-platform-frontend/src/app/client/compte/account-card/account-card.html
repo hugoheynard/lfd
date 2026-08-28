@@ -1,0 +1,28 @@
+<div class="card">
+  <div class="head">
+    <p class="kicker">{{ t().account.cardKicker }}</p>
+    <!-- La pastille monte sur la ligne du sur-titre : c'est ce qui laisse au nom
+         la largeur entière, et le droit de passer sur deux lignes. -->
+    <span class="state"
+      ><span class="dot" aria-hidden="true"></span>{{ t().account.cardActive }}</span
+    >
+  </div>
+
+  <h2 class="name">{{ account.brand }}</h2>
+  <p class="since">{{ since() }}</p>
+
+  <dl class="numbers">
+    <div class="number">
+      <dd class="value accent">{{ account.discount }}</dd>
+      <dt class="label">{{ t().account.cardDiscount }}</dt>
+    </div>
+    <div class="number">
+      <dd class="value">{{ account.term }}</dd>
+      <dt class="label">{{ t().account.cardTerm }}</dt>
+    </div>
+    <div class="number">
+      <dd class="value">{{ account.cap }}</dd>
+      <dt class="label">{{ t().account.cardCap }}</dt>
+    </div>
+  </dl>
+</div>

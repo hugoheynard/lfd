@@ -1,0 +1,142 @@
+:host {
+  display: block;
+}
+
+/* Les tons et le rythme de la carte : le composant est projeté DANS une carte
+   de la page, mais il porte sa propre encapsulation — il redit donc les deux ou
+   trois règles de texte dont il a besoin plutôt que d'espérer les hériter. */
+.note {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  /* `text-muted` (5,9:1) et non `text-subtle` (3,73:1) : c'est du texte courant
+     en bas de casse, pas un sur-titre. */
+  color: var(--fold-color-text-muted);
+}
+
+.inline {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font-family: inherit;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.sub {
+  margin: 0 0 var(--fold-space-sm);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* ── KBIS ──────────────────────────────────────────────────────────────── */
+
+.kbis-state {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}
+
+.kbis-check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-success);
+  color: var(--fold-color-on-success);
+}
+
+.kbis-verified {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-xs);
+}
+
+.kbis-tag {
+  flex: none;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.kbis-file {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.kbis-thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 38px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 3px;
+  background: var(--lfc-paper-0);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  color: var(--fold-color-text-muted);
+}
+
+.kbis-lines {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.kbis-name {
+  font-size: var(--fold-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.kbis-meta {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.kbis-acts {
+  flex: none;
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+.kbis-fresh {
+  margin: var(--fold-space-md) 0 var(--fold-space-xs);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.gauge {
+  height: 6px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  overflow: clip;
+}
+
+.gauge-fill {
+  display: block;
+  width: 33%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fold-color-primary);
+}
