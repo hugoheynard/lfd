@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { contentLocales } from "./platform-content.defaults.js";
+
 /**
  * **Le contenu de plateforme** — les textes de la vitrine, tenus par le staff.
  *
@@ -21,8 +23,7 @@ import { z } from "zod";
  * change aussi ces champs-là, et l'inviterait à les ressaisir trois fois.
  */
 
-/** Les trois langues de la vitrine. L'ordre est celui du sélecteur. */
-export const contentLocales = ["fr", "en", "it"] as const;
+/** Les trois langues de la vitrine — déclarées avec les valeurs, hors de zod. */
 export const contentLocaleSchema = z.enum(contentLocales);
 export type ContentLocale = z.infer<typeof contentLocaleSchema>;
 

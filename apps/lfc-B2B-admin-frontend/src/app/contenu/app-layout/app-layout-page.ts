@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import {
-  contentLocales,
-  DEFAULT_FOOTER_CONTENT,
-  type ContentLocale,
-  type FooterContent,
-  type FooterLocaleContent,
-  type LegalIdentity,
+import type {
+  ContentLocale,
+  FooterContent,
+  FooterLocaleContent,
+  LegalIdentity,
 } from '@lfd/contracts';
+// Les VALEURS par `content-values`, qui ne tire pas zod (cf. le front client).
+import { contentLocales, DEFAULT_FOOTER_CONTENT } from '@lfd/contracts/content-values';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,

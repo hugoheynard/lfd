@@ -1,6 +1,18 @@
 import type { FooterContent, FooterLocaleContent } from "./platform-content.js";
 
 /**
+ * Les trois langues de la vitrine. L'ordre est celui du sélecteur.
+ *
+ * ⚠️ Elles vivent ICI et non dans `platform-content.ts` pour une raison de
+ * POIDS, pas de rangement : ce module-ci n'importe que des types, donc il ne
+ * tire pas zod. Les deux fronts ont besoin de la liste et du contenu de départ
+ * comme de vraies valeurs ; les prendre au baril du paquet embarquait zod dans
+ * le bundle — mesuré, +380 ko, et le budget du front client passait de vert à
+ * rouge. Le schéma, lui, dérive de cette liste, pas l'inverse.
+ */
+export const contentLocales = ["fr", "en", "it"] as const;
+
+/**
  * Le **contenu de départ** du pied de page — celui qui était compilé dans le
  * bundle du front client, repris mot pour mot.
  *
@@ -14,9 +26,15 @@ import type { FooterContent, FooterLocaleContent } from "./platform-content.js";
  * base qui fait foi. Ce fichier est un point de départ et un filet — pas un
  * endroit où corriger une coquille une fois la fonction en service.
  *
- * L'IDENTITÉ légale n'y est pas remplie, et c'est délibéré : un numéro
- * d'immatriculation ne s'invente pas, pas même comme valeur de départ. Le rendu
- * omet ce qui est vide, et le back-office est là pour le saisir.
+ * L'identité y porte ce que la vitrine PUBLIAIT DÉJÀ — raison sociale, capital,
+ * téléphone, e-mail, réseaux. Les vider aurait été une régression : ces mentions
+ * sont à l'écran aujourd'hui, et ce fichier ne fait que déplacer d'où elles
+ * viennent.
+ *
+ * Les trois NUMÉROS D'IMMATRICULATION restent vides, et c'est délibéré : ils
+ * n'ont jamais été publiés parce qu'on ne les invente pas, pas même comme valeur
+ * de départ. Le rendu omet ce qui est vide, et le back-office est là pour les
+ * saisir — sans déploiement.
  */
 
 const FR: FooterLocaleContent = {
@@ -169,16 +187,17 @@ const IT: FooterLocaleContent = {
 
 export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   identity: {
-    company: "",
-    capital: "",
+    company: "La Folie Coffee SAS",
+    capital: "capital 40 000 €",
+    // Les trois qui ne s'inventent pas. Ils se saisissent au back-office.
     siret: "",
     rcs: "",
     vat: "",
-    phone: "",
-    phoneHref: "",
-    email: "",
-    instagram: "",
-    facebook: "",
+    phone: "04 79 06 12 40",
+    phoneHref: "tel:+33479061240",
+    email: "contact@lafoliecoffee.fr",
+    instagram: "https://www.instagram.com/",
+    facebook: "https://www.facebook.com/",
   },
   fr: FR,
   en: EN,

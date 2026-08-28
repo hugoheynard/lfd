@@ -7,6 +7,11 @@
       "types": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js"
+    },
+    "./content-values": {
+      "types": "./src/platform-content.defaults.ts",
+      "import": "./dist/platform-content.defaults.js",
+      "require": "./dist/platform-content.defaults.js"
     }
   },
   "private": true,
