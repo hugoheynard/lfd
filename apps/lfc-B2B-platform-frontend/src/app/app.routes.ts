@@ -150,7 +150,7 @@ export const routes: Routes = [
         // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.
-        path: 'commande',
+        path: 'nouvelle-commande',
         title: 'Commander — La Folie Coffee',
         loadComponent: () =>
           import('./commande/commande-page/commande-page').then((m) => m.CommandePage),
@@ -160,22 +160,28 @@ export const routes: Routes = [
         // SUITE d'une commande en cours : sans mode de service, il n'a rien à
         // montrer et renvoie à la question. `/boutique` reste la boutique PRO —
         // deux produits, deux catalogues, deux adresses.
-        path: 'commande/boutique',
+        path: 'nouvelle-commande/boutique',
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./rayon/rayon-page/rayon-page').then((m) => m.RayonPage),
       },
       {
-        path: 'commande/panier',
+        path: 'nouvelle-commande/panier',
         title: 'Mon panier — La Folie Coffee',
         loadComponent: () => import('./rayon/panier-page/panier-page').then((m) => m.PanierPage),
       },
       {
-        path: 'commande/confirmee',
+        path: 'nouvelle-commande/confirmee',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>
           import('./rayon/confirmation-page/confirmation-page').then((m) => m.ConfirmationPage),
       },
       { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
+      // Les anciennes adresses restent valides : un lien partagé ou un signet
+      // pris avant le renommage doit continuer d'ouvrir le même écran.
+      { path: 'commande', pathMatch: 'full', redirectTo: 'nouvelle-commande' },
+      { path: 'commande/boutique', redirectTo: 'nouvelle-commande/boutique' },
+      { path: 'commande/panier', redirectTo: 'nouvelle-commande/panier' },
+      { path: 'commande/confirmee', redirectTo: 'nouvelle-commande/confirmee' },
     ],
   },
   ...proRoutes,

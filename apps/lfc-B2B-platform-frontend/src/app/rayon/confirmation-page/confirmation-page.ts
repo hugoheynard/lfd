@@ -83,7 +83,7 @@ export class ConfirmationPage {
       // Rien à confirmer : personne n'est passé par le paiement. On renvoie au
       // rayon plutôt que d'afficher une commande vide.
       if (this.orders.latest() === null) {
-        void this.router.navigate(['/commande']);
+        void this.router.navigate(['/nouvelle-commande']);
       }
     });
   }
@@ -97,6 +97,6 @@ export class ConfirmationPage {
   }
 
   protected backToShop(): void {
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/nouvelle-commande/boutique']);
   }
 }

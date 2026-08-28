@@ -11,7 +11,7 @@
     <!-- Neuf fois sur dix on lance l'app pour commander, pas pour relire un QR :
          l'action garde sa place au premier coup d'œil. Il lui faut ce poids
          pour tenir face à un titre de 38 px sur le registre sombre. -->
-    <a class="new-order" routerLink="/commande">
+    <a class="new-order" routerLink="/nouvelle-commande">
       <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
       <span class="new-order-titles">
         <span class="new-order-title">{{ t().nav.newOrder }}</span>
@@ -41,7 +41,7 @@
           <span class="habit-title">{{ t().commande.againTitle }}</span>
           <span class="habit-sub">{{ t().commande.againSub }}</span>
         </span>
-        <a class="habit-action" routerLink="/commande">{{ t().commande.againAction }}</a>
+        <a class="habit-action" routerLink="/nouvelle-commande">{{ t().commande.againAction }}</a>
       </div>
     </section>
 

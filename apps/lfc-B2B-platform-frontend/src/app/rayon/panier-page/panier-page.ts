@@ -54,11 +54,11 @@ export class PanierPage {
   }
 
   protected pickService(): void {
-    void this.router.navigate(['/commande']);
+    void this.router.navigate(['/nouvelle-commande']);
   }
 
   protected backToShop(): void {
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/nouvelle-commande/boutique']);
   }
 
   /**
@@ -74,11 +74,11 @@ export class PanierPage {
     // Régler exige le mode : c'est lui qui porte la remise et les frais. On mène
     // à la question plutôt que de facturer un panier sans destination.
     if (this.choice() === null) {
-      void this.router.navigate(['/commande']);
+      void this.router.navigate(['/nouvelle-commande']);
       return;
     }
     if (this.orders.place() !== null) {
-      void this.router.navigate(['/commande/confirmee']);
+      void this.router.navigate(['/nouvelle-commande/confirmee']);
     }
   }
 }

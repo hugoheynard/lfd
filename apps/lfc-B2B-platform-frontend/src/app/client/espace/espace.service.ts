@@ -45,7 +45,7 @@ export class ClientEspace {
         action: copy.pickupAction,
         // Le QR n'existe encore nulle part ; l'écran de confirmation porte déjà
         // le récap de CETTE commande, c'est donc lui qu'on ouvre en attendant.
-        route: '/commande/confirmee',
+        route: '/nouvelle-commande/confirmee',
         badge: '',
         primary: true,
       });
@@ -58,7 +58,7 @@ export class ClientEspace {
         icon: '',
         lines: [formatEuro(this.cart.totals().total), copy.cartWhen],
         action: copy.cartAction,
-        route: '/commande/panier',
+        route: '/nouvelle-commande/panier',
         badge: copy.cartBadge,
         primary: false,
       });

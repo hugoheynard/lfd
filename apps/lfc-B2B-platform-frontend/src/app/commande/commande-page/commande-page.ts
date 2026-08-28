@@ -141,7 +141,7 @@ export class CommandePage {
   protected fillBasket(choice: ServiceChoice): void {
     this.order.choice.set(choice);
     this.dialog.set(null);
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/nouvelle-commande/boutique']);
   }
 
   /**
@@ -150,7 +150,7 @@ export class CommandePage {
    * — regarder d'abord, décider ensuite.
    */
   protected browse(): void {
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/nouvelle-commande/boutique']);
   }
 
   protected openPanel(): void {

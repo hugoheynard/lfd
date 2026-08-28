@@ -18,7 +18,7 @@ import { RappelPanel } from './rappel-panel/rappel-panel';
 import { WelcomeStep } from './welcome-step/welcome-step';
 
 /** Là où l'on va une fois entré. */
-const AFTER_ENTRY = '/commande';
+const AFTER_ENTRY = '/nouvelle-commande';
 
 /**
  * La porte d'entrée : trois champs, aucun document, et deux chemins.

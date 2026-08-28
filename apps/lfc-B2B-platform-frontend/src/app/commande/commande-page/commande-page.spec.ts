@@ -110,7 +110,7 @@ describe('CommandePage', () => {
 
     click(FR.commande.browseTitle);
 
-    expect(gone).toEqual([['/commande/boutique']]);
+    expect(gone).toEqual([['/nouvelle-commande/boutique']]);
   });
 
   it("l'urgence propose le rappel ET l'appel direct", () => {

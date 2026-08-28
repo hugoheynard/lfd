@@ -30,10 +30,10 @@ describe('Le chrome de l’app', () => {
       '/',
       '/bienvenue',
       '/connexion',
-      '/commande',
-      '/commande/boutique',
-      '/commande/panier',
-      '/commande/confirmee',
+      '/nouvelle-commande',
+      '/nouvelle-commande/boutique',
+      '/nouvelle-commande/panier',
+      '/nouvelle-commande/confirmee',
     ]) {
       expect(await at(url), url).toBe(true);
     }

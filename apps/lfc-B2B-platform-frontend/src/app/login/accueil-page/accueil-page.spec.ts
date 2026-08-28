@@ -129,7 +129,7 @@ describe('AccueilPage', () => {
     expect(asked).toEqual([
       {
         kind: 'register',
-        target: '/commande',
+        target: '/nouvelle-commande',
         payload: {
           firstName: 'Pierre',
           email: 'pierre@brasserie-marchand.fr',
@@ -146,7 +146,7 @@ describe('AccueilPage', () => {
     click(FR.doors.alreadyTitle);
 
     expect(asked).toEqual([
-      { kind: 'login', target: '/commande', payload: 'pierre@brasserie-marchand.fr' },
+      { kind: 'login', target: '/nouvelle-commande', payload: 'pierre@brasserie-marchand.fr' },
     ]);
   });
 

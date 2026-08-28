@@ -169,11 +169,11 @@ export class RayonPage {
   }
 
   protected backToService(): void {
-    void this.router.navigate(['/commande']);
+    void this.router.navigate(['/nouvelle-commande']);
   }
 
   protected goToCart(): void {
-    void this.router.navigate(['/commande/panier']);
+    void this.router.navigate(['/nouvelle-commande/panier']);
   }
 
   /**
@@ -186,7 +186,7 @@ export class RayonPage {
       return;
     }
     if (this.orders.place() !== null) {
-      void this.router.navigate(['/commande/confirmee']);
+      void this.router.navigate(['/nouvelle-commande/confirmee']);
     }
   }
 }

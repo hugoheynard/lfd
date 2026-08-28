@@ -19,7 +19,7 @@ const AT_THE_LABO: ServiceChoice = {
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
   { path: 'mon-espace', children: [] },
-  { path: 'commande/panier', children: [] },
+  { path: 'nouvelle-commande/panier', children: [] },
 ];
 
 /** L'ordre que la réf FIGE, et qu'aucune surface n'a le droit de réarranger. */
@@ -81,8 +81,8 @@ describe('Les destinations du menu', () => {
     // ⚠️ Le vrai piège : `Router.url` est une propriété nue. Une dérivation qui
     // la lit sans dépendre des événements ne se recalcule jamais, et rien dans
     // un rendu isolé ne le montre — il faut naviguer pour le voir.
-    await router.navigateByUrl('/commande/panier');
-    expect(nav.current()).toBe('/commande/panier');
+    await router.navigateByUrl('/nouvelle-commande/panier');
+    expect(nav.current()).toBe('/nouvelle-commande/panier');
 
     await router.navigateByUrl('/mon-espace');
     expect(nav.current()).toBe('/mon-espace');
