@@ -87,6 +87,7 @@ export const EN: ClientCopy = {
     todayNone: 'Nothing is waiting.',
     lead: 'What needs doing, and nothing else.',
     leadNone: 'All settled. Whenever you want to start again.',
+    eventCta: 'See the collection ›',
     wellTitle: 'Ready for you',
     wellNote: '— what needs an action, and nothing else.',
     pickupTitle: 'Collect my order',

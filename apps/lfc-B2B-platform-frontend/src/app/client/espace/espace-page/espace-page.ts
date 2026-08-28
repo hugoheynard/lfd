@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
@@ -7,7 +7,9 @@ import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientBannerBlock } from '../../client-nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../client-nav/client-banner';
+import { MOCK_EVENT } from '../../mock-event';
 import { ContactCard } from '../contact-card/contact-card';
+import { EventBanner } from '../event-banner/event-banner';
 import { ClientEspace } from '../espace.service';
 import { ReadyWell } from '../ready-well/ready-well';
 
@@ -34,6 +36,7 @@ import { ReadyWell } from '../ready-well/ready-well';
     ClientBannerBlock,
     ClientBannerOutlet,
     ContactCard,
+    EventBanner,
     FoldIconComponent,
     ReadyWell,
     RouterLink,
@@ -43,6 +46,15 @@ import { ReadyWell } from '../ready-well/ready-well';
 })
 export class EspacePage {
   protected readonly t = inject(ClientCopyService).t;
+
+  /**
+   * L'opération datée en cours, ou `null`.
+   *
+   * ⚠️ SIMULATION — le vrai modèle est le cas 3. Une constante et pas un signal
+   * : rien ne la fait changer tant qu'elle ne vient pas du serveur, et un
+   * signal ferait croire le contraire.
+   */
+  protected readonly event = MOCK_EVENT;
   protected readonly espace = inject(ClientEspace);
   private readonly identity = inject(ClientIdentity);
   private readonly chrome = inject(ClientChrome);
@@ -58,7 +70,10 @@ export class EspacePage {
   protected readonly bannerTitle = computed(() => `${this.hello()}\n${this.espace.todayLine()}`);
 
   constructor() {
-    this.chrome.kicker.set('');
+    // Le sur-titre de la barre nomme la page, et il le fait avec le MÊME mot que
+    // la destination du menu : renommer l'une renomme l'autre, et la barre ne
+    // peut pas se mettre à annoncer un écran qui ne s'appelle plus comme ça.
+    effect(() => this.chrome.kicker.set(this.t().nav.destinations.espace));
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
     // Pas de cloche ici. La réf en dessine une avec trois non-lues, mais le

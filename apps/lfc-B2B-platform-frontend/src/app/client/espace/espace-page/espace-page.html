@@ -18,6 +18,13 @@
 </ng-template>
 
 <div class="page">
+  <!-- L'OPÉRATION DATÉE passe en tête : elle a une fin, et une collection de
+       Pâques ne se rattrape pas la semaine suivante. Hors période il n'y en a
+       pas, le bloc n'existe pas, et le reste remonte. -->
+  @if (event; as dated) {
+    <app-event-banner [event]="dated" [cta]="t().espace.eventCta" />
+  }
+
   <!-- La ligne « ce qui attend / qui répond ». Les deux colonnes sont à la MÊME
        hauteur : c'est le `stretch` qui fait du contact une carte pleine hauteur
        et non un encart résiduel à côté du puits. -->

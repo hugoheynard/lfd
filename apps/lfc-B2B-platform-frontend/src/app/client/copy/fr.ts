@@ -86,6 +86,7 @@ export const FR: ClientCopy = {
     todayNone: 'Rien ne vous attend.',
     lead: 'Ce qui appelle une action, et rien d’autre.',
     leadNone: 'Tout est réglé. On remet ça quand vous voulez.',
+    eventCta: 'Voir la collection ›',
     wellTitle: 'Prêt pour vous',
     wellNote: '— ce qui attend une action, et rien d’autre.',
     pickupTitle: 'Retirer ma commande',

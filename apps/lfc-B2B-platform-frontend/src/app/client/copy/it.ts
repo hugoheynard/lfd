@@ -94,6 +94,7 @@ export const IT: ClientCopy = {
     todayNone: 'Non c’è nulla in sospeso.',
     lead: 'Ciò che richiede un’azione, e nient’altro.',
     leadNone: 'Tutto a posto. Si ricomincia quando volete.',
+    eventCta: 'Vedere la collezione ›',
     wellTitle: 'Pronto per voi',
     wellNote: '— ciò che richiede un’azione, e nient’altro.',
     pickupTitle: 'Ritirare il mio ordine',

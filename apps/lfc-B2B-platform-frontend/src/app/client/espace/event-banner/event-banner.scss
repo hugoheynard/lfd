@@ -1,0 +1,172 @@
+:host {
+  display: block;
+}
+
+/* En pile : la photo est un FOND, le texte descend dessus. Le voile est
+   vertical parce que c'est dans ce sens que le texte se lit. */
+.event {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 132px;
+  padding: var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-butter-400) var(--event-photo) center 42% / cover no-repeat;
+  color: var(--lfc-paper-0);
+  text-decoration: none;
+  overflow: hidden;
+  /* Le voile est un enfant en `z-index: -1` : sans contexte d'empilement propre,
+     il passerait DERRIÈRE le fond de la carte et ne voilerait rien. */
+  isolation: isolate;
+}
+
+/* Le voile est un ÉLÉMENT et pas une ombre portée sur le texte : il doit couvrir
+   la photo entière, y compris là où il n'y a rien d'écrit, sinon la carte se
+   lit claire d'un côté et sombre de l'autre. */
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--lfc-butter-900) 10%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-butter-900) 52%, transparent) 46%,
+    color-mix(in srgb, var(--lfc-butter-900) 90%, transparent) 100%
+  );
+}
+
+.marks {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.badge,
+.count {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--fold-space-md);
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* La pastille de l'opération prend le papier : sur une photo, c'est le seul
+   aplat qui tienne à toutes les luminosités. */
+.badge {
+  background: var(--lfc-paper-0);
+  color: var(--lfc-butter-900);
+}
+
+.count {
+  background: color-mix(in srgb, var(--lfc-paper-0) 22%, transparent);
+  color: var(--lfc-paper-0);
+}
+
+.title {
+  /* Poussé en bas par `auto`, mais jamais collé aux pastilles : le rembourrage
+     tient le minimum quand le contenu remplit déjà la carte et qu'il n'y a plus
+     d'espace libre à distribuer. */
+  margin: auto 0 0;
+  padding-top: var(--fold-space-lg);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.04;
+  text-transform: uppercase;
+  /* Le retour à la ligne est dans la DONNÉE : c'est elle qui sait où le titre
+     se plie sans se casser. */
+  white-space: pre-line;
+}
+
+.foot {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-sm);
+  font-size: var(--fold-text-md);
+  color: var(--lfc-butter-200);
+}
+
+/* En pile, le teaser ne rentre pas : la période suffit à situer l'opération, le
+   reste se lit dans la collection. */
+.teaser {
+  display: none;
+}
+
+.cta {
+  align-self: flex-start;
+  margin-top: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-butter-900);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Au-delà du pli, la bande. Le voile passe à l'HORIZONTALE : on a la place de
+   montrer la photo, et l'assombrir entière pour un titre d'une ligne serait la
+   gâcher. Le texte tient à gauche, l'action se range au bout. */
+@media (min-width: 900px) {
+  .event {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--fold-space-2xl);
+    min-height: 152px;
+    padding: var(--fold-space-xl) var(--fold-space-2xl);
+  }
+
+  .veil {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--lfc-butter-900) 88%, transparent) 0%,
+      color-mix(in srgb, var(--lfc-butter-900) 62%, transparent) 46%,
+      color-mix(in srgb, var(--lfc-butter-900) 12%, transparent) 100%
+    );
+  }
+
+  .marks {
+    grid-column: 1;
+  }
+
+  .title {
+    grid-column: 1;
+    margin: var(--fold-space-sm) 0 0;
+    padding-top: 0;
+    font-size: var(--lfc-text-screen);
+    /* Sur une ligne : la bande a la largeur, et le pli de la donnée n'y sert
+       plus qu'à couper une phrase qui n'a plus besoin de l'être. */
+    white-space: normal;
+  }
+
+  .foot {
+    grid-column: 1;
+  }
+
+  .teaser {
+    display: inline;
+  }
+
+  /* L'action quitte le flux du texte pour la seconde colonne — elle est au bout
+     de la bande, pas au bout de la phrase. */
+  .cta {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: center;
+    margin-top: 0;
+    padding: var(--fold-space-md) var(--fold-space-xl);
+    font-size: var(--lfc-text-block);
+  }
+}

@@ -1,0 +1,19 @@
+<a class="event" [routerLink]="event().route">
+  <span class="veil" aria-hidden="true"></span>
+
+  <span class="marks">
+    <span class="badge">{{ event().badge }}</span>
+    <!-- Le compte à rebours est l'information, pas l'ornement : une collection
+         datée ne se rattrape pas la semaine suivante. -->
+    <span class="count">{{ event().countdown }}</span>
+  </span>
+
+  <h2 class="title">{{ event().title }}</h2>
+
+  <span class="foot">
+    <span class="dates">{{ event().dates }}</span>
+    <span class="teaser">{{ event().teaser }}</span>
+  </span>
+
+  <span class="cta">{{ cta() }}</span>
+</a>

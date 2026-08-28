@@ -90,6 +90,8 @@ export interface ClientCopy {
     /** Ce que sont ces choses, en une ligne. */
     readonly lead: string;
     readonly leadNone: string;
+    /** L'action de la carte d'opération datée. */
+    readonly eventCta: string;
     readonly wellTitle: string;
     readonly wellNote: string;
     readonly pickupTitle: string;
