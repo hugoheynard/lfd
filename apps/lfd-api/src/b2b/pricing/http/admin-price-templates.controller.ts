@@ -30,6 +30,7 @@ import {
 } from "../application/commands/price-template.handlers.js";
 import { MercurialeBenchmarkQuery } from "../application/queries/mercuriale-benchmark.query.js";
 import { PriceTemplatesQuery } from "../application/queries/price-templates.query.js";
+import type { CreatedIdResponse, PosedRulesResponse } from "@lfd/contracts";
 
 /**
  * **Les gabarits tarifaires** — mercuriales et devis, même surface.
@@ -79,7 +80,7 @@ export class AdminPriceTemplatesController {
   async compose(
     @Body(new ZodBody(savePriceTemplatePayloadSchema)) payload: SavePriceTemplatePayload,
     @StaffSub() staffSub: string,
-  ): Promise<{ id: string }> {
+  ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SavePriceTemplateCommand, string>(
       new SavePriceTemplateCommand(null, payload, staffSub),
     );
@@ -116,7 +117,7 @@ export class AdminPriceTemplatesController {
     @Param("id") id: string,
     @Body(new ZodBody(applyPriceTemplatePayloadSchema)) payload: ApplyPriceTemplatePayload,
     @StaffSub() staffSub: string,
-  ): Promise<{ posedRules: number }> {
+  ): Promise<PosedRulesResponse> {
     const posedRules = await this.commands.execute<ApplyPriceTemplateCommand, number>(
       new ApplyPriceTemplateCommand(id, payload, staffSub),
     );

@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreatedStaffUserResponse,
+  InvitationSentResponse,
+  IssuedLinkResponse,
   StaffStatusChange,
   StaffUserPayload,
   StaffUserView,
@@ -55,9 +57,9 @@ export class StaffUsersService {
    * L'écran n'a pas à le deviner — il se tromperait dès qu'un second onglet est
    * ouvert sur la même fiche.
    */
-  async invite(id: string): Promise<{ mailSent: boolean }> {
+  async invite(id: string): Promise<InvitationSentResponse> {
     return firstValueFrom(
-      this.http.post<{ mailSent: boolean }>(
+      this.http.post<InvitationSentResponse>(
         `${B2B_API_BASE}/admin/staff-users/${id}/invitation`,
         {},
       ),
@@ -72,9 +74,9 @@ export class StaffUsersService {
    * contrôle du compte — il ne se stocke jamais, il se refabrique à la demande,
    * et le neuf tue le précédent.
    */
-  async issueLink(id: string): Promise<{ url: string; expiresAt: string }> {
+  async issueLink(id: string): Promise<IssuedLinkResponse> {
     return firstValueFrom(
-      this.http.post<{ url: string; expiresAt: string }>(
+      this.http.post<IssuedLinkResponse>(
         `${B2B_API_BASE}/admin/staff-access-pending/${id}/link`,
         {},
       ),

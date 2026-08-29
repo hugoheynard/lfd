@@ -1,19 +1,12 @@
 /**
- * Une personne à qui l'accès a été ouvert et qui **n'a jamais posé de mot de
- * passe**. Ce que le staff a besoin de savoir pour lui remettre son lien à la
- * main.
+ * La vue vit désormais dans `@lfd/contracts` : le front en rendait sa propre
+ * copie champ pour champ, et deux formes qu'aucun compilateur ne rapproche
+ * finissent par diverger. On la RÉ-EXPORTE ici pour que les imports du domaine
+ * ne bougent pas — le port reste le port, il ne possède simplement plus la forme.
  */
-export interface PendingAccessView {
-  readonly userId: string;
-  readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  /** La société pour laquelle l'accès a été ouvert. */
-  readonly companyId: string;
-  readonly companyName: string;
-  /** ISO. Depuis quand elle attend — c'est l'âge qui fait agir. */
-  readonly invitedAt: string;
-}
+import type { PendingAccessView } from "@lfd/contracts";
+
+export type { PendingAccessView };
 
 /**
  * La **file des accès à remettre** — le canal de secours quand l'e-mail

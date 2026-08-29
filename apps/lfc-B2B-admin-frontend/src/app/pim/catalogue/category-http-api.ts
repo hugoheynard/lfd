@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
 import type { Category } from '../data/models';
+import type { CreatedIdResponse } from '@lfd/contracts';
 
 /**
  * Le backend rend une `CategoryView` (contrat `@lfd/pim-contracts`). Les taux y
@@ -78,9 +79,12 @@ export class CategoryHttpApi {
     return { ...toCategory(row), editorial: row.editorial, media: [...row.media] };
   }
 
-  create(payload: { name: LocalizedText; parentId?: string | undefined }): Promise<{ id: string }> {
+  create(payload: {
+    name: LocalizedText;
+    parentId?: string | undefined;
+  }): Promise<CreatedIdResponse> {
     return firstValueFrom(
-      this.http.post<{ id: string }>(this.url('categories'), {
+      this.http.post<CreatedIdResponse>(this.url('categories'), {
         name: payload.name,
         ...(payload.parentId === undefined || payload.parentId === ''
           ? {}

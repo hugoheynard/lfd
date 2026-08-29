@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import type {
   CreateSubscriptionPayload,
+  CreatedIdResponse,
   SubscriptionStatus,
   SubscriptionView,
   UpsertOccurrenceOverridePayload,
@@ -13,10 +14,6 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 
 /** Ce que la création renvoie. */
-interface CreatedSubscription {
-  readonly id: string;
-}
-
 /**
  * **Paniers récurrents** (abonnements) du client connecté — gabarits de commande
  * répétés (`/subscriptions`, mur = le seul client connecté). Front mince au-dessus
@@ -31,12 +28,12 @@ export class SubscriptionsService {
   readonly list = this._list.asReadonly();
 
   /** Crée un panier récurrent (le plus souvent depuis une commande). */
-  create(payload: CreateSubscriptionPayload): Observable<CreatedSubscription> {
+  create(payload: CreateSubscriptionPayload): Observable<CreatedIdResponse> {
     return this.auth
       .accessToken$()
       .pipe(
         switchMap((token) =>
-          this.http.post<CreatedSubscription>(
+          this.http.post<CreatedIdResponse>(
             `${AUTH_CONFIG.apiBaseUrl}/subscriptions`,
             payload,
             headers(token),

@@ -33,29 +33,20 @@
  * fois.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 /** La dette héritée, fichier par fichier. Ce nombre ne peut que DESCENDRE. */
 const ALLOWANCE = {
-  "apps/lfc-B2B-admin-frontend/src/app/admin/acces-en-attente/pending-access.service.ts": 3,
-  "apps/lfc-B2B-admin-frontend/src/app/admin/staff-users/staff-users.service.ts": 1,
-  "apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/tarification.service.ts": 2,
-  "apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/templates.service.ts": 2,
-  "apps/lfc-B2B-admin-frontend/src/app/comptes-clients/admin-companies.service.ts": 6,
-  "apps/lfc-B2B-admin-frontend/src/app/fiche-client/mandat/mandates.service.ts": 1,
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/category-http-api.ts": 1,
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/product-http-api.ts": 1,
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/reference-api.ts": 1,
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/vat-rates/vat-http-api.ts": 1,
+  "apps/lfc-B2B-admin-frontend/src/app/comptes-clients/admin-companies.service.ts": 4,
   "apps/lfc-B2B-admin-frontend/src/app/pim/channels/shopify-channel-api.ts": 6,
-  "apps/lfc-B2B-admin-frontend/src/app/pim/points-of-sale/point-of-sale-http-api.ts": 2,
   "apps/lfc-B2B-platform-frontend/src/app/account/account.service.ts": 3,
-  "apps/lfc-B2B-platform-frontend/src/app/legacy/commandes/subscriptions.service.ts": 1,
-  "apps/lfc-B2B-platform-frontend/src/app/legacy/entreprises/support.service.ts": 1,
 };
 
 const CALL = /\.(get|post|put|patch|delete)<\s*([^>;]+?)\s*>\s*\(/gu;
 const IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@lfd\/[^'"]+)['"]/gsu;
+const LOCAL_IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](\.[^'"]+)['"]/gsu;
+const REEXPORT = /export\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]@lfd\/[^'"]+['"]/gsu;
 /** Ni un type, ni une forme : rien à posséder. */
 const NEUTRAL = new Set([
   "void",
@@ -78,17 +69,65 @@ function frontFiles() {
     .filter((file) => file.endsWith(".ts"));
 }
 
-/** Les noms importés d'un paquet `@lfd/*` — les seuls qu'un appel peut porter. */
-function ownedNames(source) {
-  const names = new Set();
-  for (const match of source.matchAll(IMPORT)) {
-    for (const raw of match[1].split(",")) {
-      const name = raw
+/** Les noms qu'un bloc d'import déclare, quel qu'en soit le module. */
+function namesOf(block) {
+  return block
+    .split(",")
+    .map((raw) =>
+      raw
         .replace(/\btype\b/u, "")
         .split(" as ")
         .pop()
-        ?.trim();
-      if (name) {
+        ?.trim(),
+    )
+    .filter((name) => name !== undefined && name !== "");
+}
+
+/** Le fichier visé par un import relatif, ou `null` s'il est introuvable. */
+function resolveLocal(from, specifier) {
+  const base = join(dirname(from), specifier);
+  for (const candidate of [`${base}.ts`, join(base, "index.ts")]) {
+    if (existsSync(candidate)) {
+      return readFileSync(candidate, "utf8");
+    }
+  }
+  return null;
+}
+
+/**
+ * Les noms venant d'un paquet `@lfd/*` — directement, OU via un barrel local.
+ *
+ * Le second cas n'est pas une faveur : `pim/data/models.ts` ne fait que
+ * `export type { AllergenReference } from "@lfd/pim-contracts"`. La forme vient
+ * bien du contrat, elle passe seulement par la porte d'entrée du module. La
+ * compter comme une dette accuserait un fichier IRRÉPROCHABLE — et une porte
+ * qui crie au loup finit désactivée.
+ *
+ * UN SEUL niveau d'indirection, volontairement : au-delà on écrirait un
+ * résolveur de modules, c'est-à-dire un compilateur. Un barrel de barrel n'existe
+ * pas ici ; le jour où il existera, la porte le signalera à tort, et c'est ce
+ * signal-là qui dira quoi faire.
+ */
+function ownedNames(source, file) {
+  const names = new Set();
+  for (const match of source.matchAll(IMPORT)) {
+    for (const name of namesOf(match[1])) {
+      names.add(name);
+    }
+  }
+  for (const match of source.matchAll(LOCAL_IMPORT)) {
+    const resolved = resolveLocal(file, match[2]);
+    if (resolved === null) {
+      continue;
+    }
+    const reexported = new Set();
+    for (const hop of resolved.matchAll(REEXPORT)) {
+      for (const name of namesOf(hop[1])) {
+        reexported.add(name);
+      }
+    }
+    for (const name of namesOf(match[1])) {
+      if (reexported.has(name)) {
         names.add(name);
       }
     }
@@ -96,11 +135,41 @@ function ownedNames(source) {
   return names;
 }
 
+/**
+ * Le `fetch` GLOBAL, qui contournerait tout ce qui précède.
+ *
+ * `HttpClient` porte un paramètre de type, donc une forme qu'on peut exiger.
+ * `fetch` rend une `Response` : la forme n'apparaît qu'au `await res.json()`,
+ * où elle vaut `any` — et un `as SomeShape` posé là n'est pas une vérification,
+ * c'est une AFFIRMATION. La porte ci-dessus n'aurait plus rien à lire.
+ *
+ * Aucun front n'en utilise aujourd'hui (vérifié le 2026-08-29 : les trois
+ * occurrences de `fetch(` sont une méthode privée qui porte ce nom). La règle
+ * est donc PRÉVENTIVE — et c'est le bon moment pour la poser, tant qu'elle ne
+ * coûte rien à personne.
+ *
+ * `\.` en tête est exclu pour laisser passer `this.fetch(…)` : un objet a le
+ * droit de nommer une méthode comme il veut.
+ */
+const RAW_FETCH = /(^|[^.\w])fetch\s*\(/u;
+/** `private async fetch(…)` DÉCLARE une méthode, il n'appelle pas le global. */
+const FETCH_DECLARATION = /\b(async|function)\s+fetch\s*\(/u;
+
 const offences = new Map();
+const rawFetch = [];
 
 for (const file of frontFiles()) {
   const source = readFileSync(file, "utf8");
-  const owned = ownedNames(source);
+  source.split("\n").forEach((line, index) => {
+    if (
+      RAW_FETCH.test(line) &&
+      !FETCH_DECLARATION.test(line) &&
+      !line.trimStart().startsWith("*")
+    ) {
+      rawFetch.push(`${file}:${String(index + 1)}`);
+    }
+  });
+  const owned = ownedNames(source, file);
   for (const match of source.matchAll(CALL)) {
     const argument = match[2].trim();
     const base = argument
@@ -132,6 +201,12 @@ for (const [file, allowed] of Object.entries(ALLOWANCE)) {
       `  ${file}\n      ${count} appel(s) hors contrat pour ${allowed} toléré(s) — baissez la tolérance`,
     );
   }
+}
+
+for (const where of rawFetch) {
+  problems.push(
+    `  ${where}\n      \`fetch\` global — passez par HttpClient, dont le type est vérifiable`,
+  );
 }
 
 if (problems.length > 0) {

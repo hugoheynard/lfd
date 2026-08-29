@@ -5,11 +5,12 @@ import { firstValueFrom } from 'rxjs';
 import type {
   AccountHolderPayload,
   BillingAddressPayload,
-  FulfillmentPreferencePayload,
-  DeferredTerm,
   CompanyMemberInvitedView,
   CompanyMemberView,
+  CreatedIdResponse,
+  DeferredTerm,
   DeliveryAddressPayload,
+  FulfillmentPreferencePayload,
   InviteCompanyMemberPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
@@ -133,7 +134,7 @@ export class AdminCompaniesService {
   /** Ajoute un interlocuteur additionnel au carnet d'adresses. */
   async addContact(companyId: string, payload: CompanyContactDraft): Promise<void> {
     await firstValueFrom(
-      this.http.post<{ readonly id: string }>(
+      this.http.post<CreatedIdResponse>(
         `${B2B_API_BASE}/admin/companies/${companyId}/contacts`,
         payload,
       ),
@@ -315,7 +316,7 @@ export class AdminCompaniesService {
   /** Ajoute une adresse de livraison. */
   async addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
     await firstValueFrom(
-      this.http.post<{ readonly id: string }>(
+      this.http.post<CreatedIdResponse>(
         `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses`,
         payload,
       ),

@@ -16,6 +16,7 @@ import {
   SignVolumeCommitmentCommand,
 } from "../application/commands/volume-commitment.handlers.js";
 import { VolumeCommitmentsQuery } from "../application/queries/volume-commitments.query.js";
+import type { CreatedIdResponse } from "@lfd/contracts";
 
 /**
  * **Les engagements de volume**, côté back-office.
@@ -45,7 +46,7 @@ export class AdminVolumeCommitmentsController {
   async sign(
     @Body(new ZodBody(createVolumeCommitmentPayloadSchema)) payload: CreateVolumeCommitmentPayload,
     @StaffSub() staffSub: string,
-  ): Promise<{ id: string }> {
+  ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SignVolumeCommitmentCommand, string>(
       new SignVolumeCommitmentCommand(payload, staffSub),
     );

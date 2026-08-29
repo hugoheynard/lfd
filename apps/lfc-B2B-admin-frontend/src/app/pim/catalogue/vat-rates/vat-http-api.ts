@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../../data/api';
 import type { VatRate } from '../../data/models';
+import type { CreatedIdResponse } from '@lfd/contracts';
 
 export interface VatRateInput {
   readonly name: string;
@@ -27,8 +28,8 @@ export class VatRateHttpApi {
     return rows.map((row) => ({ ...row }));
   }
 
-  create(input: VatRateInput): Promise<{ id: string }> {
-    return firstValueFrom(this.http.post<{ id: string }>(this.url(''), this.body(input)));
+  create(input: VatRateInput): Promise<CreatedIdResponse> {
+    return firstValueFrom(this.http.post<CreatedIdResponse>(this.url(''), this.body(input)));
   }
 
   async update(id: string, input: VatRateInput): Promise<void> {

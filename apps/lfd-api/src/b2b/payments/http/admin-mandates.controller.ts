@@ -30,6 +30,7 @@ import {
 } from "../application/mandate-commands.js";
 import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
+import type { CreatedIdResponse } from "@lfd/contracts";
 
 /** Backstop DoS du multipart, aligné sur le KBIS (le domaine tranche à 10 Mo). */
 const PROOF_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -87,7 +88,7 @@ export class AdminMandatesController {
   async register(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(registerMandatePayloadSchema)) payload: RegisterMandatePayload,
-  ): Promise<{ readonly id: string }> {
+  ): Promise<CreatedIdResponse> {
     const acceptedAt = payload.acceptedAt === undefined ? null : new Date(payload.acceptedAt);
     const id = await this.commands.execute<RegisterMandateCommand, string>(
       new RegisterMandateCommand(companyId, payload.paymentMethodId, acceptedAt),

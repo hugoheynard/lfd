@@ -4,6 +4,7 @@ import type { PointOfSaleKindView, PointOfSaleView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
+import type { CreatedIdResponse, IssuedTokenResponse } from '@lfd/contracts';
 
 /** Ce qu'on RÈGLE sur un point de vente. Le genre n'y est pas : il est figé. */
 export interface PointOfSaleInput {
@@ -39,8 +40,8 @@ export class PointOfSaleHttpApi {
     return firstValueFrom(this.http.get<PointOfSaleView[]>(this.url('')));
   }
 
-  openPointOfSale(input: OpenPointOfSaleInput): Promise<{ id: string }> {
-    return firstValueFrom(this.http.post<{ id: string }>(this.url(''), input));
+  openPointOfSale(input: OpenPointOfSaleInput): Promise<CreatedIdResponse> {
+    return firstValueFrom(this.http.post<CreatedIdResponse>(this.url(''), input));
   }
 
   async update(id: string, patch: Partial<PointOfSaleInput>): Promise<void> {
@@ -52,9 +53,9 @@ export class PointOfSaleHttpApi {
   }
 
   /** (Re)génère le QR : le backend mint le token neuf et le renvoie. */
-  generateTableQr(id: string, tableNumber: number): Promise<{ token: string }> {
+  generateTableQr(id: string, tableNumber: number): Promise<IssuedTokenResponse> {
     return firstValueFrom(
-      this.http.post<{ token: string }>(this.url(`${id}/tables/${tableNumber}/qr`), {}),
+      this.http.post<IssuedTokenResponse>(this.url(`${id}/tables/${tableNumber}/qr`), {}),
     );
   }
 

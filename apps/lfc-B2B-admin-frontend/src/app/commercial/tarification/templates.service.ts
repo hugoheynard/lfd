@@ -3,7 +3,9 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
   ApplyPriceTemplatePayload,
+  CreatedIdResponse,
   MercurialeBenchmarkView,
+  PosedRulesResponse,
   PriceTemplateKind,
   PriceTemplateView,
   SavePriceTemplatePayload,
@@ -48,8 +50,8 @@ export class PriceTemplatesService {
     );
   }
 
-  async compose(payload: SavePriceTemplatePayload): Promise<{ id: string }> {
-    return firstValueFrom(this.http.post<{ id: string }>(this.base, payload));
+  async compose(payload: SavePriceTemplatePayload): Promise<CreatedIdResponse> {
+    return firstValueFrom(this.http.post<CreatedIdResponse>(this.base, payload));
   }
 
   /** Une grille se remplace **entière** : `PUT`, jamais un palier à la fois. */
@@ -58,12 +60,9 @@ export class PriceTemplatesService {
   }
 
   /** Rend le nombre de règles posées — une ligne à deux paliers en pose deux. */
-  async apply(id: string, payload: ApplyPriceTemplatePayload): Promise<{ posedRules: number }> {
+  async apply(id: string, payload: ApplyPriceTemplatePayload): Promise<PosedRulesResponse> {
     return firstValueFrom(
-      this.http.post<{ posedRules: number }>(
-        `${this.base}/${encodeURIComponent(id)}/apply`,
-        payload,
-      ),
+      this.http.post<PosedRulesResponse>(`${this.base}/${encodeURIComponent(id)}/apply`, payload),
     );
   }
 }

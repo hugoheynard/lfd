@@ -46,6 +46,7 @@ import { BoardComparisonService } from "../application/board-comparison.service.
 import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
 import type {
+  CreatedIdResponse,
   PriceRuleView,
   PriceScopePayload,
   PricingBoardView,
@@ -134,7 +135,7 @@ export class AdminPricingController {
   async setVolumeLadder(
     @Body(new ZodBody(setVolumeLadderPayloadSchema)) payload: SetVolumeLadderPayload,
     @StaffSub() staffSub: string,
-  ): Promise<{ id: string }> {
+  ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SetVolumeLadderCommand, string>(
       new SetVolumeLadderCommand(
         {
@@ -222,7 +223,7 @@ export class AdminPricingController {
   async createRule(
     @Body(new ZodBody(createPriceRulePayloadSchema)) payload: CreatePriceRulePayload,
     @StaffSub() staffSub: string,
-  ): Promise<{ id: string }> {
+  ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreatePriceRuleCommand, string>(
       new CreatePriceRuleCommand(toDraft(payload), staffSub),
     );

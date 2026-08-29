@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreatePriceRulePayload,
+  CreatedIdResponse,
   PriceProjectionPayload,
   PriceProjectionView,
   PriceRuleView,
@@ -80,7 +81,7 @@ export class TarificationService {
    */
   async setVolumeLadder(payload: SetVolumeLadderPayload): Promise<string> {
     const created = await firstValueFrom(
-      this.http.put<{ id: string }>(`${B2B_API_BASE}/admin/pricing/volume-ladders`, payload),
+      this.http.put<CreatedIdResponse>(`${B2B_API_BASE}/admin/pricing/volume-ladders`, payload),
     );
     return created.id;
   }
@@ -88,7 +89,7 @@ export class TarificationService {
   /** Pose une règle. Rend son identifiant, pour pouvoir la retirer. */
   async createRule(payload: CreatePriceRulePayload): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<{ id: string }>(`${B2B_API_BASE}/admin/pricing/rules`, payload),
+      this.http.post<CreatedIdResponse>(`${B2B_API_BASE}/admin/pricing/rules`, payload),
     );
     return created.id;
   }

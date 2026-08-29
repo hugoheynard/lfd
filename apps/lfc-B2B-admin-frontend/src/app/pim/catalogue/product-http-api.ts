@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
 import type { Product, ProductKind, Variant } from '../data/models';
+import type { CreatedIdResponse } from '@lfd/contracts';
 
 // Formes RENDUES par l'API = vues du contrat `@lfd/pim-contracts`. `priceCents`
 // HT canonique ; le front l'expose en euros dans `priceEur` (TTC/HT relève de la
@@ -240,9 +241,9 @@ export class ProductHttpApi {
    * défaut (le backend ne les prend pas à la création). La description part dans
    * l'éditorial du produit.
    */
-  async create(input: CreateProductInput): Promise<{ id: string }> {
+  async create(input: CreateProductInput): Promise<CreatedIdResponse> {
     const created = await firstValueFrom(
-      this.http.post<{ id: string }>(this.url('products'), {
+      this.http.post<CreatedIdResponse>(this.url('products'), {
         name: input.name,
         kind: input.kind,
         categoryId: input.categoryId,

@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import type { IssuedLinkResponse, PendingAccessView, PendingStaffAccessView } from '@lfd/contracts';
+
 import type { PendingAccess } from './pending-access.model';
 
 /** La file des accès à remettre, et la fabrique de liens. */
@@ -19,9 +21,13 @@ export class PendingAccessService {
    */
   async list(): Promise<readonly PendingAccess[]> {
     const [clients, staff] = await Promise.allSettled([
-      firstValueFrom(this.http.get<readonly RawClient[]>(`${B2B_API_BASE}/admin/access-pending`)),
       firstValueFrom(
-        this.http.get<readonly RawStaff[]>(`${B2B_API_BASE}/admin/staff-access-pending`),
+        this.http.get<readonly PendingAccessView[]>(`${B2B_API_BASE}/admin/access-pending`),
+      ),
+      firstValueFrom(
+        this.http.get<readonly PendingStaffAccessView[]>(
+          `${B2B_API_BASE}/admin/staff-access-pending`,
+        ),
       ),
     ]);
     return [
@@ -35,49 +41,22 @@ export class PendingAccessService {
    * droits à usage unique, et un `GET` finirait préchargé, mis en cache et
    * rangé dans l'historique du navigateur.
    */
-  async issueLink(person: PendingAccess): Promise<IssuedLink> {
+  async issueLink(person: PendingAccess): Promise<IssuedLinkResponse> {
     // Deux annuaires, deux routes : la personne porte d'où elle vient, l'écran
     // n'a pas à le deviner.
     const base =
       person.kind === 'staff'
         ? `${B2B_API_BASE}/admin/staff-access-pending`
         : `${B2B_API_BASE}/admin/access-pending`;
-    return firstValueFrom(this.http.post<IssuedLink>(`${base}/${person.userId}/link`, {}));
+    return firstValueFrom(this.http.post<IssuedLinkResponse>(`${base}/${person.userId}/link`, {}));
   }
 }
 
-/** Le lien, et jusqu'à quand il ouvre — l'échéance vient du serveur. */
-export interface IssuedLink {
-  readonly url: string;
-  readonly expiresAt: string;
-}
-
-/** La ligne telle que la file client la rend. */
-interface RawClient {
-  readonly userId: string;
-  readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly companyId: string;
-  readonly companyName: string;
-  readonly invitedAt: string;
-}
-
-/** Celle de la file staff — pas de société, une fonction. */
-interface RawStaff {
-  readonly staffUserId: string;
-  readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly jobTitle: string;
-  readonly invitedAt: string;
-}
-
-function toClient(row: RawClient): PendingAccess {
+function toClient(row: PendingAccessView): PendingAccess {
   return { ...row, kind: 'client' };
 }
 
-function toStaff(row: RawStaff): PendingAccess {
+function toStaff(row: PendingStaffAccessView): PendingAccess {
   return {
     userId: row.staffUserId,
     email: row.email,
