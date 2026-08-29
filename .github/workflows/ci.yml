@@ -8,7 +8,7 @@ name: CI
 # tests de `@lfd/contracts` étaient rouges sur `dev` depuis plusieurs jours sans
 # que rien ne le signale — aucune commande d'app ne les exécute.
 #
-# Trois jobs qui tournent en parallèle, et un `ci-gate` qui les agrège : c'est
+# Cinq jobs qui tournent en parallèle, et un `ci-gate` qui les agrège : c'est
 # LUI qu'on met en statut requis sur la branche, pas les trois — ainsi ajouter un
 # job plus tard ne demande pas de retoucher les réglages du dépôt.
 #
@@ -51,29 +51,21 @@ jobs:
       - name: Tests
         run: pnpm --filter "./packages/**" test
 
-  # ── Le backend B2B ──────────────────────────────────────────────────────────
-  # Ses tests e2e frappent un vrai Postgres : le harnais attend le port 5433 et
-  # crée lui-même la base `lfc_b2b_test` (`db:test:setup`, idempotent). Ils
-  # frappent aussi un vrai stockage objet (MinIO, port 9100) : les pièces —
-  # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
-  # harnais (`ensureTestBucket`), donc rien à provisionner ici.
-  b2b-backend:
-    name: Backend B2B
+  # ── Le backend B2B, ses contrôles ──────────────────────────────────────────
+  # Tout ce qui NE demande ni base ni stockage : typechecks, lint, gates, et les
+  # 207 suites unitaires.
+  #
+  # Elles vivaient dans le job d'à côté, derrière les e2e, et le `maxWorkers: 1`
+  # que les e2e imposent les tenait en file une par une. Mesuré le 2026-08-29 :
+  # 8 min pour les 258 suites ensemble, contre 7 SECONDES pour les 207 unitaires
+  # seules, à sept cœurs. Ce ne sont pas les tests qui étaient lents, c'est la
+  # file d'attente.
+  #
+  # Le job ne monte donc aucun conteneur : c'est ce qui le rend court, et c'est
+  # `jest.unit.cjs` qui garantit qu'aucune de ces specs n'en a besoin.
+  b2b-checks:
+    name: Backend B2B · contrôles
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: lfc
-          POSTGRES_PASSWORD: lfc
-          POSTGRES_DB: lfc_b2b_dev
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U lfc"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -124,6 +116,47 @@ jobs:
       - name: "Gate : pas de `files` sur une app conteneurisée"
         run: pnpm lint:deployed-app-files
 
+      - name: Tests unitaires
+        run: pnpm --filter lfd-api test:unit
+
+  # ── Le backend B2B, ses e2e ─────────────────────────────────────────────────
+  # Ce job ne fait plus QUE les e2e — ses typechecks, son lint et ses gates sont
+  # partis dans `b2b-checks` ci-dessus. Ce qui reste ici est ce qui a besoin
+  # d'une infrastructure, et rien d'autre : le chemin critique de la CI, c'est
+  # lui, donc tout ce qu'on lui retire est du temps rendu au déploiement.
+  #
+  # Ses tests e2e frappent un vrai Postgres : le harnais attend le port 5433 et
+  # crée lui-même la base `lfc_b2b_test` (`db:test:setup`, idempotent). Ils
+  # frappent aussi un vrai stockage objet (MinIO, port 9100) : les pièces —
+  # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
+  # harnais (`ensureTestBucket`), donc rien à provisionner ici.
+  b2b-backend:
+    name: Backend B2B
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lfc
+          POSTGRES_PASSWORD: lfc
+          POSTGRES_DB: lfc_b2b_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U lfc"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets dont dépend le backend
+        run: pnpm --filter "./packages/**" build
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       - name: Démarrer le stockage objet (MinIO)
@@ -142,8 +175,8 @@ jobs:
           exit 1
       - name: Préparer la base de test
         run: pnpm --filter lfd-api run db:test:setup
-      - name: Tests (unitaires + e2e)
-        run: pnpm --filter lfd-api test
+      - name: Tests e2e
+        run: pnpm --filter lfd-api test:e2e
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des
@@ -273,16 +306,18 @@ jobs:
   ci-gate:
     name: ci-gate
     runs-on: ubuntu-latest
-    needs: [packages, b2b-backend, fronts-et-pim, gateway]
+    needs: [packages, b2b-checks, b2b-backend, fronts-et-pim, gateway]
     if: always()
     steps:
       - name: Vérifier que tout est vert
         run: |
           echo "packages      : ${{ needs.packages.result }}"
+          echo "b2b-checks    : ${{ needs.b2b-checks.result }}"
           echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
           echo "fronts-et-pim : ${{ needs.fronts-et-pim.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
           if [ "${{ needs.packages.result }}" != "success" ] \
+            || [ "${{ needs.b2b-checks.result }}" != "success" ] \
             || [ "${{ needs.b2b-backend.result }}" != "success" ] \
             || [ "${{ needs.fronts-et-pim.result }}" != "success" ] \
             || [ "${{ needs.gateway.result }}" != "success" ]; then

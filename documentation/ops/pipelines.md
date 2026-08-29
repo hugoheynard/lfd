@@ -73,15 +73,39 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 ## 3. Ce que la CI couvre — et ce qu'elle ne couvre pas
 
-`ci.yml` a quatre jobs plus une barrière :
+`ci.yml` a cinq jobs plus une barrière :
 
 | Job             | Périmètre                                                            |
 | --------------- | -------------------------------------------------------------------- |
 | `packages`      | les paquets partagés, en premier et à part                           |
-| `b2b-backend`   | lint, typecheck, tests (dont e2e sur Postgres docker + MinIO)        |
+| `b2b-checks`    | typechecks, lint, les 5 gates et les 207 suites unitaires du backend |
+| `b2b-backend`   | les 51 suites e2e, sur Postgres docker + MinIO — **rien d'autre**    |
 | `fronts-et-pim` | les quatre fronts et le backend PIM                                  |
 | `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée             |
-| `ci-gate`       | échoue si l'un des quatre n'est pas vert — **le seul statut requis** |
+| `ci-gate`       | échoue si l'un des cinq n'est pas vert — **le seul statut requis**   |
+
+### Pourquoi `b2b-checks` existe
+
+Le backend tenait à lui seul le chemin critique : **10 min 12 sur une CI de
+10 min 25** (run vert du 2026-08-27), dont **8 minutes** pour une seule étape,
+« Tests (unitaires + e2e) ».
+
+La cause n'était pas la lenteur des tests mais une **file d'attente**. Les e2e
+partagent une base jetable qu'elles tronquent entre les cas ; elles imposent donc
+`maxWorkers: 1`. Ce worker unique tenait aussi les 207 suites unitaires, qui ne
+touchent aucune base et n'avaient aucune raison d'attendre. Mesuré le
+2026-08-29 : **7 secondes** pour ces 207 suites (1 704 tests) lancées seules, à
+sept cœurs.
+
+Trois configurations Jest portent désormais la séparation, et le mur qui la rend
+vraie est écrit dans `jest.unit.cjs` : une spec qui a besoin d'une vraie base
+n'est pas une unitaire, elle prend le suffixe `.e2e-spec.ts` et descend dans
+`test/`.
+
+⚠️ Le motif des unitaires dit « tout sauf e2e », **pas** « tout ce qui est sous
+`src/` ». Écrit à l'envers lors du découpage, il laissait `container/__tests__/`
+hors des deux configurations : deux specs qui ne tournaient plus nulle part, et
+une CI verte pour l'affirmer. Une partition se définit par ce qu'elle exclut.
 
 La barrière a été **falsifiée** avant d'être crue : sa condition rougit bien
 quand `gateway` échoue. Une barrière qu'on n'a pas vue refuser n'est pas une
