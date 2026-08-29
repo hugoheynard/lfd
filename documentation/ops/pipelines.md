@@ -73,16 +73,52 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 ## 3. Ce que la CI couvre — et ce qu'elle ne couvre pas
 
-`ci.yml` a cinq jobs plus une barrière :
+`ci.yml` a sept jobs plus une barrière — et **quatre ne tournent que si le commit les concerne** :
 
 | Job             | Périmètre                                                               |
 | --------------- | ----------------------------------------------------------------------- |
+| `changes`       | calcule le PÉRIMÈTRE via le graphe turbo — toujours                     |
+| `gates`         | les 12 portes qui balaient tout le dépôt — toujours                     |
 | `packages`      | les paquets partagés, en premier et à part                              |
-| `b2b-checks`    | typechecks, lint, les 5 gates et les 207 suites unitaires du backend    |
+| `b2b-checks`    | typechecks, lint et les 207 suites unitaires du backend                 |
 | `b2b-backend`   | les 51 suites e2e, **shardées sur 4 runners** (Postgres + MinIO chacun) |
 | `fronts-et-pim` | les quatre fronts et le backend PIM                                     |
 | `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée                |
-| `ci-gate`       | échoue si l'un des cinq n'est pas vert — **le seul statut requis**      |
+| `ci-gate`       | échoue si l'un d'eux est rouge — **le seul statut requis**              |
+
+### Le périmètre — n'exécuter que ce que le commit concerne
+
+turborepo était dans le dépôt depuis toujours et la CI ne s'en servait pas : les
+quatre chantiers repartaient à chaque push. La promotion du 2026-08-29 portait
+**369 fichiers de front pour 14 de backend**, et les e2e backend — le chemin
+critique — ont tourné pour rien.
+
+Le job `changes` demande à turbo la seule chose que `git diff` ignore : le
+**graphe**. Toucher `packages/contracts` concerne les trois apps qui le
+consomment, et lui seul le sait. Les autres jobs portent alors un
+`if: needs.changes.outputs.<zone> == 'true'`.
+
+**Règle de sûreté, écrite dans `dev-toolbox/ci/affected.mjs` : dans le doute, on
+lance tout.** Base introuvable (premier push, force-push, historique tronqué),
+sortie illisible, turbo absent — chacun rend « tout ». Un job lancé pour rien
+coûte des minutes ; un job sauté à tort laisse passer une régression, et la
+porte ne vaut plus rien. Les deux erreurs ne se paient pas dans la même monnaie.
+
+Deux conséquences à connaître :
+
+- Le paquet racine `//` vaut « tout », et il absorbe ce qui n'appartient à aucun
+  paquet : `documentation/`, la CI, le lockfile. Un commit de documentation
+  relance donc l'ensemble. Gâchis assumé, du bon côté.
+- `changes` n'a **pas** droit au sauté dans la barrière : c'est lui qui décide
+  des autres. S'il échoue, personne n'a été mesuré.
+
+⚠️ Le filtrage a créé un trou qu'il a fallu boucher dans le même geste : **dix
+des douze gates balaient tout le dépôt**, et elles vivaient réparties entre le
+job backend et celui des fronts. Tant que ces deux-là tournaient toujours, la
+répartition ne se voyait pas. Rendus conditionnels, un commit backend seul
+sautait `fronts-et-pim` — et avec lui la porte des cycles d'import, qui lit
+pourtant `apps/**` en entier. D'où le job `gates`, global et inconditionnel :
+**une porte globale appartient à un job global.**
 
 ### Pourquoi `b2b-checks` existe
 

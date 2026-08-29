@@ -31,11 +31,168 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Le périmètre ────────────────────────────────────────────────────────────
+  # Quels chantiers ce commit concerne-t-il VRAIMENT ?
+  #
+  # turborepo est dans le dépôt depuis toujours et la CI ne s'en servait pas :
+  # elle relançait les quatre chantiers à chaque push. La promotion du
+  # 2026-08-29 portait 369 fichiers de front pour 14 de backend, et les e2e
+  # backend — qui tiennent le chemin critique — ont tourné pour rien.
+  #
+  # On ne réécrit pas les étapes à travers turbo : on lui demande la seule chose
+  # que `git diff` ignore, le GRAPHE. Toucher `packages/contracts` concerne les
+  # trois apps qui le consomment, et lui seul le sait.
+  #
+  # ⚠️ Dans le doute, le script rend « tout » (cf. dev-toolbox/ci/affected.mjs).
+  # Un job lancé pour rien coûte des minutes ; un job sauté à tort laisse passer
+  # une régression. Les deux erreurs ne se paient pas dans la même monnaie.
+  changes:
+    name: Périmètre
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.scope.outputs.packages }}
+      api: ${{ steps.scope.outputs.api }}
+      fronts: ${{ steps.scope.outputs.fronts }}
+      gateway: ${{ steps.scope.outputs.gateway }}
+    steps:
+      # `fetch-depth: 0` — sans l'historique, aucune base n'est résoluble et le
+      # script rendrait « tout » à chaque fois. Le filtrage serait inerte, et
+      # rien ne le dirait.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Calculer le périmètre
+        id: scope
+        # Sur une PR, la base est la branche visée. Sur un push, c'est l'état
+        # d'avant — et au premier push d'une branche il vaut quarante zéros,
+        # que turbo ne sait pas résoudre : le script rend « tout », ce qui est
+        # exactement ce qu'on veut d'une branche neuve.
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="origin/${{ github.base_ref }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
+
+  # ── Les gates du dépôt ──────────────────────────────────────────────────────
+  # Douze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  #
+  # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
+  # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
+  # le périmètre peut les sauter, la répartition devient un TROU : un commit qui
+  # ne touche que le backend sauterait `fronts-et-pim`, et avec lui la porte des
+  # cycles d'import — qui, elle, lit `apps/**` en entier.
+  #
+  # Une porte globale appartient donc à un job global. Elles coûtent quelques
+  # secondes ; c'est leur mise en place qui coûte une minute, et elle est
+  # partagée.
+  gates:
+    name: Gates du dépôt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # `lint:fold-tokens` lit les tokens de la version de fold-ng INSTALLÉE, et
+      # plusieurs gates résolvent des imports de `packages/**`.
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+
+      # Un abonné d'événement qui ne s'inscrit pas au travail de fond ne casse
+      # aucun test le jour où on l'écrit : il casse un AUTRE test, plus tard,
+      # une fois sur sept. Ce gate le refuse à l'entrée.
+      - name: "Gate : abonnés d'événement suivis"
+        run: pnpm lint:events-tracked
+
+      # Les deux murs de la fusion à venir (cf.
+      # documentation/suite/architecture-topologie-apps.md, étape B1). Ils sont
+      # posés AVANT que les contextes se rejoignent : un mur ajouté une fois la
+      # brèche ouverte ne ferme plus rien, il ne fait que constater.
+      - name: "Gate : frontières de contexte"
+        run: pnpm lint:context-boundaries
+
+      - name: "Gate : aucune jointure inter-schéma"
+        run: pnpm lint:cross-schema-join
+
+      # Une dépendance partagée par deux paquets vient du catalogue, pas d'une
+      # plage recopiée. Deux versions d'un même paquet dans un monorepo ne se
+      # voient pas — elles se découvrent, et toujours au pire moment.
+      - name: "Gate : dépendances partagées au catalogue"
+        run: pnpm lint:catalog-shared-deps
+
+      # Un `files` sur une app conteneurisée amputerait ce que `pnpm deploy`
+      # emporte dans l'image — sans rendre aucune étape de build rouge. La panne
+      # n'apparaîtrait qu'au démarrage du container, en production.
+      - name: "Gate : pas de `files` sur une app conteneurisée"
+        run: pnpm lint:deployed-app-files
+
+      # Une variable CSS inconnue ne casse ni le build ni les tests : elle est
+      # ignorée, et la page a l'air correcte jusqu'au jour où le thème change.
+      # Ce gate la refuse à l'entrée.
+      - name: "Gate : variables fold existantes"
+        run: pnpm lint:fold-tokens
+
+      # Une taille écrite à la main ne casse rien non plus — elle diverge de
+      # 0,03rem par écran, et le système se dissout par des différences que
+      # personne ne remarque une par une. Le gate tient les dossiers drainés et
+      # affiche le solde restant plutôt que de le taire.
+      - name: "Gate : typographie fold"
+        run: pnpm lint:fold-typography
+
+      # La langue des identifiants. Le gate ne juge que les dossiers DRAINÉS —
+      # il compte le reste et l'affiche, pour que la dette ne se taise pas.
+      - name: "Gate : les identifiants sont en anglais"
+        run: pnpm lint:code-language
+
+      # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
+      # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
+      # portait cinq, survivants de sa fusion dans le back-office — ses routes
+      # étaient passées de `/produits` à `/pim/produits`, les liens non.
+      - name: "Gate : les liens absolus mènent quelque part"
+        run: pnpm lint:router-links
+
+      # La couche modèle du référentiel portait `tvaTagFromPercent`,
+      # `generateFiches` et un `collections.ts` entier : quatre mots de Shopify
+      # au milieu du vocabulaire du catalogue. Six écrans qui n'ont rien à voir
+      # avec Shopify le traînaient dans leur bundle. Un déplacement sans porte
+      # se défait ; celle-ci tient la direction — un canal lit le catalogue, le
+      # catalogue ignore les canaux.
+      - name: "Gate : le modèle du référentiel ignore les canaux"
+        run: pnpm lint:pim-data-neutral
+
+      # Un cycle d'import ne se voit NULLE PART : tsc n'en dit rien, les tests
+      # passent, la compilation de production réussit. Seul le navigateur tombe,
+      # à l'exécution, sur la page concernée — « Failed to fetch dynamically
+      # imported module », qui ne nomme ni le cycle ni les fichiers.
+      - name: "Gate : aucun cycle d'import"
+        run: pnpm lint:import-cycles
+
+      # Un handler du référentiel qui écrit sans trace ne se voit nulle part :
+      # tsc est content, les tests passent, l'écran fonctionne. Ça se découvre le
+      # jour où l'on demande « qui a changé ça » — et ce jour-là, le blanc ne se
+      # comble plus. La dette du 2026-08-25 est déclarée dans la porte ; elle ne
+      # peut que rétrécir.
+      - name: "Gate : le référentiel journalise ce qu'il écrit"
+        run: pnpm lint:journal-tracked
+
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
   packages:
     name: Paquets
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -66,6 +223,8 @@ jobs:
   b2b-checks:
     name: Backend B2B · contrôles
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -88,34 +247,6 @@ jobs:
         run: pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
       - name: Lint
         run: pnpm --filter lfd-api lint:ci
-      # Un abonné d'événement qui ne s'inscrit pas au travail de fond ne casse
-      # aucun test le jour où on l'écrit : il casse un AUTRE test, plus tard,
-      # une fois sur sept. Ce gate le refuse à l'entrée.
-      - name: "Gate : abonnés d'événement suivis"
-        run: pnpm lint:events-tracked
-
-      # Les deux murs de la fusion à venir (cf.
-      # documentation/suite/architecture-topologie-apps.md, étape B1). Ils sont
-      # posés AVANT que les contextes se rejoignent : un mur ajouté une fois la
-      # brèche ouverte ne ferme plus rien, il ne fait que constater.
-      - name: "Gate : frontières de contexte"
-        run: pnpm lint:context-boundaries
-
-      - name: "Gate : aucune jointure inter-schéma"
-        run: pnpm lint:cross-schema-join
-
-      # Une dépendance partagée par deux paquets vient du catalogue, pas d'une
-      # plage recopiée. Deux versions d'un même paquet dans un monorepo ne se
-      # voient pas — elles se découvrent, et toujours au pire moment.
-      - name: "Gate : dépendances partagées au catalogue"
-        run: pnpm lint:catalog-shared-deps
-
-      # Un `files` sur une app conteneurisée amputerait ce que `pnpm deploy`
-      # emporte dans l'image — sans rendre aucune étape de build rouge. La panne
-      # n'apparaîtrait qu'au démarrage du container, en production.
-      - name: "Gate : pas de `files` sur une app conteneurisée"
-        run: pnpm lint:deployed-app-files
-
       - name: Tests unitaires
         run: pnpm --filter lfd-api test:unit
 
@@ -139,6 +270,8 @@ jobs:
   b2b-backend:
     name: Backend B2B · e2e ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     strategy:
       # QUATRE RUNNERS, un quart des suites chacun.
       #
@@ -211,6 +344,8 @@ jobs:
   fronts-et-pim:
     name: Fronts + PIM
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.fronts == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -221,55 +356,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
         run: pnpm --filter "./packages/**" build
-
-      # Une variable CSS inconnue ne casse ni le build ni les tests : elle est
-      # ignorée, et la page a l'air correcte jusqu'au jour où le thème change.
-      # Ce gate la refuse à l'entrée.
-      - name: "Gate : variables fold existantes"
-        run: pnpm lint:fold-tokens
-
-      # Une taille écrite à la main ne casse rien non plus — elle diverge de
-      # 0,03rem par écran, et le système se dissout par des différences que
-      # personne ne remarque une par une. Le gate tient les dossiers drainés et
-      # affiche le solde restant plutôt que de le taire.
-      - name: "Gate : typographie fold"
-        run: pnpm lint:fold-typography
-
-      # La langue des identifiants. Le gate ne juge que les dossiers DRAINÉS —
-      # il compte le reste et l'affiche, pour que la dette ne se taise pas.
-      - name: "Gate : les identifiants sont en anglais"
-        run: pnpm lint:code-language
-
-      # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
-      # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
-      # portait cinq, survivants de sa fusion dans le back-office — ses routes
-      # étaient passées de `/produits` à `/pim/produits`, les liens non.
-      - name: "Gate : les liens absolus mènent quelque part"
-        run: pnpm lint:router-links
-
-      # La couche modèle du référentiel portait `tvaTagFromPercent`,
-      # `generateFiches` et un `collections.ts` entier : quatre mots de Shopify
-      # au milieu du vocabulaire du catalogue. Six écrans qui n'ont rien à voir
-      # avec Shopify le traînaient dans leur bundle. Un déplacement sans porte
-      # se défait ; celle-ci tient la direction — un canal lit le catalogue, le
-      # catalogue ignore les canaux.
-      - name: "Gate : le modèle du référentiel ignore les canaux"
-        run: pnpm lint:pim-data-neutral
-
-      # Un cycle d'import ne se voit NULLE PART : tsc n'en dit rien, les tests
-      # passent, la compilation de production réussit. Seul le navigateur tombe,
-      # à l'exécution, sur la page concernée — « Failed to fetch dynamically
-      # imported module », qui ne nomme ni le cycle ni les fichiers.
-      - name: "Gate : aucun cycle d'import"
-        run: pnpm lint:import-cycles
-
-      # Un handler du référentiel qui écrit sans trace ne se voit nulle part :
-      # tsc est content, les tests passent, l'écran fonctionne. Ça se découvre le
-      # jour où l'on demande « qui a changé ça » — et ce jour-là, le blanc ne se
-      # comble plus. La dette du 2026-08-25 est déclarée dans la porte ; elle ne
-      # peut que rétrécir.
-      - name: "Gate : le référentiel journalise ce qu'il écrit"
-        run: pnpm lint:journal-tracked
 
       # Admin seul pour l'instant : le front plateforme n'a pas encore de config
       # ESLint, et en fabriquer une à l'aveugle poserait une porte sans savoir ce
@@ -311,6 +397,8 @@ jobs:
   gateway:
     name: Passerelle
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.gateway == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -333,21 +421,52 @@ jobs:
   ci-gate:
     name: ci-gate
     runs-on: ubuntu-latest
-    needs: [packages, b2b-checks, b2b-backend, fronts-et-pim, gateway]
+    needs: [changes, gates, packages, b2b-checks, b2b-backend, fronts-et-pim, gateway]
     if: always()
     steps:
+      # `skipped` VAUT vert, et c'est la seule chose que le filtrage a changé
+      # ici : un job hors périmètre n'a rien à prouver. Mais lui seul —
+      # `cancelled`, `failure` et tout état inconnu restent rouges, sinon un job
+      # annulé passerait pour un job non concerné.
+      #
+      # ⚠️ `changes` n'a PAS droit au sauté : c'est lui qui décide des autres.
+      # S'il échoue, personne n'a été mesuré, et laisser filer une CI où rien
+      # n'a tourné serait pire que tout ce que cette porte protège.
       - name: Vérifier que tout est vert
         run: |
+          echo "changes       : ${{ needs.changes.result }}"
           echo "packages      : ${{ needs.packages.result }}"
           echo "b2b-checks    : ${{ needs.b2b-checks.result }}"
           echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
           echo "fronts-et-pim : ${{ needs.fronts-et-pim.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
-          if [ "${{ needs.packages.result }}" != "success" ] \
-            || [ "${{ needs.b2b-checks.result }}" != "success" ] \
-            || [ "${{ needs.b2b-backend.result }}" != "success" ] \
-            || [ "${{ needs.fronts-et-pim.result }}" != "success" ] \
-            || [ "${{ needs.gateway.result }}" != "success" ]; then
+
+          echo "gates         : ${{ needs.gates.result }}"
+
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            echo "::error::Le calcul du périmètre a échoué — aucun job n'a été décidé."
+            exit 1
+          fi
+
+          if [ "${{ needs.gates.result }}" != "success" ]; then
+            echo "::error::Les gates du dépôt ne sont pas au vert."
+            exit 1
+          fi
+
+          rouge=0
+          for etat in \
+            "${{ needs.packages.result }}" \
+            "${{ needs.b2b-checks.result }}" \
+            "${{ needs.b2b-backend.result }}" \
+            "${{ needs.fronts-et-pim.result }}" \
+            "${{ needs.gateway.result }}"; do
+            case "$etat" in
+              success | skipped) ;;
+              *) rouge=1 ;;
+            esac
+          done
+
+          if [ "$rouge" = "1" ]; then
             echo "::error::Un job de la CI n'est pas au vert."
             exit 1
           fi
