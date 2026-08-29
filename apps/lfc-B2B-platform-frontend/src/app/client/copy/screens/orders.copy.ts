@@ -65,6 +65,13 @@ export interface OrdersCopy {
   readonly detailSlot: string;
   readonly detailPayment: string;
   readonly detailOrigin: string;
+  /** Un gabarit de panier a produit la commande toute seule. */
+  readonly originRecurring: string;
+  /**
+   * La maison a pris la commande POUR le client — c'est un acteur, pas un
+   * canal, et le mot doit le dire.
+   */
+  readonly originPhone: string;
   readonly detailMode: string;
   readonly purchaseOrder: string;
   readonly reorder: string;
@@ -131,6 +138,8 @@ export const ORDERS_FR: OrdersCopy = {
   detailSlot: 'Créneau',
   detailPayment: 'Règlement',
   detailOrigin: 'Origine',
+  originRecurring: 'Panier récurrent',
+  originPhone: 'Prise par La Folie Coffee',
   detailMode: 'Mode',
   purchaseOrder: 'Bon de commande',
   reorder: 'Recommander à l’identique',
@@ -203,6 +212,8 @@ export const ORDERS_EN: OrdersCopy = {
   detailSlot: 'Slot',
   detailPayment: 'Settlement',
   detailOrigin: 'Origin',
+  originRecurring: 'Recurring basket',
+  originPhone: 'Taken by La Folie Coffee',
   detailMode: 'Mode',
   purchaseOrder: 'Order form',
   reorder: 'Order the same again',
@@ -275,6 +286,8 @@ export const ORDERS_IT: OrdersCopy = {
   detailSlot: 'Fascia oraria',
   detailPayment: 'Pagamento',
   detailOrigin: 'Origine',
+  originRecurring: 'Carrello ricorrente',
+  originPhone: 'Presa da La Folie Coffee',
   detailMode: 'Modalità',
   purchaseOrder: 'Buono d’ordine',
   reorder: 'Riordinare identico',

@@ -45,6 +45,14 @@
   white-space: nowrap;
 }
 
+/* La commande prise PAR LA MAISON porte la teinte de la maison : ce n'est pas
+   une variante d'origine parmi d'autres, c'est la seule ligne que le client n'a
+   pas saisie, et il doit pouvoir la reconnaître sans lire. */
+.origin--house {
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}
+
 /* Deux étages dans une cellule — il n'en reste qu'une, le mode. La colonne
    « passée par » est passée à la cellule d'identité du système. */
 .stack {

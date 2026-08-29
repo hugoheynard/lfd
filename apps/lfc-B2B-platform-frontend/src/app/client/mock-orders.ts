@@ -53,6 +53,7 @@ export interface TrackedOrder {
 }
 
 export type OrderStatus = 'ready' | 'route' | 'done' | 'delivered';
+export type OrderOrigin = '' | 'recurring' | 'phone';
 export type OrderPayment = 'account' | 'card' | 'due';
 
 /** Une commande PASSÉE, telle que le tableau la compare. */
@@ -66,12 +67,21 @@ export interface HistoryOrder {
   readonly status: OrderStatus;
   readonly payment: OrderPayment;
   /**
-   * D'où elle vient quand ce n'est pas l'app — panier récurrent, téléphone.
+   * D'où elle vient quand ce n'est PAS l'app.
+   *
+   * `phone` ne dit pas un canal, il dit un ACTEUR : la commande a été prise par
+   * La Folie Coffee pour le client, et non passée par lui. C'est la seule ligne
+   * du tableau que le client n'a pas saisie lui-même, et la taire ferait croire
+   * à une commande oubliée.
+   *
    * Vide pour l'app : la pastille ne dit que l'exception.
    */
-  readonly origin: string;
-  /** Qui a commandé, et pour quelle maison — un compte multi-espaces le doit. */
+  readonly origin: OrderOrigin;
+  /** La maison de l'espace courant. Le tableau est MONO-COMPTE — on change
+   *  d'espace pour voir les commandes d'une autre maison — donc elle ne
+   *  distingue pas les lignes entre elles : elle situe la personne. */
   readonly org: string;
+  /** Qui a commandé. C'est LUI qu'on cherche dans une colonne, pas la maison. */
   readonly who: string;
 }
 
@@ -205,7 +215,7 @@ export const MOCK_HISTORY: readonly HistoryOrder[] = [
     total: 84.2,
     status: 'done',
     payment: 'account',
-    origin: 'Panier récurrent',
+    origin: 'recurring',
     org: 'Brasserie Marchand',
     who: 'Hélène Marchand',
   },
@@ -231,7 +241,7 @@ export const MOCK_HISTORY: readonly HistoryOrder[] = [
     total: 68.0,
     status: 'delivered',
     payment: 'due',
-    origin: 'Téléphone',
+    origin: 'phone',
     org: 'Refuge de la Balme',
     who: 'Karim Bel',
   },

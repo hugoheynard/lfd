@@ -27,12 +27,19 @@ describe('HistoryTable', () => {
     expect(drawers().length).toBe(0);
   });
 
-  it('nomme la maison ET la personne, la maison ancrée par ses initiales', () => {
-    // Un compte multi-espaces doit dire pour quelle maison on a commandé, et
-    // une initiale se retrouve dans une colonne plus vite qu'un nom.
+  it('nomme la PERSONNE en tête, la maison dessous', () => {
+    // Le tableau est mono-compte : l'enseigne est la même sur toutes les
+    // lignes, la mettre en tête ferait une colonne qui ne distingue rien.
     const identity = el().querySelector('fold-avatar-detail');
+    expect(identity?.querySelector('.primary')?.textContent).toContain('Pierre Marchand');
     expect(identity?.textContent).toContain('Brasserie Marchand');
-    expect(identity?.textContent).toContain('Pierre Marchand');
+  });
+
+  it('dit que la MAISON a pris la commande, pas qu’un téléphone a sonné', () => {
+    // C'est la seule ligne que le client n'a pas saisie lui-même : la taire
+    // ferait croire à une commande oubliée.
+    const house = el().querySelector('.origin--house');
+    expect(house?.textContent?.trim()).toBe(FR.orders.originPhone);
   });
 
   it('le total est une colonne de NOMBRES, pas un gabarit', () => {
@@ -45,7 +52,7 @@ describe('HistoryTable', () => {
   it('n’annonce l’origine que lorsqu’elle n’est PAS l’app', () => {
     // L'écrire partout ferait disparaître les deux qui comptent.
     const origins = Array.from(el().querySelectorAll('.origin')).map((n) => n.textContent?.trim());
-    expect(origins).toEqual(['Panier récurrent', 'Téléphone']);
+    expect(origins).toEqual([FR.orders.originRecurring, FR.orders.originPhone]);
   });
 
   it('déplie DANS la liste, et une seule à la fois', () => {

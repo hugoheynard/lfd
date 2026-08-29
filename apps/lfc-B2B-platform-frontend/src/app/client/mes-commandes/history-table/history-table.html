@@ -10,19 +10,25 @@
       <span class="ref-num">{{ order.reference }}</span>
       <!-- La pastille d'origine ne dit que l'EXCEPTION : une commande passée
            dans l'app n'a rien à annoncer, et l'écrire partout ferait
-           disparaître les deux qui comptent. -->
+           disparaître les deux qui comptent. Pour le téléphone elle nomme
+           l'ACTEUR et non le canal — la maison a pris la commande pour le
+           client, et c'est la seule ligne qu'il n'a pas saisie lui-même. -->
       @if (order.origin !== '') {
-        <span class="origin">{{ order.origin }}</span>
+        <span class="origin" [class.origin--house]="order.origin === 'phone'">
+          {{ originLabel(order.origin) }}
+        </span>
       }
     </span>
   </ng-template>
 
-  <!-- La cellule d'IDENTITÉ du système : la maison au-dessus, la personne
-       dessous, et la pastille carrée qui ancre l'enseigne. Un compte
-       multi-espaces doit dire pour quelle maison on a commandé, et une
-       initiale se retrouve dans une colonne plus vite qu'un nom. -->
+  <!-- La cellule d'IDENTITÉ du système, et c'est la PERSONNE qu'elle nomme.
+       Le tableau est mono-compte — on change d'espace pour voir les commandes
+       d'une autre maison — donc l'enseigne est la même sur toutes les lignes :
+       la mettre en tête aurait fait une colonne qui ne distingue rien. Elle
+       passe dessous, où elle situe la personne. L'avatar est rond : c'est
+       quelqu'un, pas une organisation. -->
   <ng-template foldCell="by" let-order>
-    <fold-avatar-detail size="sm" square [primary]="order.org" [secondary]="order.who" />
+    <fold-avatar-detail size="sm" [primary]="order.who" [secondary]="order.org" />
   </ng-template>
 
   <ng-template foldCell="mode" let-order>
