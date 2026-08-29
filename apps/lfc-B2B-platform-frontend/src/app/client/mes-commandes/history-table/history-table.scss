@@ -6,9 +6,18 @@
 
   /* Les cotes de la réf pour le tiroir : il affleure sa ligne en haut — 2 px,
      juste de quoi ne pas coller au filet — et respire d'un cran en bas et sur
-     les côtés. Le jeton arrive avec fold 0.21 ; d'ici là c'est le rembourrage
-     par défaut du composant qui s'applique, un cran plus haut. */
+     les côtés. */
   --fold-data-table-detail-padding: 2px var(--fold-space-lg) var(--fold-space-lg);
+
+  /* ⚠️ L'ÉTAGEMENT EST INVERSÉ par rapport au défaut de fold, et c'est le bon
+     sens pour ce papier-ci. Le corps du tableau est du PAPIER (le ton le plus
+     clair de la gamme) ; survoler ou déplier CREUSE la rangée jusqu'au ton de
+     la page. Fold suppose l'inverse — une table posée sur la page, que
+     l'interaction lève — parce que c'est vrai des fonds neutres, où le blanc
+     est au-dessus. Ici le blanc est le sol, pas le relief. */
+  --fold-data-table-row-bg: var(--fold-color-surface-card);
+  --fold-data-table-row-hover-bg: var(--fold-color-bg-page);
+  --fold-data-table-detail-bg: var(--fold-color-bg-page);
 }
 
 .ref {
