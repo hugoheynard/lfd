@@ -1,11 +1,11 @@
 /* The indicator themes itself from two custom properties so a host on any
-   surface can retune it without reaching inside: `--fold-scroll-indicator-color`
-   for the resting marks, `--fold-scroll-indicator-active` for the live one. */
+   surface can retune it without reaching inside: `--lfc-scroll-indicator-color`
+   for the resting marks, `--lfc-scroll-indicator-active` for the live one. */
 :host {
   display: block;
 
-  --_color: var(--fold-scroll-indicator-color, var(--fold-color-text-muted));
-  --_active: var(--fold-scroll-indicator-active, var(--fold-color-primary));
+  --_color: var(--lfc-scroll-indicator-color, var(--fold-color-text-muted));
+  --_active: var(--lfc-scroll-indicator-active, var(--fold-color-primary));
   --_dot: 6px;
   --_dash: 18px;
 }

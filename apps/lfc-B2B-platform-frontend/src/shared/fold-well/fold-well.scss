@@ -3,10 +3,10 @@
    region here and a sunken card there. */
 :host {
   display: block;
-  padding: var(--fold-well-padding, var(--fold-space-lg));
-  border-radius: var(--fold-well-radius, var(--fold-radius-xl));
-  background: var(--fold-well-bg, var(--fold-color-surface-sunken));
-  color: var(--fold-well-color, var(--fold-color-text));
+  padding: var(--lfc-well-padding, var(--fold-space-lg));
+  border-radius: var(--lfc-well-radius, var(--lfc-radius-xl));
+  background: var(--lfc-well-bg, var(--fold-color-surface-sunken));
+  color: var(--lfc-well-color, var(--fold-color-text));
 }
 
 /* ⚠️ L'ENCRE EST REDÉFINIE ICI, ET SEULEMENT ICI.
@@ -26,10 +26,10 @@
   gap: var(--fold-space-sm);
   margin-bottom: var(--fold-space-lg);
 
-  --fold-color-text: var(--fold-well-color, var(--fold-color-text));
-  --fold-color-text-secondary: var(--fold-well-color-muted, var(--fold-color-text-secondary));
-  --fold-color-text-muted: var(--fold-well-color-muted, var(--fold-color-text-muted));
-  --fold-color-text-subtle: var(--fold-well-color-muted, var(--fold-color-text-subtle));
+  --fold-color-text: var(--lfc-well-color, var(--fold-color-text));
+  --fold-color-text-secondary: var(--lfc-well-color-muted, var(--fold-color-text-secondary));
+  --fold-color-text-muted: var(--lfc-well-color-muted, var(--fold-color-text-muted));
+  --fold-color-text-subtle: var(--lfc-well-color-muted, var(--fold-color-text-subtle));
 }
 
 .titles {
@@ -50,11 +50,11 @@
   align-items: stretch;
   /* L'écart entre items est thémable : sur un rail, il ne sépare pas seulement
      deux cartes, il dit combien on en voit à la fois. */
-  gap: var(--fold-well-gap, var(--fold-space-md));
-  margin-left: calc(var(--fold-well-padding, var(--fold-space-lg)) * -1);
-  padding-left: var(--fold-well-padding, var(--fold-space-lg));
+  gap: var(--lfc-well-gap, var(--fold-space-md));
+  margin-left: calc(var(--lfc-well-padding, var(--fold-space-lg)) * -1);
+  padding-left: var(--lfc-well-padding, var(--fold-space-lg));
   padding-bottom: var(--fold-space-xs);
-  scroll-padding-inline-start: var(--fold-well-padding, var(--fold-space-lg));
+  scroll-padding-inline-start: var(--lfc-well-padding, var(--fold-space-lg));
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   /* ⚠️ A horizontal scroller inside a flex COLUMN gets compressed and clips its

@@ -17,21 +17,21 @@
    Ces quatre propriétés sont son contrat de thème — pas un sélecteur qui
    irait chercher à l'intérieur. */
 .well {
-  --fold-well-bg: var(--lfc-color-surface-well);
-  --fold-well-color: var(--lfc-color-on-well);
-  --fold-well-color-muted: var(--lfc-color-on-well-muted);
-  --fold-well-radius: var(--lfc-radius-2xl);
-  --fold-well-padding: var(--fold-space-lg);
+  --lfc-well-bg: var(--lfc-color-surface-well);
+  --lfc-well-color: var(--lfc-color-on-well);
+  --lfc-well-color-muted: var(--lfc-color-on-well-muted);
+  --lfc-well-radius: var(--lfc-radius-2xl);
+  --lfc-well-padding: var(--fold-space-lg);
   /* Les cartes de suivi sont des OBJETS, pas les items d'une liste : elles
      veulent l'air d'une gouttière et non celui d'un interligne. */
-  --fold-well-gap: var(--fold-space-lg);
+  --lfc-well-gap: var(--fold-space-lg);
 }
 
 /* L'indicateur hérite du même contrat : il ne sait pas qu'il est sur du bleu
    nuit, on le lui dit. */
 .dots {
-  --fold-scroll-indicator-color: var(--lfc-color-on-well-muted);
-  --fold-scroll-indicator-active: var(--lfc-color-accent);
+  --lfc-scroll-indicator-color: var(--lfc-color-on-well-muted);
+  --lfc-scroll-indicator-active: var(--lfc-color-accent);
 
   margin-top: var(--fold-space-sm);
 }
@@ -90,7 +90,7 @@
   }
 
   .well {
-    --fold-well-padding: var(--fold-space-xl);
+    --lfc-well-padding: var(--fold-space-xl);
   }
 
   /* DEUX cartes visibles, et la TRANCHE de la troisième : c'est ce débordement
