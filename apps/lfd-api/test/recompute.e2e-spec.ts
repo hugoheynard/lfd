@@ -6,7 +6,7 @@
  * et un recompte **matérialise** le read-model `growth.lead_scores` depuis le
  * journal. On sème le journal directement (déterministe).
  */
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
@@ -61,8 +61,8 @@ describe("POST /admin/recompute", () => {
   });
 
   it("matérialise le read-model lead_scores depuis le journal avec le bon jeton", async () => {
-    await seed("user.registered", "u_hot", "2026-08-10T09:00:00.000Z", { email: "hot@resto.fr" });
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("user.registered", "u_hot", daysAgo(8), { email: "hot@resto.fr" });
+    await seed("order.placed", "u_hot", daysAgo(3), {
       totalCents: 5000,
       companyId: null,
     });
@@ -89,7 +89,7 @@ describe("POST /admin/recompute", () => {
 
   it("remplace intégralement le read-model à chaque recompute (tout-ou-rien)", async () => {
     // 1er recompute : un lead présent.
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("order.placed", "u_hot", daysAgo(3), {
       totalCents: 5000,
       companyId: null,
     });

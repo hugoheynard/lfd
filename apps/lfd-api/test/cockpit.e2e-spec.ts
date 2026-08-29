@@ -10,7 +10,7 @@
 import type { LeadScoreView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
@@ -79,7 +79,7 @@ describe("GET /admin/cockpit", () => {
   });
 
   it("rend la queue top-5 du read-model matérialisé et journalise reco.shown", async () => {
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("order.placed", "u_hot", daysAgo(3), {
       totalCents: 5000,
       companyId: null,
     });
@@ -96,7 +96,7 @@ describe("GET /admin/cockpit", () => {
   });
 
   it("reste idempotent : rouvrir le cockpit dans la même fenêtre ne recompte pas reco.shown", async () => {
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("order.placed", "u_hot", daysAgo(3), {
       totalCents: 5000,
       companyId: null,
     });

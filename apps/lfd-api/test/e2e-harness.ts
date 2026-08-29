@@ -223,6 +223,24 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
  * Le `sub` sous lequel les suites admin appellent l'API. Les stubs de
  * `AdminTokenVerifier` le renvoient tous ; l'annuaire lui répond.
  */
+/**
+ * Une date située `days` jours avant MAINTENANT, en ISO.
+ *
+ * ⚠️ À utiliser partout où la règle testée lit une fenêtre glissante. Le
+ * scoring des leads compare deux fenêtres de 14 jours ancrées à `now` : une
+ * date absolue dans la fixture y est une BOMBE À RETARDEMENT — le test passe
+ * jusqu'au jour où le calendrier franchit le seuil, puis échoue sans qu'une
+ * ligne de code ait bougé. Constaté le 2026-08-29 : une commande semée au
+ * 2026-08-15 est sortie de la fenêtre, le lead est devenu `dormant`, et deux
+ * suites vertes la veille sont passées au rouge.
+ *
+ * Ce que la fixture veut dire, c'est « il a commandé récemment » — pas « il a
+ * commandé le 15 août ». On écrit donc l'intention.
+ */
+export function daysAgo(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export const E2E_STAFF_SUB = "staff-e2e";
 
 /** L'e-mail de la fiche d'annuaire qui incarne l'opérateur des tests. */
