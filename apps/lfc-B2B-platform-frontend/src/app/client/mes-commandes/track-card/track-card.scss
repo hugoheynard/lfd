@@ -383,9 +383,9 @@
   color: var(--fold-color-text);
 }
 
-/* Au-delà du pli, le stepper se couche : quatre colonnes reliées par un filet
-   horizontal. C'est la même information, lue dans le sens où la carte est
-   large. */
+/* Au-delà du pli, rien ne change de forme — le stepper est déjà couché des deux
+   côtés. Seuls les grains de texte et les cibles reprennent leur taille
+   courante, parce que la carte a enfin la largeur pour eux. */
 @media (min-width: 900px) {
   /* La carte a la largeur : les libellés reprennent le grain courant. */
   .step {
