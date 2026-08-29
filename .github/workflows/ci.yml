@@ -52,7 +52,8 @@ jobs:
     outputs:
       packages: ${{ steps.scope.outputs.packages }}
       api: ${{ steps.scope.outputs.api }}
-      fronts: ${{ steps.scope.outputs.fronts }}
+      front_admin: ${{ steps.scope.outputs.front_admin }}
+      front_platform: ${{ steps.scope.outputs.front_platform }}
       gateway: ${{ steps.scope.outputs.gateway }}
     steps:
       # `fetch-depth: 0` — sans l'historique, aucune base n'est résoluble et le
@@ -364,11 +365,21 @@ jobs:
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des
   # templates : un typecheck vert ne dit rien d'un binding cassé dans un .html.
-  fronts-et-pim:
-    name: Fronts + PIM
+  # ── Les fronts, un job CHACUN ───────────────────────────────────────────────
+  # Ils tournaient ensemble, et donc EN SÉRIE : tests puis tests, build puis
+  # build. Mesuré sur le run vert du 2026-08-29, l'étape « Tests des fronts »
+  # pesait 2 min 16 à elle seule, sur un job de 3 min 53.
+  #
+  # Séparés, ils tournent en parallèle sur deux machines. Et surtout ils ont
+  # chacun leur périmètre : un commit qui ne touche que la boutique ne relance
+  # plus les 745 tests de l'admin ni sa compilation AOT.
+  #
+  # Ce qu'ils partagent — les gates du dépôt — vit dans le job `gates`, pas ici.
+  front-admin:
+    name: Front admin (+ PIM)
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.fronts == 'true'
+    if: needs.changes.outputs.front_admin == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -379,30 +390,47 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
         run: pnpm --filter "./packages/**" build
-
-      # Admin seul pour l'instant : le front plateforme n'a pas encore de config
-      # ESLint, et en fabriquer une à l'aveugle poserait une porte sans savoir ce
-      # qu'elle laisse passer.
-      - name: "Lint : admin"
+      - name: Lint
         run: pnpm --filter lfc-b2b-admin-frontend lint:ci
-
-      - name: Typecheck des fronts
-        run: |
-          # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de
-          # ces apps est une config « solution », qui ne porte que des
-          # `references` et aucun `include`. `tsc --noEmit` dessus ne compile
-          # donc RIEN — il rendait vert sans rien lire. Vérifié le 2026-08-18 en
-          # y glissant un appel de méthode inexistante : aucune erreur.
-          pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
-          pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
-      - name: Tests des fronts
-        run: |
-          pnpm --filter lfc-b2b-admin-frontend test
-          pnpm --filter lfc-b2b-platform-frontend test
+      # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de ces
+      # apps est une config « solution », qui ne porte que des `references` et
+      # aucun `include`. `tsc --noEmit` dessus ne compile donc RIEN — il rendait
+      # vert sans rien lire. Vérifié le 2026-08-18 en y glissant un appel de
+      # méthode inexistante : aucune erreur.
+      - name: Typecheck
+        run: pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
+      - name: Tests
+        run: pnpm --filter lfc-b2b-admin-frontend test
+      # Le build de production est le seul endroit qui exerce la compilation AOT
+      # des templates : un typecheck vert ne dit rien d'un binding cassé dans un
+      # `.html`.
       - name: Build de production (compilation AOT)
-        run: |
-          pnpm --filter lfc-b2b-admin-frontend build
-          pnpm --filter lfc-b2b-platform-frontend build
+        run: pnpm --filter lfc-b2b-admin-frontend build
+
+  front-platform:
+    name: Front boutique
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_platform == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      # Pas de lint ici : ce front n'a pas encore de configuration ESLint, et en
+      # fabriquer une à l'aveugle poserait une porte sans savoir ce qu'elle
+      # laisse passer. Il est couvert par le typecheck, les tests et le build.
+      - name: Typecheck
+        run: pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
+      - name: Tests
+        run: pnpm --filter lfc-b2b-platform-frontend test
+      - name: Build de production (compilation AOT)
+        run: pnpm --filter lfc-b2b-platform-frontend build
 
   # ── La porte ────────────────────────────────────────────────────────────────
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
@@ -444,7 +472,7 @@ jobs:
   ci-gate:
     name: ci-gate
     runs-on: ubuntu-latest
-    needs: [changes, gates, packages, b2b-checks, b2b-backend, fronts-et-pim, gateway]
+    needs: [changes, gates, packages, b2b-checks, b2b-backend, front-admin, front-platform, gateway]
     if: always()
     steps:
       # `skipped` VAUT vert, et c'est la seule chose que le filtrage a changé
@@ -461,7 +489,8 @@ jobs:
           echo "packages      : ${{ needs.packages.result }}"
           echo "b2b-checks    : ${{ needs.b2b-checks.result }}"
           echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
-          echo "fronts-et-pim : ${{ needs.fronts-et-pim.result }}"
+          echo "front-admin   : ${{ needs.front-admin.result }}"
+          echo "front-platform: ${{ needs.front-platform.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
 
           echo "gates         : ${{ needs.gates.result }}"
@@ -481,7 +510,8 @@ jobs:
             "${{ needs.packages.result }}" \
             "${{ needs.b2b-checks.result }}" \
             "${{ needs.b2b-backend.result }}" \
-            "${{ needs.fronts-et-pim.result }}" \
+            "${{ needs.front-admin.result }}" \
+            "${{ needs.front-platform.result }}" \
             "${{ needs.gateway.result }}"; do
             case "$etat" in
               success | skipped) ;;

@@ -33,7 +33,11 @@ import { execFileSync } from "node:child_process";
 const AREAS = {
   packages: (name) => name.startsWith("@lfd/"),
   api: (name) => name === "lfd-api",
-  fronts: (name) => name.endsWith("-frontend"),
+  // Les deux fronts SÉPARÉMENT : ils ont chacun leur job, donc un commit qui ne
+  // touche que la boutique n'a aucune raison de relancer l'admin — ni ses 745
+  // tests, ni sa compilation AOT.
+  front_admin: (name) => name === "lfc-b2b-admin-frontend",
+  front_platform: (name) => name === "lfc-b2b-platform-frontend",
   gateway: (name) => name === "lfd-gateway",
 };
 
@@ -75,6 +79,6 @@ function decide(base) {
 const { areas, why } = decide(process.argv[2]);
 console.error(`Périmètre : ${why}`);
 for (const [key, value] of Object.entries(areas)) {
-  console.error(`  ${key.padEnd(9)} ${value ? "→ à lancer" : "→ sauté"}`);
+  console.error(`  ${key.padEnd(15)} ${value ? "→ à lancer" : "→ sauté"}`);
   console.log(`${key}=${value}`);
 }
