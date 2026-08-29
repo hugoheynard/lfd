@@ -25,8 +25,18 @@ import { ACCOUNT_FACTS } from "../../account/domain/events/account-facts.js";
  */
 export type ActivitySubjectType = string;
 
-/** Nature de l'acteur, recopiée du `RequestContext` (`actor.type`). */
-export type ActivityActorType = "customer" | "staff" | "system";
+/**
+ * Nature de l'acteur — **le type du `RequestContext`, pas une copie**.
+ *
+ * Il était recopié ici (`"customer" | "staff" | "system"`), et le commentaire le
+ * disait sans en tirer la conséquence : deux unions identiques que rien ne
+ * reliait. Or `platform` est le socle, tout bloc a le droit d'en dépendre —
+ * cette copie ne protégeait donc aucune frontière, elle n'offrait qu'une
+ * occasion de diverger.
+ */
+import type { ActorType } from "../../../platform/context/request-context.js";
+
+export type ActivityActorType = ActorType;
 
 /**
  * Types d'événements **source** connus (Phase 0). Volontairement des constantes

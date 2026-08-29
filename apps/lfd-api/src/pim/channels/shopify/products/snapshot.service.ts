@@ -5,6 +5,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-error.js";
 import type { ShopifyProductPayload } from "./projection.js";
 import { payloadColumn, readPayloadColumn } from "./snapshot-payload.js";
+import { CHANNEL_MODE_ON_THE_WIRE } from "../shared/channel-mode.map.js";
 
 export interface RecordSnapshotInput {
   readonly handle: string;
@@ -74,12 +75,10 @@ export class ShopifySnapshotService {
     return rows.map((row) => ({
       version: row.version,
       hash: row.hash,
-      // 🔴 La BASE écrit `dry_run` — l'enum Postgres, où le tiret est interdit —
-      // et le FIL dit `dry-run`, comme l'endpoint des réglages depuis toujours.
-      // Cette ligne rendait la valeur brute : deux routes de la même API se
-      // contredisaient sur la même notion, et personne ne le voyait parce que
-      // le contrat n'était importé nulle part.
-      mode: row.mode === "dry_run" ? "dry-run" : "live",
+      // La traduction base → fil vit dans UNE table, pas dans un ternaire
+      // recopié — c'est le ternaire recopié qui a laissé cette route rendre la
+      // valeur brute pendant que `/settings` traduisait.
+      mode: CHANNEL_MODE_ON_THE_WIRE[row.mode],
       outcome: row.outcome,
       pushedAt: row.pushedAt.toISOString(),
     }));
