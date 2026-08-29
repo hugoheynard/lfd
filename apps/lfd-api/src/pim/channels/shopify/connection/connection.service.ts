@@ -1,18 +1,16 @@
+import type { VerifyResult } from "@lfd/pim-contracts";
+
+/** Les formes vivent dans les contrats — le front les lisait en double. */
+export type { VerifyResult };
+
 import { Injectable } from "@nestjs/common";
 
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import { ShopifyAdminClient } from "@lfd/shopify-admin";
-import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
-
-export interface VerifyResult {
-  readonly mode: ChannelMode;
-  /** La boutique a-t-elle répondu ? En simulation, toujours `false`. */
-  readonly connected: boolean;
-  /** Nom de la boutique confirmé par Shopify, si connectée. */
-  readonly shopName: string | null;
-  /** Message lisible pour l'écran (raison du dry-run, ou de l'échec). */
-  readonly detail: string;
-}
+// ⚠️ PAS `import type` : cette classe est un JETON D’INJECTION. En `type`, Nest
+// ne la voit plus au runtime et rend « can’t resolve dependencies at index [0] »,
+// un message qui n’accuse jamais l’import.
+import { ShopifySettingsService } from "../shared/settings.service.js";
 
 /**
  * Vérification de connexion — le bouton « Vérifier » de l'écran d'intégration. Elle

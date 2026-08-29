@@ -1,13 +1,15 @@
+import type { CatalogueInspection } from "@lfd/pim-contracts";
+
+/** Les formes vivent dans les contrats — le front les lisait en double. */
+export type { CatalogueInspection };
+
 import { Injectable } from "@nestjs/common";
 
-import { ShopifyAdminClient, type ShopifyProductSnapshot } from "@lfd/shopify-admin";
-import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
-
-/** Ce que l'écran d'inspection affiche : l'état distant + le mode qui l'a produit. */
-export interface CatalogueInspection {
-  readonly mode: ChannelMode;
-  readonly products: readonly ShopifyProductSnapshot[];
-}
+import { ShopifyAdminClient } from "@lfd/shopify-admin";
+// ⚠️ PAS `import type` : cette classe est un JETON D’INJECTION. En `type`, Nest
+// ne la voit plus au runtime et rend « can’t resolve dependencies at index [0] »,
+// un message qui n’accuse jamais l’import.
+import { ShopifySettingsService } from "../shared/settings.service.js";
 
 /**
  * **Lecture** de l'état actuel du catalogue Shopify — l'inverse du push. Sert à *voir*

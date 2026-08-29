@@ -24,7 +24,18 @@ export const rollbackPayloadSchema = z.object({
 export type RollbackPayload = z.infer<typeof rollbackPayloadSchema>;
 
 /** Le mode du canal figé dans un snapshot (une simulation n'est pas une poussée réelle). */
-export type ChannelMode = "live" | "dry_run";
+/**
+ * Le mode du canal, **tel qu'il voyage sur le fil**.
+ *
+ * ⚠️ Ce contrat disait `dry_run`, avec un souligné. C'est la valeur de la BASE
+ * — l'enum Postgres `ShopifyChannelMode`, où un tiret est interdit. L'API et
+ * l'écran, eux, échangent `dry-run` depuis toujours. Le contrat décrivait donc
+ * le stockage en se présentant comme le fil, et personne ne s'en apercevait :
+ * rien ne l'importait.
+ *
+ * La correspondance base ↔ fil est le travail du repository, pas du contrat.
+ */
+export type ChannelMode = "live" | "dry-run";
 
 /** Une ligne d'historique de poussée — la matière du rollback. */
 export interface SnapshotView {

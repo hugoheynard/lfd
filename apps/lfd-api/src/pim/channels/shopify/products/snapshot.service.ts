@@ -74,7 +74,12 @@ export class ShopifySnapshotService {
     return rows.map((row) => ({
       version: row.version,
       hash: row.hash,
-      mode: row.mode,
+      // 🔴 La BASE écrit `dry_run` — l'enum Postgres, où le tiret est interdit —
+      // et le FIL dit `dry-run`, comme l'endpoint des réglages depuis toujours.
+      // Cette ligne rendait la valeur brute : deux routes de la même API se
+      // contredisaient sur la même notion, et personne ne le voyait parce que
+      // le contrat n'était importé nulle part.
+      mode: row.mode === "dry_run" ? "dry-run" : "live",
       outcome: row.outcome,
       pushedAt: row.pushedAt.toISOString(),
     }));

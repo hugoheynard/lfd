@@ -1,3 +1,8 @@
+import type { ReconcileRow, Reconciliation } from "@lfd/pim-contracts";
+
+/** Les formes vivent dans les contrats — le front les lisait en double. */
+export type { ReconcileRow, Reconciliation };
+
 /**
  * Rapprochement **pur** entre les collections de TVA voulues et celles réellement
  * présentes sur la boutique. Aucun appel réseau, aucune dépendance Nest — c'est la
@@ -15,22 +20,6 @@ import {
   type ShopifyCollection,
   VAT_HANDLE_PREFIX,
 } from "@lfd/shopify-admin";
-
-/** Une collection désirée rapprochée de son éventuelle contrepartie distante. */
-export interface ReconcileRow {
-  readonly handle: string;
-  readonly title: string;
-  readonly present: boolean;
-  /** La collection distante rapprochée, si elle existe. */
-  readonly remote: ShopifyCollection | null;
-}
-
-export interface Reconciliation {
-  readonly rows: readonly ReconcileRow[];
-  /** Collections `tva-*` sur la boutique que plus aucune désirée ne réclame. */
-  readonly orphans: readonly ShopifyCollection[];
-  readonly missingCount: number;
-}
 
 export function reconcileCollections(
   desired: readonly DesiredCollection[],

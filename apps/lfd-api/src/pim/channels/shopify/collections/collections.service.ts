@@ -1,3 +1,8 @@
+import type { InspectResult, PushResult } from "@lfd/pim-contracts";
+
+/** Les formes vivent dans les contrats — le front les lisait en double. */
+export type { InspectResult, PushResult };
+
 import { Injectable } from "@nestjs/common";
 
 import type { DesiredCollection, ShopifyCollection } from "@lfd/shopify-admin";
@@ -7,20 +12,7 @@ import {
   LiveShopifyCollectionsGateway,
   ShopifyCollectionsGateway,
 } from "./gateway.js";
-import { missingCollections, type Reconciliation, reconcileCollections } from "./reconcile.js";
-
-export interface InspectResult {
-  readonly mode: ChannelMode;
-  readonly reconciliation: Reconciliation;
-}
-
-export interface PushResult {
-  readonly mode: ChannelMode;
-  /** Collections effectivement créées pendant ce push. */
-  readonly created: readonly ShopifyCollection[];
-  /** État après push — la boucle se referme en un aller-retour. */
-  readonly reconciliation: Reconciliation;
-}
+import { missingCollections, reconcileCollections } from "./reconcile.js";
 
 /**
  * Réconciliation des **collections de TVA** avec la boutique. Le service reste

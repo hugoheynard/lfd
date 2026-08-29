@@ -1,3 +1,8 @@
+import type { ChannelMode, ShopifySettingsView, ShopifySettingsInput } from "@lfd/pim-contracts";
+
+/** Les formes vivent dans les contrats — le front les lisait en double. */
+export type { ChannelMode, ShopifySettingsView, ShopifySettingsInput };
+
 import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
@@ -5,28 +10,6 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 
 const SINGLETON_ID = "shopify";
 const DEFAULT_API_VERSION = "2026-07";
-
-/** Mode du canal — `live` seulement si activé **et** approvisionné en jeton.
- *  Vocabulaire partagé : lu par les collections, la connexion, le push produit. */
-export type ChannelMode = "live" | "dry-run";
-
-export interface ShopifySettingsView {
-  readonly shopDomain: string;
-  readonly apiVersion: string;
-  readonly isEnabled: boolean;
-  /** Présence d'un moyen d'authentification (jeton legacy **ou** client credentials) —
-   *  **jamais** le secret lui-même. Nom historique conservé (contrat lu par le front). */
-  readonly hasToken: boolean;
-  /** `dry-run` tant que l'intégration n'est pas activée **et** approvisionnée. */
-  readonly mode: ChannelMode;
-  readonly updatedAt: string | null;
-}
-
-export interface ShopifySettingsInput {
-  readonly shopDomain: string;
-  readonly apiVersion: string;
-  readonly isEnabled: boolean;
-}
 
 @Injectable()
 export class ShopifySettingsService {

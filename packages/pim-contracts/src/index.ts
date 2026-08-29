@@ -1,4 +1,18 @@
 export type {
+  ShopifySettingsView,
+  ShopifySettingsInput,
+  VerifyResult,
+  CatalogueInspection,
+  InspectResult,
+  PushResult,
+  ShopifyCollection,
+  DesiredCollection,
+  ReconcileRow,
+  Reconciliation,
+  ShopifyVariantSnapshot,
+  ShopifyProductSnapshot,
+} from "./shopify-channel.js";
+export type {
   LocalizedText,
   Locale,
   TranslatedLocale,

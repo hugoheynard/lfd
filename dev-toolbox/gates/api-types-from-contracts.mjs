@@ -37,9 +37,20 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 /** La dette héritée, fichier par fichier. Ce nombre ne peut que DESCENDRE. */
-const ALLOWANCE = {
-  "apps/lfc-B2B-admin-frontend/src/app/pim/channels/shopify-channel-api.ts": 6,
-};
+/**
+ * 🎉 ZÉRO. La dette est remboursée.
+ *
+ * Elle valait 32 le 2026-08-29 au matin. Le remboursement a coûté quatre
+ * fichiers de contrats et a rapporté cinq bugs que personne ne cherchait :
+ * un rôle de membre comparé à une valeur que l'API n'a jamais renvoyée, un
+ * statut de société à trois valeurs contre quatre, un « détail » qui était une
+ * « fiche », un contact sans son rôle, et deux routes de la même API qui
+ * écrivaient le mode du canal différemment.
+ *
+ * Cette table reste, VIDE et volontairement : le jour où une dette réapparaît,
+ * il faudra l'écrire ici, et l'écrire c'est déjà l'avouer.
+ */
+const ALLOWANCE = {};
 
 const CALL = /\.(get|post|put|patch|delete)<\s*([^>;]+?)\s*>\s*\(/gu;
 const IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@lfd\/[^'"]+)['"]/gsu;
