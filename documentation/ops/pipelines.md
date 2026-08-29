@@ -73,18 +73,19 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 ## 3. Ce que la CI couvre — et ce qu'elle ne couvre pas
 
-`ci.yml` a sept jobs plus une barrière — et **quatre ne tournent que si le commit les concerne** :
+`ci.yml` a huit jobs plus une barrière — et **cinq ne tournent que si le commit les concerne** :
 
-| Job             | Périmètre                                                         |
-| --------------- | ----------------------------------------------------------------- |
-| `changes`       | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`         | les 13 portes qui balaient tout le dépôt — toujours               |
-| `packages`      | les paquets partagés, en premier et à part                        |
-| `b2b-checks`    | typechecks, lint et les 207 suites unitaires du backend           |
-| `b2b-backend`   | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
-| `fronts-et-pim` | les quatre fronts et le backend PIM                               |
-| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée          |
-| `ci-gate`       | échoue si l'un d'eux est rouge — **le seul statut requis**        |
+| Job              | Périmètre                                                         |
+| ---------------- | ----------------------------------------------------------------- |
+| `changes`        | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
+| `gates`          | les 13 portes qui balaient tout le dépôt — toujours               |
+| `packages`       | les paquets partagés, en premier et à part                        |
+| `b2b-checks`     | typechecks, lint et les 207 suites unitaires du backend           |
+| `b2b-backend`    | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
+| `front-admin`    | l'admin staff (PIM compris) — lint, typecheck, tests, build AOT   |
+| `front-platform` | la boutique client — typecheck, tests, build AOT                  |
+| `gateway`        | typecheck, lint et 8 tests de routage du Worker d'entrée          |
+| `ci-gate`        | échoue si l'un d'eux est rouge — **le seul statut requis**        |
 
 ### Le périmètre — n'exécuter que ce que le commit concerne
 
@@ -116,7 +117,7 @@ Deux conséquences à connaître :
 des douze gates balaient tout le dépôt**, et elles vivaient réparties entre le
 job backend et celui des fronts. Tant que ces deux-là tournaient toujours, la
 répartition ne se voyait pas. Rendus conditionnels, un commit backend seul
-sautait `fronts-et-pim` — et avec lui la porte des cycles d'import, qui lit
+sautait les jobs de front — et avec eux la porte des cycles d'import, qui lit
 pourtant `apps/**` en entier. D'où le job `gates`, global et inconditionnel :
 **une porte globale appartient à un job global.**
 
@@ -137,6 +138,22 @@ Trois configurations Jest portent désormais la séparation, et le mur qui la re
 vraie est écrit dans `jest.unit.cjs` : une spec qui a besoin d'une vraie base
 n'est pas une unitaire, elle prend le suffixe `.e2e-spec.ts` et descend dans
 `test/`.
+
+### Les deux fronts, un job chacun
+
+Ils vivaient dans un seul job, donc **en série** : tests puis tests, build puis
+build. Sur le run vert du 2026-08-29, la seule étape « Tests des fronts » pesait
+**2 min 16** d'un job de 3 min 53 (admin 745 tests, boutique 184).
+
+Séparés, ils tournent sur deux machines — et surtout ils ont **chacun leur
+périmètre**. Un commit qui ne touche que la boutique ne relance plus les 745
+tests de l'admin ni sa compilation AOT.
+
+⚠️ Piège rencontré en le faisant : le job `changes` déclare ses sorties une par
+une. Renommer une zone dans `affected.mjs` sans toucher ce bloc laisse un
+`if: needs.changes.outputs.<zone>` pointer une sortie **inexistante** — qui vaut
+la chaîne vide, donc `false`. Les deux jobs auraient été sautés **en silence**,
+et la CI verte pour le dire.
 
 ### Le sharding des e2e
 
