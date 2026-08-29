@@ -83,7 +83,7 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Treize portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Quatorze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -194,6 +194,13 @@ jobs:
       # momentum pendant la nuit.
       - name: "Gate : aucune date absolue dans une fixture"
         run: pnpm lint:test-dates
+
+      # Le découpage des shards e2e se fait par durée. Une suite sans mesure
+      # tourne quand même — le périmètre vient du disque — mais avec un poids
+      # par défaut. Une seule s'oublie sans conséquence ; dix, et l'équilibre se
+      # dissout sans que rien ne rougisse.
+      - name: "Gate : chaque suite e2e a sa durée"
+        run: pnpm lint:e2e-durations
 
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
@@ -360,7 +367,13 @@ jobs:
         # contre du thrash. À remonter si les runners grossissent.
         env:
           E2E_WORKERS: 2
-        run: pnpm --filter lfd-api run test:e2e --shard=${{ matrix.shard }}/4
+        # La liste des suites vient de `e2e-shard.mjs`, qui répartit PAR DURÉE.
+        # `--shard` de Jest coupait par ordre alphabétique : 1 min 46 pour le
+        # shard 1, 4 min 05 pour le shard 3, et c'est le plus lent qui tient la
+        # CI. `--runTestsByPath` prend des chemins littéraux, pas des motifs.
+        run: |
+          pnpm --filter lfd-api run test:e2e --runTestsByPath \
+            $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 4)
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des

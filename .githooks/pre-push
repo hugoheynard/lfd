@@ -1,0 +1,86 @@
+#!/bin/sh
+# Ce qui doit être vrai AVANT un push — et davantage avant une promotion.
+#
+# ── Pourquoi ici et pas au commit ───────────────────────────────────────────
+# Le `pre-commit` d'à côté ne fait que formater, et son commentaire dit
+# pourquoi : un commit qui prend trente secondes finit contourné au
+# `--no-verify`. Un push est cent fois plus rare, et c'est lui qui engage.
+#
+# ── Deux niveaux, parce qu'il y a deux gestes ───────────────────────────────
+# `dev` ne déploie RIEN : la CI y tourne, et c'est elle qui juge. Le hook n'y
+# fait donc que les portes du dépôt — quatorze gates qui lisent des fichiers
+# sans rien compiler, cinq secondes à elles toutes. Elles auraient évité, le
+# 2026-08-29, un `lint:fold-tokens` rouge sur 21 variables inexistantes : CI
+# rouge, déploiement boutique perdu, un cycle complet pour s'en apercevoir.
+#
+# `main` DÉPLOIE. Une promotion vers `main` (`git push origin dev:main`) est
+# donc la seule occasion où l'on regarde ce que la CI a dit du commit qu'on
+# promeut. C'est exactement la surprise qu'on s'est offerte ce jour-là : promu,
+# puis CI rouge, puis deux déploiements morts en attendant.
+#
+# ── Ce qui reste en CI ──────────────────────────────────────────────────────
+# Le typecheck et l'ESLint type-aware de `lfd-api` coûtent près d'une minute, et
+# les tests bien davantage. Les mettre ici ferait ce que le `pre-commit` refuse.
+#
+# Contourner reste possible — `git push --no-verify` — et c'est voulu : un
+# garde-fou qu'on ne peut pas franchir devient un obstacle qu'on démonte.
+#
+# S'installe seul au `pnpm install` (script `prepare`).
+set -e
+
+echo "→ portes du dépôt…"
+pnpm lint:gates
+
+# Git donne sur stdin, une ligne par ref poussée :
+#   <ref locale> <sha local> <ref distante> <sha distant>
+# On ne lit QUE la ref distante : c'est elle qui dit où ça atterrit. Pousser
+# `dev:main` promeut, pousser `dev` ne promeut pas — la ref locale mentirait.
+promotion=""
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main) promotion="$local_sha" ;;
+  esac
+done
+
+if [ -z "$promotion" ]; then
+  exit 0
+fi
+
+# `git` donne le sha COMPLET sur stdin, et `gh run list --commit` l'exige :
+# abrégé, il ne trouve rien et rend « null », qu'on lirait comme « pas encore
+# de CI » alors qu'elle est peut-être rouge.
+echo "→ promotion vers main : que dit la CI de $(echo "$promotion" | cut -c1-8) ?"
+
+if ! command -v gh > /dev/null 2>&1; then
+  echo "  gh absent — impossible de vérifier. On laisse passer." >&2
+  exit 0
+fi
+
+verdict=$(gh run list --workflow ci.yml --commit "$promotion" --limit 1 \
+  --json conclusion,status --jq '.[0] | "\(.status)|\(.conclusion)"' 2>/dev/null || echo "")
+
+case "$verdict" in
+  completed\|success)
+    echo "  CI verte."
+    ;;
+  completed\|*)
+    echo "" >&2
+    echo "✖ La CI n'est PAS verte sur ce commit (${verdict#*|})." >&2
+    echo "  Promouvoir maintenant, c'est déployer du rouge — ou plus" >&2
+    echo "  probablement ne rien déployer du tout, les workflows de" >&2
+    echo "  déploiement attendant son verdict." >&2
+    echo "" >&2
+    echo "  Corriger, ou forcer : git push --no-verify" >&2
+    exit 1
+    ;;
+  ""|"null|null")
+    # Aucun run : le commit vient d'être poussé sur `dev` et la CI n'est pas
+    # encore créée, ou `dev` n'a pas été poussé du tout. On AVERTIT sans
+    # bloquer — refuser ici interdirait la promotion d'un commit légitime pour
+    # une raison de calendrier.
+    echo "  ⚠️  aucune CI trouvée sur ce commit — poussez d'abord sur dev." >&2
+    ;;
+  *)
+    echo "  ⚠️  CI en cours (${verdict%%|*}) — le déploiement l'attendra." >&2
+    ;;
+esac

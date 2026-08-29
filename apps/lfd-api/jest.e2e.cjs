@@ -34,5 +34,10 @@ module.exports = {
   // rester unique — un jour où le nombre de workers dépasserait le nombre de
   // bases, deux workers en partageraient une, et on retomberait exactement dans
   // la panne décrite ci-dessus.
+  // ⚠️ `E2E_WORKERS=1` fait tenir les 51 suites dans UN process, et le plafond
+  // de tas du script `test:e2e` (2048 Mo) est dimensionné pour le mode
+  // parallèle, où chaque worker a le sien. Un run à un seul worker doit donc
+  // remonter ce plafond — c'est ce que fait `e2e:rebalance`. Sans ça, Node
+  // meurt d'un « heap out of memory » qui n'accuse aucune suite en particulier.
   maxWorkers: Number(process.env.E2E_WORKERS ?? "4"),
 };

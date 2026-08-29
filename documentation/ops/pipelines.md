@@ -78,7 +78,7 @@ qu'une nouvelle sur un schéma à moitié migré.
 | Job              | Périmètre                                                         |
 | ---------------- | ----------------------------------------------------------------- |
 | `changes`        | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`          | les 13 portes qui balaient tout le dépôt — toujours               |
+| `gates`          | les 14 portes qui balaient tout le dépôt — toujours               |
 | `packages`       | les paquets partagés, en premier et à part                        |
 | `b2b-checks`     | typechecks, lint et les 207 suites unitaires du backend           |
 | `b2b-backend`    | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
@@ -138,6 +138,37 @@ Trois configurations Jest portent désormais la séparation, et le mur qui la re
 vraie est écrit dans `jest.unit.cjs` : une spec qui a besoin d'une vraie base
 n'est pas une unitaire, elle prend le suffixe `.e2e-spec.ts` et descend dans
 `test/`.
+
+### Le découpage des shards, par durée
+
+Jest sait sharder (`--shard=3/4`) mais il **trie les chemins** : il n'a aucune
+notion de durée. D'où l'écart mesuré en CI — 1 min 46 pour le shard 1, 4 min 05
+pour le shard 3, à nombre de suites égal. Le plus lent tient la CI ; les trois
+autres attendent.
+
+`dev-toolbox/ci/e2e-shard.mjs` lui retire la décision : il imprime la liste des
+suites d'un shard, que Jest reçoit par `--runTestsByPath`. L'algorithme est le
+glouton par durée décroissante (le plus long d'abord, chacun au shard le moins
+chargé) — quinze lignes, et il ne dépasse jamais 4/3 de l'optimal.
+
+Mesuré : **55 s · 55 s · 55 s · 57 s**, contre 33/39/54/39 auparavant. L'écart
+passe de 1,6× à 1,04×. Les shards n'ont plus le même nombre de suites
+(11/13/13/14) — c'est le but.
+
+**Les durées sont VERSIONNÉES** (`apps/lfd-api/test/e2e-durations.json`),
+régénérées à la main par `pnpm --filter lfd-api e2e:rebalance`, et non tirées
+d'un cache réécrit à chaque run. Un cache enregistrerait surtout le **bruit** :
+les runners varient du simple au triple (mesuré : les mêmes 51 suites en 6 min 40
+puis 16 min 45). Le découpage danserait sans que rien de réel n'ait changé, et
+deux runs du même commit ne feraient pas le même travail. Un fichier committé se
+relit en diff, donc s'accuse.
+
+🔴 **Une suite ne peut pas ne pas tourner.** La partition porte sur les fichiers
+présents **sur le disque**, jamais sur les clés du JSON : une suite ajoutée sans
+mesure prend un poids par défaut (la moyenne des connues) et part dans un shard
+comme les autres. Le fichier ne décide que de l'**équilibre**, jamais du
+périmètre. Le gate `lint:e2e-durations` veille sur l'entretien, pas sur la
+correction.
 
 ### Les deux fronts, un job chacun
 
@@ -225,6 +256,30 @@ barrière.
 🟡 **`container/` échappe à ESLint et Prettier** dans les deux backends : leurs
 globs (`{src,apps,libs,test}/**`) ne l'incluent pas. C'est pourtant du code de
 routage en production, et il porte la réécriture de l'IP cliente.
+
+## 3bis. Les hooks — ce qui est attrapé avant le push
+
+| Hook         | Ce qu'il fait                              | Coût     |
+| ------------ | ------------------------------------------ | -------- |
+| `pre-commit` | Prettier sur ce qui est indexé             | ~1 s     |
+| `pre-push`   | les 14 portes du dépôt (`pnpm lint:gates`) | **~5 s** |
+
+Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
+push : y mettre autre chose que du formatage ferait contourner le hook au
+`--no-verify`. Un **push**, lui, engage — et sur `main` il déclenche les
+déploiements. C'est là que les portes valent leur seconde.
+
+Les quatorze gates lisent des fichiers, elles ne compilent rien : cinq secondes
+à elles toutes. Le typecheck et l'ESLint type-aware de `lfd-api` (près d'une
+minute) restent en CI, exactement pour la raison qui garde le `pre-commit`
+minuscule.
+
+Ce que le `pre-push` aurait évité le 2026-08-29 : `lint:fold-tokens` rouge sur
+21 variables inexistantes — CI rouge, déploiement boutique perdu, un cycle
+complet pour s'en apercevoir.
+
+⚠️ `git push --no-verify` reste possible, et c'est voulu : un garde-fou qu'on ne
+peut pas franchir devient un obstacle qu'on démonte.
 
 ## 4. Aléas connus
 

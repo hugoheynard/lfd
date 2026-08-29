@@ -13,7 +13,19 @@
  * `perfStats.runtime` vient de Jest lui-même — rien n'est mesuré ici, on ne fait
  * que trier ce qu'il a déjà compté.
  */
+const { writeFileSync } = require("node:fs");
+
 const TOP = 15;
+
+/**
+ * Où déposer les durées, quand on veut les GARDER.
+ *
+ * `E2E_DURATIONS_OUT=test/e2e-durations.json pnpm test:e2e` régénère le fichier
+ * que lit le découpage en shards (`dev-toolbox/ci/e2e-shard.mjs`). Sans la
+ * variable, le rapporteur se contente d'afficher — mesurer ne doit pas écrire
+ * dans le dépôt à l'insu de qui lance les tests.
+ */
+const DURATIONS_OUT = process.env.E2E_DURATIONS_OUT;
 
 /** Un total et une part, alignés — la part dit s'il faut regarder plus loin. */
 function line(row, total, width) {
@@ -48,6 +60,20 @@ class SlowSuitesReporter {
     const rest = sorted.length - shown.length;
     const tail = rest > 0 ? `\n  … ${rest} suite(s) plus rapides\n` : "\n";
     process.stdout.write(`${header}${body}${tail}`);
+
+    if (DURATIONS_OUT) {
+      // Trié par NOM et non par durée : le fichier est versionné, et un diff
+      // qui rejoue l'ordre à chaque mesure serait illisible. Arrondi à la
+      // milliseconde près — la précision au-delà n'est que du bruit de runner,
+      // et elle ferait bouger le fichier sans que rien n'ait changé.
+      const byName = Object.fromEntries(
+        [...this.#rows]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((row) => [row.name, Math.round(row.ms)]),
+      );
+      writeFileSync(DURATIONS_OUT, `${JSON.stringify(byName, null, 2)}\n`);
+      process.stdout.write(`  → durées écrites dans ${DURATIONS_OUT}\n`);
+    }
   }
 }
 
