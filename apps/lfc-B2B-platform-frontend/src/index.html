@@ -16,12 +16,25 @@
     <!-- La teinte que le système peint autour de l'app (barre d'état Android,
          chrome du navigateur) : l'encre de marque, comme l'en-tête. -->
     <meta name="theme-color" content="#12307f" />
+    <!-- LE MANIFESTE — ce qui rend l'app INSTALLABLE.
+         Sans lui, un lien ouvert depuis Messages ou Instagram reste dans le
+         navigateur intégré, avec sa barre d'adresse en haut et sa barre
+         d'outils en bas : deux rangées que rien, côté CSS, ne peut retirer.
+         Elles n'appartiennent pas à l'app. Le seul moyen de s'en défaire est
+         que l'app soit posée sur l'écran d'accueil et lancée depuis là —
+         `display: standalone` le dit, et Chrome ne propose l'installation
+         qu'à cette condition. -->
+    <link rel="manifest" href="manifest.webmanifest" />
     <!-- App installée sur l'écran d'accueil : la WebView occupe l'écran entier,
          encoche comprise, et `black-translucent` rend l'heure et les icônes
          d'iOS en BLANC par-dessus notre encre. Sans ces deux lignes, iOS réserve
          une bande blanche à texte noir au-dessus de l'app. C'est le CSS qui
          réserve la marge (`env(safe-area-inset-top)`, déjà lu par la barre de
-         marque) — sinon le contenu passerait sous l'horloge. -->
+         marque) — sinon le contenu passerait sous l'horloge.
+
+         `mobile-web-app-capable` est la forme normalisée ; la variante `apple-`
+         reste car les iOS antérieurs à 16.4 ne lisent QUE celle-là. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="La Folie Coffee" />
@@ -29,6 +42,12 @@
     <!-- La marque de l'app cliente : le bonhomme seul, sans le mot. Déclarée
          après le .ico, elle le supplante sur tout navigateur moderne. -->
     <link rel="icon" type="image/png" href="brand/lfc-mark.png" />
+    <!-- L'icône de l'écran d'accueil iOS. Elle ne vient PAS du manifeste : iOS
+         ne lit que cette balise. Et elle est posée sur un aplat crème plutôt
+         que transparente — le bonhomme est tracé à l'encre bleue, et iOS
+         compose la transparence sur du blanc ou du noir selon l'humeur du
+         système. Sans fond, l'icône disparaît un jour sur deux. -->
+    <link rel="apple-touch-icon" href="brand/apple-touch-icon.png" />
 
     <!-- Polices de l'app client : Archivo (display, 800/900 uniquement) et
          Outfit (courant). Voir `01-tokens-fold.md` §5. Archivo est une
