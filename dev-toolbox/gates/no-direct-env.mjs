@@ -6,21 +6,30 @@
  * neutraliserait la règle lint, pas ce gate. Il détecte d'ailleurs aussi les
  * tentatives de désactivation de la règle.
  *
- * Usage : `pnpm lint:no-direct-env` (à brancher en CI).
+ * Usage : `pnpm lint:no-direct-env` (branché en CI et dans le `pre-push`).
+ *
+ * ⚠️ Cette porte a existé PENDANT DES MOIS sans tourner nulle part. Sa liste de
+ * dérogations n'avait pas suivi la croissance du dépôt — treize fichiers
+ * légitimes la faisaient rougir —, donc la brancher l'aurait rendue rouge en
+ * permanence, donc personne ne l'a branchée. Une porte qu'on n'ouvre jamais ne
+ * garde rien, et coûte pourtant le prix de sa maintenance.
+ *
+ * La leçon vaut pour les quinze autres : une porte se branche le jour où elle
+ * est écrite, ou elle ne se branche pas.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
-const SCAN_ROOTS = ['apps'];
+const SCAN_ROOTS = ["apps"];
 const SKIP_DIRS = new Set([
-  'node_modules',
-  'dist',
-  'client', // client Prisma généré
-  'coverage',
-  'out-tsc',
-  '.turbo',
-  '.angular',
+  "node_modules",
+  "dist",
+  "client", // client Prisma généré
+  "coverage",
+  "out-tsc",
+  ".turbo",
+  ".angular",
 ]);
 
 /**
@@ -30,36 +39,56 @@ const SKIP_DIRS = new Set([
  */
 const ALLOWED_SUFFIXES = [
   // La passerelle elle-même, son test, et le harnais qui sème l'env des tests.
-  'src/platform/config/app-config.ts',
-  'src/platform/config/__tests__/app-config.spec.ts',
-  'test/setup-env.ts',
+  "src/platform/config/app-config.ts",
+  "src/platform/config/__tests__/app-config.spec.ts",
+  "test/setup-env.ts",
   // CLI Prisma : tourne hors du runtime Nest, AppConfig n'y est pas disponible.
   // Deux configs depuis que le référentiel a rejoint le processus : une par
   // base (`prisma.config.ts`).
-  'prisma.config.ts',
+  "prisma.config.ts",
   // Serveur SSR Angular : le front n'a pas encore de passerelle de config.
   // À retirer d'ici le jour où il en aura une (cf. todo.md).
-  'src/server.ts',
+  "src/server.ts",
+  // Les LECTEURS d'environnement, extraits d'`AppConfig` pour que la passerelle
+  // reste lisible. Ils SONT la porte — la liste ci-dessus nommait `app-config.ts`
+  // sans nommer la moitié qu'on lui avait retirée, ce qui rendait la porte
+  // impossible à passer au vert, donc impossible à brancher.
+  "src/platform/config/env-readers.ts",
+  "src/platform/config/__tests__/env-readers-media-url.spec.ts",
+  "src/platform/config/__tests__/env-readers-r2.spec.ts",
+  // Les scripts `prisma/` : des CLI qui tournent HORS du runtime Nest — seeds,
+  // provisionnement, clonage. `AppConfig` n'y existe pas, et lui en fabriquer
+  // une pour un script jetable serait un coût sans contrepartie. Le suffixe est
+  // volontairement large : c'est le RÉPERTOIRE qui porte la dérogation, parce
+  // que c'est lui qui dit « je suis hors application ».
+  "prisma/clone-dev.ts",
+  "prisma/dev-db-url.ts",
+  "prisma/pim-seed.ts",
+  "prisma/reset-growth.ts",
+  "prisma/seed-fiche.ts",
+  "prisma/seed-growth.ts",
+  "prisma/seed-temoin-orders.ts",
+  "prisma/seed.ts",
+  "prisma/setup-dev-database.ts",
+  // Configuration d'un lanceur de tests, pas de l'application.
+  "playwright.config.ts",
 ];
 
 /** Contournements cherchés dans le code (commentaires retirés au préalable). */
 const CODE_PATTERNS = [
-  [/\bprocess\s*\.\s*env\b/, 'process.env'],
+  [/\bprocess\s*\.\s*env\b/, "process.env"],
   [/\bprocess\s*\[\s*['"]env['"]\s*\]/, "process['env']"],
-  [/\}\s*=\s*process\b/, 'déstructuration de `process`'],
-  [/=\s*process\s*;/, 'liaison de `process` à une variable'],
+  [/\}\s*=\s*process\b/, "déstructuration de `process`"],
+  [/=\s*process\s*;/, "liaison de `process` à une variable"],
   [/from\s+['"](?:node:)?process['"]/, "import depuis 'node:process'"],
-  [/\b(?:globalThis|global)\s*\.\s*process\b/, 'globalThis.process'],
+  [/\b(?:globalThis|global)\s*\.\s*process\b/, "globalThis.process"],
 ];
 
 /** Cherché dans la source brute : on ne peut pas se taire pour passer. */
-const DISABLE_PATTERN =
-  /eslint-disable[^\n]*no-restricted-(?:properties|syntax|imports)/;
+const DISABLE_PATTERN = /eslint-disable[^\n]*no-restricted-(?:properties|syntax|imports)/;
 
 function stripComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 function* walk(dir) {
@@ -70,14 +99,14 @@ function* walk(dir) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
       yield* walk(full);
-    } else if (full.endsWith('.ts') && !full.endsWith('.d.ts')) {
+    } else if (full.endsWith(".ts") && !full.endsWith(".d.ts")) {
       yield full;
     }
   }
 }
 
 function isAllowed(relPath) {
-  const posix = relPath.split(/[\\/]/).join('/');
+  const posix = relPath.split(/[\\/]/).join("/");
   return ALLOWED_SUFFIXES.some((suffix) => posix.endsWith(suffix));
 }
 
@@ -92,10 +121,10 @@ for (const root of SCAN_ROOTS) {
   }
   for (const file of walk(base)) {
     const rel = relative(ROOT, file);
-    const raw = readFileSync(file, 'utf8');
+    const raw = readFileSync(file, "utf8");
 
     if (DISABLE_PATTERN.test(raw)) {
-      violations.push([rel, 'désactivation de la règle anti-process.env']);
+      violations.push([rel, "désactivation de la règle anti-process.env"]);
     }
     if (isAllowed(rel)) {
       continue;
@@ -115,9 +144,9 @@ if (violations.length > 0) {
     console.error(`  ${file}\n      → ${label}`);
   }
   console.error(
-    '\nL’environnement se lit uniquement via AppConfig (src/infra/config/app-config.ts).\n',
+    "\nL’environnement se lit uniquement via AppConfig (src/platform/config/app-config.ts).\n",
   );
   process.exit(1);
 }
 
-console.log('✓ no-direct-env : aucun accès direct à process.env hors AppConfig');
+console.log("✓ no-direct-env : aucun accès direct à process.env hors AppConfig");

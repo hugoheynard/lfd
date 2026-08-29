@@ -83,7 +83,7 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Quinze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Seize portes qui balaient TOUT le dépôt, et non l'app d'à côté.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -201,6 +201,13 @@ jobs:
       # dissout sans que rien ne rougisse.
       - name: "Gate : chaque suite e2e a sa durée"
         run: pnpm lint:e2e-durations
+
+      # Deuxième filet, indépendant d'ESLint : un `eslint-disable` neutraliserait
+      # la règle lint, pas cette porte. Elle a existé des mois SANS TOURNER —
+      # sa liste de dérogations n'avait pas suivi le dépôt, donc la brancher
+      # l'aurait rendue rouge en permanence.
+      - name: "Gate : l'environnement ne se lit que via AppConfig"
+        run: pnpm lint:no-direct-env
 
       # La forme d'une réponse d'API appartient à `@lfd/contracts`. Redéclarée
       # dans un front, elle en devient une COPIE — et une copie ne suit pas : le

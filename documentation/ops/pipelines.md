@@ -78,7 +78,7 @@ qu'une nouvelle sur un schéma à moitié migré.
 | Job              | Périmètre                                                         |
 | ---------------- | ----------------------------------------------------------------- |
 | `changes`        | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`          | les 15 portes qui balaient tout le dépôt — toujours               |
+| `gates`          | les 16 portes qui balaient tout le dépôt — toujours               |
 | `packages`       | les paquets partagés, en premier et à part                        |
 | `b2b-checks`     | typechecks, lint et les 207 suites unitaires du backend           |
 | `b2b-backend`    | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
@@ -108,6 +108,27 @@ inutile survive — sinon la dette affichée cesserait de dire la dette réelle.
 
 Rembourser une ligne, c'est déplacer la forme dans `@lfd/contracts` et
 l'importer des deux côtés. Ça se fait un fichier à la fois.
+
+### Une porte se branche le jour où elle est écrite
+
+`lint:no-direct-env` a existé **des mois sans tourner nulle part** — ni en CI,
+ni dans un hook. Sa documentation disait pourtant « à brancher en CI ».
+
+La raison n'était pas l'oubli : sa liste de dérogations n'avait pas suivi la
+croissance du dépôt. Treize fichiers parfaitement légitimes la faisaient rougir
+— les lecteurs d'environnement extraits d'`AppConfig`, les neuf scripts
+`prisma/` qui tournent hors du runtime Nest, la config Playwright. La brancher
+l'aurait rendue rouge en permanence ; alors personne ne l'a branchée.
+
+Une porte qu'on n'ouvre jamais ne garde rien, et coûte pourtant le prix de sa
+maintenance. Elle donne en plus la fausse impression que le sujet est couvert.
+
+Les treize sont désormais **déclarés avec leur motif**, et la porte est branchée
+(CI + `pre-push`). Elle a été falsifiée avant d'être crue : un `process.env`
+glissé dans un port du domaine la fait rougir.
+
+⚠️ La leçon vaut pour les quinze autres : **une porte se branche le jour où elle
+est écrite, ou elle ne se branche pas.**
 
 ### Le périmètre — n'exécuter que ce que le commit concerne
 
@@ -284,7 +305,7 @@ routage en production, et il porte la réécriture de l'IP cliente.
 | Hook                | Ce qu'il fait                                     | Coût      |
 | ------------------- | ------------------------------------------------- | --------- |
 | `pre-commit`        | Prettier sur ce qui est indexé                    | ~1 s      |
-| `pre-push`          | les 15 portes + les typechecks de ce qui a changé | **~10 s** |
+| `pre-push`          | les 16 portes + les typechecks de ce qui a changé | **~10 s** |
 | `pre-push` → `main` | + le verdict de la CI sur le commit promu         | ~1 s      |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
@@ -292,7 +313,7 @@ push : y mettre autre chose que du formatage ferait contourner le hook au
 `--no-verify`. Un **push**, lui, engage — et sur `main` il déclenche les
 déploiements. C'est là que les portes valent leur seconde.
 
-Les quinze gates lisent des fichiers, elles ne compilent rien : cinq secondes
+Les seize gates lisent des fichiers, elles ne compilent rien : cinq secondes
 à elles toutes. S'y ajoutent les **typechecks de ce qui a changé** — mesurés
 5,9 s (backend app), 2,4 s (ses specs), 3,5 s et 2,2 s (les deux fronts). Un
 push qui touche le backend coûte donc une dizaine de secondes en tout.
