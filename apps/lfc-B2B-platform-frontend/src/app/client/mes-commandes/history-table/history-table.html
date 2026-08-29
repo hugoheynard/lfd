@@ -51,27 +51,46 @@
 
   <!-- LE TIROIR. Il ouvre DANS la liste : un écran de détail à ouvrir puis à
        quitter ferait perdre la place qu'on vient de trouver. -->
+  <!-- LE TIROIR. Il ouvre DANS la liste : un écran de détail à ouvrir puis à
+       quitter ferait perdre la place qu'on vient de trouver. -->
   <ng-template foldRowDetail let-order>
     <div class="detail">
-      <dl class="facts">
-        <dt>{{ t().orders.detailSlot }}</dt>
-        <dd>{{ order.slot }}</dd>
-        <dt>{{ t().orders.detailMode }}</dt>
-        <dd>{{ order.mode }}</dd>
-        <dt>{{ t().orders.detailPayment }}</dt>
-        <!-- Le règlement dit aussi OÙ : « portée à la facture de mars ».
-             C'est le lien explicite avec le relevé. -->
-        <dd>{{ paymentLabel(order.payment) }} · {{ paymentNote(order.payment) }}</dd>
-      </dl>
+      <!-- Les faits sur du PAPIER : le tiroir est creusé, la fiche s'y pose. -->
+      <div class="facts">
+        <p class="facts-head">{{ t().orders.detailHead }}</p>
+        <dl class="facts-list">
+          <div class="fact">
+            <dt>{{ t().orders.detailSlot }}</dt>
+            <dd>{{ order.slot }}</dd>
+          </div>
+          <div class="fact">
+            <dt>{{ t().orders.detailMode }}</dt>
+            <dd>{{ order.mode }}</dd>
+          </div>
+          @if (order.origin !== '') {
+            <div class="fact">
+              <dt>{{ t().orders.detailOrigin }}</dt>
+              <dd>{{ order.origin }}</dd>
+            </div>
+          }
+          <div class="fact">
+            <dt>{{ t().orders.detailPayment }}</dt>
+            <!-- Le règlement dit aussi OÙ : « portée à la facture de mars ».
+                 C'est le lien explicite avec le relevé. -->
+            <dd>{{ paymentLabel(order.payment) }} · {{ paymentNote(order.payment) }}</dd>
+          </div>
+        </dl>
+      </div>
 
+      <!-- TROIS POIDS, pas trois boutons identiques : le bon de commande est ce
+           qu'on vient chercher, recommander est la suite naturelle, et le
+           problème est OFFERT sans être encouragé — bordé, jamais un aplat. -->
       <div class="acts">
-        <button class="act" type="button">
+        <button class="act act--main" type="button">
           <fold-icon name="download" />{{ t().orders.purchaseOrder }}
         </button>
-        <button class="act" type="button">
-          <fold-icon name="repeat" />{{ t().orders.reorder }}
-        </button>
-        <button class="act danger" type="button" (click)="problemRaised.emit(order)">
+        <button class="act act--soft" type="button">{{ t().orders.reorder }}</button>
+        <button class="act act--danger" type="button" (click)="problemRaised.emit(order)">
           {{ t().orders.problem }}
         </button>
       </div>

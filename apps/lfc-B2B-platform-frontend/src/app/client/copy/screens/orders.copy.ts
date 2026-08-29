@@ -61,6 +61,7 @@ export interface OrdersCopy {
   readonly payAccountNote: string;
   readonly payCardNote: string;
   readonly payDueNote: string;
+  readonly detailHead: string;
   readonly detailSlot: string;
   readonly detailPayment: string;
   readonly detailOrigin: string;
@@ -126,6 +127,7 @@ export const ORDERS_FR: OrdersCopy = {
   payAccountNote: 'portée à la facture de mars',
   payCardNote: 'réglée à la commande',
   payDueNote: 'sur la facture FA‑2026‑0212',
+  detailHead: 'Le détail',
   detailSlot: 'Créneau',
   detailPayment: 'Règlement',
   detailOrigin: 'Origine',
@@ -197,6 +199,7 @@ export const ORDERS_EN: OrdersCopy = {
   payAccountNote: 'carried to the March invoice',
   payCardNote: 'paid at checkout',
   payDueNote: 'on invoice FA‑2026‑0212',
+  detailHead: 'The detail',
   detailSlot: 'Slot',
   detailPayment: 'Settlement',
   detailOrigin: 'Origin',
@@ -268,6 +271,7 @@ export const ORDERS_IT: OrdersCopy = {
   payAccountNote: 'riportato sulla fattura di marzo',
   payCardNote: 'pagato all’ordine',
   payDueNote: 'sulla fattura FA‑2026‑0212',
+  detailHead: 'Il dettaglio',
   detailSlot: 'Fascia oraria',
   detailPayment: 'Pagamento',
   detailOrigin: 'Origine',

@@ -73,7 +73,7 @@ describe('HistoryTable', () => {
     fixture.componentInstance.problemRaised.subscribe((order) => raised.push(order));
     toggles()[0]?.click();
     fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('.act.danger')?.click();
+    el().querySelector<HTMLButtonElement>('.act--danger')?.click();
     expect(raised.map((o) => o.reference)).toEqual([MOCK_HISTORY[0]?.reference]);
   });
 

@@ -3,6 +3,12 @@
    le balisage de cet écran, dans son encapsulation à lui. */
 :host {
   display: block;
+
+  /* Les cotes de la réf pour le tiroir : il affleure sa ligne en haut — 2 px,
+     juste de quoi ne pas coller au filet — et respire d'un cran en bas et sur
+     les côtés. Le jeton arrive avec fold 0.21 ; d'ici là c'est le rembourrage
+     par défaut du composant qui s'applique, un cran plus haut. */
+  --fold-data-table-detail-padding: 2px var(--fold-space-lg) var(--fold-space-lg);
 }
 
 .ref {
@@ -97,60 +103,106 @@
   color: var(--fold-color-success-text);
 }
 
-/* ── Le tiroir ─────────────────────────────────────────────────────────── */
-
+/* ── Le tiroir ─────────────────────────────────────────────────────────────
+   Le rembourrage appartient au châssis (voir le jeton sur `:host`) : le contenu
+   n'en ajoute pas, sinon les deux s'additionnent et le tiroir enfle. */
 .detail {
   display: grid;
   gap: var(--fold-space-md);
 }
 
+/* Les faits sur du PAPIER. Le tiroir est creusé ; poser la fiche dessus la
+   détache de la ligne sans la détacher du tableau. */
 .facts {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px var(--fold-space-md);
-  margin: 0;
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
 }
 
-.facts dt {
+.facts-head {
+  margin: 0 0 9px;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
+  font-size: var(--lfc-text-kicker);
   font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
+  letter-spacing: var(--lfc-tracking-kicker);
   text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
+  color: var(--fold-color-text-secondary);
 }
 
-.facts dd {
+.facts-list {
   margin: 0;
+}
+
+/* Libellé à gauche, valeur à DROITE : les valeurs s'alignent en colonne, ce qui
+   compte dès qu'il y a un montant ou une heure parmi elles. */
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: 7px 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.fact dt {
+  flex: none;
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-secondary);
 }
 
+.fact dd {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  color: var(--fold-color-text);
+  text-align: right;
+}
+
+/* ── Les trois actions ─────────────────────────────────────────────────────
+   TROIS POIDS et non trois boutons identiques. Le bon de commande est ce qu'on
+   vient chercher : aplat de marque. Recommander est la suite naturelle : teinte
+   de marque, sans le poids d'un aplat. Le problème est offert, jamais
+   encouragé : bordé sur papier — un aplat rouge invite au clic. */
 .acts {
-  display: grid;
-  gap: var(--fold-space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
 }
 
 .act {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--fold-space-xs);
-  min-height: 44px;
+  gap: var(--fold-space-sm);
+  height: 44px;
   padding: 0 var(--fold-space-md);
-  border: 1px solid var(--fold-color-border-strong);
-  border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
+  border: 0;
+  border-radius: 12px;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-bold);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-/* Bordé, jamais un aplat : l'action est offerte, pas encouragée. */
-.act.danger {
-  border-color: var(--fold-color-alert-border);
+.act--main {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+.act--soft {
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+}
+
+.act--danger {
+  border: 1.5px solid #e3c9c4;
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-alert-text);
 }
 
@@ -196,11 +248,13 @@
   color: var(--lfc-color-accent-deep);
 }
 
-/* Le détail se lit en deux colonnes dès qu'il y a la place : les faits à
-   gauche, les gestes à droite. */
+/* Au-delà du pli, les cotes de la réf : la fiche prend la place qui reste, la
+   colonne d'actions tient ses 300 px. Une colonne en fraction aurait fait
+   changer la largeur des boutons avec le contenu de la fiche. */
 @media (min-width: 900px) {
   .detail {
-    grid-template-columns: 1fr minmax(260px, 320px);
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: var(--fold-space-xl);
     align-items: start;
   }
 
