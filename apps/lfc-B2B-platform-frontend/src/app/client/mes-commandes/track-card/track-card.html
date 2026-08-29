@@ -41,44 +41,50 @@
   }
 </ol>
 
-<!-- LE PIED. Deux modes, une seule anatomie : un encart qui dit *où* ou *qui*,
-     puis une rangée d'actions — principale à gauche, secondaire en carré à
-     droite. `margin-top:auto` le colle en bas, et c'est ce qui donne aux deux
-     cartes la même hauteur sans qu'aucune hauteur ne soit écrite. -->
+<!-- LE PIED — une CARTE dans la carte, et la même dans les deux modes : une
+     rangée qui dit *où* ou *qui* avec son recours à droite, puis une rangée qui
+     porte l'action. C'est cette structure, et non les couleurs, qui fait que le
+     retrait et la livraison se lisent d'un même geste ; seuls la teinte, le
+     glyphe et les mots changent.
+
+     `margin-top:auto` la colle en bas, et c'est ce qui donne aux deux cartes la
+     même hauteur sans qu'aucune hauteur ne soit écrite. -->
 <footer class="foot">
   @if (order().mode === 'courier') {
-    <div class="slab courier">
-      <span class="tile" aria-hidden="true">{{ courierInitial() }}</span>
-      <span class="slab-lines">
-        <span class="slab-title">{{ courierLine() }}</span>
-        <span class="slab-note">{{ order().courierNote }}</span>
-      </span>
-    </div>
-    <div class="actions courier-actions">
-      <button class="act act--warm-ghost" type="button">{{ t().orders.courierCall }}</button>
+    <div class="panel courier">
+      <div class="panel-head">
+        <span class="tile" aria-hidden="true"><fold-icon name="truck" /></span>
+        <span class="panel-lines">
+          <span class="panel-title">{{ courierLine() }}</span>
+          <span class="panel-note">{{ order().courierNote }}</span>
+        </span>
+        <!-- Le recours, en MINEUR : on suit sa livraison, on n'appelle qu'en
+             cas de doute. Lui donner le même poids que l'action ferait douter
+             par défaut. -->
+        <button class="minor" type="button">{{ t().orders.courierCall }}</button>
+      </div>
       <!-- La pastille auréolée est le SIGNAL DE VIE : c'est elle qui distingue
-           « suivre en direct » de « voir le trajet ». Un bouton sans elle
-           promet la même chose au passé. -->
-      <button class="act act--warm" type="button">
+           « suivre en direct » de « voir le trajet ». -->
+      <button class="wide warm" type="button">
         <span class="live" aria-hidden="true"></span>{{ t().orders.courierTrack }}
       </button>
     </div>
   } @else {
-    <div class="slab pickup">
-      <span class="tile" aria-hidden="true"><fold-icon name="qr-code" /></span>
-      <span class="slab-lines">
-        <span class="slab-title">{{ order().pickup }}</span>
-        <span class="slab-note">{{ order().pickupNote }}</span>
-      </span>
-    </div>
-    <div class="actions pickup-actions">
-      <button class="act act--main" type="button" (click)="qrAsked.emit()">
+    <div class="panel pickup">
+      <div class="panel-head">
+        <span class="tile" aria-hidden="true"><fold-icon name="map-pin" /></span>
+        <span class="panel-lines">
+          <span class="panel-title">{{ order().pickup }}</span>
+          <span class="panel-note">{{ order().pickupNote }}</span>
+        </span>
+        <!-- L'avion dit le geste : envoyer le QR à qui passera le prendre.
+             Aucune phrase — elle prendrait la place de l'action. -->
+        <button class="minor square" type="button" [attr.aria-label]="t().orders.qrSend">
+          <fold-icon name="mail" />
+        </button>
+      </div>
+      <button class="wide main" type="button" (click)="qrAsked.emit()">
         <fold-icon name="qr-code" />{{ t().orders.qr }}
-      </button>
-      <!-- L'avion dit le geste : envoyer le QR à qui passera le prendre. Aucune
-           phrase d'explication — elle prendrait la place de l'action. -->
-      <button class="act act--square" type="button" [attr.aria-label]="t().orders.qrSend">
-        <fold-icon name="mail" />
       </button>
     </div>
   }
