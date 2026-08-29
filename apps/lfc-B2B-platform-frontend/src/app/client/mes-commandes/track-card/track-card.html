@@ -48,31 +48,36 @@
 <footer class="foot">
   @if (order().mode === 'courier') {
     <div class="slab courier">
-      <span class="initial" aria-hidden="true">{{ courierInitial() }}</span>
+      <span class="tile" aria-hidden="true">{{ courierInitial() }}</span>
       <span class="slab-lines">
         <span class="slab-title">{{ courierLine() }}</span>
         <span class="slab-note">{{ order().courierNote }}</span>
       </span>
     </div>
-    <div class="actions">
-      <button class="act ghost" type="button">{{ t().orders.courierCall }}</button>
-      <button class="act main" type="button">{{ t().orders.courierTrack }}</button>
+    <div class="actions courier-actions">
+      <button class="act act--warm-ghost" type="button">{{ t().orders.courierCall }}</button>
+      <!-- La pastille auréolée est le SIGNAL DE VIE : c'est elle qui distingue
+           « suivre en direct » de « voir le trajet ». Un bouton sans elle
+           promet la même chose au passé. -->
+      <button class="act act--warm" type="button">
+        <span class="live" aria-hidden="true"></span>{{ t().orders.courierTrack }}
+      </button>
     </div>
   } @else {
     <div class="slab pickup">
-      <span class="initial" aria-hidden="true"><fold-icon name="qr-code" /></span>
+      <span class="tile" aria-hidden="true"><fold-icon name="qr-code" /></span>
       <span class="slab-lines">
         <span class="slab-title">{{ order().pickup }}</span>
         <span class="slab-note">{{ order().pickupNote }}</span>
       </span>
     </div>
     <div class="actions pickup-actions">
-      <button class="act main" type="button" (click)="qrAsked.emit()">
-        {{ t().orders.qrLong }}
+      <button class="act act--main" type="button" (click)="qrAsked.emit()">
+        <fold-icon name="qr-code" />{{ t().orders.qr }}
       </button>
       <!-- L'avion dit le geste : envoyer le QR à qui passera le prendre. Aucune
            phrase d'explication — elle prendrait la place de l'action. -->
-      <button class="act square" type="button" [attr.aria-label]="t().orders.qrSend">
+      <button class="act act--square" type="button" [attr.aria-label]="t().orders.qrSend">
         <fold-icon name="mail" />
       </button>
     </div>

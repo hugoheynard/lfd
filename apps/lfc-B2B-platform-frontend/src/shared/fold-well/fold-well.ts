@@ -34,6 +34,9 @@ import { FoldElementTitleComponent } from 'fold-ng';
  * a person. It is projected rather than configured because a well can be about
  * anything, and an `icon` input would have made it about icons.
  *
+ * `--fold-well-gap` themes the space between items — on a rail it does not only
+ * separate two cards, it decides how many are read at once.
+ *
  * ## It owns its position
  *
  * The well tracks which item is in view and exposes {@link active} and

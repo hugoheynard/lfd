@@ -22,6 +22,9 @@
   --fold-well-color-muted: var(--lfc-color-on-well-muted);
   --fold-well-radius: var(--lfc-radius-2xl);
   --fold-well-padding: var(--fold-space-lg);
+  /* Les cartes de suivi sont des OBJETS, pas les items d'une liste : elles
+     veulent l'air d'une gouttière et non celui d'un interligne. */
+  --fold-well-gap: var(--fold-space-lg);
 }
 
 /* L'indicateur hérite du même contrat : il ne sait pas qu'il est sur du bleu
@@ -68,7 +71,7 @@
    CET écran, et c'est ici qu'on décide de la tranche laissée à la suivante. */
 .rail-card {
   flex: none;
-  width: min(340px, 88%);
+  width: min(340px, 86%);
   scroll-snap-align: start;
 }
 
@@ -96,6 +99,6 @@
      le puits redevenait muet. Une grille de trois aurait tout montré et
      n'aurait plus rien annoncé au quatrième suivi. */
   .rail-card {
-    width: calc(50% - var(--fold-space-md) / 2 - 44px);
+    width: calc(50% - var(--fold-space-lg) / 2 - 44px);
   }
 }

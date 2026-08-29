@@ -274,7 +274,7 @@
   display: grid;
   /* L'encart et sa rangée d'actions sont deux temps, pas une pile : ils
      respirent plus que deux lignes d'un même bloc. */
-  gap: var(--fold-space-md);
+  gap: 9px;
   /* CE QUI ÉGALISE LES CARTES : le pied tombe en bas, la hauteur vient du
      défilement qui étire. Aucune valeur en dur, donc rien à corriger le jour
      où une carte porte une ligne de plus. */
@@ -282,105 +282,179 @@
   padding: 0 var(--fold-space-md) var(--fold-space-md);
 }
 
+/* L'encart dit OÙ ou QUI. Les deux modes ont la même anatomie : une tuile, deux
+   lignes — c'est ce qui permet aux deux cartes de se lire pareil sans se
+   confondre. */
 .slab {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm);
-  border-radius: var(--lfc-radius-xl);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
 }
 
 .slab.courier {
   background: var(--lfc-color-accent-surface);
-  color: var(--lfc-color-accent-text);
 }
 
 .slab.pickup {
   background: var(--fold-color-primary-surface);
-  color: var(--fold-color-primary-text);
 }
 
-/* Une TUILE carrée, pas une pastille — même famille que la tuile de section du
-   puits. Le rond est réservé aux personnes et aux états ; ici, l'initiale du
-   coursier comme le glyphe du QR sont des repères de bloc, et deux formes pour
-   un même rôle font hésiter sur ce qu'on regarde. */
-.initial {
+/* Une TUILE carrée, pas une pastille : le rond est réservé aux personnes et aux
+   états. */
+.tile {
   flex: none;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
   font-weight: var(--lfc-weight-black);
+}
+
+.slab.courier .tile {
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-well);
+}
+
+.slab.pickup .tile {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
 }
 
 .slab-lines {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
 }
 
 .slab-title {
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-bold);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  /* Un point de retrait long se coupe plutôt que de pousser la tuile. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slab.courier .slab-title {
+  color: var(--lfc-color-accent-text);
+}
+
+.slab.pickup .slab-title {
+  color: var(--fold-color-primary);
 }
 
 .slab-note {
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-note);
+  margin-top: 2px;
+  font-size: var(--fold-text-2xs);
+  line-height: 1.35;
+}
+
+.slab.courier .slab-note {
+  color: var(--fold-color-text-muted);
+}
+
+.slab.pickup .slab-note {
+  color: var(--fold-color-primary-text);
 }
 
 /* La rangée d'actions : principale à gauche, secondaire à droite. Le carré de
    l'avion garde sa largeur, le bouton principal prend le reste. */
 .actions {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: var(--fold-space-sm);
+  gap: 9px;
+}
+
+/* 1fr / 1.35fr : « suivre en direct » est l'action, « contacter » le recours —
+   deux colonnes égales les auraient donnés pour équivalents. */
+.actions.courier-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
 }
 
 .actions.pickup-actions {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .act {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm);
   /* 46 px : le plancher tactile de la réf, tenu des deux côtés du pli. */
-  min-height: 46px;
+  height: 46px;
   padding: 0 var(--fold-space-sm);
-  border: 1px solid transparent;
-  border-radius: var(--lfc-radius-xl);
+  border: 0;
+  border-radius: 12px;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-bold);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.act.main {
+/* ⚠️ Ces boutons ne sont PAS des `foldButton`, et c'est délibéré : leur registre
+   chaud dit un MODE DE SERVICE, pas une sémantique. Le plier sur `intent`
+   voudrait dire qu'un coursier est un avertissement. Le mode est une notion de
+   cette app ; il reste dans cette app. */
+.act--main {
   background: var(--fold-color-primary);
   color: var(--fold-color-on-primary);
 }
 
-:host([data-mode='courier']) .act.main {
+.act--warm {
   background: var(--lfc-color-accent-deep);
-  color: var(--lfc-color-on-accent-deep);
+  color: var(--lfc-paper-0);
 }
 
-.act.ghost {
-  border-color: var(--fold-color-border-strong);
+/* Bordé DANS LE TON du mode, pas en gris : le recours appartient au coursier
+   autant que l'action, et un gris neutre l'aurait détaché de sa carte. */
+.act--warm-ghost {
+  border: 1.5px solid var(--lfc-color-accent-deep);
   background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
+  color: var(--lfc-color-accent-deep);
 }
 
-.act.square {
-  width: 52px;
-  border-color: var(--fold-color-border-strong);
+.act--square {
+  width: 46px;
+  padding: 0;
+  border: 1.5px solid var(--fold-color-primary-border);
   background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
+  color: var(--lfc-color-primary-vivid);
+}
+
+/* Le SIGNAL DE VIE : c'est l'auréole qui distingue « suivre en direct » de
+   « voir le trajet ». Elle bat, parce qu'un point fixe se lit comme une puce. */
+.live {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lfc-color-accent) 34%, transparent);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--lfc-color-accent) 18%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live {
+    animation: none;
+  }
 }
 
 /* Au-delà du pli, rien ne change de forme — le stepper est déjà couché des deux
@@ -397,12 +471,16 @@
     font-size: var(--fold-text-xs);
   }
 
-  .act.square {
-    width: 52px;
-    min-height: 52px;
+  /* Les classes ont changé de nom avec le pied ; ces deux règles visaient
+     encore les anciennes et ne s'appliquaient plus. La carte a la largeur au
+     bureau : la rangée du retrait passe à 52 px, celle du coursier reste à 46
+     — deux boutons y partagent la ligne. */
+  .act--square,
+  .actions.pickup-actions .act--main {
+    height: 52px;
   }
 
-  .actions.pickup-actions .act.main {
-    min-height: 52px;
+  .act--square {
+    width: 52px;
   }
 }

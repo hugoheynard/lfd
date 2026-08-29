@@ -44,7 +44,9 @@
 :host([data-scrollable]) .body {
   display: flex;
   align-items: stretch;
-  gap: var(--fold-space-md);
+  /* L'écart entre items est thémable : sur un rail, il ne sépare pas seulement
+     deux cartes, il dit combien on en voit à la fois. */
+  gap: var(--fold-well-gap, var(--fold-space-md));
   margin-left: calc(var(--fold-well-padding, var(--fold-space-lg)) * -1);
   padding-left: var(--fold-well-padding, var(--fold-space-lg));
   padding-bottom: var(--fold-space-xs);
