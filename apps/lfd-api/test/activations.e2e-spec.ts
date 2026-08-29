@@ -6,7 +6,7 @@
  */
 import type { ActivationView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 const stubAdminVerifier = {
@@ -60,6 +60,18 @@ async function seed(
   });
 }
 
+/**
+ * Les dates de la fixture, dites par leur INTENTION (cf. `daysAgo`). Seul leur
+ * ORDRE porte du sens ici — une déclaration précède l'étape qu'elle rend
+ * possible — et le relatif le préserve exactement, sans la date de péremption
+ * qu'une date en dur emporte avec elle.
+ */
+const SELF_DECLARED = daysAgo(10);
+const SELF_STEP = daysAgo(9);
+const STAFF_DECLARED = daysAgo(11);
+const STAFF_STEP = daysAgo(8);
+const GHOST_STEP = daysAgo(8);
+
 describe("GET /admin/activations", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
     await ctx.http().get("/admin/activations").expect(401);
@@ -67,21 +79,21 @@ describe("GET /admin/activations", () => {
 
   it("dérive complétion, adoption+ et exclut les sociétés non déclarées", async () => {
     // c_self : déclarée self, une pièce client → adoption+ candidate, pending.
-    await seed("company.declared", "c_self", "2026-08-10T09:00:00.000Z", "customer", {
+    await seed("company.declared", "c_self", SELF_DECLARED, "customer", {
       via: "self",
     });
-    await seed("company.step_reached", "c_self", "2026-08-11T09:00:00.000Z", "customer", {
+    await seed("company.step_reached", "c_self", SELF_STEP, "customer", {
       step: "vat",
     });
     // c_staff : une pièce posée par le staff → PAS adoption+.
-    await seed("company.declared", "c_staff", "2026-08-09T09:00:00.000Z", "customer", {
+    await seed("company.declared", "c_staff", STAFF_DECLARED, "customer", {
       via: "self",
     });
-    await seed("company.step_reached", "c_staff", "2026-08-12T09:00:00.000Z", "staff", {
+    await seed("company.step_reached", "c_staff", STAFF_STEP, "staff", {
       step: "kbis",
     });
     // Bruit : une étape sans déclaration → hors tunnel.
-    await seed("company.step_reached", "c_ghost", "2026-08-12T09:00:00.000Z", "customer", {
+    await seed("company.step_reached", "c_ghost", GHOST_STEP, "customer", {
       step: "vat",
     });
 

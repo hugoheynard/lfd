@@ -34,6 +34,7 @@
     "lint:deployed-app-files": "node dev-toolbox/gates/deployed-app-files.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean",
+    "lint:test-dates": "node dev-toolbox/gates/test-dates.mjs",
     "lint:fold-typography": "node dev-toolbox/gates/fold-typography.mjs"
   },
   "devDependencies": {

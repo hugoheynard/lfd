@@ -82,7 +82,7 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Douze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Treize portes qui balaient TOUT le dépôt, et non l'app d'à côté.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -185,6 +185,14 @@ jobs:
       # peut que rétrécir.
       - name: "Gate : le référentiel journalise ce qu'il écrit"
         run: pnpm lint:journal-tracked
+
+      # Une date en dur dans une fixture de journal est une bombe à retardement :
+      # verte jusqu'au jour où le calendrier franchit un seuil, rouge le
+      # lendemain sur du code inchangé. Le 2026-08-29, deux suites sont tombées
+      # ainsi — une commande semée au 15 août est sortie de la fenêtre de
+      # momentum pendant la nuit.
+      - name: "Gate : aucune date absolue dans une fixture"
+        run: pnpm lint:test-dates
 
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.

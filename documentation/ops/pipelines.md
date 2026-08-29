@@ -78,7 +78,7 @@ qu'une nouvelle sur un schéma à moitié migré.
 | Job             | Périmètre                                                         |
 | --------------- | ----------------------------------------------------------------- |
 | `changes`       | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`         | les 12 portes qui balaient tout le dépôt — toujours               |
+| `gates`         | les 13 portes qui balaient tout le dépôt — toujours               |
 | `packages`      | les paquets partagés, en premier et à part                        |
 | `b2b-checks`    | typechecks, lint et les 207 suites unitaires du backend           |
 | `b2b-backend`   | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
