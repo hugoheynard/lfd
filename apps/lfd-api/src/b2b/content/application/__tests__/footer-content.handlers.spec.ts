@@ -2,7 +2,6 @@ import { DEFAULT_FOOTER_CONTENT, type FooterContent, type FooterContentView } fr
 
 import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
 import { GetFooterContentHandler } from "../get-footer-content.handler.js";
-import { GetFooterContentQuery } from "../get-footer-content.query.js";
 import { SaveFooterContentCommand } from "../save-footer-content.command.js";
 import { SaveFooterContentHandler } from "../save-footer-content.handler.js";
 
@@ -35,7 +34,9 @@ class FakeContentRepository extends PlatformContentRepository {
 describe("lire le pied de page", () => {
   it("aboutit toujours — il n'y a pas de cas « pas de contenu » à traiter", async () => {
     const repository = new FakeContentRepository();
-    const view = await new GetFooterContentHandler(repository).execute(new GetFooterContentQuery());
+    // `execute()` ne prend rien : la query est vide, et la déclarer en paramètre
+    // inutilisé ne dirait rien de plus que son type déjà porté par le décorateur.
+    const view = await new GetFooterContentHandler(repository).execute();
 
     expect(view.content.fr.brand.tagline).not.toBe("");
     // Révision zéro : personne n'a encore écrit. C'est ce que l'écran d'édition
