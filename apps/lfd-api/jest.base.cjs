@@ -11,6 +11,10 @@
 // test qui échoue dans une configuration et passe dans l'autre.
 module.exports = {
   testEnvironment: "node",
+  // Le rapporteur par défaut, PLUS le chronomètre par suite : sans lui, une CI
+  // qui passe de 7 à 17 minutes ne dit pas LAQUELLE a explosé. Voir
+  // `test/slow-suites.reporter.cjs`.
+  reporters: ["default", "<rootDir>/test/slow-suites.reporter.cjs"],
   rootDir: "./",
   silent: true,
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
