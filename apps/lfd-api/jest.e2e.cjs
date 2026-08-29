@@ -6,7 +6,18 @@ module.exports = {
   ...base,
   displayName: "lfd-api:e2e",
   testMatch: ["<rootDir>/test/**/?(*.)+(e2e-spec).ts"],
-  // 🔴 UN SEUL worker, et ce n'est pas une préférence de vitesse.
+  // 🔴 CE QUI PROTÈGE L'ISOLATION N'EST PLUS LE WORKER UNIQUE, C'EST LA BASE.
+  //
+  // Historiquement `maxWorkers: 1`, pour la raison ci-dessous — elle reste vraie
+  // mot pour mot, seule la réponse a changé. Chaque worker a désormais SA base
+  // (`lfc_b2b_test_w<n>`) et SON bucket, posés par `test/setup-env.ts`. Deux
+  // suites ne peuvent plus se voir, donc elles peuvent tourner ensemble.
+  //
+  // ⚠️ Ne pas remettre `maxWorkers: 1` en croyant réparer un flake : ce serait
+  // masquer une fuite d'isolation au lieu de la lire. Un test qui échoue en
+  // parallèle et passe seul accuse un état PARTAGÉ qu'on a manqué — cherchez-le.
+  //
+  // La panne d'origine, pour mémoire :
   //
   // Toutes les suites e2e partagent LA MÊME base jetable (`lfc_b2b_test`) et la
   // tronquent entre les cas. Deux suites en parallèle s'effacent donc leurs
@@ -18,5 +29,10 @@ module.exports = {
   // Posé ICI et pas seulement en `--runInBand` dans le script npm : un clic
   // droit « Run » depuis l'IDE ne passe pas par le script, et retombait donc
   // dans le piège.
-  maxWorkers: 1,
+  // Le nombre de workers vient de l'environnement, comme les bases : c'est la
+  // MÊME source (`E2E_WORKERS`, lue dans `test/setup-env.ts`). Le réglage doit
+  // rester unique — un jour où le nombre de workers dépasserait le nombre de
+  // bases, deux workers en partageraient une, et on retomberait exactement dans
+  // la panne décrite ci-dessus.
+  maxWorkers: Number(process.env.E2E_WORKERS ?? "4"),
 };

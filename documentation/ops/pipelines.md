@@ -75,16 +75,16 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 `ci.yml` a sept jobs plus une barrière — et **quatre ne tournent que si le commit les concerne** :
 
-| Job             | Périmètre                                                               |
-| --------------- | ----------------------------------------------------------------------- |
-| `changes`       | calcule le PÉRIMÈTRE via le graphe turbo — toujours                     |
-| `gates`         | les 12 portes qui balaient tout le dépôt — toujours                     |
-| `packages`      | les paquets partagés, en premier et à part                              |
-| `b2b-checks`    | typechecks, lint et les 207 suites unitaires du backend                 |
-| `b2b-backend`   | les 51 suites e2e, **shardées sur 4 runners** (Postgres + MinIO chacun) |
-| `fronts-et-pim` | les quatre fronts et le backend PIM                                     |
-| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée                |
-| `ci-gate`       | échoue si l'un d'eux est rouge — **le seul statut requis**              |
+| Job             | Périmètre                                                         |
+| --------------- | ----------------------------------------------------------------- |
+| `changes`       | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
+| `gates`         | les 12 portes qui balaient tout le dépôt — toujours               |
+| `packages`      | les paquets partagés, en premier et à part                        |
+| `b2b-checks`    | typechecks, lint et les 207 suites unitaires du backend           |
+| `b2b-backend`   | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
+| `fronts-et-pim` | les quatre fronts et le backend PIM                               |
+| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée          |
+| `ci-gate`       | échoue si l'un d'eux est rouge — **le seul statut requis**        |
 
 ### Le périmètre — n'exécuter que ce que le commit concerne
 
@@ -158,6 +158,39 @@ plate.
 Le `maxWorkers: 1` reste vrai **à l'intérieur** d'un shard. Ce qui change, c'est
 que les quatre tournent chacun sur SA machine, donc chacun avec sa base et son
 stockage : deux suites ne partagent plus rien du tout.
+
+### La fin du worker unique
+
+Les e2e tournaient en `--runInBand` pour une raison écrite noir sur blanc dans
+leur configuration : elles tronquent la base entre chaque cas, donc deux suites
+en parallèle s'effacent leurs fixtures. Un staff semé par l'une n'existe plus
+quand l'autre l'interroge, le mur refuse, et **le 403 est parfaitement
+légitime** — c'est ce qui rendait la panne illisible.
+
+La raison reste vraie ; c'est la réponse qui a changé. Chaque worker a
+désormais **sa base** (`lfc_b2b_test_w1`, `_w2`, …) et **son bucket**
+(`lfc-b2b-test-w1`, …). Deux suites ne partagent plus rien, donc elles peuvent
+tourner ensemble.
+
+Mesuré en local sur les 51 suites : **264 s → 61 s** à 4 workers, 689 tests
+verts, trois runs de suite sans un seul échec.
+
+Le nombre vient d'une **source unique**, `E2E_WORKERS` : `jest.e2e.cjs` la lit
+pour `maxWorkers`, `setup-test-database.ts` pour savoir combien de bases créer.
+Deux réglages séparés se désaccorderaient un jour, et ce jour-là un worker
+tournerait sans base — exactement le partage qu'on vient de fermer.
+
+⚠️ **Ne pas remettre `maxWorkers: 1` en croyant réparer un flake.** Un test qui
+échoue en parallèle et passe seul accuse un état PARTAGÉ qu'on a manqué ;
+sérialiser le masque au lieu de le lire.
+
+🔴 Deux gardes protègent la base, parce que le harnais TRONQUE. `DATABASE_LFD_URL`
+n'était protégée que par un défaut (`??=`, donc une valeur existante gagne) et
+`assertDatabaseReady` ne vérifiait que le schéma — condition qu'une base de
+**production** remplit parfaitement. Désormais le harnais demande à Postgres
+`current_database()` et n'accepte qu'un nom en `_test` / `_test_w<n>`, à
+l'amorçage **et** dans `truncateAll`. Falsifiée : pointée sur `lfc_b2b_dev`,
+elle refuse en nommant la base.
 
 🟡 **Le vrai gisement reste devant.** Quatre shards divisent le symptôme, ils ne
 touchent pas la cause : 51 amorçages. Un harnais qui partagerait l'application

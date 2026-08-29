@@ -19,7 +19,7 @@
 import { spawnSync } from "node:child_process";
 import { Client } from "pg";
 
-import { testChildEnv, testDatabaseUrl } from "./setup-env.js";
+import { E2E_WORKERS, testChildEnv, testDatabaseUrlForSlot } from "./setup-env.js";
 
 /** Une base de test : son URL, et la config Prisma qui porte ses migrations. */
 interface TestDatabase {
@@ -33,9 +33,19 @@ interface TestDatabase {
 // schéma `pim` de celle-ci. La liste reste une LISTE — c'est elle qui rendait
 // l'ajout de la seconde mécanique, et qui rendra le retrait de la troisième
 // aussi simple si l'occasion se présente.
-const DATABASES: readonly TestDatabase[] = [
-  { label: "plateforme", url: testDatabaseUrl(), prismaConfig: null },
-];
+// UNE base PAR WORKER e2e, depuis que les suites tournent en parallèle. Elles
+// tronquent la base entre chaque cas : partagée, deux workers s'effaceraient
+// leurs fixtures. Le nombre vient de `E2E_WORKERS`, la même constante que
+// `jest.e2e.cjs` lit pour `maxWorkers` — deux réglages séparés finiraient par
+// se désaccorder, et ce jour-là deux workers partageraient une base.
+const DATABASES: readonly TestDatabase[] = Array.from(
+  { length: E2E_WORKERS },
+  (_unused, index) => ({
+    label: `plateforme · worker ${String(index + 1)}`,
+    url: testDatabaseUrlForSlot(index + 1),
+    prismaConfig: null,
+  }),
+);
 
 /** URL d'administration : même serveur, mais la db `postgres` toujours présente. */
 function adminUrl(url: string): string {
@@ -84,7 +94,13 @@ function applyMigrations(database: TestDatabase): void {
   }
   const result = spawnSync("prisma", args, {
     stdio: "inherit",
-    env: testChildEnv(),
+    // 🔴 L'URL DE CETTE base, pas celle du process courant. `testChildEnv()`
+    // sans argument rend la base du worker COURANT (`_w1` hors de Jest) : les
+    // quatre `migrate deploy` partaient alors sur la même base, les trois
+    // autres restaient créées mais VIDES, et la panne n'apparaissait qu'au
+    // premier test tombé sur le worker 2 — sur une erreur de table manquante
+    // qui n'accuse jamais le provisionnement.
+    env: testChildEnv(database.url),
     shell: true,
   });
   if (result.status !== 0) {

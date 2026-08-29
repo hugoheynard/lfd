@@ -330,12 +330,27 @@ jobs:
           echo "MinIO n'a pas démarré à temps" >&2
           docker logs minio >&2
           exit 1
-      - name: Préparer la base de test
+      - name: Préparer les bases de test
+        # Une base PAR WORKER (`lfc_b2b_test_w1`, `_w2`, …) : les suites
+        # tronquent la leur entre chaque cas, et deux workers qui partageraient
+        # une base s'effaceraient leurs fixtures.
+        env:
+          E2E_WORKERS: 2
         run: pnpm --filter lfd-api run db:test:setup
       # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.
       - name: Tests e2e
+        # `E2E_WORKERS` gouverne À LA FOIS le nombre de workers Jest et le nombre
+        # de bases provisionnées à l'étape précédente — une seule source, sinon
+        # un worker sans base retomberait dans le partage qu'on vient de fermer.
+        #
+        # 2 et non 4 : le runner porte 2 vCPU, et il fait déjà tourner Postgres
+        # et MinIO. Le parallélisme large est fourni par les shards, qui sont sur
+        # QUATRE machines ; empiler 4 workers sur 2 cœurs échangerait du gain
+        # contre du thrash. À remonter si les runners grossissent.
+        env:
+          E2E_WORKERS: 2
         run: pnpm --filter lfd-api run test:e2e --shard=${{ matrix.shard }}/4
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────

@@ -27,7 +27,52 @@
  */
 const DEFAULT_TEST_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_test";
 
+/**
+ * Combien de workers e2e — et donc combien de bases et de buckets à provisionner.
+ *
+ * UNE SEULE source pour les trois : `jest.e2e.cjs` la lit pour `maxWorkers`, et
+ * `setup-test-database.ts` pour savoir combien de bases créer. Deux réglages
+ * séparés se désaccorderaient un jour, et ce jour-là deux workers partageraient
+ * une base — exactement la panne que tout ceci existe pour empêcher.
+ */
+export const E2E_WORKERS = Number(process.env["E2E_WORKERS"] ?? "4");
+
+/**
+ * Le numéro du worker courant, 1..N.
+ *
+ * Jest pose `JEST_WORKER_ID` dans chaque worker. Hors de Jest — le script de
+ * provisionnement, par exemple — il n'y a pas de worker : on prend 1.
+ */
+export function workerSlot(): number {
+  return Number(process.env["JEST_WORKER_ID"] ?? "1");
+}
+
+/**
+ * L'URL de la base d'un worker donné : le nom de base, suffixé `_w<n>`.
+ *
+ * 🔴 C'EST CE QUI REMPLACE `--runInBand`.
+ *
+ * Les suites tronquent la base entre chaque cas. Tant qu'elles la partageaient,
+ * deux suites en parallèle s'effaçaient leurs fixtures l'une l'autre : un staff
+ * semé par l'une n'existait plus quand l'autre l'interrogeait, le mur d'accès
+ * refusait, et le 403 était PARFAITEMENT LÉGITIME — c'est ce qui rendait la
+ * panne illisible. Le worker unique était la réponse ; une base par worker est
+ * la même réponse, sans la file d'attente.
+ *
+ * Le suffixe est appliqué même à un worker seul (`_w1`) : une règle qui
+ * s'applique toujours se vérifie, une règle qui ne vaut qu'au-delà de deux
+ * workers ne se teste jamais dans le cas courant.
+ */
+function slotDatabaseUrl(base: string, slot: number): string {
+  const parsed = new URL(base);
+  parsed.pathname = `${parsed.pathname.replace(/\/$/u, "")}_w${String(slot)}`;
+  return parsed.toString();
+}
+
 process.env["DATABASE_LFD_URL"] ??= DEFAULT_TEST_DATABASE_URL;
+// Le suffixe de worker est posé APRÈS le `??=` : la CI garde le droit de
+// pointer un autre serveur, elle n'a pas celui de faire partager une base.
+process.env["DATABASE_LFD_URL"] = slotDatabaseUrl(process.env["DATABASE_LFD_URL"], workerSlot());
 process.env["AUTH0_DOMAIN"] ??= "test-tenant.eu.auth0.com";
 process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 
@@ -52,7 +97,10 @@ process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
  * — et supprimer — dedans.
  */
 const TEST_STORAGE = {
-  bucket: "lfc-b2b-test",
+  // Un bucket par worker, pour la RAISON EXACTE de la base : `resetStorage()`
+  // vide le bucket entre deux tests. Partagé, un worker emporterait les pièces
+  // d'un autre — et l'échec accuserait une suite qui n'a rien fait.
+  bucket: `lfc-b2b-test-w${String(workerSlot())}`,
   endpoint: "http://localhost:9100",
   region: "auto",
   accessKeyId: "lfc",
@@ -106,13 +154,21 @@ export function testDatabaseUrl(): string {
   return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;
 }
 
+/** L'URL de la base d'un worker donné — pour le provisionnement, qui les crée toutes. */
+export function testDatabaseUrlForSlot(slot: number): string {
+  const base = process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;
+  // `testDatabaseUrl()` porte déjà le suffixe du worker courant : on le retire
+  // avant d'appliquer celui qu'on vise, sinon on empilerait `_w1_w2`.
+  return slotDatabaseUrl(base.replace(/_w\d+$/u, ""), slot);
+}
+
 /**
  * Environnement à passer à un process enfant (la CLI Prisma) pour qu'il vise la
  * base de test et non celle du `.env`.
  */
-export function testChildEnv(): NodeJS.ProcessEnv {
+export function testChildEnv(url: string = testDatabaseUrl()): NodeJS.ProcessEnv {
   return {
     ...process.env,
-    DATABASE_LFD_URL: testDatabaseUrl(),
+    DATABASE_LFD_URL: url,
   };
 }

@@ -285,8 +285,14 @@ async function seedE2eStaff(prisma: PrismaService): Promise<void> {
  */
 let disposableDatabase: string | null = null;
 
-/** Le suffixe qui autorise la destruction. Une convention, mais VÉRIFIÉE. */
-const DISPOSABLE_SUFFIX = "_test";
+/**
+ * Le nom qu'une base doit porter pour qu'on accepte de la vider.
+ *
+ * `_test`, éventuellement suivi du numéro de worker (`_test_w3`) depuis que les
+ * suites tournent en parallèle sur une base chacune. Le motif est ancré à la
+ * fin : `lfc_b2b_test_w3` passe, `prod_test_copy` non.
+ */
+const DISPOSABLE_NAME = /_test(_w\d+)?$/u;
 
 /**
  * Refuse de continuer si la base connectée n'est pas jetable.
@@ -298,10 +304,10 @@ const DISPOSABLE_SUFFIX = "_test";
 async function assertDisposableDatabase(prisma: PrismaService): Promise<void> {
   const [row] = await prisma.$queryRaw<{ name: string }[]>`SELECT current_database() AS name`;
   const name = row?.name ?? "";
-  if (!name.endsWith(DISPOSABLE_SUFFIX)) {
+  if (!DISPOSABLE_NAME.test(name)) {
     throw new Error(
       `REFUS : les e2e vident la base entre chaque test, et « ${name} » n'en est pas une jetable.\n` +
-        `  Seul un nom suffixé « ${DISPOSABLE_SUFFIX} » est accepté.\n` +
+        `  Seul un nom suffixé « _test » (ou « _test_w<n> ») est accepté.\n` +
         `  DATABASE_LFD_URL pointe ailleurs que la base de test — vérifiez votre .env\n` +
         `  et votre terminal : la variable, si elle existe déjà, l'emporte sur le défaut.`,
     );
