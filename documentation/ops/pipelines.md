@@ -75,14 +75,14 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 `ci.yml` a cinq jobs plus une barrière :
 
-| Job             | Périmètre                                                            |
-| --------------- | -------------------------------------------------------------------- |
-| `packages`      | les paquets partagés, en premier et à part                           |
-| `b2b-checks`    | typechecks, lint, les 5 gates et les 207 suites unitaires du backend |
-| `b2b-backend`   | les 51 suites e2e, sur Postgres docker + MinIO — **rien d'autre**    |
-| `fronts-et-pim` | les quatre fronts et le backend PIM                                  |
-| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée             |
-| `ci-gate`       | échoue si l'un des cinq n'est pas vert — **le seul statut requis**   |
+| Job             | Périmètre                                                               |
+| --------------- | ----------------------------------------------------------------------- |
+| `packages`      | les paquets partagés, en premier et à part                              |
+| `b2b-checks`    | typechecks, lint, les 5 gates et les 207 suites unitaires du backend    |
+| `b2b-backend`   | les 51 suites e2e, **shardées sur 4 runners** (Postgres + MinIO chacun) |
+| `fronts-et-pim` | les quatre fronts et le backend PIM                                     |
+| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée                |
+| `ci-gate`       | échoue si l'un des cinq n'est pas vert — **le seul statut requis**      |
 
 ### Pourquoi `b2b-checks` existe
 
@@ -101,6 +101,31 @@ Trois configurations Jest portent désormais la séparation, et le mur qui la re
 vraie est écrit dans `jest.unit.cjs` : une spec qui a besoin d'une vraie base
 n'est pas une unitaire, elle prend le suffixe `.e2e-spec.ts` et descend dans
 `test/`.
+
+### Le sharding des e2e
+
+Sorties de la file, les e2e sont devenues **tout** le chemin critique — et elles
+sont violemment variables : les mêmes 51 suites ont pris **6 min 40** puis
+**16 min 45** sur deux runs consécutifs, à code identique.
+
+Le chronomètre par suite (`apps/lfd-api/test/slow-suites.reporter.cjs`) a tranché
+la question « quelle suite explose ? » : **aucune**. La distribution est plate,
+~5 s par suite, et le temps ne suit pas le nombre de tests — `resend-webhook`
+met 6,5 s pour 6 tests quand `staff-roles` met 11,9 s pour 40. Le coût est
+l'**amorçage de l'application Nest**, payé 51 fois.
+
+D'où quatre shards. Mesuré en local, `--shard=i/4` donne 33 s / 39 s / 54 s /
+39 s là où le run entier prend 264 s : le pire shard vaut **un cinquième** du
+tout. Le découpage par chemin suffit précisément parce que la distribution est
+plate.
+
+Le `maxWorkers: 1` reste vrai **à l'intérieur** d'un shard. Ce qui change, c'est
+que les quatre tournent chacun sur SA machine, donc chacun avec sa base et son
+stockage : deux suites ne partagent plus rien du tout.
+
+🟡 **Le vrai gisement reste devant.** Quatre shards divisent le symptôme, ils ne
+touchent pas la cause : 51 amorçages. Un harnais qui partagerait l'application
+entre les suites ferait mieux que n'importe quel orchestrateur.
 
 ⚠️ Le motif des unitaires dit « tout sauf e2e », **pas** « tout ce qui est sous
 `src/` ». Écrit à l'envers lors du découpage, il laissait `container/__tests__/`

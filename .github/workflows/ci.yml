@@ -121,7 +121,13 @@ jobs:
 
   # ── Le backend B2B, ses e2e ─────────────────────────────────────────────────
   # Ce job ne fait plus QUE les e2e — ses typechecks, son lint et ses gates sont
-  # partis dans `b2b-checks` ci-dessus. Ce qui reste ici est ce qui a besoin
+  # partis dans `b2b-checks` ci-dessus — et il tourne en QUATRE exemplaires.
+  #
+  # Le `maxWorkers: 1` des e2e ne disparaît pas : il reste vrai à l'intérieur
+  # d'un shard, et c'est ce qu'il protège. Ce qui change, c'est qu'ils sont
+  # quatre à l'être en parallèle, chacun sur SA machine, donc chacun avec sa
+  # propre base et son propre stockage. Deux suites ne peuvent pas plus se
+  # tronquer la base qu'avant — elles ne partagent plus rien du tout. Ce qui reste ici est ce qui a besoin
   # d'une infrastructure, et rien d'autre : le chemin critique de la CI, c'est
   # lui, donc tout ce qu'on lui retire est du temps rendu au déploiement.
   #
@@ -131,8 +137,26 @@ jobs:
   # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
   # harnais (`ensureTestBucket`), donc rien à provisionner ici.
   b2b-backend:
-    name: Backend B2B
+    name: Backend B2B · e2e ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
+    strategy:
+      # QUATRE RUNNERS, un quart des suites chacun.
+      #
+      # Le chronomètre par suite (`test/slow-suites.reporter.cjs`) a montré une
+      # distribution PLATE : ~5 s par suite, dominées par l'amorçage de
+      # l'application Nest, et une seule suite au-dessus (`admin-pricing`, 8 %).
+      # Un découpage par chemin répartit donc proprement — ce qui ne serait pas
+      # vrai si une suite pesait la moitié du total.
+      #
+      # Ça amortit aussi la VARIANCE, qui est le vrai problème : les mêmes 51
+      # suites ont pris 6 min 40 puis 16 min 45 sur deux runs consécutifs. Un
+      # runner lent ne coûte plus que le quart.
+      #
+      # `fail-fast: false` : un shard rouge ne doit pas annuler les trois autres,
+      # sinon on corrige une panne, on repousse, et on en découvre une seconde.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:16-alpine
@@ -175,8 +199,11 @@ jobs:
           exit 1
       - name: Préparer la base de test
         run: pnpm --filter lfd-api run db:test:setup
+      # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
+      # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
+      # trouvée, et un échec qui parle de tout sauf de la vraie cause.
       - name: Tests e2e
-        run: pnpm --filter lfd-api test:e2e
+        run: pnpm --filter lfd-api run test:e2e --shard=${{ matrix.shard }}/4
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des
