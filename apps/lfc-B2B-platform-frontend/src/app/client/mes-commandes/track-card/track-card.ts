@@ -9,11 +9,18 @@ import type { TrackedOrder } from '../../mock-orders';
  * Une commande VIVANTE, comme objet.
  *
  * Le mode de service décide de tout ce qui change : la teinte de l'en-tête, et
- * le pied de carte. Les deux pieds ont la MÊME anatomie — un encart qui dit
- * *où* ou *qui*, puis une rangée d'actions, principale à gauche et secondaire à
- * droite. C'est ce qui permet aux deux cartes d'avoir la même hauteur sans
- * qu'aucune hauteur ne soit écrite : `margin-top:auto` sur le pied, et le
- * défilement qui étire.
+ * le pied de carte. Les deux pieds ont la MÊME anatomie — une carte dans la
+ * carte, dont la première rangée dit *où* ou *qui* avec son recours en mineur,
+ * et la seconde porte l'action pleine largeur. C'est ce qui permet aux deux
+ * cartes d'avoir la même hauteur sans qu'aucune hauteur ne soit écrite :
+ * `margin-top:auto` sur le pied, et le défilement qui étire.
+ *
+ * ⚠️ Presque rien ici n'est un composant fold, et ce n'est pas un oubli : fold
+ * ferme sa palette derrière `:host(.primary|.warning|.danger|…)`, c'est-à-dire
+ * derrière une SÉMANTIQUE. Or « retrait » et « coursier » sont un mode de
+ * service, pas une sémantique — un coursier n'est pas un avertissement. Tant
+ * que fold n'ouvre pas de crochet de teinte, l'en-tête, les pastilles et les
+ * boutons de cette carte restent à nous.
  *
  * Le stepper suit la surface et non un point de rupture arbitraire : vertical
  * là où la carte est étroite — c'est la timeline du téléphone —, horizontal dès
@@ -68,6 +75,4 @@ export class TrackCard {
     const copy = this.t().orders;
     return name === null ? copy.courierPending : copy.courierOnWay.replace('{name}', name);
   });
-
-  protected readonly courierInitial = computed(() => this.order().courier?.[0] ?? '?');
 }
