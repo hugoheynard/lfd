@@ -61,3 +61,58 @@ body {
 router-outlet + * {
   display: block;
 }
+
+/* ── Le tactile : ce que le navigateur fait DE SON PROPRE CHEF ─────────────────
+   Trois gestes d'iOS que rien ne demandait, et qui se lisent tous comme un bug
+   de l'app plutôt que comme un comportement du navigateur. */
+
+html {
+  /* iOS grossit le texte de lui-même quand on tourne le téléphone. La mise en
+     page est alors juste au portrait, fausse au paysage, et rien dans le code
+     n'explique l'écart. */
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  /* Le rebond VERTICAL du document. Les écrans possèdent déjà leur défilement
+     (le shell) ; celui-ci ne fait que décoller toute l'app du haut de l'écran
+     quand un geste dépasse, et rend l'encoche visible une fraction de seconde.
+     `none` et non `contain` : il n'y a rien au-dessus à protéger, c'est le
+     rebond lui-même qui n'a pas lieu d'être. */
+  overscroll-behavior-y: none;
+}
+
+/* LE DOUBLE-TAPE POUR ZOOMER. C'est lui, le « des fois ça zoome ».
+   Sur iOS, tout élément cliquable attend ~300 ms après un appui pour voir si un
+   second arrive : deux appuis rapprochés — sur deux boutons voisins, ou sur le
+   même par impatience — sont alors lus comme un double-tape, et la page grossit.
+   `manipulation` garde le défilement et le pincement (donc le zoom reste
+   accessible à qui le demande) et ne retire QUE ce double-tape.
+
+   ⚠️ Volontairement PAS de `user-scalable=no` ni de `maximum-scale=1` dans la
+   balise viewport : Safari les ignore depuis iOS 10, et là où ils sont honorés
+   ils retirent le zoom à qui en a besoin pour lire. On désarme le geste
+   accidentel, jamais le geste voulu. */
+a,
+button,
+label,
+summary,
+[role='button'],
+[role='tab'],
+[role='option'] {
+  touch-action: manipulation;
+}
+
+/* LE ZOOM À LA MISE AU POINT D'UN CHAMP. Safari agrandit la page dès qu'un
+   champ porte moins de 16 px — et l'échelle de l'app plafonne à 15 px, même
+   pour la taille la plus grande. Tous les champs déclenchaient donc le zoom, et
+   la page restait grossie après la saisie : c'est le « déplacement non voulu ».
+   Le plancher ne vaut qu'au doigt ; à la souris, l'échelle du thème est intacte. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
