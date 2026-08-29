@@ -269,11 +269,53 @@ async function seedE2eStaff(prisma: PrismaService): Promise<void> {
 }
 
 /**
+ * La base que ce process a le droit de VIDER — vérifiée, pas supposée.
+ *
+ * 🔴 Tant que ce drapeau est faux, `truncateAll` refuse de s'exécuter.
+ *
+ * Le seul rempart, jusqu'ici, était que `DATABASE_LFD_URL` vaut PAR DÉFAUT la
+ * base jetable. Mais c'est un `??=` : une valeur déjà présente gagne. Un
+ * `.env` mal pointé, une variable exportée dans un terminal, une recette qui
+ * charge les identifiants d'un autre environnement — et `pnpm test` tronque
+ * une base qui n'est pas la sienne. Le schéma étant le même, `assertDatabaseReady`
+ * passait au vert : une base de production remplit parfaitement sa condition.
+ *
+ * Un défaut n'est pas une garde. Celle-ci demande à Postgres LUI-MÊME sur quelle
+ * base il est connecté, et n'accepte qu'un nom suffixé `_test`.
+ */
+let disposableDatabase: string | null = null;
+
+/** Le suffixe qui autorise la destruction. Une convention, mais VÉRIFIÉE. */
+const DISPOSABLE_SUFFIX = "_test";
+
+/**
+ * Refuse de continuer si la base connectée n'est pas jetable.
+ *
+ * On interroge `current_database()` plutôt que l'URL : c'est la seule source
+ * qui ne peut pas mentir. Une URL peut pointer un pooler, un alias, une socket
+ * — Postgres, lui, sait sur quoi il travaille vraiment.
+ */
+async function assertDisposableDatabase(prisma: PrismaService): Promise<void> {
+  const [row] = await prisma.$queryRaw<{ name: string }[]>`SELECT current_database() AS name`;
+  const name = row?.name ?? "";
+  if (!name.endsWith(DISPOSABLE_SUFFIX)) {
+    throw new Error(
+      `REFUS : les e2e vident la base entre chaque test, et « ${name} » n'en est pas une jetable.\n` +
+        `  Seul un nom suffixé « ${DISPOSABLE_SUFFIX} » est accepté.\n` +
+        `  DATABASE_LFD_URL pointe ailleurs que la base de test — vérifiez votre .env\n` +
+        `  et votre terminal : la variable, si elle existe déjà, l'emporte sur le défaut.`,
+    );
+  }
+  disposableDatabase = name;
+}
+
+/**
  * Échoue **tôt et clairement** si la base de test n'est pas prête : sans ça, la
  * première assertion échouerait sur une erreur Prisma cryptique et on
  * chercherait le bug dans le code applicatif.
  */
 async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
+  await assertDisposableDatabase(prisma);
   try {
     await prisma.$queryRaw`SELECT 1 FROM "companies" LIMIT 1`;
   } catch (cause) {
@@ -362,6 +404,13 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
 }
 
 async function truncateAll(prisma: PrismaService): Promise<void> {
+  // 🔴 DEUXIÈME VERROU, au point où le dégât se produit. Le premier est à
+  // l'amorçage ; celui-ci garantit qu'aucun chemin futur — un harnais
+  // parallèle, une remise à zéro appelée à la main — n'atteigne le TRUNCATE
+  // sans être passé par la vérification.
+  if (disposableDatabase === null) {
+    throw new Error("REFUS : base non vérifiée comme jetable — `truncateAll` n'a rien tronqué.");
+  }
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
     WHERE schemaname IN ('public', 'growth', 'ops', 'pim')
