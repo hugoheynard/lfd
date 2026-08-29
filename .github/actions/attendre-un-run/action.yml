@@ -52,6 +52,10 @@ runs:
         set -uo pipefail
         limite=$(( MINUTES * 60 ))
         attendu=0
+        # Le run a-t-il été VU au moins une fois ? Voir plus bas : c'est ce qui
+        # distingue « ce workflow ne tourne pas sur ce commit » d'un simple
+        # hoquet de l'API.
+        vu=0
 
         echo "Attente de « ${WORKFLOW} » sur ${GITHUB_SHA:0:7}…"
 
@@ -63,7 +67,18 @@ runs:
           if [ -z "${etat}" ]; then
             # Aucun run pour ce commit. Soit il n'a pas encore été créé, soit ce
             # workflow n'est pas concerné (ses filtres `paths:` n'ont pas mordu).
-            if [ "${attendu}" -ge "${GRACE}" ]; then
+            #
+            # ⚠️ SAUF si on l'a déjà vu. `|| etat=""` avale AUSSI l'échec de
+            # `gh api` : un hoquet réseau rend une réponse vide, impossible à
+            # distinguer d'une absence. Sans le témoin `vu`, ce hoquet arrivant
+            # après le délai de grâce se lisait « le run n'a jamais tourné » et
+            # coupait le déploiement. Constaté le 2026-08-29 : la CI tournait
+            # depuis 14 minutes, bien visible, et `deploy_lfc_boutique` a
+            # échoué en affirmant qu'elle n'existait pas.
+            #
+            # Un run qu'on a vu ne disparaît pas. Tant qu'on l'a vu, une réponse
+            # vide est une panne de lecture — on repasse, jusqu'au délai global.
+            if [ "${vu}" -eq 0 ] && [ "${attendu}" -ge "${GRACE}" ]; then
               if [ "${EXIGER}" = "true" ]; then
                 echo "::error::« ${WORKFLOW} » n'a pas tourné sur ce commit. Un déploiement non contrôlé serait pire qu'un déploiement absent."
                 exit 1
@@ -72,6 +87,7 @@ runs:
               exit 0
             fi
           else
+            vu=1
             statut="${etat%%|*}"
             reste="${etat#*|}"
             conclusion="${reste%%|*}"
