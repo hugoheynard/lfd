@@ -40,7 +40,6 @@ import { dirname, join } from "node:path";
 const ALLOWANCE = {
   "apps/lfc-B2B-admin-frontend/src/app/comptes-clients/admin-companies.service.ts": 4,
   "apps/lfc-B2B-admin-frontend/src/app/pim/channels/shopify-channel-api.ts": 6,
-  "apps/lfc-B2B-platform-frontend/src/app/account/account.service.ts": 3,
 };
 
 const CALL = /\.(get|post|put|patch|delete)<\s*([^>;]+?)\s*>\s*\(/gu;

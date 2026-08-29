@@ -27,7 +27,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     status: 'pending',
     grantedTerms: [],
     requestedTerm: null,
-    role: 'company_admin',
+    role: 'admin',
     primaryContact: {
       id: null,
       firstName: 'Camille',

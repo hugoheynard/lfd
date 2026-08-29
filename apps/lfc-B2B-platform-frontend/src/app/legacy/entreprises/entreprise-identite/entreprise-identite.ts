@@ -13,6 +13,7 @@ import {
   type Company,
   type CompanyStatus,
 } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { AccountService } from '../../../account/account.service';
 import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise-identite-panel';
 
@@ -21,6 +22,8 @@ const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {
   active: 'success',
   pending: 'warning',
   suspended: 'alert',
+  // Une société clôturée : le statut existait côté API, la carte l'ignorait.
+  terminated: 'neutral',
 };
 
 /** Zone de dépôt KBIS vide, formulée pour le **client** (« votre compte »). */
@@ -31,7 +34,7 @@ const KBIS_EMPTY_HINT =
  * Section **Identité légale** d'une entreprise côté **client** — _container_ de
  * la carte présentationnelle `@lfd/b2b-ui/company`. Il mappe le modèle `Company`
  * vers le view-model neutre, calcule les capacités (gestionnaire =
- * `company_admin`) et câble les intentions de la carte (édition, KBIS) vers
+ * `admin`) et câble les intentions de la carte (édition, KBIS) vers
  * `AccountService` et le panneau d'édition. Toute la présentation vit dans la
  * lib ; ici, uniquement la donnée, l'auth et les mutations.
  */
@@ -72,7 +75,7 @@ export class EntrepriseIdentite {
   });
 
   /** Seul le gestionnaire édite l'identité souple et gère le KBIS. */
-  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly canManage = computed(() => canManageCompany(this.company().role));
 
   /** Vrai le temps du dépôt (le service passe en `loading`). */
   protected readonly busy = computed(() => this.account.status() === 'loading');

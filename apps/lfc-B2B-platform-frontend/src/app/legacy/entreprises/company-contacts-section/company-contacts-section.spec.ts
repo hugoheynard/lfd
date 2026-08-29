@@ -29,7 +29,7 @@ function company(over: Partial<Company> = {}): Company {
     status: 'active',
     grantedTerms: [],
     requestedTerm: null,
-    role: 'company_admin',
+    role: 'admin',
     primaryContact: {
       id: null,
       firstName: 'Camille',
@@ -112,7 +112,7 @@ describe('CompanyContactsSection', () => {
 
   it('passe en lecture seule pour un simple membre (ni ajout, ni menu)', () => {
     // L'UI ne propose pas ce que le mur backend refuserait de toute façon.
-    const host = render(company({ role: 'member', contacts: [contact('x@y.fr')] }));
+    const host = render(company({ role: 'orders', contacts: [contact('x@y.fr')] }));
 
     expect(host.textContent).not.toContain('Ajouter un contact');
     expect(host.querySelector('fold-dropdown')).toBeNull();

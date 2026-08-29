@@ -5,6 +5,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { AddressesService } from '../../entreprises/addresses.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import {
@@ -34,7 +35,7 @@ export class AdressesSection {
 
   readonly company = input.required<Company>();
 
-  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly canManage = computed(() => canManageCompany(this.company().role));
   /** Masque le bloc livraison tant que le service n'existe pas. */
   protected readonly deliveryHidden = !DELIVERY_SERVICE_OPEN;
   /** Le point de retrait par défaut, montré à la place de la livraison masquée. */

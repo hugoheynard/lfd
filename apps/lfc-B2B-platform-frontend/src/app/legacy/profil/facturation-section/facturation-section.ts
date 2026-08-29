@@ -3,6 +3,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { CompanyBillingCard } from '@lfd/b2b-ui/company';
 
 import { type Company, settlementSummary, settlementLabel } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { PaymentTermPanel } from '../../entreprises/payment-term-panel/payment-term-panel';
 
 /**
@@ -25,7 +26,7 @@ export class FacturationSection {
   readonly company = input.required<Company>();
 
   protected readonly termLabel = computed(() => settlementSummary(this.company().grantedTerms));
-  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly canManage = computed(() => canManageCompany(this.company().role));
 
   /** Une demande n'est « en attente » que si elle diffère réellement du convenu. */
   protected readonly pendingLabel = computed<string | null>(() => {

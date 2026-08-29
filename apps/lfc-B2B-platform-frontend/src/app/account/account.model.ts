@@ -1,6 +1,6 @@
 import { DEFERRED_TERM_LABELS, type DeferredTerm } from '@lfd/contracts';
 
-import type { FulfillmentPreferenceView, AssignableRole, CompanyMemberRole } from '@lfd/contracts';
+import type { AssignableRole, CompanyMemberRole } from '@lfd/contracts';
 
 /**
  * Le **compte** tel que le backend le renvoie sur `GET /me` — miroir de
@@ -18,18 +18,31 @@ import type { FulfillmentPreferenceView, AssignableRole, CompanyMemberRole } fro
  * formulaire.
  */
 
-// ⚠️ SEULE dépendance du code vivant vers l'héritage, et elle est réelle : la
-// vue de catalogue préférée est persistée dans le profil (`nav_prefs` côté
-// API), donc le type n'est pas hérité — c'est son écran qui l'est. Le jour où
-// l'ancien espace part, ce type sort de `legacy/` plutôt que de disparaître
-// avec lui.
-import type { CatalogueView } from '../legacy/catalogue/catalogue-view';
-
-/** Où en est une entreprise dans son cycle commercial. */
-export type CompanyStatus = 'pending' | 'active' | 'suspended';
+export type { CompanyStatus } from '@lfd/contracts';
+import type { CompanyStatus } from '@lfd/contracts';
 
 /** Rôle de la personne **dans une entreprise donnée**. */
-export type CompanyRole = 'company_admin' | 'member';
+/**
+ * ⚠️ Ce type disait `'company_admin' | 'member'`. L'API n'a JAMAIS renvoyé ça —
+ * elle rend l'enum `owner | admin | orders | billing`. Sept écrans comparaient
+ * donc `role === 'company_admin'`, une égalité toujours fausse : le
+ * gestionnaire ne pouvait rien administrer. Personne ne l'a vu parce que la
+ * boutique déclarait sa PROPRE forme, et qu'un compilateur ne rapproche pas
+ * deux copies.
+ *
+ * On garde le nom, il désigne maintenant la bonne chose.
+ */
+export type { CompanyMemberRole as CompanyRole } from '@lfd/contracts';
+
+/**
+ * Qui a le droit d'administrer l'espace de cette société.
+ *
+ * Une fonction et non une égalité : `owner` administre aussi, et c'est le genre
+ * de détail qu'on oublie sur le septième écran qui recopie la comparaison.
+ */
+export function canManageCompany(role: CompanyMemberRole): boolean {
+  return role === 'owner' || role === 'admin';
+}
 
 /**
  * Un moyen de règlement **tel qu'un écran le nomme** : payer à la commande, ou
@@ -61,88 +74,40 @@ export function settlementSummary(grantedTerms: readonly DeferredTerm[]): string
 }
 
 /** Le profil de la personne connectée. */
-export interface UserProfile {
-  readonly userId: string;
-  /** `sub` Auth0 — identité externe. */
-  readonly subject: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly email: string;
-  readonly phone: string;
-}
-
-/** Un interlocuteur d'une entreprise (principal ou additionnel). */
-export interface Contact {
-  /** Id d'un contact additionnel ; `null` pour le contact **principal** (aplati). */
-  readonly id: string | null;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly fonction: string;
-  readonly email: string;
-  readonly phone: string;
-  /**
-   * Ce que la personne fait dans la société. `null` pour le contact principal
-   * (son rôle est constaté, pas choisi) et sur les contacts d'avant les rôles.
-   */
-  readonly role: CompanyMemberRole | null;
-}
-
-/** Le KBIS déposé, tel que la section Identité l'affiche. */
-export interface Kbis {
-  readonly fileName: string;
-  /** ISO — quand il a été déposé. */
-  readonly uploadedAt: string;
-  /** Certifié = entreprise validée (`status = active`). */
-  readonly certified: boolean;
-}
-
-/** Une entreprise de la personne, telle qu'un onglet l'affiche. */
-export interface Company {
-  readonly id: string;
-  /** Référence humaine courte (`C-XXXXXX`), dictable au téléphone. */
-  readonly reference: string;
-  readonly raisonSociale: string;
-  readonly enseigne: string;
-  readonly formeJuridique: string;
-  readonly siret: string;
-  readonly vatNumber: string;
-  /** La forme juridique impose-t-elle un n° de TVA ? (dérivé côté backend). */
-  readonly vatNumberRequired: boolean;
-  readonly status: CompanyStatus;
-  /** Condition de règlement **convenue**, toujours présente (défaut « à la commande »). */
-  readonly grantedTerms: readonly DeferredTerm[];
-  /** Terme **demandé** en attente de validation staff ; `null` = aucune demande. */
-  readonly requestedTerm: DeferredTerm | null;
-  readonly role: CompanyRole;
-  /** Contact principal (carte « Admin du compte entreprise »), toujours présent. */
-  readonly primaryContact: Contact;
-  /** Contacts additionnels, dans l'ordre d'ajout. Possiblement vide. */
-  readonly contacts: readonly Contact[];
-  /** KBIS déposé, ou `null` si l'entreprise n'en a pas encore fourni. */
-  readonly kbis: Kbis | null;
-  /**
-   * Comment cette société est servie **d'habitude** — le point de départ de ses
-   * commandes. `method: null` = rien n'est posé : le panier demandera, comme
-   * aujourd'hui.
-   */
-  readonly fulfillmentPreference: FulfillmentPreferenceView;
-}
-
 /**
- * Préférences d'affichage persistées de la personne (miroir de `NavPreferences`
- * backend). Purement UI : suivre le client d'un appareil à l'autre. `null` sur
- * un champ = aucun choix explicite, le front applique son défaut.
+ * Les formes du compte viennent des CONTRATS, elles ne sont plus déclarées ici.
+ *
+ * Elles l'étaient — `UserProfile`, `Contact`, `Kbis`, `Company`, `Account` —
+ * champ pour champ et commentaire pour commentaire, en miroir d'`AccountView`
+ * côté backend. Deux modèles qu'aucun compilateur ne rapproche : le jour où la
+ * route gagne un champ, la boutique compile toujours et l'ignore.
+ *
+ * L'app garde son VOCABULAIRE : on ré-exporte sous les noms d'ici. Ce qui
+ * change, c'est qu'elle n'en possède plus la forme — et c'est tout ce qu'on
+ * voulait changer.
  */
-export interface NavPreferences {
-  readonly catalogueView: CatalogueView | null;
-}
+// Seuls les noms dont CE fichier a besoin — les autres ne font que transiter,
+// et le ré-export ci-dessous suffit à les rendre.
+import type { CompanyView, ContactView, ProfileView } from '@lfd/contracts';
 
-export interface Account {
-  readonly profile: UserProfile;
-  readonly companies: readonly Company[];
-  /** Préférences d'affichage, toujours présentes (défauts `null` si jamais posées). */
-  readonly navPrefs: NavPreferences;
-}
+// La clause `from` est DÉLIBÉRÉE : elle dit la provenance sur la ligne même, et
+// c'est ce que lit la porte `lint:api-types` quand un service importe `Account`
+// d'ici. Un ré-export détaché (`export type { … }` sans `from`) rendrait le même
+// type, mais rendrait la chaîne illisible — pour la porte comme pour un humain.
+export type {
+  ProfileView as UserProfile,
+  ContactView as Contact,
+  KbisView as Kbis,
+  CompanyView as Company,
+  AccountView as Account,
+  NavPreferences,
+  CatalogueView,
+} from '@lfd/contracts';
+
+/** Les noms d'ici, pour le code de ce fichier. */
+type UserProfile = ProfileView;
+type Contact = ContactView;
+type Company = CompanyView;
 
 /** Ce qu'un formulaire de profil envoie. */
 export type UserProfileDraft = Pick<UserProfile, 'firstName' | 'lastName' | 'email' | 'phone'>;
@@ -179,6 +144,7 @@ const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
   pending: 'En attente de validation',
   active: 'Active',
   suspended: 'Suspendue',
+  terminated: 'Clôturée',
 };
 
 export function companyStatusLabel(status: CompanyStatus): string {
@@ -186,12 +152,14 @@ export function companyStatusLabel(status: CompanyStatus): string {
 }
 
 /** Libellés de rôle. */
-const ROLE_LABELS: Readonly<Record<CompanyRole, string>> = {
-  company_admin: 'Gestionnaire',
-  member: 'Membre',
+const ROLE_LABELS: Readonly<Record<CompanyMemberRole, string>> = {
+  owner: 'Détenteur',
+  admin: 'Gestionnaire',
+  orders: 'Commandes',
+  billing: 'Facturation',
 };
 
-export function companyRoleLabel(role: CompanyRole): string {
+export function companyRoleLabel(role: CompanyMemberRole): string {
   return ROLE_LABELS[role];
 }
 

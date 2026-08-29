@@ -23,7 +23,7 @@ function company(over: Partial<Company> = {}): Company {
     status: 'active',
     grantedTerms: [],
     requestedTerm: null,
-    role: 'company_admin',
+    role: 'admin',
     primaryContact: {
       id: null,
       firstName: 'Camille',
@@ -113,7 +113,7 @@ describe("section Préférences d'acheminement (client)", () => {
   });
 
   it('laisse le GESTIONNAIRE régler la préférence', () => {
-    const { section } = render({ role: 'company_admin' });
+    const { section } = render({ role: 'admin' });
 
     expect(section['canManage']()).toBe(true);
   });
@@ -121,7 +121,7 @@ describe("section Préférences d'acheminement (client)", () => {
   it('MONTRE sans laisser régler à un simple membre', () => {
     // Le serveur refuserait de toute façon (403) : l'écran dit la même chose
     // que lui, plutôt que d'offrir un geste qui échouera.
-    const { section } = render({ role: 'member' });
+    const { section } = render({ role: 'orders' });
 
     expect(section['canManage']()).toBe(false);
   });
@@ -158,7 +158,7 @@ describe("section Préférences d'acheminement (client)", () => {
     // l'écran — et à l'écran, les boutons portaient seuls la méthode. Un
     // simple membre lisait donc « Méthode habituelle » suivi de rien.
     const { host } = render({
-      role: 'member',
+      role: 'orders',
       fulfillmentPreference: {
         method: 'pickup',
         pickupAddressId: null,

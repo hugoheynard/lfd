@@ -4,6 +4,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { CompanyContactsCard, type CompanyContactCardView } from '@lfd/b2b-ui/company';
 
 import { EMPTY_CONTACT, type Company } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { AccountService } from '../../../account/account.service';
 import {
   ContactPanel,
@@ -15,7 +16,7 @@ import {
  * Section **Contacts** d'une entreprise côté **client** — _container_ de la
  * carte présentationnelle `@lfd/b2b-ui/company`. Il projette les contacts
  * (principal aplati + additionnels) vers le view-model neutre, calcule la
- * capacité (gestionnaire = `company_admin`) et câble les intentions de la carte
+ * capacité (gestionnaire = `owner` ou `admin`) et câble les intentions de la carte
  * vers `AccountService` et le panneau d'édition. Édition réservée au
  * gestionnaire — le backend l'impose de toute façon (mur) ; l'UI ne propose pas
  * ce qu'elle sait refusé.
@@ -33,7 +34,7 @@ export class CompanyContactsSection {
   readonly company = input.required<Company>();
 
   /** Seul le gestionnaire de l'entreprise gère ses contacts. */
-  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly canManage = computed(() => canManageCompany(this.company().role));
 
   /** Contacts projetés vers le view-model neutre de la carte. */
   protected readonly contacts = computed<CompanyContactCardView[]>(() => {

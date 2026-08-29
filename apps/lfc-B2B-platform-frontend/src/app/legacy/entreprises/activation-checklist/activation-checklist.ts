@@ -5,6 +5,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { AccountService } from '../../../account/account.service';
 import {
   BillingAddressPanel,
@@ -52,7 +53,7 @@ export class ActivationChecklist {
 
   /** Réservé au gestionnaire pendant l'onboarding (`pending`). */
   protected readonly visible = computed(
-    () => this.company().role === 'company_admin' && this.company().status === 'pending',
+    () => canManageCompany(this.company().role) && this.company().status === 'pending',
   );
 
   private readonly addressesView = this.addresses.view;

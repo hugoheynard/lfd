@@ -1,4 +1,13 @@
 export type {
+  CatalogueView,
+  NavPreferences,
+  ProfileView,
+  ContactView,
+  KbisView,
+  CompanyView,
+  AccountView,
+} from "./account.js";
+export type {
   CreatedIdResponse,
   InvitationSentResponse,
   IssuedLinkResponse,

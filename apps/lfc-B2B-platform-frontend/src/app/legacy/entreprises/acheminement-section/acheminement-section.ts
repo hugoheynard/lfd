@@ -13,6 +13,7 @@ import { CompanyFulfillmentCard } from '@lfd/b2b-ui/company';
 
 import { AccountService } from '../../../account/account.service';
 import type { Company } from '../../../account/account.model';
+import { canManageCompany } from '../../../account/account.model';
 import { AddressesService } from '../addresses.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
 
@@ -55,7 +56,7 @@ export class AcheminementSection {
   protected readonly saving = signal(false);
 
   /** Seul le gestionnaire règle la préférence ; les autres la lisent. */
-  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly canManage = computed(() => canManageCompany(this.company().role));
 
   constructor() {
     // Les adresses vivent dans leur propre service : la carte a besoin d'elles
