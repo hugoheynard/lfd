@@ -259,11 +259,11 @@ routage en production, et il porte la réécriture de l'IP cliente.
 
 ## 3bis. Les hooks — ce qui est attrapé avant le push
 
-| Hook                | Ce qu'il fait                              | Coût     |
-| ------------------- | ------------------------------------------ | -------- |
-| `pre-commit`        | Prettier sur ce qui est indexé             | ~1 s     |
-| `pre-push`          | les 14 portes du dépôt (`pnpm lint:gates`) | **~5 s** |
-| `pre-push` → `main` | + le verdict de la CI sur le commit promu  | ~1 s     |
+| Hook                | Ce qu'il fait                                     | Coût      |
+| ------------------- | ------------------------------------------------- | --------- |
+| `pre-commit`        | Prettier sur ce qui est indexé                    | ~1 s      |
+| `pre-push`          | les 14 portes + les typechecks de ce qui a changé | **~10 s** |
+| `pre-push` → `main` | + le verdict de la CI sur le commit promu         | ~1 s      |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
 push : y mettre autre chose que du formatage ferait contourner le hook au
@@ -271,9 +271,23 @@ push : y mettre autre chose que du formatage ferait contourner le hook au
 déploiements. C'est là que les portes valent leur seconde.
 
 Les quatorze gates lisent des fichiers, elles ne compilent rien : cinq secondes
-à elles toutes. Le typecheck et l'ESLint type-aware de `lfd-api` (près d'une
-minute) restent en CI, exactement pour la raison qui garde le `pre-commit`
-minuscule.
+à elles toutes. S'y ajoutent les **typechecks de ce qui a changé** — mesurés
+5,9 s (backend app), 2,4 s (ses specs), 3,5 s et 2,2 s (les deux fronts). Un
+push qui touche le backend coûte donc une dizaine de secondes en tout.
+
+Le typecheck des **specs** mérite sa place à lui seul : elles ont leur propre
+`tsconfig`, donc un `tsc --noEmit` ordinaire ne les lit pas. C'est ce trou qui a
+mis la CI au rouge le 2026-08-29, sur un `execute()` appelé avec un argument de
+trop — et fait mourir deux déploiements en attendant.
+
+⚠️ Un changement de `packages/**` déclenche **tous** les typechecks d'app : un
+contrat partagé qui bouge casse ses consommateurs. Le dépôt a déjà payé cette
+leçon — vert côté paquet, rouge côté app, découvert après le push.
+
+**Pas d'ESLint dans le hook**, et c'est un choix mesuré, pas un oubli : 22 s à
+lui seul sur `lfd-api`, et aucun échec de CI à son actif dans la journée qui a
+motivé tout ceci. Le formatage — l'autre casseur historique — est déjà pris au
+`pre-commit`. On paie pour ce qui casse, pas pour ce qui pourrait casser.
 
 **Deux niveaux, parce qu'il y a deux gestes.** `dev` ne déploie rien : la CI y
 tourne et c'est elle qui juge, le hook n'y fait donc que les portes. **`main`
