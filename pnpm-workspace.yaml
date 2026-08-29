@@ -8,7 +8,7 @@ packages:
 # bump the version in this one place. Exact pin (no caret) — fold-ng is pre-1.0,
 # so a minor can carry a breaking change; we adopt new versions deliberately.
 catalog:
-  fold-ng: 0.22.0
+  fold-ng: 0.22.1
   # Le navigateur des tests e2e front. Épinglé ici pour que toutes les apps qui
   # en prendront soient sur LA MÊME version : Playwright télécharge des binaires
   # de navigateur liés à sa version, et deux versions dans le dépôt en

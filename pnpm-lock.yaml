@@ -112,8 +112,8 @@ catalogs:
       specifier: 5.5.6
       version: 5.5.6
     fold-ng:
-      specifier: 0.22.0
-      version: 0.22.0
+      specifier: 0.22.1
+      version: 0.22.1
     globals:
       specifier: 16.5.0
       version: 16.5.0
@@ -257,7 +257,7 @@ importers:
         version: 6.1.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.22.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.22.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -381,7 +381,7 @@ importers:
         version: 9.13.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.22.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.22.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -657,7 +657,7 @@ importers:
         version: link:../contracts
       fold-ng:
         specifier: 'catalog:'
-        version: 0.22.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.22.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
         specifier: 'catalog:'
         version: 2.0.4
@@ -752,7 +752,7 @@ importers:
         version: link:../contracts
       fold-ng:
         specifier: 'catalog:'
-        version: 0.22.0(22cfa20ad0110e19ca254a01bdc8a053)
+        version: 0.22.1(22cfa20ad0110e19ca254a01bdc8a053)
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -5526,8 +5526,8 @@ packages:
   flatted@3.4.2:
     resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
 
-  fold-ng@0.22.0:
-    resolution: {integrity: sha512-rvFnrwDWBvj2jzrftrpMtNfIbpdlEdKJLSuax6pyvQyDymYjfGBJTkQhLySpHto6iYsLBhBt1lOJGq5gnnaZSg==}
+  fold-ng@0.22.1:
+    resolution: {integrity: sha512-vm87U4DuatoGN6ziW8QWbXpnhGa2y1drsXCfKEzltNFrGETYR9KlZ6VcJTfLVF+kscwWQD7deNbF1+PWa4YhfA==}
     peerDependencies:
       '@angular/common': ^22
       '@angular/core': ^22
@@ -12629,7 +12629,7 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  fold-ng@0.22.0(22cfa20ad0110e19ca254a01bdc8a053):
+  fold-ng@0.22.1(22cfa20ad0110e19ca254a01bdc8a053):
     dependencies:
       '@angular/common': 22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
