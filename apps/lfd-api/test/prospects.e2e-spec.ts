@@ -9,7 +9,7 @@
 import type { ProspectView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -64,19 +64,34 @@ async function seed(
   });
 }
 
+/**
+ * Les dates de la fixture, dites par leur INTENTION et non par un jour du
+ * calendrier (cf. `daysAgo`). La température d'un prospect se lit sur une
+ * fenêtre glissante de 14 jours ancrée à `now` : une date en dur y devient
+ * fausse le jour où le calendrier la dépasse, sans qu'une ligne ait bougé.
+ *
+ * Ce que la fixture veut dire : « il s'est inscrit il y a dix jours et a
+ * commandé il y a cinq » — les deux à l'intérieur de la fenêtre, ce qui est
+ * précisément ce qui le rend `hot`.
+ */
+const HOT_REGISTERED = daysAgo(10);
+const HOT_LAST_ORDER = daysAgo(5);
+const MID_REGISTERED = daysAgo(2);
+const CLIENT_ORDER = daysAgo(8);
+
 describe("GET /admin/prospects", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
     await ctx.http().get("/admin/prospects").expect(401);
   });
 
   it("dérive hot/mid du journal et exclut qui transacte pour une société", async () => {
-    await seed("user.registered", "u_mid", "2026-08-18T09:00:00.000Z", { email: "mid@resto.fr" });
-    await seed("user.registered", "u_hot", "2026-08-10T09:00:00.000Z", { email: "hot@resto.fr" });
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("user.registered", "u_mid", MID_REGISTERED, { email: "mid@resto.fr" });
+    await seed("user.registered", "u_hot", HOT_REGISTERED, { email: "hot@resto.fr" });
+    await seed("order.placed", "u_hot", HOT_LAST_ORDER, {
       totalCents: 633,
       companyId: null,
     });
-    await seed("order.placed", "u_client", "2026-08-12T09:00:00.000Z", {
+    await seed("order.placed", "u_client", CLIENT_ORDER, {
       totalCents: 5000,
       companyId: "company_1",
     });
@@ -91,7 +106,7 @@ describe("GET /admin/prospects", () => {
       email: "hot@resto.fr",
       orderCount: 1,
       totalCents: 633,
-      lastOrderAt: "2026-08-15T09:00:00.000Z",
+      lastOrderAt: HOT_LAST_ORDER,
     });
     expect(prospects[1]).toMatchObject({
       temperature: "mid",
@@ -101,7 +116,7 @@ describe("GET /admin/prospects", () => {
   });
 
   it("unifie les leads cold (agrégat) avec la projection entrante, hot → mid → cold", async () => {
-    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+    await seed("order.placed", "u_hot", HOT_LAST_ORDER, {
       totalCents: 900,
       companyId: null,
     });

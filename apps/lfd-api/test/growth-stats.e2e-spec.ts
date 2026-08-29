@@ -6,7 +6,7 @@
 import type { GrowthStatsView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
@@ -60,17 +60,29 @@ async function seed(
   });
 }
 
+/**
+ * Les dates de la fixture, dites par leur INTENTION (cf. `daysAgo`). Les KPI
+ * `hot`/`mid` dérivent d'une fenêtre glissante de 14 jours ancrée à `now` : une
+ * date en dur devient fausse le jour où le calendrier la dépasse, et le test
+ * échoue sans qu'une ligne ait bougé.
+ */
+const HOT_REGISTERED = daysAgo(10);
+const HOT_ORDER = daysAgo(5);
+const MID_REGISTERED = daysAgo(8);
+const COMPANY_DECLARED = daysAgo(12);
+const COMPANY_ACTIVATED = daysAgo(10);
+
 describe("GET /admin/growth/stats", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
     await ctx.http().get("/admin/growth/stats").expect(401);
   });
 
   it("dérive KPIs + entonnoirs du journal et des leads", async () => {
-    await seed("user.registered", "user", "u_hot", "2026-08-10T09:00:00.000Z", { email: "h@r.fr" });
-    await seed("order.placed", "user", "u_hot", "2026-08-15T09:00:00.000Z", { totalCents: 5000 });
-    await seed("user.registered", "user", "u_mid", "2026-08-12T09:00:00.000Z", { email: "m@r.fr" });
-    await seed("company.declared", "company", "c1", "2026-08-05T09:00:00.000Z", { via: "self" });
-    await seed("company.activated", "company", "c1", "2026-08-10T09:00:00.000Z");
+    await seed("user.registered", "user", "u_hot", HOT_REGISTERED, { email: "h@r.fr" });
+    await seed("order.placed", "user", "u_hot", HOT_ORDER, { totalCents: 5000 });
+    await seed("user.registered", "user", "u_mid", MID_REGISTERED, { email: "m@r.fr" });
+    await seed("company.declared", "company", "c1", COMPANY_DECLARED, { via: "self" });
+    await seed("company.activated", "company", "c1", COMPANY_ACTIVATED);
     await ctx.prisma.lead.create({
       data: { id: "lead_x", businessName: "Traiteur", status: "contacted" },
     });

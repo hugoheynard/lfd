@@ -441,6 +441,46 @@ verra jamais — le test ne prouve alors rien.
 
 Ne jamais committer de test qui échoue, ni de test `skip` sans TODO daté.
 
+#### 🔴 Aucune date absolue dans une fixture
+
+Une date écrite en dur (`"2026-08-15T09:00:00.000Z"`) dans une donnée de test
+est une **bombe à retardement** : le test est vert jusqu'au jour où le calendrier
+franchit un seuil, puis rouge sans qu'une ligne de code ait bougé. Ce jour-là,
+rien dans le diff n'explique la panne — et on cherche le bug dans le produit.
+
+Ce n'est pas une hypothèse. Le 2026-08-29, `cockpit` et `recompute` sont passées
+au rouge d'elles-mêmes : elles semaient une commande au 2026-08-15 et attendaient
+le coup `lock_in`. La fenêtre de momentum fait 14 jours glissants ; la date en est
+sortie pendant la nuit, le lead est devenu `dormant`, et le coup attendu est
+devenu `win_back`. Deux suites vertes la veille, rouges le matin, sur du code
+inchangé.
+
+**La règle** : une fixture dit une INTENTION relative à maintenant, jamais un
+jour du calendrier. Le harnais e2e expose `daysAgo(n)` pour ça.
+
+```ts
+// ❌ « le 15 août » — vrai pendant deux semaines, faux ensuite
+await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", { … });
+
+// ✅ « il a commandé récemment » — vrai tous les jours
+const HOT_LAST_ORDER = daysAgo(5);
+await seed("order.placed", "u_hot", HOT_LAST_ORDER, { … });
+expect(view).toMatchObject({ lastOrderAt: HOT_LAST_ORDER });
+```
+
+Une assertion sur la date vise **la même constante** que la fixture : les deux ne
+peuvent alors plus diverger.
+
+**La seule exception**, et elle est étroite : quand les dates sont le SUJET du
+test et ne sont comparées qu'**entre elles** — un chevauchement de deux fenêtres
+de validité tarifaire, un tri chronologique. Le critère est simple : _le code
+testé compare-t-il cette date à l'horloge ?_ Si oui, elle doit être relative. Si
+elle n'est comparée qu'à une autre date de la fixture, elle peut rester absolue.
+
+⚠️ Attention au cas mixte : une fenêtre de validité écrite en absolu devient
+piégeuse dès que le test vérifie aussi qu'elle est **active maintenant**. C'est
+la même bombe, déguisée en donnée métier.
+
 ---
 
 ## 6. Qualité de code
