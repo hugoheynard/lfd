@@ -83,7 +83,7 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Quatorze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Quinze portes qui balaient TOUT le dépôt, et non l'app d'à côté.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -201,6 +201,14 @@ jobs:
       # dissout sans que rien ne rougisse.
       - name: "Gate : chaque suite e2e a sa durée"
         run: pnpm lint:e2e-durations
+
+      # La forme d'une réponse d'API appartient à `@lfd/contracts`. Redéclarée
+      # dans un front, elle en devient une COPIE — et une copie ne suit pas : le
+      # backend ajoute un champ, le front compile toujours, et l'écran affiche
+      # `undefined`. Le compilateur ne peut rien dire, on ne lui a jamais appris
+      # que les deux formes parlaient de la même chose.
+      - name: "Gate : les types d'API viennent des contrats"
+        run: pnpm lint:api-types
 
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.

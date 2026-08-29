@@ -78,7 +78,7 @@ qu'une nouvelle sur un schéma à moitié migré.
 | Job              | Périmètre                                                         |
 | ---------------- | ----------------------------------------------------------------- |
 | `changes`        | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`          | les 14 portes qui balaient tout le dépôt — toujours               |
+| `gates`          | les 15 portes qui balaient tout le dépôt — toujours               |
 | `packages`       | les paquets partagés, en premier et à part                        |
 | `b2b-checks`     | typechecks, lint et les 207 suites unitaires du backend           |
 | `b2b-backend`    | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
@@ -86,6 +86,28 @@ qu'une nouvelle sur un schéma à moitié migré.
 | `front-platform` | la boutique client — typecheck, tests, build AOT                  |
 | `gateway`        | typecheck, lint et 8 tests de routage du Worker d'entrée          |
 | `ci-gate`        | échoue si l'un d'eux est rouge — **le seul statut requis**        |
+
+### Les types d'API viennent des contrats
+
+La forme d'une réponse d'API a un propriétaire : `@lfd/contracts`. Quand un front
+la redéclare, il en fait une **copie** — et une copie ne suit pas. Le backend
+ajoute un champ, le retire, change un `string` en `string | null` : le front
+continue de compiler, tranquillement faux, jusqu'à ce que l'écran affiche
+`undefined` en production. Le compilateur ne peut rien dire, parce qu'on ne lui
+a jamais appris que les deux formes parlaient de la même chose.
+
+`lint:api-types` exige donc que le paramètre de type d'un appel HTTP vienne d'un
+paquet `@lfd/*`. Un objet anonyme (`post<{ id: string }>`) est refusé au même
+titre : une forme anonyme est une forme redéclarée, elle se passe seulement de
+nom.
+
+**État au 2026-08-29** : 99 appels conformes, **32 dettes**. Elles sont
+DÉCLARÉES fichier par fichier dans la porte plutôt que tolérées en silence, et
+la porte refuse que le solde monte. Elle refuse aussi qu'une tolérance devenue
+inutile survive — sinon la dette affichée cesserait de dire la dette réelle.
+
+Rembourser une ligne, c'est déplacer la forme dans `@lfd/contracts` et
+l'importer des deux côtés. Ça se fait un fichier à la fois.
 
 ### Le périmètre — n'exécuter que ce que le commit concerne
 
@@ -262,7 +284,7 @@ routage en production, et il porte la réécriture de l'IP cliente.
 | Hook                | Ce qu'il fait                                     | Coût      |
 | ------------------- | ------------------------------------------------- | --------- |
 | `pre-commit`        | Prettier sur ce qui est indexé                    | ~1 s      |
-| `pre-push`          | les 14 portes + les typechecks de ce qui a changé | **~10 s** |
+| `pre-push`          | les 15 portes + les typechecks de ce qui a changé | **~10 s** |
 | `pre-push` → `main` | + le verdict de la CI sur le commit promu         | ~1 s      |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
@@ -270,7 +292,7 @@ push : y mettre autre chose que du formatage ferait contourner le hook au
 `--no-verify`. Un **push**, lui, engage — et sur `main` il déclenche les
 déploiements. C'est là que les portes valent leur seconde.
 
-Les quatorze gates lisent des fichiers, elles ne compilent rien : cinq secondes
+Les quinze gates lisent des fichiers, elles ne compilent rien : cinq secondes
 à elles toutes. S'y ajoutent les **typechecks de ce qui a changé** — mesurés
 5,9 s (backend app), 2,4 s (ses specs), 3,5 s et 2,2 s (les deux fronts). Un
 push qui touche le backend coûte donc une dizaine de secondes en tout.
