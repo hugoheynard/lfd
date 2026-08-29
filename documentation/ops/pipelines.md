@@ -109,6 +109,34 @@ inutile survive — sinon la dette affichée cesserait de dire la dette réelle.
 Rembourser une ligne, c'est déplacer la forme dans `@lfd/contracts` et
 l'importer des deux côtés. Ça se fait un fichier à la fois.
 
+### Les budgets de bundle — une alarme, pas un décor
+
+La boutique dépassait son budget d'initialisation **en permanence** : 1,21 Mo
+contre 1,05 Mo annoncé. Un budget toujours dépassé n'est plus un budget, c'est
+un avertissement qu'on apprend à ne plus lire — et le jour où une vraie
+régression ajoute 300 ko, elle se noie dans le bruit qu'on ignorait déjà.
+
+**Avant de monter le chiffre, on a vérifié qu'il n'y avait rien d'accidentel
+dedans**, parce que le dépôt a déjà payé une fois un import de barrel qui tirait
+zod (+380 ko). Contrôlé sur le bundle construit : pas de zod dans `main`, Sentry
+en lazy, une route = un chunk. Le poids est celui d'une vraie application.
+
+|                             | avant    | après        |
+| --------------------------- | -------- | ------------ |
+| initial · avertissement     | 1 050 ko | **1 350 ko** |
+| initial · erreur            | 1 300 ko | 1 600 ko     |
+| style de composant · avert. | 7 ko     | **10 ko**    |
+
+Le seuil d'avertissement laisse ~140 ko de marge sur les 1 210 ko réels : de
+quoi absorber deux écrans, pas une régression. **Falsifié** : ramené à 1 150 ko,
+le build redit « exceeded ». L'alarme sonne encore.
+
+🟡 Le chiffre qui compte pour un client sur son téléphone n'est pas celui-là :
+c'est la **taille transférée**, 266 ko. Les budgets Angular mesurent le brut,
+pas le compressé. 266 ko est acceptable pour cette surface, sans être bon — si
+l'on veut descendre un jour, le levier est `main.js` (891 ko brut), qui porte le
+framework et tout ce qui est importé sans être différé.
+
 ### Une porte se branche le jour où elle est écrite
 
 `lint:no-direct-env` a existé **des mois sans tourner nulle part** — ni en CI,
