@@ -31,16 +31,66 @@ set -e
 echo "→ portes du dépôt…"
 pnpm lint:gates
 
+# ── Les typechecks, SUR CE QUI A CHANGÉ ─────────────────────────────────────
+#
+# Mesurés sur une machine de dev : 5,9 s pour l'app backend, 2,4 s pour ses
+# specs, 3,5 s et 2,2 s pour les deux fronts. Une dizaine de secondes en tout,
+# et c'est la classe d'échec qui a le plus cassé la CI — le 2026-08-29, le
+# typecheck des SPECS de `lfd-api` l'a mise au rouge sur un `execute()` appelé
+# avec un argument de trop. Les specs ont leur PROPRE tsconfig, donc un
+# `tsc --noEmit` ordinaire ne les lit pas : exactement le trou qu'une porte doit
+# couvrir.
+#
+# ⚠️ Pas d'ESLint ici, et c'est un choix MESURÉ, pas une omission : 22 s à lui
+# seul sur `lfd-api`, et aucun échec de CI à son actif dans la journée qui a
+# motivé ce hook. Le formatage — l'autre casseur historique — est déjà pris au
+# `pre-commit`. On paie pour ce qui casse, pas pour ce qui pourrait casser.
+changed_files() {
+  # Le sha distant vaut quarante zéros quand la branche n'existe pas encore en
+  # face : on compare alors à `origin/main`, la seule base commune sûre.
+  case "$1" in
+    0000000000000000000000000000000000000000 | "") git diff --name-only origin/main "$2" ;;
+    *) git diff --name-only "$1" "$2" ;;
+  esac
+}
+
+typecheck_if_touched() {
+  # $1 = préfixe de chemin · $2 = libellé · $3.. = commande
+  prefix="$1"
+  label="$2"
+  shift 2
+  # `packages/` déclenche TOUS les typechecks : un contrat partagé qui change
+  # casse ses consommateurs, et c'est précisément là que le compilateur sert. Le
+  # dépôt a déjà payé cette leçon — vert côté paquet, rouge côté app, découvert
+  # après le push.
+  if printf '%s\n' "$CHANGED" | grep -q -e "^$prefix" -e "^packages/"; then
+    echo "→ typecheck $label…"
+    "$@"
+  fi
+}
+
 # Git donne sur stdin, une ligne par ref poussée :
 #   <ref locale> <sha local> <ref distante> <sha distant>
 # On ne lit QUE la ref distante : c'est elle qui dit où ça atterrit. Pousser
 # `dev:main` promeut, pousser `dev` ne promeut pas — la ref locale mentirait.
 promotion=""
-while read -r _local_ref local_sha remote_ref _remote_sha; do
+CHANGED=""
+while read -r _local_ref local_sha remote_ref remote_sha; do
+  CHANGED="$CHANGED
+$(changed_files "$remote_sha" "$local_sha")"
   case "$remote_ref" in
     refs/heads/main) promotion="$local_sha" ;;
   esac
 done
+
+typecheck_if_touched "apps/lfd-api/" "backend (app)" \
+  pnpm --filter lfd-api exec tsc --noEmit
+typecheck_if_touched "apps/lfd-api/" "backend (specs)" \
+  pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
+typecheck_if_touched "apps/lfc-B2B-admin-frontend/" "front admin" \
+  pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
+typecheck_if_touched "apps/lfc-B2B-platform-frontend/" "front boutique" \
+  pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
 
 if [ -z "$promotion" ]; then
   exit 0
