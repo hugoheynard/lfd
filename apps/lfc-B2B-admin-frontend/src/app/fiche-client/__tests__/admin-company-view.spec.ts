@@ -22,6 +22,8 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     requestedTerm: null,
     primaryContact: {
       id: null,
+      // L'API renvoie le rôle du contact ; la fixture le portait pas.
+      role: null,
       firstName: 'Camille',
       lastName: 'Rousseau',
       fonction: 'Gérante',

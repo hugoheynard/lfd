@@ -17,6 +17,8 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     requestedTerm: null,
     primaryContact: {
       id: null,
+      // L'API renvoie le rôle du contact ; la fixture le portait pas.
+      role: null,
       firstName: 'Claire',
       lastName: 'Martin',
       fonction: '',

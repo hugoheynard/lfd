@@ -38,7 +38,6 @@ import { dirname, join } from "node:path";
 
 /** La dette héritée, fichier par fichier. Ce nombre ne peut que DESCENDRE. */
 const ALLOWANCE = {
-  "apps/lfc-B2B-admin-frontend/src/app/comptes-clients/admin-companies.service.ts": 4,
   "apps/lfc-B2B-admin-frontend/src/app/pim/channels/shopify-channel-api.ts": 6,
 };
 

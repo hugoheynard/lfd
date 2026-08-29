@@ -5,8 +5,14 @@ import type { FoldViewToggleOption } from 'fold-ng';
  * - `cards` : grille de cartes riches (découverte visuelle, défaut desktop) ;
  * - `shelves` : rayons horizontaux par catégorie (découverte) ;
  * - `list` : liste order-pad compacte par catégorie (réappro dense).
+ *
+ * La forme vient des CONTRATS : la préférence est persistée côté API
+ * (`nav_prefs`), donc l'union voyage. Elle était écrite trois fois — ici, dans
+ * un value-object backend, et dans les contrats. Ce fichier garde ce qui est
+ * bien à lui : les SEGMENTS du sélecteur, qui sont de l'écran.
  */
-export type CatalogueView = 'cards' | 'shelves' | 'list';
+export type { CatalogueView } from '@lfd/contracts';
+import type { CatalogueView } from '@lfd/contracts';
 
 /** Segments du sélecteur de vue **desktop** (fold-view-toggle) : les trois vues. */
 export const CATALOGUE_VIEW_OPTIONS: readonly FoldViewToggleOption[] = [

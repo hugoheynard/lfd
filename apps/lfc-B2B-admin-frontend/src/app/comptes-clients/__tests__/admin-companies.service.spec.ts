@@ -20,6 +20,8 @@ const company: AdminCompany = {
   requestedTerm: null,
   primaryContact: {
     id: null,
+    // L'API renvoie le rôle du contact ; la fixture le portait pas.
+    role: null,
     firstName: 'Léa',
     lastName: 'Martin',
     fonction: 'Gérante',

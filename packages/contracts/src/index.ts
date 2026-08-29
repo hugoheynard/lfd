@@ -1,4 +1,20 @@
 export type {
+  CompanyOwnerView,
+  AdminCompanyView,
+  AdminCompanyDetailView,
+  AdminKbisView,
+  StaffActorView,
+  AdminCompanyFicheView,
+  ActivationTraceView,
+  ActivationBlocker,
+  ActivationCheck,
+  ActivationGate,
+  HolderOutcome,
+  CompanyOpened,
+  HolderAttached,
+  SuspensionCause,
+} from "./admin-company.js";
+export type {
   CatalogueView,
   NavPreferences,
   ProfileView,

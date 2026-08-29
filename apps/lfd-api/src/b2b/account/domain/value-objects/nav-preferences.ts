@@ -8,16 +8,22 @@
  * choix »), pour ne jamais renvoyer au front une valeur qu'il ne saurait lire.
  */
 
-/** Comment le client affiche le catalogue (miroir de l'union front). */
-export type CatalogueView = "cards" | "shelves" | "list";
+/**
+ * La forme vient des CONTRATS — elle était écrite trois fois : ici, dans les
+ * contrats, et dans `legacy/catalogue` côté boutique. Trois listes de trois
+ * mots à tenir d'accord, dont le commentaire d'origine disait déjà qu'elle
+ * était « miroir de l'union front ». Un miroir qu'on entretient à la main
+ * finit par renvoyer autre chose.
+ *
+ * Ce fichier garde ce qui lui appartient VRAIMENT : la garde de type et la
+ * relecture défensive de la colonne JSON. Ça, c'est du comportement, et le
+ * comportement ne descend pas dans un paquet de types.
+ */
+import type { CatalogueView, NavPreferences } from "@lfd/contracts";
+
+export type { CatalogueView, NavPreferences };
 
 const CATALOGUE_VIEWS: readonly CatalogueView[] = ["cards", "shelves", "list"];
-
-/** Le sac de préférences, tel que `GET /me` le renvoie. */
-export interface NavPreferences {
-  /** Vue choisie ; `null` = aucun choix explicite (le front applique son défaut). */
-  readonly catalogueView: CatalogueView | null;
-}
 
 /** Aucune préférence encore posée. */
 export const EMPTY_NAV_PREFERENCES: NavPreferences = { catalogueView: null };

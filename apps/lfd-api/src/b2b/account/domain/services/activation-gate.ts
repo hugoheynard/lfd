@@ -1,46 +1,11 @@
+import type { ActivationBlocker, ActivationCheck, ActivationGate } from "@lfd/contracts";
+
+/** Le verdict vit dans les contrats — l'écran staff en rendait sa transcription. */
+export type { ActivationBlocker, ActivationCheck, ActivationGate };
+
 import type { ActivationPiece } from "@lfd/contracts";
 
 import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
-
-/**
- * Ce qui **empêche** d'activer un compte. Des codes, pas des phrases : le
- * serveur tranche, l'écran formule. Mélanger les deux ferait de chaque
- * reformulation un déploiement backend, et d'une traduction une migration.
- */
-export type ActivationBlocker =
-  "identite_legale" | "detenteur" | "telephone" | "vat" | "facturation";
-
-/** Une pièce du dossier, telle que la fiche la montre. */
-export interface ActivationCheck {
-  readonly piece: ActivationPiece;
-  /**
-   * Cette pièce **empêche-t-elle** l'activation ? Faux = on la réclame quand
-   * même, elle ne gate rien (le KBIS, aujourd'hui).
-   */
-  readonly blocking: boolean;
-  readonly done: boolean;
-}
-
-/**
- * Le **verdict** d'activation d'un compte : la seule autorité.
- *
- * Il existait en deux exemplaires — la porte serveur, et sa transcription dans
- * l'écran staff — et les deux ont dérivé : la porte lisait « KBIS vérifié » là
- * où l'écran lisait « KBIS déposé », donc « Activer le compte » s'allumait sur
- * un dossier que le serveur refusait par un 409. Une règle écrite deux fois est
- * une règle qui finira par se contredire ; celle-ci n'est plus écrite qu'ici, et
- * l'écran ne fait que la rendre.
- *
- * Pur : fiche → verdict. Ni Nest, ni Prisma, ni horloge, **ni configuration**.
- */
-export interface ActivationGate {
-  /** Le serveur accepterait-il d'activer maintenant ? */
-  readonly canActivate: boolean;
-  /** Ce qui s'y oppose, dans l'ordre où on le corrigerait. */
-  readonly blocking: readonly ActivationBlocker[];
-  /** L'état pièce par pièce — de quoi dresser la liste, sans la redéduire. */
-  readonly checklist: readonly ActivationCheck[];
-}
 
 /**
  * Les pièces demandées, et **lesquelles bloquent** — écrit ici, en dur.
