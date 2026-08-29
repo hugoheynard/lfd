@@ -56,11 +56,9 @@ export interface OrdersCopy {
   readonly statusDelivered: string;
   readonly payAccount: string;
   readonly payCard: string;
-  readonly payDue: string;
   /** Le règlement dit aussi OÙ : « portée à la facture de mars ». */
   readonly payAccountNote: string;
   readonly payCardNote: string;
-  readonly payDueNote: string;
   readonly detailHead: string;
   readonly detailSlot: string;
   readonly detailPayment: string;
@@ -130,10 +128,8 @@ export const ORDERS_FR: OrdersCopy = {
   statusDelivered: 'Livrée',
   payAccount: 'Au compte',
   payCard: 'Réglée · CB',
-  payDue: 'À régler',
   payAccountNote: 'portée à la facture de mars',
   payCardNote: 'réglée à la commande',
-  payDueNote: 'sur la facture FA‑2026‑0212',
   detailHead: 'Le détail',
   detailSlot: 'Créneau',
   detailPayment: 'Règlement',
@@ -204,10 +200,8 @@ export const ORDERS_EN: OrdersCopy = {
   statusDelivered: 'Delivered',
   payAccount: 'On account',
   payCard: 'Paid · card',
-  payDue: 'To settle',
   payAccountNote: 'carried to the March invoice',
   payCardNote: 'paid at checkout',
-  payDueNote: 'on invoice FA‑2026‑0212',
   detailHead: 'The detail',
   detailSlot: 'Slot',
   detailPayment: 'Settlement',
@@ -278,10 +272,8 @@ export const ORDERS_IT: OrdersCopy = {
   statusDelivered: 'Consegnato',
   payAccount: 'Sul conto',
   payCard: 'Pagato · carta',
-  payDue: 'Da saldare',
   payAccountNote: 'riportato sulla fattura di marzo',
   payCardNote: 'pagato all’ordine',
-  payDueNote: 'sulla fattura FA‑2026‑0212',
   detailHead: 'Il dettaglio',
   detailSlot: 'Fascia oraria',
   detailPayment: 'Pagamento',

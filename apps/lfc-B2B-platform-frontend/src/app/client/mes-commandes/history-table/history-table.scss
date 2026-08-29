@@ -92,8 +92,7 @@
   color: var(--fold-color-info-text);
 }
 
-.tag[data-status='route'],
-.tag[data-payment='due'] {
+.tag[data-status='route'] {
   background: var(--fold-color-warning-surface);
   color: var(--fold-color-warning-text);
 }

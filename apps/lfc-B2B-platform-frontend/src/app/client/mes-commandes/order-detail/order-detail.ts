@@ -45,7 +45,6 @@ export class OrderDetail {
     const labels = {
       account: copy.payAccount,
       card: copy.payCard,
-      due: copy.payDue,
     };
     return labels[this.order().payment];
   });
@@ -55,7 +54,6 @@ export class OrderDetail {
     const notes = {
       account: copy.payAccountNote,
       card: copy.payCardNote,
-      due: copy.payDueNote,
     };
     return notes[this.order().payment];
   });

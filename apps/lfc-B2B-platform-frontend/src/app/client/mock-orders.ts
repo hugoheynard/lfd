@@ -54,7 +54,16 @@ export interface TrackedOrder {
 
 export type OrderStatus = 'ready' | 'route' | 'done' | 'delivered';
 export type OrderOrigin = '' | 'recurring' | 'phone';
-export type OrderPayment = 'account' | 'card' | 'due';
+/**
+ * Comment la commande est réglée — et il n'y a QUE ces deux-là.
+ *
+ * Une commande n'attend jamais son règlement : ou elle part au compte, et c'est
+ * la facture du mois qui la porte, ou elle a été payée par carte au moment où
+ * elle a été passée. Un troisième état « à régler » décrirait une commande
+ * livrée que personne n'a payée — ça n'existe pas dans ce commerce. Ce qui
+ * attend un règlement, c'est une FACTURE, et ça se lit dans `mes-factures`.
+ */
+export type OrderPayment = 'account' | 'card';
 
 /** Une commande PASSÉE, telle que le tableau la compare. */
 export interface HistoryOrder {
@@ -240,7 +249,7 @@ export const MOCK_HISTORY: readonly HistoryOrder[] = [
     pieces: 5,
     total: 68.0,
     status: 'delivered',
-    payment: 'due',
+    payment: 'account',
     origin: 'phone',
     org: 'Refuge de la Balme',
     who: 'Karim Bel',

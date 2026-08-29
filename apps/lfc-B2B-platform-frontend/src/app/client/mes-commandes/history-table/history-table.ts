@@ -133,7 +133,6 @@ export class HistoryTable {
     const labels: Record<OrderPayment, string> = {
       account: copy.payAccount,
       card: copy.payCard,
-      due: copy.payDue,
     };
     return labels[payment];
   }
