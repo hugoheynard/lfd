@@ -7,7 +7,13 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import {
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
+  FoldDataTableRowDetailDirective,
+  FoldIconComponent,
+  type FoldTableColumn,
+} from 'fold-ng';
 
 import { formatEuro } from '../../cart-total';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -25,18 +31,25 @@ const STARS = [1, 2, 3, 4, 5] as const;
  * compte multi-espaces doit pouvoir dire *qui* a commandé et *pour quelle
  * maison*.
  *
- * Le dépli ouvre DANS le tableau. Un écran de détail à ouvrir puis à quitter
- * ferait perdre la place qu'on vient de trouver ; ici la ligne s'écarte et
- * l'historique reste sous les doigts.
+ * Le tableau lui-même est celui du système. Il l'a remplacé au moment où
+ * `fold-data-table` a su ouvrir un tiroir de ligne : jusque-là il manquait LA
+ * décision de cet écran — déplier dans la liste plutôt que naviguer — et une
+ * table sans elle n'aurait pas été la même table. Ce composant ne garde donc
+ * que ce qui lui appartient : ses colonnes, ses pastilles, sa note.
  *
- * Sur un téléphone, le même tableau se replie en cartes : l'en-tête disparaît et
- * chaque cellule reprend son libellé. Un seul balisage — deux tables jumelles
- * auraient divergé au premier ajout de colonne.
+ * Ce qu'on gagne au change et qu'on ne réécrit plus : l'en-tête collant, la
+ * première colonne en `<th scope="row">`, la navigation aux flèches entre les
+ * lignes, et le repli en cartes sur écran étroit.
  */
 @Component({
   selector: 'app-history-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
+    FoldDataTableRowDetailDirective,
+    FoldIconComponent,
+  ],
   templateUrl: './history-table.html',
   styleUrl: './history-table.scss',
 })
@@ -49,31 +62,44 @@ export class HistoryTable {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly stars = STARS;
 
-  /** La commande dépliée, par sa référence. Une seule à la fois. */
-  private readonly opened = signal<string | null>(null);
-
   /** La note donnée, par commande — la maquette la garde le temps de la visite. */
   private readonly rated = signal<Readonly<Record<string, number>>>({});
 
-  protected readonly rows = computed(() =>
-    this.orders().map((order) => ({
-      order,
-      total: formatEuro(order.total),
-      pieces: this.t().orders.pieces.replace('{n}', String(order.pieces)),
-      status: this.statusLabel(order.status),
-      payment: this.paymentLabel(order.payment),
-      paymentNote: this.paymentNote(order.payment),
-      open: this.opened() === order.reference,
-      rate: this.rated()[order.reference] ?? 0,
-    })),
-  );
+  protected readonly columns = computed<readonly FoldTableColumn[]>(() => {
+    const copy = this.t().orders;
+    return [
+      { key: 'reference', label: copy.colOrder },
+      { key: 'by', label: copy.colBy },
+      { key: 'mode', label: copy.colMode },
+      { key: 'date', label: copy.colDate },
+      { key: 'status', label: copy.colStatus },
+      { key: 'payment', label: copy.colPayment },
+      { key: 'total', label: copy.colTotal, align: 'right' },
+    ];
+  });
 
-  protected toggle(reference: string): void {
-    this.opened.update((current) => (current === reference ? null : reference));
+  /** Les libellés du châssis, dans la langue de l'app — pas ceux de fold. */
+  protected readonly labels = computed(() => ({
+    expandRow: this.t().orders.expand,
+    collapseRow: this.t().orders.collapse,
+  }));
+
+  protected readonly key = (order: HistoryOrder): string => order.reference;
+
+  protected pieces(order: HistoryOrder): string {
+    return this.t().orders.pieces.replace('{n}', String(order.pieces));
+  }
+
+  protected total(order: HistoryOrder): string {
+    return formatEuro(order.total);
   }
 
   protected rate(reference: string, value: number): void {
     this.rated.update((all) => ({ ...all, [reference]: value }));
+  }
+
+  protected rating(reference: string): number {
+    return this.rated()[reference] ?? 0;
   }
 
   /**
@@ -94,7 +120,7 @@ export class HistoryTable {
     return this.t().orders.rateStar.replace('{n}', String(value));
   }
 
-  private statusLabel(status: OrderStatus): string {
+  protected statusLabel(status: OrderStatus): string {
     const copy = this.t().orders;
     const labels: Record<OrderStatus, string> = {
       ready: copy.statusReady,
@@ -105,7 +131,7 @@ export class HistoryTable {
     return labels[status];
   }
 
-  private paymentLabel(payment: OrderPayment): string {
+  protected paymentLabel(payment: OrderPayment): string {
     const copy = this.t().orders;
     const labels: Record<OrderPayment, string> = {
       account: copy.payAccount,
@@ -115,7 +141,7 @@ export class HistoryTable {
     return labels[payment];
   }
 
-  private paymentNote(payment: OrderPayment): string {
+  protected paymentNote(payment: OrderPayment): string {
     const copy = this.t().orders;
     const notes: Record<OrderPayment, string> = {
       account: copy.payAccountNote,

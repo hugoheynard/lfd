@@ -1,92 +1,11 @@
-/* Le tableau se lit en colonnes au bureau et en cartes sur un téléphone, avec
-   UN SEUL balisage : `thead` disparaît, chaque rangée devient une grille et les
-   cellules reprennent leur libellé. Deux tables jumelles auraient divergé au
-   premier ajout de colonne. */
+/* Le châssis du tableau appartient au système : en-tête collant, repli en
+   cartes, tiroir, navigation clavier. Ce qui reste ici, ce sont les CELLULES —
+   le balisage de cet écran, dans son encapsulation à lui. */
 :host {
   display: block;
 }
 
-.tbl {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* ── En pile (téléphone) ───────────────────────────────────────────────── */
-
-thead {
-  display: none;
-}
-
-/* En pile, une commande est une CARTE — au même titre qu'un suivi, et donc avec
-   le même matériau : rayon d'objet et ombre portée. Elle était réglée sur le
-   rayon des éléments INTÉRIEURS à une carte, sans ombre : posée sous le puits,
-   elle se lisait comme un encart et non comme une commande. */
-.group {
-  display: block;
-  margin-bottom: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--lfc-radius-2xl);
-  background: var(--fold-color-surface-card);
-  box-shadow: var(--lfc-shadow-card);
-  overflow: clip;
-}
-
-/* LA CARTE, en cinq rangées, et chaque cellule est PLACÉE.
-
-   Elle ne l'était pas : trois cellules portaient `grid-column: 1`, les quatre
-   autres se laissaient placer automatiquement. Le placement automatique remplit
-   les trous laissés par les cellules explicites — statut, règlement et total
-   atterrissaient donc là où il restait de la place, c'est-à-dire pas au même
-   endroit d'une commande à l'autre selon qu'elle portait ou non une pastille
-   d'origine. Mélanger les deux modes dans une même grille ne se rattrape pas :
-   il faut placer tout le monde.
-
-   La lecture va du repère à la somme : le numéro, qui a commandé, comment,
-   quand, puis l'état et le montant sur la même ligne — c'est le couple qu'on
-   compare. */
-.row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 5px var(--fold-space-sm);
-  align-items: center;
-  padding: var(--fold-space-md);
-}
-
-.cell {
-  min-width: 0;
-  padding: 0;
-}
-
-.caret {
-  grid-area: 1 / 3 / 2 / 4;
-  justify-self: end;
-}
-
-/* Les deux pastilles à gauche, le total à droite : l'état et la somme se lisent
-   ensemble. */
-.status {
-  grid-area: 5 / 1 / 6 / 2;
-  justify-self: start;
-  padding-top: var(--fold-space-xs);
-}
-
-.pay {
-  grid-area: 5 / 2 / 6 / 3;
-  justify-self: start;
-  padding-top: var(--fold-space-xs);
-}
-
 .ref {
-  grid-area: 1 / 1 / 2 / 3;
   display: flex;
   align-items: center;
   gap: var(--fold-space-xs);
@@ -94,7 +13,6 @@ thead {
 
 .ref-num {
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
   font-weight: var(--lfc-weight-black);
   font-variant-numeric: tabular-nums;
 }
@@ -109,10 +27,11 @@ thead {
   white-space: nowrap;
 }
 
-.by {
-  grid-area: 2 / 1 / 3 / -1;
+/* Deux étages dans une cellule. */
+.stack {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .org {
@@ -124,48 +43,29 @@ thead {
   color: var(--lfc-color-text-subtle);
 }
 
-.who {
+.who,
+.mode-label,
+.mode-pieces,
+.date {
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
-}
-
-.mode {
-  grid-area: 3 / 1 / 4 / -1;
-  display: flex;
-  flex-direction: column;
 }
 
 .mode-label {
-  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-secondary);
 }
 
-.mode-pieces {
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.date {
-  grid-area: 4 / 1 / 5 / -1;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-/* Le total garde le bord droit — c'est la colonne qu'on parcourt du pouce quand
-   on cherche une commande par son montant. Et il ne se coupe JAMAIS sur deux
-   lignes : c'est un bug, pas une adaptation. */
+/* Le total ne se coupe JAMAIS sur deux lignes : c'est un bug, pas une
+   adaptation. */
 .total {
-  grid-area: 5 / 3 / 6 / 4;
-  justify-self: end;
-  padding-top: var(--fold-space-xs);
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
   font-weight: var(--lfc-weight-black);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  text-align: right;
 }
 
+/* Les deux familles de pastilles du back-office, reprises telles quelles : le
+   statut d'un côté, le règlement de l'autre. */
 .tag {
   display: inline-block;
   padding: 3px 9px;
@@ -178,8 +78,6 @@ thead {
   white-space: nowrap;
 }
 
-/* Les deux familles de pastilles du back-office, reprises telles quelles : le
-   statut d'un côté, le règlement de l'autre. */
 .tag[data-status='ready'],
 .tag[data-payment='account'] {
   background: var(--fold-color-info-surface);
@@ -199,38 +97,11 @@ thead {
   color: var(--fold-color-success-text);
 }
 
-.toggle {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text-muted);
-  cursor: pointer;
-}
+/* ── Le tiroir ─────────────────────────────────────────────────────────── */
 
-/* ── Le dépli ──────────────────────────────────────────────────────────── */
-
-.detail-row {
-  display: block;
-}
-
-/* Le dépli est un TIROIR dans la carte : c'est lui qui se creuse, pas la carte
-   qui change de matière. Repeindre la carte entière lui faisait changer de
-   nature au clic — on ne savait plus si on regardait le même objet. */
 .detail {
-  display: block;
-  padding: 0 var(--fold-space-md) var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border-subtle);
-  background: var(--fold-color-surface-sunken);
-}
-
-.detail-grid {
   display: grid;
   gap: var(--fold-space-md);
-  padding-top: var(--fold-space-md);
 }
 
 .facts {
@@ -291,7 +162,7 @@ thead {
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-space-md);
   border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-surface-sunken);
+  background: var(--fold-color-surface-card);
 }
 
 .rate-label {
@@ -325,106 +196,10 @@ thead {
   color: var(--lfc-color-accent-deep);
 }
 
-/* ── En colonnes (bureau) ──────────────────────────────────────────────── */
-
+/* Le détail se lit en deux colonnes dès qu'il y a la place : les faits à
+   gauche, les gestes à droite. */
 @media (min-width: 900px) {
-  .tbl {
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--lfc-radius-xl);
-    background: var(--fold-color-surface-card);
-    overflow: clip;
-  }
-
-  thead {
-    display: table-header-group;
-  }
-
-  thead th {
-    padding: var(--fold-space-sm) var(--fold-space-md);
-    border-bottom: 1px solid var(--fold-color-border);
-    font-family: var(--fold-font-label);
-    font-size: var(--fold-text-2xs);
-    font-weight: var(--fold-weight-extrabold);
-    letter-spacing: var(--lfc-tracking-label);
-    text-transform: uppercase;
-    text-align: left;
-    color: var(--lfc-color-text-subtle);
-  }
-
-  thead th.num {
-    text-align: right;
-  }
-
-  /* Au bureau la carte redevient une rangée : elle rend tout ce qui faisait
-     d'elle un objet — bord, rayon, ombre. Un tableau dont chaque ligne porte
-     une ombre n'est plus un tableau. */
-  .group {
-    display: table-row-group;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-
-  .row {
-    display: table-row;
-  }
-
-  .row:hover {
-    background: var(--fold-color-surface-sunken);
-  }
-
-  /* En tableau, plus de grille : chaque cellule reprend sa place naturelle, et
-     les zones posées pour la carte doivent être ANNULÉES — une `grid-area` sur
-     un `table-cell` est inerte, mais la laisser écrite ferait croire qu'elle
-     agit encore. */
-  .cell {
-    display: table-cell;
-    grid-area: auto;
-    justify-self: auto;
-    padding: var(--fold-space-sm) var(--fold-space-md);
-    border-top: 1px solid var(--fold-color-border-subtle);
-    vertical-align: middle;
-  }
-
-  .status,
-  .pay,
-  .total {
-    padding-top: var(--fold-space-sm);
-  }
-
-  .by,
-  .mode {
-    display: table-cell;
-  }
-
-  /* Deux étages dans une cellule : l'enseigne au-dessus, la personne dessous. */
-  .org,
-  .who,
-  .mode-label,
-  .mode-pieces {
-    display: block;
-  }
-
-  .num {
-    text-align: right;
-  }
-
-  .detail-row {
-    display: table-row;
-  }
-
   .detail {
-    display: table-cell;
-    padding: 0 var(--fold-space-md) var(--fold-space-md);
-    border-top: 0;
-    background: var(--fold-color-surface-sunken);
-  }
-
-  /* Le détail à gauche, les actions à droite — et la note sous les actions,
-     dans la même colonne : elle appartient au geste, pas au relevé. */
-  .detail-grid {
     grid-template-columns: 1fr minmax(260px, 320px);
     align-items: start;
   }

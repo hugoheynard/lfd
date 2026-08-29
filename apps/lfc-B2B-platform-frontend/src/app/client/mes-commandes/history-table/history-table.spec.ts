@@ -9,7 +9,10 @@ describe('HistoryTable', () => {
   let fixture: ComponentFixture<HistoryTable>;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
-  const toggles = (): HTMLButtonElement[] => Array.from(el().querySelectorAll('button.toggle'));
+  // Le châssis appartient au système : on vise SES sélecteurs, pas les nôtres.
+  const toggles = (): HTMLButtonElement[] =>
+    Array.from(el().querySelectorAll('button.folddt-expand'));
+  const drawers = (): HTMLElement[] => Array.from(el().querySelectorAll('.folddt-detail'));
   const stars = (): HTMLButtonElement[] => Array.from(el().querySelectorAll('button.star'));
 
   beforeEach(() => {
@@ -21,7 +24,7 @@ describe('HistoryTable', () => {
 
   it('donne une ligne par commande, et n’en déplie aucune au départ', () => {
     expect(toggles().length).toBe(MOCK_HISTORY.length);
-    expect(el().querySelector('.detail')).toBeNull();
+    expect(drawers().length).toBe(0);
   });
 
   it('n’annonce l’origine que lorsqu’elle n’est PAS l’app', () => {
@@ -33,20 +36,20 @@ describe('HistoryTable', () => {
   it('déplie DANS la liste, et une seule à la fois', () => {
     toggles()[0]?.click();
     fixture.detectChanges();
-    expect(el().querySelectorAll('.detail').length).toBe(1);
+    expect(drawers().length).toBe(1);
 
     toggles()[1]?.click();
     fixture.detectChanges();
-    // La deuxième remplace la première : deux détails ouverts feraient perdre
-    // la place qu'on vient de trouver.
-    expect(el().querySelectorAll('.detail').length).toBe(1);
-    expect(el().querySelector('.detail')?.textContent).toContain(MOCK_HISTORY[1]?.slot ?? '');
+    // La deuxième remplace la première : deux tiroirs ouverts chassent le reste
+    // de la liste hors de l'écran, et on est venu comparer.
+    expect(drawers().length).toBe(1);
+    expect(drawers()[0]?.textContent).toContain(MOCK_HISTORY[1]?.slot ?? '');
   });
 
   it('le règlement dit aussi OÙ il tombe', () => {
     toggles()[0]?.click();
     fixture.detectChanges();
-    expect(el().querySelector('.detail')?.textContent).toContain(FR.orders.payAccountNote);
+    expect(drawers()[0]?.textContent).toContain(FR.orders.payAccountNote);
   });
 
   it('la note RÉPOND au geste, et différemment selon le geste', () => {
@@ -72,5 +75,11 @@ describe('HistoryTable', () => {
     fixture.detectChanges();
     el().querySelector<HTMLButtonElement>('.act.danger')?.click();
     expect(raised.map((o) => o.reference)).toEqual([MOCK_HISTORY[0]?.reference]);
+  });
+
+  it('parle la langue de l’app jusque dans le châssis', () => {
+    // Les libellés du tiroir viennent de fold, en anglais par défaut : sans les
+    // passer, un lecteur d'écran français entendrait « Show details ».
+    expect(toggles()[0]?.getAttribute('aria-label')).toBe(FR.orders.expand);
   });
 });
