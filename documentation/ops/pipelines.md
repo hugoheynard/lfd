@@ -259,10 +259,11 @@ routage en production, et il porte la réécriture de l'IP cliente.
 
 ## 3bis. Les hooks — ce qui est attrapé avant le push
 
-| Hook         | Ce qu'il fait                              | Coût     |
-| ------------ | ------------------------------------------ | -------- |
-| `pre-commit` | Prettier sur ce qui est indexé             | ~1 s     |
-| `pre-push`   | les 14 portes du dépôt (`pnpm lint:gates`) | **~5 s** |
+| Hook                | Ce qu'il fait                              | Coût     |
+| ------------------- | ------------------------------------------ | -------- |
+| `pre-commit`        | Prettier sur ce qui est indexé             | ~1 s     |
+| `pre-push`          | les 14 portes du dépôt (`pnpm lint:gates`) | **~5 s** |
+| `pre-push` → `main` | + le verdict de la CI sur le commit promu  | ~1 s     |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
 push : y mettre autre chose que du formatage ferait contourner le hook au
@@ -274,9 +275,19 @@ Les quatorze gates lisent des fichiers, elles ne compilent rien : cinq secondes
 minute) restent en CI, exactement pour la raison qui garde le `pre-commit`
 minuscule.
 
-Ce que le `pre-push` aurait évité le 2026-08-29 : `lint:fold-tokens` rouge sur
-21 variables inexistantes — CI rouge, déploiement boutique perdu, un cycle
-complet pour s'en apercevoir.
+**Deux niveaux, parce qu'il y a deux gestes.** `dev` ne déploie rien : la CI y
+tourne et c'est elle qui juge, le hook n'y fait donc que les portes. **`main`
+déploie** — une promotion (`git push origin dev:main`) est la seule occasion de
+regarder ce que la CI a dit du commit promu, et le hook refuse un verdict rouge.
+
+C'est exactement la surprise du 2026-08-29 : promotion, puis CI rouge, puis deux
+déploiements morts en attendant. Et plus tôt le même jour, `lint:fold-tokens`
+rouge sur 21 variables inexistantes — un cycle complet pour s'en apercevoir.
+
+Le hook lit **la ref distante**, jamais la locale : pousser `dev:main` promeut,
+pousser `dev` ne promeut pas. Une CI encore en cours ou absente **avertit sans
+bloquer** — refuser là interdirait une promotion légitime pour une raison de
+calendrier.
 
 ⚠️ `git push --no-verify` reste possible, et c'est voulu : un garde-fou qu'on ne
 peut pas franchir devient un obstacle qu'on démonte.
