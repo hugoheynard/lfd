@@ -8,10 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import {
+  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDataTableRowDetailDirective,
-  FoldIconComponent,
   type FoldTableColumn,
 } from 'fold-ng';
 
@@ -45,10 +45,10 @@ const STARS = [1, 2, 3, 4, 5] as const;
   selector: 'app-history-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldButtonComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldDataTableRowDetailDirective,
-    FoldIconComponent,
   ],
   templateUrl: './history-table.html',
   styleUrl: './history-table.scss',

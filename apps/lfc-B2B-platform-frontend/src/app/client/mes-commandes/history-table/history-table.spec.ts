@@ -73,7 +73,9 @@ describe('HistoryTable', () => {
     fixture.componentInstance.problemRaised.subscribe((order) => raised.push(order));
     toggles()[0]?.click();
     fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('.act--danger')?.click();
+    // Le bouton n'a plus de classe à nous : c'est un `foldButton`, et c'est son
+    // INTENTION qu'on vise — la seule chose stable quand l'habillage change.
+    el().querySelector<HTMLButtonElement>('button[intent="danger"]')?.click();
     expect(raised.map((o) => o.reference)).toEqual([MOCK_HISTORY[0]?.reference]);
   });
 

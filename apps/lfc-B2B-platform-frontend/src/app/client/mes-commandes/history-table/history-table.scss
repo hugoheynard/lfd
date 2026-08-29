@@ -170,49 +170,14 @@
 }
 
 /* ── Les trois actions ─────────────────────────────────────────────────────
-   TROIS POIDS et non trois boutons identiques. Le bon de commande est ce qu'on
-   vient chercher : aplat de marque. Recommander est la suite naturelle : teinte
-   de marque, sans le poids d'un aplat. Le problème est offert, jamais
-   encouragé : bordé sur papier — un aplat rouge invite au clic. */
+   Leur poids et leur couleur viennent du système (`emphasis` × `intent`) et
+   leur registre du thème (capitales d'Archivo, 44 px, angle 12). Il ne reste
+   ici que leur DISPOSITION — la seule chose que cet écran décide. */
 .acts {
   display: flex;
   flex-direction: column;
   gap: 9px;
   min-width: 0;
-}
-
-.act {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--fold-space-sm);
-  height: 44px;
-  padding: 0 var(--fold-space-md);
-  border: 0;
-  border-radius: 12px;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.act--main {
-  background: var(--fold-color-primary);
-  color: var(--fold-color-on-primary);
-}
-
-.act--soft {
-  background: var(--fold-color-primary-surface);
-  color: var(--lfc-color-primary-vivid);
-}
-
-.act--danger {
-  border: 1.5px solid #e3c9c4;
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-alert-text);
 }
 
 .rate {

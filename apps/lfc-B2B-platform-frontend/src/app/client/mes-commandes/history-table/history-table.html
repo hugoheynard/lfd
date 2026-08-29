@@ -82,15 +82,28 @@
         </dl>
       </div>
 
-      <!-- TROIS POIDS, pas trois boutons identiques : le bon de commande est ce
-           qu'on vient chercher, recommander est la suite naturelle, et le
-           problème est OFFERT sans être encouragé — bordé, jamais un aplat. -->
+      <!-- TROIS POIDS, pas trois boutons identiques — et les trois poids sont
+           ceux du système : le bon de commande est ce qu'on vient chercher
+           (plein), recommander est la suite naturelle (teinté), le problème
+           est OFFERT sans être encouragé (bordé — un aplat rouge invite au
+           clic). Ces couleurs étaient recopiées à la main ; `emphasis` et
+           `intent` les DISENT. -->
       <div class="acts">
-        <button class="act act--main" type="button">
-          <fold-icon name="download" />{{ t().orders.purchaseOrder }}
+        <button foldButton block size="sm" icon="download" type="button">
+          {{ t().orders.purchaseOrder }}
         </button>
-        <button class="act act--soft" type="button">{{ t().orders.reorder }}</button>
-        <button class="act act--danger" type="button" (click)="problemRaised.emit(order)">
+        <button foldButton block size="sm" emphasis="soft" type="button">
+          {{ t().orders.reorder }}
+        </button>
+        <button
+          foldButton
+          block
+          size="sm"
+          emphasis="outline"
+          intent="danger"
+          type="button"
+          (click)="problemRaised.emit(order)"
+        >
           {{ t().orders.problem }}
         </button>
       </div>

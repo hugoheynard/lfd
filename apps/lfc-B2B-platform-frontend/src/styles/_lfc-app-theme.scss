@@ -187,6 +187,21 @@
   --lfc-weight-black: 900;
 
   /* ── Interlettrages nommés par la réf, absents de l'échelle fold ── */
+  /* ── LA VOIX DES BOUTONS ──────────────────────────────────────────────
+     Le registre des CTA de la maison, déclaré UNE fois : capitales d'Archivo,
+     noir, un angle et un plancher tactile. Chaque écran le réécrivait à la
+     main faute de pouvoir le dire — les préréglages de taille de fold portent
+     un attribut ET une classe, qu'aucune classe d'app ne surclasse. Les six
+     crochets existent depuis fold 0.23.
+     La TAILLE reste celle du préréglage : une voix est un registre, pas une
+     échelle. */
+  --fold-button-font: var(--fold-font-label);
+  --fold-button-weight: var(--lfc-weight-black);
+  --fold-button-tracking: var(--lfc-tracking-label);
+  --fold-button-transform: uppercase;
+  --fold-button-radius: 12px;
+  --fold-button-min-height: 44px;
+
   --lfc-tracking-display: -0.03em; /* titre d'écran */
   --lfc-tracking-block: -0.015em; /* titre de bloc */
   --lfc-tracking-cta: 0.02em;
