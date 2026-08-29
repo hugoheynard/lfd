@@ -83,21 +83,6 @@
 /* Le pendant du titre du puits, au caractère près : même grain, même graisse,
    même interlettrage. Les deux sections d'un écran ne se lisent comme deux
    sections que si leurs titres se ressemblent. */
-.history-title {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-}
-
-.history-note {
-  margin: 2px 0 0;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
 @media (min-width: 900px) {
   .page {
     gap: var(--fold-space-2xl);

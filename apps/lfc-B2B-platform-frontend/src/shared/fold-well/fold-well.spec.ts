@@ -38,6 +38,12 @@ describe('FoldWellComponent', () => {
     expect(el().querySelector('.lead')).not.toBeNull();
   });
 
+  it('annonce sa tête en CAPITALES par défaut', () => {
+    // Un puits est une région, et une région s'annonce : c'est le registre pour
+    // lequel la variante `caps` a été écrite. Le sur-titre chuchoterait.
+    expect(el().querySelector('fold-element-title')?.classList.contains('v-caps')).toBe(true);
+  });
+
   it('sans titre, PAS de tête — une barre de titre vide est pire que pas de tête', () => {
     fixture.componentInstance.title.set('');
     fixture.detectChanges();

@@ -28,9 +28,8 @@ import { FoldElementTitleComponent } from 'fold-ng';
  * ## The head
  *
  * `title` renders a {@link FoldElementTitleComponent}; empty, there is no head
- * at all rather than an empty one. `titleVariant` picks its emphasis — a well
- * that opens a page wants `title`, one that labels a strip inside a card wants
- * `eyebrow`. `[wellLead]` takes whatever identifies the
+ * at all rather than an empty one. `titleVariant` picks its emphasis — `caps`
+ * by default, `eyebrow` for a strip labelled inside something else. `[wellLead]` takes whatever identifies the
  * set — an icon tile, or a `fold-avatar` with `square` when the well belongs to
  * a person. It is projected rather than configured because a well can be about
  * anything, and an `icon` input would have made it about icons.
@@ -75,10 +74,12 @@ export class FoldWellComponent {
   /**
    * The head's emphasis, forwarded to {@link FoldElementTitleComponent}.
    *
-   * `title` by default: a well is a REGION, and a region is announced, not
-   * whispered. The eyebrow grain is for a strip labelled inside something else.
+   * `caps` by default: a well is a REGION, and a region announces itself. That
+   * is the exact register the variant was added for — `eyebrow` whispers above
+   * a thing, `caps` names the thing. The eyebrow grain stays available for a
+   * strip labelled inside something else.
    */
-  readonly titleVariant = input<'title' | 'eyebrow' | 'bar'>('title');
+  readonly titleVariant = input<'title' | 'eyebrow' | 'bar' | 'caps'>('caps');
 
   /**
    * Turns the content into a horizontal, snapping rail.
