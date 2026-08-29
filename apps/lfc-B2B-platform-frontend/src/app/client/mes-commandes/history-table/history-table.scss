@@ -4,10 +4,13 @@
 :host {
   display: block;
 
-  /* Les cotes de la réf pour le tiroir : il affleure sa ligne en haut — 2 px,
-     juste de quoi ne pas coller au filet — et respire d'un cran en bas et sur
-     les côtés. */
-  --fold-data-table-detail-padding: 2px var(--fold-space-lg) var(--fold-space-lg);
+  /* Le tiroir : un cran de moins en haut qu'en bas, parce que le HAUT en a
+     déjà. La rangée au-dessus finit par le rembourrage bas de ses cellules —
+     12 px — et le tiroir s'y ajoute : les 2 px de la réf donnaient 14 px, ce
+     qui collait la fiche au filet ; 8 px en donnent 20, l'air qu'a la réf sous
+     ses propres rangées. Le bas et les côtés n'ont rien avant eux et prennent
+     le cran plein. */
+  --fold-data-table-detail-padding: var(--fold-space-sm) var(--fold-space-lg) var(--fold-space-lg);
 
   /* ⚠️ L'ÉTAGEMENT EST INVERSÉ par rapport au défaut de fold, et c'est le bon
      sens pour ce papier-ci. Le corps du tableau est du PAPIER (le ton le plus
@@ -42,23 +45,14 @@
   white-space: nowrap;
 }
 
-/* Deux étages dans une cellule. */
+/* Deux étages dans une cellule — il n'en reste qu'une, le mode. La colonne
+   « passée par » est passée à la cellule d'identité du système. */
 .stack {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.org {
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
-}
-
-.who,
 .mode-label,
 .mode-pieces,
 .date {
@@ -68,15 +62,6 @@
 
 .mode-label {
   color: var(--fold-color-text-secondary);
-}
-
-/* Le total ne se coupe JAMAIS sur deux lignes : c'est un bug, pas une
-   adaptation. */
-.total {
-  font-family: var(--fold-font-label);
-  font-weight: var(--lfc-weight-black);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 /* Les deux familles de pastilles du back-office, reprises telles quelles : le
@@ -110,135 +95,4 @@
 .tag[data-payment='card'] {
   background: var(--fold-color-success-surface);
   color: var(--fold-color-success-text);
-}
-
-/* ── Le tiroir ─────────────────────────────────────────────────────────────
-   Le rembourrage appartient au châssis (voir le jeton sur `:host`) : le contenu
-   n'en ajoute pas, sinon les deux s'additionnent et le tiroir enfle. */
-.detail {
-  display: grid;
-  gap: var(--fold-space-md);
-}
-
-/* Les faits sur du PAPIER. Le tiroir est creusé ; poser la fiche dessus la
-   détache de la ligne sans la détacher du tableau. */
-.facts {
-  min-width: 0;
-  padding: 13px 15px;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg);
-  background: var(--fold-color-surface-card);
-}
-
-.facts-head {
-  margin: 0 0 9px;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-kicker);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-kicker);
-  text-transform: uppercase;
-  color: var(--fold-color-text-secondary);
-}
-
-.facts-list {
-  margin: 0;
-}
-
-/* Libellé à gauche, valeur à DROITE : les valeurs s'alignent en colonne, ce qui
-   compte dès qu'il y a un montant ou une heure parmi elles. */
-.fact {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  padding: 7px 0;
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.fact dt {
-  flex: none;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-secondary);
-}
-
-.fact dd {
-  min-width: 0;
-  margin: 0;
-  font-size: var(--lfc-text-note);
-  color: var(--fold-color-text);
-  text-align: right;
-}
-
-/* ── Les trois actions ─────────────────────────────────────────────────────
-   Leur poids et leur couleur viennent du système (`emphasis` × `intent`) et
-   leur registre du thème (capitales d'Archivo, 44 px, angle 12). Il ne reste
-   ici que leur DISPOSITION — la seule chose que cet écran décide. */
-.acts {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  min-width: 0;
-}
-
-.rate {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-surface-card);
-}
-
-.rate-label {
-  margin: 0;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.stars {
-  display: flex;
-  gap: 2px;
-}
-
-/* ⚠️ CONTRASTE : le couple beurre clair / bordure crème donnait 2,17:1 et
-   1,32:1 sur ce fond — la note était illisible alors même que la cible était
-   juste. L'étoile pleine passe au caramel profond, la vide au gris de texte, et
-   le GLYPHE change avec l'état pour que la lecture ne repose pas sur la
-   couleur. */
-.star {
-  min-width: 32px;
-  min-height: 32px;
-  border: 0;
-  background: none;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md);
-  line-height: 1;
-  cursor: pointer;
-}
-
-.star.on {
-  color: var(--lfc-color-accent-deep);
-}
-
-/* Au-delà du pli, les cotes de la réf : la fiche prend la place qui reste, la
-   colonne d'actions tient ses 300 px. Une colonne en fraction aurait fait
-   changer la largeur des boutons avec le contenu de la fiche. */
-@media (min-width: 900px) {
-  .detail {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: var(--fold-space-xl);
-    align-items: start;
-  }
-
-  .acts {
-    grid-row: 1 / span 2;
-    grid-column: 2;
-  }
-
-  .rate {
-    grid-column: 1;
-    grid-row: 2;
-  }
 }

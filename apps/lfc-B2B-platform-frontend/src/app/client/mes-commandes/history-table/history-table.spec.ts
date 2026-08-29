@@ -27,6 +27,21 @@ describe('HistoryTable', () => {
     expect(drawers().length).toBe(0);
   });
 
+  it('nomme la maison ET la personne, la maison ancrée par ses initiales', () => {
+    // Un compte multi-espaces doit dire pour quelle maison on a commandé, et
+    // une initiale se retrouve dans une colonne plus vite qu'un nom.
+    const identity = el().querySelector('fold-avatar-detail');
+    expect(identity?.textContent).toContain('Brasserie Marchand');
+    expect(identity?.textContent).toContain('Pierre Marchand');
+  });
+
+  it('le total est une colonne de NOMBRES, pas un gabarit', () => {
+    // Le drapeau porte les chiffres tabulaires et le bord droit d'un coup ; à
+    // la main, on obtenait l'un sans l'autre une fois sur deux.
+    const cell = el().querySelector('td.folddt-cell.is-numeric');
+    expect(cell?.textContent?.trim()).toBe('96,40 €');
+  });
+
   it('n’annonce l’origine que lorsqu’elle n’est PAS l’app', () => {
     // L'écrire partout ferait disparaître les deux qui comptent.
     const origins = Array.from(el().querySelectorAll('.origin')).map((n) => n.textContent?.trim());

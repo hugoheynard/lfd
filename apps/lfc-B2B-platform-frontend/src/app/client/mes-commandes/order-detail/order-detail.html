@@ -1,0 +1,71 @@
+<!-- Les faits sur du PAPIER : le tiroir est creusé, la fiche s'y pose. -->
+<div class="facts">
+  <p class="facts-head">{{ t().orders.detailHead }}</p>
+  <dl class="facts-list">
+    <div class="fact">
+      <dt>{{ t().orders.detailSlot }}</dt>
+      <dd>{{ order().slot }}</dd>
+    </div>
+    <div class="fact">
+      <dt>{{ t().orders.detailMode }}</dt>
+      <dd>{{ order().mode }}</dd>
+    </div>
+    @if (order().origin !== '') {
+      <div class="fact">
+        <dt>{{ t().orders.detailOrigin }}</dt>
+        <dd>{{ order().origin }}</dd>
+      </div>
+    }
+    <div class="fact">
+      <dt>{{ t().orders.detailPayment }}</dt>
+      <!-- Le règlement dit aussi OÙ : « portée à la facture de mars ». C'est le
+           lien explicite avec le relevé. -->
+      <dd>{{ paymentLabel() }} · {{ paymentNote() }}</dd>
+    </div>
+  </dl>
+</div>
+
+<!-- TROIS POIDS, et ils viennent du système : le bon de commande est ce qu'on
+     vient chercher (plein), recommander est la suite naturelle (teinté), le
+     problème est OFFERT sans être encouragé (bordé — un aplat rouge invite au
+     clic). -->
+<div class="acts">
+  <button foldButton block size="sm" icon="download" type="button">
+    {{ t().orders.purchaseOrder }}
+  </button>
+  <button foldButton block size="sm" emphasis="soft" type="button">
+    {{ t().orders.reorder }}
+  </button>
+  <button
+    foldButton
+    block
+    size="sm"
+    emphasis="outline"
+    intent="danger"
+    type="button"
+    (click)="problemRaised.emit()"
+  >
+    {{ t().orders.problem }}
+  </button>
+</div>
+
+<!-- La note vit LÀ OÙ LA COMMANDE VIT, jamais dans une pop-up qui interrompt.
+     Le glyphe change avec l'état — plein ou vide — pour que la lecture ne repose
+     pas sur la seule couleur. -->
+<div class="rate">
+  <p class="rate-label">{{ rateLabel() }}</p>
+  <div class="stars">
+    @for (star of stars; track star) {
+      <button
+        class="star"
+        type="button"
+        [class.on]="star <= rate()"
+        [attr.aria-label]="starLabel(star)"
+        [attr.aria-pressed]="star <= rate()"
+        (click)="rated.emit(star)"
+      >
+        {{ star <= rate() ? '★' : '☆' }}
+      </button>
+    }
+  </div>
+</div>

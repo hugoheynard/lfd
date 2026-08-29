@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import {
-  FoldButtonComponent,
+  FoldAvatarDetailComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDataTableRowDetailDirective,
@@ -18,9 +18,7 @@ import {
 import { formatEuro } from '../../cart-total';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import type { HistoryOrder, OrderPayment, OrderStatus } from '../../mock-orders';
-
-/** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
-const STARS = [1, 2, 3, 4, 5] as const;
+import { OrderDetail } from '../order-detail/order-detail';
 
 /**
  * L'historique — un TABLEAU, parce qu'ici on compare.
@@ -35,7 +33,8 @@ const STARS = [1, 2, 3, 4, 5] as const;
  * `fold-data-table` a su ouvrir un tiroir de ligne : jusque-là il manquait LA
  * décision de cet écran — déplier dans la liste plutôt que naviguer — et une
  * table sans elle n'aurait pas été la même table. Ce composant ne garde donc
- * que ce qui lui appartient : ses colonnes, ses pastilles, sa note.
+ * que ce qui lui appartient : ses colonnes, ses pastilles — et la NOTE, qui
+ * survit à la fermeture du tiroir parce qu'elle vit ici et non dedans.
  *
  * Ce qu'on gagne au change et qu'on ne réécrit plus : l'en-tête collant, la
  * première colonne en `<th scope="row">`, la navigation aux flèches entre les
@@ -45,10 +44,11 @@ const STARS = [1, 2, 3, 4, 5] as const;
   selector: 'app-history-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldButtonComponent,
+    FoldAvatarDetailComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldDataTableRowDetailDirective,
+    OrderDetail,
   ],
   templateUrl: './history-table.html',
   styleUrl: './history-table.scss',
@@ -60,12 +60,11 @@ export class HistoryTable {
   readonly problemRaised = output<HistoryOrder>();
 
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly stars = STARS;
 
   /** La note donnée, par commande — la maquette la garde le temps de la visite. */
   private readonly rated = signal<Readonly<Record<string, number>>>({});
 
-  protected readonly columns = computed<readonly FoldTableColumn[]>(() => {
+  protected readonly columns = computed<readonly FoldTableColumn<HistoryOrder>[]>(() => {
     const copy = this.t().orders;
     return [
       { key: 'reference', label: copy.colOrder },
@@ -74,7 +73,15 @@ export class HistoryTable {
       { key: 'date', label: copy.colDate },
       { key: 'status', label: copy.colStatus },
       { key: 'payment', label: copy.colPayment },
-      { key: 'total', label: copy.colTotal, align: 'right' },
+      // `numeric` porte les chiffres tabulaires ET le bord droit : un montant
+      // en chiffres proportionnels ne s'aligne pas sous son voisin, et on ne
+      // met des nombres dans un tableau que pour balayer la colonne.
+      {
+        key: 'total',
+        label: copy.colTotal,
+        numeric: true,
+        value: (order) => formatEuro(order.total),
+      },
     ];
   });
 
@@ -90,34 +97,12 @@ export class HistoryTable {
     return this.t().orders.pieces.replace('{n}', String(order.pieces));
   }
 
-  protected total(order: HistoryOrder): string {
-    return formatEuro(order.total);
-  }
-
   protected rate(reference: string, value: number): void {
     this.rated.update((all) => ({ ...all, [reference]: value }));
   }
 
   protected rating(reference: string): number {
     return this.rated()[reference] ?? 0;
-  }
-
-  /**
-   * Le libellé de la note — il RÉPOND au geste, et il répond différemment.
-   *
-   * Au-dessus de 4 on remercie ; en dessous on annonce qu'on regarde. Jamais une
-   * pop-up : la note se donne là où la commande vit.
-   */
-  protected rateLabel(value: number): string {
-    const copy = this.t().orders;
-    if (value === 0) {
-      return copy.rateIdle;
-    }
-    return value >= 4 ? copy.rateHigh : copy.rateLow;
-  }
-
-  protected starLabel(value: number): string {
-    return this.t().orders.rateStar.replace('{n}', String(value));
   }
 
   protected statusLabel(status: OrderStatus): string {
@@ -139,15 +124,5 @@ export class HistoryTable {
       due: copy.payDue,
     };
     return labels[payment];
-  }
-
-  protected paymentNote(payment: OrderPayment): string {
-    const copy = this.t().orders;
-    const notes: Record<OrderPayment, string> = {
-      account: copy.payAccountNote,
-      card: copy.payCardNote,
-      due: copy.payDueNote,
-    };
-    return notes[payment];
   }
 }

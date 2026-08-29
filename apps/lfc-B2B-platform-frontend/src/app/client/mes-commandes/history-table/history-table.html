@@ -17,13 +17,12 @@
     </span>
   </ng-template>
 
-  <!-- Deux étages : l'enseigne au-dessus, la personne dessous. Un compte
-       multi-espaces doit dire pour quelle maison on a commandé. -->
+  <!-- La cellule d'IDENTITÉ du système : la maison au-dessus, la personne
+       dessous, et la pastille carrée qui ancre l'enseigne. Un compte
+       multi-espaces doit dire pour quelle maison on a commandé, et une
+       initiale se retrouve dans une colonne plus vite qu'un nom. -->
   <ng-template foldCell="by" let-order>
-    <span class="stack">
-      <span class="org">{{ order.org }}</span>
-      <span class="who">{{ order.who }}</span>
-    </span>
+    <fold-avatar-detail size="sm" square [primary]="order.org" [secondary]="order.who" />
   </ng-template>
 
   <ng-template foldCell="mode" let-order>
@@ -45,89 +44,16 @@
     <span class="tag" [attr.data-payment]="order.payment">{{ paymentLabel(order.payment) }}</span>
   </ng-template>
 
-  <ng-template foldCell="total" let-order>
-    <span class="total">{{ total(order) }}</span>
-  </ng-template>
-
   <!-- LE TIROIR. Il ouvre DANS la liste : un écran de détail à ouvrir puis à
-       quitter ferait perdre la place qu'on vient de trouver. -->
-  <!-- LE TIROIR. Il ouvre DANS la liste : un écran de détail à ouvrir puis à
-       quitter ferait perdre la place qu'on vient de trouver. -->
+       quitter ferait perdre la place qu'on vient de trouver. Son contenu est un
+       composant à lui — le gabarit d'une cellule tient sur une ligne, celui du
+       tiroir tenait sur soixante. -->
   <ng-template foldRowDetail let-order>
-    <div class="detail">
-      <!-- Les faits sur du PAPIER : le tiroir est creusé, la fiche s'y pose. -->
-      <div class="facts">
-        <p class="facts-head">{{ t().orders.detailHead }}</p>
-        <dl class="facts-list">
-          <div class="fact">
-            <dt>{{ t().orders.detailSlot }}</dt>
-            <dd>{{ order.slot }}</dd>
-          </div>
-          <div class="fact">
-            <dt>{{ t().orders.detailMode }}</dt>
-            <dd>{{ order.mode }}</dd>
-          </div>
-          @if (order.origin !== '') {
-            <div class="fact">
-              <dt>{{ t().orders.detailOrigin }}</dt>
-              <dd>{{ order.origin }}</dd>
-            </div>
-          }
-          <div class="fact">
-            <dt>{{ t().orders.detailPayment }}</dt>
-            <!-- Le règlement dit aussi OÙ : « portée à la facture de mars ».
-                 C'est le lien explicite avec le relevé. -->
-            <dd>{{ paymentLabel(order.payment) }} · {{ paymentNote(order.payment) }}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <!-- TROIS POIDS, pas trois boutons identiques — et les trois poids sont
-           ceux du système : le bon de commande est ce qu'on vient chercher
-           (plein), recommander est la suite naturelle (teinté), le problème
-           est OFFERT sans être encouragé (bordé — un aplat rouge invite au
-           clic). Ces couleurs étaient recopiées à la main ; `emphasis` et
-           `intent` les DISENT. -->
-      <div class="acts">
-        <button foldButton block size="sm" icon="download" type="button">
-          {{ t().orders.purchaseOrder }}
-        </button>
-        <button foldButton block size="sm" emphasis="soft" type="button">
-          {{ t().orders.reorder }}
-        </button>
-        <button
-          foldButton
-          block
-          size="sm"
-          emphasis="outline"
-          intent="danger"
-          type="button"
-          (click)="problemRaised.emit(order)"
-        >
-          {{ t().orders.problem }}
-        </button>
-      </div>
-
-      <!-- La note vit LÀ OÙ LA COMMANDE VIT, jamais dans une pop-up qui
-           interrompt. Le glyphe change avec l'état — plein ou vide — pour que
-           la lecture ne repose pas sur la seule couleur. -->
-      <div class="rate">
-        <p class="rate-label">{{ rateLabel(rating(order.reference)) }}</p>
-        <div class="stars">
-          @for (star of stars; track star) {
-            <button
-              class="star"
-              type="button"
-              [class.on]="star <= rating(order.reference)"
-              [attr.aria-label]="starLabel(star)"
-              [attr.aria-pressed]="star <= rating(order.reference)"
-              (click)="rate(order.reference, star)"
-            >
-              {{ star <= rating(order.reference) ? '★' : '☆' }}
-            </button>
-          }
-        </div>
-      </div>
-    </div>
+    <app-order-detail
+      [order]="order"
+      [rate]="rating(order.reference)"
+      (rated)="rate(order.reference, $event)"
+      (problemRaised)="problemRaised.emit(order)"
+    />
   </ng-template>
 </fold-data-table>
