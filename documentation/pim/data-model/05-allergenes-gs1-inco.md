@@ -102,10 +102,12 @@ Les deux colonnes disent donc deux choses distinctes :
 - `inco_category` = **c'est une catégorie de l'annexe II** ; la projection INCO
   ne connaît que celles-là.
 
-Ce découpage préserve D2 sans exception : `scope=eu` filtre sur
-`inco_category IS NOT NULL`, donc cette catégorie et ses trois entrées sortent
-du catalogue légal — exactement ce que `incoCategory !== null` fait
-aujourd'hui.
+Ce découpage est ce qui rend D2 exprimable : le prédicat de `scope=eu` est
+« la catégorie porte une `inco_category` **OU** elle n'est pas officielle », si
+bien que cette catégorie-ci — officielle et sans mention INCO — est la seule
+que le catalogue légal écarte, avec ses trois entrées. Exactement ce que
+`incoCategory !== null` faisait avant la bascule, et sans emporter les
+catégories maison avec (cf. D2).
 
 Le libellé dit « hors obligation **UE** », pas « non réglementé » : le sarrasin
 est à déclaration obligatoire au Japon et en Corée. C'est le périmètre européen
