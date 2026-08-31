@@ -1,0 +1,94 @@
+<fold-page-layout icon="award" title="Appellations">
+  <p description>
+    Les <strong>signes officiels de qualité</strong> qu'un ingrédient peut porter — AOP, IGP, Label
+    Rouge, AB. Une table plutôt qu'un champ libre&nbsp;: le même signe s'écrirait sinon de trois
+    façons, et le badge cesserait d'être fiable. On la <em>cite</em>, on ne la ré-écrit pas.
+  </p>
+
+  @if (canWrite()) {
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="open()">
+      <span class="cta-full">Ajouter une appellation</span>
+      <span class="cta-short">Ajouter</span>
+    </button>
+  }
+
+  @if (loadError(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  @if (appellations().length === 0) {
+    <fold-empty-state
+      [tone]="loadError() ? 'alert' : 'neutral'"
+      icon="award"
+      [title]="loadError() ? 'Référentiel illisible' : 'Aucune appellation'"
+      [subtitle]="
+        loadError() ??
+        'Rien à porter pour l’instant. Un ingrédient sans appellation reste parfaitement valable.'
+      "
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-data-table
+      [columns]="columns()"
+      [rows]="appellations()"
+      [rowKey]="rowKey"
+      narrowLayout="cards"
+      zebra
+    >
+      <ng-template foldCell="label" let-a>
+        <strong>{{ a.label.fr }}</strong>
+      </ng-template>
+
+      <ng-template foldCell="scheme" let-a>
+        @if (a.scheme) {
+          <fold-badge [content]="a.scheme" variant="accent" />
+        } @else {
+          <span class="muted">—</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="used" let-a>
+        <span class="muted">{{ usedLabel(a) }}</span>
+      </ng-template>
+
+      <ng-template foldCell="state" let-a>
+        @if (a.active) {
+          <fold-badge content="en service" variant="success" />
+        } @else {
+          <fold-badge content="hors service" variant="warning" />
+        }
+      </ng-template>
+
+      @if (canWrite()) {
+        <ng-template foldCell="actions" let-a>
+          <button
+            type="button"
+            class="row-open"
+            [attr.aria-label]="'Ouvrir « ' + a.label.fr + ' »'"
+            (click)="open(a)"
+          >
+            <fold-icon name="more-vertical" size="sm" />
+          </button>
+        </ng-template>
+      }
+
+      <ng-template foldRowCard let-a>
+        <div class="pv-card">
+          <span class="pv-card-head">
+            <span class="pv-card-name">{{ a.label.fr }}</span>
+            @if (a.scheme) {
+              <fold-badge [content]="a.scheme" variant="accent" />
+            }
+            @if (a.active) {
+              <fold-badge content="en service" variant="success" />
+            } @else {
+              <fold-badge content="hors service" variant="warning" />
+            }
+          </span>
+          <span class="pv-card-line">{{ usedLabel(a) }}</span>
+        </div>
+      </ng-template>
+    </fold-data-table>
+  }
+</fold-page-layout>

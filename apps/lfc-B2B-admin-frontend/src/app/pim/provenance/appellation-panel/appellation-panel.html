@@ -1,0 +1,90 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  <!-- Le code est une IDENTITÉ : les ingrédients le citent par clé étrangère.
+       Saisissable une fois, lu ensuite. -->
+  <fold-input
+    label="Code"
+    hint="Minuscules, chiffres et tirets. Il identifie l'appellation partout, et ne changera plus."
+    placeholder="ex. aop-beaufort"
+    required
+    [disabled]="isEdit()"
+    [value]="draftCode()"
+    (valueChange)="draftCode.set($event)"
+  />
+
+  <app-lang-switch [(lang)]="label.locale" [missing]="label.missing()" [hint]="label.hint()" />
+  <fold-input
+    [label]="label.label()"
+    hint="Ce qui s'affiche sur le badge."
+    placeholder="ex. Beaufort"
+    required
+    [value]="label.value()"
+    (valueChange)="label.set($event)"
+  />
+
+  <!-- Le SIGNE ne se traduit pas : « AOP » est un sigle réglementaire, le même
+       dans les trois langues. Le libellé au-dessus, lui, se traduit. -->
+  <fold-input
+    label="Signe officiel"
+    hint="AOP, IGP, Label Rouge, AB… Une chaîne libre : en reconnaître un de plus est une saisie, pas un déploiement."
+    placeholder="ex. AOP"
+    [value]="draftScheme()"
+    (valueChange)="draftScheme.set($event)"
+  />
+
+  @if (isEdit()) {
+    <fold-checkbox
+      label="En service"
+      hint="Hors service, elle ne se propose plus à la saisie. Les ingrédients qui la portent déjà la gardent — la retirer n'est pas l'effacer."
+      [checked]="draftActive()"
+      (checkedChange)="draftActive.set($event)"
+    />
+
+    <section class="danger">
+      <button
+        type="button"
+        class="danger-toggle"
+        [attr.aria-expanded]="dangerOpen()"
+        (click)="toggleDanger()"
+      >
+        Supprimer cette appellation
+      </button>
+
+      @if (dangerOpen()) {
+        @if (held() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Suppression impossible.</strong> {{ held() }} ingrédient(s) la portent encore.
+            Retirez-la d'eux d'abord&nbsp;: tant qu'un seul la cite, la base refuse — sinon des
+            badges affirmeraient un signe officiel que plus rien ne définit.
+            <br />
+            Vous pouvez en revanche la mettre <strong>hors service</strong>.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>Action irréversible.</strong> Aucun ingrédient ne la porte, donc rien ne perd sa
+            référence. Le journal, lui, garde la trace de son existence.
+          </fold-callout>
+
+          <fold-input
+            label="Retapez le code pour confirmer"
+            [placeholder]="appellation()?.code ?? ''"
+            [value]="confirmCode()"
+            (valueChange)="confirmCode.set($event)"
+          />
+
+          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
+            Supprimer définitivement
+          </button>
+        }
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : "Ouvrir l'appellation" }}
+  </button>
+</footer>

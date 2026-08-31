@@ -205,6 +205,23 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     icon: 'places',
     section: 'Paramétrage',
   },
+  // La PROVENANCE : deux référentiels qu'on règle une fois et que les fiches
+  // citent. Les ingrédients avant les appellations — on ouvre le second pour
+  // servir le premier, jamais l'inverse.
+  {
+    key: 'ingredients',
+    label: 'Ingrédients',
+    link: '/pim/ingredients',
+    icon: 'library',
+    section: 'Paramétrage',
+  },
+  {
+    key: 'appellations',
+    label: 'Appellations',
+    link: '/pim/appellations',
+    icon: 'award',
+    section: 'Paramétrage',
+  },
 ];
 
 /**

@@ -105,6 +105,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le registre décide de ce qu'on peut VENDRE, mais ne porte aucun taux :
   // `catalog:read` suffit, et `tax:read` serait un mur pour rien.
   'pim/contextes': null,
+  // La PROVENANCE ne touche à aucun prix : `catalog:read` suffit, et `tax:read`
+  // serait un mur pour rien.
+  'pim/ingredients': null,
+  'pim/appellations': null,
   'pim/integration': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,

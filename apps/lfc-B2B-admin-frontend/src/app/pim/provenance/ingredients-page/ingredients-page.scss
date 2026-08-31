@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+/* La carte mobile — projetée dans le tableau via `foldRowCard`. Sur un
+   téléphone on veut une CARTE : le nom en tête, ce qu'il implique en dessous. */
+.pv-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) 0;
+}
+
+.pv-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  flex-wrap: wrap;
+}
+
+.pv-card-name {
+  font-weight: var(--fold-weight-medium);
+}
+
+.pv-card-line {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Les trois points d'une ligne : une affordance, pas un bouton. */
+.row-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+.row-open:hover {
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+}
+
+/* Le CTA porte deux libellés : sur la ligne du titre en mobile, le libellé
+   long répéterait le titre juste à côté et ne tiendrait pas sur 375 px. */
+.cta-short {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  .cta-full {
+    display: none;
+  }
+
+  .cta-short {
+    display: inline;
+  }
+}
+
+.pv-note {
+  display: block;
+  margin-block-start: var(--fold-space-lg);
+}

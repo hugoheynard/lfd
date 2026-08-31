@@ -1,0 +1,104 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  <!-- La clé est une IDENTITÉ : les fiches la citent par clé étrangère.
+       Saisissable une fois, lue ensuite. -->
+  <fold-input
+    label="Clé"
+    hint="Minuscules, chiffres et tirets. Elle identifie l'ingrédient partout, et ne changera plus."
+    placeholder="ex. beurre-de-savoie"
+    required
+    [disabled]="isEdit()"
+    [value]="draftKey()"
+    (valueChange)="draftKey.set($event)"
+  />
+
+  <app-lang-switch [(lang)]="name.locale" [missing]="name.missing()" [hint]="name.hint()" />
+  <fold-input
+    [label]="name.label()"
+    hint="Ce qui s'affiche sur la fiche."
+    placeholder="ex. Beurre de Savoie"
+    required
+    [value]="name.value()"
+    (valueChange)="name.set($event)"
+  />
+
+  <app-lang-switch
+    [(lang)]="description.locale"
+    [missing]="description.missing()"
+    [hint]="description.hint()"
+  />
+  <fold-input
+    [label]="description.label()"
+    hint="Facultative — ce qu'on en dit quand il y a quelque chose à en dire."
+    [value]="description.value()"
+    (valueChange)="description.set($event)"
+  />
+
+  <!-- L'origine ne se TRADUIT pas : « Savoie, France » est un lieu, pas une
+       phrase, et le traduire inventerait trois façons de nommer le même
+       endroit. C'est aussi pourquoi ce n'est pas une table : rien ne la
+       calcule, ne la filtre ni ne la géocode. -->
+  <fold-input
+    label="Origine géographique"
+    hint="Facultative. Un renseignement, pas une adresse — rien ne la calcule."
+    placeholder="ex. Savoie, France"
+    [value]="draftOrigin()"
+    (valueChange)="draftOrigin.set($event)"
+  />
+
+  <fold-listbox
+    label="Appellation"
+    [value]="draftAppellation()"
+    (valueChange)="pickAppellation($event)"
+  >
+    @for (option of appellationOptions(); track option.value) {
+      <fold-option [value]="option.value">{{ option.text }}</fold-option>
+    }
+  </fold-listbox>
+
+  @if (isEdit()) {
+    <section class="danger">
+      <button
+        type="button"
+        class="danger-toggle"
+        [attr.aria-expanded]="dangerOpen()"
+        (click)="toggleDanger()"
+      >
+        Supprimer cet ingrédient
+      </button>
+
+      @if (dangerOpen()) {
+        @if (held() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Suppression impossible.</strong> {{ held() }} fiche(s) le citent encore.
+            Retirez-le d'elles d'abord&nbsp;: tant qu'une seule le cite, la base refuse.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>Action irréversible.</strong> Aucune fiche ne le cite, donc rien ne perd sa
+            référence. Le journal, lui, garde la trace de son existence.
+          </fold-callout>
+
+          <fold-input
+            label="Retapez la clé pour confirmer"
+            [placeholder]="ingredient()?.key ?? ''"
+            [value]="confirmKey()"
+            (valueChange)="confirmKey.set($event)"
+          />
+
+          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
+            Supprimer définitivement
+          </button>
+        }
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : "Déclarer l'ingrédient" }}
+  </button>
+</footer>

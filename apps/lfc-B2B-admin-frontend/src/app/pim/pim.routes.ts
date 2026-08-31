@@ -80,6 +80,23 @@ export const pimRoutes: Routes = [
           ),
       },
       {
+        // Les deux référentiels de PROVENANCE. Même mur que le reste du
+        // référentiel : déclarer d'où vient un ingrédient ne touche à aucun
+        // prix, donc `catalog:read` suffit — `tax:read` serait un mur pour rien.
+        path: 'ingredients',
+        title: 'Ingrédients — LFC B2B admin',
+        loadComponent: () =>
+          import('./provenance/ingredients-page/ingredients-page').then((m) => m.IngredientsPage),
+      },
+      {
+        path: 'appellations',
+        title: 'Appellations — LFC B2B admin',
+        loadComponent: () =>
+          import('./provenance/appellations-page/appellations-page').then(
+            (m) => m.AppellationsPage,
+          ),
+      },
+      {
         path: 'collections',
         title: 'Collections — LFC B2B admin',
         loadComponent: () =>

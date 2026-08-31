@@ -1,0 +1,94 @@
+<fold-page-layout icon="library" title="Ingrédients">
+  <p description>
+    <strong>D'où vient ce qu'il y a dedans</strong> — le beurre de Savoie AOP, la farine du moulin
+    d'à côté. Une fiche en cite ce qu'elle veut, dans l'ordre qui l'arrange&nbsp;: c'est un argument
+    de vente, pas une recette.
+  </p>
+
+  @if (canWrite()) {
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="open()">
+      <span class="cta-full">Ajouter un ingrédient</span>
+      <span class="cta-short">Ajouter</span>
+    </button>
+  }
+
+  @if (loadError(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  @if (ingredients().length === 0) {
+    <fold-empty-state
+      [tone]="loadError() ? 'alert' : 'neutral'"
+      icon="library"
+      [title]="loadError() ? 'Référentiel illisible' : 'Aucun ingrédient'"
+      [subtitle]="
+        loadError() ??
+        'Rien à citer pour l’instant. Une fiche sans ingrédient reste parfaitement publiable.'
+      "
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-data-table
+      [columns]="columns()"
+      [rows]="ingredients()"
+      [rowKey]="rowKey"
+      narrowLayout="cards"
+      zebra
+    >
+      <ng-template foldCell="name" let-i>
+        <strong>{{ i.name.fr }}</strong>
+      </ng-template>
+
+      <ng-template foldCell="origin" let-i>
+        <span class="muted">{{ i.origin || '—' }}</span>
+      </ng-template>
+
+      <ng-template foldCell="appellation" let-i>
+        @if (i.appellation) {
+          <fold-badge [content]="appellationLabel(i)" variant="accent" />
+        } @else {
+          <span class="muted">—</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="used" let-i>
+        <span class="muted">{{ usedLabel(i) }}</span>
+      </ng-template>
+
+      @if (canWrite()) {
+        <ng-template foldCell="actions" let-i>
+          <button
+            type="button"
+            class="row-open"
+            [attr.aria-label]="'Ouvrir « ' + i.name.fr + ' »'"
+            (click)="open(i)"
+          >
+            <fold-icon name="more-vertical" size="sm" />
+          </button>
+        </ng-template>
+      }
+
+      <ng-template foldRowCard let-i>
+        <div class="pv-card">
+          <span class="pv-card-head">
+            <span class="pv-card-name">{{ i.name.fr }}</span>
+            @if (i.appellation) {
+              <fold-badge [content]="appellationLabel(i)" variant="accent" />
+            }
+          </span>
+          @if (i.origin) {
+            <span class="pv-card-line">{{ i.origin }}</span>
+          }
+          <span class="pv-card-line">{{ usedLabel(i) }}</span>
+        </div>
+      </ng-template>
+    </fold-data-table>
+
+    <fold-callout class="pv-note" appearance="inset" variant="info">
+      Ce référentiel n'est <strong>pas</strong> la liste réglementaire d'ingrédients. Celle-là est
+      ordonnée par masse décroissante et porte des quantités&nbsp;: elle appartient à la
+      déclinaison, avec ses allergènes. Rien d'ici ne doit servir à la reconstituer.
+    </fold-callout>
+  }
+</fold-page-layout>
