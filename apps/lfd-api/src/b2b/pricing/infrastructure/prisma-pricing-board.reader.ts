@@ -111,7 +111,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       }),
       this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
       this.ladders.listAll(at),
-      this.history.pricesAt(at),
+      this.history.pricingAt(at),
       this.history.startsAt(),
     ]);
 
@@ -128,10 +128,18 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // être un. Un article sans trace antérieure garde son tarif courant : c'est
     // tout ce qu'on sait de lui, et `canonicalHistoryStartsAt` dit à l'écran
     // jusqu'où il peut se fier à ce qu'il lit.
+    //
+    // La clé des deux côtés est le SKU **produit** : `ProductCatalogReader`
+    // expose `sku: item.productSku`, et l'historique se groupe pareil. C'est
+    // l'unité que la plateforme vend.
+    //
+    // Seul le PRIX est repris du passé, pas le taux : le sujet de ce tableau est
+    // le tarif canonique. Le taux historisé sert au devis, qui engage — le
+    // reprendre ici changerait la mesure sans qu'on l'ait demandé.
     const current = await this.catalog.all();
     const articles = current.map((item) => {
       const past = pastPrices.get(item.sku);
-      return past === undefined ? item : { ...item, unitPriceMillicents: past };
+      return past === undefined ? item : { ...item, unitPriceMillicents: past.unitPriceMillicents };
     });
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);

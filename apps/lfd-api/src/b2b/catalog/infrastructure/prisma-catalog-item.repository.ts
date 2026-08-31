@@ -114,10 +114,17 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       // d'erreur, au premier chemin de rattrapage.
       const changes = states.flatMap((state) => {
         const effective = state.decision?.priceMillicents ?? state.facts.priceMillicents;
+        const rate = state.facts.vatRatePercent;
         // Inchangé ⇒ aucune ligne. Sans cette garde, un push de quatre-vingt-douze
         // articles identiques écrirait quatre-vingt-douze lignes à chaque
         // synchronisation, et l'historique serait illisible en une semaine.
-        if (recorded.get(state.facts.sku) === effective) {
+        //
+        // « Inchangé » porte sur le COUPLE. Ne comparer que le prix laisserait un
+        // changement de taux passer sans trace — et le jour de la bascule d'un
+        // taux légal, l'historique dirait que rien n'a bougé alors que toutes
+        // les factures ont changé.
+        const last = recorded.get(state.facts.sku);
+        if (last?.priceMillicents === effective && last.vatRatePercent === rate) {
           return [];
         }
         return [
@@ -126,6 +133,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
             sku: state.facts.sku,
             productSku: state.facts.productSku,
             priceMillicents: effective,
+            vatRatePercent: rate,
             source: state.decision?.priceMillicents === undefined ? "pim" : "b2b",
             recordedAt,
           },
@@ -137,15 +145,25 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
     });
   }
 
-  /** Le dernier prix tracé de chaque SKU — la référence du « a-t-il changé ? ». */
-  private async lastRecordedPrices(skus: readonly string[]): Promise<ReadonlyMap<string, number>> {
+  /** Le dernier COUPLE tracé de chaque SKU — la référence du « a-t-il changé ? ». */
+  private async lastRecordedPrices(
+    skus: readonly string[],
+  ): Promise<ReadonlyMap<string, { priceMillicents: number; vatRatePercent: number | null }>> {
     const rows = await this.prisma.catalogPriceHistory.findMany({
       where: { sku: { in: [...skus] } },
       orderBy: [{ sku: "asc" }, { recordedAt: "desc" }],
       distinct: ["sku"],
-      select: { sku: true, priceMillicents: true },
+      select: { sku: true, priceMillicents: true, vatRatePercent: true },
     });
-    return new Map(rows.map((row) => [row.sku, row.priceMillicents]));
+    return new Map(
+      rows.map((row) => [
+        row.sku,
+        {
+          priceMillicents: row.priceMillicents,
+          vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
+        },
+      ]),
+    );
   }
 
   async removeMany(skus: readonly string[]): Promise<void> {

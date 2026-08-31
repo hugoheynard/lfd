@@ -1857,6 +1857,16 @@ model CatalogPriceHistory {
   /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
   source          String
 
+  /// **Le taux applicable à cet instant**, en %. Sans lui, un prix daté ne
+  /// redonne pas une ligne facturable : il dit ce qu'on demandait, pas ce qu'on
+  /// facturait. Un devis, qui engage, a besoin des deux.
+  ///
+  /// `NULL` = article non vendable à cette date (famille non réglée dans le
+  /// PIM), ou trace écrite avant que cette colonne existe. Les deux se lisent
+  /// pareil — « on ne sait pas facturer » — et c'est le bon comportement : un
+  /// taux inventé sur une trace ancienne se retrouverait dans un devis.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
+
   recordedAt DateTime @map("recorded_at")
 
   @@index([productSku, recordedAt])

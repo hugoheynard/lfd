@@ -382,6 +382,7 @@ export {
   CATALOG_CATEGORY_LABELS,
   CATALOG_CATEGORY_ORDER,
 } from "./catalog.js";
+export type { CatalogPricing } from "./catalog-pricing.js";
 export type { CatalogCategory, CatalogItemView } from "./catalog.js";
 
 export {

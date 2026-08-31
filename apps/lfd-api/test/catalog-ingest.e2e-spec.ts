@@ -14,6 +14,7 @@
  */
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
+import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
@@ -33,6 +34,7 @@ beforeEach(async () => {
   // catalogue vide. Le harnais en sème un depuis la bascule (il est l'autorité
   // de prix du checkout), et le compter ici ferait échouer les compteurs pour
   // une raison qui n'a rien à voir avec l'ingestion.
+  await ctx.prisma.catalogPriceHistory.deleteMany();
   await ctx.prisma.catalogItem.deleteMany();
   await ctx.prisma.catalogCategory.deleteMany();
 });
@@ -224,5 +226,86 @@ describe("les allergènes traversent le fil", () => {
     });
 
     expect(row?.allergens).toBeNull();
+  });
+});
+
+/**
+ * **L'historique du tarif, relu.**
+ *
+ * Le vrai SQL est indispensable ici : la trace est écrite par un `createMany`
+ * dans la transaction de l'article, et relue par un `DISTINCT ON`. Ce que ces
+ * cas tiennent, c'est que les deux emploient la **même clé** — l'article. Ils
+ * n'existaient pas, et l'écriture comme la lecture avaient chacune l'air juste
+ * en isolation : c'est leur rencontre qui était fausse.
+ */
+describe("l'historique du tarif canonique", () => {
+  const AFTER = new Date("2100-01-01T00:00:00.000Z");
+
+  function history() {
+    return ctx.app.get(CanonicalPriceHistoryReader);
+  }
+
+  /**
+   * **Se relit par SKU de PRODUIT** — l'unité que la plateforme vend
+   * (`ProductCatalogReader` expose `sku: item.productSku`). La trace porte les
+   * deux SKU ; c'est le groupement qui choisit, et il choisit ce que les
+   * appelants ont en main.
+   */
+  it("se relit par SKU de PRODUIT, l'unité vendue", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+
+    const pricing = await history().pricingAt(AFTER);
+
+    expect(pricing.get("VIE-001")?.unitPriceMillicents).toBe(200_000);
+    // La trace porte bien le SKU d'article, elle : c'est le groupement qui
+    // remonte au produit, pas l'écriture qui perd l'information.
+    const rows = await ctx.prisma.catalogPriceHistory.findMany({ where: { sku: "VIE-001-1" } });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("historise le taux AVEC le prix — sans lui, la ligne n'est pas facturable", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
+
+    expect((await history().pricingAt(AFTER)).get("VIE-001")).toEqual({
+      sku: "VIE-001",
+      unitPriceMillicents: 200_000,
+      vatRatePercent: 5.5,
+    });
+  });
+
+  /**
+   * Le jour d'une bascule de taux légal, le prix ne bouge pas et toutes les
+   * factures changent. Une garde qui ne comparerait que le prix dirait que rien
+   * n'a eu lieu.
+   */
+  it("trace un changement de TAUX seul, à prix constant", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 10 }]));
+
+    expect(await ctx.prisma.catalogPriceHistory.count()).toBe(2);
+    expect((await history().pricingAt(AFTER)).get("VIE-001")?.vatRatePercent).toBe(10);
+  });
+
+  /**
+   * L'autre moitié de la même règle : un push identique n'écrit rien. Sans
+   * cette garde, une synchronisation quotidienne de 92 articles rendrait
+   * l'historique illisible en une semaine.
+   */
+  it("n'écrit rien quand ni le prix ni le taux n'ont bougé", async () => {
+    const same = snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]);
+    await push(same);
+    await push(same);
+
+    expect(await ctx.prisma.catalogPriceHistory.count()).toBe(1);
+  });
+
+  /** L'histoire commence quand on l'écrit — avant, il n'y a rien à affirmer. */
+  it("ne rend rien avant sa propre première trace", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    const startsAt = await history().startsAt();
+    expect(startsAt).not.toBeNull();
+
+    const before = new Date((startsAt?.getTime() ?? 0) - 1_000);
+    expect((await history().pricingAt(before)).size).toBe(0);
   });
 });
