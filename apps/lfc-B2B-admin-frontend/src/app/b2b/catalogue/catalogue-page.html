@@ -84,13 +84,13 @@
                    allergène, ou la liste — le premier n'est pas le second. -->
               @if (item.allergens === null) {
                 <fold-badge content="sans fiche" variant="warning" />
-              } @else if (item.allergens.length === 0) {
-                <span class="allergens">Sans allergène</span>
-              } @else {
+              } @else if (item.allergens.length > 0) {
                 <span class="allergens">{{ allergenLabels(item) }}</span>
+              } @else if (!item.allergensIncomplete) {
+                <span class="allergens">Sans allergène</span>
               }
               @if (item.allergensIncomplete) {
-                <fold-badge content="code inconnu" variant="alert" />
+                <fold-badge content="fiche incomplète" variant="alert" />
               }
               <lfd-price-editor
                 [originMillicents]="item.pimPriceMillicents"

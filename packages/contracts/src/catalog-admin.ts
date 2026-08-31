@@ -52,9 +52,17 @@ export interface CatalogAdminItemView {
    */
   readonly allergens: readonly CatalogAllergenView[] | null;
   /**
-   * Vrai si un code stocké n'existe plus dans le référentiel — la fiche
+   * Vrai si un code stocké **n'apparaît pas** dans la liste projetée — la fiche
    * affichée est alors INCOMPLÈTE, et l'écran doit le dire plutôt que de rendre
    * une liste amputée qui a l'air entière.
+   *
+   * Deux causes, et elles comptent toutes les deux : le code n'existe plus dans
+   * le référentiel, **ou** il existe sans obligation UE (sarrasin, maïs, noix
+   * de coco) et la projection INCO l'écarte. Ne compter que la première a fait
+   * afficher « Sans allergène » sur des articles qui en déclaraient un.
+   *
+   * ⚠️ Corollaire pour l'écran : `allergens: []` ne vaut « aucun allergène »
+   * que si ce drapeau est **faux**.
    */
   readonly allergensIncomplete: boolean;
 

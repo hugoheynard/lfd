@@ -89,7 +89,25 @@ function toView(row: AdminRow): CatalogAdminItemView {
  * ce qui est juste à l'écriture et disproportionné à la lecture. Une fiche
  * amputée qui se tait serait pire — d'où le drapeau.
  */
-function allergensOf(raw: unknown): {
+/**
+ * Projette les codes stockés vers ce que l'écran montre, et dit si la liste
+ * rendue est **amputée**.
+ *
+ * Exporté pour le test : la règle qu'il porte est celle qui a menti en
+ * production, et elle ne se prouve pas à travers Prisma.
+ *
+ * ⚠️ Un code déclaré disparaît de la projection de **deux** façons : parce
+ * qu'il est inconnu du référentiel, ou parce qu'il est connu mais **sans
+ * obligation UE** — `toInco` écarte les deux. Les deux amputent la liste, donc
+ * les deux rendent la fiche incomplète.
+ *
+ * Régression : seul le premier cas était compté. Une déclinaison déclarant
+ * `SO` (noix de coco), `BWD` (sarrasin) ou `NM` (maïs) rendait `[]` avec
+ * `allergensIncomplete: false`, que l'écran catalogue affichait « Sans
+ * allergène » — l'affirmation positive « aucun allergène » sur un article qui
+ * en déclare un, sur une surface en service depuis le 2026-08-17.
+ */
+export function allergensOf(raw: unknown): {
   allergens: readonly CatalogAllergenView[] | null;
   allergensIncomplete: boolean;
 } {
@@ -98,12 +116,17 @@ function allergensOf(raw: unknown): {
     return { allergens: null, allergensIncomplete: false };
   }
   const codes = raw.filter((code): code is string => typeof code === "string");
-  const known = codes.filter((code) => findMapping(code) !== undefined);
+  // Un code n'est REPRÉSENTÉ que s'il ressort de la projection : connu du
+  // référentiel, ET porteur d'une catégorie INCO.
+  const represented = codes.filter((code) => {
+    const mapping = findMapping(code);
+    return mapping !== undefined && mapping.incoCategory !== null;
+  });
   return {
-    allergens: toInco(known, "fr").map((allergen) => ({
+    allergens: toInco(represented, "fr").map((allergen) => ({
       category: allergen.category,
       label: allergen.label,
     })),
-    allergensIncomplete: known.length !== codes.length,
+    allergensIncomplete: represented.length !== codes.length,
   };
 }
