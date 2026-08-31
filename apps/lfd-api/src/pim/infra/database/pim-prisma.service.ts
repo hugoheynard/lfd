@@ -63,6 +63,9 @@ export abstract class PimPrismaService {
   abstract readonly productMedia: PrismaService["productMedia"];
   abstract readonly categoryMedia: PrismaService["categoryMedia"];
   abstract readonly b2bChannelBinding: PrismaService["b2bChannelBinding"];
+  abstract readonly appellation: PrismaService["appellation"];
+  abstract readonly ingredient: PrismaService["ingredient"];
+  abstract readonly productIngredient: PrismaService["productIngredient"];
 
   /**
    * Le lot atomique, **forme TABLEAU seulement**.

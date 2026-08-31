@@ -2962,6 +2962,10 @@ model Product {
   /// Les taux propres à CE produit, par contexte. Absence = il hérite.
   contextVat ProductContextVat[]
 
+  /// Ce que la fiche cite comme provenance — facultatif, et sans rapport avec
+  /// la liste réglementaire d'ingrédients (voir `ProductIngredient`).
+  ingredients ProductIngredient[]
+
   /// La dérogation en TABLE — voir `ProductChannelOverride`. Seule source depuis
   /// d-2 ; la colonne `jsonb` qui la précédait est tombée en d-3.
   channelOverrideRows ProductChannelOverride?
@@ -3282,6 +3286,109 @@ model ProductEditorial {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("product_editorial")
+  @@schema("pim")
+}
+
+/// **Un signe officiel de qualité** — AOP, IGP, Label Rouge, AB.
+///
+/// Une TABLE et non un champ libre sur l'ingrédient, parce qu'une appellation
+/// est une affirmation réglementée : en champ libre, le même signe s'écrirait
+/// « AOP Beaufort », « A.O.P. Beaufort », « aop beaufort », et le badge
+/// deviendrait soit faux, soit impossible à poser sans une normalisation à la
+/// lecture — c'est-à-dire une table implicite, non déclarée et jamais relue.
+///
+/// La citer plutôt que la ré-écrire, c'est aussi pouvoir en corriger le libellé
+/// — ou le traduire — à un seul endroit.
+model Appellation {
+  id     String  @id
+  /// Identité stable, celle que le code cite quand il doit citer (`aop-beaufort`).
+  code   String  @unique
+  /// Ce qu'un humain lit — localisé.
+  label  Json
+  /// Le signe lui-même (« AOP »). Une chaîne, pas une énumération : reconnaître
+  /// un signe de plus doit être une ligne, jamais un déploiement.
+  scheme String  @default("")
+  /// En service. Une appellation retirée ne se propose plus à la saisie, mais
+  /// les ingrédients qui la portent déjà la gardent — la retirer n'est pas
+  /// l'effacer.
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ingredients Ingredient[]
+
+  @@map("appellation")
+  @@schema("pim")
+}
+
+/// **D'où vient ce qu'il y a dedans** — le beurre de Savoie AOP, la farine du
+/// moulin d'à côté.
+///
+/// ⚠️ Ce n'est PAS la liste réglementaire d'ingrédients (règlement UE
+/// 1169/2011). Celle-là est ordonnée par masse décroissante, porte des
+/// quantités, décrit une recette — elle appartient donc à la DÉCLINAISON, avec
+/// les allergènes (`NutritionDeclaration`). Ce référentiel-ci est une matière
+/// éditoriale et commerciale : il nourrit un badge et un argument de vente, et
+/// rien ici ne garantit ni l'exhaustivité ni l'ordre. Le jour où une mention
+/// obligatoire serait tirée d'ici, elle serait fausse.
+model Ingredient {
+  id          String @id
+  /// Identité stable — le libellé se traduit et se corrige, elle jamais.
+  key         String @unique
+  /// Le nom, localisé. C'est lui qu'on lit sur la fiche.
+  name        Json
+  /// Le propos, localisé. `null` = personne n'a écrit — jamais une chaîne vide.
+  description Json?
+  /// L'origine géographique — « Savoie, France ». Une chaîne, pas une table de
+  /// lieux : rien ne la calcule, ne la filtre ni ne la géocode. Le jour où l'on
+  /// voudra « tout ce qui vient d'un rayon de 50 km », ce sera une autre donnée,
+  /// et elle descendra de celle-ci.
+  origin      String @default("")
+
+  /// Le signe officiel, s'il y en a un. `Restrict` : une appellation citée ne
+  /// disparaît pas sous l'ingrédient qui l'affirme.
+  appellationId String?      @map("appellation_id")
+  appellation   Appellation? @relation(fields: [appellationId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products ProductIngredient[]
+
+  @@index([appellationId])
+  @@map("ingredient")
+  @@schema("pim")
+}
+
+/// Ce qu'une fiche **cite**, dans l'ordre où elle l'affiche.
+///
+/// Une table de liaison et non un tableau `Json` sur le produit : un `Json` ne
+/// peut pas porter de clé étrangère, si bien qu'effacer un ingrédient
+/// laisserait des références mortes dans les fiches sans que rien ne le dise.
+/// Ici, la base refuse d'effacer un ingrédient encore cité — c'est exactement
+/// le comportement voulu.
+///
+/// `position` est une décision ÉDITORIALE (« le beurre AOP en premier, c'est
+/// l'argument »), et non l'ordre réglementaire par masse, qui appartient à la
+/// déclaration nutritionnelle de la déclinaison.
+model ProductIngredient {
+  productId String  @map("product_id")
+  /// `Cascade` : les citations d'une fiche effacée n'ont plus d'objet.
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  ingredientId String     @map("ingredient_id")
+  /// `Restrict` : l'ingrédient, lui, est un référentiel — il ne s'efface pas
+  /// sous les fiches qui le citent.
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([productId, ingredientId])
+  @@index([ingredientId])
+  @@map("product_ingredient")
   @@schema("pim")
 }
 

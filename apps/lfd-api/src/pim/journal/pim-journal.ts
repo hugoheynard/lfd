@@ -23,7 +23,9 @@ export type PimSubjectType =
   | "point_of_sale"
   | "sales_context"
   | "accounting_rules"
-  | "catalog_revision";
+  | "catalog_revision"
+  | "ingredient"
+  | "appellation";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -189,6 +191,23 @@ export const PIM_EVENTS = {
   salesContextCreated: "sales_context.created",
   salesContextUpdated: "sales_context.updated",
   salesContextDeleted: "sales_context.deleted",
+  /**
+   * **La provenance** — les ingrédients, les appellations, et ce qu'une fiche
+   * en cite.
+   *
+   * Ils entrent au journal pour une raison qui leur est propre : une
+   * appellation est une affirmation RÉGLEMENTÉE. « Depuis quand ce produit
+   * revendique-t-il de l'AOP » est une question qu'on peut avoir à défendre,
+   * et elle n'a de réponse que si le geste est inscrit.
+   */
+  appellationCreated: "appellation.created",
+  appellationUpdated: "appellation.updated",
+  appellationDeleted: "appellation.deleted",
+  ingredientCreated: "ingredient.created",
+  ingredientUpdated: "ingredient.updated",
+  ingredientDeleted: "ingredient.deleted",
+  /** Ce qu'une fiche cite — la liste entière, l'ordre compris. */
+  productIngredientsSaved: "product.ingredients_saved",
 } as const;
 
 /**

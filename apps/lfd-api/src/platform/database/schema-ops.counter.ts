@@ -150,6 +150,12 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   CatalogRevision: "pim",
   CatalogRevisionItem: "pim",
   CatalogRevisionPublication: "pim",
+  // Les deux référentiels de provenance, et la liaison qui les cite. Le
+  // troisième motif « une dimension pilotée par la donnée » du référentiel,
+  // après les contextes de vente et les taux.
+  Appellation: "pim",
+  Ingredient: "pim",
+  ProductIngredient: "pim",
   MediaAsset: "pim",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",

@@ -174,3 +174,20 @@ export type {
 } from "./catalog-revision.js";
 
 export type { CatalogOverviewView } from "./catalog-overview.js";
+
+export {
+  createAppellationPayloadSchema,
+  updateAppellationPayloadSchema,
+  createIngredientPayloadSchema,
+  updateIngredientPayloadSchema,
+  setProductIngredientsPayloadSchema,
+} from "./ingredient.js";
+export type {
+  AppellationView,
+  IngredientView,
+  CreateAppellationPayload,
+  UpdateAppellationPayload,
+  CreateIngredientPayload,
+  UpdateIngredientPayload,
+  SetProductIngredientsPayload,
+} from "./ingredient.js";
