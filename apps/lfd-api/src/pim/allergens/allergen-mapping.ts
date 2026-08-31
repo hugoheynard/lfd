@@ -8,7 +8,11 @@
 //
 // Chaque code ci-dessous a été relevé sur la liste T4078 publiée par GS1 et
 // recoupé, un par un, avec le vocabulaire officiel `ref.gs1.org/voc/
-// AllergenTypeCode`. Les deux sources concordent sur les 29 codes retenus.
+// AllergenTypeCode`. Les deux sources concordent sur les 30 codes retenus.
+//
+// (Le compte disait « 29 » jusqu'au 2026-08-31 : `AW` — triticale, justifié plus
+// bas — avait été ajouté sans que la phrase suive. Un compte faux dans un
+// commentaire de provenance se recopie ; celui-ci l'a été jusque dans un plan.)
 //
 // La version précédente portait des codes PROVISOIRES, et trois d'entre eux
 // étaient faux — pas seulement incertains :
