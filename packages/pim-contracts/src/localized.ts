@@ -21,5 +21,27 @@ export const localizedTextSchema = z
     message: `Le texte doit avoir une valeur en « ${SOURCE_LOCALE} ».`,
   });
 
-/** La même chose, mais entièrement facultative — un champ qu'on peut ne pas remplir. */
-export const optionalLocalizedTextSchema = localizedTextSchema.optional();
+/**
+ * La même chose, mais entièrement facultative — un champ qu'on peut ne pas
+ * remplir.
+ *
+ * `nullish` et non `optional` : un écran qui enregistre une SECTION entière
+ * envoie ce qu'il affiche, et un champ vide y est `null`, pas absent. La forme
+ * `optional` seule refusait ces `null` en 400 — « expected record, received
+ * null » — donc la section Communication ne s'enregistrait plus du tout dès
+ * qu'un champ facultatif était laissé vide, c'est-à-dire presque toujours.
+ *
+ * Les deux formes de l'absence sont ramenées à `undefined` ICI, une fois : le
+ * value-object en aval n'en connaît qu'une, et lui en faire connaître deux
+ * aurait dispersé la question dans chaque champ.
+ */
+export const optionalLocalizedTextSchema = z.preprocess(
+  // `preprocess` et non `transform` : le `null` est ramené à « absent » AVANT
+  // la validation, si bien que le type de sortie reste exactement celui d'un
+  // champ facultatif. Un `transform` en aval aurait rendu la clé « présente et
+  // peut-être indéfinie », ce qui casse les appelants qui construisent un objet
+  // partiel — et le contrat n'a aucune raison de leur imposer ça pour accepter
+  // une forme d'entrée de plus.
+  (value) => value ?? undefined,
+  localizedTextSchema.optional(),
+);

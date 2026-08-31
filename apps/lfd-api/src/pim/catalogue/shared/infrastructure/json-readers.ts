@@ -26,12 +26,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function readLocalizedColumn(value: unknown, field: string): LocalizedText {
-  if (!isRecord(value) || typeof value["fr"] !== "string") {
+  if (!isRecord(value) || typeof value[SOURCE_LOCALE] !== "string") {
     throw new CorruptedRecordError(field);
   }
-  return typeof value["en"] === "string"
-    ? { fr: value["fr"], en: value["en"] }
-    : { fr: value["fr"] };
+  // Une BOUCLE sur `LOCALES`, comme `optionalLocalizedColumn` juste en dessous.
+  //
+  // Ces deux lignes ont été `fr` et `en`, nommées à la main. L'italien est entré
+  // dans le catalogue après elles, et rien ne les a suivies : le nom italien
+  // s'écrivait en base et disparaissait à CHAQUE relecture. Un bug d'affichage
+  // en apparence, une perte de données en vérité — la fiche se recharge, se
+  // ré-enregistre, et la traduction n'est plus là pour être réécrite.
+  //
+  // C'est le défaut que le reste du référentiel évite partout ailleurs en
+  // bouclant sur la liste : ouvrir une langue ne doit toucher aucun fichier.
+  const text: Record<string, string> = {};
+  for (const locale of LOCALES) {
+    const raw = value[locale];
+    if (typeof raw === "string" && raw.trim() !== "") {
+      text[locale] = raw;
+    }
+  }
+  return { ...text, [SOURCE_LOCALE]: value[SOURCE_LOCALE] };
 }
 
 export function readStringMapColumn(value: unknown, field: string): Record<string, string> {
