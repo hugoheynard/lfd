@@ -5,31 +5,33 @@
 .rule {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4);
+  gap: var(--fold-space-lg);
   max-width: 46rem;
 }
 
 .rule-head {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
   flex-wrap: wrap;
 }
 
 h2 {
   margin: 0;
-  font: var(--fold-type-title-s);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text);
 }
 
 /* La pastille : ce qui est EN PLACE, lisible sans lire le champ — lequel peut
    déjà porter une saisie non enregistrée. */
 .badge {
-  padding: var(--fold-space-1) var(--fold-space-3);
+  padding: var(--fold-space-xs) var(--fold-space-md);
   border-radius: var(--fold-radius-pill);
   background: var(--fold-color-surface-raised);
   border: 1px solid var(--fold-color-border);
-  font: var(--fold-type-label-s);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-medium);
   color: var(--fold-color-text);
   font-variant-numeric: tabular-nums;
 }
@@ -38,19 +40,20 @@ h2 {
 .badge-unset {
   color: var(--fold-color-text-muted);
   font-style: italic;
+  font-weight: var(--fold-weight-regular);
 }
 
 .rule-say,
 .preview {
   margin: 0;
-  font: var(--fold-type-body-m);
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
 
 .rule-form {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
   align-items: flex-start;
 }
 
