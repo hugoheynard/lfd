@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../journal/pim-journal.js";
+import { referenceFrom } from "../../../../platform/id/reference.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
@@ -11,6 +12,9 @@ import {
 import type { RevisionIndex } from "../domain/diff.js";
 import { toJsonObject, type JsonObject } from "../domain/fingerprint.js";
 import type { Revision } from "../domain/revision.js";
+
+/** Le préfixe des révisions — `P` aux produits, `C` aux sociétés, `R` ici. */
+const REVISION_PREFIX = "R";
 
 @Injectable()
 export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
@@ -23,7 +27,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
 
   async latest(): Promise<RevisionRecord | null> {
     const row = await this.prisma.catalogRevision.findFirst({
-      orderBy: { version: "desc" },
+      orderBy: { takenAt: "desc" },
       include: { _count: { select: { items: true } } },
     });
     return row === null ? null : toRecord(row);
@@ -31,16 +35,16 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
 
   async list(limit: number): Promise<readonly RevisionRecord[]> {
     const rows = await this.prisma.catalogRevision.findMany({
-      orderBy: { version: "desc" },
+      orderBy: { takenAt: "desc" },
       take: limit,
       include: { _count: { select: { items: true } } },
     });
     return rows.map((row) => toRecord(row));
   }
 
-  async byVersion(version: number): Promise<RevisionRecord | null> {
+  async byReference(reference: string): Promise<RevisionRecord | null> {
     const row = await this.prisma.catalogRevision.findUnique({
-      where: { version },
+      where: { reference },
       include: { _count: { select: { items: true } } },
     });
     return row === null ? null : toRecord(row);
@@ -108,12 +112,16 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     record: Omit<RevisionRecord, "id">,
     revision: Revision,
     ticket: WriteTicket,
-  ): Promise<string> {
+  ): Promise<{ readonly id: string; readonly reference: string }> {
     // Le laissez-passer n'ouvre rien ici : une révision ne modifie aucune table
     // du catalogue, elle le PHOTOGRAPHIE. Il est exigé quand même — c'est ce qui
     // garantit que le fait est tracé avant que la ligne existe.
     void ticket;
     const id = this.ids.next();
+    // Dérivée de l'identifiant, pas tirée d'un compteur : lire « le dernier
+    // numéro » pour ajouter un est une course, et deux publications simultanées
+    // calculaient le même.
+    const reference = referenceFrom(REVISION_PREFIX, id);
     // Trois écritures SÉQUENTIELLES, sans `$transaction` : l'atomicité vient de
     // l'unité de travail du handler, qui englobe déjà la trace du journal. En
     // ouvrir une seconde ici serait une transaction imbriquée — que Prisma ne
@@ -129,7 +137,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     await this.prisma.catalogRevision.create({
       data: {
         id,
-        version: record.version,
+        reference,
         label: record.label,
         hash: record.hash,
         header: { ...revision.header },
@@ -144,14 +152,14 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
         contentHash: item.hash,
       })),
     });
-    return id;
+    return { id, reference };
   }
 }
 
 /** Ligne + compte → enregistrement. Le compte vient de la base, pas d'une lecture. */
 function toRecord(row: {
   id: string;
-  version: number;
+  reference: string;
   label: string | null;
   hash: string;
   takenAt: Date;
@@ -160,7 +168,7 @@ function toRecord(row: {
 }): RevisionRecord {
   return {
     id: row.id,
-    version: row.version,
+    reference: row.reference,
     label: row.label,
     hash: row.hash,
     takenAt: row.takenAt,
@@ -177,17 +185,21 @@ function toRecord(row: {
  * ou illisible ⇒ `null`, qui est déjà la valeur de « jamais réglé ».
  */
 function ratioOf(header: unknown): number | null {
-  if (typeof header !== "object" || header === null || Array.isArray(header)) {
+  if (!isRecord(header)) {
     return null;
   }
-  const value = Reflect.get(header, "proRatioBp");
+  const value: unknown = header["proRatioBp"];
   return typeof value === "number" ? value : null;
 }
 
 /** Un payload stocké est un objet — sinon la ligne a été écrite hors de ce code. */
 function asRecord(payload: unknown): Record<string, unknown> {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+  if (!isRecord(payload)) {
     throw new TypeError("Un payload de révision stocké n'est pas un objet.");
   }
   return { ...payload };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -22,7 +22,7 @@ function overview(over: Partial<CatalogOverviewView> = {}): CatalogOverviewView 
     articles: 12,
     lastRevision: {
       id: 'rev_1',
-      version: 4,
+      reference: 'R-TEST4',
       label: 'rentrée',
       hash: 'h',
       takenAt: '2026-08-31T09:00:00.000Z',
@@ -66,7 +66,7 @@ describe('CatalogueOverviewPage', () => {
 
     const host = await render();
     expect(text(host)).toContain('Fiches');
-    expect(text(host)).toContain('Révision 4');
+    expect(text(host)).toContain('R-TEST4');
     expect(text(host)).toContain('rentrée');
   });
 

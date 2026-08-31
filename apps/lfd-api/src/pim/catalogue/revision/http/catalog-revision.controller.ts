@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
@@ -65,20 +65,18 @@ export class CatalogRevisionController {
   }
 
   /**
-   * Ce qui a changé entre deux ancres, **par leur numéro**.
+   * Ce qui a changé entre deux ancres, **par leur référence**.
    *
    * Deux paramètres de chemin plutôt qu'une requête : un diff est une ressource,
-   * il se partage par son URL — « regarde ce qui a bougé entre la 11 et la 12 »
-   * doit tenir dans un lien collé dans une conversation.
+   * il se partage par son URL — « regarde ce qui a bougé entre R-7WT4NA et
+   * R-9P2X4B » doit tenir dans un lien collé dans une conversation. Une
+   * référence y sert mieux qu'un rang : elle ne change pas si l'ordre change.
    *
    * L'ordre est celui qu'on demande. Le renverser échange « ajouté » et
    * « retiré », et c'est voulu : on regarde parfois en arrière.
    */
   @Get(":from/diff/:to")
-  diff(
-    @Param("from", ParseIntPipe) from: number,
-    @Param("to", ParseIntPipe) to: number,
-  ): Promise<CatalogRevisionDiffView> {
+  diff(@Param("from") from: string, @Param("to") to: string): Promise<CatalogRevisionDiffView> {
     return this.queries.execute<DiffCatalogRevisionsQuery, CatalogRevisionDiffView>(
       new DiffCatalogRevisionsQuery(from, to),
     );

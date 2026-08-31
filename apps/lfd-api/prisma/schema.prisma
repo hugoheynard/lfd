@@ -3318,11 +3318,21 @@ model CatalogContent {
 /// articles, si bien que « rien n'a changé depuis la dernière » se répond par
 /// une seule comparaison.
 model CatalogRevision {
-  id      String  @id
-  version Int     @unique
+  id String @id
+
+  /// La référence LISIBLE — `R-7WT4NA`. Ce qu'on cite dans une conversation ou
+  /// dans un document, comme `P-` pour un produit et `C-` pour une société.
+  ///
+  /// Elle a remplacé un `version Int` monotone, et pas seulement par cohérence :
+  /// « le numéro suivant » se calcule en LISANT le dernier, ce qui est une
+  /// course. Deux publications simultanées calculaient le même numéro, et
+  /// l'index unique en faisait échouer une — un push perdu pour une raison
+  /// étrangère au catalogue. Une référence dérivée de l'identifiant n'a pas de
+  /// prédécesseur à lire.
+  reference String  @unique
   /// Le nom que quelqu'un lui donne ("catalogue de la rentrée"). `NULL` = pas nommée.
-  label   String?
-  hash    String
+  label     String?
+  hash      String
 
   /// Ce qui change tout sans qu'aucune ligne d'article ne bouge — le rapport
   /// prix pro / prix public. Sans lui, une remise passée de 10 % à 12 % ne se
@@ -3335,6 +3345,8 @@ model CatalogRevision {
   items        CatalogRevisionItem[]
   publications CatalogRevisionPublication[]
 
+  /// L'ordre de lecture : la plus récente d'abord. Il était porté par `version`,
+  /// qui n'existe plus — et une ancre se lit par sa DATE, pas par son rang.
   @@index([takenAt])
   @@map("catalog_revision")
   @@schema("pim")

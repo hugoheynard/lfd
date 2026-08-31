@@ -44,7 +44,7 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 
 interface Taken {
   readonly id: string;
-  readonly version: number;
+  readonly reference: string;
   readonly hash: string;
   readonly created: boolean;
 }
@@ -81,6 +81,12 @@ async function aProduct(nameFr: string): Promise<{ id: string; variantId: string
   return { id, variantId: detail.variants.find((v) => v.isDefault)?.id ?? "" };
 }
 
+/** Les deux références les plus récentes : [la dernière, l'avant-dernière]. */
+async function twoLatest(): Promise<[string, string]> {
+  const rows = jsonBody<{ reference: string }[]>(await staff().get(REVISIONS).expect(200));
+  return [rows[0]?.reference ?? "", rows[1]?.reference ?? ""];
+}
+
 async function take(label: string | null = null): Promise<Taken> {
   const response = await staff().post(REVISIONS).send({ label });
   expect(response.status).toBe(201);
@@ -93,7 +99,8 @@ describe("Ancre de publication du catalogue", () => {
 
     const taken = await take("catalogue de la rentrée");
 
-    expect(taken).toMatchObject({ version: 1, created: true });
+    expect(taken.created).toBe(true);
+    expect(taken.reference).toMatch(/^R-[A-Z2-9]{6}$/u);
     expect(await ctx.prisma.catalogRevision.count()).toBe(1);
   });
 
@@ -132,7 +139,6 @@ describe("Ancre de publication du catalogue", () => {
     const second = await take();
 
     expect(second.created).toBe(true);
-    expect(second.version).toBe(2);
     expect(second.hash).not.toBe(first.hash);
   });
 
@@ -188,11 +194,11 @@ describe("Ancre de publication du catalogue", () => {
       .expect(200);
     await take("seconde");
 
-    const rows = jsonBody<{ version: number; label: string | null; articles: number }[]>(
+    const rows = jsonBody<{ reference: string; label: string | null; articles: number }[]>(
       await staff().get(REVISIONS).expect(200),
     );
-    expect(rows.map((row) => row.version)).toEqual([2, 1]);
-    expect(rows[0]).toMatchObject({ label: "seconde", articles: 1 });
+    expect(rows.map((row) => row.label)).toEqual(["seconde", "première"]);
+    expect(rows[0]).toMatchObject({ articles: 1 });
   });
 
   it("trace le fait, avec la portée de ce qu'il fige", async () => {
@@ -204,11 +210,7 @@ describe("Ancre de publication du catalogue", () => {
       where: { type: "catalog_revision.taken" },
     });
     expect(events).toHaveLength(1);
-    expect(events[0]?.payload).toMatchObject({
-      version: 1,
-      label: "rentrée",
-      blast: { articles: 1 },
-    });
+    expect(events[0]?.payload).toMatchObject({ label: "rentrée", blast: { articles: 1 } });
   });
 });
 
@@ -230,12 +232,13 @@ describe("Diff entre deux ancres", () => {
       .expect(200);
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       changed: { sku: string; fields: { field: string; before: string; after: string }[] }[];
       added: string[];
       removed: string[];
       header: unknown[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     expect(diff.added).toEqual([]);
     expect(diff.removed).toEqual([]);
@@ -265,9 +268,10 @@ describe("Diff entre deux ancres", () => {
     await ctx.drain();
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       changed: { fields: { field: string; attributed: boolean; by: string | null }[] }[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     const name = diff.changed[0]?.fields.find((field) => field.field === "name");
     expect(name?.attributed).toBe(true);
@@ -291,9 +295,10 @@ describe("Diff entre deux ancres", () => {
     await ctx.prisma.activityEvent.deleteMany({ where: { type: "product.pricing_saved" } });
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       changed: { fields: { field: string; attributed: boolean; by: string | null }[] }[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     expect(diff.changed[0]?.fields[0]).toMatchObject({ attributed: false, by: null, at: null });
   });
@@ -344,10 +349,11 @@ describe("Diff entre deux ancres", () => {
     await ctx.drain();
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       causes: { type: string; label: string; by: string | null; explains: string[] }[];
       changed: { fields: { field: string; attributed: boolean; cause: string | null }[] }[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     expect(diff.causes.map((cause) => cause.type)).toContain("vat_rate.rate_changed");
     const cause = diff.causes.find((entry) => entry.type === "vat_rate.rate_changed");
@@ -377,9 +383,10 @@ describe("Diff entre deux ancres", () => {
     await ctx.drain();
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       changed: { fields: { field: string; before: string; after: string }[] }[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     const fields = diff.changed[0]?.fields.map((field) => field.field) ?? [];
     expect(fields).toContain("readyBy");
@@ -394,8 +401,9 @@ describe("Diff entre deux ancres", () => {
     await aProduct("Pain au chocolat");
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{ added: string[]; changed: unknown[] }>(
-      await staff().get(`${REVISIONS}/1/diff/2`).expect(200),
+      await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200),
     );
     expect(diff.added).toHaveLength(1);
     expect(diff.changed).toEqual([]);
@@ -411,10 +419,11 @@ describe("Diff entre deux ancres", () => {
     await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 8_800 }).expect(200);
     await take();
 
+    const [to, from] = await twoLatest();
     const diff = jsonBody<{
       header: { field: string; before: string; after: string }[];
       changed: unknown[];
-    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
     expect(diff.header).toEqual([{ field: "proRatioBp", before: "—", after: "8800" }]);
     expect(diff.changed).toEqual([]);
@@ -427,8 +436,9 @@ describe("Diff entre deux ancres", () => {
     await aProduct("Pain au chocolat");
     await take();
 
+    const [to, from] = await twoLatest();
     const backwards = jsonBody<{ added: string[]; removed: string[] }>(
-      await staff().get(`${REVISIONS}/2/diff/1`).expect(200),
+      await staff().get(`${REVISIONS}/${to}/diff/${from}`).expect(200),
     );
     expect(backwards.added).toEqual([]);
     expect(backwards.removed).toHaveLength(1);
@@ -438,7 +448,8 @@ describe("Diff entre deux ancres", () => {
     await aProduct("Croissant");
     await take();
 
-    await staff().get(`${REVISIONS}/1/diff/99`).expect(404);
+    const [to] = await twoLatest();
+    await staff().get(`${REVISIONS}/${to}/diff/R-ZZZZZZ`).expect(404);
   });
 });
 

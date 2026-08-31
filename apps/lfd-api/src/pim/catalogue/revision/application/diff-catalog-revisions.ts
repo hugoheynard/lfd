@@ -24,8 +24,8 @@ import { RevisionNotFoundError } from "../domain/errors/revision-errors.js";
 
 export class DiffCatalogRevisionsQuery {
   constructor(
-    readonly fromVersion: number,
-    readonly toVersion: number,
+    readonly fromReference: string,
+    readonly toReference: string,
   ) {}
 }
 
@@ -50,8 +50,8 @@ export class DiffCatalogRevisionsHandler implements IQueryHandler<
 
   async execute(query: DiffCatalogRevisionsQuery): Promise<CatalogRevisionDiffView> {
     const [from, to] = await Promise.all([
-      this.require(query.fromVersion),
-      this.require(query.toVersion),
+      this.require(query.fromReference),
+      this.require(query.toReference),
     ]);
     const [beforeIndex, afterIndex] = await Promise.all([
       this.revisions.indexOf(from.id),
@@ -146,10 +146,10 @@ export class DiffCatalogRevisionsHandler implements IQueryHandler<
     };
   }
 
-  private async require(version: number): Promise<RevisionRecord> {
-    const found = await this.revisions.byVersion(version);
+  private async require(reference: string): Promise<RevisionRecord> {
+    const found = await this.revisions.byReference(reference);
     if (found === null) {
-      throw new RevisionNotFoundError(version);
+      throw new RevisionNotFoundError(reference);
     }
     return found;
   }
@@ -182,7 +182,7 @@ function unattributed(
 export function summaryOf(record: RevisionRecord): CatalogRevisionSummaryView {
   return {
     id: record.id,
-    version: record.version,
+    reference: record.reference,
     label: record.label,
     hash: record.hash,
     takenAt: record.takenAt.toISOString(),

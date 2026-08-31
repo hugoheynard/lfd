@@ -20,7 +20,8 @@ export interface RevisionPublication {
 /** Une révision posée, telle qu'on la relit. */
 export interface RevisionRecord {
   readonly id: string;
-  readonly version: number;
+  /** La référence lisible — `R-7WT4NA`. C'est par elle qu'on cite une ancre. */
+  readonly reference: string;
   readonly label: string | null;
   readonly hash: string;
   readonly takenAt: Date;
@@ -43,21 +44,24 @@ export abstract class CatalogRevisionRepository {
   /**
    * Pose la révision : les contenus **manquants** d'abord, l'ancre ensuite.
    *
+   * Rend l'identifiant ET la référence : cette dernière est FABRIQUÉE ici, à
+   * partir de l'identifiant, et l'appelant ne peut donc pas la connaître avant.
+   *
    * « Manquants » est tout l'objet du magasin partagé — un contenu déjà connu
    * n'est pas réécrit, il est référencé. Une capture d'un catalogue inchangé
    * n'écrit donc que la ligne d'ancre et ses appartenances.
    */
   abstract save(
-    record: Omit<RevisionRecord, "id" | "articles">,
+    record: Omit<RevisionRecord, "id" | "articles" | "reference">,
     revision: Revision,
     ticket: WriteTicket,
-  ): Promise<string>;
+  ): Promise<{ readonly id: string; readonly reference: string }>;
 
   /** Les ancres, de la plus récente à la plus ancienne. */
   abstract list(limit: number): Promise<readonly RevisionRecord[]>;
 
-  /** Une ancre par son numéro. `null` = elle n'existe pas. */
-  abstract byVersion(version: number): Promise<RevisionRecord | null>;
+  /** Une ancre par sa référence. `null` = elle n'existe pas. */
+  abstract byReference(reference: string): Promise<RevisionRecord | null>;
 
   /**
    * De quoi COMPARER une révision sans la lire : une empreinte par SKU, et

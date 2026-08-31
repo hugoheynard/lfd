@@ -23,7 +23,7 @@ import { RevisionsPage } from '../revisions-page/revisions-page';
 function revision(over: Partial<CatalogRevisionSummaryView> = {}): CatalogRevisionSummaryView {
   return {
     id: 'rev_2',
-    version: 2,
+    reference: 'R-TEST2',
     label: 'rentrée',
     hash: 'h2',
     takenAt: '2026-08-31T09:00:00.000Z',
@@ -34,7 +34,7 @@ function revision(over: Partial<CatalogRevisionSummaryView> = {}): CatalogRevisi
 }
 
 const EMPTY_DIFF: CatalogRevisionDiffView = {
-  from: revision({ version: 1, id: 'rev_1', label: null, hash: 'h1' }),
+  from: revision({ reference: 'R-TEST1', id: 'rev_1', label: null, hash: 'h1' }),
   to: revision(),
   header: [],
   causes: [],
@@ -52,7 +52,9 @@ function setup(options: {
     list: vi.fn().mockResolvedValue(options.list ?? []),
     take: vi
       .fn()
-      .mockResolvedValue(options.take ?? { id: 'r', version: 1, hash: 'h', created: true }),
+      .mockResolvedValue(
+        options.take ?? { id: 'r', reference: 'R-TEST1', hash: 'h', created: true },
+      ),
     diff: vi.fn().mockResolvedValue(options.diff ?? EMPTY_DIFF),
   };
   TestBed.configureTestingModule({
@@ -84,7 +86,7 @@ describe('RevisionsPage', () => {
   });
 
   it('dit qu’il faut deux ancres avant de pouvoir comparer', async () => {
-    setup({ list: [revision({ version: 1 })] });
+    setup({ list: [revision({ reference: 'R-TEST01' })] });
 
     const host = render();
     await Promise.resolve();
@@ -92,7 +94,7 @@ describe('RevisionsPage', () => {
   });
 
   it('liste les ancres avec leur nom et leur portée', async () => {
-    setup({ list: [revision(), revision({ id: 'rev_1', version: 1, label: null })] });
+    setup({ list: [revision(), revision({ id: 'rev_1', reference: 'R-TEST1', label: null })] });
     // La page charge dans son constructeur : on laisse la microtâche se vider
     // avant de peindre, sinon on rend une liste que le store n'a pas encore.
     const fixture = TestBed.createComponent(RevisionsPage);
@@ -112,21 +114,21 @@ describe('RevisionsPage', () => {
    * n'a pas bougé ; afficher « posée » ferait croire à une version de plus.
    */
   it('dit que rien n’a été posé quand le catalogue n’a pas bougé', async () => {
-    setup({ take: { id: 'rev_2', version: 2, hash: 'h2', created: false } });
+    setup({ take: { id: 'rev_2', reference: 'R-TEST2', hash: 'h2', created: false } });
 
     await TestBed.inject(RevisionsStore).take('peu importe');
 
     expect(TestBed.inject(RevisionsStore).lastTake()).toBe(
-      "Le catalogue n'a pas bougé depuis la révision 2 : rien n'a été préparé.",
+      "Le catalogue n'a pas bougé depuis R-TEST2 : rien n'a été préparé.",
     );
   });
 
   it('annonce la révision posée quand il y en a une', async () => {
-    setup({ take: { id: 'rev_3', version: 3, hash: 'h3', created: true } });
+    setup({ take: { id: 'rev_3', reference: 'R-TEST3', hash: 'h3', created: true } });
 
     await TestBed.inject(RevisionsStore).take('rentrée');
 
-    expect(TestBed.inject(RevisionsStore).lastTake()).toBe('Révision 3 préparée.');
+    expect(TestBed.inject(RevisionsStore).lastTake()).toBe('Révision R-TEST3 préparée.');
   });
 
   /** Un nom fait de blancs n'est pas un nom : il part à `null`. */

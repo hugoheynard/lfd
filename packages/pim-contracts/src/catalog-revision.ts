@@ -18,8 +18,17 @@ import type { FieldDiffView } from "./shopify.js";
 /** Une ancre, en une ligne de liste. */
 export interface CatalogRevisionSummaryView {
   readonly id: string;
-  /** Monotone : elle donne un ordre lisible ("la 12") là où un ULID ne trie que. */
-  readonly version: number;
+  /**
+   * La référence LISIBLE — `R-7WT4NA`. Ce qu'on cite, ce qu'on colle dans un
+   * lien, ce qu'on dit à voix haute. Même famille que `P-` pour un produit et
+   * `C-` pour une société, même alphabet sans caractères ambigus.
+   *
+   * Elle a remplacé un numéro monotone. « Le suivant » se calcule en lisant le
+   * dernier — une course, dont deux publications simultanées faisaient échouer
+   * l'une pour une raison étrangère au catalogue. Et un rang n'est pas une
+   * identité : il change si l'ordre change.
+   */
+  readonly reference: string;
   /** `null` = personne ne l'a nommée. */
   readonly label: string | null;
   readonly hash: string;
@@ -124,7 +133,7 @@ export interface CatalogRevisionDiffView {
  */
 export interface CatalogRevisionTakenView {
   readonly id: string;
-  readonly version: number;
+  readonly reference: string;
   readonly hash: string;
   readonly created: boolean;
 }

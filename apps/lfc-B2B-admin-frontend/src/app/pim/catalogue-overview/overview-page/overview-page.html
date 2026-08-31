@@ -53,7 +53,7 @@
           </p>
         } @else {
           <p class="ov-last">
-            <strong>Révision {{ o.lastRevision.version }}</strong>
+            <strong>{{ o.lastRevision.reference }}</strong>
             {{ o.lastRevision.label ?? 'sans nom' }} · {{ o.lastRevision.articles }} articles ·
             {{ when(o.lastRevision.takenAt) }} par {{ o.lastRevision.takenBy }}
           </p>

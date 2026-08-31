@@ -65,14 +65,14 @@ export class RevisionsStore {
       const taken = await this.api.take(trimmed === '' ? null : trimmed);
       this.lastTakeValue.set(
         taken.created
-          ? `Révision ${String(taken.version)} préparée.`
-          : `Le catalogue n'a pas bougé depuis la révision ${String(taken.version)} : rien n'a été préparé.`,
+          ? `Révision ${taken.reference} préparée.`
+          : `Le catalogue n'a pas bougé depuis ${taken.reference} : rien n'a été préparé.`,
       );
       this.items.set(await this.api.list());
     });
   }
 
-  async compare(from: number, to: number): Promise<void> {
+  async compare(from: string, to: string): Promise<void> {
     await this.run(async () => {
       this.diffValue.set(await this.api.diff(from, to));
     });

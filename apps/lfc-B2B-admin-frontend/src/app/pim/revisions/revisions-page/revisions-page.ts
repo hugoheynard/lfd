@@ -53,33 +53,32 @@ export class RevisionsPage {
   protected readonly label = signal('');
 
   /**
-   * Les deux bornes de la comparaison, en NUMÉROS de version.
+   * Les deux bornes de la comparaison, par RÉFÉRENCE.
    *
    * `null` tant que la liste n'est pas là. Elles se posent d'elles-mêmes sur les
    * deux plus récentes une fois chargée : c'est la comparaison qu'on veut neuf
    * fois sur dix, et l'imposer à la main à chaque ouverture serait un péage.
    */
-  protected readonly from = signal<number | null>(null);
-  protected readonly to = signal<number | null>(null);
+  protected readonly from = signal<string | null>(null);
+  protected readonly to = signal<string | null>(null);
 
   /**
    * Les révisions telles que les listes déroulantes les proposent.
    *
-   * `value` est une CHAÎNE : `fold-listbox` échange des chaînes, comme un
-   * `<select>` natif. Les numéros de version restent des nombres dans les
-   * signaux — c'est ce qu'ils sont — et la conversion vit à la frontière du
-   * composant, pas dans le modèle.
+   * `value` est la référence : `fold-listbox` échange des chaînes, comme un
+   * `<select>` natif, et une référence en est une. Il n'y a donc plus rien à
+   * convertir à la frontière — c'est ce que le numéro de version imposait.
    */
   protected readonly options = computed(() =>
     this.store.revisions().map((revision) => ({
-      value: String(revision.version),
-      text: `${String(revision.version)} — ${revision.label ?? 'sans nom'} · ${this.when(revision.takenAt)}`,
+      value: revision.reference,
+      text: `${revision.reference} — ${revision.label ?? 'sans nom'} · ${this.when(revision.takenAt)}`,
     })),
   );
 
-  /** Les deux bornes, en chaînes, pour les listes déroulantes. */
-  protected readonly fromValue = computed(() => textOf(this.from()));
-  protected readonly toValue = computed(() => textOf(this.to()));
+  /** Les deux bornes, telles que les listes déroulantes les portent. */
+  protected readonly fromValue = computed(() => this.from() ?? '');
+  protected readonly toValue = computed(() => this.to() ?? '');
 
   protected readonly canCompare = computed(() => {
     const [from, to] = [this.from(), this.to()];
@@ -109,15 +108,13 @@ export class RevisionsPage {
   }
 
   /**
-   * Les listes déroulantes rendent des chaînes ; les versions sont des nombres.
+   * Une référence traverse telle quelle : c'est déjà une chaîne.
    *
-   * `null` traverse aussi — `fold-listbox` peut se vider — et on ne le convertit
-   * pas en zéro : une borne absente n'est pas la révision zéro, et le bouton
-   * « Comparer » reste désarmé tant qu'il en manque une.
+   * `null` aussi — `fold-listbox` peut se vider — et une borne vide laisse
+   * « Comparer » désarmé plutôt que d'inventer une valeur.
    */
   protected select(target: 'from' | 'to', value: string | null): void {
-    const version = value === null ? Number.NaN : Number.parseInt(value, 10);
-    (target === 'from' ? this.from : this.to).set(Number.isNaN(version) ? null : version);
+    (target === 'from' ? this.from : this.to).set(value === null || value === '' ? null : value);
   }
 
   private async refresh(): Promise<void> {
@@ -134,12 +131,7 @@ export class RevisionsPage {
    */
   private preselect(): void {
     const revisions = this.store.revisions();
-    this.to.set(revisions[0]?.version ?? null);
-    this.from.set(revisions[1]?.version ?? null);
+    this.to.set(revisions[0]?.reference ?? null);
+    this.from.set(revisions[1]?.reference ?? null);
   }
-}
-
-/** Un numéro de version, tel qu'une liste déroulante le porte. `''` = aucun. */
-function textOf(version: number | null): string {
-  return version === null ? '' : String(version);
 }

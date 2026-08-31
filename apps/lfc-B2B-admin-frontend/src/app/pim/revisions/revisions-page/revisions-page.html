@@ -69,7 +69,7 @@
         <ul class="rp-list">
           @for (revision of store.revisions(); track revision.id) {
             <li class="rp-row">
-              <span class="rp-version">{{ revision.version }}</span>
+              <span class="rp-version">{{ revision.reference }}</span>
               <span class="rp-label">{{ revision.label ?? 'sans nom' }}</span>
               <span class="rp-meta">{{ revision.articles }} articles</span>
               <span class="rp-meta">{{ when(revision.takenAt) }}</span>

@@ -64,31 +64,38 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     );
 
     if (latest !== null && latest.hash === revision.hash) {
-      return { id: latest.id, version: latest.version, hash: latest.hash, created: false };
+      return {
+        id: latest.id,
+        reference: latest.reference,
+        hash: latest.hash,
+        created: false,
+      };
     }
 
     const takenAt = new Date(this.clock.now());
     const takenBy = currentRequestContext()?.actor.id ?? "system";
-    const version = (latest?.version ?? 0) + 1;
-
     // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
     // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
     // non, l'historique affirmerait une révision que la base ne porte pas.
-    const id = await this.uow.run(async () => {
+    const posed = await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.catalogRevisionTaken,
         subjectType: "catalog_revision",
-        subjectId: `v${String(version)}`,
-        payload: { version, hash: revision.hash, label: command.label },
+        // Le HASH comme sujet, faute de mieux : la référence est fabriquée par
+        // le dépôt, donc inconnue avant l'écriture, et la trace précède
+        // l'écriture par construction. L'empreinte désigne la même chose et ne
+        // dépend de personne.
+        subjectId: revision.hash,
+        payload: { hash: revision.hash, label: command.label },
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });
       return this.revisions.save(
-        { version, label: command.label, hash: revision.hash, takenAt, takenBy },
+        { label: command.label, hash: revision.hash, takenAt, takenBy },
         revision,
         ticket,
       );
     });
-    return { id, version, hash: revision.hash, created: true };
+    return { ...posed, hash: revision.hash, created: true };
   }
 }

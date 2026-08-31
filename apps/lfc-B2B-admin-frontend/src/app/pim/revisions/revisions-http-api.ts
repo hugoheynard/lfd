@@ -28,7 +28,7 @@ export class RevisionsHttpApi {
     return firstValueFrom(this.http.post<CatalogRevisionTakenView>(this.url(), { label }));
   }
 
-  diff(from: number, to: number): Promise<CatalogRevisionDiffView> {
+  diff(from: string, to: string): Promise<CatalogRevisionDiffView> {
     return firstValueFrom(
       this.http.get<CatalogRevisionDiffView>(`${this.url()}/${from}/diff/${to}`),
     );
