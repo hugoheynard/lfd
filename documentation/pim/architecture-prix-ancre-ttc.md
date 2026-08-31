@@ -1,8 +1,8 @@
 # Le prix ancré au TTC — et le rapport prix public / prix pro
 
-> **État : tranche 1 livrée** (2026-08-31) — le rapport a une maison, une API et
-> ses tests. **Rien ne le lit encore : aucun prix n'a changé.** Les tranches 2 à
-> 4 sont décrites ici mais pas écrites.
+> **État : tranches 1 et 2 livrées** (2026-08-31) — le rapport a une maison, une
+> API, un écran et ses tests. **Rien ne le lit encore : aucun prix n'a changé**,
+> et l'écran le dit. Les tranches 3 et 4 sont décrites ici mais pas écrites.
 >
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
 > — où vit le taux, et pourquoi une carte naît d'une règle fiscale ;
@@ -116,6 +116,29 @@ le comportement d'aujourd'hui tant que personne ne bascule un article.
   pas, et le jour du raccordement on voudra savoir depuis quand le rapport vaut
   ce qu'il vaut. Reposer la même valeur ne trace rien.
 
+## 6 bis. Ce que la tranche 2 a posé
+
+- **Un écran à part**, `/pim/regles-comptables`, et pas un bloc de plus sur
+  « Taux de TVA » : un taux est imposé de l'extérieur, une remise est décidée
+  par la maison. Les ranger ensemble parce qu'ils tiennent dans la même phrase
+  (« ce qu'on facture ») mélangerait la loi et la politique commerciale. Même
+  mur (`tax:read` / `tax:write`) — la décision est comptable.
+- **On saisit une remise, on stocke un rapport.** « Le pro paie 10 % de moins »
+  est le mot qu'on emploie ; `9 000` est ce qui multiplie un prix. La traduction
+  vit en un seul endroit (`pro-discount.ts`), et refuse plutôt que de corriger
+  en silence — 100 % de remise donnerait un prix nul, que la base rejette.
+- **Le calcul a déménagé dans le contrat.** L'écran montre ce que le réglage
+  produit sur un article à 10,00 € TTC ; il appelle `proPriceFromPublic`, la
+  même fonction que le VO du serveur. C'était le risque nommé au § 7 de la
+  tranche 1 : il se refermait au moment précis où on allait l'ouvrir.
+- **Trois blancs, trois phrases différentes.** « Jamais réglé » (à saisir),
+  « réglage illisible » (à réessayer, et surtout : aucun formulaire, sinon on
+  écraserait ce qu'on n'a pas su lire), « droit manquant » (nommé). Les
+  confondre en un seul écran vide était le raccourci évident.
+- **L'écran dit qu'il n'est pas branché.** Un bandeau annonce que la remise est
+  enregistrée et tracée mais qu'aucun prix ne s'en sert encore. L'honnêteté
+  coûte une phrase ; la découvrir soi-même coûte une facture.
+
 ## 7. Restant à trancher
 
 - **La conversion TTC → HT divisera** — et c'est là qu'il faudra rouvrir la
@@ -125,7 +148,6 @@ le comportement d'aujourd'hui tant que personne ne bascule un article.
 - **Shopify est nativement TTC** (« prices include tax »). À vérifier avant la
   tranche 4 : l'ancrage TTC pourrait **simplifier** la projection au lieu de la
   compliquer.
-- **Le calcul ne doit exister qu'une fois.** L'aperçu à l'écran et le calcul
-  serveur sont exactement le genre de règle qui finit écrite deux fois, puis
-  diverge d'un centime d'arrondi. Un seul module, exporté par
-  `@lfd/pim-contracts`.
+- ~~**Le calcul ne doit exister qu'une fois.**~~ Réglé en tranche 2 :
+  `proPriceFromPublic` vit dans `@lfd/pim-contracts`, et le VO du serveur y
+  délègue. La conversion TTC → HT de la tranche 3 devra y entrer aussi.

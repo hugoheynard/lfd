@@ -1,0 +1,82 @@
+<fold-page-layout icon="tax" title="Règles comptables">
+  <p description>
+    Ce que la maison décide <strong>une fois</strong>, pour tout le catalogue. Une seule règle
+    aujourd'hui&nbsp;: la <strong>remise professionnelle</strong> — l'écart entre le prix public TTC
+    et le prix professionnel TTC. Les <strong>taux de TVA</strong>, eux, sont imposés de l'extérieur
+    et vivent dans leur propre écran.
+  </p>
+
+  @if (loadError() !== null) {
+    <!-- Distinct de « jamais réglé » : les deux affichent un blanc, mais l'un
+         invite à saisir et l'autre à réessayer. Proposer le formulaire ici
+         écraserait un réglage qu'on n'a pas su lire. -->
+    <fold-callout variant="alert">
+      <strong>Réglage illisible.</strong> Les règles comptables n'ont pas pu être chargées, donc on
+      ne sait pas ce qui est en place. Rien n'est proposé à la saisie tant que c'est le cas.
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-callout>
+  } @else {
+    <section class="rule">
+      <header class="rule-head">
+        <h2>Remise professionnelle</h2>
+        <span class="badge" [class.badge-unset]="savedRatioBp() === null">{{ savedLabel() }}</span>
+      </header>
+
+      <p class="rule-say">
+        Le professionnel paie ce pourcentage <strong>de moins</strong> que le particulier, sur le
+        prix <strong>TTC</strong>. La remise s'applique donc <em>avant</em> toute TVA&nbsp;: c'est
+        le prix affiché qui est comparé, pas le prix hors taxe — dont le montant dépend du taux, et
+        change d'un contexte de vente à l'autre.
+      </p>
+
+      @if (canWrite()) {
+        <div class="rule-form">
+          <fold-number-input
+            label="Remise (%)"
+            [min]="0"
+            [max]="99.99"
+            [step]="0.5"
+            [disabled]="isLoading()"
+            [value]="draftDiscount()"
+            (valueChange)="draftDiscount.set($event)"
+          />
+
+          <!-- L'aperçu est calculé par `proPriceFromPublic`, celui du serveur :
+               un aperçu qui arrondirait autrement que la facture serait pire
+               qu'aucun aperçu. -->
+          <p class="preview">
+            @if (samplePro(); as pro) {
+              Un article à <strong>{{ samplePublic }}</strong> TTC public sera à
+              <strong>{{ pro }}</strong> TTC pour un professionnel.
+            } @else {
+              Une remise se saisit entre 0 et 99,99&nbsp;%.
+            }
+          </p>
+
+          <button
+            foldButton
+            emphasis="solid"
+            intent="primary"
+            [disabled]="!canSubmit()"
+            (click)="submit()"
+          >
+            Enregistrer
+          </button>
+        </div>
+      } @else {
+        <fold-callout appearance="inset" variant="info">
+          Poser la remise professionnelle demande le droit <strong>tax:write</strong>, celui-là même
+          qui ouvre les taux de TVA — c'est une décision comptable.
+        </fold-callout>
+      }
+
+      <!-- Le dire ici plutôt que de laisser croire qu'une saisie retarife le
+           catalogue. L'honnêteté sur ce qui n'est pas encore branché coûte une
+           phrase ; la découvrir soi-même coûte une facture. -->
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Pas encore appliquée.</strong> La remise est enregistrée et tracée, mais aucun prix
+        ne s'en sert pour l'instant&nbsp;: le raccordement au catalogue vient avec l'ancrage TTC.
+      </fold-callout>
+    </section>
+  }
+</fold-page-layout>

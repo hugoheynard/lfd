@@ -89,6 +89,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
   // `tax` existe pour ça — sans retirer de lecture à qui l'avait.
   'pim/tva': 'tax:read',
+  // Même droit que les taux : décider ce que le professionnel paie par
+  // rapport au particulier est une décision comptable.
+  'pim/regles-comptables': 'tax:read',
   'pim/collections': null,
   'pim/publication': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle

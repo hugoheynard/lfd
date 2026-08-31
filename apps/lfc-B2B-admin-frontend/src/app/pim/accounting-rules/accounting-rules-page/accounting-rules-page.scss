@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-4);
+  max-width: 46rem;
+}
+
+.rule-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-3);
+  flex-wrap: wrap;
+}
+
+h2 {
+  margin: 0;
+  font: var(--fold-type-title-s);
+  color: var(--fold-color-text);
+}
+
+/* La pastille : ce qui est EN PLACE, lisible sans lire le champ — lequel peut
+   déjà porter une saisie non enregistrée. */
+.badge {
+  padding: var(--fold-space-1) var(--fold-space-3);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-raised);
+  border: 1px solid var(--fold-color-border);
+  font: var(--fold-type-label-s);
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Jamais réglé : la pastille doit se lire comme un manque, pas comme une valeur. */
+.badge-unset {
+  color: var(--fold-color-text-muted);
+  font-style: italic;
+}
+
+.rule-say,
+.preview {
+  margin: 0;
+  font: var(--fold-type-body-m);
+  color: var(--fold-color-text-muted);
+}
+
+.rule-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+  align-items: flex-start;
+}
+
+.preview {
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}

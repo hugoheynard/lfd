@@ -35,6 +35,20 @@ export const pimRoutes: Routes = [
           import('./catalogue/vat-rates/vat-rates-page').then((m) => m.VatRatesPage),
       },
       {
+        // Même mur que les taux, et pour la même raison : décider ce que le
+        // professionnel paie par rapport au particulier est une décision
+        // comptable, pas une édition de catalogue. Écran à part du référentiel
+        // fiscal — un taux est imposé de l'extérieur, une remise est décidée
+        // par la maison.
+        path: 'regles-comptables',
+        canActivate: [permissionGuard('tax:read')],
+        title: 'Règles comptables — LFC B2B admin',
+        loadComponent: () =>
+          import('./accounting-rules/accounting-rules-page/accounting-rules-page').then(
+            (m) => m.AccountingRulesPage,
+          ),
+      },
+      {
         // Le registre décide de ce qu'on peut VENDRE, mais il ne porte aucun
         // taux : `catalog:read` suffit, `tax:read` serait un mur pour rien.
         path: 'contextes',

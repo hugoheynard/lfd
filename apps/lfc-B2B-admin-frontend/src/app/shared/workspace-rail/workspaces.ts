@@ -90,14 +90,25 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 
 /**
  * Les vues du **PIM**. `needs` n'y figure que là où la vue ne se contente PAS
- * de `catalog:read`, le droit qui ouvre déjà l'espace : la seule est le
- * référentiel fiscal, qui a sa propre ressource. Répéter `catalog:read` sur les
- * six autres serait une condition toujours vraie, donc jamais relue.
+ * de `catalog:read`, le droit qui ouvre déjà l'espace : les deux seules sont le
+ * référentiel fiscal et les règles comptables, qui partagent sa ressource.
+ * Répéter `catalog:read` sur les six autres serait une condition toujours
+ * vraie, donc jamais relue.
  */
 export const PIM_VIEWS: readonly WorkspaceView[] = [
   { key: 'produits', label: 'Produits', link: '/pim/produits', icon: 'product' },
   { key: 'categories', label: 'Catégories', link: '/pim/categories', icon: 'category' },
   { key: 'vat', label: 'Taux de TVA', link: '/pim/tva', icon: 'tax', needs: 'tax:read' },
+  // Même icône que les taux, et c'est voulu : les deux répondent à « ce
+  // qu'on facture ». Ce qui les sépare tient au libellé — l'un est imposé
+  // de l'extérieur, l'autre décidé par la maison.
+  {
+    key: 'accounting',
+    label: 'Règles comptables',
+    link: '/pim/regles-comptables',
+    icon: 'tax',
+    needs: 'tax:read',
+  },
   { key: 'collections', label: 'Collections', link: '/pim/collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: '/pim/publication', icon: 'publish' },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
