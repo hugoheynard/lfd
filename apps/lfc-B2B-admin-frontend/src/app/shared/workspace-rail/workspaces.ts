@@ -3,11 +3,20 @@ import type { StaffPermission } from '@lfd/contracts';
 import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
 import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
 
 /** Une vue d'espace de travail, et le droit qui l'ouvre s'il lui est propre. */
 export interface WorkspaceView extends WorkspaceRailItem {
   readonly needs?: StaffPermission;
+  /**
+   * La vue n'existe que si le déploiement OUVRE la publication.
+   *
+   * Distinct de `needs`, et pas par symétrie : `needs` parle de la personne,
+   * ceci parle de l'installation. Une vue fermée par le drapeau l'est pour tout
+   * le monde, administrateur compris — il n'y a pas de droit qui la rouvre.
+   */
+  readonly needsPublication?: boolean;
 }
 
 /**
@@ -147,6 +156,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
   {
     key: 'collections',
+    needsPublication: true,
     label: 'Collections',
     link: '/pim/collections',
     icon: 'collections',
@@ -154,6 +164,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   },
   {
     key: 'publication',
+    needsPublication: true,
     label: 'Publication',
     link: '/pim/publication',
     icon: 'publish',
@@ -161,6 +172,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   },
   {
     key: 'integration',
+    needsPublication: true,
     label: 'Intégrations',
     link: '/pim/integration',
     icon: 'integrations',
@@ -319,13 +331,15 @@ export type WorkspaceKey = keyof typeof WORKSPACES;
 @Injectable({ providedIn: 'root' })
 export class WorkspaceCatalogue {
   private readonly permissions = inject(PermissionsStore);
+  private readonly capabilities = inject(PimCapabilitiesStore);
 
   /** Les vues d'un espace que la route laissera ouvrir. */
   views(key: WorkspaceKey): Signal<WorkspaceRailItem[]> {
     return computed(() =>
       WORKSPACES[key].views
         .filter((view) => view.needs === undefined || this.permissions.can(view.needs))
-        .map(({ needs, ...view }) => view),
+        .filter((view) => view.needsPublication !== true || this.capabilities.publication())
+        .map(({ needs, needsPublication, ...view }) => view),
     );
   }
 

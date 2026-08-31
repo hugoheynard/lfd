@@ -205,6 +205,39 @@ Ce qui reste :
       dessein). Sans ancre supprimable aujourd'hui, la question ne se pose pas ;
       elle se posera au premier archivage de vieilles révisions.
 
+## Provenance — la suite
+
+Les deux référentiels et la section de fiche sont livrés (cf.
+[`ingredients-et-appellations.md`](./ingredients-et-appellations.md)).
+Ce qui reste :
+
+- [ ] **Déclarer les allergènes SUR l'ingrédient**, et les remonter
+      automatiquement dans la fiche qui le cite. Le beurre porte `AM` une fois,
+      et toute fiche qui cite du beurre l'hérite — au lieu de le re-cocher à
+      chaque produit, avec l'oubli qui va avec.
+
+      ⚠️ **Trois questions à trancher avant d'écrire**, et aucune n'est
+              technique :
+
+              1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
+                 — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
+                 qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
+                 d'allergène ENGAGE : la première est plus juste, la seconde plus
+                 défendable six mois plus tard.
+              2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
+                 cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
+                 états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
+                 Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
+                 `[]` d'une fiche l'emporte sur le `AM` de son beurre.
+              3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
+                 l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
+                 Deux déclinaisons d'un même produit peuvent avoir des recettes
+                 différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
+                 une évidence.
+
+              Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
+              n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
+
 ## Prochaine étape en cours
 
 ➡️ **Le questionnaire PI** (§ actions de cadrage) — c'est lui qui débloque le pricing,

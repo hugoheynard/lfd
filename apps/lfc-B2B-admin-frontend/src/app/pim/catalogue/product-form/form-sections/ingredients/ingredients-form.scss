@@ -36,12 +36,14 @@
   font-size: var(--fold-text-sm);
 }
 
-/* Le badge d'appellation : c'est LUI que la table d'appellations rend fiable. */
+/* Le badge d'appellation : c'est LUI que la table d'appellations rend fiable.
+   Les tons `primary` et non un accent inventé — fold n'en déclare pas, et le
+   gate `lint:fold-tokens` a eu raison de refuser les deux que j'avais écrits. */
 .if-badge {
   padding: 0 var(--fold-space-xs);
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-accent-surface);
-  color: var(--fold-color-accent-text);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
   font-size: var(--fold-text-sm);
 }
 

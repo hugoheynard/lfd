@@ -8,27 +8,38 @@
     <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
   }
 
-  <fold-card>
-    <fold-page-section title="Préparer une publication" separator>
-      <span sectionSubtitle>
-        Fige le catalogue tel qu'il est, avant de l'envoyer. Un push le fait de lui-même : ce bouton
-        sert à figer <strong>avant</strong> une modification risquée. Sur un catalogue inchangé,
-        rien n'est préparé — la dernière révision fait déjà foi.
-      </span>
-      <div class="rp-take">
-        <fold-input
-          label="Nom (facultatif)"
-          placeholder="catalogue de la rentrée"
-          [value]="label()"
-          (valueChange)="label.set($event)"
-        />
-        <button foldButton [loading]="store.busy()" (click)="take()">Préparer</button>
-      </div>
-      @if (store.lastTake(); as message) {
-        <p class="rp-said">{{ message }}</p>
-      }
-    </fold-page-section>
-  </fold-card>
+  <!-- Le bloc de PRÉPARATION disparaît quand le déploiement ferme la
+       publication : une ancre n'existe que pour précéder un envoi. La
+       comparaison, elle, reste — un historique se relit toujours. -->
+  @if (capabilities.publication()) {
+    <fold-card>
+      <fold-page-section title="Préparer une publication" separator>
+        <span sectionSubtitle>
+          Fige le catalogue tel qu'il est, avant de l'envoyer. Un push le fait de lui-même : ce
+          bouton sert à figer <strong>avant</strong> une modification risquée. Sur un catalogue
+          inchangé, rien n'est préparé — la dernière révision fait déjà foi.
+        </span>
+        <div class="rp-take">
+          <fold-input
+            label="Nom (facultatif)"
+            placeholder="catalogue de la rentrée"
+            [value]="label()"
+            (valueChange)="label.set($event)"
+          />
+          <button foldButton [loading]="store.busy()" (click)="take()">Préparer</button>
+        </div>
+        @if (store.lastTake(); as message) {
+          <p class="rp-said">{{ message }}</p>
+        }
+      </fold-page-section>
+    </fold-card>
+  } @else {
+    <fold-callout appearance="inset" variant="info">
+      La publication du catalogue est <strong>fermée</strong> sur ce déploiement&nbsp;: rien ne part
+      vers une boutique ni vers la plateforme professionnelle, et il n'y a donc rien à figer avant.
+      Les révisions déjà posées restent lisibles et comparables.
+    </fold-callout>
+  }
 
   <fold-card>
     <fold-page-section title="Comparer" separator>

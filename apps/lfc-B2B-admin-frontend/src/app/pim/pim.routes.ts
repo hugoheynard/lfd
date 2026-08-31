@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from '../auth/permission.guard';
+import { publicationEnabledGuard } from './capabilities/publication.guard';
 import { pendingChangesGuard } from './catalogue/product-form/pending-changes.guard';
 
 /** Les routes du **référentiel** (PIM) — produits, familles, taux, canaux. */
@@ -98,6 +99,9 @@ export const pimRoutes: Routes = [
       },
       {
         path: 'collections',
+        // Fermé quand le déploiement ne publie pas — ce n'est pas un droit,
+        // c'est une capacité de l'installation (cf. `publication.guard.ts`).
+        canActivate: [publicationEnabledGuard],
         title: 'Collections — LFC B2B admin',
         loadComponent: () =>
           import('./integration/shopify-collections/collections-page/collections-page').then(
@@ -106,6 +110,9 @@ export const pimRoutes: Routes = [
       },
       {
         path: 'publication',
+        // Fermé quand le déploiement ne publie pas — ce n'est pas un droit,
+        // c'est une capacité de l'installation (cf. `publication.guard.ts`).
+        canActivate: [publicationEnabledGuard],
         title: 'Publication — LFC B2B admin',
         loadComponent: () =>
           import('./publication/publication-page/publication-page').then((m) => m.PublicationPage),
@@ -138,6 +145,9 @@ export const pimRoutes: Routes = [
       },
       {
         path: 'integration',
+        // Fermé quand le déploiement ne publie pas — ce n'est pas un droit,
+        // c'est une capacité de l'installation (cf. `publication.guard.ts`).
+        canActivate: [publicationEnabledGuard],
         title: 'Intégrations — LFC B2B admin',
         loadComponent: () =>
           import('./integration/integration-page/integration-page').then((m) => m.IntegrationPage),

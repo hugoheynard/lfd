@@ -11,6 +11,7 @@ import {
 } from 'fold-ng';
 
 import { RevisionDiff } from '../revision-diff/revision-diff';
+import { PimCapabilitiesStore } from '../../capabilities/pim-capabilities.store';
 import { RevisionsStore } from '../revisions.store';
 
 /** Le format d'une date d'ancre : le jour ET l'heure — on en pose plusieurs par jour. */
@@ -49,6 +50,8 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 
 })
 export class RevisionsPage {
   protected readonly store = inject(RevisionsStore);
+  /** Ce que le DÉPLOIEMENT offre — distinct de ce que la personne a le droit de faire. */
+  protected readonly capabilities = inject(PimCapabilitiesStore);
 
   protected readonly label = signal('');
 

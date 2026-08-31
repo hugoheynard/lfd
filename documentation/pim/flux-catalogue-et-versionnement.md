@@ -521,3 +521,57 @@ annonce et ce qui partirait.
 Ce qu'elle ne dit PAS, délibérément : ce qui manque à une fiche pour être
 publiable. Cette règle vit sur la fiche, et l'agréger ici en ferait une seconde
 déclaration — la dérive qui a déjà coûté trois fois dans ce dépôt.
+
+## 16. Le drapeau de publication — fermer ce qui sort, garder ce qui saisit
+
+Un déploiement peut vouloir **saisir** le catalogue sans le **publier**. C'est
+le cas du premier : on remplit les fiches en production avant qu'aucune boutique
+n'attende quoi que ce soit.
+
+`PIM_PUBLICATION_ENABLED` ouvre les gestes qui envoient le catalogue dehors, et
+il est **fermé par défaut**. Le sens du défaut est le sujet : l'extérieur ne se
+rattrape pas. Un déploiement qui a oublié de se prononcer ne doit pas publier —
+il doit se taire.
+
+### Ce qu'il ferme, et ce qu'il ne ferme pas
+
+| Fermé                                             | Ouvert                            |
+| ------------------------------------------------- | --------------------------------- |
+| `POST /pim/channels/shopify/products/push`        | Créer, éditer, traduire une fiche |
+| `POST /pim/channels/shopify/products/rollback`    | Déclarer une fiche publiable      |
+| `POST /pim/channels/b2b/push`                     | La mettre en vente au référentiel |
+| `POST /pim/catalogue/revisions` (poser une ancre) | **Lire** et comparer les ancres   |
+
+L'ancre est fermée parce qu'elle n'existe que pour précéder un envoi : un
+catalogue qu'on ne publie pas n'a rien à photographier. Leur **lecture** reste
+ouverte — un historique n'est pas une publication.
+
+### Trois couches, et une seule est un mur
+
+```mermaid
+flowchart LR
+  A["Rail de navigation<br/>needsPublication"] --> B["Garde de route<br/>publicationEnabledGuard"]
+  B --> C["Garde serveur<br/>PublicationEnabledGuard"]
+  C --> D{"PIM_PUBLICATION_ENABLED"}
+  D -- "fermé" --> E["409 catalogue.publication.closed"]
+  D -- "ouvert" --> F["Le geste passe"]
+```
+
+Les deux premières évitent d'offrir un bouton qui répondrait `409` ; la
+troisième est le mur. Sans elle, une requête recopiée depuis l'onglet réseau
+publierait quand même.
+
+### Ce n'est pas un droit
+
+`needs` demande à la **personne**, `needsPublication` demande à
+l'**installation**. D'où un refus métier (`409`) et non un `403` : un `403`
+ferait chercher une permission manquante là où il n'en manque aucune, et
+laisserait un administrateur croire qu'il peut rouvrir un écran qui n'a rien
+derrière lui.
+
+### L'ouvrir
+
+Une Variable Cloudflare `PIM_PUBLICATION_ENABLED=true` sur le Worker de l'API —
+elle est déjà dans la boucle de déploiement, donc aucun code à toucher. En
+développement et dans les suites de test, elle est ouverte : ce qu'on mesure est
+le produit entier, pas la moitié qui reste allumée.
