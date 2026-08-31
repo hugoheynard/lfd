@@ -39,6 +39,7 @@
     "db:pim:seed": "tsx --env-file=.env prisma/pim-seed.ts"
   },
   "dependencies": {
+    "@lfd/money": "workspace:*",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
     "@lfd/catalog-sync": "workspace:*",

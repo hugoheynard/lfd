@@ -1,3 +1,4 @@
+import { proHtFromPublic, proPriceFromPublic } from "../accounting-rules.js";
 import { htFromTtc, htPriceOf, ttcFromHt } from "../price-basis.js";
 
 describe("htFromTtc", () => {
@@ -70,5 +71,35 @@ describe("htPriceOf", () => {
    */
   it("refuse de convertir un prix d'étiquette sans taux", () => {
     expect(htPriceOf(120, "ttc", null)).toBeNull();
+  });
+});
+
+describe("proHtFromPublic", () => {
+  /**
+   * La chaîne entière, telle que l'écran l'affiche : 12,00 € public TTC,
+   * −10 % pour les pros, 5,5 % de TVA.
+   */
+  it("enchaîne le rapport puis le taux", () => {
+    // 12,00 € × 90 % = 10,80 € TTC ; ÷ 1,055 = 10,2369… → 10,24 € HT.
+    expect(proHtFromPublic(1_200, 9_000, 5.5)).toBe(1_024);
+  });
+
+  /**
+   * **L'invariant qui justifie l'ordre des arrondis** : le HT affiché, re-taxé,
+   * redonne le TTC affiché. Garder le rationnel exact jusqu'au bout ferait
+   * diverger d'un centime deux nombres que l'écran montre l'un sous l'autre —
+   * et un client qui recompte trouverait le désaccord avant nous.
+   */
+  it("reste d'accord avec le prix pro TTC affiché juste au-dessus", () => {
+    for (const publicTtc of [1_200, 199, 250, 4_999, 10_000]) {
+      const proTtc = proPriceFromPublic(publicTtc, 9_000);
+      const proHt = proHtFromPublic(publicTtc, 9_000, 5.5);
+      expect(proHt).not.toBeNull();
+      expect(ttcFromHt(proHt ?? 0, 5.5)).toBe(proTtc);
+    }
+  });
+
+  it("refuse de dériver sans taux", () => {
+    expect(proHtFromPublic(1_200, 9_000, null)).toBeNull();
   });
 });

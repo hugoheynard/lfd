@@ -1,4 +1,4 @@
-import { fromCents, roundToCents, scaleByBasisPoints } from "./exact-money.js";
+import { fromCents, roundToCents, scaleByBasisPoints } from "@lfd/money";
 import { PRICE_STAGES, type PriceRule, type PriceStage } from "./price-rule.js";
 import { compareSpecificity } from "./specificity.js";
 

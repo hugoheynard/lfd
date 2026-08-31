@@ -17,19 +17,13 @@ import { InvalidProPriceRatioError } from "../errors/accounting-rules-errors.js"
  * seconde implémentation divergerait d'un centime d'arrondi, et ça ne se voit
  * qu'en comparant deux factures.
  *
- * ## Pourquoi pas `exact-money`
+ * ## L'arithmétique
  *
- * La plateforme a déjà une arithmétique rationnelle exacte
- * (`b2b/pricing/domain/exact-money.ts`), et elle serait parfaite ici. Le
- * référentiel ne peut pas la voir : la matrice des frontières lui interdit
- * `b2b/`, pour la même raison qui lui interdit d'appeler le journal
- * directement. Elle n'est pas nécessaire non plus — un rapport en points de
- * base appliqué à des centimes tient dans l'entier : `10⁷ × 10⁴ = 10¹¹`, très
- * en deçà de `Number.MAX_SAFE_INTEGER`. Aucune division intermédiaire, donc
- * aucune dérive à rattraper.
- *
- * Le jour où la conversion TTC → HT arrivera (tranche 3), elle divisera, et
- * c'est LÀ qu'il faudra rouvrir la question — pas ici.
+ * La multiplication passe par `@lfd/money`, les rationnels exacts en `bigint`.
+ * Ils vivaient dans `b2b/pricing/`, que la matrice des frontières interdit au
+ * référentiel de voir ; ils sont devenus un paquet plutôt qu'une seconde
+ * implémentation — deux arithmétiques d'argent qui divergent seraient le pire
+ * des synonymes.
  */
 export class ProPriceRatio {
   private constructor(readonly basisPoints: number) {}

@@ -13,7 +13,20 @@
  * c'est-à-dire là où l'erreur coûte le plus. `bigint` supprime la question au
  * lieu de la borner.
  *
- * Ce module ne connaît ni règle, ni étage : il additionne et multiplie.
+ * Ce module ne connaît ni règle, ni étage : il additionne, multiplie et divise.
+ *
+ * ## Pourquoi c'est un paquet, et plus un fichier de `b2b/pricing`
+ *
+ * Il y a vécu tant qu'un seul contexte en avait besoin. Le référentiel en a
+ * besoin à son tour — convertir un prix d'étiquette en hors taxe est une
+ * division, et dériver un prix professionnel puis le convertir en enchaîne
+ * deux. Or la matrice des frontières interdit au PIM de voir `b2b/`, et pour
+ * une bonne raison.
+ *
+ * Le recopier aurait donné deux arithmétiques d'argent qui **divergent** — le
+ * pire endroit possible pour un synonyme. Il est donc devenu ce qu'il était
+ * déjà : une feuille du graphe, sans dépendance, que chacun tient sans
+ * posséder.
  */
 
 export interface Exact {
@@ -60,6 +73,26 @@ export function scaleByBasisPoints(value: Exact, bp: number, direction: 1 | -1):
  */
 export function fractionByBasisPoints(value: Exact, bp: number): Exact {
   return reduce({ num: value.num * BigInt(Math.trunc(bp)), den: value.den * 10_000n });
+}
+
+/**
+ * Divise par une fraction exprimée en points de base : `bp = 10 550` divise par
+ * 1,055 — c'est ainsi qu'un prix TTC rend son hors taxe.
+ *
+ * Jumelle de {@link fractionByBasisPoints}, dans l'autre sens. Les deux
+ * existent parce que « 90 % de » et « divisé par 1,055 » ne se composent pas de
+ * la même façon, et écrire la seconde comme `fraction(1/1.055)` réintroduirait
+ * exactement le flottant que ce module existe pour éviter.
+ */
+export function divideByBasisPoints(value: Exact, bp: number): Exact {
+  const divisor = BigInt(Math.trunc(bp));
+  if (divisor === 0n) {
+    // Une division par zéro rendrait un rationnel de dénominateur nul, que
+    // `roundToCents` transformerait silencieusement en `NaN` — un prix faux
+    // plutôt qu'une panne. Mieux vaut la panne.
+    throw new RangeError("Division par zéro point de base.");
+  }
+  return reduce({ num: value.num * 10_000n, den: value.den * divisor });
 }
 
 /** Ajoute (ou retranche) un montant en centimes. */

@@ -6,7 +6,7 @@ import {
   roundToCents,
   scaleByBasisPoints,
   type Exact,
-} from "./exact-money.js";
+} from "@lfd/money";
 import { PRICE_STAGES, type PriceFloor, type PriceRule, type PriceStep } from "./price-rule.js";
 import type { PricingContext, ResolvedPrice } from "./price-rule.js";
 import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";

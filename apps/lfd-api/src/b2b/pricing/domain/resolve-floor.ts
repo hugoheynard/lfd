@@ -1,4 +1,4 @@
-import { fractionByBasisPoints, fromCents, roundToCents } from "./exact-money.js";
+import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 import { AmbiguousPriceFloorsError } from "./pricing-errors.js";
 import { matchesScope, SCOPE_RANK } from "./specificity.js";
 import type { PriceFloor, PricingContext, ScopedPriceFloor } from "./price-rule.js";

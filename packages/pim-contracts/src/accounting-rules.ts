@@ -1,3 +1,6 @@
+import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
+
+import { htFromTtc } from "./price-basis.js";
 import { z } from "zod";
 
 /**
@@ -63,14 +66,11 @@ export interface AccountingRulesView {
  * diverger d'un centime d'arrondi, et cette divergence-là ne se voit qu'en
  * comparant deux factures.
  *
- * **Un seul arrondi, en fin de calcul** : on multiplie d'abord, on divise
- * ensuite. `Math.round(ttc * bp / 10000)` et non `Math.round(ttc * (bp /
- * 10000))` — la seconde forme arrondit le rapport avant de l'appliquer. C'est
- * la règle que tient déjà la chaîne de résolution de prix.
- *
- * `Math.round` et non `Math.floor` : arrondir systématiquement vers le bas
- * offrirait un demi-centime au client sur chaque ligne, ce qui n'est une remise
- * que personne n'a décidée.
+ * **Un seul arrondi, en fin de calcul.** Le rationnel exact de `@lfd/money`
+ * traverse la multiplication sans jamais retomber sur un centime, et
+ * `roundToCents` tranche à la sortie — au plus proche, la moitié s'éloignant de
+ * zéro, l'arrondi commercial. Arrondir vers le bas offrirait un demi-centime au
+ * client sur chaque ligne, ce qui n'est une remise que personne n'a décidée.
  *
  * Rien ne valide `ratioBp` ici : c'est le rôle du VO côté serveur, et le
  * contrat ne doit pas porter deux fois la même garde. Un appelant qui passe un
@@ -78,5 +78,37 @@ export interface AccountingRulesView {
  * murée en base.
  */
 export function proPriceFromPublic(publicTtcCents: number, ratioBp: number): number {
-  return Math.round((publicTtcCents * ratioBp) / MAX_RATIO_BP);
+  return roundToCents(fractionByBasisPoints(fromCents(publicTtcCents), ratioBp));
+}
+
+/**
+ * Le **hors taxe professionnel** d'un prix public TTC : la chaîne entière.
+ *
+ * `null` sans taux — le hors taxe n'est alors pas dérivable, et inventer un
+ * taux ferait facturer un montant que personne n'a décidé.
+ *
+ * ## L'ordre des arrondis, et pourquoi il n'est pas celui qu'on croit
+ *
+ * On pourrait garder le rationnel exact d'un bout à l'autre et n'arrondir qu'à
+ * la toute fin. On ne le fait pas, et c'est délibéré : **le prix pro TTC est un
+ * prix**, pas une étape de calcul. C'est le montant qu'un professionnel voit et
+ * paie, il s'arrête donc au centime — et le hors taxe se déduit de CE
+ * montant-là.
+ *
+ * L'autre ordre ferait diverger d'un centime les deux nombres que l'écran
+ * affiche l'un sous l'autre : le HT annoncé, re-taxé, ne redonnerait pas le TTC
+ * annoncé. Un client qui recompte trouverait le désaccord avant nous.
+ *
+ * C'est la même règle qu'ailleurs — « le TTC fait foi, le HT en est la
+ * conséquence » — appliquée deux fois de suite.
+ */
+export function proHtFromPublic(
+  publicTtcCents: number,
+  ratioBp: number,
+  ratePercent: number | null,
+): number | null {
+  if (ratePercent === null) {
+    return null;
+  }
+  return htFromTtc(proPriceFromPublic(publicTtcCents, ratioBp), ratePercent);
 }

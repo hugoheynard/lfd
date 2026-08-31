@@ -24,6 +24,7 @@
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
+    "@lfd/money": "workspace:*",
     "@angular/common": "catalog:",
     "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",

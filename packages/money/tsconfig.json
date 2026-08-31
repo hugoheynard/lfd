@@ -1,0 +1,19 @@
+{
+  // ARITHMÉTIQUE EXACTE de l'argent — rationnels en `bigint`.
+  // Feuille du graphe : AUCUNE dépendance, pas même zod. Dépendue par la
+  // tarification B2B (chaîne d'étages) et par le référentiel (conversion TTC↔HT,
+  // dérivation du prix pro) — donc aussi par un front, où le `bigint` tourne.
+  // Émet des déclarations ; `exports.types` pointe la source in-workspace.
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

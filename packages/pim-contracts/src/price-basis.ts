@@ -1,3 +1,6 @@
+import { divideByBasisPoints, fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
+import { z } from "zod";
+
 /**
  * **L'assiette d'un prix** — ce que le nombre saisi veut dire.
  *
@@ -15,9 +18,10 @@
  */
 export const PRICE_BASES = ["ht", "ttc"] as const;
 export type PriceBasis = (typeof PRICE_BASES)[number];
+export const priceBasisSchema = z.enum(PRICE_BASES);
 
 /**
- * Le taux, en points de base entiers. `5,5 %` → `550`.
+ * Le **multiplicateur** du taux, en points de base entiers : `5,5 %` → `10 550`.
  *
  * Repasser par l'entier avant de diviser : `1 + 5.5 / 100` ne vaut pas
  * exactement `1,055` en binaire, et l'écart se propage dans une division.
@@ -27,8 +31,8 @@ export type PriceBasis = (typeof PRICE_BASES)[number];
  * `VatPercent`.
  */
 const BP_PER_UNIT = 10_000;
-function rateToBasisPoints(ratePercent: number): number {
-  return Math.round(ratePercent * 100);
+function taxMultiplierBp(ratePercent: number): number {
+  return BP_PER_UNIT + Math.round(ratePercent * 100);
 }
 
 /**
@@ -43,12 +47,12 @@ function rateToBasisPoints(ratePercent: number): number {
  * Un seul arrondi, en fin de calcul, comme partout ailleurs dans la chaîne.
  */
 export function htFromTtc(ttcCents: number, ratePercent: number): number {
-  return Math.round((ttcCents * BP_PER_UNIT) / (BP_PER_UNIT + rateToBasisPoints(ratePercent)));
+  return roundToCents(divideByBasisPoints(fromCents(ttcCents), taxMultiplierBp(ratePercent)));
 }
 
 /** Le TTC que ce taux ajoute à un prix HT — tous deux en centimes entiers. */
 export function ttcFromHt(htCents: number, ratePercent: number): number {
-  return Math.round((htCents * (BP_PER_UNIT + rateToBasisPoints(ratePercent))) / BP_PER_UNIT);
+  return roundToCents(fractionByBasisPoints(fromCents(htCents), taxMultiplierBp(ratePercent)));
 }
 
 /**
