@@ -1,0 +1,61 @@
+@let d = diff();
+
+@if (d.header.length > 0) {
+  <fold-callout appearance="inset" variant="warning">
+    <strong>Règles comptables modifiées.</strong> Aucun article n'a bougé, et pourtant tous les prix
+    professionnels changent.
+    @for (change of d.header; track change.field) {
+      <span class="rd-header">{{ change.before }} → {{ change.after }}</span>
+    }
+  </fold-callout>
+}
+
+@if (d.added.length === 0 && d.removed.length === 0 && d.changed.length === 0) {
+  <p class="rd-empty">Aucun article n'a changé entre ces deux révisions.</p>
+}
+
+@if (d.added.length > 0) {
+  <section class="rd-block">
+    <fold-element-title [title]="d.added.length + ' entré(s) au catalogue'" />
+    <ul class="rd-skus">
+      @for (sku of d.added; track sku) {
+        <li>{{ sku }}</li>
+      }
+    </ul>
+  </section>
+}
+
+@if (d.removed.length > 0) {
+  <section class="rd-block">
+    <fold-element-title [title]="d.removed.length + ' retiré(s) du catalogue'" />
+    <ul class="rd-skus">
+      @for (sku of d.removed; track sku) {
+        <li>{{ sku }}</li>
+      }
+    </ul>
+  </section>
+}
+
+@if (d.changed.length > 0) {
+  <section class="rd-block">
+    <fold-element-title [title]="d.changed.length + ' article(s) modifié(s)'" />
+    @for (item of d.changed; track item.sku) {
+      <div class="rd-item">
+        <p class="rd-sku">{{ item.sku }}</p>
+        <!-- Une définition par champ : le nom, puis les deux états. Un tableau à
+             trois colonnes se lirait mieux à l'œil et beaucoup moins bien au
+             lecteur d'écran, qui perdrait le lien entre un champ et sa valeur. -->
+        <dl class="rd-fields">
+          @for (field of item.fields; track field.field) {
+            <dt>{{ field.field }}</dt>
+            <dd>
+              <span class="rd-before">{{ field.before }}</span>
+              <span class="rd-arrow" aria-hidden="true">→</span>
+              <span class="rd-after">{{ field.after }}</span>
+            </dd>
+          }
+        </dl>
+      </div>
+    }
+  </section>
+}

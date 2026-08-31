@@ -109,6 +109,10 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     icon: 'tax',
     needs: 'tax:read',
   },
+  // Les ancres de publication : ce que le catalogue ÉTAIT. Rangées après les
+  // réglages et avant la publication — on pose une révision de ce qu'on a
+  // décidé, puis on publie.
+  { key: 'revisions', label: 'Révisions', link: '/pim/revisions', icon: 'timeline' },
   { key: 'collections', label: 'Collections', link: '/pim/collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: '/pim/publication', icon: 'publish' },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà

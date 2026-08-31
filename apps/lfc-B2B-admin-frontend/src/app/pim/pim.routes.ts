@@ -49,6 +49,15 @@ export const pimRoutes: Routes = [
           ),
       },
       {
+        // Les ANCRES de publication : ce que le catalogue était, photographié et
+        // nommé. Même mur que le reste du référentiel — poser une ancre ne
+        // publie rien et ne modifie rien, c'est une lecture qu'on enregistre.
+        path: 'revisions',
+        title: 'Révisions du catalogue — LFC B2B admin',
+        loadComponent: () =>
+          import('./revisions/revisions-page/revisions-page').then((m) => m.RevisionsPage),
+      },
+      {
         // Le registre décide de ce qu'on peut VENDRE, mais il ne porte aucun
         // taux : `catalog:read` suffit, `tax:read` serait un mur pour rien.
         path: 'contextes',

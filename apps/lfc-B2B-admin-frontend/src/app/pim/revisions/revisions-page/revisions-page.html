@@ -1,0 +1,81 @@
+<fold-page-layout title="Révisions du catalogue" separator>
+  <p description>
+    Une révision est une photographie du catalogue entier, nommée et datée. Elle ne publie rien :
+    elle enregistre ce que le catalogue était, pour qu'on puisse dire plus tard ce qui a changé.
+  </p>
+
+  @if (store.error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  <fold-card>
+    <fold-page-section title="Poser une révision" separator>
+      <span sectionSubtitle>
+        Sur un catalogue inchangé, rien n'est posé — la dernière révision fait déjà foi.
+      </span>
+      <div class="rp-take">
+        <fold-input
+          label="Nom (facultatif)"
+          placeholder="catalogue de la rentrée"
+          [value]="label()"
+          (valueChange)="label.set($event)"
+        />
+        <button foldButton [loading]="store.busy()" (click)="take()">Poser</button>
+      </div>
+      @if (store.lastTake(); as message) {
+        <p class="rp-said">{{ message }}</p>
+      }
+    </fold-page-section>
+  </fold-card>
+
+  <fold-card>
+    <fold-page-section title="Comparer" separator>
+      @if (!store.comparable()) {
+        <p class="rp-said">
+          Il faut deux révisions pour comparer. Posez-en une seconde après avoir modifié le
+          catalogue.
+        </p>
+      } @else {
+        <div class="rp-compare">
+          <fold-listbox label="De" [value]="fromValue()" (valueChange)="select('from', $event)">
+            @for (option of options(); track option.value) {
+              <fold-option [value]="option.value">{{ option.text }}</fold-option>
+            }
+          </fold-listbox>
+          <fold-listbox label="À" [value]="toValue()" (valueChange)="select('to', $event)">
+            @for (option of options(); track option.value) {
+              <fold-option [value]="option.value">{{ option.text }}</fold-option>
+            }
+          </fold-listbox>
+          <button foldButton [disabled]="!canCompare() || store.busy()" (click)="compare()">
+            Comparer
+          </button>
+        </div>
+
+        @if (store.diff(); as diff) {
+          <app-revision-diff class="rp-diff" [diff]="diff" />
+        }
+      }
+    </fold-page-section>
+  </fold-card>
+
+  <fold-card>
+    <fold-page-section title="Historique" separator>
+      @if (store.revisions().length === 0) {
+        <p class="rp-said">Aucune révision posée.</p>
+      } @else {
+        <ul class="rp-list">
+          @for (revision of store.revisions(); track revision.id) {
+            <li class="rp-row">
+              <span class="rp-version">{{ revision.version }}</span>
+              <span class="rp-label">{{ revision.label ?? 'sans nom' }}</span>
+              <span class="rp-meta">{{ revision.articles }} articles</span>
+              <span class="rp-meta">{{ when(revision.takenAt) }}</span>
+              <span class="rp-meta">{{ revision.takenBy }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </fold-page-section>
+  </fold-card>
+</fold-page-layout>

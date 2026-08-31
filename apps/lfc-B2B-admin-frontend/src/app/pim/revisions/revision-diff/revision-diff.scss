@@ -1,0 +1,73 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.rd-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.rd-empty,
+.rd-header {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.rd-header {
+  display: block;
+  margin-top: var(--fold-space-xs);
+}
+
+.rd-skus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+}
+
+.rd-item + .rd-item {
+  margin-top: var(--fold-space-md);
+}
+
+.rd-sku {
+  margin: 0 0 var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+.rd-fields {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) 1fr;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.rd-fields dt {
+  color: var(--fold-color-text-secondary);
+}
+
+.rd-fields dd {
+  margin: 0;
+  /* Les deux états peuvent être longs (un objet sérialisé) : ils se coupent au
+     lieu de pousser la grille hors de la carte. */
+  overflow-wrap: anywhere;
+}
+
+.rd-before {
+  color: var(--fold-color-text-muted);
+  text-decoration: line-through;
+}
+
+.rd-arrow {
+  margin: 0 var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+}

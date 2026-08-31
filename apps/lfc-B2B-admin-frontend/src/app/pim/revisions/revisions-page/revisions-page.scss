@@ -1,0 +1,58 @@
+.rp-take,
+.rp-compare {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+.rp-compare fold-listbox {
+  min-width: 16rem;
+}
+
+.rp-said {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.rp-diff {
+  display: block;
+  margin-top: var(--fold-space-lg);
+}
+
+.rp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rp-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  font-size: var(--fold-text-sm);
+}
+
+/* Le numéro est la clé qu'on cite ("la 12") : il porte donc le poids, et la
+   chasse fixe pour que la colonne s'aligne d'une ligne à l'autre. */
+.rp-version {
+  min-width: 2rem;
+  font-family: var(--fold-font-mono);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.rp-label {
+  flex: 1;
+  min-width: 8rem;
+  color: var(--fold-color-text);
+}
+
+.rp-meta {
+  color: var(--fold-color-text-secondary);
+}
