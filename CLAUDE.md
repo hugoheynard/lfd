@@ -659,6 +659,44 @@ d'appel qui compte).
 
 ---
 
+## 9 bis. Les sous-agents — quand les invoquer SANS qu'on le demande
+
+Ces trois-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
+un agent est invoqué par l'assistant, jamais par un hook ni par un événement.
+Cette section est donc l'automatisation — la règle qui fait qu'on n'a pas à les
+réclamer.
+
+| Agent                            | Déclencheur — invoquer d'office                                                                                                            | Ne PAS invoquer                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **`portier`**                    | avant tout commit d'une tranche de travail, et **toujours** avant un push. En tâche de fond, pendant qu'on continue.                       | pour une correction d'une ligne dont la porte concernée vient de passer                    |
+| **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                          | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                    |
+| **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer |
+| **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                 |
+
+### La règle qui rend le `portier` non négociable
+
+**Ne jamais écrire « c'est vert » sans avoir lancé `pnpm test` à la RACINE.**
+
+`pnpm --filter lfd-api test` et les tests d'un front ne couvrent pas
+`packages/**`. Le 2026-08-31, ce raccourci a coûté un déploiement complet : une
+fixture de `@lfd/b2b-ui` portait un prix en centimes dans un champ devenu
+millicentimes, la CI l'a vu, les trois workflows de déploiement se sont arrêtés.
+
+Corollaire : un succès **mis en cache par turbo** ne prouve rien. Chercher
+`cache miss, executing` sur le paquet touché avant de conclure.
+
+### Ce que le `portier` ne remplace pas
+
+Le hook `.githooks/pre-push` tourne de toute façon, et il est plus rapide que
+lui sur ce qu'il couvre (les portes + les typechecks de ce qui a changé). Le
+`portier` ajoute ce que le hook a **volontairement** laissé à la CI — les tests,
+l'ESLint type-aware, le build AOT — parce que les mettre au push ferait ce que
+le `pre-commit` refuse.
+
+Les deux se complètent : le hook interdit, le portier informe.
+
+---
+
 ## 10. Commandes utiles
 
 ```bash
