@@ -53,3 +53,30 @@ export interface AccountingRulesView {
   /** ISO-8601, ou `null` si rien n'a jamais été réglé. */
   readonly updatedAt: string | null;
 }
+
+/**
+ * Le prix professionnel TTC, dérivé d'un prix public TTC — tous deux en
+ * centimes entiers.
+ *
+ * **Ici et nulle part ailleurs.** Le serveur en a besoin pour tarifer, l'écran
+ * pour montrer ce que le réglage produit. Deux implémentations finiraient par
+ * diverger d'un centime d'arrondi, et cette divergence-là ne se voit qu'en
+ * comparant deux factures.
+ *
+ * **Un seul arrondi, en fin de calcul** : on multiplie d'abord, on divise
+ * ensuite. `Math.round(ttc * bp / 10000)` et non `Math.round(ttc * (bp /
+ * 10000))` — la seconde forme arrondit le rapport avant de l'appliquer. C'est
+ * la règle que tient déjà la chaîne de résolution de prix.
+ *
+ * `Math.round` et non `Math.floor` : arrondir systématiquement vers le bas
+ * offrirait un demi-centime au client sur chaque ligne, ce qui n'est une remise
+ * que personne n'a décidée.
+ *
+ * Rien ne valide `ratioBp` ici : c'est le rôle du VO côté serveur, et le
+ * contrat ne doit pas porter deux fois la même garde. Un appelant qui passe un
+ * rapport hors bornes obtient un nombre hors bornes — l'écriture, elle, est
+ * murée en base.
+ */
+export function proPriceFromPublic(publicTtcCents: number, ratioBp: number): number {
+  return Math.round((publicTtcCents * ratioBp) / MAX_RATIO_BP);
+}

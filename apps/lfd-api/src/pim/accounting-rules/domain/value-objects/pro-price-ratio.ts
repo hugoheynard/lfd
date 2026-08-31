@@ -1,8 +1,6 @@
-import { MAX_RATIO_BP } from "@lfd/pim-contracts";
+import { MAX_RATIO_BP, proPriceFromPublic } from "@lfd/pim-contracts";
 
 import { InvalidProPriceRatioError } from "../errors/accounting-rules-errors.js";
-
-const BP_PER_UNIT = MAX_RATIO_BP;
 
 /**
  * **Le rapport prix pro TTC / prix public TTC.**
@@ -11,6 +9,13 @@ const BP_PER_UNIT = MAX_RATIO_BP;
  * de moins ». Le rapport, jamais la remise : c'est ce qui MULTIPLIE, et dériver
  * une multiplication d'une soustraction ajoute un endroit où se tromper de
  * sens.
+ *
+ * ## Pourquoi le calcul n'est pas ici
+ *
+ * `applyTo` délègue à `proPriceFromPublic`, dans `@lfd/pim-contracts` : l'écran
+ * doit montrer ce que le rapport produit, donc faire le même calcul. Une
+ * seconde implémentation divergerait d'un centime d'arrondi, et ça ne se voit
+ * qu'en comparant deux factures.
  *
  * ## Pourquoi pas `exact-money`
  *
@@ -40,17 +45,15 @@ export class ProPriceRatio {
    * Le prix professionnel TTC, dérivé d'un prix public TTC — tous deux en
    * centimes entiers.
    *
-   * **Un seul arrondi, au dernier moment**, comme la chaîne de résolution de
-   * prix : on multiplie d'abord, on divise ensuite. `Math.round(ttc * bp /
-   * 10000)` et non `Math.round(ttc * (bp / 10000))` — la seconde forme arrondit
-   * le rapport avant de l'appliquer, et perd un centime sur les prix ronds.
-   *
-   * `Math.round` et non `Math.floor` : arrondir systématiquement vers le bas
-   * offrirait un demi-centime au client sur chaque ligne, ce qui n'est pas une
-   * remise que quelqu'un a décidée.
+   * Le calcul lui-même vit dans le **contrat** (`proPriceFromPublic`), et pas
+   * ici : l'écran des règles comptables montre ce que le réglage produit, donc
+   * il fait le même calcul. Deux implémentations finiraient par diverger d'un
+   * centime d'arrondi, et cette divergence-là ne se voit qu'en comparant deux
+   * factures. Le VO garde ce qu'il est seul à savoir — que le rapport est
+   * valide.
    */
   applyTo(publicTtcCents: number): number {
-    return Math.round((publicTtcCents * this.basisPoints) / BP_PER_UNIT);
+    return proPriceFromPublic(publicTtcCents, this.basisPoints);
   }
 
   equals(other: ProPriceRatio): boolean {
