@@ -26,6 +26,27 @@
     </p>
   }
 
+  <!-- La création reste un geste unique : le produit n'existe pas encore, donc
+       aucune section ne peut s'enregistrer indépendamment. C'est le modèle
+       d'ÉDITION que la refonte remplace, pas celui-ci.
+
+       Les deux boutons vivent dans l'EN-TÊTE, à la place qu'occupe le menu
+       d'actions en édition. En bas de page, ils obligeaient à parcourir six
+       sections repliables pour retrouver « Annuler » — et la seule chose qu'une
+       fiche neuve demande (un nom, une famille) se saisit dans la première. La
+       phrase qui le disait a disparu avec eux : la description de l'en-tête la
+       porte déjà, un mot au-dessus. -->
+  @if (!store.isEdit()) {
+    <div pageActions class="create-actions">
+      <button foldButton emphasis="soft" intent="neutral" routerLink="/pim/produits">
+        Annuler
+      </button>
+      <button foldButton [disabled]="!store.isValid() || store.busy()" (click)="submit()">
+        Créer le brouillon
+      </button>
+    </div>
+  }
+
   @if (store.isEdit()) {
     <fold-dropdown pageActions ariaLabel="Actions du produit" placement="bottom-end">
       <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
@@ -126,24 +147,5 @@
 
       <app-publish-rail asideRight (saveAll)="saveAll()" />
     </fold-aside-layout>
-
-    <!-- La création reste un geste unique : le produit n'existe pas encore,
-         donc aucune section ne peut s'enregistrer indépendamment. C'est le
-         modèle d'ÉDITION que la refonte remplace, pas celui-ci. -->
-    @if (!store.isEdit()) {
-      <div class="save-bar">
-        @if (!store.isValid()) {
-          <small class="muted">Un nom et une catégorie suffisent.</small>
-        }
-        <div class="save-actions">
-          <button foldButton emphasis="soft" intent="neutral" routerLink="/pim/produits">
-            Annuler
-          </button>
-          <button foldButton [disabled]="!store.isValid() || store.busy()" (click)="submit()">
-            Créer le brouillon
-          </button>
-        </div>
-      </div>
-    }
   }
 </fold-page-layout>

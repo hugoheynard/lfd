@@ -39,22 +39,10 @@ fold-aside-layout {
   color: var(--fold-color-text-faded);
 }
 
-.muted {
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
-.save-bar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--fold-space-lg);
-  margin-top: var(--fold-space-xl);
-  padding-top: var(--fold-space-lg);
-  border-top: 1px solid var(--fold-color-border);
-}
-
-.save-actions {
+/* Les actions de création, dans l'en-tête. Pas de filet ni de bande : la barre
+   du bas en avait besoin pour se détacher du formulaire au-dessus d'elle ; ici
+   c'est l'en-tête qui sépare, et le redire ferait deux traits. */
+.create-actions {
   display: flex;
   gap: var(--fold-space-sm);
 }
