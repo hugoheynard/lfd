@@ -89,16 +89,85 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 ];
 
 /**
- * Les vues du **PIM**. `needs` n'y figure que là où la vue ne se contente PAS
- * de `catalog:read`, le droit qui ouvre déjà l'espace : les deux seules sont le
- * référentiel fiscal et les règles comptables, qui partagent sa ressource.
- * Répéter `catalog:read` sur les six autres serait une condition toujours
- * vraie, donc jamais relue.
+ * Les vues du **PIM**, en trois sections.
+ *
+ * Elles ne sont pas décoratives : elles disent trois natures de travail qui
+ * n'ont pas le même rythme. On édite des fiches tous les jours, on diffuse
+ * quand on a décidé, on règle un taux trois fois par an — et la liste à plat de
+ * dix entrées mettait « Taux de TVA » entre « Catégories » et « Révisions ».
+ *
+ * Le groupement suit l'ORDRE de déclaration : le rail ouvre un groupe à chaque
+ * changement de section, et une section qui reviendrait plus bas rouvrirait un
+ * second groupe au lieu de fusionner. Les entrées d'une même section doivent
+ * donc rester contiguës ici.
+ *
+ * `needs` n'y figure que là où la vue ne se contente PAS de `catalog:read`, le
+ * droit qui ouvre déjà l'espace : les deux seules sont le référentiel fiscal et
+ * les règles comptables, qui partagent sa ressource. Répéter `catalog:read` sur
+ * les huit autres serait une condition toujours vraie, donc jamais relue.
  */
 export const PIM_VIEWS: readonly WorkspaceView[] = [
-  { key: 'produits', label: 'Produits', link: '/pim/produits', icon: 'product' },
-  { key: 'categories', label: 'Catégories', link: '/pim/categories', icon: 'category' },
-  { key: 'vat', label: 'Taux de TVA', link: '/pim/tva', icon: 'tax', needs: 'tax:read' },
+  // CATALOGUE — ce qu'on vend, et ce qu'on en a figé. Les révisions y sont
+  // parce qu'une ancre photographie ce catalogue-là ; les ranger sous
+  // « Diffusion » laisserait croire qu'elles publient quelque chose.
+  {
+    key: 'produits',
+    label: 'Produits',
+    link: '/pim/produits',
+    icon: 'product',
+    section: 'Catalogue',
+  },
+  {
+    key: 'categories',
+    label: 'Catégories',
+    link: '/pim/categories',
+    icon: 'category',
+    section: 'Catalogue',
+  },
+  {
+    key: 'revisions',
+    label: 'Révisions',
+    link: '/pim/revisions',
+    icon: 'timeline',
+    section: 'Catalogue',
+  },
+
+  // DIFFUSION — ce qui sort d'ici, et par où. Ces trois-là n'avaient pas été
+  // citées dans le regroupement demandé ; les laisser sans section les aurait
+  // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
+  {
+    key: 'collections',
+    label: 'Collections',
+    link: '/pim/collections',
+    icon: 'collections',
+    section: 'Diffusion',
+  },
+  {
+    key: 'publication',
+    label: 'Publication',
+    link: '/pim/publication',
+    icon: 'publish',
+    section: 'Diffusion',
+  },
+  {
+    key: 'integration',
+    label: 'Intégrations',
+    link: '/pim/integration',
+    icon: 'integrations',
+    section: 'Diffusion',
+  },
+
+  // PARAMÉTRAGE — ce qu'on règle une fois et qui vaut pour tout le reste. En
+  // DERNIER, à l'inverse de l'ordre où on y touche : on ouvre le référentiel
+  // pour éditer des fiches tous les jours, et ses réglages trois fois par an.
+  {
+    key: 'vat',
+    label: 'Taux de TVA',
+    link: '/pim/tva',
+    icon: 'tax',
+    needs: 'tax:read',
+    section: 'Paramétrage',
+  },
   // Même icône que les taux, et c'est voulu : les deux répondent à « ce
   // qu'on facture ». Ce qui les sépare tient au libellé — l'un est imposé
   // de l'extérieur, l'autre décidé par la maison.
@@ -108,18 +177,24 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     link: '/pim/regles-comptables',
     icon: 'tax',
     needs: 'tax:read',
+    section: 'Paramétrage',
   },
-  // Les ancres de publication : ce que le catalogue ÉTAIT. Rangées après les
-  // réglages et avant la publication — on pose une révision de ce qu'on a
-  // décidé, puis on publie.
-  { key: 'revisions', label: 'Révisions', link: '/pim/revisions', icon: 'timeline' },
-  { key: 'collections', label: 'Collections', link: '/pim/collections', icon: 'collections' },
-  { key: 'publication', label: 'Publication', link: '/pim/publication', icon: 'publish' },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
   // partagés, et le mot d'interface n'a pas à traîner l'espace d'URL avec lui.
-  { key: 'locations', label: 'Points de vente', link: '/pim/emplacements', icon: 'places' },
-  { key: 'contexts', label: 'Contextes de vente', link: '/pim/contextes', icon: 'places' },
-  { key: 'integration', label: 'Intégrations', link: '/pim/integration', icon: 'integrations' },
+  {
+    key: 'locations',
+    label: 'Points de vente',
+    link: '/pim/emplacements',
+    icon: 'places',
+    section: 'Paramétrage',
+  },
+  {
+    key: 'contexts',
+    label: 'Contextes de vente',
+    link: '/pim/contextes',
+    icon: 'places',
+    section: 'Paramétrage',
+  },
 ];
 
 /**
