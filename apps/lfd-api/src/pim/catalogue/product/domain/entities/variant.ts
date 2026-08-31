@@ -1,5 +1,3 @@
-import type { PriceBasis } from "@lfd/pim-contracts";
-
 import { InvalidVariantPricingError } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
@@ -27,14 +25,6 @@ export interface VariantSnapshot {
   readonly position: number;
   /** Prix canonique en centimes ; `null` = pas encore tarifé. */
   readonly priceCents: number | null;
-  /**
-   * **Ce que `priceCents` veut dire** — hors taxe, ou prix d'étiquette.
-   *
-   * Non optionnel, alors que le prix, lui, peut manquer : une déclinaison sans
-   * assiette n'existe pas, et la rendre optionnelle ferait porter à chaque
-   * lecteur la charge de deviner laquelle appliquer.
-   */
-  readonly priceBasis: PriceBasis;
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
   readonly weightGrams: number | null;
   /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
@@ -58,7 +48,6 @@ export interface VariantSnapshot {
 /** Ce que la section « Tarif & TVA » possède, pour une déclinaison. */
 export interface VariantPricing {
   readonly priceCents: number | null;
-  readonly priceBasis: PriceBasis;
   readonly weightGrams: number | null;
 }
 
@@ -71,7 +60,6 @@ export class Variant {
   private discontinuedFlag: boolean;
   private positionValue: number;
   private priceCentsValue: number | null;
-  private priceBasisValue: PriceBasis;
   private weightGramsValue: number | null;
   private readonly allergensValue: readonly string[] | null;
   private readonly nutritionValue: VariantNutritionSnapshot | null;
@@ -93,7 +81,6 @@ export class Variant {
     this.discontinuedFlag = snapshot.isDiscontinued;
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
-    this.priceBasisValue = snapshot.priceBasis;
     this.weightGramsValue = snapshot.weightGrams;
     this.allergensValue = snapshot.allergens;
     this.nutritionValue = snapshot.nutrition;
@@ -116,7 +103,6 @@ export class Variant {
       isDiscontinued: false,
       position: 0,
       priceCents: null,
-      priceBasis: "ht",
       weightGrams: null,
       allergens: null,
       nutrition: null,
@@ -149,16 +135,18 @@ export class Variant {
   }
 
   /**
-   * Tarif, **assiette** et poids en un geste : c'est ainsi que le back-office
-   * les saisit, et l'assiette ne se sépare pas du nombre qu'elle qualifie.
+   * Tarif et poids en un geste : c'est ainsi que le back-office les saisit.
    *
-   * Un record plutôt que trois arguments positionnels : deux `number | null`
-   * voisins qu'aucun compilateur ne distingue si on les intervertit, et une
-   * chaîne au milieu. La même raison a fait passer `VatRate.revise` au record.
+   * Un record plutôt que deux arguments positionnels : deux `number | null`
+   * voisins qu'aucun compilateur ne distingue si on les intervertit. La même
+   * raison a fait passer `VatRate.revise` au record.
+   *
+   * `priceCents` EST un prix public TTC — il n'y a plus d'assiette à côté pour
+   * le dire, parce qu'il n'y a plus qu'une assiette. Le hors taxe se déduit du
+   * taux de chaque canal, au moment de la projection.
    */
   price(input: VariantPricing): void {
     this.priceCentsValue = requireCountOrNull("priceCents", input.priceCents);
-    this.priceBasisValue = input.priceBasis;
     this.weightGramsValue = requireCountOrNull("weightGrams", input.weightGrams);
   }
 
@@ -172,7 +160,6 @@ export class Variant {
       isDiscontinued: this.discontinuedFlag,
       position: this.positionValue,
       priceCents: this.priceCentsValue,
-      priceBasis: this.priceBasisValue,
       weightGrams: this.weightGramsValue,
       allergens: this.allergensValue,
       nutrition: this.nutritionValue,

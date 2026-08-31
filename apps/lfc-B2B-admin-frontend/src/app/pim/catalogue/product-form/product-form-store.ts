@@ -2,9 +2,7 @@ import { Injectable, computed, inject, signal, type Signal } from '@angular/core
 
 import {
   htFromTtc,
-  ttcFromHt,
   proPriceFromPublic,
-  type PriceBasis,
   LOCALES,
   SOURCE_LOCALE,
   missingLocales,
@@ -91,18 +89,11 @@ export interface RateView {
  * serveur. Un aperçu qui arrondirait autrement que la facture serait pire
  * qu'aucun aperçu.
  */
-function counterpartOf(
-  priceEur: number | null,
-  basis: PriceBasis,
-  percent: number | undefined,
-): DerivedAmount | null {
+function counterpartOf(priceEur: number | null, percent: number | undefined): DerivedAmount | null {
   if (priceEur === null || percent === undefined) {
     return null;
   }
-  const cents = Math.round(priceEur * 100);
-  return basis === 'ttc'
-    ? { label: 'HT', amount: euros(htFromTtc(cents, percent)) }
-    : { label: 'TTC', amount: euros(ttcFromHt(cents, percent)) };
+  return { label: 'HT', amount: euros(htFromTtc(Math.round(priceEur * 100), percent)) };
 }
 
 const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -112,9 +103,16 @@ function euros(cents: number): string {
   return EUROS.format(cents / 100);
 }
 
-/** Un montant dérivé et ce qu'il EST : le nombre seul ne le dit pas. */
+/**
+ * Un montant dérivé et ce qu'il EST.
+ *
+ * `label` ne vaut plus que `'HT'` — il a porté `'TTC'` du temps où une fiche
+ * pouvait être ancrée au hors taxe, et où la contrepartie changeait donc de
+ * nature. Il reste parce que le nombre seul ne dit toujours pas ce qu'il est,
+ * et qu'un montant nu à côté d'un prix public se lirait comme un autre prix.
+ */
 export interface DerivedAmount {
-  readonly label: 'HT' | 'TTC';
+  readonly label: 'HT';
   readonly amount: string;
 }
 
@@ -400,7 +398,6 @@ export class ProductFormStore {
    * qu'on quitte. Une fiche RELUE, elle, garde la sienne — on ne réinterprète
    * pas un montant enregistré en changeant l'étiquette au-dessus.
    */
-  readonly priceBasis = signal<PriceBasis>('ttc');
 
   /**
    * La **dérogation** de cette fiche, par clé de contexte. Vide = elle hérite.
@@ -553,17 +550,13 @@ export class ProductFormStore {
    * l'écran affichait DEUX hors taxe B2B différents, l'un sous le prix pro et
    * l'autre dans le tableau, et rien ne disait lequel serait facturé.
    *
-   * Le rapport ne s'applique qu'à une fiche ancrée au TTC — c'est un rapport
-   * TTC/TTC. Ailleurs, la ligne professionnelle retombe sur le prix public,
-   * comme les autres.
+   * Le rapport est un rapport TTC/TTC, et le prix saisi EST un prix public
+   * TTC : il n'y a plus d'assiette à vérifier avant de l'appliquer.
    */
   private basePriceEurFor(contextKey: string): number | null {
     const priceEur = this.priceEur();
     const ratioBp = this.accounting.rules().ratioBp;
     if (contextKey !== PRO_CONTEXT_KEY || priceEur === null || ratioBp === null) {
-      return priceEur;
-    }
-    if (this.priceBasis() !== 'ttc') {
       return priceEur;
     }
     return proPriceFromPublic(Math.round(priceEur * 100), ratioBp) / 100;
@@ -572,7 +565,7 @@ export class ProductFormStore {
   readonly proPricing = computed<ProPricing | null>(() => {
     const priceEur = this.priceEur();
     const ratioBp = this.accounting.rules().ratioBp;
-    if (priceEur === null || ratioBp === null || this.priceBasis() !== 'ttc') {
+    if (priceEur === null || ratioBp === null) {
       return null;
     }
     const proTtcCents = proPriceFromPublic(Math.round(priceEur * 100), ratioBp);
@@ -635,11 +628,7 @@ export class ProductFormStore {
       override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
     const counterpartFor = (contextKey: string): DerivedAmount | null =>
-      counterpartOf(
-        this.basePriceEurFor(contextKey),
-        this.priceBasis(),
-        this.percentOf(contextKey),
-      );
+      counterpartOf(this.basePriceEurFor(contextKey), this.percentOf(contextKey));
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
@@ -1108,10 +1097,9 @@ export class ProductFormStore {
     const price = this.priceEur();
     const weight = this.weightGrams();
     return this.products.savePricing(this.productId(), this.variantId(), {
+      // Un prix public TTC — la seule assiette. Le hors taxe se déduit du taux
+      // de chaque canal, il ne s'enregistre pas.
       priceCents: price === null ? null : Math.round(price * 100),
-      // L'assiette part AVEC le prix : entre deux écritures, la base porterait
-      // un montant dont personne ne saurait dire s'il est hors taxe.
-      priceBasis: this.priceBasis(),
       weightGrams: weight === null ? null : Math.round(weight),
     });
   }
@@ -1239,14 +1227,7 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([
-          this.priceEur(),
-          // Sans elle, basculer l'assiette sans toucher au nombre laisserait la
-          // section « propre » : le geste ne partirait jamais.
-          this.priceBasis(),
-          this.vatOverride(),
-          this.channelsOverride(),
-        ]);
+        return JSON.stringify([this.priceEur(), this.vatOverride(), this.channelsOverride()]);
       case 'fiche':
         // Le poids net est de CETTE section : la grille est « pour 100 g », et
         // sans lui elle ne dit rien de ce qu'on vend.
@@ -1288,7 +1269,6 @@ export class ProductFormStore {
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
-    this.priceBasis.set(product.priceBasis);
     this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
     this.weightGrams.set(product.weightGrams ?? null);

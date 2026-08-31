@@ -80,21 +80,6 @@ describe('PricingForm', () => {
     expect(text).toContain('Prix public TTC');
   });
 
-  /**
-   * Une fiche RELUE garde son assiette : réinterpréter un montant enregistré en
-   * changeant l'étiquette au-dessus serait le seul mensonge qu'un écran de
-   * tarif ne peut pas se permettre.
-   */
-  it('dit « Prix HT » sur une fiche encore ancrée au hors taxe', () => {
-    const store = setup();
-    store.priceBasis.set('ht');
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Prix HT');
-    expect(text).not.toContain('Prix public TTC');
-  });
-
   it('montre le régime À CÔTÉ du prix, pas dans une autre section', () => {
     // « 24,50 » et « TVA 5,5 % » sont une seule information : ce qu'on facture.
     // Les séparer obligeait à replier une section pour en déplier une autre.
@@ -270,26 +255,21 @@ describe('PricingForm — le HT par canal', () => {
   });
 
   /**
-   * Une fiche encore ancrée au hors taxe montre l'autre face : le TTC. La
-   * colonne dit toujours l'INVERSE de ce qu'on saisit, sinon elle n'apprend
-   * rien.
+   * La colonne dit toujours l'INVERSE de ce qu'on saisit, sinon elle n'apprend
+   * rien. On saisit un prix public TTC, elle montre donc des hors taxe — et
+   * c'est désormais son seul mode : le sens inverse a disparu avec l'assiette.
    */
-  it('montre le TTC quand la fiche est encore ancrée au hors taxe', () => {
+  it('étiquette « HT » et jamais « TTC » : le sens de lecture est unique', () => {
     const store = setup();
     withFamily(store);
-    store.priceBasis.set('ht');
     store.priceEur.set(10);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
-    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
-    const cell = b2b?.querySelector('.inherit-gross');
-
-    expect(cell?.querySelector('strong')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toBe(
-      '12,00 €',
-    );
-    expect(cell?.textContent).toContain('TTC');
+    const cells = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-gross')];
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every((cell) => (cell.textContent ?? '').includes('HT'))).toBe(true);
+    expect(cells.some((cell) => (cell.textContent ?? '').includes('TTC'))).toBe(false);
   });
 
   it('ne montre RIEN sans prix — jamais un montant dérivé de zéro', () => {
@@ -360,21 +340,6 @@ describe('PricingForm — le prix professionnel', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('.pro')).toBeNull();
     expect(host.textContent).toContain('Aucune');
-  });
-
-  /**
-   * Le rapport est un rapport TTC/TTC : appliqué à un montant hors taxe, il ne
-   * veut rien dire. On n'affiche donc pas un prix que le serveur ne
-   * calculerait pas.
-   */
-  it('ne dérive rien tant que la fiche est ancrée au hors taxe', () => {
-    const store = setup();
-    withProRatio(store, 9_000);
-    store.priceBasis.set('ht');
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    expect((fixture.nativeElement as HTMLElement).querySelector('.pro')).toBeNull();
   });
 });
 

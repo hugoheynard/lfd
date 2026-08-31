@@ -51,7 +51,6 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
         isDiscontinued: false,
         position: 0,
         priceCents: null,
-        priceBasis: "ttc",
         weightGrams: null,
         allergens: null,
         nutrition: null,

@@ -18,7 +18,6 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     isDiscontinued: false,
     position: 0,
     priceCents: 200,
-    priceBasis: "ht",
     weightGrams: null,
     allergens: null,
     nutrition: null,
@@ -78,19 +77,20 @@ describe("projectCatalog", () => {
     expect(excluded).toEqual([]);
     expect(snapshot.generatedAt).toBe(AT);
     expect(snapshot.products).toHaveLength(1);
-    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(200_000);
+    // 2,00 € d'étiquette à 5,5 % → 1,89573… € HT. Le prix stocké EST un prix
+    // public TTC : il n'y a plus de cas où il traverse sans conversion.
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(189_573);
     expect(snapshot.categories[0]?.vatRatePercent).toBe(5.5);
   });
 
   /**
    * Le cœur de l'ancrage : la plateforme professionnelle facture en HORS TAXE,
-   * toujours. Un article dont le prix est celui de l'étiquette est converti
-   * ici, au dernier endroit qui connaît encore son assiette — 1,20 € TTC à
-   * 5,5 % partent à 1,14 € HT.
+   * toujours. Le prix d'une déclinaison est celui de l'étiquette, et c'est ici
+   * qu'il devient un hors taxe — 1,20 € TTC à 5,5 % partent à 1,14 € HT.
    */
-  it("convertit un prix ancré au TTC en hors taxe avant de l'envoyer", () => {
+  it("convertit le prix d'étiquette en hors taxe avant de l'envoyer", () => {
     const { snapshot, excluded } = projectCatalog(
-      [product({ variants: [variant({ priceCents: 120, priceBasis: "ttc" })] })],
+      [product({ variants: [variant({ priceCents: 120 })] })],
       [category()],
       vat(),
       sold(),
@@ -109,7 +109,7 @@ describe("projectCatalog", () => {
    * projection et pas seulement dans la fonction de conversion.
    */
   it("fait dépendre le HT du taux, à prix d'étiquette égal", () => {
-    const ttcVariant = { variants: [variant({ priceCents: 120, priceBasis: "ttc" as const })] };
+    const ttcVariant = { variants: [variant({ priceCents: 120 })] };
     const at55 = projectCatalog([product(ttcVariant)], [category()], vat(), sold(), AT);
     const at10 = projectCatalog([product(ttcVariant)], [category()], vat({ b2b: 10 }), sold(), AT);
 
@@ -122,26 +122,27 @@ describe("projectCatalog", () => {
    * hors taxe. Le motif est distinct de « pas de tarif » — ici le prix existe,
    * c'est le taux qui manque, et c'est un autre écran qu'il faut ouvrir.
    */
-  it("écarte un prix ancré au TTC quand le contexte B2B n'a pas de taux", () => {
+  it("écarte un prix quand le contexte B2B n'a pas de taux", () => {
     const { snapshot, excluded } = projectCatalog(
-      [product({ variants: [variant({ priceCents: 120, priceBasis: "ttc" })] })],
+      [product({ variants: [variant({ priceCents: 120 })] })],
       [category()],
       vat({ takeaway: 5.5 }),
       sold(),
       AT,
     );
 
-    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_ttc_sans_taux" });
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_taux" });
     expect(snapshot.products).toHaveLength(0);
   });
 
   /**
-   * Un prix HORS TAXE, lui, part sans taux : il n'a jamais eu besoin d'un taux
-   * pour être ce qu'il est. C'est la garantie que l'ancrage n'a rien resserré
-   * au passage — la plateforme écarte ces articles de sa boutique, mais le prix
-   * canonique, lui, a de la valeur.
+   * **Plus aucun prix ne traverse sans taux.** Ce cas disait l'inverse : un
+   * montant hors taxe partait tel quel, n'ayant jamais eu besoin d'un taux
+   * pour être ce qu'il est. Cette porte s'est fermée avec l'assiette — tout
+   * prix est désormais un prix d'étiquette, et un prix d'étiquette sans taux
+   * n'a pas de hors taxe.
    */
-  it("laisse passer un prix hors taxe même sans taux B2B", () => {
+  it("n'a plus de chemin sans taux : rien ne traverse tel quel", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
       [category()],
@@ -150,12 +151,8 @@ describe("projectCatalog", () => {
       AT,
     );
 
-    expect(excluded).toEqual([]);
-    // Un prix DÉJÀ hors taxe traverse par une multiplication exacte : la
-    // précision n'est jamais une invention, elle n'apparaît que là où une
-    // division l'a créée.
-    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(200_000);
-    expect(snapshot.products[0]?.variants[0]?.vatRatePercent).toBeNull();
+    expect(snapshot.products).toEqual([]);
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_taux" });
   });
 
   it("facture la DÉROGATION de la fiche, pas le taux de sa famille", () => {

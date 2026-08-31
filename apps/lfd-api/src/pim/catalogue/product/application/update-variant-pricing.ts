@@ -3,7 +3,6 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { changesBetween } from "../../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import type { PriceBasis } from "@lfd/pim-contracts";
 
 import type { VariantPricing } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
@@ -70,7 +69,6 @@ function pricingOf(
   variants: readonly {
     readonly id: string;
     readonly priceCents: number | null;
-    readonly priceBasis: PriceBasis;
     readonly weightGrams: number | null;
   }[],
   variantId: string,
@@ -78,11 +76,6 @@ function pricingOf(
   const variant = variants.find((candidate) => candidate.id === variantId);
   return {
     priceCents: variant?.priceCents ?? null,
-    // Journalisée au même titre que le prix, et c'est le point : passer un
-    // article de « 1,20 € hors taxe » à « 1,20 € en tout » change ce qui est
-    // facturé sans changer un seul chiffre. Une trace qui tairait l'assiette
-    // montrerait un enregistrement sans modification.
-    priceBasis: variant?.priceBasis ?? null,
     weightGrams: variant?.weightGrams ?? null,
   };
 }

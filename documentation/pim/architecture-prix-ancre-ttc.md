@@ -1,9 +1,13 @@
 # Le prix ancré au TTC — et le rapport prix public / prix pro
 
-> **État : tranches 1 à 3 livrées** (2026-08-31) — le rapport a une maison, une
-> API et un écran ; l'assiette existe dans le modèle et la conversion se fait au
-> push. **Aucun prix n'a changé**, et rien ne peut encore poser `ttc` : la
-> bascule d'un article est la tranche 4, qui doit d'abord trancher Shopify.
+> **État : terminé** (2026-08-31). Le rapport a une maison, une API et un écran ;
+> la fiche saisit un prix public TTC ; chaque canal en dérive son hors taxe.
+>
+> 🔴 **Le chantier ne s'est pas terminé comme il avait commencé.** Il visait un
+> SECOND ancrage à côté du premier ; une décision de réunion en a fait le SEUL.
+> `price_basis` a donc été livrée puis retirée le même jour — voir le § 8, qui
+> supersède ce que les § 1, 6 ter et 7 disent de la coexistence des deux
+> assiettes.
 >
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
 > — où vit le taux, et pourquoi une carte naît d'une règle fiscale ;
@@ -95,10 +99,12 @@ lu ce service.
 | **1** | Le rapport, socle | `pim.accounting_rules` (singleton), VO `ProPriceRatio`, agrégat, dépôt, `GET` / `PUT`, journal, tests. **Aucune lecture de prix ne change.**         | ✅   |
 | **2** | Le rapport, écran | La case dans « Règles comptables ». On saisit, on voit ; ça ne décide encore rien.                                                                   | ⬜   |
 | **3** | L'ancrage         | `price_basis: ht \| ttc` (défaut `ht`), conversion TTC↔HT dans le contrat, conversion au push B2B. Parité : rien à faire, elle rejoue la projection. | ✅   |
-| **4** | Le raccordement   | Le prix pro se dérive, projection Shopify, fiche qui affiche public TTC · HT par contexte · pro.                                                     | ⬜   |
+| **4** | Le raccordement   | Le prix pro se dérive, fiche qui affiche public TTC · HT par contexte · pro.                                                                         | ✅   |
+| **5** | L'assiette unique | Décision de réunion : le hors taxe ne se saisit plus. `price_basis` retirée, `ttcFromHt` / `htPriceOf` supprimées. Voir § 8.                         | ✅   |
 
-Les tranches 1 à 3 **ne changent aucun prix facturé** : le défaut `ht` conserve
-le comportement d'aujourd'hui tant que personne ne bascule un article.
+Les tranches 1 à 3 n'ont changé aucun prix facturé : le défaut `ht` conservait
+le comportement d'alors tant que personne ne basculait un article. La tranche 5,
+elle, en change le SENS — voir § 8.
 
 ## 6. Ce que la tranche 1 a posé
 
@@ -202,3 +208,63 @@ n'est pas traduit à l'écran.
 - ~~**Le calcul ne doit exister qu'une fois.**~~ Réglé en tranche 2 :
   `proPriceFromPublic` vit dans `@lfd/pim-contracts`, et le VO du serveur y
   délègue. La conversion TTC → HT de la tranche 3 devra y entrer aussi.
+
+## 8. L'assiette unique — la décision qui a clos le chantier
+
+**Décision de réunion, 2026-08-31 : le calcul par le HT n'a pas d'utilité.** Un
+seul système est valide — prix public TTC, rapport vers le TTC pro, taux vers le
+hors taxe de chaque canal. Le hors taxe cesse d'être une saisie ; il devient un
+résultat.
+
+### Pourquoi ne pas garder l'assiette « au cas où »
+
+C'était la vraie question, et la réponse n'est pas « YAGNI ».
+
+**L'extensibilité qui compte est ailleurs, et elle est pilotée par la donnée.**
+Le rapport est une LIGNE (`accounting_rules.ratio_bp`) ; les taux sont des
+LIGNES par (contexte × produit|famille). Un second rapport, un rapport par
+famille, un rapport par client, un canal de plus — tout ça s'absorbe en ajoutant
+des lignes. **Aucun de ces cas de figure ne rouvre `price_basis`.**
+
+`price_basis` n'était pas un axe extensible, c'était un interrupteur à deux
+positions, et le garder inerte se payait à chaque lecture. Deux exemples, tous
+deux livrés en tranche 3 :
+
+- `htMillicentsOf` devait rendre `null` sur une branche qui n'aurait jamais été
+  prise ;
+- la projection B2B avait dû inventer une exclusion `variant_ttc_sans_taux`
+  **uniquement** parce que les deux assiettes coexistaient.
+
+Une branche jamais prise est une branche jamais testée pour de vrai. Et une
+colonne à deux valeurs dont une n'est plus jamais écrite est pire qu'absente :
+le jour où un import y remet `ht`, personne ne le voit, et on ne sait plus si
+c'est un cas légitime ou une ligne oubliée.
+
+### Ce qui a été retiré
+
+| Retiré                               | Remplacé par                                             |
+| ------------------------------------ | -------------------------------------------------------- |
+| `pim.price_basis` (enum + colonne)   | rien : `price_cents` EST un prix public TTC              |
+| `PRICE_BASES`, `priceBasisSchema`    | rien                                                     |
+| `ttcFromHt`, `htPriceOf`             | rien — le sens inverse n'existe plus                     |
+| `price-basis.ts`                     | `tax.ts` : `htFromTtc` + `htMillicentsOf`                |
+| `variant_ttc_sans_taux`              | `variant_sans_taux` — il n'y a plus d'ancrage à préciser |
+| le sélecteur d'assiette sur la fiche | l'étiquette fixe « Prix public TTC »                     |
+
+**Aucune conversion de données.** Les 92 déclinaisons `ht` étaient du seed, rien
+en production — la question a été posée avant d'écrire la migration, parce qu'une
+conversion aurait demandé de choisir UN taux par déclinaison alors qu'un prix
+public en a un par contexte de vente. C'est tout l'objet de ce modèle : il n'y
+avait pas de réponse mécanique.
+
+### Ce que ça règle chez Shopify, et sous quelle hypothèse
+
+Le § 7 annonçait Shopify comme le bloquant : sa projection envoie `price_cents`
+**tel quel**, sans jamais voir de taux. C'était vrai — et c'était déjà un défaut
+AVANT ce chantier : elle poussait un montant hors taxe dans un champ que Shopify
+lit comme taxe comprise (« prices include tax », le réglage français par défaut).
+
+Le prix stocké étant désormais un prix public TTC, la projection envoie la bonne
+chose **sans avoir changé une ligne**. ⚠️ Sous une hypothèse qui n'est pas
+vérifiable depuis ce dépôt : que la boutique soit bien paramétrée taxe comprise.
+À confirmer dans son paramétrage avant le premier push réel.

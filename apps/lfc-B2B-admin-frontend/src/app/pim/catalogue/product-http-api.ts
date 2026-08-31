@@ -174,9 +174,6 @@ export function backendToProduct(
     vatByContext: product.vatByContext,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
-    // Reçue, pas devinée : c'est elle qui dit si « 2,00 » veut dire deux euros
-    // hors taxe ou deux euros en tout.
-    priceBasis: base?.priceBasis ?? 'ht',
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
     ...(description === null || description === undefined || description === ''
       ? {}
@@ -405,10 +402,6 @@ export class ProductHttpApi {
     }
     await this.savePricing(id, variantId, {
       priceCents: input.priceEur === undefined ? null : Math.round(input.priceEur * 100),
-      // Une fiche neuve naît au prix d'étiquette : c'est ce que l'écran demande
-      // maintenant (« Prix public TTC »), et la faire naître en hors taxe
-      // obligerait à la basculer aussitôt.
-      priceBasis: 'ttc',
       weightGrams: input.weightGrams === undefined ? null : input.weightGrams,
     });
   }

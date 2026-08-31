@@ -1,5 +1,6 @@
 import { proHtFromPublic, proPriceFromPublic } from "../accounting-rules.js";
-import { htFromTtc, htPriceOf, ttcFromHt } from "../price-basis.js";
+import { htFromTtc, htMillicentsOf } from "../tax.js";
+import { updateVariantPricingPayloadSchema } from "../product.js";
 
 describe("htFromTtc", () => {
   it("déduit le hors taxe d'un prix d'étiquette", () => {
@@ -33,35 +34,23 @@ describe("htFromTtc", () => {
   });
 });
 
-describe("ttcFromHt", () => {
-  it("ajoute la taxe à un prix hors taxe", () => {
-    expect(ttcFromHt(1_000, 20)).toBe(1_200);
-    expect(ttcFromHt(1_000, 5.5)).toBe(1_055);
-  });
-});
-
-describe("l'aller-retour", () => {
+describe("htMillicentsOf", () => {
   /**
-   * Le TTC fait foi : c'est l'étiquette. Le HT en est la conséquence, et un
-   * centime peut se perdre en chemin — ce qui est le bon sens de la perte. Ce
-   * test **documente** l'asymétrie plutôt que de prétendre qu'elle n'existe
-   * pas : on ne recalcule jamais une étiquette depuis sa propre déduction.
+   * Le cran de précision qui évite qu'une division se paie à la quantité : le
+   * hors taxe d'un prix d'étiquette ne tombe presque jamais juste, et
+   * l'arrondir au centime ici multiplierait l'erreur par ce qui est commandé.
    */
-  it("revient au même TTC sur les cas ronds", () => {
-    for (const ttc of [120, 1_200, 250, 999]) {
-      expect(ttcFromHt(htFromTtc(ttc, 5.5), 5.5)).toBe(ttc);
+  it("garde les décimales que la division crée", () => {
+    // 1,20 € TTC à 5,5 % → 1,13744… € : 113 744 millicentimes.
+    expect(htMillicentsOf(120, 5.5)).toBe(113_744);
+  });
+
+  it("reste d'accord avec le centime au moment de l'arrondir", () => {
+    for (const ttc of [120, 250, 999, 1_200]) {
+      const millicents = htMillicentsOf(ttc, 5.5);
+      expect(millicents).not.toBeNull();
+      expect(Math.round((millicents ?? 0) / 1_000)).toBe(htFromTtc(ttc, 5.5));
     }
-  });
-});
-
-describe("htPriceOf", () => {
-  it("rend un prix hors taxe tel quel, sans avoir besoin d'un taux", () => {
-    expect(htPriceOf(200, "ht", null)).toBe(200);
-    expect(htPriceOf(200, "ht", 5.5)).toBe(200);
-  });
-
-  it("convertit un prix d'étiquette avec le taux donné", () => {
-    expect(htPriceOf(120, "ttc", 5.5)).toBe(114);
   });
 
   /**
@@ -69,8 +58,8 @@ describe("htPriceOf", () => {
    * n'a décidé. Le référentiel a déjà retiré un défaut de ce genre
    * (`DEFAULT_FOOD_VAT_RATE`).
    */
-  it("refuse de convertir un prix d'étiquette sans taux", () => {
-    expect(htPriceOf(120, "ttc", null)).toBeNull();
+  it("refuse de dériver sans taux", () => {
+    expect(htMillicentsOf(120, null)).toBeNull();
   });
 });
 
@@ -91,15 +80,38 @@ describe("proHtFromPublic", () => {
    * et un client qui recompte trouverait le désaccord avant nous.
    */
   it("reste d'accord avec le prix pro TTC affiché juste au-dessus", () => {
+    // La re-taxation est recalculée ICI, à la main, et non par une fonction du
+    // module : un invariant vérifié avec le code qu'il surveille ne surveille
+    // rien. `ttcFromHt` la portait — elle a disparu avec la saisie hors taxe,
+    // et l'invariant, lui, tient toujours.
+    const retaxed = (htCents: number, ratePercent: number): number =>
+      Math.round((htCents * (10_000 + ratePercent * 100)) / 10_000);
+
     for (const publicTtc of [1_200, 199, 250, 4_999, 10_000]) {
       const proTtc = proPriceFromPublic(publicTtc, 9_000);
       const proHt = proHtFromPublic(publicTtc, 9_000, 5.5);
       expect(proHt).not.toBeNull();
-      expect(ttcFromHt(proHt ?? 0, 5.5)).toBe(proTtc);
+      expect(retaxed(proHt ?? 0, 5.5)).toBe(proTtc);
     }
   });
 
   it("refuse de dériver sans taux", () => {
     expect(proHtFromPublic(1_200, 9_000, null)).toBeNull();
+  });
+});
+
+/**
+ * **La porte d'entrée, fermée.** Un seul système est valide : le prix se saisit
+ * TTC, le hors taxe se dérive.
+ *
+ * Le champ `priceBasis` a disparu du contrat, et ce cas est là pour que sa
+ * disparition soit un FAIT testé plutôt qu'une absence. Un jour quelqu'un
+ * voudra rouvrir la porte ; il tombera d'abord ici.
+ */
+describe("updateVariantPricingPayloadSchema — une seule assiette", () => {
+  it("n'attend plus qu'un prix et un poids : le prix EST un prix public TTC", () => {
+    expect(
+      updateVariantPricingPayloadSchema.parse({ priceCents: 1_000, weightGrams: null }),
+    ).toEqual({ priceCents: 1_000, weightGrams: null });
   });
 });

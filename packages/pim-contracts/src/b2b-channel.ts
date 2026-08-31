@@ -77,11 +77,15 @@ export type B2bExclusionReason =
   /** La fiche n'est pas vendue sur ce canal — sa matrice, ou celle de sa famille. */
   | "canal_ferme"
   /**
-   * Prix ancré au **TTC**, et le contexte B2B n'a pas de taux : le hors taxe
-   * n'est pas dérivable. Distinct de `variant_sans_prix` — ici le prix existe,
-   * c'est le taux qui manque, et c'est un autre écran qu'il faut ouvrir.
+   * Le contexte B2B n'a pas de taux : le hors taxe n'est pas dérivable.
+   *
+   * Distinct de `variant_sans_prix` — ici le prix existe, c'est le taux qui
+   * manque, et c'est un autre écran qu'il faut ouvrir. Le motif s'appelait
+   * `variant_ttc_sans_taux` du temps où une déclinaison pouvait être ancrée au
+   * hors taxe : il fallait alors dire de quel ancrage on parlait. Il n'y en a
+   * plus qu'un, donc le préciser ne distinguait plus rien.
    */
-  | "variant_ttc_sans_taux";
+  | "variant_sans_taux";
 
 export interface B2bExclusionView {
   readonly sku: string;

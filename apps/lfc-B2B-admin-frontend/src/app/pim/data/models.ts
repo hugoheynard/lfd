@@ -18,7 +18,7 @@
  * utilise — `@lfd/pim-contracts` tire zod, qui n'a rien à faire dans le bundle
  * initial.
  */
-import type { LocalizedText, PriceBasis } from '@lfd/pim-contracts';
+import type { LocalizedText } from '@lfd/pim-contracts';
 
 export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
@@ -108,14 +108,6 @@ export interface Product {
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */
   priceEur?: number;
-  /**
-   * **Ce que `priceEur` veut dire** — hors taxe, ou prix d'étiquette.
-   *
-   * Obligatoire, alors que le prix est facultatif : une fiche sans assiette
-   * n'existe pas, et la rendre facultative obligerait chaque lecteur à deviner
-   * laquelle appliquer — donc à en choisir une, donc à se tromper un jour.
-   */
-  priceBasis: PriceBasis;
   /** Description courte (fiche produit + listes). */
   descriptionFr?: string;
   /** Poids en grammes, quand le produit se vend au format/poids. */

@@ -24,7 +24,7 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
   // « le prix existe, le taux manque » : c'est l'écran des taux qu'il faut
   // ouvrir, pas celui du tarif. Le dire évite d'aller corriger au mauvais
   // endroit.
-  variant_ttc_sans_taux: 'prix TTC sans taux B2B',
+  variant_sans_taux: 'prix sans taux B2B',
 };
 
 /**

@@ -45,51 +45,6 @@
   color: var(--fold-color-text-muted);
 }
 
-/* ── L'assiette ──────────────────────────────────────────────────────────────
-   Deux boutons, pas une liste déroulante : il n'y a que deux réponses, et les
-   cacher derrière un clic ferait passer pour un réglage avancé ce qui décide du
-   sens de tout l'écran. */
-.basis {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  margin-block-start: var(--fold-space-md);
-}
-
-.basis-label {
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.basis-choice {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.basis-option {
-  border: 1px solid var(--fold-color-border);
-  background: transparent;
-  border-radius: var(--fold-radius-sm);
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-  cursor: pointer;
-}
-
-.basis-option.is-on {
-  background: var(--fold-color-surface-raised);
-  border-color: var(--fold-color-text-secondary);
-  color: var(--fold-color-text);
-  font-weight: var(--fold-weight-semibold);
-}
-
-.basis-say {
-  margin: 0;
-  font-size: var(--fold-text-2xs);
-  color: var(--fold-color-text-faded);
-}
-
 /* ── Le prix professionnel ───────────────────────────────────────────────────
    Sous le prix public, séparé d'un filet : il en DÉCOULE, il ne le concurrence
    pas. Rien n'y est saisissable — la remise se règle ailleurs, et l'écran le

@@ -60,7 +60,6 @@ function seedProduct(): ProductSnapshot {
         isDiscontinued: false,
         position: 0,
         priceCents: null,
-        priceBasis: "ht",
         weightGrams: null,
         allergens: null,
         nutrition: null,
@@ -256,7 +255,6 @@ describe("l’historique d’une fiche", () => {
     await new UpdateVariantPricingHandler(products, journal, new DirectUnitOfWork()).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 260,
-        priceBasis: "ht",
         weightGrams: null,
       }),
     );
@@ -355,7 +353,6 @@ describe("UpdateVariantPricingHandler", () => {
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 500,
-        priceBasis: "ht",
         weightGrams: 300,
       }),
     );
@@ -380,7 +377,6 @@ describe("UpdateVariantPricingHandler", () => {
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: null,
-        priceBasis: "ht",
         weightGrams: null,
       }),
     );
@@ -397,7 +393,6 @@ describe("UpdateVariantPricingHandler", () => {
       ).execute(
         new UpdateVariantPricingCommand(PRODUCT_ID, "variant_etranger", {
           priceCents: 100,
-          priceBasis: "ht",
           weightGrams: null,
         }),
       ),

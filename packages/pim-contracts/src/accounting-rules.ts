@@ -1,6 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 
-import { htFromTtc } from "./price-basis.js";
+import { htFromTtc } from "./tax.js";
 import { z } from "zod";
 
 /**

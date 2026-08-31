@@ -2991,22 +2991,6 @@ model ProductContextVat {
   @@schema("pim")
 }
 
-/// **L'assiette d'un prix** — ce que le nombre saisi veut dire.
-///
-/// `ht` : hors taxe, le TTC se calcule. L'assiette historique, celle d'une
-/// facture professionnelle. `ttc` : le prix de l'étiquette, et c'est le HT qui
-/// se calcule — différemment pour chaque taux. Le même croissant est à 1,20 €
-/// qu'on l'emporte (5,5 %) ou qu'on le mange en salle (10 %).
-///
-/// Cf. `documentation/pim/architecture-prix-ancre-ttc.md`.
-enum PriceBasis {
-  ht
-  ttc
-
-  @@map("price_basis")
-  @@schema("pim")
-}
-
 model ProductVariant {
   id             String  @id
   productId      String  @map("product_id")
@@ -3023,7 +3007,7 @@ model ProductVariant {
   /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
   /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
   /// ici (cf. documentation/architecture-conditionnements-pricing.md).
-  priceCents  Int?       @map("price_cents")
+  priceCents  Int? @map("price_cents")
   /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
   /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
   /// existantes serait une reprise de données déguisée en migration.
@@ -3031,9 +3015,8 @@ model ProductVariant {
   /// Non-nullable, donc pas de troisième état : une déclinaison sans assiette
   /// n'existe pas, alors qu'une déclinaison sans PRIX, si (`price_cents` reste
   /// nullable — « pas encore tarifé »).
-  priceBasis  PriceBasis @default(ht) @map("price_basis")
   /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
-  weightGrams Int?       @map("weight_grams")
+  weightGrams Int? @map("weight_grams")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -72,7 +72,6 @@ function snapshot(
         isDiscontinued: false,
         position: 0,
         priceCents: null,
-        priceBasis: "ht",
         weightGrams: null,
         allergens: null,
         nutrition: null,

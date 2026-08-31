@@ -175,7 +175,7 @@ describe("l’agrégat Product", () => {
   describe("le tarif d’une déclinaison", () => {
     it("s’applique à une déclinaison du produit", () => {
       const product = open();
-      product.priceVariant("var_1", { priceCents: 1250, priceBasis: "ht", weightGrams: 480 });
+      product.priceVariant("var_1", { priceCents: 1250, weightGrams: 480 });
       expect(product.snapshot().variants[0]?.priceCents).toBe(1250);
       expect(product.snapshot().variants[0]?.weightGrams).toBe(480);
     });
@@ -185,7 +185,6 @@ describe("l’agrégat Product", () => {
       expect(() =>
         open().priceVariant("var_dautrui", {
           priceCents: 100,
-          priceBasis: "ht",
           weightGrams: null,
         }),
       ).toThrow(VariantNotFoundError);
@@ -193,8 +192,8 @@ describe("l’agrégat Product", () => {
 
     it("accepte de dé-tarifer (null)", () => {
       const product = open();
-      product.priceVariant("var_1", { priceCents: 1250, priceBasis: "ht", weightGrams: 480 });
-      product.priceVariant("var_1", { priceCents: null, priceBasis: "ht", weightGrams: null });
+      product.priceVariant("var_1", { priceCents: 1250, weightGrams: 480 });
+      product.priceVariant("var_1", { priceCents: null, weightGrams: null });
       expect(product.snapshot().variants[0]?.priceCents).toBeNull();
     });
 
@@ -211,7 +210,6 @@ describe("l’agrégat Product", () => {
       expect(() =>
         open().priceVariant("var_1", {
           priceCents: priceCents,
-          priceBasis: "ht",
           weightGrams: weightGrams,
         }),
       ).toThrow(InvalidVariantPricingError);

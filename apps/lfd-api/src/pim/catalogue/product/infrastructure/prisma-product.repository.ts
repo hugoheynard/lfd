@@ -1,7 +1,5 @@
 import { Injectable } from "@nestjs/common";
 
-import type { PriceBasis } from "@lfd/pim-contracts";
-
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
@@ -44,7 +42,6 @@ interface VariantRow {
   isDiscontinued: boolean;
   position: number;
   priceCents: number | null;
-  priceBasis: PriceBasis;
   weightGrams: number | null;
   nutrition: NutritionRow | null;
 }
@@ -87,7 +84,6 @@ function toVariant(row: VariantRow): VariantSnapshot {
     isDiscontinued: row.isDiscontinued,
     position: row.position,
     priceCents: row.priceCents,
-    priceBasis: row.priceBasis,
     weightGrams: row.weightGrams,
     allergens:
       row.nutrition === null
@@ -269,7 +265,6 @@ export class PrismaProductRepository extends ProductRepository {
             isDiscontinued: variant.isDiscontinued,
             position: variant.position,
             priceCents: variant.priceCents,
-            priceBasis: variant.priceBasis,
             weightGrams: variant.weightGrams,
           },
         }),

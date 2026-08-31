@@ -136,9 +136,9 @@ function sortVariants(
     // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
     // d'inventer un taux : une conversion approximative facturerait un montant
     // que personne n'a décidé, et rien ne le signalerait ensuite.
-    const htMillicents = htMillicentsOf(priceCents, variant.priceBasis, vatRatePercent);
+    const htMillicents = htMillicentsOf(priceCents, vatRatePercent);
     if (htMillicents === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_ttc_sans_taux" });
+      excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
     }
     sellable.push(projectVariant(variant, htMillicents, vatRatePercent));
