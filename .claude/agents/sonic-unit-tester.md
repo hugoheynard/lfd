@@ -75,7 +75,8 @@ pnpm --filter @lfd/<paquet> test -- <motif>
 ```
 
 Ne lance rien d'autre. Pas de `pnpm test` racine, pas de build, pas de porte :
-c'est le travail du `portier`, et tu es censé être fini avant qu'il démarre.
+c'est le travail de `cerberus-le-portier`, et tu es censé être fini avant qu'il
+démarre.
 
 **Un test rouge n'est jamais livré.** Soit ton attente était fausse et tu la
 corriges, soit tu as trouvé un vrai défaut et il part en `DIVERGENCE`, sans le
