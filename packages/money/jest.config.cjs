@@ -2,7 +2,7 @@
 module.exports = {
   testEnvironment: "node",
   rootDir: "./",
-  displayName: "catalog-sync",
+  displayName: "money",
   testMatch: ["**/?(*.)+(spec|test).ts"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
   extensionsToTreatAsEsm: [".ts"],
