@@ -103,14 +103,11 @@ export function attributeFields(
 
 /** Le bloc `changes` d'un payload, ou `null` s'il n'en porte pas. */
 function readChanges(payload: unknown): Record<string, unknown> | null {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
-    return null;
-  }
-  const changes = Reflect.get(payload, "changes");
-  if (typeof changes !== "object" || changes === null || Array.isArray(changes)) {
-    return null;
-  }
-  return { ...changes };
+  return readObject(payload, "changes");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Les faits de PRODUIT — ceux que ce module doit savoir interpréter. */
@@ -255,21 +252,18 @@ function blastOf(payload: unknown): Readonly<Record<string, number>> {
 }
 
 function readObject(payload: unknown, key: string): Record<string, unknown> | null {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+  if (!isRecord(payload)) {
     return null;
   }
-  const value = Reflect.get(payload, key);
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null;
-  }
-  return { ...value };
+  const value: unknown = payload[key];
+  return isRecord(value) ? { ...value } : null;
 }
 
 function readScalar(payload: unknown, key: string): string | null {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+  if (!isRecord(payload)) {
     return null;
   }
-  const value = Reflect.get(payload, key);
+  const value: unknown = payload[key];
   if (typeof value === "string") {
     return value;
   }
