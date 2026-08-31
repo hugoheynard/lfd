@@ -268,3 +268,63 @@ Le prix stocké étant désormais un prix public TTC, la projection envoie la bo
 chose **sans avoir changé une ligne**. ⚠️ Sous une hypothèse qui n'est pas
 vérifiable depuis ce dépôt : que la boutique soit bien paramétrée taxe comprise.
 À confirmer dans son paramétrage avant le premier push réel.
+
+## 9. Le raccordement du rapport au push
+
+La tranche 4 n'avait été livrée qu'à moitié, et la moitié manquante ne se voyait
+pas : **l'écran appliquait le rapport, le fil non.**
+
+```
+fiche Tarif  →  basePriceEurFor('b2b')  →  × rapport  →  9,00 € HT affiché
+projection   →  htMillicentsOf(prix public, taux)     → 10,00 € HT poussé
+```
+
+Les deux nombres ne se lisent pas sur le même écran, donc personne ne pouvait
+voir l'écart. Un rapport saisi, tracé, affiché — et jamais facturé.
+
+### La chaîne, désormais complète
+
+```
+prix public TTC (stocké)
+  × rapport            → prix pro TTC, ARRONDI AU CENTIME ici
+  ÷ (1 + taux du canal) → hors taxe en millicentimes, poussé
+```
+
+L'arrondi du prix pro **avant** la division n'est pas un détail : c'est un prix,
+pas un intermédiaire de calcul. Garder le rationnel exact jusqu'au bout ferait
+diverger d'un centime le hors taxe poussé et celui que la fiche montre sous le
+prix pro — deux nombres qu'un client peut recompter. Sur 1,99 € à −10 % et
+5,5 % : 169 668 millicentimes par le prix pro arrondi, 169 763 par le rationnel.
+Un test tient l'écart.
+
+### Le rapport est une PRÉCONDITION du push
+
+`projectCatalog` le reçoit **obligatoire**, sans valeur de repli et sans branche
+`null`. Un défaut à 10 000 affirmerait « le pro paie le prix public », que
+personne n'a décidé ; une branche `null` ne serait jamais prise sur une maison
+correctement réglée, donc jamais éprouvée, et facturerait le plein tarif le jour
+où elle le serait.
+
+Le refus vit dans `B2bCatalogFeedProjection`, et il porte sur le **push entier**
+plutôt que sur chaque article. C'est la seule forme sûre : un snapshot dont tous
+les articles seraient écartés est un snapshot VALIDE, que la plateforme
+ingérerait en retirant de sa boutique tout ce qu'elle vendait (`removedSkus`).
+Un catalogue vidé par un réglage manquant est exactement ce que ce refus empêche.
+
+Un canal où **rien n'est publié** passe avant le garde : il n'a aucun prix à
+montrer, et lui réclamer un réglage comptable refuserait un aperçu qui ne tarife
+rien.
+
+⚠️ **Conséquence d'exploitation** : tant que « Règles comptables » est vide, le
+push B2B répond en erreur au lieu de partir. C'est voulu, et c'est la première
+chose à régler sur un environnement neuf.
+
+⚠️ **Et le contrôle de parité avec.** `CheckCatalogParityService` consomme la
+même `preview()` pour construire sa référence : sans rapport réglé, l'écran de
+parité tombe lui aussi, sur un message qui parle de règles comptables. C'est
+cohérent — il ne peut pas comparer à une référence qu'il ne sait pas calculer —
+mais le lien n'est pas évident depuis cet écran-là.
+
+**Couverture** : le garde est tenu par `feed-projection.service.spec.ts`
+(unitaire). Aucun e2e ne le traverse — `catalog-parity.e2e-spec.ts` double
+`FeedPreview`, donc la chaîne réelle n'est exercée nulle part au niveau e2e.

@@ -70,9 +70,26 @@ function sold(channels: SalesChannels = [{ pointOfSaleId: "pos_b2b", context: "b
   return new Map([["prd_1", channels]]);
 }
 
+/**
+ * Le rapport **neutre** : le pro paie le prix public.
+ *
+ * Une valeur explicite plutôt qu'un défaut dans la signature — la projection
+ * n'en a pas, délibérément, et un défaut ici la rendrait à nouveau facultative
+ * dans l'esprit du lecteur. `10 000` dit « aucune remise », ce qui est un
+ * réglage possible et pas une absence de réglage.
+ */
+const NO_DISCOUNT = 10_000;
+
 describe("projectCatalog", () => {
   it("projette un produit tarifé, avec le taux de TVA de sa famille", () => {
-    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), sold(), AT);
+    const { snapshot, excluded } = projectCatalog(
+      [product()],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(excluded).toEqual([]);
     expect(snapshot.generatedAt).toBe(AT);
@@ -94,6 +111,7 @@ describe("projectCatalog", () => {
       [category()],
       vat(),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -104,14 +122,72 @@ describe("projectCatalog", () => {
   });
 
   /**
+   * **Le raccordement du rapport.** Le prix poussé est un hors taxe
+   * PROFESSIONNEL : prix public TTC × rapport, puis ÷ taux du canal.
+   *
+   * Sans lui, la fiche affichait une ligne B2B remisée et le fil envoyait le
+   * plein tarif. Personne ne voyait l'écart : les deux nombres ne se lisent pas
+   * sur le même écran.
+   */
+  it("applique le rapport pro AVANT d'en déduire le hors taxe", () => {
+    const { snapshot } = projectCatalog(
+      [product({ variants: [variant({ priceCents: 1_200 })] })],
+      [category()],
+      vat({ b2b: 20 }),
+      sold(),
+      9_000,
+      AT,
+    );
+
+    // 12,00 € public × 90 % = 10,80 € pro TTC ; ÷ 1,20 = 9,00 € HT exactement.
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(900_000);
+  });
+
+  /**
+   * **L'accord entre l'écran et le fil**, qui est tout l'intérêt de l'ordre des
+   * arrondis : le prix pro est arrondi au centime AVANT la division, parce que
+   * c'est un prix. Garder le rationnel exact jusqu'au bout ferait diverger d'un
+   * centime le hors taxe poussé et celui que la fiche montre sous le prix pro.
+   */
+  it("arrondit le prix pro au centime avant de diviser", () => {
+    const { snapshot } = projectCatalog(
+      // 1,99 € × 90 % = 1,791 € → 1,79 € pro TTC (arrondi ICI).
+      [product({ variants: [variant({ priceCents: 199 })] })],
+      [category()],
+      vat({ b2b: 5.5 }),
+      sold(),
+      9_000,
+      AT,
+    );
+
+    // 1,79 € ÷ 1,055 = 1,696682… € → 169 668 millicentimes. Partir du rationnel
+    // exact (1,791 €) donnerait 169 763 : un centime d'écart avec l'écran.
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(169_668);
+  });
+
+  /**
    * Un même prix d'étiquette ne donne pas le même hors taxe selon le taux —
    * c'est la raison d'être de tout le chantier, vérifiée de bout en bout de la
    * projection et pas seulement dans la fonction de conversion.
    */
   it("fait dépendre le HT du taux, à prix d'étiquette égal", () => {
     const ttcVariant = { variants: [variant({ priceCents: 120 })] };
-    const at55 = projectCatalog([product(ttcVariant)], [category()], vat(), sold(), AT);
-    const at10 = projectCatalog([product(ttcVariant)], [category()], vat({ b2b: 10 }), sold(), AT);
+    const at55 = projectCatalog(
+      [product(ttcVariant)],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
+    const at10 = projectCatalog(
+      [product(ttcVariant)],
+      [category()],
+      vat({ b2b: 10 }),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(at55.snapshot.products[0]?.variants[0]?.priceMillicents).toBe(113_744);
     expect(at10.snapshot.products[0]?.variants[0]?.priceMillicents).toBe(109_091);
@@ -128,6 +204,7 @@ describe("projectCatalog", () => {
       [category()],
       vat({ takeaway: 5.5 }),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -148,6 +225,7 @@ describe("projectCatalog", () => {
       [category()],
       vat({ takeaway: 5.5 }),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -164,6 +242,7 @@ describe("projectCatalog", () => {
       [category()],
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -181,6 +260,7 @@ describe("projectCatalog", () => {
       [category({ vatByContext: { takeaway: 5.5, b2b: 20 } })],
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -189,7 +269,7 @@ describe("projectCatalog", () => {
   });
 
   it("ne lit aucune horloge : l’instant d’émission est celui qu’on lui passe", () => {
-    const { snapshot } = projectCatalog([product()], [category()], vat(), sold(), AT);
+    const { snapshot } = projectCatalog([product()], [category()], vat(), sold(), NO_DISCOUNT, AT);
 
     expect(snapshot.generatedAt).toBe(AT);
   });
@@ -199,7 +279,14 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "VIE-001-1", priceCents: null })],
     });
 
-    const { snapshot, excluded } = projectCatalog([priceless], [category()], vat(), sold(), AT);
+    const { snapshot, excluded } = projectCatalog(
+      [priceless],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(excluded).toContainEqual({
       sku: "VIE-001-1",
@@ -217,7 +304,14 @@ describe("projectCatalog", () => {
       ],
     });
 
-    const { snapshot, excluded } = projectCatalog([mixed], [category()], vat(), sold(), AT);
+    const { snapshot, excluded } = projectCatalog(
+      [mixed],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(excluded).toContainEqual({ sku: "A", reason: "variant_arretee" });
     expect(excluded).toContainEqual({ sku: "B", reason: "variant_sans_prix" });
@@ -229,7 +323,14 @@ describe("projectCatalog", () => {
       variants: [variant({ sku: "A", isDiscontinued: true })],
     });
 
-    const { snapshot, excluded } = projectCatalog([dead], [category()], vat(), sold(), AT);
+    const { snapshot, excluded } = projectCatalog(
+      [dead],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(excluded).toContainEqual({
       sku: "VIE-001",
@@ -250,6 +351,7 @@ describe("projectCatalog", () => {
       [category({ vatByContext: { takeaway: 5.5 } })],
       vat(),
       sold(),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -261,7 +363,7 @@ describe("projectCatalog", () => {
   it("écarte un produit dont la famille est inconnue", () => {
     const orphan = product({ categoryId: "cat_fantome" });
 
-    const { excluded } = projectCatalog([orphan], [category()], vat(), sold(), AT);
+    const { excluded } = projectCatalog([orphan], [category()], vat(), sold(), NO_DISCOUNT, AT);
 
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "famille_inconnue" }]);
   });
@@ -269,7 +371,14 @@ describe("projectCatalog", () => {
   it("ne pousse que les familles réellement utilisées", () => {
     const unused = category({ id: "cat_vide", name: { fr: "Vide" } });
 
-    const { snapshot } = projectCatalog([product()], [category(), unused], vat(), sold(), AT);
+    const { snapshot } = projectCatalog(
+      [product()],
+      [category(), unused],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(snapshot.categories.map((c) => c.id)).toEqual(["cat_vien"]);
   });
@@ -279,13 +388,13 @@ describe("projectCatalog", () => {
       name: { fr: "Croissant", en: "Croissant" },
     });
 
-    const { snapshot } = projectCatalog([bilingual], [category()], vat(), sold(), AT);
+    const { snapshot } = projectCatalog([bilingual], [category()], vat(), sold(), NO_DISCOUNT, AT);
 
     expect(snapshot.products[0]?.name).toBe("Croissant");
   });
 
   it("rend un snapshot vide sans rien inventer quand rien n’est publié", () => {
-    const { snapshot, excluded } = projectCatalog([], [category()], vat(), sold(), AT);
+    const { snapshot, excluded } = projectCatalog([], [category()], vat(), sold(), NO_DISCOUNT, AT);
 
     expect(snapshot.products).toEqual([]);
     expect(snapshot.categories).toEqual([]);
@@ -303,6 +412,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       [category()],
       vat(),
       sold([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
+      NO_DISCOUNT,
       AT,
     );
 
@@ -313,7 +423,14 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
   it("écarte aussi une fiche dont on ignore les canaux, plutôt que de la pousser", () => {
     // Une carte sans entrée pour ce produit veut dire « on n'a pas résolu » —
     // et sur une boutique, ne pas savoir n'autorise pas à vendre.
-    const { snapshot, excluded } = projectCatalog([product()], [category()], vat(), new Map(), AT);
+    const { snapshot, excluded } = projectCatalog(
+      [product()],
+      [category()],
+      vat(),
+      new Map(),
+      NO_DISCOUNT,
+      AT,
+    );
 
     expect(snapshot.products).toEqual([]);
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "canal_ferme" }]);

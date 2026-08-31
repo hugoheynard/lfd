@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
@@ -25,7 +26,7 @@ import { B2bCatalogPushService } from "./products/push.service.js";
  * contrôleurs ne déclarent que leur sous-chemin.
  */
 @Module({
-  imports: [PimDatabaseModule, CatalogueModule],
+  imports: [PimDatabaseModule, CatalogueModule, AccountingRulesModule],
   controllers: [B2bMembershipController, B2bPushController],
   providers: [
     B2bMembershipService,

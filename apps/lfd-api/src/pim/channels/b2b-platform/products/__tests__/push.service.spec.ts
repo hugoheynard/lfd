@@ -126,6 +126,8 @@ async function build(
                       new Map(
                         products.map((p) => [p.id, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]]),
                       ),
+                      // Rapport neutre : ce test parle de PUSH, pas de tarif.
+                      10_000,
                       generatedAt,
                     ),
                     candidates: publishedIds.length,

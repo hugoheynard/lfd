@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
+import { ProPriceRatioNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
+import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
@@ -17,12 +19,22 @@ const EMPTY_SNAPSHOT_PRODUCTS: readonly [] = [];
  * **regarder** cette projection sans provoquer d'envoi — un contrôle de parité
  * qui pousserait pour se rassurer serait un contrôle qui change ce qu'il
  * mesure.
+ *
+ * ## Le rapport pro est une PRÉCONDITION, pas une donnée de plus
+ *
+ * Le prix poussé est un hors taxe **professionnel** : prix public TTC × rapport,
+ * puis ÷ taux du canal. Tant que le rapport n'est pas réglé, il n'y a pas de
+ * prix pro — et ce service refuse plutôt que de pousser le plein tarif. Le
+ * refus est ici et non dans la projection parce qu'il porte sur le PUSH entier :
+ * écarter chaque article un par un produirait un snapshot vide, que la
+ * plateforme accepterait en retirant de sa boutique tout ce qu'elle vendait.
  */
 @Injectable()
 export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
   constructor(
     private readonly catalogue: CatalogueReader,
     private readonly membership: B2bMembershipService,
+    private readonly accounting: AccountingRulesRepository,
   ) {
     super();
   }
@@ -35,6 +47,14 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
         candidates: 0,
         excluded: [],
       };
+    }
+
+    // **Lu APRÈS le raccourci du canal vide.** Un canal où rien n'est publié
+    // n'a rien à tarifer, et lui réclamer un réglage comptable refuserait un
+    // aperçu qui n'a aucun prix à montrer.
+    const rules = await this.accounting.read();
+    if (rules === null) {
+      throw new ProPriceRatioNotSetError();
     }
 
     const [products, categories] = await Promise.all([
@@ -53,6 +73,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       categories,
       vatByProduct,
       channelsByProduct,
+      rules.rules.proPriceRatio.basisPoints,
       generatedAt,
     );
     return { snapshot, candidates: productIds.length, excluded };

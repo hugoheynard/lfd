@@ -1,6 +1,6 @@
 import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
-import { htMillicentsOf, type B2bExclusionReason } from "@lfd/pim-contracts";
+import { htMillicentsOf, proPriceFromPublic, type B2bExclusionReason } from "@lfd/pim-contracts";
 
 import type {
   CategoryVatPercents,
@@ -116,6 +116,7 @@ function projectVariant(
 function sortVariants(
   product: ProductRecord,
   vatRatePercent: number | null,
+  proRatioBp: number,
 ): {
   sellable: SyncVariant[];
   excluded: Exclusion[];
@@ -133,10 +134,19 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_prix" });
       continue;
     }
+    // **La chaîne, dans son ordre.** Le prix stocké est un prix public TTC ; le
+    // rapport en fait un prix pro TTC ; le taux du canal en fait un hors taxe.
+    //
+    // Le prix pro est arrondi AU CENTIME avant la division, et c'est délibéré :
+    // c'est un prix, pas un intermédiaire de calcul. Garder le rationnel exact
+    // jusqu'au bout ferait diverger d'un centime le hors taxe poussé et celui
+    // que la fiche affiche sous le prix pro — deux nombres qu'un client peut
+    // recompter. L'écran fait exactement la même chose, avec la même fonction.
+    const proTtcCents = proPriceFromPublic(priceCents, proRatioBp);
     // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
     // d'inventer un taux : une conversion approximative facturerait un montant
     // que personne n'a décidé, et rien ne le signalerait ensuite.
-    const htMillicents = htMillicentsOf(priceCents, vatRatePercent);
+    const htMillicents = htMillicentsOf(proTtcCents, vatRatePercent);
     if (htMillicents === null) {
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
@@ -182,6 +192,18 @@ export function projectCatalog(
    * l'ingestion supprime ce qui n'arrive plus.
    */
   channelsByProduct: ReadonlyMap<string, SalesChannels>,
+  /**
+   * Le **rapport prix pro / prix public**, en points de base (9 000 = 90 %).
+   *
+   * Obligatoire, et sans valeur de repli. Un défaut à 10 000 affirmerait « le
+   * pro paie le prix public » — une phrase que personne n'a prononcée, et le
+   * référentiel a déjà retiré un défaut de ce genre (`DEFAULT_FOOD_VAT_RATE`).
+   * Une branche `null` ici serait pire encore : elle ne serait jamais prise sur
+   * une maison correctement réglée, donc jamais éprouvée, et elle facturerait
+   * le plein tarif le jour où elle le serait. C'est l'APPELANT qui refuse de
+   * pousser tant que rien n'est réglé — voir `B2bCatalogFeedProjection`.
+   */
+  proRatioBp: number,
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -208,6 +230,7 @@ export function projectCatalog(
     const { sellable, excluded: rejected } = sortVariants(
       product,
       vatOf(vatByProduct.get(product.id) ?? {}),
+      proRatioBp,
     );
     excluded.push(...rejected);
 

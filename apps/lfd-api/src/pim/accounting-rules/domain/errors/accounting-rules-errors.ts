@@ -33,3 +33,26 @@ export class AccountingRulesNotSetError extends BusinessError {
     );
   }
 }
+
+/**
+ * On veut tarifer le professionnel, et personne n'a réglé le rapport.
+ *
+ * Refus, pas repli. Un rapport implicite à 100 % ferait facturer le prix public
+ * à tous les professionnels — silencieusement, sur tout le catalogue, et la
+ * nouvelle n'arriverait que par une facture contestée. C'est la même règle que
+ * pour un taux de TVA absent, appliquée un cran plus haut : le référentiel a
+ * déjà retiré un défaut de ce genre (`DEFAULT_FOOD_VAT_RATE`).
+ *
+ * Le refus vaut pour le PUSH entier et non article par article : un snapshot
+ * dont tous les articles seraient écartés serait accepté par la plateforme, qui
+ * retirerait alors de sa boutique tout ce qu'elle vendait. Un catalogue vidé
+ * par un réglage manquant est exactement ce que ce refus empêche.
+ */
+export class ProPriceRatioNotSetError extends BusinessError {
+  constructor() {
+    super(
+      "accounting_rules.pro_ratio_not_set",
+      "Le rapport prix pro / prix public n'est pas réglé : impossible de tarifer les professionnels. Réglez-le dans « Règles comptables ».",
+    );
+  }
+}
