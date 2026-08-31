@@ -40,6 +40,22 @@ export type {
 } from "./media.js";
 
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";
+export {
+  createAllergenCategoryPayloadSchema,
+  createAllergenEntryPayloadSchema,
+  moveAllergenCategoryPayloadSchema,
+  renameAllergenCategoryPayloadSchema,
+  reviseAllergenEntryPayloadSchema,
+} from "./allergen.js";
+export type {
+  AllergenCategoryAdminView,
+  AllergenEntryAdminView,
+  CreateAllergenCategoryPayload,
+  CreateAllergenEntryPayload,
+  MoveAllergenCategoryPayload,
+  RenameAllergenCategoryPayload,
+  ReviseAllergenEntryPayload,
+} from "./allergen.js";
 
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
