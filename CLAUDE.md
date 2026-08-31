@@ -661,7 +661,7 @@ d'appel qui compte).
 
 ## 9 bis. Les sous-agents — quand les invoquer SANS qu'on le demande
 
-Ces quatre-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
+Ces sept-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
 un agent est invoqué par l'assistant, jamais par un hook ni par un événement.
 Cette section est donc l'automatisation — la règle qui fait qu'on n'a pas à les
 réclamer.
@@ -673,6 +673,7 @@ réclamer.
 | **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer |
 | **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                 |
 | **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                             | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver      |
+| **`sonic-unit-tester`**          | sur du code **feuille** que rien ne traverse — fonction pure, value object, mapper, garde. **Un fichier par instance, par dizaines.**      | dès qu'il faudrait un double pour tester : c'est `brutus-tester` qu'il faut                |
 
 ### La règle qui rend le `portier` non négociable
 
