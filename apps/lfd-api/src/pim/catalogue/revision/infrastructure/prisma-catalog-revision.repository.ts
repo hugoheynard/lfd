@@ -93,33 +93,36 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     // garantit que le fait est tracé avant que la ligne existe.
     void ticket;
     const id = this.ids.next();
-    await this.prisma.$transaction([
-      // `skipDuplicates` EST le magasin partagé : un contenu déjà connu n'est
-      // pas réécrit, et deux articles identiques dans la même capture (deux
-      // déclinaisons jumelles) n'entrent qu'une fois.
-      this.prisma.catalogContent.createMany({
-        data: revision.items.map((item) => ({ hash: item.hash, payload: item.payload })),
-        skipDuplicates: true,
-      }),
-      this.prisma.catalogRevision.create({
-        data: {
-          id,
-          version: record.version,
-          label: record.label,
-          hash: record.hash,
-          header: { ...revision.header },
-          takenAt: record.takenAt,
-          takenBy: record.takenBy,
-        },
-      }),
-      this.prisma.catalogRevisionItem.createMany({
-        data: revision.items.map((item) => ({
-          revisionId: id,
-          sku: item.sku,
-          contentHash: item.hash,
-        })),
-      }),
-    ]);
+    // Trois écritures SÉQUENTIELLES, sans `$transaction` : l'atomicité vient de
+    // l'unité de travail du handler, qui englobe déjà la trace du journal. En
+    // ouvrir une seconde ici serait une transaction imbriquée — que Prisma ne
+    // sait pas faire — et surtout la trace tomberait hors du même tout.
+    //
+    // `skipDuplicates` EST le magasin partagé : un contenu déjà connu n'est pas
+    // réécrit, et deux articles identiques d'une même capture n'entrent qu'une
+    // fois.
+    await this.prisma.catalogContent.createMany({
+      data: revision.items.map((item) => ({ hash: item.hash, payload: item.payload })),
+      skipDuplicates: true,
+    });
+    await this.prisma.catalogRevision.create({
+      data: {
+        id,
+        version: record.version,
+        label: record.label,
+        hash: record.hash,
+        header: { ...revision.header },
+        takenAt: record.takenAt,
+        takenBy: record.takenBy,
+      },
+    });
+    await this.prisma.catalogRevisionItem.createMany({
+      data: revision.items.map((item) => ({
+        revisionId: id,
+        sku: item.sku,
+        contentHash: item.hash,
+      })),
+    });
     return id;
   }
 }

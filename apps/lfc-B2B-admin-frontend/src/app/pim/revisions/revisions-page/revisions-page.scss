@@ -43,7 +43,7 @@
 .rp-version {
   min-width: 2rem;
   font-family: var(--fold-font-mono);
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
   color: var(--fold-color-text);
 }
 
