@@ -405,3 +405,66 @@ qui a changé entre deux.
 
 Le détail d'un article s'arrête au premier niveau (cf. § 11), et une ancre sans
 nom se dit « sans nom » : un blanc se lirait comme un défaut d'affichage.
+
+## 13. L'attribution par ligne, et les causes globales
+
+**Livrée le 2026-08-31.** Chaque ligne d'un diff dit qui l'a écrite.
+
+Une révision sait qui l'a **posée** ; elle ne sait pas qui a écrit chacune de
+ses lignes. Cette réponse vit dans le journal, fait par fait : pour chaque
+article modifié, on relit les faits de son produit sur l'intervalle des deux
+ancres, du plus récent au plus ancien, et le premier qui touche un champ est
+celui qui l'a fait.
+
+### Le pont entre deux vocabulaires, et ce qui le tient
+
+La table qui relie un fait aux champs qu'il touche est une **troisième
+déclaration** du même ensemble, après le payload d'une révision et celui d'un
+fait. C'est exactement la forme de dérive qui a déjà coûté deux fois ici
+(`B2bExclusionReason`, `readLocalizedColumn`).
+
+Elle est donc tenue par un test qui parcourt `PIM_EVENTS` : **un fait de produit
+ajouté sans correspondance fait échouer la suite.** Sans ça, un événement neuf
+n'attribuerait plus rien — et « rien » se lit exactement comme « personne n'y a
+touché ».
+
+Deux choses y sont écrites plutôt que devinées : les faits de section disent
+EUX-MÊMES quels champs ils ont changés (on lit leur `changes` au lieu de le
+recopier), et une déclaration de publiabilité n'attribue **aucun** champ — elle
+affirme quelque chose sur la fiche, elle ne la modifie pas.
+
+### Les méta-actions
+
+Changer un taux de TVA dans le paramétrage est **un** fait, sur **un** sujet, qui
+altère le taux de tous les articles qui s'en servent. Aucun de ces articles n'a
+de fait à lui : l'attribution par sujet ne trouve rien, et l'écran répétait
+« auteur non défini par une action locale » autant de fois qu'il y avait
+d'articles, pour une décision prise une fois.
+
+Les **causes globales** sont ces faits-là, relus une fois pour tout le diff et
+posés au-dessus de lui, avec leur **portée telle que le fait l'a enregistrée**
+(`blast`) — relue, jamais recalculée : recompter aujourd'hui donnerait la portée
+d'aujourd'hui, pas celle du jour de la décision.
+
+⚠️ **Une cause n'est PAS une attribution.** `attributed` reste faux : le fait a
+PU produire la ligne, il ne la revendique pas. Le présenter comme un auteur
+ferait porter à quelqu'un un changement qu'il n'a peut-être pas provoqué — deux
+taux modifiés dans le même intervalle, et l'écran désignerait le mauvais.
+
+D'où trois états, et le troisième dit **pourquoi** il ne sait pas :
+
+| État                                               | Ce que l'écran dit                                                                |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Un fait du produit revendique la ligne             | `Hugo Heynard le 31/08 15:40`                                                     |
+| Aucun, mais un réglage a pu la produire            | `auteur non défini par une action locale` + `suite à : Intermédiaire : 10 → 10.1` |
+| Ni l'un ni l'autre (script, seed, verbe non tracé) | `auteur non défini par une action locale`                                         |
+
+« Auteur inconnu » disait le contraire de ce qu'on veut : il laissait croire que
+l'information manque, alors qu'elle est ailleurs et nommée.
+
+### Un défaut trouvé par ce chantier
+
+L'article d'une ancre portait le nom de la **déclinaison** et pas celui du
+produit : renommer un produit ne changeait donc aucune empreinte, et l'ancre ne
+voyait pas le renommage. L'article porte désormais `name` (le produit, comme le
+journal et comme `SyncProduct`) et `variantName`.

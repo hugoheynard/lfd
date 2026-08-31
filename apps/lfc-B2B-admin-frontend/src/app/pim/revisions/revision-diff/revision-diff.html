@@ -10,6 +10,28 @@
   </fold-callout>
 }
 
+@if (d.causes.length > 0) {
+  <section class="rd-block">
+    <fold-element-title title="Réglages modifiés pendant l'intervalle" />
+    <!-- Ce ne sont PAS des auteurs de lignes : ces faits ont pu causer des
+         changements, ils ne les revendiquent pas. Un taux révisé est un seul
+         geste qui altère cent articles, et aucun de ces cent produits ne porte
+         de fait à lui — sans cette liste, l'écran répéterait « auteur non défini par une action locale »
+         cent fois pour une décision prise une fois. -->
+    <ul class="rd-causes">
+      @for (cause of d.causes; track cause.at + cause.label) {
+        <li>
+          <span class="rd-cause-label">{{ cause.label }}</span>
+          <span class="rd-by">{{ author(cause) }}</span>
+          @if (blast(cause); as portee) {
+            <span class="rd-blast">{{ portee }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}
+
 @if (d.added.length === 0 && d.removed.length === 0 && d.changed.length === 0) {
   <p class="rd-empty">Aucun article n'a changé entre ces deux révisions.</p>
 }
@@ -52,6 +74,17 @@
               <span class="rd-before">{{ field.before }}</span>
               <span class="rd-arrow" aria-hidden="true">→</span>
               <span class="rd-after">{{ field.after }}</span>
+              <!-- L'auteur vient du journal, pas de la révision : elle sait qui
+                   l'a POSÉE, pas qui a écrit chacune de ses lignes. Trois états
+                   à distinguer, et le troisième est le plus important — dire
+                   « inconnu » vaut mieux que d'accuser celui qui a posé
+                   l'ancre. -->
+              <span class="rd-by">{{ author(field) }}</span>
+              @if (field.cause; as cause) {
+                <!-- Un réglage a PU produire cette ligne. Dit comme une piste,
+                     pas comme une attribution : personne ne l'a revendiquée. -->
+                <span class="rd-cause">suite à : {{ cause }}</span>
+              }
             </dd>
           }
         </dl>

@@ -37,6 +37,7 @@ const EMPTY_DIFF: CatalogRevisionDiffView = {
   from: revision({ version: 1, id: 'rev_1', label: null, hash: 'h1' }),
   to: revision(),
   header: [],
+  causes: [],
   added: [],
   removed: [],
   changed: [],

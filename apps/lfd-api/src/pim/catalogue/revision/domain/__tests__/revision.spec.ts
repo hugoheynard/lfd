@@ -13,6 +13,7 @@ function item(over: Partial<RevisionItemInput> = {}): RevisionItemInput {
     productId: "prd_1",
     productSku: "VIE-001",
     name: { fr: "Croissant" },
+    variantName: { fr: "Croissant" },
     kind: "daily",
     status: "published",
     categoryId: "cat_vien",

@@ -240,9 +240,126 @@ describe("Diff entre deux ancres", () => {
     expect(diff.added).toEqual([]);
     expect(diff.removed).toEqual([]);
     expect(diff.changed).toHaveLength(1);
-    expect(diff.changed[0]?.fields).toEqual([
-      { field: "priceCents", before: "null", after: "1200" },
-    ]);
+    expect(diff.changed[0]?.fields).toHaveLength(1);
+    expect(diff.changed[0]?.fields[0]).toMatchObject({
+      field: "priceCents",
+      before: "null",
+      after: "1200",
+    });
+  });
+
+  /**
+   * **L'auteur par ligne.** Une révision sait qui l'a POSÉE ; elle ne sait pas
+   * qui a écrit chacune de ses lignes. Cette réponse vit dans le journal, et le
+   * seul vrai aller-retour la montre : le fait est écrit par le handler, relu
+   * sur l'intervalle des deux ancres, et rapproché du champ par la table de
+   * correspondance.
+   */
+  it("dit QUI a changé chaque ligne", async () => {
+    const { id } = await aProduct("Croissant");
+    await take();
+    await staff()
+      .put(`${PRODUCTS}/${id}/identity`)
+      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
+      .expect(200);
+    await ctx.drain();
+    await take();
+
+    const diff = jsonBody<{
+      changed: { fields: { field: string; attributed: boolean; by: string | null }[] }[];
+    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+
+    const name = diff.changed[0]?.fields.find((field) => field.field === "name");
+    expect(name?.attributed).toBe(true);
+    expect(name?.by).not.toBeNull();
+  });
+
+  /**
+   * Un champ que personne ne revendique reste SANS auteur. Lui coller celui de
+   * la révision accuserait quelqu'un qui a seulement appuyé sur « poser ».
+   */
+  it("laisse un champ sans auteur plutôt que d'en inventer un", async () => {
+    const { id, variantId } = await aProduct("Croissant");
+    await take();
+    // Le prix est tracé, mais on efface le fait : on simule un changement venu
+    // d'un script ou d'un verbe qui ne trace pas encore.
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+      .send({ priceCents: 1_200, weightGrams: null })
+      .expect(200);
+    await ctx.drain();
+    await ctx.prisma.activityEvent.deleteMany({ where: { type: "product.pricing_saved" } });
+    await take();
+
+    const diff = jsonBody<{
+      changed: { fields: { field: string; attributed: boolean; by: string | null }[] }[];
+    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+
+    expect(diff.changed[0]?.fields[0]).toMatchObject({ attributed: false, by: null, at: null });
+  });
+
+  /**
+   * **Le cas des méta-actions.** Changer un taux de TVA dans le paramétrage est
+   * UN fait, sur UN sujet, qui altère le taux de tous les articles qui s'en
+   * servent. Aucun de ces articles n'a de fait à lui : l'attribution par sujet
+   * ne trouve rien, et l'écran répétait « auteur inconnu » autant de fois qu'il
+   * y avait d'articles — pour une décision prise une fois.
+   *
+   * La cause est rendue à part, avec sa PORTÉE telle que le fait l'a
+   * enregistrée. Elle n'est pas une attribution : le fait a PU produire la
+   * ligne, il ne la revendique pas, et `attributed` reste donc faux.
+   */
+  it("explique par une cause globale ce qu'aucun fait de produit ne revendique", async () => {
+    // Le taux doit être VISÉ par la famille du produit, sinon le changer
+    // n'altère aucun article et il n'y a pas de seconde ancre à comparer.
+    const created = await staff()
+      .post("/pim/vat-rates")
+      .send({ name: "Intermédiaire", percent: 10 })
+      .expect(201);
+    const rateId = jsonBody<{ id: string }>(created).id;
+    const categoryId = await aCategory();
+    // Un taux ne se déroge que là où la famille VEND : déroger sur un contexte
+    // fermé serait décider d'un prix pour une vente qui n'a pas lieu, et le
+    // serveur le refuse en 409. On ouvre donc le comptoir d'abord.
+    const shop = await staff()
+      .post("/pim/points-of-sale")
+      .send({ kind: "shop", label: "Comptoir", contexts: ["takeaway"], baseUrl: "", tableCount: 0 })
+      .expect(201);
+    await staff()
+      .put(`${CATEGORIES}/${categoryId}/channels`)
+      .send([{ pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "takeaway" }])
+      .expect(200);
+    await staff()
+      .put(`${CATEGORIES}/${categoryId}/vat`)
+      .send({ vatByContext: { takeaway: rateId } })
+      .expect(200);
+    await aProduct("Croissant");
+    await ctx.drain();
+    await take();
+
+    await staff()
+      .put(`/pim/vat-rates/${rateId}`)
+      .send({ name: "Intermédiaire", percent: 10.1 })
+      .expect(200);
+    await ctx.drain();
+    await take();
+
+    const diff = jsonBody<{
+      causes: { type: string; label: string; by: string | null; explains: string[] }[];
+      changed: { fields: { field: string; attributed: boolean; cause: string | null }[] }[];
+    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+
+    expect(diff.causes.map((cause) => cause.type)).toContain("vat_rate.rate_changed");
+    const cause = diff.causes.find((entry) => entry.type === "vat_rate.rate_changed");
+    expect(cause?.explains).toContain("vatByContext");
+    expect(cause?.by).not.toBeNull();
+    expect(cause?.label).toContain("10");
+
+    // La ligne reste SANS auteur — le fait a pu la produire, il ne la
+    // revendique pas — mais elle porte désormais la piste.
+    const vat = diff.changed[0]?.fields.find((field) => field.field === "vatByContext");
+    expect(vat).toMatchObject({ attributed: false });
+    expect(vat?.cause).not.toBeNull();
   });
 
   it("nomme un article entré au catalogue", async () => {

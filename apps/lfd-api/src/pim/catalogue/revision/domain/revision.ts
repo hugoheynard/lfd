@@ -50,7 +50,17 @@ export interface RevisionItemInput {
   readonly sku: string;
   readonly productId: string;
   readonly productSku: string;
+  /**
+   * Le nom du PRODUIT, localisé.
+   *
+   * Il porte le nom `name` — celui du journal (`product.identity_saved` trace
+   * `changes.name`) et celui du fil (`SyncProduct.name`). L'article ne portait
+   * que le nom de sa DÉCLINAISON, si bien qu'un produit renommé ne changeait
+   * aucune empreinte : l'ancre ne voyait pas le renommage, et le diff non plus.
+   */
   readonly name: Readonly<Record<string, string>>;
+  /** Le nom de la déclinaison — distinct, et souvent identique au premier. */
+  readonly variantName: Readonly<Record<string, string>>;
   readonly kind: string;
   readonly status: string;
   readonly categoryId: string;

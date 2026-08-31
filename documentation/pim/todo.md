@@ -183,6 +183,28 @@
 - [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle
 - [ ] Adaptateur **B2B** (export fiches, pass-through GS1) — sans hiérarchie GDSN (ADR-14)
 
+## Révisions du catalogue — la suite
+
+Les trois tranches sont livrées (cf.
+[`flux-catalogue-et-versionnement.md`](./flux-catalogue-et-versionnement.md)).
+Ce qui reste :
+
+- [ ] **Filtrer un diff par nature de changement** — ajout / suppression /
+      modification / publication. Trois des quatre existent déjà dans la réponse
+      (`added`, `removed`, `changed`) : le filtre est alors une facette d'écran,
+      sans un aller-retour de plus.
+      La quatrième demande une décision. Une **publication** est aujourd'hui une
+      `modification` comme une autre — le champ `status` passe de `draft` à
+      `published` dans le payload de l'article. La sortir en catégorie propre
+      veut dire qu'un article qui change de statut ET de prix apparaît dans
+      DEUX facettes, ou qu'on choisit laquelle l'emporte. Trancher avant
+      d'écrire : un article qui disparaît d'un filtre parce qu'il a aussi changé
+      de prix est le genre d'absence qu'on ne remarque pas.
+- [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
+      révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à
+      dessein). Sans ancre supprimable aujourd'hui, la question ne se pose pas ;
+      elle se posera au premier archivage de vieilles révisions.
+
 ## Prochaine étape en cours
 
 ➡️ **Le questionnaire PI** (§ actions de cadrage) — c'est lui qui débloque le pricing,

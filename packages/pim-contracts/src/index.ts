@@ -169,4 +169,6 @@ export type {
   CatalogRevisionItemDiffView,
   CatalogRevisionDiffView,
   CatalogRevisionTakenView,
+  AttributedFieldDiffView,
+  CatalogRevisionCauseView,
 } from "./catalog-revision.js";
