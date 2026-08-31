@@ -81,20 +81,24 @@ que d'un caractère.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft : CreateProduct<br/><i>naît invisible</i>
-    draft --> draft : les 5 sections<br/>s'enregistrent
-    draft --> published : Publish<br/><i>invariant 7 : fiche réglementaire</i>
-    published --> draft : Unpublish
-    draft --> archived : Archive
-    published --> archived : Archive
-    archived --> draft : Restore<br/><i>jamais directement en ligne</i>
+    [*] --> draft: CreateProduct, la fiche naît invisible
+    draft --> draft: les 5 sections s'enregistrent
+    draft --> published: Publish
+    published --> draft: Unpublish
+    draft --> archived: Archive
+    published --> archived: Archive
+    archived --> draft: Restore, jamais directement en ligne
 
     note right of draft
-        En PARALLÈLE du statut :
-        product_readiness — la signature.
-        « quelqu'un affirme que c'est juste »
-        Datée, signée, et comparée en LECTURE
-        à la dernière modification du contenu.
+        En parallèle du statut, product_readiness.
+        Quelqu'un affirme que le contenu est juste.
+        Datée, signée, et comparée en LECTURE à la
+        dernière modification de la fiche.
+    end note
+
+    note right of published
+        Publish exige l'invariant 7 : une fiche
+        réglementaire sur chaque déclinaison active.
     end note
 ```
 
