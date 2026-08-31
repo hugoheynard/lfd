@@ -29,6 +29,7 @@ import { CommunicationForm } from './form-sections/communication/communication-f
 import { IdentityForm } from './form-sections/identity/identity-form';
 import { IntegrationsForm } from './form-sections/integrations/integrations-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
+import { IngredientsForm } from './form-sections/ingredients/ingredients-form';
 import { RegulatoryForm } from './form-sections/regulatory/regulatory-form';
 import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
@@ -93,6 +94,7 @@ interface PageSection {
     IdentityForm,
     PricingForm,
     RegulatoryForm,
+    IngredientsForm,
     CommunicationForm,
     VisualsForm,
     IntegrationsForm,

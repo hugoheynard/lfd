@@ -493,7 +493,16 @@ export class ProductFormStore {
   /** Un dépôt en cours — le bouton se désarme, la liste ne bouge pas encore. */
   readonly uploading = signal(false);
 
-  private readonly productId = signal('');
+  /**
+   * L'identifiant de la fiche ouverte — vide tant qu'on crée.
+   *
+   * Lisible de l'extérieur depuis la section Ingrédients : elle vit sur un
+   * AUTRE agrégat, avec son propre point d'API, et n'a besoin de ce magasin que
+   * pour savoir de quelle fiche elle parle. La rendre écrivable ferait de ce
+   * magasin le sujet de deux propriétaires.
+   */
+  private readonly productIdValue = signal('');
+  readonly productId: Signal<string> = this.productIdValue;
   private readonly variantId = signal('');
   private readonly statusMap = signal<Partial<Record<FormSection, SectionStatus>>>({});
   private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
@@ -957,7 +966,7 @@ export class ProductFormStore {
 
   async init(id: string | null): Promise<void> {
     this.isEdit.set(id !== null);
-    this.productId.set(id ?? '');
+    this.productIdValue.set(id ?? '');
     this.loading.set(true);
     try {
       const [categories, rates] = await Promise.all([

@@ -1,0 +1,73 @@
+@if (isNew()) {
+  <fold-callout appearance="inset" variant="info">
+    Enregistrez d'abord l'identité de la fiche&nbsp;: on ne peut citer une provenance que sur un
+    produit qui existe.
+  </fold-callout>
+} @else {
+  @if (rows().length === 0) {
+    <p class="if-empty">
+      Aucun ingrédient cité. C'est <strong>facultatif</strong>&nbsp;: une fiche sans provenance
+      reste publiable.
+    </p>
+  } @else {
+    <ul class="if-list">
+      @for (row of rows(); track row.key; let first = $first) {
+        <li class="if-row">
+          <button
+            type="button"
+            class="if-move"
+            [disabled]="first"
+            [attr.aria-label]="'Remonter « ' + row.name.fr + ' »'"
+            (click)="store.moveUp(row.key)"
+          >
+            <fold-icon name="chevron-up" size="sm" />
+          </button>
+
+          <span class="if-name">{{ row.name.fr }}</span>
+
+          @if (row.origin) {
+            <span class="if-origin">{{ row.origin }}</span>
+          }
+          @if (row.appellation) {
+            <span class="if-badge">{{ appellationLabel(row) }}</span>
+          }
+
+          <button
+            type="button"
+            class="if-remove"
+            [attr.aria-label]="'Retirer « ' + row.name.fr + ' »'"
+            (click)="store.remove(row.key)"
+          >
+            <fold-icon name="close" size="sm" />
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="if-add">
+    <fold-listbox label="Ajouter un ingrédient" [value]="picked()" (valueChange)="pick($event)">
+      <fold-option value="">Choisir…</fold-option>
+      @for (option of addable(); track option.key) {
+        <fold-option [value]="option.key">{{ option.name.fr }}</fold-option>
+      }
+    </fold-listbox>
+    <button foldButton emphasis="outline" [disabled]="picked() === ''" (click)="add()">
+      Ajouter
+    </button>
+  </div>
+
+  <!-- Le bouton vit ICI et non dans l'en-tête de section : cette liste part sur
+       un AUTRE point d'API que le reste de la fiche, et « Tout enregistrer » ne
+       l'a jamais portée. Un indicateur d'état partagé mentirait. -->
+  @if (store.dirty()) {
+    <div class="if-foot">
+      <button foldButton emphasis="outline" intent="neutral" (click)="store.revert()">
+        Annuler
+      </button>
+      <button foldButton [loading]="store.busy()" (click)="save()">
+        Enregistrer les ingrédients
+      </button>
+    </div>
+  }
+}

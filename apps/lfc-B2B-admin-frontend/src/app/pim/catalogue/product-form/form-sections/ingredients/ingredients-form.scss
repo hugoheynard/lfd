@@ -1,0 +1,87 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.if-empty {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.if-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.if-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+}
+
+.if-name {
+  font-weight: var(--fold-weight-medium);
+}
+
+.if-origin {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le badge d'appellation : c'est LUI que la table d'appellations rend fiable. */
+.if-badge {
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-accent-surface);
+  color: var(--fold-color-accent-text);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le retrait est poussé à droite ; la poignée d'ordre reste collée au nom. */
+.if-remove {
+  margin-inline-start: auto;
+}
+
+.if-move,
+.if-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+.if-move:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.if-move:hover:not(:disabled),
+.if-remove:hover {
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+}
+
+.if-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.if-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

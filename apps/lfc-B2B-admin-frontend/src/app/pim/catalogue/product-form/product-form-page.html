@@ -104,6 +104,31 @@
           </fold-card>
         }
 
+        <!-- INGRÉDIENTS — sous les allergènes, et pas avec eux. Ce que la fiche
+             revendique sur la PROVENANCE : un badge, un argument de vente. La
+             liste réglementaire (ordonnée par masse, avec quantités) appartient
+             à la déclinaison, avec ses allergènes ; cf.
+             `documentation/pim/ingredients-et-appellations.md`.
+
+             Pas d'`app-section-state` : la section vit sur un autre agrégat et
+             porte son propre bouton. Un indicateur partagé avec « Tout
+             enregistrer » affirmerait qu'il la sauve, ce qui est faux. -->
+        <fold-card>
+          <fold-page-section
+            title="Ingrédients"
+            separator
+            collapsible
+            [open]="sectionOpen('ingredients')()"
+            (openChange)="setSectionOpen('ingredients', $event)"
+          >
+            <span sectionSubtitle>
+              D'où vient ce qu'il y a dedans — facultatif, et sans effet sur la publiabilité.
+              L'ordre est le vôtre : c'est un argument, pas une mesure.
+            </span>
+            <app-ingredients-form />
+          </fold-page-section>
+        </fold-card>
+
         <!-- Une section en lecture seule : elle n'a pas d'enregistrement
              propre, donc pas d'indicateur d'état. -->
         <fold-card>
