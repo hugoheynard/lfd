@@ -156,6 +156,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   Appellation: "pim",
   Ingredient: "pim",
   ProductIngredient: "pim",
+  // Le référentiel d'allergènes, semé et verrouillé par migration, et la
+  // liaison qui le pose sur l'ingrédient.
+  AllergenCategory: "pim",
+  AllergenEntry: "pim",
+  IngredientAllergen: "pim",
   MediaAsset: "pim",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",

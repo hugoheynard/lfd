@@ -3354,7 +3354,10 @@ model Ingredient {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  products ProductIngredient[]
+  products  ProductIngredient[]
+  /// Ce que cet ingrédient CONTIENT, en codes GS1 — la source de l'ensemble
+  /// dérivé proposé à la fiche produit.
+  allergens IngredientAllergen[]
 
   @@index([appellationId])
   @@map("ingredient")
@@ -3389,6 +3392,116 @@ model ProductIngredient {
   @@id([productId, ingredientId])
   @@index([ingredientId])
   @@map("product_ingredient")
+  @@schema("pim")
+}
+
+/// **Une famille d'allergènes** — la maille à laquelle une étiquette parle.
+///
+/// Les 14 de l'annexe II (règlement UE 1169/2011) y sont semées par migration
+/// avec leur `incoCategory` ; s'y ajoute `non_eu`, qui accueille les codes GS1
+/// sans obligation de déclaration européenne. Le staff peut en créer d'autres
+/// pour organiser son catalogue — jamais pour étendre l'annexe II.
+///
+/// ⚠️ `official` et `incoCategory` disent DEUX choses différentes : la première
+/// « semé par migration, donc verrouillé en base », la seconde « c'est une
+/// catégorie de l'annexe II ». `non_eu` est officielle sans être INCO.
+model AllergenCategory {
+  id           String    @id
+  /// Identité stable — « tree_nuts », « fruits-coque-exotiques ». C'est une
+  /// VALEUR de donnée : elle ne se traduit pas.
+  key          String    @unique
+  /// La mention d'étiquette si la catégorie est réglementaire, localisée.
+  name         Json
+  /// La catégorie de l'annexe II, si c'en est une. `null` = hors annexe II, et
+  /// donc jamais dans une projection INCO — ce qui vaut aussi bien pour `non_eu`
+  /// que pour une catégorie maison.
+  incoCategory String?   @map("inco_category")
+  /// Semée par migration. Ni renommable, ni supprimable, ni détachable : un
+  /// trigger le tient EN BASE, pas seulement dans l'agrégat.
+  official     Boolean   @default(false)
+  /// Jamais de DELETE physique : une catégorie maison retirée s'archive — et la
+  /// FK `Restrict` d'`AllergenEntry` refuserait de toute façon d'effacer une
+  /// catégorie encore citée.
+  /// ⚠️ Une catégorie OFFICIELLE ne s'archive pas : le trigger gèle cette
+  /// colonne avec les autres, parce qu'ici l'archivage est la suppression et
+  /// que retirer une mention de l'annexe II n'en est qu'une forme polie.
+  archivedAt   DateTime? @map("archived_at")
+  /// Ordre d'affichage — sans portée réglementaire, et le seul champ qu'une
+  /// catégorie officielle laisse modifier.
+  position     Int       @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  entries AllergenEntry[]
+
+  @@map("allergen_category")
+  @@schema("pim")
+}
+
+/// **Un allergène nommé** — la maille à laquelle on déclare.
+///
+/// Le mapping vers la catégorie est n:1 : blé, seigle, orge, avoine, épeautre,
+/// khorasan et triticale retombent tous sur `gluten`, les huit fruits à coque
+/// sur `tree_nuts`. C'est la raison d'être du modèle — l'étiquette affiche la
+/// catégorie, le B2B garde le détail.
+model AllergenEntry {
+  id   String @id
+  /// Code de stockage canonique — GS1 T4078 pour l'officiel, libre ensuite.
+  /// VALEUR de donnée, casse d'origine comprise.
+  code String @unique
+  /// Libellé granulaire (« Noisettes »), localisé — pas la mention d'étiquette,
+  /// qui est celle de la catégorie.
+  name Json
+
+  categoryId String           @map("category_id")
+  /// `Restrict` : une catégorie citée par une entrée ne s'efface pas. C'est ce
+  /// qui rend l'orphelin impossible plutôt que détectable après coup.
+  category   AllergenCategory @relation(fields: [categoryId], references: [id])
+
+  /// Semée par migration, donc verrouillée par le trigger (cf. `AllergenCategory`).
+  official   Boolean   @default(false)
+  /// Jamais de DELETE physique : une entrée maison retirée s'archive.
+  /// ⚠️ Une entrée OFFICIELLE ne s'archive pas — le trigger gèle cette colonne
+  /// avec les autres : ici l'archivage est la suppression, et retirer de la
+  /// saisie un allergène que le règlement impose de proposer n'en est qu'une
+  /// forme polie.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ingredients IngredientAllergen[]
+
+  @@index([categoryId])
+  @@map("allergen_entry")
+  @@schema("pim")
+}
+
+/// **Ce qu'un ingrédient contient**, en codes GS1.
+///
+/// Une table de liaison et non un `Json` : on voudra l'index inverse (« quels
+/// produits contiennent du gluten »), et un `Json` ne peut pas porter de clé
+/// étrangère — effacer un allergène y laisserait des références mortes sans que
+/// rien ne le dise.
+///
+/// ⚠️ Ce lien ne DÉCIDE de rien : il alimente un ensemble dérivé, affiché à côté
+/// de la déclaration de la déclinaison. La déclaration reste ce qui fait foi ;
+/// la reprise est un geste explicite du staff.
+model IngredientAllergen {
+  ingredientId String     @map("ingredient_id")
+  /// `Cascade` : les déclarations d'un ingrédient effacé n'ont plus d'objet.
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  entryId String        @map("entry_id")
+  /// `Restrict` : un allergène cité par un ingrédient ne s'efface pas.
+  entry   AllergenEntry @relation(fields: [entryId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([ingredientId, entryId])
+  @@index([entryId])
+  @@map("ingredient_allergen")
   @@schema("pim")
 }
 
