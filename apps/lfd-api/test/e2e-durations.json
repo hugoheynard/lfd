@@ -28,6 +28,7 @@
   "test/ops-vitals.e2e-spec.ts": 3266,
   "test/orders.e2e-spec.ts": 4562,
   "test/pickup-addresses.e2e-spec.ts": 3623,
+  "test/pim-allergens.e2e-spec.ts": 6547,
   "test/pim-catalog-revision.e2e-spec.ts": 5396,
   "test/pim-categories.e2e-spec.ts": 5929,
   "test/pim-channel-matrix.e2e-spec.ts": 3285,

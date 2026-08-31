@@ -191,6 +191,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
       // un lieu » quand une colonne a été ajoutée sans arriver ici.
       await app.get(PointOfSaleReader).ensureRootPointOfSale();
+      // Le référentiel d'allergènes est posé par migration, comme les contextes
+      // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
+      // donc qu'à effacer ce qu'un TEST y aurait ajouté.
+      await purgeHouseAllergens(prisma);
       await seedE2eStaff(prisma);
       // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
       // toute suite qui commande passerait au vert sur un catalogue vide.
@@ -350,6 +354,14 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * migration. C'est le vocabulaire du modèle, pas de la donnée de test — la vider
  * laisserait une base sans aucun contexte de vente, où régler une TVA échoue sur
  * « contexte inconnu » alors que rien n'est cassé.
+ *
+ * 🔴 `allergen_category` et `allergen_entry` sont préservées pour la même raison,
+ * mais le piège y est PIRE : elles sont protégées par un trigger d'immuabilité —
+ * qui ne se déclenche pas sur `TRUNCATE`, lequel n'est pas un `DELETE` de ligne.
+ * Les 15 catégories et les 30 codes GS1 semés par la migration disparaîtraient
+ * donc en silence au premier `reset()`, et `migrate deploy` ne rejoue jamais une
+ * migration déjà appliquée : la base ne les reverrait plus. Ce qu'un test y crée
+ * est effacé autrement, par `purgeHouseAllergens`.
  */
 /**
  * Les contextes de vente, à l'identique des migrations qui les posent
@@ -409,6 +421,26 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
   }
 }
 
+/**
+ * Efface du référentiel d'allergènes tout ce qui n'est pas semé.
+ *
+ * Le pendant de `ensureSalesContexts`, mais à l'envers : ici rien n'est à
+ * rétablir, puisque le trigger d'immuabilité rend les lignes officielles
+ * inaltérables — le semis de la migration EST toujours là. Seul ce qu'un test a
+ * créé (une catégorie ou une entrée maison) survivrait au `TRUNCATE` qui les
+ * épargne, et refuserait alors sa propre clé au test suivant.
+ *
+ * L'entrée avant la catégorie : la clé étrangère est en `RESTRICT`.
+ *
+ * Rien à faire pour `archived_at` : le trigger le gèle aussi sur les lignes
+ * officielles, donc aucune suite ne peut en archiver une — l'archivage EST la
+ * suppression, et la suppression d'une ligne réglementaire est interdite.
+ */
+async function purgeHouseAllergens(prisma: PrismaService): Promise<void> {
+  await prisma.allergenEntry.deleteMany({ where: { official: false } });
+  await prisma.allergenCategory.deleteMany({ where: { official: false } });
+}
+
 async function truncateAll(prisma: PrismaService): Promise<void> {
   // 🔴 DEUXIÈME VERROU, au point où le dégât se produit. Le premier est à
   // l'amorçage ; celui-ci garantit qu'aucun chemin futur — un harnais
@@ -420,7 +452,9 @@ async function truncateAll(prisma: PrismaService): Promise<void> {
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
     WHERE schemaname IN ('public', 'growth', 'ops', 'pim')
-      AND tablename NOT IN ('_prisma_migrations', 'sales_context')
+      AND tablename NOT IN (
+        '_prisma_migrations', 'sales_context', 'allergen_category', 'allergen_entry'
+      )
   `;
   if (tables.length === 0) {
     return;
