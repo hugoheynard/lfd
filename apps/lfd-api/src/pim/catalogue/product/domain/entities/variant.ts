@@ -55,6 +55,13 @@ export interface VariantSnapshot {
  * La déclinaison la porte pour que le produit puisse répondre « suis-je
  * publiable ? » sans aller la rechercher ailleurs.
  */
+/** Ce que la section « Tarif & TVA » possède, pour une déclinaison. */
+export interface VariantPricing {
+  readonly priceCents: number | null;
+  readonly priceBasis: PriceBasis;
+  readonly weightGrams: number | null;
+}
+
 export class Variant {
   private readonly identity: string;
   private readonly skuValue: string;
@@ -64,7 +71,7 @@ export class Variant {
   private discontinuedFlag: boolean;
   private positionValue: number;
   private priceCentsValue: number | null;
-  private readonly priceBasisValue: PriceBasis;
+  private priceBasisValue: PriceBasis;
   private weightGramsValue: number | null;
   private readonly allergensValue: readonly string[] | null;
   private readonly nutritionValue: VariantNutritionSnapshot | null;
@@ -141,10 +148,18 @@ export class Variant {
     return this.allergensValue !== null;
   }
 
-  /** Tarif et poids en un geste : c'est ainsi que le back-office les saisit. */
-  price(priceCents: number | null, weightGrams: number | null): void {
-    this.priceCentsValue = requireCountOrNull("priceCents", priceCents);
-    this.weightGramsValue = requireCountOrNull("weightGrams", weightGrams);
+  /**
+   * Tarif, **assiette** et poids en un geste : c'est ainsi que le back-office
+   * les saisit, et l'assiette ne se sépare pas du nombre qu'elle qualifie.
+   *
+   * Un record plutôt que trois arguments positionnels : deux `number | null`
+   * voisins qu'aucun compilateur ne distingue si on les intervertit, et une
+   * chaîne au milieu. La même raison a fait passer `VatRate.revise` au record.
+   */
+  price(input: VariantPricing): void {
+    this.priceCentsValue = requireCountOrNull("priceCents", input.priceCents);
+    this.priceBasisValue = input.priceBasis;
+    this.weightGramsValue = requireCountOrNull("weightGrams", input.weightGrams);
   }
 
   snapshot(): VariantSnapshot {

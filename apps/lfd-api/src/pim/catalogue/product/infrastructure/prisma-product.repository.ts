@@ -269,6 +269,7 @@ export class PrismaProductRepository extends ProductRepository {
             isDiscontinued: variant.isDiscontinued,
             position: variant.position,
             priceCents: variant.priceCents,
+            priceBasis: variant.priceBasis,
             weightGrams: variant.weightGrams,
           },
         }),

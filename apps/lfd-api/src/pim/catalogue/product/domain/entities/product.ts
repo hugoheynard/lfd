@@ -6,7 +6,7 @@ import {
   ProductUnknownContextError,
   VariantNotFoundError,
 } from "../errors/product-errors.js";
-import { Variant, type VariantSnapshot } from "./variant.js";
+import { Variant, type VariantPricing, type VariantSnapshot } from "./variant.js";
 import {
   slugify,
   type LocalizedText,
@@ -280,8 +280,8 @@ export class Product {
   }
 
   /** Tarif et poids d'une déclinaison **du produit**. */
-  priceVariant(variantId: string, priceCents: number | null, weightGrams: number | null): void {
-    this.variant(variantId).price(priceCents, weightGrams);
+  priceVariant(variantId: string, pricing: VariantPricing): void {
+    this.variant(variantId).price(pricing);
   }
 
   /**

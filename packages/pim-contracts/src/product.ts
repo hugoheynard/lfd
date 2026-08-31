@@ -4,6 +4,7 @@ import { salesChannelsSchema } from "./category.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import { mediaItemPayloadSchema, setMediaPayloadSchema, type AttachedMediaView } from "./media.js";
+import { priceBasisSchema, type PriceBasis } from "./price-basis.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**
@@ -85,6 +86,15 @@ export type UpdateProductIdentityPayload = z.infer<typeof updateProductIdentityP
 /** Tarif & logistique d'une déclinaison. `null` = effacer. */
 export const updateVariantPricingPayloadSchema = z.object({
   priceCents: z.number().int().min(0).nullable(),
+  /**
+   * L'assiette part **avec** le prix, dans le même geste.
+   *
+   * Un nombre et sa signification ne se sauvent pas séparément : entre les deux
+   * écritures, la base porterait un montant dont personne ne saurait dire s'il
+   * est hors taxe. Obligatoire pour la même raison — un champ optionnel
+   * obligerait chaque appelant à connaître le défaut, donc à le redire.
+   */
+  priceBasis: priceBasisSchema,
   weightGrams: z.number().int().min(0).nullable(),
 });
 export type UpdateVariantPricingPayload = z.infer<typeof updateVariantPricingPayloadSchema>;
@@ -122,8 +132,10 @@ export interface VariantView {
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   readonly position: number;
-  /** Prix canonique HT en centimes ; `null` = pas encore tarifé. */
+  /** Prix canonique en centimes ; `null` = pas encore tarifé. */
   readonly priceCents: number | null;
+  /** **Ce que `priceCents` veut dire** — hors taxe, ou prix d'étiquette. */
+  readonly priceBasis: PriceBasis;
   readonly weightGrams: number | null;
   /** `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré. */
   readonly allergens: readonly string[] | null;

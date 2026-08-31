@@ -175,20 +175,26 @@ describe("l’agrégat Product", () => {
   describe("le tarif d’une déclinaison", () => {
     it("s’applique à une déclinaison du produit", () => {
       const product = open();
-      product.priceVariant("var_1", 1250, 480);
+      product.priceVariant("var_1", { priceCents: 1250, priceBasis: "ht", weightGrams: 480 });
       expect(product.snapshot().variants[0]?.priceCents).toBe(1250);
       expect(product.snapshot().variants[0]?.weightGrams).toBe(480);
     });
 
     /** Sans cette garde, une requête forgée tarifait la variante d’un autre. */
     it("refuse une déclinaison qui n’est pas la sienne", () => {
-      expect(() => open().priceVariant("var_dautrui", 100, null)).toThrow(VariantNotFoundError);
+      expect(() =>
+        open().priceVariant("var_dautrui", {
+          priceCents: 100,
+          priceBasis: "ht",
+          weightGrams: null,
+        }),
+      ).toThrow(VariantNotFoundError);
     });
 
     it("accepte de dé-tarifer (null)", () => {
       const product = open();
-      product.priceVariant("var_1", 1250, 480);
-      product.priceVariant("var_1", null, null);
+      product.priceVariant("var_1", { priceCents: 1250, priceBasis: "ht", weightGrams: 480 });
+      product.priceVariant("var_1", { priceCents: null, priceBasis: "ht", weightGrams: null });
       expect(product.snapshot().variants[0]?.priceCents).toBeNull();
     });
 
@@ -202,9 +208,13 @@ describe("l’agrégat Product", () => {
       ["un poids négatif", null, -3],
       ["un poids fractionnaire", null, 1.5],
     ])("refuse %s", (_label, priceCents, weightGrams) => {
-      expect(() => open().priceVariant("var_1", priceCents, weightGrams)).toThrow(
-        InvalidVariantPricingError,
-      );
+      expect(() =>
+        open().priceVariant("var_1", {
+          priceCents: priceCents,
+          priceBasis: "ht",
+          weightGrams: weightGrams,
+        }),
+      ).toThrow(InvalidVariantPricingError);
     });
   });
 

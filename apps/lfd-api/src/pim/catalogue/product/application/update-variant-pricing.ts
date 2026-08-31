@@ -3,13 +3,18 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { changesBetween } from "../../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import type { PriceBasis } from "@lfd/pim-contracts";
+
+import type { VariantPricing } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
-export interface UpdateVariantPricingInput {
-  readonly priceCents: number | null;
-  readonly weightGrams: number | null;
-}
+/**
+ * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
+ * un nombre et sa signification ne s'enregistrent pas séparément, sinon la base
+ * porte un montant dont personne ne sait s'il est hors taxe.
+ */
+export type UpdateVariantPricingInput = VariantPricing;
 
 export class UpdateVariantPricingCommand {
   constructor(
@@ -39,7 +44,7 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
     const before = pricingOf(product.snapshot().variants, variantId);
-    product.priceVariant(variantId, input.priceCents, input.weightGrams);
+    product.priceVariant(variantId, input);
     const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
 
     await this.uow.run(async () => {
@@ -65,10 +70,19 @@ function pricingOf(
   variants: readonly {
     readonly id: string;
     readonly priceCents: number | null;
+    readonly priceBasis: PriceBasis;
     readonly weightGrams: number | null;
   }[],
   variantId: string,
 ): Record<string, unknown> {
   const variant = variants.find((candidate) => candidate.id === variantId);
-  return { priceCents: variant?.priceCents ?? null, weightGrams: variant?.weightGrams ?? null };
+  return {
+    priceCents: variant?.priceCents ?? null,
+    // Journalisée au même titre que le prix, et c'est le point : passer un
+    // article de « 1,20 € hors taxe » à « 1,20 € en tout » change ce qui est
+    // facturé sans changer un seul chiffre. Une trace qui tairait l'assiette
+    // montrerait un enregistrement sans modification.
+    priceBasis: variant?.priceBasis ?? null,
+    weightGrams: variant?.weightGrams ?? null,
+  };
 }

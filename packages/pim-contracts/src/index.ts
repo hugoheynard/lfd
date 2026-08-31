@@ -48,10 +48,11 @@ export {
   proPriceRatioPayloadSchema,
   MAX_RATIO_BP,
   proPriceFromPublic,
+  proHtFromPublic,
 } from "./accounting-rules.js";
 export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
 
-export { PRICE_BASES, htFromTtc, ttcFromHt, htPriceOf } from "./price-basis.js";
+export { PRICE_BASES, priceBasisSchema, htFromTtc, ttcFromHt, htPriceOf } from "./price-basis.js";
 export type { PriceBasis } from "./price-basis.js";
 
 export {
