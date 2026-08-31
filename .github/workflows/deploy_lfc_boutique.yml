@@ -23,13 +23,22 @@ name: deploy_lfc_boutique
 on:
   push:
     branches: [main]
-    # Only what actually affects the B2B build. The app's own code, and
-    # pnpm-workspace.yaml (the `catalog:` pin — where a fold-ng bump lands). NOT
-    # pnpm-lock.yaml (any other app installing a dep would redeploy B2B for
-    # nothing) nor packages/** (B2B consumes no local package). Force a rebuild
-    # anytime via Actions → Run workflow (workflow_dispatch).
+    # Ce qui entre RÉELLEMENT dans le build : le code de l'app, les paquets
+    # locaux qu'elle embarque, et `pnpm-workspace.yaml` (le `catalog:`, où
+    # atterrit une montée de fold-ng).
+    #
+    # ⚠️ Il était écrit ici « nor packages/** (B2B consumes no local package) ».
+    # C'était vrai, et ça a cessé de l'être : la boutique en embarque cinq,
+    # dont `@lfd/b2b-ui` — celui qui FORMATE ses prix. Un correctif de prix
+    # dans ce paquet ne la redéployait donc pas. Une justification devenue
+    # fausse est pire qu'un filtre absent : personne ne la relit.
+    #
+    # PAS `pnpm-lock.yaml` : n'importe quelle autre app installant une
+    # dépendance redéploierait la boutique pour rien. Cette raison-là tient
+    # toujours.
     paths:
       - "apps/lfc-B2B-platform-frontend/**"
+      - "packages/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_lfc_boutique.yml"
   workflow_dispatch:

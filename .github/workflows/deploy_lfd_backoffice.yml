@@ -20,8 +20,19 @@ name: deploy_lfd_backoffice
 on:
   push:
     branches: [main]
+    # Ce qui entre RÉELLEMENT dans le build : le code de l'app, les paquets
+    # locaux qu'elle embarque, et `pnpm-workspace.yaml` (le `catalog:`, où
+    # atterrit une montée de fold-ng).
+    #
+    # `packages/**` manquait, et le trou s'est vu : un correctif de prix dans
+    # `@lfd/b2b-ui` ne redéployait pas le front qui l'embarque. L'API partait
+    # à jour, le back-office restait sur le code d'avant — et rien ne le disait.
+    #
+    # PAS `pnpm-lock.yaml` : n'importe quelle autre app installant une dépendance
+    # redéploierait celle-ci pour rien.
     paths:
       - "apps/lfc-B2B-admin-frontend/**"
+      - "packages/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_lfd_backoffice.yml"
   workflow_dispatch:
