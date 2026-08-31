@@ -19,7 +19,7 @@ import type { VolumeTierPriceView } from "@lfd/contracts";
  * la même que si le client passait cette commande-là.
  */
 export function volumeTierPrices(
-  canonicalCents: number,
+  canonicalMillicents: number,
   ladders: readonly VolumeLadder[],
   rules: readonly PriceRule[],
   context: PricingContext,
@@ -32,11 +32,11 @@ export function volumeTierPrices(
 
   return ladder.tiers.map((tier) => {
     const at = atQuantity(context, tier.minQuantity);
-    const resolved = resolvePrice(canonicalCents, withLadder(rules, ladders, at), at, floor);
+    const resolved = resolvePrice(canonicalMillicents, withLadder(rules, ladders, at), at, floor);
     return {
       minQuantity: tier.minQuantity,
-      unitPriceCents: resolved.finalCents,
-      discountBp: discountBpOf(canonicalCents, resolved.finalCents),
+      unitPriceMillicents: resolved.finalMillicents,
+      discountBp: discountBpOf(canonicalMillicents, resolved.finalMillicents),
     };
   });
 }
@@ -94,9 +94,12 @@ function withLadder(
 }
 
 /** L'écart au tarif d'entrée, en points de base d'une baisse. Jamais négatif. */
-function discountBpOf(canonicalCents: number, finalCents: number): number {
-  if (canonicalCents <= 0) {
+function discountBpOf(canonicalMillicents: number, finalMillicents: number): number {
+  if (canonicalMillicents <= 0) {
     return 0;
   }
-  return Math.max(0, Math.round(((canonicalCents - finalCents) / canonicalCents) * 10_000));
+  return Math.max(
+    0,
+    Math.round(((canonicalMillicents - finalMillicents) / canonicalMillicents) * 10_000),
+  );
 }

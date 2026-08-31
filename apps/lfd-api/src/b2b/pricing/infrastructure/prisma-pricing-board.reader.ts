@@ -131,7 +131,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     const current = await this.catalog.all();
     const articles = current.map((item) => {
       const past = pastPrices.get(item.sku);
-      return past === undefined ? item : { ...item, unitPriceCents: past };
+      return past === undefined ? item : { ...item, unitPriceMillicents: past };
     });
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);

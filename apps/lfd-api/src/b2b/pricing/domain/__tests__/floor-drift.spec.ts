@@ -1,4 +1,4 @@
-import { floorDrift, medianCents, STALE_DRIFT_BP } from "../floor-drift.js";
+import { floorDrift, medianMillicents, STALE_DRIFT_BP } from "../floor-drift.js";
 
 const POSED = new Date("2026-01-01T00:00:00.000Z");
 const NOW = new Date("2026-08-17T00:00:00.000Z");
@@ -70,11 +70,11 @@ describe("l'écart entre l'intention et le tarif du jour", () => {
 
 describe("le tarif représentatif", () => {
   it("prend la valeur du milieu sur un nombre impair", () => {
-    expect(medianCents([100, 200, 900])).toBe(200);
+    expect(medianMillicents([100, 200, 900])).toBe(200);
   });
 
   it("prend la moyenne des deux du milieu sur un nombre pair", () => {
-    expect(medianCents([100, 200, 300, 900])).toBe(250);
+    expect(medianMillicents([100, 200, 300, 900])).toBe(250);
   });
 
   /**
@@ -82,10 +82,10 @@ describe("le tarif représentatif", () => {
    * parce qu'une pièce montée à 90 € y côtoie des croissants à 2 €.
    */
   it("résiste à un article hors norme, là où une moyenne céderait", () => {
-    expect(medianCents([200, 220, 240, 9_000])).toBe(230);
+    expect(medianMillicents([200, 220, 240, 9_000])).toBe(230);
   });
 
   it("n'a pas de valeur sur un ensemble vide", () => {
-    expect(medianCents([])).toBeNull();
+    expect(medianMillicents([])).toBeNull();
   });
 });

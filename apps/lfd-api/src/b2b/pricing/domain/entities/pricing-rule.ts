@@ -28,7 +28,7 @@ export interface PricingRuleDraft {
   readonly audience: PriceAudience;
   readonly minQuantity: number | null;
   readonly effect:
-    | { readonly nature: "replace"; readonly amountCents: number }
+    | { readonly nature: "replace"; readonly amountMillicents: number }
     | { readonly nature: "alter"; readonly alteration: PriceAlteration };
   readonly label: string;
   readonly validFrom: Date;
@@ -249,7 +249,7 @@ export class PricingRule {
       stacksOverMercuriale: this.state.stacksOverMercuriale,
     };
     return this.state.effect.nature === "replace"
-      ? { ...common, nature: "replace", amountCents: this.state.effect.amountCents }
+      ? { ...common, nature: "replace", amountMillicents: this.state.effect.amountMillicents }
       : { ...common, nature: "alter", alteration: this.state.effect.alteration };
   }
 

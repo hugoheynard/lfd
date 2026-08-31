@@ -13,9 +13,9 @@ export interface ResolvedCatalogItem {
   readonly productSku: string;
   readonly name: string;
   /** Prix HT en centimes réellement applicable — celui du B2B s'il existe. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   /** Le prix du PIM, gardé pour que l'écran puisse montrer l'écart. */
-  readonly pimPriceCents: number;
+  readonly pimPriceMillicents: number;
   readonly vatRate: number;
   readonly categoryId: string;
   readonly categoryName: string;

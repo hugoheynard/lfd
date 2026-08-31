@@ -41,7 +41,7 @@ import { winnerOf } from "./specificity.js";
  * @throws {AmbiguousPriceRulesError} deux règles également spécifiques dans un étage.
  */
 export function resolvePrice(
-  canonicalCents: number,
+  canonicalMillicents: number,
   rules: readonly PriceRule[],
   context: PricingContext,
   floor: PriceFloor | null = null,
@@ -51,13 +51,13 @@ export function resolvePrice(
   // (`nonnegative`). Seul le négatif est refusé — il n'a aucune lecture. La
   // première écriture refusait aussi zéro, par réflexe de rigueur : elle
   // cassait un chemin existant, celui d'une commande sans rien à encaisser.
-  if (!Number.isInteger(canonicalCents) || canonicalCents < 0) {
-    throw new InvalidCanonicalPriceError(canonicalCents);
+  if (!Number.isInteger(canonicalMillicents) || canonicalMillicents < 0) {
+    throw new InvalidCanonicalPriceError(canonicalMillicents);
   }
 
   const steps: PriceStep[] = [];
   const sealedRuleIds: string[] = [];
-  let running = fromCents(canonicalCents);
+  let running = fromCents(canonicalMillicents);
   let sealedByRuleId: string | null = null;
 
   for (const stage of PRICE_STAGES) {
@@ -85,14 +85,14 @@ export function resolvePrice(
       // Arrondi pour l'AFFICHAGE seulement : `running` reste exact et poursuit
       // la chaîne. Reprendre cette valeur arrondie serait l'arrondi par étage
       // qu'on cherche justement à éviter.
-      resultCents: roundToCents(running),
+      resultMillicents: roundToCents(running),
     });
     if (stage === "mercuriale") {
       sealedByRuleId = winner.id;
     }
   }
 
-  const lowest = floorValue(floor, canonicalCents);
+  const lowest = floorValue(floor, canonicalMillicents);
   const floored = lowest !== null && compareExact(running, lowest) < 0;
   const finalExact = floored && lowest !== null ? lowest : running;
 
@@ -116,20 +116,20 @@ export function resolvePrice(
   const clampedToZero = rounded < 0;
 
   return {
-    basePriceCents: canonicalCents,
+    basePriceMillicents: canonicalMillicents,
     steps,
     floored,
     clampedToZero,
     sealedByRuleId,
     sealedRuleIds,
-    finalCents: clampedToZero ? 0 : rounded,
+    finalMillicents: clampedToZero ? 0 : rounded,
   };
 }
 
 /** `replace` pose un prix ; `alter` modifie celui qui entre. */
 function apply(running: Exact, rule: PriceRule): Exact {
   if (rule.nature === "replace") {
-    return fromCents(rule.amountCents);
+    return fromCents(rule.amountMillicents);
   }
 
   const { alteration } = rule;
@@ -151,11 +151,11 @@ function apply(running: Exact, rule: PriceRule): Exact {
  * plancher qui suivrait le prix altéré descendrait avec lui, et ne planchérait
  * rien du tout.
  */
-function floorValue(floor: PriceFloor | null, canonicalCents: number): Exact | null {
+function floorValue(floor: PriceFloor | null, canonicalMillicents: number): Exact | null {
   if (floor === null) {
     return null;
   }
   return floor.mode === "amount"
     ? fromCents(floor.cents)
-    : fractionByBasisPoints(fromCents(canonicalCents), floor.bp);
+    : fractionByBasisPoints(fromCents(canonicalMillicents), floor.bp);
 }

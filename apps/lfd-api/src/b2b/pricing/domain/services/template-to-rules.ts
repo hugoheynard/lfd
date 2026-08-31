@@ -41,7 +41,7 @@ export function templateToRules(
       // on relit une mercuriale pour comprendre d'où elle vient, la différence
       // entre « prix posé » et « premier palier d'une grille » est la question.
       minQuantity: tier.minQuantity,
-      effect: { nature: "replace" as const, amountCents: tier.unitPriceCents },
+      effect: { nature: "replace" as const, amountMillicents: tier.unitPriceMillicents },
       // Le libellé du gabarit, pas celui du palier : c'est ce que le client lira
       // dans la trace de son prix, et « Mercuriale Club Med » lui parle. Le seuil,
       // lui, est déjà porté par la règle.

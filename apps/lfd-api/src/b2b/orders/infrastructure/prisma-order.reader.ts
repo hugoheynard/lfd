@@ -32,11 +32,11 @@ import { orderOriginOf } from "../domain/services/order-origin.js";
 interface OrderLineRow {
   readonly sku: string;
   readonly productNameSnapshot: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly vatRate: { toNumber(): number };
   readonly quantity: number;
   readonly lineTotalCents: number;
-  readonly basePriceCents: number | null;
+  readonly basePriceMillicents: number | null;
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
   readonly pricingFloor: Prisma.JsonValue | null;
@@ -102,11 +102,11 @@ const ORDER_SELECT = {
     select: {
       sku: true,
       productNameSnapshot: true,
-      unitPriceCents: true,
+      unitPriceMillicents: true,
       vatRate: true,
       quantity: true,
       lineTotalCents: true,
-      basePriceCents: true,
+      basePriceMillicents: true,
       pricingSteps: true,
       pricingFloored: true,
       pricingFloor: true,
@@ -524,7 +524,7 @@ function toLineView(line: OrderLineRow): OrderLineView {
   return {
     sku: line.sku,
     productName: line.productNameSnapshot,
-    unitPriceCents: line.unitPriceCents,
+    unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate.toNumber(),
     quantity: line.quantity,
     lineTotalCents: line.lineTotalCents,
@@ -544,7 +544,7 @@ function toLineView(line: OrderLineRow): OrderLineView {
  * décidé ; ici elle empêche seulement de commenter un prix déjà facturé.
  */
 function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
-  if (line.basePriceCents === null || line.pricingFloored === null) {
+  if (line.basePriceMillicents === null || line.pricingFloored === null) {
     return null;
   }
   const steps = priceStepsSchema.safeParse(line.pricingSteps);
@@ -552,7 +552,7 @@ function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     return null;
   }
   return {
-    basePriceCents: line.basePriceCents,
+    basePriceMillicents: line.basePriceMillicents,
     steps: steps.data,
     floored: line.pricingFloored,
     // Une décision illisible rend `null` sans emporter le reste de la trace : le

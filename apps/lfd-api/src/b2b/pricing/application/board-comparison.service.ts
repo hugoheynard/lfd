@@ -59,7 +59,7 @@ export class BoardComparisonService {
       to: to.toISOString(),
       previousFrom: mirror.from.toISOString(),
       days: windowDays(from, to),
-      changedCount: items.filter((item) => item.fromCents !== item.toCents).length,
+      changedCount: items.filter((item) => item.fromMillicents !== item.toMillicents).length,
       items,
     };
   }
@@ -71,7 +71,7 @@ interface FlatItem {
   readonly name: string;
   readonly categoryId: string;
   readonly categoryName: string;
-  readonly finalCents: number;
+  readonly finalMillicents: number;
   readonly volumeTiers: readonly VolumeTierPriceView[] | null;
 }
 
@@ -82,7 +82,7 @@ function itemsOf(board: PricingBoardView): FlatItem[] {
       name: item.name,
       categoryId: category.id,
       categoryName: category.name,
-      finalCents: item.finalCents,
+      finalMillicents: item.finalMillicents,
       volumeTiers: item.volumeTiers,
     })),
   );
@@ -106,11 +106,11 @@ function comparisonItem(
     name: item.name,
     categoryId: item.categoryId,
     categoryName: item.categoryName,
-    fromCents: before.finalCents,
-    toCents: item.finalCents,
+    fromMillicents: before.finalMillicents,
+    toMillicents: item.finalMillicents,
     fromTiers: before.volumeTiers,
     toTiers: item.volumeTiers,
-    priceVariationBp: variationBp(before.finalCents, item.finalCents),
+    priceVariationBp: variationBp(before.finalMillicents, item.finalMillicents),
     volume: sales.volume,
     previousVolume: sales.previousVolume,
     volumeVariationBp: variationBp(sales.previousVolume, sales.volume),

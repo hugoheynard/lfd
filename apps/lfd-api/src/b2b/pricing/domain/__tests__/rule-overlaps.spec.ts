@@ -113,7 +113,7 @@ describe("le cumul", () => {
     const posed: PriceRule = {
       ...rule("b", "15", "30", { stage: "geste" }),
       nature: "replace",
-      amountCents: 180,
+      amountMillicents: 180_000,
     };
 
     const [segment] = overlapSegments([rule("a", "01", "20"), posed]);

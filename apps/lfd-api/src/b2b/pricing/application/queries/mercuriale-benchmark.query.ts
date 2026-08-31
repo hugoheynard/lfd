@@ -17,7 +17,7 @@ import { ruleFromRow } from "../../infrastructure/price-rows.js";
  *
  * Le prix de chaque observation passe par `resolvePrice`, **la fonction qui
  * facture**. Une mercuriale peut être posée en `replace` (un prix) comme en
- * `alter` (une remise sur le canonique) : lire `amountCents` ignorerait la
+ * `alter` (une remise sur le canonique) : lire `amountMillicents` ignorerait la
  * seconde forme, et l'écran comparerait des prix négociés à des remises.
  *
  * Le **plancher n'est pas appliqué**, et c'est délibéré : il est propre à un
@@ -70,13 +70,13 @@ export class MercurialeBenchmarkQuery {
   ): NegotiatedPrice | null {
     const sku = row.scopeId;
     const companyId = row.audienceId;
-    const canonicalCents = sku === null ? undefined : catalogue.get(sku)?.unitPriceCents;
-    if (sku === null || companyId === null || canonicalCents === undefined) {
+    const canonicalMillicents = sku === null ? undefined : catalogue.get(sku)?.unitPriceMillicents;
+    if (sku === null || companyId === null || canonicalMillicents === undefined) {
       return null;
     }
     const rule = ruleFromRow(row);
     const resolved = resolvePrice(
-      canonicalCents,
+      canonicalMillicents,
       [rule],
       {
         at,
@@ -92,6 +92,6 @@ export class MercurialeBenchmarkQuery {
       },
       null,
     );
-    return { sku, companyId, unitPriceCents: resolved.finalCents };
+    return { sku, companyId, unitPriceMillicents: resolved.finalMillicents };
   }
 }

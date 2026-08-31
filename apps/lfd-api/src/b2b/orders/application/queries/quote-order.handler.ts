@@ -5,6 +5,7 @@ import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
+import { lineTotalCents } from "@lfd/money";
 
 /**
  * **Ce que la commande coûterait**, demandé avant de la passer.
@@ -58,7 +59,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       query.payload.lines.map((line) => ({
         sku: line.sku,
         productName: "",
-        unitPriceCents: 0,
+        unitPriceMillicents: 0,
         vatRate: 0,
         quantity: line.quantity,
         pricing: null,
@@ -67,7 +68,14 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
 
     return {
       lines: lines.map(toQuoteLine),
-      subtotalCents: lines.reduce((sum, { line }) => sum + line.unitPriceCents * line.quantity, 0),
+      // Le sous-total est un MONTANT : il s'arrondit au centime, une fois par
+      // ligne, exactement comme la commande le fera. Sommer des millicentimes
+      // rendrait un devis mille fois trop cher — et un devis qui ne prédit pas
+      // la facture ne sert à rien.
+      subtotalCents: lines.reduce(
+        (sum, { line }) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
+        0,
+      ),
     };
   }
 }
@@ -75,7 +83,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
 /**
  * La ligne résolue → sa vue.
  *
- * `canonicalCents` vient de la **trace**, pas d'une seconde lecture du
+ * `canonicalMillicents` vient de la **trace**, pas d'une seconde lecture du
  * catalogue : c'est le tarif d'entrée que la résolution a réellement utilisé, et
  * le relire ailleurs pourrait donner un autre nombre entre-temps. Sans trace —
  * une ligne qu'aucune règle n'a touchée — le prix final EST le tarif d'entrée.
@@ -86,8 +94,8 @@ function toQuoteLine(resolved: ResolvedOrderLine): OrderQuoteLineView {
   return {
     sku: line.sku,
     productName: line.productName,
-    canonicalCents: trace?.basePriceCents ?? line.unitPriceCents,
-    unitPriceCents: line.unitPriceCents,
+    canonicalMillicents: trace?.basePriceMillicents ?? line.unitPriceMillicents,
+    unitPriceMillicents: line.unitPriceMillicents,
     quantity: line.quantity,
     vatRate: line.vatRate,
     steps: trace?.steps ?? [],
@@ -95,6 +103,6 @@ function toQuoteLine(resolved: ResolvedOrderLine): OrderQuoteLineView {
     sealedByRuleId: resolved.sealedByRuleId,
     sealedRuleIds: resolved.sealedRuleIds,
     volumeTiers: resolved.volumeTiers,
-    floorCents: resolved.floorCents,
+    floorMillicents: resolved.floorMillicents,
   };
 }

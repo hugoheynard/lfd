@@ -1,4 +1,17 @@
-import type { PricedSku } from "../src/b2b/orders/domain/ports/product-catalog.reader.js";
+/**
+ * Le semis se lit en **centimes**, et il a désormais son propre type plutôt que
+ * d'emprunter `PricedSku`.
+ *
+ * Celui-ci porte des millicentimes depuis que les prix unitaires en portent, et
+ * un semis en millicentimes serait illisible : « croissant à 200 000 » ne se
+ * relit pas. La conversion se fait à l'ÉCRITURE, dans la fixture, par une
+ * multiplication exacte.
+ */
+export interface SeededSku {
+  readonly sku: string;
+  readonly name: string;
+  readonly unitPriceCents: number;
+}
 
 /**
  * ⚠️ **Jeu de données de TEST**, plus une source de production.
@@ -19,7 +32,7 @@ import type { PricedSku } from "../src/b2b/orders/domain/ports/product-catalog.r
  * Jetable : remplacé par la vraie synchro catalogue PIM. On ne dérive rien de
  * métier d'ici — juste une table de correspondance sku → (nom, prix).
  */
-export const CATALOG_SEED: readonly PricedSku[] = [
+export const CATALOG_SEED: readonly SeededSku[] = [
   { sku: "VIE-001", name: "Croissant", unitPriceCents: 200 },
   { sku: "VIE-002", name: "Pain au chocolat", unitPriceCents: 220 },
   { sku: "VIE-003", name: "Patte d'ours", unitPriceCents: 300 },

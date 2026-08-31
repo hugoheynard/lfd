@@ -19,8 +19,8 @@ const CROISSANT: ResolvedCatalogItem = {
   sku: "VIE-001-1",
   productSku: "VIE-001",
   name: "Croissant",
-  unitPriceCents: 200,
-  pimPriceCents: 240,
+  unitPriceMillicents: 200_000,
+  pimPriceMillicents: 240_000,
   vatRate: 5.5,
   categoryId: "cat_vien",
   categoryName: "Viennoiseries",
@@ -65,7 +65,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("rend le prix résolu, pas celui du PIM", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    expect((await catalog.resolve("VIE-001"))?.unitPriceCents).toBe(200);
+    expect((await catalog.resolve("VIE-001"))?.unitPriceMillicents).toBe(200_000);
   });
 
   it("traduit la famille du PIM en rayon de la boutique", async () => {

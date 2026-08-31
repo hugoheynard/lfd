@@ -20,7 +20,7 @@ export class ListCatalogHandler implements IQueryHandler<
     return items.map((item) => ({
       sku: item.sku,
       name: item.name,
-      unitPriceCents: item.unitPriceCents,
+      unitPriceMillicents: item.unitPriceMillicents,
       vatRate: item.vatRate,
       category: item.category,
     }));

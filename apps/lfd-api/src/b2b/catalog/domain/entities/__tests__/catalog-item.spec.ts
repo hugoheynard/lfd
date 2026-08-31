@@ -19,7 +19,7 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     name: "Croissant",
     kind: "daily",
     categoryId: "cat_vien",
-    priceCents: 200,
+    priceMillicents: 200,
     weightGrams: null,
     isDefault: true,
     position: 0,
@@ -33,7 +33,7 @@ describe("CatalogItem — le prix", () => {
   it("part au tarif du PIM tant que personne n'a rien décidé", () => {
     const item = CatalogItem.receive(facts());
 
-    expect(item.effectivePriceCents).toBe(200);
+    expect(item.effectivePriceMillicents).toBe(200);
     expect(item.toPersistence().decision).toBeNull();
   });
 
@@ -42,8 +42,8 @@ describe("CatalogItem — le prix", () => {
 
     item.setB2bPrice(180, "cecile");
 
-    expect(item.effectivePriceCents).toBe(180);
-    expect(item.pimPriceCents).toBe(200);
+    expect(item.effectivePriceMillicents).toBe(180);
+    expect(item.pimPriceMillicents).toBe(200);
   });
 
   it("refuse un prix nul ou négatif — on ne vend ni à perte ni gratuitement", () => {
@@ -76,7 +76,7 @@ describe("CatalogItem — le prix", () => {
 
     item.alignOnPim();
 
-    expect(item.effectivePriceCents).toBe(200);
+    expect(item.effectivePriceMillicents).toBe(200);
     expect(item.toPersistence().decision).toBeNull();
   });
 });
@@ -130,10 +130,12 @@ describe("CatalogItem — le push", () => {
     const item = CatalogItem.receive(facts());
     item.setB2bPrice(180, "cecile");
 
-    const refreshed = item.refreshFromPim(facts({ priceCents: 220, name: "Croissant beurre" }));
+    const refreshed = item.refreshFromPim(
+      facts({ priceMillicents: 220, name: "Croissant beurre" }),
+    );
 
-    expect(refreshed.pimPriceCents).toBe(220);
-    expect(refreshed.effectivePriceCents).toBe(180);
+    expect(refreshed.pimPriceMillicents).toBe(220);
+    expect(refreshed.effectivePriceMillicents).toBe(180);
     expect(refreshed.toPersistence().decision?.decidedBy).toBe("cecile");
   });
 
@@ -141,7 +143,7 @@ describe("CatalogItem — le push", () => {
     const item = CatalogItem.receive(facts());
     item.hide("cecile");
 
-    const refreshed = item.refreshFromPim(facts({ priceCents: 220 }));
+    const refreshed = item.refreshFromPim(facts({ priceMillicents: 220 }));
 
     expect(refreshed.isHidden).toBe(true);
   });
@@ -149,7 +151,7 @@ describe("CatalogItem — le push", () => {
   it("un article sans décision reste sans décision après un push", () => {
     const item = CatalogItem.receive(facts());
 
-    const refreshed = item.refreshFromPim(facts({ priceCents: 220 }));
+    const refreshed = item.refreshFromPim(facts({ priceMillicents: 220 }));
 
     expect(refreshed.toPersistence().decision).toBeNull();
   });

@@ -73,7 +73,7 @@ export function categoryView(
     ladders: lineageLadders.filter((ladder) => ladder.suspendedFrom === null).map(ladderBandView),
     items: articles.map((item) =>
       itemView(
-        { sku: item.sku, name: item.name, canonicalCents: item.unitPriceCents },
+        { sku: item.sku, name: item.name, canonicalMillicents: item.unitPriceMillicents },
         pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
         materials,
         loaded,

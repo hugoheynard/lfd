@@ -4,7 +4,7 @@ import type { MercurialeBenchmarkView } from "@lfd/contracts";
 export interface NegotiatedPrice {
   readonly sku: string;
   readonly companyId: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
 }
 
 /**
@@ -31,8 +31,8 @@ export function benchmarkByProduct(
     perCompany.set(
       observation.companyId,
       known === undefined
-        ? observation.unitPriceCents
-        : Math.max(known, observation.unitPriceCents),
+        ? observation.unitPriceMillicents
+        : Math.max(known, observation.unitPriceMillicents),
     );
     bySku.set(observation.sku, perCompany);
   }
@@ -41,9 +41,9 @@ export function benchmarkByProduct(
     const prices = [...perCompany.values()].sort((left, right) => left - right);
     return {
       sku,
-      medianCents: medianOf(prices),
-      lowCents: prices[0] ?? 0,
-      highCents: prices.at(-1) ?? 0,
+      medianMillicents: medianOf(prices),
+      lowMillicents: prices[0] ?? 0,
+      highMillicents: prices.at(-1) ?? 0,
       companyCount: prices.length,
     };
   });

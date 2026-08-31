@@ -17,6 +17,7 @@ import type { BillingAddressPayload, OrderView, PlacedOrderResponse } from "@lfd
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { lineTotalCents } from "@lfd/money";
 
 const ADMIN = "auth0|admin";
 const MEMBER = "auth0|member";
@@ -225,14 +226,14 @@ describe("checkout → Order", () => {
       {
         sku: "VIE-001",
         productName: "Croissant",
-        unitPriceCents: 200,
+        unitPriceMillicents: 200_000,
         vatRate: 5.5,
         quantity: 3,
         lineTotalCents: 600,
         // Vue de commande : la trace remonte sous sa forme de contrat. Aucune
         // règle en base ici — elle dit donc qu'aucun étage n'a joué.
         pricing: {
-          basePriceCents: 200,
+          basePriceMillicents: 200_000,
           steps: [],
           floored: false,
           floorDecision: null,
@@ -443,9 +444,9 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
           orderId: placed.id,
           sku: existing.sku,
           productNameSnapshot: existing.productNameSnapshot,
-          unitPriceCents: existing.unitPriceCents,
+          unitPriceMillicents: existing.unitPriceMillicents,
           quantity: 1,
-          lineTotalCents: existing.unitPriceCents,
+          lineTotalCents: existing.unitPriceMillicents,
         },
       }),
     ).rejects.toThrow();
@@ -478,7 +479,7 @@ describe("POST /orders/quote", () => {
     const companyId = await seedCompany("active");
 
     const body = jsonBody<{
-      lines: { sku: string; unitPriceCents: number }[];
+      lines: { sku: string; unitPriceMillicents: number }[];
       subtotalCents: number;
     }>(
       await ctx
@@ -489,13 +490,16 @@ describe("POST /orders/quote", () => {
     );
 
     expect(body.lines[0]?.sku).toBe("VIE-001");
-    expect(body.subtotalCents).toBe(body.lines[0]!.unitPriceCents * 6);
+    // Le sous-total est un MONTANT, le prix unitaire un prix : la relation
+    // entre les deux passe par l'arrondi unique, pas par une multiplication
+    // nue. L'assertion épingle la frontière d'unité en même temps que le total.
+    expect(body.subtotalCents).toBe(lineTotalCents(body.lines[0]!.unitPriceMillicents, 6));
   });
 
   /** Le parcours zéro friction : sans société, seules les règles ouvertes à tous jouent. */
   it("estime sans société, pour un client de passage", async () => {
     const WALKIN = "auth0|walkin-quote";
-    const body = jsonBody<{ lines: { unitPriceCents: number }[] }>(
+    const body = jsonBody<{ lines: { unitPriceMillicents: number }[] }>(
       await ctx
         .asSub(WALKIN)
         .post("/orders/quote")
@@ -503,6 +507,6 @@ describe("POST /orders/quote", () => {
         .expect(200),
     );
 
-    expect(body.lines[0]?.unitPriceCents).toBe(200);
+    expect(body.lines[0]?.unitPriceMillicents).toBe(200_000);
   });
 });

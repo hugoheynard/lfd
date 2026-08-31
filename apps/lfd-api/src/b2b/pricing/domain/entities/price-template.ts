@@ -9,7 +9,7 @@ import type { PriceTemplateKind } from "@lfd/contracts";
 /** Un palier : à partir de cette quantité, ce prix en centimes. */
 export interface TemplateTier {
   readonly minQuantity: number;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
 }
 
 export interface TemplateLine {
@@ -155,7 +155,7 @@ function normalizeLine(line: TemplateLine): TemplateLine {
     // Prix qui remonte : commander plus coûterait plus cher.
     if (
       previous.minQuantity === tier.minQuantity ||
-      previous.unitPriceCents <= tier.unitPriceCents
+      previous.unitPriceMillicents <= tier.unitPriceMillicents
     ) {
       throw new NonDecreasingTemplateTiersError(line.sku, tier.minQuantity);
     }

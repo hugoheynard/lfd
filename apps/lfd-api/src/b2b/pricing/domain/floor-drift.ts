@@ -30,9 +30,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface FloorDrift {
   /** Le tarif de référence, figé au moment où la limite a été posée. */
-  readonly referenceCanonicalCents: number;
+  readonly referenceCanonicalMillicents: number;
   /** Le tarif équivalent aujourd'hui. */
-  readonly currentCanonicalCents: number;
+  readonly currentCanonicalMillicents: number;
   /** L'écart, **signé**, en points de base (`1200` = +12 %). */
   readonly driftBp: number;
   readonly ageDays: number;
@@ -49,8 +49,8 @@ export interface FloorDrift {
  */
 export function floorDrift(
   floor: PriceFloor,
-  referenceCanonicalCents: number | null,
-  currentCanonicalCents: number | null,
+  referenceCanonicalMillicents: number | null,
+  currentCanonicalMillicents: number | null,
   posedAt: Date,
   now: Date,
 ): FloorDrift | null {
@@ -58,19 +58,20 @@ export function floorDrift(
     return null;
   }
   if (
-    referenceCanonicalCents === null ||
-    currentCanonicalCents === null ||
-    referenceCanonicalCents <= 0
+    referenceCanonicalMillicents === null ||
+    currentCanonicalMillicents === null ||
+    referenceCanonicalMillicents <= 0
   ) {
     return null;
   }
 
   const driftBp = Math.round(
-    ((currentCanonicalCents - referenceCanonicalCents) / referenceCanonicalCents) * RATIO_UNIT_BP,
+    ((currentCanonicalMillicents - referenceCanonicalMillicents) / referenceCanonicalMillicents) *
+      RATIO_UNIT_BP,
   );
   return {
-    referenceCanonicalCents,
-    currentCanonicalCents,
+    referenceCanonicalMillicents,
+    currentCanonicalMillicents,
     driftBp,
     ageDays: Math.max(0, Math.floor((now.getTime() - posedAt.getTime()) / DAY_MS)),
     stale: Math.abs(driftBp) >= STALE_DRIFT_BP,
@@ -85,7 +86,7 @@ export function floorDrift(
  * suit ce que la famille vend vraiment ; la moyenne suit son article le plus
  * cher.
  */
-export function medianCents(values: readonly number[]): number | null {
+export function medianMillicents(values: readonly number[]): number | null {
   if (values.length === 0) {
     return null;
   }

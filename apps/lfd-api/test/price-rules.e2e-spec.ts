@@ -1,3 +1,4 @@
+import { centsFromMillicents, millicentsFromCents } from "@lfd/money";
 /**
  * E2E des **règles tarifaires** — sur un vrai Postgres.
  *
@@ -80,7 +81,7 @@ interface RuleSeed {
   readonly audienceId?: string | null;
   readonly minQuantity?: number | null;
   readonly bp?: number;
-  readonly amountCents?: number;
+  readonly amountMillicents?: number;
   readonly validFrom?: Date;
   readonly validTo?: Date | null;
   readonly stacksOverMercuriale?: boolean;
@@ -88,7 +89,7 @@ interface RuleSeed {
 
 /** Sème une règle directement : la saisie staff est la slice S3. */
 function seedRule(seed: RuleSeed) {
-  const alter = seed.amountCents === undefined;
+  const alter = seed.amountMillicents === undefined;
   return ctx.prisma.priceRule.create({
     data: {
       id: seed.id,
@@ -99,7 +100,7 @@ function seedRule(seed: RuleSeed) {
       audienceType: seed.audienceType ?? "all",
       audienceId: seed.audienceId ?? null,
       minQuantity: seed.minQuantity ?? null,
-      amountCents: seed.amountCents ?? null,
+      amountMillicents: seed.amountMillicents ?? null,
       direction: alter ? "decrease" : null,
       mode: alter ? "percent" : null,
       value: alter ? (seed.bp ?? 1000) : null,
@@ -113,9 +114,20 @@ function seedRule(seed: RuleSeed) {
 }
 
 /** Pose un plancher. La saisie staff est la slice S3 ; ici on sème. */
+/**
+ * Le plancher se pose en **centimes** dans les tests — un montant s'écrit comme
+ * on le prononce — et se range en millicentimes, l'unité de la colonne. La
+ * conversion vit ici, une fois.
+ */
 function seedFloor(scopeType: string, scopeId: string | null, cents: number) {
   return ctx.prisma.priceFloor.create({
-    data: { scopeType, scopeId, mode: "amount", value: cents, createdBy: "e2e" },
+    data: {
+      scopeType,
+      scopeId,
+      mode: "amount",
+      value: millicentsFromCents(cents),
+      createdBy: "e2e",
+    },
   });
 }
 
@@ -127,9 +139,18 @@ function placeOrder(quantity: number) {
 }
 
 /** Le prix unitaire réellement écrit sur la ligne — la seule mesure qui compte. */
+/**
+ * Le prix unitaire facturé, rendu en **centimes** : les attentes de ce fichier
+ * se lisent comme des prix (« 170 », pas « 170 000 »). La colonne, elle, porte
+ * des millicentimes — c'est ici qu'on repasse dans l'unité qui se prononce.
+ *
+ * `centsFromMillicents` et non une division nue : l'arrondi commercial est le
+ * même que celui de la facture, et deux arrondis divergents feraient échouer un
+ * test sur un centime sans rien dire du code.
+ */
 async function unitPriceOf(orderId: string): Promise<number> {
   const line = await ctx.prisma.orderLine.findFirstOrThrow({ where: { orderId } });
-  return line.unitPriceCents;
+  return centsFromMillicents(line.unitPriceMillicents);
 }
 
 /** La ligne complète — la trace y est figée à côté du prix. */
@@ -147,7 +168,7 @@ describe("la trace figée sur la ligne", () => {
     const response = await placeOrder(1);
 
     const line = await lineOf(jsonBody<{ id: string }>(response).id);
-    expect(line.basePriceCents).toBe(CANONICAL);
+    expect(line.basePriceMillicents).toBe(millicentsFromCents(CANONICAL));
     expect(line.pricingSteps).toEqual([]);
     expect(line.pricingFloored).toBe(false);
   });
@@ -158,12 +179,12 @@ describe("la trace figée sur la ligne", () => {
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
 
-    expect(line.basePriceCents).toBe(CANONICAL);
+    expect(line.basePriceMillicents).toBe(millicentsFromCents(CANONICAL));
     expect(line.pricingSteps).toEqual([
-      { stage: "volume", ruleId: "vol", label: "vol", resultCents: 160 },
-      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 144 },
+      { stage: "volume", ruleId: "vol", label: "vol", resultMillicents: 160_000 },
+      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 144_000 },
     ]);
-    expect(line.unitPriceCents).toBe(144);
+    expect(line.unitPriceMillicents).toBe(144_000);
   });
 
   it("consigne que le plancher a relevé le prix", async () => {
@@ -177,9 +198,9 @@ describe("la trace figée sur la ligne", () => {
     // plancher a imposé (150). Les deux nombres sont vrais, et leur écart est
     // exactement ce qu'on veut pouvoir montrer.
     expect(line.pricingSteps).toEqual([
-      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 100 },
+      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 100_000 },
     ]);
-    expect(line.unitPriceCents).toBe(150);
+    expect(line.unitPriceMillicents).toBe(150_000);
   });
 
   /**
@@ -195,7 +216,7 @@ describe("la trace figée sur la ligne", () => {
 
     const line = await lineOf(orderId);
     expect(line.pricingSteps).toEqual([
-      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 180 },
+      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 180_000 },
     ]);
   });
 });
@@ -376,7 +397,7 @@ describe("une règle change le prix facturé", () => {
       stage: "mercuriale",
       audienceType: "company",
       audienceId: company.id,
-      amountCents: 150,
+      amountMillicents: 150_000,
     });
 
     const response = await placeOrder(1);
@@ -395,22 +416,22 @@ describe("une règle change le prix facturé", () => {
  */
 describe("le scellement par la mercuriale", () => {
   it("une promotion ne s'applique PAS par-dessus un tarif négocié", async () => {
-    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
 
     // 180 et non 162 : la promotion a été écartée, pas appliquée.
-    expect(line.unitPriceCents).toBe(180);
+    expect(line.unitPriceMillicents).toBe(180_000);
     // La trace ne cite QUE l'étage qui a joué — elle décrit ce qui a fait le
     // prix, pas ce qui aurait pu le faire.
     expect(line.pricingSteps).toEqual([
-      { stage: "mercuriale", ruleId: "merc", label: "merc", resultCents: 180 },
+      { stage: "mercuriale", ruleId: "merc", label: "merc", resultMillicents: 180_000 },
     ]);
   });
 
   it("une promotion explicitement cumulable franchit le scellement", async () => {
-    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await seedRule({
       id: "promo",
       stage: "promotion",
@@ -420,7 +441,7 @@ describe("le scellement par la mercuriale", () => {
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
 
-    expect(line.unitPriceCents).toBe(162);
+    expect(line.unitPriceMillicents).toBe(162_000);
   });
 
   /**
@@ -429,7 +450,7 @@ describe("le scellement par la mercuriale", () => {
    * fois la remise que la mercuriale avait consentie en euros.
    */
   it("un barème de volume ne franchit jamais un tarif négocié", async () => {
-    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await ctx.prisma.volumeLadder.create({
       data: {
         id: "ladder",
@@ -447,7 +468,7 @@ describe("le scellement par la mercuriale", () => {
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(20)).id);
 
-    expect(line.unitPriceCents).toBe(180);
+    expect(line.unitPriceMillicents).toBe(180_000);
   });
 });
 
@@ -487,22 +508,22 @@ describe("POST /orders/quote — la grille et le scellement", () => {
 
     const body = jsonBody<{
       lines: {
-        unitPriceCents: number;
-        volumeTiers: { minQuantity: number; unitPriceCents: number }[] | null;
+        unitPriceMillicents: number;
+        volumeTiers: { minQuantity: number; unitPriceMillicents: number }[] | null;
       }[];
     }>(await quote(1).expect(200));
 
     // À 1 pièce aucun palier n'est atteint : le prix reste le canonique…
-    expect(body.lines[0]?.unitPriceCents).toBe(CANONICAL);
+    expect(body.lines[0]?.unitPriceMillicents).toBe(millicentsFromCents(CANONICAL));
     // …mais la grille dit ce que coûteraient 10 et 50, ce qui est la question.
     expect(body.lines[0]?.volumeTiers).toEqual([
-      { minQuantity: 10, unitPriceCents: 180, discountBp: 1000 },
-      { minQuantity: 50, unitPriceCents: 160, discountBp: 2000 },
+      { minQuantity: 10, unitPriceMillicents: 180_000, discountBp: 1000 },
+      { minQuantity: 50, unitPriceMillicents: 160_000, discountBp: 2000 },
     ]);
   });
 
   it("nomme la mercuriale qui scelle, et la règle qu'elle écarte", async () => {
-    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
 
     const body = jsonBody<{
@@ -595,7 +616,7 @@ describe("l'engagement de volume", () => {
 
     const line = await lineOf(jsonBody<{ id: string }>(await order(100)).id);
 
-    expect(line.unitPriceCents).toBe(CANONICAL);
+    expect(line.unitPriceMillicents).toBe(millicentsFromCents(CANONICAL));
   });
 
   /**
@@ -611,7 +632,7 @@ describe("l'engagement de volume", () => {
     const line = await lineOf(jsonBody<{ id: string }>(await order(100)).id);
 
     // 6 000 promis → palier 500+ → 200 × 0,8 = 160, dès la première pièce.
-    expect(line.unitPriceCents).toBe(160);
+    expect(line.unitPriceMillicents).toBe(160_000);
   });
 
   /**
@@ -626,7 +647,7 @@ describe("l'engagement de volume", () => {
     const line = await lineOf(jsonBody<{ id: string }>(await order(10_000)).id);
 
     // 10 000 livrés > 6 000 promis → palier 10 000+ → 200 × 0,6 = 120.
-    expect(line.unitPriceCents).toBe(120);
+    expect(line.unitPriceMillicents).toBe(120_000);
   });
 
   /**
@@ -658,7 +679,7 @@ describe("l'engagement de volume", () => {
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(300)).id);
 
-    expect(line.unitPriceCents).toBe(CANONICAL);
+    expect(line.unitPriceMillicents).toBe(millicentsFromCents(CANONICAL));
     expect(line.pricingCommitment).toBeNull();
   });
 
@@ -679,9 +700,9 @@ describe("l'engagement de volume", () => {
       data: { archivedAt: new Date(), archivedBy: "e2e" },
     });
 
-    expect((await lineOf(first)).unitPriceCents).toBe(160);
+    expect((await lineOf(first)).unitPriceMillicents).toBe(160_000);
     // …mais la commande SUIVANTE repart sur la quantité du panier.
     const after = await lineOf(jsonBody<{ id: string }>(await order(300)).id);
-    expect(after.unitPriceCents).toBe(CANONICAL);
+    expect(after.unitPriceMillicents).toBe(millicentsFromCents(CANONICAL));
   });
 });

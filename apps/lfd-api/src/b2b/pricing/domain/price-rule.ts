@@ -163,7 +163,7 @@ export type PriceRule = {
    */
   readonly stacksOverMercuriale: boolean;
 } & (
-  | { readonly nature: "replace"; readonly amountCents: number }
+  | { readonly nature: "replace"; readonly amountMillicents: number }
   | { readonly nature: "alter"; readonly alteration: PriceAlteration }
 );
 
@@ -213,7 +213,7 @@ export interface PriceStep {
   readonly ruleId: string;
   readonly label: string;
   /** Le prix **au sortir** de cet étage, arrondi pour l'affichage. */
-  readonly resultCents: number;
+  readonly resultMillicents: number;
 }
 
 /**
@@ -224,7 +224,7 @@ export interface PriceStep {
  * contestée de se relire.
  */
 export interface ResolvedPrice {
-  readonly basePriceCents: number;
+  readonly basePriceMillicents: number;
   readonly steps: readonly PriceStep[];
   /**
    * Le plancher a-t-il **relevé** le prix ?
@@ -262,5 +262,5 @@ export interface ResolvedPrice {
    * appliquerait une décision que l'éviction avait écartée.
    */
   readonly sealedRuleIds: readonly string[];
-  readonly finalCents: number;
+  readonly finalMillicents: number;
 }

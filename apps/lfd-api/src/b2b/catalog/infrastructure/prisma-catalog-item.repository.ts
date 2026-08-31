@@ -15,7 +15,7 @@ interface ItemRow {
   readonly name: string;
   readonly kind: string;
   readonly categoryId: string;
-  readonly priceCents: number;
+  readonly priceMillicents: number;
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;
@@ -23,7 +23,7 @@ interface ItemRow {
   readonly allergens: unknown;
   readonly receivedAt: Date;
   readonly override: {
-    readonly priceCents: number | null;
+    readonly priceMillicents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
@@ -93,7 +93,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
         }
 
         const decision = {
-          priceCents: state.decision.priceCents,
+          priceMillicents: state.decision.priceMillicents,
           isHidden: state.decision.isHidden,
           isFeatured: state.decision.isFeatured,
           decidedBy: state.decision.decidedBy,
@@ -113,7 +113,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       // un prix sans sa trace — au premier oubli, à la première branche
       // d'erreur, au premier chemin de rattrapage.
       const changes = states.flatMap((state) => {
-        const effective = state.decision?.priceCents ?? state.facts.priceCents;
+        const effective = state.decision?.priceMillicents ?? state.facts.priceMillicents;
         // Inchangé ⇒ aucune ligne. Sans cette garde, un push de quatre-vingt-douze
         // articles identiques écrirait quatre-vingt-douze lignes à chaque
         // synchronisation, et l'historique serait illisible en une semaine.
@@ -125,8 +125,8 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
             id: this.ids.next(),
             sku: state.facts.sku,
             productSku: state.facts.productSku,
-            priceCents: effective,
-            source: state.decision?.priceCents === undefined ? "pim" : "b2b",
+            priceMillicents: effective,
+            source: state.decision?.priceMillicents === undefined ? "pim" : "b2b",
             recordedAt,
           },
         ];
@@ -143,9 +143,9 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       where: { sku: { in: [...skus] } },
       orderBy: [{ sku: "asc" }, { recordedAt: "desc" }],
       distinct: ["sku"],
-      select: { sku: true, priceCents: true },
+      select: { sku: true, priceMillicents: true },
     });
-    return new Map(rows.map((row) => [row.sku, row.priceCents]));
+    return new Map(rows.map((row) => [row.sku, row.priceMillicents]));
   }
 
   async removeMany(skus: readonly string[]): Promise<void> {
@@ -166,7 +166,7 @@ function toDomain(row: ItemRow): CatalogItem {
       name: row.name,
       kind: row.kind,
       categoryId: row.categoryId,
-      priceCents: row.priceCents,
+      priceMillicents: row.priceMillicents,
       weightGrams: row.weightGrams,
       isDefault: row.isDefault,
       position: row.position,
@@ -179,7 +179,7 @@ function toDomain(row: ItemRow): CatalogItem {
       row.override === null
         ? null
         : {
-            priceCents: row.override.priceCents,
+            priceMillicents: row.override.priceMillicents,
             isHidden: row.override.isHidden,
             isFeatured: row.override.isFeatured,
             decidedBy: row.override.decidedBy,
@@ -196,7 +196,7 @@ function factsRow(state: CatalogItemState) {
     name: facts.name,
     kind: facts.kind,
     categoryId: facts.categoryId,
-    priceCents: facts.priceCents,
+    priceMillicents: facts.priceMillicents,
     weightGrams: facts.weightGrams,
     isDefault: facts.isDefault,
     position: facts.position,

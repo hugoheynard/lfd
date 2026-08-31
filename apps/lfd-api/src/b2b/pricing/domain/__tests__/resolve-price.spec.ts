@@ -50,7 +50,7 @@ function percentOff(over: Partial<PriceRule> & { bp: number }): PriceRule {
 }
 
 /** Une mercuriale : un prix posé, pas une remise. */
-function mercuriale(amountCents: number, over: Partial<PriceRule> = {}): PriceRule {
+function mercuriale(amountMillicents: number, over: Partial<PriceRule> = {}): PriceRule {
   return {
     id: "merc",
     stage: "mercuriale",
@@ -63,7 +63,7 @@ function mercuriale(amountCents: number, over: Partial<PriceRule> = {}): PriceRu
     label: "Mercuriale Dupont",
     stacksOverMercuriale: false,
     nature: "replace",
-    amountCents,
+    amountMillicents,
     ...over,
   } as PriceRule;
 }
@@ -72,8 +72,8 @@ describe("resolvePrice — sans règle", () => {
   it("rend le prix canonique et une trace vide", () => {
     const result = resolvePrice(240, [], context());
 
-    expect(result.finalCents).toBe(240);
-    expect(result.basePriceCents).toBe(240);
+    expect(result.finalMillicents).toBe(240);
+    expect(result.basePriceMillicents).toBe(240);
     expect(result.steps).toEqual([]);
     expect(result.floored).toBe(false);
   });
@@ -89,7 +89,7 @@ describe("resolvePrice — sans règle", () => {
   it("accepte un article à zéro, et les altérations le laissent à zéro", () => {
     const result = resolvePrice(0, [percentOff({ id: "p", bp: 1000 })], context());
 
-    expect(result.finalCents).toBe(0);
+    expect(result.finalMillicents).toBe(0);
   });
 });
 
@@ -108,7 +108,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
       context(),
     );
 
-    expect(result.finalCents).toBe(720); // 1000 × 0,8 × 0,9 — et non 700
+    expect(result.finalMillicents).toBe(720); // 1000 × 0,8 × 0,9 — et non 700
   });
 
   it("applique les étages dans l'ordre déclaré, pas dans celui des règles", () => {
@@ -127,7 +127,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
     );
 
     // volume (−5 €) d'abord → 500, puis geste (−20 %) → 400.
-    expect(result.finalCents).toBe(400);
+    expect(result.finalMillicents).toBe(400);
     expect(result.steps.map((step) => step.stage)).toEqual(["volume", "geste"]);
   });
 
@@ -159,17 +159,17 @@ describe("resolvePrice — l'arrondi unique", () => {
       context(),
     );
 
-    expect(result.finalCents).toBe(125);
+    expect(result.finalMillicents).toBe(125);
     // La trace affiche l'étage arrondi (251), mais la chaîne a poursuivi
     // avec 250,5 — c'est toute la différence.
-    expect(result.steps[0]?.resultCents).toBe(251);
+    expect(result.steps[0]?.resultMillicents).toBe(251);
   });
 
   it("arrondit la moitié en s'éloignant de zéro, pas au pair", () => {
     // 5 × 0,5 = 2,5 → 3. L'arrondi IEEE rendrait 2.
     const result = resolvePrice(5, [percentOff({ id: "p", bp: 5000 })], context());
 
-    expect(result.finalCents).toBe(3);
+    expect(result.finalMillicents).toBe(3);
   });
 
   /** Sans `bigint`, trois pourcentages sur un article cher perdraient la précision. */
@@ -185,7 +185,7 @@ describe("resolvePrice — l'arrondi unique", () => {
     );
 
     // 100000 × 0,9999³ = 99970,003 → 99970.
-    expect(result.finalCents).toBe(99_970);
+    expect(result.finalMillicents).toBe(99_970);
   });
 });
 
@@ -193,7 +193,7 @@ describe("resolvePrice — replace contre alter", () => {
   it("une mercuriale POSE un prix, elle ne remise pas", () => {
     const result = resolvePrice(240, [mercuriale(210)], context());
 
-    expect(result.finalCents).toBe(210);
+    expect(result.finalMillicents).toBe(210);
   });
 
   /**
@@ -213,8 +213,8 @@ describe("resolvePrice — replace contre alter", () => {
       context({ quantity: 100 }),
     );
 
-    expect(result.finalCents).toBe(210);
-    expect(result.steps.map((step) => step.resultCents)).toEqual([210]);
+    expect(result.finalMillicents).toBe(210);
+    expect(result.steps.map((step) => step.resultMillicents)).toEqual([210]);
     expect(result.sealedByRuleId).toBe("merc");
     // Écartée, mais **nommée** : sans ce champ, un commercial ne saurait pas
     // dire si son palier a expiré ou si le tarif négocié l'a scellé.
@@ -236,7 +236,7 @@ describe("resolvePrice — replace contre alter", () => {
       context(),
     );
 
-    expect(result.finalCents).toBe(200);
+    expect(result.finalMillicents).toBe(200);
     expect(result.sealedRuleIds).toEqual([]);
     // Le scellement reste consigné : il a bien eu lieu, cette règle l'a traversé.
     expect(result.sealedByRuleId).toBe("merc");
@@ -271,7 +271,7 @@ describe("resolvePrice — replace contre alter", () => {
       context(),
     );
 
-    expect(result.finalCents).toBe(210);
+    expect(result.finalMillicents).toBe(210);
     expect(result.sealedRuleIds).toEqual(["article"]);
   });
 
@@ -289,21 +289,21 @@ describe("resolvePrice — le plancher (fork 3)", () => {
   it("relève le prix sous une fraction du canonique, et le CONSIGNE", () => {
     const result = resolvePrice(1000, [percentOff({ id: "p", bp: 9000 })], context(), floorPercent);
 
-    expect(result.finalCents).toBe(500);
+    expect(result.finalMillicents).toBe(500);
     expect(result.floored).toBe(true);
   });
 
   it("relève le prix sous un montant plancher", () => {
     const result = resolvePrice(1000, [percentOff({ id: "p", bp: 9000 })], context(), floorAmount);
 
-    expect(result.finalCents).toBe(150);
+    expect(result.finalMillicents).toBe(150);
     expect(result.floored).toBe(true);
   });
 
   it("ne consigne rien quand le plancher n'a pas servi", () => {
     const result = resolvePrice(1000, [percentOff({ id: "p", bp: 1000 })], context(), floorPercent);
 
-    expect(result.finalCents).toBe(900);
+    expect(result.finalMillicents).toBe(900);
     expect(result.floored).toBe(false);
   });
 
@@ -324,7 +324,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
     );
 
     // 1000 → 500 → 250, sous les 500 du plancher.
-    expect(result.finalCents).toBe(500);
+    expect(result.finalMillicents).toBe(500);
     expect(result.floored).toBe(true);
   });
 
@@ -332,8 +332,8 @@ describe("resolvePrice — le plancher (fork 3)", () => {
     const result = resolvePrice(1000, [percentOff({ id: "p", bp: 9000 })], context(), floorPercent);
 
     expect(result.steps).toHaveLength(1);
-    expect(result.steps[0]?.resultCents).toBe(100);
-    expect(result.finalCents).toBe(500);
+    expect(result.steps[0]?.resultMillicents).toBe(100);
+    expect(result.finalMillicents).toBe(500);
   });
 });
 
@@ -355,7 +355,7 @@ describe("resolvePrice — l'ambiguïté", () => {
       context(),
     );
 
-    expect(result.finalCents).toBe(810);
+    expect(result.finalMillicents).toBe(810);
   });
 });
 
@@ -402,7 +402,7 @@ describe("le plancher naturel du système", () => {
   it("ramène à zéro une baisse en euros plus grande que le prix, et le consigne", () => {
     const resolved = resolvePrice(200, [minus(500)], context);
 
-    expect(resolved.finalCents).toBe(0);
+    expect(resolved.finalMillicents).toBe(0);
     expect(resolved.clampedToZero).toBe(true);
   });
 
@@ -410,14 +410,14 @@ describe("le plancher naturel du système", () => {
   it("ne crie pas quand le prix tombe pile à zéro", () => {
     const resolved = resolvePrice(200, [minus(200)], context);
 
-    expect(resolved.finalCents).toBe(0);
+    expect(resolved.finalMillicents).toBe(0);
     expect(resolved.clampedToZero).toBe(false);
   });
 
   it("laisse tranquille un prix qui reste positif", () => {
     const resolved = resolvePrice(200, [minus(50)], context);
 
-    expect(resolved.finalCents).toBe(150);
+    expect(resolved.finalMillicents).toBe(150);
     expect(resolved.clampedToZero).toBe(false);
   });
 });

@@ -8,7 +8,7 @@ interface ItemRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
-  readonly priceCents: number;
+  readonly priceMillicents: number;
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
@@ -19,7 +19,7 @@ interface ItemRow {
     readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
-    readonly priceCents: number | null;
+    readonly priceMillicents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
   } | null;
@@ -144,13 +144,13 @@ function billableRate(row: ItemRow): number | null {
  * se défend pas devant un client qui le conteste.
  */
 function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
-  const localPrice = row.override?.priceCents ?? null;
+  const localPrice = row.override?.priceMillicents ?? null;
   return {
     sku: row.sku,
     productSku: row.productSku,
     name: row.name,
-    unitPriceCents: localPrice ?? row.priceCents,
-    pimPriceCents: row.priceCents,
+    unitPriceMillicents: localPrice ?? row.priceMillicents,
+    pimPriceMillicents: row.priceMillicents,
     vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,

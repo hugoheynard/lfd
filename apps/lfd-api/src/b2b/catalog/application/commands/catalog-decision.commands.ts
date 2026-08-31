@@ -10,7 +10,7 @@
 export class SetB2bPriceCommand {
   constructor(
     readonly sku: string,
-    readonly priceCents: number,
+    readonly priceMillicents: number,
     readonly decidedBy: string | null,
   ) {}
 }

@@ -94,7 +94,7 @@ const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
     sku: "VIE-001",
     name: "Croissant",
-    unitPriceCents: 200,
+    unitPriceMillicents: 200_000,
     vatRate: 0,
     category: "viennoiserie",
   },
@@ -371,7 +371,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       {
         sku: "VIE-001",
         name: "Croissant offert",
-        unitPriceCents: 0,
+        unitPriceMillicents: 0,
         vatRate: 0,
         category: "viennoiserie",
       },

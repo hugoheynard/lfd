@@ -20,7 +20,7 @@ export interface PricingFloorState {
    * l'appelant ne sait pas le calculer — le signal de dérive se taira, plutôt
    * que d'annoncer un écart nul qu'il n'a pas mesuré.
    */
-  readonly referenceCanonicalCents: number | null;
+  readonly referenceCanonicalMillicents: number | null;
 }
 
 /** 100 % du prix canonique, en points de base. */
@@ -57,7 +57,7 @@ export class PricingFloor {
     scope: PriceScope,
     policy: PriceFloorPolicy,
     createdBy: string,
-    referenceCanonicalCents: number | null = null,
+    referenceCanonicalMillicents: number | null = null,
   ): PricingFloor {
     if ((scope.type === "global") !== (scope.id === null)) {
       throw new ScopeIdMismatchError("portée", scope.type === "global", scope.id);
@@ -89,7 +89,7 @@ export class PricingFloor {
       scope,
       policy,
       createdBy,
-      referenceCanonicalCents,
+      referenceCanonicalMillicents,
     });
   }
 

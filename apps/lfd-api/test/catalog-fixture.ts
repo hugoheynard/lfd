@@ -1,3 +1,4 @@
+import { millicentsFromCents } from "@lfd/money";
 import { CATALOG_SEED } from "./catalog-seed.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
@@ -68,7 +69,10 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
         name: item.name,
         kind: "simple",
         categoryId: category.id,
-        priceCents: item.unitPriceCents,
+        // Le semis se lit en centimes — un prix de catalogue s'écrit comme on
+        // le prononce. La colonne, elle, est en millicentimes : la conversion
+        // se fait ICI, à l'écriture, par une multiplication exacte.
+        priceMillicents: millicentsFromCents(item.unitPriceCents),
         isDefault: true,
         position: index,
         receivedAt,

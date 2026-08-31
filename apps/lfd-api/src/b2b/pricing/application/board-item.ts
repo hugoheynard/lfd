@@ -6,7 +6,7 @@ import type {
 } from "@lfd/contracts";
 
 import { decideFloor } from "../domain/floor-policy.js";
-import { floorCentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
+import { floorMillicentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
@@ -71,7 +71,7 @@ export function boardMaterials(
  * client conteste.
  */
 export function itemView(
-  article: { sku: string; name: string; canonicalCents: number },
+  article: { sku: string; name: string; canonicalMillicents: number },
   context: PricingContext,
   materials: BoardMaterials,
   loaded: { rules: readonly LoadedRule[]; floors: readonly LoadedFloor[] },
@@ -89,19 +89,19 @@ export function itemView(
       : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null })
           .applied;
 
-  const resolved = resolvePrice(article.canonicalCents, materials.rules, context, applied);
+  const resolved = resolvePrice(article.canonicalMillicents, materials.rules, context, applied);
 
   return {
     sku: article.sku,
     name: article.name,
-    canonicalCents: article.canonicalCents,
+    canonicalMillicents: article.canonicalMillicents,
     ownFloor:
       loaded.floors.find((entry) => targetsArticle(entry.floor.scope, article.sku))?.view ?? null,
     // La grille du barème : chaque ligne est une RÉSOLUTION COMPLÈTE à la
     // quantité du palier — un prix « canonique × (1 − remise) » mentirait dès
     // qu'une promotion compose avec le palier, ou qu'un plancher le relève.
     volumeTiers: volumeTierPrices(
-      article.canonicalCents,
+      article.canonicalMillicents,
       ladders,
       materials.rules,
       context,
@@ -117,10 +117,10 @@ export function itemView(
     steps: resolved.steps.map((step) => ({ ...step })),
     floored: resolved.floored,
     clampedToZero: resolved.clampedToZero,
-    finalCents: resolved.finalCents,
+    finalMillicents: resolved.finalMillicents,
     negotiationRoom: negotiationRoom(
-      resolved.finalCents,
-      applied === null ? null : floorCentsFor(applied, article.canonicalCents),
+      resolved.finalMillicents,
+      applied === null ? null : floorMillicentsFor(applied, article.canonicalMillicents),
     ),
     // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
     // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.
@@ -169,16 +169,19 @@ function supersededIn(
  * le plancher relève ensuite) donnerait une marge négative, c'est-à-dire une
  * hausse déguisée en remise dans la colonne où on lit les remises.
  */
-function negotiationRoom(finalCents: number, floorCents: number | null): NegotiationRoom | null {
-  if (floorCents === null) {
+function negotiationRoom(
+  finalMillicents: number,
+  floorMillicents: number | null,
+): NegotiationRoom | null {
+  if (floorMillicents === null) {
     return null;
   }
-  const room = Math.max(0, finalCents - floorCents);
+  const room = Math.max(0, finalMillicents - floorMillicents);
   return {
-    floorCents,
-    maxDiscountCents: room,
+    floorMillicents,
+    maxDiscountMillicents: room,
     // En points de base du prix FINAL : c'est sur ce prix-là que le commercial
     // annonce « je te fais 5 % », pas sur le canonique que le client n'a jamais vu.
-    maxDiscountBp: finalCents <= 0 ? 0 : Math.round((room / finalCents) * 10_000),
+    maxDiscountBp: finalMillicents <= 0 ? 0 : Math.round((room / finalMillicents) * 10_000),
   };
 }

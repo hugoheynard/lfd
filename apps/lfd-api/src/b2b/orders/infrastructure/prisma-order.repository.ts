@@ -70,11 +70,11 @@ export class PrismaOrderRepository extends OrderRepository {
           create: state.lines.map((line) => ({
             sku: line.sku,
             productNameSnapshot: line.productName,
-            unitPriceCents: line.unitPriceCents,
+            unitPriceMillicents: line.unitPriceMillicents,
             vatRate: line.vatRate,
             quantity: line.quantity,
             lineTotalCents: line.lineTotalCents,
-            basePriceCents: line.pricing?.basePriceCents ?? null,
+            basePriceMillicents: line.pricing?.basePriceMillicents ?? null,
             // `Prisma.DbNull` et non `null` : sur une colonne JSON nullable,
             // `null` désigne le *littéral* JSON `null`, pas l'absence de valeur.
             // Les deux se relisent différemment, et c'est précisément la
@@ -160,6 +160,6 @@ function jsonSteps(steps: readonly PriceStepView[]): Prisma.InputJsonValue {
     stage: step.stage,
     ruleId: step.ruleId,
     label: step.label,
-    resultCents: step.resultCents,
+    resultMillicents: step.resultMillicents,
   }));
 }

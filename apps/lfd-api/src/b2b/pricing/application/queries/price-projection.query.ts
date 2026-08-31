@@ -86,7 +86,7 @@ export class PriceProjectionQuery {
    * les niveaux qu'il demande.
    */
   private pointAt(
-    item: { sku: string; unitPriceCents: number },
+    item: { sku: string; unitPriceMillicents: number },
     candidates: Candidates,
     base: PricingContext,
     cumulative: number,
@@ -111,15 +111,15 @@ export class PriceProjectionQuery {
         : decideFloor(scoped.policy, { quantity: cumulative, observedVolumeRatioBp: null }).applied;
 
     const resolved = resolvePrice(
-      item.unitPriceCents,
+      item.unitPriceMillicents,
       [...candidates.rules, ...volumeRules],
       context,
       applied,
     );
     return {
       cumulativeQuantity: cumulative,
-      canonicalCents: item.unitPriceCents,
-      unitPriceCents: resolved.finalCents,
+      canonicalMillicents: item.unitPriceMillicents,
+      unitPriceMillicents: resolved.finalMillicents,
       steps: resolved.steps.map((step) => ({ ...step })),
       floored: resolved.floored,
     };

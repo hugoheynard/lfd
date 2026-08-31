@@ -20,14 +20,14 @@ export interface MeasuredPair {
  * énumérant plutôt qu'en fabriquant un historique.
  */
 export function itemElasticity(
-  fromCents: number,
-  toCents: number,
+  fromMillicents: number,
+  toMillicents: number,
   measurements: { readonly sinceChange: MeasuredPair | null; readonly rolling: MeasuredPair },
 ): ItemElasticityView {
-  const ratioBp = isoRevenueRatioBp(fromCents, toCents);
+  const ratioBp = isoRevenueRatioBp(fromMillicents, toMillicents);
   return {
-    fromCents,
-    toCents,
+    fromMillicents,
+    toMillicents,
     isoRevenueRatioBp: ratioBp,
     sinceChange:
       measurements.sinceChange === null ? null : comparison(measurements.sinceChange, ratioBp),

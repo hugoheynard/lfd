@@ -38,7 +38,7 @@ export class ListCustomerSkusHandler implements IQueryHandler<
       return {
         sku: tally.sku,
         productName: item?.name ?? tally.lastProductName,
-        unitPriceCents: item?.unitPriceCents ?? 0,
+        unitPriceMillicents: item?.unitPriceMillicents ?? 0,
         orderCount: tally.orderCount,
         totalQuantity: tally.totalQuantity,
         totalCents: tally.totalCents,

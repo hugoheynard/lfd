@@ -38,7 +38,7 @@ export interface RuleRow {
   readonly audienceType: string;
   readonly audienceId: string | null;
   readonly minQuantity: number | null;
-  readonly amountCents: number | null;
+  readonly amountMillicents: number | null;
   readonly direction: string | null;
   readonly mode: string | null;
   readonly value: number | null;
@@ -65,7 +65,7 @@ export interface FloorRow {
   readonly dynamicValue: number | null;
   readonly unlockMinQuantity: number | null;
   readonly unlockMinVolumeRatioBp: number | null;
-  readonly referenceCanonicalCents: number | null;
+  readonly referenceCanonicalMillicents: number | null;
   readonly createdBy: string;
   readonly updatedAt: Date;
 }
@@ -94,10 +94,13 @@ export function ruleFromRow(row: RuleRow): PriceRule {
   } as const;
 
   if (row.nature === "replace") {
-    if (row.amountCents === null) {
-      throw new CorruptedPriceRuleError(row.id, "amountCents manquant sur une règle « replace »");
+    if (row.amountMillicents === null) {
+      throw new CorruptedPriceRuleError(
+        row.id,
+        "amountMillicents manquant sur une règle « replace »",
+      );
     }
-    return { ...common, nature: "replace", amountCents: row.amountCents };
+    return { ...common, nature: "replace", amountMillicents: row.amountMillicents };
   }
   if (row.nature === "alter") {
     return { ...common, nature: "alter", alteration: alterationOf(row) };
@@ -134,7 +137,7 @@ export function ruleStateFromRow(row: RuleRow): PricingRuleState {
     minQuantity: rule.minQuantity,
     effect:
       rule.nature === "replace"
-        ? { nature: "replace", amountCents: rule.amountCents }
+        ? { nature: "replace", amountMillicents: rule.amountMillicents }
         : { nature: "alter", alteration: rule.alteration },
     label: rule.label,
     stacksOverMercuriale: rule.stacksOverMercuriale,
@@ -156,7 +159,7 @@ export function ruleViewFromRow(row: RuleRow): PriceRuleView {
     minQuantity: rule.minQuantity,
     effect:
       rule.nature === "replace"
-        ? { nature: "replace", amountCents: rule.amountCents }
+        ? { nature: "replace", amountMillicents: rule.amountMillicents }
         : {
             nature: "alter",
             direction: rule.alteration.direction,
@@ -226,13 +229,13 @@ function dynamicOf(row: FloorRow): DynamicFloor | null {
 }
 
 /**
- * @param currentCanonicalCents le tarif représentatif **d'aujourd'hui** pour la
+ * @param currentCanonicalMillicents le tarif représentatif **d'aujourd'hui** pour la
  *   portée visée, ou `null` si l'appelant ne sait pas le calculer. Passé plutôt
  *   que lu ici : ce fichier convertit des lignes, il n'interroge pas le catalogue.
  */
 export function floorViewFromRow(
   row: FloorRow,
-  currentCanonicalCents: number | null = null,
+  currentCanonicalMillicents: number | null = null,
   now: Date = new Date(),
 ): PriceFloorView {
   const scoped = floorFromRow(row);
@@ -252,8 +255,8 @@ export function floorViewFromRow(
           },
     drift: floorDrift(
       scoped.policy.hard,
-      row.referenceCanonicalCents,
-      currentCanonicalCents,
+      row.referenceCanonicalMillicents,
+      currentCanonicalMillicents,
       row.updatedAt,
       now,
     ),

@@ -82,7 +82,7 @@ function factsOf(snapshot: CatalogSnapshot, receivedAt: Date): PimFacts[] {
       name: variant.name,
       kind: product.kind,
       categoryId: product.categoryId,
-      priceCents: variant.priceCents,
+      priceMillicents: variant.priceMillicents,
       weightGrams: variant.weightGrams,
       isDefault: variant.isDefault,
       position: variant.position,

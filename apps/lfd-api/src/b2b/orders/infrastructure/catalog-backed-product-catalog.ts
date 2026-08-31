@@ -102,7 +102,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     // Le SKU du PRODUIT : c'est l'identifiant que la boutique porte déjà.
     sku: item.productSku,
     name: item.name,
-    unitPriceCents: item.unitPriceCents,
+    unitPriceMillicents: item.unitPriceMillicents,
     vatRate: item.vatRate,
     category: shelf,
   };

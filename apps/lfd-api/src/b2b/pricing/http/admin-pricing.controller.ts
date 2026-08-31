@@ -346,7 +346,7 @@ function toDraft(payload: CreatePriceRulePayload): PricingRuleDraft {
     minQuantity: payload.minQuantity,
     effect:
       payload.effect.nature === "replace"
-        ? { nature: "replace", amountCents: payload.effect.amountCents }
+        ? { nature: "replace", amountMillicents: payload.effect.amountMillicents }
         : {
             nature: "alter",
             alteration:

@@ -1,7 +1,12 @@
 import { InvalidOrderLineError } from "../../errors/order-errors.js";
 import { OrderLine } from "../order-line.js";
 
-const base = { sku: "VIE-001", productName: "Croissant", unitPriceCents: 200, vatRate: 5.5 };
+const base = {
+  sku: "VIE-001",
+  productName: "Croissant",
+  unitPriceMillicents: 200_000,
+  vatRate: 5.5,
+};
 
 describe("OrderLine", () => {
   it("calcule le total de ligne = prix unitaire × quantité", () => {
@@ -17,7 +22,7 @@ describe("OrderLine", () => {
   });
 
   it("refuse un prix unitaire négatif", () => {
-    expect(() => OrderLine.create({ ...base, unitPriceCents: -1, quantity: 1 })).toThrow(
+    expect(() => OrderLine.create({ ...base, unitPriceMillicents: -1, quantity: 1 })).toThrow(
       InvalidOrderLineError,
     );
   });

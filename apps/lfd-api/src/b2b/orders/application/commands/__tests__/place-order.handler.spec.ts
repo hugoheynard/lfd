@@ -101,14 +101,14 @@ const CATALOG: Record<string, CatalogItem> = {
     category: "pain",
     sku: "VIE-001",
     name: "Croissant",
-    unitPriceCents: 200,
+    unitPriceMillicents: 200_000,
     vatRate: 0,
   },
   "VIE-002": {
     category: "pain",
     sku: "VIE-002",
     name: "Pain au chocolat",
-    unitPriceCents: 220,
+    unitPriceMillicents: 220_000,
     vatRate: 0,
   },
 };
@@ -365,14 +365,14 @@ describe("PlaceOrderHandler", () => {
       {
         sku: "VIE-001",
         productName: "Croissant",
-        unitPriceCents: 200,
+        unitPriceMillicents: 200_000,
         vatRate: 0,
         quantity: 3,
         lineTotalCents: 600,
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
         pricing: {
-          basePriceCents: 200,
+          basePriceMillicents: 200_000,
           steps: [],
           floored: false,
           // Aucun plancher posé : il n'y a pas d'étage à commenter.

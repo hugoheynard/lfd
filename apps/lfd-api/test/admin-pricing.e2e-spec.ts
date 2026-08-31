@@ -1,3 +1,4 @@
+import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage tarifaire** — sur un vrai Postgres.
  *
@@ -155,7 +156,7 @@ const priceOf = async (sku: string): Promise<number> => {
   if (sku !== SKU) {
     throw new Error(`Ce test ne connaît que ${SKU}.`);
   }
-  return (await croissant()).finalCents;
+  return (await croissant()).finalMillicents;
 };
 
 describe("poser une règle", () => {
@@ -180,7 +181,7 @@ describe("poser une règle", () => {
   it("accepte une mercuriale qui pose un prix", async () => {
     const response = await postRule({
       stage: "mercuriale",
-      effect: { nature: "replace", amountCents: 210 },
+      effect: { nature: "replace", amountMillicents: 210_000 },
       audience: { type: "company", id: "cmp_absent" },
     });
 
@@ -696,8 +697,8 @@ describe("suspendre, reprendre, archiver", () => {
     const tiers = (await croissant()).volumeTiers;
 
     expect(tiers).toEqual([
-      { minQuantity: 50, unitPriceCents: 190, discountBp: 500 },
-      { minQuantity: 100, unitPriceCents: 180, discountBp: 1_000 },
+      { minQuantity: 50, unitPriceMillicents: 190_000, discountBp: 500 },
+      { minQuantity: 100, unitPriceMillicents: 180_000, discountBp: 1_000 },
     ]);
   });
 
@@ -754,8 +755,8 @@ describe("l'écran de tarification", () => {
   it("montre le prix canonique quand rien n'est posé", async () => {
     const item = await croissant();
 
-    expect(item.canonicalCents).toBe(CANONICAL);
-    expect(item.finalCents).toBe(CANONICAL);
+    expect(item.canonicalMillicents).toBe(millicentsFromCents(CANONICAL));
+    expect(item.finalMillicents).toBe(millicentsFromCents(CANONICAL));
     expect(item.steps).toEqual([]);
   });
 
@@ -768,9 +769,9 @@ describe("l'écran de tarification", () => {
     expect(item.steps[0]).toMatchObject({
       stage: "promotion",
       label: "Promo de rentrée",
-      resultCents: 180,
+      resultMillicents: 180_000,
     });
-    expect(item.finalCents).toBe(180);
+    expect(item.finalMillicents).toBe(180_000);
   });
 
   it("range la règle de famille sur la famille, pas sur l'article", async () => {
@@ -798,7 +799,7 @@ describe("l'écran de tarification", () => {
 
     expect(item.supersededRuleIds).toEqual([familyRule]);
     // 200 − 20 % = 160. Composées, les deux auraient donné 144.
-    expect(item.finalCents).toBe(160);
+    expect(item.finalMillicents).toBe(160_000);
     expect(item.steps).toHaveLength(1);
   });
 
@@ -829,7 +830,7 @@ describe("l'écran de tarification", () => {
     const item = await croissant();
 
     expect(item.floored).toBe(true);
-    expect(item.finalCents).toBe(150);
+    expect(item.finalMillicents).toBe(150_000);
   });
 
   /**
@@ -847,11 +848,11 @@ describe("l'écran de tarification", () => {
   it("n'applique pas une mercuriale visant un client à la vitrine", async () => {
     await postRule({
       stage: "mercuriale",
-      effect: { nature: "replace", amountCents: 150 },
+      effect: { nature: "replace", amountMillicents: 150_000 },
       audience: { type: "company", id: "cmp_dupont" },
     });
 
-    expect((await croissant()).finalCents).toBe(CANONICAL);
+    expect((await croissant()).finalMillicents).toBe(millicentsFromCents(CANONICAL));
   });
 });
 
@@ -914,7 +915,7 @@ describe("le rapport prix / volume", () => {
 
     const item = await croissant();
 
-    expect(item.finalCents).toBe(160);
+    expect(item.finalMillicents).toBe(160_000);
     expect(item.elasticity?.isoRevenueRatioBp).toBe(12_500);
   });
 
@@ -985,10 +986,20 @@ describe("le rapport prix / volume", () => {
 });
 
 describe("la remise commerciale accordable", () => {
+  /**
+   * En mode `amount`, la valeur se dit en **centimes** ici et voyage en
+   * millicentimes : c'est l'unité des prix unitaires. En mode `percent`, c'est
+   * un ratio en points de base — il ne se convertit pas, le multiplier par
+   * mille en ferait un plancher mille fois trop haut.
+   */
   const putFloor = (mode: string, value: number) =>
     staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "product", id: SKU }, mode, value });
+      .send({
+        scope: { type: "product", id: SKU },
+        mode,
+        value: mode === "amount" ? millicentsFromCents(value) : value,
+      });
 
   /**
    * Sans limite posée, il n'y a pas de marge DÉFINIE. Afficher un nombre
@@ -1008,7 +1019,11 @@ describe("la remise commerciale accordable", () => {
     const room = (await croissant()).negotiationRoom;
 
     // 2,00 € final, plancher 1,50 € ⇒ 0,50 € accordables, soit 25 %.
-    expect(room).toEqual({ floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 });
+    expect(room).toEqual({
+      floorMillicents: 150_000,
+      maxDiscountMillicents: 50_000,
+      maxDiscountBp: 2_500,
+    });
   });
 
   it("se calcule sur le prix APRÈS altération, pas sur le canonique", async () => {
@@ -1017,7 +1032,7 @@ describe("la remise commerciale accordable", () => {
 
     const room = (await croissant()).negotiationRoom;
 
-    expect(room?.maxDiscountCents).toBe(30);
+    expect(room?.maxDiscountMillicents).toBe(30_000);
     // 30 / 180 = 16,67 % — sur le prix que le client verra, pas sur 200.
     expect(room?.maxDiscountBp).toBe(1_667);
   });
@@ -1030,7 +1045,7 @@ describe("la remise commerciale accordable", () => {
   it("ramène une limite en fraction du tarif en centimes", async () => {
     await putFloor("percent", 7_500); // 75 % de 200 = 150
 
-    expect((await croissant()).negotiationRoom?.floorCents).toBe(150);
+    expect((await croissant()).negotiationRoom?.floorMillicents).toBe(150_000);
   });
 
   /** Un article déjà relevé au plancher rend zéro : c'est une information. */
@@ -1041,7 +1056,7 @@ describe("la remise commerciale accordable", () => {
     const item = await croissant();
 
     expect(item.floored).toBe(true);
-    expect(item.negotiationRoom?.maxDiscountCents).toBe(0);
+    expect(item.negotiationRoom?.maxDiscountMillicents).toBe(0);
   });
 });
 
@@ -1051,14 +1066,25 @@ describe("le signal de dérive de la limite", () => {
   const putFloor = (mode: string, value: number) =>
     staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "product", id: SKU }, mode, value });
+      .send({
+        scope: { type: "product", id: SKU },
+        mode,
+        // `amount` se dit en centimes ici et voyage en millicentimes ;
+        // `percent` est un ratio en points de base, qui ne se convertit pas.
+        value: mode === "amount" ? millicentsFromCents(value) : value,
+      });
 
-  /** Vieillit la limite ET fausse sa référence, pour simuler une hausse du tarif. */
-  function ageFloor(referenceCanonicalCents: number, daysAgo: number) {
+  /**
+   * Vieillit la limite ET fausse sa référence, pour simuler une hausse du tarif.
+   *
+   * La référence se donne en **centimes** — elle se lit comme un prix — et se
+   * range en millicentimes, l'unité de la colonne.
+   */
+  function ageFloor(referenceCents: number, daysAgo: number) {
     return ctx.prisma.priceFloor.update({
       where: { id: `product:${SKU}` },
       data: {
-        referenceCanonicalCents,
+        referenceCanonicalMillicents: millicentsFromCents(referenceCents),
         updatedAt: new Date(Date.now() - daysAgo * DAY_MS),
       },
     });
@@ -1070,7 +1096,9 @@ describe("le signal de dérive de la limite", () => {
     await putFloor("amount", 150);
 
     // VIE-001 vaut 200 c : la limite ne vise que lui, donc c'est sa référence.
-    expect((await floorOf())?.drift?.referenceCanonicalCents).toBe(CANONICAL);
+    expect((await floorOf())?.drift?.referenceCanonicalMillicents).toBe(
+      millicentsFromCents(CANONICAL),
+    );
   });
 
   it("ne signale rien quand le tarif n'a pas bougé", async () => {
@@ -1128,7 +1156,9 @@ describe("le signal de dérive de la limite", () => {
 
     expect(response.status).toBe(204);
     const floor = await floorOf();
-    expect(floor?.value).toBe(150);
+    // La limite est en mode `amount` : sa valeur est un prix, donc des
+    // millicentimes. En mode `percent` ce serait un ratio en points de base.
+    expect(floor?.value).toBe(millicentsFromCents(150));
     expect(floor?.drift?.stale).toBe(false);
     expect(floor?.drift?.ageDays).toBe(0);
   });
@@ -1182,19 +1212,19 @@ describe("l’écran daté et la comparaison", () => {
       }),
     );
     const before = await priceOf(SKU);
-    expect(before).toBe(CANONICAL / 2);
+    expect(before).toBe(millicentsFromCents(CANONICAL / 2));
 
     await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "fin" });
 
     // Au présent : la règle a disparu, le prix remonte.
-    expect(await priceOf(SKU)).toBe(CANONICAL);
+    expect(await priceOf(SKU)).toBe(millicentsFromCents(CANONICAL));
 
     // Hier : elle agissait, et le prix le dit.
     const past = jsonBody<PricingBoardView>(await at("2026-08-01T00:00:00.000Z"));
     const item = past.categories
       .flatMap((category) => category.items)
       .find((candidate) => candidate.sku === SKU);
-    expect(item?.finalCents).toBe(CANONICAL / 2);
+    expect(item?.finalMillicents).toBe(millicentsFromCents(CANONICAL / 2));
   });
 
   it("refuse deux marqueurs dans le désordre", async () => {
@@ -1226,8 +1256,8 @@ describe("l’écran daté et la comparaison", () => {
 
     expect(comparison.days).toBe(10);
     expect(comparison.previousFrom).toBe("2026-07-31T00:00:00.000Z");
-    expect(item?.fromCents).toBe(CANONICAL);
-    expect(item?.toCents).toBe(CANONICAL / 2);
+    expect(item?.fromMillicents).toBe(millicentsFromCents(CANONICAL));
+    expect(item?.toMillicents).toBe(millicentsFromCents(CANONICAL / 2));
     expect(item?.priceVariationBp).toBe(-5_000);
     expect(comparison.changedCount).toBeGreaterThan(0);
   });
@@ -1262,8 +1292,14 @@ describe("l’écran daté et la comparaison", () => {
 
     // 200 c, −10 % dès 50 et −20 % dès 100 : chaque palier est une RÉSOLUTION,
     // pas un canonique × (1 − remise).
-    expect(item?.fromTiers?.map((tier) => tier.unitPriceCents)).toEqual([180, 160]);
-    expect(item?.toTiers?.map((tier) => tier.unitPriceCents)).toEqual([180, 160]);
+    expect(item?.fromTiers?.map((tier) => tier.unitPriceMillicents)).toEqual([
+      millicentsFromCents(180),
+      millicentsFromCents(160),
+    ]);
+    expect(item?.toTiers?.map((tier) => tier.unitPriceMillicents)).toEqual([
+      millicentsFromCents(180),
+      millicentsFromCents(160),
+    ]);
   });
 
   /** Aucun barème ce jour-là : `null`, et non un tableau vide qui se lirait « zéro palier ». */
@@ -1411,7 +1447,7 @@ describe("renommer une règle", () => {
     const { id } = jsonBody<{ id: string }>(
       await postRule({ label: "Promo de rentre" }).expect(201),
     );
-    const before = (await croissant()).finalCents;
+    const before = (await croissant()).finalMillicents;
 
     await staff()
       .patch(`/admin/pricing/rules/${id}/label`)
@@ -1420,7 +1456,7 @@ describe("renommer une règle", () => {
 
     const rule = (await board()).globalRules.find((candidate) => candidate.id === id);
     expect(rule?.label).toBe("Promo de rentrée");
-    expect((await croissant()).finalCents).toBe(before);
+    expect((await croissant()).finalMillicents).toBe(before);
   });
 
   /** L'acte dit `renamed` et non `replaced` : aucun prix n'a bougé. */
@@ -1481,10 +1517,12 @@ describe("POST /admin/pricing/projection", () => {
     await seedLadder();
 
     const body = jsonBody<{
-      points: { cumulativeQuantity: number; unitPriceCents: number }[];
+      points: { cumulativeQuantity: number; unitPriceMillicents: number }[];
     }>(await project([100, 500, 1000]).expect(200));
 
-    expect(body.points.map((point) => point.unitPriceCents)).toEqual([200, 160, 160]);
+    expect(body.points.map((point) => point.unitPriceMillicents)).toEqual(
+      [200, 160, 160].map(millicentsFromCents),
+    );
     // Une projection n'est pas une commande : rien n'a été écrit.
     expect(await ctx.prisma.order.count()).toBe(0);
   });
@@ -1507,9 +1545,9 @@ describe("POST /admin/pricing/projection", () => {
   it("rend le MÊME prix que la commande réelle au même niveau", async () => {
     await seedLadder();
 
-    const projected = jsonBody<{ points: { unitPriceCents: number }[] }>(
+    const projected = jsonBody<{ points: { unitPriceMillicents: number }[] }>(
       await project([600]).expect(200),
-    ).points[0]?.unitPriceCents;
+    ).points[0]?.unitPriceMillicents;
 
     const placed = await ctx
       .asSub("auth0|solo")
@@ -1525,7 +1563,7 @@ describe("POST /admin/pricing/projection", () => {
       where: { orderId: jsonBody<{ id: string }>(placed).id },
     });
 
-    expect(projected).toBe(line.unitPriceCents);
+    expect(projected).toBe(line.unitPriceMillicents);
   });
 
   it("refuse plus de vingt-quatre niveaux plutôt que de tronquer en silence", async () => {
@@ -1567,7 +1605,9 @@ describe("les gabarits tarifaires", () => {
 
   it("un prix fixe est la grille à UN palier, et pose UNE règle", async () => {
     const { id } = jsonBody<{ id: string }>(
-      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+      await compose([
+        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }] },
+      ]).expect(201),
     );
     const company = await createCompany(ctx.prisma);
 
@@ -1582,8 +1622,8 @@ describe("les gabarits tarifaires", () => {
         {
           sku: SKU,
           tiers: [
-            { minQuantity: 1, unitPriceCents: 170 },
-            { minQuantity: 10_000, unitPriceCents: 150 },
+            { minQuantity: 1, unitPriceMillicents: 170_000 },
+            { minQuantity: 10_000, unitPriceMillicents: 150_000 },
           ],
         },
       ]).expect(201),
@@ -1596,11 +1636,11 @@ describe("les gabarits tarifaires", () => {
     const posed = await ctx.prisma.priceRule.findMany({
       where: { audienceId: company.id },
       orderBy: { minQuantity: "asc" },
-      select: { stage: true, nature: true, minQuantity: true, amountCents: true },
+      select: { stage: true, nature: true, minQuantity: true, amountMillicents: true },
     });
     expect(posed).toEqual([
-      { stage: "mercuriale", nature: "replace", minQuantity: 1, amountCents: 170 },
-      { stage: "mercuriale", nature: "replace", minQuantity: 10_000, amountCents: 150 },
+      { stage: "mercuriale", nature: "replace", minQuantity: 1, amountMillicents: 170_000 },
+      { stage: "mercuriale", nature: "replace", minQuantity: 10_000, amountMillicents: 150_000 },
     ]);
   });
 
@@ -1616,9 +1656,9 @@ describe("les gabarits tarifaires", () => {
       const entries = jsonBody<
         {
           sku: string;
-          medianCents: number;
-          lowCents: number;
-          highCents: number;
+          medianMillicents: number;
+          lowMillicents: number;
+          highMillicents: number;
           companyCount: number;
         }[]
       >(await staff().get("/admin/pricing/templates/benchmark").expect(200));
@@ -1627,7 +1667,9 @@ describe("les gabarits tarifaires", () => {
 
     it("situe un prix entre les bornes, sur les mercuriales en place", async () => {
       const { id } = jsonBody<{ id: string }>(
-        await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 140 }] }]).expect(201),
+        await compose([
+          { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 140_000 }] },
+        ]).expect(201),
       );
       for (let index = 0; index < 3; index += 1) {
         const company = await createCompany(ctx.prisma);
@@ -1638,13 +1680,15 @@ describe("les gabarits tarifaires", () => {
 
       expect(market).not.toBeNull();
       expect(market?.companyCount ?? 0).toBeGreaterThanOrEqual(3);
-      expect(market?.lowCents ?? 0).toBeLessThanOrEqual(market?.medianCents ?? 0);
-      expect(market?.highCents ?? 0).toBeGreaterThanOrEqual(market?.medianCents ?? 0);
+      expect(market?.lowMillicents ?? 0).toBeLessThanOrEqual(market?.medianMillicents ?? 0);
+      expect(market?.highMillicents ?? 0).toBeGreaterThanOrEqual(market?.medianMillicents ?? 0);
     });
 
     it("une mercuriale archivée sort du marché", async () => {
       const { id } = jsonBody<{ id: string }>(
-        await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 133 }] }]).expect(201),
+        await compose([
+          { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 133_000 }] },
+        ]).expect(201),
       );
       const company = await createCompany(ctx.prisma);
       await apply(id, company.id).expect(201);
@@ -1671,7 +1715,11 @@ describe("les gabarits tarifaires", () => {
   it("garde le volume prévu avec la grille, sans qu'il pose la moindre règle", async () => {
     const { id } = jsonBody<{ id: string }>(
       await compose([
-        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }], plannedVolume: 10_000 },
+        {
+          sku: SKU,
+          tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }],
+          plannedVolume: 10_000,
+        },
       ]).expect(201),
     );
     const company = await createCompany(ctx.prisma);
@@ -1688,7 +1736,9 @@ describe("les gabarits tarifaires", () => {
   /** Les gabarits écrits avant ce champ se relisent : les lignes sont en JSON. */
   it("rend null sur une grille composée sans volume prévu", async () => {
     const { id } = jsonBody<{ id: string }>(
-      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+      await compose([
+        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }] },
+      ]).expect(201),
     );
 
     const view = jsonBody<{ lines: { plannedVolume: number | null }[] }>(
@@ -1701,14 +1751,16 @@ describe("les gabarits tarifaires", () => {
   /** L'écart au catalogue est ce que le commercial regarde : il est LU, pas figé. */
   it("rend le tarif catalogue en regard de chaque ligne", async () => {
     const { id } = jsonBody<{ id: string }>(
-      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+      await compose([
+        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }] },
+      ]).expect(201),
     );
 
-    const view = jsonBody<{ lines: { catalogPriceCents: number | null }[] }>(
+    const view = jsonBody<{ lines: { catalogPriceMillicents: number | null }[] }>(
       await staff().get(`/admin/pricing/templates/${id}`).expect(200),
     );
 
-    expect(view.lines[0]?.catalogPriceCents).toBe(CANONICAL);
+    expect(view.lines[0]?.catalogPriceMillicents).toBe(millicentsFromCents(CANONICAL));
   });
 
   /**
@@ -1721,8 +1773,8 @@ describe("les gabarits tarifaires", () => {
       {
         sku: SKU,
         tiers: [
-          { minQuantity: 1, unitPriceCents: 150 },
-          { minQuantity: 10_000, unitPriceCents: 170 },
+          { minQuantity: 1, unitPriceMillicents: 150_000 },
+          { minQuantity: 10_000, unitPriceMillicents: 170_000 },
         ],
       },
     ]).expect(400);

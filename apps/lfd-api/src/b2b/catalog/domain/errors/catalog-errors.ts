@@ -10,10 +10,10 @@ import { BusinessError, DomainError } from "../../../../platform/shared/errors/a
  * perte ni gratuitement » appartient à l'article, pas à la route HTTP.
  */
 export class InvalidB2bPriceError extends DomainError {
-  constructor(readonly priceCents: number) {
+  constructor(readonly priceMillicents: number) {
     super(
       "catalog.price.invalid",
-      `Un prix de vente doit être strictement positif (reçu : ${String(priceCents)} centimes).`,
+      `Un prix de vente doit être strictement positif (reçu : ${String(priceMillicents)} centimes).`,
     );
   }
 }
@@ -31,7 +31,7 @@ export class InvalidB2bPriceError extends DomainError {
  * Le geste correct est l'inverse : `alignerSurLePim()`, qui retire la décision.
  */
 export class RedundantB2bPriceError extends BusinessError {
-  constructor(readonly priceCents: number) {
+  constructor(readonly priceMillicents: number) {
     super(
       "catalog.price.redundant",
       "Ce prix est déjà celui du PIM : retirez la décision plutôt que de la recopier.",

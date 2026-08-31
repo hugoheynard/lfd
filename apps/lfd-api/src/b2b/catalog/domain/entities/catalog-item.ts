@@ -32,7 +32,7 @@ export interface PimFacts {
   readonly name: string;
   readonly kind: string;
   readonly categoryId: string;
-  readonly priceCents: number;
+  readonly priceMillicents: number;
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;
@@ -56,7 +56,7 @@ export interface PimFacts {
 
 /** La décision de la plateforme. `null` partout = aucune décision prise. */
 export interface LocalDecision {
-  readonly priceCents: number | null;
+  readonly priceMillicents: number | null;
   readonly isHidden: boolean;
   readonly isFeatured: boolean;
   readonly decidedBy: string | null;
@@ -64,7 +64,7 @@ export interface LocalDecision {
 
 /** Aucune décision : l'état d'un article que personne n'a encore touché. */
 const NO_DECISION: LocalDecision = {
-  priceCents: null,
+  priceMillicents: null,
   isHidden: false,
   isFeatured: false,
   decidedBy: null,
@@ -111,12 +111,12 @@ export class CatalogItem {
    * celui du PIM. La règle vit ici, une seule fois — la laisser fuir donnerait
    * autant de réponses qu'il y a d'écrans.
    */
-  get effectivePriceCents(): number {
-    return this.decision.priceCents ?? this.facts.priceCents;
+  get effectivePriceMillicents(): number {
+    return this.decision.priceMillicents ?? this.facts.priceMillicents;
   }
 
-  get pimPriceCents(): number {
-    return this.facts.priceCents;
+  get pimPriceMillicents(): number {
+    return this.facts.priceMillicents;
   }
 
   get isHidden(): boolean {
@@ -145,14 +145,14 @@ export class CatalogItem {
    * @throws {RedundantB2bPriceError} prix identique à celui du PIM — le geste
    *   voulu est alors {@link alignOnPim}.
    */
-  setB2bPrice(priceCents: number, decidedBy: string | null): void {
-    if (!Number.isInteger(priceCents) || priceCents <= 0) {
-      throw new InvalidB2bPriceError(priceCents);
+  setB2bPrice(priceMillicents: number, decidedBy: string | null): void {
+    if (!Number.isInteger(priceMillicents) || priceMillicents <= 0) {
+      throw new InvalidB2bPriceError(priceMillicents);
     }
-    if (priceCents === this.facts.priceCents) {
-      throw new RedundantB2bPriceError(priceCents);
+    if (priceMillicents === this.facts.priceMillicents) {
+      throw new RedundantB2bPriceError(priceMillicents);
     }
-    this.decision = { ...this.decision, priceCents, decidedBy };
+    this.decision = { ...this.decision, priceMillicents, decidedBy };
   }
 
   /**
@@ -161,7 +161,7 @@ export class CatalogItem {
    * revenir en arrière — d'où un nom qui dit le résultat, pas la suppression.
    */
   alignOnPim(): void {
-    this.decision = { ...this.decision, priceCents: null };
+    this.decision = { ...this.decision, priceMillicents: null };
   }
 
   /**
@@ -209,7 +209,9 @@ export class CatalogItem {
    */
   toPersistence(): CatalogItemState {
     const untouched =
-      this.decision.priceCents === null && !this.decision.isHidden && !this.decision.isFeatured;
+      this.decision.priceMillicents === null &&
+      !this.decision.isHidden &&
+      !this.decision.isFeatured;
     return { facts: this.facts, decision: untouched ? null : this.decision };
   }
 }

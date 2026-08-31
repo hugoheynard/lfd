@@ -71,10 +71,10 @@ export class InvalidAlterationError extends DomainError {
  * client déguisée en ligne de commande.
  */
 export class InvalidCanonicalPriceError extends DomainError {
-  constructor(readonly priceCents: number) {
+  constructor(readonly priceMillicents: number) {
     super(
       "pricing.canonical.invalid",
-      `Le prix canonique doit être un entier positif ou nul (reçu : ${String(priceCents)} centimes).`,
+      `Le prix canonique doit être un entier positif ou nul (reçu : ${String(priceMillicents)} centimes).`,
     );
   }
 }

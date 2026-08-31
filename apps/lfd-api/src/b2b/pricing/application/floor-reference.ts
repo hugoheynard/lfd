@@ -1,11 +1,11 @@
-import { medianCents } from "../domain/floor-drift.js";
+import { medianMillicents } from "../domain/floor-drift.js";
 import type { PriceScope } from "../domain/price-rule.js";
 
 /** Ce que la référence a besoin de savoir d'un article : son rayon et son prix. */
 export interface ReferenceArticle {
   readonly sku: string;
   readonly category: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
 }
 
 /**
@@ -24,7 +24,7 @@ export function referenceCanonicalFor(
   scope: PriceScope,
   articles: readonly ReferenceArticle[],
 ): number | null {
-  return medianCents(targeted(scope, articles).map((article) => article.unitPriceCents));
+  return medianMillicents(targeted(scope, articles).map((article) => article.unitPriceMillicents));
 }
 
 /**

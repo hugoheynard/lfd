@@ -7,11 +7,11 @@ import { compareToReference, type MirrorEntry, type ReferenceEntry } from "../ca
  */
 
 function reference(over: Partial<ReferenceEntry> = {}): ReferenceEntry {
-  return { sku: "VIE-001-1", name: "Croissant", priceCents: 200, vatRate: 5.5, ...over };
+  return { sku: "VIE-001-1", name: "Croissant", priceMillicents: 200, vatRate: 5.5, ...over };
 }
 
 function mirror(over: Partial<MirrorEntry> = {}): MirrorEntry {
-  return { sku: "VIE-001-1", name: "Croissant", pimPriceCents: 200, vatRate: 5.5, ...over };
+  return { sku: "VIE-001-1", name: "Croissant", pimPriceMillicents: 200, vatRate: 5.5, ...over };
 }
 
 describe("compareToReference", () => {
@@ -42,7 +42,7 @@ describe("compareToReference", () => {
   });
 
   it("donne les DEUX versions d'un écart de prix, pas juste son existence", () => {
-    const report = compareToReference([reference({ priceCents: 220 })], [mirror()]);
+    const report = compareToReference([reference({ priceMillicents: 220 })], [mirror()]);
 
     expect(report.priceGaps).toEqual([{ sku: "VIE-001-1", reference: 220, mirror: 200 }]);
   });
@@ -65,8 +65,8 @@ describe("compareToReference", () => {
     // Le miroir a reçu 200 du référentiel ; la plateforme facture 180.
     // Seul le premier nombre entre dans la comparaison.
     const report = compareToReference(
-      [reference({ priceCents: 200 })],
-      [mirror({ pimPriceCents: 200 })],
+      [reference({ priceMillicents: 200 })],
+      [mirror({ pimPriceMillicents: 200 })],
     );
 
     expect(report.inSync).toBe(true);

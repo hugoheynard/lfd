@@ -12,7 +12,7 @@ const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
     sku: "VIE-001",
     name: "Croissant",
-    unitPriceCents: 220,
+    unitPriceMillicents: 220_000,
     vatRate: 5.5,
     category: "viennoiserie",
   },
@@ -52,7 +52,7 @@ describe("ListCustomerSkusHandler", () => {
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
 
     expect(stat?.productName).toBe("Croissant");
-    expect(stat?.unitPriceCents).toBe(220);
+    expect(stat?.unitPriceMillicents).toBe(220_000);
     expect(stat?.stillAvailable).toBe(true);
   });
 
@@ -83,7 +83,7 @@ describe("ListCustomerSkusHandler", () => {
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
 
-    expect(stat?.unitPriceCents).toBe(0);
+    expect(stat?.unitPriceMillicents).toBe(0);
   });
 
   it("respecte l'ordre du port — c'est lui qui sait ce qui est habituel", async () => {

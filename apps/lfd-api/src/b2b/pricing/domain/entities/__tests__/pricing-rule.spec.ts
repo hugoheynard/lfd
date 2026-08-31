@@ -54,7 +54,7 @@ describe("PricingRule.create", () => {
     expect(() =>
       create({
         stage: "mercuriale",
-        effect: { nature: "replace", amountCents: 210 },
+        effect: { nature: "replace", amountMillicents: 210_000 },
         stacksOverMercuriale: true,
       }),
     ).toThrow(MercurialeCannotStackOverItselfError);
@@ -69,10 +69,10 @@ describe("PricingRule.create", () => {
   it("accepte une mercuriale qui pose un prix en euros", () => {
     const rule = create({
       stage: "mercuriale",
-      effect: { nature: "replace", amountCents: 210 },
+      effect: { nature: "replace", amountMillicents: 210_000 },
     });
 
-    expect(rule.asPriceRule).toMatchObject({ nature: "replace", amountCents: 210 });
+    expect(rule.asPriceRule).toMatchObject({ nature: "replace", amountMillicents: 210_000 });
   });
 
   /**
@@ -83,13 +83,13 @@ describe("PricingRule.create", () => {
    */
   it("laisse les AUTRES étages poser un prix ferme", () => {
     expect(() =>
-      create({ stage: "promotion", effect: { nature: "replace", amountCents: 180 } }),
+      create({ stage: "promotion", effect: { nature: "replace", amountMillicents: 180_000 } }),
     ).not.toThrow();
   });
 
   it("accepte un article offert : zéro est un prix", () => {
     expect(() =>
-      create({ stage: "geste", effect: { nature: "replace", amountCents: 0 } }),
+      create({ stage: "geste", effect: { nature: "replace", amountMillicents: 0 } }),
     ).not.toThrow();
   });
 

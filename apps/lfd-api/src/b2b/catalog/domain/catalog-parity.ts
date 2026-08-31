@@ -36,7 +36,7 @@ export interface ReferenceEntry {
   readonly sku: string;
   readonly name: string;
   /** Prix canonique HT, en centimes. Celui du référentiel, avant toute décision. */
-  readonly priceCents: number;
+  readonly priceMillicents: number;
   /**
    * Le taux de TVA que le référentiel publierait pour cet article.
    *
@@ -53,7 +53,7 @@ export interface MirrorEntry {
   readonly sku: string;
   readonly name: string;
   /** Le prix **reçu** du référentiel, pas celui qui sera facturé. */
-  readonly pimPriceCents: number;
+  readonly pimPriceMillicents: number;
   /** Le taux que la boutique appliquerait aujourd'hui. */
   readonly vatRate: number | null;
 }
@@ -86,8 +86,12 @@ export function compareToReference(
     }
     seen.add(entry.sku);
 
-    if (match.pimPriceCents !== entry.priceCents) {
-      priceGaps.push({ sku: entry.sku, reference: entry.priceCents, mirror: match.pimPriceCents });
+    if (match.pimPriceMillicents !== entry.priceMillicents) {
+      priceGaps.push({
+        sku: entry.sku,
+        reference: entry.priceMillicents,
+        mirror: match.pimPriceMillicents,
+      });
     }
     if (match.vatRate !== entry.vatRate) {
       vatGaps.push({ sku: entry.sku, reference: entry.vatRate, mirror: match.vatRate });

@@ -103,7 +103,7 @@ export class BoardElasticityService {
 
 /** Un article dont le prix a bougé — les seuls à mesurer. */
 function hasAlteration(item: PricingItemView): boolean {
-  return item.finalCents !== item.canonicalCents;
+  return item.finalMillicents !== item.canonicalMillicents;
 }
 
 /**
@@ -145,7 +145,7 @@ function withElasticity(
       const measured = change === null ? undefined : sinceChange.get(change.toISOString());
       return {
         ...item,
-        elasticity: itemElasticity(item.canonicalCents, item.finalCents, {
+        elasticity: itemElasticity(item.canonicalMillicents, item.finalMillicents, {
           sinceChange: measured === undefined ? null : pairFor(item.sku, measured),
           rolling: pairFor(item.sku, rolling),
         }),

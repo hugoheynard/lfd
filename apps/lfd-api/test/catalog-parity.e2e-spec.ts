@@ -26,7 +26,7 @@ class StubFeed extends B2bCatalogFeedPreview {
   products: {
     sku: string;
     name: string;
-    priceCents: number;
+    priceMillicents: number;
     vatRatePercent: number | null;
   }[] = [];
 
@@ -48,7 +48,7 @@ class StubFeed extends B2bCatalogFeedPreview {
             {
               sku: variant.sku,
               name: variant.name,
-              priceCents: variant.priceCents,
+              priceMillicents: variant.priceMillicents,
               weightGrams: null,
               isDefault: true,
               position: 0,
@@ -92,7 +92,7 @@ async function mirrorOf(skus: readonly string[]) {
   return items.map((item) => ({
     sku: item.sku,
     name: item.name,
-    priceCents: item.priceCents,
+    priceMillicents: item.priceMillicents,
     // Le taux tel que la boutique le facturerait — celui de l'article, ou
     // celui de sa famille tant que le repli de transition tient.
     vatRatePercent:
@@ -119,14 +119,14 @@ describe("le miroir face à sa source", () => {
     if (seeded === undefined) {
       throw new Error("le harnais doit semer VIE-001-1");
     }
-    feed.products = [{ ...seeded, priceCents: seeded.priceCents + 25 }];
+    feed.products = [{ ...seeded, priceMillicents: seeded.priceMillicents + 25 }];
 
     const report = await ctx.app.get(CheckCatalogParityService).check();
 
     expect(report.priceGaps).toContainEqual({
       sku: "VIE-001-1",
-      reference: seeded.priceCents + 25,
-      mirror: seeded.priceCents,
+      reference: seeded.priceMillicents + 25,
+      mirror: seeded.priceMillicents,
     });
     expect(report.inSync).toBe(false);
   });

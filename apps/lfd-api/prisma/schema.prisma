@@ -820,7 +820,10 @@ model OrderLine {
   // Snapshots au moment de la commande : le prix/nom/TVA du PIM peut changer,
   // la commande garde ce qu'elle a facturé.
   productNameSnapshot String  @map("product_name_snapshot")
-  unitPriceCents      Int     @map("unit_price_cents")
+  /// Prix unitaire HT en **millicentimes** (10⁻⁵ €) — le seul nombre de la
+  /// ligne qu'une quantité multiplie, donc le seul qui ait besoin de
+  /// décimales. `line_total_cents` en découle par un arrondi UNIQUE.
+  unitPriceMillicents Int     @map("unit_price_millicents")
   vatRate             Decimal @default(0) @map("vat_rate") @db.Decimal(5, 2) // %, ex. 5.50
 
   quantity       Int
@@ -838,7 +841,7 @@ model OrderLine {
   /// `NULL` avoue « on ne sait pas ». Un défaut à `[]` aurait transformé une
   /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
   /// vérifier.
-  basePriceCents Int?     @map("base_price_cents")
+  basePriceMillicents Int?    @map("base_price_millicents")
   pricingSteps   Json?    @map("pricing_steps")
   /// Quel étage de plancher a mordu, et sur quelles preuves — figé avec le prix.
   /// C'est ce qui rend le plancher DYNAMIQUE tenable : sans la mesure consignée,
@@ -1850,7 +1853,7 @@ model CatalogPriceHistory {
   productSku String @map("product_sku")
 
   /// Prix HT en centimes réellement applicable à cet instant.
-  priceCents Int    @map("price_cents")
+  priceMillicents Int @map("price_millicents")
   /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
   source     String
 
@@ -1908,8 +1911,8 @@ model CatalogItem {
 
   /// Prix canonique HT en centimes, tel que le PIM le tarife. **Pré-altération** :
   /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
-  priceCents  Int     @map("price_cents")
-  weightGrams Int?    @map("weight_grams")
+  priceMillicents Int @map("price_millicents")
+  weightGrams     Int? @map("weight_grams")
   isDefault   Boolean @default(false) @map("is_default")
   position    Int     @default(0)
 
@@ -1972,7 +1975,7 @@ model CatalogItemOverride {
   /// Prix de liste **du canal B2B**, HT en centimes. `NULL` = on garde celui du
   /// PIM. C'est l'ENTRÉE du pipeline de résolution de prix, pas un de ses étages :
   /// mercuriale, dégressif et promotions viendront par-dessus.
-  priceCents Int? @map("price_cents")
+  priceMillicents Int? @map("price_millicents")
 
   /// Retiré du catalogue B2B sans être retiré du PIM.
   isHidden   Boolean @default(false) @map("is_hidden")
@@ -2027,7 +2030,7 @@ model PriceRule {
   minQuantity Int? @map("min_quantity")
 
   /// `nature = 'replace'` : le prix posé, HT en centimes.
-  amountCents Int? @map("amount_cents")
+  amountMillicents Int? @map("amount_millicents")
 
   /// `nature = 'alter'` : sens, unité, grandeur. La grandeur est **toujours
   /// positive** — le sens vit dans `direction`.
@@ -2143,7 +2146,7 @@ model PriceFloor {
   /// `NULL` = limite posée avant que cette référence n'existe. L'écran se tait
   /// alors plutôt que d'annoncer « 0 % d'écart », qui ferait passer une absence
   /// de mesure pour une confirmation.
-  referenceCanonicalCents Int? @map("reference_canonical_cents")
+  referenceCanonicalMillicents Int? @map("reference_canonical_millicents")
 
   /// Qui a posé cette limite. Même raison que sur une règle : la question posée
   /// six mois plus tard est toujours « qui a autorisé de descendre si bas ».

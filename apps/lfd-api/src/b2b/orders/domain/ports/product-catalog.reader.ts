@@ -4,7 +4,7 @@ import type { CatalogCategory } from "@lfd/contracts";
 export interface PricedSku {
   readonly sku: string;
   readonly name: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
 }
 
 /** Un article du catalogue, tel que le checkout en a besoin. Prix unitaire **HT**. */

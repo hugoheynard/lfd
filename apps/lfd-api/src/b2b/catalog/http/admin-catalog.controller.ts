@@ -30,7 +30,7 @@ import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
  * dirait plus ce qui a été fait, et le serveur devrait deviner l'intention
  * depuis les champs présents.
  *
- * Retirer un prix B2B est un `DELETE` et pas un `PUT { priceCents: null }` : on
+ * Retirer un prix B2B est un `DELETE` et pas un `PUT { priceMillicents: null }` : on
  * **supprime une décision**, on n'en pose pas une qui vaudrait « rien ».
  *
  * Surface staff murée par `@AdminSurface("catalog")` : le paramétrage du
@@ -59,7 +59,7 @@ export class AdminCatalogController {
     @StaffSub() staffSub: string,
   ): Promise<void> {
     await this.commands.execute<SetB2bPriceCommand, void>(
-      new SetB2bPriceCommand(sku, payload.priceCents, staffSub),
+      new SetB2bPriceCommand(sku, payload.priceMillicents, staffSub),
     );
   }
 

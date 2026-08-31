@@ -49,7 +49,7 @@ const CATEGORY = {
 function snapshot(
   skus: readonly {
     sku: string;
-    priceCents: number;
+    priceMillicents: number;
     vatRatePercent?: number | null;
     allergens?: readonly string[] | null;
   }[],
@@ -58,7 +58,7 @@ function snapshot(
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [CATEGORY],
-    products: skus.map(({ sku, priceCents, vatRatePercent = 5.5, allergens = ["AW"] }) => ({
+    products: skus.map(({ sku, priceMillicents, vatRatePercent = 5.5, allergens = ["AW"] }) => ({
       id: `prd_${sku}`,
       sku,
       name: `Produit ${sku}`,
@@ -68,7 +68,7 @@ function snapshot(
         {
           sku: `${sku}-1`,
           name: `Produit ${sku}`,
-          priceCents,
+          priceMillicents,
           weightGrams: null,
           isDefault: true,
           position: 0,
@@ -86,7 +86,7 @@ function push(body: CatalogSnapshot) {
 
 describe("le fil catalogue, côté plateforme", () => {
   it("écrit le catalogue et rend des compteurs", async () => {
-    const report = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    const report = await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     expect(report).toMatchObject({
       acceptedProducts: 1,
@@ -98,7 +98,7 @@ describe("le fil catalogue, côté plateforme", () => {
   });
 
   it("reçoit le taux de TVA de la famille, au lieu de le supposer", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     const category = await ctx.prisma.catalogCategory.findUniqueOrThrow({
       where: { id: CATEGORY.id },
@@ -114,32 +114,32 @@ describe("le fil catalogue, côté plateforme", () => {
    * seul ce test la met sous tension.
    */
   it("un push ne perd pas les décisions déjà prises", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
-      data: { sku: "VIE-001-1", priceCents: 180, decidedBy: "cecile" },
+      data: { sku: "VIE-001-1", priceMillicents: 180_000, decidedBy: "cecile" },
     });
 
     // Le PIM augmente son prix : le miroir doit suivre, la décision rester.
-    await push(snapshot([{ sku: "VIE-001", priceCents: 220 }]));
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 220_000 }]));
 
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({
       where: { sku: "VIE-001-1" },
       include: { override: true },
     });
-    expect(item.priceCents).toBe(220);
-    expect(item.override?.priceCents).toBe(180);
+    expect(item.priceMillicents).toBe(220_000);
+    expect(item.override?.priceMillicents).toBe(180_000);
     expect(item.override?.decidedBy).toBe("cecile");
   });
 
   it("retire ce qui a disparu du snapshot, et le NOMME", async () => {
     await push(
       snapshot([
-        { sku: "VIE-001", priceCents: 200 },
-        { sku: "VIE-002", priceCents: 220 },
+        { sku: "VIE-001", priceMillicents: 200_000 },
+        { sku: "VIE-002", priceMillicents: 220_000 },
       ]),
     );
 
-    const report = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    const report = await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     expect(report).toMatchObject({ removedSkus: ["VIE-002-1"] });
     expect(await ctx.prisma.catalogItem.count()).toBe(1);
@@ -151,9 +151,9 @@ describe("le fil catalogue, côté plateforme", () => {
    * rien dire sans l'article qu'il tarifait.
    */
   it("un article retiré emporte sa décision", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
-      data: { sku: "VIE-001-1", priceCents: 180 },
+      data: { sku: "VIE-001-1", priceMillicents: 180_000 },
     });
 
     await push(snapshot([]));
@@ -170,7 +170,7 @@ describe("le taux de TVA arrive sur l’ARTICLE", () => {
    * pouvoir se facturer seul.
    */
   it("écrit le taux reçu sur la ligne d’article", async () => {
-    await push(snapshot([{ sku: "VIE-002", priceCents: 220, vatRatePercent: 20 }]));
+    await push(snapshot([{ sku: "VIE-002", priceMillicents: 220_000, vatRatePercent: 20 }]));
 
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-002-1" } });
 
@@ -179,7 +179,7 @@ describe("le taux de TVA arrive sur l’ARTICLE", () => {
 
   /** Famille non réglée dans le référentiel : l'article entre sans taux. */
   it("laisse le taux vide quand le référentiel n’en a pas", async () => {
-    await push(snapshot([{ sku: "VIE-003", priceCents: 240, vatRatePercent: null }]));
+    await push(snapshot([{ sku: "VIE-003", priceMillicents: 240_000, vatRatePercent: null }]));
 
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-003-1" } });
 
@@ -197,9 +197,9 @@ describe("les allergènes traversent le fil", () => {
   it("distingue « pas de fiche », « fiche vide » et « des codes »", async () => {
     await push(
       snapshot([
-        { sku: "ALG-001", priceCents: 100, allergens: ["AW", "AM"] },
-        { sku: "ALG-002", priceCents: 100, allergens: [] },
-        { sku: "ALG-003", priceCents: 100, allergens: null },
+        { sku: "ALG-001", priceMillicents: 100_000, allergens: ["AW", "AM"] },
+        { sku: "ALG-002", priceMillicents: 100_000, allergens: [] },
+        { sku: "ALG-003", priceMillicents: 100_000, allergens: null },
       ]),
     );
 
@@ -215,8 +215,8 @@ describe("les allergènes traversent le fil", () => {
   it("efface la fiche quand le PIM la retire", async () => {
     // Un `undefined` laisserait la colonne inchangée sur l'upsert, et l'article
     // garderait des allergènes que le référentiel ne déclare plus.
-    await push(snapshot([{ sku: "ALG-004", priceCents: 100, allergens: ["AW"] }]));
-    await push(snapshot([{ sku: "ALG-004", priceCents: 100, allergens: null }]));
+    await push(snapshot([{ sku: "ALG-004", priceMillicents: 100_000, allergens: ["AW"] }]));
+    await push(snapshot([{ sku: "ALG-004", priceMillicents: 100_000, allergens: null }]));
 
     const row = await ctx.prisma.catalogItem.findUnique({
       where: { sku: "ALG-004-1" },

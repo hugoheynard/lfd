@@ -21,9 +21,9 @@ export class PrismaCanonicalPriceHistoryReader extends CanonicalPriceHistoryRead
       where: { recordedAt: { lte: at } },
       orderBy: [{ productSku: "asc" }, { recordedAt: "desc" }],
       distinct: ["productSku"],
-      select: { productSku: true, priceCents: true },
+      select: { productSku: true, priceMillicents: true },
     });
-    return new Map(rows.map((row) => [row.productSku, row.priceCents]));
+    return new Map(rows.map((row) => [row.productSku, row.priceMillicents]));
   }
 
   async startsAt(): Promise<Date | null> {

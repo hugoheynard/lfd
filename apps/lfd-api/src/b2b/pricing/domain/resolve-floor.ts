@@ -73,8 +73,8 @@ export function resolveScopedFloor(
  * La fraction se calcule sur le **canonique**, jamais sur le prix altéré : un
  * plancher qui suivrait le prix vers le bas ne plancherait rien.
  */
-export function floorCentsFor(floor: PriceFloor, canonicalCents: number): number {
+export function floorMillicentsFor(floor: PriceFloor, canonicalMillicents: number): number {
   return floor.mode === "amount"
     ? floor.cents
-    : roundToCents(fractionByBasisPoints(fromCents(canonicalCents), floor.bp));
+    : roundToCents(fractionByBasisPoints(fromCents(canonicalMillicents), floor.bp));
 }

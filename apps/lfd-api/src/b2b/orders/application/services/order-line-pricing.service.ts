@@ -13,7 +13,7 @@ import { volumeTierPrices } from "../../../pricing/application/volume-tier-price
 import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
 import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
 import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
-import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
+import { floorMillicentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
 import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
@@ -38,7 +38,7 @@ import type { OrderParties } from "./order-parties.js";
 export interface ResolvedOrderLine {
   readonly line: OrderLineInput;
   /** Le tarif de liste d'entrée, avant le moindre étage. */
-  readonly canonicalCents: number;
+  readonly canonicalMillicents: number;
   /** La mercuriale qui a scellé la chaîne pour cette ligne, ou `null`. */
   readonly sealedByRuleId: string | null;
   /** Les règles écartées par ce scellement. */
@@ -57,7 +57,7 @@ export interface ResolvedOrderLine {
    */
   readonly volumeTiers: readonly VolumeTierPriceView[] | null;
   /** Le plancher qui vise l'article, en centimes, ou `null` s'il n'y en a pas. */
-  readonly floorCents: number | null;
+  readonly floorMillicents: number | null;
 }
 
 /**
@@ -156,7 +156,13 @@ export class OrderLinePricing {
 
   /** Une ligne, une fois son article connu et sa quantité fusionnée. */
   private async resolveOne(
-    item: { sku: string; name: string; unitPriceCents: number; vatRate: number; category: string },
+    item: {
+      sku: string;
+      name: string;
+      unitPriceMillicents: number;
+      vatRate: number;
+      category: string;
+    },
     quantity: number,
     parties: OrderParties,
     at: Date,
@@ -200,7 +206,7 @@ export class OrderLinePricing {
           });
     const applied = floorDecision?.applied ?? null;
     const resolved = resolvePrice(
-      item.unitPriceCents,
+      item.unitPriceMillicents,
       [...rules, ...volumeRules],
       context,
       applied,
@@ -210,14 +216,14 @@ export class OrderLinePricing {
       line: {
         sku: item.sku,
         productName: item.name,
-        unitPriceCents: resolved.finalCents,
+        unitPriceMillicents: resolved.finalMillicents,
         vatRate: item.vatRate,
         quantity,
         // La trace part avec le prix, et pour la même raison : dans six mois, les
         // règles qui l'ont produit peuvent avoir été retirées. Sans elle, la seule
         // réponse à « pourquoi ce prix ? » serait « c'était le prix ».
         pricing: {
-          basePriceCents: resolved.basePriceCents,
+          basePriceMillicents: resolved.basePriceMillicents,
           steps: resolved.steps,
           floored: resolved.floored,
           // La décision de plancher est figée AVEC le prix. C'est ce qui rend le
@@ -229,7 +235,10 @@ export class OrderLinePricing {
               ? null
               : {
                   tier: floorDecision.tier,
-                  floorCents: floorCentsFor(floorDecision.applied, item.unitPriceCents),
+                  floorMillicents: floorMillicentsFor(
+                    floorDecision.applied,
+                    item.unitPriceMillicents,
+                  ),
                   observedVolumeRatioBp: floorDecision.unlock?.observedVolumeRatioBp ?? null,
                   quantityMet: floorDecision.unlock?.quantityMet ?? true,
                   volumeMet: floorDecision.unlock?.volumeMet ?? true,
@@ -240,7 +249,7 @@ export class OrderLinePricing {
           commitment: decision,
         },
       },
-      canonicalCents: item.unitPriceCents,
+      canonicalMillicents: item.unitPriceMillicents,
       sealedByRuleId: resolved.sealedByRuleId,
       sealedRuleIds: resolved.sealedRuleIds,
       // `rules` SANS `volumeRules` : `volumeTierPrices` réinjecte lui-même le
@@ -248,9 +257,10 @@ export class OrderLinePricing {
       // dupliquait l'échelle, et deux règles de même identifiant à l'étage
       // volume rendaient la résolution ambiguë — 400 sur une commande de 20.
       volumeTiers: withTiers
-        ? volumeTierPrices(item.unitPriceCents, ladders, rules, context, applied)
+        ? volumeTierPrices(item.unitPriceMillicents, ladders, rules, context, applied)
         : null,
-      floorCents: applied === null ? null : floorCentsFor(applied, item.unitPriceCents),
+      floorMillicents:
+        applied === null ? null : floorMillicentsFor(applied, item.unitPriceMillicents),
     };
   }
 

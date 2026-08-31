@@ -29,6 +29,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
+import { lineTotalCents } from "@lfd/money";
 
 /** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
 export interface OrderContent {
@@ -89,7 +90,14 @@ export class OrderDrafting {
   async draft(parties: OrderParties, content: OrderContent): Promise<Order> {
     const resolved = await this.linePricing.resolve(content.lines, parties);
     const lines = resolved.map((entry) => entry.line);
-    const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
+    // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
+    // par la même fonction que la ligne persistée. Deux arithmétiques ici
+    // feraient diverger le seuil de franco du total facturé — sur un centime,
+    // et seulement pour certains paniers.
+    const subtotalCents = lines.reduce(
+      (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
+      0,
+    );
     const acheminement = await this.resolveFulfillment(content, subtotalCents);
     const agreed = agreeFulfillment(
       {

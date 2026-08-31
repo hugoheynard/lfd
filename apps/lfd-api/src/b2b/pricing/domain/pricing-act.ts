@@ -142,7 +142,7 @@ function ratio(bp: number): string {
 
 function describeEffect(rule: PriceRule): string {
   if (rule.nature === "replace") {
-    return `prix posé à ${euros(rule.amountCents)}`;
+    return `prix posé à ${euros(rule.amountMillicents)}`;
   }
   const sign = rule.alteration.direction === "decrease" ? "−" : "+";
   return rule.alteration.mode === "percent"

@@ -41,7 +41,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       // Re-posée = re-décidée : la référence se rafraîchit, et l'écart repart
       // de zéro. C'est exactement ce qu'on veut d'une confirmation — sans quoi
       // le signal ne s'éteindrait jamais et on apprendrait à l'ignorer.
-      referenceCanonicalCents: state.referenceCanonicalCents,
+      referenceCanonicalMillicents: state.referenceCanonicalMillicents,
       createdBy: state.createdBy,
       // Re-poser sur une portée archivée la REND : c'est une nouvelle décision,
       // avec son auteur et sa date, et l'histoire de la portée reste lisible
@@ -73,7 +73,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       scope: scoped.scope,
       policy: scoped.policy,
       createdBy: row.createdBy,
-      referenceCanonicalCents: row.referenceCanonicalCents,
+      referenceCanonicalMillicents: row.referenceCanonicalMillicents,
     });
   }
 

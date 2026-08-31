@@ -116,7 +116,7 @@ function ruleData(
     audienceType: state.audience.type,
     audienceId: state.audience.id,
     minQuantity: state.minQuantity,
-    amountCents: effect.nature === "replace" ? effect.amountCents : null,
+    amountMillicents: effect.nature === "replace" ? effect.amountMillicents : null,
     direction: alteration?.direction ?? null,
     mode: alteration?.mode ?? null,
     value: alteration === null ? null : magnitudeOf(alteration),

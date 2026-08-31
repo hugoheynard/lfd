@@ -33,7 +33,7 @@ export class CheckCatalogParityService {
       product.variants.map((variant) => ({
         sku: variant.sku,
         name: variant.name,
-        priceCents: variant.priceCents,
+        priceMillicents: variant.priceMillicents,
         vatRate: variant.vatRatePercent,
       })),
     );
@@ -43,7 +43,7 @@ export class CheckCatalogParityService {
       mirror.map((item) => ({
         sku: item.sku,
         name: item.name,
-        pimPriceCents: item.pimPriceCents,
+        pimPriceMillicents: item.pimPriceMillicents,
         vatRate: item.vatRate,
       })),
     );

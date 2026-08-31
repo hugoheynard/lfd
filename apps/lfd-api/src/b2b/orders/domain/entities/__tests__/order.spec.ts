@@ -7,6 +7,7 @@ import {
 } from "../../errors/order-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import { millicentsFromCents } from "@lfd/money";
 
 const ADDRESS: BillingAddressPayload = {
   label: "",
@@ -17,10 +18,15 @@ const ADDRESS: BillingAddressPayload = {
   pays: "France",
 };
 
-const food = (qty: number, price = 200, rate = 5.5): OrderLineInput => ({
+/**
+ * Le prix se donne en **centimes** — un tarif s'écrit comme on le prononce — et
+ * entre dans la ligne en millicentimes, l'unité des prix unitaires. Les totaux
+ * attendus plus bas restent donc des centimes, ce qu'ils sont.
+ */
+const food = (qty: number, priceCents = 200, rate = 5.5): OrderLineInput => ({
   sku: "VIE-001",
   productName: "Croissant",
-  unitPriceCents: price,
+  unitPriceMillicents: millicentsFromCents(priceCents),
   vatRate: rate,
   quantity: qty,
 });
@@ -70,7 +76,7 @@ describe("Order.draft — calcul monétaire", () => {
       {
         sku: "VIE-001",
         productName: "Croissant",
-        unitPriceCents: 200,
+        unitPriceMillicents: 200_000,
         vatRate: 5.5,
         quantity: 3,
         lineTotalCents: 600,

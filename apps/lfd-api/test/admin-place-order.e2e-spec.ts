@@ -283,7 +283,12 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
     const { companyId } = await seedCompany(true);
 
     const quote = jsonBody<{
-      lines: { sku: string; canonicalCents: number; unitPriceCents: number; steps: unknown[] }[];
+      lines: {
+        sku: string;
+        canonicalMillicents: number;
+        unitPriceMillicents: number;
+        steps: unknown[];
+      }[];
       subtotalCents: number;
     }>(
       await staff()
@@ -292,8 +297,8 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
         .expect(200),
     );
 
-    expect(quote.lines[0]?.canonicalCents).toBe(200);
-    expect(quote.lines[0]?.unitPriceCents).toBe(200);
+    expect(quote.lines[0]?.canonicalMillicents).toBe(200_000);
+    expect(quote.lines[0]?.unitPriceMillicents).toBe(200_000);
     expect(quote.lines[0]?.steps).toEqual([]);
     expect(quote.subtotalCents).toBe(2400);
   });
@@ -315,7 +320,11 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
       .expect(201);
 
     const quote = jsonBody<{
-      lines: { canonicalCents: number; unitPriceCents: number; steps: { stage: string }[] }[];
+      lines: {
+        canonicalMillicents: number;
+        unitPriceMillicents: number;
+        steps: { stage: string }[];
+      }[];
     }>(
       await staff()
         .post("/admin/orders/quote")
@@ -324,8 +333,8 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
     );
 
     // 200 c − 25 % = 150 c. Le tarif d'entrée reste visible à côté.
-    expect(quote.lines[0]?.canonicalCents).toBe(200);
-    expect(quote.lines[0]?.unitPriceCents).toBe(150);
+    expect(quote.lines[0]?.canonicalMillicents).toBe(200_000);
+    expect(quote.lines[0]?.unitPriceMillicents).toBe(150_000);
     expect(quote.lines[0]?.steps.map((step) => step.stage)).toEqual(["promotion"]);
   });
 
@@ -350,7 +359,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
       })
       .expect(201);
 
-    const quote = jsonBody<{ lines: { unitPriceCents: number }[] }>(
+    const quote = jsonBody<{ lines: { unitPriceMillicents: number }[] }>(
       await staff()
         .post("/admin/orders/quote")
         .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
@@ -364,6 +373,6 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
 
     const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
 
-    expect(quote.lines[0]?.unitPriceCents).toBe(line?.unitPriceCents);
+    expect(quote.lines[0]?.unitPriceMillicents).toBe(line?.unitPriceMillicents);
   });
 });

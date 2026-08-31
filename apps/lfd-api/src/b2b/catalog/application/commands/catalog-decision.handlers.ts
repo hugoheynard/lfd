@@ -36,7 +36,7 @@ export class SetB2bPriceHandler implements ICommandHandler<SetB2bPriceCommand, v
 
   async execute(command: SetB2bPriceCommand): Promise<void> {
     const item = await loadOrFail(this.items, command.sku);
-    item.setB2bPrice(command.priceCents, command.decidedBy);
+    item.setB2bPrice(command.priceMillicents, command.decidedBy);
     await this.items.saveMany([item]);
   }
 }

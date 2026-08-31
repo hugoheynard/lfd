@@ -1,6 +1,6 @@
 import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
-import { htPriceOf, type B2bExclusionReason } from "@lfd/pim-contracts";
+import { htMillicentsOf, type B2bExclusionReason } from "@lfd/pim-contracts";
 
 import type {
   CategoryVatPercents,
@@ -79,13 +79,13 @@ function frenchOf(text: { readonly fr: string }): string {
  */
 function projectVariant(
   variant: VariantRecord,
-  htPriceCents: number,
+  htPriceMillicents: number,
   vatRatePercent: number | null,
 ): SyncVariant {
   return {
     sku: variant.sku,
     name: frenchOf(variant.name),
-    priceCents: htPriceCents,
+    priceMillicents: htPriceMillicents,
     weightGrams: variant.weightGrams,
     isDefault: variant.isDefault,
     position: variant.position,
@@ -136,12 +136,12 @@ function sortVariants(
     // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
     // d'inventer un taux : une conversion approximative facturerait un montant
     // que personne n'a décidé, et rien ne le signalerait ensuite.
-    const htPriceCents = htPriceOf(priceCents, variant.priceBasis, vatRatePercent);
-    if (htPriceCents === null) {
+    const htMillicents = htMillicentsOf(priceCents, variant.priceBasis, vatRatePercent);
+    if (htMillicents === null) {
       excluded.push({ sku: variant.sku, reason: "variant_ttc_sans_taux" });
       continue;
     }
-    sellable.push(projectVariant(variant, htPriceCents, vatRatePercent));
+    sellable.push(projectVariant(variant, htMillicents, vatRatePercent));
   }
 
   return { sellable, excluded };

@@ -78,7 +78,7 @@ describe("projectCatalog", () => {
     expect(excluded).toEqual([]);
     expect(snapshot.generatedAt).toBe(AT);
     expect(snapshot.products).toHaveLength(1);
-    expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(200_000);
     expect(snapshot.categories[0]?.vatRatePercent).toBe(5.5);
   });
 
@@ -98,7 +98,9 @@ describe("projectCatalog", () => {
     );
 
     expect(excluded).toEqual([]);
-    expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(114);
+    // 1,20 € TTC ÷ 1,055 = 1,137440… € → 113 744 millicentimes. Les décimales
+    // survivent jusqu'au total de ligne, où l'arrondi aura lieu une fois.
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(113_744);
   });
 
   /**
@@ -111,8 +113,8 @@ describe("projectCatalog", () => {
     const at55 = projectCatalog([product(ttcVariant)], [category()], vat(), sold(), AT);
     const at10 = projectCatalog([product(ttcVariant)], [category()], vat({ b2b: 10 }), sold(), AT);
 
-    expect(at55.snapshot.products[0]?.variants[0]?.priceCents).toBe(114);
-    expect(at10.snapshot.products[0]?.variants[0]?.priceCents).toBe(109);
+    expect(at55.snapshot.products[0]?.variants[0]?.priceMillicents).toBe(113_744);
+    expect(at10.snapshot.products[0]?.variants[0]?.priceMillicents).toBe(109_091);
   });
 
   /**
@@ -149,7 +151,10 @@ describe("projectCatalog", () => {
     );
 
     expect(excluded).toEqual([]);
-    expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
+    // Un prix DÉJÀ hors taxe traverse par une multiplication exacte : la
+    // précision n'est jamais une invention, elle n'apparaît que là où une
+    // division l'a créée.
+    expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(200_000);
     expect(snapshot.products[0]?.variants[0]?.vatRatePercent).toBeNull();
   });
 

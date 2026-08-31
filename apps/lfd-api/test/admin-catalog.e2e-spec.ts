@@ -1,3 +1,4 @@
+import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage du catalogue** — sur un vrai Postgres.
  *
@@ -37,7 +38,7 @@ beforeEach(async () => {
 
 const SKU = "VIE-001-1";
 
-function snapshot(priceCents: number): CatalogSnapshot {
+function snapshot(priceMillicents: number): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
@@ -63,7 +64,7 @@ function snapshot(priceCents: number): CatalogSnapshot {
             allergens: null,
             sku: SKU,
             name: "Croissant",
-            priceCents,
+            priceMillicents,
             weightGrams: null,
             isDefault: true,
             position: 0,
@@ -75,9 +76,14 @@ function snapshot(priceCents: number): CatalogSnapshot {
   };
 }
 
-/** L'ingestion telle que le référentiel la déclenche : par le port, pas par HTTP. */
-function push(priceCents: number) {
-  return ctx.app.get(B2bCatalogDriver).send(snapshot(priceCents));
+/**
+ * L'ingestion telle que le référentiel la déclenche : par le port, pas par HTTP.
+ *
+ * Le prix se donne en **centimes** — un tarif s'écrit comme on le prononce — et
+ * part sur le fil en millicentimes, l'unité des prix unitaires.
+ */
+function push(cents: number) {
+  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents)));
 }
 
 /** Le staff appelle avec un jeton quelconque : le verifier est doublé. */
@@ -88,9 +94,9 @@ function asStaff() {
 async function listOne() {
   const response = await asStaff().get("/admin/catalog");
   const [item] = jsonBody<{ length: number }[]>(response) as unknown as {
-    b2bPriceCents: number | null;
-    effectivePriceCents: number;
-    pimPriceCents: number;
+    b2bPriceMillicents: number | null;
+    effectivePriceMillicents: number;
+    pimPriceMillicents: number;
     isHidden: boolean;
     isFeatured: boolean;
     decidedBy: string | null;
@@ -102,9 +108,9 @@ describe("GET /admin/catalog", () => {
   it("rend les DEUX prix, pas seulement le résultat", async () => {
     const item = await listOne();
 
-    expect(item?.pimPriceCents).toBe(200);
-    expect(item?.b2bPriceCents).toBeNull();
-    expect(item?.effectivePriceCents).toBe(200);
+    expect(item?.pimPriceMillicents).toBe(200_000);
+    expect(item?.b2bPriceMillicents).toBeNull();
+    expect(item?.effectivePriceMillicents).toBe(200_000);
   });
 
   it("refuse un appel sans jeton staff", async () => {
@@ -116,16 +122,21 @@ describe("GET /admin/catalog", () => {
 
 describe("PUT /admin/catalog/:sku/price", () => {
   it("pose le prix B2B et trace son auteur", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 180 }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 180_000 })
+      .expect(204);
 
     const item = await listOne();
-    expect(item?.b2bPriceCents).toBe(180);
-    expect(item?.effectivePriceCents).toBe(180);
+    expect(item?.b2bPriceMillicents).toBe(180_000);
+    expect(item?.effectivePriceMillicents).toBe(180_000);
     expect(item?.decidedBy).toBe("staff-e2e");
   });
 
   it("refuse un prix nul — le refus de l'agrégat ressort en 400", async () => {
-    const response = await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 0 });
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 0 });
 
     expect(response.status).toBe(400);
   });
@@ -136,13 +147,17 @@ describe("PUT /admin/catalog/:sku/price", () => {
    * correct.
    */
   it("refuse un prix identique à celui du PIM", async () => {
-    const response = await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 200 });
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 200_000 });
 
     expect(response.status).toBe(409);
   });
 
   it("rend 404 pour un article qui n'est plus au catalogue", async () => {
-    const response = await asStaff().put("/admin/catalog/INCONNU/price").send({ priceCents: 180 });
+    const response = await asStaff()
+      .put("/admin/catalog/INCONNU/price")
+      .send({ priceMillicents: 180_000 });
 
     expect(response.status).toBe(404);
   });
@@ -150,13 +165,16 @@ describe("PUT /admin/catalog/:sku/price", () => {
 
 describe("DELETE /admin/catalog/:sku/price", () => {
   it("ramène l'article au tarif du PIM", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 180 }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 180_000 })
+      .expect(204);
 
     await asStaff().delete(`/admin/catalog/${SKU}/price`).expect(204);
 
     const item = await listOne();
-    expect(item?.b2bPriceCents).toBeNull();
-    expect(item?.effectivePriceCents).toBe(200);
+    expect(item?.b2bPriceMillicents).toBeNull();
+    expect(item?.effectivePriceMillicents).toBe(200_000);
   });
 });
 
@@ -192,14 +210,17 @@ describe("visibilité et mise en avant", () => {
  */
 describe("une décision survit au push suivant", () => {
   it("garde le prix B2B quand le PIM change le sien", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 180 }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 180_000 })
+      .expect(204);
 
     await push(220);
 
     const item = await listOne();
-    expect(item?.pimPriceCents).toBe(220);
-    expect(item?.b2bPriceCents).toBe(180);
-    expect(item?.effectivePriceCents).toBe(180);
+    expect(item?.pimPriceMillicents).toBe(220_000);
+    expect(item?.b2bPriceMillicents).toBe(180_000);
+    expect(item?.effectivePriceMillicents).toBe(180_000);
   });
 });
 
@@ -218,18 +239,21 @@ describe("l'historique du tarif canonique", () => {
     const before = new Date();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 999 }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 999_000 })
+      .expect(204);
 
-    const now = jsonBody<{ categories: { items: { sku: string; canonicalCents: number }[] }[] }>(
-      await asStaff().get("/admin/pricing").expect(200),
-    );
-    expect(croissantIn(now)).toBe(999);
+    const now = jsonBody<{
+      categories: { items: { sku: string; canonicalMillicents: number }[] }[];
+    }>(await asStaff().get("/admin/pricing").expect(200));
+    expect(croissantIn(now)).toBe(millicentsFromCents(999));
 
     // La MÊME lecture, datée d'avant la décision : le tarif d'alors.
-    const past = jsonBody<{ categories: { items: { sku: string; canonicalCents: number }[] }[] }>(
-      await asStaff().get(`/admin/pricing?at=${before.toISOString()}`).expect(200),
-    );
-    expect(croissantIn(past)).toBe(200);
+    const past = jsonBody<{
+      categories: { items: { sku: string; canonicalMillicents: number }[] }[];
+    }>(await asStaff().get(`/admin/pricing?at=${before.toISOString()}`).expect(200));
+    expect(croissantIn(past)).toBe(millicentsFromCents(200));
   });
 
   /**
@@ -242,7 +266,7 @@ describe("l'historique du tarif canonique", () => {
     const rows = await ctx.prisma.catalogPriceHistory.findMany({ where: { sku: SKU } });
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.priceCents).toBe(200);
+    expect(rows[0]?.priceMillicents).toBe(200_000);
     expect(rows[0]?.source).toBe("pim");
   });
 
@@ -265,8 +289,14 @@ describe("l'historique du tarif canonique", () => {
   it("n'écrit rien quand le prix ne bouge pas", async () => {
     const before = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
 
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 300 }).expect(204);
-    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 300 }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 300_000 })
+      .expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 300_000 })
+      .expect(204);
 
     const after = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
     expect(after - before).toBe(1);
@@ -275,9 +305,9 @@ describe("l'historique du tarif canonique", () => {
 
 /** Le croissant dans un tableau de tarification, par le SKU que la boutique vend. */
 function croissantIn(board: {
-  categories: { items: { sku: string; canonicalCents: number }[] }[];
+  categories: { items: { sku: string; canonicalMillicents: number }[] }[];
 }): number | undefined {
   return board.categories
     .flatMap((category) => category.items)
-    .find((item) => item.sku === "VIE-001")?.canonicalCents;
+    .find((item) => item.sku === "VIE-001")?.canonicalMillicents;
 }

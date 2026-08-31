@@ -26,11 +26,19 @@ describe("PriceTemplate.compose", () => {
    */
   it("accepte un prix fixe comme grille à un seul palier", () => {
     const template = compose([
-      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+      {
+        sku: "PAI-001",
+        plannedVolume: null,
+        tiers: [{ minQuantity: 1, unitPriceMillicents: 80_000 }],
+      },
     ]);
 
     expect(template.lines).toEqual([
-      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+      {
+        sku: "PAI-001",
+        plannedVolume: null,
+        tiers: [{ minQuantity: 1, unitPriceMillicents: 80_000 }],
+      },
     ]);
   });
 
@@ -40,8 +48,8 @@ describe("PriceTemplate.compose", () => {
         sku: "PAI-001",
         plannedVolume: null,
         tiers: [
-          { minQuantity: 5000, unitPriceCents: 80 },
-          { minQuantity: 1, unitPriceCents: 85 },
+          { minQuantity: 5000, unitPriceMillicents: 80_000 },
+          { minQuantity: 1, unitPriceMillicents: 85_000 },
         ],
       },
     ]);
@@ -61,8 +69,8 @@ describe("PriceTemplate.compose", () => {
           sku: "PAI-001",
           plannedVolume: null,
           tiers: [
-            { minQuantity: 1, unitPriceCents: 80 },
-            { minQuantity: 5000, unitPriceCents: 85 },
+            { minQuantity: 1, unitPriceMillicents: 80_000 },
+            { minQuantity: 5000, unitPriceMillicents: 85_000 },
           ],
         },
       ]),
@@ -76,8 +84,8 @@ describe("PriceTemplate.compose", () => {
           sku: "PAI-001",
           plannedVolume: null,
           tiers: [
-            { minQuantity: 100, unitPriceCents: 85 },
-            { minQuantity: 100, unitPriceCents: 80 },
+            { minQuantity: 100, unitPriceMillicents: 85_000 },
+            { minQuantity: 100, unitPriceMillicents: 80_000 },
           ],
         },
       ]),
@@ -87,8 +95,16 @@ describe("PriceTemplate.compose", () => {
   it("refuse deux lignes sur le même article", () => {
     expect(() =>
       compose([
-        { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 85 }] },
-        { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+        {
+          sku: "PAI-001",
+          plannedVolume: null,
+          tiers: [{ minQuantity: 1, unitPriceMillicents: 85_000 }],
+        },
+        {
+          sku: "PAI-001",
+          plannedVolume: null,
+          tiers: [{ minQuantity: 1, unitPriceMillicents: 80_000 }],
+        },
       ]),
     ).toThrow(DuplicateTemplateSkuError);
   });
@@ -102,10 +118,10 @@ describe("PriceTemplate.compose", () => {
 
   it("accepte un article offert — zéro est un prix réel", () => {
     const template = compose([
-      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 0 }] },
+      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceMillicents: 0 }] },
     ]);
 
-    expect(template.lines[0]?.tiers[0]?.unitPriceCents).toBe(0);
+    expect(template.lines[0]?.tiers[0]?.unitPriceMillicents).toBe(0);
   });
 });
 
@@ -121,8 +137,8 @@ describe("templateToRules", () => {
         sku: "PAI-001",
         plannedVolume: null,
         tiers: [
-          { minQuantity: 1, unitPriceCents: 85 },
-          { minQuantity: 10_000, unitPriceCents: 78 },
+          { minQuantity: 1, unitPriceMillicents: 85_000 },
+          { minQuantity: 10_000, unitPriceMillicents: 78_000 },
         ],
       },
     ]);
@@ -135,7 +151,7 @@ describe("templateToRules", () => {
         scope: { type: "product", id: "PAI-001" },
         audience: { type: "company", id: "cmp_clubmed" },
         minQuantity: 1,
-        effect: { nature: "replace", amountCents: 85 },
+        effect: { nature: "replace", amountMillicents: 85_000 },
         label: "Mercuriale Club Med",
         stacksOverMercuriale: false,
         ...SAISON,
@@ -145,7 +161,7 @@ describe("templateToRules", () => {
         scope: { type: "product", id: "PAI-001" },
         audience: { type: "company", id: "cmp_clubmed" },
         minQuantity: 10_000,
-        effect: { nature: "replace", amountCents: 78 },
+        effect: { nature: "replace", amountMillicents: 78_000 },
         label: "Mercuriale Club Med",
         stacksOverMercuriale: false,
         ...SAISON,
@@ -155,7 +171,11 @@ describe("templateToRules", () => {
 
   it("un prix fixe ne pose qu'une règle", () => {
     const template = compose([
-      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+      {
+        sku: "PAI-001",
+        plannedVolume: null,
+        tiers: [{ minQuantity: 1, unitPriceMillicents: 80_000 }],
+      },
     ]);
 
     expect(templateToRules(template.lines, "cmp_clubmed", SAISON, "Fixe")).toHaveLength(1);
@@ -168,8 +188,8 @@ describe("templateToRules", () => {
         sku: "PAI-001",
         plannedVolume: null,
         tiers: [
-          { minQuantity: 1, unitPriceCents: 85 },
-          { minQuantity: 500, unitPriceCents: 80 },
+          { minQuantity: 1, unitPriceMillicents: 85_000 },
+          { minQuantity: 500, unitPriceMillicents: 80_000 },
         ],
       },
     ]);

@@ -1,4 +1,5 @@
 import type { OrderLinePricingTrace } from "@lfd/contracts";
+import { lineTotalCents } from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
@@ -6,8 +7,13 @@ import { InvalidOrderLineError } from "../errors/order-errors.js";
 export interface OrderLineInput {
   readonly sku: string;
   readonly productName: string;
-  /** Prix unitaire **HT**, en centimes. */
-  readonly unitPriceCents: number;
+  /**
+   * Prix unitaire **HT**, en **millicentimes** (10⁻⁵ €).
+   *
+   * C'est le seul nombre de la ligne qui ait besoin de décimales, parce que
+   * c'est le seul qu'une quantité multiplie.
+   */
+  readonly unitPriceMillicents: number;
   /** Taux de TVA du produit en %, ex. 5.5 ou 20. */
   readonly vatRate: number;
   readonly quantity: number;
@@ -23,7 +29,10 @@ export interface OrderLineInput {
 
 /** Une ligne prête à persister (snapshots figés + total calculé). */
 export interface OrderLineSnapshot extends OrderLineInput {
-  /** Total **HT** de la ligne = prix unitaire × quantité, en centimes. */
+  /**
+   * Total **HT** de la ligne, en **centimes** : prix unitaire × quantité,
+   * arrondi **une seule fois**, ici. C'est un montant, pas un prix unitaire.
+   */
   readonly lineTotalCents: number;
   /**
    * Requis ici alors qu'il est facultatif à l'entrée : l'appelant peut ne pas
@@ -43,7 +52,7 @@ export class OrderLine {
   private constructor(
     readonly sku: string,
     readonly productName: string,
-    readonly unitPriceCents: number,
+    readonly unitPriceMillicents: number,
     readonly vatRate: number,
     readonly quantity: number,
     readonly lineTotalCents: number,
@@ -54,16 +63,20 @@ export class OrderLine {
     if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
       throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
     }
-    if (!Number.isInteger(input.unitPriceCents) || input.unitPriceCents < 0) {
+    if (!Number.isInteger(input.unitPriceMillicents) || input.unitPriceMillicents < 0) {
       throw new InvalidOrderLineError(input.sku, "prix unitaire en centimes ≥ 0 attendu");
     }
     return new OrderLine(
       input.sku,
       input.productName,
-      input.unitPriceCents,
+      input.unitPriceMillicents,
       input.vatRate,
       input.quantity,
-      input.unitPriceCents * input.quantity,
+      // **L'unique arrondi de la ligne.** Il est ici, et nulle part avant :
+      // arrondir le prix unitaire d'abord revenait à multiplier l'erreur par la
+      // quantité — douze articles à 9,00 € TTC facturaient 107,98 € au lieu de
+      // 108,00. Le prix unitaire garde ses décimales jusqu'à ce point.
+      lineTotalCents(input.unitPriceMillicents, input.quantity),
       assertConsistent(input),
     );
   }
@@ -72,7 +85,7 @@ export class OrderLine {
     return {
       sku: this.sku,
       productName: this.productName,
-      unitPriceCents: this.unitPriceCents,
+      unitPriceMillicents: this.unitPriceMillicents,
       vatRate: this.vatRate,
       quantity: this.quantity,
       lineTotalCents: this.lineTotalCents,
@@ -95,11 +108,11 @@ function assertConsistent(input: OrderLineInput): OrderLinePricingTrace | null {
     return null;
   }
   const last = trace.steps.at(-1);
-  const expected = last?.resultCents ?? trace.basePriceCents;
-  if (!trace.floored && expected !== input.unitPriceCents) {
+  const expected = last?.resultMillicents ?? trace.basePriceMillicents;
+  if (!trace.floored && expected !== input.unitPriceMillicents) {
     throw new InvalidOrderLineError(
       input.sku,
-      `la trace aboutit à ${String(expected)} centimes, la ligne en facture ${String(input.unitPriceCents)}`,
+      `la trace aboutit à ${String(expected)} centimes, la ligne en facture ${String(input.unitPriceMillicents)}`,
     );
   }
   return trace;

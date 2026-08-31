@@ -60,7 +60,7 @@ export class PriceTemplatesQuery {
             // Le SKU nu quand le catalogue ne le connaît plus : le gabarit garde
             // la ligne, et l'écran doit pouvoir dire qu'elle ne vise plus rien.
             productName: item?.name ?? line.sku,
-            catalogPriceCents: item?.unitPriceCents ?? null,
+            catalogPriceMillicents: item?.unitPriceMillicents ?? null,
             tiers: line.tiers.map((tier) => ({ ...tier })),
             plannedVolume: line.plannedVolume,
           };

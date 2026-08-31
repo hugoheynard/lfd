@@ -26,7 +26,7 @@ import type { PriceScope, PriceStage } from "../../domain/price-rule.js";
 
 const AT = new Date("2026-08-17T00:00:00.000Z");
 const CONTEXT = pricingContextFor("VIE-001", "viennoiserie", 1, { companyId: null }, AT);
-const ARTICLE = { sku: "VIE-001", name: "Croissant", canonicalCents: 200 };
+const ARTICLE = { sku: "VIE-001", name: "Croissant", canonicalMillicents: 200_000 };
 
 function ruleRow(
   id: string,
@@ -43,7 +43,7 @@ function ruleRow(
     audienceType: "all",
     audienceId: null,
     minQuantity: null,
-    amountCents: null,
+    amountMillicents: null,
     direction: "decrease",
     mode: "percent",
     value: over.bp ?? 1_000,
@@ -75,7 +75,7 @@ function loadedFloor(id: string, scope: PriceScope, bp: number): LoadedFloor {
     dynamicValue: null,
     unlockMinQuantity: null,
     unlockMinVolumeRatioBp: null,
-    referenceCanonicalCents: null,
+    referenceCanonicalMillicents: null,
     createdBy: "staff|test",
     updatedAt: AT,
   };
@@ -92,7 +92,7 @@ describe("un nœud du tableau", () => {
     const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, []), { rules, floors: [] }, []);
 
     // −20 % puis −10 % font −28 %, pas −30 % : 200 → 160 → 144.
-    expect(view.finalCents).toBe(144);
+    expect(view.finalMillicents).toBe(144_000);
     expect(view.steps.map((step) => step.stage)).toEqual(["promotion", "geste"]);
   });
 
@@ -111,7 +111,7 @@ describe("un nœud du tableau", () => {
 
     expect(view.supersededRuleIds).toEqual(["catalogue"]);
     expect(view.steps).toHaveLength(1);
-    expect(view.finalCents).toBe(190);
+    expect(view.finalMillicents).toBe(190_000);
   });
 
   it("n'annonce aucune marge de négociation quand aucune limite n'est posée", () => {
@@ -134,10 +134,10 @@ describe("un nœud du tableau", () => {
     const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors), { rules, floors }, []);
 
     expect(view.floored).toBe(true);
-    expect(view.finalCents).toBe(180);
+    expect(view.finalMillicents).toBe(180_000);
     expect(view.negotiationRoom).toEqual({
-      floorCents: 180,
-      maxDiscountCents: 0,
+      floorMillicents: 180_000,
+      maxDiscountMillicents: 0,
       maxDiscountBp: 0,
     });
   });
@@ -154,7 +154,7 @@ describe("un nœud du tableau", () => {
 
     expect(view.effectiveFloor?.id).toBe("article");
     expect(view.floored).toBe(false);
-    expect(view.finalCents).toBe(120);
+    expect(view.finalMillicents).toBe(120_000);
   });
 
   it("laisse la mesure des ventes à la passe qui la fait", () => {

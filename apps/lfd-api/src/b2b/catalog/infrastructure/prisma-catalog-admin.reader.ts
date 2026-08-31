@@ -11,7 +11,7 @@ interface AdminRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
-  readonly priceCents: number;
+  readonly priceMillicents: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly receivedAt: Date;
@@ -21,7 +21,7 @@ interface AdminRow {
     readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
-    readonly priceCents: number | null;
+    readonly priceMillicents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
@@ -52,16 +52,16 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
  * provenance ne se défend pas devant un client qui le conteste.
  */
 function toView(row: AdminRow): CatalogAdminItemView {
-  const b2bPriceCents = row.override?.priceCents ?? null;
+  const b2bPriceMillicents = row.override?.priceMillicents ?? null;
   return {
     sku: row.sku,
     productSku: row.productSku,
     name: row.name,
     categoryId: row.category.id,
     categoryName: row.category.name,
-    pimPriceCents: row.priceCents,
-    b2bPriceCents,
-    effectivePriceCents: b2bPriceCents ?? row.priceCents,
+    pimPriceMillicents: row.priceMillicents,
+    b2bPriceMillicents,
+    effectivePriceMillicents: b2bPriceMillicents ?? row.priceMillicents,
     // Le taux de L'ARTICLE d'abord : c'est lui qu'on facture depuis que le fil
     // le porte. L'écran lisait celui de la FAMILLE et pouvait donc afficher un
     // taux que la boutique n'applique pas. Repli sur la famille tant que des

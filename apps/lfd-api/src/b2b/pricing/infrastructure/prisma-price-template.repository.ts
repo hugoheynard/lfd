@@ -26,7 +26,7 @@ export class PrismaPriceTemplateRepository extends PriceTemplateRepository {
       sku: line.sku,
       tiers: line.tiers.map((tier) => ({
         minQuantity: tier.minQuantity,
-        unitPriceCents: tier.unitPriceCents,
+        unitPriceMillicents: tier.unitPriceMillicents,
       })),
       plannedVolume: line.plannedVolume,
     }));
