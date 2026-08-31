@@ -23,6 +23,8 @@ import { SetCategoryVatHandler } from "./category/application/set-category-vat.j
 import { DeclareProductNutritionHandler } from "./product/application/declare-product-nutrition.js";
 import { GetProductDetailHandler } from "./product/application/get-product-detail.js";
 import { ListProductsHandler } from "./product/application/list-products.js";
+import { DeclareProductReadyHandler } from "./product/application/declare-product-ready.js";
+import { GetProductReadinessHandler } from "./product/application/get-product-readiness.js";
 import { PublishProductHandler } from "./product/application/publish-product.js";
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -40,6 +42,7 @@ import { CategoryRepository } from "./category/domain/ports/category.repository.
 import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
+import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { MediaLibrary } from "./product/domain/ports/media-library.js";
 import { NutritionRepository } from "./product/domain/ports/nutrition.repository.js";
@@ -54,6 +57,7 @@ import { PrismaCategoryRepository } from "./category/infrastructure/prisma-categ
 import { PrismaPointOfSaleOfferReader } from "./shared/infrastructure/prisma-point-of-sale-offer.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
+import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
 import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
 import { PrismaNutritionRepository } from "./product/infrastructure/prisma-nutrition.repository.js";
@@ -106,6 +110,8 @@ import {
     ArchiveProductHandler,
     RestoreProductHandler,
     ListProductsHandler,
+    DeclareProductReadyHandler,
+    GetProductReadinessHandler,
     PublishProductHandler,
     UnpublishProductHandler,
     GetProductDetailHandler,
@@ -123,6 +129,7 @@ import {
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
   ],

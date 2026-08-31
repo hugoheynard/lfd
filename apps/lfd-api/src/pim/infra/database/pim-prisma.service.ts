@@ -53,6 +53,7 @@ export abstract class PimPrismaService {
   abstract readonly shopifyVariantBinding: PrismaService["shopifyVariantBinding"];
   abstract readonly nutritionDeclaration: PrismaService["nutritionDeclaration"];
   abstract readonly productEditorial: PrismaService["productEditorial"];
+  abstract readonly productReadiness: PrismaService["productReadiness"];
   abstract readonly categoryEditorial: PrismaService["categoryEditorial"];
   abstract readonly mediaAsset: PrismaService["mediaAsset"];
   abstract readonly productMedia: PrismaService["productMedia"];

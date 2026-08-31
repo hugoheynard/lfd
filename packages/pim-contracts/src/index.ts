@@ -134,6 +134,7 @@ export type {
   ProductView,
   ProductEditorialView,
   ProductDetailView,
+  ProductReadinessView,
   ProductMediaView,
   SetProductMediaPayload,
   SetProductChannelsPayload,

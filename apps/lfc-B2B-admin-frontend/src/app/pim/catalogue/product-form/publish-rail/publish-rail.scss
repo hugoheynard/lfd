@@ -71,3 +71,31 @@
   margin-left: var(--fold-space-lg);
   font-size: var(--fold-text-sm);
 }
+
+/* La signature et la phrase qui la précède : du texte de lecture, pas un
+   libellé de champ. Elles portent la couleur secondaire pour laisser le bouton
+   être la seule chose accentuée de la carte. */
+.pr-signature,
+.pr-ready-intro,
+.pr-ready-blocked {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.pr-signature {
+  color: var(--fold-color-text);
+}
+
+/* Le motif du refus se lit COLLÉ au bouton désarmé : plus loin, il passerait
+   pour un commentaire sur la carte entière. */
+.pr-ready-blocked {
+  margin-top: var(--fold-space-sm);
+}
+
+/* L'avertissement est DANS la carte, sous la signature : il la commente, il ne
+   la remplace pas. */
+.pr-block fold-callout {
+  display: block;
+  margin-top: var(--fold-space-sm);
+}

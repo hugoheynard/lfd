@@ -145,6 +145,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ShopifyVariantBinding: "pim",
   NutritionDeclaration: "pim",
   ProductEditorial: "pim",
+  ProductReadiness: "pim",
   MediaAsset: "pim",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",

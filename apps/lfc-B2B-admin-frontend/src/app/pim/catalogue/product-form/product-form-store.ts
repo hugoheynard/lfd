@@ -11,6 +11,7 @@ import {
   writeLocalized,
   type Locale,
   type LocalizedText,
+  type ProductReadinessView,
 } from '@lfd/pim-contracts';
 
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -454,6 +455,35 @@ export class ProductFormStore {
    */
   private readonly statusValue = signal<ProductStatus>('draft');
   readonly status: Signal<ProductStatus> = this.statusValue;
+
+  /**
+   * **La signature « publiable »** — `null` tant que personne ne s'est prononcé.
+   *
+   * Elle vit à côté du statut sans en être un : le statut dit ce que le
+   * catalogue fait de la fiche, la signature dit ce qu'une personne affirme de
+   * son contenu. Une fiche signée reste un brouillon.
+   */
+  private readonly readinessValue = signal<ProductReadinessView | null>(null);
+  readonly readiness: Signal<ProductReadinessView | null> = this.readinessValue;
+
+  /** Quand le contenu enregistré de la fiche a bougé pour la dernière fois (ISO). */
+  private readonly contentUpdatedAtValue = signal('');
+  readonly contentUpdatedAt: Signal<string> = this.contentUpdatedAtValue;
+
+  /**
+   * La signature vaut-elle encore ?
+   *
+   * Rien ne la périme en écriture — c'est un fait daté, pas une garantie — donc
+   * c'est ici qu'on compare. Une comparaison de chaînes ISO suffit : elles sont
+   * en UTC, à précision fixe, et l'ordre lexicographique y est l'ordre
+   * chronologique. `>=` et non `>` : déclarer ne touche pas au contenu, donc
+   * une déclaration faite dans la même milliseconde qu'un enregistrement reste
+   * valide.
+   */
+  readonly readinessStale = computed(() => {
+    const signed = this.readinessValue();
+    return signed !== null && signed.readyAt < this.contentUpdatedAtValue();
+  });
 
   /**
    * Le nombre de déclinaisons — un COMPTE, pas la liste. L'en-tête a besoin de
@@ -1116,6 +1146,34 @@ export class ProductFormStore {
    * L'état n'avance qu'au retour du serveur : le peindre avant, c'est afficher
    * « Publié » sur un produit que le backend a refusé.
    */
+  /**
+   * **Déclarer la fiche publiable.**
+   *
+   * Le geste que la complétude ne peut pas faire : elle dit que tout est
+   * rempli, elle ne dira jamais que c'est juste. Il ne touche pas au statut, et
+   * n'enregistre rien des champs — une section modifiée le reste, et la
+   * signature portera sur ce qui est ENREGISTRÉ, pas sur ce qui est à l'écran.
+   *
+   * La déclaration revient du serveur plutôt que d'être peinte d'avance : sa
+   * date et son auteur sont décidés là-bas, et les inventer ici afficherait une
+   * signature que la base ne porte pas.
+   */
+  async declareReady(): Promise<void> {
+    const id = this.productId();
+    if (id === '' || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      this.readinessValue.set(await this.products.declareReady(id));
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   async changeStatus(next: ProductStatus): Promise<void> {
     const id = this.productId();
     if (id === '' || this.busy()) {
@@ -1236,6 +1294,8 @@ export class ProductFormStore {
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);
+    this.readinessValue.set(detail.readiness);
+    this.contentUpdatedAtValue.set(detail.contentUpdatedAt);
     this.nutrition.set(detail.nutrition);
     const variant = product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');

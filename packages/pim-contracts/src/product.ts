@@ -196,9 +196,38 @@ export interface ProductEditorialView {
  */
 export type ProductMediaView = AttachedMediaView;
 
+/**
+ * **La déclaration qu'une fiche est publiable**, telle que l'écran la lit.
+ *
+ * `null` = personne ne s'est prononcé. Ce n'est pas un état de publication :
+ * une fiche déclarée publiable n'est pas en vente, elle est *vouchée*. Le
+ * schéma dit qu'elle est bien remplie ; ceci dit que quelqu'un a regardé.
+ *
+ * `contentUpdatedAt` accompagne toujours la déclaration parce qu'elle seule ne
+ * suffit pas à répondre à la question qu'on lui pose. Rien ne périme la
+ * déclaration en écriture — c'est un fait daté, pas une garantie perpétuelle —
+ * donc c'est la LECTURE qui compare : la fiche a-t-elle bougé depuis ? Les deux
+ * dates voyagent ensemble pour qu'aucun appelant ne puisse afficher la première
+ * sans la seconde et annoncer « publiable » sur une fiche modifiée depuis.
+ */
+export interface ProductReadinessView {
+  readonly readyAt: string;
+  readonly readyBy: string;
+}
+
 /** Détail enrichi (socle + éditorial + visuels) — pour la page d'édition. */
 export type ProductDetailView = ProductView & {
   readonly editorial: ProductEditorialView | null;
+  /** La déclaration « publiable », si quelqu'un s'est prononcé. */
+  readonly readiness: ProductReadinessView | null;
+  /**
+   * La dernière fois que le CONTENU de la fiche a bougé — toutes tables
+   * confondues (socle, déclinaisons, éditorial, visuels).
+   *
+   * `updatedAt` du seul produit ne suffirait pas : changer une photo ou une
+   * description n'y touche pas, et une déclaration se dirait à jour après.
+   */
+  readonly contentUpdatedAt: string;
   /**
    * Les visuels attachés, dans l'ordre. Ils étaient acceptés à la CRÉATION et
    * jamais relus : le formulaire ouvrait un panneau vide sur un produit qui

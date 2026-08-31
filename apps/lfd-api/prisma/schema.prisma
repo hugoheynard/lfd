@@ -841,16 +841,16 @@ model OrderLine {
   /// `NULL` avoue « on ne sait pas ». Un défaut à `[]` aurait transformé une
   /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
   /// vérifier.
-  basePriceMillicents Int?    @map("base_price_millicents")
-  pricingSteps   Json?    @map("pricing_steps")
+  basePriceMillicents Int?     @map("base_price_millicents")
+  pricingSteps        Json?    @map("pricing_steps")
   /// Quel étage de plancher a mordu, et sur quelles preuves — figé avec le prix.
   /// C'est ce qui rend le plancher DYNAMIQUE tenable : sans la mesure consignée,
   /// un prix qui dépend de l'historique cesse d'être explicable dès que
   /// l'historique bouge. Ne se relit jamais.
-  pricingFloor   Json?    @map("pricing_floor")
+  pricingFloor        Json?    @map("pricing_floor")
   /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
   /// relevé est un prix dont une règle n'a pas produit son effet.
-  pricingFloored Boolean? @map("pricing_floored")
+  pricingFloored      Boolean? @map("pricing_floored")
 
   /// L'engagement de volume qui a décidé du palier, et le CUMUL mesuré à cet
   /// instant : `{ id, promisedQuantity, cumulativeQuantity }`.
@@ -1853,9 +1853,9 @@ model CatalogPriceHistory {
   productSku String @map("product_sku")
 
   /// Prix HT en centimes réellement applicable à cet instant.
-  priceMillicents Int @map("price_millicents")
+  priceMillicents Int    @map("price_millicents")
   /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
-  source     String
+  source          String
 
   recordedAt DateTime @map("recorded_at")
 
@@ -1911,10 +1911,10 @@ model CatalogItem {
 
   /// Prix canonique HT en centimes, tel que le PIM le tarife. **Pré-altération** :
   /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
-  priceMillicents Int @map("price_millicents")
-  weightGrams     Int? @map("weight_grams")
-  isDefault   Boolean @default(false) @map("is_default")
-  position    Int     @default(0)
+  priceMillicents Int     @map("price_millicents")
+  weightGrams     Int?    @map("weight_grams")
+  isDefault       Boolean @default(false) @map("is_default")
+  position        Int     @default(0)
 
   /// Taux de TVA en %, **résolu par le PIM pour CET article** et reçu tel quel.
   ///
@@ -2946,6 +2946,9 @@ model Product {
   editorial ProductEditorial?
   media     ProductMedia[]
 
+  /// La déclaration « publiable », si quelqu'un s'est prononcé.
+  readiness ProductReadiness?
+
   /// Les taux propres à CE produit, par contexte. Absence = il hérite.
   contextVat ProductContextVat[]
 
@@ -3020,7 +3023,7 @@ model ProductVariant {
   /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
   /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
   /// ici (cf. documentation/architecture-conditionnements-pricing.md).
-  priceCents  Int? @map("price_cents")
+  priceCents  Int?       @map("price_cents")
   /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
   /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
   /// existantes serait une reprise de données déguisée en migration.
@@ -3030,7 +3033,7 @@ model ProductVariant {
   /// nullable — « pas encore tarifé »).
   priceBasis  PriceBasis @default(ht) @map("price_basis")
   /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
-  weightGrams Int? @map("weight_grams")
+  weightGrams Int?       @map("weight_grams")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -3289,6 +3292,35 @@ model ProductEditorial {
   @@schema("pim")
 }
 
+/// **La déclaration qu'une fiche est publiable** — un fait humain, daté et signé.
+///
+/// Satellite optionnel (PK = FK, ADR-13) : l'absence de ligne dit « personne ne
+/// s'est prononcé ». Ce n'est PAS une valeur de `ProductStatus` : le statut dit
+/// ce que le catalogue fait du produit (brouillon, en vente, archivé), la
+/// déclaration dit ce qu'une PERSONNE affirme de son contenu. Les mêler
+/// obligerait à repasser par « brouillon » pour retirer une signature.
+///
+/// Rien ne la périme en écriture, et c'est délibéré : une déclaration est un
+/// fait daté, pas une garantie perpétuelle. On la compare en LECTURE à la date
+/// de dernière modification de la fiche (`product`, `product_variant`,
+/// `product_editorial`, `product_media`) — si la fiche a bougé après, la
+/// déclaration est périmée et l'écran le dit. Une invalidation écrite à la main
+/// dans chaque verbe se serait oubliée quelque part, en silence, et une
+/// vignette « publiable » périmée est pire que pas de vignette du tout.
+model ProductReadiness {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quand la déclaration a été faite. La ligne n'existe pas sans elle.
+  readyAt DateTime @map("ready_at")
+  /// Qui l'a faite — l'identifiant de l'agent staff, jamais `null` : une
+  /// déclaration anonyme n'engagerait personne, et c'est tout son objet.
+  readyBy String   @map("ready_by")
+
+  @@map("product_readiness")
+  @@schema("pim")
+}
+
 /// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
 /// plusieurs produits. On stocke le **master** + un point focal ; les tailles
 /// dérivées sont calculées par chaque canal, jamais ressaisies.
@@ -3347,6 +3379,12 @@ model ProductMedia {
   media     MediaAsset @relation(fields: [mediaId], references: [id])
   role      MediaRole
   position  Int        @default(0)
+
+  /// Quand ce rattachement a bougé. Il n'était pas daté, et c'était sans
+  /// conséquence tant que personne ne demandait « la fiche a-t-elle changé
+  /// depuis ? » — `ProductReadiness` le demande, et une déclaration qui
+  /// ignorerait les visuels se dirait à jour après un changement de photo.
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@id([productId, mediaId])
   @@index([productId])

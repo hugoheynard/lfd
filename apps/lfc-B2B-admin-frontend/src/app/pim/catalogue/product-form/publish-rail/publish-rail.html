@@ -46,3 +46,44 @@
     }
   </fold-card>
 </section>
+
+<section class="pr-block" aria-labelledby="pr-ready">
+  <fold-element-title id="pr-ready" title="Publiable" />
+  <fold-card>
+    @if (signature(); as signed) {
+      <p class="pr-signature">{{ signed }}</p>
+
+      @if (store.readinessStale()) {
+        <fold-callout appearance="inset" variant="warning">
+          La fiche a été modifiée depuis. La déclaration porte sur l'état précédent.
+        </fold-callout>
+      }
+    } @else {
+      <p class="pr-ready-intro">
+        La complétude dit que tout est rempli. Elle ne dit pas que c'est juste — les prix, les
+        allergènes et les traductions n'engagent que celui qui les relit.
+      </p>
+    }
+
+    @if (signature() === null || store.readinessStale()) {
+      <button
+        foldButton
+        class="pr-cta"
+        [loading]="store.busy()"
+        [disabled]="!complete()"
+        (click)="declare()"
+      >
+        {{ signature() === null ? 'Déclarer publiable' : 'Déclarer à nouveau' }}
+      </button>
+
+      @if (!complete()) {
+        <p class="pr-ready-blocked">
+          {{ remaining() }} condition{{ remaining() > 1 ? 's' : '' }} manque{{
+            remaining() > 1 ? 'nt' : ''
+          }}
+          encore.
+        </p>
+      }
+    }
+  </fold-card>
+</section>

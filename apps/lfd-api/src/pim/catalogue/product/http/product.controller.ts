@@ -10,6 +10,7 @@ import {
   type DeclareNutritionPayload,
   type ProductDetailView,
   type ProductEditorialPayload,
+  type ProductReadinessView,
   type ProductView,
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
@@ -25,8 +26,10 @@ import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
+import { DeclareProductReadyCommand } from "../application/declare-product-ready.js";
 import { DeclareProductNutritionCommand } from "../application/declare-product-nutrition.js";
 import { GetProductDetailQuery } from "../application/get-product-detail.js";
+import { GetProductReadinessQuery } from "../application/get-product-readiness.js";
 import { ListProductsQuery } from "../application/list-products.js";
 import { PublishProductCommand } from "../application/publish-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
@@ -178,6 +181,31 @@ export class ProductController {
       new DeclareProductNutritionCommand(id, variantId, body),
     );
     return { id, variantId };
+  }
+
+  /**
+   * **Déclarer la fiche publiable** — une signature, pas une mise en vente.
+   *
+   * Sans corps : il n'y a rien à paramétrer. Ce qui est affirmé, c'est l'état
+   * de la fiche à cet instant, et l'instant comme l'auteur sont pris au vol
+   * (horloge de la requête, acteur du contexte) plutôt que fournis par
+   * l'appelant — un client qui pourrait dater ou signer à la place de
+   * quelqu'un d'autre viderait la déclaration de son sens.
+   *
+   * Refusée (409) sur un produit archivé, ou hors requête identifiée.
+   */
+  @Put(":id/ready")
+  async declareProductReady(@Param("id") id: string): Promise<ProductReadinessView | null> {
+    await this.commands.execute<DeclareProductReadyCommand, void>(
+      new DeclareProductReadyCommand(id),
+    );
+    // Commande puis requête, et non une commande qui rendrait un modèle de
+    // lecture : l'écran a besoin de la date et de l'auteur pour repeindre sa
+    // vignette, et les relire coûte moins que de recharger la fiche entière —
+    // ce qui écraserait la saisie en cours.
+    return this.queries.execute<GetProductReadinessQuery, ProductReadinessView | null>(
+      new GetProductReadinessQuery(id),
+    );
   }
 
   /**

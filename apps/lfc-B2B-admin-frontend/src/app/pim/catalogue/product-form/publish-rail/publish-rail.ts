@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCardComponent,
   FoldChecklistComponent,
   FoldDisclosureComponent,
@@ -32,6 +33,16 @@ interface CheckRow {
   readonly doneChildren: number;
 }
 
+/**
+ * La date d'une signature, telle qu'on la lit. Avec l'heure : deux
+ * enregistrements dans la même journée sont le cas COURANT, et une date seule
+ * ne dirait pas lequel des deux la signature a précédé.
+ */
+const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  dateStyle: 'long',
+  timeStyle: 'short',
+});
+
 /** Ce qu'un lecteur d'écran entend avant le libellé. La librairie livre l'anglais. */
 const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
   done: 'Fait',
@@ -62,6 +73,17 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
  *
  * Le modèle — quelles exigences, quelles langues, comment on compte — vit dans
  * `completeness.ts`. Ce composant ne fait que le peindre.
+ *
+ * ## Et le bloc « Publiable » en dessous
+ *
+ * La complétude mesure la FORME : dix conditions remplies. Elle ne dira jamais
+ * que 10,00 € est le bon prix, ni que la description parle du bon produit —
+ * c'est une responsabilité, et une responsabilité se prend, elle ne se calcule
+ * pas. D'où un second bloc, et un second geste : quelqu'un signe.
+ *
+ * La signature ne se périme pas toute seule, elle se DATE. Si la fiche bouge
+ * après, le bloc le dit au lieu d'effacer la signature en silence — savoir que
+ * Untel avait validé avant la modification vaut mieux que ne plus rien savoir.
  */
 @Component({
   selector: 'app-publish-rail',
@@ -69,6 +91,7 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCardComponent,
     FoldChecklistComponent,
     FoldDisclosureComponent,
@@ -115,6 +138,31 @@ export class PublishRail {
 
   protected readonly done = computed(() => this.score().done);
   protected readonly total = computed(() => this.score().total);
+
+  /**
+   * Reste-t-il quelque chose à remplir ? La déclaration attend que non.
+   *
+   * Elle n'est pas *interdite* sur une fiche incomplète par principe : elle est
+   * sans objet. Signer « les informations sont justes » quand il manque le prix
+   * signerait un vide.
+   */
+  protected readonly complete = computed(() => this.done() === this.total());
+
+  /** Ce qui reste, dit en toutes lettres sous le bouton désarmé. */
+  protected readonly remaining = computed(() => this.total() - this.done());
+
+  /** La signature, mise en français. `null` = personne ne s'est prononcé. */
+  protected readonly signature = computed<string | null>(() => {
+    const signed = this.store.readiness();
+    return signed === null
+      ? null
+      : `Déclarée publiable le ${DATE_FORMAT.format(new Date(signed.readyAt))} par ${signed.readyBy}`;
+  });
+
+  /** Déclare la fiche publiable — le store porte le geste, le rail le déclenche. */
+  protected declare(): void {
+    void this.store.declareReady();
+  }
 
   /**
    * Vert une fois tout rempli, accent avant.

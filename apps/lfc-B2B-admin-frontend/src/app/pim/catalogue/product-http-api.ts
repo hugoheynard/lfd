@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   ProductDetailView,
+  ProductReadinessView,
   UploadedMediaView,
   ProductEditorialView,
   SalesChannels,
@@ -98,6 +99,10 @@ export interface ProductDetail {
   readonly nutrition: NutritionValues;
   /** Les visuels attachés, dans l'ordre. Relus depuis peu : ils ne l'étaient pas. */
   readonly media: readonly MediaSlot[];
+  /** La signature « publiable », si quelqu'un s'est prononcé. */
+  readonly readiness: ProductReadinessView | null;
+  /** Quand le contenu de la fiche a bougé pour la dernière fois (ISO). */
+  readonly contentUpdatedAt: string;
 }
 
 function toNutritionValues(nutrition: VariantNutritionView | null): NutritionValues {
@@ -237,7 +242,23 @@ export class ProductHttpApi {
         bytes: item.bytes,
         contentType: item.contentType,
       })),
+      readiness: row.readiness,
+      contentUpdatedAt: row.contentUpdatedAt,
     };
+  }
+
+  /**
+   * Déclare la fiche publiable — une signature, pas une mise en vente.
+   *
+   * Rend la déclaration inscrite, seule route de mutation à rendre autre chose
+   * qu'un identifiant : l'écran doit repeindre la date et l'auteur, et les
+   * relire coûterait un aller-retour de plus pour ce que le serveur vient
+   * d'écrire.
+   */
+  async declareReady(id: string): Promise<ProductReadinessView | null> {
+    return await firstValueFrom(
+      this.http.put<ProductReadinessView | null>(this.url(`products/${id}/ready`), {}),
+    );
   }
 
   /**

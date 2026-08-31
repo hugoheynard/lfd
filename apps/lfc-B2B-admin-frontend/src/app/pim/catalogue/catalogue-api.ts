@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 
-import type { LocalizedText } from '@lfd/pim-contracts';
+import type { LocalizedText, ProductReadinessView } from '@lfd/pim-contracts';
 
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
@@ -91,6 +91,11 @@ export class CatalogueApi {
 
   async publishProduct(id: string): Promise<void> {
     await this.productsApi.publish(id);
+  }
+
+  /** Déclare la fiche publiable — la signature, distincte de la mise en vente. */
+  declareProductReady(id: string): Promise<ProductReadinessView | null> {
+    return this.productsApi.declareReady(id);
   }
 
   async unpublishProduct(id: string): Promise<void> {

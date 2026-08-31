@@ -68,6 +68,14 @@ export const PIM_EVENTS = {
   productVatChanged: "product.vat_changed",
   /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
   productChannelsChanged: "product.channels_changed",
+  /**
+   * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
+   * l'un est une signature sur un contenu, l'autre une mise en vente. Un
+   * historique qui les confondrait ne saurait plus répondre à « qui a validé ce
+   * prix », seulement à « qui l'a mis en ligne » — et ce n'est pas la même
+   * question ni, souvent, la même personne.
+   */
+  productDeclaredReady: "product.declared_ready",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
   /**
