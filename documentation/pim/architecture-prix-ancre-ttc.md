@@ -1,8 +1,9 @@
 # Le prix ancré au TTC — et le rapport prix public / prix pro
 
-> **État : tranches 1 et 2 livrées** (2026-08-31) — le rapport a une maison, une
-> API, un écran et ses tests. **Rien ne le lit encore : aucun prix n'a changé**,
-> et l'écran le dit. Les tranches 3 et 4 sont décrites ici mais pas écrites.
+> **État : tranches 1 à 3 livrées** (2026-08-31) — le rapport a une maison, une
+> API et un écran ; l'assiette existe dans le modèle et la conversion se fait au
+> push. **Aucun prix n'a changé**, et rien ne peut encore poser `ttc` : la
+> bascule d'un article est la tranche 4, qui doit d'abord trancher Shopify.
 >
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
 > — où vit le taux, et pourquoi une carte naît d'une règle fiscale ;
@@ -79,18 +80,22 @@ La conversion se fait donc **au push**, une fois : le référentiel résout le t
 `catalog_items.price_cents` garde son contrat à la lettre, et rien en aval ne
 bouge.
 
-⚠️ En revanche `catalog-parity.ts` et le contrat de push devront transporter
-l'ancrage : sans lui, la parité comparerait un TTC à un HT et crierait au faux
-positif. C'est un point de la tranche 3, pas un détail d'implémentation.
+~~⚠️ En revanche `catalog-parity.ts` et le contrat de push devront transporter
+l'ancrage.~~ **Faux, corrigé en tranche 3.** La conversion se fait dans la
+projection, donc le fil ne transporte que du HT et son contrat ne change pas.
+Et la parité n'a rien à apprendre non plus : `CheckCatalogParityService` rejoue
+**cette même projection** pour construire sa référence, si bien qu'elle compare
+déjà deux HT. L'annonce de la tranche 1 était une hypothèse écrite avant d'avoir
+lu ce service.
 
 ## 5. Les tranches
 
-| #     | Tranche           | Contenu                                                                                                                                      | État |
-| ----- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| **1** | Le rapport, socle | `pim.accounting_rules` (singleton), VO `ProPriceRatio`, agrégat, dépôt, `GET` / `PUT`, journal, tests. **Aucune lecture de prix ne change.** | ✅   |
-| **2** | Le rapport, écran | La case dans « Règles comptables ». On saisit, on voit ; ça ne décide encore rien.                                                           | ⬜   |
-| **3** | L'ancrage         | `price_basis: ht \| ttc` (défaut `ht`), conversion TTC↔HT, ancrage dans le contrat de push, parité réveillée.                                | ⬜   |
-| **4** | Le raccordement   | Le prix pro se dérive, projection Shopify, fiche qui affiche public TTC · HT par contexte · pro.                                             | ⬜   |
+| #     | Tranche           | Contenu                                                                                                                                              | État |
+| ----- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| **1** | Le rapport, socle | `pim.accounting_rules` (singleton), VO `ProPriceRatio`, agrégat, dépôt, `GET` / `PUT`, journal, tests. **Aucune lecture de prix ne change.**         | ✅   |
+| **2** | Le rapport, écran | La case dans « Règles comptables ». On saisit, on voit ; ça ne décide encore rien.                                                                   | ⬜   |
+| **3** | L'ancrage         | `price_basis: ht \| ttc` (défaut `ht`), conversion TTC↔HT dans le contrat, conversion au push B2B. Parité : rien à faire, elle rejoue la projection. | ✅   |
+| **4** | Le raccordement   | Le prix pro se dérive, projection Shopify, fiche qui affiche public TTC · HT par contexte · pro.                                                     | ⬜   |
 
 Les tranches 1 à 3 **ne changent aucun prix facturé** : le défaut `ht` conserve
 le comportement d'aujourd'hui tant que personne ne bascule un article.
@@ -139,15 +144,61 @@ le comportement d'aujourd'hui tant que personne ne bascule un article.
   enregistrée et tracée mais qu'aucun prix ne s'en sert encore. L'honnêteté
   coûte une phrase ; la découvrir soi-même coûte une facture.
 
+## 6 ter. Ce que la tranche 3 a posé
+
+- **`product_variant.price_basis`**, `ht` par défaut. Le défaut est le point :
+  la colonne portait un prix hors taxe depuis toujours, et tout autre défaut
+  changerait le SENS des lignes existantes sans les toucher — une reprise de
+  données déguisée en migration, et la pire espèce, puisque rien ne la
+  signalerait. Non-nullable : une déclinaison sans assiette n'existe pas, alors
+  qu'une déclinaison sans PRIX, si.
+- **`htFromTtc` / `ttcFromHt` / `htPriceOf` dans `@lfd/pim-contracts`**, à côté
+  de `proPriceFromPublic`. Le taux repasse par les points de base entiers avant
+  la division : `5.5 * 100` vaut `550.0000000000001` en binaire, et `4.85 * 100`
+  vaut `484.99999999999994`. Le référentiel a déjà payé ce piège dans
+  `VatPercent`.
+- **Le TTC fait foi.** L'aller-retour `ttcFromHt(htFromTtc(x))` peut perdre un
+  centime, et c'est le bon sens de la perte : l'étiquette est ce qu'un client
+  lit et ce que la caisse encaisse ; le hors taxe en est la conséquence. On ne
+  recalcule jamais une étiquette depuis sa propre déduction — un test le
+  documente plutôt que de prétendre l'inverse.
+- **La conversion vit dans la projection B2B**, dernier endroit qui connaît
+  encore l'assiette. Passé ce point, tout est HT, y compris pour la parité.
+- **Un motif d'exclusion de plus** : `variant_ttc_sans_taux`. Distinct de
+  « pas de tarif » — ici le prix EXISTE, c'est le taux qui manque, et c'est un
+  autre écran qu'il faut ouvrir. Écarté plutôt que converti au jugé : inventer
+  un taux ferait facturer un montant que personne n'a décidé.
+- **`htPriceOf` teste `ttc`, pas `ht`.** Une valeur inattendue — fixture
+  incomplète, ligne écrite par un script — retombe alors sur le hors taxe, ce
+  que la colonne a toujours voulu dire. La forme inverse faisait CONVERTIR tout
+  ce qui n'était pas exactement `"ht"`, donc baisser un prix sur une assiette
+  absente ; un test l'a montré avant la production.
+
+### Une dérive attrapée au passage
+
+`B2bExclusionReason` (contrat) et `Exclusion.reason` (domaine) étaient deux
+déclarations **indépendantes** du même ensemble, et elles avaient divergé : le
+domaine produisait déjà `canal_ferme`, absent du contrat. Une fiche écartée
+parce qu'on ne la vend pas aux professionnels s'affichait donc avec un motif
+**vide** dans l'écran de publication, et le compilateur ne pouvait rien en dire
+— deux synonymes ne se contredisent jamais, ils divergent.
+
+Le domaine importe désormais l'union du contrat. C'est un **alias**, donc le
+compilateur tient les deux bouts : un motif ajouté ne compile pas tant qu'il
+n'est pas traduit à l'écran.
+
 ## 7. Restant à trancher
 
-- **La conversion TTC → HT divisera** — et c'est là qu'il faudra rouvrir la
-  question de l'arithmétique exacte. Le référentiel ne peut pas voir
-  `b2b/pricing/domain/exact-money.ts` (matrice des frontières) ; la tranche 1
-  n'en a pas besoin (que des entiers), la tranche 3 si.
-- **Shopify est nativement TTC** (« prices include tax »). À vérifier avant la
-  tranche 4 : l'ancrage TTC pourrait **simplifier** la projection au lieu de la
-  compliquer.
+- ~~**La conversion TTC → HT divisera.**~~ Réglé en tranche 3 : la division
+  passe par les points de base entiers et n'arrondit qu'une fois. Pas besoin de
+  rationnel exact — un seul quotient, pas une chaîne.
+- 🔴 **Shopify est nativement TTC** (« prices include tax »), et sa projection
+  envoie `price_cents` **tel quel**, sans jamais voir de taux. C'est le
+  **bloquant de la tranche 4**, et la raison pour laquelle la tranche 3 ne
+  livre AUCUN moyen de poser `ttc` : tant que personne ne peut basculer un
+  article, la question reste théorique et aucun prix ne part de travers. La
+  trancher demande de savoir si la boutique encaisse taxe comprise — ce qui se
+  lit dans son paramétrage, pas dans ce dépôt.
 - ~~**Le calcul ne doit exister qu'une fois.**~~ Réglé en tranche 2 :
   `proPriceFromPublic` vit dans `@lfd/pim-contracts`, et le VO du serveur y
   délègue. La conversion TTC → HT de la tranche 3 devra y entrer aussi.

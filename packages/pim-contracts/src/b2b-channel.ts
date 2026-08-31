@@ -55,9 +55,33 @@ export interface B2bMembershipView {
  * brancher.
  */
 
-/** Pourquoi un article n'est **pas** parti. Nommé, jamais tu. */
+/**
+ * Pourquoi un article n'est **pas** parti. Nommé, jamais tu.
+ *
+ * ⚠️ Cette union est la **source** : le domaine (`Exclusion.reason`, côté
+ * projection B2B) l'importe au lieu de la redéclarer, et l'écran de publication
+ * en tire son dictionnaire de libellés — un motif ajouté ici ne compile pas
+ * tant qu'il n'est pas traduit.
+ *
+ * Elle a été un synonyme, et elle a dérivé : le domaine produisait déjà
+ * `canal_ferme` que l'union ignorait, si bien qu'une fiche écartée parce qu'on
+ * ne la vend pas aux professionnels s'affichait avec un motif VIDE. Le
+ * compilateur ne pouvait rien en dire — deux déclarations indépendantes ne se
+ * contredisent jamais, elles divergent.
+ */
 export type B2bExclusionReason =
-  "variant_sans_prix" | "variant_arretee" | "produit_sans_variante_vendable" | "famille_inconnue";
+  | "variant_sans_prix"
+  | "variant_arretee"
+  | "produit_sans_variante_vendable"
+  | "famille_inconnue"
+  /** La fiche n'est pas vendue sur ce canal — sa matrice, ou celle de sa famille. */
+  | "canal_ferme"
+  /**
+   * Prix ancré au **TTC**, et le contexte B2B n'a pas de taux : le hors taxe
+   * n'est pas dérivable. Distinct de `variant_sans_prix` — ici le prix existe,
+   * c'est le taux qui manque, et c'est un autre écran qu'il faut ouvrir.
+   */
+  | "variant_ttc_sans_taux";
 
 export interface B2bExclusionView {
   readonly sku: string;

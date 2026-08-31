@@ -18,6 +18,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     isDiscontinued: false,
     position: 0,
     priceCents: 200,
+    priceBasis: "ht",
     weightGrams: null,
     allergens: null,
     nutrition: null,
@@ -79,6 +80,77 @@ describe("projectCatalog", () => {
     expect(snapshot.products).toHaveLength(1);
     expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
     expect(snapshot.categories[0]?.vatRatePercent).toBe(5.5);
+  });
+
+  /**
+   * Le cœur de l'ancrage : la plateforme professionnelle facture en HORS TAXE,
+   * toujours. Un article dont le prix est celui de l'étiquette est converti
+   * ici, au dernier endroit qui connaît encore son assiette — 1,20 € TTC à
+   * 5,5 % partent à 1,14 € HT.
+   */
+  it("convertit un prix ancré au TTC en hors taxe avant de l'envoyer", () => {
+    const { snapshot, excluded } = projectCatalog(
+      [product({ variants: [variant({ priceCents: 120, priceBasis: "ttc" })] })],
+      [category()],
+      vat(),
+      sold(),
+      AT,
+    );
+
+    expect(excluded).toEqual([]);
+    expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(114);
+  });
+
+  /**
+   * Un même prix d'étiquette ne donne pas le même hors taxe selon le taux —
+   * c'est la raison d'être de tout le chantier, vérifiée de bout en bout de la
+   * projection et pas seulement dans la fonction de conversion.
+   */
+  it("fait dépendre le HT du taux, à prix d'étiquette égal", () => {
+    const ttcVariant = { variants: [variant({ priceCents: 120, priceBasis: "ttc" as const })] };
+    const at55 = projectCatalog([product(ttcVariant)], [category()], vat(), sold(), AT);
+    const at10 = projectCatalog([product(ttcVariant)], [category()], vat({ b2b: 10 }), sold(), AT);
+
+    expect(at55.snapshot.products[0]?.variants[0]?.priceCents).toBe(114);
+    expect(at10.snapshot.products[0]?.variants[0]?.priceCents).toBe(109);
+  });
+
+  /**
+   * Écarté, pas converti au jugé : un prix d'étiquette sans taux n'a pas de
+   * hors taxe. Le motif est distinct de « pas de tarif » — ici le prix existe,
+   * c'est le taux qui manque, et c'est un autre écran qu'il faut ouvrir.
+   */
+  it("écarte un prix ancré au TTC quand le contexte B2B n'a pas de taux", () => {
+    const { snapshot, excluded } = projectCatalog(
+      [product({ variants: [variant({ priceCents: 120, priceBasis: "ttc" })] })],
+      [category()],
+      vat({ takeaway: 5.5 }),
+      sold(),
+      AT,
+    );
+
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_ttc_sans_taux" });
+    expect(snapshot.products).toHaveLength(0);
+  });
+
+  /**
+   * Un prix HORS TAXE, lui, part sans taux : il n'a jamais eu besoin d'un taux
+   * pour être ce qu'il est. C'est la garantie que l'ancrage n'a rien resserré
+   * au passage — la plateforme écarte ces articles de sa boutique, mais le prix
+   * canonique, lui, a de la valeur.
+   */
+  it("laisse passer un prix hors taxe même sans taux B2B", () => {
+    const { snapshot, excluded } = projectCatalog(
+      [product()],
+      [category()],
+      vat({ takeaway: 5.5 }),
+      sold(),
+      AT,
+    );
+
+    expect(excluded).toEqual([]);
+    expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
+    expect(snapshot.products[0]?.variants[0]?.vatRatePercent).toBeNull();
   });
 
   it("facture la DÉROGATION de la fiche, pas le taux de sa famille", () => {

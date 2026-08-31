@@ -1,5 +1,6 @@
 import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
+import { htPriceOf, type B2bExclusionReason } from "@lfd/pim-contracts";
 
 import type {
   CategoryVatPercents,
@@ -30,17 +31,19 @@ import type {
  * « ce produit, vendu aux pros » ne changera pas.
  */
 
-/** Pourquoi quelque chose n'est **pas** parti. Nommé, jamais tu. */
+/**
+ * Pourquoi quelque chose n'est **pas** parti. Nommé, jamais tu.
+ *
+ * Le motif vient du CONTRAT (`B2bExclusionReason`) au lieu d'être redéclaré
+ * ici. C'était un synonyme, et il avait dérivé : le domaine produisait
+ * `canal_ferme` que le contrat ignorait, donc l'écran de publication affichait
+ * un motif vide pour une fiche écartée. Un alias, lui, ne peut pas diverger —
+ * c'est le compilateur qui tient les deux bouts.
+ */
 export interface Exclusion {
   /** SKU du produit ou de la déclinaison concernée. */
   readonly sku: string;
-  readonly reason:
-    | "variant_sans_prix"
-    | "variant_arretee"
-    | "produit_sans_variante_vendable"
-    | "famille_inconnue"
-    /** La fiche n'est pas vendue sur ce canal — sa matrice, ou celle de sa famille. */
-    | "canal_ferme";
+  readonly reason: B2bExclusionReason;
 }
 
 export interface Projection {
@@ -61,22 +64,28 @@ function frenchOf(text: { readonly fr: string }): string {
 }
 
 /**
- * Le prix est passé **à part**, déjà vérifié non nul par l'appelant.
+ * Le prix est passé **à part**, déjà converti en hors taxe et vérifié non nul
+ * par l'appelant.
  *
  * Le lire depuis `variant.priceCents` obligerait à un repli (`?? 0`) qui
  * transformerait un oubli de tarification en produit gratuit — précisément la
  * faute que le tri en amont existe pour empêcher. Une signature qui ne peut pas
  * mentir vaut mieux qu'un commentaire promettant qu'elle ne ment pas.
+ *
+ * Et il est **hors taxe**, quelle que soit l'assiette de la déclinaison : la
+ * plateforme professionnelle facture en HT de bout en bout, et la frontière du
+ * TTC s'arrête à ce fichier. Cf.
+ * `documentation/pim/architecture-prix-ancre-ttc.md` § 4.
  */
 function projectVariant(
   variant: VariantRecord,
-  priceCents: number,
+  htPriceCents: number,
   vatRatePercent: number | null,
 ): SyncVariant {
   return {
     sku: variant.sku,
     name: frenchOf(variant.name),
-    priceCents,
+    priceCents: htPriceCents,
     weightGrams: variant.weightGrams,
     isDefault: variant.isDefault,
     position: variant.position,
@@ -90,11 +99,19 @@ function projectVariant(
 }
 
 /**
- * Trie les déclinaisons d'un produit entre vendables et écartées.
+ * Trie les déclinaisons d'un produit entre vendables et écartées, et **convertit
+ * en hors taxe** au passage.
  *
- * Deux motifs, distincts à dessein : une déclinaison **arrêtée** est une
- * décision produit, une déclinaison **sans prix** est un oubli de saisie. Les
- * confondre priverait l'écran de la seule information actionnable des deux.
+ * Trois motifs, distincts à dessein : une déclinaison **arrêtée** est une
+ * décision produit, une déclinaison **sans prix** est un oubli de saisie, et une
+ * déclinaison **ancrée au TTC sans taux** est un prix qu'on ne sait pas
+ * convertir. Les confondre priverait l'écran de la seule information
+ * actionnable des trois — et le dernier envoie ouvrir un autre écran que les
+ * deux premiers.
+ *
+ * La conversion se fait ICI plutôt qu'en aval : c'est le dernier endroit qui
+ * connaît encore l'assiette. Passé ce point, tout est HT — y compris pour la
+ * comparaison de parité, qui rejoue cette même projection.
  */
 function sortVariants(
   product: ProductRecord,
@@ -116,7 +133,15 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_prix" });
       continue;
     }
-    sellable.push(projectVariant(variant, priceCents, vatRatePercent));
+    // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
+    // d'inventer un taux : une conversion approximative facturerait un montant
+    // que personne n'a décidé, et rien ne le signalerait ensuite.
+    const htPriceCents = htPriceOf(priceCents, variant.priceBasis, vatRatePercent);
+    if (htPriceCents === null) {
+      excluded.push({ sku: variant.sku, reason: "variant_ttc_sans_taux" });
+      continue;
+    }
+    sellable.push(projectVariant(variant, htPriceCents, vatRatePercent));
   }
 
   return { sellable, excluded };

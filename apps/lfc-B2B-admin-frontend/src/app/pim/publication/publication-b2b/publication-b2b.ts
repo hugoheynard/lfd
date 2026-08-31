@@ -20,6 +20,11 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
   variant_arretee: 'déclinaison arrêtée',
   produit_sans_variante_vendable: 'aucune déclinaison vendable',
   famille_inconnue: 'famille absente du référentiel',
+  canal_ferme: 'non vendue aux professionnels',
+  // « le prix existe, le taux manque » : c'est l'écran des taux qu'il faut
+  // ouvrir, pas celui du tarif. Le dire évite d'aller corriger au mauvais
+  // endroit.
+  variant_ttc_sans_taux: 'prix TTC sans taux B2B',
 };
 
 /**

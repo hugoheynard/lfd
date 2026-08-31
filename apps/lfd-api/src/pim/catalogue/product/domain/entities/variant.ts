@@ -1,3 +1,5 @@
+import type { PriceBasis } from "@lfd/pim-contracts";
+
 import { InvalidVariantPricingError } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
@@ -23,8 +25,16 @@ export interface VariantSnapshot {
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   readonly position: number;
-  /** Prix canonique HT en centimes ; `null` = pas encore tarifé. */
+  /** Prix canonique en centimes ; `null` = pas encore tarifé. */
   readonly priceCents: number | null;
+  /**
+   * **Ce que `priceCents` veut dire** — hors taxe, ou prix d'étiquette.
+   *
+   * Non optionnel, alors que le prix, lui, peut manquer : une déclinaison sans
+   * assiette n'existe pas, et la rendre optionnelle ferait porter à chaque
+   * lecteur la charge de deviner laquelle appliquer.
+   */
+  readonly priceBasis: PriceBasis;
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
   readonly weightGrams: number | null;
   /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
@@ -46,51 +56,68 @@ export interface VariantSnapshot {
  * publiable ? » sans aller la rechercher ailleurs.
  */
 export class Variant {
-  private constructor(
-    private readonly identity: string,
-    private readonly skuValue: string,
-    private readonly nameValue: LocalizedText,
-    private readonly optionsValue: Readonly<Record<string, string>>,
-    private defaultFlag: boolean,
-    private discontinuedFlag: boolean,
-    private positionValue: number,
-    private priceCentsValue: number | null,
-    private weightGramsValue: number | null,
-    private readonly allergensValue: readonly string[] | null,
-    private readonly nutritionValue: VariantNutritionSnapshot | null,
-  ) {}
+  private readonly identity: string;
+  private readonly skuValue: string;
+  private readonly nameValue: LocalizedText;
+  private readonly optionsValue: Readonly<Record<string, string>>;
+  private defaultFlag: boolean;
+  private discontinuedFlag: boolean;
+  private positionValue: number;
+  private priceCentsValue: number | null;
+  private readonly priceBasisValue: PriceBasis;
+  private weightGramsValue: number | null;
+  private readonly allergensValue: readonly string[] | null;
+  private readonly nutritionValue: VariantNutritionSnapshot | null;
 
-  /** La déclinaison née avec son produit : par défaut, en tête, sans tarif. */
+  /**
+   * L'instantané, et non onze arguments positionnels.
+   *
+   * Ils étaient onze, et l'assiette du prix en aurait fait douze — dont trois
+   * `boolean` et quatre `number | null` voisins, qu'aucun compilateur ne
+   * distingue si on les intervertit. La même raison a fait passer
+   * `VatRate.revise` et `Category.setVat` au record.
+   */
+  private constructor(snapshot: VariantSnapshot) {
+    this.identity = snapshot.id;
+    this.skuValue = snapshot.sku;
+    this.nameValue = snapshot.name;
+    this.optionsValue = snapshot.options;
+    this.defaultFlag = snapshot.isDefault;
+    this.discontinuedFlag = snapshot.isDiscontinued;
+    this.positionValue = snapshot.position;
+    this.priceCentsValue = snapshot.priceCents;
+    this.priceBasisValue = snapshot.priceBasis;
+    this.weightGramsValue = snapshot.weightGrams;
+    this.allergensValue = snapshot.allergens;
+    this.nutritionValue = snapshot.nutrition;
+  }
+
+  /**
+   * La déclinaison née avec son produit : par défaut, en tête, sans tarif.
+   *
+   * Elle naît **hors taxe**, l'assiette historique du référentiel. Un article
+   * neuf n'a aucune raison de basculer sans qu'on le décide, et le défaut de la
+   * base dit la même chose.
+   */
   static openDefault(input: { id: string; sku: Sku; name: LocalizedText }): Variant {
-    return new Variant(
-      input.id,
-      input.sku.value,
-      input.name,
-      {},
-      true,
-      false,
-      0,
-      null,
-      null,
-      null,
-      null,
-    );
+    return new Variant({
+      id: input.id,
+      sku: input.sku.value,
+      name: input.name,
+      options: {},
+      isDefault: true,
+      isDiscontinued: false,
+      position: 0,
+      priceCents: null,
+      priceBasis: "ht",
+      weightGrams: null,
+      allergens: null,
+      nutrition: null,
+    });
   }
 
   static reconstitute(snapshot: VariantSnapshot): Variant {
-    return new Variant(
-      snapshot.id,
-      snapshot.sku,
-      snapshot.name,
-      snapshot.options,
-      snapshot.isDefault,
-      snapshot.isDiscontinued,
-      snapshot.position,
-      snapshot.priceCents,
-      snapshot.weightGrams,
-      snapshot.allergens,
-      snapshot.nutrition,
-    );
+    return new Variant(snapshot);
   }
 
   get id(): string {
@@ -130,6 +157,7 @@ export class Variant {
       isDiscontinued: this.discontinuedFlag,
       position: this.positionValue,
       priceCents: this.priceCentsValue,
+      priceBasis: this.priceBasisValue,
       weightGrams: this.weightGramsValue,
       allergens: this.allergensValue,
       nutrition: this.nutritionValue,

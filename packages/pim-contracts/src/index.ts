@@ -51,6 +51,9 @@ export {
 } from "./accounting-rules.js";
 export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
 
+export { PRICE_BASES, htFromTtc, ttcFromHt, htPriceOf } from "./price-basis.js";
+export type { PriceBasis } from "./price-basis.js";
+
 export {
   createCategoryPayloadSchema,
   moveCategoryPayloadSchema,

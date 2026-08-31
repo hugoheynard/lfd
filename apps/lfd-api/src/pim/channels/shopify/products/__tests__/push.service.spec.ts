@@ -37,6 +37,7 @@ function product(): ProductRecord {
         isDiscontinued: false,
         position: 0,
         priceCents: 130,
+        priceBasis: "ht",
         weightGrams: null,
         allergens: null,
         nutrition: null,
