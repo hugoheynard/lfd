@@ -17,18 +17,34 @@
  *
  * Doc : documentation/pim/data-model/05-allergenes-gs1-inco.md
  */
+import type { AllergenCategoryAdminView, AllergenReference } from "@lfd/pim-contracts";
+
 import {
   ALLERGEN_MAPPINGS,
   incoLabel,
   type IncoCategory,
 } from "../src/pim/allergens/allergen-mapping.js";
 import { allergenReference } from "../src/pim/allergens/allergen-reference.js";
-import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+
+/** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+};
+
+/** Le catalogue servi à la SAISIE — filtré (D2, D2 bis). */
+const REFERENCE = "/pim/reference/allergens";
+/** Le référentiel servi à l'ADMINISTRATION — tout, archivage compris. */
+const ADMIN = "/pim/allergens";
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+  });
 });
 
 afterAll(async () => {
@@ -436,5 +452,203 @@ describe("le verrou d'immuabilité", () => {
     await expect(
       ctx.prisma.allergenCategory.delete({ where: { id: category.id } }),
     ).rejects.toThrow();
+  });
+});
+
+const staff = (): ReturnType<E2eContext["http"]> =>
+  ctx.http().set("Authorization", "Bearer staff-e2e");
+
+/** Les codes que l'endpoint de saisie propose, triés — l'assertion la plus fréquente. */
+async function proposedCodes(scope?: "eu" | "world"): Promise<string[]> {
+  const url = scope === undefined ? REFERENCE : `${REFERENCE}?scope=${scope}`;
+  const response = await staff().get(url);
+  expect(response.status).toBe(200);
+  return jsonBody<AllergenReference>(response)
+    .entries.map((entry) => entry.code)
+    .sort();
+}
+
+/** Le référentiel entier, tel que l'écran d'administration le lit. */
+async function adminCatalogue(): Promise<AllergenCategoryAdminView[]> {
+  const response = await staff().get(ADMIN);
+  expect(response.status).toBe(200);
+  return jsonBody<AllergenCategoryAdminView[]>(response);
+}
+
+/** Ouvre une catégorie maison et rend son identifiant. */
+async function createCategory(key: string): Promise<string> {
+  const response = await staff()
+    .post(`${ADMIN}/categories`)
+    .send({ key, name: { fr: "Fruits à coque exotiques", en: "Exotic nuts" } });
+  expect(response.status).toBe(201);
+  return jsonBody<{ id: string }>(response).id;
+}
+
+/** Déclare un allergène maison sous `categoryId` et rend son identifiant. */
+async function createEntry(code: string, categoryId: string): Promise<string> {
+  const response = await staff()
+    .post(`${ADMIN}/entries`)
+    .send({ code, name: { fr: "Souchet", en: "Tiger nut" }, categoryId });
+  expect(response.status).toBe(201);
+  return jsonBody<{ id: string }>(response).id;
+}
+
+describe("le rebranchement de GET /pim/reference/allergens", () => {
+  /**
+   * La preuve que ce déploiement ne change RIEN pour l'utilisateur : l'endpoint
+   * ne lit plus `ALLERGEN_MAPPINGS` mais la table semée, et il rend les mêmes
+   * codes dans les deux périmètres.
+   */
+  it("sert depuis la base exactement les codes que la constante servait", async () => {
+    const expected = (scope: "eu" | "world"): string[] =>
+      allergenReference(scope, "fr")
+        .entries.map((entry) => entry.code)
+        .sort();
+
+    expect(await proposedCodes("eu")).toEqual(expected("eu"));
+    expect(await proposedCodes("world")).toEqual(expected("world"));
+  });
+
+  it("sert les mêmes libellés, granulaire et d'étiquette", async () => {
+    const response = await staff().get(`${REFERENCE}?scope=world`);
+    const served = jsonBody<AllergenReference>(response).entries;
+
+    for (const mapping of ALLERGEN_MAPPINGS) {
+      expect(served.find((entry) => entry.code === mapping.gs1Code)).toEqual({
+        code: mapping.gs1Code,
+        label: mapping.labels.fr,
+        incoCategory: mapping.incoCategory,
+        incoLabel: mapping.incoCategory === null ? null : incoLabel(mapping.incoCategory, "fr"),
+      });
+    }
+  });
+
+  it("prend `eu` par défaut, comme avant la bascule", async () => {
+    expect(await proposedCodes()).toEqual(await proposedCodes("eu"));
+  });
+});
+
+describe("le catalogue `eu` après la bascule (D2)", () => {
+  /**
+   * Le point sur lequel D2 a été redressé. Si `eu` continuait de filtrer sur
+   * `inco_category IS NOT NULL`, un allergène maison serait créable et jamais
+   * cochable — le formulaire produit démarre sur `eu`. Le référentiel
+   * deviendrait administrable et la déclaration ne le verrait pas.
+   */
+  it("propose un allergène maison, dont la catégorie n'a aucune mention INCO", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    await createEntry("X-SOUCHET", categoryId);
+
+    expect(await proposedCodes("eu")).toContain("X-SOUCHET");
+    expect(await proposedCodes("world")).toContain("X-SOUCHET");
+  });
+
+  it("garde le sarrasin hors du catalogue `eu` — officiel, mais sans obligation UE", async () => {
+    // `official` et « porte une catégorie de l'annexe II » ne disent pas la
+    // même chose, et ces trois codes-là sont la preuve vivante de l'écart.
+    expect(await proposedCodes("eu")).not.toContain("BWD");
+    expect(await proposedCodes("world")).toContain("BWD");
+  });
+});
+
+describe("l'archivage (D2 bis)", () => {
+  it("retire l'entrée de ce qu'on PROPOSE, sans la retirer de ce qu'on reconnaît", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    const entryId = await createEntry("X-SOUCHET", categoryId);
+
+    await staff().put(`${ADMIN}/entries/${entryId}/archive`).expect(200);
+
+    expect(await proposedCodes("eu")).not.toContain("X-SOUCHET");
+    // Elle reste au référentiel : l'écran d'administration doit la voir pour
+    // pouvoir la restaurer, et une déclaration qui la cite reste valide.
+    const catalogue = await adminCatalogue();
+    const entry = catalogue
+      .flatMap((category) => category.entries)
+      .find((candidate) => candidate.id === entryId);
+    expect(entry?.archivedAt).not.toBeNull();
+  });
+
+  it("rend la ligne à la saisie quand on la restaure", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    const entryId = await createEntry("X-SOUCHET", categoryId);
+    await staff().put(`${ADMIN}/entries/${entryId}/archive`).expect(200);
+
+    await staff().put(`${ADMIN}/entries/${entryId}/restore`).expect(200);
+
+    expect(await proposedCodes("eu")).toContain("X-SOUCHET");
+  });
+
+  it("refuse d'archiver une catégorie qui accueille encore un allergène proposé", async () => {
+    // La FK `Restrict` ne protège que de l'effacement : ce refus-ci n'existe
+    // que dans le handler, et il ne se prouve qu'en traversant le vrai SQL.
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    await createEntry("X-SOUCHET", categoryId);
+
+    await staff().put(`${ADMIN}/categories/${categoryId}/archive`).expect(409);
+  });
+});
+
+describe("l'officiel, vu de l'API", () => {
+  it("refuse de renommer une catégorie de l'annexe II", async () => {
+    const catalogue = await adminCatalogue();
+    const gluten = catalogue.find((category) => category.key === "gluten");
+    if (gluten === undefined) {
+      throw new Error("le semis n'a pas posé la catégorie « gluten »");
+    }
+
+    const response = await staff()
+      .put(`${ADMIN}/categories/${gluten.id}/name`)
+      .send({ name: { fr: "Céréales" } });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "catalogue.allergen_category.official_locked",
+    );
+  });
+
+  it("refuse d'archiver un code GS1", async () => {
+    const catalogue = await adminCatalogue();
+    const hazelnut = catalogue
+      .flatMap((category) => category.entries)
+      .find((entry) => entry.code === "SH");
+    if (hazelnut === undefined) {
+      throw new Error("le semis n'a pas posé l'entrée « SH »");
+    }
+
+    await staff().put(`${ADMIN}/entries/${hazelnut.id}/archive`).expect(409);
+  });
+
+  it("laisse ranger une catégorie officielle — l'ordre n'a pas de portée réglementaire", async () => {
+    const before = await adminCatalogue();
+    const gluten = before.find((category) => category.key === "gluten");
+    if (gluten === undefined) {
+      throw new Error("le semis n'a pas posé la catégorie « gluten »");
+    }
+
+    await staff()
+      .put(`${ADMIN}/categories/${gluten.id}/position`)
+      .send({ position: gluten.position + 100 })
+      .expect(200);
+
+    const moved = (await adminCatalogue()).find((category) => category.key === "gluten");
+    expect(moved?.position).toBe(gluten.position + 100);
+
+    // On remet le rang semé : les lignes officielles échappent au `TRUNCATE` du
+    // harnais, donc ce déplacement survivrait à la suite.
+    await staff()
+      .put(`${ADMIN}/categories/${gluten.id}/position`)
+      .send({ position: gluten.position })
+      .expect(200);
+  });
+
+  it("refuse un second allergène sur un code déjà pris", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+
+    const response = await staff()
+      .post(`${ADMIN}/entries`)
+      .send({ code: "SH", name: { fr: "Ma noisette" }, categoryId });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.allergen.code_taken");
   });
 });
