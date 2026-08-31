@@ -47,28 +47,6 @@
     </div>
   }
 
-  @if (store.isEdit()) {
-    <fold-dropdown pageActions ariaLabel="Actions du produit" placement="bottom-end">
-      <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
-
-      @if (store.status() !== 'published') {
-        <fold-dropdown-item icon="check" [disabled]="store.busy()" (selected)="publish()">
-          Publier
-        </fold-dropdown-item>
-      }
-      @if (store.status() === 'published') {
-        <fold-dropdown-item icon="eye-off" [disabled]="store.busy()" (selected)="unpublish()">
-          Dépublier
-        </fold-dropdown-item>
-      }
-      @if (store.status() !== 'archived') {
-        <fold-dropdown-item icon="folder" [disabled]="store.busy()" (selected)="archive()">
-          Archiver
-        </fold-dropdown-item>
-      }
-    </fold-dropdown>
-  }
-
   @if (store.error(); as message) {
     <fold-callout appearance="inset" variant="alert" role="alert">
       {{ message }}
@@ -145,7 +123,14 @@
         </fold-card>
       </div>
 
-      <app-publish-rail asideRight (saveAll)="saveAll()" />
+      <app-publish-rail
+        asideRight
+        (saveAll)="saveAll()"
+        (publish)="publish()"
+        (unpublish)="unpublish()"
+        (archive)="archive()"
+        (restore)="restore()"
+      />
     </fold-aside-layout>
   }
 </fold-page-layout>

@@ -13,16 +13,12 @@ import {
   FoldBadgeComponent,
   FoldCardComponent,
   FoldButtonComponent,
-  FoldButtonIconComponent,
   FoldCalloutComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
   FoldAsideLayoutComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
-  FoldPopoverTriggerDirective,
   type FoldBadgeVariant,
 } from 'fold-ng';
 
@@ -87,10 +83,6 @@ interface PageSection {
     FoldBadgeComponent,
     FoldCardComponent,
     FoldButtonComponent,
-    FoldButtonIconComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
-    FoldPopoverTriggerDirective,
     FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
@@ -240,6 +232,11 @@ export class ProductFormPage implements HasPendingChanges {
 
   protected archive(): void {
     void this.store.changeStatus('archived');
+  }
+
+  /** Une fiche archivée revient en BROUILLON, jamais directement en ligne. */
+  protected restore(): void {
+    void this.store.changeStatus('draft');
   }
 
   /** Enregistre toutes les sections modifiées, depuis le rail. */

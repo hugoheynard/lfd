@@ -87,3 +87,57 @@
     }
   </fold-card>
 </section>
+
+<!-- LA MISE EN VENTE, en dernier — c'est l'aboutissement de la colonne : ce qui
+     reste à enregistrer, ce qui manque, qui a validé, puis ce qu'on en fait.
+     Ces gestes vivaient dans un menu ⋮ de l'en-tête, à l'autre bout de l'écran
+     et sans lien visible avec la complétude qui les conditionne. -->
+<section class="pr-block" aria-labelledby="pr-sale">
+  <fold-element-title id="pr-sale" title="Mise en vente" />
+  <fold-card>
+    @if (store.status() === 'archived') {
+      <p class="pr-said">
+        Cette fiche est <strong>archivée</strong>&nbsp;: elle ne part chez aucun canal. La restaurer
+        la remet en brouillon — jamais directement en ligne.
+      </p>
+      <button foldButton class="pr-cta" [loading]="store.busy()" (click)="restore.emit()">
+        Restaurer
+      </button>
+    } @else {
+      <p class="pr-said">
+        @if (store.status() === 'published') {
+          En ligne. La retirer la remet en brouillon sans rien détruire.
+        } @else {
+          Brouillon&nbsp;: elle n'est visible d'aucun canal.
+        }
+      </p>
+      @if (store.status() === 'published') {
+        <button
+          foldButton
+          class="pr-cta"
+          emphasis="outline"
+          intent="neutral"
+          [loading]="store.busy()"
+          (click)="unpublish.emit()"
+        >
+          Retirer de la vente
+        </button>
+      } @else {
+        <button foldButton class="pr-cta" [loading]="store.busy()" (click)="publish.emit()">
+          Mettre en vente
+        </button>
+      }
+
+      <!-- Archiver est d'une autre nature : ça sort la fiche du catalogue. D'où
+           la confirmation en place, et non un item de menu qu'on choisit par
+           erreur en visant celui d'à côté. -->
+      <div class="pr-danger">
+        <fold-inline-confirm intent="danger" (confirmed)="archive.emit()">
+          <button foldButton emphasis="soft" intent="danger" [disabled]="store.busy()">
+            Archiver
+          </button>
+        </fold-inline-confirm>
+      </div>
+    }
+  </fold-card>
+</section>

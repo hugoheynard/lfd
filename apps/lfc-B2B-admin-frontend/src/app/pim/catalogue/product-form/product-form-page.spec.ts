@@ -84,14 +84,26 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('.ident')?.textContent).toContain('Frais du jour');
   });
 
-  it('propose Publier et Archiver sur un brouillon, jamais Dépublier', () => {
+  /**
+   * Le cycle de vie a quitté le menu ⋮ de l'en-tête pour le RAIL, sous la
+   * complétude qui le conditionne. Il vivait à l'autre bout de l'écran, sans
+   * lien visible avec ce qui décide s'il est permis.
+   */
+  it('ne garde plus de menu d’actions dans l’en-tête', () => {
     const { root } = render(true);
-    const items = [...root.querySelectorAll('fold-dropdown-item')].map(
-      (item) => item.textContent?.trim() ?? '',
+
+    expect(root.querySelector('fold-dropdown')).toBeNull();
+  });
+
+  it('propose la mise en vente sur un brouillon, jamais le retrait', () => {
+    const { root } = render(true);
+    const actions = [...root.querySelectorAll('app-publish-rail button')].map(
+      (button) => button.textContent?.trim() ?? '',
     );
-    expect(items).toContain('Publier');
-    expect(items).toContain('Archiver');
-    expect(items).not.toContain('Dépublier');
+
+    expect(actions).toContain('Mettre en vente');
+    expect(actions).toContain('Archiver');
+    expect(actions).not.toContain('Retirer de la vente');
   });
 
   it('pose le retour AU-DESSUS du titre, dans l’en-tête', () => {

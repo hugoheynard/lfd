@@ -4,6 +4,7 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldChecklistComponent,
+  FoldInlineConfirmComponent,
   FoldDisclosureComponent,
   FoldElementTitleComponent,
   FoldMeterComponent,
@@ -94,6 +95,7 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
     FoldCalloutComponent,
     FoldCardComponent,
     FoldChecklistComponent,
+    FoldInlineConfirmComponent,
     FoldDisclosureComponent,
     FoldElementTitleComponent,
     FoldMeterComponent,
@@ -106,6 +108,18 @@ export class PublishRail {
 
   /** Lance l'enregistrement de toutes les sections modifiées. */
   readonly saveAll = output<void>();
+
+  /**
+   * Le cycle de vie de la fiche — remonté ici depuis le menu ⋮ de l'en-tête.
+   *
+   * Des `output` et non des appels directs au store : la page possède déjà ces
+   * gestes (elle les enchaîne avec sa navigation et ses messages), et le rail
+   * n'a pas à savoir ce qui suit un archivage.
+   */
+  readonly publish = output<void>();
+  readonly unpublish = output<void>();
+  readonly archive = output<void>();
+  readonly restore = output<void>();
 
   protected readonly stateLabels = STATE_LABELS;
 
