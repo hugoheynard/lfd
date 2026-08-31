@@ -43,7 +43,19 @@ export function cleanRequiredText(what: string, text: LocalizedText): LocalizedT
   return cleaned;
 }
 
-/** La même chose, mais un texte entièrement vide vaut « rien n'a été écrit ». */
+/**
+ * La même chose, mais l'absence est permise : un texte **sans langue source**
+ * vaut « rien n'a été écrit » et rend `null`.
+ *
+ * Les traductions seules partent avec lui, et c'est délibéré : un
+ * `LocalizedText` sans `fr` n'existe pas dans le type, et le conserver
+ * demanderait d'inventer une source. Un appelant qui tient à une traduction
+ * pose donc la langue source d'abord.
+ *
+ * Le fil HTTP ne peut pas produire ce cas — `localizedTextSchema` exige déjà
+ * `fr`. La note vise l'appelant direct (script, autre commande), pour qui la
+ * perte serait silencieuse.
+ */
 export function cleanOptionalText(text: LocalizedText | null | undefined): LocalizedText | null {
   if (text === null || text === undefined) {
     return null;
