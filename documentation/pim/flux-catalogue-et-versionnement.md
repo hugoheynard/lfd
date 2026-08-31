@@ -306,3 +306,102 @@ mécanisme de git, pour la même raison.
 trop cher pour être posé souvent — c'est lui qui rend la décision tenable, et
 c'est donc lui qui doit être livré dans la première tranche, pas dans une
 optimisation ultérieure.
+
+## 10. Ce que la tranche 1 a posé
+
+**Livrée le 2026-08-31.** `POST /pim/catalogue/revisions` pose une ancre.
+
+- **Trois tables.** `catalog_content` (le magasin adressé par empreinte),
+  `catalog_revision` (l'ancre : version monotone, libellé, empreinte, en-tête),
+  `catalog_revision_item` (l'appartenance, qui porte la clé et non le contenu).
+  La clé étrangère du contenu est `RESTRICT`, pas `CASCADE` : un contenu partagé
+  ne disparaît pas parce qu'une révision le lâche.
+- **Une empreinte canonique.** SHA-256 d'un JSON aux clés triées à tous les
+  étages — l'ordre des clés d'un objet JavaScript suit l'insertion, et sans
+  forme canonique il suffirait qu'un champ change de place dans un `map` pour
+  que tout le catalogue paraisse modifié. Les tableaux, eux, gardent leur ordre :
+  il porte du sens.
+- **Les articles triés par SKU** avant de calculer l'empreinte de la révision.
+  L'ordre de lecture de la base n'est pas garanti stable ; sans ce tri, deux
+  captures d'un catalogue identique donneraient deux empreintes.
+- **Une frontière JSON vérifiée** (`toJsonObject`). Le magasin étant adressé par
+  contenu, ce qui est stocké doit être exactement ce qui a été haché : une
+  `Date`, un `NaN` ou une fonction que `JSON.stringify` déforme en silence
+  romprait ce lien. La vérification refuse plutôt que de laisser passer.
+- **Une capture identique ne pose rien.** L'empreinte est comparée à celle de la
+  dernière ancre ; égales, on rend l'existante avec `created: false`. Un libellé
+  différent ne suffit pas — nommer autrement un catalogue identique ne le rend
+  pas différent.
+- **Un port de lecture à part** (`CatalogRevisionSource`). `CatalogueReader`
+  répond aux questions des canaux et ne charge aucun éditorial ; les fondre
+  aurait obligé tous ses appelants à porter ce que la révision seule lit.
+
+Mesuré par un e2e : deux révisions séparées par un seul changement de prix
+partagent tous leurs autres contenus, et un changement du **seul** rapport pro
+pose bien une ancre sans écrire un contenu de plus.
+
+## 11. Ce que la tranche 2 a posé — le diff
+
+**Livrée le 2026-08-31.** `GET /pim/catalogue/revisions` liste les ancres,
+`GET /pim/catalogue/revisions/:from/diff/:to` dit ce qui a changé entre deux.
+
+### La lecture est paresseuse, et c'est tout l'intérêt du magasin
+
+```
+1. lire les deux INDEX      → une empreinte par SKU, aucun payload
+2. planifier                → ajoutés / retirés / modifiés
+3. lire les payloads        → des seuls SKU modifiés, des deux côtés
+```
+
+Sur mille articles dont trois ont bougé, six payloads sont lus. Sans le magasin
+adressé par contenu, il aurait fallu relire deux catalogues entiers pour en
+comparer trois lignes.
+
+### Ce que le diff montre, et ce qu'il ne descend pas
+
+Le détail d'un article s'arrête au **premier niveau** : un champ imbriqué qui
+bouge — une description en italien, l'alternative d'un visuel — rend une ligne
+pour le champ entier, sérialisé, avec ses deux états. Descendre plus bas
+demanderait de décider ce qu'est « la même » entrée dans deux tableaux : un
+visuel déplacé est-il modifié ou remplacé ? La question n'a pas de réponse
+universelle, et montrer les deux états est honnête là où trancher serait
+arbitraire.
+
+Les chaînes sortent **telles quelles**, sans guillemets : un nom de produit dans
+la colonne « avant » d'un tableau ne doit pas se lire avec du bruit autour.
+
+### Deux points de conception
+
+- **`FieldDiffView` est réutilisé** depuis la réconciliation Shopify plutôt que
+  redéclaré. Un champ qui bouge se rend de la même façon, qu'il ait bougé entre
+  deux révisions ou entre nous et une boutique — et deux déclarations du même
+  ensemble finissent par diverger, ce qui est déjà arrivé sur les motifs
+  d'exclusion B2B.
+- **L'ordre demandé fait foi.** Demander `2/diff/1` échange « ajouté » et
+  « retiré » au lieu de normaliser : on regarde parfois en arrière, et corriger
+  silencieusement l'ordre priverait de ce regard.
+
+## 12. Ce que la tranche 3 a posé — l'écran
+
+**Livrée le 2026-08-31.** `/pim/revisions` : poser une ancre, la nommer, lire ce
+qui a changé entre deux.
+
+- **Trois cartes, trois gestes** : poser, comparer, relire l'historique. Les
+  fondre en une seule mêlerait une écriture et deux lectures dans le même bloc.
+- **Les deux bornes se posent d'elles-mêmes** sur les deux plus récentes, dans
+  le bon sens (de l'avant-dernière à la dernière). C'est la comparaison qu'on
+  vient chercher neuf fois sur dix ; l'imposer à la main serait un péage.
+- **« Rien n'a été posé » est un message**, pas un silence. Le serveur rend
+  `created: false` sur un catalogue inchangé, et l'écran le dit — annoncer
+  « posée » ferait croire à une version de plus.
+- **L'en-tête du diff vient en PREMIER.** Il porte le rapport professionnel, qui
+  bouge sans qu'aucun article ne change : plus bas, il se manquerait sur un diff
+  long, alors que c'est le seul changement qui touche toutes les factures d'un
+  coup.
+- **Trois natures, trois blocs** — entré, retiré, modifié. Une liste unique
+  obligerait le lecteur à trier lui-même deux questions qui ne se posent pas
+  ensemble : « qu'est-ce qu'on vend en plus » n'est pas « qu'est-ce qui a changé
+  de prix ».
+
+Le détail d'un article s'arrête au premier niveau (cf. § 11), et une ancre sans
+nom se dit « sans nom » : un blanc se lirait comme un défaut d'affichage.
