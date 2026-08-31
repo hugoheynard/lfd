@@ -1,0 +1,91 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  @if (isOfficial()) {
+    <fold-callout appearance="inset" variant="info">{{ officialReason }}</fold-callout>
+  }
+
+  @if (isNonEu()) {
+    <fold-callout appearance="inset" variant="warning">{{ nonEuReason }}</fold-callout>
+  }
+
+  @if (isArchived()) {
+    <fold-callout appearance="inset" variant="warning">
+      <strong>Catégorie archivée.</strong> Elle ne se propose plus à la saisie, et rien n'y range
+      d'allergène tant qu'elle n'est pas revenue. Elle n'est pas supprimée&nbsp;: ses entrées
+      archivées l'attendent, et se restaurent ensuite une par une.
+    </fold-callout>
+  }
+
+  <!-- La clé est une IDENTITÉ : les entrées s'y rattachent. Saisissable une
+       fois, lue ensuite. -->
+  <fold-input
+    label="Clé"
+    hint="Minuscules, chiffres, tirets ou soulignés. Elle identifie la catégorie partout, et ne changera plus."
+    placeholder="ex. fruits-exotiques"
+    required
+    [disabled]="isEdit()"
+    [value]="draftKey()"
+    (valueChange)="draftKey.set($event)"
+  />
+
+  <app-lang-switch [(lang)]="name.locale" [missing]="name.missing()" [hint]="name.hint()" />
+  <fold-input
+    [label]="name.label()"
+    hint="Ce qui s'affiche en tête de la famille, et sur l'étiquette pour les catégories de l'annexe II."
+    placeholder="ex. Fruits à coque exotiques"
+    required
+    [disabled]="isOfficial()"
+    [value]="name.value()"
+    (valueChange)="name.set($event)"
+  />
+
+  <!-- Le rang n'a AUCUNE portée réglementaire : c'est le seul champ qu'une
+       catégorie du droit laisse régler. -->
+  <fold-number-input
+    label="Rang d'affichage"
+    hint="Le plus petit d'abord. Sans portée réglementaire — c'est pourquoi même une catégorie officielle se range."
+    integer
+    [min]="0"
+    [value]="draftPosition()"
+    (valueChange)="draftPosition.set($event)"
+  />
+
+  @if (isEdit() && !isOfficial()) {
+    <section class="archive">
+      @if (isArchived()) {
+        <button foldButton emphasis="outline" icon="reset" [disabled]="busy()" (click)="restore()">
+          Restaurer la catégorie
+        </button>
+      } @else {
+        <fold-callout appearance="inset" variant="info">{{ archiveMeaning }}</fold-callout>
+
+        @if (offered() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Archivage impossible.</strong> {{ offered() }} allergène(s) y sont encore
+            proposés. Archivez-les d'abord&nbsp;: sinon ils resteraient offerts à la saisie sous une
+            famille que l'écran ne montre plus.
+          </fold-callout>
+        } @else {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="warning"
+            icon="archive"
+            [disabled]="busy()"
+            (click)="archive()"
+          >
+            Archiver la catégorie
+          </button>
+        }
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="busy()" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : 'Ouvrir la catégorie' }}
+  </button>
+</footer>

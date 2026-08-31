@@ -5,16 +5,181 @@
     sur elle — c'est la déclinaison qui est mise sur le marché.
   </p>
 
-  <fold-empty-state
-    icon="alert"
-    title="Écran à venir"
-    subtitle="Le référentiel est aujourd'hui en dur dans le code (liste GS1, annexe II du règlement UE 1169/2011). Le rendre modifiable ici est prévu ; rien n'est perdu en attendant."
-  />
+  @if (canWrite()) {
+    <button
+      pageActions
+      foldButton
+      emphasis="solid"
+      intent="primary"
+      icon="plus"
+      (click)="openCategory()"
+    >
+      <span class="cta-full">Ajouter une catégorie</span>
+      <span class="cta-short">Ajouter</span>
+    </button>
+  }
 
-  <fold-callout appearance="inset" variant="info">
-    En attendant, les allergènes d'une fiche se déclarent dans sa section
-    <strong>Fiche réglementaire</strong>. Ce déménagement-ci ne concerne que le
-    <strong>référentiel</strong> — la déclaration, elle, restera sur la fiche&nbsp;: elle se prend
-    en regardant le produit, pas une table de réglages.
-  </fold-callout>
+  @if (firstLoad()) {
+    <fold-loading message="Lecture du référentiel…" />
+  } @else if (categories().length === 0) {
+    <fold-empty-state
+      [tone]="loadError() ? 'alert' : 'neutral'"
+      icon="alert"
+      [title]="loadError() ? 'Référentiel illisible' : 'Référentiel vide'"
+      [subtitle]="
+        loadError() ??
+        'Les 15 catégories et les 30 codes GS1 sont semés par une migration. Une liste vide signale un semis qui n’a pas eu lieu — c’est à corriger côté base, pas ici.'
+      "
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    @if (loadError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>
+        {{ message }} Ce qui s'affiche est la dernière lecture réussie&nbsp;: elle peut avoir
+        vieilli.
+      </fold-callout>
+    }
+
+    <fold-callout appearance="inset" variant="info">
+      Deux populations cohabitent ici. <strong>L'officiel</strong> — les 15 catégories semées et les
+      30 codes GS1 — est du <strong>droit</strong>&nbsp;: on ne l'invente pas, on l'enregistre, et
+      il s'affiche sous cadenas. <strong>Le maison</strong> est ce que vous ouvrez ensuite&nbsp;: il
+      se renomme, se range et s'archive. Archiver n'efface rien&nbsp;— c'est d'ici, et d'ici
+      seulement, qu'on restaure.
+    </fold-callout>
+
+    <fold-choice-row
+      layout="chips"
+      ariaLabel="Filtrer le référentiel"
+      [options]="filters()"
+      [activeKey]="filter()"
+      (selected)="setFilter($event)"
+    />
+
+    @for (row of rows(); track row.category.id) {
+      <fold-card [surface]="row.category.archivedAt ? 'sunken' : 'card'" separators="header">
+        <fold-element-title
+          cardHeader
+          variant="title"
+          [icon]="categoryIcon(row.category)"
+          [iconTone]="row.category.official ? 'faded' : 'neutral'"
+          [title]="row.category.name.fr"
+          [subtitle]="subtitle(row.category)"
+        >
+          <div class="head" titleAction>
+            <span class="origin">{{ origin(row.category) }}</span>
+
+            @if (row.category.official) {
+              <span class="locked">
+                <fold-icon name="lock" size="sm" />
+                Inaltérable
+              </span>
+              <fold-info
+                [text]="officialCategoryReason"
+                label="Pourquoi cette catégorie ne se modifie pas"
+              />
+            }
+
+            @if (isNonEu(row.category)) {
+              <fold-info [text]="nonEuReason" label="Ce que « hors obligation UE » veut dire" />
+            }
+
+            @if (row.category.archivedAt) {
+              <fold-badge content="Archivée" variant="warning" />
+            }
+
+            @if (canWrite()) {
+              @if (row.category.archivedAt) {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  icon="reset"
+                  (click)="restoreCategory(row.category)"
+                >
+                  Restaurer
+                </button>
+              } @else {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  icon="plus"
+                  (click)="openEntry(row.category)"
+                >
+                  Allergène
+                </button>
+              }
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                [icon]="row.category.official ? 'sliders' : 'edit'"
+                (click)="openCategory(row.category)"
+              >
+                {{ row.category.official ? 'Ranger' : 'Régler' }}
+              </button>
+            }
+          </div>
+        </fold-element-title>
+
+        <ul class="entries">
+          @for (entry of row.entries; track entry.id) {
+            <li class="entry" [class.retired]="entry.archivedAt !== null">
+              <code class="code">{{ entry.code }}</code>
+              <span class="name">{{ entry.name.fr }}</span>
+
+              @if (entry.official) {
+                <span class="locked">
+                  <fold-icon name="lock" size="sm" />
+                  Officiel
+                </span>
+              }
+
+              @if (entry.archivedAt) {
+                <fold-badge content="Archivé" variant="warning" />
+              }
+
+              @if (canWrite()) {
+                <span class="actions">
+                  @if (entry.archivedAt) {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      icon="reset"
+                      (click)="restoreEntry(entry)"
+                    >
+                      Restaurer
+                    </button>
+                  }
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    [icon]="entry.official ? 'view' : 'edit'"
+                    (click)="openEntry(row.category, entry)"
+                  >
+                    {{ entry.official ? 'Voir' : 'Réviser' }}
+                  </button>
+                </span>
+              }
+            </li>
+          } @empty {
+            <li class="void">Aucun allergène sous ce filtre.</li>
+          }
+        </ul>
+      </fold-card>
+    } @empty {
+      <fold-empty-state
+        icon="filter"
+        title="Rien sous ce filtre"
+        subtitle="Aucune ligne ne correspond. Repassez sur « Tout » pour voir le référentiel entier."
+      />
+    }
+  }
 </fold-page-layout>

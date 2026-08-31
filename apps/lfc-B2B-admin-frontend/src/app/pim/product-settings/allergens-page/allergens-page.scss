@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+/* La ligne d'actions d'une carte : elle se replie sous le titre quand la
+   fenêtre se resserre plutôt que d'écraser le libellé de la catégorie. */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.origin {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+/* Le cadenas et son mot. Un bouton absent sans explication se lit comme une
+   panne : la mention est TOUJOURS écrite à côté de l'icône, jamais seule. */
+.locked {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) 0;
+}
+
+/* Archivée n'est pas supprimée : la ligne s'estompe, elle ne disparaît pas. */
+.entry.retired .name,
+.entry.retired .code {
+  color: var(--fold-color-text-faded);
+}
+
+/* Du monospace rend optiquement plus gros à taille égale : la mesure est
+   RELATIVE au texte qui l'entoure, ce qu'aucun token absolu n'exprime. */
+.code {
+  font-family: var(--fold-font-mono);
+  font-size: 0.85em;
+  color: var(--fold-color-text-secondary);
+}
+
+.name {
+  font-weight: var(--fold-weight-medium);
+}
+
+/* Les gestes de la ligne, poussés au bout — l'œil descend une colonne. */
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin-left: auto;
+}
+
+.void {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le CTA porte deux libellés : sur la ligne du titre en mobile, le libellé long
+   répéterait le titre juste à côté et ne tiendrait pas sur 375 px. */
+.cta-short {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  .cta-full {
+    display: none;
+  }
+
+  .cta-short {
+    display: inline;
+  }
+}

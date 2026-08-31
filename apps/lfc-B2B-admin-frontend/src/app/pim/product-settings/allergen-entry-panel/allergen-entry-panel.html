@@ -1,0 +1,80 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  @if (isOfficial()) {
+    <fold-callout appearance="inset" variant="info">{{ officialReason }}</fold-callout>
+  }
+
+  @if (isArchived()) {
+    <fold-callout appearance="inset" variant="warning">
+      <strong>Allergène archivé.</strong> Il n'est plus proposé à la saisie. Les fiches qui le
+      citent restent valides&nbsp;: il est retiré de ce qu'on propose, pas de ce qu'on reconnaît.
+    </fold-callout>
+  }
+
+  <!-- Le code est l'identité de STOCKAGE : les déclarations le citent tel quel.
+       Saisissable une fois, lu ensuite. -->
+  <fold-input
+    label="Code"
+    hint="Majuscules, chiffres, tirets ou soulignés. Il identifie l'allergène dans toutes les déclarations, et ne changera plus."
+    placeholder="ex. SH"
+    required
+    [disabled]="isEdit()"
+    [value]="draftCode()"
+    (valueChange)="draftCode.set($event)"
+  />
+
+  <app-lang-switch [(lang)]="name.locale" [missing]="name.missing()" [hint]="name.hint()" />
+  <fold-input
+    [label]="name.label()"
+    hint="Le libellé granulaire — « Noisettes ». Sur l'étiquette, c'est celui de la catégorie qui fait foi."
+    placeholder="ex. Noisettes"
+    required
+    [disabled]="isOfficial()"
+    [value]="name.value()"
+    (valueChange)="name.set($event)"
+  />
+
+  <fold-listbox
+    label="Catégorie"
+    hint="Le mapping est n:1 : plusieurs allergènes retombent sur la même mention d'étiquette."
+    required
+    [disabled]="isOfficial()"
+    [options]="categoryOptions()"
+    [value]="draftCategoryId()"
+    (selectionChange)="draftCategoryId.set($event)"
+  />
+
+  @if (isEdit() && !isOfficial()) {
+    <section class="archive">
+      @if (isArchived()) {
+        <button foldButton emphasis="outline" icon="reset" [disabled]="busy()" (click)="restore()">
+          Restaurer l'allergène
+        </button>
+      } @else {
+        <fold-callout appearance="inset" variant="info">{{ archiveMeaning }}</fold-callout>
+        <button
+          foldButton
+          emphasis="outline"
+          intent="warning"
+          icon="archive"
+          [disabled]="busy()"
+          (click)="archive()"
+        >
+          Archiver l'allergène
+        </button>
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  @if (isOfficial()) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button foldButton [disabled]="!canSubmit()" [loading]="busy()" (click)="submit()">
+      {{ isEdit() ? 'Enregistrer' : "Déclarer l'allergène" }}
+    </button>
+  }
+</footer>

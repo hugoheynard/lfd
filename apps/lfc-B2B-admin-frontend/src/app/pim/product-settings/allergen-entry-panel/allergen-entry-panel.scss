@@ -1,0 +1,37 @@
+// Le panneau remplit la coquille : en-tête figé, corps scrollable, pied collé.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+/* L'archivage est réversible, mais il change ce que la saisie propose : séparé
+   du formulaire par un trait et repoussé en bas, on ne le croise pas en
+   remplissant les champs. */
+.archive {
+  margin-top: auto;
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+}
