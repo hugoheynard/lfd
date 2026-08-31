@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { CompanyStatus, CustomerRole } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { referenceFrom } from "../../../platform/id/reference.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { Company, type CompanySoftState } from "../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
@@ -14,31 +15,17 @@ import {
 } from "../domain/ports/company.repository.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 
-/**
- * Alphabet de la référence humaine — **sans caractères ambigus** (ni `I`, `O`,
- * `0`, `1`) : elle se dicte au téléphone sans confusion. 32 symboles, comme
- * l'alphabet Crockford du ULID → mapping bijectif direct (cf. `deriveReference`).
- */
-const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-/** Alphabet Crockford base32 des ULID (exclut I, L, O, U). Même longueur que ci-dessus. */
-const CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/** Préfixe de la référence société — ce que le `P-` du produit est à un article. */
+const COMPANY_PREFIX = "C";
 
 /**
- * Dérive une référence `C-XXXXXX` d'un ULID. On prend ses 6 derniers caractères
- * (composante aléatoire du ULID) et on les **remappe** sur l'alphabet
- * non-ambigu : deux alphabets de 32 symboles → bijection index-à-index. Aucun
- * `Math.random` (déterminisme + traçabilité via `IdGenerator`), et l'unicité
- * finale reste **garantie** par la colonne `@unique`.
+ * Dérive une référence `C-XXXXXX` d'un ULID — même dérivation que le `P-` d'un
+ * produit et le `R-` d'une révision, elle vit dans `platform/id/reference.ts`.
+ * Aucun `Math.random` (déterminisme + traçabilité via `IdGenerator`), et
+ * l'unicité finale reste **garantie** par la colonne `@unique`.
  */
 function deriveReference(ulid: string): string {
-  const tail = ulid.slice(-6);
-  let code = "";
-  for (const char of tail) {
-    const index = CROCKFORD_ALPHABET.indexOf(char);
-    code += index >= 0 ? REFERENCE_ALPHABET[index] : REFERENCE_ALPHABET[0];
-  }
-  return `C-${code}`;
+  return referenceFrom(COMPANY_PREFIX, ulid);
 }
 
 /** Nombre de re-tirages avant d'abandonner (une collision est déjà quasi impossible). */

@@ -29,43 +29,27 @@ function drawing(ids: readonly string[]): () => string {
   };
 }
 
-const UUID_A = "0192f3c1-4d2e-7a3b-8c9d-1e2f3a4b5c6d";
-const UUID_B = "0192f3c1-4d2e-7a3b-8c9d-99887766aabb";
+// Deux ULID de la MÊME milliseconde : ils ne diffèrent que par leur composante
+// aléatoire, ce qui est le cas que la dérivation doit savoir distinguer.
+const ULID_A = "01K7M3QT9X4B2NPRSTVWXY7WT4";
+const ULID_B = "01K7M3QT9X4B2NPRSTVWXY9P2X";
 
 describe("génération de la référence par défaut", () => {
   describe("productSkuRoot", () => {
     it("produit un préfixe et six caractères", () => {
-      expect(productSkuRoot(UUID_A)).toMatch(/^P-[A-Z2-9]{6}$/u);
+      expect(productSkuRoot(ULID_A)).toMatch(/^P-[A-Z2-9]{6}$/u);
     });
 
     it("est déterministe — même identifiant, même référence", () => {
-      expect(productSkuRoot(UUID_A)).toBe(productSkuRoot(UUID_A));
+      expect(productSkuRoot(ULID_A)).toBe(productSkuRoot(ULID_A));
     });
 
-    // Parcourt les 32 symboles atteignables (5 bits de queue) plutôt que d'inspecter
-    // un code au hasard : un `O` planqué dans l'alphabet passerait sous un tirage unique.
-    it("n'emploie aucun caractère ambigu, sur tout l'alphabet", () => {
-      const symbols = new Set<string>();
-
-      for (let value = 0; value < 32; value += 1) {
-        const id = `0192f3c1-4d2e-7a3b-8c9d-0000000000${value.toString(16).padStart(2, "0")}`;
-        symbols.add(productSkuRoot(id).slice(-1));
-      }
-
-      expect(symbols.size).toBe(32);
-      expect([...symbols].join("")).not.toMatch(/[IO01]/u);
-    });
-
-    // Le préfixe d'un UUID v7 est son HORODATAGE : deux produits créés la même
+    // La tête d'un ULID est son HORODATAGE : deux produits créés la même
     // milliseconde ne se distinguent que par la queue. La lire est le point.
+    // (L'alphabet et sa tolérance aux identifiants non-ULID appartiennent au
+    // module partagé — `platform/id/__tests__/reference.spec.ts` les tient.)
     it("distingue deux identifiants qui ne diffèrent que par leur queue", () => {
-      expect(productSkuRoot(UUID_A)).not.toBe(productSkuRoot(UUID_B));
-    });
-
-    // Un identifiant est une chaîne opaque : ce module n'a pas le droit d'exiger
-    // une forme, seulement d'en tirer le meilleur.
-    it("survit à un identifiant qui n'est pas hexadécimal", () => {
-      expect(productSkuRoot("prd_zzz")).toMatch(/^P-[A-Z2-9]{6}$/u);
+      expect(productSkuRoot(ULID_A)).not.toBe(productSkuRoot(ULID_B));
     });
   });
 
@@ -79,17 +63,17 @@ describe("génération de la référence par défaut", () => {
 
   describe("proposeProductSku", () => {
     it("rend la première référence tirée quand elle est libre", async () => {
-      const sku = await proposeProductSku(drawing([UUID_A]), availabilityOf([]));
-      expect(sku.value).toBe(productSkuRoot(UUID_A));
+      const sku = await proposeProductSku(drawing([ULID_A]), availabilityOf([]));
+      expect(sku.value).toBe(productSkuRoot(ULID_A));
     });
 
     // Suffixer donnerait `P-XXXXXX-2`, qui se lirait comme la DÉCLINAISON n° 2
     // du produit `P-XXXXXX` — une référence qui ment sur ce qu'elle désigne.
     it("re-tire un identifiant en cas de collision, sans jamais suffixer", async () => {
-      const taken = availabilityOf([productSkuRoot(UUID_A)]);
-      const sku = await proposeProductSku(drawing([UUID_A, UUID_B]), taken);
+      const taken = availabilityOf([productSkuRoot(ULID_A)]);
+      const sku = await proposeProductSku(drawing([ULID_A, ULID_B]), taken);
 
-      expect(sku.value).toBe(productSkuRoot(UUID_B));
+      expect(sku.value).toBe(productSkuRoot(ULID_B));
       expect(sku.value).not.toMatch(/-2$/u);
     });
 
@@ -97,7 +81,7 @@ describe("génération de la référence par défaut", () => {
       const everything: SkuAvailability = {
         isTaken: (): Promise<boolean> => Promise.resolve(true),
       };
-      await expect(proposeProductSku(() => UUID_A, everything)).rejects.toThrow(
+      await expect(proposeProductSku(() => ULID_A, everything)).rejects.toThrow(
         SkuGenerationExhaustedError,
       );
     });

@@ -1,3 +1,4 @@
+import { referenceFrom } from "../../../../../platform/id/reference.js";
 import { SkuGenerationExhaustedError } from "../errors/sku-errors.js";
 import { Sku, SKU_MAX_LENGTH } from "../value-objects/sku.value-object.js";
 
@@ -14,8 +15,8 @@ import { Sku, SKU_MAX_LENGTH } from "../value-objects/sku.value-object.js";
  * L'argument qui avait fait pencher vers le signifiant — « il sera lu à voix haute au
  * labo » — penche en réalité dans l'autre sens : six caractères tirés d'un alphabet
  * **sans caractères ambigus** se dictent mieux qu'une chaîne longue où `O` et `0` se
- * confondent. C'est le même raisonnement, et le même alphabet, que la référence société
- * `C-XXXXXX` (`b2b/account/infrastructure/prisma-company.repository.ts`).
+ * confondent. C'est le même raisonnement, et — depuis
+ * `platform/id/reference.ts` — le même alphabet que la référence société `C-XXXXXX`.
  *
  * Le besoin d'une référence à un format imposé par un tiers ne disparaît pas — il est
  * servi là où il doit l'être : la colonne `channel_reference` de la table de binding du
@@ -30,53 +31,12 @@ export interface SkuAvailability {
 
 const MAX_ATTEMPTS = 10;
 
-/**
- * Alphabet de la référence — **sans caractères ambigus** (ni `I`, ni `O`, ni `0`, ni
- * `1`) : elle se dicte au téléphone et se relit sur une feuille de production sans
- * confusion. 32 symboles, donc 5 bits par caractère.
- */
-const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-/** 6 symboles = 30 bits ≈ 33 millions de combinaisons. */
-const CODE_LENGTH = 6;
-
 /** Préfixe de la référence produit — ce que le `C-` de la société est à un client. */
 const PRODUCT_PREFIX = "P";
 
-/**
- * Nombre de chiffres hexadécimaux lus en queue d'identifiant. 12 chiffres = 48 bits,
- * dont on consomme 30 : 2⁴⁸ étant un multiple de 2³⁰, la troncature reste **uniforme**
- * (aucun biais de modulo).
- */
-const TAIL_HEX_LENGTH = 12;
-
-/**
- * Projette la queue d'un identifiant sur l'alphabet lisible.
- *
- * La queue d'un UUID v7 est sa composante **aléatoire** (son préfixe, lui, est
- * l'horodatage : le lire produirait des références voisines pour des produits créés
- * la même milliseconde). Les caractères non hexadécimaux sont ignorés plutôt que de
- * faire échouer la conversion — un identifiant reste une chaîne opaque, pas une
- * structure que ce module aurait le droit d'exiger.
- */
-function encodeTail(id: string): string {
-  const hex = id.toLowerCase().replace(/[^0-9a-f]/gu, "");
-  const tail = hex.slice(-TAIL_HEX_LENGTH).padStart(TAIL_HEX_LENGTH, "0");
-
-  let remaining = BigInt(`0x${tail}`);
-  let code = "";
-
-  for (let index = 0; index < CODE_LENGTH; index += 1) {
-    code = REFERENCE_ALPHABET[Number(remaining % 32n)] + code;
-    remaining /= 32n;
-  }
-
-  return code;
-}
-
-/** `0192f3…a7b91c` → `P-K7M3QT`. Déterministe : même identifiant, même référence. */
+/** `01K7M3…QT9X4B` → `P-K7M3QT`. Déterministe : même identifiant, même référence. */
 export function productSkuRoot(id: string): string {
-  return `${PRODUCT_PREFIX}-${encodeTail(id)}`;
+  return referenceFrom(PRODUCT_PREFIX, id);
 }
 
 /**
