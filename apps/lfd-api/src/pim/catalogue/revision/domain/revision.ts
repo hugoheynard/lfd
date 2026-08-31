@@ -85,6 +85,24 @@ export interface RevisionItemInput {
   readonly soldContexts: readonly string[];
   readonly editorial: Readonly<Record<string, unknown>> | null;
   readonly media: readonly RevisionMedia[];
+  /**
+   * **La signature de la fiche, telle qu'elle était.** `null` = personne ne
+   * s'était prononcé.
+   *
+   * Elle a d'abord été EXCLUE d'une révision, au motif qu'une signature est un
+   * fait *sur* la fiche et non un morceau de la fiche. C'était le bon
+   * raisonnement pour une ancre de tarif, et le mauvais pour une ancre de
+   * PUBLICATION : « qui avait validé ce qu'on a publié ce jour-là » est
+   * exactement ce qu'on vient relire, et le journal ne le rend pas — il dit
+   * quand on a signé, pas ce que l'ancre contenait.
+   *
+   * ⚠️ Ce qui n'est PAS enregistré : si la signature était PÉRIMÉE à la capture,
+   * c'est-à-dire si la fiche avait bougé depuis. Le savoir demanderait la date
+   * de dernière modification de quatre tables par produit, et l'écran vivant la
+   * calcule déjà. Une ancre dit qui avait signé, pas si ça valait encore.
+   */
+  readonly readyAt: string | null;
+  readonly readyBy: string | null;
 }
 
 /** Un article figé, avec son empreinte. */

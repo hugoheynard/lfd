@@ -49,10 +49,14 @@ export class RevisionsStore {
   }
 
   /**
-   * Pose une ancre, et rafraîchit la liste.
+   * Prépare une publication — fige le catalogue — et rafraîchit la liste.
    *
-   * Le message distingue les deux issues du serveur : une ancre posée, ou un
-   * catalogue inchangé. Les confondre en « c'est fait » ferait croire à une
+   * Le geste est le MÊME que celui d'un push, qui fige de lui-même avant
+   * d'envoyer. Il reste ici pour figer avant une modification risquée, sans
+   * rien publier.
+   *
+   * Le message distingue les deux issues du serveur : une révision préparée, ou
+   * un catalogue inchangé. Les confondre en « c'est fait » ferait croire à une
    * version de plus qui n'existe pas.
    */
   async take(label: string): Promise<void> {
@@ -61,8 +65,8 @@ export class RevisionsStore {
       const taken = await this.api.take(trimmed === '' ? null : trimmed);
       this.lastTakeValue.set(
         taken.created
-          ? `Révision ${String(taken.version)} posée.`
-          : `Le catalogue n'a pas bougé depuis la révision ${String(taken.version)} : rien n'a été posé.`,
+          ? `Révision ${String(taken.version)} préparée.`
+          : `Le catalogue n'a pas bougé depuis la révision ${String(taken.version)} : rien n'a été préparé.`,
       );
       this.items.set(await this.api.list());
     });

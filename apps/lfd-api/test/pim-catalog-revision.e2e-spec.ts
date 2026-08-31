@@ -362,6 +362,32 @@ describe("Diff entre deux ancres", () => {
     expect(vat?.cause).not.toBeNull();
   });
 
+  /**
+   * **La signature entre dans l'ancre.** Elle en avait d'abord été exclue — une
+   * signature est un fait SUR la fiche, pas un morceau de la fiche — et c'était
+   * le bon raisonnement pour une ancre de tarif, le mauvais pour une ancre de
+   * PUBLICATION : « qui avait validé ce qu'on a publié ce jour-là » est
+   * exactement ce qu'on vient relire, et le journal ne le rend pas.
+   */
+  it("fige QUI avait validé la fiche", async () => {
+    const { id } = await aProduct("Croissant");
+    await take();
+
+    await staff().put(`${PRODUCTS}/${id}/ready`).send({}).expect(200);
+    await ctx.drain();
+    await take();
+
+    const diff = jsonBody<{
+      changed: { fields: { field: string; before: string; after: string }[] }[];
+    }>(await staff().get(`${REVISIONS}/1/diff/2`).expect(200));
+
+    const fields = diff.changed[0]?.fields.map((field) => field.field) ?? [];
+    expect(fields).toContain("readyBy");
+    const by = diff.changed[0]?.fields.find((field) => field.field === "readyBy");
+    expect(by?.before).toBe("null");
+    expect(by?.after).not.toBe("null");
+  });
+
   it("nomme un article entré au catalogue", async () => {
     await aProduct("Croissant");
     await take();
@@ -413,5 +439,67 @@ describe("Diff entre deux ancres", () => {
     await take();
 
     await staff().get(`${REVISIONS}/1/diff/99`).expect(404);
+  });
+});
+
+/**
+ * **Une révision est le sous-produit d'une publication**, pas une photographie
+ * qu'on pense à prendre.
+ *
+ * C'est le renversement qui compte : le bouton « poser » faisait de l'ancre une
+ * corvée à ne pas oublier, et une ancre oubliée ne vaut rien. Accrochée au
+ * push, elle se pose d'elle-même, et elle sait où elle est partie.
+ */
+/** Un produit RÉELLEMENT vendu aux pros : sans appartenance au canal, il n'y a
+ *  rien à pousser, donc rien à figer — et le test mesurerait ce vide. */
+async function aSoldProduct(): Promise<string> {
+  const { id } = await aProduct("Croissant");
+  await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
+  // Sans rapport professionnel, le push REFUSE plutôt que d'envoyer le plein
+  // tarif : le garde est voulu, et il faut donc le satisfaire ici.
+  await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
+  return id;
+}
+
+describe("Le push pose et inscrit sa révision", () => {
+  it("fige une révision avant d'envoyer, puis y inscrit sa destination", async () => {
+    await aSoldProduct();
+
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await ctx.drain();
+
+    const revisions = await ctx.prisma.catalogRevision.findMany({
+      include: { publications: true },
+    });
+    expect(revisions).toHaveLength(1);
+    expect(revisions[0]?.publications).toHaveLength(1);
+    expect(revisions[0]?.publications[0]).toMatchObject({
+      channel: "b2b",
+      mode: "dry-run",
+      outcome: "sent",
+    });
+  });
+
+  /**
+   * Deux envois d'un catalogue INCHANGÉ sont deux publications d'UNE révision —
+   * ce qu'ils sont. Poser une seconde ancre identique remplirait l'histoire de
+   * doublons qu'aucun diff ne saurait distinguer.
+   */
+  it("n'ajoute pas d'ancre quand le catalogue n'a pas bougé, mais bien une publication", async () => {
+    await aSoldProduct();
+
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await ctx.drain();
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
+    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(2);
+  });
+
+  /** Rien à envoyer : rien n'est figé non plus. */
+  it("ne fige rien quand aucun produit n'est publié sur le canal", async () => {
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
   });
 });

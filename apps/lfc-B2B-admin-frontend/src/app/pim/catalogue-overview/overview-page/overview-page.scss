@@ -1,0 +1,34 @@
+/* Les chiffres se lisent d'un coup d'œil, en rang : c'est la première chose
+   qu'on vient chercher, et une liste verticale obligerait à parcourir. */
+.ov-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xl);
+  margin: 0;
+}
+
+.ov-figures dt {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.ov-figures dd {
+  margin: 0;
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-note,
+.ov-last {
+  margin: var(--fold-space-md) 0 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.ov-actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-lg);
+}

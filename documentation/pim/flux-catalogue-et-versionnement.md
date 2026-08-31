@@ -468,3 +468,56 @@ L'article d'une ancre portait le nom de la **déclinaison** et pas celui du
 produit : renommer un produit ne changeait donc aucune empreinte, et l'ancre ne
 voyait pas le renommage. L'article porte désormais `name` (le produit, comme le
 journal et comme `SyncProduct`) et `variantName`.
+
+## 14. Le renversement : une révision est le sous-produit d'une publication
+
+**Repris le 2026-08-31.** Les tranches 1 à 3 posaient une ancre par un BOUTON.
+C'était le mauvais déclencheur : une ancre qu'il faut penser à poser est une
+ancre qu'on oublie, et une ancre oubliée ne vaut rien.
+
+Le geste qui doit la poser est celui qui a déjà lieu — la **publication** :
+
+```
+preview  →  FIGER la révision  →  envoyer  →  inscrire (canal, mode, issue, rapport)
+```
+
+Trois conséquences, et aucune n'était visible depuis le monde du bouton :
+
+- **L'ordre compte.** Figer APRÈS l'envoi enregistrerait un catalogue qui a pu
+  bouger entre la requête et la réponse : l'ancre ne dirait plus ce qui est
+  parti.
+- **L'échec s'inscrit aussi.** Une trace qui n'existe qu'en cas de succès ne
+  raconte que les bons jours — et c'est le mauvais jour qu'on vient relire.
+- **La garde « capture identique ne pose rien » gagne son utilité.** Deux envois
+  d'un catalogue inchangé sont deux PUBLICATIONS d'UNE révision, ce qu'ils sont.
+  Sans elle, chaque push aurait créé une ancre jumelle.
+
+Une révision **sans aucune publication** devient un état lisible : préparée,
+jamais envoyée. C'est ce que le bouton produit désormais — renommé « Préparer une
+publication », il sert à figer AVANT une modification risquée, sans rien
+envoyer.
+
+`catalog_revision_publication` porte la destination, le mode (`live` /
+`dry-run` — une simulation se trace aussi, sinon on ne distingue pas « jamais
+tenté » de « tenté à blanc »), l'issue et le rapport de la destination, tel
+qu'elle l'a rendu.
+
+## 15. La page Catalogue
+
+**Livrée le 2026-08-31**, en accueil du référentiel (`/pim/catalogue`).
+
+La réponse à « où en est le catalogue » existait, éclatée sur trois écrans : la
+liste des produits disait les statuts, la publication disait les canaux, les
+révisions disaient l'histoire. Personne ne la tenait — et c'est pourtant la
+première question qu'on se pose en ouvrant le PIM. La liste des produits était
+l'accueil par défaut faute de mieux : elle répond à « lequel », pas à « où on en
+est ».
+
+Elle se calcule **comme une capture qu'on ne pose pas** : on construit la
+révision du catalogue tel qu'il est et on la compare à la dernière ancre. C'est
+la même mécanique que le push, donc aucun écart possible entre ce que l'écran
+annonce et ce qui partirait.
+
+Ce qu'elle ne dit PAS, délibérément : ce qui manque à une fiche pour être
+publiable. Cette règle vit sur la fiche, et l'agréger ici en ferait une seconde
+déclaration — la dérive qui a déjà coûté trois fois dans ce dépôt.

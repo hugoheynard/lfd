@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
+import { ReadinessRepository } from "../../product/domain/ports/readiness.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import type { RevisionItemInput, RevisionMedia } from "../domain/revision.js";
@@ -22,6 +23,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
   constructor(
     private readonly catalogue: CatalogueReader,
     private readonly editorials: EditorialReader,
+    private readonly readiness: ReadinessRepository,
     private readonly prisma: PimPrismaService,
   ) {
     super();
@@ -33,13 +35,14 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
       return [];
     }
     const ids = products.map((product) => product.id);
-    const [categories, vatByProduct, channelsByProduct, editorials, mediaByProduct] =
+    const [categories, vatByProduct, channelsByProduct, editorials, mediaByProduct, signatures] =
       await Promise.all([
         this.catalogue.channelCategories(),
         this.catalogue.vatPercents(products),
         this.catalogue.effectiveChannels(products),
         this.editorials.findByProducts(ids),
         this.mediaOf(ids),
+        this.readiness.readMany(ids),
       ]);
     const categoryName = new Map(categories.map((category) => [category.id, category.name]));
 
@@ -52,6 +55,9 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         .map((context) => context);
       const editorial = editorials.get(product.id) ?? null;
       const media = mediaByProduct.get(product.id) ?? [];
+      // La signature est portée par le PRODUIT : ses déclinaisons partagent
+      // donc la même, ce qui est exact — on valide une fiche, pas un article.
+      const signed = signatures.get(product.id) ?? null;
       return product.variants.map((variant) => ({
         sku: variant.sku,
         productId: product.id,
@@ -71,6 +77,8 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         soldContexts: sold,
         editorial: editorial === null ? null : { ...editorial },
         media,
+        readyAt: signed === null ? null : signed.readyAt.toISOString(),
+        readyBy: signed?.readyBy ?? null,
       }));
     });
   }

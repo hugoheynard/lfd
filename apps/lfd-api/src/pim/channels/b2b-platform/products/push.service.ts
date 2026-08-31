@@ -1,10 +1,21 @@
 import { Injectable } from "@nestjs/common";
+import { CommandBus } from "@nestjs/cqrs";
 import type { CatalogIngestionReport } from "@lfd/catalog-sync";
 
+import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { CatalogRevisionRepository } from "../../../catalogue/revision/domain/ports/catalog-revision.repository.js";
+import {
+  TakeCatalogRevisionCommand,
+  type TakenRevision,
+} from "../../../catalogue/revision/application/take-catalog-revision.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { B2bCatalogDriver, DryRunB2bCatalogDriver } from "./driver.js";
 import { B2bCatalogFeedPreview } from "./feed-preview.js";
 import type { Exclusion } from "./projection.js";
+
+/** La destination, nommée une fois : elle désigne une ligne de publication. */
+const B2B_CHANNEL = "b2b";
 
 /** Ce que le push a produit, dit en entier — y compris ce qui n'est pas parti. */
 export interface B2bPushSummary {
@@ -23,6 +34,9 @@ export class B2bCatalogPushService {
     private readonly dryRun: DryRunB2bCatalogDriver,
     private readonly live: B2bCatalogDriver,
     private readonly prisma: PimPrismaService,
+    private readonly commands: CommandBus,
+    private readonly revisions: CatalogRevisionRepository,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -50,11 +64,31 @@ export class B2bCatalogPushService {
       };
     }
 
-    const report = await driver.send(snapshot);
+    // **On fige AVANT d'envoyer.** Une révision est ce qu'on s'apprête à
+    // publier, pas une photographie prise après coup : figer ensuite
+    // enregistrerait un catalogue qui a pu bouger entre l'envoi et la réponse,
+    // et l'ancre ne dirait plus ce qui est parti.
+    //
+    // Sur un catalogue inchangé, aucune ancre n'est créée — la commande rend
+    // celle qui existait, et la publication s'inscrit dessus. Deux envois du
+    // même catalogue sont donc deux publications d'UNE révision, ce qui est
+    // exactement ce qu'ils sont.
+    const revision = await this.commands.execute<TakeCatalogRevisionCommand, TakenRevision>(
+      new TakeCatalogRevisionCommand(null),
+    );
+
+    const report = await driver.send(snapshot).catch(async (error: unknown) => {
+      // L'échec s'inscrit AUSSI. Une trace qui n'existe qu'en cas de succès ne
+      // raconte que les bons jours, et c'est le mauvais jour qu'on vient
+      // relire.
+      await this.recordPublication(revision.id, driver.mode, "failed", null);
+      throw error;
+    });
 
     if (driver.mode === "live") {
       await this.stamp(snapshot.products.map((product) => product.id));
     }
+    await this.recordPublication(revision.id, driver.mode, "sent", report);
 
     return {
       mode: driver.mode,
@@ -62,6 +96,24 @@ export class B2bCatalogPushService {
       report,
       excluded,
     };
+  }
+
+  /** Où cette révision est partie, et ce que la destination en a dit. */
+  private async recordPublication(
+    revisionId: string,
+    mode: string,
+    outcome: string,
+    report: unknown,
+  ): Promise<void> {
+    await this.revisions.recordPublication({
+      revisionId,
+      channel: B2B_CHANNEL,
+      mode,
+      outcome,
+      report,
+      publishedAt: new Date(this.clock.now()),
+      publishedBy: currentRequestContext()?.actor.id ?? null,
+    });
   }
 
   /**

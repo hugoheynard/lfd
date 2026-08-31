@@ -1,3 +1,7 @@
+import { CommandBus } from "@nestjs/cqrs";
+
+import { Clock } from "../../../../../platform/time/clock.js";
+import { CatalogRevisionRepository } from "../../../../catalogue/revision/domain/ports/catalog-revision.repository.js";
 import { Test } from "@nestjs/testing";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
@@ -107,6 +111,21 @@ async function build(
       { provide: B2bCatalogDriver, useValue: live },
       // Le service ne projette plus lui-même : il consomme le port de lecture.
       // Le double est d'autant plus court — c'était le but de l'extraction.
+      // Le push FIGE une révision avant d'envoyer, puis y inscrit sa
+      // destination : ces trois doublures sont le prix de ce couplage, et il est
+      // voulu — une publication qui ne laisse pas d'ancre ne dit pas ce qui est
+      // parti.
+      {
+        provide: CommandBus,
+        useValue: {
+          execute: () => Promise.resolve({ id: "rev_1", version: 1, hash: "h", created: true }),
+        },
+      },
+      {
+        provide: CatalogRevisionRepository,
+        useValue: { recordPublication: () => Promise.resolve() },
+      },
+      { provide: Clock, useValue: { now: () => new Date("2026-08-31T10:00:00.000Z") } },
       {
         provide: B2bCatalogFeedPreview,
         useValue: {

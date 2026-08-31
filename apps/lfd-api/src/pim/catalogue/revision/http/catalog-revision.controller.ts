@@ -4,9 +4,14 @@ import { z } from "zod";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
-import type { CatalogRevisionDiffView, CatalogRevisionSummaryView } from "@lfd/pim-contracts";
+import type {
+  CatalogOverviewView,
+  CatalogRevisionDiffView,
+  CatalogRevisionSummaryView,
+} from "@lfd/pim-contracts";
 
 import { DiffCatalogRevisionsQuery } from "../application/diff-catalog-revisions.js";
+import { GetCatalogOverviewQuery } from "../application/get-catalog-overview.js";
 import { ListCatalogRevisionsQuery } from "../application/list-catalog-revisions.js";
 import {
   TakeCatalogRevisionCommand,
@@ -36,6 +41,20 @@ export class CatalogRevisionController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  /**
+   * **Où en est le catalogue** — la synthèse.
+   *
+   * Sous `revisions/` parce qu'elle se calcule comme une capture qu'on ne pose
+   * pas : c'est la même mécanique, donc le même contexte. La ranger ailleurs
+   * ferait deux endroits qui savent construire une révision.
+   */
+  @Get("overview")
+  overview(): Promise<CatalogOverviewView> {
+    return this.queries.execute<GetCatalogOverviewQuery, CatalogOverviewView>(
+      new GetCatalogOverviewQuery(),
+    );
+  }
 
   /** Les ancres, de la plus récente à la plus ancienne. */
   @Get()

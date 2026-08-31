@@ -57,6 +57,7 @@ export abstract class PimPrismaService {
   abstract readonly catalogContent: PrismaService["catalogContent"];
   abstract readonly catalogRevision: PrismaService["catalogRevision"];
   abstract readonly catalogRevisionItem: PrismaService["catalogRevisionItem"];
+  abstract readonly catalogRevisionPublication: PrismaService["catalogRevisionPublication"];
   abstract readonly categoryEditorial: PrismaService["categoryEditorial"];
   abstract readonly mediaAsset: PrismaService["mediaAsset"];
   abstract readonly productMedia: PrismaService["productMedia"];

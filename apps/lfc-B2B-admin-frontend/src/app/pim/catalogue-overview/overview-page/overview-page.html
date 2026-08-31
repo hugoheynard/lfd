@@ -1,0 +1,87 @@
+<fold-page-layout icon="product" title="Catalogue" separator>
+  <p description>
+    Où en est le référentiel : ce qu'il contient, ce qui est validé, et ce qui a bougé depuis la
+    dernière publication.
+  </p>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  } @else if (loading()) {
+    <fold-loading message="Lecture du catalogue…" />
+  } @else if (overview(); as o) {
+    <fold-card>
+      <fold-page-section title="Ce qu'il contient" separator>
+        <dl class="ov-figures">
+          <div>
+            <dt>Fiches</dt>
+            <dd>{{ o.products }}</dd>
+          </div>
+          <div>
+            <dt>En ligne</dt>
+            <dd>{{ o.published }}</dd>
+          </div>
+          <div>
+            <dt>Brouillons</dt>
+            <dd>{{ o.drafts }}</dd>
+          </div>
+          <!-- Les articles sont les DÉCLINAISONS : c'est l'unité qu'un canal
+               reçoit et qu'une commande porte, pas la fiche. -->
+          <div>
+            <dt>Articles</dt>
+            <dd>{{ o.articles }}</dd>
+          </div>
+          <div>
+            <dt>Validées</dt>
+            <dd>{{ o.signed }}</dd>
+          </div>
+        </dl>
+        @if (o.signed < o.products) {
+          <p class="ov-note">
+            {{ o.products - o.signed }} fiche(s) sans validation. Une fiche complète n'est pas une
+            fiche relue&nbsp;: quelqu'un doit affirmer que les informations sont justes.
+          </p>
+        }
+      </fold-page-section>
+    </fold-card>
+
+    <fold-card>
+      <fold-page-section title="Depuis la dernière publication" separator>
+        @if (o.lastRevision === null) {
+          <p class="ov-note">
+            Aucune révision posée. La première partira avec le prochain push, ou en préparant une
+            publication.
+          </p>
+        } @else {
+          <p class="ov-last">
+            <strong>Révision {{ o.lastRevision.version }}</strong>
+            {{ o.lastRevision.label ?? 'sans nom' }} · {{ o.lastRevision.articles }} articles ·
+            {{ when(o.lastRevision.takenAt) }} par {{ o.lastRevision.takenBy }}
+          </p>
+          @if (o.sinceLastRevision; as since) {
+            @if (moved()) {
+              <!-- Ce compte se calcule comme une capture qu'on ne pose PAS : la
+                   même mécanique que le push, donc aucun écart possible entre
+                   ce qu'on annonce ici et ce qui partirait. -->
+              <fold-callout appearance="inset" variant="warning">
+                Le catalogue a bougé depuis&nbsp;: {{ since.added }} entré(s),
+                {{ since.removed }} retiré(s), {{ since.changed }} modifié(s).
+              </fold-callout>
+            } @else {
+              <p class="ov-note">
+                Le catalogue n'a pas bougé depuis. Un push ne poserait aucune nouvelle révision.
+              </p>
+            }
+          }
+        }
+        <div class="ov-actions">
+          <button foldButton emphasis="outline" routerLink="/pim/revisions">
+            Voir les révisions
+          </button>
+          <button foldButton emphasis="outline" intent="neutral" routerLink="/pim/produits">
+            Ouvrir les produits
+          </button>
+        </div>
+      </fold-page-section>
+    </fold-card>
+  }
+</fold-page-layout>

@@ -9,9 +9,11 @@
   }
 
   <fold-card>
-    <fold-page-section title="Poser une révision" separator>
+    <fold-page-section title="Préparer une publication" separator>
       <span sectionSubtitle>
-        Sur un catalogue inchangé, rien n'est posé — la dernière révision fait déjà foi.
+        Fige le catalogue tel qu'il est, avant de l'envoyer. Un push le fait de lui-même : ce bouton
+        sert à figer <strong>avant</strong> une modification risquée. Sur un catalogue inchangé,
+        rien n'est préparé — la dernière révision fait déjà foi.
       </span>
       <div class="rp-take">
         <fold-input
@@ -20,7 +22,7 @@
           [value]="label()"
           (valueChange)="label.set($event)"
         />
-        <button foldButton [loading]="store.busy()" (click)="take()">Poser</button>
+        <button foldButton [loading]="store.busy()" (click)="take()">Préparer</button>
       </div>
       @if (store.lastTake(); as message) {
         <p class="rp-said">{{ message }}</p>

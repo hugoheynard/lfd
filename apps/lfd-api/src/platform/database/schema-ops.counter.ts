@@ -149,6 +149,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   CatalogContent: "pim",
   CatalogRevision: "pim",
   CatalogRevisionItem: "pim",
+  CatalogRevisionPublication: "pim",
   MediaAsset: "pim",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",

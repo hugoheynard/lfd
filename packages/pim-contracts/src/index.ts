@@ -172,3 +172,5 @@ export type {
   AttributedFieldDiffView,
   CatalogRevisionCauseView,
 } from "./catalog-revision.js";
+
+export type { CatalogOverviewView } from "./catalog-overview.js";

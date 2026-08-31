@@ -3332,10 +3332,51 @@ model CatalogRevision {
   takenAt DateTime @map("taken_at")
   takenBy String   @map("taken_by")
 
-  items CatalogRevisionItem[]
+  items        CatalogRevisionItem[]
+  publications CatalogRevisionPublication[]
 
   @@index([takenAt])
   @@map("catalog_revision")
+  @@schema("pim")
+}
+
+/// **Où une révision est partie, et ce que la destination en a fait.**
+///
+/// Une révision n'est pas une photographie qu'on prend pour soi : c'est ce
+/// qu'on s'apprête à publier. Le geste de publication l'inscrit ici avec sa
+/// destination et son issue — sans quoi l'ancre dirait ce que le catalogue
+/// ÉTAIT sans dire s'il est parti, ni où.
+///
+/// Une révision sans aucune ligne ici est **préparée, jamais envoyée**. C'est un
+/// état lisible et voulu : on fige avant d'envoyer, et l'envoi peut échouer.
+model CatalogRevisionPublication {
+  id String @id
+
+  revisionId String          @map("revision_id")
+  revision   CatalogRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  /// La destination : `b2b`, `shopify`. Une chaîne et non un enum — un canal de
+  /// plus ne doit pas demander une migration d'enum, et le registre des canaux
+  /// vit dans le code qui les pousse.
+  channel String
+
+  /// `live` ou `dry-run` : une simulation s'enregistre aussi, sinon on ne
+  /// saurait pas distinguer « jamais tenté » de « tenté à blanc ».
+  mode String
+
+  /// `sent` | `failed`. L'échec s'inscrit : une publication qui ne laisse une
+  /// trace que quand elle réussit ne raconte que les bons jours.
+  outcome String
+
+  /// Ce que la destination a répondu — compteurs, SKU retirés. `NULL` en échec.
+  report Json?
+
+  publishedAt DateTime @map("published_at")
+  publishedBy String?  @map("published_by")
+
+  @@index([revisionId])
+  @@index([channel, publishedAt])
+  @@map("catalog_revision_publication")
   @@schema("pim")
 }
 

@@ -110,6 +110,16 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // CATALOGUE — ce qu'on vend, et ce qu'on en a figé. Les révisions y sont
   // parce qu'une ancre photographie ce catalogue-là ; les ranger sous
   // « Diffusion » laisserait croire qu'elles publient quelque chose.
+  //
+  // La synthèse ouvre la section : elle répond à « où on en est », les autres à
+  // « lequel ».
+  {
+    key: 'overview',
+    label: "Vue d'ensemble",
+    link: '/pim/catalogue',
+    icon: 'grid',
+    section: 'Catalogue',
+  },
   {
     key: 'produits',
     label: 'Produits',

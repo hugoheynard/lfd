@@ -92,6 +92,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Même droit que les taux : décider ce que le professionnel paie par
   // rapport au particulier est une décision comptable.
   'pim/regles-comptables': 'tax:read',
+  'pim/catalogue': null,
   'pim/revisions': null,
   'pim/collections': null,
   'pim/publication': null,

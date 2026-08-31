@@ -23,6 +23,16 @@ export abstract class ReadinessRepository {
   abstract read(productId: string): Promise<ProductReadiness | null>;
 
   /**
+   * Les signatures de plusieurs fiches, indexées par produit.
+   *
+   * En LOT, et pas une boucle d'appels : une capture de révision demande la
+   * signature des quatre-vingt-douze fiches d'un coup, et une requête par
+   * produit y coûterait autant d'allers-retours que de fiches. Un produit absent
+   * de la carte n'a pas de signature.
+   */
+  abstract readMany(productIds: readonly string[]): Promise<ReadonlyMap<string, ProductReadiness>>;
+
+  /**
    * La dernière modification du CONTENU, toutes tables de la fiche confondues.
    *
    * `null` si le produit n'existe pas — jamais pour un produit sans satellite :

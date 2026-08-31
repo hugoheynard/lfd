@@ -5,6 +5,7 @@ import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   CatalogRevisionRepository,
+  type RevisionPublication,
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
 import type { RevisionIndex } from "../domain/diff.js";
@@ -67,6 +68,26 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
       hashBySku: new Map(items.map((item) => [item.sku, item.contentHash])),
       proRatioBp: ratioOf(revision?.header),
     };
+  }
+
+  async recordPublication(publication: RevisionPublication): Promise<void> {
+    await this.prisma.catalogRevisionPublication.create({
+      data: {
+        id: this.ids.next(),
+        revisionId: publication.revisionId,
+        channel: publication.channel,
+        mode: publication.mode,
+        outcome: publication.outcome,
+        // `report` traverse tel quel : c'est ce que la destination a répondu, et
+        // le réinterpréter ici ferait dire à l'ancre autre chose que ce qui a
+        // été reçu.
+        ...(publication.report === undefined || publication.report === null
+          ? {}
+          : { report: toJsonObject(asRecord(publication.report)) }),
+        publishedAt: publication.publishedAt,
+        publishedBy: publication.publishedBy,
+      },
+    });
   }
 
   async payloadsOf(

@@ -22,7 +22,19 @@ export const pimRoutes: Routes = [
     title: 'Référentiel — LFC B2B admin',
     loadComponent: () => import('./pim-page/pim-page').then((m) => m.PimPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'produits' },
+      // L'ACCUEIL du référentiel : « où en est le catalogue » est la première
+      // question qu'on se pose en l'ouvrant, et la réponse était éclatée sur
+      // trois écrans. La liste des produits était l'accueil par défaut faute de
+      // mieux — elle répond à « lequel », pas à « où on en est ».
+      { path: '', pathMatch: 'full', redirectTo: 'catalogue' },
+      {
+        path: 'catalogue',
+        title: 'Catalogue — LFC B2B admin',
+        loadComponent: () =>
+          import('./catalogue-overview/overview-page/overview-page').then(
+            (m) => m.CatalogueOverviewPage,
+          ),
+      },
       {
         path: 'tva',
         // Le référentiel fiscal a sa propre ressource : la comptabilité l'écrit,

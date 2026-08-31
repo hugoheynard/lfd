@@ -45,6 +45,7 @@ import { AccountingRulesModule } from "../accounting-rules/accounting-rules.modu
 import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "./revision/domain/ports/catalog-revision.source.js";
 import { DiffCatalogRevisionsHandler } from "./revision/application/diff-catalog-revisions.js";
+import { GetCatalogOverviewHandler } from "./revision/application/get-catalog-overview.js";
 import { ListCatalogRevisionsHandler } from "./revision/application/list-catalog-revisions.js";
 import { TakeCatalogRevisionHandler } from "./revision/application/take-catalog-revision.js";
 import { CatalogRevisionController } from "./revision/http/catalog-revision.controller.js";
@@ -144,6 +145,7 @@ import {
     TakeCatalogRevisionHandler,
     ListCatalogRevisionsHandler,
     DiffCatalogRevisionsHandler,
+    GetCatalogOverviewHandler,
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
@@ -154,6 +156,9 @@ import {
   // Le registre des contextes n'y est plus : il a son propre module. Il sortait
   // d'ici parce qu'il y était rangé, pas parce qu'il en dépendait — et le
   // commentaire qui l'expliquait décrivait le symptôme, pas la raison.
-  exports: [CatalogueReader],
+  // Le dépôt des révisions sort d'ici : le canal B2B inscrit sa publication SUR
+  // l'ancre qu'il vient de figer, et c'est le seul moyen qu'une ancre sache où
+  // elle est partie. Le reste de la mécanique (source, capture) ne sort pas.
+  exports: [CatalogueReader, CatalogRevisionRepository],
 })
 export class CatalogueModule {}

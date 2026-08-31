@@ -3,6 +3,20 @@ import type { RevisionIndex } from "../diff.js";
 import type { JsonObject } from "../fingerprint.js";
 import type { Revision } from "../revision.js";
 
+/** Une publication d'une révision vers une destination. */
+export interface RevisionPublication {
+  readonly revisionId: string;
+  /** `b2b`, `shopify`… Le registre des canaux vit chez qui les pousse. */
+  readonly channel: string;
+  /** `live` ou `dry-run` — une simulation se trace aussi. */
+  readonly mode: string;
+  /** `sent` ou `failed`. L'échec s'inscrit : sinon on ne raconte que les bons jours. */
+  readonly outcome: string;
+  readonly report: unknown;
+  readonly publishedAt: Date;
+  readonly publishedBy: string | null;
+}
+
 /** Une révision posée, telle qu'on la relit. */
 export interface RevisionRecord {
   readonly id: string;
@@ -54,6 +68,16 @@ export abstract class CatalogRevisionRepository {
    * pour trois lignes de résultat.
    */
   abstract indexOf(revisionId: string): Promise<RevisionIndex>;
+
+  /**
+   * Inscrit une publication SUR une révision : où elle est partie, et l'issue.
+   *
+   * Séparé de `save` parce que les deux actes sont séparés dans le temps : on
+   * fige d'abord ce qu'on s'apprête à envoyer, on envoie ensuite, et l'envoi
+   * peut échouer. Les fondre obligerait à connaître l'issue avant de figer,
+   * c'est-à-dire à ne rien figer du tout.
+   */
+  abstract recordPublication(publication: RevisionPublication): Promise<void>;
 
   /** Les payloads de quelques SKU — ceux que le plan a désignés, et eux seuls. */
   abstract payloadsOf(

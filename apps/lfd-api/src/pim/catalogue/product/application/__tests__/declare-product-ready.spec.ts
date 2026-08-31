@@ -84,6 +84,9 @@ class FakeReadiness extends ReadinessRepository {
   read(): Promise<ProductReadiness | null> {
     return Promise.resolve(this.declared);
   }
+  readMany(): Promise<ReadonlyMap<string, ProductReadiness>> {
+    return Promise.resolve(new Map());
+  }
   contentUpdatedAt(): Promise<Date | null> {
     return Promise.resolve(NOW);
   }

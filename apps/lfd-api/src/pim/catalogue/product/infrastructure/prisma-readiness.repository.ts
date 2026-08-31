@@ -28,6 +28,18 @@ export class PrismaReadinessRepository extends ReadinessRepository {
     return row === null ? null : { readyAt: row.readyAt, readyBy: row.readyBy };
   }
 
+  async readMany(productIds: readonly string[]): Promise<ReadonlyMap<string, ProductReadiness>> {
+    if (productIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.productReadiness.findMany({
+      where: { productId: { in: [...productIds] } },
+    });
+    return new Map(
+      rows.map((row) => [row.productId, { readyAt: row.readyAt, readyBy: row.readyBy }]),
+    );
+  }
+
   async contentUpdatedAt(productId: string): Promise<Date | null> {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },

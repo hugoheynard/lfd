@@ -117,7 +117,7 @@ describe('RevisionsPage', () => {
     await TestBed.inject(RevisionsStore).take('peu importe');
 
     expect(TestBed.inject(RevisionsStore).lastTake()).toBe(
-      "Le catalogue n'a pas bougé depuis la révision 2 : rien n'a été posé.",
+      "Le catalogue n'a pas bougé depuis la révision 2 : rien n'a été préparé.",
     );
   });
 
@@ -126,7 +126,7 @@ describe('RevisionsPage', () => {
 
     await TestBed.inject(RevisionsStore).take('rentrée');
 
-    expect(TestBed.inject(RevisionsStore).lastTake()).toBe('Révision 3 posée.');
+    expect(TestBed.inject(RevisionsStore).lastTake()).toBe('Révision 3 préparée.');
   });
 
   /** Un nom fait de blancs n'est pas un nom : il part à `null`. */
