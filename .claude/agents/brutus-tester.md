@@ -148,6 +148,80 @@ Une suite e2e **nouvelle** fait échouer `lint:e2e-durations` tant que
 `pnpm --filter lfd-api e2e:rebalance` n'a pas tourné. Signale-le ; ne le lance
 pas toi-même, il dure plusieurs minutes.
 
+## Le harnais de test de ce dépôt — tu ne l'inventes pas
+
+Il existe, il est unanime, et t'en écarter crée un dialecte de plus. Avant ta
+première ligne, ouvre une suite **voisine du même niveau** — pour un handler,
+`pim/vat-rates/application/__tests__/vat-rate.handlers.spec.ts` — et copies-en
+la mécanique.
+
+**Les doubles s'écrivent à la main, en héritant du port abstrait.**
+`class InMemoryRepo extends VatRateRepository`. Jamais `implements`, jamais
+`jest.mock`, jamais `jest.fn()` : il n'y en a **aucun** dans le PIM, et le
+premier serait le tien.
+
+**Des doubles partagés existent déjà — tu les IMPORTES.**
+
+- `platform/database/__tests__/direct-unit-of-work.js` → `DirectUnitOfWork`
+- `pim/journal/__tests__/recording-journal.js` → `RecordingJournal`
+  (`.types()` rend les types dans l'ordre, `.entries[]` le détail)
+
+Le JSDoc de `RecordingJournal` dit pourquoi : « un double par fichier finirait
+par diverger du port ». Avant d'écrire un faux, cherche s'il existe :
+
+```bash
+grep -rl "class \(Fake\|InMemory\|Recording\|Stub\)" --include="*.ts" src/ | head
+```
+
+**Le générateur d'identifiants dépend du port que TON handler prend.** Le dépôt
+en a deux, et se tromper ne compile pas :
+
+- `IdGenerator` (platform, ULID) — double partagé prêt à l'emploi dans
+  `platform/id/fixed-id-generator.js` → `FixedIdGenerator` ;
+- `PimIdGenerator` (PIM, uuid v7) — pas de double partagé, on le sous-classe
+  localement en compteur.
+
+Lis la signature du constructeur. Ne devine pas.
+
+**Le vocabulaire des préfixes**, à respecter — il porte du sens :
+`InMemory*` garde l'état et reconstitue · `Fake*` double fonctionnel ·
+`Stub*` / `Sequential*` réponses déterministes · `Recording*` capture pour
+assertion · `Silent*` no-op qui satisfait le port · `Failing*` injection de
+panne · `Empty*` rend le vide.
+
+**Un repo en mémoire garde le SNAPSHOT et reconstitue à chaque lecture.**
+`this.stored.set(id, aggregate.snapshot())` à l'écriture, `X.reconstitute(…)`
+à la lecture — « comme la vraie base ». Rendre l'instance que tient le handler
+masquerait les bugs de référence partagée et sauterait la revalidation des
+value objects. Expose `at(id)` pour l'assertion, `seed(…)` pour l'état initial,
+et garde publique la donnée que la vraie base calculerait (un compte d'usages)
+pour que le test la pose.
+
+**Au niveau application, pas de Nest.** Le handler se construit à la main :
+`new CreateVatRateHandler(repo, ids, journal, uow)`. Une **seule** instance de
+générateur par test — deux repartiraient du même compteur, et le second agrégat
+écraserait le premier. `Test.createTestingModule` n'existe que dans
+`channels/**`, au niveau service ; ne le remonte pas d'un cran.
+
+**Un refus s'assert en trois temps.** C'est le patron le plus fort du dépôt, et
+celui qu'on oublie : l'erreur nommée, PLUS l'absence d'écriture, PLUS le
+silence du journal.
+
+```ts
+await expect(handler.execute(cmd)).rejects.toBeInstanceOf(XError);
+expect(repo.at(id)).toEqual(avant); // rien écrit
+expect(journal.types()).toEqual([]); // rien tracé
+```
+
+`rejects.toBeInstanceOf`, pas `rejects.toThrow` (49 contre 7 dans le PIM).
+
+**Le journal est une surface d'assertion de plein droit.** Sur tout handler qui
+mute : les types dans l'ordre, la charge du fait (`{ from, to }`), et surtout
+le cas **« reposé à l'identique ne trace rien »** — un formulaire réenregistré
+sans changement n'est pas un fait, et le tracer noierait celui que quelqu'un
+cherchera. Éprouvé dans `vat-rates` et `accounting-rules` : c'est une règle du
+dépôt, pas une coquetterie locale.
+
 ## Les règles d'écriture du dépôt
 
 - **Colocalisés** dans `__tests__/` à côté de la source.
