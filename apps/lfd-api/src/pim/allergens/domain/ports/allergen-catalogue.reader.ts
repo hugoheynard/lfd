@@ -35,6 +35,13 @@ export interface AllergenCategoryView {
   readonly incoCategory: IncoCategory | null;
   readonly official: boolean;
   readonly position: number;
+  /**
+   * Retirée du référentiel à cette date — comme une entrée, et pour la même
+   * raison : sans elle, l'écran d'administration ne peut pas distinguer une
+   * catégorie retirée d'une catégorie vide, et la restauration n'a pas d'objet
+   * à viser (D2 bis).
+   */
+  readonly archivedAt: Date | null;
   readonly entries: readonly AllergenEntryView[];
 }
 
