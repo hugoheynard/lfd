@@ -232,10 +232,39 @@ Elle décide du coût de stockage, mais surtout de **ce qu'un diff saura montrer
 | **Le vendable** — ce que les projections lisent (identité, prix, taux, canaux, allergènes) | ce qui change une facture ou une mise en rayon | une description réécrite, une photo remplacée  |
 | **La fiche entière** — éditorial et visuels compris                                        | tout                                           | — (mais chaque ancre pèse le catalogue entier) |
 
-Mon avis : **le vendable**. Un point d'ancrage de publication répond à « qu'est-ce
-qui part chez nos clients », et une photo remplacée n'a jamais changé une
-facture. L'éditorial a déjà sa traçabilité au grain du fait dans le journal.
+**Tranché le 2026-08-31 : le vendable seulement.** Un point d'ancrage de
+publication répond à « qu'est-ce qui part chez nos clients », et une photo
+remplacée n'a jamais changé une facture. L'éditorial garde sa traçabilité au
+grain du fait, dans le journal.
 
-Mais c'est une décision produit, pas technique : si l'ancre doit servir à
-retrouver « la fiche telle qu'elle était », il faut la fiche entière, et il faut
-l'accepter avec son coût.
+## 8. Ce que « le vendable » contient — et le piège du rapport
+
+La décision laisse une question qu'il vaut mieux poser maintenant : capture-t-on
+l'état **canonique** (les lignes telles qu'elles sont écrites) ou l'état
+**résolu** (ce qu'un canal recevrait) ?
+
+Le canonique seul a un trou, et il est large. Le prix professionnel se dérive du
+prix public par `accounting_rules.ratio_bp` — une ligne **globale**. Le jour où
+la remise passe de 10 % à 12 %, aucune ligne de produit ne bouge, et un diff
+canonique dirait donc **« rien n'a changé »** alors que toutes les factures
+professionnelles viennent de changer. Le même raisonnement vaut pour un taux de
+TVA révisé sur une famille : une ligne change, cent articles sont refacturés.
+
+Une révision porte donc **deux étages** :
+
+| Étage        | Contenu                                                                                                                                     | Pourquoi                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **En-tête**  | le rapport pro, les taux par contexte en vigueur                                                                                            | ce qui change tout sans que rien ne bouge   |
+| **Articles** | par déclinaison vendable : sku, sku produit, nom, famille, prix public TTC, poids, allergènes, canaux effectifs, taux effectif par contexte | ce qu'on vend, résolu — héritages appliqués |
+
+Les **héritages sont résolus** à la capture. Garder « ce produit hérite de sa
+famille » obligerait un diff à rejouer la résolution pour comprendre qu'un taux
+de famille a bougé — et à la rejouer avec le code d'aujourd'hui, sur des données
+d'hier. Une ancre doit être lisible sans son moteur.
+
+Ce qui n'entre PAS, et se relit dans le journal : l'éditorial, les visuels, la
+nutrition détaillée, les conditionnements.
+
+⚠️ **Ce que cette décision coûte** : une ancre ne permet pas de retrouver « la
+fiche telle qu'elle était ». Elle permet de retrouver **ce qui était vendu, à
+quel prix, sous quel régime**. C'est un choix, pas un oubli.
