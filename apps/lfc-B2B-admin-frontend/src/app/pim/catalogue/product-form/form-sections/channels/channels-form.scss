@@ -136,3 +136,10 @@
   letter-spacing: 0.06em;
   color: var(--fold-color-text-muted);
 }
+
+/* La ligne qui part d'un prix remisé le dit. Discret : c'est une précision, pas
+   une alerte — le montant reste ce qu'on vient lire. */
+.inherit-discounted {
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-faded);
+}

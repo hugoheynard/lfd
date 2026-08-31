@@ -1,6 +1,10 @@
 import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
 
 import {
+  htFromTtc,
+  ttcFromHt,
+  proPriceFromPublic,
+  type PriceBasis,
   LOCALES,
   SOURCE_LOCALE,
   missingLocales,
@@ -13,6 +17,8 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { NO_CHANNELS, formatPercent, pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import type { SalesChannels } from '../../data/models';
+import { AccountingRulesStore } from '../../accounting-rules/accounting-rules.store';
+import { formatDiscount } from '../../accounting-rules/pro-discount';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import type {
@@ -72,21 +78,68 @@ export interface RateView {
 }
 
 /**
- * Le prix TTC d'un contexte — **calculé ici**, jamais reçu.
+ * **L'autre face du prix**, pour un contexte donné — calculée ici, jamais reçue.
  *
- * Le catalogue porte un prix HT et un taux par contexte : le TTC en découle, et
- * le stocker en ferait une troisième valeur à tenir d'accord avec les deux
- * autres. C'est une aide à la lecture, pas une donnée : la facture, elle, est
- * calculée par le serveur au moment de la commande.
+ * Un prix d'étiquette rend son hors taxe ; un prix hors taxe rend son TTC. C'est
+ * toujours l'inverse de l'assiette saisie, et c'est le seul nombre que l'écran
+ * ait à ajouter : le stocker en ferait une troisième valeur à tenir d'accord
+ * avec les deux autres. C'est une aide à la lecture, pas une donnée — la
+ * facture, elle, est calculée par le serveur au moment de la commande.
+ *
+ * Les conversions viennent de `@lfd/pim-contracts`, donc du même code que le
+ * serveur. Un aperçu qui arrondirait autrement que la facture serait pire
+ * qu'aucun aperçu.
  */
-function grossOf(priceEur: number | null, percent: number | undefined): string | null {
+function counterpartOf(
+  priceEur: number | null,
+  basis: PriceBasis,
+  percent: number | undefined,
+): DerivedAmount | null {
   if (priceEur === null || percent === undefined) {
     return null;
   }
-  return EUROS.format(Math.round(priceEur * (1 + percent / 100) * 100) / 100);
+  const cents = Math.round(priceEur * 100);
+  return basis === 'ttc'
+    ? { label: 'HT', amount: euros(htFromTtc(cents, percent)) }
+    : { label: 'TTC', amount: euros(ttcFromHt(cents, percent)) };
 }
 
 const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+
+/** Des centimes entiers vers « 1,14 € ». */
+function euros(cents: number): string {
+  return EUROS.format(cents / 100);
+}
+
+/** Un montant dérivé et ce qu'il EST : le nombre seul ne le dit pas. */
+export interface DerivedAmount {
+  readonly label: 'HT' | 'TTC';
+  readonly amount: string;
+}
+
+/**
+ * Le prix professionnel tel que l'écran le montre : le TTC, la remise qui l'a
+ * produit, et le hors taxe qui en découle.
+ */
+export interface ProPricing {
+  readonly ttc: string;
+  /** « −10 % » — la pastille, pour que le nombre ne tombe pas de nulle part. */
+  readonly discountLabel: string;
+  /** `null` quand le contexte professionnel n'a pas de taux réglé. */
+  readonly ht: string | null;
+}
+
+/**
+ * La clé du contexte que le prix PROFESSIONNEL concerne.
+ *
+ * Cet écran ne nomme aucun contexte — c'est une règle, et elle tient : les
+ * lignes viennent du registre. Celle-ci est l'exception assumée, pour la même
+ * raison que la projection B2B nomme la sienne : ce bloc EST le prix
+ * professionnel, pas « le prix d'un contexte quelconque ». Une constante nommée
+ * plutôt qu'une chaîne au fil du code — le jour où elle ne désigne plus rien,
+ * il n'y a qu'un endroit à corriger.
+ */
+const PRO_CONTEXT_KEY = 'b2b';
 
 /**
  * Une ligne de l'héritage : un contexte de vente, ce qu'il dessert, son taux.
@@ -117,8 +170,21 @@ export interface ChannelInheritance {
   /** Vide pour un contexte sans comptoir — le B2B se vend depuis la plateforme. */
   readonly boutiques: readonly string[];
   readonly rate: RateView | null;
-  /** Le prix TTC de ce contexte — `null` sans prix ou sans taux. */
-  readonly gross: string | null;
+  /**
+   * L'autre face du prix, pour CE contexte — `null` sans prix ou sans taux.
+   *
+   * C'est ici que l'ancrage TTC se voit : un prix d'étiquette unique donne un
+   * hors taxe par taux, et c'est cette colonne qui les montre côte à côte.
+   */
+  readonly counterpart: DerivedAmount | null;
+  /**
+   * Cette ligne part-elle d'un prix **remisé** plutôt que du prix public ?
+   *
+   * Le montant seul ne le dit pas, et un professionnel qui compare le tableau
+   * au prix affiché plus haut ne retrouverait pas ses comptes sans cette
+   * mention.
+   */
+  readonly discounted: boolean;
 }
 
 export interface CategoryInheritanceView {
@@ -237,6 +303,8 @@ export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
   private readonly pointStore = inject(PointOfSaleStore);
+  /** Le rapport prix public / prix pro — réglé une fois, lu partout. */
+  private readonly accounting = inject(AccountingRulesStore);
   private readonly contextStore = inject(SalesContextStore);
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
@@ -322,6 +390,16 @@ export class ProductFormStore {
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
   readonly priceEur = signal<number | null>(null);
+
+  /**
+   * **Ce que `priceEur` veut dire.**
+   *
+   * `ttc` par défaut : c'est ce que l'écran demande désormais (« Prix public
+   * TTC »), et une fiche neuve n'a aucune raison de naître dans l'assiette
+   * qu'on quitte. Une fiche RELUE, elle, garde la sienne — on ne réinterprète
+   * pas un montant enregistré en changeant l'étiquette au-dessus.
+   */
+  readonly priceBasis = signal<PriceBasis>('ttc');
 
   /**
    * La **dérogation** de cette fiche, par clé de contexte. Vide = elle hérite.
@@ -418,6 +496,68 @@ export class ProductFormStore {
 
   private readonly regimeById = computed(() => new Map(this.rates().map((r) => [r.id, r])));
 
+  /**
+   * Le taux EFFECTIF d'un contexte, en pourcentage — dérogation de la fiche
+   * par-dessus celle de sa famille. `undefined` = pas de taux réglé.
+   */
+  private percentOf(contextKey: string): number | undefined {
+    const rateId =
+      this.vatOverride()[contextKey] ?? this.selectedCategory()?.vatByContext[contextKey];
+    return rateId === undefined ? undefined : this.regimeById().get(rateId)?.percent;
+  }
+
+  /**
+   * Le **prix professionnel**, dérivé du prix public par le rapport des règles
+   * comptables — et son hors taxe.
+   *
+   * `null` dès qu'une pièce manque : pas de prix, pas de rapport réglé, ou une
+   * fiche encore ancrée au hors taxe. Le rapport est un rapport TTC/TTC ; il ne
+   * veut rien dire appliqué à un montant hors taxe, et le faire quand même
+   * afficherait un prix que le serveur ne calculerait pas.
+   */
+  /**
+   * Le prix **de départ** d'un contexte, avant son taux.
+   *
+   * C'est le prix public partout — sauf pour le contexte professionnel, qui ne
+   * vend pas au prix public : il vend au prix remisé. Sans cette distinction,
+   * l'écran affichait DEUX hors taxe B2B différents, l'un sous le prix pro et
+   * l'autre dans le tableau, et rien ne disait lequel serait facturé.
+   *
+   * Le rapport ne s'applique qu'à une fiche ancrée au TTC — c'est un rapport
+   * TTC/TTC. Ailleurs, la ligne professionnelle retombe sur le prix public,
+   * comme les autres.
+   */
+  private basePriceEurFor(contextKey: string): number | null {
+    const priceEur = this.priceEur();
+    const ratioBp = this.accounting.rules().ratioBp;
+    if (contextKey !== PRO_CONTEXT_KEY || priceEur === null || ratioBp === null) {
+      return priceEur;
+    }
+    if (this.priceBasis() !== 'ttc') {
+      return priceEur;
+    }
+    return proPriceFromPublic(Math.round(priceEur * 100), ratioBp) / 100;
+  }
+
+  readonly proPricing = computed<ProPricing | null>(() => {
+    const priceEur = this.priceEur();
+    const ratioBp = this.accounting.rules().ratioBp;
+    if (priceEur === null || ratioBp === null || this.priceBasis() !== 'ttc') {
+      return null;
+    }
+    const proTtcCents = proPriceFromPublic(Math.round(priceEur * 100), ratioBp);
+    const percent = this.percentOf(PRO_CONTEXT_KEY);
+    return {
+      ttc: euros(proTtcCents),
+      discountLabel: formatDiscount(ratioBp),
+      // Le hors taxe se déduit du prix pro ARRONDI, pas d'un rationnel gardé
+      // jusqu'au bout : les deux nombres s'affichent l'un sous l'autre, et le
+      // second re-taxé doit redonner le premier. Un client qui recompte
+      // trouverait le désaccord avant nous.
+      ht: percent === undefined ? null : euros(htFromTtc(proTtcCents, percent)),
+    };
+  });
+
   private readonly selectedCategory = computed<Category | undefined>(() =>
     this.categories().find((c) => c.id === this.categoryId()),
   );
@@ -464,11 +604,12 @@ export class ProductFormStore {
     const rateIdOf = (contextKey: string): string | undefined =>
       override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
-    const grossFor = (contextKey: string): string | null => {
-      const rateId = rateIdOf(contextKey);
-      const rate = rateId === undefined ? undefined : this.regimeById().get(rateId);
-      return grossOf(this.priceEur(), rate?.percent);
-    };
+    const counterpartFor = (contextKey: string): DerivedAmount | null =>
+      counterpartOf(
+        this.basePriceEurFor(contextKey),
+        this.priceBasis(),
+        this.percentOf(contextKey),
+      );
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
@@ -483,7 +624,8 @@ export class ProductFormStore {
         sold: sellsContext(channels, context.key),
         boutiques: pointsOfSaleSelling(channels, context.key, this.pointsOfSale()),
         rate: rateOf(context.key),
-        gross: grossFor(context.key),
+        counterpart: counterpartFor(context.key),
+        discounted: this.basePriceEurFor(context.key) !== this.priceEur(),
         source: override[context.key] === undefined ? 'inherited' : 'overridden',
       })),
     };
@@ -937,6 +1079,9 @@ export class ProductFormStore {
     const weight = this.weightGrams();
     return this.products.savePricing(this.productId(), this.variantId(), {
       priceCents: price === null ? null : Math.round(price * 100),
+      // L'assiette part AVEC le prix : entre deux écritures, la base porterait
+      // un montant dont personne ne saurait dire s'il est hors taxe.
+      priceBasis: this.priceBasis(),
       weightGrams: weight === null ? null : Math.round(weight),
     });
   }
@@ -1036,7 +1181,14 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([this.priceEur(), this.vatOverride(), this.channelsOverride()]);
+        return JSON.stringify([
+          this.priceEur(),
+          // Sans elle, basculer l'assiette sans toucher au nombre laisserait la
+          // section « propre » : le geste ne partirait jamais.
+          this.priceBasis(),
+          this.vatOverride(),
+          this.channelsOverride(),
+        ]);
       case 'fiche':
         // Le poids net est de CETTE section : la grille est « pour 100 g », et
         // sans lui elle ne dit rien de ce qu'on vend.
@@ -1078,6 +1230,7 @@ export class ProductFormStore {
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
     this.priceEur.set(product.priceEur ?? null);
+    this.priceBasis.set(product.priceBasis);
     this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
     this.weightGrams.set(product.weightGrams ?? null);

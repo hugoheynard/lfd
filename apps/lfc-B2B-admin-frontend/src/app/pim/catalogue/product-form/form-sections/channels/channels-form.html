@@ -46,18 +46,30 @@
                 <span class="muted">taux non défini</span>
               }
             </dd>
-            <!-- Le TTC de CE contexte. Calculé ici à partir du prix HT et du
-                 taux : le stocker en ferait une troisième valeur à tenir
-                 d'accord avec les deux autres. La facture, elle, est calculée
-                 par le serveur au moment de la commande. -->
+            <!-- L'AUTRE FACE du prix, pour CE contexte — le hors taxe quand on
+                 saisit un prix d'étiquette, le TTC quand on saisit un hors taxe.
+                 C'est ici que l'ancrage TTC se voit : un seul prix public, un
+                 hors taxe par taux, alignés les uns sous les autres.
+
+                 Calculé ici, jamais stocké : ce serait une troisième valeur à
+                 tenir d'accord avec les deux autres. La facture, elle, est
+                 calculée par le serveur au moment de la commande — avec le même
+                 code, qui vient du contrat. -->
             <dd class="inherit-gross">
-              @if (row.gross; as gross) {
-                <strong>{{ gross }}</strong>
+              @if (row.counterpart; as counterpart) {
+                <strong>{{ counterpart.amount }}</strong>
+                <!-- Cette ligne ne part PAS du prix public : le contexte
+                     professionnel vend au prix remisé. Sans la mention, un
+                     lecteur qui compare la ligne au prix affiché plus haut ne
+                     retrouverait pas ses comptes. -->
+                @if (row.discounted) {
+                  <span class="inherit-discounted">remisé</span>
+                }
                 <!-- Le montant seul ne dit pas ce qu'il est : à côté d'un taux
-                     et d'un prix HT saisi plus haut, « 12,00 € » peut se lire
-                     comme l'un ou l'autre. La mention lève le doute là où il
-                     naît, pas dans un en-tête qu'on ne relit pas. -->
-                <span class="inherit-regime">TTC</span>
+                     et d'un prix saisi plus haut, « 12,00 € » peut se lire comme
+                     l'un ou l'autre. La mention lève le doute là où il naît, pas
+                     dans un en-tête qu'on ne relit pas. -->
+                <span class="inherit-regime">{{ counterpart.label }}</span>
               } @else {
                 <span class="muted">—</span>
               }

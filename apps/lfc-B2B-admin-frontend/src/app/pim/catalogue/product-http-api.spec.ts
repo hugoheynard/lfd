@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { PriceBasis } from '@lfd/pim-contracts';
+
 import { backendToProduct } from './product-http-api';
 
 interface BackendVariantLike {
@@ -11,6 +13,7 @@ interface BackendVariantLike {
   isDefault: boolean;
   isDiscontinued: boolean;
   priceCents: number | null;
+  priceBasis: PriceBasis;
   weightGrams: number | null;
   allergens: readonly string[] | null;
   nutrition: null;
@@ -26,6 +29,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     isDefault: true,
     isDiscontinued: false,
     priceCents: 450,
+    priceBasis: 'ttc',
     weightGrams: 250,
     allergens: null,
     nutrition: null,

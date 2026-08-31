@@ -16,6 +16,7 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../data/api';
 import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
+import type { UpdateVariantPricingPayload } from '@lfd/pim-contracts';
 
 // Formes RENDUES par l'API = vues du contrat `@lfd/pim-contracts`. `priceCents`
 // HT canonique ; le front l'expose en euros dans `priceEur` (TTC/HT relève de la
@@ -168,6 +169,9 @@ export function backendToProduct(
     vatByContext: product.vatByContext,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
+    // Reçue, pas devinée : c'est elle qui dit si « 2,00 » veut dire deux euros
+    // hors taxe ou deux euros en tout.
+    priceBasis: base?.priceBasis ?? 'ht',
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
     ...(description === null || description === undefined || description === ''
       ? {}
@@ -268,11 +272,7 @@ export class ProductHttpApi {
   }
 
   /** Section Tarif & logistique — prix + poids de la déclinaison en une requête. */
-  savePricing(
-    id: string,
-    variantId: string,
-    input: { priceCents: number | null; weightGrams: number | null },
-  ): Promise<void> {
+  savePricing(id: string, variantId: string, input: UpdateVariantPricingPayload): Promise<void> {
     return this.put(`products/${id}/variants/${variantId}/pricing`, input);
   }
 
@@ -384,6 +384,10 @@ export class ProductHttpApi {
     }
     await this.savePricing(id, variantId, {
       priceCents: input.priceEur === undefined ? null : Math.round(input.priceEur * 100),
+      // Une fiche neuve naît au prix d'étiquette : c'est ce que l'écran demande
+      // maintenant (« Prix public TTC »), et la faire naître en hors taxe
+      // obligerait à la basculer aussitôt.
+      priceBasis: 'ttc',
       weightGrams: input.weightGrams === undefined ? null : input.weightGrams,
     });
   }

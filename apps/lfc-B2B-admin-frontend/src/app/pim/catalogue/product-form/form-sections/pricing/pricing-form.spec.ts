@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { AccountingRulesStore } from '../../../../accounting-rules/accounting-rules.store';
 import { ProductFormStore } from '../../product-form-store';
 import { provideTestSalesContexts } from '../../../../sales-contexts/sales-context-store.testing';
 import { PricingForm } from './pricing-form';
@@ -66,13 +67,32 @@ describe('PricingForm', () => {
     const labels = [...root.querySelectorAll('button')].map((b) => b.textContent ?? '');
     expect(labels.some((label) => label.includes('Enregistrer'))).toBe(false);
   });
-  it('demande un prix HT — le TTC dépend du mode, il se calcule', () => {
+  /**
+   * Le sens de lecture s'est INVERSÉ : on saisit le prix d'étiquette, et
+   * l'écran montre les hors taxe qu'il produit. Une fiche neuve naît donc au
+   * TTC — la faire naître en hors taxe obligerait à la basculer aussitôt.
+   */
+  it('demande un prix public TTC — ce sont les HT qui se calculent', () => {
     setup();
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Prix public TTC');
+  });
+
+  /**
+   * Une fiche RELUE garde son assiette : réinterpréter un montant enregistré en
+   * changeant l'étiquette au-dessus serait le seul mensonge qu'un écran de
+   * tarif ne peut pas se permettre.
+   */
+  it('dit « Prix HT » sur une fiche encore ancrée au hors taxe', () => {
+    const store = setup();
+    store.priceBasis.set('ht');
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Prix HT');
-    expect(text).not.toContain('TTC');
+    expect(text).not.toContain('Prix public TTC');
   });
 
   it('montre le régime À CÔTÉ du prix, pas dans une autre section', () => {
@@ -83,7 +103,7 @@ describe('PricingForm', () => {
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Prix HT');
+    expect(text).toContain('Prix public TTC');
     expect(text).toContain('Tartes');
     expect(text).toContain('5,5 %');
   });
@@ -217,11 +237,14 @@ describe('PricingForm — ce qui n’y est PAS', () => {
   });
 });
 
-describe('PricingForm — le TTC par canal', () => {
-  it('calcule le TTC de CHAQUE contexte à partir du prix HT et de son taux', () => {
-    // La famille est à 5,5 % au comptoir et 20 % en B2B : deux TTC pour un seul
-    // prix HT. C'est exactement ce que la colonne existe pour montrer — sans
-    // elle, il faut faire le calcul de tête pour savoir ce que paie le client.
+describe('PricingForm — le HT par canal', () => {
+  /**
+   * **Le cœur de l'ancrage.** Un seul prix d'étiquette, deux taux, deux hors
+   * taxe : 10,00 € TTC valent 9,48 € HT au comptoir (5,5 %) et 8,33 € HT en
+   * B2B (20 %). Sans cette colonne, il faut faire le calcul de tête pour savoir
+   * ce que la maison encaisse vraiment.
+   */
+  it('déduit le HT de CHAQUE contexte du prix public et de son taux', () => {
     const store = setup();
     withFamily(store);
     store.priceEur.set(10);
@@ -229,23 +252,47 @@ describe('PricingForm — le TTC par canal', () => {
     fixture.detectChanges();
 
     const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const gross = (label: string): string =>
+    const net = (label: string): string =>
       rows
         .find((row) => row.querySelector('dt')?.textContent?.includes(label))
         ?.querySelector('.inherit-gross strong')
         ?.textContent?.replace(/\u202f|\u00a0/g, ' ')
         .trim() ?? '';
 
-    expect(gross('À emporter')).toBe('10,55 €');
-    expect(gross('B2B')).toBe('12,00 €');
+    expect(net('À emporter')).toBe('9,48 €');
+    // Aucune remise réglée dans ce cas-là : la ligne B2B part du prix public.
+    expect(net('B2B')).toBe('8,33 €');
 
-    // Le montant est ÉTIQUETÉ : seul, « 12,00 € » se lirait aussi bien comme le
-    // prix HT saisi plus haut.
+    // Le montant est ÉTIQUETÉ : seul, « 8,33 € » se lirait aussi bien comme le
+    // prix saisi plus haut.
     const rate = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
-    expect(rate?.querySelector('.inherit-gross')?.textContent).toContain('TTC');
+    expect(rate?.querySelector('.inherit-gross')?.textContent).toContain('HT');
   });
 
-  it('ne montre RIEN sans prix — jamais un TTC égal au HT', () => {
+  /**
+   * Une fiche encore ancrée au hors taxe montre l'autre face : le TTC. La
+   * colonne dit toujours l'INVERSE de ce qu'on saisit, sinon elle n'apprend
+   * rien.
+   */
+  it('montre le TTC quand la fiche est encore ancrée au hors taxe', () => {
+    const store = setup();
+    withFamily(store);
+    store.priceBasis.set('ht');
+    store.priceEur.set(10);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
+    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
+    const cell = b2b?.querySelector('.inherit-gross');
+
+    expect(cell?.querySelector('strong')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toBe(
+      '12,00 €',
+    );
+    expect(cell?.textContent).toContain('TTC');
+  });
+
+  it('ne montre RIEN sans prix — jamais un montant dérivé de zéro', () => {
     // Un produit non tarifé afficherait « 0,00 € » si on calculait sur `null`,
     // et un zéro se lit comme un prix.
     const store = setup();
@@ -256,5 +303,127 @@ describe('PricingForm — le TTC par canal', () => {
 
     const gross = (fixture.nativeElement as HTMLElement).querySelector('.inherit-gross');
     expect(gross?.textContent?.trim()).toBe('—');
+  });
+});
+
+describe('PricingForm — le prix professionnel', () => {
+  /** Le rapport tel que les règles comptables le rendent : −10 %. */
+  function withProRatio(store: ProductFormStore, ratioBp: number | null): void {
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp, updatedAt: null });
+    withFamily(store);
+    store.priceEur.set(12);
+  }
+
+  /**
+   * La chaîne entière, telle qu'on la lit à l'écran : 12,00 € public TTC,
+   * −10 % pour les pros, 20 % de TVA sur le contexte B2B.
+   */
+  it('dérive le prix pro TTC et son HT du prix public', () => {
+    const store = setup();
+    withProRatio(store, 9_000);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const pro = (fixture.nativeElement as HTMLElement).querySelector('.pro');
+    const text = pro?.textContent?.replace(/\u202f|\u00a0/g, ' ') ?? '';
+    // 12,00 € × 90 % = 10,80 € TTC ; ÷ 1,20 = 9,00 € HT.
+    expect(text).toContain('10,80 €');
+    expect(text).toContain('9,00 €');
+  });
+
+  /**
+   * La pastille dit d'où vient le montant. Sans elle, « 10,80 € » tombe de
+   * nulle part et personne ne sait où aller le changer.
+   */
+  it('porte la remise en pastille, et renvoie où elle se règle', () => {
+    const store = setup();
+    withProRatio(store, 9_000);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('−10 %');
+    expect(text).toContain('Règles comptables');
+  });
+
+  /**
+   * Aucun rapport réglé : on le DIT. Un blanc se lirait « ce produit n'a pas de
+   * prix pro », alors que c'est le réglage de la maison qui manque.
+   */
+  it('dit qu’aucune remise n’est réglée plutôt que de laisser un blanc', () => {
+    const store = setup();
+    withProRatio(store, null);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.pro')).toBeNull();
+    expect(host.textContent).toContain('Aucune');
+  });
+
+  /**
+   * Le rapport est un rapport TTC/TTC : appliqué à un montant hors taxe, il ne
+   * veut rien dire. On n'affiche donc pas un prix que le serveur ne
+   * calculerait pas.
+   */
+  it('ne dérive rien tant que la fiche est ancrée au hors taxe', () => {
+    const store = setup();
+    withProRatio(store, 9_000);
+    store.priceBasis.set('ht');
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.pro')).toBeNull();
+  });
+});
+
+describe('PricingForm — la ligne B2B suit le prix remisé', () => {
+  /**
+   * **L'invariant de l'écran** : le hors taxe B2B du tableau est celui du bloc
+   * « Prix pro » juste au-dessus. Faire partir la ligne du prix PUBLIC
+   * afficherait deux montants différents pour la même facture, et rien ne
+   * dirait lequel sera encaissé.
+   */
+  it('déduit la ligne B2B du prix pro, pas du prix public', () => {
+    const store = setup();
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, updatedAt: null });
+    withFamily(store);
+    store.priceEur.set(12);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const b2b = [...host.querySelectorAll('.inherit-row')].find((row) =>
+      row.querySelector('dt')?.textContent?.includes('B2B'),
+    );
+    const amount = b2b
+      ?.querySelector('.inherit-gross strong')
+      ?.textContent?.replace(/\u202f|\u00a0/g, ' ');
+
+    // 12,00 € × 90 % = 10,80 € TTC ; ÷ 1,20 (taux B2B) = 9,00 € HT — le même
+    // nombre que le bloc « Prix pro ».
+    expect(amount).toBe('9,00 €');
+    expect(host.querySelector('.pro')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toContain(
+      '9,00 €',
+    );
+  });
+
+  /** Le montant seul ne dit pas qu'il est remisé. La ligne le dit. */
+  it('marque la ligne remisée, et elle seule', () => {
+    const store = setup();
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, updatedAt: null });
+    withFamily(store);
+    store.priceEur.set(12);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
+    const marked = rows.filter((row) => row.querySelector('.inherit-discounted') !== null);
+
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.querySelector('dt')?.textContent).toContain('B2B');
   });
 });

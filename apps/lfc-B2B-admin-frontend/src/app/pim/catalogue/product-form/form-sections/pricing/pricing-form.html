@@ -4,11 +4,13 @@
 <div class="tarif">
   <div class="stack">
     <label class="field">
-      <span class="field-label">Prix HT</span>
-      <!-- HT, et non le TTC de la maquette : le prix saisi ici est le prix
-           canonique du catalogue. Le TTC dépend du mode de vente — deux taux
-           possibles pour un même produit — donc il se CALCULE, il ne se saisit
-           pas. Le saisir en TTC obligerait à choisir lequel des deux. -->
+      <!-- L'étiquette suit l'ASSIETTE. La figer sur « Prix public TTC » pendant
+           qu'une fiche relue porte encore un montant hors taxe mentirait sur le
+           nombre affiché — et c'est le seul mensonge qu'un écran de tarif ne
+           peut pas se permettre. -->
+      <span class="field-label">{{
+        store.priceBasis() === 'ttc' ? 'Prix public TTC' : 'Prix HT'
+      }}</span>
       <span class="field-money">
         <input
           class="native-input"
@@ -21,6 +23,64 @@
         <span class="field-unit" aria-hidden="true">€</span>
       </span>
     </label>
+
+    <!-- Changer d'assiette ne change PAS le nombre : ça change ce qu'il veut
+         dire. On le dit ici, sous les deux boutons, parce que c'est exactement
+         là que la méprise est possible — et parce qu'aucune conversion
+         automatique n'est honnête : « le prix public » n'a pas UN taux, il en a
+         un par contexte, et c'est tout l'objet de cet écran. -->
+    <div class="basis">
+      <span class="basis-label">Ce montant est&nbsp;:</span>
+      <div class="basis-choice" role="group" aria-label="Assiette du prix">
+        @for (option of BASES; track option.value) {
+          <button
+            type="button"
+            class="basis-option"
+            [class.is-on]="store.priceBasis() === option.value"
+            [attr.aria-pressed]="store.priceBasis() === option.value"
+            (click)="store.priceBasis.set(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      <p class="basis-say">
+        Le nombre ne bouge pas&nbsp;: c'est sa <strong>signification</strong> qui change.
+      </p>
+    </div>
+
+    <!-- Le prix PROFESSIONNEL, sous le prix public parce qu'il en découle. La
+         pastille porte la remise : sans elle, le montant tomberait de nulle
+         part et personne ne saurait où aller le changer. -->
+    @if (store.proPricing(); as pro) {
+      <div class="pro">
+        <p class="pro-head">
+          <span class="pro-title">Prix pro TTC</span>
+          <span class="pro-badge">{{ pro.discountLabel }}</span>
+        </p>
+        <p class="pro-amount">
+          <strong>{{ pro.ttc }}</strong>
+          @if (pro.ht; as ht) {
+            <span class="pro-net">{{ ht }} HT</span>
+          } @else {
+            <!-- Le taux professionnel manque : on ne devine pas. Un hors taxe
+                 inventé serait facturé. -->
+            <span class="pro-net muted">HT indisponible — taux pro non défini</span>
+          }
+        </p>
+        <p class="pro-say">
+          Dérivé du prix public par la remise posée dans
+          <strong>Règles comptables</strong>. Il ne se saisit pas ici.
+        </p>
+      </div>
+    } @else if (store.priceBasis() === 'ttc' && store.priceEur() !== null) {
+      <!-- Prix TTC saisi mais aucun rapport réglé : le dire, plutôt que de
+           laisser un blanc qu'on prendrait pour « pas de prix pro ». -->
+      <p class="pro-missing">
+        Aucune <strong>remise professionnelle</strong> n'est réglée&nbsp;: le prix pro ne peut pas
+        se dériver.
+      </p>
+    }
   </div>
 
   <app-channels-form />
