@@ -164,6 +164,119 @@ Ne l'utiliser qu'après avoir vérifié que l'objet existe bel et bien et qu'il 
 la forme attendue — sinon on inscrit un mensonge dans `_prisma_migrations`, et
 la prochaine migration s'appuiera dessus.
 
+## Si une écriture est refusée par « allergène officiel : … »
+
+Symptôme : une écriture sur `pim.allergen_entry` ou `pim.allergen_category`
+échoue avec un `SQLSTATE 23001` et l'un de ces deux messages, sans qu'aucun code
+TypeScript ne les ait levés :
+
+```
+ERROR:  allergène officiel : suppression refusée (SH)
+ERROR:  allergène officiel : SH est réglementaire et ne se modifie pas
+CONTEXT:  PL/pgSQL function pim.refuse_official_allergen_write() line 12 at RAISE
+```
+
+C'est **voulu**. Les 15 catégories et les 30 codes GS1 semés par
+`20260902120000_referentiel_allergenes` sont du droit (annexe II du règlement UE
+1169/2011), et un trigger `BEFORE UPDATE OR DELETE … WHEN (OLD.official)` les
+gèle **en base** : `code`, `key`, `name`, `category_id`, `inco_category`,
+`official` et `archived_at`. Ni un `psql` d'astreinte ni une migration future
+n'y touchent. Seul `position` reste libre — l'ordre d'affichage n'a pas de
+portée réglementaire.
+
+Le geste normal n'est pas de forcer, c'est de **créer une entrée maison**
+(`official = false`) : elle se modifie et s'archive librement, et le trigger ne
+la voit même pas.
+
+⚠️ **On ne neutralise pas le verrou en passant `official = false`** : cette
+colonne est gelée elle aussi, précisément pour fermer cette porte-là. Et
+`archived_at` l'est pour la même raison — ici l'archivage EST la suppression
+(`CLAUDE.md` §3), donc archiver un allergène réglementaire reviendrait à le
+retirer de la saisie par la porte de derrière.
+
+## Corriger une ligne officielle du référentiel d'allergènes
+
+Symptôme : un code, un rattachement ou une mention d'étiquette semés à tort — un
+libellé faux sur une étiquette est un défaut de conformité, pas une coquille.
+
+Le geste, **dans UNE migration** — donc dans une transaction, donc tout ou rien :
+
+```sql
+DROP TRIGGER allergen_entry_official_lock ON pim.allergen_entry;
+
+UPDATE pim.allergen_entry
+   SET name = '{"fr": "…", "en": "…"}'
+ WHERE code = 'SH';
+
+CREATE TRIGGER allergen_entry_official_lock
+  BEFORE UPDATE OR DELETE ON pim.allergen_entry
+  FOR EACH ROW WHEN (OLD.official)
+  EXECUTE FUNCTION pim.refuse_official_allergen_write();
+```
+
+Le trigger jumeau des catégories s'appelle `allergen_category_official_lock` et
+tient à `pim.refuse_official_allergen_category_write()`.
+
+Ce qui se casse si on l'oublie :
+
+- **Corriger à la main en production**, hors migration : la prod et le semis de
+  la migration divergent en silence. Toute base neuve — clone de dev, base
+  jetable des e2e, reconstruction — reçoit la valeur **fausse**, et le test
+  d'intégrité de `test/pim-allergens.e2e-spec.ts` reste vert puisqu'il compare
+  la table à la même constante.
+- **Recréer le trigger dans une autre migration que celle qui le supprime** :
+  entre les deux, la table est sans verrou, et la fenêtre ne se referme que le
+  jour où quelqu'un s'en souvient.
+- **Supprimer un code plutôt que le corriger** : le `RESTRICT` de
+  `ingredient_allergen` refusera si un ingrédient le cite déjà, et une
+  déclaration produit qui porte ce code en `Json` n'a, elle, aucune clé
+  étrangère pour la protéger — elle deviendra un code inconnu à la projection.
+
+## Retirer le référentiel d'allergènes — l'ordre de démontage
+
+Symptôme : il faut défaire `20260902120000_referentiel_allergenes` (retour
+arrière complet, avant que quoi que ce soit d'autre ne s'appuie dessus).
+
+L'ordre n'est pas un goût, c'est la seule séquence que Postgres accepte sans
+`CASCADE` :
+
+```sql
+DROP TRIGGER allergen_entry_official_lock ON pim.allergen_entry;
+DROP TRIGGER allergen_category_official_lock ON pim.allergen_category;
+
+DROP FUNCTION pim.refuse_official_allergen_write();
+DROP FUNCTION pim.refuse_official_allergen_category_write();
+
+DROP TABLE pim.ingredient_allergen;
+DROP TABLE pim.allergen_entry;
+DROP TABLE pim.allergen_category;
+```
+
+Puis **retirer les trois modèles de `prisma/schema.prisma`**
+(`AllergenCategory`, `AllergenEntry`, `IngredientAllergen`), leurs trois lignes
+de `src/platform/database/schema-ops.counter.ts`, et régénérer le client.
+
+Ce que chaque inversion donne, et pourquoi l'erreur envoie chercher ailleurs :
+
+- **Fonction avant trigger** — `cannot drop function
+pim.refuse_official_allergen_write() because other objects depend on it`.
+  Postgres suggère `CASCADE` ; l'accepter emporte le trigger de l'autre table
+  sans le dire.
+- **`allergen_category` avant `allergen_entry`** — `constraint
+allergen_entry_category_id_fkey … depends on table` : le `RESTRICT` impose de
+  descendre des enfants vers les parents.
+- **`allergen_entry` avant `ingredient_allergen`** — même refus, par
+  `ingredient_allergen_entry_id_fkey`.
+- **Modèles laissés dans `schema.prisma`** — le client reste généré contre des
+  tables disparues : `prisma.allergenEntry` existe encore côté types et échoue
+  au premier appel, en `42P01` (relation inexistante), c'est-à-dire au pire
+  moment et loin de la cause.
+
+Note pour ne pas chercher au mauvais endroit : le trigger ne se déclenche ni sur
+`DROP TABLE` ni sur `TRUNCATE` — ce sont des triggers de **ligne**. Ce qu'on
+libère en supprimant les triggers d'abord, ce sont les **fonctions**, pas les
+tables.
+
 ## Basculer le back-office vers `lfd-backoffice`
 
 Cloudflare **ne renomme pas** un projet Pages. Le workflow en crée donc un neuf,
