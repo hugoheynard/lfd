@@ -201,6 +201,13 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+          # La publication du catalogue — pousser vers la boutique et vers la
+          # plateforme professionnelle, et poser l'ancre qui les précède.
+          # FERMÉE par défaut : sans cette Variable, le backend ne publie pas.
+          # C'est voulu — l'extérieur ne se rattrape pas, et le déploiement où
+          # l'on SAISIT le catalogue n'est pas celui où on l'envoie. La poser à
+          # `true` dans les Variables du dépôt l'ouvre, sans toucher au code.
+          PIM_PUBLICATION_ENABLED: ${{ vars.PIM_PUBLICATION_ENABLED }}
         run: |
           for name in DATABASE_LFD_URL \
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
@@ -217,7 +224,8 @@ jobs:
                       SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET \
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
-                      RECOMPUTE_TOKEN; do
+                      RECOMPUTE_TOKEN \
+                      PIM_PUBLICATION_ENABLED; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"

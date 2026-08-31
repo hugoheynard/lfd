@@ -418,3 +418,20 @@ export function optionalAnalyticsConfig(): AnalyticsConfig | null {
   }
   return { accountId, apiToken };
 }
+
+/**
+ * La **publication du catalogue** est-elle ouverte sur ce déploiement ?
+ *
+ * `PIM_PUBLICATION_ENABLED=true` l'ouvre ; toute autre valeur, et l'absence, la
+ * ferment. **Fermée par défaut**, et c'est le sens qui compte : ces gestes
+ * envoient le catalogue à l'extérieur — une boutique en ligne, une plateforme
+ * professionnelle — et l'extérieur ne se rattrape pas. Un déploiement qui a
+ * oublié de se prononcer ne doit pas publier ; il doit se taire.
+ *
+ * Le développement et les suites de test l'ouvrent explicitement : ce qu'on
+ * mesure est le produit entier, drapeau compris, pas la moitié qui reste
+ * allumée.
+ */
+export function optionalPublicationEnabled(): boolean {
+  return process.env["PIM_PUBLICATION_ENABLED"]?.trim().toLowerCase() === "true";
+}

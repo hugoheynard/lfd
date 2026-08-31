@@ -182,6 +182,7 @@ export {
   updateIngredientPayloadSchema,
   setProductIngredientsPayloadSchema,
 } from "./ingredient.js";
+export type { PimCapabilitiesView } from "./catalog-overview.js";
 export type {
   AppellationView,
   IngredientView,

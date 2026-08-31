@@ -10,6 +10,7 @@ import {
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalPort,
+  optionalPublicationEnabled,
   optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
@@ -57,6 +58,7 @@ export type { ShopifyOAuthCredentials };
 @Injectable()
 export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
+  private readonly publicationValue: boolean;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
@@ -102,6 +104,7 @@ export class AppConfig implements ShopifyCredentialsSource {
       optionalString("BOOTSTRAP_ADMIN_EMAIL") ?? "",
     );
     this.adminBypass = optionalAdminDevBypass();
+    this.publicationValue = optionalPublicationEnabled();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.shopifyTokenValue = optionalString("SHOPIFY_ADMIN_TOKEN");
@@ -319,6 +322,21 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   adminDevBypass(): boolean {
     return this.adminBypass || this.impersonation !== null;
+  }
+
+  /**
+   * La **publication du catalogue** est-elle ouverte ici ?
+   *
+   * Elle ferme les gestes qui envoient le catalogue DEHORS — pousser vers la
+   * boutique, vers la plateforme professionnelle, et poser l'ancre qui les
+   * précède. Elle ne ferme rien de la saisie : une fiche s'écrit, se signe et
+   * se met en vente au référentiel exactement comme avant.
+   *
+   * **Fermée par défaut** (cf. `optionalPublicationEnabled`) : un déploiement
+   * qui ne s'est pas prononcé ne publie pas.
+   */
+  publicationEnabled(): boolean {
+    return this.publicationValue;
   }
 
   /**

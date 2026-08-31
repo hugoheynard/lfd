@@ -12,6 +12,7 @@ import {
   type SnapshotView,
 } from "@lfd/pim-contracts";
 
+import { PublicationGesture } from "../../../publication/publication-switch.js";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
@@ -59,6 +60,8 @@ export class ShopifyProductsController {
     }));
   }
 
+  // Le catalogue part DEHORS : fermé quand la publication ne l'est pas.
+  @PublicationGesture()
   @Post("push")
   push(@Body(new ZodBody(pushPayloadSchema)) body: PushPayload): Promise<PushSummary> {
     return this.pushService.push(body.productIds, body.dryRun ?? false);
@@ -83,6 +86,8 @@ export class ShopifyProductsController {
   }
 
   /** Rejoue une version antérieure : re-pousse son payload figé (crée une version). */
+  // Un retour arrière re-pousse un payload figé : il publie, lui aussi.
+  @PublicationGesture()
   @Post("rollback")
   rollback(@Body(new ZodBody(rollbackPayloadSchema)) body: RollbackPayload): Promise<PushReport> {
     return this.pushService.rollback(body.handle, body.version);

@@ -149,6 +149,20 @@ process.env["STRIPE_PUBLISHABLE_KEY"] = "pk_test_e2e";
 export const TEST_RECOMPUTE_TOKEN = "test-recompute-secret";
 process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
 
+/**
+ * La publication du catalogue est **ouverte** dans les tests.
+ *
+ * Écrasement dur, et c'est le régime qui compte : ce drapeau est fermé par
+ * défaut sur un déploiement, et ce qu'on mesure ici est le produit ENTIER — les
+ * suites de push et d'ancrage doivent exercer ce qu'elles décrivent, pas la
+ * moitié qui reste allumée. Un `.env` local qui le fermerait rendrait ces
+ * suites vertes en ne mesurant rien.
+ *
+ * La suite qui éprouve le drapeau LUI-MÊME le referme dans son propre
+ * amorçage — c'est le seul endroit où sa valeur est le sujet.
+ */
+process.env["PIM_PUBLICATION_ENABLED"] = "true";
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;

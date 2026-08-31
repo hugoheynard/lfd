@@ -101,6 +101,12 @@ const RUNTIME_KEYS = [
   "VAPID_PUBLIC_KEY",
   "VAPID_PRIVATE_KEY",
   "VAPID_SUBJECT",
+  // La publication du catalogue. ABSENTE = fermée, et c'est le comportement
+  // voulu : l'extérieur ne se rattrape pas, et un déploiement qui ne s'est pas
+  // prononcé doit se taire. Elle doit tout de même TRAVERSER — sans elle dans
+  // cette liste, la poser dans Cloudflare ne l'ouvrirait pas, et rien ne le
+  // dirait.
+  "PIM_PUBLICATION_ENABLED",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

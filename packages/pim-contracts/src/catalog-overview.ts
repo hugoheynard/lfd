@@ -38,3 +38,18 @@ export interface CatalogOverviewView {
     readonly changed: number;
   } | null;
 }
+
+/**
+ * Ce que le référentiel **peut faire sur ce déploiement** (`GET /pim/capabilities`).
+ *
+ * Une vue plain, sans schéma zod : c'est une réponse de lecture, servie depuis
+ * la configuration. Rien n'entre par ce chemin.
+ *
+ * ⚠️ Ce n'est pas un droit. Un droit dit ce que LA PERSONNE peut faire ; ceci
+ * dit ce que l'INSTALLATION offre. Les deux se composent, et les confondre
+ * ferait chercher une permission manquante là où il n'en manque aucune.
+ */
+export interface PimCapabilitiesView {
+  /** La publication du catalogue est-elle ouverte — pousser, et ancrer avant. */
+  readonly publication: boolean;
+}

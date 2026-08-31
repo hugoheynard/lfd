@@ -35,6 +35,7 @@ import { DatabaseModule } from "../platform/database/database.module.js";
 import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
+import { PublicationEnabledGuard } from "../pim/publication/publication-switch.js";
 
 @Module({
   imports: [
@@ -117,6 +118,9 @@ import { AuthGuard } from "../platform/auth/auth.guard.js";
     // tout le monde. L'API reste protégée par défaut : c'est le LIEU de la
     // déclaration qui change, pas la règle.
     { provide: APP_GUARD, useClass: AuthGuard },
+    // APRÈS l'authentification : refuser un geste de publication à qui n'est
+    // même pas identifié dirait au passage que ce déploiement en a un.
+    { provide: APP_GUARD, useClass: PublicationEnabledGuard },
   ],
 })
 export class AppModule {}
