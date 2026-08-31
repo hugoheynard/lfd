@@ -7,19 +7,14 @@ import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-
 import { PublishRail } from './publish-rail';
 
 /**
- * Ce que la complétude PROMET, et qu'un coup d'œil à l'écran ne suffit pas à
- * vérifier : la barre ne mesure que ce qui bloque, et les traductions
- * n'apparaissent que là où il y a quelque chose à traduire.
+ * Ce que le rail PROMET à l'écran, et qu'un coup d'œil ne suffit pas à vérifier :
+ * la barre mesure tout ce qui bloque — langues comprises — et les langues sont
+ * REPLIÉES, comptées dans leur résumé.
  *
- * Les deux règles se ressemblent mais tombent différemment. Compter les
- * traductions ferait d'une fiche publiable une fiche « à 5/9 » — un manque
- * annoncé qui n'existe pas. Les afficher sur une source vide ferait d'une fiche
- * neuve une liste grise avant la première frappe.
- *
- * Tout passe par le DOM rendu, jamais par les membres du composant : ce sont
- * `fold-meter` et `fold-checklist` qui rendent, et ce qu'on veut tenir est ce
- * qu'ils affichent — le jour où l'un change de gabarit, c'est ici qu'on doit
- * l'apprendre.
+ * La règle elle-même se tient dans `completeness.spec.ts` ; ici on ne tient que
+ * le rendu. Tout passe par le DOM, jamais par les membres du composant : ce sont
+ * `fold-meter`, `fold-checklist` et `fold-disclosure` qui rendent, et le jour où
+ * l'un change de gabarit, c'est ici qu'on doit l'apprendre.
  */
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
@@ -28,18 +23,24 @@ function setup(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-/** Le rail rendu, une fois le store garni. */
 function render(): HTMLElement {
   const fixture = TestBed.createComponent(PublishRail);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
 
-/** Les lignes de la checklist, dans l'ordre — l'ordre EST la hiérarchie. */
-function lines(host: HTMLElement): string[] {
-  return [...host.querySelectorAll('fold-checklist li')].map((li) =>
-    (li.textContent ?? '').replace(/\s+/gu, ' ').trim(),
-  );
+function text(element: Element | null | undefined): string {
+  return (element?.textContent ?? '').replace(/\s+/gu, ' ').trim();
+}
+
+/** Les exigences de premier rang — celles qu'on lit sans rien déplier. */
+function topLines(host: HTMLElement): string[] {
+  return [...host.querySelectorAll('.pr-check > fold-checklist li')].map((li) => text(li));
+}
+
+/** Les lignes cachées derrière un repli. */
+function foldedLines(host: HTMLElement): string[] {
+  return [...host.querySelectorAll('fold-disclosure li')].map((li) => text(li));
 }
 
 /** La mesure telle qu'un lecteur d'écran l'entend. */
@@ -52,43 +53,46 @@ function meter(host: HTMLElement): { readonly now: string | null; readonly max: 
 }
 
 describe('PublishRail — la complétude', () => {
-  it('mesure les cinq requis, et rien de plus', () => {
+  it('mesure dix conditions, dont les six langues', () => {
     setup();
 
-    expect(meter(render())).toEqual({ now: '0', max: '5' });
+    expect(meter(render())).toEqual({ now: '0', max: '10' });
   });
 
-  it('ne montre aucune traduction tant que la source est vide', () => {
+  it('garde les langues repliées : six exigences se lisent au premier rang', () => {
     setup();
 
-    const rendered = lines(render());
-    expect(rendered.some((line) => line.includes('anglais'))).toBe(false);
-    expect(rendered).toHaveLength(5);
-  });
-
-  it('pose les langues juste APRÈS le champ qu’elles traduisent', () => {
-    const store = setup();
-    store.nameText.set({ fr: 'Baguette' });
-    store.editorial.update((fields) => ({ ...fields, descriptionShort: { fr: 'Tradition' } }));
-
-    const rendered = lines(render());
-    const name = rendered.findIndex((line) => line.includes('Nom et famille'));
-    const description = rendered.findIndex(
-      (line) => line.includes('Description') && !line.includes('·'),
-    );
-
-    expect(rendered[name + 1]).toContain('Nom · anglais');
-    expect(rendered[name + 2]).toContain('Nom · italien');
-    expect(rendered[description + 1]).toContain('Description · anglais');
-  });
-
-  it('une traduction s’ajoute à la LISTE, jamais au dénominateur', () => {
-    const store = setup();
-    store.nameText.set({ fr: 'Baguette' });
-
+    // « À faire » est le préfixe que `fold-checklist` réserve aux lecteurs
+    // d'écran : il est dans le texte, invisible. On le garde dans l'attendu
+    // plutôt que de le rincer — il prouve que l'état est ANNONCÉ, pas seulement
+    // colorié, et c'est la moitié de ce qui rend cette liste lisible.
     const host = render();
-    // Sept lignes affichées, cinq mesurées : c'est toute la règle.
-    expect(lines(host)).toHaveLength(7);
-    expect(meter(host).max).toBe('5');
+    expect(topLines(host)).toEqual([
+      'À faireNom',
+      'À faireFamille',
+      'À fairePrix',
+      'À faireAllergènes déclarés',
+      'À faireDescription',
+      'À faireAu moins un visuel',
+    ]);
+    expect(foldedLines(host)).toHaveLength(6);
+  });
+
+  it('dit combien de langues manquent sans qu’on ait à déplier', () => {
+    const store = setup();
+    store.nameText.set({ fr: 'Baguette', en: 'Baguette' });
+
+    const summaries = [...render().querySelectorAll('fold-disclosure [summary]')].map((s) =>
+      text(s),
+    );
+    expect(summaries[0]).toBe('2/3 langues');
+    expect(summaries[1]).toBe('0/3 langues');
+  });
+
+  it('avance d’un cran par langue remplie — une traduction n’est plus gratuite', () => {
+    const store = setup();
+    store.nameText.set({ fr: 'Baguette' });
+
+    expect(meter(render()).now).toBe('1');
   });
 });

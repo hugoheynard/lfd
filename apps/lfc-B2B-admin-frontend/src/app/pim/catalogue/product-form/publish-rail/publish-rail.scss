@@ -55,3 +55,19 @@
   margin-top: var(--fold-space-sm);
   width: 100%;
 }
+
+/* Une exigence et son détail replié. Les exigences se suivent d'un rang à
+   l'autre ; le `gap` est ici et pas sur la carte, qui n'a pas à connaître le
+   pas de sa liste. */
+.pr-check + .pr-check {
+  margin-top: var(--fold-space-sm);
+}
+
+/* Le repli est DÉCALÉ sous sa ligne : c'est tout ce qui dit qu'il en dépend.
+   `fold-checklist` est une liste plate et `fold-disclosure` ne s'imbrique pas —
+   la hiérarchie passe donc par le retrait, comme dans la fiche elle-même. */
+.pr-langs {
+  display: block;
+  margin-left: var(--fold-space-lg);
+  font-size: var(--fold-text-sm);
+}

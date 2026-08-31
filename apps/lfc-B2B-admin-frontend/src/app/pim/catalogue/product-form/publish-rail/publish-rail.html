@@ -27,10 +27,22 @@
       class="pr-meter"
       label="Complétude"
       [value]="done()"
-      [max]="required().length"
+      [max]="total()"
       [tone]="tone()"
       showValue
     />
-    <fold-checklist [items]="items()" [stateLabels]="stateLabels" />
+
+    @for (row of rows(); track row.key) {
+      <div class="pr-check">
+        <fold-checklist [items]="row.items" [stateLabels]="stateLabels" />
+
+        @if (row.children.length > 0) {
+          <fold-disclosure class="pr-langs">
+            <span summary>{{ row.doneChildren }}/{{ row.children.length }} langues</span>
+            <fold-checklist [items]="row.children" [stateLabels]="stateLabels" />
+          </fold-disclosure>
+        }
+      </div>
+    }
   </fold-card>
 </section>
