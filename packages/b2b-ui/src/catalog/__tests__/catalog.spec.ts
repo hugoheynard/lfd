@@ -3,10 +3,16 @@ import type { CatalogItemView } from '@lfd/contracts';
 import { catalogShelves } from '../catalog-shelves';
 import { toCatalogProduct } from '../to-catalog-product';
 
+// ⚠️ Les prix sont en MILLICENTIMES (10⁻⁵ €) : un croissant à 2,20 € vaut
+// 220 000, pas 220. Le champ a été renommé quand le prix unitaire est descendu
+// sous le centime ; ces trois valeurs ne l'avaient pas suivi, et le test lisait
+// donc « 0,0022 € » — un catalogue divisé par mille. C'est très exactement le
+// défaut que la migration se donnait pour mission d'éviter en CONVERTISSANT les
+// valeurs plutôt qu'en les réinterprétant ; elle l'a fait en base, pas ici.
 const CROISSANT: CatalogItemView = {
   sku: 'VIE-001',
   name: 'Croissant',
-  unitPriceMillicents: 220,
+  unitPriceMillicents: 220_000,
   vatRate: 5.5,
   category: 'viennoiserie',
 };
@@ -14,7 +20,7 @@ const CROISSANT: CatalogItemView = {
 const BAGUETTE: CatalogItemView = {
   sku: 'PAI-001',
   name: 'Baguette tradition',
-  unitPriceMillicents: 200,
+  unitPriceMillicents: 200_000,
   vatRate: 5.5,
   category: 'pain',
 };
@@ -22,7 +28,7 @@ const BAGUETTE: CatalogItemView = {
 const TABLETTE: CatalogItemView = {
   sku: 'CHO-003',
   name: 'Tablette lait',
-  unitPriceMillicents: 1000,
+  unitPriceMillicents: 1_000_000,
   vatRate: 5.5,
   category: 'chocolat',
 };
