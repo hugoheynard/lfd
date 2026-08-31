@@ -41,6 +41,15 @@ import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js"
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
+import { AccountingRulesModule } from "../accounting-rules/accounting-rules.module.js";
+import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";
+import { CatalogRevisionSource } from "./revision/domain/ports/catalog-revision.source.js";
+import { DiffCatalogRevisionsHandler } from "./revision/application/diff-catalog-revisions.js";
+import { ListCatalogRevisionsHandler } from "./revision/application/list-catalog-revisions.js";
+import { TakeCatalogRevisionHandler } from "./revision/application/take-catalog-revision.js";
+import { CatalogRevisionController } from "./revision/http/catalog-revision.controller.js";
+import { PrismaCatalogRevisionRepository } from "./revision/infrastructure/prisma-catalog-revision.repository.js";
+import { PrismaCatalogRevisionSource } from "./revision/infrastructure/prisma-catalog-revision.source.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
@@ -75,8 +84,9 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [PimDatabaseModule, VatRatesModule, SalesContextsModule],
+  imports: [PimDatabaseModule, VatRatesModule, SalesContextsModule, AccountingRulesModule],
   controllers: [
+    CatalogRevisionController,
     CategoryController,
     MediaController,
     MediaSweepController,
@@ -129,6 +139,11 @@ import {
     { provide: NutritionRepository, useClass: PrismaNutritionRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
+    { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
+    TakeCatalogRevisionHandler,
+    ListCatalogRevisionsHandler,
+    DiffCatalogRevisionsHandler,
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },

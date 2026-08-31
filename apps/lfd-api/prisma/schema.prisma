@@ -3285,6 +3285,78 @@ model ProductEditorial {
   @@schema("pim")
 }
 
+/// **Un contenu, adressé par son empreinte.** Le magasin partagé des révisions.
+///
+/// Deux révisions qui partagent quatre-vingt-dix articles inchangés partagent
+/// quatre-vingt-dix lignes ICI : une ancre posée sur un catalogue stable ne
+/// coûte presque rien, et un diff se calcule en comparant des empreintes avant
+/// de lire un seul payload. C'est le mécanisme de git, pour la même raison — et
+/// c'est lui qui rend une révision du catalogue COMPLET abordable.
+///
+/// Jamais purgé avec une révision : un contenu peut être référencé par
+/// plusieurs. C'est ce que la clé étrangère de `CatalogRevisionItem` garantit.
+model CatalogContent {
+  /// SHA-256 du payload canonique (clés triées). L'empreinte EST l'identité.
+  hash String @id
+
+  /// L'article figé — la fiche entière moins les octets des visuels, qui vivent
+  /// dans le bucket et voyagent par leur URL.
+  payload Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  items CatalogRevisionItem[]
+
+  @@map("catalog_content")
+  @@schema("pim")
+}
+
+/// **Un point d'ancrage de publication** — le catalogue, photographié et nommé.
+///
+/// `version` est monotone et unique : elle donne un ordre lisible ("la 12") là
+/// où un ULID ne donne qu'un tri. `hash` couvre l'en-tête ET la liste des
+/// articles, si bien que « rien n'a changé depuis la dernière » se répond par
+/// une seule comparaison.
+model CatalogRevision {
+  id      String  @id
+  version Int     @unique
+  /// Le nom que quelqu'un lui donne ("catalogue de la rentrée"). `NULL` = pas nommée.
+  label   String?
+  hash    String
+
+  /// Ce qui change tout sans qu'aucune ligne d'article ne bouge — le rapport
+  /// prix pro / prix public. Sans lui, une remise passée de 10 % à 12 % ne se
+  /// verrait dans AUCUN diff pendant que toutes les factures pro changent.
+  header Json
+
+  takenAt DateTime @map("taken_at")
+  takenBy String   @map("taken_by")
+
+  items CatalogRevisionItem[]
+
+  @@index([takenAt])
+  @@map("catalog_revision")
+  @@schema("pim")
+}
+
+/// L'appartenance d'un contenu à une révision. La table qui rend le partage
+/// possible : elle porte la clé de l'article, pas son contenu.
+model CatalogRevisionItem {
+  revisionId String          @map("revision_id")
+  revision   CatalogRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  /// Le SKU de la DÉCLINAISON — l'unité tarifée, celle qui a un prix propre.
+  sku String
+
+  contentHash String         @map("content_hash")
+  content     CatalogContent @relation(fields: [contentHash], references: [hash])
+
+  @@id([revisionId, sku])
+  @@index([contentHash])
+  @@map("catalog_revision_item")
+  @@schema("pim")
+}
+
 /// **La déclaration qu'une fiche est publiable** — un fait humain, daté et signé.
 ///
 /// Satellite optionnel (PK = FK, ADR-13) : l'absence de ligne dit « personne ne

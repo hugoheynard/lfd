@@ -22,7 +22,8 @@ export type PimSubjectType =
   | "product_category"
   | "point_of_sale"
   | "sales_context"
-  | "accounting_rules";
+  | "accounting_rules"
+  | "catalog_revision";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -104,6 +105,12 @@ export const PIM_EVENTS = {
    * hérite, renommer ne fait ni l'un ni l'autre — les confondre obligerait à
    * rouvrir chaque charge utile pour savoir laquelle des trois on lit.
    */
+  /**
+   * **Une ancre de publication est posée.** Le fait ne dit pas ce qu'elle
+   * contient — la révision le porte, en entier et pour toujours. Il dit qui l'a
+   * posée et quand, ce que la révision, elle, ne dirait pas d'elle-même.
+   */
+  catalogRevisionTaken: "catalog_revision.taken",
   productCategoryCreated: "product_category.created",
   productCategoryRenamed: "product_category.renamed",
   /** Change le parent, donc l'héritage de TVA et de canaux en aval. */
@@ -214,6 +221,14 @@ export interface PimBlastRadius {
   readonly families?: Readonly<Record<string, number>>;
   /** Articles portés par le produit concerné. */
   readonly variants?: number;
+  /**
+   * Articles figés par une ancre de publication.
+   *
+   * Distinct de `variants` : celui-ci compte les déclinaisons d'UN produit,
+   * celui-là tout ce qu'une révision photographie. Les confondre dans un même
+   * champ ferait lire « 3 » sur une ancre de catalogue entier.
+   */
+  readonly articles?: number;
 }
 
 /** Ce qu'un handler du référentiel fournit pour tracer un fait. */

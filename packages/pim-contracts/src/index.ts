@@ -163,3 +163,10 @@ export type {
   ReconciliationBoardView,
   ReconciliationDetailView,
 } from "./shopify.js";
+
+export type {
+  CatalogRevisionSummaryView,
+  CatalogRevisionItemDiffView,
+  CatalogRevisionDiffView,
+  CatalogRevisionTakenView,
+} from "./catalog-revision.js";
