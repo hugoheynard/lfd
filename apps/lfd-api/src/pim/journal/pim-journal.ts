@@ -15,7 +15,7 @@
  * tient plus.
  */
 
-/** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
+/** La chose dont l'événement parle — onze sujets, énumérés plutôt que comptés. */
 export type PimSubjectType =
   | "vat_rate"
   | "product"
@@ -25,7 +25,9 @@ export type PimSubjectType =
   | "accounting_rules"
   | "catalog_revision"
   | "ingredient"
-  | "appellation";
+  | "appellation"
+  | "allergen_category"
+  | "allergen_entry";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -208,6 +210,40 @@ export const PIM_EVENTS = {
   ingredientDeleted: "ingredient.deleted",
   /** Ce qu'une fiche cite — la liste entière, l'ordre compris. */
   productIngredientsSaved: "product.ingredients_saved",
+  /**
+   * **Le référentiel d'allergènes** — ce que le staff y ajoute et ce qu'il en
+   * retire.
+   *
+   * Il entre au journal pour la raison qui vaut déjà pour les appellations, en
+   * plus fort : un allergène est une mention RÉGLEMENTAIRE. « Depuis quand ce
+   * code est-il proposé à la saisie », « qui a retiré celui-ci du référentiel »
+   * sont des questions qu'on peut avoir à défendre, et elles n'ont de réponse
+   * que si le geste est inscrit.
+   *
+   * ⚠️ Aucun de ces faits ne peut porter sur une ligne OFFICIELLE : les 30
+   * codes GS1 et les 15 catégories semées sont inaltérables — l'agrégat le
+   * refuse, et un trigger le tient en base. Ce que ce flux raconte est donc
+   * l'histoire du référentiel **maison**, et de lui seul.
+   */
+  allergenCategoryCreated: "allergen_category.created",
+  allergenCategoryRenamed: "allergen_category.renamed",
+  /**
+   * Le rang d'affichage a bougé. Tracé comme le reste bien qu'il soit sans
+   * portée réglementaire : c'est le seul geste qu'une catégorie OFFICIELLE
+   * accepte, donc le seul qui puisse toucher une ligne du droit.
+   */
+  allergenCategoryReordered: "allergen_category.reordered",
+  /**
+   * Retirée de ce qu'on PROPOSE, jamais de ce qu'on reconnaît (D2 bis) : les
+   * déclarations qui citent ses entrées restent valides.
+   */
+  allergenCategoryArchived: "allergen_category.archived",
+  allergenCategoryRestored: "allergen_category.restored",
+  allergenEntryCreated: "allergen_entry.created",
+  /** Libellé et/ou rattachement. Le code n'y est pas : c'est une identité. */
+  allergenEntryUpdated: "allergen_entry.updated",
+  allergenEntryArchived: "allergen_entry.archived",
+  allergenEntryRestored: "allergen_entry.restored",
 } as const;
 
 /**
