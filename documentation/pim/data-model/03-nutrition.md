@@ -71,8 +71,10 @@ s'ajouter plus tard sans casser celle-ci.
 `allergens` / `may_contain` stockent des **codes GS1** (canonique, interopérable B2B/GDSN). La
 projection vers l'**INCO-14** (filtre + libellés + mise en forme) se fait à l'affichage — logique
 déjà codée : [`src/allergens`](../../../apps/lfd-api/src/pim/allergens) (`toInco` /
-`toGdsn`), détail dans `05-allergenes-gs1-inco.md` _(à porter)_. Codes GS1 **provisoires** — à
-peupler depuis `ref.gs1.org` (ADR-07).
+`toGdsn`), détail dans [`05-allergenes-gs1-inco.md`](05-allergenes-gs1-inco.md). Les 30 codes GS1
+ont été **recoupés un par un** avec `ref.gs1.org/voc/AllergenTypeCode` — trois codes provisoires
+étaient faux et ont été corrigés ; la provenance est en tête d'`allergen-mapping.ts`. Le
+référentiel devient administrable : voir le doc dédié.
 
 ## Invariants
 
@@ -83,13 +85,14 @@ peupler depuis `ref.gs1.org` (ADR-07).
    foi, on ne recalcule pas les calories depuis les macros.
 4. Aucune donnée réglementaire dans `attributes` (jsonb) — jamais.
 
+> **Tranchée** — le stockage des allergènes reste un tableau de codes en `Json` sur la
+> déclinaison. La table de liaison sert l'**ingrédient**, pas la déclinaison : voir D4 et D5 de
+> [`05-allergenes-gs1-inco.md`](05-allergenes-gs1-inco.md).
+
 ## Questions ouvertes
 
-1. **Stockage des allergènes** : `jsonb` (array de codes GS1 + index GIN) **ou** table de liaison
-   `variant_allergen` ? Le besoin « filtrer les produits sans gluten » penche pour la table de
-   liaison ou l'index GIN — **décision à la phase Prisma**.
-2. **Fiche complète INCO** : ajoute-t-on les champs légaux (énergie en **kJ**, **acides gras
+1. **Fiche complète INCO** : ajoute-t-on les champs légaux (énergie en **kJ**, **acides gras
    saturés**, **sucres**, **sel/sodium**, **fibres**) ? Volontairement **lean** aujourd'hui.
-3. **`ingredients_text`** (liste d'ingrédients réglementaire) : légalement du réglementaire → sa
+2. **`ingredients_text`** (liste d'ingrédients réglementaire) : légalement du réglementaire → sa
    place est **ici**, pas dans l'éditorial. À ajouter au moment où on saura s'il est obligatoire
    pour de la vente non préemballée.
