@@ -99,9 +99,9 @@ import { formatEuros } from "../price-origin/format-euros";
 })
 export class PriceEditor {
   /** Le tarif d'origine, en centimes — ce vers quoi « revenir » ramène. */
-  readonly originCents = input.required<number>();
+  readonly originMillicents = input.required<number>();
   /** La décision en place, en centimes. `null` = aucune. */
-  readonly alteredCents = input<number | null>(null);
+  readonly alteredMillicents = input<number | null>(null);
   /** Le nom de l'article — pour l'étiquette accessible du champ. */
   readonly label = input<string>("");
 
@@ -113,8 +113,8 @@ export class PriceEditor {
   protected readonly editing = signal(false);
   protected readonly draft = signal("");
 
-  protected readonly hasDecision = computed(() => this.alteredCents() !== null);
-  protected readonly originLabel = computed(() => formatEuros(this.originCents()));
+  protected readonly hasDecision = computed(() => this.alteredMillicents() !== null);
+  protected readonly originLabel = computed(() => formatEuros(this.originMillicents()));
 
   /**
    * Un montant strictement positif — et **différent de l'origine**, parce que le
@@ -122,12 +122,15 @@ export class PriceEditor {
    * apprendre une règle que l'écran connaissait déjà.
    */
   protected readonly isValid = computed(() => {
-    const cents = toCents(this.draft());
-    return cents !== null && cents > 0 && cents !== this.originCents();
+    const millicents = toMillicents(this.draft());
+    return millicents !== null && millicents > 0 && millicents !== this.originMillicents();
   });
 
   protected open(): void {
-    this.draft.set(((this.alteredCents() ?? this.originCents()) / 100).toFixed(2));
+    // Deux décimales AU MOINS, cinq au plus, et les fines seulement si elles
+    // existent : un prix rond se rouvre « 2,10 », un prix déduit « 8,18182 ».
+    // Forcer cinq décimales ferait ressaisir des zéros à chaque correction.
+    this.draft.set(draftOf(this.alteredMillicents() ?? this.originMillicents()));
     this.editing.set(true);
   }
 
@@ -141,22 +144,33 @@ export class PriceEditor {
 
   protected submit(event: Event): void {
     event.preventDefault();
-    const cents = toCents(this.draft());
-    if (cents === null || !this.isValid()) {
+    const millicents = toMillicents(this.draft());
+    if (millicents === null || !this.isValid()) {
       return;
     }
-    this.save.emit(cents);
+    this.save.emit(millicents);
     this.editing.set(false);
   }
 }
 
 /**
- * Euros saisis → centimes entiers.
+ * Euros saisis → **millicentimes** entiers.
  *
- * `Math.round` et non une troncature : `2.99 * 100` vaut `298.99999…` en
- * flottant, et tronquer facturerait un centime de moins à chaque ligne.
+ * Cinq décimales acceptées, et c'est délibéré : un devis grand compte se pose
+ * avec, parce que le volume les rend visibles sur la facture. Les tronquer à
+ * deux décollerait le prix négocié du prix facturé.
+ *
+ * `Math.round` et non une troncature : `2.99 * 100000` vaut `298999.9999…` en
+ * flottant, et tronquer facturerait un millicentime de moins à chaque ligne.
  */
-function toCents(raw: string): number | null {
+function toMillicents(raw: string): number | null {
   const value = Number.parseFloat(raw.replace(",", "."));
-  return Number.isFinite(value) ? Math.round(value * 100) : null;
+  return Number.isFinite(value) ? Math.round(value * 100_000) : null;
+}
+
+/** Le montant tel qu'on le rouvre à la saisie : « 2,10 », « 8,18182 ». */
+function draftOf(millicents: number): string {
+  const euros = millicents / 100_000;
+  const fine = euros.toFixed(5).replace(/0+$/u, "");
+  return fine.endsWith(".") ? euros.toFixed(2) : fine.padEnd(fine.indexOf(".") + 3, "0");
 }

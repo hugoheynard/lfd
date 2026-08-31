@@ -54,7 +54,7 @@ export const CATALOG_CATEGORY_ORDER: readonly CatalogCategory[] = [
 export interface CatalogItemView {
   readonly sku: string;
   readonly name: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   /** Taux de TVA en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
   readonly category: CatalogCategory;

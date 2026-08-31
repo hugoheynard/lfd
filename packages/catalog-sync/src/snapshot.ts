@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 3;
+export const CATALOG_SNAPSHOT_VERSION = 4;
 
 /**
  * Une famille de produits, **à plat**.
@@ -87,7 +87,7 @@ export const syncVariantSchema = z.object({
    * l'exclure en le **disant**, pas la pousser avec un trou que le récepteur
    * interpréterait en gratuit.
    */
-  priceCents: z.number().int().nonnegative(),
+  priceMillicents: z.number().int().nonnegative(),
   weightGrams: z.number().int().positive().nullable(),
   isDefault: z.boolean(),
   position: z.number().int().nonnegative(),

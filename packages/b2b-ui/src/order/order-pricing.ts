@@ -26,8 +26,8 @@ import type { OrderLineView } from '@lfd/contracts';
  *   plutôt qu'inventée.
  */
 export function entryPriceOf(line: OrderLineView): number | null {
-  const base = line.pricing?.basePriceCents ?? null;
-  return base === null || base === line.unitPriceCents ? null : base;
+  const base = line.pricing?.basePriceMillicents ?? null;
+  return base === null || base === line.unitPriceMillicents ? null : base;
 }
 
 /**

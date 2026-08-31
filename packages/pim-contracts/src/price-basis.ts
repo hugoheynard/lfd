@@ -1,4 +1,11 @@
-import { divideByBasisPoints, fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
+import {
+  divideByBasisPoints,
+  fractionByBasisPoints,
+  fromCents,
+  millicentsFromCents,
+  roundToCents,
+  roundToMillicents,
+} from "@lfd/money";
 import { z } from "zod";
 
 /**
@@ -81,4 +88,37 @@ export function htPriceOf(
     return ratePercent === null ? null : htFromTtc(priceCents, ratePercent);
   }
   return priceCents;
+}
+
+/**
+ * Le hors taxe d'une déclinaison **en millicentimes** (10⁻⁵ €) — la forme qui
+ * part sur le fil, et celle qu'une quantité multipliera.
+ *
+ * Jumelle de {@link htPriceOf}, un cran plus précis, et c'est le cran qui
+ * compte : un hors taxe déduit d'un prix d'étiquette ne tombe presque jamais
+ * juste, et l'arrondir ici multiplierait l'erreur par la quantité commandée.
+ * L'arrondi n'a lieu qu'au **total de ligne**, chez le récepteur.
+ *
+ * Un prix déjà hors taxe traverse **sans perte** : ×1 000 est exact. La
+ * précision n'est donc jamais une invention — elle n'apparaît que là où une
+ * division l'a créée.
+ *
+ * `null` quand le hors taxe n'est pas dérivable : un prix ancré au TTC sans
+ * taux. Refus, pas repli — inventer un taux ferait facturer un montant que
+ * personne n'a décidé.
+ */
+export function htMillicentsOf(
+  priceCents: number,
+  basis: PriceBasis,
+  ratePercent: number | null,
+): number | null {
+  if (basis !== "ttc") {
+    return millicentsFromCents(priceCents);
+  }
+  if (ratePercent === null) {
+    return null;
+  }
+  return roundToMillicents(
+    divideByBasisPoints(fromCents(priceCents), taxMultiplierBp(ratePercent)),
+  );
 }

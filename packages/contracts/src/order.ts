@@ -288,7 +288,7 @@ export type RecurringDeltas = z.infer<typeof recurringDeltasSchema>;
 export interface OrderLineView {
   readonly sku: string;
   readonly productName: string;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly quantity: number;
   readonly lineTotalCents: number;
@@ -424,6 +424,7 @@ export interface OrderPaymentIntent {
   /** Clé **publique** Stripe (pk_test_… / pk_live_…) — destinée au bundle. */
   readonly publishableKey: string;
   /** Montant à encaisser, en centimes (le total serveur). Pour l'affichage. */
+  /** Le total à encaisser, en **centimes** : un montant, pas un prix unitaire. */
   readonly amountCents: number;
 }
 
@@ -520,9 +521,9 @@ export interface OrderQuoteLineView {
   readonly sku: string;
   readonly productName: string;
   /** Le tarif d'entrée, avant tout étage — celui du catalogue. */
-  readonly canonicalCents: number;
+  readonly canonicalMillicents: number;
   /** Le prix **réellement facturé** à cette quantité, pour ce client. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly quantity: number;
   readonly vatRate: number;
   /** Les étages qui ont produit un effet. Vide = le tarif d'entrée s'applique tel quel. */
@@ -548,7 +549,7 @@ export interface OrderQuoteLineView {
    */
   readonly volumeTiers: readonly VolumeTierPriceView[] | null;
   /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
-  readonly floorCents: number | null;
+  readonly floorMillicents: number | null;
 }
 
 export interface OrderQuoteView {

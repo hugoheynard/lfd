@@ -49,17 +49,17 @@ import { formatEuros } from "./format-euros";
 })
 export class PriceOrigin {
   /** Le tarif de référence, en centimes. Toujours présent. */
-  readonly originCents = input.required<number>();
+  readonly originMillicents = input.required<number>();
   /** Le tarif décidé localement, en centimes. `null` = on suit l'origine. */
-  readonly alteredCents = input<number | null>(null);
+  readonly alteredMillicents = input<number | null>(null);
 
-  protected readonly isAltered = computed(() => this.alteredCents() !== null);
+  protected readonly isAltered = computed(() => this.alteredMillicents() !== null);
 
   protected readonly effective = computed(() =>
-    formatEuros(this.alteredCents() ?? this.originCents()),
+    formatEuros(this.alteredMillicents() ?? this.originMillicents()),
   );
 
-  protected readonly origin = computed(() => formatEuros(this.originCents()));
+  protected readonly origin = computed(() => formatEuros(this.originMillicents()));
 
   protected readonly originTitle = computed(() => `Tarif d'origine : ${this.origin()}`);
 }

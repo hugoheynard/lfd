@@ -83,6 +83,28 @@ export function formatCents(cents: number): string {
   }).format(cents / 100);
 }
 
+/**
+ * Un **prix unitaire** en millicentimes (10⁻⁵ €) → « 8,18182 € ».
+ *
+ * Distinct de {@link formatCents}, et le rester est le point : un prix unitaire
+ * et un montant ne s'écrivent pas pareil parce qu'ils ne sont pas la même
+ * chose. Le premier peut porter jusqu'à cinq décimales — un hors taxe déduit
+ * d'un prix d'étiquette, un devis grand compte posé au volume — le second
+ * s'arrête au centime, parce qu'il est encaissé.
+ *
+ * Les décimales au-delà du centime ne s'affichent **que si elles existent** :
+ * « 2,10 € » reste « 2,10 € », il n'y a rien à annoncer. Les afficher toujours
+ * ferait passer chaque prix rond pour un prix calculé.
+ */
+export function formatMillicents(millicents: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 5,
+  }).format(millicents / 100_000);
+}
+
 /** Un taux de TVA `0.055` → « 5,5 % ». */
 export function formatVatRate(rate: number): string {
   return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(rate * 100)} %`;

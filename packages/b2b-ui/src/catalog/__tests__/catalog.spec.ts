@@ -6,7 +6,7 @@ import { toCatalogProduct } from '../to-catalog-product';
 const CROISSANT: CatalogItemView = {
   sku: 'VIE-001',
   name: 'Croissant',
-  unitPriceCents: 220,
+  unitPriceMillicents: 220,
   vatRate: 5.5,
   category: 'viennoiserie',
 };
@@ -14,7 +14,7 @@ const CROISSANT: CatalogItemView = {
 const BAGUETTE: CatalogItemView = {
   sku: 'PAI-001',
   name: 'Baguette tradition',
-  unitPriceCents: 200,
+  unitPriceMillicents: 200,
   vatRate: 5.5,
   category: 'pain',
 };
@@ -22,7 +22,7 @@ const BAGUETTE: CatalogItemView = {
 const TABLETTE: CatalogItemView = {
   sku: 'CHO-003',
   name: 'Tablette lait',
-  unitPriceCents: 1000,
+  unitPriceMillicents: 1000,
   vatRate: 5.5,
   category: 'chocolat',
 };

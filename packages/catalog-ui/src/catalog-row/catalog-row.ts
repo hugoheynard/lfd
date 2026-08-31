@@ -26,7 +26,10 @@ import { PriceOrigin } from "../price-origin/price-origin";
         <span class="sku">{{ sku() }}</span>
       </div>
       <span class="category">{{ category() }}</span>
-      <lfd-price-origin [originCents]="originCents()" [alteredCents]="alteredCents()" />
+      <lfd-price-origin
+        [originMillicents]="originMillicents()"
+        [alteredMillicents]="alteredMillicents()"
+      />
       <div class="trailing">
         <ng-content />
       </div>
@@ -80,8 +83,8 @@ export class CatalogRow {
   readonly sku = input.required<string>();
   readonly name = input.required<string>();
   readonly category = input<string>("");
-  readonly originCents = input.required<number>();
-  readonly alteredCents = input<number | null>(null);
+  readonly originMillicents = input.required<number>();
+  readonly alteredMillicents = input<number | null>(null);
   /** Mis en retrait — un article retiré de la vente, ou non publié. */
   readonly dimmed = input<boolean>(false);
 }

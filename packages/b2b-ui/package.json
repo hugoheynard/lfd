@@ -58,6 +58,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@lfd/money": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "qrcode-generator": "catalog:",
     "tslib": "catalog:"

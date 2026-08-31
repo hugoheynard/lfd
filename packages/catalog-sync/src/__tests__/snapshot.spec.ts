@@ -9,7 +9,7 @@ import { CATALOG_SNAPSHOT_VERSION, catalogSnapshotSchema, syncVariantSchema } fr
 const variant = {
   sku: "VIE-001-1",
   name: "Croissant",
-  priceCents: 200,
+  priceMillicents: 200,
   weightGrams: null,
   isDefault: true,
   position: 0,
@@ -82,17 +82,17 @@ describe("catalogSnapshotSchema", () => {
 describe("syncVariantSchema", () => {
   it("refuse une déclinaison sans prix, au lieu de la lire en gratuite", () => {
     const priceless: Record<string, unknown> = { ...variant };
-    delete priceless.priceCents;
+    delete priceless.priceMillicents;
 
     expect(syncVariantSchema.safeParse(priceless).success).toBe(false);
   });
 
   it("refuse un prix à virgule — l'argent est en centimes entiers", () => {
-    expect(syncVariantSchema.safeParse({ ...variant, priceCents: 2.5 }).success).toBe(false);
+    expect(syncVariantSchema.safeParse({ ...variant, priceMillicents: 2.5 }).success).toBe(false);
   });
 
   it("refuse un prix négatif", () => {
-    expect(syncVariantSchema.safeParse({ ...variant, priceCents: -1 }).success).toBe(false);
+    expect(syncVariantSchema.safeParse({ ...variant, priceMillicents: -1 }).success).toBe(false);
   });
 
   it("accepte un poids absent — tout ne se pèse pas", () => {

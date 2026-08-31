@@ -98,7 +98,7 @@ export interface CustomerSkuStat {
   /** Le nom **du catalogue**, pas le snapshot d'une vieille commande. */
   readonly productName: string;
   /** Prix unitaire HT **actuel**, en centimes — celui qui sera facturé. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   /** Sur combien de commandes ce SKU apparaît. */
   readonly orderCount: number;
   /** Quantité cumulée, toutes commandes confondues. */

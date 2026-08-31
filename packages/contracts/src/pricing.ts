@@ -1,6 +1,28 @@
 import { z } from "zod";
 
 /**
+ * ## L'unité de l'argent, dans tout ce fichier
+ *
+ * **Un PRIX UNITAIRE est en millicentimes (10⁻⁵ €). Un MONTANT est en
+ * centimes.** La frontière n'est pas « posé ou dérivé » : c'est « multiplié par
+ * une quantité, ou pas ».
+ *
+ * Un prix unitaire se multiplie, donc son arrondi se multiplie avec lui. Deux
+ * raisons l'ont fait descendre sous le centime, et elles se rejoignent :
+ *
+ * - un hors taxe **déduit** d'un prix d'étiquette ne tombe presque jamais juste
+ *   (9,00 € TTC à 10 % font 8,181818… € HT) ;
+ * - un devis grand compte se **pose** avec ses décimales, parce que le volume
+ *   les rend visibles sur la facture.
+ *
+ * Les montants — total de ligne, sous-total, TVA, frais, remise, paiement —
+ * restent en centimes : ce sont des sommes réellement échangées, et c'est en
+ * les formant qu'on arrondit, **une seule fois**.
+ *
+ * Cf. `documentation/pim/architecture-prix-ancre-ttc.md`.
+ */
+
+/**
  * Le vocabulaire du **prix** — cf.
  * `documentation/b2b/architecture-resolution-de-prix.md`.
  *
@@ -98,7 +120,7 @@ export const priceEffectSchema = z
     z.object({
       nature: z.literal("replace"),
       /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
-      amountCents: z.number().int().nonnegative(),
+      amountMillicents: z.number().int().nonnegative(),
     }),
     z.object({
       nature: z.literal("alter"),
@@ -365,8 +387,8 @@ export interface PricingJournalEntryView {
  * absence de mesure pour une confirmation.
  */
 export interface FloorDriftView {
-  readonly referenceCanonicalCents: number;
-  readonly currentCanonicalCents: number;
+  readonly referenceCanonicalMillicents: number;
+  readonly currentCanonicalMillicents: number;
   /** L'écart **signé**, en points de base (`1200` = +12 %). */
   readonly driftBp: number;
   readonly ageDays: number;
@@ -403,7 +425,7 @@ export interface PriceFloorView {
 export interface FloorDecisionView {
   readonly tier: "hard" | "dynamic";
   /** Le plancher appliqué, ramené en centimes sur cet article. */
-  readonly floorCents: number;
+  readonly floorMillicents: number;
   /** Le ratio de volume mesuré à cet instant. `null` = pas de référence. */
   readonly observedVolumeRatioBp: number | null;
   /** Les deux termes de la condition, tels qu'ils ont été évalués. */
@@ -424,7 +446,7 @@ export interface PriceStepView {
   readonly ruleId: string;
   readonly label: string;
   /** Le prix **au sortir** de cet étage. */
-  readonly resultCents: number;
+  readonly resultMillicents: number;
 }
 
 /**
@@ -440,7 +462,7 @@ export const priceStepsSchema = z.array(
     stage: priceStageSchema,
     ruleId: z.string(),
     label: z.string(),
-    resultCents: z.number().int(),
+    resultMillicents: z.number().int(),
   }),
 );
 
@@ -484,7 +506,7 @@ export const commitmentDecisionSchema = z.object({
 /** Le schéma de la décision de plancher, pour **relire** une trace persistée. */
 export const floorDecisionSchema = z.object({
   tier: z.enum(["hard", "dynamic"]),
-  floorCents: z.number().int(),
+  floorMillicents: z.number().int(),
   observedVolumeRatioBp: z.number().int().nullable(),
   quantityMet: z.boolean(),
   volumeMet: z.boolean(),
@@ -503,7 +525,7 @@ export const floorDecisionSchema = z.object({
  */
 export interface OrderLinePricingTrace {
   /** Le prix canonique d'entrée, avant tout étage. */
-  readonly basePriceCents: number;
+  readonly basePriceMillicents: number;
   /** Les étages qui ont produit un effet, dans l'ordre. Vide = aucun. */
   readonly steps: readonly PriceStepView[];
   /** Le plancher a-t-il **relevé** le prix ? */
@@ -536,9 +558,9 @@ export interface OrderLinePricingTrace {
  */
 export interface NegotiationRoom {
   /** Le plancher qui s'applique, ramené en centimes sur CET article. */
-  readonly floorCents: number;
+  readonly floorMillicents: number;
   /** Ce qu'on peut encore accorder, en centimes. Jamais négatif. */
-  readonly maxDiscountCents: number;
+  readonly maxDiscountMillicents: number;
   /** La même chose en points de base du prix final (`500` = 5 %). */
   readonly maxDiscountBp: number;
 }
@@ -556,7 +578,7 @@ export interface PricingItemView {
   readonly sku: string;
   readonly name: string;
   /** L'entrée du pipeline : le prix B2B s'il est posé, celui du PIM sinon. */
-  readonly canonicalCents: number;
+  readonly canonicalMillicents: number;
   /** Le plancher posé **sur cet article**, ou `null`. */
   readonly ownFloor: PriceFloorView | null;
   /**
@@ -593,7 +615,7 @@ export interface PricingItemView {
    * SEUL endroit où on peut s'en apercevoir avant qu'un client ne commande.
    */
   readonly clampedToZero: boolean;
-  readonly finalCents: number;
+  readonly finalMillicents: number;
   /**
    * Ce que l'altération coûte en volume. `null` quand le prix n'a pas bougé —
    * il n'y a alors rien à compenser, et afficher « ×1,00 » ferait du bruit sur
@@ -682,7 +704,7 @@ export interface VolumeLadderView {
 export interface VolumeTierPriceView {
   readonly minQuantity: number;
   /** Le prix unitaire à ce palier, tous étages passés. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   /** L'écart au tarif d'entrée, en points de base d'une baisse (`1000` = −10 %). */
   readonly discountBp: number;
 }
@@ -868,8 +890,8 @@ export interface ElasticityComparison {
  * l'écran l'affiche alors sur le nœud de la règle aussi.
  */
 export interface ItemElasticityView {
-  readonly fromCents: number;
-  readonly toCents: number;
+  readonly fromMillicents: number;
+  readonly toMillicents: number;
   /** Le volume qu'il faut vendre pour le même chiffre, en bp (`12500` = ×1,25). */
   readonly isoRevenueRatioBp: number | null;
   /**
@@ -896,8 +918,8 @@ export interface PricingComparisonItemView {
   readonly categoryId: string;
   readonly categoryName: string;
   /** Le prix résolu au premier marqueur, puis au second. HT, en centimes. */
-  readonly fromCents: number;
-  readonly toCents: number;
+  readonly fromMillicents: number;
+  readonly toMillicents: number;
   /**
    * Les **paliers de volume** à chaque marqueur, ou `null` s'il n'y a pas de
    * barème ce jour-là.
@@ -1030,9 +1052,9 @@ export type PriceProjectionPayload = z.infer<typeof priceProjectionPayloadSchema
 export interface PriceProjectionPointView {
   readonly cumulativeQuantity: number;
   /** Le tarif d'entrée, avant tout étage. */
-  readonly canonicalCents: number;
+  readonly canonicalMillicents: number;
   /** Le prix unitaire **résolu** à ce niveau de cumul. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly steps: readonly PriceStepView[];
   readonly floored: boolean;
 }
@@ -1065,7 +1087,7 @@ export const templateTierSchema = z.object({
   /** Quantité minimale. `1` = le prix d'entrée, donc le cas « prix fixe ». */
   minQuantity: z.number().int().positive(),
   /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
-  unitPriceCents: z.number().int().nonnegative(),
+  unitPriceMillicents: z.number().int().nonnegative(),
 });
 export type TemplateTierPayload = z.infer<typeof templateTierSchema>;
 
@@ -1118,7 +1140,7 @@ export interface PriceTemplateLineView {
    * `null` quand le catalogue ne connaît plus ce SKU : le gabarit garde la
    * ligne, l'écran dit qu'elle ne vise plus rien.
    */
-  readonly catalogPriceCents: number | null;
+  readonly catalogPriceMillicents: number | null;
   readonly tiers: readonly TemplateTierPayload[];
   /** Le volume prévu gardé avec la grille. `null` = article hors du plan. */
   readonly plannedVolume: number | null;
@@ -1168,9 +1190,9 @@ export type ApplyPriceTemplatePayload = z.infer<typeof applyPriceTemplatePayload
  */
 export interface MercurialeBenchmarkView {
   readonly sku: string;
-  readonly medianCents: number;
-  readonly lowCents: number;
-  readonly highCents: number;
+  readonly medianMillicents: number;
+  readonly lowMillicents: number;
+  readonly highMillicents: number;
   /** Sur combien de clients la médiane est calculée — un chiffre sur deux se dit. */
   readonly companyCount: number;
 }

@@ -1,3 +1,4 @@
+import { lineTotalCents } from '@lfd/money';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,7 +9,7 @@ import {
 } from '@angular/core';
 import { FoldButtonIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
-import { formatCents } from '../../order/order-format';
+import { formatCents, formatMillicents } from '../../order/order-format';
 
 /**
  * `lfd-cart-row` — **un article dans un panier**, tel que le client le voit.
@@ -41,7 +42,7 @@ import { formatCents } from '../../order/order-format';
 export class CartRow {
   readonly name = input.required<string>();
   /** Prix unitaire **HT**, en centimes. */
-  readonly unitPriceCents = input.required<number>();
+  readonly unitPriceMillicents = input.required<number>();
   readonly quantity = input.required<number>();
 
   /**
@@ -67,17 +68,20 @@ export class CartRow {
   readonly quantityChange = output<number>();
   readonly remove = output<void>();
 
-  protected readonly unitPrice = computed(() => formatCents(this.unitPriceCents()));
+  protected readonly unitPrice = computed(() => formatMillicents(this.unitPriceMillicents()));
 
   /** Le tarif barré — affiché **seulement** s'il diffère de ce qui est facturé. */
   protected readonly strikedPrice = computed(() => {
     const canonical = this.canonicalPriceCents();
-    return canonical === null || canonical === this.unitPriceCents()
+    return canonical === null || canonical === this.unitPriceMillicents()
       ? null
       : formatCents(canonical);
   });
   protected readonly lineTotal = computed(() =>
-    formatCents(this.unitPriceCents() * this.quantity()),
+    // Le total de ligne s'ARRONDIT, une seule fois, ici : c'est un montant.
+    // Le prix unitaire, lui, garde ses décimales — les confondre afficherait un
+    // total qui ne correspond pas à ce que la facture portera.
+    formatCents(lineTotalCents(this.unitPriceMillicents(), this.quantity())),
   );
   protected readonly initial = computed(() => this.name().charAt(0));
 

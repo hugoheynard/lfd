@@ -52,7 +52,14 @@ export {
 } from "./accounting-rules.js";
 export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
 
-export { PRICE_BASES, priceBasisSchema, htFromTtc, ttcFromHt, htPriceOf } from "./price-basis.js";
+export {
+  PRICE_BASES,
+  priceBasisSchema,
+  htFromTtc,
+  ttcFromHt,
+  htPriceOf,
+  htMillicentsOf,
+} from "./price-basis.js";
 export type { PriceBasis } from "./price-basis.js";
 
 export {

@@ -29,11 +29,11 @@ export interface CatalogAdminItemView {
   readonly categoryName: string;
 
   /** Le tarif du PIM. Toujours présent — c'est le socle. */
-  readonly pimPriceCents: number;
+  readonly pimPriceMillicents: number;
   /** Le tarif décidé ici. `null` = on suit le PIM. */
-  readonly b2bPriceCents: number | null;
+  readonly b2bPriceMillicents: number | null;
   /** Ce qui sera facturé : le B2B s'il existe, le PIM sinon. */
-  readonly effectivePriceCents: number;
+  readonly effectivePriceMillicents: number;
 
   /**
    * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
@@ -77,7 +77,7 @@ export interface CatalogAdminItemView {
  * PIM sans que personne ne comprenne pourquoi.
  */
 export const setB2bPricePayloadSchema = z.object({
-  priceCents: z.number().int().positive(),
+  priceMillicents: z.number().int().positive(),
 });
 export type SetB2bPricePayload = z.infer<typeof setB2bPricePayloadSchema>;
 

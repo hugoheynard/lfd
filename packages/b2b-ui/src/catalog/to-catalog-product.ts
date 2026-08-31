@@ -1,6 +1,6 @@
 import type { CatalogItemView } from '@lfd/contracts';
 
-import { formatCents } from '../order/order-format';
+import { formatMillicents } from '../order/order-format';
 import type { CatalogProduct } from './catalog-product.model';
 
 /**
@@ -21,6 +21,6 @@ export function toCatalogProduct(item: CatalogItemView): CatalogProduct {
   return {
     id: item.sku,
     name: item.name,
-    price: formatCents(item.unitPriceCents),
+    price: formatMillicents(item.unitPriceMillicents),
   };
 }

@@ -16,6 +16,7 @@ export {
   fulfillmentLabel,
   formatAdjustment,
   formatCents,
+  formatMillicents,
   formatVatRate,
   formatOrderDate,
   formatOrderDay,

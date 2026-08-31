@@ -20,8 +20,8 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     pickupAddress: null,
     note: '',
     lines: [
-      { sku: 'VIE-001', productName: 'Croissant', quantity: 12, unitPriceCents: 200 },
-      { sku: 'PAI-001', productName: 'Baguette tradition', quantity: 24, unitPriceCents: 200 },
+      { sku: 'VIE-001', productName: 'Croissant', quantity: 12, unitPriceMillicents: 200 },
+      { sku: 'PAI-001', productName: 'Baguette tradition', quantity: 24, unitPriceMillicents: 200 },
     ],
     ...overrides,
   } as OrderView;
