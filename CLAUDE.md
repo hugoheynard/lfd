@@ -58,21 +58,38 @@ laisser Hugo décider — ne pas l'exécuter d'autorité.
 
 ---
 
-## 1. Les deux backends ne partagent pas leur base
+## 1. Les deux backends ne partagent pas leurs données
 
-Bounded contexts distincts, bases **physiquement séparées** :
+Bounded contexts distincts, **schémas Postgres séparés dans UNE seule base** :
 
-|                     | PIM                                                 | B2B platform                      |
-| ------------------- | --------------------------------------------------- | --------------------------------- |
-| Langage ubiquitaire | catalogue produit, SKU, canaux, fiche réglementaire | commerce, client pro, commande    |
-| Base                | db PIM                                              | db commerce (« La Folie Coffee ») |
-| Env de connexion    | `DATABASE_URL`                                      | `DATABASE_LFD_URL`                |
-| `User` désigne      | le staff                                            | le client (customer)              |
+|                     | PIM                                                 | B2B platform                   |
+| ------------------- | --------------------------------------------------- | ------------------------------ |
+| Langage ubiquitaire | catalogue produit, SKU, canaux, fiche réglementaire | commerce, client pro, commande |
+| Schéma Postgres     | `pim`                                               | `public` (+ `growth`, `ops`)   |
+| `User` désigne      | le staff                                            | le client (customer)           |
 
-Un backend **ne lit jamais** la base de l'autre. La référence croisée se fait par
-identifiant opaque + **snapshot** (une `OrderLine` B2B porte le SKU PIM en
+🔴 **Une seule base, une seule URL, un seul client Prisma.** `schema.prisma`
+déclare `schemas = ["public", "growth", "ops", "pim"]`, et `AppConfig` ne lit
+que `DATABASE_LFD_URL`. Le référentiel a eu sa propre base ; il ne l'a plus
+depuis B4 (`test/setup-test-database.ts` le dit à sa première ligne de
+commentaire).
+
+**Ce que ça change, et c'est tout le sujet :** la frontière n'est plus tenue par
+la physique. Une jointure `b2b` → `pim` **marcherait**. Elle reste interdite,
+mais par **discipline**, et une discipline se perd là où une impossibilité tient
+toute seule. Écrire que c'est impossible est la meilleure façon que ça revienne
+le jour où quelqu'un constatera que ça marche.
+
+Un backend **ne lit jamais** les tables de l'autre. La référence croisée se fait
+par identifiant opaque + **snapshot** (une `OrderLine` B2B porte le SKU PIM en
 `string` avec copie du prix/nom/TVA au moment de la commande) — jamais par
 jointure ni par import de modèle Prisma.
+
+⚠️ Et les portes ne suffisent pas à le tenir : `lint:context-boundaries`
+autorise aujourd'hui `b2b → pim` **sans réserve** (elle liste `pim` dans les
+cibles permises), et `lint:cross-schema-join` surveille une liste de schémas
+qui ne correspond plus au datasource. Le mur repose donc sur la revue. Le
+resserrer est un chantier ouvert, noté dans `documentation/todos/`.
 
 Corollaire : pas de `packages/shared-types` global qui mélangerait les deux
 langages. Un type partagé n'est légitime que s'il est vraiment transverse
@@ -661,21 +678,24 @@ d'appel qui compte).
 
 ## 9 bis. Les sous-agents — quand les invoquer SANS qu'on le demande
 
-Ces sept-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
+Ces dix-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
 un agent est invoqué par l'assistant, jamais par un hook ni par un événement.
 Cette section est donc l'automatisation — la règle qui fait qu'on n'a pas à les
 réclamer.
 
-| Agent                            | Déclencheur — invoquer d'office                                                                                                            | Ne PAS invoquer                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| **`portier`**                    | avant tout commit d'une tranche de travail, et **toujours** avant un push. En tâche de fond, pendant qu'on continue.                       | pour une correction d'une ligne dont la porte concernée vient de passer                    |
-| **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                          | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                    |
-| **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer |
-| **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                 |
-| **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                             | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver      |
-| **`sonic-unit-tester`**          | sur du code **feuille** que rien ne traverse — fonction pure, value object, mapper, garde. **Un fichier par instance, par dizaines.**      | dès qu'il faudrait un double pour tester : c'est `brutus-tester` qu'il faut                |
+| Agent                            | Déclencheur — invoquer d'office                                                                                                            | Ne PAS invoquer                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| **`cerberus-le-portier`**        | avant tout commit d'une tranche de travail, et **toujours** avant un push. En tâche de fond, pendant qu'on continue.                       | pour une correction d'une ligne dont la porte concernée vient de passer                     |
+| **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                          | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                     |
+| **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer  |
+| **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                  |
+| **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                             | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver       |
+| **`sonic-unit-tester`**          | sur du code **feuille** que rien ne traverse — fonction pure, value object, mapper, garde. **Un fichier par instance, par dizaines.**      | dès qu'il faudrait un double pour tester : c'est `brutus-tester` qu'il faut                 |
+| **`batisseur`**                  | une tranche de **backend** dont la conception est déjà tranchée dans un document — un lot par instance                                     | tant que le plan n'existe pas : il bâtit, il ne conçoit pas                                 |
+| **`pablo`**                      | la même chose côté **Angular** — fold-ng d'abord, et il sait que `tsc` ne voit pas les gabarits                                            | pour du backend : les conventions n'ont rien à voir                                         |
+| **`vitruve`**                    | **tout document de conception, AVANT de le soumettre à Hugo** — voir la règle ci-dessous                                                   | sur un plan d'une tranche déjà bâtie : il contredit une conception, il n'audite pas du code |
 
-### La règle qui rend le `portier` non négociable
+### La règle qui rend `cerberus-le-portier` non négociable
 
 **Ne jamais écrire « c'est vert » sans avoir lancé `pnpm test` à la RACINE.**
 
@@ -702,15 +722,40 @@ pratiques :
 Aucun d'eux ne commite, sauf `lfd-worker`. Des agents parallèles se
 disputeraient l'index git — ils écrivent, quelqu'un d'autre commite.
 
-### Ce que le `portier` ne remplace pas
+### La règle qui rend `vitruve` non négociable
+
+**Un plan ne se soumet pas à Hugo avant d'avoir été contredit.**
+
+Le 2026-08-31, le chantier « référentiel allergènes » a produit un plan qui
+portait, en une seule journée : un compte faux recopié d'un commentaire périmé
+(29 codes au lieu de 30), du SQL qui ne compilait pas (`$` au lieu de `$$`), un
+verrou troué par la sémantique de `NULL` (`<>` sur une colonne nullable), une
+promesse d'immuabilité que son propre mécanisme ne tenait pas (`archived_at`),
+et une justification d'ordre de démontage tout simplement fausse.
+
+Les six ont été trouvées — par les codeurs et les relecteurs, **après** que le
+plan a été validé par un humain. Chacune a coûté un aller-retour, et deux ont
+failli être écrites dans un runbook, c'est-à-dire à l'endroit qu'on lit sous
+pression.
+
+L'artefact le plus faible d'un chantier est le plan, parce qu'il est écrit en
+premier, vite, et qu'il tire son autorité d'une description de l'existant faite
+de mémoire. Le faire relire coûte quelques minutes ; ne pas le faire relire
+coûte le chantier.
+
+Corollaire : ce que `vitruve` rend n'est pas à masquer. Ses objections
+`BLOQUANT` et `SÉRIEUX` se remontent à Hugo **avec** le plan — corrigées, ou
+assumées et dites.
+
+### Ce que `cerberus-le-portier` ne remplace pas
 
 Le hook `.githooks/pre-push` tourne de toute façon, et il est plus rapide que
 lui sur ce qu'il couvre (les portes + les typechecks de ce qui a changé). Le
-`portier` ajoute ce que le hook a **volontairement** laissé à la CI — les tests,
+Cerbère ajoute ce que le hook a **volontairement** laissé à la CI — les tests,
 l'ESLint type-aware, le build AOT — parce que les mettre au push ferait ce que
 le `pre-commit` refuse.
 
-Les deux se complètent : le hook interdit, le portier informe.
+Les deux se complètent : le hook interdit, Cerbère informe.
 
 ---
 
