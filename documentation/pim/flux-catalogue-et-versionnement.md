@@ -232,10 +232,8 @@ Elle décide du coût de stockage, mais surtout de **ce qu'un diff saura montrer
 | **Le vendable** — ce que les projections lisent (identité, prix, taux, canaux, allergènes) | ce qui change une facture ou une mise en rayon | une description réécrite, une photo remplacée  |
 | **La fiche entière** — éditorial et visuels compris                                        | tout                                           | — (mais chaque ancre pèse le catalogue entier) |
 
-**Tranché le 2026-08-31 : le vendable seulement.** Un point d'ancrage de
-publication répond à « qu'est-ce qui part chez nos clients », et une photo
-remplacée n'a jamais changé une facture. L'éditorial garde sa traçabilité au
-grain du fait, dans le journal.
+~~**Tranché le 2026-08-31 : le vendable seulement.**~~ **Repris le même jour —
+voir le § 9.** Le critère était mauvais.
 
 ## 8. Ce que « le vendable » contient — et le piège du rapport
 
@@ -262,9 +260,49 @@ famille » obligerait un diff à rejouer la résolution pour comprendre qu'un ta
 de famille a bougé — et à la rejouer avec le code d'aujourd'hui, sur des données
 d'hier. Une ancre doit être lisible sans son moteur.
 
-Ce qui n'entre PAS, et se relit dans le journal : l'éditorial, les visuels, la
-nutrition détaillée, les conditionnements.
+Les deux étages restent vrais quel que soit le périmètre — c'est le § 9 qui dit
+ce qu'un article contient.
 
-⚠️ **Ce que cette décision coûte** : une ancre ne permet pas de retrouver « la
-fiche telle qu'elle était ». Elle permet de retrouver **ce qui était vendu, à
-quel prix, sous quel régime**. C'est un choix, pas un oubli.
+## 9. Reprise : le bon critère n'est pas « ce qui change une facture »
+
+**« Le vendable » répondait à la mauvaise question.** Il désignait ce qui change
+une facture — le critère d'une ancre de TARIF. Une ancre de PUBLICATION répond à
+autre chose : **ce qu'un canal doit recevoir pour être autosuffisant.**
+
+Et le B2B doit l'être : sa boutique sert ses propres pages, elle ne rappelle pas
+le PIM pour afficher un produit. Aujourd'hui elle affiche des bannières **codées
+en dur** dans `legacy/` et son modèle de rangée n'a même pas de champ
+description — le fil n'en transporte aucune. C'est un placeholder, pas une
+décision. Le jour où on le comble, descriptions et visuels passent sur le fil ;
+une ancre qui les ignorerait ne pourrait pas dire ce qui a été publié.
+
+### Ce qui rend le périmètre complet abordable
+
+Deux choses, et la première vient de l'observation qui a rouvert le sujet.
+
+**Les médias sont dans un bucket.** Une révision porte l'**URL** et l'identifiant
+de l'asset, jamais les octets. Et elle ne ment pas en le faisant : `MediaAsset`
+est un agrégat à cycle propre (`id`, `url`, `storage_key`) — remplacer un visuel
+crée un nouvel asset, il ne s'écrase pas en place. Le poids d'une révision est
+donc du **texte**.
+
+**Les articles sont adressés par leur contenu.** Un `catalog_revision_item`
+référence un hash de payload plutôt que de recopier le payload. Deux révisions
+qui partagent quatre-vingt-dix articles inchangés partagent quatre-vingt-dix
+lignes — une ancre posée sur un catalogue stable ne coûte presque rien, et le
+diff se calcule en comparant des hashs avant de lire quoi que ce soit. C'est le
+mécanisme de git, pour la même raison.
+
+### Ce qui reste dehors, et pourquoi
+
+- **Les octets des visuels** — bucket, adressés par URL (ci-dessus).
+- **`product_readiness`** — une signature _sur_ la fiche, pas un morceau de la
+  fiche. Elle dit qui a validé, pas ce qui est publié.
+- **Les liaisons de synchronisation** (`shopify_product_binding`, gids,
+  `sku_registry`) — de l'état de transport, re-dérivable, sans valeur historique.
+
+⚠️ **Ce que cette reprise coûte** : une révision devient une copie du catalogue
+éditorial, pas un extrait tarifaire. Sans l'adressage par contenu, ce serait
+trop cher pour être posé souvent — c'est lui qui rend la décision tenable, et
+c'est donc lui qui doit être livré dans la première tranche, pas dans une
+optimisation ultérieure.
