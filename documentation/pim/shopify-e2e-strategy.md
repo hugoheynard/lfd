@@ -86,9 +86,9 @@ prétendre le contraire.
 
 ```mermaid
 flowchart LR
-  dev[Nouvelle méthode admin-client] --> gate{@verified-by ?}
-  gate -- non --> red[Build rouge]
-  gate -- oui --> e2e[*.shopify-live.e2e.ts]
+  dev["Nouvelle méthode admin-client"] --> gate{"@verified-by ?"}
+  gate -- non --> red["Build rouge"]
+  gate -- oui --> e2e["*.shopify-live.e2e.ts"]
   e2e --> run[test:shopify:live sur dev store]
   run --> deploy[Redeploy PIM]
 ```

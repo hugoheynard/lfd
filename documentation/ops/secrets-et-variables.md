@@ -24,7 +24,7 @@ flowchart LR
         S["**Secrets**<br/>valeurs sensibles<br/>(bases, clés API, tokens)"]
     end
     V --> BUILD["Build des fronts<br/>(compilé DANS le bundle)"]
-    S --> SYNC["`wrangler secret put`<br/>à chaque déploiement"]
+    S --> SYNC["wrangler secret put<br/>à chaque déploiement"]
     V --> SYNC
     SYNC --> W["Worker"] --> F{"**RUNTIME_KEYS**<br/>filtre — container/worker.ts"}
     F -->|"nom listé"| ENV["envVars → process.env du NestJS"]

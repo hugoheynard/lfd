@@ -75,15 +75,15 @@ throttle) descend dans le package/gateway.
 ```mermaid
 flowchart TD
   subgraph now[Aujourd'hui]
-    pim1[PIM · projection + push] --> conn1[connexion Shopify in-process]
+    pim1["PIM · projection + push"] --> conn1["connexion Shopify in-process"]
   end
   subgraph pkg[Étape 1 — package]
-    pim2[PIM · projection] --> lib[@lfd/shopify-client\ntoken + graphql]
-    stock2[Stock · ingestion] --> lib
+    pim2["PIM · projection"] --> lib["@lfd/shopify-client<br/>token + graphql"]
+    stock2["Stock · ingestion"] --> lib
   end
   subgraph svc[Étape 2 — gateway, au 1er webhook]
-    pim3[PIM · projection] --> gw[Gateway Shopify\ntransport + webhooks + rate]
-    stock3[Stock · réassort] --> gw
+    pim3["PIM · projection"] --> gw["Gateway Shopify<br/>transport + webhooks + rate"]
+    stock3["Stock · réassort"] --> gw
     shopify[(Shopify webhooks)] --> gw
   end
   now --> pkg --> svc
