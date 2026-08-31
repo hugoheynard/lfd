@@ -661,7 +661,7 @@ d'appel qui compte).
 
 ## 9 bis. Les sous-agents — quand les invoquer SANS qu'on le demande
 
-Ces trois-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
+Ces quatre-là vivent dans `.claude/agents/`. **Rien ne les déclenche tout seul** :
 un agent est invoqué par l'assistant, jamais par un hook ni par un événement.
 Cette section est donc l'automatisation — la règle qui fait qu'on n'a pas à les
 réclamer.
@@ -672,6 +672,7 @@ réclamer.
 | **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                          | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                    |
 | **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer |
 | **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                 |
+| **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                             | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver      |
 
 ### La règle qui rend le `portier` non négociable
 
@@ -684,6 +685,21 @@ millicentimes, la CI l'a vu, les trois workflows de déploiement se sont arrêt�
 
 Corollaire : un succès **mis en cache par turbo** ne prouve rien. Chercher
 `cache miss, executing` sur le paquet touché avant de conclure.
+
+### Paralléliser, et pourquoi ça décharge
+
+Un sous-agent travaille dans **son propre contexte** : ce qu'il lit ne coûte
+rien à l'orchestrateur, qui ne paie que le rapport final. Deux conséquences
+pratiques :
+
+- **la taille du rapport est le seul levier** — d'où le format court imposé à
+  chacun d'eux, et l'interdiction de recracher les fichiers lus ;
+- **plusieurs instances se lancent dans UN SEUL message**, pas l'une après
+  l'autre. `brutus-tester` est fait pour ça : un module par instance, et deux
+  instances n'écrivent jamais dans les mêmes fichiers.
+
+Aucun d'eux ne commite, sauf `lfd-worker`. Des agents parallèles se
+disputeraient l'index git — ils écrivent, quelqu'un d'autre commite.
 
 ### Ce que le `portier` ne remplace pas
 
