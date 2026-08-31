@@ -133,6 +133,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   PointOfSaleContext: "pim",
   PointOfSaleTable: "pim",
   VatRate: "pim",
+  // Les décisions comptables globales de la maison (le rapport prix pro /
+  // prix public). Singleton, comme `ShopifySettings`.
+  AccountingRules: "pim",
   Product: "pim",
   ProductVariant: "pim",
   ProductPackaging: "pim",

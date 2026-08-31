@@ -17,7 +17,12 @@
 
 /** La chose dont l'événement parle. Le référentiel n'en connaît que quatre. */
 export type PimSubjectType =
-  "vat_rate" | "product" | "product_category" | "point_of_sale" | "sales_context";
+  | "vat_rate"
+  | "product"
+  | "product_category"
+  | "point_of_sale"
+  | "sales_context"
+  | "accounting_rules";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -154,6 +159,18 @@ export const PIM_EVENTS = {
    * facturer sans rien casser de visible. « Pourquoi le B2B ne facture plus
    * depuis mardi » n'a de réponse que si le geste est inscrit.
    */
+  /**
+   * Le **rapport prix pro / prix public** a bougé.
+   *
+   * Un fait à fort aval, et c'est pour ça qu'il est tracé avant même que
+   * quelque chose le lise : le jour où la dérivation sera branchée, il faudra
+   * savoir depuis quand le rapport vaut ce qu'il vaut. Une lacune de journal ne
+   * se rattrape pas — les mois passés sont perdus.
+   *
+   * Sans `blast` : la portée est le catalogue entier, et un nombre le dirait
+   * moins bien que la phrase.
+   */
+  accountingRulesProRatioChanged: "accounting_rules.pro_ratio_changed",
   salesContextCreated: "sales_context.created",
   salesContextUpdated: "sales_context.updated",
   salesContextDeleted: "sales_context.deleted",

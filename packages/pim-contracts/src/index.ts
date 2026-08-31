@@ -44,6 +44,9 @@ export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
 
+export { proPriceRatioPayloadSchema, MAX_RATIO_BP } from "./accounting-rules.js";
+export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
+
 export {
   createCategoryPayloadSchema,
   moveCategoryPayloadSchema,

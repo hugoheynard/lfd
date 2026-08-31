@@ -2783,6 +2783,52 @@ model VatRate {
   @@schema("pim")
 }
 
+/// **Les règles comptables** — ce que la maison décide une fois, pour tout le
+/// catalogue.
+///
+/// Singleton (une constante fixe en `id` garantit l'unicité), comme
+/// `ShopifySettings` et `BookingPolicySettings`. Elle ne porte qu'une règle
+/// aujourd'hui, et elle est là pour en accueillir d'autres : les décisions de
+/// ce genre sont peu nombreuses, globales, et n'ont pas de porteur naturel dans
+/// le catalogue.
+///
+/// **L'absence de ligne est la donnée** : rien réglé ⇒ pas de ligne, et non une
+/// ligne à 100 %. Un défaut à 100 % affirmerait « le professionnel paie le prix
+/// public », ce que personne n'a décidé. C'est la même discipline que
+/// `AlertRuleSetting` et que le `DEFAULT_FOOD_VAT_RATE` retiré du B2B.
+///
+/// Pas de `updated_by` ici : le journal du référentiel fige déjà l'acteur au
+/// moment de l'acte, et une seconde copie ne pourrait que diverger de la
+/// première.
+///
+/// ⚠️ Une contrainte non exprimable ici garde ce modèle :
+/// `accounting_rules_pro_ratio_bounds` (`0 < pro_price_ratio_bp <= 10000`),
+/// posée en SQL par la migration `20260831090000_regles_comptables` comme
+/// `price_rules_no_overlap` avant elle. Une `migrate dev` proposera de la
+/// supprimer : refuser la ligne.
+model AccountingRules {
+  id String @id
+
+  /// Le rapport **prix pro TTC / prix public TTC**, en points de base entiers
+  /// (9 000 = 90 %, soit « le pro paie 10 % de moins »).
+  ///
+  /// En points de base et non en pourcentage flottant : `0.9` n'est pas
+  /// représentable en binaire, et un rapport qui dérive produit deux prix
+  /// différents pour le même article selon qui l'a calculé. C'est déjà l'unité
+  /// de `PriceRule.value`.
+  ///
+  /// Le RAPPORT, pas la remise : c'est ce qui multiplie. Stocker `-10 %`
+  /// imposerait une soustraction à chaque lecture, donc un endroit de plus où
+  /// se tromper de sens.
+  proPriceRatioBp Int @map("pro_price_ratio_bp")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("accounting_rules")
+  @@schema("pim")
+}
+
 /// Le **genre** d'un point de vente. `shop` = une boutique physique, qui a une
 /// URL de click & collect et peut être équipée d'une grille de tables ;
 /// `platform` = une plateforme de commande, la boutique professionnelle B2B

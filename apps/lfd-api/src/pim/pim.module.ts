@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { RouterModule } from "@nestjs/core";
 
+import { AccountingRulesModule } from "./accounting-rules/accounting-rules.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { ShopifyModule } from "./channels/shopify/shopify.module.js";
@@ -30,6 +31,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
   imports: [
     CatalogueModule,
     VatRatesModule,
+    AccountingRulesModule,
     PointsOfSaleModule,
     SalesContextsModule,
     ShopifyModule,
@@ -45,6 +47,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
         children: [
           CatalogueModule,
           VatRatesModule,
+          AccountingRulesModule,
           PointsOfSaleModule,
           SalesContextsModule,
           {
