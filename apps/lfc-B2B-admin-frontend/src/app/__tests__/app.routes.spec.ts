@@ -109,6 +109,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // serait un mur pour rien.
   'pim/ingredients': null,
   'pim/appellations': null,
+  'pim/allergenes': null,
+  'pim/conditionnements': null,
   'pim/integration': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,

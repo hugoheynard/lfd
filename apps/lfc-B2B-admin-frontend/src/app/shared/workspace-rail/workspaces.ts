@@ -179,16 +179,52 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     section: 'Diffusion',
   },
 
-  // PARAMÉTRAGE — ce qu'on règle une fois et qui vaut pour tout le reste. En
+  // PARAMÉTRAGE PRODUIT — le vocabulaire dans lequel une FICHE se remplit :
+  // ce qu'elle contient, ce qui la conditionne, ce qu'elle déclare. On y
+  // revient en saisissant, ce qui le sépare du paramétrage général plus bas —
+  // celui-là se règle trois fois par an.
+  //
+  // C'est la même distinction que le rail fait déjà entre Catalogue et
+  // Diffusion : par NATURE de ce qu'on y fait, pas par ordre d'arrivée.
+  {
+    key: 'ingredients',
+    label: 'Ingrédients',
+    link: '/pim/ingredients',
+    icon: 'library',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'appellations',
+    label: 'Appellations',
+    link: '/pim/appellations',
+    icon: 'award',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'allergenes',
+    label: 'Allergènes',
+    link: '/pim/allergenes',
+    icon: 'alert',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'conditionnements',
+    label: 'Conditionnements',
+    link: '/pim/conditionnements',
+    icon: 'package',
+    section: 'Paramétrage produit',
+  },
+
+  // GÉNÉRAL — ce qu'on règle une fois et qui vaut pour tout le reste. En
   // DERNIER, à l'inverse de l'ordre où on y touche : on ouvre le référentiel
-  // pour éditer des fiches tous les jours, et ses réglages trois fois par an.
+  // pour éditer des fiches tous les jours, et ceci trois fois par an.
   {
     key: 'vat',
     label: 'Taux de TVA',
     link: '/pim/tva',
     icon: 'tax',
     needs: 'tax:read',
-    section: 'Paramétrage',
+    section: 'Général',
   },
   // Même icône que les taux, et c'est voulu : les deux répondent à « ce
   // qu'on facture ». Ce qui les sépare tient au libellé — l'un est imposé
@@ -199,7 +235,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     link: '/pim/regles-comptables',
     icon: 'tax',
     needs: 'tax:read',
-    section: 'Paramétrage',
+    section: 'Général',
   },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
   // partagés, et le mot d'interface n'a pas à traîner l'espace d'URL avec lui.
@@ -208,31 +244,14 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     label: 'Points de vente',
     link: '/pim/emplacements',
     icon: 'places',
-    section: 'Paramétrage',
+    section: 'Général',
   },
   {
     key: 'contexts',
     label: 'Contextes de vente',
     link: '/pim/contextes',
     icon: 'places',
-    section: 'Paramétrage',
-  },
-  // La PROVENANCE : deux référentiels qu'on règle une fois et que les fiches
-  // citent. Les ingrédients avant les appellations — on ouvre le second pour
-  // servir le premier, jamais l'inverse.
-  {
-    key: 'ingredients',
-    label: 'Ingrédients',
-    link: '/pim/ingredients',
-    icon: 'library',
-    section: 'Paramétrage',
-  },
-  {
-    key: 'appellations',
-    label: 'Appellations',
-    link: '/pim/appellations',
-    icon: 'award',
-    section: 'Paramétrage',
+    section: 'Général',
   },
 ];
 

@@ -90,6 +90,22 @@ export const pimRoutes: Routes = [
           import('./provenance/ingredients-page/ingredients-page').then((m) => m.IngredientsPage),
       },
       {
+        // Deux écrans POSÉS avant leur contenu : l'entrée de menu dit où la
+        // chose ira, la page vide dit qu'elle n'y est pas encore. Une entrée
+        // absente laisserait chercher ; une page plausible mais inerte
+        // mentirait.
+        path: 'allergenes',
+        title: 'Allergènes — LFC B2B admin',
+        loadComponent: () =>
+          import('./product-settings/allergens-page/allergens-page').then((m) => m.AllergensPage),
+      },
+      {
+        path: 'conditionnements',
+        title: 'Conditionnements — LFC B2B admin',
+        loadComponent: () =>
+          import('./product-settings/packaging-page/packaging-page').then((m) => m.PackagingPage),
+      },
+      {
         path: 'appellations',
         title: 'Appellations — LFC B2B admin',
         loadComponent: () =>
