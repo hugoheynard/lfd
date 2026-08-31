@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { CartStore } from '../cart.store';
 
-const CROISSANT = { sku: 'VIE-001', name: 'Croissant', unitPriceCents: 200 };
-const BAGUETTE = { sku: 'PAI-001', name: 'Baguette', unitPriceCents: 180 };
+const CROISSANT = { sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 200 };
+const BAGUETTE = { sku: 'PAI-001', name: 'Baguette', unitPriceMillicents: 180 };
 
 describe('CartStore', () => {
   it('cumule un SKU déjà présent plutôt que d’ouvrir une seconde ligne', () => {

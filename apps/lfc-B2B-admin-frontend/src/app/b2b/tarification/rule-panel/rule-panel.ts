@@ -182,7 +182,11 @@ export class RulePanel {
   private buildEffect(): CreatePriceRulePayload['effect'] | null {
     if (this.nature() === 'replace') {
       const amount = this.amount();
-      return amount === null ? null : { nature: 'replace', amountCents: Math.round(amount * 100) };
+      // Cinq décimales acceptées : un devis grand compte se pose avec, parce que
+      // le volume les rend visibles sur la facture.
+      return amount === null
+        ? null
+        : { nature: 'replace', amountMillicents: Math.round(amount * 100_000) };
     }
     const alteration = this.alteration();
     if (alteration === null) {

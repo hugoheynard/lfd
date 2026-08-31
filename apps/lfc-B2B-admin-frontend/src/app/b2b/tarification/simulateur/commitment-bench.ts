@@ -36,7 +36,7 @@ export interface Installment {
   readonly quantity: number;
   /** Le cumul **après** cette échéance — la mesure sur laquelle le palier se juge. */
   readonly cumulativeQuantity: number;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly lineTotalCents: number;
 }
 
@@ -125,8 +125,8 @@ export function scenarioOf(
       index: index + 1,
       quantity,
       cumulativeQuantity: cumulative,
-      unitPriceCents: point.unitPriceCents,
-      lineTotalCents: point.unitPriceCents * quantity,
+      unitPriceMillicents: point.unitPriceMillicents,
+      lineTotalCents: point.unitPriceMillicents * quantity,
     });
     previous = cumulative;
   }

@@ -70,8 +70,8 @@
               [sku]="item.sku"
               [name]="item.name"
               [category]="item.categoryName"
-              [originCents]="item.pimPriceCents"
-              [alteredCents]="item.b2bPriceCents"
+              [originMillicents]="item.pimPriceMillicents"
+              [alteredMillicents]="item.b2bPriceMillicents"
               [dimmed]="item.isHidden"
             >
               @if (item.vatRatePercent !== null) {
@@ -93,8 +93,8 @@
                 <fold-badge content="code inconnu" variant="alert" />
               }
               <lfd-price-editor
-                [originCents]="item.pimPriceCents"
-                [alteredCents]="item.b2bPriceCents"
+                [originMillicents]="item.pimPriceMillicents"
+                [alteredMillicents]="item.b2bPriceMillicents"
                 [label]="item.name"
                 (save)="setPrice(item, $event)"
                 (reset)="alignOnPim(item)"

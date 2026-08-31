@@ -1,3 +1,4 @@
+import { formatEuros } from '@lfd/catalog-ui';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { PRICE_SCOPE_LABELS, PRICE_STAGE_LABELS, type PriceRuleView } from '@lfd/contracts';
 import {
@@ -92,7 +93,7 @@ export class ArchivesPanel {
 /** Ce que la règle fait au prix, en une expression. */
 function effectOf(rule: PriceRuleView): string {
   if (rule.effect.nature === 'replace') {
-    return `prix posé à ${(rule.effect.amountCents / 100).toFixed(2).replace('.', ',')} €`;
+    return `prix posé à ${formatEuros(rule.effect.amountMillicents)}`;
   }
   const sign = rule.effect.direction === 'decrease' ? '−' : '+';
   return rule.effect.mode === 'percent'

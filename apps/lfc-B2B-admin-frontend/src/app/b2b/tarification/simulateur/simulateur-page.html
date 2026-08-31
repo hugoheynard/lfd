@@ -32,7 +32,9 @@
 
         <fold-select label="Article" [value]="sku()" (valueChange)="sku.set($event)">
           @for (item of catalog(); track item.sku) {
-            <option [value]="item.sku">{{ item.name }} — {{ euros(item.unitPriceCents) }}</option>
+            <option [value]="item.sku">
+              {{ item.name }} — {{ euros(item.unitPriceMillicents) }}
+            </option>
           }
         </fold-select>
 
@@ -164,7 +166,7 @@
                     <th scope="row" class="num">{{ line.index }}</th>
                     <td class="num">{{ line.quantity }}</td>
                     <td class="num strong">{{ line.cumulativeQuantity }}</td>
-                    <td class="num strong">{{ euros(line.unitPriceCents) }}</td>
+                    <td class="num strong">{{ euros(line.unitPriceMillicents) }}</td>
                     <td class="num">{{ euros(line.lineTotalCents) }}</td>
                   </tr>
                 }
@@ -194,10 +196,10 @@
                 }
               </li>
             }
-            @if (line.floorCents !== null) {
+            @if (line.floorMillicents !== null) {
               <li class="fact">
-                Limite basse à <strong>{{ euros(line.floorCents) }}</strong> — aucun étage ne passe
-                dessous.
+                Limite basse à <strong>{{ euros(line.floorMillicents) }}</strong> — aucun étage ne
+                passe dessous.
               </li>
             }
             @if (line.volumeTiers === null) {
@@ -225,7 +227,7 @@
               @for (row of rows(); track row.quantity; let i = $index) {
                 <tr>
                   <th scope="row" class="num strong">{{ row.quantity }}</th>
-                  <td class="num strong">{{ euros(row.unitPriceCents) }}</td>
+                  <td class="num strong">{{ euros(row.unitPriceMillicents) }}</td>
                   <td class="num delta" [class]="'is-' + direction(row.discountBp)">
                     @if (row.discountBp === 0) {
                       <span class="muted">—</span>
@@ -249,7 +251,7 @@
                         @for (step of row.line.steps; track step.ruleId) {
                           <li class="step">
                             {{ step.label }}
-                            <span class="step-out">{{ euros(step.resultCents) }}</span>
+                            <span class="step-out">{{ euros(step.resultMillicents) }}</span>
                           </li>
                         }
                       </ul>

@@ -25,13 +25,15 @@ export function isFlatPrice(tiers: readonly TemplateTierPayload[]): boolean {
  * « −100 % » serait pire que rien : ce n'est pas une remise, c'est une absence.
  */
 export function gapToCatalogBp(
-  catalogPriceCents: number | null,
-  unitPriceCents: number,
+  catalogPriceMillicents: number | null,
+  unitPriceMillicents: number,
 ): number | null {
-  if (catalogPriceCents === null || catalogPriceCents <= 0) {
+  if (catalogPriceMillicents === null || catalogPriceMillicents <= 0) {
     return null;
   }
-  return Math.round(((catalogPriceCents - unitPriceCents) / catalogPriceCents) * 10_000);
+  return Math.round(
+    ((catalogPriceMillicents - unitPriceMillicents) / catalogPriceMillicents) * 10_000,
+  );
 }
 
 /**
@@ -42,7 +44,7 @@ export function gapToCatalogBp(
  * un client qui commande peu paie l'entrée, et c'est ce qu'il faut voir.
  */
 export function entryPriceCents(tiers: readonly TemplateTierPayload[]): number {
-  return tiers[0]?.unitPriceCents ?? 0;
+  return tiers[0]?.unitPriceMillicents ?? 0;
 }
 
 /**
@@ -54,7 +56,7 @@ export function entryPriceCents(tiers: readonly TemplateTierPayload[]): number {
  */
 export function averageGapBp(lines: readonly PriceTemplateLineView[]): number | null {
   const gaps = lines
-    .map((line) => gapToCatalogBp(line.catalogPriceCents, entryPriceCents(line.tiers)))
+    .map((line) => gapToCatalogBp(line.catalogPriceMillicents, entryPriceCents(line.tiers)))
     .filter((gap): gap is number => gap !== null);
   if (gaps.length === 0) {
     return null;

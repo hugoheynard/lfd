@@ -1,9 +1,9 @@
 @if (delta(); as ecart) {
   <!-- Le tarif d'entrée, barré : sans lui, l'écart n'a pas de point de départ. -->
-  <span class="from">{{ euros(item().canonicalCents) }}</span>
+  <span class="from">{{ euros(item().canonicalMillicents) }}</span>
 }
 
-<span class="price">{{ euros(item().finalCents) }}</span>
+<span class="price">{{ euros(item().finalMillicents) }}</span>
 
 @if (delta(); as ecart) {
   <span class="delta" [class.is-up]="!discount()">{{ ecart }}</span>
@@ -23,7 +23,7 @@
     @for (tier of tiers(); track tier.minQuantity) {
       <li class="tier">
         <span class="tier-qty">{{ tier.minQuantity }}+</span>
-        <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+        <span class="tier-price">{{ euros(tier.unitPriceMillicents) }}</span>
         <span class="tier-off">{{ tierDiscount(tier.discountBp) }}</span>
       </li>
     }

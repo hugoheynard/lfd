@@ -24,10 +24,10 @@ import type {
  * bruit là où l'absence de puce dit déjà tout.
  */
 export function deltaLabel(item: PricingItemView): string | null {
-  if (item.canonicalCents <= 0 || item.finalCents === item.canonicalCents) {
+  if (item.canonicalMillicents <= 0 || item.finalMillicents === item.canonicalMillicents) {
     return null;
   }
-  const ratio = (item.finalCents - item.canonicalCents) / item.canonicalCents;
+  const ratio = (item.finalMillicents - item.canonicalMillicents) / item.canonicalMillicents;
   return `${ratio < 0 ? '−' : '+'}${Math.abs(ratio * 100)
     .toFixed(1)
     .replace('.', ',')} %`;
@@ -35,7 +35,7 @@ export function deltaLabel(item: PricingItemView): string | null {
 
 /** Une baisse et une hausse ne se lisent pas pareil : la puce le dit. */
 export function isDiscount(item: PricingItemView): boolean {
-  return item.finalCents < item.canonicalCents;
+  return item.finalMillicents < item.canonicalMillicents;
 }
 
 /**
@@ -65,8 +65,8 @@ export function isOnTrack(comparison: ElasticityComparison): boolean {
  * La marge négociable, dans les DEUX unités — le commercial choisit celle qu'il
  * annonce, et l'écran les met au même poids.
  */
-export function roomEuros(maxDiscountCents: number): string {
-  return formatEuros(maxDiscountCents);
+export function roomEuros(maxDiscountMillicents: number): string {
+  return formatEuros(maxDiscountMillicents);
 }
 
 export function roomPercent(maxDiscountBp: number): string {
@@ -102,7 +102,7 @@ export function ruleSentence(rule: PriceRuleView): string {
 
 function ruleEffect(rule: PriceRuleView): string {
   if (rule.effect.nature === 'replace') {
-    return `à ${formatEuros(rule.effect.amountCents)}`;
+    return `à ${formatEuros(rule.effect.amountMillicents)}`;
   }
   const sign = rule.effect.direction === 'decrease' ? '−' : '+';
   return rule.effect.mode === 'percent'

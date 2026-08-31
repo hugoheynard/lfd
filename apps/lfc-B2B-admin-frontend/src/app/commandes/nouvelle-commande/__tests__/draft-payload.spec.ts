@@ -26,7 +26,7 @@ const CATALOGUE: readonly CatalogItemView[] = [
   {
     sku: 'VIE-001',
     name: 'Croissant',
-    unitPriceCents: 120,
+    unitPriceMillicents: 120,
     vatRate: 5.5,
     category: 'viennoiserie',
   },
@@ -106,7 +106,7 @@ describe('la traduction écran ↔ brouillon', () => {
     const restored = restoreLines(viewOf({ lines: [{ sku: 'VIE-001', quantity: 40 }] }), CATALOGUE);
 
     expect(restored.lines).toEqual([
-      { sku: 'VIE-001', name: 'Croissant', unitPriceCents: 120, quantity: 40 },
+      { sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 120, quantity: 40 },
     ]);
     expect(restored.dropped).toEqual([]);
   });

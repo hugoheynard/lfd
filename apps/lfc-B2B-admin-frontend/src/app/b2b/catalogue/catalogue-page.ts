@@ -86,7 +86,7 @@ export class CataloguePage {
 
   /** Combien portent un prix décidé ici — la mesure du travail commercial déjà fait. */
   protected readonly alteredCount = computed(
-    () => this.items().filter((item) => item.b2bPriceCents !== null).length,
+    () => this.items().filter((item) => item.b2bPriceMillicents !== null).length,
   );
 
   protected readonly total = computed(() => this.items().length);
@@ -136,9 +136,9 @@ export class CataloguePage {
   }
 
   /** Pose le prix B2B. Le serveur refuse un montant égal à celui du PIM. */
-  protected async setPrice(item: CatalogAdminItemView, priceCents: number): Promise<void> {
+  protected async setPrice(item: CatalogAdminItemView, priceMillicents: number): Promise<void> {
     try {
-      await this.catalogue.setPrice(item.sku, priceCents);
+      await this.catalogue.setPrice(item.sku, priceMillicents);
       this.notify.success(`Prix B2B posé sur ${item.name}.`);
       await this.load();
     } catch (error) {

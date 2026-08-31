@@ -71,8 +71,8 @@ describe('toLines', () => {
         sku: 'PAI-001',
         plannedVolume: null,
         tiers: [
-          { minQuantity: 1, unitPriceCents: 85 },
-          { minQuantity: 10_000, unitPriceCents: 78 },
+          { minQuantity: 1, unitPriceMillicents: 85 },
+          { minQuantity: 10_000, unitPriceMillicents: 78 },
         ],
       },
     ]);
@@ -93,7 +93,7 @@ describe('toLines', () => {
         ]),
       ),
     ).toEqual([
-      { sku: 'PAI-001', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 85 }] },
+      { sku: 'PAI-001', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceMillicents: 85 }] },
     ]);
   });
 
@@ -111,7 +111,7 @@ describe('toLines', () => {
         ]),
       ),
     ).toEqual([
-      { sku: 'PAI-002', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+      { sku: 'PAI-002', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceMillicents: 80 }] },
     ]);
   });
 

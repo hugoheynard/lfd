@@ -134,7 +134,7 @@
                 <div class="node node-article">
                   <span class="article-name">{{ item.name }}</span>
                   <span class="article-meta"
-                    >{{ item.sku }} · {{ euros(item.canonicalCents) }}</span
+                    >{{ item.sku }} · {{ euros(item.canonicalMillicents) }}</span
                   >
                 </div>
               </div>
@@ -256,17 +256,17 @@
                    unités au même poids : il choisit celle qu'il annonce. -->
               <div class="cell col-room" [style.gridRow]="row + 1">
                 @if (item.negotiationRoom; as room) {
-                  <div class="node node-room" [class.is-spent]="room.maxDiscountCents === 0">
+                  <div class="node node-room" [class.is-spent]="room.maxDiscountMillicents === 0">
                     <div class="room-values">
                       <span class="room-value">{{ roomEuros(room) }}</span>
                       <span class="room-sep">·</span>
                       <span class="room-value">{{ roomPercent(room) }}</span>
                     </div>
                     <span class="room-note">
-                      @if (room.maxDiscountCents === 0) {
+                      @if (room.maxDiscountMillicents === 0) {
                         déjà au plancher
                       } @else {
-                        jusqu'à {{ euros(room.floorCents) }}
+                        jusqu'à {{ euros(room.floorMillicents) }}
                       }
                     </span>
                   </div>

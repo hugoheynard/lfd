@@ -15,8 +15,8 @@ export const MAX_PROBES = 8;
 /** Une quantité sondée, et ce que le serveur a répondu pour elle. */
 export interface BenchRow {
   readonly quantity: number;
-  readonly canonicalCents: number;
-  readonly unitPriceCents: number;
+  readonly canonicalMillicents: number;
+  readonly unitPriceMillicents: number;
   readonly totalCents: number;
   /** L'écart au tarif de liste, en points de base. Négatif = une hausse. */
   readonly discountBp: number;
@@ -56,21 +56,21 @@ export function probeQuantities(
  * mercuriale plus chère que le catalogue depuis que le PIM a baissé. Écraser ce
  * cas à zéro cacherait exactement ce qu'on est venu chercher.
  */
-export function variationBp(canonicalCents: number, unitPriceCents: number): number {
-  if (canonicalCents <= 0) {
+export function variationBp(canonicalMillicents: number, unitPriceMillicents: number): number {
+  if (canonicalMillicents <= 0) {
     return 0;
   }
-  return Math.round(((canonicalCents - unitPriceCents) / canonicalCents) * 10_000);
+  return Math.round(((canonicalMillicents - unitPriceMillicents) / canonicalMillicents) * 10_000);
 }
 
 /** La réponse du serveur pour une quantité → une ligne du banc. */
 export function benchRow(line: OrderQuoteLineView): BenchRow {
   return {
     quantity: line.quantity,
-    canonicalCents: line.canonicalCents,
-    unitPriceCents: line.unitPriceCents,
-    totalCents: line.unitPriceCents * line.quantity,
-    discountBp: variationBp(line.canonicalCents, line.unitPriceCents),
+    canonicalMillicents: line.canonicalMillicents,
+    unitPriceMillicents: line.unitPriceMillicents,
+    totalCents: line.unitPriceMillicents * line.quantity,
+    discountBp: variationBp(line.canonicalMillicents, line.unitPriceMillicents),
     line,
   };
 }
@@ -87,6 +87,6 @@ export function stepDownCents(rows: readonly BenchRow[], index: number): number 
   if (previous === undefined || current === undefined) {
     return null;
   }
-  const gap = previous.unitPriceCents - current.unitPriceCents;
+  const gap = previous.unitPriceMillicents - current.unitPriceMillicents;
   return gap === 0 ? null : gap;
 }

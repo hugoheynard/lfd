@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { categoryMix, planRatios, shareAt, type MixArticle } from '../mercuriale-mix';
 
-const basis = { catalogCents: 100, floorCents: null };
+const basis = { catalogCents: 100, floorMillicents: null };
 
 function article(overrides: Partial<MixArticle>): MixArticle {
   return {
@@ -10,7 +10,7 @@ function article(overrides: Partial<MixArticle>): MixArticle {
     categoryName: 'Pains',
     sku: 'baguette',
     basis,
-    tiers: [{ minQuantity: 1, unitPriceCents: 90 }],
+    tiers: [{ minQuantity: 1, unitPriceMillicents: 90 }],
     plannedVolume: 1_000,
     ...overrides,
   };
@@ -53,8 +53,8 @@ describe('categoryMix', () => {
     expect(categoryMix([article({})], [1]).hasTier).toBe(false);
     const laddered = article({
       tiers: [
-        { minQuantity: 1, unitPriceCents: 90 },
-        { minQuantity: 500, unitPriceCents: 80 },
+        { minQuantity: 1, unitPriceMillicents: 90 },
+        { minQuantity: 500, unitPriceMillicents: 80 },
       ],
     });
     expect(categoryMix([laddered], [1]).hasTier).toBe(true);
@@ -78,8 +78,8 @@ describe('categoryMix', () => {
     const laddered = article({
       sku: 'a',
       tiers: [
-        { minQuantity: 1, unitPriceCents: 90 },
-        { minQuantity: 600, unitPriceCents: 40 },
+        { minQuantity: 1, unitPriceMillicents: 90 },
+        { minQuantity: 600, unitPriceMillicents: 40 },
       ],
     });
     const flat = article({ sku: 'b', categoryId: 'v', categoryName: 'V' });
@@ -113,20 +113,20 @@ describe('categoryMix · ce qui est lâché', () => {
   });
 
   it('rend une concession NÉGATIVE au-dessus du catalogue, sans la masquer', () => {
-    const above = article({ tiers: [{ minQuantity: 1, unitPriceCents: 130 }] });
+    const above = article({ tiers: [{ minQuantity: 1, unitPriceMillicents: 130 }] });
     // La nier ici la ferait disparaître du total ; c'est l'anneau qui l'écarte.
     expect(categoryMix([above], [1]).concededCents).toBeLessThan(0);
   });
 
   it('la part de la remise ne suit PAS la part du chiffre', () => {
     // Le cas qui justifie les deux anneaux : un petit rayon très remisé.
-    const big = article({ sku: 'a', tiers: [{ minQuantity: 1, unitPriceCents: 99 }] });
+    const big = article({ sku: 'a', tiers: [{ minQuantity: 1, unitPriceMillicents: 99 }] });
     const small = article({
       sku: 'b',
       categoryId: 'v',
       categoryName: 'V',
       plannedVolume: 100,
-      tiers: [{ minQuantity: 1, unitPriceCents: 40 }],
+      tiers: [{ minQuantity: 1, unitPriceMillicents: 40 }],
     });
     const mix = categoryMix([big, small], [1]);
     const revenueShare = (mix.categories[1]?.revenueByRatio[0] ?? 0) / mix.plannedCents;

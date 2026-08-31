@@ -26,9 +26,9 @@ export interface MercurialeRow {
   /** Ce qui est saisi, en centimes. `null` = pas de prix sur cet article. */
   readonly mercurialeCents: number | null;
   /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
-  readonly floorCents: number | null;
+  readonly floorMillicents: number | null;
   /** Le prix réellement facturé : la saisie, relevée par la limite. */
-  readonly finalCents: number | null;
+  readonly finalMillicents: number | null;
   /** La limite a-t-elle **relevé** le prix saisi ? */
   readonly floored: boolean;
   /** Ce qu'un commercial peut encore lâcher. `null` sans limite posée. */
@@ -46,21 +46,24 @@ export interface MercurialeRow {
 }
 
 /** La limite d'un article, en centimes, quelle que soit sa forme. */
-export function floorCentsOf(floor: PriceFloorView | null, canonicalCents: number): number | null {
+export function floorCentsOf(
+  floor: PriceFloorView | null,
+  canonicalMillicents: number,
+): number | null {
   if (floor === null) {
     return null;
   }
   return floor.mode === 'amount'
     ? floor.value
-    : Math.round((canonicalCents * floor.value) / 10_000);
+    : Math.round((canonicalMillicents * floor.value) / 10_000);
 }
 
 /** L'écart au tarif catalogue, signé — positif = moins cher que le catalogue. */
-export function impactBp(catalogCents: number, finalCents: number): number | null {
+export function impactBp(catalogCents: number, finalMillicents: number): number | null {
   if (catalogCents <= 0) {
     return null;
   }
-  return Math.round(((catalogCents - finalCents) / catalogCents) * 10_000);
+  return Math.round(((catalogCents - finalMillicents) / catalogCents) * 10_000);
 }
 
 /**
@@ -71,19 +74,19 @@ export function impactBp(catalogCents: number, finalCents: number): number | nul
  * porte aucune décision, et afficher un prix final la ferait passer pour tarifée.
  */
 export function mercurialeRow(
-  item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalCents' | 'effectiveFloor'>,
+  item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'effectiveFloor'>,
   mercurialeCents: number | null,
   benchmark: MercurialeBenchmarkView | null = null,
 ): MercurialeRow {
-  const floorCents = floorCentsOf(item.effectiveFloor, item.canonicalCents);
+  const floorMillicents = floorCentsOf(item.effectiveFloor, item.canonicalMillicents);
   if (mercurialeCents === null) {
     return {
       sku: item.sku,
       name: item.name,
-      catalogCents: item.canonicalCents,
+      catalogCents: item.canonicalMillicents,
       mercurialeCents: null,
-      floorCents,
-      finalCents: null,
+      floorMillicents,
+      finalMillicents: null,
       floored: false,
       roomCents: null,
       impactBp: null,
@@ -91,31 +94,31 @@ export function mercurialeRow(
       versusMarket: null,
     };
   }
-  const floored = floorCents !== null && mercurialeCents < floorCents;
-  const finalCents = floored && floorCents !== null ? floorCents : mercurialeCents;
+  const floored = floorMillicents !== null && mercurialeCents < floorMillicents;
+  const finalMillicents = floored && floorMillicents !== null ? floorMillicents : mercurialeCents;
   return {
     sku: item.sku,
     name: item.name,
-    catalogCents: item.canonicalCents,
+    catalogCents: item.canonicalMillicents,
     mercurialeCents,
-    floorCents,
-    finalCents,
+    floorMillicents,
+    finalMillicents,
     floored,
     // Bornée à zéro : un prix déjà relevé au plancher n'a pas de marge négative,
     // il en a zéro — ce qui est une information, pas la même chose qu'une absence.
-    roomCents: floorCents === null ? null : Math.max(0, finalCents - floorCents),
-    impactBp: impactBp(item.canonicalCents, finalCents),
+    roomCents: floorMillicents === null ? null : Math.max(0, finalMillicents - floorMillicents),
+    impactBp: impactBp(item.canonicalMillicents, finalMillicents),
     benchmark,
-    versusMarket: benchmark === null ? null : versus(finalCents, benchmark.medianCents),
+    versusMarket: benchmark === null ? null : versus(finalMillicents, benchmark.medianMillicents),
   };
 }
 
 /** Le prix saisi, situé par rapport à la médiane du marché. */
-function versus(finalCents: number, medianCents: number): 'under' | 'over' | 'at' {
-  if (finalCents === medianCents) {
+function versus(finalMillicents: number, medianMillicents: number): 'under' | 'over' | 'at' {
+  if (finalMillicents === medianMillicents) {
     return 'at';
   }
-  return finalCents < medianCents ? 'under' : 'over';
+  return finalMillicents < medianMillicents ? 'under' : 'over';
 }
 
 /**
@@ -126,7 +129,7 @@ function versus(finalCents: number, medianCents: number): 'under' | 'over' | 'at
  * la limite et la marge se jugent sur ce qu'un petit client paie.
  */
 export function entryCents(tiers: readonly TemplateTierPayload[]): number | null {
-  return tiers[0]?.unitPriceCents ?? null;
+  return tiers[0]?.unitPriceMillicents ?? null;
 }
 
 /** Ce que la grille pèse : combien d'articles tarifés, combien relevés au plancher. */

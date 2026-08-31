@@ -136,7 +136,7 @@ export function restoreLines(
     lines.push({
       sku: item.sku,
       name: item.name,
-      unitPriceCents: item.unitPriceCents,
+      unitPriceMillicents: item.unitPriceMillicents,
       quantity: line.quantity,
     });
   }

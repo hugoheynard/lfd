@@ -26,11 +26,11 @@ import {
  * chose. C'est le fil de ce fichier.
  */
 
-function item(canonicalCents: number, finalCents: number): PricingItemView {
+function item(canonicalMillicents: number, finalMillicents: number): PricingItemView {
   return {
     sku: 'VIE-001',
     name: 'Croissant',
-    canonicalCents,
+    canonicalMillicents,
     ownFloor: null,
     effectiveFloor: null,
     rules: [],
@@ -40,7 +40,7 @@ function item(canonicalCents: number, finalCents: number): PricingItemView {
     steps: [],
     floored: false,
     clampedToZero: false,
-    finalCents,
+    finalMillicents,
     volumeTiers: [],
     elasticity: null,
     negotiationRoom: null,
@@ -49,8 +49,8 @@ function item(canonicalCents: number, finalCents: number): PricingItemView {
 
 function elasticity(isoRevenueRatioBp: number | null): ItemElasticityView {
   return {
-    fromCents: 200,
-    toCents: 160,
+    fromMillicents: 200,
+    toMillicents: 160,
     isoRevenueRatioBp,
     sinceChange: null,
     rolling: comparison(9_000),

@@ -126,7 +126,7 @@
                     <span class="item-name">{{ row.name }}</span>
                     <span class="item-meta">{{ row.categoryName }}</span>
                   </th>
-                  <td class="num strong">{{ euros(row.finalCents) }}</td>
+                  <td class="num strong">{{ euros(row.finalMillicents) }}</td>
                   <td>
                     @if (row.tiers.length === 0) {
                       <span class="muted">—</span>
@@ -135,7 +135,7 @@
                         @for (tier of row.tiers; track tier.minQuantity) {
                           <li class="tier">
                             <span class="tier-qty">{{ tier.minQuantity }}+</span>
-                            <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                            <span class="tier-price">{{ euros(tier.unitPriceMillicents) }}</span>
                           </li>
                         }
                       </ul>
@@ -187,7 +187,7 @@
                       <span class="item-meta">{{ item.categoryName }}</span>
                     </th>
                     <td class="num side">
-                      {{ euros(item.fromCents) }}
+                      {{ euros(item.fromMillicents) }}
                       <!-- Les paliers du PREMIER marqueur : un barème naît et meurt
                            comme le reste, et ne montrer que ceux d'aujourd'hui ferait
                            lire une baisse sans voir le barème disparu avec. -->
@@ -196,7 +196,7 @@
                           @for (tier of tiers; track tier.minQuantity) {
                             <li class="tier">
                               <span class="tier-qty">{{ tier.minQuantity }}+</span>
-                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceMillicents) }}</span>
                             </li>
                           }
                         </ul>
@@ -206,13 +206,13 @@
                       <span>{{ percent(item.priceVariationBp) }}</span>
                     </td>
                     <td class="num side strong">
-                      {{ euros(item.toCents) }}
+                      {{ euros(item.toMillicents) }}
                       @if (item.toTiers; as tiers) {
                         <ul class="tiers">
                           @for (tier of tiers; track tier.minQuantity) {
                             <li class="tier">
                               <span class="tier-qty">{{ tier.minQuantity }}+</span>
-                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceMillicents) }}</span>
                             </li>
                           }
                         </ul>

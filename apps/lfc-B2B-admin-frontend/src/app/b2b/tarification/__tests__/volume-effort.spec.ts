@@ -32,8 +32,8 @@ function comparison(over: Partial<ElasticityComparison> = {}): ElasticityCompari
 
 function elasticity(over: Partial<ItemElasticityView> = {}): ItemElasticityView {
   return {
-    fromCents: 200,
-    toCents: 160,
+    fromMillicents: 200,
+    toMillicents: 160,
     isoRevenueRatioBp: 12_500,
     sinceChange: comparison(),
     rolling: comparison(),

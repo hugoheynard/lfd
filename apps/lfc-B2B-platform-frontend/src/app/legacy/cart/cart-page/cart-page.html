@@ -13,7 +13,7 @@
         <div class="line-group">
           <lfd-cart-row
             [name]="line.product.name"
-            [unitPriceCents]="cents(line.unitPriceEur)"
+            [unitPriceMillicents]="cents(line.unitPriceEur)"
             [quantity]="line.qty"
             [unit]="line.product.unit ?? ''"
             [image]="line.product.image ?? null"

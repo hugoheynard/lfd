@@ -12,15 +12,15 @@ import {
   type Scenario,
 } from '../revenue-model';
 
-const basis: ArticleBasis = { catalogCents: 100, floorCents: null };
+const basis: ArticleBasis = { catalogCents: 100, floorMillicents: null };
 
 const ladder: Scenario = {
   id: 'paliers',
   label: 'Paliers',
   tiers: [
-    { minQuantity: 1, unitPriceCents: 90 },
-    { minQuantity: 100, unitPriceCents: 80 },
-    { minQuantity: 500, unitPriceCents: 70 },
+    { minQuantity: 1, unitPriceMillicents: 90 },
+    { minQuantity: 100, unitPriceMillicents: 80 },
+    { minQuantity: 500, unitPriceMillicents: 70 },
   ],
 };
 
@@ -36,14 +36,14 @@ describe('unitPriceCentsAt', () => {
     const late: Scenario = {
       id: 'tardif',
       label: 'Tardif',
-      tiers: [{ minQuantity: 500, unitPriceCents: 70 }],
+      tiers: [{ minQuantity: 500, unitPriceMillicents: 70 }],
     };
     expect(unitPriceCentsAt(late, basis, 499)).toBe(100);
     expect(unitPriceCentsAt(late, basis, 500)).toBe(70);
   });
 
   it('la limite relève le palier, comme à la caisse', () => {
-    const floored: ArticleBasis = { catalogCents: 100, floorCents: 85 };
+    const floored: ArticleBasis = { catalogCents: 100, floorMillicents: 85 };
     expect(unitPriceCentsAt(ladder, floored, 10_000)).toBe(85);
   });
 });
@@ -67,7 +67,7 @@ describe('revenueCentsAt', () => {
     const fixed: Scenario = {
       id: 'fixe',
       label: 'Fixe',
-      tiers: [{ minQuantity: 1, unitPriceCents: 75 }],
+      tiers: [{ minQuantity: 1, unitPriceMillicents: 75 }],
     };
     expect(revenueCentsAt(fixed, basis, 1_000)).toBe(75_000);
   });
@@ -109,8 +109,8 @@ describe('fixedScenario', () => {
   });
 
   it('la limite relève un prix fixe trop bas, comme à la caisse', () => {
-    const floored = fixedScenario(60, { catalogCents: 100, floorCents: 85 });
-    expect(floored.tiers[0]?.unitPriceCents).toBe(85);
+    const floored = fixedScenario(60, { catalogCents: 100, floorMillicents: 85 });
+    expect(floored.tiers[0]?.unitPriceMillicents).toBe(85);
   });
 });
 

@@ -3,9 +3,9 @@ import type { OrderQuoteLineView } from '@lfd/contracts';
 
 import { benchRow, probeQuantities, stepDownCents, variationBp } from '../quote-bench';
 
-const tier = (minQuantity: number, unitPriceCents: number) => ({
+const tier = (minQuantity: number, unitPriceMillicents: number) => ({
   minQuantity,
-  unitPriceCents,
+  unitPriceMillicents,
   discountBp: 0,
 });
 
@@ -51,8 +51,8 @@ describe('variationBp', () => {
 const line = (over: Partial<OrderQuoteLineView>): OrderQuoteLineView => ({
   sku: 'VIE-001',
   productName: 'Croissant',
-  canonicalCents: 200,
-  unitPriceCents: 200,
+  canonicalMillicents: 200,
+  unitPriceMillicents: 200,
   quantity: 1,
   vatRate: 5.5,
   steps: [],
@@ -60,13 +60,13 @@ const line = (over: Partial<OrderQuoteLineView>): OrderQuoteLineView => ({
   sealedByRuleId: null,
   sealedRuleIds: [],
   volumeTiers: null,
-  floorCents: null,
+  floorMillicents: null,
   ...over,
 });
 
 describe('benchRow', () => {
   it('multiplie le prix RÉSOLU, jamais le canonique', () => {
-    const row = benchRow(line({ quantity: 10, unitPriceCents: 180 }));
+    const row = benchRow(line({ quantity: 10, unitPriceMillicents: 180 }));
 
     expect(row.totalCents).toBe(1800);
     expect(row.discountBp).toBe(1000);
@@ -75,9 +75,9 @@ describe('benchRow', () => {
 
 describe('stepDownCents', () => {
   const rows = [
-    benchRow(line({ quantity: 1, unitPriceCents: 200 })),
-    benchRow(line({ quantity: 10, unitPriceCents: 180 })),
-    benchRow(line({ quantity: 11, unitPriceCents: 180 })),
+    benchRow(line({ quantity: 1, unitPriceMillicents: 200 })),
+    benchRow(line({ quantity: 10, unitPriceMillicents: 180 })),
+    benchRow(line({ quantity: 11, unitPriceMillicents: 180 })),
   ];
 
   it('mesure la marche par rapport à la quantité précédente', () => {

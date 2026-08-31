@@ -98,11 +98,11 @@ export function toLines(grid: DraftGrid, volumes: PlannedVolumes): readonly Temp
         return [];
       }
       const minQuantity = Number.parseInt(tier.minQuantity, 10);
-      const unitPriceCents = centsOf(tier.unitPrice);
-      if (Number.isNaN(minQuantity) || minQuantity <= 0 || unitPriceCents === null) {
+      const unitPriceMillicents = centsOf(tier.unitPrice);
+      if (Number.isNaN(minQuantity) || minQuantity <= 0 || unitPriceMillicents === null) {
         return [null];
       }
-      return [{ minQuantity, unitPriceCents }];
+      return [{ minQuantity, unitPriceMillicents }];
     });
     return built.length === 0 || built.some((tier) => tier === null)
       ? []
@@ -132,7 +132,7 @@ export function draftFromLines(
       line.sku,
       line.tiers.map((tier) => ({
         minQuantity: String(tier.minQuantity),
-        unitPrice: eurosField(tier.unitPriceCents),
+        unitPrice: eurosField(tier.unitPriceMillicents),
       })),
     ]),
   );

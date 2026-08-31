@@ -91,7 +91,7 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
   return {
     sku: 'VIE-001',
     name: 'Croissant',
-    canonicalCents: 200,
+    canonicalMillicents: 200,
     ownFloor: null,
     effectiveFloor: null,
     rules: [],
@@ -101,7 +101,7 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
     steps: [],
     floored: false,
     clampedToZero: false,
-    finalCents: 200,
+    finalMillicents: 200,
     volumeTiers: [],
     elasticity: null,
     negotiationRoom: null,
@@ -182,8 +182,8 @@ describe('les compteurs de tête', () => {
 
   it("compte les articles qu'au moins un étage a touchés", async () => {
     const touche = item({
-      steps: [{ stage: 'promotion', ruleId: 'rule_1', label: 'Promo', resultCents: 180 }],
-      finalCents: 180,
+      steps: [{ stage: 'promotion', ruleId: 'rule_1', label: 'Promo', resultMillicents: 180 }],
+      finalMillicents: 180,
     });
     const screen = page({ ...EMPTY_BOARD, categories: [category({ items: [touche, item()] })] });
     await screen['load']();
@@ -193,7 +193,7 @@ describe('les compteurs de tête', () => {
 });
 
 describe('la remise accordable', () => {
-  const room = { floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 };
+  const room = { floorMillicents: 150_000, maxDiscountMillicents: 50_000, maxDiscountBp: 2_500 };
 
   /**
    * Les deux unités sont rendues séparément et au même poids : le commercial

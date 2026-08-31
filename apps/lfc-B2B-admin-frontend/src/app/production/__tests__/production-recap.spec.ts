@@ -23,7 +23,7 @@ function sheet(orderNumber: string, lines: [string, string, number][]): Producti
 }
 
 function item(sku: string, category: CatalogItemView['category']): CatalogItemView {
-  return { sku, name: sku, unitPriceCents: 100, vatRate: 5.5, category };
+  return { sku, name: sku, unitPriceMillicents: 100, vatRate: 5.5, category };
 }
 
 const CATALOGUE: readonly CatalogItemView[] = [

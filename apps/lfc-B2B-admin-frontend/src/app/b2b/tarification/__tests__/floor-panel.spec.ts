@@ -34,7 +34,7 @@ const DATA: FloorPanelData = {
   target: 'Viennoiseries',
   current: FLOOR,
   inherited: null,
-  canonicalCents: 200,
+  canonicalMillicents: 200,
 };
 
 function mount(

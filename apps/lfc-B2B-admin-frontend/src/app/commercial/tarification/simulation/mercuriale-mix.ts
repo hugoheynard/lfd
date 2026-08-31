@@ -207,8 +207,8 @@ export function mixArticlesOf(
       categoryName: category.name,
       sku: item.sku,
       basis: {
-        catalogCents: item.canonicalCents,
-        floorCents: floorCentsOf(item.effectiveFloor, item.canonicalCents),
+        catalogCents: item.canonicalMillicents,
+        floorMillicents: floorCentsOf(item.effectiveFloor, item.canonicalMillicents),
       },
       tiers: tiersBySku.get(item.sku) ?? [],
       plannedVolume: volumes.get(item.sku) ?? 0,

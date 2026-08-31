@@ -17,11 +17,13 @@ const floor = (over: Partial<PriceFloorView>): PriceFloorView =>
   }) as PriceFloorView;
 
 const item = (
-  over: Partial<Pick<PricingItemView, 'sku' | 'name' | 'canonicalCents' | 'effectiveFloor'>> = {},
+  over: Partial<
+    Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'effectiveFloor'>
+  > = {},
 ) => ({
   sku: 'PAI-001',
   name: 'Baguette',
-  canonicalCents: 100,
+  canonicalMillicents: 100,
   effectiveFloor: null,
   ...over,
 });
@@ -48,7 +50,12 @@ describe('mercurialeRow', () => {
   it('sans limite, le prix final est le prix saisi', () => {
     const row = mercurialeRow(item(), 80);
 
-    expect(row).toMatchObject({ finalCents: 80, floored: false, roomCents: null, impactBp: 2000 });
+    expect(row).toMatchObject({
+      finalMillicents: 80,
+      floored: false,
+      roomCents: null,
+      impactBp: 2000,
+    });
   });
 
   /**
@@ -60,7 +67,7 @@ describe('mercurialeRow', () => {
   it('la limite RELÈVE un prix négocié trop bas, et le dit', () => {
     const row = mercurialeRow(item({ effectiveFloor: floor({ value: 70 }) }), 60);
 
-    expect(row.finalCents).toBe(70);
+    expect(row.finalMillicents).toBe(70);
     expect(row.floored).toBe(true);
     // Relevé au plancher : la marge est de zéro, pas absente.
     expect(row.roomCents).toBe(0);
@@ -80,13 +87,13 @@ describe('mercurialeRow', () => {
 
     expect(row).toMatchObject({
       mercurialeCents: null,
-      finalCents: null,
+      finalMillicents: null,
       roomCents: null,
       impactBp: null,
       floored: false,
     });
     // La limite, elle, reste affichée : elle existe indépendamment du gabarit.
-    expect(row.floorCents).toBe(70);
+    expect(row.floorMillicents).toBe(70);
   });
 });
 
@@ -94,8 +101,8 @@ describe('entryCents', () => {
   it('prend le prix du plus petit palier, pas le plus flatteur', () => {
     expect(
       entryCents([
-        { minQuantity: 1, unitPriceCents: 85 },
-        { minQuantity: 10_000, unitPriceCents: 78 },
+        { minQuantity: 1, unitPriceMillicents: 85 },
+        { minQuantity: 10_000, unitPriceMillicents: 78 },
       ]),
     ).toBe(85);
   });
@@ -124,15 +131,15 @@ describe('tally', () => {
 describe('mercurialeRow · la médiane du marché', () => {
   const market = {
     sku: 'baguette',
-    medianCents: 120,
-    lowCents: 100,
-    highCents: 160,
+    medianMillicents: 120,
+    lowMillicents: 100,
+    highMillicents: 160,
     companyCount: 5,
   };
   const item = {
     sku: 'baguette',
     name: 'Baguette',
-    canonicalCents: 200,
+    canonicalMillicents: 200,
     effectiveFloor: null,
   };
 

@@ -89,8 +89,8 @@ export class GabaritsPage {
     this.opened.set(this.opened() === id ? null : id);
   }
 
-  protected gap(catalogPriceCents: number | null, unitPriceCents: number): number | null {
-    return gapToCatalogBp(catalogPriceCents, unitPriceCents);
+  protected gap(catalogPriceMillicents: number | null, unitPriceMillicents: number): number | null {
+    return gapToCatalogBp(catalogPriceMillicents, unitPriceMillicents);
   }
 
   /** Le signe se dit en toutes lettres : « −20 % » et « +4 % » ne se lisent pas pareil. */

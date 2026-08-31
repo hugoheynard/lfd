@@ -6,8 +6,8 @@ import { MAX_POINTS, projectionLevels, scenarioOf, volumeOf } from '../commitmen
 /** Une grille de prix : 200 c en dessous de 500 cumulés, 160 c au-dessus. */
 const point = (cumulativeQuantity: number): PriceProjectionPointView => ({
   cumulativeQuantity,
-  canonicalCents: 200,
-  unitPriceCents: cumulativeQuantity >= 500 ? 160 : 200,
+  canonicalMillicents: 200,
+  unitPriceMillicents: cumulativeQuantity >= 500 ? 160 : 200,
   steps: [],
   floored: false,
 });
@@ -53,14 +53,14 @@ describe('scenarioOf', () => {
         index: 1,
         quantity: 500,
         cumulativeQuantity: 500,
-        unitPriceCents: 160,
+        unitPriceMillicents: 160,
         lineTotalCents: 80_000,
       },
       {
         index: 2,
         quantity: 500,
         cumulativeQuantity: 1000,
-        unitPriceCents: 160,
+        unitPriceMillicents: 160,
         lineTotalCents: 80_000,
       },
     ]);
@@ -69,8 +69,8 @@ describe('scenarioOf', () => {
   it("laisse la première échéance au tarif d'entrée quand elle n'atteint pas le palier", () => {
     const scenario = scenarioOf(600, 10_000, 2, grid([300, 600]));
 
-    expect(scenario?.installments[0]?.unitPriceCents).toBe(200);
-    expect(scenario?.installments[1]?.unitPriceCents).toBe(160);
+    expect(scenario?.installments[0]?.unitPriceMillicents).toBe(200);
+    expect(scenario?.installments[1]?.unitPriceMillicents).toBe(160);
     // 300 × 2,00 € + 300 × 1,60 € = 1 080 €.
     expect(scenario?.totalCents).toBe(108_000);
   });

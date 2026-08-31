@@ -89,32 +89,35 @@
                       <span class="item-meta">{{ line.sku }}</span>
                     </th>
                     <td class="num">
-                      @if (line.catalogPriceCents === null) {
+                      @if (line.catalogPriceMillicents === null) {
                         <!-- Le PIM ne pousse plus cet article : la ligne existe
                              encore, mais elle ne vise plus rien. Le dire vaut
                              mieux qu'un tiret qu'on prend pour zéro. -->
                         <span class="muted">hors catalogue</span>
                       } @else {
-                        {{ euros(line.catalogPriceCents) }}
+                        {{ euros(line.catalogPriceMillicents) }}
                       }
                     </td>
                     <td>
                       @if (isFlatPrice(line.tiers)) {
-                        <span class="flat">{{ euros(line.tiers[0]!.unitPriceCents) }}</span>
+                        <span class="flat">{{ euros(line.tiers[0]!.unitPriceMillicents) }}</span>
                         <span class="muted">prix fixe</span>
                       } @else {
                         <ul class="tiers">
                           @for (tier of line.tiers; track tier.minQuantity) {
                             <li class="tier">
                               <span class="tier-qty">{{ tier.minQuantity }}+</span>
-                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceMillicents) }}</span>
                             </li>
                           }
                         </ul>
                       }
                     </td>
                     <td class="num">
-                      @if (gap(line.catalogPriceCents, entryPriceCents(line.tiers)); as delta) {
+                      @if (
+                        gap(line.catalogPriceMillicents, entryPriceCents(line.tiers));
+                        as delta
+                      ) {
                         <span class="delta" [class]="'is-' + direction(delta)">
                           {{ percent(delta) }}
                         </span>

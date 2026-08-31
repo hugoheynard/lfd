@@ -46,7 +46,7 @@
 /** Un palier : à partir de cette quantité cumulée, ce prix unitaire. */
 export interface ScenarioTier {
   readonly minQuantity: number;
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
 }
 
 /** Une manière d'arriver au prix. Le prix fixe est la grille à un seul palier. */
@@ -59,7 +59,7 @@ export interface Scenario {
 /** Ce qui ne dépend pas du scénario : le tarif d'entrée, et ce qui borne en bas. */
 export interface ArticleBasis {
   readonly catalogCents: number;
-  readonly floorCents: number | null;
+  readonly floorMillicents: number | null;
 }
 
 export interface CurvePoint {
@@ -88,8 +88,8 @@ export function unitPriceCentsAt(
       winner = tier;
     }
   }
-  const raw = winner === null ? basis.catalogCents : winner.unitPriceCents;
-  return basis.floorCents === null ? raw : Math.max(raw, basis.floorCents);
+  const raw = winner === null ? basis.catalogCents : winner.unitPriceMillicents;
+  return basis.floorMillicents === null ? raw : Math.max(raw, basis.floorMillicents);
 }
 
 /**
@@ -143,11 +143,16 @@ function breakpoints(scenario: Scenario): readonly number[] {
  * La limite s'applique ici aussi : un prix fixe sous le plancher serait une offre
  * que la caisse relèverait, et la courbe la montrerait tenue.
  */
-export function fixedScenario(unitPriceCents: number, basis: ArticleBasis): Scenario {
+export function fixedScenario(unitPriceMillicents: number, basis: ArticleBasis): Scenario {
   return {
     id: 'fixe',
     label: 'Prix fixe',
-    tiers: [{ minQuantity: 1, unitPriceCents: Math.max(unitPriceCents, basis.floorCents ?? 0) }],
+    tiers: [
+      {
+        minQuantity: 1,
+        unitPriceMillicents: Math.max(unitPriceMillicents, basis.floorMillicents ?? 0),
+      },
+    ],
   };
 }
 

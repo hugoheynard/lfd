@@ -64,7 +64,7 @@ describe('la règle sur son nœud', () => {
   });
 
   it('dit un prix posé comme un prix, pas comme une remise', () => {
-    const posed = rule({ effect: { nature: 'replace', amountCents: 180 } });
+    const posed = rule({ effect: { nature: 'replace', amountMillicents: 180_000 } });
 
     // `formatEuros` sépare le montant de l'unité par une espace INSÉCABLE :
     // l'assertion porte sur le nombre, pas sur la façon dont l'espace est codée.

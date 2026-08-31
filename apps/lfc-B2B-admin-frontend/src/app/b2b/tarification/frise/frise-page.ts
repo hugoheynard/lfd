@@ -26,8 +26,8 @@ interface SnapshotRow {
   readonly sku: string;
   readonly name: string;
   readonly categoryName: string;
-  readonly finalCents: number;
-  readonly tiers: readonly { readonly minQuantity: number; readonly unitPriceCents: number }[];
+  readonly finalMillicents: number;
+  readonly tiers: readonly { readonly minQuantity: number; readonly unitPriceMillicents: number }[];
 }
 
 /**
@@ -195,10 +195,10 @@ export class FrisePage {
         sku: item.sku,
         name: item.name,
         categoryName: category.name,
-        finalCents: item.finalCents,
+        finalMillicents: item.finalMillicents,
         tiers: (item.volumeTiers ?? []).map((tier) => ({
           minQuantity: tier.minQuantity,
-          unitPriceCents: tier.unitPriceCents,
+          unitPriceMillicents: tier.unitPriceMillicents,
         })),
       })),
     );
@@ -208,7 +208,7 @@ export class FrisePage {
   protected readonly moved = computed<readonly PricingComparisonItemView[]>(() => {
     const items = this.comparison()?.items ?? [];
     return [...items]
-      .filter((item) => item.fromCents !== item.toCents)
+      .filter((item) => item.fromMillicents !== item.toMillicents)
       .sort(
         (left, right) =>
           Math.abs(right.priceVariationBp ?? 0) - Math.abs(left.priceVariationBp ?? 0),

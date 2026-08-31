@@ -33,7 +33,7 @@ export interface FloorPanelData {
   /** Celle qui s'applique aujourd'hui — la sienne, ou celle dont elle hérite. */
   readonly inherited: PriceFloorView | null;
   /** Le prix canonique, pour montrer ce qu'une fraction donnerait. `null` sur une famille. */
-  readonly canonicalCents: number | null;
+  readonly canonicalMillicents: number | null;
 }
 
 /**
@@ -130,7 +130,7 @@ export class FloorPanel {
    * un pourcentage. « 50 % » ne dit rien tant qu'on ne voit pas 1,00 €.
    */
   protected readonly preview = computed(() => {
-    const canonical = this.data()?.canonicalCents ?? null;
+    const canonical = this.data()?.canonicalMillicents ?? null;
     const value = this.amount();
     if (canonical === null || value === null || this.mode() !== 'percent') {
       return null;

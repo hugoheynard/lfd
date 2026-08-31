@@ -20,7 +20,7 @@ import { deltaLabel, isDiscount } from '../pricing-format';
   templateUrl: './final-price.html',
   styleUrl: './final-price.scss',
   host: {
-    '[class.is-changed]': 'item().finalCents !== item().canonicalCents',
+    '[class.is-changed]': 'item().finalMillicents !== item().canonicalMillicents',
     '[class.is-floored]': 'item().floored',
   },
 })

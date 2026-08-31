@@ -159,7 +159,7 @@
                   <!-- L'indicateur sert AVANT de tarifer : c'est là qu'on décide
                        du premier chiffre qu'on annoncera au téléphone. -->
                   @if (row.benchmark; as market) {
-                    <span class="market">marché {{ euros(market.medianCents) }}</span>
+                    <span class="market">marché {{ euros(market.medianMillicents) }}</span>
                   }
                 </button>
               } @else {
@@ -209,9 +209,9 @@
                   -->
                   @if (row.benchmark; as market) {
                     <p class="market" [class]="'is-' + row.versusMarket">
-                      <span class="market-median">marché {{ euros(market.medianCents) }}</span>
+                      <span class="market-median">marché {{ euros(market.medianMillicents) }}</span>
                       <span class="market-spread">
-                        {{ euros(market.lowCents) }} – {{ euros(market.highCents) }} ·
+                        {{ euros(market.lowMillicents) }} – {{ euros(market.highMillicents) }} ·
                         {{ market.companyCount }} client(s)
                       </span>
                     </p>
@@ -229,11 +229,11 @@
             <!-- Colonne 3 — la limite. Elle existe indépendamment du gabarit :
                  elle s'affiche même sur un article non tarifé. -->
             <div class="cell col-limit" [style.gridRow]="rowOf(category.id, index)">
-              @if (row.floorCents === null) {
+              @if (row.floorMillicents === null) {
                 <span class="node node-empty muted">—</span>
               } @else {
                 <span class="node node-guard" [class.is-active]="row.floored">
-                  <span class="guard-value">{{ euros(row.floorCents) }}</span>
+                  <span class="guard-value">{{ euros(row.floorMillicents) }}</span>
                   <span class="guard-meta">{{ row.floored ? 'a relevé' : 'limite' }}</span>
                 </span>
               }
@@ -267,11 +267,11 @@
 
             <!-- Colonne 6 — le prix RÉELLEMENT facturé, limite comprise. -->
             <div class="cell col-final" [style.gridRow]="rowOf(category.id, index)">
-              @if (row.finalCents === null) {
+              @if (row.finalMillicents === null) {
                 <span class="node node-empty muted">tarif B2B</span>
               } @else {
                 <span class="node node-final" [class.is-floored]="row.floored">
-                  <span class="final-value">{{ euros(row.finalCents) }}</span>
+                  <span class="final-value">{{ euros(row.finalMillicents) }}</span>
                   @if (row.floored) {
                     <span class="guard-meta">relevé par la limite</span>
                   }
@@ -289,7 +289,7 @@
                 <app-article-simulation
                   [name]="slot.name"
                   [catalogCents]="slot.catalogCents"
-                  [floorCents]="slot.floorCents"
+                  [floorMillicents]="slot.floorMillicents"
                   [tiers]="simulatedTiers()"
                   [targetVolume]="plannedVolumeOf(slot.sku)"
                   [pierced]="piercing().length > 0"

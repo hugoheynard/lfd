@@ -103,7 +103,7 @@ export class TarificationPage {
 
   /** Les deux unités de la marge, prises sur la vue plutôt que sur deux nombres. */
   protected roomEuros(room: NegotiationRoom): string {
-    return roomEuros(room.maxDiscountCents);
+    return roomEuros(room.maxDiscountMillicents);
   }
 
   protected roomPercent(room: NegotiationRoom): string {
@@ -212,7 +212,7 @@ export class TarificationPage {
       target: 'tout le catalogue',
       current: this.globalFloor(),
       inherited: null,
-      canonicalCents: null,
+      canonicalMillicents: null,
     });
   }
 
@@ -263,7 +263,7 @@ export class TarificationPage {
       target: item.name,
       current: item.ownFloor,
       inherited: item.effectiveFloor,
-      canonicalCents: item.canonicalCents,
+      canonicalMillicents: item.canonicalMillicents,
     });
   }
 
@@ -273,7 +273,7 @@ export class TarificationPage {
       target: category.name,
       current: category.floor,
       inherited: this.board()?.globalFloor ?? null,
-      canonicalCents: null,
+      canonicalMillicents: null,
     });
   }
 

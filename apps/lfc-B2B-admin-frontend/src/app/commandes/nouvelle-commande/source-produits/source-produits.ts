@@ -26,7 +26,7 @@ import {
   type CatalogProduct,
   type CatalogShelf,
 } from '@lfd/b2b-ui/catalog';
-import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
+import { formatCents, formatMillicents, formatOrderDate } from '@lfd/b2b-ui/order';
 
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
@@ -44,7 +44,7 @@ export interface ProposedLine {
    * représentations du même prix, et c'est assumé : formater dans le panier
    * puis reparser à l'addition serait pire.
    */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   /** Une seconde ligne d'écran : « 12 commandes · 480 pcs », « ×24 ». */
   readonly hint: string;
   /** La quantité que la source suggère : 1 au catalogue, celle d'une commande. */
@@ -222,7 +222,7 @@ function matches(item: CatalogItemView, needle: string): boolean {
 function fromCatalog(item: CatalogItemView): ProposedLine {
   return {
     product: toCatalogProduct(item),
-    unitPriceCents: item.unitPriceCents,
+    unitPriceMillicents: item.unitPriceMillicents,
     hint: item.sku,
     quantity: 1,
     available: true,
@@ -238,10 +238,10 @@ function fromHabit(stat: CustomerSkuStat): ProposedLine {
       // Un SKU retiré n'a plus de tarif : afficher le dernier facturé
       // annoncerait un prix qu'on ne tiendra pas. `outOfStock` fait rendre à la
       // rangée son état « indisponible » plutôt qu'un bouton d'ajout.
-      ...(stat.stillAvailable ? { price: formatCents(stat.unitPriceCents) } : {}),
+      ...(stat.stillAvailable ? { price: formatMillicents(stat.unitPriceMillicents) } : {}),
       outOfStock: !stat.stillAvailable,
     },
-    unitPriceCents: stat.unitPriceCents,
+    unitPriceMillicents: stat.unitPriceMillicents,
     hint: `${orders} · ${stat.totalQuantity} pcs · ${formatCents(stat.totalCents)}`,
     // La quantité MOYENNE par commande, arrondie : reprendre le cumul de l'année
     // remplirait le panier de 480 croissants.
@@ -252,8 +252,12 @@ function fromHabit(stat: CustomerSkuStat): ProposedLine {
 
 function fromOrderLine(line: OrderView['lines'][number]): ProposedLine {
   return {
-    product: { id: line.sku, name: line.productName, price: formatCents(line.unitPriceCents) },
-    unitPriceCents: line.unitPriceCents,
+    product: {
+      id: line.sku,
+      name: line.productName,
+      price: formatMillicents(line.unitPriceMillicents),
+    },
+    unitPriceMillicents: line.unitPriceMillicents,
     hint: `×${line.quantity}`,
     quantity: line.quantity,
     available: true,

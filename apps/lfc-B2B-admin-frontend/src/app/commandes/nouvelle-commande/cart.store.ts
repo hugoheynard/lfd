@@ -7,7 +7,7 @@ export interface CartLine {
   readonly sku: string;
   readonly name: string;
   /** Prix unitaire **HT** en centimes, tel que le catalogue le donne. */
-  readonly unitPriceCents: number;
+  readonly unitPriceMillicents: number;
   readonly quantity: number;
 }
 
@@ -59,9 +59,9 @@ export class CartStore {
     const quoted = this.quoted$();
     return this.lines$().map((line) => {
       const billed = quoted.get(line.sku);
-      return billed === undefined || billed === line.unitPriceCents
+      return billed === undefined || billed === line.unitPriceMillicents
         ? { ...line, canonicalPriceCents: null }
-        : { ...line, unitPriceCents: billed, canonicalPriceCents: line.unitPriceCents };
+        : { ...line, unitPriceMillicents: billed, canonicalPriceCents: line.unitPriceMillicents };
     });
   });
 
@@ -73,7 +73,7 @@ export class CartStore {
    * ligne du panier.
    */
   applyQuote(quote: OrderQuoteView): void {
-    this.quoted$.set(new Map(quote.lines.map((line) => [line.sku, line.unitPriceCents])));
+    this.quoted$.set(new Map(quote.lines.map((line) => [line.sku, line.unitPriceMillicents])));
   }
 
   /** Le devis ne vaut plus rien : le panier ou le client a changé. */
@@ -93,7 +93,7 @@ export class CartStore {
    * la classe pour ce qu'il ne contient pas (remise de retrait, zone, TVA).
    */
   readonly subtotalCents = computed(() =>
-    this.pricedLines().reduce((total, line) => total + line.unitPriceCents * line.quantity, 0),
+    this.pricedLines().reduce((total, line) => total + line.unitPriceMillicents * line.quantity, 0),
   );
 
   /** Quantité déjà au panier pour ce SKU — ce que les sources affichent en pastille. */

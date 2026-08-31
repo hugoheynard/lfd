@@ -3,16 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { averageUnderRegime, revenueUnderRegime } from '../pricing-regime';
 import { unitPriceCentsAt, type ArticleBasis, type Scenario } from '../revenue-model';
 
-const basis: ArticleBasis = { catalogCents: 200, floorCents: null };
+const basis: ArticleBasis = { catalogCents: 200, floorMillicents: null };
 
 /** 200 au catalogue, 180 dès 1, 150 dès 1 000, 120 dès 10 000. */
 const ladder: Scenario = {
   id: 'paliers',
   label: 'Paliers',
   tiers: [
-    { minQuantity: 1, unitPriceCents: 180 },
-    { minQuantity: 1_000, unitPriceCents: 150 },
-    { minQuantity: 10_000, unitPriceCents: 120 },
+    { minQuantity: 1, unitPriceMillicents: 180 },
+    { minQuantity: 1_000, unitPriceMillicents: 150 },
+    { minQuantity: 10_000, unitPriceMillicents: 120 },
   ],
 };
 
@@ -50,7 +50,7 @@ describe('revenueUnderRegime · engagement signé', () => {
     const fixed: Scenario = {
       id: 'fixe',
       label: 'Fixe',
-      tiers: [{ minQuantity: 1, unitPriceCents: unitPriceCentsAt(ladder, basis, 10_000) }],
+      tiers: [{ minQuantity: 1, unitPriceMillicents: unitPriceCentsAt(ladder, basis, 10_000) }],
     };
     for (const volume of [1, 2_500, 9_999, 10_000]) {
       expect(revenueUnderRegime(ladder, basis, volume, commitment)).toBe(

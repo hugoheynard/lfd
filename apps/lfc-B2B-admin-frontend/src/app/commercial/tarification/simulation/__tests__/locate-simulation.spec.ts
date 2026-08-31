@@ -7,7 +7,7 @@ function item(sku: string): PricingItemView {
   return {
     sku,
     name: sku.toUpperCase(),
-    canonicalCents: 100,
+    canonicalMillicents: 100,
     ownFloor: null,
     volumeTiers: null,
     effectiveFloor: null,
@@ -18,7 +18,7 @@ function item(sku: string): PricingItemView {
     steps: [],
     floored: false,
     clampedToZero: false,
-    finalCents: 100,
+    finalMillicents: 100,
     negotiationRoom: null,
     elasticity: null,
   };

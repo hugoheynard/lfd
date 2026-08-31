@@ -12,8 +12,8 @@ import {
 const line = (over: Partial<PriceTemplateLineView>): PriceTemplateLineView => ({
   sku: 'PAI-001',
   productName: 'Baguette',
-  catalogPriceCents: 100,
-  tiers: [{ minQuantity: 1, unitPriceCents: 80 }],
+  catalogPriceMillicents: 100,
+  tiers: [{ minQuantity: 1, unitPriceMillicents: 80 }],
   plannedVolume: null,
   ...over,
 });
@@ -21,21 +21,21 @@ const line = (over: Partial<PriceTemplateLineView>): PriceTemplateLineView => ({
 describe('isFlatPrice', () => {
   /** Le point du modèle : un prix fixe EST la grille à un palier, à partir de 1. */
   it('reconnaît le prix fixe dans la grille à un palier depuis 1', () => {
-    expect(isFlatPrice([{ minQuantity: 1, unitPriceCents: 80 }])).toBe(true);
+    expect(isFlatPrice([{ minQuantity: 1, unitPriceMillicents: 80 }])).toBe(true);
   });
 
   it("n'est pas un prix fixe dès qu'il y a deux paliers", () => {
     expect(
       isFlatPrice([
-        { minQuantity: 1, unitPriceCents: 85 },
-        { minQuantity: 10_000, unitPriceCents: 78 },
+        { minQuantity: 1, unitPriceMillicents: 85 },
+        { minQuantity: 10_000, unitPriceMillicents: 78 },
       ]),
     ).toBe(false);
   });
 
   /** Un palier unique posé à 500 n'est pas un prix fixe : en dessous, rien ne s'applique. */
   it("n'est pas un prix fixe si le palier unique ne part pas de 1", () => {
-    expect(isFlatPrice([{ minQuantity: 500, unitPriceCents: 80 }])).toBe(false);
+    expect(isFlatPrice([{ minQuantity: 500, unitPriceMillicents: 80 }])).toBe(false);
   });
 });
 
@@ -56,8 +56,8 @@ describe('entryPriceCents', () => {
   it('prend le prix du plus petit palier', () => {
     expect(
       entryPriceCents([
-        { minQuantity: 1, unitPriceCents: 85 },
-        { minQuantity: 10_000, unitPriceCents: 78 },
+        { minQuantity: 1, unitPriceMillicents: 85 },
+        { minQuantity: 10_000, unitPriceMillicents: 78 },
       ]),
     ).toBe(85);
   });
@@ -68,17 +68,17 @@ describe('averageGapBp', () => {
     expect(
       averageGapBp([
         line({}),
-        line({ sku: 'PAI-002', tiers: [{ minQuantity: 1, unitPriceCents: 60 }] }),
+        line({ sku: 'PAI-002', tiers: [{ minQuantity: 1, unitPriceMillicents: 60 }] }),
       ]),
     ).toBe(3000);
   });
 
   it('ignore les lignes sans tarif catalogue plutôt que de les compter à zéro', () => {
-    expect(averageGapBp([line({}), line({ sku: 'X', catalogPriceCents: null })])).toBe(2000);
+    expect(averageGapBp([line({}), line({ sku: 'X', catalogPriceMillicents: null })])).toBe(2000);
   });
 
   it('ne rend rien quand aucune ligne ne se compare', () => {
-    expect(averageGapBp([line({ catalogPriceCents: null })])).toBeNull();
+    expect(averageGapBp([line({ catalogPriceMillicents: null })])).toBeNull();
   });
 });
 
@@ -88,8 +88,8 @@ describe('ruleCount', () => {
       ruleCount([
         line({
           tiers: [
-            { minQuantity: 1, unitPriceCents: 85 },
-            { minQuantity: 10_000, unitPriceCents: 78 },
+            { minQuantity: 1, unitPriceMillicents: 85 },
+            { minQuantity: 10_000, unitPriceMillicents: 78 },
           ],
         }),
         line({ sku: 'PAI-002' }),

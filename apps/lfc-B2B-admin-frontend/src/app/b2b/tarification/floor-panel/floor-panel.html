@@ -29,8 +29,8 @@
         <strong>{{ driftLabel() }}</strong> depuis
       </p>
       <p class="drift-detail">
-        {{ euros(ecart.referenceCanonicalCents) }} à l'époque,
-        {{ euros(ecart.currentCanonicalCents) }}
+        {{ euros(ecart.referenceCanonicalMillicents) }} à l'époque,
+        {{ euros(ecart.currentCanonicalMillicents) }}
         aujourd'hui.
       </p>
       @if (ecart.stale) {

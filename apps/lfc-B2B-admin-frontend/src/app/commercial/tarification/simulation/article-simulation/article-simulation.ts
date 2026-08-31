@@ -57,7 +57,7 @@ const MAX_PINNED = 2;
 export class ArticleSimulation {
   readonly name = input.required<string>();
   readonly catalogCents = input.required<number>();
-  readonly floorCents = input.required<number | null>();
+  readonly floorMillicents = input.required<number | null>();
   /** Les paliers lisibles de la grille en cours de saisie. */
   readonly tiers = input.required<readonly ScenarioTier[]>();
   /**
@@ -109,7 +109,7 @@ export class ArticleSimulation {
 
   protected readonly basis = computed<ArticleBasis>(() => ({
     catalogCents: this.catalogCents(),
-    floorCents: this.floorCents(),
+    floorMillicents: this.floorMillicents(),
   }));
 
   protected readonly live = computed<Scenario>(() => ({
@@ -142,7 +142,10 @@ export class ArticleSimulation {
   // remonter au champ pour savoir contre quoi la courbe se compare.
   protected readonly reference = computed(() => {
     const scenario = fixedScenario(this.referenceCents(), this.basis());
-    return { ...scenario, label: `Fixe ${formatEuros(scenario.tiers[0]?.unitPriceCents ?? 0)}` };
+    return {
+      ...scenario,
+      label: `Fixe ${formatEuros(scenario.tiers[0]?.unitPriceMillicents ?? 0)}`,
+    };
   });
 
   protected readonly canPin = computed(
@@ -222,7 +225,7 @@ export class ArticleSimulation {
 
   /** Le prix fixe réellement tracé — la limite peut l'avoir relevé. */
   protected readonly appliedFixedCents = computed(
-    () => this.reference().tiers[0]?.unitPriceCents ?? 0,
+    () => this.reference().tiers[0]?.unitPriceMillicents ?? 0,
   );
 
   /**

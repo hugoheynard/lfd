@@ -12,7 +12,7 @@ export interface SimulationSlot {
   readonly sku: string;
   readonly name: string;
   readonly catalogCents: number;
-  readonly floorCents: number | null;
+  readonly floorMillicents: number | null;
 }
 
 /**
@@ -42,8 +42,8 @@ export function locateSimulation(
       gridRow: index + 2,
       sku,
       name: item.name,
-      catalogCents: item.canonicalCents,
-      floorCents: floorCentsOf(item.effectiveFloor, item.canonicalCents),
+      catalogCents: item.canonicalMillicents,
+      floorMillicents: floorCentsOf(item.effectiveFloor, item.canonicalMillicents),
     };
   }
   return null;
