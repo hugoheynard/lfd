@@ -74,3 +74,19 @@ export class CompanyNotFoundForMandateError extends ResourceNotFoundError {
     super("payments.mandate.company_not_found", `Société ${companyId} introuvable.`);
   }
 }
+
+/**
+ * La RUM est mal formée — **400**.
+ *
+ * Levée à la relecture d'une référence venue de la base ou d'un import : la RUM
+ * que nous frappons est correcte par construction, donc une RUM invalide signale
+ * une donnée abîmée, pas une saisie.
+ */
+export class InvalidRumError extends DomainError {
+  constructor(
+    readonly raw: string,
+    readonly reason: string,
+  ) {
+    super("payments.rum.invalid", `Référence de mandat « ${raw} » : ${reason}`);
+  }
+}

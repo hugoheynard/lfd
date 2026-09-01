@@ -18,6 +18,14 @@
 > (tranches 3 et 4) n'existe pas encore. Les points ⚠️ restants sont signalés
 > tranche par tranche au §7.
 
+> **⏸️ 2026-09-01 — l'alternative a été conçue, chiffrée et mise en pause.**
+> Sortir de Stripe pour émettre nous-mêmes sous notre propre ICS (schéma SDD
+> B2B) a fait l'objet d'une conception complète, contredite deux fois :
+> [`architecture-prelevement-sepa-direct.md`](architecture-prelevement-sepa-direct.md).
+> **Le prélèvement reste ici, chez Stripe.** Avant de rouvrir la question, lire
+> la §0 bis de ce document-là : quatre objections bloquantes y sont ouvertes, et
+> le motif d'origine — les frais — n'a jamais été chiffré.
+
 ---
 
 ## 0. Le problème
