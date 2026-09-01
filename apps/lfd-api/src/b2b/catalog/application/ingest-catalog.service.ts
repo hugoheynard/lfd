@@ -88,6 +88,9 @@ function factsOf(snapshot: CatalogSnapshot, receivedAt: Date): PimFacts[] {
       position: variant.position,
       vatRatePercent: variant.vatRatePercent,
       allergens: variant.allergens,
+      // Projetées par le PIM (D6) : la plateforme n'a plus le référentiel
+      // réglementaire, elle range ce qu'on lui envoie.
+      allergenLabels: variant.allergenLabels,
       receivedAt,
     })),
   );

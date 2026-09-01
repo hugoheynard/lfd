@@ -1,0 +1,21 @@
+-- Le fil catalogue transporte désormais les MENTIONS d'étiquette, pas seulement
+-- les codes (D6 de documentation/pim/data-model/05-allergenes-gs1-inco.md).
+--
+-- Pourquoi le renversement : la plateforme B2B projetait elle-même les codes
+-- GS1 vers les catégories INCO, en important le référentiel du PIM. Ce
+-- référentiel est devenu une donnée administrable de la base PIM ; le lire
+-- depuis un contexte marchand, c'est franchir une frontière — et le dupliquer,
+-- c'est le laisser dériver. La projection reste donc UNE décision, prise là où
+-- le référentiel vit, et voyage sur le fil.
+--
+-- Additive, et elle le reste : `allergens` ne bouge pas, ne se renomme pas et
+-- ne se vide pas. Les codes restent le stockage canonique ; cette colonne-ci est
+-- une commodité d'affichage.
+--
+-- `NULL` sur toutes les lignes existantes : aucun backfill SQL n'est possible
+-- ici, la traduction demande le référentiel PIM. C'est un PUSH COMPLET qui la
+-- garnit (`POST /pim/channels/b2b/catalogue/push`), et la séquence est écrite
+-- au runbook. Entre-temps, l'écran d'administration lit « sans fiche » sur les
+-- articles anciens — faux, mais prudent : jamais « sans allergène ».
+ALTER TABLE "public"."catalog_items"
+    ADD COLUMN "allergen_labels" JSONB;

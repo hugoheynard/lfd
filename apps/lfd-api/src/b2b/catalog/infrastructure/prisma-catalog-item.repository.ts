@@ -4,7 +4,11 @@ import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
+import {
+  CatalogItem,
+  type CatalogItemState,
+  type PimAllergenLabels,
+} from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
@@ -21,6 +25,7 @@ interface ItemRow {
   readonly position: number;
   readonly vatRatePercent: { toNumber(): number } | null;
   readonly allergens: unknown;
+  readonly allergenLabels: unknown;
   readonly receivedAt: Date;
   readonly override: {
     readonly priceMillicents: number | null;
@@ -191,6 +196,7 @@ function toDomain(row: ItemRow): CatalogItem {
       // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
       vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
       allergens: allergensOf(row.allergens),
+      allergenLabels: allergenLabelsOf(row.allergenLabels),
       receivedAt: row.receivedAt,
     },
     decision:
@@ -223,6 +229,19 @@ function factsRow(state: CatalogItemState) {
     // sur un upsert, et un article dont la fiche a été retirée dans le PIM
     // garderait ses anciens allergènes.
     allergens: facts.allergens ?? Prisma.DbNull,
+    // Même repli, même raison : `undefined` laisserait la colonne inchangée sur
+    // un upsert, et un article dont la fiche a été retirée dans le PIM garderait
+    // des mentions d'étiquette que plus rien ne déclare.
+    allergenLabels:
+      facts.allergenLabels === null
+        ? Prisma.DbNull
+        : {
+            labels: facts.allergenLabels.labels.map((entry) => ({
+              category: entry.category,
+              label: entry.label,
+            })),
+            incomplete: facts.allergenLabels.incomplete,
+          },
     receivedAt: facts.receivedAt,
   };
 }
@@ -239,4 +258,37 @@ function allergensOf(raw: unknown): readonly string[] | null {
     return null;
   }
   return raw.filter((code): code is string => typeof code === "string");
+}
+
+/**
+ * Les mentions d'étiquette relues depuis `jsonb`.
+ *
+ * Tout ce qui n'a pas la forme attendue rend `null` — « pas de fiche » plutôt
+ * qu'une fiche vide, comme pour les codes. C'est aussi l'état des lignes reçues
+ * avant la v5 du fil, que seul un push complet garnit : sur un champ
+ * réglementaire, la valeur par défaut est celle qui n'affirme RIEN.
+ */
+function allergenLabelsOf(raw: unknown): PimAllergenLabels | null {
+  if (typeof raw !== "object" || raw === null) {
+    return null;
+  }
+  const candidate = raw as { labels?: unknown; incomplete?: unknown };
+  if (!Array.isArray(candidate.labels) || typeof candidate.incomplete !== "boolean") {
+    return null;
+  }
+  return {
+    labels: candidate.labels.filter(isLabel).map((label) => ({
+      category: label.category,
+      label: label.label,
+    })),
+    incomplete: candidate.incomplete,
+  };
+}
+
+function isLabel(raw: unknown): raw is { category: string; label: string } {
+  if (typeof raw !== "object" || raw === null) {
+    return false;
+  }
+  const candidate = raw as { category?: unknown; label?: unknown };
+  return typeof candidate.category === "string" && typeof candidate.label === "string";
 }

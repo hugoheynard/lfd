@@ -51,7 +51,32 @@ export interface PimFacts {
    * affirmation qu'un client a le droit de lire.
    */
   readonly allergens: readonly string[] | null;
+  /**
+   * Les **mentions d'étiquette** que le PIM a projetées pour ces codes, et
+   * l'aveu que la liste peut être amputée.
+   *
+   * Subies comme le reste : la plateforme ne les recalcule pas, elle n'a plus le
+   * référentiel réglementaire (D6). `null` suit `allergens` — et vaut aussi pour
+   * un article reçu avant la v5 du fil, que seul un push complet garnira.
+   *
+   * `incomplete` compte autant que les libellés : un code sans obligation UE ou
+   * inconnu disparaît de la projection sans bruit, et une liste vide qui se tait
+   * s'affiche « sans allergène ».
+   */
+  readonly allergenLabels: PimAllergenLabels | null;
   readonly receivedAt: Date;
+}
+
+/** Une mention d'étiquette reçue : la catégorie INCO et son libellé français. */
+export interface PimAllergenLabel {
+  readonly category: string;
+  readonly label: string;
+}
+
+/** Les mentions reçues pour un article, et ce qu'elles taisent. */
+export interface PimAllergenLabels {
+  readonly labels: readonly PimAllergenLabel[];
+  readonly incomplete: boolean;
 }
 
 /** La décision de la plateforme. `null` partout = aucune décision prise. */

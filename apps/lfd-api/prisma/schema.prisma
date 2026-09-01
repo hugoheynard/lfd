@@ -1947,9 +1947,24 @@ model CatalogItem {
   /// liste = les codes. Confondre les deux premiers transformerait un oubli de
   /// saisie en promesse au consommateur.
   ///
-  /// Des CODES, jamais des libellés : la projection vers les catégories INCO
-  /// (dédup n:1, mise en évidence, langue) appartient à qui affiche.
+  /// Le **stockage canonique** : des codes, et c'est eux qui portent les trois
+  /// états. La colonne voisine porte ce qu'on en AFFICHE.
   allergens Json? @map("allergens")
+
+  /// Les **mentions d'étiquette déjà projetées** par le PIM, et l'aveu que la
+  /// liste peut être amputée : `{ labels: [{ category, label }], incomplete }`.
+  ///
+  /// ⚠️ Renversement assumé (D6 de
+  /// `documentation/pim/data-model/05-allergenes-gs1-inco.md`). Cette colonne-ci
+  /// justifiait de ne stocker que des codes, « la projection appartenant à qui
+  /// affiche ». La plateforme n'a plus de quoi projeter : le référentiel
+  /// d'allergènes est devenu une donnée administrable du PIM, qu'un contexte
+  /// marchand ne lit pas. Le dupliquer ici le laisserait dériver.
+  ///
+  /// `NULL` sur les lignes d'avant le fil v5, tant qu'un push complet n'a pas
+  /// tourné — l'écran lit alors « sans fiche », ce qui est faux mais prudent :
+  /// jamais « sans allergène ». Suit ensuite `allergens` : `NULL` si `NULL`.
+  allergenLabels Json? @map("allergen_labels")
 
   /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
   receivedAt DateTime @map("received_at")
