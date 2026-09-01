@@ -41,6 +41,27 @@ export class AllergenStore {
     return category;
   }
 
+  /**
+   * Sème une entrée **maison**, archivée ou non.
+   *
+   * Par la factory du domaine et son verbe d'archivage, jamais par un
+   * instantané forgé : une entrée officielle refuse `archive()`, et un test qui
+   * contournerait ce refus éprouverait un état que la prod ne verra pas.
+   */
+  seedHouseEntry(
+    id: string,
+    code: string,
+    categoryId: string,
+    archivedAt: Date | null = null,
+  ): AllergenEntry {
+    const entry = AllergenEntry.declare({ id, code, name: { fr: code, en: code }, categoryId });
+    if (archivedAt !== null) {
+      entry.archive(archivedAt);
+    }
+    this.entries.set(id, entry.snapshot());
+    return entry;
+  }
+
   /** Sème une entrée OFFICIELLE, rattachée à `categoryId`. */
   seedOfficialEntry(id: string, code: string, categoryId: string): AllergenEntry {
     const entry = AllergenEntry.reconstitute({

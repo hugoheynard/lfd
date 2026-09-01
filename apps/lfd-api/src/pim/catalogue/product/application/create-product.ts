@@ -3,6 +3,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import {
   CategoryArchivedError,
@@ -29,10 +30,8 @@ import {
   type EditorialInput,
   type MediaInput,
 } from "../domain/value-objects/editorial.js";
-import {
-  nutritionDeclaration,
-  type NutritionValues,
-} from "../domain/value-objects/nutrition-declaration.js";
+import type { NutritionValues } from "../domain/value-objects/nutrition-declaration.js";
+import { validatedDeclaration } from "./declaration-support.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
 import { Product } from "../domain/entities/product.js";
@@ -75,6 +74,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
     private readonly nutrition: NutritionRepository,
+    private readonly allergens: AllergenCatalogueReader,
     private readonly editorials: EditorialRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -101,10 +101,21 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
     // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
     // derrière elle un produit à moitié créé.
+    //
+    // Aucun code n'était déjà déclaré — la fiche naît avec le produit. Un code
+    // archivé y est donc TOUJOURS un ajout à neuf, et il est refusé (D2 bis).
     const declaration =
       input.allergens === undefined
         ? null
-        : nutritionDeclaration(input.allergens, input.mayContain ?? [], input.nutrition ?? {});
+        : await validatedDeclaration(
+            this.allergens,
+            {
+              allergens: input.allergens,
+              mayContain: input.mayContain,
+              nutrition: input.nutrition,
+            },
+            [],
+          );
 
     const story = editorial(input.editorial ?? {});
     const visuals = mediaItems(input.media ?? []);

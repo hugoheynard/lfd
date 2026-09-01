@@ -1,4 +1,9 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  AllergenStore,
+  InMemoryAllergenCatalogueReader,
+} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
+import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
 import {
@@ -423,16 +428,37 @@ describe("UpdateProductEditorialHandler", () => {
   });
 });
 
+/**
+ * Le référentiel servi depuis la base (D3) : `GB` (orge) est officiel et
+ * proposé, `OLD` est une entrée maison **archivée** — encore reconnue, plus
+ * jamais offerte.
+ */
+function reference(): InMemoryAllergenCatalogueReader {
+  const store = new AllergenStore();
+  store.seedOfficialCategory("alg_cat_gluten", "gluten", "gluten");
+  store.seedOfficialEntry("alg_GB", "GB", "alg_cat_gluten");
+  store.seedHouseEntry("alg_OLD", "OLD", "alg_cat_gluten", new Date());
+  return new InMemoryAllergenCatalogueReader(store);
+}
+
+function declareHandler(
+  products: FakeProductRepository,
+  nutrition: RecordingNutritionRepository,
+): DeclareProductNutritionHandler {
+  return new DeclareProductNutritionHandler(
+    products,
+    nutrition,
+    reference(),
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  );
+}
+
 describe("DeclareProductNutritionHandler", () => {
   it("déclare la fiche réglementaire de la déclinaison", async () => {
     const products = new FakeProductRepository(seedProduct());
     const nutrition = new RecordingNutritionRepository();
-    await new DeclareProductNutritionHandler(
-      products,
-      nutrition,
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-    ).execute(
+    await declareHandler(products, nutrition).execute(
       new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
         allergens: ["GB"],
       }),
@@ -444,17 +470,91 @@ describe("DeclareProductNutritionHandler", () => {
   it("refuse une déclaration sur une déclinaison étrangère", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new DeclareProductNutritionHandler(
-        products,
-        new RecordingNutritionRepository(),
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-      ).execute(
+      declareHandler(products, new RecordingNutritionRepository()).execute(
         new DeclareProductNutritionCommand(PRODUCT_ID, "variant_etranger", {
           allergens: [],
         }),
       ),
     ).rejects.toBeInstanceOf(VariantNotFoundError);
+  });
+});
+
+/**
+ * **D2 bis, le revers.** L'archivage retire un allergène de ce qu'on PROPOSE,
+ * pas de ce qu'on reconnaît. Comme cette commande revalide la déclaration
+ * ENTIÈRE à chaque enregistrement, un refus sec ferait échouer un changement de
+ * valeur nutritionnelle sur un code que personne n'a touché — d'où la
+ * distinction entre rééditer et ajouter.
+ */
+describe("DeclareProductNutritionHandler — un code archivé", () => {
+  /** La fiche cite déjà `OLD` : elle a été enregistrée avant l'archivage. */
+  function alreadyCiting(
+    codes: readonly string[],
+    traces: readonly string[] = [],
+  ): ProductSnapshot {
+    const seed = seedProduct();
+    const [variant] = seed.variants;
+    return {
+      ...seed,
+      variants: [
+        {
+          ...variant!,
+          allergens: [...codes],
+          nutrition: {
+            mayContain: [...traces],
+            energyKcal: null,
+            fatG: null,
+            saturatedFatG: null,
+            carbsG: null,
+            sugarsG: null,
+            proteinG: null,
+            saltG: null,
+            glycemicIndex: null,
+          },
+        },
+      ],
+    };
+  }
+
+  it("refuse de l'AJOUTER à une fiche qui ne le citait pas", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const nutrition = new RecordingNutritionRepository();
+
+    await expect(
+      declareHandler(products, nutrition).execute(
+        new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, { allergens: ["GB", "OLD"] }),
+      ),
+    ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
+    expect(nutrition.calls).toHaveLength(0);
+  });
+
+  it("laisse RÉENREGISTRER une fiche qui le citait déjà", async () => {
+    const products = new FakeProductRepository(alreadyCiting(["OLD"]));
+    const nutrition = new RecordingNutritionRepository();
+
+    await declareHandler(products, nutrition).execute(
+      // Seule la valeur nutritionnelle change ; l'allergène archivé traverse.
+      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
+        allergens: ["OLD"],
+        nutrition: { saltG: 2 },
+      }),
+    );
+
+    expect(nutrition.calls[0]?.declaration.allergens).toEqual(["OLD"]);
+  });
+
+  it("compte aussi les TRACES dans ce qui était déjà déclaré", async () => {
+    const products = new FakeProductRepository(alreadyCiting([], ["OLD"]));
+    const nutrition = new RecordingNutritionRepository();
+
+    await declareHandler(products, nutrition).execute(
+      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
+        allergens: [],
+        mayContain: ["OLD"],
+      }),
+    );
+
+    expect(nutrition.calls[0]?.declaration.mayContain).toEqual(["OLD"]);
   });
 });
 

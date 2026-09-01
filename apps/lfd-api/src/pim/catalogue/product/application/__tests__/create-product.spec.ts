@@ -2,6 +2,11 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { v7 as uuidV7 } from "uuid";
 
+import {
+  AllergenStore,
+  InMemoryAllergenCatalogueReader,
+} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
+import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryArchivedError } from "../../../category/domain/errors/category-errors.js";
@@ -115,6 +120,22 @@ class RealIds extends PimIdGenerator {
   }
 }
 
+/**
+ * Le référentiel d'allergènes tel que la base le sert (D3) : une catégorie de
+ * l'annexe II, un code officiel, et une entrée maison **archivée** — celle qui
+ * n'a plus le droit d'entrer dans une fiche neuve (D2 bis).
+ *
+ * Le double est celui du contexte `allergens`, pas une réinvention locale : une
+ * copie divergerait le jour où la règle d'archivage bougerait d'un côté.
+ */
+function reference(): InMemoryAllergenCatalogueReader {
+  const store = new AllergenStore();
+  store.seedOfficialCategory("alg_cat_gluten", "gluten", "gluten");
+  store.seedOfficialEntry("alg_UW", "UW", "alg_cat_gluten");
+  store.seedHouseEntry("alg_OLD", "OLD", "alg_cat_gluten", new Date());
+  return new InMemoryAllergenCatalogueReader(store);
+}
+
 function setup(taken: readonly string[] = []): {
   handler: CreateProductHandler;
   products: FakeProductRepository;
@@ -134,6 +155,7 @@ function setup(taken: readonly string[] = []): {
       products,
       new FakeCategoryRepository(),
       new SilentNutrition(),
+      reference(),
       new SilentEditorial(),
       journal,
       new DirectUnitOfWork(),
@@ -242,5 +264,38 @@ describe("CreateProductHandler — ce qu'il inscrit au journal", () => {
     await handler.execute(new CreateProductCommand(input()));
 
     expect(journal.entries[0]?.payload).toMatchObject({ declared: false });
+  });
+});
+
+describe("CreateProductHandler — la fiche se valide contre le référentiel EN BASE", () => {
+  it("accepte un code que le référentiel connaît", async () => {
+    const { handler, journal } = setup();
+
+    await handler.execute(new CreateProductCommand(input({ allergens: ["UW"] })));
+
+    expect(journal.entries[0]?.payload).toMatchObject({ declared: true });
+  });
+
+  /**
+   * D2 bis, côté création : il n'y a rien de « déjà déclaré » sur une fiche qui
+   * naît, donc un code archivé y est toujours un ajout à neuf — et il est
+   * refusé. Le référentiel le RECONNAÎT encore (`knownCodes`), c'est bien
+   * l'archivage qui parle, pas l'inconnu.
+   */
+  it("refuse un code archivé, et n'écrit rien", async () => {
+    const { handler, products } = setup();
+
+    await expect(
+      handler.execute(new CreateProductCommand(input({ allergens: ["OLD"] }))),
+    ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
+    expect(products.written).toHaveLength(0);
+  });
+
+  it("refuse un code archivé posé en TRACE aussi", async () => {
+    const { handler } = setup();
+
+    await expect(
+      handler.execute(new CreateProductCommand(input({ allergens: [], mayContain: ["OLD"] }))),
+    ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
   });
 });

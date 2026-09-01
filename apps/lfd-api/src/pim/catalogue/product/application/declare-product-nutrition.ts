@@ -1,21 +1,16 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { changesBetween } from "../../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { NutritionRepository } from "../domain/ports/nutrition.repository.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
-import {
-  nutritionDeclaration,
-  type NutritionValues,
-} from "../domain/value-objects/nutrition-declaration.js";
+import { validatedDeclaration, type DeclarationInput } from "./declaration-support.js";
 import { requireProduct } from "./product-support.js";
 
-export interface DeclareNutritionInput {
-  readonly allergens: readonly string[];
-  readonly mayContain?: readonly string[] | undefined;
-  readonly nutrition?: NutritionValues | undefined;
-}
+/** La fiche telle que le formulaire l'envoie — la forme partagée avec la création. */
+export type DeclareNutritionInput = DeclarationInput;
 
 export class DeclareProductNutritionCommand {
   constructor(
@@ -34,6 +29,7 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly nutrition: NutritionRepository,
+    private readonly allergens: AllergenCatalogueReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -42,12 +38,16 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
     product.requireVariant(variantId);
-    const declaration = nutritionDeclaration(
-      input.allergens,
-      input.mayContain ?? [],
-      input.nutrition ?? {},
-    );
     const variant = product.snapshot().variants.find((candidate) => candidate.id === variantId);
+    // Ce que la fiche déclarait DÉJÀ, traces comprises : c'est la seule chose
+    // qui distingue un code archivé qu'on rééditerait d'un code archivé qu'on
+    // ajouterait (D2 bis). Sans elle, corriger une valeur nutritionnelle
+    // échouerait sur un allergène que personne n'a touché.
+    const alreadyDeclared = [
+      ...(variant?.allergens ?? []),
+      ...(variant?.nutrition?.mayContain ?? []),
+    ];
+    const declaration = await validatedDeclaration(this.allergens, input, alreadyDeclared);
     const changes = changesBetween(
       {
         // `null` (fiche jamais renseignée) et `[]` (« aucun allergène »

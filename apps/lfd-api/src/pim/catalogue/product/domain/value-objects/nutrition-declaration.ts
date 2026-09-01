@@ -1,4 +1,3 @@
-import { findMapping } from "../../../../allergens/allergen-mapping.js";
 import { DomainError } from "../../../../../platform/shared/errors/app-error.js";
 
 export class UnknownAllergenError extends DomainError {
@@ -69,14 +68,26 @@ export interface NutritionDeclaration extends NutritionValues {
  *
  * Sur un champ réglementé, la validation ne peut pas vivre dans un DTO HTTP : un
  * import ou un seed la contournerait. Elle est ici, sur le chemin unique.
+ *
+ * @param knownCodes les codes que le référentiel reconnaît, **reçus** et jamais
+ *   cherchés (D3). Le référentiel vit en base depuis qu'il est administrable ;
+ *   aller l'y lire rendrait cette fabrique asynchrone et dépendante de Prisma,
+ *   c'est-à-dire ni pure ni éprouvable sans Nest. Le handler le charge une fois
+ *   et le passe. Les entrées **archivées en font partie** (D2 bis) : relire une
+ *   fiche enregistrée hier ne doit pas la déclarer invalide parce que le staff a
+ *   retiré un code depuis — refuser l'AJOUT d'un code archivé est une règle du
+ *   handler, qui seul sait ce que la fiche déclarait déjà.
  */
 export function nutritionDeclaration(
   allergens: readonly string[],
   mayContain: readonly string[],
   values: NutritionValues,
+  knownCodes: ReadonlySet<string>,
 ): NutritionDeclaration {
-  const present = dedupeAndValidate(allergens);
-  const traces = dedupeAndValidate(mayContain);
+  // `may_contain` suit exactement le même référentiel et la même garde : une
+  // trace est un allergène, déclaré à un autre titre.
+  const present = dedupeAndValidate(allergens, knownCodes);
+  const traces = dedupeAndValidate(mayContain, knownCodes);
 
   const overlap = present.filter((code) => traces.includes(code));
   if (overlap.length > 0) {
@@ -101,10 +112,10 @@ export function nutritionDeclaration(
   return { allergens: present, mayContain: traces, ...values };
 }
 
-function dedupeAndValidate(codes: readonly string[]): string[] {
+function dedupeAndValidate(codes: readonly string[], knownCodes: ReadonlySet<string>): string[] {
   const seen: string[] = [];
   for (const code of codes) {
-    if (findMapping(code) === undefined) {
+    if (!knownCodes.has(code)) {
       throw new UnknownAllergenError(code);
     }
     if (!seen.includes(code)) {

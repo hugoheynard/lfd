@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AllergensModule } from "../allergens/allergens.module.js";
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
@@ -85,7 +86,16 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [PimDatabaseModule, VatRatesModule, SalesContextsModule, AccountingRulesModule],
+  // `AllergensModule` n'exporte que son lecteur : la fiche réglementaire d'un
+  // produit se valide contre le référentiel en base (D3), elle ne l'écrit
+  // jamais.
+  imports: [
+    PimDatabaseModule,
+    AllergensModule,
+    VatRatesModule,
+    SalesContextsModule,
+    AccountingRulesModule,
+  ],
   controllers: [
     CatalogRevisionController,
     CategoryController,
