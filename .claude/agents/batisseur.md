@@ -125,7 +125,7 @@ une.
 ## Avant de rendre
 
 ```bash
-pnpm --filter <app> exec tsc -p tsconfig.app.json --noEmit
+pnpm --filter <app> exec tsc --noEmit    # front Angular : -p tsconfig.app.json
 pnpm --filter <app> test          # pour ITÉRER
 pnpm lint:gates
 ```
