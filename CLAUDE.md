@@ -703,17 +703,17 @@ un agent est invoqué par l'assistant, jamais par un hook ni par un événement.
 Cette section est donc l'automatisation — la règle qui fait qu'on n'a pas à les
 réclamer.
 
-| Agent                            | Déclencheur — invoquer d'office                                                                                                            | Ne PAS invoquer                                                                             |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| **`cerberus-le-portier`**        | avant tout commit d'une tranche de travail, et **toujours** avant un push. En tâche de fond, pendant qu'on continue.                       | pour une correction d'une ligne dont la porte concernée vient de passer                     |
-| **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                          | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                     |
-| **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché) | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer  |
-| **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                           | quand on connaît le fichier : lire coûte moins qu'un agent                                  |
-| **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                             | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver       |
-| **`sonic-unit-tester`**          | sur du code **feuille** que rien ne traverse — fonction pure, value object, mapper, garde. **Un fichier par instance, par dizaines.**      | dès qu'il faudrait un double pour tester : c'est `brutus-tester` qu'il faut                 |
-| **`batisseur`**                  | une tranche de **backend** dont la conception est déjà tranchée dans un document — un lot par instance                                     | tant que le plan n'existe pas : il bâtit, il ne conçoit pas                                 |
-| **`pablo`**                      | la même chose côté **Angular** — fold-ng d'abord, et il sait que `tsc` ne voit pas les gabarits                                            | pour du backend : les conventions n'ont rien à voir                                         |
-| **`vitruve`**                    | **tout document de conception, AVANT de le soumettre à Hugo** — voir la règle ci-dessous                                                   | sur un plan d'une tranche déjà bâtie : il contredit une conception, il n'audite pas du code |
+| Agent                            | Déclencheur — invoquer d'office                                                                                                                                        | Ne PAS invoquer                                                                                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`cerberus-le-portier`**        | avant tout commit d'une tranche de travail, et **toujours** avant un push. En tâche de fond, pendant qu'on continue.                                                   | pour une correction d'une ligne dont la porte concernée vient de passer                                                                                                       |
+| **`lecteur-de-migrations`**      | dès qu'une migration Prisma est ajoutée, **et** avant toute promotion vers `main`                                                                                      | quand `git diff origin/main -- apps/lfd-api/prisma/migrations` est vide                                                                                                       |
+| **`auditeur-de-justifications`** | après une bascule qui change une UNITÉ, un nommage ou une frontière (un champ renommé, un paquet déplacé, un filtre de déploiement touché)                             | sur un diff qui n'ajoute que du code neuf — il n'y a pas encore de justification à périmer                                                                                    |
+| **`Explore`**                    | quand la question est « où ça vit » et qu'on ne le sait pas déjà                                                                                                       | quand on connaît le fichier : lire coûte moins qu'un agent                                                                                                                    |
+| **`brutus-tester`**              | après une fonctionnalité, **un module par instance et plusieurs en parallèle**                                                                                         | sur du code qui ne porte encore aucun invariant écrit — il n'y aurait rien à éprouver                                                                                         |
+| **`sonic-unit-tester`**          | sur du code **feuille** que rien ne traverse — fonction pure, value object, mapper, garde. **Un fichier par instance, par dizaines.**                                  | dès qu'il faudrait un double pour tester : c'est `brutus-tester` qu'il faut                                                                                                   |
+| **`batisseur`**                  | une tranche de **backend** dont la conception est déjà tranchée dans un document — un lot par instance                                                                 | tant que le plan n'existe pas : il bâtit, il ne conçoit pas                                                                                                                   |
+| **`pablo`**                      | la même chose côté **Angular** — fold-ng d'abord, et il sait que `tsc` ne voit pas les gabarits                                                                        | pour du backend : les conventions n'ont rien à voir                                                                                                                           |
+| **`vitruve`**                    | un plan qui touche **l'argent**, une **migration de données**, une **frontière de sécurité**, ou qui finira dans un **runbook** — AVANT Hugo, voir la règle ci-dessous | sur les autres plans : on vérifie soi-même ses affirmations, c'est moins cher. Ni sur un plan d'une tranche déjà bâtie : il contredit une conception, il n'audite pas du code |
 
 ### La règle qui rend `cerberus-le-portier` non négociable
 
@@ -742,30 +742,52 @@ pratiques :
 Aucun d'eux ne commite, sauf `lfd-worker`. Des agents parallèles se
 disputeraient l'index git — ils écrivent, quelqu'un d'autre commite.
 
-### La règle qui rend `vitruve` non négociable
+### Quand `vitruve` est obligatoire, et quand il coûte plus qu'il ne rend
 
-**Un plan ne se soumet pas à Hugo avant d'avoir été contredit.**
+**Un plan ne se soumet pas à Hugo avant d'avoir été contredit — quand se
+tromper coûte cher.**
 
-Le 2026-08-31, le chantier « référentiel allergènes » a produit un plan qui
-portait, en une seule journée : un compte faux recopié d'un commentaire périmé
-(29 codes au lieu de 30), du SQL qui ne compilait pas (`$` au lieu de `$$`), un
-verrou troué par la sémantique de `NULL` (`<>` sur une colonne nullable), une
-promesse d'immuabilité que son propre mécanisme ne tenait pas (`archived_at`),
-et une justification d'ordre de démontage tout simplement fausse.
+La règle a d'abord été écrite sans réserve, et elle s'est mise à coûter. Un
+contradicteur, c'est quelques minutes plus un aller-retour de lecture, à chaque
+document. Sur un plan court qui décrit un mécanisme qu'on vient d'écrire
+soi-même, il rend les objections qu'on aurait trouvées en vérifiant ses propres
+affirmations. Le prix se paie tous les jours ; le gain, lui, est concentré sur
+quelques documents.
 
-Les six ont été trouvées — par les codeurs et les relecteurs, **après** que le
-plan a été validé par un humain. Chacune a coûté un aller-retour, et deux ont
-failli être écrites dans un runbook, c'est-à-dire à l'endroit qu'on lit sous
-pression.
+**`vitruve` d'office** dès qu'une des quatre est vraie :
 
-L'artefact le plus faible d'un chantier est le plan, parce qu'il est écrit en
-premier, vite, et qu'il tire son autorité d'une description de l'existant faite
-de mémoire. Le faire relire coûte quelques minutes ; ne pas le faire relire
-coûte le chantier.
+- le plan touche à **l'argent** — prix, TVA, prélèvement, facturation ;
+- il porte une **migration de données** — une bascule, un renommage de valeur,
+  une colonne resserrée ;
+- il déplace une **frontière de sécurité** — le mur tenant, la résolution
+  d'accès, un périmètre de permissions ;
+- une de ses phrases finira dans un **runbook**, c'est-à-dire à l'endroit qu'on
+  lit sous pression.
 
-Corollaire : ce que `vitruve` rend n'est pas à masquer. Ses objections
-`BLOQUANT` et `SÉRIEUX` se remontent à Hugo **avec** le plan — corrigées, ou
-assumées et dites.
+**Sinon, la vérification remplace la contradiction.** Avant de soumettre, on
+rouvre chaque affirmation que le plan fait de l'existant — un compte, un nom de
+fichier, une convention supposée tenue — et on la confronte au dépôt. C'est là
+qu'est la racine, pas dans l'absence de relecteur : le 2026-08-31, le chantier
+« référentiel allergènes » a produit un plan qui portait, en une seule journée,
+un compte faux recopié d'un commentaire périmé (29 codes au lieu de 30), du SQL
+qui ne compilait pas (`$` au lieu de `$$`), un verrou troué par la sémantique de
+`NULL` (`<>` sur une colonne nullable), une promesse d'immuabilité que son
+propre mécanisme ne tenait pas (`archived_at`), et une justification d'ordre de
+démontage tout simplement fausse. **Cinq des six se voyaient en ouvrant un
+fichier.** Elles ont été trouvées après validation humaine, chacune a coûté un
+aller-retour, et deux ont failli être écrites dans un runbook.
+
+L'artefact le plus faible d'un chantier reste le plan : écrit en premier, vite,
+et tirant son autorité d'une description de l'existant faite de mémoire. Ce
+qu'il faut supprimer, c'est la mémoire — pas nécessairement le contradicteur.
+
+Corollaire inchangé : quand `vitruve` tourne, ce qu'il rend n'est pas à masquer.
+Ses objections `BLOQUANT` et `SÉRIEUX` se remontent à Hugo **avec** le plan —
+corrigées, ou assumées et dites.
+
+⚠️ Le critère n'est pas « le plan est court » ni « je le sens bien ». C'est la
+liste des quatre. Un plan d'une page sur le prélèvement y passe ; un plan de dix
+pages sur un écran de configuration n'y passe pas.
 
 ### Ce que `cerberus-le-portier` ne remplace pas
 
