@@ -333,6 +333,52 @@ plus étroite. L'écran est lu par du personnel sans le code sous les yeux
 (`CLAUDE.md` §0) — le texte dit ce qui est vrai : « la composition mentionne des
 allergènes que la fiche ne déclare pas ».
 
+### D5 bis — L'écart écarté se retire côté API, et reste visible
+
+D5 rend obligatoire un troisième état : **écart connu et écarté**. Sans lui, un
+dérivé qui propose `SO` parce qu'un « chocolat » porte la noix de coco, alors
+que la recette en utilise une version raffinée, revient à chaque ouverture pour
+toujours — et le staff apprend à ignorer le bandeau.
+
+**Le retrait se fait côté API.** Ce que le fil sert comme proposition est déjà
+net :
+
+    proposé = dérivé − déclaré − écarté
+
+Si l'écran filtrait lui-même, chaque consommateur devrait reproduire la règle,
+et le premier qui l'oublierait réafficherait un écart que quelqu'un avait
+explicitement écarté. Une règle métier qui vit dans N écrans n'est pas une
+règle.
+
+**Mais l'écarté reste exposé**, dans son propre champ. Sinon il devient
+irrattrapable : personne ne peut réintégrer ce qu'il ne voit plus. L'écran a
+donc deux listes — ce qu'on lui propose, et ce qu'il a mis de côté — et la
+seconde se replie par défaut.
+
+#### Ce que ça implique, et qui n'est pas évident
+
+- **C'est une décision, donc un fait.** « Quelqu'un a regardé cette proposition
+  et a dit non » se journalise au même titre que le reste du référentiel. Une
+  lacune de journal ne se rattrape pas, et « depuis quand ce produit n'annonce
+  plus la noix de coco » est exactement la question qu'on posera.
+- **La maille est la déclinaison**, pas le produit — comme la déclaration, et
+  contrairement au dérivé. Deux recettes sous un même produit peuvent écarter
+  des choses différentes.
+- **Un code écarté puis déclaré à la main ne resurgit pas** : la soustraction
+  le retire déjà par `− déclaré`. Rien de spécial à écrire.
+- **L'écart écarté survit à la composition.** Retirer puis remettre le chocolat
+  ne réveille pas la proposition : c'est la recette qui a été jugée, pas la
+  liste d'ingrédients.
+- **Il n'existe pas quand `allergens` vaut `null`.** Rien n'est proposé sur une
+  fiche non déclarée (D5), donc rien n'est à écarter.
+
+#### La forme
+
+Une table de liaison additive, `variant_allergen_dismissal(variant_id,
+entry_code, dismissed_at)`. Pas une colonne `jsonb` sur la déclaration : la
+déclaration peut ne pas exister, et l'écart écarté doit lui survivre — c'est un
+jugement sur une recette, pas un attribut d'une fiche.
+
 ### D6 — Le B2B lit un instantané, jamais le référentiel PIM
 
 `prisma-catalog-admin.reader.ts` cesse d'importer `pim/allergens/`. Le B2B
