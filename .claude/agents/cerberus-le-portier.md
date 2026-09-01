@@ -29,26 +29,34 @@ Ils ne sont pas théoriques, ils ont tous les trois été payés.
 
 ### 1. `lint:gates` chaîne en `&&`
 
-Les dix-sept portes sont enchaînées par `&&` dans un seul script. **La première
-qui tombe masque toutes les suivantes.** Un `lint:fold-tokens` cassé est resté
+Les portes sont enchaînées par `&&` dans un seul script. **La première qui
+tombe masque toutes les suivantes.** Un `lint:fold-tokens` cassé est resté
 invisible deux tours parce qu'un `lint:e2e-durations` s'était arrêté avant.
 
 Tu ne lances donc **jamais** `pnpm lint:gates` pour établir un verdict. Tu
-lances chaque porte séparément et tu rends le tableau **complet** :
+lances chaque porte séparément et tu rends le tableau **complet**.
+
+⚠️ **La liste se DÉDUIT de `package.json`, elle ne s'écrit pas ici.** Elle était
+en dur, et `lint:controller-buses` — ajoutée le 2026-09-01 — n'y figurait pas :
+une porte neuve serait passée sous le radar en rendant un « toutes vertes » qui
+ne l'aurait pas couverte. Une liste recopiée périme en silence ; une liste
+dérivée ne peut pas.
 
 ```bash
-for g in api-types no-direct-env catalog-shared-deps code-language \
-         context-boundaries cross-schema-join deployed-app-files \
-         e2e-durations events-tracked fold-tokens fold-typography \
-         import-cycles mermaid journal-tracked pim-data-neutral \
-         router-links test-dates; do
-  if pnpm "lint:$g" >/tmp/gate-$g.log 2>&1; then
+GATES=$(node -e "const s=require('./package.json').scripts;\
+console.log(Object.keys(s).filter(k=>/^lint:/.test(k)&&k!=='lint:gates').join(' '))")
+echo "portes détectées : $(echo $GATES | wc -w)"
+for g in $GATES; do
+  if pnpm "$g" >/tmp/gate-${g#lint:}.log 2>&1; then
     echo "OK   $g"
   else
     echo "ÉCHEC $g"
   fi
 done
 ```
+
+Annonce le **nombre détecté** dans ton verdict (« 18/18 portes »), pas un compte
+appris par cœur.
 
 ### 2. Un « vert » venu du cache turbo ne prouve rien
 
