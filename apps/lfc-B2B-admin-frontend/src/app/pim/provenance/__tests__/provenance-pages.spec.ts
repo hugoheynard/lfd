@@ -34,6 +34,7 @@ const BEURRE: IngredientView = {
   description: null,
   origin: 'Savoie, France',
   appellation: AOP,
+  allergens: [],
   usedBy: 2,
 };
 

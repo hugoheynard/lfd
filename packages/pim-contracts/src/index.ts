@@ -197,6 +197,7 @@ export {
   createIngredientPayloadSchema,
   updateIngredientPayloadSchema,
   setProductIngredientsPayloadSchema,
+  setIngredientAllergensPayloadSchema,
 } from "./ingredient.js";
 export type { PimCapabilitiesView } from "./catalog-overview.js";
 export type {
@@ -207,4 +208,7 @@ export type {
   CreateIngredientPayload,
   UpdateIngredientPayload,
   SetProductIngredientsPayload,
+  SetIngredientAllergensPayload,
+  VariantAllergenGapView,
+  ProductIngredientAllergensView,
 } from "./ingredient.js";
