@@ -1,7 +1,20 @@
 # 05 — Allergènes : d'un référentiel en dur à un référentiel administrable
 
-> **État : doc-first.** Le § « L'existant » décrit le code d'aujourd'hui ; tout
-> ce qui suit « La cible » est décidé mais **pas implémenté**. Ce document est
+> **État : partiel.** Livrés et commités — **D1, D2, D2 bis, D3, D4, D6**, le
+> référentiel administrable, son écran, et les allergènes posés sur
+> l'ingrédient. **D5 est déjà bâti à moitié, sous un autre nom** :
+> `read-product-ingredient-allergens.ts` calcule l'ensemble dérivé et le sert
+> par `GET /pim/products/:id/ingredient-allergens` — avec une sémantique qui
+> n'est pas celle décidée ici (voir le TODO ci-dessous). **Pas une ligne de
+> code — D4 bis, D5 bis**, ni la sonde de contradiction, ni la surface
+> réglementaire du front (lots 6 à 10).
+>
+> ⚠️ Les objections non traitées de la relecture d'architecture sont dans
+> [`todos/todo-allergenes-objections-vitruve.md`](../../todos/todo-allergenes-objections-vitruve.md) :
+> trois bloquantes, huit sérieuses. **Ce plan n'est pas bon à bâtir en l'état.** Le § « L'existant, exactement » décrit l'état
+> d'AVANT la bascule : il est conservé parce que c'est lui qui explique les
+> décisions, mais `src/pim/allergens/` compte aujourd'hui quatre couches et une
+> quarantaine de fichiers. Ce document est
 > le plan de la bascule, et il devient la référence du sujet — il remplit le
 > renvoi pendant de [`03-nutrition.md`](03-nutrition.md).
 
@@ -14,8 +27,8 @@ Trois choses, dans cet ordre de difficulté croissante :
 2. **Ne rien perdre de l'officiel** — les 30 codes GS1 et les 14 catégories
    INCO existantes sont du droit, pas de la configuration. Ils survivent à la
    bascule à l'identique, et deviennent **inaltérables**.
-3. **Poser les allergènes sur l'ingrédient** pour qu'un produit hérite
-   automatiquement de ceux de sa composition.
+3. **Poser les allergènes sur l'ingrédient** pour qu'une fiche dont la
+   composition les contredit ne puisse pas rester fausse.
 
 ## L'existant, exactement
 
@@ -56,9 +69,11 @@ de cette feature, traitée en D3.
 
 **Problème 2 — le mur entre contextes.** Un fichier de `b2b/` importe
 directement `pim/allergens/`. La matrice de `CLAUDE.md` §3 l'autorise « par
-port uniquement », et surtout : le référentiel va vivre dans la **base PIM**,
-qu'un backend B2B ne lit jamais. Cet import deviendrait une jointure
-inter-bases déguisée. Traité en D6.
+port uniquement ». ⚠️ La première rédaction ajoutait « le référentiel va vivre
+dans la base PIM, qu'un backend B2B ne lit jamais » — c'est **faux**, il n'y a
+qu'une base et `pim` en est un schéma (`CLAUDE.md` §1, redressé le
+2026-08-31). Une telle jointure marcherait, et c'est justement pour ça qu'elle
+s'interdit par discipline. Traité en D6.
 
 ## Ce qui est permanent, et ce qui ne l'est pas
 
@@ -117,7 +132,7 @@ Corollaire assumé : **l'annexe II ne s'étend pas depuis le back-office.** Le
 jour où le législateur ajoute une 15ᵉ catégorie, c'est une migration semée,
 pas une saisie — et c'est voulu.
 
-## Les six décisions
+## Les neuf décisions
 
 ### D1 — Les catégories deviennent une table, pas un enum élargi
 
@@ -248,136 +263,388 @@ précisément ce qu'on aura besoin de savoir un jour, pour un marché hors UE ou
 pour un client qui demande.
 
 Le filtre européen appartient à la **déclaration**, pas à la matière. Un code
-hors obligation UE posé sur un ingrédient remonte donc dans le dérivé, entre
-dans la déclaration si le staff le reprend, et `toInco` l'écarte de l'étiquette
-— chaque étage fait son travail, et aucun ne décide à la place d'un autre.
+hors obligation UE posé sur un ingrédient peut donc **contredire** une fiche
+(D5) sans jamais s'y écrire, et `toInco` l'écarterait de l'étiquette UE de
+toute façon — chaque étage fait son travail, et aucun ne décide à la place d'un
+autre.
 
-### D5 — La dérivation **propose**, la déclaration **décide**
+### D4 bis — « aucun allergène » s'inscrit aussi sur un ingrédient
 
-C'est la décision la plus lourde de conséquences, et elle découle d'un
-invariant que tout le dépôt tient déjà : `[]` est une **affirmation**, pas un
-défaut.
+L'absence de lignes dans `ingredient_allergen` dit aujourd'hui **deux choses à
+la fois** : « personne n'a regardé » et « on a regardé, il n'y en a pas ». C'est
+la confusion à trois états que tout le dépôt combat, cette fois au niveau de la
+**matière** — et elle contamine la détection de contradiction, qui compare une
+déclaration à des listes dont elle ne sait pas si elles ont été remplies.
 
-Si les allergènes d'un produit étaient calculés à la lecture, ajouter un
-allergène à un ingrédient réécrirait silencieusement l'étiquette de tous les
-produits qui le citent — y compris ceux déjà publiés, déjà imprimés, déjà
-servis. Personne n'aurait pris la décision.
+**Décision :** une colonne `allergens_declared_at` sur `ingredient`, nullable
+et **datée**. `null` = jamais examiné ; renseignée = examiné, et les lignes de
+liaison sont la réponse, **y compris zéro**.
 
-**Décision :** la composition produit un **ensemble dérivé**, affiché à côté de
-la déclaration. La déclaration reste ce qui est stocké et ce qui fait foi. Quand
-les deux divergent, la fiche le signale et propose la reprise en un geste — elle
-ne l'applique pas.
+Datée plutôt que booléenne : un booléen répond « oui », une date répond « depuis
+quand », et c'est la question qu'on pose six mois plus tard sur un champ
+réglementé. Migration additive, colonne nullable.
+
+**Tracé comme un fait à part entière.** Affirmer « cette matière ne contient
+aucun allergène » est une affirmation, exactement comme `[]` sur une fiche
+produit — elle ne se déduit pas d'une liste vide, elle se prononce. Elle a donc
+son propre événement, distinct de la pose d'une liste.
+
+#### Ce que ça change pour l'alerte
+
+L'alerte de D5 détecte ce que la composition **cite**. Sa **couverture** décide
+donc de ce qu'elle vaut : une absence d'alerte sur sept ingrédients dont trois
+n'ont jamais été examinés ne dit rien. Elle cesse d'être muette sur sa propre
+fiabilité et peut dire :
+
+> l'union des allergènes des sept ingrédients cités — **dont trois n'ont jamais
+> été examinés**
+
+et **nommer lesquels**, plutôt que d'en donner le compte : « trois non examinés »
+oblige à ouvrir les sept fiches pour trouver lesquelles. Le coût est nul, la
+requête parcourt déjà la composition.
+
+#### Ce que ça ne répare PAS
+
+Il reste **deux** sources de silence, et celle-ci n'en corrige qu'une :
+
+1. **Un ingrédient jamais examiné** — réparé.
+2. **La liste d'ingrédients n'est pas exhaustive** — intact. Le schéma
+   l'avertit : elle est éditoriale, elle cite « le beurre de Savoie AOP » et tait
+   la farine. Aucun champ posé sur un ingrédient ne rattrapera un ingrédient
+   **absent**.
+
+L'alerte n'est donc toujours **pas un contrôle réglementaire** (D5) : elle
+empêche une affirmation contredite de survivre, elle ne prouve jamais qu'une
+déclaration est complète. Mais il passe de « je ne sais pas ce que je ne dis
+pas » à « je sais exactement quelle part de la composition j'ai pu lire » — et
+cette part-là, l'écran l'affiche.
+
+### D5 — La composition ne déclare rien, elle **contredit**
+
+C'est la décision la plus lourde du plan, et la troisième rédaction. Les deux
+précédentes sont notées ici parce qu'elles disent ce que le sujet a de piégeux.
+
+**Première version — « la dérivation propose, la déclaration décide ».** Fausse
+sur un cas : une fiche affirmant `[]` (« vérifié, aucun allergène ») dont la
+composition cite une matière allergène est un incident allergique, pas une gêne.
+Laisser cette affirmation debout jusqu'à un clic est indéfendable.
+
+**Deuxième version — l'héritage automatique, `effectif = déclaré ∪ hérité`.**
+Fausse pour une raison plus profonde : elle **tirait une mention obligatoire de
+la liste éditoriale**, ce que `model Ingredient` interdit sans réserve — « le
+jour où une mention obligatoire serait tirée d'ici, elle serait fausse ». Elle
+citait cet avertissement pour refuser la case `null` et passait au travers pour
+les deux autres. Et elle produisait, dès la mise en service, une déclinaison
+« sans gluten » déclarant du gluten — le plan citait déjà cet exemple, dans la
+section même de la décision qu'il réfute.
+
+**Décision :** la composition ne produit **aucune déclaration**. Elle produit
+une **contradiction**, que l'écran nomme et qu'un humain résout.
+
+> Rien de ce que porte un ingrédient n'atteint jamais `allergens`, `toInco`,
+> `toGdsn`, le fil B2B ou une révision. `déclaré` reste la source unique de
+> l'étiquette. La composition n'écrit pas — elle **alerte**.
+
+La troisième rédaction a elle-même été reprise sur trois points, tous notés à
+l'endroit où ils portent : la porte choisie n'en était pas une, la matrice
+contredisait sa propre définition, et `may_contain` absolvait un allergène que
+la composition dit **contenu**.
+
+#### La matrice
+
+| déclaré ↓ · composition → | ne cite rien | cite des allergènes                                                |
+| ------------------------- | ------------ | ------------------------------------------------------------------ |
+| `null` — aucune fiche     | `null`       | `null` + alerte — **déjà refusé** par `publish()`, la fiche manque |
+| `[]` — aucun, affirmé     | `[]` tient   | **contradiction** — `[]` est faux                                  |
+| une liste                 | la liste     | **contradiction** sur chaque code cité et non déclaré              |
+
+Trois cellules sur six portent une citation, et **les trois refusent la mise en
+vente**. La version précédente n'en marquait qu'une, et rangeait dans « informe »
+le cas courant — la fiche déclare le lait, la composition cite aussi la
+noisette — c'est-à-dire une étiquette à laquelle manque une mention obligatoire.
+C'était exactement le scénario qui a tué la première version, réintroduit par un
+tableau qui ne suivait pas sa propre définition.
+
+La première ligne n'a pas besoin de ce plan pour être refusée : `publish()` exige
+déjà une fiche réglementaire sur chaque déclinaison non arrêtée
+(`variant.hasRegulatorySheet`, faux quand `allergens` vaut `null`). La
+composition n'y ajoute pas un refus, elle ajoute une **raison** — « et vos
+ingrédients en portent trois » vaut mieux que « fiche manquante ».
+
+#### Ce qui est une contradiction, et ce qui n'en est pas
+
+Un code cité par la composition n'est pas une contradiction quand la déclinaison
+le porte **en présence** (`allergens`) ou quand un jugement l'a explicitement
+tranché (D5 bis).
+
+**`may_contain` seul n'absout pas.** `ingredient_allergen` n'a aucune nuance :
+une ligne dit que cette matière **contient** ce code, pas qu'elle en porte des
+traces. Déclarer en « traces de lait » un ingrédient dont le référentiel dit
+qu'il contient du lait est un **déclassement**, et un déclassement silencieux
+est la falsification que la première version produisait — réintroduite par la
+porte de la tolérance. Le déclassement reste possible ; il devient un jugement
+signé (D5 bis, `traces_only`), pas un effet de bord.
+
+La contradiction est donc : _un code cité par la composition, absent
+d'`allergens`, et que ne couvre aucune certification de D5 bis._
+
+#### Résoudre, en trois gestes
+
+1. **Le déclarer présent** — le code entre dans `allergens`.
+2. **Le juger** (D5 bis) — soit `absent` (le chocolat raffiné ne porte pas la
+   noix de coco de sa matière première), soit `traces_only` (il s'y retrouve à
+   l'état de traces, et le code doit alors figurer en `may_contain`).
+3. **Corriger la composition** — l'ingrédient n'aurait pas dû être cité, ou son
+   propre référentiel d'allergènes est faux.
+
+Un code **archivé** cité par la composition contredit comme les autres, mais
+D2 bis interdit de l'ajouter à neuf : les gestes disponibles sont donc le
+jugement ou la désarchivation.
+
+L'état « entrée vive sous catégorie archivée », qui échapperait au refus
+(`declaration-support.ts` ne regarde que `entry.archivedAt`), est **inatteignable
+par l'application** : `requireLivingCategory` garde la création, la restauration
+et le déplacement, et `ensureCategoryUncited` refuse d'archiver une catégorie qui
+garde une entrée proposée. Le lot 3 l'a fermé. Reste le SQL direct, qu'aucune
+contrainte ne couvre — c'est le même angle mort que le §3 de `CLAUDE.md` signale,
+et il n'appartient pas à ce plan.
+
+#### La porte est `publish()`, et rien d'autre
+
+La rédaction précédente bloquait `product.declared_ready`. C'était faux, et le
+fichier le dit en toutes lettres : _« Elle ne touche PAS au statut. Une fiche
+déclarée publiable reste un brouillon »_ (`declare-product-ready.ts`). Le geste
+est facultatif, sans aval, et une fiche contredite pouvait donc être mise en
+vente, figée dans une révision, poussée vers Shopify et vers la plateforme
+professionnelle sans jamais rencontrer le blocage.
+
+La porte réelle est **`product.publish()`** : c'est elle qui refuse déjà une
+fiche réglementaire manquante, et une contradiction s'y ajoute comme un refus de
+même nature.
+
+⚠️ **Son périmètre réel est plus étroit que cette décision ne le laisse
+entendre.** Une rédaction antérieure affirmait que « les quatre gestes marqués
+`@PublicationGesture()` » traversent `publish()` : c'est faux, aucun des quatre
+n'appelle `PublishProductCommand` — ce décorateur marque l'interrupteur de
+déploiement, pas le statut. Seul le fil B2B filtre sur les produits publiés
+(`feed-projection.service.ts`) ; une **révision de catalogue** fige encore une
+fiche contredite, et la projection Shopify ne transporte aucun allergène. Ce
+qu'il faut trancher — `take-catalog-revision` entre-t-il dans le périmètre, ou
+une ancre photographie-t-elle sans juger — est noté au TODO et **n'est pas
+tranché ici**.
+
+Une contradiction n'empêche donc **pas** d'enregistrer un brouillon — on
+travaille une fiche par étapes — ni de la déclarer prête, qui reste une signature
+sans effet de bord. Elle empêche la **mise en vente**.
+
+#### Où vit la règle
+
+Le calcul croise quatre faits : les codes cités par la composition, `allergens`,
+`may_contain` et les certifications. Aucun n'appartient à l'agrégat `Product`, et
+`CLAUDE.md` §3.1 nomme précisément le smell qui guette — « un invariant vérifié
+sur une `*.View` puis suivi d'une écriture nue ». Trois pièces, donc :
+
+- **un service de domaine pur** — `detectAllergenContradictions(cited, declared,
+mayContain, certified)` rend la liste des contradictions, par déclinaison. Pas
+  de Nest, pas de Prisma, testable sans double ;
+- **un port de lecture** — `CitedAllergensReader`, déclaré par `catalogue`,
+  rendant les codes que cite la composition d'un produit. Son adaptateur vit dans
+  `ingredients/infrastructure/` et le **liage se fait dans `appBootstrap/`** :
+  aucun des deux modules n'importe l'autre, donc pas de cycle, et la frontière
+  reste visible. C'est délibérément l'inverse de
+  `prisma-variant-declaration.reader.ts`, qui lit aujourd'hui les tables d'un
+  autre sous-contexte en SQL direct — sous la granularité des portes, et à
+  rembourser de la même façon ;
+- **le refus dans l'agrégat** — `publish()` prend les contradictions en
+  argument et lève. Le handler charge, le service calcule, l'agrégat refuse ;
+  aucun `if` de handler ne porte l'invariant.
+
+#### La maille du refus est le produit, celle du jugement la déclinaison
+
+`ProductIngredient` est clé sur le **produit**, `NutritionDeclaration` et les
+certifications sur la **déclinaison**. `publish()` raisonne sur le produit
+entier : une contradiction sur une seule déclinaison **refuse tout le produit**,
+comme le fait déjà une fiche réglementaire manquante. C'est le comportement
+existant, pas une invention — et il est juste : on ne met pas en vente une
+gamme dont un article ment.
+
+« Tarte 6 pers » et « Tarte 6 pers sans gluten » partagent donc la même
+composition et reçoivent la même alerte, dont l'une est fausse. Sous héritage
+automatique, cette fausseté devenait une étiquette ; ici la seconde déclinaison
+la résout **une fois** par un jugement. Le texte de l'écran parle de la
+composition **du produit**, jamais de « ce que cette déclinaison contient ».
+
+#### Une fiche déjà en vente dont la composition dérive
+
+`publish()` n'attrape qu'à l'instant de publier. Deux dérives lui échappent, et
+la seconde est la plus coûteuse :
+
+1. **la composition du produit change après la mise en vente.** Rien ne la
+   signale aujourd'hui : `ProductIngredient` n'a pas d'`updatedAt`, et
+   `contentUpdatedAt` ne lit que quatre tables — produit, déclinaisons,
+   éditorial, médias. Le JSDoc de l'adaptateur prévient de ce défaut exact.
+   Correctif : `setProductIngredients` **touche `product.updatedAt`** dans la
+   même transaction, et la fiche périme comme n'importe quel autre contenu ;
+2. **le référentiel partagé change.** `ingredient_allergen` est posé sur
+   l'ingrédient, pas sur la fiche : corriger « chocolat » crée d'un coup une
+   contradiction sur **toutes** les fiches qui le citent, publiées comprises.
+   Aucune écriture côté produit, donc aucune péremption possible — c'est
+   structurel.
+
+Le second cas ne se rattrape que par un **balayage**. La sonde de contradiction
+de la couche 4 cesse donc d'être un confort : elle est la condition de
+l'intention n°3 de ce chantier — _« qu'une fiche dont la composition les
+contredit ne puisse pas rester fausse »_. Elle recalcule les contradictions sur
+les produits **publiés**, sur le modèle de `ops_catalog_parity.yml`.
+
+Elle **rapporte, elle ne dépublie pas.** Retirer de la vente d'autorité, sur une
+donnée que ce plan reconnaît lui-même comme non exhaustive, ferait plus de dégâts
+qu'elle n'en éviterait. Le geste appartient à un humain (`CLAUDE.md` §0).
+
+#### Ce que ça ne prouve toujours pas
+
+L'alerte détecte ce que la composition **cite**. Elle ne dit rien de ce que la
+composition **tait** — la liste est éditoriale et non exhaustive, et aucun
+mécanisme posé ici ne rattrapera un ingrédient absent. L'absence d'alerte n'est
+donc pas une vérification, et aucun écran ne doit se lire comme « composition
+vérifiée ». D4 bis borne l'autre moitié du silence : elle distingue « ingrédient
+jamais examiné » de « examiné, aucun allergène », et l'alerte doit dire combien
+d'ingrédients cités sont dans le premier cas.
+
+Elle ne dit rien non plus de ce qui change **derrière un ingrédient inchangé** :
+un fournisseur qui modifie sa recette sans que la clé de l'ingrédient bouge est
+invisible à toute donnée de ce dépôt. C'est la limite dure du modèle, et elle
+justifie que le jugement de D5 bis ne soit jamais présenté comme définitif.
 
 ```mermaid
 flowchart LR
-  I["Ingrédients de la fiche<br/>(ingredient_allergen)"] -->|union des codes| D["Ensemble DÉRIVÉ<br/>(calculé, jamais stocké)"]
-  D -->|comparaison| C{"Écart avec<br/>la déclaration ?"}
-  C -->|non| OK["Fiche cohérente"]
-  C -->|oui| W["Bandeau : « la composition a changé »<br/>+ bouton « reprendre »"]
-  W -->|geste explicite du staff| N["NutritionDeclaration.allergens<br/>(stocké, fait foi)"]
-  N -->|toInco| E["Étiquette UE"]
-  N -->|toGdsn| G["Export B2B / GDSN"]
+  I["Ingrédients cités<br/>(ingredient_allergen)"] -->|union des codes| C["Codes de la composition"]
+  D["allergens<br/>(déclaré présent)"] --> X{"Un code cité,<br/>ni déclaré présent<br/>ni jugé ?"}
+  J["Certifications<br/>(absent · traces_only)"] --> X
+  C --> X
+  X -->|non| OK["Fiche publiable"]
+  X -->|oui| A["Alerte nommée<br/>+ refus de publish()"]
+  A -->|déclarer présent| D
+  A -->|juger| J
+  A -->|corriger la composition| I
+  D --> E["Étiquette UE (toInco)"]
+  D --> G["Fil B2B / GDSN (toGdsn)"]
 ```
 
-Le dérivé ne peut que **proposer d'ajouter**. Il ne retire jamais : un
-allergène déclaré à la main sur la fiche (contamination croisée d'atelier, par
-exemple) n'est pas contredit par une composition qui l'ignore.
+### D5 bis — Juger un allergène de la composition
 
-#### 🔴 Ce que le dérivé ne peut PAS dire — et pourquoi
+C'est l'un des trois gestes qui résolvent une contradiction (D5), et le seul qui
+n'écrit rien dans `allergens`.
 
-`model Ingredient` porte cet avertissement, écrit avant ce chantier :
+Le cas est réel : un ingrédient « chocolat » porte `SO`, mais la recette utilise
+une version raffinée qui n'en contient pas. Sans ce geste, l'alerte reviendrait à
+chaque ouverture et refuserait la mise en vente pour toujours — et une alerte
+permanente est une alerte morte.
 
-> ⚠️ Ce n'est PAS la liste réglementaire d'ingrédients (règlement UE
-> 1169/2011). […] Ce référentiel-ci est une matière **éditoriale et
-> commerciale** […] et **rien ici ne garantit ni l'exhaustivité ni l'ordre. Le
-> jour où une mention obligatoire serait tirée d'ici, elle serait fausse.**
+**Ce n'est pas « ignorer ».** C'est prendre position contre une donnée, sur un
+champ réglementé. Le libellé de l'écran doit porter ce poids ; un bouton
+« ignorer » mentirait sur ce qui se passe.
 
-La dérivation tire exactement de là. Elle reste utile — proposer « noisettes »
-parce que la fiche cite une praline fait gagner du temps et évite un oubli — mais
-elle est une **aide de saisie, sans aucune valeur de contrôle**. Trois
-conséquences, non négociables :
+#### Deux jugements, pas un
 
-1. **Le silence du dérivé ne vaut rien.** La liste éditoriale cite « le beurre de
-   Savoie AOP » et tait la farine : le dérivé ne proposera jamais `UW`. L'écran
-   ne doit donc **jamais** afficher « rien à ajouter », « composition couverte »
-   ni aucune formulation qui se lirait comme une vérification. Absence de
-   proposition = absence d'information.
-2. **La reprise ne fabrique pas une fiche.** Quand `allergens` vaut `null`
-   (aucune fiche déclarée), le bouton de reprise est **absent** : fabriquer une
-   fiche réglementaire depuis la liste éditoriale est précisément le geste que
-   l'avertissement ci-dessus interdit. La fiche se crée à la main, le dérivé
-   n'aide qu'ensuite.
-3. **La maille diffère, et le dérivé doit le dire.** `ProductIngredient` est
-   clé sur le **produit** ; `NutritionDeclaration` est portée par la
-   **déclinaison**. Deux déclinaisons de recettes différentes sous un même
-   produit reçoivent donc le **même** dérivé — « Tarte 6 pers » et « Tarte 6 pers
-   sans gluten » comprises. Le libellé doit donc parler de la composition **du
-   produit**, jamais de « ce que cette déclinaison contient ».
+| `judgment`    | Ce qu'il affirme                                    | Ce qu'il exige                             |
+| ------------- | --------------------------------------------------- | ------------------------------------------ |
+| `absent`      | cet allergène ne se retrouve pas dans cette recette | rien                                       |
+| `traces_only` | il s'y retrouve, à l'état de traces seulement       | le code figure en `may_contain`, invariant |
 
-#### L'écart n'est pas un événement — il faut pouvoir l'écarter
+Sans le second, `may_contain` n'aurait plus de sortie légitime et l'opérateur
+détournerait `absent` — un déclassement rendu silencieux par le mécanisme même
+qui devait l'empêcher. Avec lui, le déclassement est possible, nommé, daté et
+signé.
 
-Un dérivé qui propose `SO` parce qu'un ingrédient « chocolat » porte la noix de
-coco, alors que la recette en utilise une version raffinée, reviendra **à chaque
-ouverture, pour toujours**. Le staff apprendra à ignorer le bandeau, et le jour
-où il signale un vrai écart, personne ne le lira. Un bandeau permanent est un
-bandeau mort.
+`traces_only` est un invariant, pas une case à cocher : retirer le code de
+`may_contain` invalide le jugement, et la contradiction revient.
 
-Il faut donc un troisième état — **écart connu et écarté** — persistant par
-déclinaison et par code. Sa forme est à concevoir au lot 5 ; ce qui est décidé
-ici, c'est qu'il est **obligatoire**, et que livrer le bandeau sans lui serait
-livrer une alerte qu'on apprend à ne plus voir.
+#### Journalisé, et **signé en table**
 
-Corollaire de libellé : « la composition a changé » est faux au premier
-affichage, où rien n'a changé et où la déclaration a simplement toujours été
-plus étroite. L'écran est lu par du personnel sans le code sous les yeux
-(`CLAUDE.md` §0) — le texte dit ce qui est vrai : « la composition mentionne des
-allergènes que la fiche ne déclare pas ».
+« Qui a jugé que ce produit ne contient pas la noix de coco de son chocolat, et
+quand » est exactement la question d'un rappel. `ProductReadiness` a déjà tranché
+ce point et écrit pourquoi — `readyBy` _« jamais `null` : une déclaration anonyme
+n'engagerait personne, et c'est tout son objet »_. La certification suit : elle
+porte `certifiedBy` **en table**, et non seulement au journal d'un autre
+contexte, sans clé de jointure. Le journal enregistre le fait par-dessus ; le
+`subjectType` du référentiel gagne un douzième sujet, « déclinaison ».
 
-### D5 bis — L'écart écarté se retire côté API, et reste visible
+#### Ce qui l'endort, et ce qui ne l'endort pas
 
-D5 rend obligatoire un troisième état : **écart connu et écarté**. Sans lui, un
-dérivé qui propose `SO` parce qu'un « chocolat » porte la noix de coco, alors
-que la recette en utilise une version raffinée, revient à chaque ouverture pour
-toujours — et le staff apprend à ignorer le bandeau.
+Un jugement porté une fois ne peut pas éteindre une alerte réglementaire pour
+toujours. La certification retient donc **quels ingrédients citaient ce code au
+moment du jugement** (`citedBy`, les clés d'ingrédients) :
 
-**Le retrait se fait côté API.** Ce que le fil sert comme proposition est déjà
-net :
+- **les mêmes ingrédients citent toujours ce code** → le jugement couvre, pas
+  d'alerte ;
+- **un ingrédient de plus cite ce code** → le jugement ne le couvre pas. La
+  certification devient **dormante**, l'alerte revient, et l'écran affiche le
+  jugement passé plutôt que de le taire — on reprend une position, on n'en
+  découvre pas l'absence ;
+- **déclarer le code en présence** rend le jugement sans objet ; on ne le
+  supprime pas. Si cette déclaration est ensuite retirée, il **reprend effet** —
+  il n'a jamais été annulé.
 
-    proposé = dérivé − déclaré − écarté
-
-Si l'écran filtrait lui-même, chaque consommateur devrait reproduire la règle,
-et le premier qui l'oublierait réafficherait un écart que quelqu'un avait
-explicitement écarté. Une règle métier qui vit dans N écrans n'est pas une
-règle.
-
-**Mais l'écarté reste exposé**, dans son propre champ. Sinon il devient
-irrattrapable : personne ne peut réintégrer ce qu'il ne voit plus. L'écran a
-donc deux listes — ce qu'on lui propose, et ce qu'il a mis de côté — et la
-seconde se replie par défaut.
-
-#### Ce que ça implique, et qui n'est pas évident
-
-- **C'est une décision, donc un fait.** « Quelqu'un a regardé cette proposition
-  et a dit non » se journalise au même titre que le reste du référentiel. Une
-  lacune de journal ne se rattrape pas, et « depuis quand ce produit n'annonce
-  plus la noix de coco » est exactement la question qu'on posera.
-- **La maille est la déclinaison**, pas le produit — comme la déclaration, et
-  contrairement au dérivé. Deux recettes sous un même produit peuvent écarter
-  des choses différentes.
-- **Un code écarté puis déclaré à la main ne resurgit pas** : la soustraction
-  le retire déjà par `− déclaré`. Rien de spécial à écrire.
-- **L'écart écarté survit à la composition.** Retirer puis remettre le chocolat
-  ne réveille pas la proposition : c'est la recette qui a été jugée, pas la
-  liste d'ingrédients.
-- **Il n'existe pas quand `allergens` vaut `null`.** Rien n'est proposé sur une
-  fiche non déclarée (D5), donc rien n'est à écarter.
+⚠️ Ce que `citedBy` **ne** couvre pas : un fournisseur qui change sa recette
+derrière un ingrédient dont la clé ne bouge pas. Aucune donnée de ce dépôt ne le
+voit. L'écran doit donc dater le jugement visiblement — un jugement de dix-huit
+mois se relit.
 
 #### La forme
 
-Une table de liaison additive, `variant_allergen_dismissal(variant_id,
-entry_code, dismissed_at)`. Pas une colonne `jsonb` sur la déclaration : la
-déclaration peut ne pas exister, et l'écart écarté doit lui survivre — c'est un
-jugement sur une recette, pas un attribut d'une fiche.
+Une table de liaison additive :
+
+```prisma
+model VariantAllergenCertification {
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  /// L'entrée du référentiel, par sa CLÉ ÉTRANGÈRE et non par son code en
+  /// clair : une certification qui pointerait une chaîne survivrait à l'entrée
+  /// qu'elle vise, exactement le défaut que `ProductIngredient` documente.
+  entryId   String        @map("entry_id")
+  entry     AllergenEntry @relation(fields: [entryId], references: [id])
+  /// `absent` | `traces_only` — enum Postgres, pas une chaîne libre.
+  judgment    AllergenJudgment
+  /// Les clés d'ingrédients qui citaient ce code au moment du jugement. Un
+  /// citant de plus l'endort (voir plus haut).
+  citedBy     String[]  @map("cited_by")
+  certifiedAt DateTime  @map("certified_at")
+  /// Jamais `null` : un jugement anonyme n'engagerait personne.
+  certifiedBy String    @map("certified_by")
+  @@id([variantId, entryId])
+  @@index([entryId])
+  @@map("variant_allergen_certification")
+  @@schema("pim")
+}
+
+enum AllergenJudgment {
+  absent
+  traces_only
+  @@map("allergen_judgment")
+  @@schema("pim")
+}
+```
+
+Et les **relations inverses**, sans lesquelles `prisma validate` échoue avant
+toute migration — le défaut de la rédaction précédente :
+
+```prisma
+model ProductVariant {
+  // …
+  allergenCertifications VariantAllergenCertification[]
+}
+
+model AllergenEntry {
+  // …
+  certifications VariantAllergenCertification[]
+}
+```
+
+Pas une colonne `jsonb` sur la déclaration : la déclaration peut ne pas exister,
+et un jugement porté sur une recette doit lui survivre. Et une clé étrangère,
+pas un code en clair — `Restrict` côté entrée, comme partout ailleurs dans ce
+chantier.
 
 ### D6 — Le B2B lit un instantané, jamais le référentiel PIM
 
@@ -428,7 +695,7 @@ qui aurait alors dû se procurer le projecteur PIM. C'est-à-dire exactement ce
 que D6 interdit. La lecture vit donc dans ce qui projette.
 
 ```ts
-// push.service.ts — une fois par push
+// feed-projection.service.ts — une fois par push
 const inco = await this.allergens.projector(); // port de lecture PIM
 // projection.ts — reste pure
 projectVariant(variant, htPrice, vatRate, inco);
@@ -500,6 +767,13 @@ model AllergenEntry {
   @@schema("pim")
 }
 
+/// D4 bis — la date qui distingue « jamais examiné » de « examiné, aucun ».
+model Ingredient {
+  // …
+  allergensDeclaredAt DateTime?            @map("allergens_declared_at")
+  allergens           IngredientAllergen[]
+}
+
 model IngredientAllergen {
   ingredientId String @map("ingredient_id")
   ingredient   Ingredient    @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
@@ -511,6 +785,13 @@ model IngredientAllergen {
   @@schema("pim")
 }
 ```
+
+Les trois tables portent `created_at`, et les deux tables de référentiel
+`updated_at` — omis ici, présents dans la migration livrée.
+
+`VariantAllergenCertification` et l'enum `AllergenJudgment` (D5 bis) complètent
+ce modèle. Ils sont écrits là-bas, avec la justification de chaque colonne, et
+non recopiés ici : un modèle en deux exemplaires diverge.
 
 `NutritionDeclaration.allergens` **ne change pas** : il reste un tableau de
 codes en `Json`, avec ses trois états. Le référentiel devient administrable ;
@@ -547,7 +828,8 @@ se séparer.
 déploiement n'appelle que `prisma migrate deploy`
 ([`deploy_lfd_api.yml`](../../../.github/workflows/deploy_lfd_api.yml)), jamais
 `db:seed`. Un semis dans le script n'atteindrait **jamais** la production.
-C'est déjà le motif de la maison — huit migrations insèrent de la donnée, dont
+C'est déjà le motif de la maison — huit migrations insèrent de la donnée
+avant celle-ci, dont
 `20260824150000_contextes_de_vente`, qui sème un référentiel de même nature.
 Chaque migration jouant dans une transaction, les 15 catégories et les 30
 entrées atterrissent toutes ou la migration n'est pas marquée appliquée : un
@@ -557,7 +839,10 @@ semis partiel n'est pas un état atteignable.
 déjà en place ([runbook](../../ops/runbook.md)). Une prod qui n'aurait pas reçu
 le semis ne sert pas de trafic.
 
-**4. Une sonde ops le vérifie sur la vraie base**, sur le modèle de
+**4. Une sonde ops le vérifiera sur la vraie base** — ⚠️ **elle n'existe pas
+encore**, et elle n'est dans aucun lot du découpage. C'est la seule des quatre
+couches qui regarde la production, et la seule qui reste à écrire. Sur le modèle
+de
 `ops_catalog_parity.yml` : 30 entrées et 15 catégories officielles, et chaque
 entrée officielle rattachée à une catégorie officielle. C'est la seule des
 quatre qui regarde la production.
@@ -583,7 +868,8 @@ BEGIN
     RAISE EXCEPTION 'allergène officiel : suppression refusée (%)', OLD.code
       USING ERRCODE = 'restrict_violation';
   END IF;
-  IF NEW.code IS DISTINCT FROM OLD.code
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.code IS DISTINCT FROM OLD.code
      OR NEW.category_id IS DISTINCT FROM OLD.category_id
      OR NEW.name::text IS DISTINCT FROM OLD.name::text
      OR NEW.official IS DISTINCT FROM OLD.official
@@ -655,15 +941,15 @@ ce que le back-office crée ensuite.
 
 ## Le front
 
-Trois surfaces, deux existantes et une vide qui attend.
+Trois surfaces : deux bâties, une qui reste.
 
-1. **`pim/product-settings/allergens-page/`** — aujourd'hui une page vide qui
-   annonce précisément ce qui viendra ici. C'est la destination : liste des
+1. **`pim/product-settings/allergens-page/`** — ✅ bâtie (400 lignes, avec
+   `allergen-category-panel`, `allergen-entry-panel` et son store) : liste des
    catégories et de leurs entrées, création d'une catégorie maison, création
    d'une entrée. L'officiel s'y affiche **en lecture seule et signalé comme
    tel** — pas grisé sans explication : un cadenas et la raison.
-2. **`pim/provenance/ingredients-page/`** — la fiche ingrédient gagne une
-   section « Allergènes », dans son panneau. Le contrôle est
+2. **`pim/provenance/ingredients-page/`** — ✅ bâtie. La fiche ingrédient porte
+   une section « Allergènes », dans son panneau. Le contrôle est
    **`<fold-multiselect>`** en API `[options]` : sa valeur est un
    `readonly T[]`, le panneau **reste ouvert** entre deux clics (cocher cinq
    allergènes est une seule interaction), et il porte `role="listbox"` +
@@ -680,8 +966,13 @@ Trois surfaces, deux existantes et une vide qui attend.
 
    Périmètre `world`, cf. D4.
 
-3. **`product-form/form-sections/regulatory/`** — la fiche réglementaire gagne
-   le bandeau d'écart de D5 et son bouton de reprise. ⚠️ **Et le groupement
+3. **`product-form/form-sections/regulatory/`** — ⬜ reste à faire. La fiche
+   réglementaire gagne les callouts de D5 : l'alerte nommant chaque code cité
+   par la composition et non déclaré présent, le **refus de la mise en vente**
+   tant qu'une contradiction tient, et les trois gestes qui la résolvent —
+   déclarer présent, **juger** (`absent` ou `traces_only`, D5 bis), ou corriger
+   la composition. Un jugement dormant s'affiche, jamais ne se tait. Jamais un
+   bouton « ignorer », qui mentirait sur ce qui se passe. ⚠️ **Et le groupement
    change** : il repose aujourd'hui sur `entry.incoLabel ?? 'Hors obligation
 UE'`, donc toutes les catégories maison tomberaient dans ce seul seau, sous
    une légende qui mentirait. Le contrat de fil `AllergenEntry` doit porter la
@@ -690,18 +981,28 @@ UE'`, donc toutes les catégories maison tomberaient dans ce seul seau, sous
 
 ## Le découpage
 
-| Lot | Contenu                                                                                   | Dépend de |
-| --- | ----------------------------------------------------------------------------------------- | --------- |
-| 1   | Migration + semis + verrou + test d'intégrité des 30/15                                   | —         |
-| 2   | Domaine : agrégats `AllergenCategory` / `AllergenEntry`, verrou `official`, ports         | 1         |
-| 3   | Application + HTTP : lecture (rebranchement de `/reference/allergens`), puis écriture     | 2         |
-| 4   | D3 — `NutritionDeclaration` reçoit les codes connus ; D6 — le B2B cesse d'importer le PIM | 3         |
-| 5   | `ingredient_allergen` + dérivation D5 côté lecture                                        | 2         |
-| 6   | Front : écran référentiel, section ingrédient, bandeau d'écart                            | 3, 5      |
+| Lot | Décisions        | Contenu                                                                               | Dépend de | État |
+| --- | ---------------- | ------------------------------------------------------------------------------------- | --------- | ---- |
+| 1   | D1               | Migration + semis + verrou + test d'intégrité des 30/15                               | —         | ✅   |
+| 2   | D1, D2           | Domaine : agrégats `AllergenCategory` / `AllergenEntry`, verrou `official`, ports     | 1         | ✅   |
+| 3   | D2, D2 bis       | Application + HTTP : lecture (rebranchement de `/reference/allergens`), puis écriture | 2         | ✅   |
+| 4   | D3, D6           | `NutritionDeclaration` reçoit les codes connus ; le B2B cesse d'importer le PIM       | 3         | ✅   |
+| 5   | D4               | `ingredient_allergen` + l'écriture des codes sur l'ingrédient                         | 2         | ✅   |
+| 6   | **D4 bis**       | `allergens_declared_at` (migration + sémantique d'écriture)                           | 5         | ⬜   |
+| 7   | **D5**           | Service de domaine, port `CitedAllergensReader`, refus dans `publish()`, péremption   | 5, 6      | ⬜   |
+| 8   | **D5 bis**       | `variant_allergen_certification` + enum `allergen_judgment`, les deux jugements       | 7         | ⬜   |
+| 9   | **D5, couche 4** | La sonde de contradiction sur les produits **publiés** — rapporte, ne dépublie pas    | 7, 8      | ⬜   |
+| 10  | D1→D5 bis        | Front : callouts de contradiction sur la fiche réglementaire (surface 3)              | 7, 8      | ⬜   |
 
-Les lots 1 à 4 sont la **bascule à comportement constant** : à leur terme, rien
-n'a changé pour l'utilisateur, et tout est administrable. Les lots 5 et 6 sont
-la fonctionnalité neuve.
+Les lots 1 à 5 sont la **bascule à comportement presque constant** — presque,
+parce que D6 prévoit que l'écran admin B2B affiche « sans fiche » sur les
+articles non repoussés tant que le push complet n'a pas tourné. À leur terme,
+rien n'a changé pour l'utilisateur, et tout est administrable. Les deux
+premières surfaces du front sont bâties dans les mêmes lots.
+
+Les lots 6 à 10 sont la fonctionnalité neuve, et **aucun n'est commencé**. Le
+lot 9 n'est pas un confort : sans lui, une fiche déjà en vente dont le
+référentiel dérive n'est visitée par rien (D5).
 
 ## Ce que ce plan ne fait pas
 
@@ -710,5 +1011,6 @@ la fonctionnalité neuve.
 - **Étendre l'annexe II.** Voir plus haut : c'est un semis, pas une saisie.
 - **Traduire les libellés officiels au-delà de `fr`/`en`.** La structure
   l'accepte (`Json` localisé), le contenu n'existe pas.
-- **Toucher `may_contain`.** Il suit le même référentiel et le même chemin ;
-  rien de spécifique n'est à décider.
+- **Changer la forme de `may_contain`.** Il suit le même référentiel et le même
+  chemin. Ce que D5 tranche est son **poids** face à la composition — il
+  n'absout pas un code que le référentiel dit contenu — pas sa structure.
