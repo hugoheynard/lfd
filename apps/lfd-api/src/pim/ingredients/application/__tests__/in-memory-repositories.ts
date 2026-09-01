@@ -28,6 +28,15 @@ export class InMemoryIngredientRepository extends IngredientRepository {
   private readonly byKey = new Map<string, IngredientSnapshot>();
   private readonly citedBy = new Map<string, readonly string[]>();
 
+  /**
+   * Le dépôt d'appellations est FACULTATIF, et c'est ce qui décide de la
+   * jointure : la vraie lecture résout le signe officiel en base, et une suite
+   * qui ne parle pas d'appellation n'a pas à en monter une.
+   */
+  constructor(private readonly appellations: InMemoryAppellationRepository | null = null) {
+    super();
+  }
+
   list(): Promise<readonly IngredientRecord[]> {
     return Promise.resolve([...this.byKey.values()].map((snapshot) => this.toRecord(snapshot)));
   }
@@ -76,7 +85,16 @@ export class InMemoryIngredientRepository extends IngredientRepository {
   }
 
   private toRecord(snapshot: IngredientSnapshot): IngredientRecord {
-    return { ...snapshot, appellation: null, usedBy: 0 };
+    return {
+      ...snapshot,
+      appellation: this.appellations?.snapshotOfId(snapshot.appellationId) ?? null,
+      usedBy: this.citationsOf(snapshot.key),
+    };
+  }
+
+  /** Combien de fiches citent la matière — ce que la vraie lecture compte. */
+  private citationsOf(key: string): number {
+    return [...this.citedBy.values()].filter((keys) => keys.includes(key)).length;
   }
 }
 
@@ -119,6 +137,14 @@ export class InMemoryAppellationRepository extends AppellationRepository {
   /** Ce que le test relit — l'état stocké, sans repasser par une commande. */
   at(code: string): AppellationSnapshot | undefined {
     return this.byCode.get(code);
+  }
+
+  /** La résolution que la base fait par jointure — l'ingrédient stocke un id. */
+  snapshotOfId(id: string | null): AppellationSnapshot | null {
+    if (id === null) {
+      return null;
+    }
+    return [...this.byCode.values()].find((snapshot) => snapshot.id === id) ?? null;
   }
 }
 

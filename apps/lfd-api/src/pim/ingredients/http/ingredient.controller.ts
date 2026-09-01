@@ -8,9 +8,9 @@ import {
   updateAppellationPayloadSchema,
   updateIngredientPayloadSchema,
   type AppellationView,
+  type IngredientView,
   type CreateAppellationPayload,
   type CreateIngredientPayload,
-  type IngredientView,
   type ProductIngredientAllergensView,
   type SetIngredientAllergensPayload,
   type SetProductIngredientsPayload,
@@ -30,48 +30,12 @@ import {
   RemoveIngredientCommand,
   UpdateIngredientCommand,
 } from "../application/ingredient-handlers.js";
+import { ListAppellationsQuery } from "../application/list-appellations.js";
+import { ListIngredientsQuery } from "../application/list-ingredients.js";
 import { ReadProductIngredientAllergensQuery } from "../application/read-product-ingredient-allergens.js";
+import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";
 import { SetIngredientAllergensCommand } from "../application/set-ingredient-allergens.js";
 import { SetProductIngredientsCommand } from "../application/set-product-ingredients.js";
-import type { AppellationRecord } from "../domain/ports/appellation.repository.js";
-import { AppellationRepository } from "../domain/ports/appellation.repository.js";
-import type { IngredientRecord } from "../domain/ports/ingredient.repository.js";
-import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
-
-/** L'identifiant technique ne sort pas : le fil parle en codes et en clés. */
-function toAppellationView(record: AppellationRecord): AppellationView {
-  return {
-    code: record.code,
-    label: record.label,
-    scheme: record.scheme,
-    active: record.active,
-    usedBy: record.usedBy,
-  };
-}
-
-function toIngredientView(record: IngredientRecord): IngredientView {
-  return {
-    key: record.key,
-    name: record.name,
-    description: record.description,
-    origin: record.origin,
-    allergens: record.allergens,
-    appellation:
-      record.appellation === null
-        ? null
-        : {
-            code: record.appellation.code,
-            label: record.appellation.label,
-            scheme: record.appellation.scheme,
-            active: record.appellation.active,
-            // Le compte n'a pas de sens sur une appellation lue À TRAVERS un
-            // ingrédient : ce serait le compte de l'appellation, pas celui de
-            // ce rattachement, et l'écran s'en servirait à tort.
-            usedBy: 0,
-          },
-    usedBy: record.usedBy,
-  };
-}
 
 /**
  * Les **provenances** — ingrédients et appellations, en lecture et en écriture.
@@ -90,16 +54,15 @@ function toIngredientView(record: IngredientRecord): IngredientView {
 @Controller()
 export class IngredientController {
   constructor(
-    private readonly ingredients: IngredientRepository,
-    private readonly appellations: AppellationRepository,
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
 
   @Get("appellations")
-  async listAppellations(): Promise<AppellationView[]> {
-    const records = await this.appellations.list();
-    return records.map(toAppellationView);
+  listAppellations(): Promise<AppellationView[]> {
+    return this.queries.execute<ListAppellationsQuery, AppellationView[]>(
+      new ListAppellationsQuery(),
+    );
   }
 
   @Post("appellations")
@@ -130,9 +93,8 @@ export class IngredientController {
   }
 
   @Get("ingredients")
-  async listIngredients(): Promise<IngredientView[]> {
-    const records = await this.ingredients.list();
-    return records.map(toIngredientView);
+  listIngredients(): Promise<IngredientView[]> {
+    return this.queries.execute<ListIngredientsQuery, IngredientView[]>(new ListIngredientsQuery());
   }
 
   @Post("ingredients")
@@ -182,9 +144,10 @@ export class IngredientController {
 
   /** Ce que CETTE fiche cite, dans son ordre d'affichage. */
   @Get("products/:id/ingredients")
-  async ofProduct(@Param("id") id: string): Promise<IngredientView[]> {
-    const records = await this.ingredients.ofProduct(id);
-    return records.map(toIngredientView);
+  ofProduct(@Param("id") id: string): Promise<IngredientView[]> {
+    return this.queries.execute<ReadProductIngredientsQuery, IngredientView[]>(
+      new ReadProductIngredientsQuery(id),
+    );
   }
 
   @Put("products/:id/ingredients")

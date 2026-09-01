@@ -12,7 +12,10 @@ import {
   RemoveIngredientHandler,
   UpdateIngredientHandler,
 } from "./application/ingredient-handlers.js";
+import { ListAppellationsHandler } from "./application/list-appellations.js";
+import { ListIngredientsHandler } from "./application/list-ingredients.js";
 import { ReadProductIngredientAllergensHandler } from "./application/read-product-ingredient-allergens.js";
+import { ReadProductIngredientsHandler } from "./application/read-product-ingredients.js";
 import { SetIngredientAllergensHandler } from "./application/set-ingredient-allergens.js";
 import { SetProductIngredientsHandler } from "./application/set-product-ingredients.js";
 import { AppellationRepository } from "./domain/ports/appellation.repository.js";
@@ -50,6 +53,9 @@ import { PrismaVariantDeclarationReader } from "./infrastructure/prisma-variant-
     RemoveIngredientHandler,
     SetProductIngredientsHandler,
     SetIngredientAllergensHandler,
+    ListAppellationsHandler,
+    ListIngredientsHandler,
+    ReadProductIngredientsHandler,
     ReadProductIngredientAllergensHandler,
     { provide: AppellationRepository, useClass: PrismaAppellationRepository },
     { provide: IngredientRepository, useClass: PrismaIngredientRepository },
