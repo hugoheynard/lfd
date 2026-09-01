@@ -1,7 +1,17 @@
-import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
+import type {
+  CatalogSnapshot,
+  SyncAllergenLabels,
+  SyncCategory,
+  SyncProduct,
+  SyncVariant,
+} from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 import { htMillicentsOf, proPriceFromPublic, type B2bExclusionReason } from "@lfd/pim-contracts";
 
+import type {
+  IncoProjection,
+  IncoProjector,
+} from "../../../allergens/domain/services/inco-projector.js";
 import type {
   CategoryVatPercents,
   ChannelCategory,
@@ -81,7 +91,14 @@ function projectVariant(
   variant: VariantRecord,
   htPriceMillicents: number,
   vatRatePercent: number | null,
+  inco: IncoProjector,
 ): SyncVariant {
+  // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
+  // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en aval.
+  // Les mentions le suivent — « aucune fiche » ne se lit jamais « aucun
+  // allergène ». Les codes, eux, restent le stockage canonique ; leur copie
+  // n'est que le passage du `readonly` du domaine au tableau du schéma de fil.
+  const declared = variant.allergens;
   return {
     sku: variant.sku,
     name: frenchOf(variant.name),
@@ -90,11 +107,16 @@ function projectVariant(
     isDefault: variant.isDefault,
     position: variant.position,
     vatRatePercent,
-    // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
-    // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en
-    // aval. La copie n'est que le passage du `readonly` du domaine au tableau
-    // du schéma de fil.
-    allergens: variant.allergens === null ? null : [...variant.allergens],
+    allergens: declared === null ? null : [...declared],
+    allergenLabels: declared === null ? null : labelsOf(inco.project(declared)),
+  };
+}
+
+/** Du domaine au fil : seul le `readonly` tombe, surtout pas `incomplete`. */
+function labelsOf(projection: IncoProjection): SyncAllergenLabels {
+  return {
+    labels: projection.labels.map((entry) => ({ category: entry.category, label: entry.label })),
+    incomplete: projection.incomplete,
   };
 }
 
@@ -117,6 +139,7 @@ function sortVariants(
   product: ProductRecord,
   vatRatePercent: number | null,
   proRatioBp: number,
+  inco: IncoProjector,
 ): {
   sellable: SyncVariant[];
   excluded: Exclusion[];
@@ -151,7 +174,7 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
     }
-    sellable.push(projectVariant(variant, htMillicents, vatRatePercent));
+    sellable.push(projectVariant(variant, htMillicents, vatRatePercent, inco));
   }
 
   return { sellable, excluded };
@@ -204,6 +227,13 @@ export function projectCatalog(
    * pousser tant que rien n'est réglé — voir `B2bCatalogFeedProjection`.
    */
   proRatioBp: number,
+  /**
+   * Le référentiel d'allergènes, lu **une fois par push** et passé ici (D6) —
+   * reçu plutôt que cherché, comme le taux et le rapport pro, ce qui garde
+   * cette projection pure. Le récepteur n'a plus de quoi traduire un code GS1
+   * en mention d'étiquette : le référentiel est une donnée du PIM.
+   */
+  inco: IncoProjector,
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -231,6 +261,7 @@ export function projectCatalog(
       product,
       vatOf(vatByProduct.get(product.id) ?? {}),
       proRatioBp,
+      inco,
     );
     excluded.push(...rejected);
 

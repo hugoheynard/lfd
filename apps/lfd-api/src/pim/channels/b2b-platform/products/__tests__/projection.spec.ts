@@ -4,6 +4,8 @@ import type {
   ProductRecord,
   VariantRecord,
 } from "../../../../catalogue/product/domain/ports/product.repository.js";
+import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
+import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
 import { projectCatalog } from "../projection.js";
 
 const AT = "2026-08-17T08:00:00.000Z";
@@ -80,6 +82,41 @@ function sold(channels: SalesChannels = [{ pointOfSaleId: "pos_b2b", context: "b
  */
 const NO_DISCOUNT = 10_000;
 
+/**
+ * Le référentiel d'allergènes tel que la base le sert, **passé** à la projection
+ * (D6). Trois entrées suffisent à couvrir les trois sorts d'un code déclaré :
+ *
+ * - `UW` (blé) et `NR` (seigle) — deux codes qui retombent sur UNE mention,
+ *   c'est le n:1 qui est la raison d'être du modèle ;
+ * - `SO` (noix de coco) — officiel, **sans obligation UE**, donc écarté de la
+ *   mention d'étiquette sans être inconnu.
+ */
+const INCO = incoProjector();
+
+function incoProjector(): IncoProjector {
+  const store = new AllergenStore();
+  store.seedOfficialCategory("alg_cat_gluten", "gluten", "gluten");
+  store.seedOfficialEntry("alg_UW", "UW", "alg_cat_gluten");
+  store.seedOfficialEntry("alg_NR", "NR", "alg_cat_gluten");
+  store.seedOfficialCategory("alg_cat_non_eu", "non_eu", null);
+  store.seedOfficialEntry("alg_SO", "SO", "alg_cat_non_eu");
+  return IncoProjector.from(catalogueOf(store), "fr");
+}
+
+/** Le lecteur est asynchrone ; la projection, elle, reçoit un objet pur. */
+function catalogueOf(store: AllergenStore) {
+  const categories = [...store.categories.values()].sort((a, b) => a.position - b.position);
+  return categories.map((category) => ({
+    ...category,
+    entries: [...store.entries.values()]
+      .filter((entry) => entry.categoryId === category.id)
+      .map(({ categoryId, ...entry }) => {
+        void categoryId;
+        return entry;
+      }),
+  }));
+}
+
 describe("projectCatalog", () => {
   it("projette un produit tarifé, avec le taux de TVA de sa famille", () => {
     const { snapshot, excluded } = projectCatalog(
@@ -88,6 +125,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -112,6 +150,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -136,6 +175,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 20 }),
       sold(),
       9_000,
+      INCO,
       AT,
     );
 
@@ -157,6 +197,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 5.5 }),
       sold(),
       9_000,
+      INCO,
       AT,
     );
 
@@ -178,6 +219,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
     const at10 = projectCatalog(
@@ -186,6 +228,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 10 }),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -205,6 +248,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5 }),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -226,6 +270,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5 }),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -243,6 +288,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -261,6 +307,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -269,7 +316,15 @@ describe("projectCatalog", () => {
   });
 
   it("ne lit aucune horloge : l’instant d’émission est celui qu’on lui passe", () => {
-    const { snapshot } = projectCatalog([product()], [category()], vat(), sold(), NO_DISCOUNT, AT);
+    const { snapshot } = projectCatalog(
+      [product()],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      INCO,
+      AT,
+    );
 
     expect(snapshot.generatedAt).toBe(AT);
   });
@@ -285,6 +340,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -310,6 +366,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -329,6 +386,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -352,6 +410,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -363,7 +422,15 @@ describe("projectCatalog", () => {
   it("écarte un produit dont la famille est inconnue", () => {
     const orphan = product({ categoryId: "cat_fantome" });
 
-    const { excluded } = projectCatalog([orphan], [category()], vat(), sold(), NO_DISCOUNT, AT);
+    const { excluded } = projectCatalog(
+      [orphan],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      INCO,
+      AT,
+    );
 
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "famille_inconnue" }]);
   });
@@ -377,6 +444,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -388,13 +456,29 @@ describe("projectCatalog", () => {
       name: { fr: "Croissant", en: "Croissant" },
     });
 
-    const { snapshot } = projectCatalog([bilingual], [category()], vat(), sold(), NO_DISCOUNT, AT);
+    const { snapshot } = projectCatalog(
+      [bilingual],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      INCO,
+      AT,
+    );
 
     expect(snapshot.products[0]?.name).toBe("Croissant");
   });
 
   it("rend un snapshot vide sans rien inventer quand rien n’est publié", () => {
-    const { snapshot, excluded } = projectCatalog([], [category()], vat(), sold(), NO_DISCOUNT, AT);
+    const { snapshot, excluded } = projectCatalog(
+      [],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      INCO,
+      AT,
+    );
 
     expect(snapshot.products).toEqual([]);
     expect(snapshot.categories).toEqual([]);
@@ -413,6 +497,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       vat(),
       sold([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
@@ -429,10 +514,85 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       vat(),
       new Map(),
       NO_DISCOUNT,
+      INCO,
       AT,
     );
 
     expect(snapshot.products).toEqual([]);
     expect(excluded).toEqual([{ sku: "VIE-001", reason: "canal_ferme" }]);
+  });
+});
+
+/**
+ * **Le fil transporte désormais les mentions d'étiquette** (D6). La plateforme
+ * B2B n'a plus le référentiel réglementaire : projeter là-bas exigerait d'y
+ * dupliquer du droit, donc de le laisser dériver.
+ *
+ * Les codes ne bougent pas — ils restent le stockage canonique, et ce sont eux
+ * qui portent les trois états.
+ */
+describe("projectCatalog — les allergènes", () => {
+  function labelsOf(codes: readonly string[] | null) {
+    const { snapshot } = projectCatalog(
+      [product({ variants: [variant({ allergens: codes })] })],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      INCO,
+      AT,
+    );
+    return snapshot.products[0]?.variants[0];
+  }
+
+  it("pousse les codes ET leurs mentions", () => {
+    expect(labelsOf(["UW"])).toMatchObject({
+      allergens: ["UW"],
+      allergenLabels: { labels: [{ category: "gluten", label: "gluten" }], incomplete: false },
+    });
+  });
+
+  it("dédoublonne le n:1 sans toucher aux codes", () => {
+    expect(labelsOf(["UW", "NR"])).toMatchObject({
+      allergens: ["UW", "NR"],
+      allergenLabels: { labels: [{ category: "gluten", label: "gluten" }], incomplete: false },
+    });
+  });
+
+  /**
+   * `null` = aucune fiche réglementaire. Les mentions le suivent : rendre `[]`
+   * ici ferait lire « aucun allergène » là où personne n'a rien déclaré, et
+   * c'est la seule faute qui compte sur ce champ.
+   */
+  it("laisse les mentions à `null` quand aucune fiche n'est déclarée", () => {
+    expect(labelsOf(null)).toMatchObject({ allergens: null, allergenLabels: null });
+  });
+
+  it("distingue « fiche sans allergène » de « pas de fiche »", () => {
+    expect(labelsOf([])).toMatchObject({
+      allergens: [],
+      allergenLabels: { labels: [], incomplete: false },
+    });
+  });
+
+  /**
+   * Régression, transposée : côté plateforme, un code hors obligation UE
+   * disparaissait de la projection **sans trace**, et l'écran affichait « Sans
+   * allergène » sur un article déclarant la noix de coco (fix 2026-08-31). Le
+   * fil porte donc `incomplete`, calculé là où le référentiel vit — le récepteur
+   * ne saurait pas le recalculer.
+   */
+  it("avoue la liste amputée par un code hors obligation UE", () => {
+    expect(labelsOf(["SO"])).toMatchObject({
+      allergens: ["SO"],
+      allergenLabels: { labels: [], incomplete: true },
+    });
+  });
+
+  it("avoue l'amputation même quand la liste de mentions n'est pas vide", () => {
+    expect(labelsOf(["UW", "SO"])?.allergenLabels).toEqual({
+      labels: [{ category: "gluten", label: "gluten" }],
+      incomplete: true,
+    });
   });
 });

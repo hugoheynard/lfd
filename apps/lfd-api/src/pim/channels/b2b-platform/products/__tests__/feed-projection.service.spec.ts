@@ -3,6 +3,11 @@ import { Test } from "@nestjs/testing";
 import { AccountingRules } from "../../../../accounting-rules/domain/entities/accounting-rules.js";
 import { ProPriceRatioNotSetError } from "../../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../../../../accounting-rules/domain/ports/accounting-rules.repository.js";
+import {
+  AllergenStore,
+  InMemoryAllergenCatalogueReader,
+} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
+import { AllergenCatalogueReader } from "../../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../../membership/membership.service.js";
 import { B2bCatalogFeedProjection } from "../feed-projection.service.js";
@@ -62,6 +67,10 @@ async function build(options: {
       {
         provide: B2bMembershipService,
         useValue: { publishedProductIds: () => Promise.resolve([...options.publishedIds]) },
+      },
+      {
+        provide: AllergenCatalogueReader,
+        useValue: new InMemoryAllergenCatalogueReader(new AllergenStore()),
       },
       {
         provide: AccountingRulesRepository,

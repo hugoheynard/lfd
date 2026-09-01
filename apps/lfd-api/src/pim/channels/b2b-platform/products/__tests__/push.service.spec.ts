@@ -9,6 +9,7 @@ import type { ProductRecord } from "../../../../catalogue/product/domain/ports/p
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
 import { B2bCatalogDriver, DryRunB2bCatalogDriver } from "../driver.js";
 import { B2bCatalogFeedPreview } from "../feed-preview.js";
+import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
 import { projectCatalog } from "../projection.js";
 import { B2bCatalogPushService } from "../push.service.js";
 
@@ -147,6 +148,9 @@ async function build(
                       ),
                       // Rapport neutre : ce test parle de PUSH, pas de tarif.
                       10_000,
+                      // Référentiel vide : aucune fiche n'est déclarée ici, donc
+                      // rien à projeter — ce test parle d'estampille.
+                      IncoProjector.from([], "fr"),
                       generatedAt,
                     ),
                     candidates: publishedIds.length,

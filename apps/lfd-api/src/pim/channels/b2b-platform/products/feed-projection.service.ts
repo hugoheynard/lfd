@@ -1,8 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
+import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
 import { ProPriceRatioNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
+import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
@@ -35,6 +38,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     private readonly catalogue: CatalogueReader,
     private readonly membership: B2bMembershipService,
     private readonly accounting: AccountingRulesRepository,
+    private readonly allergens: AllergenCatalogueReader,
   ) {
     super();
   }
@@ -64,9 +68,15 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // Le taux ET les canaux effectifs de chaque fiche — sa dérogation par-dessus
     // celle de sa famille. Résolus ici, une fois, pour que la projection reste
     // pure.
-    const [vatByProduct, channelsByProduct] = await Promise.all([
+    //
+    // Le référentiel d'allergènes les rejoint, pour la même raison et **une
+    // seule fois par projection** (D6) : la plateforme B2B n'a plus de quoi
+    // traduire un code GS1 en mention d'étiquette, donc c'est le PIM qui
+    // projette — mais `projectCatalog` reste pure, elle reçoit le projecteur.
+    const [vatByProduct, channelsByProduct, allergenCatalogue] = await Promise.all([
       this.catalogue.vatPercents(products),
       this.catalogue.effectiveChannels(products),
+      this.allergens.catalogue(),
     ]);
     const { snapshot, excluded } = projectCatalog(
       products,
@@ -74,6 +84,9 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       vatByProduct,
       channelsByProduct,
       rules.rules.proPriceRatio.basisPoints,
+      // Le canal est monolingue français : l'aplatissement se fait à l'émission
+      // plutôt que de transporter un objet localisé que personne ne lira.
+      IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),
       generatedAt,
     );
     return { snapshot, candidates: productIds.length, excluded };

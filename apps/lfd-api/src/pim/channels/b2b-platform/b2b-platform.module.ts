@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.module.js";
+import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
@@ -26,7 +27,10 @@ import { B2bCatalogPushService } from "./products/push.service.js";
  * contrôleurs ne déclarent que leur sous-chemin.
  */
 @Module({
-  imports: [PimDatabaseModule, CatalogueModule, AccountingRulesModule],
+  // `AllergensModule` fournit le lecteur du référentiel : la projection y prend
+  // les mentions d'étiquette une fois par push (D6), parce que le récepteur n'a
+  // plus de quoi les fabriquer.
+  imports: [PimDatabaseModule, CatalogueModule, AccountingRulesModule, AllergensModule],
   controllers: [B2bMembershipController, B2bPushController],
   providers: [
     B2bMembershipService,
