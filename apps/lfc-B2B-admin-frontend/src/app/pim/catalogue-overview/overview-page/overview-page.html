@@ -5,7 +5,7 @@
   </p>
 
   @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
   } @else if (loading()) {
     <fold-loading message="Lecture du catalogue…" />
   } @else if (overview(); as o) {

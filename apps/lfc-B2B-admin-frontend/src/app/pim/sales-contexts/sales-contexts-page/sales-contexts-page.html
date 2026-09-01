@@ -16,7 +16,7 @@
   }
 
   @if (loadError(); as message) {
-    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
   }
 
   @if (contexts().length === 0) {
