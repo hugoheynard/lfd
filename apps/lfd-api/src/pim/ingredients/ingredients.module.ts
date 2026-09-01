@@ -21,6 +21,7 @@ import { SetProductIngredientsHandler } from "./application/set-product-ingredie
 import { AppellationRepository } from "./domain/ports/appellation.repository.js";
 import { IngredientRepository } from "./domain/ports/ingredient.repository.js";
 import { VariantDeclarationReader } from "./domain/ports/variant-declaration.reader.js";
+import { AppellationController } from "./http/appellation.controller.js";
 import { IngredientController } from "./http/ingredient.controller.js";
 import { PrismaAppellationRepository } from "./infrastructure/prisma-appellation.repository.js";
 import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.repository.js";
@@ -43,7 +44,7 @@ import { PrismaVariantDeclarationReader } from "./infrastructure/prisma-variant-
   // qu'il ne propose plus (D2 bis). Il n'expose aucun dépôt d'écriture — la
   // provenance lit le référentiel, elle ne l'administre pas.
   imports: [PimDatabaseModule, AllergensModule],
-  controllers: [IngredientController],
+  controllers: [IngredientController, AppellationController],
   providers: [
     CreateAppellationHandler,
     UpdateAppellationHandler,

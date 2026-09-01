@@ -1,36 +1,25 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
-  createAppellationPayloadSchema,
   createIngredientPayloadSchema,
   setIngredientAllergensPayloadSchema,
   setProductIngredientsPayloadSchema,
-  updateAppellationPayloadSchema,
   updateIngredientPayloadSchema,
-  type AppellationView,
   type IngredientView,
-  type CreateAppellationPayload,
   type CreateIngredientPayload,
   type ProductIngredientAllergensView,
   type SetIngredientAllergensPayload,
   type SetProductIngredientsPayload,
-  type UpdateAppellationPayload,
   type UpdateIngredientPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
-  CreateAppellationCommand,
-  RemoveAppellationCommand,
-  UpdateAppellationCommand,
-} from "../application/appellation-handlers.js";
-import {
   CreateIngredientCommand,
   RemoveIngredientCommand,
   UpdateIngredientCommand,
 } from "../application/ingredient-handlers.js";
-import { ListAppellationsQuery } from "../application/list-appellations.js";
 import { ListIngredientsQuery } from "../application/list-ingredients.js";
 import { ReadProductIngredientAllergensQuery } from "../application/read-product-ingredient-allergens.js";
 import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";
@@ -38,12 +27,17 @@ import { SetIngredientAllergensCommand } from "../application/set-ingredient-all
 import { SetProductIngredientsCommand } from "../application/set-product-ingredients.js";
 
 /**
- * Les **provenances** — ingrédients et appellations, en lecture et en écriture.
+ * Les **ingrédients** — la matière, ce qu'elle contient, et ce que chaque fiche
+ * en cite.
  *
- * Un seul contrôleur pour deux référentiels, parce que ce sont deux moitiés
- * d'une même chose : une appellation n'existe ici que pour être portée par un
- * ingrédient, et aucun écran n'ouvre l'une sans l'autre. Les séparer ferait
- * deux portes pour une seule pièce.
+ * Les appellations ont leur propre porte ({@link AppellationController}) : deux
+ * référentiels, deux raisons de changer.
+ *
+ * Le chemin de base reste vide parce que ce contrôleur en sert deux : la
+ * matière (`ingredients/…`) et la composition d'une fiche
+ * (`products/:id/…`). Ces routes-là appartiennent bien ici — la composition
+ * n'existe que comme citation d'ingrédients, et la découper ferait un
+ * contrôleur qui ne saurait rien de ce qu'il liste.
  *
  * ⚠️ Rien de ce qui se déclare ici n'est une mention obligatoire au sens du
  * règlement UE 1169/2011 : la liste réglementaire d'ingrédients appartient à la
@@ -57,40 +51,6 @@ export class IngredientController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
-
-  @Get("appellations")
-  listAppellations(): Promise<AppellationView[]> {
-    return this.queries.execute<ListAppellationsQuery, AppellationView[]>(
-      new ListAppellationsQuery(),
-    );
-  }
-
-  @Post("appellations")
-  async createAppellation(
-    @Body(new ZodBody(createAppellationPayloadSchema)) body: CreateAppellationPayload,
-  ) {
-    const code = await this.commands.execute<CreateAppellationCommand, string>(
-      new CreateAppellationCommand(body),
-    );
-    return { code };
-  }
-
-  @Put("appellations/:code")
-  async updateAppellation(
-    @Param("code") code: string,
-    @Body(new ZodBody(updateAppellationPayloadSchema)) body: UpdateAppellationPayload,
-  ) {
-    await this.commands.execute<UpdateAppellationCommand, void>(
-      new UpdateAppellationCommand(code, body),
-    );
-    return { code };
-  }
-
-  @Delete("appellations/:code")
-  async removeAppellation(@Param("code") code: string) {
-    await this.commands.execute<RemoveAppellationCommand, void>(new RemoveAppellationCommand(code));
-    return { code };
-  }
 
   @Get("ingredients")
   listIngredients(): Promise<IngredientView[]> {
