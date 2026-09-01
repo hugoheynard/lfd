@@ -56,7 +56,20 @@ interface IngredientRow {
   readonly description: Record<string, string> | null;
   readonly origin: string;
   readonly appellation: AppellationRow | null;
+  readonly allergens: string[];
   readonly usedBy: number;
+}
+
+interface VariantGapRow {
+  readonly variantId: string;
+  readonly declaredAllergens: string[] | null;
+  readonly citedNotDeclared: string[];
+}
+
+interface CitedAllergensRow {
+  readonly productId: string;
+  readonly citedByIngredients: string[];
+  readonly variants: VariantGapRow[];
 }
 
 const appellations = async (): Promise<AppellationRow[]> =>
@@ -108,6 +121,21 @@ async function aProduct(): Promise<string> {
   expect(created.status).toBe(201);
   return jsonBody<{ id: string }>(created).id;
 }
+
+/** La déclinaison par défaut, celle qui porte la fiche réglementaire. */
+async function defaultVariant(productId: string): Promise<string> {
+  const detail = await staff().get(`${PRODUCTS}/${productId}`).expect(200);
+  const variantId = jsonBody<{ variants: { id: string }[] }>(detail).variants[0]?.id;
+  if (variantId === undefined) {
+    throw new Error("le produit est né sans déclinaison par défaut");
+  }
+  return variantId;
+}
+
+const citedAllergens = async (productId: string): Promise<CitedAllergensRow> =>
+  jsonBody<CitedAllergensRow>(
+    await staff().get(`/pim/products/${productId}/ingredient-allergens`).expect(200),
+  );
 
 describe("le référentiel des appellations", () => {
   it("ouvre une appellation en service, et la rend par son code", async () => {
@@ -238,5 +266,165 @@ describe("ce qu'une fiche cite", () => {
       .send({ keys: ["fantome"] });
 
     expect(response.status).toBe(404);
+  });
+});
+
+/**
+ * **Ce qu'un ingrédient contient** — contre le référentiel SEMÉ par la
+ * migration, pas contre une constante.
+ *
+ * Ce que seul ce niveau prouve : les codes GS1 sont bien en table, la liaison
+ * les rattache par identifiant, et la clé étrangère `Cascade` emporte les
+ * liaisons d'une matière effacée — trois choses qu'un double en mémoire ne peut
+ * qu'imiter.
+ */
+describe("les allergènes d'un ingrédient", () => {
+  const setAllergens = (key: string, codes: readonly string[]) =>
+    staff().put(`${INGREDIENTS}/${key}/allergens`).send({ codes });
+
+  it("pose des codes du référentiel et les rend avec la matière", async () => {
+    const key = await anIngredient("praline");
+
+    await setAllergens(key, ["SH", "UW"]).expect(200);
+
+    expect((await ingredients())[0]?.allergens).toEqual(["SH", "UW"]);
+  });
+
+  // D4 : le périmètre de la matière est `world`. Un ingrédient énonce un fait —
+  // une farine qui contient du sarrasin en contient, que l'Europe l'exige ou
+  // non — et le filtre européen appartient à la déclaration, pas à la matière.
+  it("accepte un code hors obligation UE", async () => {
+    const key = await anIngredient("farine-de-sarrasin");
+
+    await setAllergens(key, ["BWD"]).expect(200);
+
+    expect((await ingredients())[0]?.allergens).toEqual(["BWD"]);
+  });
+
+  it("refuse un code que la table ne porte pas", async () => {
+    const key = await anIngredient("praline");
+
+    const refus = await setAllergens(key, ["ZZZZ"]);
+
+    expect(refus.status).toBe(400);
+    expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.ingredient.allergen_unknown");
+  });
+
+  it("remplace la liste entière, y compris par le vide", async () => {
+    const key = await anIngredient("praline");
+    await setAllergens(key, ["SH", "UW"]).expect(200);
+
+    await setAllergens(key, []).expect(200);
+
+    expect((await ingredients())[0]?.allergens).toEqual([]);
+  });
+
+  /**
+   * `Cascade` côté ingrédient : ses déclarations n'ont plus d'objet quand il
+   * disparaît. Sans elle, la clé étrangère refuserait l'effacement d'une
+   * matière que plus aucune fiche ne cite — et l'écran ne pourrait plus jamais
+   * la retirer du référentiel.
+   */
+  it("laisse effacer une matière qui porte des allergènes", async () => {
+    const key = await anIngredient("praline");
+    await setAllergens(key, ["SH"]).expect(200);
+
+    await staff().delete(`${INGREDIENTS}/${key}`).expect(200);
+
+    expect(await ingredients()).toEqual([]);
+  });
+});
+
+/**
+ * **L'ensemble dérivé (D5)** — il propose, la déclaration décide.
+ *
+ * ⚠️ Une proposition vide ne dit RIEN : la liste d'ingrédients est éditoriale,
+ * et rien n'y garantit l'exhaustivité. Ces tests figent ce que l'API rend, pas
+ * une quelconque conformité de la fiche.
+ */
+describe("ce que la composition d'une fiche mentionne", () => {
+  it("unit les codes des ingrédients cités, sans doublon", async () => {
+    const praline = await anIngredient("praline");
+    const nougat = await anIngredient("nougat");
+    await staff()
+      .put(`${INGREDIENTS}/${praline}/allergens`)
+      .send({ codes: ["SH", "UW"] });
+    await staff()
+      .put(`${INGREDIENTS}/${nougat}/allergens`)
+      .send({ codes: ["SH"] });
+    const productId = await aProduct();
+    await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [praline, nougat] })
+      .expect(200);
+
+    expect((await citedAllergens(productId)).citedByIngredients).toEqual(["SH", "UW"]);
+  });
+
+  // Sans fiche déclarée, il n'y a rien à reprendre : fabriquer une mention
+  // réglementaire depuis une liste éditoriale est le geste que l'avertissement
+  // de `Ingredient` interdit.
+  it("ne propose rien à une déclinaison sans fiche", async () => {
+    const praline = await anIngredient("praline");
+    await staff()
+      .put(`${INGREDIENTS}/${praline}/allergens`)
+      .send({ codes: ["SH"] });
+    const productId = await aProduct();
+    await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [praline] })
+      .expect(200);
+
+    const view = await citedAllergens(productId);
+
+    expect(view.variants).toEqual([
+      { variantId: await defaultVariant(productId), declaredAllergens: null, citedNotDeclared: [] },
+    ]);
+    expect(view.citedByIngredients).toEqual(["SH"]);
+  });
+
+  it("propose ce que la composition mentionne et que la fiche ne déclare pas", async () => {
+    const praline = await anIngredient("praline");
+    await staff()
+      .put(`${INGREDIENTS}/${praline}/allergens`)
+      .send({ codes: ["SH", "UW"] });
+    const productId = await aProduct();
+    const variantId = await defaultVariant(productId);
+    await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [praline] })
+      .expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`)
+      .send({ allergens: ["UW"] })
+      .expect(200);
+
+    expect((await citedAllergens(productId)).variants).toEqual([
+      { variantId, declaredAllergens: ["UW"], citedNotDeclared: ["SH"] },
+    ]);
+  });
+
+  // Le dérivé ne RETIRE jamais : un allergène déclaré à la main — une
+  // contamination croisée d'atelier — n'est pas contredit par une composition
+  // éditoriale qui l'ignore.
+  it("ne propose jamais de retirer ce que la fiche déclare en plus", async () => {
+    const praline = await anIngredient("praline");
+    await staff()
+      .put(`${INGREDIENTS}/${praline}/allergens`)
+      .send({ codes: ["SH"] });
+    const productId = await aProduct();
+    const variantId = await defaultVariant(productId);
+    await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [praline] })
+      .expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`)
+      .send({ allergens: ["SH", "BWD"] })
+      .expect(200);
+
+    expect((await citedAllergens(productId)).variants).toEqual([
+      { variantId, declaredAllergens: ["SH", "BWD"], citedNotDeclared: [] },
+    ]);
   });
 });
