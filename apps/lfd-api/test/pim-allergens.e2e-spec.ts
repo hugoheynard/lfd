@@ -588,6 +588,99 @@ describe("l'archivage (D2 bis)", () => {
   });
 });
 
+/**
+ * **D3 et son revers, contre le vrai SQL.**
+ *
+ * Le value object ne cherche plus les codes, il les reçoit : c'est le handler
+ * qui charge `knownCodes()` depuis la table. Seul un e2e prouve que la chaîne
+ * entière tient — endpoint, handler, adaptateur Prisma, table semée — et
+ * surtout que `knownCodes()` rend **aussi** les codes archivés, ce qui est la
+ * moitié la moins évidente de D2 bis.
+ */
+describe("la fiche réglementaire se valide contre le référentiel EN BASE (D3)", () => {
+  const PRODUCTS = "/pim/catalogue/products";
+  const CATEGORIES = "/pim/catalogue/categories";
+
+  /** Ouvre un produit sans fiche, et rend le couple produit / déclinaison. */
+  async function aProduct(): Promise<{ productId: string; variantId: string }> {
+    const family = await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Viennoiseries" } });
+    expect(family.status).toBe(201);
+    const created = await staff()
+      .post(PRODUCTS)
+      .send({
+        name: { fr: "Croissant" },
+        kind: "daily",
+        categoryId: jsonBody<{ id: string }>(family).id,
+      });
+    expect(created.status).toBe(201);
+    const productId = jsonBody<{ id: string }>(created).id;
+
+    const detail = await staff().get(`${PRODUCTS}/${productId}`).expect(200);
+    const variantId = jsonBody<{ variants: { id: string }[] }>(detail).variants[0]?.id;
+    if (variantId === undefined) {
+      throw new Error("le produit est né sans déclinaison par défaut");
+    }
+    return { productId, variantId };
+  }
+
+  function declare(
+    productId: string,
+    variantId: string,
+    body: Record<string, unknown>,
+  ): ReturnType<ReturnType<typeof staff>["put"]> {
+    return staff().put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`).send(body);
+  }
+
+  it("accepte un code GS1 semé par la migration", async () => {
+    const { productId, variantId } = await aProduct();
+
+    await declare(productId, variantId, { allergens: ["UW"] }).expect(200);
+  });
+
+  it("refuse un code que la table ne porte pas", async () => {
+    const { productId, variantId } = await aProduct();
+
+    const refus = await declare(productId, variantId, { allergens: ["ZZZZ"] });
+
+    expect(refus.status).toBe(400);
+    expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.allergen.unknown");
+  });
+
+  it("refuse d'AJOUTER un allergène archivé à une fiche qui ne le citait pas", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    const entryId = await createEntry("X-SOUCHET", categoryId);
+    const { productId, variantId } = await aProduct();
+    await staff().put(`${ADMIN}/entries/${entryId}/archive`).expect(200);
+
+    const refus = await declare(productId, variantId, { allergens: ["X-SOUCHET"] });
+
+    expect(refus.status).toBe(409);
+    expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.allergen.archived");
+  });
+
+  /**
+   * Le cœur de D2 bis : la déclaration est revalidée **entière** à chaque
+   * enregistrement. Un refus sec ferait échouer un changement de valeur
+   * nutritionnelle sur un allergène que personne n'a touché — et invaliderait
+   * l'étiquette d'un produit déjà servi sans que quiconque l'ait décidé.
+   */
+  it("laisse réenregistrer une fiche qui citait déjà l'allergène avant son archivage", async () => {
+    const categoryId = await createCategory("fruits-coque-exotiques");
+    const entryId = await createEntry("X-SOUCHET", categoryId);
+    const { productId, variantId } = await aProduct();
+    await declare(productId, variantId, { allergens: ["X-SOUCHET"] }).expect(200);
+
+    await staff().put(`${ADMIN}/entries/${entryId}/archive`).expect(200);
+
+    await declare(productId, variantId, {
+      allergens: ["X-SOUCHET"],
+      nutrition: { saltG: 2 },
+    }).expect(200);
+  });
+});
+
 describe("l'officiel, vu de l'API", () => {
   it("refuse de renommer une catégorie de l'annexe II", async () => {
     const catalogue = await adminCatalogue();

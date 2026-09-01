@@ -62,6 +62,7 @@ function snapshot(priceMillicents: number): CatalogSnapshot {
         variants: [
           {
             allergens: null,
+            allergenLabels: null,
             sku: SKU,
             name: "Croissant",
             priceMillicents,

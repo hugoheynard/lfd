@@ -54,31 +54,42 @@ function snapshot(
     priceMillicents: number;
     vatRatePercent?: number | null;
     allergens?: readonly string[] | null;
+    /** Les mentions déjà projetées par le PIM (v5 du fil). */
+    allergenLabels?: { labels: { category: string; label: string }[]; incomplete: boolean } | null;
   }[],
 ): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [CATEGORY],
-    products: skus.map(({ sku, priceMillicents, vatRatePercent = 5.5, allergens = ["AW"] }) => ({
-      id: `prd_${sku}`,
-      sku,
-      name: `Produit ${sku}`,
-      categoryId: CATEGORY.id,
-      kind: "daily" as const,
-      variants: [
-        {
-          sku: `${sku}-1`,
-          name: `Produit ${sku}`,
-          priceMillicents,
-          weightGrams: null,
-          isDefault: true,
-          position: 0,
-          vatRatePercent,
-          allergens: allergens === null ? null : [...allergens],
-        },
-      ],
-    })),
+    products: skus.map(
+      ({
+        sku,
+        priceMillicents,
+        vatRatePercent = 5.5,
+        allergens = ["AW"],
+        allergenLabels = null,
+      }) => ({
+        id: `prd_${sku}`,
+        sku,
+        name: `Produit ${sku}`,
+        categoryId: CATEGORY.id,
+        kind: "daily" as const,
+        variants: [
+          {
+            sku: `${sku}-1`,
+            name: `Produit ${sku}`,
+            priceMillicents,
+            weightGrams: null,
+            isDefault: true,
+            position: 0,
+            vatRatePercent,
+            allergens: allergens === null ? null : [...allergens],
+            allergenLabels,
+          },
+        ],
+      }),
+    ),
   };
 }
 
@@ -226,6 +237,91 @@ describe("les allergènes traversent le fil", () => {
     });
 
     expect(row?.allergens).toBeNull();
+  });
+});
+
+/**
+ * **Les mentions d'étiquette arrivent projetées** (D6, v5 du fil).
+ *
+ * La plateforme n'a plus le référentiel réglementaire : elle range ce que le
+ * PIM lui envoie, `incomplete` compris. Le vrai SQL compte ici — c'est une
+ * colonne `jsonb` de plus, et le repli `DbNull` de l'upsert est exactement ce
+ * qui empêche une fiche retirée de laisser des mentions derrière elle.
+ */
+describe("les mentions d’étiquette traversent le fil", () => {
+  const MENTIONS = {
+    labels: [{ category: "gluten", label: "Céréales contenant du gluten" }],
+    incomplete: false,
+  };
+
+  it("écrit les mentions à côté des codes, sans les remplacer", async () => {
+    await push(
+      snapshot([
+        {
+          sku: "LBL-001",
+          priceMillicents: 100_000,
+          allergens: ["UW"],
+          allergenLabels: MENTIONS,
+        },
+      ]),
+    );
+
+    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "LBL-001-1" },
+      select: { allergens: true, allergenLabels: true },
+    });
+
+    expect(row.allergens).toEqual(["UW"]);
+    expect(row.allergenLabels).toEqual(MENTIONS);
+  });
+
+  /**
+   * Le drapeau doit survivre au transport : sans lui, l'écran lirait une liste
+   * vide comme « sans allergène » sur un article qui déclare la noix de coco.
+   */
+  it("conserve l’aveu d’une liste amputée", async () => {
+    await push(
+      snapshot([
+        {
+          sku: "LBL-002",
+          priceMillicents: 100_000,
+          allergens: ["SO"],
+          allergenLabels: { labels: [], incomplete: true },
+        },
+      ]),
+    );
+
+    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "LBL-002-1" },
+      select: { allergenLabels: true },
+    });
+
+    expect(row.allergenLabels).toEqual({ labels: [], incomplete: true });
+  });
+
+  it("efface les mentions quand le PIM retire la fiche", async () => {
+    await push(
+      snapshot([
+        {
+          sku: "LBL-003",
+          priceMillicents: 100_000,
+          allergens: ["UW"],
+          allergenLabels: MENTIONS,
+        },
+      ]),
+    );
+    await push(
+      snapshot([
+        { sku: "LBL-003", priceMillicents: 100_000, allergens: null, allergenLabels: null },
+      ]),
+    );
+
+    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "LBL-003-1" },
+      select: { allergenLabels: true },
+    });
+
+    expect(row.allergenLabels).toBeNull();
   });
 });
 

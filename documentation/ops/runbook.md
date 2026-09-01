@@ -232,6 +232,46 @@ Ce qui se casse si on l'oublie :
   déclaration produit qui porte ce code en `Json` n'a, elle, aucune clé
   étrangère pour la protéger — elle deviendra un code inconnu à la projection.
 
+## Faire descendre les mentions d'allergènes sur le catalogue B2B
+
+Symptôme : après le déploiement de la v5 du fil catalogue, l'écran
+d'administration du catalogue B2B affiche « sans fiche » sur des articles qui
+déclarent pourtant des allergènes.
+
+Ce n'est pas une panne, c'est l'état intermédiaire prévu. La colonne
+`public.catalog_items.allergen_labels` naît à `NULL` : aucune migration ne peut
+la garnir, la traduction d'un code GS1 en mention d'étiquette demande le
+référentiel PIM (D6 de
+[`documentation/pim/data-model/05-allergenes-gs1-inco.md`](../pim/data-model/05-allergenes-gs1-inco.md)).
+C'est un **push complet** qui la remplit — la republication écrit tous les
+articles, décisions commerciales conservées.
+
+La bascule se fait en **trois temps**, et l'ordre compte :
+
+1. **Déployer.** Le PIM projette et envoie `allergenLabels` ; la plateforme
+   l'ingère et le stocke. `allergens` (les codes) ne bouge pas — il reste le
+   stockage canonique, et l'écran continue de le projeter lui-même.
+2. **Pousser tout le catalogue**, une fois, depuis le back-office : _Référentiel
+   → Canaux → Plateforme B2B → Publier_ (`POST /pim/channels/b2b/push`,
+   `dryRun: false`). Vérifier ensuite qu'il ne reste plus d'article sans
+   mentions parmi ceux qui déclarent une fiche :
+
+   ```sql
+   SELECT count(*) FROM public.catalog_items
+   WHERE allergens IS NOT NULL AND allergen_labels IS NULL;
+   ```
+
+   Attendu : `0`. Tant que ce compte n'est pas nul, **ne pas passer au temps 3**.
+
+3. **Seulement alors**, retirer `toInco` / `findMapping` du lecteur B2B
+   (`src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts`) et servir
+   `allergen_labels`. Le faire avant viderait la colonne allergènes de l'écran
+   d'administration sur tous les articles reçus avant le temps 2.
+
+Entre le temps 1 et le temps 3, l'écran lit `null` sur les articles anciens et
+affiche « sans fiche ». C'est **faux mais prudent** : jamais « sans allergène »,
+qui serait une affirmation positive sur un champ réglementé.
+
 ## Retirer le référentiel d'allergènes — l'ordre de démontage
 
 Symptôme : il faut défaire `20260902120000_referentiel_allergenes` (retour

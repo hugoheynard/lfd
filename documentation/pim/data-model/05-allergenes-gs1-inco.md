@@ -222,9 +222,9 @@ port et le passe à la factory** :
 
 ```ts
 // application/ — le handler lit le référentiel
-const known = await this.allergenCatalogue.knownCodes(); // Set<string>
-// domain/ — la factory reste pure, synchrone, testable sans Nest
-NutritionDeclaration.create(payload, known);
+const known = await this.catalogue.knownCodes(); // ReadonlySet<string>
+// domain/ — la fabrique reste pure, synchrone, testable sans Nest
+nutritionDeclaration(allergens, mayContain, values, known);
 ```
 
 Le value object garde son invariant (« un code inconnu est refusé ») et reste
@@ -238,8 +238,19 @@ Un ingrédient déclare ce qu'il **est** (« contient des noisettes » → `SH`)
 ce qu'une étiquette en dira. La projection vers la catégorie appartient à
 l'affichage, exactement comme pour la déclinaison. Table de liaison
 `ingredient_allergen`, pas un `Json` : ici on voudra l'index inverse (« quels
-produits contiennent du gluten »), et c'est la question laissée ouverte au
-§ « décisions ouvertes » de `03-nutrition.md`.
+produits contiennent du gluten »).
+
+**Le périmètre offert à l'ingrédient est `world`, jamais `eu`.** Un ingrédient
+énonce un **fait** : une farine qui contient du sarrasin en contient, que
+l'Europe l'exige ou non. Servir le catalogue `eu` rendrait `BWD`, `NM` et `SO`
+impossibles à poser sur une matière — c'est-à-dire interdirait de consigner
+précisément ce qu'on aura besoin de savoir un jour, pour un marché hors UE ou
+pour un client qui demande.
+
+Le filtre européen appartient à la **déclaration**, pas à la matière. Un code
+hors obligation UE posé sur un ingrédient remonte donc dans le dérivé, entre
+dans la déclaration si le staff le reprend, et `toInco` l'écarte de l'étiquette
+— chaque étage fait son travail, et aucun ne décide à la place d'un autre.
 
 ### D5 — La dérivation **propose**, la déclaration **décide**
 
@@ -353,8 +364,59 @@ Trois coûts que la première rédaction passait sous silence :
    dans le même processus, donc le bump est atomique — mais il se nomme.
 3. **Les `catalog_items` déjà en base ne portent que des codes.** Retirer
    `toInco` du B2B sans repush complet viderait la colonne allergènes de
-   l'écran admin. La seconde source « existe déjà » était faux : elle demande un
-   backfill ou un repush, à chiffrer au lot 4.
+   l'écran admin. La seconde source « existe déjà » était faux.
+
+#### Comment la projection entre dans le push — la même forme que D3
+
+`projectVariant()` est **pure et synchrone**, et doit le rester : c'est ce qui la
+rend testable sans base. Elle ne va donc pas chercher le référentiel, **elle le
+reçoit** — exactement comme `nutritionDeclaration` reçoit `knownCodes()` en D3.
+Une seule lecture par projection, dans **`B2bCatalogFeedProjection`**, passée aux
+fonctions pures.
+
+⚠️ Pas dans `B2bCatalogPushService`, comme une première rédaction le disait :
+le push ne projette pas, il délègue à `B2bCatalogFeedPreview.preview()`. Y faire
+entrer le référentiel aurait demandé de changer la signature de ce port — dont
+le second consommateur est `b2b/catalog/application/check-catalog-parity.service.ts`,
+qui aurait alors dû se procurer le projecteur PIM. C'est-à-dire exactement ce
+que D6 interdit. La lecture vit donc dans ce qui projette.
+
+```ts
+// push.service.ts — une fois par push
+const inco = await this.allergens.projector(); // port de lecture PIM
+// projection.ts — reste pure
+projectVariant(variant, htPrice, vatRate, inco);
+```
+
+La solution rejetée est de rendre `projectVariant` asynchrone : elle perdrait la
+propriété qui la rend éprouvable, pour un gain nul.
+
+#### Le champ ajouté, et ce qu'il ne remplace pas
+
+`SyncVariant` gagne `allergenLabels: { labels, incomplete } | null` **à côté** de
+`allergens`, qui ne bouge pas — un **objet**, pas un tableau : le drapeau
+d'amputation doit se poser quelque part, et une liste ne peut pas le porter.
+`labels` y est le tableau des `{ category, label }`. Les codes restent le stockage canonique et les
+trois états restent portés par eux ; le nouveau champ est une **commodité
+d'affichage**, et il suit `null` quand `allergens` vaut `null`.
+
+⚠️ Il ne peut pas porter l'information « la liste est amputée » : un code hors
+INCO disparaît de la projection sans que le récepteur puisse le savoir. C'est le
+défaut corrigé le 2026-08-31 dans `allergensOf`, et il se rejouerait ici.
+`allergenLabels` porte donc **aussi** `incomplete: boolean`, calculé côté PIM
+qui, lui, a le référentiel.
+
+#### Le backfill : un push complet, pas une migration
+
+Rien à écrire. `B2bCatalogPushService.push()` existe et republie tout le
+catalogue ; le nouveau champ apparaît sur chaque `catalog_item` au premier
+passage. La séquence de déploiement est donc : déployer, **puis** lancer un push
+complet, **puis** seulement retirer le `toInco` du B2B — trois temps, comme
+toute bascule de ce dépôt. Le geste va au runbook.
+
+Tant que le push n'a pas tourné, l'écran admin lit `allergenLabels: null` sur les
+articles anciens : il affiche « sans fiche », ce qui est faux mais **prudent** —
+jamais « sans allergène ».
 
 ## Le modèle de données
 
@@ -555,7 +617,23 @@ Trois surfaces, deux existantes et une vide qui attend.
    d'une entrée. L'officiel s'y affiche **en lecture seule et signalé comme
    tel** — pas grisé sans explication : un cadenas et la raison.
 2. **`pim/provenance/ingredients-page/`** — la fiche ingrédient gagne une
-   section « Allergènes », un sélecteur multiple sur le référentiel.
+   section « Allergènes », dans son panneau. Le contrôle est
+   **`<fold-multiselect>`** en API `[options]` : sa valeur est un
+   `readonly T[]`, le panneau **reste ouvert** entre deux clics (cocher cinq
+   allergènes est une seule interaction), et il porte `role="listbox"` +
+   `aria-multiselectable` sans qu'on s'en occupe.
+
+   **Le groupement est natif** : une entrée d'`[options]` est soit une option
+   simple, soit un `FoldSelectOptionGroup` étiqueté. La règle est celle que la
+   fiche réglementaire applique déjà — **on groupe une catégorie qui a plus
+   d'une entrée, on aplatit celle qui n'en a qu'une**. Ce n'est pas une
+   préférence : les douze catégories INCO à entrée unique portent un libellé
+   identique à leur entrée (« Céleri » sous « Céleri »), et un groupe d'un seul
+   élément y serait une redondance visible. Sur le catalogue `world`, seules
+   `gluten` (7), `tree_nuts` (8) et « hors obligation UE » (3) se groupent.
+
+   Périmètre `world`, cf. D4.
+
 3. **`product-form/form-sections/regulatory/`** — la fiche réglementaire gagne
    le bandeau d'écart de D5 et son bouton de reprise. ⚠️ **Et le groupement
    change** : il repose aujourd'hui sur `entry.incoLabel ?? 'Hors obligation
