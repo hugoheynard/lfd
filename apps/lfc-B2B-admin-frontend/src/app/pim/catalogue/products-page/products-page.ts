@@ -24,6 +24,8 @@ import {
 
 import { NO_CHANNELS, pointsOfSaleSelling, resolveChannels } from '../../data/channels';
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
+import { SalesContextStore } from '../../sales-contexts/sales-context-store';
+import { soldContexts, type SoldContext } from '../sold-contexts';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
 import {
@@ -33,6 +35,8 @@ import {
   type SalesChannels,
   type VatRate,
 } from '../catalogue-api';
+import { productStatusLabel, productStatusVariant } from '../product-status';
+import type { ProductStatus } from '../../data/models';
 
 const SYNC_LABELS: Record<SyncStatus, string> = {
   never_pushed: 'jamais poussé',
@@ -77,6 +81,8 @@ export class ProductsPage {
 
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
   protected readonly pointsOfSale = this.pointStore.items;
+  /** Le registre des contextes — même raison : la colonne « Canaux » les lit tous. */
+  private readonly contexts = inject(SalesContextStore);
   private readonly shopify = inject(ShopifyApi);
   private readonly router = inject(Router);
 
@@ -218,6 +224,19 @@ export class ProductsPage {
   }
 
   /**
+   * Le statut, tel que la fiche produit le montre déjà. Deux passe-plats plutôt
+   * qu'une seconde table : la liste peignait la valeur d'enum brute, en anglais,
+   * et donnait le vert au brouillon comme au produit en ligne.
+   */
+  protected statusLabel(status: ProductStatus): string {
+    return productStatusLabel(status);
+  }
+
+  protected statusVariant(status: ProductStatus): FoldBadgeVariant {
+    return productStatusVariant(status);
+  }
+
+  /**
    * Les points de vente qui vendent ce contexte pour cette fiche.
    *
    * Les deux colonnes de la liste restent « à emporter » et « sur place » —
@@ -226,6 +245,18 @@ export class ProductsPage {
    */
   protected rowSelling(product: Product, contextKey: string): string[] {
     return pointsOfSaleSelling(this.rowChannels(product), contextKey, this.pointsOfSale());
+  }
+
+  /**
+   * Tous les contextes où cette fiche se vend — la colonne « Canaux ».
+   *
+   * Elle interrogeait `takeaway` et `eatIn`, deux clés écrites dans le gabarit,
+   * et rendait « aucun » quand les deux étaient vides. Une fiche vendue en B2B
+   * s'y affichait donc « aucun ». Le registre est une donnée : c'est lui qui
+   * dit quels contextes existent, comment ils s'appellent et dans quel ordre.
+   */
+  protected rowSoldContexts(product: Product): readonly SoldContext[] {
+    return soldContexts(this.rowChannels(product), this.contexts.items(), this.pointsOfSale());
   }
 
   protected rowInherited(product: Product): boolean {

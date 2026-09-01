@@ -96,28 +96,31 @@
       {{ categoryName(p.categoryId) }}
     </ng-template>
 
+    <!-- TOUS les contextes du registre, pas deux clés écrites en dur. La colonne
+         n'interrogeait que `takeaway` et `eatIn` : une fiche vendue en B2B —
+         le canal principal de la plateforme — s'y affichait « aucun ». Le
+         libellé et l'ordre viennent du registre, donc un contexte ajouté à
+         l'écran des contextes apparaît ici sans toucher au code.
+
+         Une seule teinte : avec N contextes, la couleur ne peut plus porter
+         l'identité, et deux pastilles de la même couleur sous des libellés
+         différents mentent moins qu'une palette qu'on épuise au troisième. -->
     <ng-template foldCell="channels" let-p>
       <span class="chan-pills">
-        @if (rowSelling(p, 'takeaway').length > 0) {
-          <fold-badge
-            [content]="'Emporter ' + rowSelling(p, 'takeaway').join(' · ')"
-            variant="accent"
-          />
-        }
-        @if (rowSelling(p, 'eatIn').length > 0) {
-          <fold-badge [content]="'Salle ' + rowSelling(p, 'eatIn').join(' · ')" variant="info" />
-        }
-        @if (rowSelling(p, 'takeaway').length === 0 && rowSelling(p, 'eatIn').length === 0) {
+        @for (sold of rowSoldContexts(p); track sold.key) {
+          <fold-badge [content]="sold.label + ' ' + sold.locations.join(' · ')" variant="info" />
+        } @empty {
           <span class="muted">aucun</span>
         }
       </span>
     </ng-template>
 
+    <!-- La pastille passe par la table partagée avec la fiche produit. Elle
+         peignait `p.status` — la valeur d'enum, en anglais — et donnait le vert
+         à tout ce qui n'est pas archivé : un brouillon s'affichait donc comme un
+         produit en ligne. -->
     <ng-template foldCell="status" let-p>
-      <fold-badge
-        [content]="p.status"
-        [variant]="p.status === 'archived' ? 'neutral' : 'success'"
-      />
+      <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
     </ng-template>
 
     <ng-template foldCell="sync" let-p>
@@ -137,7 +140,7 @@
           </fold-dropdown-item>
           @if (p.status === 'draft') {
             <fold-dropdown-item icon="check" [disabled]="busy()" (selected)="publish(p)">
-              Publier
+              Publier au catalogue
             </fold-dropdown-item>
           }
           @if (p.status === 'published') {

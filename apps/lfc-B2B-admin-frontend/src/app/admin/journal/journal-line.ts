@@ -75,7 +75,7 @@ function sentenceOf(event: ActivityEventView): string {
       // son identifiant technique.
       return `Commande ${text(p['orderNumber'])} passée`;
     case 'product.published':
-      return `Produit « ${text(p['name'])} » mis en vente (${text(p['sku'])})`;
+      return `Produit « ${text(p['name'])} » publié au catalogue (${text(p['sku'])})`;
     case 'product.unpublished':
       return `Produit « ${text(p['name'])} » retiré de la vente (${text(p['sku'])})`;
     default:
