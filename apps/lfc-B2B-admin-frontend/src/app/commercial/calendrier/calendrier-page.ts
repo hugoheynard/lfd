@@ -9,6 +9,7 @@ import {
 import { Router } from '@angular/router';
 import {
   FoldCalendarAgendaComponent,
+  FoldCalloutComponent,
   FoldCalendarDayComponent,
   FoldCalendarMonthComponent,
   FoldCalendarToolbarComponent,
@@ -63,6 +64,7 @@ type CalendarEvent = FoldCalendarEvent<AppointmentView>;
     FoldCalendarDayComponent,
     FoldCalendarToolbarComponent,
     FoldCalendarAgendaComponent,
+    FoldCalloutComponent,
   ],
   templateUrl: './calendrier-page.html',
   styleUrl: './calendrier-page.scss',

@@ -6,9 +6,9 @@
   </div>
 
   @if (state() === 'error') {
-    <p class="cal-error" role="alert">
-      Les rendez-vous n'ont pas pu être chargés — le backend B2B est-il démarré ?
-    </p>
+    <fold-callout appearance="inset" variant="alert" announce>
+      Les rendez-vous n'ont pas pu être chargés — le backend B2B est-il démarré&nbsp;?
+    </fold-callout>
   }
 
   <div class="cal-body">
