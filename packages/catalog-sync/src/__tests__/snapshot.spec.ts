@@ -15,6 +15,7 @@ const variant = {
   position: 0,
   vatRatePercent: 5.5,
   allergens: ["AW"],
+  allergenLabels: { labels: [{ category: "milk", label: "Lait" }], incomplete: false },
 };
 
 const snapshot = {
@@ -147,5 +148,61 @@ describe("les allergènes de l’article", () => {
 
   it("refuse un code vide", () => {
     expect(syncVariantSchema.safeParse({ ...variant, allergens: [""] }).success).toBe(false);
+  });
+});
+
+/**
+ * **Les mentions d'étiquette, depuis la v5.** Le fil ne portait que des codes,
+ * au motif que « la projection appartient à qui affiche ». Le motif est tombé :
+ * le référentiel d'allergènes est devenu une donnée administrable du PIM, et le
+ * récepteur n'a plus de quoi projeter (D6 de
+ * `documentation/pim/data-model/05-allergenes-gs1-inco.md`).
+ */
+describe("les mentions d’étiquette de l’article", () => {
+  it("exige le champ : un article muet dessus n’est pas un article sans allergène", () => {
+    const muet: Record<string, unknown> = { ...variant };
+    delete muet["allergenLabels"];
+
+    expect(syncVariantSchema.safeParse(muet).success).toBe(false);
+  });
+
+  it("accepte `null`, qui suit « aucune fiche déclarée »", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, allergenLabels: null }).success).toBe(true);
+  });
+
+  it("accepte une liste VIDE et complète — la fiche affirme « aucun allergène »", () => {
+    const vide = { ...variant, allergenLabels: { labels: [], incomplete: false } };
+
+    expect(syncVariantSchema.safeParse(vide).success).toBe(true);
+  });
+
+  /**
+   * Le drapeau est le cœur du champ. Sans lui, un article déclarant la seule
+   * noix de coco voyagerait avec une liste vide qu'un écran lirait « sans
+   * allergène » — c'est le défaut corrigé côté plateforme le 2026-08-31, et le
+   * fil le rejouerait.
+   */
+  it("exige `incomplete` : une liste amputée ne peut pas se taire", () => {
+    const sansAveu = { ...variant, allergenLabels: { labels: [] } };
+
+    expect(syncVariantSchema.safeParse(sansAveu).success).toBe(false);
+  });
+
+  it("refuse une mention sans catégorie — la clé est ce qu’un écran groupe", () => {
+    const orpheline = {
+      ...variant,
+      allergenLabels: { labels: [{ label: "Lait" }], incomplete: false },
+    };
+
+    expect(syncVariantSchema.safeParse(orpheline).success).toBe(false);
+  });
+
+  it("refuse un libellé vide — une mention muette ne s’imprime pas", () => {
+    const muette = {
+      ...variant,
+      allergenLabels: { labels: [{ category: "milk", label: "" }], incomplete: false },
+    };
+
+    expect(syncVariantSchema.safeParse(muette).success).toBe(false);
   });
 });

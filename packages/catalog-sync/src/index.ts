@@ -1,5 +1,7 @@
 export {
   CATALOG_SNAPSHOT_VERSION,
+  syncAllergenLabelSchema,
+  syncAllergenLabelsSchema,
   syncCategorySchema,
   syncVariantSchema,
   syncProductSchema,
@@ -7,6 +9,8 @@ export {
   catalogIngestionReportSchema,
 } from "./snapshot.js";
 export type {
+  SyncAllergenLabel,
+  SyncAllergenLabels,
   SyncCategory,
   SyncVariant,
   SyncProduct,

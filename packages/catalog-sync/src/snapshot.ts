@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 4;
+export const CATALOG_SNAPSHOT_VERSION = 5;
 
 /**
  * Une famille de produits, **à plat**.
@@ -62,6 +62,39 @@ export const syncCategorySchema = z.object({
   vatRatePercent: z.number().nonnegative().nullable(),
 });
 export type SyncCategory = z.infer<typeof syncCategorySchema>;
+
+/**
+ * Une mention d'étiquette, telle qu'elle s'imprime : la **catégorie INCO** et
+ * son libellé, dans la langue de l'émetteur (français).
+ *
+ * La catégorie est la clé stable et non traduite — c'est elle qu'un écran
+ * groupe, filtre ou compare ; le libellé est ce qu'il montre.
+ */
+export const syncAllergenLabelSchema = z.object({
+  category: z.string().min(1),
+  label: z.string().min(1),
+});
+export type SyncAllergenLabel = z.infer<typeof syncAllergenLabelSchema>;
+
+/**
+ * Les mentions projetées **et l'aveu que la liste peut être amputée**.
+ *
+ * `incomplete` n'est pas un confort : la projection INCO écarte silencieusement
+ * ce qui ne porte pas d'obligation UE (sarrasin, maïs, noix de coco) et ce que
+ * le référentiel ne connaît pas. Sans ce drapeau, un article déclarant la seule
+ * noix de coco voyagerait avec `labels: []`, qu'un écran lirait « sans
+ * allergène » — l'affirmation positive à la place d'une liste tronquée. C'est
+ * exactement le défaut corrigé le 2026-08-31 côté plateforme ; le rejouer sur le
+ * fil serait le réintroduire par la fenêtre.
+ *
+ * Il est calculé **côté PIM**, qui a le référentiel — le récepteur, lui, ne
+ * pourrait pas le recalculer.
+ */
+export const syncAllergenLabelsSchema = z.object({
+  labels: z.array(syncAllergenLabelSchema),
+  incomplete: z.boolean(),
+});
+export type SyncAllergenLabels = z.infer<typeof syncAllergenLabelsSchema>;
 
 /**
  * **L'unité réellement vendue** — une déclinaison du PIM (R4), pas le produit.
@@ -124,11 +157,29 @@ export const syncVariantSchema = z.object({
    * fil perdait — les allergènes ne voyageaient pas du tout, si bien que la
    * boutique qui vend le produit ignorait ce qu'il contient.
    *
-   * **Des codes, jamais des libellés** : la projection vers les catégories INCO
-   * (dédup n:1, mise en évidence, langue) est une décision d'AFFICHAGE, et elle
-   * appartient à qui affiche.
+   * **Ce champ reste le stockage canonique**, et c'est lui qui porte les trois
+   * états. {@link syncAllergenLabelsSchema} vient à côté, jamais à la place :
+   * une liste de mentions d'étiquette ne se re-projette pas, ne s'exporte pas en
+   * GDSN et ne se compare pas à ce que le référentiel déclare.
    */
   allergens: z.array(z.string().min(1)).nullable(),
+  /**
+   * Les mentions d'étiquette **déjà projetées**, par l'émetteur.
+   *
+   * ⚠️ **Renversement assumé de la v4.** Ce champ justifiait jusqu'ici que le
+   * fil ne porte « que des codes, jamais des libellés : la projection appartient
+   * à qui affiche ». La phrase supposait que le récepteur avait de quoi
+   * projeter. Ce n'est plus vrai : le référentiel d'allergènes est devenu une
+   * donnée administrable de la base PIM, et la plateforme B2B ne le lit pas
+   * (D6 de `documentation/pim/data-model/05-allergenes-gs1-inco.md`). Projeter
+   * là-bas exigerait d'y dupliquer un référentiel réglementaire, c'est-à-dire de
+   * le laisser dériver. La projection reste donc **une** décision, prise là où
+   * le référentiel vit.
+   *
+   * Suit `allergens` : `null` quand `allergens` vaut `null`, et **jamais**
+   * l'inverse — « aucune fiche » ne doit pas se lire « aucun allergène ».
+   */
+  allergenLabels: syncAllergenLabelsSchema.nullable(),
 });
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
 
