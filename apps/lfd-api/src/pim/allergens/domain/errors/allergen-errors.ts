@@ -209,3 +209,24 @@ export class ArchivedAllergenCategoryError extends BusinessError {
     );
   }
 }
+
+/**
+ * On n'AJOUTE pas un code archivé à une fiche réglementaire.
+ *
+ * Le pendant exact de `AllergenCatalogueReader.knownCodes()` : l'archivage
+ * retire une entrée de ce qu'on PROPOSE, jamais de ce qu'on reconnaît (D2 bis).
+ * Une déclaration qui cite déjà ce code se relit, se corrige et s'enregistre
+ * sans encombre — sinon changer une valeur nutritionnelle échouerait sur un
+ * code que personne n'a touché, puisque la déclaration est revalidée **entière**
+ * à chaque enregistrement. C'est l'ajout à neuf, et lui seul, qui est refusé.
+ */
+export class ArchivedAllergenDeclaredError extends BusinessError {
+  constructor(code: string) {
+    super(
+      "catalogue.allergen.archived",
+      `L'allergène « ${code} » a été retiré du référentiel : il ne se déclare ` +
+        `plus sur une nouvelle fiche. Choisissez un allergène proposé, ou faites ` +
+        `restaurer celui-ci depuis l'écran du référentiel.`,
+    );
+  }
+}
