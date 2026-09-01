@@ -8,7 +8,7 @@
 #
 # ── Deux niveaux, parce qu'il y a deux gestes ───────────────────────────────
 # `dev` ne déploie RIEN : la CI y tourne, et c'est elle qui juge. Le hook n'y
-# fait donc que les portes du dépôt — quatorze gates qui lisent des fichiers
+# fait donc que les portes du dépôt — dix-huit gates qui lisent des fichiers
 # sans rien compiler, cinq secondes à elles toutes. Elles auraient évité, le
 # 2026-08-29, un `lint:fold-tokens` rouge sur 21 variables inexistantes : CI
 # rouge, déploiement boutique perdu, un cycle complet pour s'en apercevoir.

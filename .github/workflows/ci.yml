@@ -83,7 +83,7 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Seize portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Dix-sept portes qui balaient TOUT le dépôt, et non l'app d'à côté.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -155,6 +155,14 @@ jobs:
       # il compte le reste et l'affiche, pour que la dette ne se taise pas.
       - name: "Gate : les identifiants sont en anglais"
         run: pnpm lint:code-language
+
+      # Un contrôleur qui injecte un dépôt marche parfaitement : rien ne casse,
+      # et la lecture n'a simplement pas de nom. Elle ne se teste qu'à travers
+      # HTTP, ne se réutilise pas, et le prochain qui en a besoin la réécrit.
+      # La règle était en incise dans le §4, enfreinte six fois ; le gate tient
+      # les contrôleurs drainés et affiche le solde plutôt que de le taire.
+      - name: "Gate : un contrôleur n'injecte que des bus"
+        run: pnpm lint:controller-buses
 
       # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
       # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en

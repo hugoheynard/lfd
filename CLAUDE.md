@@ -300,10 +300,30 @@ ensuite. Une requête de lecture n'écrit rien, pas même un compteur. Pas d'app
 croisé entre un handler d'écriture et un handler de lecture : ils se partagent le
 domaine ou les ports, pas leurs services.
 
-**Les deux backends utilisent le bus `@nestjs/cqrs`** (contrôleurs → `CommandBus`/
-`QueryBus`, jamais un service applicatif directement). Seule **l'organisation des
+**Les deux backends utilisent le bus `@nestjs/cqrs`.** Seule **l'organisation des
 fichiers diverge** — divergence assumée, notée ici pour qu'elle ne soit pas
 « corrigée » par mégarde.
+
+### 🔴 Un contrôleur n'injecte QUE des bus
+
+`CommandBus` et `QueryBus`, rien d'autre. Ni service applicatif, ni dépôt, **ni
+port de lecture** — un `*Reader` est un contournement au même titre qu'un
+`*Repository`.
+
+Ce qui compte n'est pas la nature du port, c'est que **la lecture ait un nom et
+un handler**. Une route qui appelle `repo.list()` en direct n'a pas de cas
+d'usage nommé : elle ne se teste qu'à travers HTTP, elle ne se réutilise pas,
+elle ne se journalise pas si elle devient une écriture, et le prochain qui aura
+besoin de la même lecture la réécrira.
+
+La règle était déjà là, en incise. Elle est enfreinte **six fois** — c'est
+précisément ce qu'une règle en incise devient. `lint:controller-buses` la tient
+désormais : les fichiers déjà corrigés échouent au premier retour en arrière,
+les autres sont **comptés et affichés** à chaque exécution, comme
+`lint:code-language`. La dette ne peut que décroître.
+
+⚠️ La règle vise les **contrôleurs**. Un service applicatif injecte des ports :
+c'est son travail.
 
 ### B2B platform — bus `@nestjs/cqrs`, fichiers command/handler séparés
 

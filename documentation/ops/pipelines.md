@@ -333,7 +333,7 @@ routage en production, et il porte la réécriture de l'IP cliente.
 | Hook                | Ce qu'il fait                                     | Coût      |
 | ------------------- | ------------------------------------------------- | --------- |
 | `pre-commit`        | Prettier sur ce qui est indexé                    | ~1 s      |
-| `pre-push`          | les 16 portes + les typechecks de ce qui a changé | **~10 s** |
+| `pre-push`          | les 18 portes + les typechecks de ce qui a changé | **~10 s** |
 | `pre-push` → `main` | + le verdict de la CI sur le commit promu         | ~1 s      |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
@@ -341,7 +341,7 @@ push : y mettre autre chose que du formatage ferait contourner le hook au
 `--no-verify`. Un **push**, lui, engage — et sur `main` il déclenche les
 déploiements. C'est là que les portes valent leur seconde.
 
-Les seize gates lisent des fichiers, elles ne compilent rien : cinq secondes
+Les dix-huit gates lisent des fichiers, elles ne compilent rien : cinq secondes
 à elles toutes. S'y ajoutent les **typechecks de ce qui a changé** — mesurés
 5,9 s (backend app), 2,4 s (ses specs), 3,5 s et 2,2 s (les deux fronts). Un
 push qui touche le backend coûte donc une dizaine de secondes en tout.
