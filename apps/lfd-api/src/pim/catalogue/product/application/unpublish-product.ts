@@ -24,7 +24,13 @@ export class UnpublishProductHandler implements ICommandHandler<UnpublishProduct
 
   async execute(command: UnpublishProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
-    product.unpublish();
+    // Un produit déjà en brouillon n'est pas retiré de la vente : il n'y était
+    // pas. Le fait était pourtant tracé inconditionnellement, avec sa portée —
+    // « N articles cessent d'être vendus » sur une fiche qui n'a pas bougé
+    // (audit 2026-09-01).
+    if (!product.unpublish()) {
+      return;
+    }
     const { sku, name, variants } = product.snapshot();
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({

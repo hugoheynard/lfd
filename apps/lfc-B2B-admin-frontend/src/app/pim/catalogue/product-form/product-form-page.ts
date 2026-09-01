@@ -19,11 +19,10 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
-  type FoldBadgeVariant,
 } from 'fold-ng';
 
-import type { ProductStatus } from '../../data/models';
 import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
+import { productStatusLabel, productStatusVariant } from '../product-status';
 
 import { CommunicationForm } from './form-sections/communication/communication-form';
 import { IdentityForm } from './form-sections/identity/identity-form';
@@ -37,23 +36,6 @@ import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
 import { SectionState } from '../section-state/section-state';
-
-/**
- * Les libellés d'état — exhaustifs par construction : un `Record<ProductStatus,
- * …>` casse la compilation le jour où le modèle gagne un état, là où un `switch`
- * avec `default` l'aurait peint « Brouillon » en silence.
- */
-const STATUS_LABELS: Readonly<Record<ProductStatus, string>> = {
-  draft: 'Brouillon',
-  published: 'Publié',
-  archived: 'Archivé',
-};
-
-const STATUS_VARIANTS: Readonly<Record<ProductStatus, FoldBadgeVariant>> = {
-  draft: 'warning',
-  published: 'success',
-  archived: 'neutral',
-};
 
 /** L'espace de noms des plis de CET écran — une fiche produit se replie comme
  *  une autre, donc la préférence est celle de l'écran, pas celle du produit. */
@@ -138,8 +120,8 @@ export class ProductFormPage implements HasPendingChanges {
     this.uiPrefs.setOpen(FOLD_SCOPE, key, open);
   }
 
-  protected readonly statusLabel = computed(() => STATUS_LABELS[this.store.status()]);
-  protected readonly statusVariant = computed(() => STATUS_VARIANTS[this.store.status()]);
+  protected readonly statusLabel = computed(() => productStatusLabel(this.store.status()));
+  protected readonly statusVariant = computed(() => productStatusVariant(this.store.status()));
 
   /**
    * Les faits de l'en-tête, après la référence : où le produit est rangé, et
@@ -173,7 +155,7 @@ export class ProductFormPage implements HasPendingChanges {
     {
       key: 'tarif',
       label: 'Tarif & TVA',
-      description: 'Prix canonique HT, canaux de vente et taux — hérités, ou redéfinis ici.',
+      description: 'Prix public TTC, canaux de vente et taux — hérités, ou redéfinis ici.',
     },
     {
       key: 'fiche',
@@ -225,20 +207,26 @@ export class ProductFormPage implements HasPendingChanges {
   }
 
   protected publish(): void {
-    void this.store.changeStatus('published');
+    void this.store.runLifecycle('publish');
   }
 
   protected unpublish(): void {
-    void this.store.changeStatus('draft');
+    void this.store.runLifecycle('unpublish');
   }
 
   protected archive(): void {
-    void this.store.changeStatus('archived');
+    void this.store.runLifecycle('archive');
   }
 
-  /** Une fiche archivée revient en BROUILLON, jamais directement en ligne. */
+  /**
+   * Une fiche archivée revient en BROUILLON, jamais directement en ligne.
+   *
+   * Ce geste passait par `changeStatus('draft')`, donc par la route de
+   * DÉPUBLICATION — qui ne fait rien sur un archivé. Il a sa route depuis le
+   * début côté serveur ; il ne l'appelait pas (audit 2026-09-01, §1).
+   */
   protected restore(): void {
-    void this.store.changeStatus('draft');
+    void this.store.runLifecycle('restore');
   }
 
   /** Enregistre toutes les sections modifiées, depuis le rail. */

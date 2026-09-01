@@ -5,7 +5,12 @@ import {
 } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
+import {
+  ArchivedProductNotWithdrawableError,
+  NotArchivedProductNotRestorableError,
+  ProductNotFoundError,
+  VariantNotFoundError,
+} from "../../domain/errors/product-errors.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -641,6 +646,42 @@ describe("UnpublishProductHandler", () => {
 
     expect(repo.snapshot()?.status).toBe("draft");
   });
+
+  /**
+   * Régression : le handler traçait `product.unpublished` — portée comprise,
+   * « N articles cessent d'être vendus » — avant même de savoir si l'agrégat
+   * avait changé d'état. Le journal est la trace d'audit ; un retrait de la
+   * vente qui n'a pas eu lieu y est un fait faux (audit 2026-09-01, §1).
+   */
+  it("n’inscrit RIEN au journal quand la fiche était déjà en brouillon", async () => {
+    const repo = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new UnpublishProductHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new UnpublishProductCommand(PRODUCT_ID),
+    );
+
+    expect(journal.types()).toEqual([]);
+    expect(repo.snapshot()?.status).toBe("draft");
+  });
+
+  /**
+   * C'est par ici que passait la RESTAURATION du back-office. Le refus est la
+   * seule chose qui rendait la panne visible.
+   */
+  it("refuse un produit archivé plutôt que de faire semblant", async () => {
+    const repo = new FakeProductRepository({ ...seedProduct(), status: "archived" });
+    const journal = new RecordingJournal();
+
+    await expect(
+      new UnpublishProductHandler(repo, journal, new DirectUnitOfWork()).execute(
+        new UnpublishProductCommand(PRODUCT_ID),
+      ),
+    ).rejects.toBeInstanceOf(ArchivedProductNotWithdrawableError);
+
+    expect(journal.types()).toEqual([]);
+    expect(repo.snapshot()?.status).toBe("archived");
+  });
 });
 
 describe("SetProductMediaHandler", () => {
@@ -708,6 +749,40 @@ describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
     );
 
     expect(journal.types()).toEqual(["product.archived", "product.restored"]);
+  });
+
+  /**
+   * L'archivage en lot passe par ce handler, et une sélection contient
+   * couramment ce qui est déjà archivé. Il reste donc idempotent — mais un
+   * second passage n'inscrit pas une seconde sortie de catalogue.
+   */
+  it("n’inscrit rien la seconde fois : archiver deux fois n’est pas archiver deux fois", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+    const uow = new DirectUnitOfWork();
+
+    await new ArchiveProductHandler(products, journal, uow).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
+    await new ArchiveProductHandler(products, journal, uow).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
+
+    expect(journal.types()).toEqual(["product.archived"]);
+  });
+
+  /** Restaurer ce qui n'est pas archivé rétrogradait un produit en ligne. */
+  it("refuse de restaurer un produit qui n’est pas archivé", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await expect(
+      new RestoreProductHandler(products, journal, new DirectUnitOfWork()).execute(
+        new RestoreProductCommand(PRODUCT_ID),
+      ),
+    ).rejects.toBeInstanceOf(NotArchivedProductNotRestorableError);
+
+    expect(journal.types()).toEqual([]);
   });
 
   it("emporte la référence et le nom — une fiche archivée sort des écrans", async () => {

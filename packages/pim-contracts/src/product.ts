@@ -221,10 +221,30 @@ export type ProductDetailView = ProductView & {
    * La dernière fois que le CONTENU de la fiche a bougé — toutes tables
    * confondues (socle, déclinaisons, éditorial, visuels).
    *
-   * `updatedAt` du seul produit ne suffirait pas : changer une photo ou une
-   * description n'y touche pas, et une déclaration se dirait à jour après.
+   * @deprecated Mesure fausse **dans les deux sens** ; lire
+   *   {@link ProductDetailView.readinessStale} à la place.
+   *
+   *   Elle repose sur `product.updated_at`, un `@updatedAt` posé sur la ligne
+   *   qui porte `status` : mettre en vente périmait donc la signature qui
+   *   justifiait la mise en vente. Et elle ignore les taux et les canaux, qui
+   *   vivent dans des tables satellites : les changer ne périmait rien.
+   *
+   *   Servie encore UN déploiement, le temps que les fronts basculent (audit
+   *   2026-09-01, tranche 3).
    */
   readonly contentUpdatedAt: string;
+  /**
+   * La déclaration « publiable » vaut-elle encore ?
+   *
+   * Elle voyage avec la déclaration et jamais sans : la signature seule ne
+   * répond pas à la question qu'on lui pose. Rien ne la périme en écriture —
+   * c'est un fait daté, pas une garantie perpétuelle — donc c'est la LECTURE
+   * qui tranche, sur les **faits du journal** plutôt que sur des horodatages de
+   * ligne : eux seuls distinguent un prix d'un statut.
+   *
+   * `false` quand personne n'a signé : il n'y a alors rien à périmer.
+   */
+  readonly readinessStale: boolean;
   /**
    * Les visuels attachés, dans l'ordre. Ils étaient acceptés à la CRÉATION et
    * jamais relus : le formulaire ouvrait un panneau vide sur un produit qui

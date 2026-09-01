@@ -1,7 +1,9 @@
 import {
   ArchivedProductNotPublishableError,
+  ArchivedProductNotWithdrawableError,
   InvalidProductVariantsError,
   InvalidVariantPricingError,
+  NotArchivedProductNotRestorableError,
   ProductNotPublishableError,
   VariantNotFoundError,
 } from "../../errors/product-errors.js";
@@ -104,6 +106,45 @@ describe("l’agrégat Product", () => {
       product.archive();
       expect(() => product.archive()).not.toThrow();
     });
+
+    /**
+     * Régression : `restore()` posait `draft` sans regarder d'où il venait. Un
+     * produit EN LIGNE qu'on « restaurait » sortait donc de la vente en silence.
+     */
+    it("REFUSE de restaurer ce qui n’est pas archivé — un produit en ligne y perdait sa vente", () => {
+      const product = declared([{ allergens: ["gluten"] }]);
+      product.publish();
+      expect(() => product.restore()).toThrow(NotArchivedProductNotRestorableError);
+      expect(product.status).toBe("published");
+    });
+
+    it("REFUSE de restaurer un brouillon — il n’y a rien à restaurer", () => {
+      expect(() => open().restore()).toThrow(NotArchivedProductNotRestorableError);
+    });
+
+    /**
+     * Le booléen est ce qui permet aux handlers de ne PAS journaliser un
+     * non-événement : trois des quatre traçaient inconditionnellement, si bien
+     * que le journal d'audit portait des retraits de la vente qui n'avaient pas
+     * eu lieu (audit 2026-09-01).
+     */
+    it("dit ce qu’il a fait : vrai quand l’état bouge, faux quand il y était déjà", () => {
+      const product = declared([{ allergens: ["gluten"] }]);
+      expect(product.publish()).toBe(true);
+      expect(product.publish()).toBe(false);
+      expect(product.unpublish()).toBe(true);
+      expect(product.unpublish()).toBe(false);
+      expect(product.archive()).toBe(true);
+      expect(product.archive()).toBe(false);
+      expect(product.restore()).toBe(true);
+    });
+
+    it("republier ne re-vérifie pas les fiches : rien ne change, donc rien ne peut échouer", () => {
+      const product = declared([{ allergens: ["gluten"] }]);
+      product.publish();
+      expect(() => product.publish()).not.toThrow();
+      expect(product.status).toBe("published");
+    });
   });
 
   describe("invariant 7 : on ne met pas en vente ce qu’on ne peut pas étiqueter", () => {
@@ -158,16 +199,27 @@ describe("l’agrégat Product", () => {
       expect(product.status).toBe("draft");
     });
 
-    it("ne réveille pas un produit archivé", () => {
+    /**
+     * Le produit reste archivé — c'est l'invariant, et il n'a pas changé. Ce
+     * qui a changé, c'est qu'il le dit maintenant au lieu de se taire.
+     *
+     * Régression : le back-office envoyait sa demande de RESTAURATION sur cette
+     * route (`changeStatus('draft')` → `unpublishProduct`). Le no-op était donc
+     * indiscernable d'un succès — l'écran peignait « Brouillon », le handler
+     * journalisait un retrait de la vente, la base restait archivée, et comme
+     * la liste n'offre pas la restauration, archiver était devenu irréversible
+     * depuis l'interface (audit 2026-09-01, §1).
+     */
+    it("REFUSE de réveiller un produit archivé, au lieu de se taire", () => {
       const product = open();
       product.archive();
-      product.unpublish();
+      expect(() => product.unpublish()).toThrow(ArchivedProductNotWithdrawableError);
       expect(product.status).toBe("archived");
     });
 
-    it("sur un brouillon, ne fait rien", () => {
+    it("sur un brouillon, ne fait rien — et le DIT, pour que rien ne soit journalisé", () => {
       const product = open();
-      product.unpublish();
+      expect(product.unpublish()).toBe(false);
       expect(product.status).toBe("draft");
     });
   });

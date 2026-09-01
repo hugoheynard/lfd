@@ -50,6 +50,50 @@
     />
   </fold-callout>
 
+  <!-- CE QUE LA COMPOSITION MENTIONNE.
+       Une aide de saisie, sans valeur de contrôle : la liste d'ingrédients est
+       ÉDITORIALE — elle cite « le beurre de Savoie AOP » et tait la farine. Rien
+       ne s'affiche donc quand elle ne propose rien : « aucun allergène dans la
+       composition » se lirait comme une vérification, et ce n'en est pas une.
+       Les libellés parlent de la composition du PRODUIT, jamais de ce que cette
+       déclinaison contient — les ingrédients sont cités par la fiche, la
+       déclaration est portée par la déclinaison. -->
+  @if (store.citedAllergensUnreadable()) {
+    <fold-callout appearance="inset" variant="warning">
+      La composition n’a pas pu être lue&nbsp;: cet encart ne propose rien, et ce silence ne dit
+      rien de la fiche. Rechargez la page pour réessayer.
+    </fold-callout>
+  } @else if (store.citedContradictsNone()) {
+    <fold-callout appearance="inset" variant="alert">
+      <p class="cited-lead">
+        <strong>La composition contredit cette déclaration.</strong> « Aucun allergène » est coché,
+        et la composition de ce produit mentionne&nbsp;:
+      </p>
+      <ul class="cited-list">
+        @for (item of store.citedNotDeclared(); track item.code) {
+          <li>{{ item.label }}</li>
+        }
+      </ul>
+      <button foldButton size="sm" emphasis="outline" (click)="store.adoptCitedAllergens()">
+        Reprendre dans la déclaration
+      </button>
+    </fold-callout>
+  } @else if (store.citedNotDeclared().length > 0) {
+    <fold-callout appearance="inset" variant="warning">
+      <p class="cited-lead">
+        La composition de ce produit mentionne des allergènes que la déclaration ne porte pas&nbsp;:
+      </p>
+      <ul class="cited-list">
+        @for (item of store.citedNotDeclared(); track item.code) {
+          <li>{{ item.label }}</li>
+        }
+      </ul>
+      <button foldButton size="sm" emphasis="outline" (click)="store.adoptCitedAllergens()">
+        Reprendre dans la déclaration
+      </button>
+    </fold-callout>
+  }
+
   @if (!store.declaresNone()) {
     <div class="stack">
       <div class="scope">

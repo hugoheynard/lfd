@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   ProductDetailView,
+  ProductIngredientAllergensView,
   ProductReadinessView,
   UploadedMediaView,
   ProductEditorialView,
@@ -101,8 +102,16 @@ export interface ProductDetail {
   readonly media: readonly MediaSlot[];
   /** La signature « publiable », si quelqu'un s'est prononcé. */
   readonly readiness: ProductReadinessView | null;
-  /** Quand le contenu de la fiche a bougé pour la dernière fois (ISO). */
-  readonly contentUpdatedAt: string;
+  /**
+   * La signature vaut-elle encore ? `false` quand personne n'a signé.
+   *
+   * Elle vient du SERVEUR et ne se recalcule pas ici. L'écran la comparait
+   * lui-même à `contentUpdatedAt` — une mesure fausse dans les deux sens :
+   * publier périmait la signature qui justifiait la publication, et un
+   * enregistrement de section ne la périmait pas puisque la page ne relisait
+   * jamais la date (audit 2026-09-01, tranches 3 et 7).
+   */
+  readonly readinessStale: boolean;
 }
 
 function toNutritionValues(nutrition: VariantNutritionView | null): NutritionValues {
@@ -240,7 +249,7 @@ export class ProductHttpApi {
         contentType: item.contentType,
       })),
       readiness: row.readiness,
-      contentUpdatedAt: row.contentUpdatedAt,
+      readinessStale: row.readinessStale,
     };
   }
 
@@ -392,6 +401,33 @@ export class ProductHttpApi {
 
   restore(id: string): Promise<void> {
     return this.put(`products/${id}/restore`, {});
+  }
+
+  /**
+   * Ce que la **composition** de la fiche mentionne comme allergènes.
+   *
+   * Une aide de saisie, sans valeur de contrôle : la liste d'ingrédients est
+   * éditoriale, donc une réponse vide veut dire « rien à proposer », jamais
+   * « rien à ajouter ». Cf. les trois interdits de
+   * `ProductIngredientAllergensView` (D5).
+   *
+   * ⚠️ Pas de `this.url()` : cette route vit sur le contrôleur des ingrédients,
+   * dont le chemin de base est VIDE — elle est sous `products/:id/…` et non
+   * sous `catalogue/products/:id/…`. Y passer rendrait un 404 que rien ne
+   * distinguerait d'une fiche sans composition.
+   *
+   * On ne garde que `citedByIngredients` : l'écart par déclinaison
+   * (`variants[].citedNotDeclared`) porte sur ce qui est ENREGISTRÉ, alors que
+   * la section compare à ce qui est à l'écran — et le formulaire n'édite de
+   * toute façon qu'une déclinaison. La maille du cité est le produit.
+   */
+  async citedAllergens(id: string): Promise<readonly string[]> {
+    const row = await firstValueFrom(
+      this.http.get<ProductIngredientAllergensView>(
+        `${this.base}/products/${id}/ingredient-allergens`,
+      ),
+    );
+    return row.citedByIngredients;
   }
 
   private async applyInitialPricing(id: string, input: CreateProductInput): Promise<void> {

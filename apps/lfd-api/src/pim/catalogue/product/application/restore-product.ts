@@ -20,6 +20,10 @@ export class RestoreProductHandler implements ICommandHandler<RestoreProductComm
 
   async execute(command: RestoreProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
+    // `restore()` refuse sur un produit qui n'est pas archivé plutôt que de
+    // rendre `false` : il n'y a pas de « déjà restauré », il n'y a qu'un geste
+    // qui ne s'applique pas. Le booléen est donc toujours vrai ici, et le
+    // lire serait feindre un doute.
     product.restore();
     const { sku, name } = product.snapshot();
     await this.uow.run(async () => {

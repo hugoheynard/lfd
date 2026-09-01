@@ -24,7 +24,11 @@ export class PublishProductHandler implements ICommandHandler<PublishProductComm
 
   async execute(command: PublishProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
-    product.publish();
+    // Déjà en vente : `publish()` rend `false` et rien ne bouge. Journaliser
+    // quand même daterait une mise en vente au jour du second clic.
+    if (!product.publish()) {
+      return;
+    }
     const { sku, name, variants } = product.snapshot();
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({

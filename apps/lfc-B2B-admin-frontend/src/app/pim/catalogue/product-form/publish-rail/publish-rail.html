@@ -65,12 +65,22 @@
       </p>
     }
 
-    @if (signature() === null || store.readinessStale()) {
+    <!-- Une fiche qui se contredit reste signée tant qu'on n'y a pas touché : la
+         signature est un fait daté, on ne l'efface pas dans le dos de celui qui
+         l'a posée. Mais on le DIT, et on ne la laisse pas se reposer. -->
+    @if (contradicted()) {
+      <fold-callout appearance="inset" variant="alert">
+        La composition contredit la déclaration d'allergènes. Reprenez-la dans la fiche
+        réglementaire, ou retirez l'ingrédient en cause.
+      </fold-callout>
+    }
+
+    @if (signature() === null || store.readinessStale() || contradicted()) {
       <button
         foldButton
         class="pr-cta"
         [loading]="store.busy()"
-        [disabled]="!complete()"
+        [disabled]="signatureBlocked()"
         (click)="declare()"
       >
         {{ signature() === null ? 'Déclarer publiable' : 'Déclarer à nouveau' }}
@@ -88,29 +98,61 @@
   </fold-card>
 </section>
 
-<!-- LA MISE EN VENTE, en dernier — c'est l'aboutissement de la colonne : ce qui
-     reste à enregistrer, ce qui manque, qui a validé, puis ce qu'on en fait.
-     Ces gestes vivaient dans un menu ⋮ de l'en-tête, à l'autre bout de l'écran
-     et sans lien visible avec la complétude qui les conditionne. -->
+<!-- LA PUBLICATION AU CATALOGUE, en dernier — c'est l'aboutissement de la
+     colonne : ce qui reste à enregistrer, ce qui manque, qui a validé, puis ce
+     qu'on en fait. Ces gestes vivaient dans un menu ⋮ de l'en-tête, à l'autre
+     bout de l'écran et sans lien visible avec la complétude qui les conditionne.
+
+     « Publier au catalogue » et non « Mettre en vente » : le geste bascule un
+     statut, il n'envoie rien. La diffusion vers un canal est un PUSH, séparé et
+     manuel, sur un autre écran — nommer les deux pareil ferait croire que
+     publier suffit à vendre (audit 2026-09-01, §4 et §10). Le vocabulaire est
+     désormais le même que celui de la liste produits. -->
 <section class="pr-block" aria-labelledby="pr-sale">
-  <fold-element-title id="pr-sale" title="Mise en vente" />
+  <fold-element-title id="pr-sale" title="Publication au catalogue" />
   <fold-card>
     @if (store.status() === 'archived') {
       <p class="pr-said">
-        Cette fiche est <strong>archivée</strong>&nbsp;: elle ne part chez aucun canal. La restaurer
-        la remet en brouillon — jamais directement en ligne.
+        Cette fiche est <strong>archivée</strong>&nbsp;: aucun push ne l'emporte. La restaurer la
+        remet en brouillon — jamais directement en ligne.
       </p>
       <button foldButton class="pr-cta" [loading]="store.busy()" (click)="restore.emit()">
         Restaurer
       </button>
     } @else {
+      <!-- Ce que le bouton fait VRAIMENT, dit à l'endroit où on appuie. Publier
+           bascule un statut ; ça n'envoie rien. La diffusion est un push
+           séparé, manuel, sur un autre écran — et l'écran le taisait, si bien
+           qu'une fiche « en ligne » jamais poussée n'était en vente nulle part
+           sans que rien ne le dise (audit 2026-09-01, §4). -->
       <p class="pr-said">
         @if (store.status() === 'published') {
-          En ligne. La retirer la remet en brouillon sans rien détruire.
+          Publiée au catalogue. Elle sera ajoutée au <strong>prochain push</strong> du catalogue
+          vers les canaux de vente&nbsp;: publier ne pousse rien par soi-même. La dépublier la remet
+          en brouillon sans rien détruire.
         } @else {
-          Brouillon&nbsp;: elle n'est visible d'aucun canal.
+          Brouillon&nbsp;: aucun push ne la mettra en vente tant qu'elle n'est pas publiée au
+          catalogue.
         }
       </p>
+
+      <!-- Le trou que la complétude ne peut pas boucher : elle mesure ce que la
+           fiche PORTE, jamais où on la vend. Une fiche à 10/10, signée et « en
+           ligne » pouvait n'apparaître dans aucun contexte — tout juste, et rien
+           ne se passait. Un avertissement, pas un blocage : préparer une fiche
+           avant d'ouvrir ses canaux est un usage normal. -->
+      @if (store.soldNowhere()) {
+        <fold-callout appearance="inset" variant="warning">
+          @if (store.status() === 'published') {
+            Publiée, mais vendue dans <strong>aucun contexte</strong>&nbsp;: le push ne l'emportera
+            nulle part.
+          } @else {
+            Vendue dans <strong>aucun contexte</strong>&nbsp;: la publier au catalogue ne la fera
+            apparaître nulle part.
+          }
+          Réglez-le dans «&nbsp;Tarif &amp; TVA&nbsp;», ou sur la famille dont elle hérite.
+        </fold-callout>
+      }
       @if (store.status() === 'published') {
         <button
           foldButton
@@ -120,11 +162,11 @@
           [loading]="store.busy()"
           (click)="unpublish.emit()"
         >
-          Retirer de la vente
+          Dépublier
         </button>
       } @else {
         <button foldButton class="pr-cta" [loading]="store.busy()" (click)="publish.emit()">
-          Mettre en vente
+          Publier au catalogue
         </button>
       }
 

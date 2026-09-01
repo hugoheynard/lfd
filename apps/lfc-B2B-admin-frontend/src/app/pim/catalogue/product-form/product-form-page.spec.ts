@@ -95,15 +95,15 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('fold-dropdown')).toBeNull();
   });
 
-  it('propose la mise en vente sur un brouillon, jamais le retrait', () => {
+  it('propose la publication sur un brouillon, jamais la dépublication', () => {
     const { root } = render(true);
     const actions = [...root.querySelectorAll('app-publish-rail button')].map(
       (button) => button.textContent?.trim() ?? '',
     );
 
-    expect(actions).toContain('Mettre en vente');
+    expect(actions).toContain('Publier au catalogue');
     expect(actions).toContain('Archiver');
-    expect(actions).not.toContain('Retirer de la vente');
+    expect(actions).not.toContain('Dépublier');
   });
 
   it('pose le retour AU-DESSUS du titre, dans l’en-tête', () => {

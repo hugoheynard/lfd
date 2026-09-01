@@ -196,6 +196,21 @@ export interface CategoryInheritanceView {
 /** Les sections **enregistrables** — la seule source des clés de section. */
 export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication' | 'visuels';
 
+/**
+ * Les quatre gestes du cycle de vie, nommés par l'**intention**.
+ *
+ * Pas par le statut visé, et c'est tout l'objet du type. Le magasin prenait un
+ * `ProductStatus` cible, où `'draft'` est l'aboutissement de DEUX gestes
+ * distincts — dépublier et restaurer. Les deux partaient donc sur la même
+ * route, celle de la dépublication, que le domaine ignore sur un produit
+ * archivé : « Restaurer » ne restaurait rien, et tout le monde lisait un succès
+ * (audit 2026-09-01, §1).
+ *
+ * Un type qui ne peut pas exprimer la confusion vaut mieux qu'un test qui la
+ * détecte.
+ */
+export type LifecycleGesture = 'publish' | 'unpublish' | 'archive' | 'restore';
+
 export interface SectionRef {
   readonly key: FormSection;
   readonly label: string;
@@ -419,6 +434,42 @@ export class ProductFormStore {
   readonly weightGrams = signal<number | null>(null);
   readonly selected = signal<string[]>([]);
   readonly declaresNone = signal(false);
+
+  /**
+   * Ce que la **composition** de la fiche mentionne comme allergènes.
+   *
+   * 🔴 Une aide de saisie, **sans aucune valeur de contrôle** — et les trois
+   * interdits de `ProductIngredientAllergensView` (D5) valent ici tels quels :
+   *
+   * 1. **Le silence ne vaut rien.** La liste d'ingrédients est ÉDITORIALE : elle
+   *    cite « le beurre de Savoie AOP » et tait la farine. Vide veut dire « rien
+   *    à proposer », jamais « rien à ajouter » ni « composition couverte ». D'où
+   *    un écran qui n'affiche **rien du tout** dans ce cas, plutôt qu'un
+   *    rassurant « aucun allergène dans la composition ».
+   * 2. **La maille est le PRODUIT.** Les ingrédients sont cités par la fiche, la
+   *    déclaration est portée par la déclinaison. Les libellés parlent donc de
+   *    « la composition de ce produit », jamais de ce que cette déclinaison
+   *    contient.
+   * 3. **Le dérivé propose, la déclaration décide.** Rien n'est appliqué : la
+   *    reprise est un geste explicite, et elle ne part qu'avec la section.
+   *
+   * Le champ existait côté serveur — la route, le handler, le contrat et ses
+   * tests — et **aucun écran ne l'appelait**. Un ingrédient porteur d'un
+   * allergène, cité par une fiche qui n'en déclare aucun, ne produisait donc
+   * aucune alerte (audit 2026-09-01, §3).
+   */
+  private readonly citedAllergensValue = signal<readonly string[]>([]);
+  readonly citedAllergens: Signal<readonly string[]> = this.citedAllergensValue;
+
+  /**
+   * La composition n'a pas pu être lue.
+   *
+   * Un drapeau à part, et pas une liste vide : « rien à proposer » et « on n'a
+   * pas pu regarder » se ressemblent à l'écran, et le premier est déjà une
+   * absence d'information (D5, interdit n° 1). Les confondre ferait passer une
+   * panne réseau pour une composition sans allergène.
+   */
+  readonly citedAllergensUnreadable = signal(false);
   readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
   readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
   readonly media = signal<MediaSlot[]>([]);
@@ -463,24 +514,27 @@ export class ProductFormStore {
   private readonly readinessValue = signal<ProductReadinessView | null>(null);
   readonly readiness: Signal<ProductReadinessView | null> = this.readinessValue;
 
-  /** Quand le contenu enregistré de la fiche a bougé pour la dernière fois (ISO). */
-  private readonly contentUpdatedAtValue = signal('');
-  readonly contentUpdatedAt: Signal<string> = this.contentUpdatedAtValue;
-
   /**
-   * La signature vaut-elle encore ?
+   * La signature vaut-elle encore ? **Lue**, jamais calculée ici.
    *
-   * Rien ne la périme en écriture — c'est un fait daté, pas une garantie — donc
-   * c'est ici qu'on compare. Une comparaison de chaînes ISO suffit : elles sont
-   * en UTC, à précision fixe, et l'ordre lexicographique y est l'ordre
-   * chronologique. `>=` et non `>` : déclarer ne touche pas au contenu, donc
-   * une déclaration faite dans la même milliseconde qu'un enregistrement reste
-   * valide.
+   * Elle l'était : l'écran comparait `readyAt` à un `contentUpdatedAt` reçu au
+   * chargement. Deux défauts symétriques, tous deux invisibles à la lecture du
+   * code de comparaison, qui était juste :
+   *
+   * - côté serveur, la date venait de `product.updated_at`, un `@updatedAt`
+   *   posé sur la ligne qui porte `status` — **mettre en vente périmait donc la
+   *   signature qui justifiait la mise en vente** ;
+   * - côté écran, la date n'était posée qu'à l'hydratation et jamais
+   *   rafraîchie, si bien qu'enregistrer une section ne périmait rien tant
+   *   qu'on ne rechargeait pas la page.
+   *
+   * Un indicateur faux dans les deux sens n'informe pas, il use. Le serveur
+   * répond désormais sur les FAITS du journal (`domain/content-facts.ts`), et
+   * l'écran se contente de le relire — y compris après un changement de statut,
+   * cf. {@link refreshLifecycle} (audit 2026-09-01, tranches 2, 3 et 7).
    */
-  readonly readinessStale = computed(() => {
-    const signed = this.readinessValue();
-    return signed !== null && signed.readyAt < this.contentUpdatedAtValue();
-  });
+  private readonly readinessStaleValue = signal(false);
+  readonly readinessStale: Signal<boolean> = this.readinessStaleValue;
 
   /**
    * Le nombre de déclinaisons — un COMPTE, pas la liste. L'en-tête a besoin de
@@ -617,6 +671,27 @@ export class ProductFormStore {
     () => this.channelsOverride() ?? this.familyChannels(),
   );
 
+  /**
+   * **La fiche n'est vendue nulle part.**
+   *
+   * Le trou que la complétude ne peut pas boucher : elle mesure ce que la fiche
+   * PORTE — un nom, un prix, des allergènes, un visuel — et rien de tout ça ne
+   * dit où on la vend. Une fiche pouvait donc être à 10/10, signée, « En
+   * ligne », et n'apparaître dans aucun contexte : tout était juste, et il ne se
+   * passait rien. Rien à l'écran ne le disait (audit 2026-09-01, §11).
+   *
+   * ⚠️ Ce n'est **pas** une condition de complétude, et c'est délibéré :
+   * préparer une fiche avant d'ouvrir ses canaux est un usage normal, et la
+   * rendre bloquante l'interdirait. C'est un avertissement, posé là où le geste
+   * se fait — le bloc de mise en vente.
+   *
+   * Lu sur les CANAUX et non sur les contextes résolus : résoudre demande le
+   * référentiel des points de vente, et tant qu'il n'a pas répondu toute fiche
+   * paraîtrait vendue nulle part. Le couple (lieu, contexte) est là ou il n'y
+   * est pas — la question ne dépend d'aucun chargement.
+   */
+  readonly soldNowhere = computed(() => this.effectiveChannels().length === 0);
+
   readonly channelsInheritance = computed<CategoryInheritanceView | null>(() => {
     const category = this.selectedCategory();
     if (category === undefined) {
@@ -719,6 +794,64 @@ export class ProductFormStore {
         group.entries.map((entry) => ({ code: entry.code, label: entry.incoLabel ?? entry.label })),
       ),
   );
+
+  /**
+   * Les allergènes cités par la composition et **absents de la déclaration en
+   * cours** — la proposition, pas une vérification.
+   *
+   * Elle se calcule sur `selected()`, l'état à l'écran, et non sur ce qui est
+   * enregistré : cocher une case doit faire disparaître la ligne tout de suite,
+   * sinon l'encart reproche encore ce qu'on vient de corriger.
+   *
+   * Un code que le référentiel du catalogue courant ne connaît pas est ignoré :
+   * la portée « UE » n'expose pas tout, et proposer un code sans libellé
+   * afficherait `en:e220` à un opérateur.
+   */
+  readonly citedNotDeclared = computed<AllergenChoice[]>(() => {
+    const declared = new Set(this.selected());
+    const byCode = new Map(this.entries().map((entry) => [entry.code, entry]));
+    return this.citedAllergens()
+      .filter((code) => !declared.has(code))
+      .flatMap((code) => {
+        const entry = byCode.get(code);
+        return entry === undefined ? [] : [{ code, label: entry.incoLabel ?? entry.label }];
+      });
+  });
+
+  /**
+   * La composition contredit-elle un « aucun allergène » ?
+   *
+   * Le cas le plus grave des deux, et le seul que l'écran doit crier : quelqu'un
+   * a affirmé qu'il n'y en avait aucun, et la fiche cite un ingrédient qui en
+   * porte un. C'est exactement le beurre de l'audit. Une proposition ordinaire
+   * se range, celle-ci s'oppose.
+   */
+  readonly citedContradictsNone = computed(
+    () => this.declaresNone() && this.citedAllergens().length > 0,
+  );
+
+  /**
+   * **Reprendre** ce que la composition mentionne dans la déclaration.
+   *
+   * Le geste explicite que D5 exige : rien n'est appliqué tout seul, et rien
+   * n'est enregistré ici non plus — la section part avec le reste. Un « aucun
+   * allergène » qui traînait est levé au passage, sans quoi la déclaration se
+   * contredirait elle-même.
+   *
+   * Jamais de RETRAIT : un allergène déclaré à la main (contamination croisée
+   * d'atelier) n'est pas démenti par une composition qui l'ignore.
+   */
+  adoptCitedAllergens(): void {
+    const missing = this.citedNotDeclared().map((choice) => choice.code);
+    if (missing.length === 0 && !this.citedContradictsNone()) {
+      return;
+    }
+    this.declaresNone.set(false);
+    this.selected.update((current) => [
+      ...current,
+      ...missing.filter((code) => !current.includes(code)),
+    ]);
+  }
 
   readonly dirtySections = computed<SectionRef[]>(() => {
     if (!this.isEdit()) {
@@ -1132,18 +1265,6 @@ export class ProductFormStore {
   }
 
   /**
-   * Publie, dépublie ou archive — le menu de l'en-tête.
-   *
-   * Ce n'est PAS un enregistrement de section : rien ici ne dépend de ce qui
-   * est en attente dans les champs, et l'inverse est vrai aussi — un produit se
-   * publie avec des sections modifiées, elles restent modifiées après. Les deux
-   * gestes ne se mélangent donc pas, et `statusMap` (par section) ne le suit
-   * pas.
-   *
-   * L'état n'avance qu'au retour du serveur : le peindre avant, c'est afficher
-   * « Publié » sur un produit que le backend a refusé.
-   */
-  /**
    * **Déclarer la fiche publiable.**
    *
    * Le geste que la complétude ne peut pas faire : elle dit que tout est
@@ -1164,6 +1285,11 @@ export class ProductFormStore {
     this.error.set(null);
     try {
       this.readinessValue.set(await this.products.declareReady(id));
+      // La signature vient d'être posée à l'horloge du serveur, donc APRÈS tout
+      // fait déjà écrit : rien ne peut la périmer à l'instant où elle naît. Le
+      // dire ici évite un aller-retour, et surtout évite de laisser à l'écran
+      // l'avertissement de péremption de la signature PRÉCÉDENTE.
+      this.readinessStaleValue.set(false);
     } catch (caught) {
       this.error.set(messageOf(caught));
     } finally {
@@ -1171,7 +1297,28 @@ export class ProductFormStore {
     }
   }
 
-  async changeStatus(next: ProductStatus): Promise<void> {
+  /**
+   * **Un geste du cycle de vie**, nommé par l'intention et non par le statut visé.
+   *
+   * 🔴 C'est la correction du défaut le plus coûteux de l'écran, et elle tient
+   * dans le TYPE. La méthode prenait un `ProductStatus` cible, et `'draft'` est
+   * la cible de deux gestes différents : dépublier (depuis « en ligne ») et
+   * restaurer (depuis « archivé »). Les deux se retrouvaient donc sur la route
+   * de dépublication — que le domaine ignore sur un produit archivé. Résultat :
+   * l'écran peignait « Brouillon », le journal inscrivait un retrait de la vente
+   * qui n'avait pas eu lieu, la base restait archivée, et la restauration
+   * n'existait nulle part ailleurs dans l'interface (audit 2026-09-01, §1).
+   *
+   * Nommer l'intention rend la confusion **inexprimable** : il n'y a plus de
+   * cible commune où deux gestes puissent se rejoindre.
+   *
+   * Ce n'est PAS un enregistrement de section : rien ici ne dépend de ce qui est
+   * en attente dans les champs, et l'inverse est vrai aussi — un produit se
+   * publie avec des sections modifiées, elles restent modifiées après. D'où le
+   * rafraîchissement CIBLÉ de {@link refreshLifecycle} plutôt qu'une
+   * réhydratation, qui écraserait la saisie en cours.
+   */
+  async runLifecycle(gesture: LifecycleGesture): Promise<void> {
     const id = this.productId();
     if (id === '' || this.busy()) {
       return;
@@ -1179,8 +1326,8 @@ export class ProductFormStore {
     this.busy.set(true);
     this.error.set(null);
     try {
-      await this.callStatus(id, next);
-      this.statusValue.set(next);
+      await this.callLifecycle(id, gesture);
+      await this.refreshLifecycle(id);
     } catch (caught) {
       this.error.set(messageOf(caught));
     } finally {
@@ -1188,15 +1335,44 @@ export class ProductFormStore {
     }
   }
 
-  private callStatus(id: string, next: ProductStatus): Promise<void> {
-    switch (next) {
-      case 'published':
+  private callLifecycle(id: string, gesture: LifecycleGesture): Promise<void> {
+    switch (gesture) {
+      case 'publish':
         return this.api.publishProduct(id);
-      case 'draft':
+      case 'unpublish':
         return this.api.unpublishProduct(id);
-      case 'archived':
+      case 'archive':
         return this.api.archiveProduct(id);
+      case 'restore':
+        return this.api.restoreProduct(id);
     }
+  }
+
+  /**
+   * Relit du serveur ce qu'un geste de cycle de vie a pu déplacer — et RIEN
+   * d'autre.
+   *
+   * L'état était peint d'avance (`statusValue.set(next)`), ce qui affichait le
+   * résultat espéré même quand le serveur n'avait rien fait. Il est maintenant
+   * relu, et c'est ce qui rend une panne visible plutôt que muette.
+   *
+   * Ciblé, pas une réhydratation : `hydrate()` réécrit tous les champs et
+   * effacerait les sections en attente, qu'une mise en vente est censée laisser
+   * intactes. Quatre valeurs sont reprises, et ce sont exactement celles qu'un
+   * statut déplace : l'état lui-même, la signature et sa péremption (le serveur
+   * ne compte plus un statut comme une modification du contenu, mais c'est LUI
+   * qui le dit maintenant), et le `slug`, qui naît de la première publication.
+   */
+  private async refreshLifecycle(id: string): Promise<void> {
+    const detail = await this.products.getDetail(id);
+    if (detail === null) {
+      this.notFound.set(true);
+      return;
+    }
+    this.statusValue.set(detail.product.status);
+    this.slugValue.set(detail.product.slug?.fr ?? '');
+    this.readinessValue.set(detail.readiness);
+    this.readinessStaleValue.set(detail.readinessStale);
   }
 
   /** Enregistre UNE section — le bouton posé à droite de son titre. */
@@ -1225,6 +1401,23 @@ export class ProductFormStore {
         ...base,
         [section]: this.snapshot(section),
       }));
+      // 🔴 Les CINQ sections écrivent du contenu — identité, tarif, fiche
+      // réglementaire, communication, visuels. Chacune inscrit donc un fait
+      // postérieur à la signature, et la périme.
+      //
+      // Déduit plutôt que relu : un aller-retour de plus rendrait la même
+      // réponse, et il pourrait échouer APRÈS un enregistrement réussi — on
+      // afficherait alors une signature valide sur un contenu qui vient de
+      // changer, c'est-à-dire exactement le défaut qu'on répare.
+      //
+      // Sans cette ligne, la signature restait verte pour toute la session :
+      // `readinessStale` n'était rafraîchi qu'à l'hydratation et après un geste
+      // de cycle de vie. Reprendre les allergènes cités, enregistrer, et le rail
+      // n'offrait pas « Déclarer à nouveau » — la fiche paraissait signée sur un
+      // contenu qu'elle n'avait plus (constaté par Hugo le 2026-09-01).
+      if (this.readinessValue() !== null) {
+        this.readinessStaleValue.set(true);
+      }
     } catch (caught) {
       this.statusMap.update((current) => ({ ...current, [section]: 'error' }));
       this.error.set(messageOf(caught));
@@ -1284,20 +1477,67 @@ export class ProductFormStore {
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);
     this.readinessValue.set(detail.readiness);
-    this.contentUpdatedAtValue.set(detail.contentUpdatedAt);
+    this.readinessStaleValue.set(detail.readinessStale);
     this.nutrition.set(detail.nutrition);
     const variant = product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');
+    // Les DEUX champs sont posés dans les trois branches. Ils ne l'étaient pas :
+    // `[]` ne remettait que `declaresNone`, une liste non vide ne remettait que
+    // `selected`. Une seconde hydratation sur la même instance pouvait donc
+    // laisser `declaresNone` à `true` au-dessus d'une sélection non vide — et
+    // `saveFiche()` aurait alors envoyé `[]`, effaçant les allergènes déclarés
+    // sans un mot (audit 2026-09-01, §13).
     const allergens = detail.allergens;
-    if (allergens === null) {
-      this.declaresNone.set(false);
-      this.selected.set([]);
-    } else if (allergens.length === 0) {
-      this.declaresNone.set(true);
-    } else {
-      this.selected.set([...allergens]);
-    }
+    this.declaresNone.set(allergens !== null && allergens.length === 0);
+    this.selected.set(allergens === null ? [] : [...allergens]);
     this.captureBaseline();
+    await this.loadCitedAllergens(id);
+  }
+
+  /**
+   * Ce que la composition mentionne — une aide, jamais un bloqueur.
+   *
+   * Un échec ne fait pas tomber la fiche : la déclaration réglementaire se
+   * saisit très bien sans proposition. Mais il ne se tait pas non plus, et
+   * c'est la seule chose qui compte ici — « rien à proposer » et « on n'a pas
+   * pu regarder » se ressemblent à l'écran et ne veulent pas du tout dire la
+   * même chose (D5, interdit n° 1). D'où un drapeau distinct plutôt qu'une
+   * liste vide.
+   */
+  private async loadCitedAllergens(id: string): Promise<void> {
+    try {
+      this.citedAllergensValue.set(await this.products.citedAllergens(id));
+      this.citedAllergensUnreadable.set(false);
+    } catch {
+      this.citedAllergensValue.set([]);
+      this.citedAllergensUnreadable.set(true);
+    }
+  }
+
+  /**
+   * **La composition vient d'être enregistrée** — appelé par la section
+   * Ingrédients, qui vit sur un autre agrégat et porte son propre bouton.
+   *
+   * Deux conséquences, et une seule méthode pour les deux parce que c'est un
+   * seul événement :
+   *
+   * - on relit ce que la composition mentionne, sans quoi ajouter « beurre » ne
+   *   changerait rien à ce que la section réglementaire propose tant qu'on n'a
+   *   pas rechargé la page ;
+   * - on périme la signature, comme pour les cinq autres sections : changer la
+   *   composition peut rendre fausse une déclaration d'allergènes déjà signée,
+   *   et c'est précisément pour ça que `product.ingredients_saved` est classé
+   *   fait de contenu côté serveur.
+   */
+  async noteCompositionSaved(): Promise<void> {
+    const id = this.productId();
+    if (id === '') {
+      return;
+    }
+    await this.loadCitedAllergens(id);
+    if (this.readinessValue() !== null) {
+      this.readinessStaleValue.set(true);
+    }
   }
 
   private async loadReference(scope: AllergenScope): Promise<void> {

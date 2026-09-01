@@ -90,6 +90,42 @@ export class ArchivedProductNotPublishableError extends BusinessError {
 }
 
 /**
+ * On ne retire pas de la vente ce qui n'y est pas.
+ *
+ * Le refus existe parce que son absence coûtait cher : le back-office envoyait
+ * sa demande de RESTAURATION sur cette route, `unpublish()` ne faisait rien sur
+ * un archivé, et tout le monde lisait un succès — l'écran passait la fiche en
+ * « Brouillon », le journal enregistrait un retrait de la vente, la base restait
+ * archivée (audit 2026-09-01). Le message dit donc le geste attendu.
+ */
+export class ArchivedProductNotWithdrawableError extends BusinessError {
+  constructor(readonly productId: string) {
+    super(
+      "catalogue.product.archived_not_withdrawable",
+      "Ce produit est archivé : c'est « Restaurer » qu'il faut, pas « Dépublier ».",
+    );
+  }
+}
+
+/**
+ * On ne restaure que ce qui est archivé.
+ *
+ * Sans ce refus, restaurer un produit **en ligne** le rétrogradait en brouillon
+ * sans un mot : `restore()` posait `draft` sans regarder d'où il venait.
+ */
+export class NotArchivedProductNotRestorableError extends BusinessError {
+  constructor(
+    readonly productId: string,
+    readonly status: string,
+  ) {
+    super(
+      "catalogue.product.not_archived_not_restorable",
+      "Ce produit n'est pas archivé : il n'y a rien à restaurer.",
+    );
+  }
+}
+
+/**
  * Une dérogation de taux visant un contexte que le registre ne connaît pas.
  *
  * Même refus que sur la famille, et pour la même raison : la clé serait

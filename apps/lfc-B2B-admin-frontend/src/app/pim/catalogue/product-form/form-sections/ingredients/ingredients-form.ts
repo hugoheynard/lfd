@@ -116,7 +116,17 @@ export class IngredientsForm {
     }
   }
 
+  /**
+   * Enregistre la composition, puis prévient le reste de la fiche.
+   *
+   * Les deux vivent sur des agrégats différents, et c'est bien ainsi — mais
+   * l'une MENTIONNE des allergènes que l'autre déclare. Sans ce rappel, ajouter
+   * « beurre » ici ne changerait rien à ce que la déclaration propose tant
+   * qu'on n'a pas rechargé la page, et l'écran resterait muet exactement là où
+   * il doit parler (audit 2026-09-01, §3).
+   */
   protected async save(): Promise<void> {
     await this.store.save(this.form.productId()).catch(() => undefined);
+    await this.form.noteCompositionSaved();
   }
 }

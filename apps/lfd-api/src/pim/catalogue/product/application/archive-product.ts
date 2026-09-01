@@ -20,7 +20,13 @@ export class ArchiveProductHandler implements ICommandHandler<ArchiveProductComm
 
   async execute(command: ArchiveProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
-    product.archive();
+    // Rien à écrire, donc rien à journaliser : l'archivage est idempotent (une
+    // sélection en lot contient couramment ce qui l'est déjà), et un fait
+    // `product.archived` de plus affirmerait une sortie de catalogue qui n'a
+    // pas eu lieu.
+    if (!product.archive()) {
+      return;
+    }
     const { sku, name } = product.snapshot();
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({

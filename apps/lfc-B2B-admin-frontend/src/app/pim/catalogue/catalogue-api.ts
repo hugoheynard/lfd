@@ -106,6 +106,21 @@ export class CatalogueApi {
     await this.productsApi.archive(id);
   }
 
+  /**
+   * Sort un produit des archives — il revient en BROUILLON, jamais en ligne.
+   *
+   * Ce passe-plat manquait, et son absence a coûté cher : la fiche routait
+   * « Restaurer » vers `unpublishProduct`, que le domaine ignore sur un
+   * archivé. L'écran affichait « Brouillon », le journal inscrivait un retrait
+   * de la vente, la base restait archivée — et comme la liste n'offre pas la
+   * restauration, archiver était devenu irréversible depuis l'interface
+   * (audit 2026-09-01, §1). La route `PUT :id/restore` existait depuis le
+   * début, et `productsApi.restore` aussi.
+   */
+  async restoreProduct(id: string): Promise<void> {
+    await this.productsApi.restore(id);
+  }
+
   /** Pas de suppression physique (R3 backend) : « supprimer » = archiver. */
   async deleteProduct(id: string): Promise<void> {
     await this.productsApi.archive(id);

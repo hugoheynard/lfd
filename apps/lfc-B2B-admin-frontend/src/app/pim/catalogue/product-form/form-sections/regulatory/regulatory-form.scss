@@ -59,3 +59,21 @@
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--fold-space-xs) var(--fold-space-md);
 }
+
+/* CE QUE LA COMPOSITION MENTIONNE.
+   L'encart vit dans un `fold-callout`, donc sa boîte et sa teinte viennent de
+   la librairie. Ne reste ici que la mise en page de son contenu : une phrase,
+   une liste, un bouton. La liste porte ses puces — ce sont des substances qu'on
+   dénombre, pas une prose — et son retrait est celui du texte, pas celui du
+   navigateur, qui décalerait les puces hors de l'aparté. */
+.cited-lead {
+  margin: 0;
+}
+
+.cited-list {
+  margin: var(--fold-space-xs) 0 var(--fold-space-sm);
+  padding-inline-start: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

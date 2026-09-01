@@ -154,7 +154,7 @@ describe('PublishRail — la déclaration « publiable »', () => {
     const store = setup();
     fill(store);
     store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff_hugo' });
-    store['contentUpdatedAtValue'].set('2026-08-31T08:00:00.000Z');
+    store['readinessStaleValue'].set(false);
 
     const host = render();
     expect(text(host)).toContain('Déclarée publiable le 31 août 2026');
@@ -167,7 +167,7 @@ describe('PublishRail — la déclaration « publiable »', () => {
     const store = setup();
     fill(store);
     store['readinessValue'].set({ readyAt: '2026-08-31T08:00:00.000Z', readyBy: 'staff_hugo' });
-    store['contentUpdatedAtValue'].set('2026-08-31T09:00:00.000Z');
+    store['readinessStaleValue'].set(true);
 
     const host = render();
     // Savoir qu'Untel avait validé AVANT la modification vaut mieux que ne plus
@@ -175,5 +175,130 @@ describe('PublishRail — la déclaration « publiable »', () => {
     expect(text(host)).toContain('staff_hugo');
     expect(text(host)).toContain('modifiée depuis');
     expect(text(readyButton(host))).toContain('Déclarer à nouveau');
+  });
+
+  /**
+   * Ce que la complétude ne peut pas voir, et qu'elle ne verra jamais.
+   *
+   * Elle compte « Allergènes déclarés » comme satisfait dès qu'une affirmation
+   * existe — et « aucun allergène » en est une, fausse mais présente. Une fiche
+   * que sa propre composition dément était donc à 10/10, verte, et signable :
+   * l'avertissement s'affichait, et le bouton restait armé juste en dessous
+   * (constaté par Hugo le 2026-09-01, après la tranche 5).
+   */
+  describe('quand la composition dément la déclaration', () => {
+    /** « Aucun allergène » coché, et un ingrédient cité qui en porte un. */
+    function contradict(store: ProductFormStore): void {
+      store.entries.set([{ code: 'milk', label: 'Lait', incoCategory: 'MILK', incoLabel: 'Lait' }]);
+      store['citedAllergensValue'].set(['milk']);
+    }
+
+    it('REFUSE la signature sur une fiche par ailleurs complète', () => {
+      const store = setup();
+      fill(store);
+      contradict(store);
+
+      const host = render();
+      expect(readyButton(host)?.disabled).toBe(true);
+      expect(text(host)).toContain('contredit la déclaration');
+    });
+
+    it('n’invoque pas la complétude comme motif : il ne manque rien', () => {
+      const store = setup();
+      fill(store);
+      contradict(store);
+
+      expect(text(render())).not.toContain('manque');
+    });
+
+    it('rouvre la signature dès que la contradiction est levée', () => {
+      const store = setup();
+      fill(store);
+      contradict(store);
+      store.adoptCitedAllergens();
+
+      expect(readyButton(render())?.disabled).toBe(false);
+    });
+
+    /**
+     * Une fiche DÉJÀ signée qui se met à se contredire — un ingrédient ajouté
+     * après coup. La signature reste lisible : c'est un fait daté, on ne
+     * l'efface pas dans le dos de celui qui l'a posée. Mais on ne la laisse pas
+     * se reposer, et le bouton réapparaît désarmé pour le dire.
+     */
+    it('laisse la signature en place, et refuse qu’on la repose', () => {
+      const store = setup();
+      fill(store);
+      store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff_hugo' });
+      store['readinessStaleValue'].set(false);
+      contradict(store);
+
+      const host = render();
+      expect(text(host)).toContain('staff_hugo');
+      expect(readyButton(host)?.disabled).toBe(true);
+    });
+
+    /**
+     * ⚠️ La limite, et elle est voulue. « Contient du gluten » est une
+     * affirmation PARTIELLE : un lait cité ne la rend pas fausse, il la
+     * complète. Bloquer là ferait de la composition une entrée obligatoire de
+     * la déclaration réglementaire — exactement la « valeur de contrôle » que
+     * le contrat lui refuse (D5). Seule l'affirmation UNIVERSELLE se dément.
+     */
+    it('ne bloque PAS sur une simple proposition — la composition ne décide rien', () => {
+      const store = setup();
+      fill(store);
+      store.declaresNone.set(false);
+      store.selected.set(['gluten']);
+      contradict(store);
+
+      const host = render();
+      expect(store.citedNotDeclared().map((choice) => choice.code)).toEqual(['milk']);
+      expect(readyButton(host)?.disabled).toBe(false);
+    });
+  });
+
+  /**
+   * Ce que la complétude ne mesure pas, et ne mesurera pas : où la fiche se
+   * vend. Elle compte ce que la fiche PORTE — un nom, un prix, des allergènes,
+   * un visuel. Une fiche pouvait donc être à 10/10, signée, « En ligne », et
+   * n'apparaître dans aucun contexte : tout juste, et rien ne se passe
+   * (audit 2026-09-01, §11).
+   */
+  describe('quand la fiche n’est vendue nulle part', () => {
+    /** Un lieu qui vend, sans quoi le garde « le référentiel a répondu » ferme. */
+    function sellSomewhere(store: ProductFormStore): void {
+      store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
+    }
+
+    it('le dit, sur une fiche par ailleurs complète', () => {
+      const store = setup();
+      fill(store);
+
+      expect(store.soldNowhere()).toBe(true);
+      expect(text(render())).toContain('aucun contexte');
+    });
+
+    it('se tait dès qu’un contexte la vend', () => {
+      const store = setup();
+      fill(store);
+      sellSomewhere(store);
+
+      expect(store.soldNowhere()).toBe(false);
+      expect(text(render())).not.toContain('aucun contexte');
+    });
+
+    /**
+     * ⚠️ Un avertissement, jamais un blocage : préparer une fiche avant
+     * d'ouvrir ses canaux est un usage normal, et l'interdire coûterait plus
+     * que le silence qu'on répare.
+     */
+    it('n’empêche NI de signer, NI de publier au catalogue', () => {
+      const store = setup();
+      fill(store);
+
+      expect(store.soldNowhere()).toBe(true);
+      expect(readyButton(render())?.disabled).toBe(false);
+    });
   });
 });

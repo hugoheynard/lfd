@@ -40,8 +40,10 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 
 interface Detail {
   readonly readiness: { readonly readyAt: string; readonly readyBy: string } | null;
+  readonly readinessStale: boolean;
   readonly contentUpdatedAt: string;
   readonly categoryId: string;
+  readonly status: string;
   readonly variants: readonly { readonly id: string; readonly isDefault: boolean }[];
 }
 
@@ -73,9 +75,17 @@ async function declareReady(id: string): Promise<string> {
   return jsonBody<{ readyAt: string }>(response).readyAt;
 }
 
-/** La signature est-elle périmée ? La règle de l'écran, rejouée ici. */
+/**
+ * La signature est-elle périmée ? **La réponse du serveur**, plus une règle que
+ * ce fichier rejouerait.
+ *
+ * Elle était recalculée ici (`readyAt < contentUpdatedAt`) — la même comparaison
+ * que l'écran, donc les mêmes angles morts : le test ne pouvait pas voir que la
+ * date de contenu comptait un changement de STATUT et ratait les taux. Un test
+ * qui réimplémente la règle ne teste que sa propre copie (audit 2026-09-01).
+ */
 function isStale(view: Detail): boolean {
-  return view.readiness !== null && view.readiness.readyAt < view.contentUpdatedAt;
+  return view.readinessStale;
 }
 
 describe("Déclaration publiable", () => {
@@ -166,6 +176,76 @@ describe("Déclaration publiable", () => {
       // Le cas qui a motivé la colonne `updated_at` sur `product_media` : sans
       // elle, changer la photo laissait la signature se dire à jour.
       expect(isStale(await detail(id))).toBe(true);
+    });
+
+    /**
+     * Régression : les canaux vivent dans `ProductChannelOverride`, une table
+     * satellite que le `max` d'horodatages ne regardait pas. Fermer un canal —
+     * donc retirer la fiche d'un contexte de vente — ne périmait rien
+     * (audit 2026-09-01, §6).
+     */
+    it("sur les canaux, que le max d’horodatages ne voyait pas", async () => {
+      const id = await aProduct();
+      await declareReady(id);
+
+      const response = await staff()
+        .put(`${PRODUCTS}/${id}/channels`)
+        .send({ channels: [{ pointOfSaleId: "pos_b2b", context: "b2b" }] });
+      expect(response.status).toBe(200);
+
+      expect(isStale(await detail(id))).toBe(true);
+    });
+  });
+
+  /**
+   * L'autre moitié du défaut, et la plus retorse : la date de contenu venait de
+   * `product.updated_at`, un `@updatedAt` posé sur la ligne qui porte `status`.
+   * **Mettre en vente périmait donc la signature qui justifiait la mise en
+   * vente**, et l'écran affichait « la fiche a été modifiée depuis » sur une
+   * fiche dont pas un caractère n'avait bougé (audit 2026-09-01, §6).
+   */
+  describe("ne se périme PAS sur un changement de statut", () => {
+    async function aPublishableProduct(): Promise<string> {
+      const id = await aProduct();
+      const variant = (await detail(id)).variants.find((entry) => entry.isDefault);
+      // Invariant 7 : pas de mise en vente sans fiche réglementaire. `[]` est
+      // une affirmation — « aucun allergène » — pas une absence de réponse.
+      const declared = await staff()
+        .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/nutrition`)
+        .send({ allergens: [] });
+      expect(declared.status).toBe(200);
+      return id;
+    }
+
+    it("mettre en vente ne périme pas la signature qui l’autorisait", async () => {
+      const id = await aPublishableProduct();
+      await declareReady(id);
+
+      expect((await staff().put(`${PRODUCTS}/${id}/publish`).send({})).status).toBe(200);
+
+      const after = await detail(id);
+      expect(after.status).toBe("published");
+      expect(isStale(after)).toBe(false);
+    });
+
+    it("retirer de la vente non plus", async () => {
+      const id = await aPublishableProduct();
+      expect((await staff().put(`${PRODUCTS}/${id}/publish`).send({})).status).toBe(200);
+      await declareReady(id);
+
+      expect((await staff().put(`${PRODUCTS}/${id}/unpublish`).send({})).status).toBe(200);
+
+      expect(isStale(await detail(id))).toBe(false);
+    });
+
+    it("ni l’archivage, ni la restauration", async () => {
+      const id = await aProduct();
+      await declareReady(id);
+
+      expect((await staff().put(`${PRODUCTS}/${id}/archive`).send({})).status).toBe(200);
+      expect((await staff().put(`${PRODUCTS}/${id}/restore`).send({})).status).toBe(200);
+
+      expect(isStale(await detail(id))).toBe(false);
     });
   });
 });

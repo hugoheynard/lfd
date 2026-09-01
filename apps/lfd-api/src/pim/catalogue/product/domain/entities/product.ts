@@ -1,6 +1,8 @@
 import {
   ArchivedProductNotPublishableError,
+  ArchivedProductNotWithdrawableError,
   InvalidProductVariantsError,
+  NotArchivedProductNotRestorableError,
   ProductNotPublishableError,
   ProductVatWithoutChannelError,
   ProductUnknownContextError,
@@ -24,6 +26,20 @@ import type { Sku } from "../value-objects/sku.value-object.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
 export type ProductStatus = "draft" | "published" | "archived";
+
+/**
+ * Ce qu'un verbe de cycle de vie a **réellement** fait.
+ *
+ * `false` = le produit y était déjà. Il n'y a alors rien à écrire, et surtout
+ * **rien à journaliser** : le journal est la trace d'audit, et un fait
+ * `product.unpublished` sur une fiche qui n'était pas en vente est un fait qui
+ * n'a pas eu lieu. Trois des quatre verbes journalisaient inconditionnellement
+ * (audit 2026-09-01).
+ *
+ * À distinguer d'une transition **impossible**, qui lève : « il y était déjà »
+ * est un non-événement, « ça n'a pas de sens » est une erreur d'appelant.
+ */
+export type StatusChanged = boolean;
 
 export interface ProductSnapshot {
   readonly id: string;
@@ -249,9 +265,12 @@ export class Product {
    * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
    * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
    */
-  publish(): void {
+  publish(): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
+    }
+    if (this.statusValue === "published") {
+      return false;
     }
     const missing = this.variantList
       .filter((variant) => !variant.isDiscontinued && !variant.hasRegulatorySheet)
@@ -260,23 +279,57 @@ export class Product {
       throw new ProductNotPublishableError(this.identity, missing);
     }
     this.statusValue = "published";
+    return true;
   }
 
-  /** Retire de la vente en ligne, sans archiver : le produit redevient brouillon. */
-  unpublish(): void {
-    if (this.statusValue === "published") {
-      this.statusValue = "draft";
+  /**
+   * Retire de la vente en ligne, sans archiver : le produit redevient brouillon.
+   *
+   * Refuse sur un produit **archivé** : il n'est pas en vente, il est sorti du
+   * catalogue, et « le retirer de la vente » ne veut rien dire. Le refus n'est
+   * pas de la rigueur gratuite — c'est ici que le front envoyait sa demande de
+   * RESTAURATION (audit 2026-09-01, §1). Le verbe ne faisait rien, le handler
+   * journalisait quand même, et l'écran peignait « Brouillon » sur une fiche
+   * restée archivée. Un no-op silencieux avait donc l'exacte apparence d'un
+   * succès.
+   */
+  unpublish(): StatusChanged {
+    if (this.statusValue === "archived") {
+      throw new ArchivedProductNotWithdrawableError(this.identity);
     }
-  }
-
-  /** Retire de la vente sans supprimer. Idempotent. */
-  archive(): void {
-    this.statusValue = "archived";
-  }
-
-  /** Remet en brouillon — jamais directement en ligne. */
-  restore(): void {
+    if (this.statusValue !== "published") {
+      return false;
+    }
     this.statusValue = "draft";
+    return true;
+  }
+
+  /**
+   * Retire de la vente sans supprimer. Idempotent — l'archivage en lot passe par
+   * là, et une sélection contient couramment ce qui l'est déjà.
+   */
+  archive(): StatusChanged {
+    if (this.statusValue === "archived") {
+      return false;
+    }
+    this.statusValue = "archived";
+    return true;
+  }
+
+  /**
+   * Remet un produit archivé en brouillon — jamais directement en ligne.
+   *
+   * Refuse sur un produit qui n'est pas archivé. Sans ce refus, restaurer un
+   * produit **en ligne** le rétrogradait silencieusement en brouillon : le
+   * verbe posait `draft` sans regarder d'où il venait, et le produit sortait de
+   * la vente sur un geste qui prétendait l'y ramener.
+   */
+  restore(): StatusChanged {
+    if (this.statusValue !== "archived") {
+      throw new NotArchivedProductNotRestorableError(this.identity, this.statusValue);
+    }
+    this.statusValue = "draft";
+    return true;
   }
 
   /** Tarif et poids d'une déclinaison **du produit**. */
