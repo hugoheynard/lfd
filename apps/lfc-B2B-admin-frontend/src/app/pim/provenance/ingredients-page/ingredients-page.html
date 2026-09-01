@@ -52,6 +52,16 @@
         }
       </ng-template>
 
+      <!-- Un compte, pas un verdict : sans code, on écrit « Non renseigné » et
+           surtout pas « aucun ». Le référentiel n'atteste que ce qu'on y a mis. -->
+      <ng-template foldCell="allergens" let-i>
+        @if (i.allergens.length > 0) {
+          <fold-badge [content]="allergenCount(i)" variant="neutral" />
+        } @else {
+          <span class="muted">Non renseigné</span>
+        }
+      </ng-template>
+
       <ng-template foldCell="used" let-i>
         <span class="muted">{{ usedLabel(i) }}</span>
       </ng-template>
@@ -80,6 +90,7 @@
           @if (i.origin) {
             <span class="pv-card-line">{{ i.origin }}</span>
           }
+          <span class="pv-card-line">{{ allergenSummary(i) }}</span>
           <span class="pv-card-line">{{ usedLabel(i) }}</span>
         </div>
       </ng-template>

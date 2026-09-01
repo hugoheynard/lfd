@@ -104,7 +104,7 @@ describe('IngredientsPage', () => {
   it('projette une cellule par colonne jusqu’au tableau', () => {
     const { table } = render(IngredientsPage);
 
-    for (const key of ['name', 'origin', 'appellation', 'used']) {
+    for (const key of ['name', 'origin', 'appellation', 'allergens', 'used']) {
       expect(table.cellTemplate(key), `cellule « ${key} » absente`).not.toBeNull();
     }
     expect(table.rowCardTemplate()).not.toBeNull();

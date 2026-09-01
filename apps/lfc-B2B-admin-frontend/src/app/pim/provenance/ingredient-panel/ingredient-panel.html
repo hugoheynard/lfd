@@ -57,6 +57,36 @@
     }
   </fold-listbox>
 
+  <!-- Ce que la MATIÈRE contient, en codes GS1 et au périmètre mondial (D4).
+       Ce n'est pas la déclaration réglementaire d'une déclinaison : celle-ci se
+       remplit à la main, et rien d'ici ne l'écrit. -->
+  @if (allergensLoading()) {
+    <fold-loading message="Chargement du référentiel allergènes…" size="sm" />
+  } @else if (allergenError(); as message) {
+    <fold-callout appearance="inset" variant="alert">
+      <strong>Référentiel allergènes illisible.</strong> {{ message }} Le reste de la fiche
+      s'enregistre quand même&nbsp;; les allergènes, eux, attendront.
+      <button foldButton emphasis="outline" size="sm" (click)="retryAllergens()">Réessayer</button>
+    </fold-callout>
+  } @else if (allergenOptions().length === 0) {
+    <fold-empty-state
+      icon="warning"
+      iconSize="md"
+      title="Référentiel allergènes vide"
+      subtitle="Le serveur n’a proposé aucun code. Rien à cocher tant qu’il n’en sert pas."
+    />
+  } @else {
+    <fold-multiselect
+      label="Allergènes"
+      placeholder="Aucun allergène renseigné"
+      hint="Ce que cette matière contient — les fiches qui la citent s’en serviront."
+      info="Ne rien cocher n’affirme rien : c’est « personne n’a renseigné », jamais « sans allergène ». Le périmètre est mondial — le sarrasin, le maïs et la noix de coco n’ont pas d’obligation européenne mais restent des faits. Le filtre légal appartient à la fiche réglementaire de la déclinaison."
+      allowClear
+      [options]="allergenOptions()"
+      [(value)]="draftAllergens"
+    />
+  }
+
   @if (isEdit()) {
     <section class="danger">
       <button

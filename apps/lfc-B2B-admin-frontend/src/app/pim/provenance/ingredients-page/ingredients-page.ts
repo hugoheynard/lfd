@@ -58,6 +58,7 @@ export class IngredientsPage {
     { key: 'name', label: 'Ingrédient' },
     { key: 'origin', label: 'Origine', width: '16rem' },
     { key: 'appellation', label: 'Appellation', width: '14rem' },
+    { key: 'allergens', label: 'Allergènes', width: '11rem' },
     { key: 'used', label: 'Cité par', width: '9rem' },
     { key: 'actions', label: '', width: '3.5rem' },
   ];
@@ -81,6 +82,27 @@ export class IngredientsPage {
       return '';
     }
     return held.scheme === '' ? held.label.fr : `${held.scheme} — ${held.label.fr}`;
+  }
+
+  /**
+   * « 3 allergènes » — le COMPTE, jamais la liste : quatre badges de codes GS1
+   * par ligne noieraient le tableau, et un ingrédient s'ouvre pour les lire.
+   */
+  protected allergenCount(row: IngredientView): string {
+    const declared = row.allergens.length;
+    return declared === 1 ? '1 allergène' : `${String(declared)} allergènes`;
+  }
+
+  /**
+   * Sur la carte mobile, le silence est NOMMÉ.
+   *
+   * Un ingrédient sans code n'est pas un ingrédient « sans allergène » : c'est
+   * un ingrédient dont personne n'a rien dit (cf. `IngredientView.allergens`).
+   * Écrire « aucun allergène » ferait dire à la liste une chose que le
+   * référentiel n'atteste pas, et sur ce sujet-là le raccourci se paie.
+   */
+  protected allergenSummary(row: IngredientView): string {
+    return row.allergens.length === 0 ? 'Allergènes non renseignés' : this.allergenCount(row);
   }
 
   protected open(ingredient?: IngredientView): void {
