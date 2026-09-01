@@ -1,0 +1,23 @@
+<fold-page-layout icon="info" title="Vue d’ensemble">
+  <p description>
+    Comment le PIM est pensé — et comment un simple paramétrage se transforme en
+    <strong>collections Shopify</strong>. À parcourir section par section, dans l'ordre du rail.
+  </p>
+
+  <div class="doc-stack">
+    <fold-callout appearance="inset" variant="info">
+      <strong>Le référentiel a un back.</strong> Les données vivent en base, derrière une API murée
+      par l'annuaire du personnel. Cet encadré annonçait un <em>POC front-only</em> sur
+      <code>localStorage</code> — c'était vrai au début, et ça ne l'est plus depuis longtemps.
+    </fold-callout>
+
+    <fold-card class="doc-card">
+      <p>
+        Le PIM est la <strong>source de vérité</strong> du catalogue. On y décrit les catégories,
+        les taux de TVA et les produits ; le système en <strong>dérive</strong> les collections
+        finales, prêtes à être poussées vers Shopify.
+      </p>
+      <app-system-diagram />
+    </fold-card>
+  </div>
+</fold-page-layout>

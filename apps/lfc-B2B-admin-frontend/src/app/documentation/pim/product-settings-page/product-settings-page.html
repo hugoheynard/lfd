@@ -1,0 +1,241 @@
+<fold-page-layout icon="library" title="Paramétrage produit">
+  <p description>
+    Le <strong>vocabulaire</strong> dans lequel une fiche se remplit — appellations, allergènes,
+    ingrédients, conditionnements. Écrit une fois, cité par toutes les fiches.
+  </p>
+
+  <div class="doc-stack">
+    <fold-callout appearance="inset" variant="info">
+      <strong>Ce n'est pas la fiche produit.</strong> Ici on écrit les mots&nbsp;; là-bas on les
+      emploie. La différence qui compte n'est pas l'écran, c'est la
+      <strong>portée d'un changement</strong>&nbsp;: renommer un produit touche une fiche, renommer
+      un ingrédient touche <em>toutes celles qui le citent</em>. C'est de là que vient tout le reste
+      — les identités qui ne bougent plus, le compteur d'usages, et l'archivage au lieu de la
+      suppression.
+    </fold-callout>
+
+    <div class="doc-grid">
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="library"
+          iconTone="primary"
+          title="Paramétrage produit"
+          subtitle="le vocabulaire, partagé"
+        />
+        <ul class="doc-list">
+          <li>Une écriture, <strong>n fiches</strong> touchées.</li>
+          <li>
+            L'identité est <strong>figée</strong> — le code d'une appellation, la clé d'un
+            ingrédient, le code d'un allergène ne changent plus.
+          </li>
+          <li>
+            On n'efface pas ce qui est cité&nbsp;: chaque entrée porte le
+            <strong>nombre de fiches</strong> qui la retiennent.
+          </li>
+          <li>On retire de ce qu'on <em>propose</em>, jamais de ce qu'on <em>reconnaît</em>.</li>
+        </ul>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="product"
+          iconTone="primary"
+          title="Fiche produit"
+          subtitle="une instance, qui cite"
+        />
+        <ul class="doc-list">
+          <li>Une écriture, <strong>une fiche</strong> touchée.</li>
+          <li>Le nom s'édite, se traduit, se corrige — c'est de l'éditorial.</li>
+          <li>Elle a un cycle de vie&nbsp;: brouillon, publiée, archivée.</li>
+          <li>
+            Elle ne peut citer que ce qui existe déjà ici — d'où l'ordre de remplissage, plus bas.
+          </li>
+        </ul>
+      </fold-card>
+    </div>
+
+    <!-- LE SCHÉMA CENTRAL. Il porte la question qu'on pose vraiment en arrivant :
+         « qu'est-ce qui se branche sur quoi, et dans quel sens ». -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="grid"
+        iconTone="primary"
+        title="Comment ça se mappe"
+        subtitle="de l'appellation à l'étiquette"
+      />
+      <app-product-vocabulary-diagram />
+      <p>
+        La chaîne se lit de gauche à droite, et chaque maillon ne cite que son voisin. Une
+        <strong>appellation</strong> se pose sur un <strong>ingrédient</strong> — au plus une, parce
+        qu'une matière porte un signe officiel ou n'en porte pas. Un <strong>produit</strong> cite
+        une liste d'ingrédients, <strong>dans l'ordre qu'on choisit</strong>&nbsp;: c'est un ordre
+        éditorial, « beurre de Savoie AOP » en tête parce que c'est l'argument — surtout pas l'ordre
+        réglementaire par masse décroissante, qui appartient à la déclinaison.
+      </p>
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Le piège du référentiel, et il est sérieux.</strong> Les allergènes apparaissent à
+        deux endroits, avec les mêmes codes, et leur <strong>liste vide</strong> dit l'inverse d'un
+        endroit à l'autre. Sur un ingrédient, elle veut dire « personne n'a saisi »&nbsp;: elle
+        n'affirme rien. Sur la fiche réglementaire d'une déclinaison, elle
+        <strong>affirme</strong> « aucun allergène ». Recopier l'une dans l'autre ferait imprimer
+        une allégation que personne n'a prononcée.
+      </fold-callout>
+      <p>
+        C'est pourquoi le lien entre les deux est <strong>interrompu</strong> sur le schéma. Le
+        système sait faire l'union des allergènes des ingrédients cités et la comparer à ce que
+        chaque déclinaison déclare — mais il en fait une <strong>proposition d'ajout</strong>, et
+        rien d'autre. Il ne retire jamais, il n'écrit jamais&nbsp;: enrichir un ingrédient
+        réécrirait sinon l'étiquette de tout ce qui le cite, y compris ce qui est déjà imprimé et
+        déjà servi.
+      </p>
+      <p>
+        Deux détails de maille qui expliquent des surprises d'écran&nbsp;: les ingrédients sont
+        cités par le <strong>produit</strong>, la fiche réglementaire est portée par la
+        <strong>déclinaison</strong> — toutes les déclinaisons d'un produit reçoivent donc la même
+        proposition. Et la liste d'ingrédients est éditoriale&nbsp;: rien n'y garantit
+        l'exhaustivité, donc « rien à proposer » ne veut jamais dire « composition couverte ».
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="award"
+        iconTone="primary"
+        title="Appellations"
+        subtitle="le signe officiel qu'une matière porte"
+      />
+      <p>
+        AOP, IGP, Label Rouge, AB. Chacune a un <strong>code</strong> — son identité, qui ne change
+        plus —, un libellé traduit, et le <strong>signe</strong> qu'elle affiche. Ce signe est un
+        texte libre et non une liste fermée&nbsp;: c'est un mot qu'on lit sur un badge, pas une
+        valeur sur laquelle le code se branche. En faire une énumération obligerait à livrer une
+        version pour reconnaître un signe de plus — exactement ce que ce référentiel existe pour
+        éviter.
+      </p>
+      <p>
+        Une appellation se <strong>désactive</strong>&nbsp;; elle ne s'efface pas tant qu'un
+        ingrédient la cite. L'écran affiche le nombre de citations <em>avant</em> le geste, plutôt
+        que de laisser le refus l'apprendre après le clic.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="alert"
+        iconTone="primary"
+        title="Allergènes"
+        subtitle="deux catalogues, et une partie verrouillée"
+      />
+      <p>
+        Le référentiel range des <strong>entrées</strong> — « Noisettes » — dans des
+        <strong>catégories</strong> — « Fruits à coque ». C'est la catégorie qui porte le libellé
+        <strong>d'étiquette</strong>&nbsp;: c'est lui qui fait foi, pas le nom granulaire qu'on
+        coche.
+      </p>
+      <p>
+        Deux catalogues cohabitent. Le catalogue <strong>légal</strong> est l'annexe II du règlement
+        UE 1169/2011&nbsp;: il est semé, marqué officiel, et <strong>verrouillé</strong> — l'annexe
+        II ne s'étend pas depuis un back-office, et l'absence de champ le dit mieux qu'une
+        validation. Le catalogue <strong>interopérable</strong>, plus large, accueille les codes
+        sans obligation européenne et les entrées maison&nbsp;: c'est celui dans lequel un
+        ingrédient énonce un fait.
+      </p>
+      <fold-callout appearance="inset" variant="warning">
+        <strong>On archive, on ne supprime pas.</strong> Une entrée archivée sort de ce qu'on
+        <em>propose</em> à la saisie, jamais de ce qu'on <em>reconnaît</em>&nbsp;: les fiches qui la
+        portent déjà continuent de la porter, et l'écran d'administration la montre encore — il faut
+        la voir pour pouvoir défaire l'archivage.
+      </fold-callout>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="library"
+        iconTone="primary"
+        title="Ingrédients"
+        subtitle="la charnière — c'est ici que les deux autres se rejoignent"
+      />
+      <p>
+        Un ingrédient déclare une <strong>origine</strong> — « Savoie, France », un texte, pas une
+        table de lieux, parce que rien ne la calcule ni ne la géocode —, au plus une
+        <strong>appellation</strong>, et les <strong>codes d'allergènes</strong> que cette matière
+        contient. C'est le seul endroit où les deux référentiels précédents se croisent, et c'est ce
+        qui en fait l'écran à remplir avant d'ouvrir une fiche.
+      </p>
+      <fold-callout appearance="inset" variant="info">
+        <strong>Ce n'est pas la liste réglementaire d'ingrédients.</strong> Celle-là est ordonnée
+        par masse décroissante, porte des quantités, décrit une recette — et appartient à la
+        <em>déclinaison</em>, avec sa fiche nutritionnelle. Ce référentiel-ci sert la
+        <strong>provenance</strong>&nbsp;: un badge, un argument de vente, une fiche B2B qui se
+        suffit à elle-même.
+      </fold-callout>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="package"
+        iconTone="primary"
+        title="Conditionnements"
+        subtitle="posé, pas encore écrit"
+      />
+      <p>
+        La table existe&nbsp;: une déclinaison peut porter des conditionnements, chacun avec sa
+        <strong>propre référence</strong>, sa quantité, son poids brut et son prix. Rien ne les
+        saisit encore — l'écran est posé pour que la place soit prise, parce qu'une entrée absente
+        laisse chercher là où une page vide dit simplement « pas encore ».
+      </p>
+      <p>
+        Ce qui viendra ici est le <strong>vocabulaire</strong> — les types de conditionnement, ce
+        qu'ils nomment : carton, plateau, sachet. Combien d'unités dans le carton d'un produit donné
+        restera sur la fiche&nbsp;: c'est une propriété de ce produit, pas un réglage de la maison.
+        Et c'est la propre référence du carton qui en fait autre chose qu'une quantité — le
+        professionnel commande « le carton de 24 », pas « 24 fois l'article ».
+      </p>
+    </fold-card>
+
+    <!-- L'ORDRE DE REMPLISSAGE, en dernier : c'est la conclusion pratique de
+         tout ce qui précède, et c'est ce qu'on vient rechercher la deuxième
+         fois qu'on ouvre cette page. -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="timeline"
+        iconTone="primary"
+        title="Dans quel ordre remplir"
+        subtitle="on ne cite pas ce qui n'existe pas encore"
+      />
+      <ol class="doc-steps">
+        <li>
+          <strong>Les appellations d'abord.</strong> Un ingrédient ne peut pointer que sur une
+          appellation déjà ouverte.
+        </li>
+        <li>
+          <strong>Les allergènes ensuite</strong>, et seulement s'il manque un code&nbsp;: l'annexe
+          II est déjà là. Ce qu'on ajoute, ce sont des entrées maison, dans une catégorie maison.
+        </li>
+        <li>
+          <strong>Les ingrédients</strong>, qui citent les deux. C'est l'étape qui coûte, et celle
+          qu'on rentabilise&nbsp;: une matière décrite une fois sert toutes les fiches qui
+          l'emploient.
+        </li>
+        <li>
+          <strong>Alors seulement la fiche produit</strong> — elle n'a plus qu'à choisir dans une
+          liste, et à déclarer ce qui lui est propre&nbsp;: son prix, ses déclinaisons, et sa fiche
+          réglementaire.
+        </li>
+      </ol>
+      <p>
+        Rien n'oblige à cet ordre techniquement — mais le prendre à l'envers fait sortir de la fiche
+        pour ouvrir un référentiel, puis y revenir, et c'est là qu'on oublie la moitié de ce qu'on
+        était venu écrire.
+      </p>
+    </fold-card>
+  </div>
+</fold-page-layout>

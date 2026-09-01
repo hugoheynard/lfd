@@ -1,0 +1,87 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.step {
+  fill: var(--fold-color-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.box {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.box-accent {
+  fill: var(--fold-color-primary);
+  stroke: var(--fold-color-primary);
+}
+
+.box-title {
+  fill: var(--fold-color-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.box-sub {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.on-accent {
+  fill: var(--fold-color-on-primary);
+}
+
+/* Le verdict est SOUS la porte et non dedans : les trois boîtes se ressemblent
+   à dessein — c'est bien le même geste vu trois fois — et ce qui les distingue
+   doit donc se lire sur une ligne à part, à la même hauteur pour les trois. */
+.verdict {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.verdict-strong {
+  fill: none;
+  stroke: var(--fold-color-primary);
+  stroke-dasharray: none;
+}
+
+.verdict-text {
+  fill: var(--fold-color-text-muted);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.verdict-text-strong {
+  fill: var(--fold-color-primary);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.rule-box {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-primary);
+  stroke-width: 1;
+}
+
+.rule-title {
+  fill: var(--fold-color-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rule-line {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+}

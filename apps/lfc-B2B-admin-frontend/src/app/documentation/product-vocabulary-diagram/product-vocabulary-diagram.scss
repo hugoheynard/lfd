@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.step {
+  fill: var(--fold-color-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.box {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.box-accent {
+  fill: var(--fold-color-primary);
+  stroke: var(--fold-color-primary);
+}
+
+.box-title {
+  fill: var(--fold-color-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.box-sub {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.on-accent {
+  fill: var(--fold-color-on-primary);
+}
+
+.arrow {
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+}
+
+.arrowhead {
+  fill: var(--fold-color-text-muted);
+}
+
+/* Le trait interrompu porte tout le sens de la deuxième moitié : ce lien
+   PROPOSE, il n'écrit pas. Un trait plein l'aurait mis au même rang que les
+   citations du haut, qui, elles, sont des faits enregistrés. */
+.arrow-soft {
+  stroke: var(--fold-color-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.arrowhead-soft {
+  fill: var(--fold-color-primary);
+}
+
+.card {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.note {
+  fill: var(--fold-color-text-muted);
+  font-size: 11px;
+}
+
+.panel {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.panel-strong {
+  stroke: var(--fold-color-primary);
+}
+
+.panel-title {
+  fill: var(--fold-color-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+}
+
+.panel-sub {
+  fill: var(--fold-color-text-muted);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.panel-line {
+  fill: var(--fold-color-text-secondary);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.panel-verdict {
+  fill: var(--fold-color-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.panel-verdict-strong {
+  fill: var(--fold-color-primary);
+}
+
+.hint {
+  fill: var(--fold-color-primary);
+  font-size: 11px;
+  font-style: italic;
+  text-anchor: middle;
+}
+
+.foot {
+  fill: var(--fold-color-text-secondary);
+  font-size: 12px;
+}

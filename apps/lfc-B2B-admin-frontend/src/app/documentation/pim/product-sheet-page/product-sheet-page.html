@@ -1,0 +1,232 @@
+<fold-page-layout icon="product" title="Remplir une fiche produit">
+  <p description>
+    L'écran où l'on passe ses journées. Ce qu'il demande, dans quel ordre, comment il enregistre —
+    et la seule chose qui puisse refuser une publication.
+  </p>
+
+  <div class="doc-stack">
+    <fold-callout appearance="inset" variant="info">
+      <strong>Une fiche n'est pas un formulaire qu'on valide à la fin.</strong> On la crée en deux
+      champs, puis on la remplit <em>section par section</em>, chacune s'enregistrant pour son
+      compte. Il n'y a pas de « soumettre » qui décide de tout&nbsp;: la publication au catalogue
+      est un geste à part, et c'est le seul qui puisse être refusé.
+    </fold-callout>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="plus"
+        iconTone="primary"
+        title="Créer : un geste, deux champs"
+        subtitle="un nom, une famille, et le brouillon existe"
+      />
+      <p>
+        À la création, le produit n'existe pas encore — donc aucune section ne peut s'enregistrer
+        seule. C'est le seul moment où la fiche se comporte comme un formulaire classique&nbsp;: on
+        remplit l'identité, on clique <strong>Créer le brouillon</strong>, et tout le reste s'ajoute
+        ensuite.
+      </p>
+      <p>
+        Deux champs suffisent&nbsp;: un <strong>nom</strong> et une <strong>famille</strong>. Le
+        reste peut attendre, et il vaut mieux qu'il attende — un brouillon n'est visible d'aucun
+        canal, alors qu'une fiche qu'on garde ouverte pendant vingt minutes se perd au premier
+        rechargement.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="save"
+        iconTone="primary"
+        title="Ensuite : une section, un enregistrement"
+        subtitle="par section, jamais par champ"
+      />
+      <p>
+        En édition, chaque section a son propre bouton et son propre état — <em>Modifié</em>,
+        <em>Enregistré</em>, <em>Échec</em>. Une section qui échoue reste marquée modifiée pendant
+        que les autres passent&nbsp;: on ne perd pas le travail des cinq autres parce que la sixième
+        a été refusée.
+      </p>
+      <p>
+        <strong>Tout enregistrer</strong>, dans le rail, est un raccourci et pas une transaction :
+        un geste pour vous, un appel par section pour l'API, et des échecs qui restent indépendants.
+        Il vit à hauteur d'œil pour qu'on n'ait jamais à parcourir la page pour retrouver ce qui est
+        en attente.
+      </p>
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Deux sections ne suivent pas cette règle</strong>, et l'écran le montre en ne leur
+        donnant pas d'indicateur. <strong>Ingrédients</strong> vit sur un autre agrégat et porte son
+        propre bouton — « Tout enregistrer » ne la sauve pas. <strong>Diffusion par canal</strong>
+        est en lecture seule&nbsp;: elle montre ce que chaque canal fera de la fiche, elle n'écrit
+        rien.
+      </fold-callout>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="timeline"
+        iconTone="primary"
+        title="Les sections, dans l'ordre de lecture"
+        subtitle="la page se descend, elle ne se navigue pas"
+      />
+      <ol class="doc-steps">
+        <li>
+          <strong>Identité</strong> — le strict nécessaire pour exister au catalogue : le nom dans
+          ses langues, la famille, la nature de la fiche.
+        </li>
+        <li>
+          <strong>Tarif &amp; TVA</strong> — le <strong>prix public TTC</strong>, les canaux de
+          vente, et les taux hérités de la famille ou redéfinis ici.
+        </li>
+        <li>
+          <strong>Fiche réglementaire</strong> — allergènes, déclaration nutritionnelle, poids net.
+          C'est la seule section qui décide de la publiabilité.
+        </li>
+        <li><strong>Contenu</strong> — les textes du site et le référencement.</li>
+        <li>
+          <strong>Visuels</strong> — la principale est celle des boutiques&nbsp;; le texte
+          alternatif est le seul champ d'image qui se traduit.
+        </li>
+        <li>
+          <strong>Ingrédients</strong> — d'où vient ce qu'il y a dedans. Facultatif, sans effet sur
+          la publiabilité, et l'ordre est le vôtre : c'est un argument, pas une mesure.
+        </li>
+        <li><strong>Diffusion par canal</strong> — en lecture : ce que chaque canal en fera.</li>
+      </ol>
+    </fold-card>
+
+    <!-- LES TROIS PORTES. C'est la partie qu'on vient rechercher : « pourquoi
+         ça refuse alors que la barre est verte ». -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="publish"
+        iconTone="primary"
+        title="Trois portes, et une seule refuse"
+        subtitle="la barre, la signature, la publication"
+      />
+      <app-product-gates-diagram />
+      <p>
+        Elles se ressemblent assez pour qu'on les confonde, et c'est la confusion la plus coûteuse
+        de l'écran. <strong>La barre de complétude</strong> mesure la forme et
+        <strong>n'empêche rien</strong>&nbsp;: une fiche à 3/10 se publie si sa fiche réglementaire
+        est là. <strong>La déclaration « publiable »</strong> est une signature datée&nbsp;: elle
+        n'écrit aucun statut, une fiche signée reste un brouillon. Seule
+        <strong>la publication au catalogue</strong> peut dire non.
+      </p>
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Le seul refus, et son piège.</strong> Toute déclinaison <strong>active</strong> doit
+        porter une fiche réglementaire. Une liste d'allergènes vide compte comme <em>déclarée</em> —
+        « aucun allergène » est une affirmation, pas une absence de réponse. Ce qui manque, ce n'est
+        donc jamais « des allergènes » : c'est que personne ne s'est prononcé. Les déclinaisons
+        arrêtées, elles, ne comptent pas : elles ne partiront chez aucun canal.
+      </fold-callout>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="stats"
+        iconTone="primary"
+        title="Ce que la barre compte"
+        subtitle="des feuilles, pas des exigences"
+      />
+      <p>
+        Six exigences — nom, famille, prix, allergènes déclarés, description, au moins un visuel —
+        mais la barre ne les compte pas elles&nbsp;: elle compte leurs
+        <strong>feuilles</strong>. Un nom vaut une ligne par langue du catalogue. Sans ça, une fiche
+        à laquelle il manque deux traductions pèserait autant qu'une fiche sans prix, et ce n'est
+        pas le même travail.
+      </p>
+      <p>
+        Les langues comptent <strong>dès la fiche vide</strong>. C'est un renversement assumé : les
+        traductions étaient facultatives et n'apparaissaient qu'une fois la source écrite, si bien
+        que le dénominateur <em>grandissait</em> à mesure qu'on tapait — on passait de 5/5 à 5/9 en
+        remplissant un champ, et une fiche « complète » pouvait partir en français seul. Publiable
+        veut dire traduit&nbsp;; le compte doit donc être connu d'avance, et faux tant qu'il manque
+        une langue.
+      </p>
+      <fold-callout appearance="inset" variant="info">
+        <strong>Ce qu'elle ne dira jamais.</strong> Que 10,00&nbsp;€ est le bon prix, ni que la
+        description parle du bon produit. C'est une responsabilité, et une responsabilité se prend —
+        elle ne se calcule pas. D'où la signature : elle n'inscrit aucune vérification, elle inscrit
+        un nom et une date, et c'est tout ce qu'on peut honnêtement inscrire.
+      </fold-callout>
+      <p>
+        Elle se <strong>date</strong> plutôt que de se périmer. Si la fiche bouge après la
+        signature, le rail le dit au lieu de l'effacer en silence&nbsp;: savoir que quelqu'un avait
+        validé <em>avant</em> la modification vaut mieux que ne plus rien savoir.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="tag"
+        iconTone="primary"
+        title="Le prix : une seule assiette"
+        subtitle="on saisit le TTC, le hors taxe se calcule"
+      />
+      <p>
+        Le champ est le <strong>prix public TTC</strong> — le prix d'étiquette, en centimes. Il n'y
+        a pas de second champ à côté&nbsp;: chaque hors taxe se déduit du taux de son canal, et
+        c'est pourquoi le même prix affiche deux montants différents selon qu'on regarde le comptoir
+        ou la vente pro.
+      </p>
+      <p>
+        Le sens de lecture est unique, et le tableau le respecte&nbsp;: on saisit du TTC, il montre
+        des HT. Le prix professionnel se dérive du même nombre, par la remise des règles comptables
+        — jamais saisi à la main, jamais recopié d'un catalogue papier.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="alert"
+        iconTone="primary"
+        title="La fiche réglementaire est portée par la DÉCLINAISON"
+        subtitle="pas par le produit — et c'est ce qui surprend"
+      />
+      <p>
+        Les allergènes, la déclaration nutritionnelle et le poids net appartiennent à ce qui se
+        vend, donc à la déclinaison. Un produit à trois déclinaisons a
+        <strong>trois fiches réglementaires</strong>, et la publication les regarde toutes.
+      </p>
+      <p>
+        Les valeurs nutritionnelles se saisissent <strong>pour 100 g</strong>, dans l'ordre de
+        l'annexe XV du règlement UE 1169/2011 — ce n'est pas une préférence de lecture, c'est
+        l'ordre que le tableau imprimé doit suivre. Les deux « dont » sont des
+        <strong>parts</strong> de la ligne qui les précède, et le domaine refuse qu'elles la
+        dépassent.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="reload"
+        iconTone="primary"
+        title="Après la publication"
+        subtitle="dépublier n'est pas archiver"
+      />
+      <ol class="doc-steps">
+        <li>
+          <strong>Dépublier</strong> ramène la fiche à l'état de brouillon. Rien n'est perdu, rien
+          n'est archivé — c'est le geste du « on suspend ».
+        </li>
+        <li>
+          <strong>Archiver</strong> la retire sans la supprimer. Le référentiel ne supprime pas
+          d'agrégat métier.
+        </li>
+        <li>
+          Une fiche archivée <strong>ne se publie pas directement</strong> : on la restaure d'abord.
+          Passer de « retiré » à « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un
+          regarde.
+        </li>
+      </ol>
+    </fold-card>
+  </div>
+</fold-page-layout>

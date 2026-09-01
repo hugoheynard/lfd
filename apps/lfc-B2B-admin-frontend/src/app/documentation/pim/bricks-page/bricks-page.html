@@ -1,0 +1,64 @@
+<fold-page-layout icon="grid" title="Les briques">
+  <p description>
+    Les quatre objets du référentiel, et ce que chacun porte. Tout le reste en découle&nbsp;: une
+    collection n'est jamais saisie, elle est <strong>dérivée</strong> de ces briques-là.
+  </p>
+
+  <div class="doc-grid">
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        icon="sliders"
+        iconTone="primary"
+        title="Taux de TVA"
+        subtitle="Un nom, un pourcentage"
+      />
+      <p>
+        « Réduit · 5,5 % », « Normal · 20 % »… Chaque taux est une donnée éditable, et correspond à
+        <strong>une collection</strong> côté TVA.
+      </p>
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        icon="folder"
+        iconTone="primary"
+        title="Catégorie"
+        subtitle="= famille = gamme"
+      />
+      <p>
+        Porte les <strong>défauts de canaux</strong> (par boutique × à emporter / sur place) et
+        <strong>deux taux de TVA</strong>. Côté Shopify, elle devient une collection.
+      </p>
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        icon="grid"
+        iconTone="primary"
+        title="Produit"
+        subtitle="hérite de sa catégorie"
+      />
+      <p>
+        Reprend les canaux et la TVA de sa catégorie. On peut <strong>override</strong> les canaux,
+        en <em>tout-ou-rien</em>, pour ce produit précis.
+      </p>
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        icon="globe"
+        iconTone="primary"
+        title="Collection"
+        subtitle="le résultat visible"
+      />
+      <p>
+        Ce que voit le client : un rayon en ligne. Générée automatiquement à partir des canaux
+        actifs — jamais saisie à la main.
+      </p>
+    </fold-card>
+  </div>
+</fold-page-layout>

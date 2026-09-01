@@ -1,0 +1,66 @@
+/**
+ * Le vêtement COMMUN des pages de documentation.
+ *
+ * Sept pages qui empilent des cartes, des grilles et des listes numérotées :
+ * les styler chacune de son côté ferait diverger l'écartement d'une section à
+ * l'autre, et c'est précisément ce qu'on remarque en naviguant dans un rail.
+ * Chaque page le déclare en `styleUrl` — les styles restent donc encapsulés par
+ * composant, ce fichier ne fait que dire la même chose une seule fois.
+ */
+
+:host {
+  display: block;
+}
+
+.doc-stack {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.doc-card {
+  display: grid;
+  gap: var(--fold-space-md, 1rem);
+}
+
+p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--fold-color-text-secondary);
+}
+
+.doc-grid fold-element-title {
+  margin-bottom: 0.6rem;
+}
+
+.doc-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+  line-height: 1.55;
+  color: var(--fold-color-text-secondary);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  color: var(--fold-color-text);
+}
+
+/* Une liste à puces se lit comme les listes numérotées voisines : même
+   gouttière, même interligne. Sans ça, deux listes de la même page n'ont pas
+   le même rythme selon qu'elles comptent ou non. */
+.doc-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.4rem;
+  line-height: 1.55;
+  color: var(--fold-color-text-secondary);
+}

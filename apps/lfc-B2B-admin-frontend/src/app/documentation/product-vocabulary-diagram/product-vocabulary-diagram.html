@@ -1,0 +1,97 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 352"
+  role="img"
+  aria-label="Une appellation par ingrédient, une liste d'ingrédients par produit, une fiche réglementaire par déclinaison ; les allergènes apparaissent sur l'ingrédient comme un fait et sur la déclinaison comme une déclaration"
+>
+  <defs>
+    <marker
+      id="voc-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+    <marker
+      id="voc-arrow-soft"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead-soft" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <text class="step" x="14" y="14">① Le vocabulaire, cité de gauche à droite</text>
+
+  <g>
+    <rect class="box" x="14" y="28" width="150" height="56" rx="10" />
+    <text class="box-title" x="89" y="52">Appellation</text>
+    <text class="box-sub" x="89" y="70">AOP · IGP · AB</text>
+  </g>
+
+  <g>
+    <rect class="box box-accent" x="214" y="28" width="180" height="56" rx="10" />
+    <text class="box-title on-accent" x="304" y="52">Ingrédient</text>
+    <text class="box-sub on-accent" x="304" y="70">la matière, son origine</text>
+  </g>
+
+  <g>
+    <rect class="box" x="444" y="28" width="130" height="56" rx="10" />
+    <text class="box-title" x="509" y="52">Produit</text>
+    <text class="box-sub" x="509" y="70">la fiche</text>
+  </g>
+
+  <g>
+    <rect class="box" x="604" y="28" width="122" height="56" rx="10" />
+    <text class="box-title" x="665" y="52">Déclinaison</text>
+    <text class="box-sub" x="665" y="70">ce qui se vend</text>
+  </g>
+
+  <line class="arrow" x1="166" y1="56" x2="210" y2="56" marker-end="url(#voc-arrow)" />
+  <line class="arrow" x1="396" y1="56" x2="440" y2="56" marker-end="url(#voc-arrow)" />
+  <line class="arrow" x1="576" y1="56" x2="600" y2="56" marker-end="url(#voc-arrow)" />
+
+  <text class="card" x="188" y="104">0..1</text>
+  <text class="card" x="418" y="104">n · ordonné</text>
+  <text class="card" x="588" y="104">1..n</text>
+
+  <text class="note" x="14" y="126">
+    Une appellation par ingrédient. Une liste d'ingrédients par produit, dans l'ordre qu'on choisit
+  </text>
+  <text class="note" x="14" y="142">
+    — pas celui des masses. Une fiche réglementaire par déclinaison.
+  </text>
+
+  <text class="step" x="14" y="180">
+    ② Les allergènes entrent DEUX fois — et le vide n'y dit pas la même chose
+  </text>
+
+  <rect class="panel" x="14" y="194" width="300" height="112" rx="10" />
+  <text class="panel-title" x="164" y="218">sur l'INGRÉDIENT</text>
+  <text class="panel-sub" x="164" y="236">codes GS1 · portée monde</text>
+  <text class="panel-line" x="164" y="262">« ce que cette matière contient »</text>
+  <text class="panel-verdict" x="164" y="288">vide = personne n'a saisi</text>
+
+  <rect class="panel panel-strong" x="426" y="194" width="300" height="112" rx="10" />
+  <text class="panel-title" x="576" y="218">sur la DÉCLINAISON</text>
+  <text class="panel-sub" x="576" y="236">annexe II · portée UE</text>
+  <text class="panel-line" x="576" y="262">« ce que l'étiquette déclare »</text>
+  <text class="panel-verdict panel-verdict-strong" x="576" y="288">vide = AUCUN allergène</text>
+
+  <text class="hint" x="370" y="234">propose</text>
+  <line class="arrow-soft" x1="322" y1="250" x2="418" y2="250" marker-end="url(#voc-arrow-soft)" />
+  <text class="hint" x="370" y="272">n'écrit jamais</text>
+
+  <text class="foot" x="14" y="334">
+    Le dérivé compare les deux et PROPOSE l'écart. Il n'écrit rien : une étiquette déjà imprimée ne
+    se réécrit pas toute seule.
+  </text>
+</svg>

@@ -1,0 +1,82 @@
+<fold-page-layout icon="shopify" title="Intégration Shopify">
+  <p description>
+    Comment le référentiel pousse vers Shopify sans jamais casser une URL — et le seul réglage qui
+    reste à faire à la main.
+  </p>
+
+  <div class="doc-stack">
+    <fold-callout appearance="inset" variant="info">
+      <strong>Push idempotent, SEO-safe.</strong> Une fois une collection ou un produit créé, on ne
+      le <em>recrée</em> jamais : on le <strong>met à jour par id</strong>. Le
+      <code>handle</code> Shopify — donc l'URL, donc le référencement — reste intact.
+    </fold-callout>
+
+    <fold-card class="doc-card">
+      <p>
+        Le <code>handle</code> est calculé <strong>une seule fois</strong>, à la création. Modifier
+        le contenu (titre, textes, images, prix) ne le change pas. Le push suit donc un
+        <strong>upsert</strong> piloté par le binding.
+      </p>
+      <app-upsert-diagram />
+    </fold-card>
+
+    <div class="doc-grid">
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="save"
+          iconTone="primary"
+          title="Bindings"
+          subtitle="PIM ↔ Shopify"
+        />
+        <p>
+          La table de correspondance <strong>id + handle</strong>. Elle décide
+          <em>create</em> (première fois) vs <em>update</em> (ensuite), et garde le lien vers la
+          bonne ressource Shopify.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="reload"
+          iconTone="primary"
+          title="Hashes"
+          subtitle="ne pousser que le delta"
+        />
+        <p>
+          Une empreinte du dernier contenu poussé. Inchangée → on <strong>saute</strong> l'appel.
+          Moins d'écritures, pas de churn inutile côté Shopify.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="globe"
+          iconTone="primary"
+          title="Renommage = 301"
+          subtitle="dernier recours"
+        />
+        <p>
+          Si un handle doit vraiment changer, on pose une <strong>redirection 301</strong> pour ne
+          pas perdre le jus SEO. Par défaut : on ne touche pas au handle.
+        </p>
+      </fold-card>
+    </div>
+
+    <fold-callout appearance="inset" variant="warning">
+      <strong>Config manuelle, une seule fois.</strong> Les <em>tax overrides</em> ne sont pas
+      pleinement pilotables par API : le PIM crée les collections TVA programmatiquement, mais le
+      mapping <strong>collection → taux</strong> se règle à la main dans l'admin (Réglages → Taxes
+      et droits de douane). Config initiale, stable ensuite.
+      <a
+        href="https://help.shopify.com/fr/manual/taxes/tax-overrides"
+        target="_blank"
+        rel="noopener"
+      >
+        Doc Shopify — tax overrides ↗
+      </a>
+    </fold-callout>
+  </div>
+</fold-page-layout>

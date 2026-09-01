@@ -1,0 +1,48 @@
+<fold-page-layout icon="sliders" title="Flux des collections">
+  <p description>
+    Comment trois <strong>calques</strong> se composent pour produire ce que voit chaque vitrine —
+    et à quoi ça ressemble, en vrai, sur une table.
+  </p>
+
+  <div class="doc-stack">
+    <fold-card class="doc-card">
+      <p>
+        Trois <strong>calques</strong> se composent, <strong>dans cet ordre</strong>, pour produire
+        ce que voit chaque <strong>vitrine</strong> : la TVA d'abord, puis la disponibilité sur les
+        canaux, puis le rendu utilisateur.
+      </p>
+      <app-flow-diagram />
+    </fold-card>
+
+    <fold-card>
+      <ol class="doc-steps">
+        <li><strong>① TVA</strong> — le taux fiscal, hérité par canal (à emporter ≠ sur place).</li>
+        <li>
+          <strong>② Disponibilité</strong> — sur quels canaux le produit est vendu (boutique ×
+          mode).
+        </li>
+        <li><strong>③ Display user</strong> — le rendu final, propre à chaque vitrine.</li>
+        <li>
+          La composition des trois calques donne l'<strong>output d'une vitrine</strong> (click
+          &amp; collect public, sur place QR…).
+        </li>
+      </ol>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="tag"
+        iconTone="primary"
+        title="La feuille, en vrai"
+        subtitle="Disponibilité « sur place » après scan du QR"
+      />
+      <p>
+        Une feuille n'est pas abstraite : c'est ce que voit le client. Ici, la
+        <strong>disponibilité</strong> d'une table — catégories dépliables, produits dedans (données
+        live du catalogue).
+      </p>
+      <app-leaf-preview />
+    </fold-card>
+  </div>
+</fold-page-layout>

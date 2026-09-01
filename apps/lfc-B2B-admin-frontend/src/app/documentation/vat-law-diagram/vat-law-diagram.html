@@ -1,0 +1,100 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 372"
+  role="img"
+  aria-label="La législation distingue trois traitements ; chacun donne un contexte de vente ; chaque contexte donne une colonne de la matrice des taux"
+>
+  <defs>
+    <marker
+      id="law-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- ① CE QUE LA LOI DISTINGUE. Le point de départ, et il n'est pas de nous :
+       le référentiel ne choisit pas ses colonnes, il transcrit une distinction
+       qui existe hors de lui. -->
+  <text class="step" x="14" y="16">① La loi française distingue trois traitements</text>
+
+  <g>
+    <rect class="box" x="14" y="26" width="230" height="70" rx="10" />
+    <text class="box-title" x="129" y="48">Consommation différée</text>
+    <text class="box-sub" x="129" y="65">emporté, emballé, mangé plus tard</text>
+    <text class="rate" x="129" y="87">5,5 %</text>
+  </g>
+
+  <g>
+    <rect class="box" x="255" y="26" width="230" height="70" rx="10" />
+    <text class="box-title" x="370" y="48">Consommation immédiate</text>
+    <text class="box-sub" x="370" y="65">servi pour être mangé ici</text>
+    <text class="rate" x="370" y="87">10 %</text>
+  </g>
+
+  <g>
+    <rect class="box" x="496" y="26" width="230" height="70" rx="10" />
+    <text class="box-title" x="611" y="48">Boisson alcoolisée</text>
+    <text class="box-sub" x="611" y="65">où qu'elle soit consommée</text>
+    <text class="rate" x="611" y="87">20 %</text>
+  </g>
+
+  <line class="arrow" x1="129" y1="100" x2="129" y2="126" marker-end="url(#law-arrow)" />
+  <line class="arrow" x1="370" y1="100" x2="370" y2="126" marker-end="url(#law-arrow)" />
+
+  <!-- ② LE CONTEXTE DE VENTE. Un par traitement, et c'est la seule raison d'en
+       ouvrir un : « QR », « comptoir », « en ligne » sont des chemins d'achat,
+       ils ne changent aucun traitement — donc aucun contexte. -->
+  <text class="step" x="14" y="150">
+    ② Donc UN contexte de vente par traitement — pas par canal
+  </text>
+
+  <g>
+    <rect class="box box-accent" x="14" y="160" width="230" height="46" rx="10" />
+    <text class="box-title on-accent" x="129" y="181">À emporter</text>
+    <text class="box-sub on-accent" x="129" y="197">boutique · en ligne · pro</text>
+  </g>
+
+  <g>
+    <rect class="box box-accent" x="255" y="160" width="230" height="46" rx="10" />
+    <text class="box-title on-accent" x="370" y="181">Sur place</text>
+    <text class="box-sub on-accent" x="370" y="197">comptoir · QR de table</text>
+  </g>
+
+  <g>
+    <rect class="box box-dashed" x="496" y="160" width="230" height="46" rx="10" />
+    <text class="box-title muted" x="611" y="181">aucun contexte</text>
+    <text class="box-sub muted" x="611" y="197">l'alcool est une LIGNE, pas une colonne</text>
+  </g>
+
+  <line class="arrow" x1="129" y1="210" x2="129" y2="236" marker-end="url(#law-arrow)" />
+  <line class="arrow" x1="370" y1="210" x2="370" y2="236" marker-end="url(#law-arrow)" />
+
+  <!-- ③ LA MATRICE. Les colonnes viennent d'en haut, les lignes du catalogue :
+       c'est le croisement qui porte le taux, et c'est pour ça qu'il ne peut
+       vivre ni sur la famille seule ni sur le contexte seul. -->
+  <text class="step" x="14" y="260">
+    ③ Et une COLONNE de matrice par contexte — les lignes, elles, sont vos catégories
+  </text>
+
+  <text class="head" x="370" y="286">À emporter</text>
+  <text class="head" x="611" y="286">Sur place</text>
+  <line class="rule" x1="14" y1="294" x2="726" y2="294" />
+
+  <text class="row" x="14" y="318">Viennoiseries</text>
+  <rect class="cell" x="255" y="300" width="230" height="26" rx="7" />
+  <text class="cell-text" x="370" y="318">5,5 %</text>
+  <rect class="cell" x="496" y="300" width="230" height="26" rx="7" />
+  <text class="cell-text" x="611" y="318">10 %</text>
+
+  <text class="row" x="14" y="352">Boissons alcoolisées</text>
+  <rect class="cell" x="255" y="334" width="230" height="26" rx="7" />
+  <text class="cell-text" x="370" y="352">20 %</text>
+  <rect class="cell" x="496" y="334" width="230" height="26" rx="7" />
+  <text class="cell-text" x="611" y="352">20 %</text>
+</svg>
