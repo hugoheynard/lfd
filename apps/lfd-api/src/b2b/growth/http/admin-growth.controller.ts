@@ -29,7 +29,7 @@ import type {
  * du journal. Même montage `@AdminSurface` que les autres contrôleurs `/admin/*`.
  */
 @Controller("admin/growth")
-@AdminSurface("growth")
+@AdminSurface("b2b_growth")
 export class AdminGrowthController {
   constructor(private readonly queries: QueryBus) {}
 

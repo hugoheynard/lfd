@@ -50,7 +50,7 @@ import { ListAppointmentsQuery } from "../application/queries/list-appointments.
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin")
-@AdminSurface("appointments")
+@AdminSurface("b2b_appointments")
 export class AdminAppointmentsController {
   constructor(
     private readonly commands: CommandBus,

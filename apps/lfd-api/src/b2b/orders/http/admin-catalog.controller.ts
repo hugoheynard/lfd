@@ -20,7 +20,7 @@ import { ListCustomerSkusQuery } from "../application/queries/list-customer-skus
  * multiplier les droits sans multiplier les décisions.
  */
 @Controller("admin/catalog")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 export class AdminCatalogController {
   constructor(private readonly queries: QueryBus) {}
 

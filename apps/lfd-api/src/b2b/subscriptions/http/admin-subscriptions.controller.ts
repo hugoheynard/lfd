@@ -17,7 +17,7 @@ import { ListCompanySubscriptionsQuery } from "../application/queries/list-compa
  * décision produit.
  */
 @Controller("admin/companies/:companyId/subscriptions")
-@AdminSurface("orders")
+@AdminSurface("b2b_subscriptions")
 export class AdminSubscriptionsController {
   constructor(private readonly queries: QueryBus) {}
 

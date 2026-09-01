@@ -23,7 +23,7 @@ import { GetProductionBatchQuery } from "../application/queries/get-production-b
  * l'accorder à quelqu'un avant que le premier écran existe.
  */
 @Controller("admin/production")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 export class AdminProductionController {
   constructor(private readonly queries: QueryBus) {}
 

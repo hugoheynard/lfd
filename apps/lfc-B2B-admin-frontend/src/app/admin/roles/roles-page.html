@@ -1,0 +1,102 @@
+@if (state() === 'error') {
+  <fold-empty-state tone="alert" title="Impossible de charger les rôles">
+    <button foldButton (click)="load()">Réessayer</button>
+  </fold-empty-state>
+} @else {
+  <header class="head">
+    <div>
+      <h2 class="head-title">Rôles</h2>
+      <p class="head-hint">
+        Un rôle est un paquet de droits nommé. L’exception d’une seule personne se pose sur sa fiche
+        — inventer un rôle par cas particulier finit par en faire autant que de personnes.
+      </p>
+    </div>
+    <a foldButton *appCan="'staff_access:write'" routerLink="/admin/roles/nouveau">Nouveau rôle</a>
+  </header>
+
+  <div class="roles">
+    @for (card of cards(); track card.role.key) {
+      <fold-card class="role" [class.role-archived]="card.role.archivedAt !== null">
+        <header class="role-head">
+          <div class="role-identity">
+            <h3 class="role-title">{{ card.role.label }}</h3>
+            <code class="role-key">{{ card.role.key }}</code>
+          </div>
+          <span class="role-members" [attr.aria-label]="card.role.memberCount + ' personne(s)'">
+            <fold-icon name="user" [size]="15" aria-hidden="true" />
+            {{ card.role.memberCount }}
+          </span>
+        </header>
+
+        @if (card.locked) {
+          <p class="role-all">
+            <fold-badge variant="neutral" content="Interne" />
+            Accorde <strong>tout</strong>, y compris les domaines à venir. Non modifiable — c’est ce
+            qui garantit qu’on ne peut pas se verrouiller dehors.
+          </p>
+        } @else {
+          <dl class="grants">
+            @for (group of card.groups; track group.level) {
+              <dt class="grants-level" [class.grants-write]="group.level === 'write'">
+                {{ group.label }}
+              </dt>
+              <dd class="grants-list">{{ group.resources.join(' · ') }}</dd>
+            } @empty {
+              <dd class="grants-none">Aucun domaine ouvert</dd>
+            }
+          </dl>
+        }
+
+        <footer class="role-foot">
+          <span class="role-count">
+            @if (card.openedLabel !== null) {
+              {{ card.openedLabel }} domaines
+            }
+            @if (card.role.archivedAt !== null) {
+              <fold-badge variant="warning" content="Archivé" />
+            }
+          </span>
+
+          @if (!card.locked) {
+            <span class="role-actions" *appCan="'staff_access:write'">
+              @if (card.role.archivedAt !== null) {
+                <button foldButton size="sm" variant="ghost" (click)="restore(card.role)">
+                  Remettre en service
+                </button>
+              } @else if (confirmingKey() === card.role.key) {
+                <fold-inline-confirm
+                  [open]="true"
+                  intent="danger"
+                  message="Archiver ce rôle ?"
+                  (confirmed)="confirmArchive(card.role)"
+                  (cancelled)="confirmingKey.set(null)"
+                >
+                  <span hidden></span>
+                </fold-inline-confirm>
+              } @else {
+                <button
+                  foldButton
+                  size="sm"
+                  variant="ghost"
+                  (click)="confirmingKey.set(card.role.key)"
+                >
+                  Archiver
+                </button>
+                <a
+                  foldButton
+                  size="sm"
+                  variant="secondary"
+                  [routerLink]="['/admin/roles', card.role.key]"
+                >
+                  Modifier
+                </a>
+              }
+            </span>
+          }
+        </footer>
+      </fold-card>
+    } @empty {
+      <fold-empty-state title="Aucun rôle" description="Le premier rôle défini apparaîtra ici." />
+    }
+  </div>
+}

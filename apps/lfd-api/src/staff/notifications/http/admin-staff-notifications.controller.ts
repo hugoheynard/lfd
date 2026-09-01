@@ -14,7 +14,7 @@ import { GetStaffNotificationsQuery } from "../application/queries/get-staff-not
  * attente chez les autres. `readBy` dit qui s'en est chargé.
  */
 @Controller("admin/notifications")
-@AdminSurface("support")
+@AdminSurface("staff_notifications")
 export class AdminStaffNotificationsController {
   constructor(
     private readonly queries: QueryBus,

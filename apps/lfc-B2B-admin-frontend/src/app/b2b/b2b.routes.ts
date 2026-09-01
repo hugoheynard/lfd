@@ -13,7 +13,7 @@ import { permissionGuard } from '../auth/permission.guard';
 export const b2bRoutes: Routes = [
   {
     path: 'b2b',
-    canActivate: [permissionGuard('settings:read')],
+    canActivate: [permissionGuard('b2b_settings:read')],
     title: 'B2B — LFC B2B admin',
     loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [

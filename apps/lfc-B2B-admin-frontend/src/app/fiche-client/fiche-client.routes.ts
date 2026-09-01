@@ -16,7 +16,7 @@ export const nouveauCompteRoutes: Routes = [
     // AVANT `comptes-clients/:id` : sans cela « nouveau » serait lu comme un
     // identifiant de société, et la page afficherait « Société introuvable ».
     path: 'comptes-clients/nouveau',
-    canActivate: [permissionGuard('companies:write')],
+    canActivate: [permissionGuard('b2b_companies:write')],
     title: 'Nouveau compte client — LFC B2B admin',
     loadComponent: () => import('./nouveau-compte-shell').then((m) => m.NouveauCompteShell),
   },
@@ -30,7 +30,7 @@ export const ficheClientRoutes: Routes = [
     // Une coquille, cinq vues routées — l'en-tête et l'épingle appartiennent à
     // la coquille.
     path: 'comptes-clients/:id',
-    canActivate: [permissionGuard('companies:read')],
+    canActivate: [permissionGuard('b2b_companies:read')],
     title: 'Compte client — LFC B2B admin',
     loadComponent: () => import('./fiche-client-shell').then((m) => m.FicheClientShell),
     children: [

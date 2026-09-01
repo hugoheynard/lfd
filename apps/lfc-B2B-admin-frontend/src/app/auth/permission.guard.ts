@@ -10,17 +10,17 @@ import { PermissionsStore } from './permissions.store';
  * renvoie vers la première porte ouverte, pas vers une page d'erreur.
  */
 const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: string }[] = [
-  { permission: 'companies:read', path: '/commercial/comptes-clients' },
-  { permission: 'growth:read', path: '/commercial' },
-  { permission: 'orders:read', path: '/commandes' },
-  { permission: 'settings:read', path: '/reglages' },
+  { permission: 'b2b_companies:read', path: '/commercial/comptes-clients' },
+  { permission: 'b2b_growth:read', path: '/commercial' },
+  { permission: 'b2b_orders:read', path: '/commandes' },
+  { permission: 'b2b_settings:read', path: '/reglages' },
 ];
 
 /**
  * Un garde qui **dit** ce qu'il ferme.
  *
  * Une fonction de garde est opaque : rien, ni à la relecture ni au test, ne
- * distingue `permissionGuard('settings:read')` de `permissionGuard('staff:read')`.
+ * distingue `permissionGuard('b2b_settings:read')` de `permissionGuard('staff_access:read')`.
  * Porter la permission sur la fonction rend la table des routes inspectable —
  * c'est ce qui permet de vérifier que chaque écran est derrière le **bon** droit,
  * et pas seulement derrière un droit quelconque.

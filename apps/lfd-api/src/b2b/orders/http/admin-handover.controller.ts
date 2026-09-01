@@ -22,7 +22,7 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  * propre remise.
  */
 @Controller("admin/handover")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 export class AdminHandoverController {
   constructor(
     private readonly queries: QueryBus,

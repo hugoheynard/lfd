@@ -12,7 +12,7 @@ import { OpsHealthService } from "./ops-health.service.js";
  * nœud absent de la réponse serait indistinguable d'un nœud qui va bien.
  */
 @Controller("admin/ops/health")
-@AdminSurface("ops")
+@AdminSurface("ops_health")
 export class AdminHealthController {
   constructor(private readonly health: OpsHealthService) {}
 

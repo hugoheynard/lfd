@@ -50,7 +50,7 @@ export class IngredientsPage {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly canWrite = computed(() => this.permissions.can('catalog:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
   protected readonly ingredients = this.store.ingredients;
   protected readonly loadError = this.store.ingredientError;
 

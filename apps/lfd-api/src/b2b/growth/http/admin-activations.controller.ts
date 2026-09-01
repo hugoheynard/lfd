@@ -11,7 +11,7 @@ import type { ActivationView } from "@lfd/contracts";
  * frictions ». Même montage `@AdminSurface` que les autres routes `/admin/*`.
  */
 @Controller("admin/activations")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminActivationsController {
   constructor(private readonly queries: QueryBus) {}
 

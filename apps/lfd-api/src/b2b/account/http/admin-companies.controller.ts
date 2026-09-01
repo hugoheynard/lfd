@@ -29,7 +29,7 @@ import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./pay
  * un seul backend B2B, deux publics, la confiance vient du JWT et de l.annuaire.
  */
 @Controller("admin/companies")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminCompaniesController {
   constructor(
     private readonly queries: QueryBus,

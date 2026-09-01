@@ -95,7 +95,7 @@ export class AllergensPage {
   protected readonly officialCategoryReason = OFFICIAL_CATEGORY_REASON;
   protected readonly nonEuReason = NON_EU_REASON;
 
-  protected readonly canWrite = computed(() => this.permissions.can('catalog:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
   protected readonly categories = this.store.categories;
   protected readonly loadError = this.store.loadError;
   protected readonly firstLoad = this.store.firstLoad;

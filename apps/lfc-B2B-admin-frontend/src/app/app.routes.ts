@@ -33,7 +33,7 @@ export const routes: Routes = [
     // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
     // de premier niveau les couvre toutes les deux.
     path: 'commandes/:id',
-    canActivate: [permissionGuard('orders:read')],
+    canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Commande — LFC B2B admin',
     loadComponent: () =>
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
@@ -44,7 +44,7 @@ export const routes: Routes = [
     // colonnes réclament toute la largeur. Des onglets à côté inviteraient à en
     // sortir en cours de saisie — et le panier ne survit pas à la navigation.
     path: 'comptes-clients/:id/nouvelle-commande',
-    canActivate: [permissionGuard('orders:write')],
+    canActivate: [permissionGuard('b2b_orders:write')],
     title: 'Nouvelle commande — LFC B2B admin',
     loadComponent: () =>
       import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
@@ -57,7 +57,7 @@ export const routes: Routes = [
     // parfois en la dictant. `ops:read` et pas `settings:read` — regarder la
     // flotte n'est pas la régler.
     path: 'sante',
-    canActivate: [permissionGuard('ops:read')],
+    canActivate: [permissionGuard('ops_health:read')],
     title: 'Santé de l’écosystème — LFC B2B admin',
     loadComponent: () => import('./ops/sante-page/sante-page').then((m) => m.SantePage),
   },
@@ -67,7 +67,7 @@ export const routes: Routes = [
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc
     // fragilise le scan — ce n'est pas de la coquetterie d'URL.
     path: 'retrait/:token',
-    canActivate: [permissionGuard('orders:write')],
+    canActivate: [permissionGuard('b2b_orders:write')],
     title: 'Retrait — LFC B2B admin',
     loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.PickupPage),
   },
@@ -94,7 +94,7 @@ export const routes: Routes = [
     // quand la deuxième vue arrivera (cohortes, marges, saisonnalité), et pas
     // avant. Généraliser au SECOND usage, ici comme ailleurs.
     path: 'analytics',
-    canActivate: [permissionGuard('growth:read')],
+    canActivate: [permissionGuard('b2b_growth:read')],
     title: 'Analytics — LFC B2B admin',
     loadComponent: () =>
       import('./analytics/croissance/croissance-page').then((m) => m.CroissancePage),
@@ -112,6 +112,78 @@ export const routes: Routes = [
     title: 'Documentation — LFC B2B admin',
     loadComponent: () =>
       import('./documentation/documentation-page').then((m) => m.DocumentationPage),
+    // Chaque section a son URL. Elles étaient sept panneaux sur la même adresse,
+    // ce qui interdisait d'envoyer un lien vers une explication — le geste le
+    // plus courant qu'on fait avec de la documentation.
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'parametrage-general' },
+      {
+        // EN PREMIER, et c'est le sens de lecture : rien du référentiel ne se
+        // comprend sans le contexte de vente et le point de vente, qui viennent
+        // eux-mêmes de la loi et non d'un choix produit.
+        path: 'parametrage-general',
+        title: 'Paramétrage général — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/general-settings-page/general-settings-page').then(
+            (m) => m.DocGeneralSettingsPage,
+          ),
+      },
+      {
+        // Juste après le paramétrage général, et pour la même raison d'ordre :
+        // une fiche produit ne cite que du vocabulaire déjà écrit.
+        path: 'parametrage-produit',
+        title: 'Paramétrage produit — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/product-settings-page/product-settings-page').then(
+            (m) => m.DocProductSettingsPage,
+          ),
+      },
+      {
+        // Après le paramétrage produit : une fiche ne fait que citer un
+        // vocabulaire écrit ailleurs, et l'expliquer avant obligerait à renvoyer
+        // à chaque paragraphe vers des référentiels pas encore lus.
+        path: 'remplir-une-fiche-produit',
+        title: 'Remplir une fiche produit — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/product-sheet-page/product-sheet-page').then(
+            (m) => m.DocProductSheetPage,
+          ),
+      },
+      {
+        path: 'vue-d-ensemble',
+        title: 'Vue d’ensemble — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/overview-page/overview-page').then((m) => m.DocOverviewPage),
+      },
+      {
+        path: 'briques',
+        title: 'Les briques — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/bricks-page/bricks-page').then((m) => m.DocBricksPage),
+      },
+      {
+        path: 'flux-des-collections',
+        title: 'Flux des collections — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/collections-flow-page/collections-flow-page').then(
+            (m) => m.DocCollectionsFlowPage,
+          ),
+      },
+      {
+        path: 'segmentation-web',
+        title: 'Segmentation web — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/web-segmentation-page/web-segmentation-page').then(
+            (m) => m.DocWebSegmentationPage,
+          ),
+      },
+      {
+        path: 'integration-shopify',
+        title: 'Intégration Shopify — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/pim/shopify-page/shopify-page').then((m) => m.DocShopifyPage),
+      },
+    ],
   },
   {
     // LIVRAISON — la place réservée, et rien d'autre pour l'instant. L'entrée
@@ -119,7 +191,7 @@ export const routes: Routes = [
     // dans « Production » en attendant, d'où plus personne ne les sortirait.
     // Même mur que la production : c'est la même commande, vue au bout.
     path: 'livraison',
-    canActivate: [permissionGuard('orders:read')],
+    canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Livraison — LFC B2B admin',
     loadComponent: () =>
       import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
@@ -138,7 +210,7 @@ export const routes: Routes = [
     // Les commandes en lecture : c'est la même donnée que la liste staff, vue
     // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
     // passent pas par le rail — et un poste du labo ouvrira exactement ça.
-    canActivate: [permissionGuard('orders:read')],
+    canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Production — LFC B2B admin',
     loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
   },

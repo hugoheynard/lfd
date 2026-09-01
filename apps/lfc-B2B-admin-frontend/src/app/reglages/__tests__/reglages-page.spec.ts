@@ -28,7 +28,7 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
 
 describe('les onglets de Réglages', () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
-    expect(tabsFor(['settings:read', 'growth:read', 'staff:read'])).toEqual([
+    expect(tabsFor(['b2b_settings:read', 'b2b_growth:read', 'staff_access:read'])).toEqual([
       'retraits-livraisons',
       'facturation',
       'commercial',
@@ -38,6 +38,6 @@ describe('les onglets de Réglages', () => {
   it('cache « Commercial » à la comptabilité', () => {
     // Catalogue et Tarification n'y sont plus : ils ont leur espace, sous le
     // même droit. On ne va pas dans les Réglages pour travailler.
-    expect(tabsFor(['settings:read'])).toEqual(['retraits-livraisons', 'facturation']);
+    expect(tabsFor(['b2b_settings:read'])).toEqual(['retraits-livraisons', 'facturation']);
   });
 });

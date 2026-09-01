@@ -25,7 +25,7 @@ function guardWith(permissions: readonly StaffPermission[]): Promise<boolean | U
     providers: [{ provide: PermissionsStore, useValue: store }],
   });
   const injector = TestBed.inject(Injector);
-  const guard = permissionGuard('growth:read');
+  const guard = permissionGuard('b2b_growth:read');
   return runInInjectionContext(injector, () =>
     Promise.resolve(guard(null as never, null as never)),
   ) as Promise<boolean | UrlTree>;
@@ -38,7 +38,7 @@ function redirectPath(result: boolean | UrlTree): string | null {
 
 describe('permissionGuard — laisse passer qui a le droit', () => {
   it('accepte la navigation quand la permission est là', async () => {
-    const result = await guardWith(['growth:read']);
+    const result = await guardWith(['b2b_growth:read']);
 
     expect(result).toBe(true);
   });
@@ -48,13 +48,13 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
   it("renvoie vers la première destination ouverte, dans l'ordre du menu", async () => {
     // L'ordre compte : `companies` passe avant `orders`, comme dans le menu.
     // Renvoyer ailleurs donnerait l'impression d'avoir cliqué de travers.
-    const result = await guardWith(['companies:read', 'orders:read']);
+    const result = await guardWith(['b2b_companies:read', 'b2b_orders:read']);
 
     expect(redirectPath(result)).toBe('/commercial/comptes-clients');
   });
 
   it('descend dans la liste quand les premières portes sont fermées', async () => {
-    const result = await guardWith(['settings:read']);
+    const result = await guardWith(['b2b_settings:read']);
 
     expect(redirectPath(result)).toBe('/reglages');
   });

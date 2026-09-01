@@ -136,6 +136,7 @@ export class App {
   protected readonly commercialViews = this.catalogue.views('commercial');
   protected readonly pimViews = this.catalogue.views('pim');
   protected readonly adminViews = this.catalogue.views('admin');
+  protected readonly documentationViews = this.catalogue.views('documentation');
 
   /** « 7 entrées » — le lanceur de fold parle anglais par défaut. */
   protected readonly entriesLabel = (count: number): string =>
@@ -150,7 +151,7 @@ export class App {
    * Commercial depuis que le lanceur sait descendre. Elle garde un seul rôle :
    * ne lancer la lecture des compteurs que pour qui a le droit de les lire.
    */
-  private readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
+  private readonly canSeeCompanies = computed(() => this.permissions.can('b2b_companies:read'));
 
   private readonly counts = inject(NavCountsService);
   private readonly push = inject(PushNotificationsService);
@@ -161,7 +162,7 @@ export class App {
   protected readonly accessBadge = computed(() =>
     this.counts.accessPending() > 0 ? this.counts.accessPending() : undefined,
   );
-  protected readonly canSeeCommercial = computed(() => this.permissions.can('growth:read'));
+  protected readonly canSeeCommercial = computed(() => this.permissions.can('b2b_growth:read'));
   /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
   /**
    * Analytics lit le même droit que Commercial (`growth:read`) — c'est la même
@@ -169,12 +170,12 @@ export class App {
    * n'aurait de sens que le jour où l'on montrera des chiffres qu'un
    * commercial ne doit pas voir.
    */
-  protected readonly canSeeAnalytics = computed(() => this.permissions.can('growth:read'));
+  protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
-  protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
+  protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
 
   /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
-  protected readonly canSeePim = computed(() => this.permissions.can('catalog:read'));
+  protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));
 
   /**
    * **Admin** — deux vues, deux murs : les accès à remettre demandent
@@ -185,15 +186,15 @@ export class App {
    * l'un. Le mur reste, comme toujours, côté backend.
    */
   protected readonly canSeeAdmin = computed(
-    () => this.permissions.can('companies:read') || this.permissions.can('staff:read'),
+    () => this.permissions.can('b2b_companies:read') || this.permissions.can('staff_access:read'),
   );
-  protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
+  protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
   /**
    * La carte de santé. Son propre périmètre (`ops:read`), et pas celui des
    * réglages : regarder la flotte n'est pas la régler, et le jour où l'un
    * s'ouvre à quelqu'un l'autre n'a aucune raison de suivre.
    */
-  protected readonly canSeeOps = computed(() => this.permissions.can('ops:read'));
+  protected readonly canSeeOps = computed(() => this.permissions.can('ops_health:read'));
 
   /**
    * Connecté, mais l'annuaire ne nous connaît pas — ou plus. On le **dit** :

@@ -103,8 +103,8 @@ describe("le mur staff — /admin/me", () => {
     const me = response.body as { role: string; permissions: string[] };
 
     expect(me.role).toBe("comptabilite");
-    expect(me.permissions).toContain("orders:write");
-    expect(me.permissions).not.toContain("staff:read");
+    expect(me.permissions).toContain("b2b_orders:write");
+    expect(me.permissions).not.toContain("staff_access:read");
   });
 
   it("ne répond pas à un inconnu", async () => {
@@ -167,7 +167,7 @@ describe("le mur staff — la dérogation, en vrai", () => {
     await ctx.prisma.staffPermissionOverride.create({
       data: {
         staffUserId: staffUser.id,
-        resource: "growth",
+        resource: "b2b_growth",
         action: "read",
         effect: "allow",
         grantedBy: "test",
@@ -186,13 +186,13 @@ describe("le mur staff — la dérogation, en vrai", () => {
  */
 describe("le mur staff — le balayage des huit ressources", () => {
   const SURFACES: readonly { readonly resource: string; readonly path: string }[] = [
-    { resource: "companies", path: "/admin/companies" },
-    { resource: "orders", path: "/admin/orders" },
-    { resource: "growth", path: "/admin/cockpit" },
-    { resource: "appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
-    { resource: "support", path: "/admin/support-requests" },
-    { resource: "settings", path: "/admin/order-cutoffs" },
-    { resource: "staff", path: "/admin/staff-users" },
+    { resource: "b2b_companies", path: "/admin/companies" },
+    { resource: "b2b_orders", path: "/admin/orders" },
+    { resource: "b2b_growth", path: "/admin/cockpit" },
+    { resource: "b2b_appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
+    { resource: "b2b_support", path: "/admin/support-requests" },
+    { resource: "b2b_settings", path: "/admin/order-cutoffs" },
+    { resource: "staff_access", path: "/admin/staff-users" },
     { resource: "me", path: "/admin/me" },
   ];
 

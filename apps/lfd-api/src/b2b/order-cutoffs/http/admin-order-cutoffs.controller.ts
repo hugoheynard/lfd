@@ -34,7 +34,7 @@ import {
  * doit rester de la saisie.
  */
 @Controller("admin/order-cutoffs")
-@AdminSurface("settings")
+@AdminSurface("b2b_settings")
 export class AdminOrderCutoffsController {
   constructor(
     private readonly commands: CommandBus,

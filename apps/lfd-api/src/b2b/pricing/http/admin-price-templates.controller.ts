@@ -41,7 +41,7 @@ import type { CreatedIdResponse, PosedRulesResponse } from "@lfd/contracts";
  * d'agir, pas au moment de ranger.
  */
 @Controller("admin/pricing/templates")
-@AdminSurface("settings")
+@AdminSurface("b2b_pricing")
 export class AdminPriceTemplatesController {
   constructor(
     private readonly commands: CommandBus,

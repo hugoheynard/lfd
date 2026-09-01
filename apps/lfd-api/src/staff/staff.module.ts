@@ -28,6 +28,20 @@ import {
 } from "./invitations/pending-staff-access.js";
 import { AdminStaffUsersController } from "./directory/http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./directory/infrastructure/prisma-staff-user.repository.js";
+import { AdminStaffRolesController } from "./permissions/http/admin-staff-roles.controller.js";
+import {
+  ArchiveStaffRoleHandler,
+  CreateStaffRoleHandler,
+  ListStaffRolesHandler,
+  RestoreStaffRoleHandler,
+  UpdateStaffRoleHandler,
+} from "./permissions/application/staff-role.handlers.js";
+import { StaffRoleReader } from "./permissions/domain/staff-role.reader.js";
+import { StaffRoleRepository } from "./permissions/domain/staff-role.repository.js";
+import {
+  PrismaStaffRoleReader,
+  PrismaStaffRoleRepository,
+} from "./permissions/infrastructure/prisma-staff-role.repository.js";
 
 /**
  * **Annuaire staff** (back-office) — source de vérité locale des personnes qui
@@ -39,12 +53,26 @@ import { PrismaStaffUserRepository } from "./directory/infrastructure/prisma-sta
  * la garde du repo interdit sa suppression/rétrogradation.
  */
 @Module({
-  controllers: [AdminStaffUsersController, AdminStaffAccessPendingController, AdminMeController],
+  controllers: [
+    AdminStaffUsersController,
+    AdminStaffRolesController,
+    AdminStaffAccessPendingController,
+    AdminMeController,
+  ],
   providers: [
     { provide: PendingStaffAccessReader, useClass: PrismaPendingStaffAccessReader },
     ListPendingStaffAccessHandler,
     IssueStaffPasswordLinkHandler,
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
+    // Les rôles définis. Le dépôt et la lecture sont DEUX ports (ISP) : l'écran
+    // ne reçoit que des vues, jamais l'agrégat.
+    { provide: StaffRoleRepository, useClass: PrismaStaffRoleRepository },
+    { provide: StaffRoleReader, useClass: PrismaStaffRoleReader },
+    ListStaffRolesHandler,
+    CreateStaffRoleHandler,
+    UpdateStaffRoleHandler,
+    ArchiveStaffRoleHandler,
+    RestoreStaffRoleHandler,
     // L'adaptateur de résolution vit ICI, avec les tables qu'il lit ; c'est la
     // racine de composition qui le relie au port (cf. `StaffAccessModule`).
     PrismaStaffAccessResolver,

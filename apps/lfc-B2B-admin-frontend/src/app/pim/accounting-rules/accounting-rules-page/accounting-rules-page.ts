@@ -65,12 +65,12 @@ export class AccountingRulesPage {
   private readonly permissions = inject(PermissionsStore);
 
   /**
-   * Poser la remise est un droit à part (`tax:write`, la comptabilité l'a) —
+   * Poser la remise est un droit à part (`pim_tax:write`, la comptabilité l'a) —
    * le même que les taux, et pour la même raison : c'est une décision
    * comptable, pas une édition de catalogue. Le front cache, le serveur
    * refuse : ce test évite d'offrir un formulaire qui répondrait 403.
    */
-  protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_tax:write'));
 
   protected readonly isLoading = this.store.isLoading;
   protected readonly loadError = this.store.loadError;

@@ -22,7 +22,7 @@ import { ListCompanyMembersQuery } from "../application/queries/list-company-mem
  * carnet d'adresses une liste de droits.
  */
 @Controller("admin/companies/:companyId/members")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminCompanyMembersController {
   constructor(
     private readonly queries: QueryBus,

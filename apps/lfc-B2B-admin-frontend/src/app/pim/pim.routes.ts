@@ -19,7 +19,7 @@ export const pimRoutes: Routes = [
     // de budget à 1 300, et le référentiel pesait 594 ko. La greffe ne tient que
     // parce que rien n'entre dans le bundle initial.
     path: 'pim',
-    canActivate: [permissionGuard('catalog:read')],
+    canActivate: [permissionGuard('pim_catalog:read')],
     title: 'Référentiel — LFC B2B admin',
     loadComponent: () => import('./pim-page/pim-page').then((m) => m.PimPage),
     children: [
@@ -42,7 +42,7 @@ export const pimRoutes: Routes = [
         // alors qu'elle ne fait que lire le reste du catalogue. Le parent exige
         // déjà `catalog:read`, mais c'est `tax:read` qui décide de CET écran —
         // une dérogation `deny tax:read` doit le fermer sans fermer le PIM.
-        canActivate: [permissionGuard('tax:read')],
+        canActivate: [permissionGuard('pim_tax:read')],
         title: 'Taux de TVA — LFC B2B admin',
         loadComponent: () =>
           import('./catalogue/vat-rates/vat-rates-page').then((m) => m.VatRatesPage),
@@ -54,7 +54,7 @@ export const pimRoutes: Routes = [
         // fiscal — un taux est imposé de l'extérieur, une remise est décidée
         // par la maison.
         path: 'regles-comptables',
-        canActivate: [permissionGuard('tax:read')],
+        canActivate: [permissionGuard('pim_tax:read')],
         title: 'Règles comptables — LFC B2B admin',
         loadComponent: () =>
           import('./accounting-rules/accounting-rules-page/accounting-rules-page').then(

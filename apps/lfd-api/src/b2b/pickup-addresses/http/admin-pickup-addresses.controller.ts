@@ -20,7 +20,7 @@ import {
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/pickup-addresses")
-@AdminSurface("settings")
+@AdminSurface("b2b_settings")
 export class AdminPickupAddressesController {
   constructor(private readonly commands: CommandBus) {}
 

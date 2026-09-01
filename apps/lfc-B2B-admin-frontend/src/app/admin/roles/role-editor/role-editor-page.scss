@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+/* Une colonne étroite : un formulaire se lit de haut en bas, et des champs
+   étirés sur 90 rem obligent l'œil à repartir de la marge à chaque ligne. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  max-width: 46rem;
+}
+
+.head-title {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+}
+
+.head-hint {
+  max-width: 60ch;
+  margin: var(--fold-space-xs) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.block-title {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  text-transform: uppercase;
+}
+
+.key-frozen {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

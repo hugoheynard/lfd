@@ -23,7 +23,7 @@ import { StaffPushSender, StaffPushSubscriptions } from "../domain/ports/staff-p
  * de la recevoir sur son téléphone.
  */
 @Controller("admin/notifications/push")
-@AdminSurface("support")
+@AdminSurface("staff_notifications")
 export class AdminStaffPushController {
   constructor(
     private readonly sender: StaffPushSender,

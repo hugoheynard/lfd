@@ -23,7 +23,7 @@ import { GetMarketConfigQuery } from "../application/queries/get-market-config.q
  * externe. Le refresh renvoie la config à jour (comptages figés) en une réponse.
  */
 @Controller("admin/commercial/market")
-@AdminSurface("growth")
+@AdminSurface("b2b_growth")
 export class AdminMarketController {
   constructor(
     private readonly commands: CommandBus,

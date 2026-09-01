@@ -294,7 +294,7 @@
         <!-- La cloche interroge `/admin/notifications` : sans ce garde, elle
              partirait en boucle pour qui n'a pas le périmètre, et n'afficherait
              qu'une erreur silencieuse. -->
-        <app-notification-bell *appCan="'support:read'" />
+        <app-notification-bell *appCan="'b2b_support:read'" />
       </div>
     </div>
 
@@ -448,16 +448,23 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      <a
-        fold-nav-tile
-        icon="library"
-        label="Documentation"
-        routerLink="/documentation"
-        routerLinkActive
-        #docTile="routerLinkActive"
-        [active]="docTile.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
+      <!-- La documentation est un GROUPE depuis qu'elle a des sections : une
+           tuile unique ramenait sur la première page, et le lanceur est
+           justement l'endroit où l'on cherche une explication précise. -->
+      <fold-nav-group icon="library" label="Documentation" [entryCountLabel]="entriesLabel">
+        @for (view of documentationViews(); track view.key) {
+          <a
+            fold-nav-tile
+            [icon]="view.icon"
+            [label]="view.label"
+            [routerLink]="view.link"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [active]="rla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+        }
+      </fold-nav-group>
       @if (canSeeSettings()) {
         <a
           fold-nav-tile

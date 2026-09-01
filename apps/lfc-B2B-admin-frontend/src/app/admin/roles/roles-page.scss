@@ -1,0 +1,128 @@
+:host {
+  display: block;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  margin-block-end: var(--fold-space-lg);
+}
+
+.head-title {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+}
+
+.head-hint {
+  max-width: 62ch;
+  margin: var(--fold-space-xs) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Des cartes compactes en grille : une matrice se compare de l'œil, et une
+   seule colonne obligerait à défiler entre deux rôles voisins. */
+.roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: var(--fold-space-md);
+  align-items: start;
+}
+
+.role {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.role-archived {
+  opacity: 0.65;
+}
+
+.role-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.role-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.role-key {
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-2xs);
+}
+
+.role-members {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.role-all {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Deux lignes qui se lisent comme une phrase, plutôt que douze pastilles où
+   chaque libellé traînerait son propre « écriture ». */
+.grants {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+  margin: 0;
+}
+
+.grants-level {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  text-transform: uppercase;
+}
+
+/* L'écriture porte l'accent : c'est ce qu'on cherche du regard en auditant. */
+.grants-write {
+  color: var(--fold-color-primary-text);
+}
+
+.grants-list {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.grants-none {
+  margin: 0;
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-sm);
+}
+
+.role-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  min-height: 2rem;
+  padding-block-start: var(--fold-space-xs);
+  border-block-start: 1px solid var(--fold-color-border-subtle);
+}
+
+.role-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-2xs);
+}
+
+.role-actions {
+  display: inline-flex;
+  gap: var(--fold-space-xs);
+}

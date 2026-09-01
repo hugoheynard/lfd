@@ -150,14 +150,14 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
     const { prisma } = fakePrisma(
       row({
         auth0Id: TOKEN.subject,
-        overrides: [{ resource: "growth", action: "read", effect: "allow" }],
+        overrides: [{ resource: "b2b_growth", action: "read", effect: "allow" }],
       }),
     );
 
     const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
 
-    expect(access?.permissions).toContain("growth:read");
-    expect(access?.permissions).not.toContain("staff:read");
+    expect(access?.permissions).toContain("b2b_growth:read");
+    expect(access?.permissions).not.toContain("staff_access:read");
   });
 });
 

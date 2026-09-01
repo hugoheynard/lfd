@@ -15,7 +15,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
  * Ne rend son contenu que si la personne connectée a cette permission.
  *
  * ```html
- * <button *appCan="'companies:write'" foldButton>Activer</button>
+ * <button *appCan="'b2b_companies:write'" foldButton>Activer</button>
  * ```
  *
  * Une affordance qu'on ne peut pas exercer **disparaît** au lieu d'être grisée :

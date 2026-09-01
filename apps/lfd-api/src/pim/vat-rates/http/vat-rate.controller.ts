@@ -14,7 +14,7 @@ import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
  * contrôleur ne fait que **dispatcher** sur les bus CQRS : commandes qui mutent,
  * requête qui lit.
  *
- * Surface staff murée par `@AdminSurface("tax")` : identité vérifiée contre
+ * Surface staff murée par `@AdminSurface("pim_tax")` : identité vérifiée contre
  * l'annuaire, puis périmètre. Elle a été **ouverte** tant que le référentiel
  * vivait dans son propre processus — un jeton Auth0 valide suffisait, et un
  * révoqué gardait la main sur le catalogue.
@@ -24,7 +24,7 @@ import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
  * sans pouvoir les toucher. La frontière s'arrête ici — POUSSER les collections
  * de taxe vers un canal reste `catalog:write`.
  */
-@AdminSurface("tax")
+@AdminSurface("pim_tax")
 @Controller("vat-rates")
 export class VatRateController {
   constructor(

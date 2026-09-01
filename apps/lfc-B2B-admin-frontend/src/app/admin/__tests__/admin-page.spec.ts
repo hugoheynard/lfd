@@ -27,16 +27,27 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
 
 describe("les vues d'Admin", () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
-    expect(tabsFor(['companies:read', 'staff:read'])).toEqual(['acces-en-attente', 'utilisateurs']);
+    expect(tabsFor(['b2b_companies:read', 'staff_access:read'])).toEqual([
+      'acces-en-attente',
+      'utilisateurs',
+      'roles',
+    ]);
   });
 
   it("cache « Utilisateurs » à qui n'a pas `staff:read`", () => {
     // Le cas réel : un commercial garde le canal de secours — c'est un geste
     // commercial — sans jamais voir l'annuaire de l'équipe.
-    expect(tabsFor(['companies:read', 'growth:read'])).toEqual(['acces-en-attente']);
+    expect(tabsFor(['b2b_companies:read', 'b2b_growth:read'])).toEqual(['acces-en-attente']);
   });
 
   it("cache « Accès à remettre » à qui n'a pas `companies:read`", () => {
-    expect(tabsFor(['staff:read'])).toEqual(['utilisateurs']);
+    expect(tabsFor(['staff_access:read'])).toEqual(['utilisateurs', 'roles']);
+  });
+
+  it("cache « Rôles » à qui n'a pas `staff:read`, comme l'annuaire", () => {
+    // Les deux vont ensemble : définir un droit et l'attribuer sont le même
+    // pouvoir vu de deux côtés. Un mur plus faible sur l'un laisserait
+    // fabriquer des droits à qui n'a pas celui de les donner.
+    expect(tabsFor(['b2b_companies:read'])).not.toContain('roles');
   });
 });

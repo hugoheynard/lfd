@@ -20,10 +20,10 @@ import { ReadAllergenReferenceQuery } from "../../../allergens/application/read-
  * `GET /pim/allergens`, archivage compris, faute de quoi il n'aurait rien à
  * restaurer.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_catalog")` : identité vérifiée
  * contre l'annuaire, puis périmètre.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("reference")
 export class ReferenceController {
   constructor(private readonly queries: QueryBus) {}

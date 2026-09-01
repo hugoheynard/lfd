@@ -32,7 +32,7 @@ import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
  * que l'écran connaît, et l'identifiant en dérive de toute façon.
  */
 @Controller("admin/pricing")
-@AdminSurface("settings")
+@AdminSurface("b2b_pricing")
 export class AdminPriceFloorsController {
   constructor(private readonly commands: CommandBus) {}
 

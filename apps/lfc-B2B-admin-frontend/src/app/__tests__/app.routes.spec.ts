@@ -36,13 +36,13 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
   // groupement, et la table n'inventorie que ce qui s'affiche.
   'b2b/contenu/app-footer': null,
-  'commercial/comptes-clients': 'companies:read',
-  'comptes-clients/nouveau': 'companies:write',
-  'commandes/:id': 'orders:read',
-  'comptes-clients/:id/nouvelle-commande': 'orders:write',
-  'retrait/:token': 'orders:write',
+  'commercial/comptes-clients': 'b2b_companies:read',
+  'comptes-clients/nouveau': 'b2b_companies:write',
+  'commandes/:id': 'b2b_orders:read',
+  'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
+  'retrait/:token': 'b2b_orders:write',
 
-  'comptes-clients/:id': 'companies:read',
+  'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
   'comptes-clients/:id/commandes': null,
@@ -55,9 +55,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // ADMIN — ce qui se règle sur les GENS. Le parent s'ouvre sur le plus faible
   // des deux droits, et chaque vue porte le sien : `null` aurait donné à
   // l'annuaire de l'équipe le mur des sociétés, qui n'est pas le sien.
-  admin: 'companies:read',
-  'admin/acces-en-attente': 'companies:read',
-  'admin/utilisateurs': 'staff:read',
+  admin: 'b2b_companies:read',
+  'admin/acces-en-attente': 'b2b_companies:read',
+  'admin/utilisateurs': 'staff_access:read',
+  // Le MÊME droit que l'annuaire, délibérément : définir un rôle et
+  // l'attribuer sont le même pouvoir. Un mur plus faible ici laisserait
+  // fabriquer des droits à qui n'a pas celui de les donner.
+  'admin/roles': 'staff_access:read',
+  // L'éditeur exige `staff:write`, pas `staff:read` : voir un rôle et le
+  // définir ne sont pas le même geste, et l'URL d'un formulaire se tape.
+  'admin/roles/nouveau': 'staff_access:write',
+  'admin/roles/:key': 'staff_access:write',
   // Le journal traverse les modules : il a sa propre ressource, et n'hérite
   // donc pas du `companies:read` de son parent.
   'admin/journal': 'activity:read',
@@ -65,33 +73,33 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
   // de suivre — et un écran qui expose la topologie interne mérite sa décision.
-  sante: 'ops:read',
+  sante: 'ops_health:read',
 
-  reglages: 'settings:read',
+  reglages: 'b2b_settings:read',
   'reglages/retraits-livraisons': null,
   // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,
-  'reglages/commercial': 'growth:read',
+  'reglages/commercial': 'b2b_growth:read',
 
   // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
   // du paramétrage, pas une ressource à part.
-  b2b: 'settings:read',
+  b2b: 'b2b_settings:read',
   'b2b/catalogue': null,
   'b2b/tarification': null,
   // La frise LIT la même chose que la grille, à d'autres dates : même mur.
   'b2b/tarification/frise': null,
   'b2b/tarification/simulateur': null,
 
-  pim: 'catalog:read',
+  pim: 'pim_catalog:read',
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
   // `tax` existe pour ça — sans retirer de lecture à qui l'avait.
-  'pim/tva': 'tax:read',
+  'pim/tva': 'pim_tax:read',
   // Même droit que les taux : décider ce que le professionnel paie par
   // rapport au particulier est une décision comptable.
-  'pim/regles-comptables': 'tax:read',
+  'pim/regles-comptables': 'pim_tax:read',
   'pim/catalogue': null,
   'pim/revisions': null,
   'pim/collections': null,
@@ -115,20 +123,31 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
-  production: 'orders:read',
-  livraison: 'orders:read',
+  production: 'b2b_orders:read',
+  livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // AUCUN garde, et c'est voulu : de la prose sur le fonctionnement du
   // catalogue, pas une donnée. Elle n'a pas de parent dont hériter — d'où
   // `OPEN` plutôt que `null`.
   documentation: OPEN,
+  // Ses sections héritent de l'absence de garde, mais `null` est réservé à
+  // l'héritage d'un parent GARDÉ : sans garde au-dessus, elles sont ouvertes
+  // pour la même raison que leur parent, et le disent chacune.
+  'documentation/parametrage-general': OPEN,
+  'documentation/parametrage-produit': OPEN,
+  'documentation/remplir-une-fiche-produit': OPEN,
+  'documentation/vue-d-ensemble': OPEN,
+  'documentation/briques': OPEN,
+  'documentation/flux-des-collections': OPEN,
+  'documentation/segmentation-web': OPEN,
+  'documentation/integration-shopify': OPEN,
 
-  commercial: 'companies:read',
-  'commercial/cockpit': 'growth:read',
-  'commercial/prospects': 'growth:read',
-  analytics: 'growth:read',
-  'commercial/calendrier': 'growth:read',
+  commercial: 'b2b_companies:read',
+  'commercial/cockpit': 'b2b_growth:read',
+  'commercial/prospects': 'b2b_growth:read',
+  analytics: 'b2b_growth:read',
+  'commercial/calendrier': 'b2b_growth:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.
@@ -137,7 +156,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/tarification/mercuriales-templates/:id': null,
   'commercial/tarification/devis-templates/:id': null,
 
-  'rendez-vous/:appointmentId': 'appointments:read',
+  'rendez-vous/:appointmentId': 'b2b_appointments:read',
 };
 
 /** Toutes les routes de l'arbre, avec leur chemin complet. */

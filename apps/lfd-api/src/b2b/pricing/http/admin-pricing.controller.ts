@@ -66,11 +66,11 @@ import type { PriceScope } from "../domain/price-rule.js";
  * que l'écran connaît, et l'identifiant en dérive de toute façon. Demander un id
  * aurait obligé le client à le transporter pour rien.
  *
- * Surface staff murée par `@AdminSurface("settings")`, comme le catalogue :
+ * Surface staff murée par `@AdminSurface("b2b_pricing")`, comme le catalogue :
  * décider d'un prix est du réglage.
  */
 @Controller("admin/pricing")
-@AdminSurface("settings")
+@AdminSurface("b2b_pricing")
 export class AdminPricingController {
   constructor(
     private readonly board: PricingBoardReader,

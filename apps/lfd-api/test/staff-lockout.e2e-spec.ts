@@ -270,7 +270,7 @@ describe("porte de secours — l'annuaire ne s'ouvre pas par un écart", () => {
           firstName: "Camille",
           lastName: "Durand",
           role: "support",
-          overrides: [{ resource: "staff", action: "write", effect: "allow" }],
+          overrides: [{ resource: "staff_access", action: "write", effect: "allow" }],
         }),
       )
       .expect(409);
@@ -289,7 +289,7 @@ describe("porte de secours — l'annuaire ne s'ouvre pas par un écart", () => {
           firstName: "Camille",
           lastName: "Durand",
           role: "admin",
-          overrides: [{ resource: "staff", action: "write", effect: "deny" }],
+          overrides: [{ resource: "staff_access", action: "write", effect: "deny" }],
         }),
       )
       .expect(409);
@@ -306,7 +306,7 @@ describe("porte de secours — l'annuaire ne s'ouvre pas par un écart", () => {
           firstName: "Camille",
           lastName: "Durand",
           role: "support",
-          overrides: [{ resource: "growth", action: "read", effect: "allow" }],
+          overrides: [{ resource: "b2b_growth", action: "read", effect: "allow" }],
         }),
       )
       .expect(204);
@@ -315,6 +315,6 @@ describe("porte de secours — l'annuaire ne s'ouvre pas par un écart", () => {
     const rows = jsonBody<readonly StaffUserView[]>(response);
     const updated = rows.find((row) => row.id === id);
 
-    expect(updated?.permissions).toContain("growth:read");
+    expect(updated?.permissions).toContain("b2b_growth:read");
   });
 });

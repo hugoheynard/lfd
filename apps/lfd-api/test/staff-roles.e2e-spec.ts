@@ -39,13 +39,13 @@ const stubAdminVerifier = {
  * et l'inventer ici ferait passer un test sur une porte qui n'existe pas.
  */
 const SURFACES: readonly { readonly resource: StaffResource; readonly path: string }[] = [
-  { resource: "companies", path: "/admin/companies" },
-  { resource: "orders", path: "/admin/orders" },
-  { resource: "growth", path: "/admin/cockpit" },
-  { resource: "appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
-  { resource: "support", path: "/admin/support-requests" },
-  { resource: "settings", path: "/admin/order-cutoffs" },
-  { resource: "staff", path: "/admin/staff-users" },
+  { resource: "b2b_companies", path: "/admin/companies" },
+  { resource: "b2b_orders", path: "/admin/orders" },
+  { resource: "b2b_growth", path: "/admin/cockpit" },
+  { resource: "b2b_appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
+  { resource: "b2b_support", path: "/admin/support-requests" },
+  { resource: "b2b_settings", path: "/admin/order-cutoffs" },
+  { resource: "staff_access", path: "/admin/staff-users" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

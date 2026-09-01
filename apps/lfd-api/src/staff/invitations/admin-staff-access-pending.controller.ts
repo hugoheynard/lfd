@@ -19,7 +19,7 @@ import type { IssuedPasswordLink } from "../../platform/identity/password-link.j
  * un historique.
  */
 @Controller("admin/staff-access-pending")
-@AdminSurface("staff")
+@AdminSurface("staff_access")
 export class AdminStaffAccessPendingController {
   constructor(
     private readonly commands: CommandBus,

@@ -50,7 +50,7 @@ import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.q
  * cela : on ajoute un fait, on n'en réécrit aucun.
  */
 @Controller("admin/orders")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 export class AdminOrdersController {
   constructor(
     private readonly queries: QueryBus,

@@ -24,10 +24,10 @@ import { UpdatePointOfSaleCommand } from "../application/update-point-of-sale.js
  * Le contrôleur ne fait que dispatcher sur les bus CQRS : commandes qui mutent,
  * requête qui lit.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : un `GET` demande
+ * Surface staff murée par `@AdminSurface("pim_settings")` : un `GET` demande
  * `catalog:read`, tout le reste `catalog:write`.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_settings")
 @Controller("points-of-sale")
 export class PointOfSaleController {
   constructor(

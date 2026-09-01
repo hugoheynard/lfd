@@ -20,7 +20,7 @@ import { ListLeadsQuery } from "../application/queries/list-leads.query.js";
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/leads")
-@AdminSurface("growth")
+@AdminSurface("b2b_growth")
 export class AdminLeadsController {
   constructor(
     private readonly commands: CommandBus,

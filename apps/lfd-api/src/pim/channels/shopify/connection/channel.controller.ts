@@ -20,12 +20,12 @@ const settingsPayload = z.object({
  * Préfixe monté par le module (`channels/shopify`) via `RouterModule` : ce
  * contrôleur ne déclare que son sous-chemin `settings`.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_channels")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_channels")
 @Controller("settings")
 export class ChannelController {
   constructor(

@@ -12,7 +12,7 @@ import type { ProspectView } from "@lfd/contracts";
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/prospects")
-@AdminSurface("growth")
+@AdminSurface("b2b_growth")
 export class AdminProspectsController {
   constructor(private readonly queries: QueryBus) {}
 

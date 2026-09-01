@@ -33,7 +33,7 @@ import { SalesContextRepository } from "../domain/ports/sales-context.repository
  * l'agrégat garde — la clé est immuable, la racine ineffaçable, et un contexte
  * encore offert ou vendu ne se supprime pas.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_settings")
 @Controller("sales-contexts")
 export class SalesContextController {
   constructor(

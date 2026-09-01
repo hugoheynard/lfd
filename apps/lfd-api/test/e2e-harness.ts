@@ -27,6 +27,7 @@
  * (base créée + migrée). Sans ça, `bootstrapE2e` échoue avec le message qui dit
  * quoi lancer.
  */
+import { legacyRoleSeeds } from "@lfd/contracts";
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
@@ -185,6 +186,13 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // règle a vidée ne le retrouverait jamais — `migrate deploy` ne rejoue pas
       // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
       await ensureSalesContexts(prisma);
+      // Les rôles sont semés par migration, comme les contextes de vente, et le
+      // `TRUNCATE` les emporte de la même façon. Rien ne les lit ENCORE — le
+      // résolveur d'accès tient toujours son catalogue en dur — mais le jour de
+      // la bascule, leur absence retirerait toutes leurs permissions à tous les
+      // comptes de test : un 403 partout, qui accuserait le mur au lieu du
+      // harnais. On les remet avant que ça n'arrive.
+      await ensureStaffRoleDefinitions(prisma);
       // La plateforme professionnelle est semée au BOOT, donc une seule fois —
       // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
       // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
@@ -373,6 +381,24 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * d'autant plus vert qu'il ne vérifie rien — c'est arrivé avec `perLocation`,
  * qui recréait un B2B « vendu depuis un lieu ».
  */
+/**
+ * Remet les rôles semés par la migration `20260901140000_roles_definis`.
+ *
+ * La graine vient de `legacyRoleSeeds()` — **la même fonction que la
+ * migration** — et non d'une liste recopiée ici. Un double dériverait au
+ * premier rôle dont on change les droits, et les e2e passeraient au vert sur un
+ * catalogue de permissions que la production ne connaît pas.
+ */
+async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> {
+  for (const seed of legacyRoleSeeds()) {
+    await prisma.staffRoleDefinition.upsert({
+      where: { key: seed.key },
+      create: { key: seed.key, label: seed.label, grants: [...seed.grants] },
+      update: { label: seed.label, grants: [...seed.grants] },
+    });
+  }
+}
+
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
   const contexts = [
     {

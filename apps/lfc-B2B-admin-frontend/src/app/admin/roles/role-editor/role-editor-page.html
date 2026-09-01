@@ -1,0 +1,64 @@
+@switch (state()) {
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger ce rôle">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('missing') {
+    <fold-empty-state
+      title="Ce rôle n’est pas modifiable"
+      description="Soit il n’existe pas, soit c’est le rôle interne qui garantit qu’on ne peut pas se verrouiller dehors."
+    >
+      <button foldButton (click)="cancel()">Retour aux rôles</button>
+    </fold-empty-state>
+  }
+  @default {
+    <form class="editor" (submit)="$event.preventDefault(); submit()">
+      <header class="head">
+        <h2 class="head-title">{{ heading }}</h2>
+        <p class="head-hint">
+          Un rôle est un paquet de droits nommé, attribué à plusieurs personnes. Pour l’exception
+          d’une seule, ce sont les dérogations de sa fiche.
+        </p>
+      </header>
+
+      <fold-card class="block">
+        <h3 class="block-title">Nom</h3>
+        <fold-input
+          label="Libellé"
+          placeholder="Fournil de nuit"
+          hint="Ce que l’équipe lira dans la liste des rôles."
+          [value]="label()"
+          (valueChange)="setLabel($event)"
+          required
+        />
+        @if (isCreate) {
+          <fold-input
+            label="Clé"
+            placeholder="fournil-de-nuit"
+            hint="Écrite sur les fiches et dans le journal. Elle ne se renomme pas."
+            [value]="key()"
+            (valueChange)="setKey($event)"
+            required
+          />
+        } @else {
+          <p class="key-frozen">
+            Clé : <code>{{ key() }}</code> — figée, elle est écrite sur les fiches qui la portent.
+          </p>
+        }
+      </fold-card>
+
+      <fold-card class="block">
+        <h3 class="block-title">Droits</h3>
+        <app-grants-grid [(grants)]="grants" />
+      </fold-card>
+
+      <footer class="actions">
+        <button foldButton variant="ghost" type="button" (click)="cancel()">Annuler</button>
+        <button foldButton type="submit" [disabled]="!canSubmit()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </footer>
+    </form>
+  }
+}

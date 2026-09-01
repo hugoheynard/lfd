@@ -18,7 +18,7 @@ import type { PendingAccessView } from "../domain/ports/pending-access.reader.js
  * de quoi prendre un compte.
  */
 @Controller("admin/access-pending")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminAccessPendingController {
   constructor(
     private readonly commands: CommandBus,

@@ -40,10 +40,10 @@ import { ReviseAllergenEntryCommand } from "../application/revise-allergen-entry
  * n'ouvrent donc que le référentiel **maison**, `position` exceptée, seul champ
  * qu'une catégorie du droit laisse régler.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : le référentiel décide de
+ * Surface staff murée par `@AdminSurface("pim_catalog")` : le référentiel décide de
  * ce qui s'imprime sur une étiquette.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("allergens")
 export class AllergenController {
   constructor(

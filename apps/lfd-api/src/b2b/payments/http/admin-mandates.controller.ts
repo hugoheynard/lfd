@@ -52,7 +52,7 @@ interface UploadedFilePart {
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/companies")
-@AdminSurface("companies")
+@AdminSurface("b2b_payments")
 export class AdminMandatesController {
   constructor(
     private readonly commands: CommandBus,

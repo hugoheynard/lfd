@@ -24,7 +24,7 @@ import { SaveFooterContentCommand } from "../application/save-footer-content.com
  * rien ne le dise — exactement ce que le contrat cherche à rendre impossible.
  */
 @Controller("admin/content")
-@AdminSurface("settings")
+@AdminSurface("b2b_settings")
 export class AdminPlatformContentController {
   constructor(
     private readonly queries: QueryBus,

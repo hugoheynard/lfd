@@ -32,10 +32,10 @@ interface UploadedFilePart {
  * toujours le fichier (`MediaAsset`) de son emploi (`ProductMedia`). C'est
  * aussi ce qui permet d'illustrer un produit qu'on est en train de créer.
  *
- * Même mur que le reste du catalogue (`@AdminSurface("catalog")`) : identité
+ * Même mur que le reste du catalogue (`@AdminSurface("pim_catalog")`) : identité
  * vérifiée contre l'annuaire, puis périmètre.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("catalogue/media")
 export class MediaController {
   constructor(private readonly commands: CommandBus) {}

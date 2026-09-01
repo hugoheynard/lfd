@@ -23,7 +23,7 @@ const ME: StaffMeView = {
   lastName: 'Bréal',
   email: 'compta@lfc.test',
   role: 'comptabilite',
-  permissions: ['orders:read', 'orders:write', 'companies:read', 'settings:read'],
+  permissions: ['b2b_orders:read', 'b2b_orders:write', 'b2b_companies:read', 'b2b_settings:read'],
 };
 
 function setup(): { store: PermissionsStore; ctrl: HttpTestingController } {
@@ -56,7 +56,7 @@ describe('PermissionsStore — avant de savoir', () => {
   it("ne dit oui à rien tant que la lecture n'a pas eu lieu", () => {
     // Le défaut par défaut est le refus. Dire oui puis se raviser ferait
     // clignoter les boutons — et offrirait un geste qui échouera.
-    expect(store.can('orders:read')).toBe(false);
+    expect(store.can('b2b_orders:read')).toBe(false);
     expect(store.loaded()).toBe(false);
 
     const loading = store.ensureLoaded();
@@ -71,10 +71,10 @@ describe('PermissionsStore — après la lecture', () => {
     answer(ME);
     await loading;
 
-    expect(store.can('orders:write')).toBe(true);
+    expect(store.can('b2b_orders:write')).toBe(true);
     // `growth:read` n'est pas dans la liste : le magasin ne la fabrique pas.
-    expect(store.can('growth:read')).toBe(false);
-    expect(store.can('staff:read')).toBe(false);
+    expect(store.can('b2b_growth:read')).toBe(false);
+    expect(store.can('staff_access:read')).toBe(false);
   });
 
   it("expose l'identité pour que l'écran sache qui parle", async () => {
@@ -108,7 +108,7 @@ describe('PermissionsStore — un seul appel', () => {
 
     await store.ensureLoaded();
 
-    expect(store.can('orders:read')).toBe(true);
+    expect(store.can('b2b_orders:read')).toBe(true);
   });
 
   it('relit sur demande explicite — après un changement de rôle', async () => {
@@ -117,11 +117,11 @@ describe('PermissionsStore — un seul appel', () => {
     await loading;
 
     const again = store.reload();
-    answer({ ...ME, role: 'admin', permissions: ['staff:read', 'staff:write'] });
+    answer({ ...ME, role: 'admin', permissions: ['staff_access:read', 'staff_access:write'] });
     await again;
 
-    expect(store.can('staff:write')).toBe(true);
-    expect(store.can('orders:read')).toBe(false);
+    expect(store.can('staff_access:write')).toBe(true);
+    expect(store.can('b2b_orders:read')).toBe(false);
   });
 });
 
@@ -137,7 +137,7 @@ describe('PermissionsStore — le refus du serveur', () => {
 
     expect(store.denied()).toBe(true);
     expect(store.loaded()).toBe(true);
-    expect(store.can('orders:read')).toBe(false);
+    expect(store.can('b2b_orders:read')).toBe(false);
     expect(store.identity()).toBeNull();
   });
 

@@ -199,19 +199,40 @@ enum StaffStatus {
 
 /// Les domaines du back-office sur lesquels une permission porte. Miroir de
 /// `StaffResource` (`@lfd/contracts`).
+/// Les domaines de droits, PRÉFIXÉS PAR OUTIL — la même liste que
+/// `staffResourceSchema` de `@lfd/contracts`, qui en porte les justifications.
+///
+/// Le préfixe est le bloc de `src/` : `pim_`, `b2b_`, `staff_`, `ops_`. Un
+/// tiret bas et non un point parce que Prisma refuse le point dans une valeur
+/// d'enum — un `@map` aurait donné deux orthographes et une traduction entre
+/// elles.
+///
+/// `activity` n'a pas de préfixe : le journal traverse les outils, et son
+/// contrat le dit. Exception écrite, donc exception qui ne dérive pas.
 enum StaffResource {
-  companies
-  orders
-  catalog
-  tax
-  growth
-  appointments
-  support
-  settings
-  staff
+  pim_catalog
+  pim_channels
+  pim_settings
+  pim_tax
+
+  b2b_companies
+  b2b_orders
+  b2b_subscriptions
+  b2b_catalog
+  b2b_pricing
+  b2b_growth
+  b2b_appointments
+  b2b_support
+  b2b_payments
+  b2b_alerts
+  b2b_settings
+
+  staff_access
+  staff_notifications
+
+  ops_health
+
   activity
-  tech
-  ops
 
   @@schema("public")
 }
@@ -1122,6 +1143,41 @@ model StaffUser {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("staff_users")
+  @@schema("public")
+}
+
+/// Un **rôle**, tel qu'il se définit désormais à l'écran.
+///
+/// Les cinq rôles historiques (`admin`, `commercial`, `comptabilite`, `support`,
+/// `dev`) y sont **semés** par la migration, à l'identique de `ROLE_GRANTS` :
+/// après la bascule, ils s'éditent comme les autres et le tableau du code n'est
+/// plus l'autorité.
+///
+/// `superadmin` ne vit PAS ici. Il est court-circuité dans le contrat
+/// (`resolveRolePermissions`) : une ressource ajoutée demain lui est acquise le
+/// jour même, et aucune dérogation ne peut le refermer. Une ligne en base serait
+/// une ligne modifiable — c'est-à-dire une issue de secours qu'on peut condamner.
+model StaffRoleDefinition {
+  id String @id @default(cuid())
+
+  /// Le slug écrit sur les fiches et dans le journal. Immuable : le renommer
+  /// orphelinerait les personnes qui le portent.
+  key   String @unique
+  label String
+
+  /// Les droits, en `{ resource, action }[]`. Du JSON et non deux colonnes
+  /// enum : le catalogue de ressources grandit, et chaque ajout deviendrait
+  /// sinon une migration sur une table que l'écran est censé suffire à régler.
+  grants Json
+
+  /// Un rôle ne se supprime pas tant qu'une fiche le porte — il s'archive, et
+  /// les fiches qui le citent restent lisibles.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("staff_role_definitions")
   @@schema("public")
 }
 

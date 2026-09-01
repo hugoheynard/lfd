@@ -15,7 +15,7 @@ import { SetProPriceRatioCommand } from "../application/set-pro-price-ratio.js";
  * **Règles comptables** — le réglage unique de la maison. Le contrôleur ne fait
  * que dispatcher sur les bus CQRS.
  *
- * Surface staff murée par `@AdminSurface("tax")`, comme les taux de TVA et pour
+ * Surface staff murée par `@AdminSurface("pim_tax")`, comme les taux de TVA et pour
  * la même raison : décider ce que le professionnel paie par rapport au
  * particulier est une décision comptable, pas une édition de catalogue.
  * `catalog:write` est réservé à l'admin, et la comptabilité doit pouvoir poser
@@ -25,7 +25,7 @@ import { SetProPriceRatioCommand } from "../application/set-pro-price-ratio.js";
  * rapport laisse le système dans le même état. Il n'y a rien à créer, et pas
  * d'identifiant à rendre.
  */
-@AdminSurface("tax")
+@AdminSurface("pim_tax")
 @Controller("accounting-rules")
 export class AccountingRulesController {
   constructor(

@@ -52,7 +52,7 @@ export class AppellationsPage {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly canWrite = computed(() => this.permissions.can('catalog:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
   protected readonly appellations = this.store.appellations;
   protected readonly loadError = this.store.appellationError;
 

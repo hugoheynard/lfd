@@ -132,7 +132,7 @@ function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutatio
  * bouts : **l'annuaire ne s'ouvre ni ne se ferme par un delta**.
  *
  * - Une dérogation ne l'**ouvre** pas à qui son rôle ne l'ouvre pas : obtenir
- *   `staff:write` par écart, c'est pouvoir s'attribuer `admin` dans la foulée,
+ *   `staff_access:write` par écart, c'est pouvoir s'attribuer `admin` dans la foulée,
  *   et le modèle n'a plus de sommet.
  * - Elle ne le **ferme** pas à un administrateur : ce serait contourner « il
  *   reste au moins un admin » par la porte de derrière — l'admin serait là, mais
@@ -140,7 +140,7 @@ function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutatio
  */
 function assertOverridesAllowed(intent: StaffMutationIntent): void {
   const opensDirectory = intent.overrides.some(
-    (override) => override.resource === "staff" && override.effect === "allow",
+    (override) => override.resource === "staff_access" && override.effect === "allow",
   );
   if (opensDirectory) {
     throw new StaffGrantByOverrideError();
@@ -149,7 +149,7 @@ function assertOverridesAllowed(intent: StaffMutationIntent): void {
     return;
   }
   const effective = resolveStaffPermissions(intent.role, intent.overrides);
-  if (!hasStaffPermission(effective, "staff:write")) {
+  if (!hasStaffPermission(effective, "staff_access:write")) {
     throw new AdminOverrideRefusedError();
   }
 }

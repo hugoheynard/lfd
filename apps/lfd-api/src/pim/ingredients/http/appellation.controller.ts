@@ -35,7 +35,7 @@ import { ListAppellationsQuery } from "../application/list-appellations.js";
  * ⚠️ Une appellation n'est pas une mention obligatoire au sens du règlement UE
  * 1169/2011. Cf. `documentation/pim/ingredients-et-appellations.md`.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("appellations")
 export class AppellationController {
   constructor(

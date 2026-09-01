@@ -6,7 +6,7 @@ import { permissionGuard } from '../auth/permission.guard';
 export const reglagesRoutes: Routes = [
   {
     path: 'reglages',
-    canActivate: [permissionGuard('settings:read')],
+    canActivate: [permissionGuard('b2b_settings:read')],
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages-page').then((m) => m.ReglagesPage),
     children: [
@@ -39,7 +39,7 @@ export const reglagesRoutes: Routes = [
       },
       {
         path: 'commercial',
-        canActivate: [permissionGuard('growth:read')],
+        canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Commercial — LFC B2B admin',
         loadComponent: () =>
           import('./commercial/reglages-commercial-page').then((m) => m.ReglagesCommercialPage),

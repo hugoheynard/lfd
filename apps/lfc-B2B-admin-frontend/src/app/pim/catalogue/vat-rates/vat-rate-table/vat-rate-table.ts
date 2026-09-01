@@ -69,7 +69,7 @@ export class VatRateTable {
   private readonly contexts = inject(SalesContextStore);
 
   /** Sans `tax:write`, la colonne d'actions n'a rien à proposer — on la retire. */
-  protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_tax:write'));
 
   /** Liste réactive : suit le store, donc création / édition / suppression se voient direct. */
   protected readonly rates = this.store.items;

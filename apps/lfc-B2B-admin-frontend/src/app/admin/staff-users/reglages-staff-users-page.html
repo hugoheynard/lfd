@@ -19,7 +19,7 @@
       </fold-inline-confirm>
     } @else {
       <fold-dropdown
-        *appCan="'staff:write'"
+        *appCan="'staff_access:write'"
         placement="bottom-end"
         ariaLabel="Actions de l'utilisateur"
       >
@@ -163,7 +163,7 @@
         <span></span>
       }
       <button
-        *appCan="'staff:write'"
+        *appCan="'staff_access:write'"
         foldButton
         intent="primary"
         emphasis="solid"

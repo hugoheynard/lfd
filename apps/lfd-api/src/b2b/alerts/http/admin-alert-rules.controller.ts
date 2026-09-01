@@ -24,7 +24,7 @@ import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.que
  * cet écran ne doivent pas s'écraser en silence. Un 409 dit lequel a perdu.
  */
 @Controller("admin/alert-rules")
-@AdminSurface("settings")
+@AdminSurface("b2b_alerts")
 export class AdminAlertRulesController {
   constructor(
     private readonly queries: QueryBus,

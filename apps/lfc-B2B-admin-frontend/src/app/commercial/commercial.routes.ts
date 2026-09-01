@@ -25,14 +25,14 @@ export const commercialRoutes: Routes = [
     //
     // ⚠️ À revoir avec la refonte des rôles : c'est la direction PRUDENTE
     // (personne ne perd d'accès), pas forcément la bonne au terme.
-    canActivate: [permissionGuard('companies:read')],
+    canActivate: [permissionGuard('b2b_companies:read')],
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial-page').then((m) => m.CommercialPage),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'cockpit' },
       {
         path: 'cockpit',
-        canActivate: [permissionGuard('growth:read')],
+        canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Tableau de bord — LFC B2B admin',
         loadComponent: () => import('./cockpit/cockpit-page').then((m) => m.CockpitPage),
       },
@@ -41,14 +41,14 @@ export const commercialRoutes: Routes = [
         // FICHE, elle, reste au premier niveau (comme `commandes/:id`) — on ne
         // reste pas dans le poste de travail quand on ouvre un dossier.
         path: 'comptes-clients',
-        canActivate: [permissionGuard('companies:read')],
+        canActivate: [permissionGuard('b2b_companies:read')],
         title: 'Comptes clients — LFC B2B admin',
         loadComponent: () =>
           import('../comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
       },
       {
         path: 'prospects',
-        canActivate: [permissionGuard('growth:read')],
+        canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Prospects — LFC B2B admin',
         loadComponent: () => import('./prospects/prospects-page').then((m) => m.ProspectsPage),
       },
@@ -57,7 +57,7 @@ export const commercialRoutes: Routes = [
       { path: 'activation', pathMatch: 'full', redirectTo: 'prospects' },
       {
         path: 'calendrier',
-        canActivate: [permissionGuard('growth:read')],
+        canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Calendrier — LFC B2B admin',
         loadComponent: () => import('./calendrier/calendrier-page').then((m) => m.CalendrierPage),
       },
@@ -109,7 +109,7 @@ export const commercialRoutes: Routes = [
     // inviteraient à en sortir, et voleraient la largeur au rail d'historique.
     // Le retour se fait par un lien explicite, pas par un onglet resté allumé.
     path: 'rendez-vous/:appointmentId',
-    canActivate: [permissionGuard('appointments:read')],
+    canActivate: [permissionGuard('b2b_appointments:read')],
     title: 'Rendez-vous — LFC B2B admin',
     loadComponent: () =>
       import('./calendrier/rendez-vous/rendez-vous-page').then((m) => m.RendezVousPage),

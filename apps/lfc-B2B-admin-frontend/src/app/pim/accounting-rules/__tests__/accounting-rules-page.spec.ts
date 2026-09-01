@@ -99,7 +99,7 @@ describe('AccountingRulesPage — sans le droit comptable', () => {
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelector('fold-number-input')).toBeNull();
-    expect(host.textContent).toContain('tax:write');
+    expect(host.textContent).toContain('pim_tax:write');
   });
 });
 

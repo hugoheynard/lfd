@@ -15,7 +15,7 @@ import { AppConfig } from "../../platform/config/app-config.js";
  * L'écran s'en sert pour ne pas offrir un bouton qui répondrait `409`. Le mur,
  * lui, est le guard — cf. `publication-switch.ts`.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_channels")
 @Controller("capabilities")
 export class PimCapabilitiesController {
   constructor(private readonly config: AppConfig) {}

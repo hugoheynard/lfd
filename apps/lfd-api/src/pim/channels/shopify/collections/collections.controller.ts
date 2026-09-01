@@ -21,7 +21,7 @@ import { TaxCollectionsPlan } from "./tax-collections.plan.js";
  * envoyait sa propre liste, ce qui laissait un composant Angular décider du
  * titre d'une collection et rendait la publication tributaire d'un écran ouvert.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_channels")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
@@ -30,7 +30,7 @@ import { TaxCollectionsPlan } from "./tax-collections.plan.js";
  * **écrit chez un tiers**. Poser le taux est comptable, le publier est un geste
  * de catalogue — la comptabilité pose un taux juste, le publieur réconcilie.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_channels")
 @Controller("collections/vat")
 export class ShopifyCollectionsController {
   constructor(
@@ -41,11 +41,11 @@ export class ShopifyCollectionsController {
   /**
    * Rapproche les collections de TVA voulues et la boutique, sans rien écrire.
    *
-   * `catalog:read` explicite : le verbe ment. `POST` impliquerait `write`, donc
-   * l'inspection était réservée à l'admin — un lecteur du catalogue voyait un
+   * `pim_channels:read` explicite : le verbe ment. `POST` impliquerait `write`, donc
+   * l'inspection était réservée à l'admin — un lecteur de la diffusion voyait un
    * bouton « Inspecter » qui lui répondait 403.
    */
-  @RequirePermission("catalog:read")
+  @RequirePermission("pim_channels:read")
   @Post("inspect")
   async inspect(): Promise<InspectResult> {
     return this.collections.inspect(await this.plan.desired());

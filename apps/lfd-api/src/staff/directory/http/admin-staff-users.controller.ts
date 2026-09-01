@@ -38,7 +38,7 @@ import {
  * l'annuaire est staff-only de bout en bout.
  */
 @Controller("admin/staff-users")
-@AdminSurface("staff")
+@AdminSurface("staff_access")
 export class AdminStaffUsersController {
   constructor(
     private readonly queries: QueryBus,

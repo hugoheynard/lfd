@@ -44,7 +44,7 @@ import { SetProductIngredientsCommand } from "../application/set-product-ingredi
  * déclinaison, avec ses allergènes. Cf.
  * `documentation/pim/ingredients-et-appellations.md`.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller()
 export class IngredientController {
   constructor(

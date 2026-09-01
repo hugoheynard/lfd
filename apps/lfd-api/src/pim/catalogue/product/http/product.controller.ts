@@ -45,12 +45,12 @@ import { UpdateVariantPricingCommand } from "../application/update-variant-prici
  * Produits du catalogue — dispatchés sur les bus CQRS. L'édition se fait **par
  * section** (une requête par section, pas par champ).
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_catalog")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("catalogue/products")
 export class ProductController {
   constructor(

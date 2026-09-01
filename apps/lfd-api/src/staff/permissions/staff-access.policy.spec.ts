@@ -118,7 +118,7 @@ describe("l'auto-rétrogradation", () => {
 });
 
 describe("les dérogations d'un administrateur", () => {
-  const deny = (): StaffOverride => ({ resource: "staff", action: "write", effect: "deny" });
+  const deny = (): StaffOverride => ({ resource: "staff_access", action: "write", effect: "deny" });
 
   it("ne peuvent pas lui couper l'accès à l'annuaire", () => {
     // Sinon le delta contourne « il reste au moins un admin » par la porte de
@@ -130,7 +130,7 @@ describe("les dérogations d'un administrateur", () => {
   });
 
   it("attrapent aussi le refus de lecture, qui emporte l'écriture", () => {
-    const denyRead: StaffOverride = { resource: "staff", action: "read", effect: "deny" };
+    const denyRead: StaffOverride = { resource: "staff_access", action: "read", effect: "deny" };
 
     expect(() => assertEditAllowed(admin(), intent("admin", { overrides: [denyRead] }))).toThrow(
       AdminOverrideRefusedError,
@@ -138,7 +138,7 @@ describe("les dérogations d'un administrateur", () => {
   });
 
   it("restent libres sur les autres ressources", () => {
-    const denyGrowth: StaffOverride = { resource: "growth", action: "write", effect: "deny" };
+    const denyGrowth: StaffOverride = { resource: "b2b_growth", action: "write", effect: "deny" };
 
     expect(() =>
       assertEditAllowed(admin(), intent("admin", { overrides: [denyGrowth] })),
@@ -176,7 +176,7 @@ describe("les bords de la politique", () => {
     // donc s'attribuer le rôle `admin` dans la foulée. Le modèle n'aurait plus
     // de sommet.
     const target = admin({ role: "support" });
-    const grant: StaffOverride = { resource: "staff", action: "write", effect: "allow" };
+    const grant: StaffOverride = { resource: "staff_access", action: "write", effect: "allow" };
 
     expect(() => assertEditAllowed(target, intent("support", { overrides: [grant] }))).toThrow(
       StaffGrantByOverrideError,
@@ -186,7 +186,7 @@ describe("les bords de la politique", () => {
   it("refuse aussi l'ouverture en LECTURE seule", () => {
     // Lire l'annuaire, c'est déjà connaître qui peut quoi — et le refus doit
     // porter sur la ressource, pas sur une action choisie au cas par cas.
-    const grant: StaffOverride = { resource: "staff", action: "read", effect: "allow" };
+    const grant: StaffOverride = { resource: "staff_access", action: "read", effect: "allow" };
 
     expect(() =>
       assertEditAllowed(
@@ -199,7 +199,7 @@ describe("les bords de la politique", () => {
   it("laisse RETIRER l'annuaire à un non-admin — c'est sans danger", () => {
     // Le refus d'un droit qu'on n'a pas ne change rien ; l'interdire ferait
     // échouer un enregistrement pour rien.
-    const deny: StaffOverride = { resource: "staff", action: "write", effect: "deny" };
+    const deny: StaffOverride = { resource: "staff_access", action: "write", effect: "deny" };
 
     expect(() =>
       assertEditAllowed(admin({ role: "support" }), intent("support", { overrides: [deny] })),

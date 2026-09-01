@@ -11,7 +11,7 @@ import type { LeadScoreView } from "@lfd/contracts";
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/cockpit")
-@AdminSurface("growth")
+@AdminSurface("b2b_growth")
 export class AdminCockpitController {
   constructor(private readonly queries: QueryBus) {}
 

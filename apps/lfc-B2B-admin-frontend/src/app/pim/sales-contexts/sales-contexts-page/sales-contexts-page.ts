@@ -60,7 +60,7 @@ export class SalesContextsPage {
   private readonly permissions = inject(PermissionsStore);
 
   /** Ouvrir ou régler un contexte est un geste d'admin, et lui seul. */
-  protected readonly canWrite = computed(() => this.permissions.can('catalog:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_settings:write'));
 
   protected readonly contexts = this.store.items;
   protected readonly loadError = this.store.loadError;

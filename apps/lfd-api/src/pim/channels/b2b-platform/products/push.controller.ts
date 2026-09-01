@@ -19,12 +19,12 @@ const pushPayload = z.object({
  * Ressource **push** du canal B2B. Sous-chemin `push` sous le préfixe module
  * `channels/b2b`.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_channels")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_channels")
 @Controller("push")
 export class B2bPushController {
   constructor(private readonly pushService: B2bCatalogPushService) {}

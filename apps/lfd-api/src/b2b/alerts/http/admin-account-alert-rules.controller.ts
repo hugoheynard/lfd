@@ -35,7 +35,7 @@ import { GetAccountAlertRulesQuery } from "../application/queries/get-account-al
  * la même chose, dont une seule serait vraie.
  */
 @Controller("admin/companies/:companyId/alert-rules")
-@AdminSurface("companies")
+@AdminSurface("b2b_alerts")
 export class AdminAccountAlertRulesController {
   constructor(
     private readonly queries: QueryBus,

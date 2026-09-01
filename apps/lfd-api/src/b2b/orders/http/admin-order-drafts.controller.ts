@@ -38,7 +38,7 @@ import { GetOrderDraftQuery } from "../application/queries/get-order-draft.query
  * saisies se croisent.
  */
 @Controller("admin/order-drafts")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 export class AdminOrderDraftsController {
   constructor(
     private readonly queries: QueryBus,

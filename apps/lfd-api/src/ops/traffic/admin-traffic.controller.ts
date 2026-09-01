@@ -16,7 +16,7 @@ import { TrafficReader } from "./traffic-reader.port.js";
  * murées à part — pas glissées ici parce que le contrôleur existait déjà.
  */
 @Controller("admin/ops/traffic")
-@AdminSurface("ops")
+@AdminSurface("ops_health")
 export class AdminTrafficController {
   constructor(private readonly traffic: TrafficReader) {}
 

@@ -35,7 +35,7 @@ type TakeRevisionPayload = z.infer<typeof takeRevisionPayloadSchema>;
  * il rend l'ancre existante avec `created: false` au lieu d'en créer une
  * seconde. Un bouton cliqué deux fois ne double donc pas l'histoire.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_channels")
 @Controller("catalogue/revisions")
 export class CatalogRevisionController {
   constructor(

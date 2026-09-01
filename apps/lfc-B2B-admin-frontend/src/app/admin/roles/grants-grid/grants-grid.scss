@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.grid-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin-block-end: var(--fold-space-sm);
+}
+
+.grid-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* La grille défile DANS son conteneur : sur un écran étroit, elle pousserait
+   sinon la page et créerait un défilement horizontal général. */
+.grid-scroll {
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding-block: var(--fold-space-xs);
+    text-align: start;
+  }
+
+  thead th {
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-2xs);
+    text-transform: uppercase;
+  }
+
+  tbody tr + tr {
+    border-block-start: 1px solid var(--fold-color-border-subtle);
+  }
+
+  tbody th {
+    padding-inline-end: var(--fold-space-md);
+    font-weight: normal;
+  }
+
+  /* La colonne des niveaux ne s'étire pas : douze `<select>` pleine largeur
+     éloignent le choix de son libellé. */
+  td {
+    width: 12rem;
+  }
+}
+
+/* L'en-tête d'un groupe d'outil. Une ligne de tableau plutôt qu'un titre au-dessus
+   d'un second tableau : une seule grille garde ses deux colonnes alignées d'un
+   groupe à l'autre, et un lecteur d'écran annonce `colgroup` sans qu'on lui
+   fabrique une structure à la main. */
+.grid-group th {
+  padding-block: var(--fold-space-md) var(--fold-space-xs);
+  background: var(--fold-color-surface-subtle);
+  border-block-start: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Le libellé porte l'outil, l'aparté dit ce qu'il recouvre — sans quoi
+   « Transverse » ne veut rien dire pour qui découvre la grille. */
+.grid-group-label {
+  display: block;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.grid-group-hint {
+  display: block;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}

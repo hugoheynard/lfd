@@ -62,6 +62,29 @@ export type {
   CreatedAddressResponse,
 } from "./address.js";
 export {
+  createStaffRolePayloadSchema,
+  fromRoleGrants,
+  isSuperAdminRoleKey,
+  legacyRoleSeeds,
+  resolveRolePermissions,
+  roleGrantSchema,
+  roleGrantsSchema,
+  staffRoleKeySchema,
+  STAFF_ROLE_KEY_MAX_LENGTH,
+  STAFF_ROLE_KEY_MIN_LENGTH,
+  STAFF_ROLE_LABEL_MAX_LENGTH,
+  SUPER_ADMIN_ROLE_KEY,
+  SUPER_ADMIN_ROLE_LABEL,
+  toRoleGrants,
+  updateStaffRolePayloadSchema,
+} from "./staff-role.js";
+export type {
+  CreateStaffRolePayload,
+  RoleGrant,
+  StaffRoleView,
+  UpdateStaffRolePayload,
+} from "./staff-role.js";
+export {
   mandateStatusSchema,
   registerMandatePayloadSchema,
   MANDATE_STATUS_LABELS,
@@ -309,6 +332,7 @@ export {
   staffOverrideEffectSchema,
   staffOverrideSchema,
   staffPermission,
+  resolvePermissionsFromGrants,
   resolveStaffPermissions,
   hasStaffPermission,
   dedupeStaffOverrides,
@@ -318,6 +342,7 @@ export {
   STAFF_RESOURCE_LABELS,
 } from "./staff-access.js";
 export type {
+  RoleGrants,
   StaffResource,
   StaffAction,
   StaffPermission,

@@ -20,7 +20,7 @@ const SUBJECT_TYPES = ["rule", "floor", "ladder"] as const;
  * journal auquel on peut écrire séparément est un journal qu'on peut arranger.
  */
 @Controller("admin/pricing/journal")
-@AdminSurface("settings")
+@AdminSurface("b2b_pricing")
 export class AdminPricingJournalController {
   constructor(private readonly journal: PricingJournalReader) {}
 

@@ -223,7 +223,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     label: 'Taux de TVA',
     link: '/pim/tva',
     icon: 'tax',
-    needs: 'tax:read',
+    needs: 'pim_tax:read',
     section: 'Général',
   },
   // Même icône que les taux, et c'est voulu : les deux répondent à « ce
@@ -234,7 +234,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     label: 'Règles comptables',
     link: '/pim/regles-comptables',
     icon: 'tax',
-    needs: 'tax:read',
+    needs: 'pim_tax:read',
     section: 'Général',
   },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
@@ -308,14 +308,24 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
     label: 'Accès à remettre',
     link: '/admin/acces-en-attente',
     icon: 'shield',
-    needs: 'companies:read',
+    needs: 'b2b_companies:read',
   },
   {
     key: 'utilisateurs',
     label: 'Utilisateurs',
     link: '/admin/utilisateurs',
     icon: 'user',
-    needs: 'staff:read',
+    needs: 'staff_access:read',
+  },
+  {
+    // Juste après « Utilisateurs », et sous le même droit : on vient de voir
+    // qu'une personne porte un rôle, la question suivante est ce que ce rôle
+    // ouvre. Les séparer ferait chercher.
+    key: 'roles',
+    label: 'Rôles',
+    link: '/admin/roles',
+    icon: 'shield',
+    needs: 'staff_access:read',
   },
   {
     key: 'journal',
@@ -326,12 +336,93 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
   },
 ];
 
+/**
+ * Les vues de la **documentation**, en sections.
+ *
+ * C'est le seul espace dont les vues ne portent AUCUN droit, et ce n'est pas un
+ * oubli : ce sont des explications du fonctionnement, pas des données. Le mur
+ * est sur les écrans qu'elles commentent, pas sur la prose qui les commente.
+ *
+ * Une seule section pour l'instant — « PIM ». La déclarer quand même, plutôt
+ * que de laisser les vues sans titre, est ce qui rend la suivante gratuite : le
+ * jour où l'on documente le commerce ou la production, on ajoute des lignes,
+ * pas un regroupement rétroactif où chaque lecteur devra retrouver ses repères.
+ *
+ * L'ordre est celui de la lecture, pas celui de l'écriture : le paramétrage
+ * général ouvre, parce que rien du reste ne se comprend sans le contexte de
+ * vente et le point de vente — et qu'ils viennent, eux, de la loi.
+ */
+export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'general',
+    label: 'Paramétrage général',
+    link: '/documentation/parametrage-general',
+    icon: 'sliders',
+    section: 'PIM',
+  },
+  {
+    key: 'product-settings',
+    label: 'Paramétrage produit',
+    link: '/documentation/parametrage-produit',
+    icon: 'library',
+    section: 'PIM',
+  },
+  {
+    key: 'product-sheet',
+    label: 'Remplir une fiche produit',
+    link: '/documentation/remplir-une-fiche-produit',
+    icon: 'product',
+    section: 'PIM',
+  },
+  {
+    key: 'overview',
+    label: "Vue d'ensemble",
+    link: '/documentation/vue-d-ensemble',
+    icon: 'info',
+    section: 'PIM',
+  },
+  {
+    key: 'bricks',
+    label: 'Les briques',
+    link: '/documentation/briques',
+    icon: 'grid',
+    section: 'PIM',
+  },
+  {
+    key: 'flow',
+    label: 'Flux des collections',
+    link: '/documentation/flux-des-collections',
+    icon: 'sliders',
+    section: 'PIM',
+  },
+  {
+    key: 'web',
+    label: 'Segmentation web',
+    link: '/documentation/segmentation-web',
+    icon: 'globe',
+    section: 'PIM',
+  },
+  {
+    key: 'shopify',
+    label: 'Intégration Shopify',
+    link: '/documentation/integration-shopify',
+    icon: 'shopify',
+    section: 'PIM',
+  },
+];
+
 /** Le catalogue, par clé. */
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
   admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
+  documentation: {
+    key: 'documentation',
+    title: 'Documentation',
+    icon: 'library',
+    views: DOCUMENTATION_VIEWS,
+  },
 } as const satisfies Record<string, Workspace>;
 
 /** Une clé d'espace de travail — fermée, donc une faute de frappe ne compile pas. */

@@ -66,22 +66,22 @@ describe("annuaire staff", () => {
     expect(users[0]?.email).toBe("alex.martin@lfc.test");
     expect(users[0]?.jobTitle).toBe("Responsable grands comptes");
     // L'effectif est résolu par le serveur : l'écran n'a pas à rejouer la formule.
-    expect(users[0]?.permissions).toContain("companies:write");
-    expect(users[0]?.permissions).not.toContain("staff:write");
+    expect(users[0]?.permissions).toContain("b2b_companies:write");
+    expect(users[0]?.permissions).not.toContain("staff_access:write");
   });
 
   it("dédoublonne les dérogations et normalise l'e-mail en minuscule", async () => {
     await create({
       email: "Alex.Martin@LFC.test",
       overrides: [
-        { resource: "orders", action: "write", effect: "allow" },
-        { resource: "orders", action: "write", effect: "allow" },
+        { resource: "b2b_orders", action: "write", effect: "allow" },
+        { resource: "b2b_orders", action: "write", effect: "allow" },
       ],
     });
     const users = await list();
     expect(users[0]?.email).toBe("alex.martin@lfc.test");
     expect(users[0]?.overrides).toHaveLength(1);
-    expect(users[0]?.permissions).toContain("orders:write");
+    expect(users[0]?.permissions).toContain("b2b_orders:write");
   });
 
   it("refuse un e-mail déjà pris (409), casse insensible", async () => {
@@ -102,7 +102,7 @@ describe("annuaire staff", () => {
     const users = await list();
     expect(users[0]?.lastName).toBe("Durand");
     expect(users[0]?.role).toBe("admin");
-    expect(users[0]?.permissions).toContain("staff:write");
+    expect(users[0]?.permissions).toContain("staff_access:write");
   });
 
   it("refuse d'éditer vers l'e-mail d'un autre user (409)", async () => {
@@ -179,7 +179,7 @@ describe("annuaire staff — on ne se verrouille pas dehors", () => {
           email: "two@lfc.test",
           firstName: "Bea",
           role: "admin",
-          overrides: [{ resource: "staff", action: "write", effect: "deny" }],
+          overrides: [{ resource: "staff_access", action: "write", effect: "deny" }],
         }),
       );
 
@@ -196,8 +196,8 @@ describe("/admin/me", () => {
     expect(me.role).toBe("admin");
     // L'administrateur porte tous les pouvoirs : c'est l'invariant qui garantit
     // qu'il reste toujours quelqu'un capable de tout réparer.
-    expect(me.permissions).toContain("staff:write");
-    expect(me.permissions).toContain("settings:write");
+    expect(me.permissions).toContain("staff_access:write");
+    expect(me.permissions).toContain("b2b_settings:write");
   });
 });
 
@@ -270,7 +270,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
           email: "two@lfc.test",
           firstName: "Bea",
           role: "support",
-          overrides: [{ resource: "staff", action: "write", effect: "allow" }],
+          overrides: [{ resource: "staff_access", action: "write", effect: "allow" }],
         }),
       );
 
@@ -285,8 +285,8 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
       firstName: "Bea",
       role: "support",
       overrides: [
-        { resource: "orders", action: "write", effect: "allow" },
-        { resource: "orders", action: "write", effect: "deny" },
+        { resource: "b2b_orders", action: "write", effect: "allow" },
+        { resource: "b2b_orders", action: "write", effect: "deny" },
       ],
     });
 
@@ -294,7 +294,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
     const created = rows.find((row) => row.id === id);
 
     expect(created?.overrides).toHaveLength(1);
-    expect(created?.permissions).not.toContain("orders:write");
+    expect(created?.permissions).not.toContain("b2b_orders:write");
   });
 
   it("normalise l'e-mail avant de conclure au doublon, espaces compris", async () => {

@@ -38,12 +38,12 @@ import { SetCategoryVatCommand } from "../application/set-category-vat.js";
 /**
  * Familles du catalogue — dispatchées sur les bus CQRS.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * Surface staff murée par `@AdminSurface("pim_catalog")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@AdminSurface("catalog")
+@AdminSurface("pim_catalog")
 @Controller("catalogue/categories")
 export class CategoryController {
   constructor(

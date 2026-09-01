@@ -14,7 +14,7 @@ import { ListSupportRequestsQuery } from "../application/queries/list-support-re
  * Même montage `@AdminSurface` que les autres `/admin/*`.
  */
 @Controller("admin/support-requests")
-@AdminSurface("support")
+@AdminSurface("b2b_support")
 export class AdminSupportController {
   constructor(
     private readonly commands: CommandBus,

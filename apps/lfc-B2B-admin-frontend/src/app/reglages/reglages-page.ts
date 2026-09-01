@@ -51,21 +51,21 @@ export class ReglagesPage {
       label: 'Retraits & livraisons',
       link: 'retraits-livraisons',
       icon: 'briefcase',
-      needs: 'settings:read',
+      needs: 'b2b_settings:read',
     },
     {
       key: 'facturation',
       label: 'Facturation',
       link: 'facturation',
       icon: 'library',
-      needs: 'settings:read',
+      needs: 'b2b_settings:read',
     },
     {
       key: 'commercial',
       label: 'Commercial',
       link: 'commercial',
       icon: 'bell',
-      needs: 'growth:read',
+      needs: 'b2b_growth:read',
     },
   ];
 

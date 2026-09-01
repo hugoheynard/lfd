@@ -14,7 +14,7 @@ import type { ParityReport } from "../domain/catalog-parity.js";
  * avec un outil d'astreinte.
  */
 @Controller("admin/catalog")
-@AdminSurface("catalog")
+@AdminSurface("b2b_catalog")
 export class AdminCatalogParityController {
   constructor(private readonly parity: CheckCatalogParityService) {}
 

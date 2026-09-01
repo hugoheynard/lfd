@@ -28,7 +28,7 @@ import type { CreatedIdResponse } from "@lfd/contracts";
  * la facture. Pour corriger, on clôt et on signe.
  */
 @Controller("admin/pricing/commitments")
-@AdminSurface("settings")
+@AdminSurface("b2b_pricing")
 export class AdminVolumeCommitmentsController {
   constructor(
     private readonly commands: CommandBus,

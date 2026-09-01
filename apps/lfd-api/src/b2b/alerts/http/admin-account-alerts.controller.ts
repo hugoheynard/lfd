@@ -17,7 +17,7 @@ import { ListAccountAlertsQuery } from "../application/queries/list-account-aler
  * de nom ou de rôle.
  */
 @Controller("admin")
-@AdminSurface("orders")
+@AdminSurface("b2b_alerts")
 export class AdminAccountAlertsController {
   constructor(
     private readonly queries: QueryBus,

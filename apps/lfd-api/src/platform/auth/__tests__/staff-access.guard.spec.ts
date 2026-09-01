@@ -32,7 +32,7 @@ const configStub = {
 };
 
 @Controller("admin/probe-orders")
-@AdminSurface("orders")
+@AdminSurface("b2b_orders")
 class ProbeOrdersController {
   @Get()
   read(): string {
@@ -46,7 +46,7 @@ class ProbeOrdersController {
 
   /** Le verbe dit « écrire », l'intention dit « lire ». La déclaration gagne. */
   @Patch("search")
-  @RequirePermission("orders:read")
+  @RequirePermission("b2b_orders:read")
   search(): string {
     return "search";
   }
@@ -62,7 +62,7 @@ class ProbeReflexiveController {
   }
 
   @Get("restreint")
-  @RequirePermission("staff:read")
+  @RequirePermission("staff_access:read")
   restricted(): string {
     return "restreint";
   }
@@ -107,7 +107,7 @@ describe("StaffAccessGuard — le verbe dit l'action", () => {
   });
 
   it("laisse lire avec la seule lecture, et refuse d'écrire", async () => {
-    app = await bootWith(["orders:read"]);
+    app = await bootWith(["b2b_orders:read"]);
 
     await request(app.getHttpServer()).get("/admin/probe-orders").expect(200);
     await request(app.getHttpServer()).post("/admin/probe-orders").expect(403);
@@ -116,13 +116,13 @@ describe("StaffAccessGuard — le verbe dit l'action", () => {
   it("traite HEAD comme une lecture", async () => {
     // Nest route HEAD sur le handler GET : sans ce cas dans la liste, un HEAD
     // exigerait l'écriture et un simple test de disponibilité serait refusé.
-    app = await bootWith(["orders:read"]);
+    app = await bootWith(["b2b_orders:read"]);
 
     await request(app.getHttpServer()).head("/admin/probe-orders").expect(200);
   });
 
   it("laisse écrire quand l'écriture est là", async () => {
-    app = await bootWith(["orders:read", "orders:write"]);
+    app = await bootWith(["b2b_orders:read", "b2b_orders:write"]);
 
     await request(app.getHttpServer()).post("/admin/probe-orders").expect(201);
   });
@@ -137,7 +137,7 @@ describe("StaffAccessGuard — la déclaration explicite gagne", () => {
 
   it("accepte un PATCH qui ne demande que la lecture", async () => {
     // Le cas où le verbe ment sur l'intention : une recherche en POST/PATCH.
-    app = await bootWith(["orders:read"]);
+    app = await bootWith(["b2b_orders:read"]);
 
     await request(app.getHttpServer()).patch("/admin/probe-orders/search").expect(200);
   });
@@ -146,7 +146,7 @@ describe("StaffAccessGuard — la déclaration explicite gagne", () => {
     // Le piège silencieux : `/admin/me` n'exige aucune permission, donc une
     // `@RequirePermission` posée dessus pourrait être ignorée sans bruit — on
     // croirait avoir restreint une route qui ne l'est pas.
-    app = await bootWith(["orders:read"]);
+    app = await bootWith(["b2b_orders:read"]);
 
     await request(app.getHttpServer()).get("/admin/probe-me").expect(200);
     await request(app.getHttpServer()).get("/admin/probe-me/restreint").expect(403);
@@ -163,7 +163,12 @@ describe("StaffAccessGuard — fail-closed", () => {
   it("refuse une surface sans ressource déclarée, même à qui a tout", async () => {
     // Un contrôleur copié d'un voisin, sans la ligne qui compte : il ne doit pas
     // s'ouvrir parce que l'appelant se trouve être administrateur.
-    app = await bootWith(["orders:read", "orders:write", "staff:read", "staff:write"]);
+    app = await bootWith([
+      "b2b_orders:read",
+      "b2b_orders:write",
+      "staff_access:read",
+      "staff_access:write",
+    ]);
 
     await request(app.getHttpServer()).get("/admin/probe-nue").expect(403);
   });

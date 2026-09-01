@@ -19,7 +19,7 @@ import {
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/delivery-zones")
-@AdminSurface("settings")
+@AdminSurface("b2b_settings")
 export class AdminDeliveryZonesController {
   constructor(private readonly commands: CommandBus) {}
 

@@ -1,0 +1,52 @@
+<div class="grid-head">
+  <p class="grid-hint">
+    Un niveau par domaine. <strong>L'écriture entraîne la lecture</strong> — on ne modifie pas ce
+    qu'on ne voit pas.
+  </p>
+  <fold-badge
+    variant="neutral"
+    [content]="openedCount() + ' ouvert' + (openedCount() > 1 ? 's' : '')"
+  />
+</div>
+
+<!-- Groupé PAR OUTIL, et pas à plat. Douze lignes se lisaient d'un coup d'œil ;
+     le découpage à venir (référentiel / plateforme / socle) en fera dix-neuf, et
+     une liste plate de dix-neuf droits ne se remplit pas sans se tromper. Le
+     groupe dit AUSSI de quel outil on parle : `catalog` seul ne le disait pas. -->
+<div class="grid-scroll">
+  <table class="grid">
+    <thead>
+      <tr>
+        <th scope="col">Domaine</th>
+        <th scope="col">Niveau</th>
+      </tr>
+    </thead>
+    @for (group of groups(); track group.tool) {
+      <tbody>
+        <tr class="grid-group">
+          <th scope="colgroup" colspan="2">
+            <span class="grid-group-label">{{ group.label }}</span>
+            <span class="grid-group-hint">{{ group.hint }}</span>
+          </th>
+        </tr>
+        @for (row of group.rows; track row.resource) {
+          <tr>
+            <th scope="row">{{ row.label }}</th>
+            <td>
+              <fold-select
+                size="sm"
+                [attr.aria-label]="group.label + ' — ' + row.label"
+                [value]="row.level"
+                (valueChange)="setLevel(row.resource, $event)"
+              >
+                @for (level of levels; track level.value) {
+                  <option [value]="level.value">{{ level.label }}</option>
+                }
+              </fold-select>
+            </td>
+          </tr>
+        }
+      </tbody>
+    }
+  </table>
+</div>

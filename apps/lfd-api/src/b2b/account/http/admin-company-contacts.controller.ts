@@ -26,7 +26,7 @@ import {
  * comptoir.
  */
 @Controller("admin/companies/:companyId")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminCompanyContactsController {
   constructor(private readonly commands: CommandBus) {}
 

@@ -78,7 +78,7 @@ interface UploadedFilePart {
  * fait que le transport et dispatche au bus.
  */
 @Controller("admin/companies")
-@AdminSurface("companies")
+@AdminSurface("b2b_companies")
 export class AdminCompanyPiecesController {
   constructor(
     private readonly commands: CommandBus,

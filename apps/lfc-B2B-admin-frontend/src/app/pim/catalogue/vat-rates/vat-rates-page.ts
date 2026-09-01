@@ -49,7 +49,7 @@ export class VatRatesPage {
    * Le front cache, le serveur refuse : ce test évite d'offrir un bouton qui
    * répondrait 403, il ne protège rien.
    */
-  protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('pim_tax:write'));
 
   /** Ouvre le side-panel de création ; le tableau, réactif à la DB, se met à
    *  jour tout seul quand un taux en sort. */
