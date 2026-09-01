@@ -10,7 +10,15 @@ export interface IngredientRecord extends IngredientSnapshot {
   readonly usedBy: number;
 }
 
-/** Le référentiel des **provenances** — lecture et écriture. */
+/**
+ * Le référentiel des **provenances** — lecture et écriture.
+ *
+ * `add` et `save` prennent et rendent l'**agrégat entier**, allergènes compris :
+ * ce que contient une matière est un fait qui lui appartient (la liaison meurt
+ * avec elle, en `Cascade`), et une méthode `setAllergensOf(key, codes)` aurait
+ * fait du dépôt un CRUD dont l'invariant — un ensemble sans doublon — se serait
+ * retrouvé dans le handler.
+ */
 export abstract class IngredientRepository {
   abstract list(): Promise<readonly IngredientRecord[]>;
   abstract findByKey(key: string): Promise<IngredientAggregate | null>;

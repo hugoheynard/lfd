@@ -1,8 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   createAppellationPayloadSchema,
   createIngredientPayloadSchema,
+  setIngredientAllergensPayloadSchema,
   setProductIngredientsPayloadSchema,
   updateAppellationPayloadSchema,
   updateIngredientPayloadSchema,
@@ -10,6 +11,8 @@ import {
   type CreateAppellationPayload,
   type CreateIngredientPayload,
   type IngredientView,
+  type ProductIngredientAllergensView,
+  type SetIngredientAllergensPayload,
   type SetProductIngredientsPayload,
   type UpdateAppellationPayload,
   type UpdateIngredientPayload,
@@ -27,6 +30,8 @@ import {
   RemoveIngredientCommand,
   UpdateIngredientCommand,
 } from "../application/ingredient-handlers.js";
+import { ReadProductIngredientAllergensQuery } from "../application/read-product-ingredient-allergens.js";
+import { SetIngredientAllergensCommand } from "../application/set-ingredient-allergens.js";
 import { SetProductIngredientsCommand } from "../application/set-product-ingredients.js";
 import type { AppellationRecord } from "../domain/ports/appellation.repository.js";
 import { AppellationRepository } from "../domain/ports/appellation.repository.js";
@@ -50,6 +55,7 @@ function toIngredientView(record: IngredientRecord): IngredientView {
     name: record.name,
     description: record.description,
     origin: record.origin,
+    allergens: record.allergens,
     appellation:
       record.appellation === null
         ? null
@@ -87,6 +93,7 @@ export class IngredientController {
     private readonly ingredients: IngredientRepository,
     private readonly appellations: AppellationRepository,
     private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   @Get("appellations")
@@ -155,6 +162,24 @@ export class IngredientController {
     return { key };
   }
 
+  /**
+   * Ce que cette matière **contient** — la liste entière, en codes.
+   *
+   * Périmètre `world` (D4) : l'écran propose le référentiel complet, codes hors
+   * obligation UE compris. Un ingrédient énonce un fait ; le filtre européen
+   * appartient à la déclaration de la déclinaison.
+   */
+  @Put("ingredients/:key/allergens")
+  async setIngredientAllergens(
+    @Param("key") key: string,
+    @Body(new ZodBody(setIngredientAllergensPayloadSchema)) body: SetIngredientAllergensPayload,
+  ) {
+    await this.commands.execute<SetIngredientAllergensCommand, void>(
+      new SetIngredientAllergensCommand(key, body.codes),
+    );
+    return { key };
+  }
+
   /** Ce que CETTE fiche cite, dans son ordre d'affichage. */
   @Get("products/:id/ingredients")
   async ofProduct(@Param("id") id: string): Promise<IngredientView[]> {
@@ -171,5 +196,25 @@ export class IngredientController {
       new SetProductIngredientsCommand(id, body.keys),
     );
     return { id };
+  }
+
+  /**
+   * Ce que la composition de cette fiche **mentionne** comme allergènes, et
+   * l'écart avec ce que chaque déclinaison déclare (D5).
+   *
+   * Sous `products/:id/…`, à côté de ce que la fiche cite, parce que c'en est la
+   * lecture dérivée — et nommée `ingredient-allergens` plutôt que `allergens` :
+   * ce ne sont pas les allergènes du produit, ce sont ceux de ses ingrédients
+   * cités. La nuance est toute la décision D5, et une URL qui la perdrait
+   * inviterait à lire cette réponse comme une fiche réglementaire.
+   *
+   * ⚠️ Une proposition vide ne dit RIEN : la liste d'ingrédients est éditoriale.
+   */
+  @Get("products/:id/ingredient-allergens")
+  citedAllergens(@Param("id") id: string): Promise<ProductIngredientAllergensView> {
+    return this.queries.execute<
+      ReadProductIngredientAllergensQuery,
+      ProductIngredientAllergensView
+    >(new ReadProductIngredientAllergensQuery(id));
   }
 }

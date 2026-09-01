@@ -208,6 +208,20 @@ export const PIM_EVENTS = {
   ingredientCreated: "ingredient.created",
   ingredientUpdated: "ingredient.updated",
   ingredientDeleted: "ingredient.deleted",
+  /**
+   * Ce qu'une matière **contient** — la liste entière, en codes.
+   *
+   * Distinct d'`ingredient.updated`, qui porte le nom, l'origine et
+   * l'appellation : ce fait-ci alimente l'ensemble dérivé proposé aux fiches
+   * réglementaires, et « depuis quand cette farine porte-t-elle le sarrasin »
+   * est une question qu'on peut avoir à défendre. La noyer dans un diff de
+   * formulaire la rendrait introuvable.
+   *
+   * Un SEUL fait pour la liste, et l'avant/après en **codes** : six mois plus
+   * tard, « on a retiré la noisette du praliné » doit se lire sans une jointure
+   * sur un référentiel qui aura peut-être bougé.
+   */
+  ingredientAllergensSaved: "ingredient.allergens_saved",
   /** Ce qu'une fiche cite — la liste entière, l'ordre compris. */
   productIngredientsSaved: "product.ingredients_saved",
   /**

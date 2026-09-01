@@ -76,3 +76,41 @@ export class IngredientInUseError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un code que le référentiel d'allergènes ne connaît pas.
+ *
+ * Le pendant, côté matière, de ce que `NutritionDeclaration` refuse sur une
+ * fiche : les codes sont des identités de stockage, et un code inventé sur un
+ * ingrédient remonterait tel quel dans l'ensemble dérivé proposé aux fiches.
+ */
+export class UnknownIngredientAllergenError extends DomainError {
+  constructor(code: string) {
+    super(
+      "catalogue.ingredient.allergen_unknown",
+      `Code allergène inconnu du référentiel : « ${code} ». Rechargez l'écran, ` +
+        `ou faites créer cette entrée depuis le référentiel des allergènes.`,
+    );
+  }
+}
+
+/**
+ * On n'AJOUTE pas un code archivé sur une matière.
+ *
+ * Exactement la règle que D2 bis impose à la déclaration, et pour la même
+ * raison : l'archivage retire une entrée de ce qu'on PROPOSE, jamais de ce
+ * qu'on reconnaît. Une matière qui porte déjà ce code se réenregistre donc sans
+ * encombre — sinon corriger l'origine d'un ingrédient échouerait sur un
+ * allergène que personne n'a touché. C'est l'ajout à neuf, et lui seul, qui est
+ * refusé.
+ */
+export class ArchivedIngredientAllergenError extends BusinessError {
+  constructor(code: string) {
+    super(
+      "catalogue.ingredient.allergen_archived",
+      `L'allergène « ${code} » a été retiré du référentiel : il ne se pose plus ` +
+        `sur une matière. Choisissez un allergène proposé, ou faites restaurer ` +
+        `celui-ci depuis l'écran du référentiel.`,
+    );
+  }
+}

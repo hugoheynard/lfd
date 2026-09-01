@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AllergensModule } from "../allergens/allergens.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import {
   CreateAppellationHandler,
@@ -11,12 +12,16 @@ import {
   RemoveIngredientHandler,
   UpdateIngredientHandler,
 } from "./application/ingredient-handlers.js";
+import { ReadProductIngredientAllergensHandler } from "./application/read-product-ingredient-allergens.js";
+import { SetIngredientAllergensHandler } from "./application/set-ingredient-allergens.js";
 import { SetProductIngredientsHandler } from "./application/set-product-ingredients.js";
 import { AppellationRepository } from "./domain/ports/appellation.repository.js";
 import { IngredientRepository } from "./domain/ports/ingredient.repository.js";
+import { VariantDeclarationReader } from "./domain/ports/variant-declaration.reader.js";
 import { IngredientController } from "./http/ingredient.controller.js";
 import { PrismaAppellationRepository } from "./infrastructure/prisma-appellation.repository.js";
 import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.repository.js";
+import { PrismaVariantDeclarationReader } from "./infrastructure/prisma-variant-declaration.reader.js";
 
 /**
  * Contexte **ingredients** — la provenance de ce qu'on vend.
@@ -30,7 +35,11 @@ import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.r
  * lecteur — et ce jour-là seulement.
  */
 @Module({
-  imports: [PimDatabaseModule],
+  // `AllergensModule` pour son seul lecteur de catalogue : poser un allergène
+  // sur une matière suppose de savoir ce que le référentiel reconnaît, et ce
+  // qu'il ne propose plus (D2 bis). Il n'expose aucun dépôt d'écriture — la
+  // provenance lit le référentiel, elle ne l'administre pas.
+  imports: [PimDatabaseModule, AllergensModule],
   controllers: [IngredientController],
   providers: [
     CreateAppellationHandler,
@@ -40,8 +49,11 @@ import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.r
     UpdateIngredientHandler,
     RemoveIngredientHandler,
     SetProductIngredientsHandler,
+    SetIngredientAllergensHandler,
+    ReadProductIngredientAllergensHandler,
     { provide: AppellationRepository, useClass: PrismaAppellationRepository },
     { provide: IngredientRepository, useClass: PrismaIngredientRepository },
+    { provide: VariantDeclarationReader, useClass: PrismaVariantDeclarationReader },
   ],
 })
 export class IngredientsModule {}

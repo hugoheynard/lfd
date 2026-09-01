@@ -34,6 +34,11 @@ export interface NewIngredientInput extends IngredientRevision {
 export interface IngredientSnapshot extends IngredientRevision {
   readonly id: string;
   readonly key: string;
+  /**
+   * Les codes d'allergènes que la matière contient — un ENSEMBLE, dédupliqué et
+   * rangé par l'agrégat.
+   */
+  readonly allergens: readonly string[];
 }
 
 /**
@@ -49,8 +54,9 @@ export interface IngredientSnapshot extends IngredientRevision {
  * qu'un objet de chaînes vides.
  *
  * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE
- * ingrédient ne porte cette clé, que l'appellation citée existe, et qu'aucune
- * fiche ne le cite au moment de l'effacer.
+ * ingrédient ne porte cette clé, que l'appellation citée existe, que les codes
+ * d'allergènes qu'il porte sont au référentiel, et qu'aucune fiche ne le cite au
+ * moment de l'effacer.
  */
 export class IngredientAggregate {
   private constructor(
@@ -60,6 +66,7 @@ export class IngredientAggregate {
     private descriptionValue: LocalizedText | null,
     private originValue: string,
     private appellationValue: string | null,
+    private allergenValues: readonly string[],
   ) {}
 
   static declare(input: NewIngredientInput): IngredientAggregate {
@@ -70,6 +77,10 @@ export class IngredientAggregate {
       cleanOptionalText(input.description),
       input.origin.trim(),
       input.appellationId,
+      // Une matière déclarée ne prétend rien contenir tant que personne ne l'a
+      // dit : les allergènes se posent par leur propre verbe, à l'écran comme
+      // ici. Et cette liste vide n'affirme RIEN — cf. `declareAllergens`.
+      [],
     );
   }
 
@@ -81,6 +92,7 @@ export class IngredientAggregate {
       snapshot.description,
       snapshot.origin,
       snapshot.appellationId,
+      distinctCodes(snapshot.allergens),
     );
   }
 
@@ -106,6 +118,33 @@ export class IngredientAggregate {
     }
   }
 
+  /**
+   * Pose ce que la matière **contient**, la liste entière.
+   *
+   * Un verbe à elle plutôt qu'un champ de `revise` : c'est une autre section de
+   * l'écran, un autre fait au journal, et surtout une autre nature de donnée —
+   * un ensemble, là où le reste de la révision est un formulaire de champs.
+   *
+   * Ce que l'agrégat garantit ici, et lui seul : **un ensemble**, sans doublon
+   * et dans un ordre canonique. Un allergène cité deux fois est une redite, pas
+   * deux faits, et l'ordre de saisie n'est porteur de rien — le rendre stable
+   * évite qu'un simple réordonnancement à l'écran se lise comme un changement
+   * dans le journal.
+   *
+   * Ce qu'il ne peut PAS voir, et qui reste au handler : que ces codes existent
+   * au référentiel, et qu'aucun code archivé n'y entre à neuf (D2 bis). Le
+   * référentiel vit en base ; le domaine ne le cherche pas, il le reçoit — comme
+   * `nutritionDeclaration` reçoit `knownCodes()` (D3).
+   *
+   * ⚠️ `[]` n'affirme pas « sans allergène ». La déclaration d'une déclinaison
+   * distingue `null` de `[]` parce qu'elle fait foi ; ici rien ne fait foi — la
+   * liste d'ingrédients est éditoriale, et son silence ne renseigne sur rien
+   * (D5).
+   */
+  declareAllergens(codes: readonly string[]): void {
+    this.allergenValues = distinctCodes(codes);
+  }
+
   snapshot(): IngredientSnapshot {
     return {
       id: this.identity,
@@ -114,6 +153,28 @@ export class IngredientAggregate {
       description: this.descriptionValue,
       origin: this.originValue,
       appellationId: this.appellationValue,
+      allergens: this.allergenValues,
     };
   }
+}
+
+/**
+ * L'ensemble canonique : sans doublon, rangé par code.
+ *
+ * Rangé et non « dans l'ordre reçu », à l'inverse de ce qu'une fiche cite comme
+ * ingrédients : là-bas l'ordre est une décision éditoriale (« l'argument en
+ * premier »), ici il n'en est pas une.
+ */
+function distinctCodes(codes: readonly string[]): readonly string[] {
+  // Comparaison brute et non `localeCompare` : un code est une identité de
+  // stockage, pas un texte à ranger pour un lecteur — l'ordre doit être le même
+  // partout, quelle que soit la locale du processus.
+  const distinct = [...new Set(codes)];
+  distinct.sort((left, right) => {
+    if (left === right) {
+      return 0;
+    }
+    return left < right ? -1 : 1;
+  });
+  return distinct;
 }

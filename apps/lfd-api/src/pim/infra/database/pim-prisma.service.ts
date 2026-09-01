@@ -68,6 +68,7 @@ export abstract class PimPrismaService {
   abstract readonly productIngredient: PrismaService["productIngredient"];
   abstract readonly allergenCategory: PrismaService["allergenCategory"];
   abstract readonly allergenEntry: PrismaService["allergenEntry"];
+  abstract readonly ingredientAllergen: PrismaService["ingredientAllergen"];
 
   /**
    * Le lot atomique, **forme TABLEAU seulement**.

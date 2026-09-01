@@ -111,4 +111,54 @@ describe("IngredientAggregate", () => {
     ingredient.revise({ appellationId: null });
     expect(ingredient.snapshot().appellationId).toBeNull();
   });
+
+  describe("les allergènes qu'elle contient", () => {
+    it("ne prétend rien contenir tant que personne ne l'a dit", () => {
+      expect(IngredientAggregate.declare(base).snapshot().allergens).toEqual([]);
+    });
+
+    // Un ensemble, pas une suite : un code cité deux fois est une redite, et
+    // l'ordre de saisie n'est porteur de rien.
+    it("déduplique et range les codes reçus", () => {
+      const ingredient = IngredientAggregate.declare(base);
+
+      ingredient.declareAllergens(["SH", "AC", "SH", "BWD"]);
+
+      expect(ingredient.snapshot().allergens).toEqual(["AC", "BWD", "SH"]);
+    });
+
+    it("remplace la liste précédente plutôt que de la compléter", () => {
+      const ingredient = IngredientAggregate.declare(base);
+      ingredient.declareAllergens(["SH", "AC"]);
+
+      ingredient.declareAllergens(["UW"]);
+
+      expect(ingredient.snapshot().allergens).toEqual(["UW"]);
+    });
+
+    // Régler le nom d'une matière ne touche pas à ce qu'elle contient : les
+    // deux gestes sont deux sections de l'écran et deux faits au journal.
+    it("survit à une révision d'identité", () => {
+      const ingredient = IngredientAggregate.declare(base);
+      ingredient.declareAllergens(["SH"]);
+
+      ingredient.revise({ origin: "Savoie", appellationId: "app_1" });
+
+      expect(ingredient.snapshot().allergens).toEqual(["SH"]);
+    });
+
+    // Une base relue par un autre chemin (import, psql) peut rendre des
+    // doublons ou un ordre quelconque : l'ensemble canonique est un invariant
+    // de l'agrégat, pas une politesse de l'adaptateur.
+    it("range aussi ce qu'elle relit", () => {
+      const ingredient = IngredientAggregate.rehydrate({
+        ...base,
+        key: "praline",
+        origin: "Savoie",
+        allergens: ["SH", "AC", "SH"],
+      });
+
+      expect(ingredient.snapshot().allergens).toEqual(["AC", "SH"]);
+    });
+  });
 });
