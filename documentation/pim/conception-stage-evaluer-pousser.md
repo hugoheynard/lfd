@@ -351,6 +351,45 @@ Ce que ça donne, et qui manquait :
   (§3.5). Rien à déplacer.
 - Le refus est **cheap** : reprojeter coûte ce que coûte déjà un `dryRun`.
 
+⚠️ **Ce que le refus NE peut PAS dire, et ce qu'il promettait quand même**
+_(relevé par la contradiction d'architecture, traité le 2026-09-02)._
+
+Le message disait « rechargez l'aperçu **pour voir ce qui a bougé** ». Rien ne
+pouvait tenir cette promesse, et les deux moitiés du problème se lisent l'une
+contre l'autre :
+
+| Ce que l'empreinte couvre                                                     | Ce que l'aperçu affiche                                |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------ |
+| toute la projection — chaque champ de chaque déclinaison et de chaque famille | le nombre de candidats, les compteurs, les SKU écartés |
+| `position`, `weightGrams`, `allergenLabels`, `slug` de famille compris        | **aucun contenu** : ni nom, ni prix, ni taux           |
+
+Le cas courant est donc muet : un collègue corrige un prix pendant qu'on pousse,
+le nombre de candidats ne bouge pas, les écartés non plus, les compteurs non
+plus. On re-simule, on voit la carte **identique**, on renvoie, ça passe.
+
+🔴 **Le coût n'est pas le message, c'est le réflexe qu'il enseigne.**
+« Re-simuler puis renvoyer » est précisément le geste qui vide cette garde de son
+sens : on ne relit rien, on rafraîchit un jeton. Un refus qui prescrit un remède
+inapplicable enseigne le contournement.
+
+Le message dit désormais ce qui est vrai — le catalogue a changé, simulez à
+nouveau, vous enverrez alors l'état actuel — et ne prétend plus diagnostiquer.
+Un cas de test épingle la dérive invisible : un `weightGrams` corrigé fait
+basculer le haché en laissant `candidates` et `excluded` rigoureusement égaux.
+
+**Nommer les SKU qui ont bougé reste possible, et n'est pas décidé.** Il
+faudrait garder la projection relue pour la comparer à la courante — soit une
+empreinte par SKU stockée à la simulation (quelques kilo-octets), soit la
+projection renvoyée au front, qui la garderait en mémoire et ferait le diff
+lui-même sans rien persister.
+
+⚠️ **Et le raccourci qui vient à l'esprit est FAUX** : comparer les deux
+**ancres** à la place. Une ancre hache `RevisionItemInput`, pas la projection.
+Un libellé d'allergène reprojeté change la projection sans toucher l'ancre ; une
+`nutrition` corrigée fait l'inverse. Un diff d'ancres répondrait donc parfois
+« rien n'a changé » à un refus de dérive — une seconde promesse fausse à la
+place de celle qu'on vient de retirer.
+
 🔴 **L'ancre ne bouge pas.** La V2 voulait sortir `TakeCatalogRevisionCommand`
 du push pour en faire un bouton. C'est exactement ce que
 [`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md) §14 a

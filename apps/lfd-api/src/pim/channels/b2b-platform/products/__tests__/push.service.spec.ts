@@ -261,6 +261,74 @@ describe("l’empreinte relie la relecture à l’envoi", () => {
   });
 
   /**
+   * 🔴 **La dérive que l'aperçu ne montre pas** — et la raison pour laquelle le
+   * refus a cessé de promettre un diagnostic.
+   *
+   * L'empreinte couvre TOUTE la projection ; l'écran n'affiche que le nombre de
+   * candidats, les compteurs du rapport et les SKU écartés. Un `weightGrams`
+   * corrigé par un collègue pendant qu'on pousse fait donc basculer le haché
+   * sans changer une seule ligne de ce que l'opérateur voit.
+   *
+   * Le message disait « rechargez l'aperçu pour voir ce qui a bougé ». Ce cas
+   * est la preuve qu'il envoyait chercher l'introuvable — et que le réflexe
+   * enseigné, « re-simuler puis renvoyer », vide la garde de son sens.
+   */
+  it("refuse une dérive que l’aperçu ne peut PAS montrer", async () => {
+    const avant = await build(["prd_1"], [product()]);
+    const relu = await avant.service.push(true);
+
+    const lourd = product({
+      variants: [
+        {
+          id: "var_1",
+          sku: "VIE-001-1",
+          name: { fr: "Croissant" },
+          options: {},
+          isDefault: true,
+          isDiscontinued: false,
+          position: 0,
+          priceCents: 200,
+          // Le SEUL champ qui bouge, et il n'apparaît nulle part à l'écran.
+          weightGrams: 65,
+          allergens: null,
+          nutrition: null,
+        },
+      ],
+    });
+    const apres = await build(["prd_1"], [lourd]);
+
+    // Le push est bien refusé : la garde fait son travail.
+    await expect(apres.service.push(false, relu.fingerprint)).rejects.toBeInstanceOf(
+      ProjectionDriftError,
+    );
+
+    // Et pourtant, tout ce que l'écran sait afficher est IDENTIQUE.
+    const resimule = await apres.service.push(true);
+    expect(resimule.candidates).toBe(relu.candidates);
+    expect(resimule.excluded).toEqual(relu.excluded);
+  });
+
+  /**
+   * Le refus nomme le geste que le front impose déjà — re-simuler —, et ne
+   * prétend plus dire ce qui a bougé. Un message est lu par du personnel qui
+   * n'a pas le code sous les yeux : ce qu'il promet doit être atteignable.
+   */
+  it("dit de re-simuler, sans promettre de diagnostic", async () => {
+    const { service } = await build(["prd_1"], [product()]);
+
+    // Rattrapé par son TYPE plutôt que casté : une assertion de type rendrait le
+    // cas vert le jour où le refus change de nature.
+    const refus = await service
+      .push(false, "une-empreinte-d-avant")
+      .then(() => null)
+      .catch((error: unknown) => (error instanceof ProjectionDriftError ? error : null));
+
+    expect(refus).not.toBeNull();
+    expect(refus?.message).toContain("Simulez à nouveau");
+    expect(refus?.message).not.toContain("ce qui a bougé");
+  });
+
+  /**
    * Une simulation ne consomme pas l'empreinte : c'est ELLE qui la produit.
    * Refuser un dry-run parce que l'état a changé reviendrait à refuser de
    * montrer l'état actuel — précisément ce qu'on vient chercher.
