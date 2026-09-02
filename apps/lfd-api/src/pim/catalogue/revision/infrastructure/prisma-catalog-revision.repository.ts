@@ -9,12 +9,26 @@ import {
   type RevisionPublication,
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
+import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
 import type { RevisionIndex } from "../domain/diff.js";
 import { toJsonObject, type JsonObject } from "../domain/fingerprint.js";
 import type { Revision } from "../domain/revision.js";
 
 /** Le préfixe des révisions — `P` aux produits, `C` aux sociétés, `R` ici. */
 const REVISION_PREFIX = "R";
+
+/**
+ * Violation d'unicité Prisma (`P2002`) — **duck-typée**, sans importer les
+ * classes du client.
+ *
+ * Le motif est celui du dépôt (`prisma-appointment.repository.ts`,
+ * `customer-principal.resolver.ts`) : importer `PrismaClientKnownRequestError`
+ * ferait entrer une classe du client dans le seul fichier qui a le droit de la
+ * connaître, pour y gagner un `instanceof` que la forme donne déjà.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && Reflect.get(error, "code") === "P2002";
+}
 
 @Injectable()
 export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
@@ -62,17 +76,15 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
   }
 
   /**
-   * `findFirst` et non `findUnique` : `hash` n'est pas encore `@unique` en base
-   * — le resserrement demande un comptage des doublons en production avant
-   * d'être posé (§9, point 3 du document de conception).
-   *
-   * D'où le tri **ascendant** : quand plusieurs ancres partagent l'empreinte,
-   * c'est la PREMIÈRE qui fait foi. Une ancre est un contenu, pas un moment.
+   * `findUnique` : l'empreinte est l'**identité** de l'ancre depuis que la base
+   * la tient (`catalog_revision_hash_key`). Il ne peut y en avoir qu'une, donc
+   * il n'y a plus de tri à choisir — et le choix qu'il fallait faire quand la
+   * colonne n'était pas unique (la plus ANCIENNE fait foi) est devenu sans objet
+   * plutôt que d'être devenu tacite.
    */
   async byHash(hash: string): Promise<RevisionRecord | null> {
-    const row = await this.prisma.catalogRevision.findFirst({
+    const row = await this.prisma.catalogRevision.findUnique({
       where: { hash },
-      orderBy: { takenAt: "asc" },
       include: { _count: { select: { items: true } } },
     });
     return row === null ? null : toRecord(row);
@@ -180,17 +192,29 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
       data: revision.items.map((item) => ({ hash: item.hash, payload: item.payload })),
       skipDuplicates: true,
     });
-    await this.prisma.catalogRevision.create({
-      data: {
-        id,
-        reference,
-        label: record.label,
-        hash: record.hash,
-        header: { ...revision.header },
-        takenAt: record.takenAt,
-        takenBy: record.takenBy,
-      },
-    });
+    // La violation d'unicité est TRADUITE ici, et nulle part ailleurs : le
+    // handler ne peut pas lire un code d'erreur de la base sans savoir quelle
+    // base il a en face. Ce refus n'arrive qu'à la course — deux pushs
+    // simultanés qui écrivent la même empreinte —, et l'appelant a alors une
+    // suite honnête : rattraper l'ancre du gagnant.
+    await this.prisma.catalogRevision
+      .create({
+        data: {
+          id,
+          reference,
+          label: record.label,
+          hash: record.hash,
+          header: { ...revision.header },
+          takenAt: record.takenAt,
+          takenBy: record.takenBy,
+        },
+      })
+      .catch((error: unknown) => {
+        if (isUniqueViolation(error)) {
+          throw new RevisionHashAlreadyTakenError(record.hash);
+        }
+        throw error;
+      });
     await this.prisma.catalogRevisionItem.createMany({
       data: revision.items.map((item) => ({
         revisionId: id,

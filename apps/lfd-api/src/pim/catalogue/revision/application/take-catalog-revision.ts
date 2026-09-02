@@ -6,6 +6,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { buildRevision } from "../domain/revision.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
@@ -35,13 +36,16 @@ export class TakeCatalogRevisionCommand {
  * Un LIBELLÉ ne suffit pas à justifier une nouvelle ancre : nommer différemment
  * un catalogue identique ne le rend pas différent.
  *
- * ⚠️ **Ce que la garde ne tient PAS**, et il faut le dire : deux pushs
- * simultanés lisent tous deux « rien », calculent la même empreinte, et écrivent
- * tous deux. La lecture est hors transaction, et `catalog_revision.hash` n'est
- * pas encore `@unique` — le resserrement demande un comptage des doublons en
- * production avant d'être posé (§9, point 3 du document de conception). Tant
- * qu'il n'est pas là, cette garde est la seule ligne de défense, alors qu'elle
- * devrait n'être qu'une optimisation qui évite un aller-retour.
+ * ⚠️ **Cette garde ne peut pas gagner la course, et elle n'a plus à la gagner.**
+ * Deux pushs simultanés lisent tous deux « rien », calculent la même empreinte
+ * et écrivent tous deux : la lecture est hors transaction, aucune rédaction
+ * applicative n'y changerait quoi que ce soit. C'est `catalog_revision.hash`
+ * en `@unique` qui ferme la course — la base refuse, et celui qui perd
+ * **rattrape l'ancre du gagnant** au lieu de tomber. Il voulait cette ancre-là ;
+ * elle existe ; il l'a.
+ *
+ * La garde redevient donc ce qu'elle aurait toujours dû être : une optimisation
+ * qui évite un aller-retour, pas une ligne de défense.
  *
  * ## Un push échoué ne laisse plus de déchet
  *
@@ -95,7 +99,37 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
     // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
     // non, l'historique affirmerait une révision que la base ne porte pas.
-    const posed = await this.uow.run(async () => {
+    const posed = await this.pose(command.label, revision, takenAt, takenBy).catch(
+      async (error: unknown) => {
+        // Course perdue : un autre push vient de poser exactement cette ancre.
+        // On la rattrape plutôt que de rendre une erreur pour un résultat qui
+        // est déjà là.
+        if (!(error instanceof RevisionHashAlreadyTakenError)) {
+          throw error;
+        }
+        const winner = await this.revisions.byHash(revision.hash);
+        if (winner === null) {
+          throw error;
+        }
+        return { id: winner.id, reference: winner.reference, adopted: true as const };
+      },
+    );
+    return {
+      id: posed.id,
+      reference: posed.reference,
+      hash: revision.hash,
+      created: !("adopted" in posed),
+    };
+  }
+
+  /** La trace et l'ancre, dans la même transaction. */
+  private async pose(
+    label: string | null,
+    revision: ReturnType<typeof buildRevision>,
+    takenAt: Date,
+    takenBy: string,
+  ): Promise<{ readonly id: string; readonly reference: string }> {
+    return this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.catalogRevisionTaken,
         subjectType: "catalog_revision",
@@ -104,16 +138,15 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         // l'écriture par construction. L'empreinte désigne la même chose et ne
         // dépend de personne.
         subjectId: revision.hash,
-        payload: { hash: revision.hash, label: command.label },
+        payload: { hash: revision.hash, label },
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });
       return this.revisions.save(
-        { label: command.label, hash: revision.hash, takenAt, takenBy },
+        { label, hash: revision.hash, takenAt, takenBy },
         revision,
         ticket,
       );
     });
-    return { ...posed, hash: revision.hash, created: true };
   }
 }

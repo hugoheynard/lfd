@@ -766,6 +766,40 @@ describe("l'ancre de référence : publiée, pas posée", () => {
    * qu'un envoi échoué — une ancre, aucune publication — sans avoir à faire
    * tomber le pilote.
    */
+  /**
+   * 🔴 **C'est la BASE qui refuse**, et c'est le seul niveau où ça se prouve.
+   *
+   * La garde applicative lit hors transaction : deux pushs simultanés la passent
+   * tous les deux. Aucune rédaction du handler n'y changerait quoi que ce soit —
+   * seule la contrainte ferme la course.
+   *
+   * L'insertion est faite en Prisma direct, à dessein : passer par le domaine
+   * éprouverait la garde, pas l'index. C'est le même geste que pour l'unicité de
+   * l'arrivée en attente, et pour la même raison.
+   */
+  it("refuse en BASE une seconde ancre de même empreinte", async () => {
+    await aDeliverableProduct();
+    await pushLive();
+    await ctx.drain();
+    const posee = await ctx.prisma.catalogRevision.findFirstOrThrow();
+
+    await expect(
+      ctx.prisma.catalogRevision.create({
+        data: {
+          id: "rev_jumelle",
+          reference: "R-JUMELL",
+          label: null,
+          hash: posee.hash,
+          header: {},
+          takenAt: new Date(posee.takenAt.getTime() + 1_000),
+          takenBy: "staff_e2e",
+        },
+      }),
+    ).rejects.toThrow();
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
+  });
+
   it("adopte l'ancre orpheline au lieu d'en poser une seconde", async () => {
     await aDeliverableProduct();
     const orpheline = await take();

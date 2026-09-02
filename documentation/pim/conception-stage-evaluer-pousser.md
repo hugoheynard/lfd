@@ -1281,11 +1281,17 @@ n'est pas une décision d'implémentation : fusionner détruit la référence
 citer dans une conversation cesserait de résoudre. Ses publications, elles, se
 reportent sans perte sur l'ancre gardée.
 
-🔴 **La tranche 8 a livré les deux autres pièces sans celle-ci** (2026-09-02), et
-c'est sûr : `byHash()` empêche déjà tout doublon par le chemin normal. Ce qui
-reste ouvert est la **course** entre deux pushs simultanés — exactement l'état
-d'avant, ni pire ni meilleur. La garde applicative est donc pour l'instant la
-seule ligne de défense, là où elle devrait n'être qu'une optimisation.
+✅ **Posé le 2026-09-02**, et le comptage a été gratuit : **aucune ancre en
+production** — la publication du catalogue n'y a pas encore tourné — et quatre
+ancres pour quatre empreintes en développement. C'est le calendrier qui rend ce
+resserrement sans risque, pas la nature du code : le même geste sur une table
+déjà remplie aurait demandé la décision ci-dessus.
+
+⚠️ **Et le refus a une suite, sinon il coûte un push.** Sans rattrapage, celui
+qui perd la course reçoit une violation d'unicité pour une ancre qui existe et
+qu'il voulait. L'adaptateur traduit donc le `P2002` en
+`RevisionHashAlreadyTakenError`, et le handler **relit par empreinte** pour
+rendre l'ancre du gagnant. La course cesse d'avoir une issue visible.
 
 🔴 **Le point 7 est le seul dont la BASCULE peut casser du comportement.**
 Marquer au lieu de supprimer n'est additif que dans le schéma : dès que
@@ -1430,15 +1436,15 @@ après un retour en arrière, `lastPublished()` seul laisse un doublon au retry
 d'un push échoué. Livrer l'une **de ces deux-là** sans l'autre est pire que ne
 rien livrer.
 
-✅ **Livré le 2026-09-02 : `byHash()` + `lastPublished()`.** Les deux ensemble,
-donc les deux garanties tenues — l'aller-retour rend l'ancre d'origine, et
-l'ancre orpheline d'un push échoué est adoptée au retry.
+✅ **Livrée entière le 2026-09-02.** `byHash()` + `lastPublished()` d'abord —
+l'aller-retour rend l'ancre d'origine, et l'ancre orpheline d'un push échoué est
+adoptée au retry. Puis `hash @unique`, une fois le comptage fait : la table est
+**vide en production**, donc le resserrement ne pouvait rien renverser (§9,
+point 3).
 
-⏸️ **`hash @unique` attend un comptage en production** (§9, point 3). Ce n'est
-pas un découpage de confort : `byHash()` referme déjà tous les chemins normaux,
-et la contrainte ne couvre plus que la course entre deux pushs simultanés. La
-poser sans compter ferait **tomber un déploiement** sur une table servie, et les
-doublons y sont probables — c'est la garde d'avant qui les fabriquait.
+L'ordre n'était pas un découpage de confort. `byHash()` referme tous les chemins
+normaux ; la contrainte ne couvre que la course entre deux pushs simultanés, et
+la poser sans compter aurait fait tomber un déploiement sur une table servie.
 
 ⚠️ **Les tranches 8 et 9 ne dépendent de rien et ne servent pas ce chantier.**
 Elles sont là parce que la revue du §11 les a mises au jour : l'une ferme une
@@ -2230,14 +2236,14 @@ de décision — les treize questions du §11 sont tranchées. Ce qui suit atten
 désormais son numéro de tranche, parce qu'une décision sans accroche dans le §10
 est une décision qu'on redécouvre en production :
 
-| Ce qui reste                                       | Décidé au   | Où ça vit, et pourquoi c'est à part                |
-| -------------------------------------------------- | ----------- | -------------------------------------------------- |
-| Le retrait non destructif                          | §11.1       | **tranche 10** — précondition du GESTE de rollback |
-| Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
-| Le port de retour et la frise                      | §6.3        | **tranche 7** — indépendante, le miroir suffit     |
-| `hash` en `@unique` — les deux autres sont livrées | §4.3, §11.7 | tranche 8 ; attend un comptage en production (§9)  |
-| Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier                |
-| L'écran de santé, et le workflow d'ops qui migre   | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |
+| Ce qui reste                                           | Décidé au   | Où ça vit, et pourquoi c'est à part                |
+| ------------------------------------------------------ | ----------- | -------------------------------------------------- |
+| Le retrait non destructif                              | §11.1       | **tranche 10** — précondition du GESTE de rollback |
+| Le compte d'abonnements affiché                        | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
+| Le port de retour et la frise                          | §6.3        | **tranche 7** — indépendante, le miroir suffit     |
+| ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02         |
+| Les allergènes figés sur `OrderLine`                   | §11.10      | tranche 9, antérieure à ce chantier                |
+| L'écran de santé, et le workflow d'ops qui migre       | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |
 
 ---
 

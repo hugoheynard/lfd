@@ -3787,7 +3787,20 @@ model CatalogRevision {
   reference String  @unique
   /// Le nom que quelqu'un lui donne ("catalogue de la rentrée"). `NULL` = pas nommée.
   label     String?
-  hash      String
+
+  /// L'empreinte du catalogue figé — et l'IDENTITÉ de l'ancre.
+  ///
+  /// `@unique` parce qu'une ancre répond à « le catalogue **était** ceci » :
+  /// c'est un contenu, pas un moment. Deux lignes de même empreinte seraient
+  /// deux réponses identiques à la même question, que rien ne distinguerait —
+  /// et le « quand » est de toute façon porté par les publications, qui ont
+  /// chacune leur date.
+  ///
+  /// Ce que la contrainte ferme, et que le code seul ne fermait pas : deux pushs
+  /// simultanés lisent tous deux « cette ancre n'existe pas », calculent la même
+  /// empreinte et écrivent tous deux. La garde applicative lit hors transaction ;
+  /// elle ne peut pas gagner cette course, et elle n'a plus à la gagner.
+  hash String @unique
 
   /// Ce qui change tout sans qu'aucune ligne d'article ne bouge — le rapport
   /// prix pro / prix public. Sans lui, une remise passée de 10 % à 12 % ne se
