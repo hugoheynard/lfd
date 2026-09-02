@@ -60,7 +60,14 @@ import { join, relative } from "node:path";
 const ROOT = process.cwd();
 
 /** Les contrôleurs dont la dette est purgée. En ajouter un = l'avoir drainé. */
-const SCOPE = ["apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts"];
+const SCOPE = [
+  "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
+  // Drainé le 2026-09-02 : il injectait `B2bCatalogPushService` en direct, que
+  // le suffixe de port ne voyait pas. Le geste passe désormais par
+  // `PushB2bCatalogCommand`. Il entre ici pour que le retour en arrière échoue,
+  // faute de quoi le nettoyage ne tient qu'à la mémoire de celui qui l'a fait.
+  "apps/lfd-api/src/pim/channels/b2b-platform/products/push.controller.ts",
+];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */
 const WATCHED = ["apps/lfd-api/src"];
@@ -70,6 +77,22 @@ const ALLOWED = new Set(["CommandBus", "QueryBus"]);
 
 /** Les classes de service qu'on refuse sans qu'elles soient des ports. */
 const FORBIDDEN_SUFFIX = /PrismaService$/;
+
+/**
+ * Le suffixe de service, refusé **dans le SCOPE seulement**.
+ *
+ * La justification ci-dessus tient toujours pour le reste du dépôt : refuser
+ * tout `*Service` partout ferait rougir une vingtaine de contrôleurs d'un coup,
+ * et une porte qui rougit partout se fait désactiver. Mais un fichier DRAINÉ a
+ * déjà payé ce prix — l'y autoriser rendait le drainage réversible sans bruit.
+ *
+ * Vérifié le 2026-09-02 : avant cette ligne, remettre
+ * `constructor(private readonly pushService: B2bCatalogPushService)` dans un
+ * contrôleur du SCOPE laissait la porte **verte**. Un scope qui ne protège pas
+ * ce qu'il a drainé est une fausse assurance — pire qu'une porte étroite
+ * assumée.
+ */
+const SERVICE_SUFFIX = /Service$/;
 
 /** Une classe abstraite exportée : `export abstract class VatRateRepository`. */
 const ABSTRACT_CLASS = /^export abstract class ([A-Za-z0-9_$]+)/gm;
@@ -117,7 +140,7 @@ function withoutComments(source) {
     .replace(/(^|[^:])\/\/[^\n]*/g, (m, lead) => lead + blank(m.slice(lead.length)));
 }
 
-function findingsIn(file, ports) {
+function findingsIn(file, ports, strict = false) {
   const source = withoutComments(readFileSync(file, "utf8"));
   if (!source.includes("@Controller(")) {
     return [];
@@ -126,7 +149,8 @@ function findingsIn(file, ports) {
   for (const constructor of source.matchAll(CONSTRUCTOR)) {
     for (const annotation of constructor[1].matchAll(ANNOTATION)) {
       const type = annotation[1];
-      const forbidden = ports.has(type) || FORBIDDEN_SUFFIX.test(type);
+      const forbidden =
+        ports.has(type) || FORBIDDEN_SUFFIX.test(type) || (strict && SERVICE_SUFFIX.test(type));
       if (ALLOWED.has(type) || !forbidden) {
         continue;
       }
@@ -192,13 +216,14 @@ const PORTS = portNames(WATCHED);
 let failures = 0;
 for (const entry of SCOPE) {
   for (const file of drainedFiles(entry)) {
-    for (const [line, type] of findingsIn(file, PORTS)) {
+    for (const [line, type] of findingsIn(file, PORTS, true)) {
       if (failures === 0) {
         console.error("\n✗ controller-buses\n");
       }
       failures += 1;
       console.error(
-        `  ${relative(ROOT, file)}:${line}  injecte ${type} — la lecture doit passer par le QueryBus`,
+        `  ${relative(ROOT, file)}:${line}  injecte ${type} — un contrôleur n'injecte que ` +
+          `CommandBus et QueryBus (lecture : QueryBus ; écriture : CommandBus)`,
       );
     }
   }
