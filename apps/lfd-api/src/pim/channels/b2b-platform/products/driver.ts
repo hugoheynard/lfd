@@ -17,9 +17,30 @@ import type { CatalogIngestionReport, CatalogSnapshot } from "@lfd/catalog-sync"
  * rien, et l'envoi réel. Le service de push choisit ; il ne sait pas lequel il
  * tient, et c'est ce qui rend le chemin testable de bout en bout.
  */
+/** Ce que le référentiel dit de la livraison qu'il envoie. */
+export interface CatalogDeliveryOrigin {
+  /** L'ancre posée par ce push — opaque pour la plateforme, jamais une clé étrangère. */
+  readonly revisionId: string;
+  /** L'empreinte de la projection livrée, celle que le push vient d'exiger. */
+  readonly fingerprint: string;
+}
+
 export abstract class B2bCatalogDriver {
   abstract readonly mode: "dry-run" | "live";
-  abstract send(snapshot: CatalogSnapshot): Promise<CatalogIngestionReport>;
+  /**
+   * @param origin d'où vient ce snapshot, côté référentiel.
+   *
+   * Les deux **voyagent** plutôt que d'être retrouvés de l'autre côté, et ce
+   * n'est pas une commodité. L'ancre, la plateforme ne peut pas la lire : ce
+   * serait franchir la frontière vers les tables du référentiel. L'empreinte,
+   * elle, pourrait être recalculée — mais une empreinte recalculée est une
+   * AUTRE empreinte : elle dirait ce que le catalogue est devenu, là où on veut
+   * savoir ce qui a été relu.
+   */
+  abstract send(
+    snapshot: CatalogSnapshot,
+    origin: CatalogDeliveryOrigin,
+  ): Promise<CatalogIngestionReport>;
 }
 
 /**
@@ -36,6 +57,8 @@ export class DryRunB2bCatalogDriver extends B2bCatalogDriver {
 
   send(snapshot: CatalogSnapshot): Promise<CatalogIngestionReport> {
     return Promise.resolve({
+      // Une simulation n'entre nulle part : ni faits de vente, ni réception.
+      status: "applied" as const,
       acceptedProducts: snapshot.products.length,
       acceptedVariants: snapshot.products.reduce(
         (total, product) => total + product.variants.length,

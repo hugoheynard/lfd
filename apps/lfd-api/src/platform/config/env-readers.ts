@@ -435,3 +435,23 @@ export function optionalAnalyticsConfig(): AnalyticsConfig | null {
 export function optionalPublicationEnabled(): boolean {
   return process.env["PIM_PUBLICATION_ENABLED"]?.trim().toLowerCase() === "true";
 }
+
+/**
+ * La livraison du PIM entre-t-elle dans une **boîte de réception** plutôt que
+ * dans les faits de vente ?
+ *
+ * **Fermé par défaut**, et le sens du défaut est le sujet : ouvrir la réception
+ * sans écran pour la valider gèlerait le catalogue B2B sur son état courant,
+ * silencieusement. Un déploiement qui a oublié de se prononcer doit continuer de
+ * faire ce qu'il faisait.
+ *
+ * ⚠️ Le retour arrière coûte un **déploiement**, pas un clic : `AppConfig` lit
+ * l'environnement dans son constructeur, et changer une variable Cloudflare
+ * redémarre le container. Ce qui le rend propre malgré ce délai, c'est que la
+ * table d'arrivées n'a AUCUN lecteur en mode direct — revenir en arrière ne
+ * demande rien d'autre que de redéployer, et les lignes en attente deviennent
+ * inertes.
+ */
+export function optionalDeliveryInboxEnabled(): boolean {
+  return process.env["B2B_DELIVERY_INBOX"]?.trim().toLowerCase() === "true";
+}

@@ -84,7 +84,10 @@ function snapshot(priceMillicents: number): CatalogSnapshot {
  * part sur le fil en millicentimes, l'unité des prix unitaires.
  */
 function push(cents: number) {
-  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents)));
+  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents)), {
+    revisionId: "rev_e2e",
+    fingerprint: "empreinte-e2e",
+  });
 }
 
 /** Le staff appelle avec un jeton quelconque : le verifier est doublé. */

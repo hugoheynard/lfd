@@ -123,13 +123,15 @@ export class B2bCatalogPushService {
       new TakeCatalogRevisionCommand(null),
     );
 
-    const report = await driver.send(snapshot).catch(async (error: unknown) => {
-      // L'échec s'inscrit AUSSI. Une trace qui n'existe qu'en cas de succès ne
-      // raconte que les bons jours, et c'est le mauvais jour qu'on vient
-      // relire.
-      await this.recordPublication(revision.id, driver.mode, "failed", null);
-      throw error;
-    });
+    const report = await driver
+      .send(snapshot, { revisionId: revision.id, fingerprint })
+      .catch(async (error: unknown) => {
+        // L'échec s'inscrit AUSSI. Une trace qui n'existe qu'en cas de succès ne
+        // raconte que les bons jours, et c'est le mauvais jour qu'on vient
+        // relire.
+        await this.recordPublication(revision.id, driver.mode, "failed", null);
+        throw error;
+      });
 
     if (driver.mode === "live") {
       await this.stamp(snapshot.products.map((product) => product.id));

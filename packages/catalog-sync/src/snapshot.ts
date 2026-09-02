@@ -228,5 +228,22 @@ export const catalogIngestionReportSchema = z.object({
    */
   removedSkus: z.array(z.string().min(1)),
   appliedAt: z.string().datetime({ offset: true }),
+  /**
+   * Ce que la destination a **fait** du snapshot.
+   *
+   * `applied` : les faits de vente sont écrits, le client voit le nouveau
+   * catalogue. `queued` : la livraison est reçue et **attend une validation
+   * humaine** — rien n'est en vente, et les compteurs disent ce qui est ARRIVÉ,
+   * pas ce qui est parti au client.
+   *
+   * ⚠️ Sans ce champ, un émetteur ne peut pas distinguer les deux : il lirait
+   * « 92 acceptés, aucun retrait » et conclurait que le catalogue est en ligne,
+   * alors que des retraits attendent précisément d'être relus. Le compteur est
+   * exact dans les deux cas ; c'est son SENS qui change.
+   *
+   * Défaut `applied` : le contrat est servi, et une destination qui ne connaît
+   * pas encore la réception applique, comme avant.
+   */
+  status: z.enum(["applied", "queued"]).default("applied"),
 });
 export type CatalogIngestionReport = z.infer<typeof catalogIngestionReportSchema>;

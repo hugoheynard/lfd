@@ -208,6 +208,16 @@ jobs:
           # l'on SAISIT le catalogue n'est pas celui où on l'envoie. La poser à
           # `true` dans les Variables du dépôt l'ouvre, sans toucher au code.
           PIM_PUBLICATION_ENABLED: ${{ vars.PIM_PUBLICATION_ENABLED }}
+          # La livraison du référentiel entre-t-elle dans une BOÎTE DE RÉCEPTION
+          # plutôt que dans les faits de vente ? Fermée par défaut : sans cette
+          # Variable, un push met en vente comme il l'a toujours fait.
+          #
+          # ⚠️ Elle est lue au DÉMARRAGE — `AppConfig` lit l'environnement dans
+          # son constructeur. L'ouvrir comme la refermer coûte un redéploiement,
+          # pas un clic. Ne l'ouvrir qu'une fois l'écran de validation en ligne :
+          # ouverte sans lui, le catalogue B2B se fige sur son état courant, en
+          # silence.
+          B2B_DELIVERY_INBOX: ${{ vars.B2B_DELIVERY_INBOX }}
         run: |
           for name in DATABASE_LFD_URL \
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
@@ -225,7 +235,7 @@ jobs:
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
-                      PIM_PUBLICATION_ENABLED; do
+                      PIM_PUBLICATION_ENABLED B2B_DELIVERY_INBOX; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"

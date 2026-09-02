@@ -11,6 +11,7 @@ import {
   optionalManagementCredentials,
   optionalPort,
   optionalPublicationEnabled,
+  optionalDeliveryInboxEnabled,
   optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
@@ -59,6 +60,7 @@ export type { ShopifyOAuthCredentials };
 export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
   private readonly publicationValue: boolean;
+  private readonly deliveryInboxValue: boolean;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
@@ -105,6 +107,7 @@ export class AppConfig implements ShopifyCredentialsSource {
     );
     this.adminBypass = optionalAdminDevBypass();
     this.publicationValue = optionalPublicationEnabled();
+    this.deliveryInboxValue = optionalDeliveryInboxEnabled();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.shopifyTokenValue = optionalString("SHOPIFY_ADMIN_TOKEN");
@@ -337,6 +340,22 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   publicationEnabled(): boolean {
     return this.publicationValue;
+  }
+
+  /**
+   * La livraison du PIM entre-t-elle dans la **boîte de réception** ?
+   *
+   * Ouvert, un push du référentiel ne met plus rien en vente : il dépose une
+   * arrivée que la plateforme valide ensuite, avec ses droits et ses règles.
+   * Fermé — le défaut — l'ingestion écrit les faits de vente en direct, comme
+   * avant.
+   *
+   * ⚠️ **Un seul chemin actif à la fois**, choisi au démarrage. C'est ce qui
+   * rend la bascule lisible : il n'existe jamais un catalogue à moitié validé
+   * parce que deux chemins auraient tourné en parallèle.
+   */
+  deliveryInboxEnabled(): boolean {
+    return this.deliveryInboxValue;
   }
 
   /**

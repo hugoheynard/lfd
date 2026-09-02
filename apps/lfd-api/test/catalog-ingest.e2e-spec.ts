@@ -94,7 +94,13 @@ function snapshot(
 }
 
 function push(body: CatalogSnapshot) {
-  return ctx.app.get(B2bCatalogDriver).send(body);
+  // L'origine voyage avec le snapshot depuis que la plateforme peut le RECEVOIR
+  // au lieu de l'appliquer : elle a besoin de l'ancre et de l'empreinte, qu'elle
+  // ne peut pas aller lire chez le référentiel.
+  return ctx.app.get(B2bCatalogDriver).send(body, {
+    revisionId: "rev_e2e",
+    fingerprint: "empreinte-e2e",
+  });
 }
 
 describe("le fil catalogue, côté plateforme", () => {

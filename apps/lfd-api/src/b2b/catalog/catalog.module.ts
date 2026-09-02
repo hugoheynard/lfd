@@ -83,6 +83,11 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
     CanonicalPriceHistoryReader,
     IngestCatalogService,
     CheckCatalogParityService,
+    // Exporté pour la racine de composition : c'est elle qui relie le driver du
+    // canal, et celui-ci dépose désormais une arrivée quand la réception est
+    // ouverte. Sans cet export, le module de composition ne peut pas construire
+    // le driver — et l'échec est un refus de démarrage, pas une panne discrète.
+    CatalogDeliveryRepository,
   ],
 })
 export class CatalogModule {}
