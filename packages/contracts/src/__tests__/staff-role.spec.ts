@@ -34,8 +34,8 @@ describe("le sommet", () => {
     // Sinon quelqu'un qui tient `staff:write` retire `staff:write` au sommet et
     // verrouille tout le monde dehors.
     const denied = resolveRolePermissions(SUPER_ADMIN_ROLE_KEY, {}, [
-      { resource: "staff", action: "write", effect: "deny" },
-      { resource: "staff", action: "read", effect: "deny" },
+      { resource: "staff_access", action: "write", effect: "deny" },
+      { resource: "staff_access", action: "read", effect: "deny" },
     ]);
     expect(denied).toEqual(ALL_STAFF_PERMISSIONS);
   });
@@ -57,11 +57,11 @@ describe("un rôle défini", () => {
   });
 
   it("subit les dérogations, lui", () => {
-    const grants = toRoleGrants([{ resource: "orders", action: "write" }]);
+    const grants = toRoleGrants([{ resource: "b2b_orders", action: "write" }]);
     const effective = resolveRolePermissions("fournil", grants, [
-      { resource: "orders", action: "write", effect: "deny" },
+      { resource: "b2b_orders", action: "write", effect: "deny" },
     ]);
-    expect(effective).toEqual(["orders:read"]);
+    expect(effective).toEqual(["b2b_orders:read"]);
   });
 });
 
@@ -96,16 +96,16 @@ describe("la clé", () => {
 describe("les droits", () => {
   it("refusent deux niveaux sur la même ressource", () => {
     const twice = [
-      { resource: "orders", action: "read" },
-      { resource: "orders", action: "write" },
+      { resource: "b2b_orders", action: "read" },
+      { resource: "b2b_orders", action: "write" },
     ];
     expect(roleGrantsSchema.safeParse(twice).success).toBe(false);
   });
 
   it("font l'aller-retour entre la forme transportée et la forme résolue", () => {
     const grants = [
-      { resource: "companies", action: "read" },
-      { resource: "orders", action: "write" },
+      { resource: "b2b_companies", action: "read" },
+      { resource: "b2b_orders", action: "write" },
     ] as const;
     expect(fromRoleGrants(toRoleGrants(grants))).toEqual([...grants]);
   });

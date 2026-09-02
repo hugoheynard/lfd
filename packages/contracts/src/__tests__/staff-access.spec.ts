@@ -19,26 +19,26 @@ describe("resolveStaffPermissions — le rôle seul", () => {
   });
 
   it("traîne la lecture avec l'écriture", () => {
-    // `commercial` n'a que `companies: "write"` dans la matrice ; la lecture
+    // `commercial` n'a que `b2b_companies: "write"` dans la matrice ; la lecture
     // n'est écrite nulle part et doit pourtant être là.
     const permissions = resolveStaffPermissions("commercial");
 
-    expect(hasStaffPermission(permissions, "companies:write")).toBe(true);
-    expect(hasStaffPermission(permissions, "companies:read")).toBe(true);
+    expect(hasStaffPermission(permissions, "b2b_companies:write")).toBe(true);
+    expect(hasStaffPermission(permissions, "b2b_companies:read")).toBe(true);
   });
 
   it("n'accorde pas l'écriture pour une lecture", () => {
     const permissions = resolveStaffPermissions("comptabilite");
 
-    expect(hasStaffPermission(permissions, "companies:read")).toBe(true);
-    expect(hasStaffPermission(permissions, "companies:write")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_companies:read")).toBe(true);
+    expect(hasStaffPermission(permissions, "b2b_companies:write")).toBe(false);
   });
 
   it("ne laisse l'annuaire staff qu'à l'administrateur", () => {
     // Accorder des droits est le seul geste qui permet de s'en accorder :
-    // un 2e rôle sur `staff` serait un 2e admin qui n'ose pas dire son nom.
+    // un 2e rôle sur `staff_access` serait un 2e admin qui n'ose pas dire son nom.
     const holders = staffRoleSchema.options.filter((role) =>
-      hasStaffPermission(resolveStaffPermissions(role), "staff:write"),
+      hasStaffPermission(resolveStaffPermissions(role), "staff_access:write"),
     );
 
     expect(holders).toEqual(["admin"]);
@@ -49,21 +49,21 @@ describe("resolveStaffPermissions — le rôle seul", () => {
     // rôle apparaît ici, c'est qu'on a élargi par habitude : un taux de TVA
     // n'est pas un choix d'assortiment.
     const writers = staffRoleSchema.options.filter((role) =>
-      hasStaffPermission(resolveStaffPermissions(role), "tax:write"),
+      hasStaffPermission(resolveStaffPermissions(role), "pim_tax:write"),
     );
 
     expect(writers).toEqual(["admin", "comptabilite"]);
   });
 
-  it("ne retire la lecture des taux à personne en détachant `tax` de `catalog`", () => {
-    // Les régimes se lisaient sous `catalog:read`. La ressource change, pas
-    // l'audience — sinon le découpage coûte un accès à quelqu'un, en silence.
+  it("ne retire la lecture des taux à personne en détachant `pim_tax` de `pim_catalog`", () => {
+    // Les régimes se lisaient sous le droit du référentiel. La ressource change,
+    // pas l'audience — sinon le découpage coûte un accès à quelqu'un, en silence.
     const readers = staffRoleSchema.options.filter((role) =>
-      hasStaffPermission(resolveStaffPermissions(role), "catalog:read"),
+      hasStaffPermission(resolveStaffPermissions(role), "pim_catalog:read"),
     );
 
     for (const role of readers) {
-      expect(hasStaffPermission(resolveStaffPermissions(role), "tax:read")).toBe(true);
+      expect(hasStaffPermission(resolveStaffPermissions(role), "pim_tax:read")).toBe(true);
     }
   });
 
@@ -78,11 +78,15 @@ describe("resolveStaffPermissions — le rôle seul", () => {
   });
 
   it("garde le rôle technique hors des données clients", () => {
+    // ⚠️ La ressource `tech` a DISPARU au découpage par outil (2026-09-01) :
+    // aucune route ne la vérifiait, et un droit que personne ne lit est un droit
+    // qui ment. Ce que `dev` possède désormais est nommé — la santé de
+    // l'écosystème — et ce qu'il n'a pas l'est tout autant.
     const permissions = resolveStaffPermissions("dev");
 
-    expect(hasStaffPermission(permissions, "tech:write")).toBe(true);
-    expect(hasStaffPermission(permissions, "companies:read")).toBe(false);
-    expect(hasStaffPermission(permissions, "orders:read")).toBe(false);
+    expect(hasStaffPermission(permissions, "ops_health:read")).toBe(true);
+    expect(hasStaffPermission(permissions, "b2b_companies:read")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_orders:read")).toBe(false);
   });
 
   it("rend un ordre stable, quelle que soit la matrice", () => {
@@ -108,50 +112,51 @@ describe("resolveStaffPermissions — les dérogations", () => {
 
   it("ajoute ce que le rôle ne donne pas", () => {
     // « Marc est commercial MAIS il a aussi la main sur l'outillage. »
-    // `tech` et non `orders` : depuis que le commercial écrit les commandes, une
-    // dérogation dessus n'ajouterait rien — le test passerait sans rien prouver.
-    const permissions = resolveStaffPermissions("commercial", [allow("tech", "write")]);
+    // `ops_health` et non `b2b_orders` : depuis que le commercial écrit les
+    // commandes, une dérogation dessus n'ajouterait rien — le test passerait
+    // sans rien prouver.
+    const permissions = resolveStaffPermissions("commercial", [allow("ops_health", "write")]);
 
-    expect(hasStaffPermission(permissions, "tech:write")).toBe(true);
+    expect(hasStaffPermission(permissions, "ops_health:write")).toBe(true);
   });
 
   it("retire ce que le rôle donne", () => {
     // « Léa est commerciale SAUF qu'elle ne touche pas aux prospects. »
-    const permissions = resolveStaffPermissions("commercial", [deny("growth", "write")]);
+    const permissions = resolveStaffPermissions("commercial", [deny("b2b_growth", "write")]);
 
-    expect(hasStaffPermission(permissions, "growth:write")).toBe(false);
-    expect(hasStaffPermission(permissions, "growth:read")).toBe(true);
+    expect(hasStaffPermission(permissions, "b2b_growth:write")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_growth:read")).toBe(true);
   });
 
   it("refuse l'écriture quand elle refuse la lecture", () => {
     // La dualité de « écrire implique lire » : garder le droit de modifier une
     // page qu'on n'a pas le droit d'ouvrir n'a aucun sens.
-    const permissions = resolveStaffPermissions("commercial", [deny("companies", "read")]);
+    const permissions = resolveStaffPermissions("commercial", [deny("b2b_companies", "read")]);
 
-    expect(hasStaffPermission(permissions, "companies:read")).toBe(false);
-    expect(hasStaffPermission(permissions, "companies:write")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_companies:read")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_companies:write")).toBe(false);
   });
 
   it("fait gagner le refus, même contre une autorisation explicite", () => {
     const permissions = resolveStaffPermissions("support", [
-      allow("settings", "write"),
-      deny("settings", "write"),
+      allow("b2b_settings", "write"),
+      deny("b2b_settings", "write"),
     ]);
 
-    expect(hasStaffPermission(permissions, "settings:write")).toBe(false);
+    expect(hasStaffPermission(permissions, "b2b_settings:write")).toBe(false);
   });
 
   it("ne rend pas un administrateur amputable par mégarde", () => {
-    // Le domaine interdira la dérogation qui coupe `staff:write` à un admin ;
-    // la fonction pure, elle, l'applique. Ce test fige l'endroit où vit la
-    // règle — dans l'agrégat, pas ici.
-    const permissions = resolveStaffPermissions("admin", [deny("staff", "write")]);
+    // Le domaine interdira la dérogation qui coupe `staff_access:write` à un
+    // admin ; la fonction pure, elle, l'applique. Ce test fige l'endroit où vit
+    // la règle — dans l'agrégat, pas ici.
+    const permissions = resolveStaffPermissions("admin", [deny("staff_access", "write")]);
 
-    expect(hasStaffPermission(permissions, "staff:write")).toBe(false);
+    expect(hasStaffPermission(permissions, "staff_access:write")).toBe(false);
   });
 
   it("ignore une dérogation qui ne change rien", () => {
-    const withNoop = resolveStaffPermissions("comptabilite", [allow("orders", "read")]);
+    const withNoop = resolveStaffPermissions("comptabilite", [allow("b2b_orders", "read")]);
 
     expect(withNoop).toEqual(resolveStaffPermissions("comptabilite"));
   });
@@ -195,18 +200,18 @@ describe("dedupeStaffOverrides", () => {
   it("ne garde qu'une ligne par permission", () => {
     // La base ne peut en stocker qu'une (contrainte d'unicité) : si on n'arbitre
     // pas ici, on valide un état et on en écrit un autre.
-    expect(dedupeStaffOverrides([allow("orders"), deny("orders")])).toHaveLength(1);
+    expect(dedupeStaffOverrides([allow("b2b_orders"), deny("b2b_orders")])).toHaveLength(1);
   });
 
   it("fait gagner le refus, quel que soit l'ordre d'arrivée", () => {
-    expect(dedupeStaffOverrides([allow("orders"), deny("orders")])[0]?.effect).toBe("deny");
-    expect(dedupeStaffOverrides([deny("orders"), allow("orders")])[0]?.effect).toBe("deny");
+    expect(dedupeStaffOverrides([allow("b2b_orders"), deny("b2b_orders")])[0]?.effect).toBe("deny");
+    expect(dedupeStaffOverrides([deny("b2b_orders"), allow("b2b_orders")])[0]?.effect).toBe("deny");
   });
 
   it("donne le même effectif que la formule, sur la liste brute comme sur la réduite", () => {
     // C'est LA propriété qui compte : normaliser ne doit rien changer au
     // résultat, sinon on aurait déplacé le problème au lieu de le fermer.
-    const raw = [allow("orders"), deny("orders"), allow("growth")];
+    const raw = [allow("b2b_orders"), deny("b2b_orders"), allow("b2b_growth")];
 
     expect(resolveStaffPermissions("support", dedupeStaffOverrides(raw))).toEqual(
       resolveStaffPermissions("support", raw),
@@ -214,7 +219,7 @@ describe("dedupeStaffOverrides", () => {
   });
 
   it("laisse tranquilles des permissions distinctes", () => {
-    const distinct = [allow("orders"), allow("growth")];
+    const distinct = [allow("b2b_orders"), allow("b2b_growth")];
 
     expect(dedupeStaffOverrides(distinct)).toHaveLength(2);
   });
