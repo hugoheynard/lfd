@@ -86,6 +86,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
   // du paramétrage, pas une ressource à part.
   b2b: 'b2b_settings:read',
+  // La RÉCEPTION porte son propre droit, et pas celui de l'espace : valider ce
+  // qui entre en vente est le métier du commercial, régler la plateforme ne
+  // l'est pas. C'est la séparation que le découpage des droits par outil a
+  // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
+  'b2b/reception': 'b2b_catalog:read',
   'b2b/catalogue': null,
   'b2b/tarification': null,
   // La frise LIT la même chose que la grille, à d'autres dates : même mur.

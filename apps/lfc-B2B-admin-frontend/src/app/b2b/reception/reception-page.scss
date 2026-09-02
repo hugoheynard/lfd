@@ -1,0 +1,66 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.lead {
+  margin: 0 0 var(--fold-space-lg);
+  color: var(--fold-color-text-muted);
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0 0 var(--fold-space-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.change {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Un article écarté reste LISIBLE, seulement mis en retrait : le masquer ferait
+   perdre de vue ce qu'on a décidé de ne pas prendre. */
+.change--excluded {
+  opacity: 0.55;
+}
+
+.change__what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.change__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.change__sku {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.change__kind {
+  font-size: var(--fold-text-sm);
+}
+
+.change__fields {
+  color: var(--fold-color-text-muted);
+}
+
+/* Sous 768 px, la grille à trois colonnes écrase les libellés : on empile. */
+@media (max-width: 768px) {
+  .change {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--fold-space-xs);
+  }
+}

@@ -35,6 +35,14 @@ export const b2bRoutes: Routes = [
         ],
       },
       {
+        // LA BOÎTE DE RÉCEPTION — avant le catalogue dans la lecture comme dans
+        // le temps : ce qui attend d'être validé précède ce qui est en vente.
+        path: 'reception',
+        title: 'Réception du catalogue — LFC B2B admin',
+        canActivate: [permissionGuard('b2b_catalog:read')],
+        loadComponent: () => import('./reception/reception-page').then((m) => m.ReceptionPage),
+      },
+      {
         path: 'catalogue',
         title: 'Catalogue B2B — LFC B2B admin',
         loadComponent: () => import('./catalogue/catalogue-page').then((m) => m.CataloguePage),

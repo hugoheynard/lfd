@@ -1,0 +1,83 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la boîte de réception…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de lire la boîte de réception">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    @if (delivery(); as pending) {
+      <!--
+        L'ALERTE D'ABORD, et une seule. Une arrivée peut attendre indéfiniment
+        sans que rien ne casse — sauf une correction d'allergène qui dormirait.
+        C'est le seul motif qui presse, donc le seul qui s'affiche ainsi : une
+        bannière qui sonnerait pour un prix cesserait d'être lue avant celle-ci.
+      -->
+      @if (pending.carriesAllergenChange) {
+        <fold-callout variant="alert">
+          Cette livraison touche une <strong>déclaration d'allergènes</strong>. Rien n'est en vente
+          tant qu'elle n'est pas validée&nbsp;: relisez-la en priorité.
+        </fold-callout>
+      }
+
+      <fold-card>
+        <p class="lead">
+          Le référentiel a livré <strong>{{ pending.changes.length }}</strong> changement{{
+            pending.changes.length > 1 ? 's' : ''
+          }}. <strong>Rien n'est en vente</strong> tant que vous n'avez pas validé.
+        </p>
+
+        <ul class="changes">
+          @for (change of changes(); track change.sku) {
+            <li class="change" [class.change--excluded]="change.excluded">
+              <div class="change__what">
+                <span class="change__name">{{ change.name }}</span>
+                <span class="change__sku">{{ change.sku }}</span>
+              </div>
+              <div class="change__kind">
+                {{ change.kind }}
+                @if (change.fields) {
+                  <span class="change__fields">&nbsp;— {{ change.fields }}</span>
+                }
+              </div>
+              <!--
+                Le libellé CHANGE DE SENS sur un retrait : écarter une sortie,
+                c'est garder l'article. Un intitulé unique aurait laissé
+                l'opérateur deviner, sur le geste où il tient le plus à décider.
+              -->
+              <fold-checkbox
+                size="sm"
+                [label]="change.excludeLabel"
+                [checked]="change.excluded"
+                (checkedChange)="toggle(change.sku, $event)"
+              />
+            </li>
+          }
+        </ul>
+
+        @if (excludedCount() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>{{ excludedCount() }}</strong> écarté{{ excludedCount() > 1 ? 's' : '' }}. Ces
+            articles gardent ce qu'ils ont aujourd'hui&nbsp;: ils réapparaîtront dans la prochaine
+            livraison, tant que le référentiel n'aura pas changé d'avis.
+          </fold-callout>
+        }
+
+        <button foldButton [loading]="busy()" (click)="accept()">
+          Valider {{ acceptedCount() }} changement{{ acceptedCount() > 1 ? 's' : '' }}
+        </button>
+      </fold-card>
+    } @else {
+      <!--
+        Rien à valider est l'état NORMAL d'une plateforme à jour, pas une panne :
+        d'où un vide serein, sans ton d'alerte et sans bouton de réparation.
+      -->
+      <fold-empty-state
+        title="Rien à valider"
+        description="Le catalogue vendu est à jour. La prochaine livraison du référentiel apparaîtra ici."
+      />
+    }
+  }
+}

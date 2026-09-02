@@ -274,6 +274,17 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
  */
 export const B2B_VIEWS: readonly WorkspaceView[] = [
   {
+    // En TÊTE de la section catalogue : ce qui attend une décision passe avant
+    // ce qui est déjà en vente. Une arrivée non validée ne coûte rien tant
+    // qu'on la voit ; c'est de ne pas la voir qui coûte.
+    key: 'reception',
+    label: 'Réception',
+    link: '/b2b/reception',
+    icon: 'inbox',
+    section: 'Catalogue',
+    needs: 'b2b_catalog:read',
+  },
+  {
     key: 'catalogue',
     label: 'Catalogue',
     link: '/b2b/catalogue',
