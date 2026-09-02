@@ -495,8 +495,10 @@ describe("L'empreinte relie la relecture à l'envoi", () => {
   it("laisse partir le push dont l'empreinte vient de la simulation", async () => {
     await aSoldProduct();
 
-    const relu = await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
-    const empreinte: unknown = relu.body.fingerprint;
+    const relu = jsonBody<{ fingerprint: string }>(
+      await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201),
+    );
+    const empreinte = relu.fingerprint;
     expect(typeof empreinte).toBe("string");
 
     await staff()
