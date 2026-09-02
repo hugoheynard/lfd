@@ -739,6 +739,20 @@ model Order {
   // aurait dupliqué la même information dans une troisième forme.
   placedByStaffId String? @map("placed_by_staff_id")
 
+  /// **De quelle version du catalogue venaient ces articles.**
+  ///
+  /// Répond à « d'où venait cet article », JAMAIS à « quel prix » : celui-là est
+  /// figé sur `OrderLine`, avec sa TVA, son nom et sa trace de résolution. Une
+  /// version dit ce que le PIM avait livré et ce que la plateforme avait accepté
+  /// — pas ce qui a été facturé.
+  ///
+  /// `NULL` = **on ne sait pas**, et c'est la vérité : toutes les commandes
+  /// antérieures à la réception du catalogue en sont là, comme celles passées
+  /// avant la première validation. Le sens net d'un `NULL`, comme
+  /// `pricingSteps` sur la ligne.
+  catalogVersionId String?         @map("catalog_version_id")
+  catalogVersion   CatalogVersion? @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
+
   status OrderStatus @default(placed)
 
   // Alimente le plan de prod (« à produire pour demain »).
@@ -2129,6 +2143,63 @@ model CatalogDelivery {
   @@schema("public")
 }
 
+/// **Une version du catalogue accepté** — la photographie complète du miroir des
+/// faits, prise juste après une validation.
+///
+/// Une ligne par SKU en catalogue, portant le fait PIM en vigueur pour ce SKU :
+/// issu de cette livraison s'il a été accepté, de la PRÉCÉDENTE s'il a été
+/// écarté. C'est ce qui rend le refus d'un retrait exprimable — on n'écarte pas
+/// une ligne, on écarte un SKU, et un SKU écarté garde ses faits courants, y
+/// compris son existence.
+///
+/// ⚠️ **Le prix REÇU, jamais l'effectif.** Une version est le résultat d'un geste
+/// de validation, à une date, et elle est immuable après pose ; le prix effectif
+/// bouge par construction — un commercial renégocie sans qu'aucune livraison
+/// n'arrive. Y inscrire l'effectif donnerait un objet immuable **faux dès la
+/// première renégociation**. La décision locale vit dans
+/// `catalog_item_overrides`, et le prix appliqué un jour donné dans
+/// `catalog_price_history` : trois objets, trois questions, aucun qui empiète.
+///
+/// **Copie entière, pas chaînage de deltas.** Deux cents articles à ~500 octets
+/// font cent kilo-octets la version ; même à une validation par jour, trente-six
+/// mégaoctets l'an. Le delta, lui, réintroduirait la reconstruction par rejeu —
+/// exactement la propriété refusée aux ancres du PIM.
+model CatalogVersion {
+  /// Assigné par le domaine (ULID), jamais par la base : une version est posée
+  /// par un geste applicatif, et son identité lui appartient avant l'écriture.
+  id String @id
+
+  /// L'arrivée validée qui l'a produite, et l'ancre PIM d'où elle venait. La
+  /// seconde est une chaîne opaque : le référentiel est un autre contexte.
+  deliveryId String @map("delivery_id")
+  revisionId String @map("revision_id")
+
+  /// L'empreinte de la projection livrée — celle que le push a exigée. Elle
+  /// rattache la version à ce qui a été relu, et pas à autre chose.
+  fingerprint String
+
+  /// Les SKU écartés à cette validation. `[]` = tout a été pris ; l'absence de
+  /// distinction avec `NULL` n'a pas de sens ici, une version naît validée.
+  excludedSkus Json @map("excluded_skus")
+
+  /// La photographie : les faits PIM, SKU par SKU, tels que le miroir les porte
+  /// après application. `itemCount` est redondant et assumé — lister les
+  /// versions sans désérialiser cent kilo-octets par ligne.
+  items     Json
+  itemCount Int  @map("item_count")
+
+  createdAt DateTime @map("created_at")
+  /// Qui a validé. Un `StaffUser.id`, jamais une clé étrangère : une version est
+  /// une pièce d'archive, elle ne doit pas bloquer le retrait d'une personne.
+  createdBy String?  @map("created_by")
+
+  orders Order[]
+
+  @@index([createdAt])
+  @@map("catalog_versions")
+  @@schema("public")
+}
+
 model CatalogItemOverride {
   sku  String      @id
   item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Cascade)
@@ -3087,14 +3158,14 @@ model PointOfSaleTable {
 }
 
 model Product {
-  id         String           @id
-  sku        String           @unique
+  id         String        @id
+  sku        String        @unique
   slug       Json
   kind       ProductKind
   name       Json
-  categoryId String           @map("category_id")
-  category   Category         @relation(fields: [categoryId], references: [id])
-  status     ProductStatus    @default(draft)
+  categoryId String        @map("category_id")
+  category   Category      @relation(fields: [categoryId], references: [id])
+  status     ProductStatus @default(draft)
 
   /// ⚠️ **AUCUN LECTEUR, AUCUN ÉCRIVAIN** — constaté le 2026-09-02 sur tout le
   /// dépôt : backend, les deux fronts, `packages/*`, le seed. La colonne existe

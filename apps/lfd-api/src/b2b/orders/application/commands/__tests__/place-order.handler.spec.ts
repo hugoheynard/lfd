@@ -41,6 +41,7 @@ import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
+import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-version.reader.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -95,6 +96,21 @@ const noCommitments: VolumeCommitmentReader = {
 const noCustomerVolumes: CustomerVolumeReader = {
   volumesFor: () => Promise.resolve(new Map<string, number>()),
 };
+
+/**
+ * La version courante du catalogue, telle que la passation l'estampille.
+ *
+ * Un double **qui rend une valeur**, et pas `null` : c'est la seule façon de
+ * distinguer « l'estampille est reportée » de « le champ est resté vide », qui
+ * se ressemblent trait pour trait tant que le double se tait.
+ */
+const CURRENT_VERSION = "cver_courante";
+function versionsAt(id: string | null): CatalogVersionReader {
+  return {
+    currentId: () => Promise.resolve(id),
+    byId: () => Promise.resolve(null),
+  };
+}
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
@@ -196,6 +212,7 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
 function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
+  versions: CatalogVersionReader = versionsAt(CURRENT_VERSION),
 ): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
@@ -207,6 +224,7 @@ function drafting(
       noCommitments,
       noCustomerVolumes,
     ),
+    versions,
     pickupsDouble,
     zonesDouble,
     noDeliveryDefaults(),
@@ -287,6 +305,47 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
 }
 
 describe("PlaceOrderHandler", () => {
+  /**
+   * 🔴 Ce que la commande retient du catalogue, c'est **d'où venaient** ses
+   * articles — jamais leur prix, qui est figé sur la ligne avec sa TVA et sa
+   * trace de résolution. Sans cette estampille, une commande relue six mois plus
+   * tard ne peut plus être rapportée à la livraison qui l'a rendue possible.
+   */
+  it("estampille la version du catalogue en vigueur", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(),
+      events(),
+    );
+
+    await handler.execute(new PlaceOrderCommand("u1", payload()));
+
+    expect(sink.placed?.catalogVersionId).toBe(CURRENT_VERSION);
+  });
+
+  /**
+   * Avant la première validation, il n'y a rien à citer. `null` est alors la
+   * réponse juste : inventer une version rendrait une provenance à une commande
+   * qui n'en a pas.
+   */
+  it("passe sans estampille quand aucune version n’existe encore", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones(), versionsAt(null)),
+      capturingRepo(sink),
+      payments(),
+      events(),
+    );
+
+    await handler.execute(new PlaceOrderCommand("u1", payload()));
+
+    expect(sink.placed?.catalogVersionId).toBeNull();
+  });
+
   it("publie OrderPlacedEvent après persistance (signal lead chaud)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const published = events();

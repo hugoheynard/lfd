@@ -15,6 +15,9 @@ import type { CompanyStatus } from "../src/platform/database/client/client.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingAddressPayload, OrderView, PlacedOrderResponse } from "@lfd/contracts";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CatalogVersion } from "../src/b2b/catalog/domain/entities/catalog-version.js";
+import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
+import { CatalogVersionRepository } from "../src/b2b/catalog/domain/ports/catalog-version.repository.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { lineTotalCents } from "@lfd/money";
@@ -523,6 +526,87 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
  * un prix NÉGOCIÉ ; s'il acceptait n'importe quel `companyId`, on sonderait la
  * mercuriale d'un concurrent en devinant son identifiant.
  */
+/**
+ * **De quelle version du catalogue venaient les articles.**
+ *
+ * Jamais « à quel prix » : celui-là est figé sur la ligne, avec sa TVA, son nom
+ * et sa trace. L'estampille répond à l'autre question — celle qu'on pose quand
+ * une réclamation arrive et qu'il faut retrouver la livraison qui a produit ce
+ * que le client a vu.
+ */
+describe("l'estampille de version sur la commande", () => {
+  /** Pose une version réelle : la photographie du miroir tel qu'il est. */
+  async function seedVersion(id: string): Promise<void> {
+    const mirror = await ctx.app.get(CatalogItemRepository).loadAll();
+    await ctx.app.get(CatalogVersionRepository).append(
+      CatalogVersion.photograph({
+        id,
+        deliveryId: `d_${id}`,
+        revisionId: `rev_${id}`,
+        fingerprint: `empreinte-${id}`,
+        excludedSkus: [],
+        createdAt: new Date(),
+        createdBy: "staff_e2e",
+        mirror,
+      }),
+    );
+  }
+
+  it("porte la version en vigueur au moment de la passation", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    await seedVersion("cver_1");
+
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed.id },
+      select: { catalogVersionId: true },
+    });
+    expect(row.catalogVersionId).toBe("cver_1");
+  });
+
+  /**
+   * 🔴 `NULL` est une RÉPONSE — « on ne sait pas » —, pas un trou. C'est l'état
+   * de toute commande antérieure à la première validation, et fabriquer une
+   * version par défaut inventerait une provenance qui n'a jamais existé.
+   */
+  it("laisse l'estampille vide tant qu'aucune version n'a été posée", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed.id },
+      select: { catalogVersionId: true },
+    });
+    expect(row.catalogVersionId).toBeNull();
+  });
+
+  /** La DERNIÈRE posée, pas la première : une commande cite ce qui est en vente. */
+  it("cite la plus récente quand plusieurs versions existent", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    await seedVersion("cver_1");
+    await seedVersion("cver_2");
+
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed.id },
+      select: { catalogVersionId: true },
+    });
+    expect(row.catalogVersionId).toBe("cver_2");
+  });
+});
+
 describe("POST /orders/quote", () => {
   it("refuse d'estimer pour une société dont on n'est pas membre", async () => {
     const companyId = await seedCompany("active");

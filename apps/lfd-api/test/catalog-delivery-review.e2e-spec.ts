@@ -3,6 +3,7 @@ import type { PendingDeliveryView } from "@lfd/contracts";
 
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
+import { CatalogVersionReader } from "../src/b2b/catalog/domain/ports/catalog-version.reader.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -48,7 +49,9 @@ beforeEach(async () => {
 
 const staff = () => ctx.http().set("Authorization", "Bearer staff");
 
-function snapshot(variants: readonly { sku: string; allergens?: string[] | null }[]) {
+function snapshot(
+  variants: readonly { sku: string; allergens?: string[] | null; priceMillicents?: number }[],
+) {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-01-01T00:00:00.000Z",
@@ -72,7 +75,7 @@ function snapshot(variants: readonly { sku: string; allergens?: string[] | null 
         {
           sku: `${variant.sku}-1`,
           name: `Article ${variant.sku}`,
-          priceMillicents: 210_000,
+          priceMillicents: variant.priceMillicents ?? 210_000,
           weightGrams: 80,
           isDefault: true,
           position: 0,
@@ -211,6 +214,73 @@ describe("POST /admin/catalog/delivery/accept", () => {
     await staff().post("/admin/catalog/delivery/accept").send(body).expect(409);
 
     expect(await ctx.prisma.catalogItem.count()).toBe(2);
+  });
+
+  it("pose UNE version, photographie de ce que la boutique vend désormais", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+
+    const rows = await ctx.prisma.catalogVersion.findMany();
+    expect(rows).toHaveLength(1);
+    const version = await ctx.app.get(CatalogVersionReader).byId(rows[0]?.id ?? "");
+    expect(version?.lines.map((line) => line.sku).sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
+    expect(version?.revisionId).toBe(pending.revisionId);
+  });
+
+  /**
+   * 🔴 LE cas qui distingue « photographie du miroir » de « copie du snapshot ».
+   *
+   * L'arrivée porte un prix neuf, on l'écarte, et la version doit garder
+   * l'ANCIEN — celui qui est réellement en vente. Une version déduite du
+   * snapshot reçu archiverait un prix que personne n'a accepté, et l'archive
+   * contredirait le catalogue qu'elle prétend photographier.
+   */
+  it("archive le fait PRÉCÉDENT d'un SKU écarté, jamais celui qu'on refuse", async () => {
+    await sell(snapshot([{ sku: "VIE-001", priceMillicents: 210_000 }]));
+    await toInbox(snapshot([{ sku: "VIE-001", priceMillicents: 999_000 }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: ["VIE-001-1"] })
+      .expect(201);
+
+    const [row] = await ctx.prisma.catalogVersion.findMany();
+    const version = await ctx.app.get(CatalogVersionReader).byId(row?.id ?? "");
+    expect(version?.factsFor("VIE-001-1")?.priceMillicents).toBe(210_000);
+    expect(version?.excludedSkus).toEqual(["VIE-001-1"]);
+  });
+
+  /**
+   * Écarter un retrait, c'est garder l'article — et la version doit donc le
+   * porter. Sans ça, l'archive dirait qu'un article encore en vente avait
+   * disparu ce jour-là.
+   */
+  it("garde dans la version l'article dont on a écarté le retrait", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: ["PAT-002-1"] })
+      .expect(201);
+
+    const [row] = await ctx.prisma.catalogVersion.findMany();
+    const version = await ctx.app.get(CatalogVersionReader).byId(row?.id ?? "");
+    expect(version?.lines.map((line) => line.sku).sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
   });
 
   it("refuse d'écarter un SKU que personne ne connaît", async () => {

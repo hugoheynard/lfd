@@ -50,6 +50,9 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     },
     requestedDeliveryDate: null,
     note: "",
+    // Aucune version posée : le cas de toutes les commandes antérieures à la
+    // première validation, et le seul défaut honnête — « on ne sait pas ».
+    catalogVersionId: null,
     lines: [food(2)],
     discountCents: 0,
     discountAdjustment: null,
@@ -210,6 +213,28 @@ describe("Order.draft — acheminement", () => {
         }),
       ),
     ).toThrow(InvalidOrderFulfillmentError);
+  });
+});
+
+describe("Order — la version du catalogue", () => {
+  /**
+   * L'agrégat **porte** l'estampille sans jamais la relire : elle répond à
+   * « d'où venaient ces articles », et rien dans le calcul monétaire n'en
+   * dépend. Ce cas tient donc une seule chose — qu'elle traverse.
+   */
+  it("reporte la version reçue jusqu’à la persistance", () => {
+    expect(deferred({ catalogVersionId: "cver_7" })).toMatchObject({
+      catalogVersionId: "cver_7",
+    });
+  });
+
+  /**
+   * 🔴 `null` est une RÉPONSE — « on ne sait pas » —, pas un trou à combler.
+   * Toute commande passée avant la première validation en est là, et fabriquer
+   * une version par défaut inventerait une provenance.
+   */
+  it("garde `null` quand aucune version n’a encore été posée", () => {
+    expect(deferred({ catalogVersionId: null })).toMatchObject({ catalogVersionId: null });
   });
 });
 

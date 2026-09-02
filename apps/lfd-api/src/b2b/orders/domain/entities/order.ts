@@ -47,6 +47,15 @@ export interface DraftOrderInput {
   readonly agreed: AgreedFulfillment;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
+  /**
+   * La **version du catalogue** sous laquelle ces lignes ont été résolues, ou
+   * `null` si aucune n'a encore été posée.
+   *
+   * Répond à « d'où venaient ces articles », jamais à « quel prix » : le prix,
+   * la TVA, le nom et la trace de résolution sont figés sur la ligne. `null` est
+   * une réponse honnête — « on ne sait pas » —, pas un défaut à combler.
+   */
+  readonly catalogVersionId: string | null;
   readonly lines: readonly OrderLineInput[];
   /** Remise (retrait) déjà résolue, HT, en centimes. */
   readonly discountCents: number;
@@ -69,6 +78,7 @@ export interface OrderToPlace {
   readonly agreed: AgreedFulfillment;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
+  readonly catalogVersionId: string | null;
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
@@ -120,6 +130,7 @@ export class Order {
     private readonly agreed: AgreedFulfillment,
     private readonly requestedDeliveryDate: Date | null,
     private readonly note: string,
+    private readonly catalogVersionId: string | null,
     private readonly lines: readonly OrderLine[],
     private readonly discountCents: number,
     private readonly discountAdjustment: CartAdjustment | null,
@@ -156,6 +167,7 @@ export class Order {
       input.agreed,
       input.requestedDeliveryDate,
       input.note,
+      input.catalogVersionId,
       lines,
       input.discountCents,
       input.discountAdjustment,
@@ -200,6 +212,7 @@ export class Order {
       agreed: this.agreed,
       requestedDeliveryDate: this.requestedDeliveryDate,
       note: this.note,
+      catalogVersionId: this.catalogVersionId,
       subtotalCents: this.subtotalCentsValue,
       discountCents: this.discountCents,
       discountAdjustment: this.discountAdjustment,

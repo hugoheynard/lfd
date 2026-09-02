@@ -173,6 +173,22 @@ export class CatalogItem {
     return this.facts.allergens;
   }
 
+  /**
+   * **Tous** les faits reçus, d'un bloc — et strictement eux.
+   *
+   * Sert à photographier le miroir au moment d'une validation. Le bloc plutôt
+   * que les champs un par un, parce qu'une version doit être *complète* : un
+   * getter oublié ici donnerait une archive amputée qu'aucun test ne verrait,
+   * puisqu'elle serait cohérente avec elle-même.
+   *
+   * ⚠️ Aucune décision n'en sort, et c'est tout l'intérêt : le prix rendu est le
+   * prix **reçu**, jamais l'effectif. Y glisser la décision rendrait faux dès la
+   * première renégociation un objet qu'on promet immuable.
+   */
+  get pimFacts(): PimFacts {
+    return this.facts;
+  }
+
   get isHidden(): boolean {
     return this.decision.isHidden;
   }

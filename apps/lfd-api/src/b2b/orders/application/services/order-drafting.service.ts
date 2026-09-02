@@ -8,6 +8,7 @@ import {
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { CatalogVersionReader } from "../../../catalog/domain/ports/catalog-version.reader.js";
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
@@ -81,6 +82,7 @@ interface ResolvedFulfillment {
 export class OrderDrafting {
   constructor(
     private readonly linePricing: OrderLinePricing,
+    private readonly catalogVersions: CatalogVersionReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -88,6 +90,13 @@ export class OrderDrafting {
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
   async draft(parties: OrderParties, content: OrderContent): Promise<Order> {
+    // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
+    // tomberait pile entre les deux ne peut alors que rendre l'estampille
+    // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
+    // en retard sous-entend « au moins cette version-là » ; une estampille en
+    // avance affirmerait que la ligne vient d'une livraison qu'elle n'a pas vue.
+    // La seconde est un mensonge, la première une borne.
+    const catalogVersionId = await this.catalogVersions.currentId();
     const resolved = await this.linePricing.resolve(content.lines, parties);
     const lines = resolved.map((entry) => entry.line);
     // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
@@ -122,6 +131,7 @@ export class OrderDrafting {
         ? new Date(content.requestedDeliveryDate)
         : null,
       note: content.note,
+      catalogVersionId,
       lines,
       discountCents: acheminement.discountCents,
       discountAdjustment: acheminement.discountAdjustment,

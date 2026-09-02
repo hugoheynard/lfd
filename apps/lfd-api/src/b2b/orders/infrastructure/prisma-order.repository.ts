@@ -51,6 +51,10 @@ export class PrismaOrderRepository extends OrderRepository {
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
         requestedDeliveryDate: state.requestedDeliveryDate,
+        // D'où venaient les articles, jamais à quel prix — celui-là est sur la
+        // ligne. `null` = aucune version posée à cet instant, ce qui est la
+        // vérité pour toute commande antérieure à la première validation.
+        catalogVersionId: state.catalogVersionId,
         fulfillmentMethod: state.fulfillmentMethod,
         deliveryZoneId: state.deliveryZoneId,
         deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
