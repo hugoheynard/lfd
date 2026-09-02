@@ -86,6 +86,40 @@ permanence — et une CI rouge en permanence se fait désactiver.
 > un même littéral, et deux appels à des signatures mortes qui passaient parce
 > qu'un autre refus se déclenchait d'abord.
 
+## 1ter. 🔴 La porte du point 1 ne couvre QUE le backend
+
+_(Relevé le 2026-09-02, sur une régression réelle.)_
+
+Le point 1 est fermé pour `lfd-api` : `tsc --noEmit -p tsconfig.test.json` tourne
+dans le job `backend`. **Les quatre apps Angular n'ont rien d'équivalent** — leurs
+specs sont transpilées par Vitest, qui ne vérifie pas les types.
+
+Ce que ça coûte, avec la preuve du jour : le découpage des droits en 19
+ressources (2026-09-01) a supprimé la ressource `tech`.
+`admin/roles/grants-grid/__tests__/apply-level.spec.ts` continuait de l'employer
+— `applyLevel(GRANTS, 'tech', 'none')` — et **restait vert**. Il testait
+« retirer une ressource qui n'existe pas ne fait rien », ce qui est vrai et n'est
+pas ce qu'il prétendait prouver. C'est mot pour mot le piège que le commentaire
+du job backend décrit : « un double survit à la disparition de ce qu'il simule,
+le test reste vert, et ce qu'il prouve a disparu. »
+
+**Ce qui bloque, et c'est borné** : `tsconfig.spec.json` du back-office rend
+**66 erreurs `TS6059`** — les paquets `@lfd/b2b-ui` importés par chemin de source
+ne sont pas sous son `rootDir`. Et **zéro autre erreur** une fois la régression
+ci-dessus corrigée : les specs sont saines, c'est la configuration qui les rend
+invérifiables.
+
+Le geste, dans cet ordre :
+
+1. Régler le `rootDir` / les `references` de `tsconfig.spec.json` pour que les
+   paquets du monorepo entrent par leurs types publiés plutôt que par leurs
+   sources — 66 erreurs, une seule cause.
+2. Poser la porte dans le job `frontends` de la CI, comme au point 1.
+
+⚠️ L'ordre compte : poser la porte avant le réglage ferait rougir la CI sur 66
+erreurs qui ne disent rien de vrai — exactement ce qui a fait sortir
+`container/worker.ts` de la configuration backend.
+
 ## 1bis. Les adaptateurs Prisma du référentiel n'avaient aucun test
 
 Fermé le même jour, et il vaut d'être noté séparément : les specs remplacent le
