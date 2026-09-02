@@ -41,7 +41,13 @@ function board(): ReconciliationBoardView {
 
 /** Fake transport — enregistre les push, pas de HTTP. */
 class FakeApi {
-  readonly pushes: { ids: string[] | undefined; dryRun: boolean }[] = [];
+  readonly pushes: {
+    ids: string[] | undefined;
+    dryRun: boolean;
+    hashes?: Readonly<Record<string, string>>;
+  }[] = [];
+  /** Ce que le prochain push rendra — pour jouer un refus de dérive. */
+  next: PushSummary | null = null;
 
   reconciliation(): Promise<ReconciliationBoardView> {
     return Promise.resolve(board());
@@ -60,9 +66,13 @@ class FakeApi {
   history(): Promise<SnapshotView[]> {
     return Promise.resolve([]);
   }
-  push(ids?: string[], dryRun = false): Promise<PushSummary> {
-    this.pushes.push({ ids, dryRun });
-    return Promise.resolve({ mode: 'live', results: [], taxCollections: null });
+  push(
+    ids?: string[],
+    dryRun = false,
+    hashes?: Readonly<Record<string, string>>,
+  ): Promise<PushSummary> {
+    this.pushes.push(hashes === undefined ? { ids, dryRun } : { ids, dryRun, hashes });
+    return Promise.resolve(this.next ?? { mode: 'live', results: [], taxCollections: null });
   }
 }
 
@@ -115,5 +125,65 @@ describe('PublicationShopify', () => {
 
     expect(api.pushes.at(-1)?.ids).toEqual(['p1']);
     expect(api.pushes.at(-1)?.dryRun).toBe(true);
+  });
+});
+
+/**
+ * Ce que ces cas tiennent : **le jeton fait l'aller-retour**, et un refus ne
+ * s'oublie pas au clic suivant.
+ */
+describe('PublicationShopify — les empreintes du pré-push', () => {
+  const summary = (outcome: PushSummary['results'][number]['outcome']): PushSummary => ({
+    mode: 'live',
+    taxCollections: null,
+    results: [{ productId: 'p1', sku: 'VIE-001', outcome, message: '', hash: 'hache-A' }],
+  });
+
+  it('redonne à la publication les empreintes lues au pré-push', async () => {
+    const api = new FakeApi();
+    api.next = summary('pushed');
+    const fixture = await render(api);
+    const component = fixture.componentInstance;
+
+    component['toggle']('p1', true);
+    await component['prePush']();
+    await component['publish']();
+
+    expect(api.pushes.at(-1)?.hashes).toEqual({ p1: 'hache-A' });
+  });
+
+  /**
+   * 🔴 Un refus doit survivre au clic. Vider les empreintes ici laisserait le
+   * geste suivant passer SANS relecture — précisément le trou qu'elles ferment.
+   * Le seul geste qui les renouvelle est un nouveau pré-push.
+   */
+  it('garde les empreintes après un refus, pour que le refus persiste', async () => {
+    const api = new FakeApi();
+    api.next = summary('pushed');
+    const fixture = await render(api);
+    const component = fixture.componentInstance;
+
+    component['toggle']('p1', true);
+    await component['prePush']();
+
+    api.next = summary('drifted');
+    await component['publish']();
+    await component['publish']();
+
+    expect(api.pushes.at(-1)?.hashes).toEqual({ p1: 'hache-A' });
+  });
+
+  /** Un refus n'est pas une panne : le message ne doit pas envoyer chercher un bug. */
+  it('nomme le refus à part d’un échec, et dit le geste de sortie', async () => {
+    const api = new FakeApi();
+    api.next = summary('drifted');
+    const fixture = await render(api);
+    const component = fixture.componentInstance;
+
+    component['toggle']('p1', true);
+    await component['publish']();
+
+    expect(component['message']()).toContain('modifiée(s) depuis votre relecture');
+    expect(component['message']()).not.toContain('échec');
   });
 });

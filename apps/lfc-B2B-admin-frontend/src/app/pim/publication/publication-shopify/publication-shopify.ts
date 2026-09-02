@@ -81,6 +81,14 @@ export class PublicationShopify {
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   protected readonly busy = signal(false);
   protected readonly message = signal<string | null>(null);
+  /**
+   * Les empreintes lues au dernier pré-push, par identifiant de produit.
+   *
+   * C'est le lien entre ce qu'on a relu et ce qu'on envoie : sans elles, les
+   * deux gestes de cet écran sont deux appels que rien ne rattache, et on peut
+   * publier une fiche que personne n'a regardée.
+   */
+  private readonly relu = signal<Readonly<Record<string, string>>>({});
 
   /** Les productIds pré-sélectionnés (actionnables, ayant un produit courant). */
   protected readonly actionableIds = computed(() =>
@@ -142,6 +150,7 @@ export class PublicationShopify {
     this.busy.set(true);
     try {
       const summary = await this.api.push(targets, true);
+      this.relu.set(Object.fromEntries(summary.results.map((r) => [r.productId, r.hash])));
       this.message.set(`Pré-push — ${this.summarize(summary)}`);
     } catch {
       this.message.set('Échec du pré-push (backend injoignable ?).');
@@ -158,9 +167,20 @@ export class PublicationShopify {
     }
     this.busy.set(true);
     try {
-      const summary = await this.api.push(targets);
+      const summary = await this.api.push(targets, false, this.relu());
+      const drifted = summary.results.filter((result) => result.outcome === 'drifted');
       this.message.set(`Publié — ${this.summarize(summary)}${this.describeTaxPass(summary)}`);
-      this.selected.set(new Set());
+
+      // 🔴 Les empreintes ne sont vidées QUE si tout est parti. Un refus doit
+      // survivre au clic : les garder fait que le geste suivant se heurte au
+      // même refus, jusqu'à ce qu'on refasse un pré-push — le seul geste qui
+      // rende la garde à nouveau valable. Les vider ici laisserait le second
+      // clic passer sans aucune relecture, ce qui est précisément le trou
+      // qu'elles ferment.
+      if (drifted.length === 0) {
+        this.relu.set({});
+        this.selected.set(new Set());
+      }
       await this.store.reload();
     } catch {
       this.message.set('Échec de la publication.');
@@ -217,6 +237,13 @@ export class PublicationShopify {
     const failed = by('failed');
     if (failed > 0) {
       parts.push(`${failed} échec(s)`);
+    }
+    // Nommé à part d'un échec : rien n'a raté, la fiche a simplement changé
+    // depuis la relecture. Les confondre enverrait chercher une panne là où il
+    // n'y a qu'à relire.
+    const drifted = by('drifted');
+    if (drifted > 0) {
+      parts.push(`${drifted} modifiée(s) depuis votre relecture — refaites un pré-push`);
     }
     return `${parts.join(', ')}.`;
   }

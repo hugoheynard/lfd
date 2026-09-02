@@ -44,10 +44,20 @@ export class ShopifyApi {
   }
 
   /** Pousse (ou pré-pousse en `dryRun` : aperçu sans effet de bord). */
-  push(productIds?: string[], dryRun = false): Promise<PushSummary> {
+  /**
+   * @param hashes les empreintes lues au pré-push, **par identifiant de
+   *   produit**. Fournies, elles sont exigées : une fiche qui a changé depuis la
+   *   relecture rend `drifted` et ne part pas — elle seule, jamais le lot.
+   */
+  push(
+    productIds?: string[],
+    dryRun = false,
+    hashes?: Readonly<Record<string, string>>,
+  ): Promise<PushSummary> {
     const body = {
       ...(productIds === undefined ? {} : { productIds }),
       ...(dryRun ? { dryRun: true } : {}),
+      ...(hashes === undefined ? {} : { hashes }),
     };
     return firstValueFrom(this.http.post<PushSummary>(this.url('push'), body));
   }
