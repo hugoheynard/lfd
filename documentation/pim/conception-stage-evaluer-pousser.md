@@ -446,6 +446,10 @@ et il a la propriété que l'ancre manuelle n'a pas : quelqu'un l'a reçu.
 **[proposé]** Retirer le geste de pose manuelle. Une ancre naît d'une
 publication, et d'elle seule.
 
+⚠️ **Mais retirer le bouton ne corrige que le symptôme.** La cause est que
+`latest()` rend la dernière ancre **posée**, sans regarder si elle a été
+publiée — et elle reste vraie sans le bouton. Le §4.3 la corrige à la racine.
+
 ✅ Le besoin qu'il servait — « un point de reprise avant une grosse manœuvre » —
 est légitime, et sa réponse **existe déjà, hors du code** : une sauvegarde
 restaurée vers une base neuve avant l'opération
@@ -494,18 +498,119 @@ canal. Or aujourd'hui **c'est l'inverse** : l'ancre est bâtie sur
 article. Renommer un brouillon change donc son empreinte, donc celle de la
 révision — et ferait avancer R+1 sans que rien de vendable n'ait bougé.
 
-**[proposé]** Une ancre ne contient que ce qui est **publié**. `publishable()`
-change de filtre — et de nom, puisqu'il dit déjà autre chose que ce qu'il fait.
+**[proposé]** Une ancre ne contient que ce qui est **publié**.
 
-⚠️ Le prix, et il est réel : les ancres déjà posées contiennent les brouillons.
-Après la bascule, un diff qui enjambe ce changement montrerait des « retraits »
-massifs qui ne sont que la sortie des brouillons. À traiter comme une bascule de
-sens, pas comme un correctif — donc en le disant sur l'écran des révisions.
+🔴 **Mais PAS en changeant le filtre de `publishable()` — correction du
+2026-09-02.** La V3 écrivait « `publishable()` change de filtre, et de nom ». Le
+constat sur le nom est juste : la méthode rend « tout ce qui n'est pas archivé »,
+ce qui n'est pas « publiable ». La conclusion, elle, était **trop large** — la
+méthode a **trois** appelants, et le §4.2 n'en regardait qu'un :
+
+| Appelant                                                       | Ce qu'il en fait                                                |
+| -------------------------------------------------------------- | --------------------------------------------------------------- |
+| `revision/infrastructure/prisma-catalog-revision.source.ts:33` | l'ancre — **le seul que le §4.2 vise**                          |
+| `channels/shopify/products/push.service.ts:67`                 | **ce que Shopify pousse** quand aucun `productIds` n'est fourni |
+| `channels/shopify/products/reconciliation.service.ts:162`      | le tableau 3 voies                                              |
+
+Et un brouillon **part réellement chez Shopify**, délibérément, en `DRAFT` :
+`status: product.status === "published" && soldOnStorefront ? "ACTIVE" : "DRAFT"`
+(`shopify/products/projection.ts:101`). Restreindre le filtre aurait donc, sur
+une boutique en ligne : supprimé la préparation d'une fiche côté Shopify avant sa
+publication, fait basculer en « À retirer » toutes les fiches brouillon déjà
+là-bas, et laissé ces fiches orphelines — car `to_remove` **ne supprime rien**,
+c'est un libellé d'écran (`publication-shopify.ts:35`). Du bruit dans un écran
+d'alerte, c'est-à-dire un écran mort : le mode de panne du §5.1 bis, une deuxième
+fois.
+
+**Ce qu'on fait à la place**, et qui atteint exactement le but sans toucher à la
+production :
+
+- `publishable()` est **renommé** `notArchived()` — filtre **inchangé**. Il dit
+  enfin ce qu'il fait, et Shopify comme la réconciliation le gardent tel quel.
+- Le port gagne `published()` — filtre `status === "published"` — et **la source
+  d'ancre est son seul appelant**.
+
+Une méthode de plus, un renommage, zéro changement de comportement pour un canal
+en ligne.
+
+⚠️ Le prix subsiste, inchangé et réel : les ancres déjà posées contiennent les
+brouillons. Après la bascule, un diff qui enjambe ce changement montrerait des
+« retraits » massifs qui ne sont que la sortie des brouillons. À traiter comme
+une bascule de sens, pas comme un correctif — donc en le disant sur l'écran des
+révisions.
 
 **Et R+1 ne remplace pas l'empreinte du §4** — il la rend nécessaire, plutôt.
 Puisque R+1 est la version en cours d'édition, il **bouge pendant qu'on le relit**. C'est
 précisément ce que l'empreinte pin : « j'ai relu R+1 dans cet état-là, refuse si
 ce n'est plus lui ». Le nom donne l'identité, l'empreinte donne la garantie.
+
+### 4.3 🔴 `latest()` rend la dernière ancre POSÉE — le §4.2 dit PUBLIÉE
+
+_(Contradiction relevée le 2026-09-02, tranchée le jour même.)_
+
+**Le code et le §4.2 divergeaient déjà, et le §4.1 bis a contourné au lieu de
+corriger.** `latest()` est un `orderBy: { takenAt: "desc" }` sans le moindre
+filtre sur la publication
+(`revision/infrastructure/prisma-catalog-revision.repository.ts:28`), alors que
+le §4.2 définit R comme « la plus récente ancre **publiée** ». Retirer le bouton
+de pose manuelle supprimait la façon la plus commode de fabriquer l'écart ; ça ne
+supprimait pas l'écart.
+
+🔴 **Et `hash @unique` (§11.7) le rend visible.** Scénario A→B→A, celui que la
+décision assume :
+
+|                      | aujourd'hui                             | avec l'unicité seule                                |
+| -------------------- | --------------------------------------- | --------------------------------------------------- |
+| on republie l'état A | une ancre A′ est posée, `latest()` = A′ | A′ refusée, on rend A — mais `latest()` reste **B** |
+| l'écran affiche      | rien à signaler ✅                      | « N changements depuis R-B » ❌                     |
+
+Sur un catalogue qu'on vient de publier entier. C'est mot pour mot le grief du
+§4.1 bis, réintroduit par la porte de derrière.
+
+#### Les deux décisions sont indissociables — chacune casse sans l'autre
+
+- **`@unique` sans `lastPublished()`** : le tableau ci-dessus.
+- **`lastPublished()` sans `@unique`** : un push qui échoue laisse une ancre
+  **orpheline**. Elle est posée **avant** l'envoi (`push.service.ts:82` — l'ordre
+  est délibéré, cf. §3.1), et l'échec n'inscrit qu'une publication `failed`. Au
+  retry, la référence est l'ancienne ancre publiée, le hash recalculé ne lui
+  correspond pas, et rien n'empêche de créer un **doublon**. Aujourd'hui ça
+  n'arrive pas — précisément parce que `latest()` rend la dernière posée,
+  orpheline comprise.
+
+Ensemble, elles se rattrapent : au retry, l'unicité refuse, on récupère l'ancre
+orpheline et on inscrit la publication réussie **dessus**. Un échec cesse de
+laisser un déchet.
+
+#### Les trois pièces
+
+1. **La garde change de question.** `TakeCatalogRevisionHandler` cesse de
+   demander « est-ce la dernière ? » pour demander « **cette ancre existe-t-elle
+   ?** ». Comparer à `latest()` était une approximation de cette question-là —
+   juste tant qu'on ne revient jamais en arrière. L'unicité ne sert plus alors
+   qu'à la course réelle entre deux pushs simultanés.
+2. **`latest()` devient `lastPublished()`** : la dernière ancre portant une
+   publication `live` / `sent`.
+3. **Le port gagne `byHash()`**, qu'il n'a pas
+   (`domain/ports/catalog-revision.repository.ts` : `latest`, `save`, `list`,
+   `byReference`, `indexOf`, `recordPublication`, `payloadsOf`).
+
+Deux appelants seulement sont concernés — l'écran
+(`application/get-catalog-overview.ts:38`) et la garde
+(`application/take-catalog-revision.ts:55`).
+
+#### ⚖️ « Publiée » veut dire au moins une, pas toutes
+
+**[tranché par Hugo, 2026-09-02]** Le §4.2 définit R comme un **consensus** :
+« la plus récente ancre publiée sur TOUS les canaux ». Appliqué tel quel à
+`lastPublished()`, le diff perdrait sa référence dès qu'un canal est en retard —
+c'est-à-dire souvent — et l'écran principal du catalogue n'afficherait rien dans
+le cas le plus banal.
+
+Donc : `lastPublished()` = **au moins une** publication réussie. Le consensus
+n'est pas abandonné, il retrouve sa place — une information d'**écran**, la ligne
+par canal que le §4.2 réclame déjà (« Shopify est deux ancres en arrière »).
+Ce qui informe ne doit pas devenir le dénominateur de tout.
 
 ---
 
@@ -572,6 +677,54 @@ Le troisième cas n'est pas théorique : une ingestion interrompue en cours de
 route, une écriture directe en base, une restauration de sauvegarde. C'est
 exactement ce qu'un contrôle de parité existe pour attraper, et c'est ce qu'il ne
 sait pas montrer aujourd'hui.
+
+#### 🔴 Le miroir de la parité n'est pas ce qui est VENDABLE — c'est ce qui est REÇU
+
+_(Contradiction relevée le 2026-09-02. Sans elle, le découpage en trois ci-dessus
+ne servait à rien : la ligne alarmante se serait allumée sur le geste le plus
+banal du commercial.)_
+
+`CheckCatalogParityService` lit le miroir par `CatalogReader.listSellable()`. Ce
+port ne rend pas le miroir : il rend ce que la boutique peut **vendre**, et il
+retire donc deux populations (`infrastructure/prisma-catalog.reader.ts:88-105`) :
+
+- les articles **masqués localement** (`OR: [{ override: null }, { override: { isHidden: false } }]`) ;
+- les articles **sans taux applicable**, ni sur l'article ni sur sa famille.
+
+Or masquer un article est un geste normal, porté par l'agrégat (`hide()` /
+`show()`, `catalog-item.ts:200-206`), exposé par `admin-catalog.controller.ts` —
+et c'est précisément le droit `b2b_catalog:write` que le §11.3 vient de donner au
+commercial. Chaque article qu'il masque tomberait en `missing`, c'est-à-dire sous
+la ligne « **rien n'explique cet écart** ». La décision qui donne le droit
+fabriquait le bruit que la décision d'à côté prétendait supprimer.
+
+🔴 **Et le raisonnement juste était DÉJÀ écrit dans le fichier — pour le prix.**
+`catalog-parity.ts` le dit en toutes lettres : « on compare le prix du
+référentiel, pas le prix appliqué. Le prix B2B négocié est une **décision
+légitime de la plateforme, pas une dérive**. Les confondre ferait sonner l'alarme
+sur chaque client à qui l'on a consenti un tarif — c'est-à-dire tout le temps,
+donc jamais. »
+
+`LocalDecision` porte **trois** décisions : `priceMillicents`, `isHidden`,
+`isFeatured` (`catalog-item.ts:82-88`). La doctrine n'avait été appliquée qu'à la
+première. C'est le même argument, mot pour mot, pour les deux autres.
+
+**La correction ne demande aucun port neuf.** `CatalogAdminReader.list()` rend
+**tout** `catalog_items` — aucun `where`
+(`infrastructure/prisma-catalog-admin.reader.ts:38-44`) — avec les quatre champs
+que `MirrorEntry` réclame : `sku`, `name`, `pimPriceMillicents`, et un
+`vatRatePercent` déjà résolu article → famille (`:69-70`). La parité **est** un
+écran d'administration ; elle lit le port d'administration.
+
+| Cas                                         | Avec `listSellable()` | Avec `CatalogAdminReader.list()`                            |
+| ------------------------------------------- | --------------------- | ----------------------------------------------------------- |
+| article reçu, masqué par un commercial      | `missing` — **faux**  | rien à signaler ✅                                          |
+| article reçu, famille sans taux dans le PIM | `missing` — **faux**  | `stale` ✅ — le PIM ne l'enverrait plus, on le tient encore |
+| article jamais arrivé                       | `missing` ✅          | `missing` ✅                                                |
+
+Le second cas se range **tout seul**, et du bon côté : un article dont le taux a
+disparu côté PIM sort de la projection (motif `variant_sans_taux`), donc de la
+référence — il est bien « dans le miroir, plus publié ».
 
 ⚠️ **Dette relevée en chemin, hors sujet mais à ne pas taire** :
 `check-catalog-parity.service.ts` appelle `new Date()` en couche application, ce
@@ -695,9 +848,33 @@ version pour ne pas bloquer une telle correction — il serait absurde de la
 laisser bloquer par oubli à l'étage suivant.
 
 D'où : **pas de borne, mais une escalade selon ce que l'arrivée PORTE.**
-`engagedLines` (§15 · D) nomme déjà le champ qui change ; le même calcul classe
-l'arrivée. Une arrivée « prix et textes » dort sans drame ; une arrivée qui
-touche une déclaration d'allergène sonne à la cloche dès la réception —
+
+🔴 **Correction du 2026-09-02 — ce n'est PAS `engagedLines` qui classe
+l'arrivée.** La première rédaction disait « le même calcul » ; c'était confondre
+deux questions qui n'ont ni le même moment, ni la même population :
+
+| La question                              | Population                        | Quand               | L'élément                     |
+| ---------------------------------------- | --------------------------------- | ------------------- | ----------------------------- |
+| « Qu'est-ce que cette arrivée change ? » | les SKU de l'arrivée et du miroir | à la **réception**  | `diffDelivery` — **manquait** |
+| « Qui est touché ? »                     | les commandes ouvertes            | à la **validation** | `engagedLines` (§15 · D)      |
+
+`engagedLines` ne voit que les commandes ouvertes. Une correction d'allergène sur
+un article que **personne n'a commandé** ne lui produit aucune ligne — donc
+aucune cloche, dans le seul cas où ce paragraphe admet que l'attente fait mal.
+La garde ne gardait rien, et c'est le cas majoritaire : un article corrigé n'est
+pas nécessairement engagé.
+
+**`diffDelivery(delivery, mirror)`** est le calcul qui manquait — pur, il rend
+par SKU les champs qui changent (et le retrait comme un champ). L'escalade le
+lit ; `engagedLines` en devient un **consommateur** plutôt qu'un doublon, en le
+croisant avec les commandes ouvertes. Un seul diff, deux lectures.
+
+✅ **Et il était nécessaire de toute façon** : le §8 promet à l'écran B2B
+« l'arrivée en attente, **son diff**, sa validation ». Ce diff n'avait aucun
+élément dans le plan.
+
+Une arrivée « prix et textes » dort sans drame ; une arrivée qui touche une
+déclaration d'allergène sonne à la cloche dès la réception —
 `StaffNotifier` existe, avec son anti-doublon par `idempotencyKey` et sa poussée
 vers les téléphones. Et l'écran de santé (§5.1 bis) affiche l'ancienneté de
 l'arrivée en attente : un fait, pas une alarme.
@@ -847,9 +1024,47 @@ endroits ; accrochée au seul `unpublish`, elle en manquerait sept.
 
 ### 7.3 La forme d'une version — copie entière, prix REÇU
 
-**[tranché par Hugo, 2026-09-02]** Une version est une **copie entière** du
-snapshot accepté, et elle porte le prix **livré par le PIM**, pas le prix
-effectif.
+**[tranché par Hugo, 2026-09-02]** Une version est une **copie entière** — et
+elle porte le prix **livré par le PIM**, pas le prix effectif.
+
+🔴 **Copie entière de QUOI : du miroir des faits, pas du snapshot reçu.**
+Correction du 2026-09-02 : la première rédaction disait « copie entière du
+snapshot accepté », ce qui contredisait frontalement le §6.2 bis — « une ligne
+écartée n'entre pas dans la version, et le SKU garde ses faits de vente
+courants ». Les deux ne pouvaient pas être vraies, et le trou se serait découvert
+en écrivant le mapper.
+
+**Ce n'était pas une contradiction de fond, mais d'imprécision.** Une ligne
+écartée garde un fait **PIM** — celui d'une livraison antérieure. Il reste un
+fait PIM, jamais une décision locale : la distinction que le §7.3 protège
+(le **reçu** contre l'**effectif**) est intacte. Ce qui variait, c'était la
+**date** du fait, pas sa nature.
+
+> Une version est la photographie **complète** du miroir des faits, prise après
+> acceptation : une ligne par SKU en catalogue, portant le fait PIM en vigueur
+> pour ce SKU — issu de cette livraison s'il a été accepté, de la précédente s'il
+> a été écarté.
+
+✅ **Et cette formulation gagne un cas que le plan ne savait pas exprimer.** Un
+retrait est une **absence** dans le snapshot (§6.2) : on ne peut pas « écarter »
+une absence dans une liste de lignes. Avec la règle ci-dessus, on n'écarte pas
+une ligne, on **écarte un SKU** — et un SKU écarté garde son fait courant, **y
+compris son existence**. Écarter un retrait revient donc à garder l'article, sans
+mécanisme supplémentaire. Les trois cas — changement, ajout, retrait — se traitent
+d'une seule règle.
+
+Cas limite, et il tombe juste : un **ajout** écarté n'a aucun fait antérieur,
+donc il n'entre pas au catalogue et n'est dans aucune version. C'est exactement
+ce qu'on veut — il n'est pas en vente.
+
+⚠️ Conséquence pour le §15 · C : la garde « refuse d'écarter un SKU absent de
+l'arrivée » est **trop stricte**, puisqu'un retrait est précisément un SKU absent
+de l'arrivée. Elle devient : refuse d'écarter un SKU qui n'est **ni dans
+l'arrivée, ni dans le miroir**.
+
+✅ Bénéfice non cherché : la version devient exactement ce que l'écran de santé
+doit comparer au miroir (§5.1 bis, troisième ligne). Les deux objets parlent
+enfin de la même population.
 
 **Copie entière, pas chaînage de deltas.** Le volume ne plaide pas : deux cents
 articles — le **plafond** annoncé, pour quatre-vingt-quinze aujourd'hui — à ~500
@@ -964,9 +1179,23 @@ garantie. Tranché au §11.6 : une seule, sur la publication.
 binding, il en avait deux — `last_pushed_at: NULL` signifie « publié, jamais
 parti », et un binding sans push ne peut pas porter d'empreinte : forcer une
 valeur aurait détruit l'état que l'empreinte sert à distinguer. Sur
-`catalog_revision_publication`, une ligne n'existe **que** parce qu'une
-publication a eu lieu. `NULL` n'y dit plus qu'une chose : « écrit avant que la
-colonne existe ». Le même sens net que `pricingSteps` sur `OrderLine`.
+`catalog_revision_publication`, une ligne n'existe **que** parce qu'un envoi a
+été tenté. `NULL` n'y dit plus qu'une chose : « écrit avant que la colonne
+existe ». Le même sens net que `pricingSteps` sur `OrderLine`.
+
+🔴 **Mais « tenté » n'est pas « reçu », et la V3 confondait les deux.**
+`recordPublication` est appelé **trois** fois dans `push.service.ts` : à l'échec
+(`:84`, `outcome: "failed"`), au succès (`:91`), et en **dry-run** — le mode vient
+du driver, et l'appel est **hors** du `if (driver.mode === "live")`. Une
+simulation laisse donc une ligne `mode: "dry-run"`, `outcome: "sent"`, ce qui est
+délibéré (« sinon on ne distingue pas _jamais tenté_ de _tenté à blanc_ »,
+`schema.prisma`).
+
+Conséquence, à écrire une fois pour toutes : **toute lecture « quelle empreinte
+ce canal a-t-il reçue » filtre `mode = 'live' AND outcome = 'sent'`.** Sans ce
+filtre, un dry-run devient la référence — et `@@index([channel, publishedAt])`
+ne le rattrape pas, il ne porte ni le mode ni l'issue. C'est la même lecture que
+`lastPublished()` (§4.3), et elle se factorise avec elle.
 
 🔴 **Le point 3 est le seul qui puisse ÉCHOUER au déploiement**, et c'est
 pour ça qu'il est en trois temps plutôt qu'en un. Poser `@unique` sur une
@@ -1007,12 +1236,17 @@ demande qu'un déploiement soit **prêt à repartir**, pas seulement possible.
 | 1   | **La forme canonique de projection** — `generatedAt` retiré, tri stable, empreinte. Pure, testable seule | rien      |
 | 2   | L'aperçu B2B = la parité **+ l'empreinte** ; le push l'exige, `409` sinon                                | 1         |
 | 3   | Shopify : `previewOne` **rend** son haché par produit ; le push l'exige au grain du produit              | 1         |
-| 4   | Réception + validation, **ensemble**, avec les lignes écartables (§6.2 bis)                              | rien      |
+| 4   | Réception + validation, **ensemble** : `diffDelivery`, les SKU écartables (§6.2 bis, §7.3)               | rien      |
 | 5   | Les versions du catalogue accepté, et la référence sur `orders`                                          | 4         |
 | 6   | L'empreinte de projection **persistée** sur `catalog_revision_publication`                               | 1         |
 | 7   | Le port de retour, pour la frise de la fiche produit                                                     | 5         |
-| 8   | `catalog_revision.hash` en `@unique` — comptage, résolution, resserrement (§9)                           | rien      |
+| 8   | `hash` en `@unique` **+ `byHash()` + `lastPublished()`** — indissociables (§4.3)                         | rien      |
 | 9   | Les **allergènes figés** sur `OrderLine`, codes **et** libellés (§11.10, §11.13)                         | rien      |
+
+⚠️ **La tranche 8 ne se découpe pas.** Ses trois pièces se tiennent mutuellement
+(§4.3) : l'unicité seule rend l'écran faux après un retour en arrière,
+`lastPublished()` seul laisse un doublon au retry d'un push échoué. Livrer l'une
+sans l'autre est pire que ne rien livrer.
 
 ⚠️ **Les tranches 8 et 9 ne dépendent de rien et ne servent pas ce chantier.**
 Elles sont là parce que la revue du §11 les a mises au jour : l'une ferme une
@@ -1162,6 +1396,11 @@ décision elle-même.
    unique qu'il est (`push.service.ts:130`). `catalog_revision_publication` porte
    déjà `@@index([channel, publishedAt])`.
 
+   ⚠️ **Correction du 2026-09-02** : « la dernière publication de ce canal » est
+   une lecture indexée, mais **pas** une lecture nue. Une ligne existe aussi pour
+   un dry-run et pour un échec ; il faut filtrer `mode = 'live'` et
+   `outcome = 'sent'`, sans quoi une simulation devient la référence (§9).
+
    **Bénéfice non cherché** : le `NULL` y a enfin un seul sens (§9).
 
    ⚠️ Dette relevée en chemin : `stamp()` appelle `new Date()` alors que
@@ -1186,8 +1425,14 @@ décision elle-même.
    **`hash` devient donc `@unique`.** Postgres refuse, la course n'a plus
    d'issue, et la garde applicative redevient ce qu'elle aurait toujours dû
    être : une **optimisation** qui évite un aller-retour, pas la seule ligne de
-   défense. Le handler attrape la violation et rend l'ancre existante —
-   l'appelant ne voit aucune différence.
+   défense.
+
+   🔴 **Correction du 2026-09-02 — j'avais écrit « l'appelant ne voit aucune
+   différence ». C'était faux**, et une contradiction d'architecture l'a montré :
+   `latest()` rend la dernière ancre **posée**, donc refuser A′ laisse l'écran
+   comparer à B. Le §4.3 tranche l'ensemble : la garde passe par `byHash()`,
+   `latest()` devient `lastPublished()`, et les deux décisions se tiennent
+   mutuellement — chacune casse sans l'autre.
 
    🔴 **Et ça change une sémantique, assumée plutôt que découverte après.**
    Aujourd'hui la garde ne compare qu'à `latest`. Un catalogue qui va de A à B
@@ -1268,7 +1513,9 @@ décision elle-même.
       « 3 commandes touchées » ne se traite pas ; « la commande #1287 de
       Boulangerie Martin porte la brioche dont la déclaration d'allergènes
       change » se traite. L'élément est une fonction pure du domaine, sœur de
-      `suspiciousLines` (§15 · D).
+      `suspiciousLines` (§15 · D) — et **consommatrice de `diffDelivery`**, qui
+      seul répond à « qu'est-ce que cette arrivée change » indépendamment de ce
+      qui a été commandé (§6.2 ter).
     - **Les allergènes se figent sur la ligne de commande**, comme le prix.
       _(Décidé par Hugo dès le 2026-09-01, indépendamment des deux autres.)_
 
@@ -1661,6 +1908,9 @@ changer de forme, les décisions non.
 | `fingerprint()`                       | `revision/domain/fingerprint.ts` — **existe** | hache une forme canonique                                                                                                | —                        |
 | `ProjectionDriftError`                | `pim/channels/shared/domain/errors/`          | `BusinessError` → **409**                                                                                                | —                        |
 | `catalog_revision.hash` **`@unique`** | schéma `pim`                                  | rend la course perdante : deux pushs simultanés ne posent plus deux ancres jumelles                                      | un second hash identique |
+| `byHash(hash)` sur le port            | `revision/domain/ports/` — **manque**         | « cette ancre existe-t-elle ? » — la question que la garde voulait poser (§4.3)                                          | —                        |
+| `lastPublished()`                     | idem, **remplace `latest()`**                 | la dernière ancre portant une publication `live` / `sent` — au moins UNE, pas toutes (§4.3)                              | —                        |
+| `published()` sur `CatalogueReader`   | `catalogue/shared/domain/ports/`              | ce que l'ancre doit contenir. `publishable()` devient `notArchived()`, filtre inchangé — Shopify le garde (§4.2)         | —                        |
 
 🔴 **La pièce qui porte tout le chantier est `canonicalProjection`.** Sans elle,
 deux projections d'un catalogue identique donnent deux empreintes et le push
@@ -1670,14 +1920,14 @@ chaîne, y compris après un `UPDATE` qui change l'ordre physique ».
 
 ### B · L'aperçu et le push — un par canal
 
-| Élément                                               | Où                                                               | Ce qu'il fait                                                                                                              | Ce qu'il REFUSE                                         |
-| ----------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `GetB2bChannelPreviewQuery`                           | `b2b/catalog/application/`                                       | enveloppe `CheckCatalogParityService` (**existe**) et **ajoute l'empreinte**                                               | —                                                       |
-| `CheckCatalogParityService`                           | `b2b/catalog/application/` — **existe**                          | compose la projection PIM et le miroir B2B ; rend `missing`, **`stale`** (les sorties), `priceGaps`, `vatGaps`, `nameGaps` | —                                                       |
-| `DeliverCatalogCommand { fingerprint }`               | `pim/channels/b2b-platform/application/`                         | reprojette, compare, **livre**                                                                                             | `ProjectionDriftError` si l'empreinte a changé          |
-| `previewOne()`                                        | `shopify/products/push.service.ts:115` — **existe, à compléter** | calcule déjà `fingerprint(payload)` (`:120`) — **il ne le rend pas**                                                       | —                                                       |
-| `PushShopifyCommand { hashes }`                       | `shopify/products/application/`                                  | pousse **produit par produit**, chacun avec son haché                                                                      | refuse le produit dont le haché a bougé, **pas le lot** |
-| `catalog_revision_publication.projection_fingerprint` | schéma `pim`                                                     | **persiste** l'empreinte du canal, publication par publication                                                             | —                                                       |
+| Élément                                               | Où                                                               | Ce qu'il fait                                                                                                                                                                                  | Ce qu'il REFUSE                                         |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `GetB2bChannelPreviewQuery`                           | `b2b/catalog/application/`                                       | enveloppe `CheckCatalogParityService` (**existe**) et **ajoute l'empreinte**                                                                                                                   | —                                                       |
+| `CheckCatalogParityService`                           | `b2b/catalog/application/` — **existe, à recâbler**              | compose la projection PIM et le miroir B2B ; rend `missing`, **`stale`** (les sorties), `priceGaps`, `vatGaps`, `nameGaps`. ⚠️ Doit lire `CatalogAdminReader`, pas `listSellable()` (§5.1 bis) | —                                                       |
+| `DeliverCatalogCommand { fingerprint }`               | `pim/channels/b2b-platform/application/`                         | reprojette, compare, **livre**                                                                                                                                                                 | `ProjectionDriftError` si l'empreinte a changé          |
+| `previewOne()`                                        | `shopify/products/push.service.ts:115` — **existe, à compléter** | calcule déjà `fingerprint(payload)` (`:120`) — **il ne le rend pas**                                                                                                                           | —                                                       |
+| `PushShopifyCommand { hashes }`                       | `shopify/products/application/`                                  | pousse **produit par produit**, chacun avec son haché                                                                                                                                          | refuse le produit dont le haché a bougé, **pas le lot** |
+| `catalog_revision_publication.projection_fingerprint` | schéma `pim`                                                     | **persiste** l'empreinte du canal, publication par publication                                                                                                                                 | —                                                       |
 
 ⚠️ Le grain diffère volontairement : **le canal** pour le B2B (on livre tout),
 **le produit** pour Shopify (on pousse un sous-ensemble, §5.2).
@@ -1691,15 +1941,15 @@ d'être l'`updateMany` unique qu'il est (`push.service.ts:130`).
 
 ### C · La réception et la validation — côté B2B
 
-| Élément                                  | Où                                                   | Ce qu'il fait                                                        | Ce qu'il REFUSE                                                                                      |
-| ---------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `B2bCatalogDriver`                       | port publié par `pim` — **existe, inchangé**         | la frontière ; `b2b` s'y conforme                                    | —                                                                                                    |
-| `CatalogDelivery` (agrégat)              | `b2b/catalog/domain/entities/`                       | porte **le snapshot entier** reçu, sa date, l'ancre d'origine        | une seconde arrivée **remplace** la précédente (§6.2)                                                |
-| `catalog_delivery` (table)               | schéma `public`                                      | une ligne : ancre, snapshot JSON, reçu le                            | —                                                                                                    |
-| `IngestCatalogService`                   | `b2b/catalog/application/` — **existe, à détourner** | écrit aujourd'hui les faits de VENTE ; écrira la **réception**       | —                                                                                                    |
-| `AcceptDeliveryCommand { excludedSkus }` | `b2b/catalog/application/`                           | promeut les faits, **écarte** les lignes désignées, pose une version | refuse une arrivée déjà close (**en base**, cf. §11.7) ; refuse d'écarter un SKU absent de l'arrivée |
-| `CatalogVersion`                         | `b2b/catalog/domain/`                                | la version acceptée, archivée entière (§7)                           | immuable après pose                                                                                  |
-| `orders.catalogVersionId`                | schéma `public`                                      | rattache une commande à sa version                                   | `null` pour l'historique — « on ne sait pas »                                                        |
+| Élément                                  | Où                                                   | Ce qu'il fait                                                                                          | Ce qu'il REFUSE                                                                                                                    |
+| ---------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `B2bCatalogDriver`                       | port publié par `pim` — **existe, inchangé**         | la frontière ; `b2b` s'y conforme                                                                      | —                                                                                                                                  |
+| `CatalogDelivery` (agrégat)              | `b2b/catalog/domain/entities/`                       | porte **le snapshot entier** reçu, sa date, l'ancre d'origine                                          | une seconde arrivée **remplace** la précédente (§6.2)                                                                              |
+| `catalog_delivery` (table)               | schéma `public`                                      | une ligne : ancre, snapshot JSON, reçu le                                                              | —                                                                                                                                  |
+| `IngestCatalogService`                   | `b2b/catalog/application/` — **existe, à détourner** | écrit aujourd'hui les faits de VENTE ; écrira la **réception**                                         | —                                                                                                                                  |
+| `AcceptDeliveryCommand { excludedSkus }` | `b2b/catalog/application/`                           | promeut les faits, **écarte** les SKU désignés (qui gardent leur fait courant, §7.3), pose une version | refuse une arrivée déjà close (**en base**, cf. §11.7) ; refuse d'écarter un SKU qui n'est **ni dans l'arrivée ni dans le miroir** |
+| `CatalogVersion`                         | `b2b/catalog/domain/`                                | la version acceptée, archivée entière (§7)                                                             | immuable après pose                                                                                                                |
+| `orders.catalogVersionId`                | schéma `public`                                      | rattache une commande à sa version                                                                     | `null` pour l'historique — « on ne sait pas »                                                                                      |
 
 🔴 **`AcceptDeliveryCommand` est le geste qui n'existe nulle part aujourd'hui**, et
 c'est lui qui fait que « livrer » cesse d'être « mettre en vente ». Il clôt
@@ -1707,16 +1957,23 @@ l'arrivée en une fois : il n'existe jamais d'arrivée à moitié validée.
 
 ### D · Le garde-fou ciblé
 
-| Élément                                      | Où                                 | Ce qu'il fait                                                                                           | Ce qu'il REFUSE           |
-| -------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `suspiciousLines(delivery, floors, history)` | `b2b/catalog/domain/`              | marque **écartées d'office** les lignes sous plancher, à variation anormale, ou sans prix pro antérieur | rien — pure, elle signale |
-| `PriceFloor` / `resolve-floor.ts`            | `b2b/pricing/domain/` — **existe** | le plancher applicable                                                                                  | —                         |
-| `catalog_price_history`                      | schéma `public` — **existe**       | le prix effectif daté, par SKU                                                                          | —                         |
-| `engagedLines(delivery, engagements)`        | `b2b/catalog/domain/`              | **nomme** les commandes ouvertes dont un article change — la commande, le client, le SKU, le champ      | rien — pure, elle signale |
-| `OpenEngagementsReader` (port)               | `b2b/catalog/domain/ports/`        | les lignes des commandes `placed` / `confirmed` / `in_production`, par SKU                              | —                         |
+| Élément                                      | Où                                 | Ce qu'il fait                                                                                                               | Ce qu'il REFUSE           |
+| -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `suspiciousLines(delivery, floors, history)` | `b2b/catalog/domain/`              | marque **écartées d'office** les lignes sous plancher, à variation anormale, ou sans prix pro antérieur                     | rien — pure, elle signale |
+| `PriceFloor` / `resolve-floor.ts`            | `b2b/pricing/domain/` — **existe** | le plancher applicable                                                                                                      | —                         |
+| `catalog_price_history`                      | schéma `public` — **existe**       | le prix effectif daté, par SKU                                                                                              | —                         |
+| `diffDelivery(delivery, mirror)`             | `b2b/catalog/domain/`              | par SKU, **les champs qui changent** — le retrait compris. Le diff de l'arrivée que le §8 promet à l'écran                  | rien — pure               |
+| `engagedLines(changes, engagements)`         | `b2b/catalog/domain/`              | **nomme** les commandes ouvertes dont un article change — la commande, le client, le SKU, le champ. Consomme `diffDelivery` | rien — pure, elle signale |
+| `OpenEngagementsReader` (port)               | `b2b/catalog/domain/ports/`        | les lignes des commandes `placed` / `confirmed` / `in_production`, par SKU                                                  | —                         |
 
 Une arrivée ordinaire se valide d'un clic ; une arrivée qui porte un prix sous
 plancher s'arrête **sur cette ligne-là** (§13).
+
+⚠️ **`diffDelivery` porte deux lectures, pas une** (§6.2 ter) : l'escalade à la
+réception le lit seul — « cette arrivée touche-t-elle une déclaration
+d'allergène ? », quelle que soit la population commandée — et `engagedLines` le
+croise avec les commandes ouvertes au moment de la validation. Les confondre
+avait rendu la cloche muette sur le cas majoritaire.
 
 ⚠️ `engagedLines` **ne retient rien** : elle nomme. Une version passe entière,
 même sur un article engagé (§11.10) — retenir bloquerait indéfiniment les
@@ -1776,13 +2033,13 @@ lignes d'une arrivée qui doit d'abord exister.
 Les treize questions du §11 sont tranchées ; ce qui suit attend une
 **implémentation**, ce qui n'est pas la même chose :
 
-| Ce qui reste                         | Décidé au | Pourquoi hors de ce plan                        |
-| ------------------------------------ | --------- | ----------------------------------------------- |
-| Le retrait non destructif            | §11.1     | précondition du §12, pas du cycle décrit ici    |
-| Le compte d'abonnements affiché      | §11.9     | une lecture, à greffer sur l'aperçu (tranche 2) |
-| Le port de retour et la frise        | §6.3      | dépend des versions (tranche 7)                 |
-| `hash` en `@unique`                  | §11.7     | tranche 8, indépendante                         |
-| Les allergènes figés sur `OrderLine` | §11.10    | tranche 9, antérieure à ce chantier             |
+| Ce qui reste                                       | Décidé au   | Pourquoi hors de ce plan                        |
+| -------------------------------------------------- | ----------- | ----------------------------------------------- |
+| Le retrait non destructif                          | §11.1       | précondition du §12, pas du cycle décrit ici    |
+| Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2) |
+| Le port de retour et la frise                      | §6.3        | dépend des versions (tranche 7)                 |
+| `hash` en `@unique`, `byHash()`, `lastPublished()` | §4.3, §11.7 | tranche 8, indépendante et indivisible          |
+| Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier             |
 
 ---
 
