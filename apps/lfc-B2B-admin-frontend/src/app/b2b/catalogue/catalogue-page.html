@@ -42,7 +42,15 @@
             famille sans taux de TVA dans le PIM. Ils sont bien reçus et leur prix canonique est là,
             mais la boutique ne peut pas les vendre : sans taux, rien ne saurait les facturer.
           </p>
-          <p>Réglez le taux « à emporter » de ces familles dans le PIM, puis relancez un push.</p>
+          <!-- Le contexte PROFESSIONNEL, et pas un autre : la projection du canal
+               lit `vatByContext["b2b"]`. Cet encart disait « à emporter » —
+               régler ce taux-là n'aurait rien débloqué, et l'article serait
+               resté écarté en `variant_sans_taux`. L'écran qui explique
+               pourquoi un article ne se vend pas envoyait au mauvais endroit. -->
+          <p>
+            Réglez le taux du contexte <strong>professionnel</strong> de ces familles dans le PIM —
+            celui de la plateforme B2B, pas celui du comptoir — puis relancez un push.
+          </p>
         </fold-callout>
       }
 

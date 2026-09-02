@@ -296,10 +296,6 @@ export class ProductsPage {
     await this.run(() => this.api.archiveProduct(product.id));
   }
 
-  protected async remove(product: Product): Promise<void> {
-    await this.run(() => this.api.deleteProduct(product.id));
-  }
-
   // ── Actions groupées (sur la sélection) ──────────────────────────────────
 
   protected async pushSelected(): Promise<void> {
@@ -313,10 +309,6 @@ export class ProductsPage {
 
   protected async archiveSelected(): Promise<void> {
     await this.batch((id) => this.api.archiveProduct(id));
-  }
-
-  protected async deleteSelected(): Promise<void> {
-    await this.batch((id) => this.api.deleteProduct(id));
   }
 
   private async batch(action: (id: string) => Promise<void>): Promise<void> {

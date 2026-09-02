@@ -92,14 +92,23 @@ describe('CatalogueOverviewPage', () => {
   });
 
   /**
-   * Sans ancre, il n'y a rien à soustraire : annoncer « rien n'a changé »
-   * serait faux sur un catalogue jamais figé.
+   * Sans référence, il n'y a rien à soustraire : annoncer « rien n'a changé »
+   * serait faux sur un catalogue jamais publié.
+   *
+   * 🔴 « PUBLIÉE », et non « posée ». La référence est l'ancre de la dernière
+   * publication réussie : des ancres peuvent exister — une simulation en pose
+   * une — sans qu'aucune ne soit partie. L'écran disait « aucune révision
+   * posée », ce qui est faux dès le premier dry-run, et renvoyait de surcroît à
+   * un bouton de pose manuelle qui n'existe plus.
    */
-  it('distingue « aucune ancre » de « rien n’a bougé »', async () => {
+  it('distingue « aucune ancre publiée » de « rien n’a bougé »', async () => {
     setup(overview({ lastRevision: null, sinceLastRevision: null }));
 
     const rendu = text(await render());
-    expect(rendu).toContain('Aucune révision posée');
+    expect(rendu).toContain('Aucune révision');
+    expect(rendu).toContain('publiée');
+    expect(rendu).not.toContain('posée');
+    expect(rendu).not.toContain('en préparant une publication');
     expect(rendu).not.toContain("n'a pas bougé depuis");
   });
 });

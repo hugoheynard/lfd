@@ -120,9 +120,4 @@ export class CatalogueApi {
   async restoreProduct(id: string): Promise<void> {
     await this.productsApi.restore(id);
   }
-
-  /** Pas de suppression physique (R3 backend) : « supprimer » = archiver. */
-  async deleteProduct(id: string): Promise<void> {
-    await this.productsApi.archive(id);
-  }
 }

@@ -72,11 +72,13 @@
         <fold-dropdown-item icon="upload" (selected)="pushSelected()">
           Pousser la sélection
         </fold-dropdown-item>
+        <!-- UN seul item, et il dit ce qui se passe. « Supprimer la sélection »
+             vivait ici à côté, avec une poubelle et un ton danger — et appelait
+             exactement la même route. Qui voulait retirer une fiche cliquait
+             dessus, la voyait disparaître de la liste, et croyait que c'était
+             fait. Le back-office ne supprime aucune fiche : il archive. -->
         <fold-dropdown-item icon="folder" (selected)="archiveSelected()">
           Archiver la sélection
-        </fold-dropdown-item>
-        <fold-dropdown-item icon="bin" tone="danger" (selected)="deleteSelected()">
-          Supprimer la sélection
         </fold-dropdown-item>
       </fold-dropdown>
 
@@ -149,13 +151,10 @@
             </fold-dropdown-item>
           }
           @if (p.status !== 'archived') {
-            <fold-dropdown-item icon="folder" (selected)="archive(p)">
+            <fold-dropdown-item icon="folder" tone="danger" (selected)="archive(p)">
               Archiver
             </fold-dropdown-item>
           }
-          <fold-dropdown-item icon="bin" tone="danger" (selected)="remove(p)">
-            Supprimer
-          </fold-dropdown-item>
         </fold-dropdown>
       </div>
     </ng-template>

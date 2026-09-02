@@ -47,9 +47,14 @@
     <fold-card>
       <fold-page-section title="Depuis la dernière publication" separator>
         @if (o.lastRevision === null) {
+          <!-- « PUBLIÉE », pas « posée » : la référence est l'ancre de la
+               dernière publication réussie. Des ancres peuvent très bien
+               exister — une simulation en pose une — sans qu'aucune ne soit
+               partie. Cette phrase disait « aucune révision posée » et
+               mentionnait un bouton de pose manuelle qui n'existe plus. -->
           <p class="ov-note">
-            Aucune révision posée. La première partira avec le prochain push, ou en préparant une
-            publication.
+            Aucune révision <strong>publiée</strong>. La référence apparaîtra au premier envoi réel
+            vers un canal&nbsp;: une simulation ne compte pas.
           </p>
         } @else {
           <p class="ov-last">
@@ -62,7 +67,11 @@
               <!-- Ce compte se calcule comme une capture qu'on ne pose PAS : la
                    même mécanique que le push, donc aucun écart possible entre
                    ce qu'on annonce ici et ce qui partirait. -->
-              <fold-callout appearance="inset" variant="warning">
+              <!-- NEUTRE, pas « warning » : du travail non poussé est l'état
+                   normal d'un catalogue vivant. Le rendre alarmant ferait sonner
+                   l'écran tous les jours — donc jamais. Même ton que la première
+                   ligne de l'écran de santé, pour le même fait. -->
+              <fold-callout appearance="inset" variant="neutral">
                 Le catalogue a bougé depuis&nbsp;: {{ since.added }} entré(s),
                 {{ since.removed }} retiré(s), {{ since.changed }} modifié(s).
               </fold-callout>
