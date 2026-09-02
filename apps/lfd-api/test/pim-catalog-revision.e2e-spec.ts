@@ -472,6 +472,43 @@ async function aSoldProduct(): Promise<string> {
   return id;
 }
 
+describe("L'empreinte relie la relecture à l'envoi", () => {
+  /**
+   * 🔴 Le bout en bout de la garde. Ce que seul ce niveau prouve : que le refus
+   * **sort en 409** et qu'aucune trace n'est écrite — un `BusinessError` mal
+   * catégorisé rendrait 500, et un refus qui laisserait une publication
+   * derrière lui raconterait un envoi qui n'a pas eu lieu.
+   */
+  it("rend 409 et n'inscrit rien quand l'empreinte a bougé", async () => {
+    await aSoldProduct();
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, fingerprint: "une-empreinte-d-avant" })
+      .expect(409);
+    await ctx.drain();
+
+    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(0);
+    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
+  });
+
+  it("laisse partir le push dont l'empreinte vient de la simulation", async () => {
+    await aSoldProduct();
+
+    const relu = await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    const empreinte: unknown = relu.body.fingerprint;
+    expect(typeof empreinte).toBe("string");
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: true, fingerprint: empreinte })
+      .expect(201);
+    await ctx.drain();
+
+    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(2);
+  });
+});
+
 describe("Le push pose et inscrit sa révision", () => {
   it("fige une révision avant d'envoyer, puis y inscrit sa destination", async () => {
     await aSoldProduct();

@@ -13,6 +13,19 @@ const pushPayload = z.object({
    * demande explicitement.
    */
   dryRun: z.boolean().default(true),
+  /**
+   * L'empreinte rendue par la simulation qu'on vient de relire.
+   *
+   * Fournie, elle est **exigée** : si le catalogue a bougé depuis, rien ne part
+   * et la route rend `409`. C'est ce qui relie la relecture à l'envoi — sans
+   * elle, l'aperçu qu'on regarde et le push qui suit sont deux appels séparés
+   * que rien ne rattache.
+   *
+   * ⚠️ **Optionnelle**, et c'est une étape, pas un état final : le front en
+   * ligne appelle déjà cette route sans elle, et un contrat servi ne se casse
+   * pas dans le même déploiement. Elle passe obligatoire au troisième temps.
+   */
+  fingerprint: z.string().min(1).optional(),
 });
 
 /**
@@ -32,6 +45,6 @@ export class B2bPushController {
   @PublicationGesture()
   @Post()
   push(@Body(new ZodBody(pushPayload)) body: z.infer<typeof pushPayload>): Promise<B2bPushSummary> {
-    return this.pushService.push(body.dryRun);
+    return this.pushService.push(body.dryRun, body.fingerprint);
   }
 }

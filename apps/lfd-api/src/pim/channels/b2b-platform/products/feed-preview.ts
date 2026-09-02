@@ -9,6 +9,23 @@ export interface FeedPreview {
   readonly candidates: number;
   /** Ce que la projection écarte, avec son motif. Vide est une bonne nouvelle. */
   readonly excluded: readonly Exclusion[];
+  /**
+   * L'**empreinte** de ce qui partirait — `projectionFingerprint(snapshot)`.
+   *
+   * C'est elle qui relie la relecture à l'envoi, et c'est tout ce qui manquait :
+   * l'aperçu qu'on regarde et le push qui suit sont deux appels séparés, et rien
+   * — ni identifiant, ni empreinte, ni refus — ne les rattachait. On relisait un
+   * catalogue et on en envoyait un autre, sans que personne ne le sache.
+   *
+   * Elle est calculée **ici** plutôt que chez l'appelant pour que les deux
+   * consommateurs du port en obtiennent la même : le push, qui la compare avant
+   * d'envoyer, et le contrôle de parité, qui la montre.
+   *
+   * ⚠️ Elle ne porte **pas** `generatedAt` : deux projections d'un catalogue
+   * identique à une milliseconde d'écart doivent la rendre égale, sans quoi le
+   * push refuserait toujours (cf. `canonicalProjection`).
+   */
+  readonly fingerprint: string;
 }
 
 /**

@@ -4,6 +4,7 @@ import type { CatalogIngestionReport } from "@lfd/catalog-sync";
 
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { ProjectionDriftError } from "../../shared/domain/errors/projection-errors.js";
 import { CatalogRevisionRepository } from "../../../catalogue/revision/domain/ports/catalog-revision.repository.js";
 import {
   TakeCatalogRevisionCommand,
@@ -25,6 +26,14 @@ export interface B2bPushSummary {
   readonly report: CatalogIngestionReport | null;
   /** Ce qui a été écarté, avec son motif. Vide est une bonne nouvelle, pas un défaut. */
   readonly excluded: readonly Exclusion[];
+  /**
+   * L'empreinte de ce qui vient d'être projeté.
+   *
+   * Rendue **dans les deux modes**, et pour deux raisons différentes : en
+   * simulation c'est le jeton que l'appelant redonnera au push réel ; en envoi
+   * c'est la trace de ce qui est parti.
+   */
+  readonly fingerprint: string;
 }
 
 @Injectable()
@@ -42,18 +51,46 @@ export class B2bCatalogPushService {
   /**
    * Projette le catalogue publié et l'envoie — ou le simule.
    *
-   * L'instant d'émission est pris **une seule fois** et traverse la projection :
-   * deux `new Date()` dans la même opération dériveraient de quelques
+   * L'instant d'émission est pris **une seule fois**, sur le `Clock` : deux
+   * lectures d'horloge dans la même opération dériveraient de quelques
    * millisecondes, et le snapshot porterait un instant qui n'est celui de rien.
    *
    * Rien n'est estampillé tant que la plateforme n'a pas répondu. Poser
    * `lastPushedAt` avant la réponse ferait passer un échec réseau pour un
    * catalogue en ligne — l'écran dirait « à jour » d'un produit que personne ne
    * peut acheter.
+   *
+   * @param expectedFingerprint l'empreinte rendue par l'aperçu qu'on vient de
+   *   relire. Fournie, elle est **exigée** : si la reprojection n'y correspond
+   *   plus, rien ne part. C'est ce qui relie la relecture à l'envoi, et c'est
+   *   tout ce qui manquait.
+   *
+   *   **Optionnelle pour l'instant**, et ce n'est pas un choix de confort : le
+   *   front en ligne appelle déjà cette route sans elle
+   *   (`pim/channels/b2b-channel-api.ts`), et un contrat servi ne se casse pas
+   *   dans le même déploiement. Elle devient obligatoire au troisième temps,
+   *   quand le front l'enverra.
+   *
+   * @throws {ProjectionDriftError} le catalogue a bougé depuis la relecture.
    */
-  async push(dryRunRequested: boolean): Promise<B2bPushSummary> {
+  async push(dryRunRequested: boolean, expectedFingerprint?: string): Promise<B2bPushSummary> {
     const driver: B2bCatalogDriver = dryRunRequested ? this.dryRun : this.live;
-    const { snapshot, candidates, excluded } = await this.feed.preview(new Date().toISOString());
+    const { snapshot, candidates, excluded, fingerprint } = await this.feed.preview(
+      this.clock.now().toISOString(),
+    );
+
+    // 🔴 AVANT le court-circuit sur `candidates === 0`, et c'est délibéré : un
+    // catalogue devenu vide depuis la relecture est précisément la dérive qu'on
+    // veut refuser. Sortir en « rien à faire » la ferait passer pour un succès.
+    //
+    // Un dry-run ne vérifie rien : c'est LUI qui produit l'empreinte, il ne la
+    // consomme pas. Refuser une simulation parce que l'état a changé serait
+    // refuser de montrer l'état actuel.
+    if (!dryRunRequested && expectedFingerprint !== undefined) {
+      if (expectedFingerprint !== fingerprint) {
+        throw new ProjectionDriftError(B2B_CHANNEL, expectedFingerprint, fingerprint);
+      }
+    }
 
     if (candidates === 0) {
       return {
@@ -61,6 +98,7 @@ export class B2bCatalogPushService {
         candidates: 0,
         report: null,
         excluded: [],
+        fingerprint,
       };
     }
 
@@ -95,6 +133,7 @@ export class B2bCatalogPushService {
       candidates,
       report,
       excluded,
+      fingerprint,
     };
   }
 
@@ -129,7 +168,7 @@ export class B2bCatalogPushService {
     }
     await this.prisma.b2bChannelBinding.updateMany({
       where: { productId: { in: [...productIds] } },
-      data: { lastPushedAt: new Date() },
+      data: { lastPushedAt: new Date(this.clock.now()) },
     });
   }
 }

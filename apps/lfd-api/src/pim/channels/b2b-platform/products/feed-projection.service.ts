@@ -5,6 +5,7 @@ import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 import { ProPriceRatioNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { projectionFingerprint } from "../../shared/domain/canonical-projection.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
@@ -46,10 +47,16 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
   async preview(generatedAt: string): Promise<FeedPreview> {
     const productIds = await this.membership.publishedProductIds();
     if (productIds.length === 0) {
+      // Le vide porte une empreinte comme le reste, et il le faut : relire
+      // quatre-vingt-quinze articles puis pousser un catalogue devenu vide est
+      // la dérive la plus coûteuse qui soit. Sans empreinte ici, ce cas-là
+      // sortirait en « rien à faire » — un succès.
+      const empty = emptySnapshot(generatedAt);
       return {
-        snapshot: emptySnapshot(generatedAt),
+        snapshot: empty,
         candidates: 0,
         excluded: [],
+        fingerprint: projectionFingerprint(empty),
       };
     }
 
@@ -89,7 +96,16 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),
       generatedAt,
     );
-    return { snapshot, candidates: productIds.length, excluded };
+    // L'empreinte se calcule ICI, sur la projection qu'on vient de produire :
+    // c'est la seule façon qu'elle désigne exactement ce que l'appelant tient.
+    // La recalculer plus haut, sur un snapshot repassé de main en main, rouvrirait
+    // le trou qu'elle ferme.
+    return {
+      snapshot,
+      candidates: productIds.length,
+      excluded,
+      fingerprint: projectionFingerprint(snapshot),
+    };
   }
 }
 
