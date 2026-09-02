@@ -28,7 +28,7 @@ name: ops_catalog_parity
 # faisait pas, et le disait : « ce workflow ne sait pas distinguer *pas encore
 # poussé* de *le miroir a décroché* ». Il le sait — c'est tout l'objet du
 # découpage en trois lignes de
-# `documentation/pim/conception-stage-evaluer-pousser.md` (§5.1 bis). Les deux
+# `documentation/pim/cycle-catalogue-du-pim-a-la-vente.md` (§8). Les deux
 # constats qui décrivent un fonctionnement normal se lisent ailleurs ; celui-ci
 # est le seul qui doive réveiller quelqu'un.
 #

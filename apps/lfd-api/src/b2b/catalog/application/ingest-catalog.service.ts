@@ -50,7 +50,7 @@ export class IngestCatalogService {
     // changement écarté ne s'écrit pas, et un RETRAIT écarté ne s'applique pas.
     // On n'écarte donc pas une ligne mais un SKU, ce qui rend exprimable le
     // refus d'un retrait — impossible autrement, un retrait n'étant qu'une
-    // absence dans le snapshot (§7.3 du document de conception).
+    // absence dans le snapshot.
     const excluded = new Set(excludedSkus);
     const receivedAt = new Date(snapshot.generatedAt);
 

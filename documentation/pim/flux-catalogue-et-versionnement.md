@@ -500,7 +500,7 @@ envoyer.
 > 🔴 **Ce dernier paragraphe est périmé depuis le 2026-09-01 : le bouton est
 > retiré.** Le §14 lui avait ôté son rôle de déclencheur en lui gardant celui de
 > point de reprise ; ce reste-là ne survit pas.
-> [`conception-stage-evaluer-pousser.md`](conception-stage-evaluer-pousser.md)
+> [`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md)
 > §4.1 bis montre pourquoi : `latest()` rend la dernière ancre **posée**, sans
 > regarder si elle a été publiée. Une ancre manuelle devient donc la référence de
 > tous les diffs — « N changements depuis la dernière révision » se calcule

@@ -79,7 +79,7 @@ export abstract class B2bDeliveryFactsReader {
    * pas : jamais arrivé, et arrivé puis retiré — le retrait supprime la ligne.
    * L'écran doit donc s'en tenir à « la plateforme ne l'a pas », sans conclure
    * qu'il n'y a jamais été. La distinction viendra avec le retrait non
-   * destructif (§11.1 du document de conception).
+   * destructif : `catalog_items.withdrawn_at` marque la sortie.
    */
   abstract factsFor(skus: readonly string[]): Promise<ReadonlyMap<string, SkuDeliveryFacts>>;
 }

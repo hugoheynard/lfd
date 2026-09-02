@@ -97,7 +97,7 @@ import { CheckCatalogParityHandler } from "./application/queries/check-catalog-p
     { provide: CanonicalPriceHistoryReader, useClass: PrismaCanonicalPriceHistoryReader },
     // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
     // continue d'écrire les faits en direct, et la bascule est un déploiement
-    // séparé, derrière un drapeau (§9 du document de conception).
+    // séparé, derrière un drapeau `B2B_DELIVERY_INBOX`.
     { provide: CatalogDeliveryRepository, useClass: PrismaCatalogDeliveryRepository },
     // Les versions : deux ports pour deux questions (ISP). Écrire n'a qu'un
     // geste — `append` —, parce qu'une archive ne se modifie pas ; lire sert la

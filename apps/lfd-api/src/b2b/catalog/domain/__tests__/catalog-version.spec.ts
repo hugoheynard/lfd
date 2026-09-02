@@ -107,7 +107,7 @@ describe("CatalogVersion.photograph", () => {
   });
 
   /**
-   * Le cas limite du §7.3, et il tombe juste : un catalogue peut être vide (tout
+   * Le cas limite, et il tombe juste : un catalogue peut être vide (tout
    * a été retiré). Refuser la pose obligerait à choisir entre ne pas archiver ce
    * geste-là et inventer une ligne.
    */

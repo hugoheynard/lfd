@@ -48,7 +48,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
    * aller-retour A → B → A, l'ancre A reçoit une seconde publication mais son
    * `takenAt` reste le plus ancien : le tri par pose rendrait **B**, et l'écran
    * annoncerait des changements sur un catalogue qu'on vient de republier
-   * entier. C'est le tableau du §4.3, à un tri près.
+   * entier. Les deux rédactions sont à un tri près, et une seule est juste.
    *
    * D'où deux requêtes plutôt qu'une jointure triée : la dernière publication
    * réussie, puis l'ancre qu'elle désigne. La table est petite — quelques lignes

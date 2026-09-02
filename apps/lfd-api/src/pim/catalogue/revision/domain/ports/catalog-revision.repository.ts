@@ -61,8 +61,8 @@ export abstract class CatalogRevisionRepository {
    * reçoit une seconde publication mais garde sa date de pose. Trier les ancres
    * publiées par leur pose rendrait B — et rejouerait le bug.
    *
-   * ⚖️ **Au moins une**, pas toutes. Le §4.2 du document de conception définit R
-   * comme un consensus — publiée sur TOUS les canaux. Appliqué ici, le diff
+   * ⚖️ **Au moins une**, pas toutes. Le modèle définit R comme un consensus —
+   * publiée sur TOUS les canaux. Appliqué ici, le diff
    * perdrait sa référence dès qu'un canal est en retard, c'est-à-dire souvent.
    * Le consensus reste une information d'écran (« Shopify est deux ancres en
    * arrière ») ; ce qui informe ne doit pas devenir le dénominateur de tout.
