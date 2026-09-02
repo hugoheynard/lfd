@@ -120,7 +120,6 @@ export class ProductsPage {
   protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly memberships = signal<B2bMembershipView[]>([]);
   protected readonly rates = signal<VatRate[]>([]);
-  protected readonly pushMessage = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
@@ -348,15 +347,6 @@ export class ProductsPage {
   }
 
   /** Un produit précis — le bouton de la ligne. */
-  protected async push(product: Product): Promise<void> {
-    await this.runPush([product.id]);
-  }
-
-  /** Tout le catalogue publiable — le bouton d'entête. */
-  protected async pushAll(): Promise<void> {
-    await this.runPush(undefined);
-  }
-
   protected categoryName(id: string): string {
     return this.byId().get(id)?.name.fr ?? '—';
   }
@@ -381,15 +371,6 @@ export class ProductsPage {
   }
 
   // ── Actions groupées (sur la sélection) ──────────────────────────────────
-
-  protected async pushSelected(): Promise<void> {
-    const ids = this.selectedIds();
-    if (ids.length === 0) {
-      return;
-    }
-    await this.runPush(ids);
-    this.selection.set(new Set());
-  }
 
   protected async archiveSelected(): Promise<void> {
     await this.batch((id) => this.api.archiveProduct(id));
@@ -421,28 +402,6 @@ export class ProductsPage {
       return product.channelsOverride ?? NO_CHANNELS;
     }
     return resolveChannels(product, category).channels;
-  }
-
-  private async runPush(productIds: string[] | undefined): Promise<void> {
-    this.busy.set(true);
-    this.pushMessage.set(null);
-    try {
-      const summary = await this.shopify.push(productIds);
-      const pushed = summary.results.filter((r) => r.outcome === 'pushed').length;
-      const unchanged = summary.results.filter((r) => r.outcome === 'unchanged').length;
-      const failed = summary.results.filter((r) => r.outcome === 'failed').length;
-
-      // Le mode est rappelé à chaque fois : sans ça on croirait pousser pour de vrai.
-      const prefix = summary.mode === 'dry-run' ? 'Simulation — ' : 'Envoi réel — ';
-      this.pushMessage.set(
-        `${prefix}${pushed} poussé(s), ${unchanged} inchangé(s), ${failed} en échec.`,
-      );
-      this.bindings.set(await this.shopify.listBindings());
-    } catch {
-      this.pushMessage.set('Envoi impossible : le serveur est injoignable.');
-    } finally {
-      this.busy.set(false);
-    }
   }
 
   private async run(action: () => Promise<unknown>): Promise<void> {

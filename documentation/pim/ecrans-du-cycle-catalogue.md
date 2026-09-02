@@ -34,6 +34,27 @@ l'enchaînement lisible — et c'est ce qui a le plus manqué.
 ⚠️ **« Publier au catalogue » ne met rien en vente**, et l'écran doit le dire là
 où on appuie. Une fiche en ligne, jamais poussée, n'est vendue nulle part.
 
+### 🔴 Et chaque geste n'a qu'UNE porte
+
+Les quatre premiers sont des **décisions sur une fiche** : ils vivent là où on
+regarde les fiches — la liste et la fiche elle-même. **Envoyer n'en est pas
+une** : c'est un acte qui part vers un système tiers, qui se **relit avant** de
+partir, et qui n'a qu'un seul écran — Publication.
+
+La liste produits a longtemps porté « Pousser », « Pousser la sélection » et
+« Tout pousser sur Shopify ». Ce n'était pas seulement une confusion de place :
+ces trois-là appelaient l'envoi **en réel, sans empreinte** — `dryRun` à faux,
+aucun haché relu. Il existait donc deux portes vers le même envoi, et celle-ci
+**contournait entièrement la garde de dérive** que le cycle repose sur elle.
+Retirées le 2026-09-02 ; la liste renvoie vers Publication.
+
+⚠️ **L'asymétrie entre les deux canaux est réelle, et il faut la dire.** La
+boutique B2B a une **appartenance décidée** (`b2b_channel_binding`) : on choisit
+d'y vendre une fiche. Shopify n'en a pas — son binding **naît du push**
+(`push.service.ts`, les deux seuls `upsert`), donc tout ce qui est publiable y
+part. Il n'y a donc pas d'action « Vendre sur Shopify », et son absence n'est pas
+un oubli.
+
 ---
 
 ## 2. Le parcours, écran par écran
@@ -99,13 +120,14 @@ vend**, l'appartenance dit **si le canal l'emporte**. La projection exige les
 deux, et l'écran doit les distinguer parce que régler l'une sans l'autre ne
 produit rien.
 
-| Doit offrir                                         | État | Note                                              |
-| --------------------------------------------------- | ---- | ------------------------------------------------- |
-| Ouvrir la fiche                                     | ✅   |                                                   |
-| **Publier au catalogue** / **Dépublier**            | ✅   | selon l'état                                      |
-| **Archiver** — et rien qui lui ressemble            | ✅   | « Supprimer » a été retiré : deux items, un effet |
-| Pousser vers Shopify (unitaire et en lot)           | ✅   |                                                   |
-| **Vendre sur la boutique B2B** (unitaire et en lot) | ✅   | et **Retirer**, symétrique                        |
+| Doit offrir                                         | État      | Note                                               |
+| --------------------------------------------------- | --------- | -------------------------------------------------- |
+| Ouvrir la fiche                                     | ✅        |                                                    |
+| **Publier au catalogue** / **Dépublier**            | ✅        | selon l'état                                       |
+| **Archiver** — et rien qui lui ressemble            | ✅        | « Supprimer » a été retiré : deux items, un effet  |
+| **Vendre sur la boutique B2B** (unitaire et en lot) | ✅        | et **Retirer**, symétrique                         |
+| Un renvoi vers **Publication**                      | ✅        | l'envoi n'a qu'une porte, et ce n'est pas celle-ci |
+| ~~Pousser, unitaire ou en lot~~                     | ✅ retiré | envoyait en réel, sans relecture ni empreinte      |
 
 ---
 

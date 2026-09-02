@@ -10,22 +10,16 @@
         Créer un produit
       </button>
     }
-    @if (products().length > 0) {
-      <button
-        foldButton
-        emphasis="outline"
-        intent="neutral"
-        [disabled]="busy()"
-        (click)="pushAll()"
-      >
-        Tout pousser sur Shopify
-      </button>
-    }
+    <!-- 🔴 « Tout pousser sur Shopify » vivait ici, et envoyait EN RÉEL sans
+         relecture : `push(ids)` part avec `dryRun = false` et aucune empreinte.
+         Il existait donc deux portes vers le même envoi, et celle-ci
+         contournait entièrement la garde de dérive. Envoyer est un geste de la
+         page Publication — on y simule, puis on envoie ce qu'on a relu. -->
+    <button foldButton emphasis="outline" intent="neutral" routerLink="/pim/publication">
+      Publier vers les canaux
+    </button>
   </div>
 
-  @if (pushMessage(); as text) {
-    <fold-callout appearance="inset" variant="info">{{ text }}</fold-callout>
-  }
   @if (error(); as message) {
     <fold-callout appearance="inset" variant="alert" announce>
       {{ message }}
@@ -69,10 +63,11 @@
         >
           Actions ({{ selectedCount() }})
         </button>
-        <fold-dropdown-item icon="upload" (selected)="pushSelected()">
-          Pousser la sélection
-        </fold-dropdown-item>
-        <!-- Ouvrir un canal se fait une fois, sur tout un catalogue : le geste
+        <!-- Ce menu ne porte que des DÉCISIONS sur la fiche : où elle se vend,
+             et si elle est au catalogue. Envoyer n'en est pas une — c'est un
+             geste de la page Publication, qui se relit avant de partir.
+
+             Ouvrir un canal se fait une fois, sur tout un catalogue : le geste
              unitaire seul aurait demandé quatre-vingt-quinze clics. -->
         <fold-dropdown-item icon="shopping-bag" (selected)="setB2bSelected(true)">
           Vendre sur la boutique B2B
@@ -153,9 +148,6 @@
 
           <fold-dropdown-item icon="edit" (selected)="openProduct(p)">
             Ouvrir la fiche
-          </fold-dropdown-item>
-          <fold-dropdown-item icon="upload" [disabled]="busy()" (selected)="push(p)">
-            Pousser
           </fold-dropdown-item>
           <!-- 🔴 Le geste qui manquait. La projection du canal démarre sur cette
                appartenance : une fiche qui n'y est pas n'est JAMAIS candidate au
