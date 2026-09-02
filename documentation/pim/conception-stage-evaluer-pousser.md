@@ -667,8 +667,29 @@ n'ont ni la même cause, ni le même responsable, ni la même urgence :
 | une arrivée attend validation           | le PIM a poussé, personne n'a validé           | `catalog_delivery`       | non      |
 | le miroir ≠ la dernière version validée | **rien n'explique cet écart**                  | `compareToReference`     | **oui**  |
 
-Une seule des trois est encore une parité — les deux autres se **lisent**, elles
-ne se comparent pas. C'est le vrai résultat du découpage : l'écran arrête d'être
+#### Deux référents, donc DEUX routes — et un consommateur qu'on ne voit pas
+
+**[tranché le 2026-09-02]** `GET /admin/catalog/parity` **ne change pas** : elle
+reste l'aperçu, référent « la projection du moment ». L'écran de santé prend une
+route à lui, avec son référent à lui. Changer la première aurait cassé ses
+consommateurs pour servir un besoin qui n'est pas le sien.
+
+🔴 **Et l'un de ces consommateurs ne casse pas bruyamment.** La route en a
+quatre : deux e2e (`test/catalog-parity.e2e-spec.ts:147,154`), l'écran
+`pim/integration/b2b-integration/b2b-integration.ts:96`, et
+**`.github/workflows/ops_catalog_parity.yml:37`**, qui l'appelle **en
+production**. Les trois premiers rougissent au moindre changement de forme ; le
+quatrième est en `workflow_dispatch`, donc il échoue **le jour où quelqu'un le
+lance**, des semaines plus tard. Ce n'est pas une hypothèse : il lisait huit
+champs disparus et personne ne le savait (réparé le 2026-09-02, l'en-tête du
+fichier le raconte).
+
+Le workflow **migre vers la route de santé**, dans le même lot que la tranche 11 :
+ce qu'il surveille est « le miroir a-t-il décroché », pas « qu'est-ce que je
+m'apprête à envoyer ».
+
+Une seule des trois lignes est encore une parité — les deux autres se **lisent**,
+elles ne se comparent pas. C'est le vrai résultat du découpage : l'écran arrête d'être
 « un contrôle de parité » pour devenir « où en est le catalogue », et la seule
 ligne qui doit réveiller quelqu'un cesse d'être noyée par les deux qui ne le
 doivent pas.
@@ -731,6 +752,21 @@ référence — il est bien « dans le miroir, plus publié ».
 que le `Clock` interdit (CLAUDE.md §3.2). Son JSDoc justifie même l'appel unique
 — ce qui rend la dette d'autant plus facile à ne jamais voir. À rebrancher quand
 on touchera ce fichier.
+
+✅ **Et une objection écartée, vérifiée le 2026-09-02.** La contradiction
+d'architecture reprochait à ce service d'importer `B2bCatalogFeedPreview`
+« directement, pas par un port », en violation du « port uniquement » de la
+matrice. C'est **faux** : `B2bCatalogFeedPreview` **est** une classe abstraite,
+donc un port, et son propre JSDoc l'écrit — « `b2b` lit un port publié par `pim`,
+jamais une table ». Le service est conforme.
+
+⚠️ La violation existe, mais dans le fichier d'à côté — celui vers lequel cette
+section redirige la parité. `prisma-catalog-admin.reader.ts:4-5` importe
+`findMapping` et `toInco`, deux **fonctions concrètes**, et s'en sert pour
+recalculer des libellés d'allergènes que `catalog_items.allergen_labels` porte
+déjà. Ça n'affecte pas la parité — elle ne compare que SKU, nom, prix et taux —
+donc cette section **ne l'aggrave pas**. Inventaire et arbitrage dans
+[`todos/todo-mur-entre-contextes.md`](../todos/todo-mur-entre-contextes.md).
 
 ### 5.2 Shopify — l'empreinte au grain du PRODUIT, pas du canal
 
@@ -1164,11 +1200,21 @@ coder — s'y tromper coûte le double.
 
 ## 9. Les migrations, en trois déploiements
 
-| #   | Étendre                                                                   | Basculer                                               | Resserrer                                             |
-| --- | ------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
-| 1   | `catalog_revision_publication.projection_fingerprint` **nullable**        | le push l'écrit ; l'écart se calcule quand elle est là | **rien** — cf. ci-dessous                             |
-| 2   | table `catalog_delivery` (une ligne : ancre, snapshot, reçu le), **vide** | la livraison y écrit ; la validation promeut           | l'ingestion n'écrit plus les faits de vente en direct |
-| 3   | **compter** les doublons de `catalog_revision.hash`                       | les résoudre s'il y en a                               | `hash` devient `@unique` (§11.7)                      |
+| #   | Étendre                                                                   | Basculer                                               | Resserrer                                              |
+| --- | ------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| 1   | `catalog_revision_publication.projection_fingerprint` **nullable**        | le push l'écrit ; l'écart se calcule quand elle est là | **rien** — cf. ci-dessous                              |
+| 2   | table `catalog_delivery` (une ligne : ancre, snapshot, reçu le), **vide** | la livraison y écrit ; la validation promeut           | l'ingestion n'écrit plus les faits de vente en direct  |
+| 3   | **compter** les doublons de `catalog_revision.hash`                       | les résoudre s'il y en a                               | `hash` devient `@unique` (§11.7)                       |
+| 4   | table `catalog_version`, **vide** (§7.3)                                  | la validation y écrit                                  | —                                                      |
+| 5   | `orders.catalog_version_id` **nullable**                                  | la passation le renseigne                              | **rien** — `NULL` = « on ne sait pas » (§7.5)          |
+| 6   | colonnes d'allergènes sur `order_lines` (§11.10)                          | la passation les fige, codes **et** libellés (§11.13)  | **rien** — trois états à préserver, cf. ci-dessous     |
+| 7   | `catalog_items.withdrawn_at` **nullable** (§11.1)                         | `removeMany` **marque** ; les six lectures filtrent    | **rien** — la cascade reste, elle ne se déclenche plus |
+
+🔴 **Les points 4 à 7 manquaient**, et c'est le §9 qui est censé être l'endroit
+où une migration dangereuse se voit. Relevé par la contradiction du 2026-09-02.
+Deux d'entre eux touchent des tables **servies** — `orders` et `order_lines` —,
+mais tous deux sont strictement **additifs** : une colonne nullable de plus, et
+aucun contrat existant ne change.
 
 🔴 **La V2 en comptait trois, et deux étaient la même.** Elle posait une
 empreinte sur `b2b_channel_binding` (point 1) **et** une empreinte de projection
@@ -1202,6 +1248,59 @@ pour ça qu'il est en trois temps plutôt qu'en un. Poser `@unique` sur une
 colonne qui porte déjà des doublons fait tomber la migration en production. Le
 comptage n'est pas une précaution de style : c'est la seule façon de savoir si
 la deuxième étape a du travail.
+
+🔴 **Le point 7 est le seul dont la BASCULE peut casser du comportement.**
+Marquer au lieu de supprimer n'est additif que dans le schéma : dès que
+`removeMany` marque, **toute lecture qui oublie le filtre remet un article retiré
+en vente**. Il y en a six, toutes dans `b2b/catalog/infrastructure/` :
+
+| Fichier                             | Lignes                                                       |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `prisma-catalog-item.repository.ts` | `:56` (`load`), `:64` (`loadAll`)                            |
+| `prisma-catalog-admin.reader.ts`    | `:39` (`list` — celle que la parité lit désormais, §5.1 bis) |
+| `prisma-catalog.reader.ts`          | `:42`, `:72`, `:88`                                          |
+
+C'est la plus insidieuse des dettes de ce chantier, et pour une raison de nature :
+les autres réserves sont des **absences** — on sait qu'on n'a rien. Celle-ci est
+une **régression introduite par une amélioration**, sur une surface en service,
+et le geste qui la crée est motivé par la sécurité des données.
+
+#### Ne pas vérifier le filtre — le rendre inoubliable
+
+Une porte syntaxique l'attraperait mal, et un e2e qui énumère les six ne protège
+que des six d'aujourd'hui. **Le filtre doit devenir structurel : on ne l'oublie
+plus parce qu'on ne l'écrit plus.**
+
+Le motif existe déjà dans le dépôt — `$extends` avec un intercepteur `query`,
+utilisé par `countedPrisma` (`platform/database/counted-prisma.ts`) et composé
+dans `database.module.ts:104`. Une seconde extension y injecte
+`withdrawnAt: null` dans le `where` de `catalogItem`, et le filtre cesse d'être
+une discipline.
+
+⚠️ **Trois pièges, tous connus d'avance :**
+
+1. **`findUnique` refuse un champ non unique dans son `where`.** Deux des six
+   lectures en sont (`prisma-catalog.reader.ts:42`,
+   `prisma-catalog-item.repository.ts:56`) : elles basculent en `findFirst`.
+   C'est le motif documenté de Prisma pour le retrait logique, pas un
+   contournement.
+2. **`$extends` rend un NOUVEAU client**, il ne modifie pas celui qu'on lui
+   passe — `counted-prisma.ts:18-22` le dit déjà, et en tire la conséquence :
+   le module fournit le résultat sous le jeton `PrismaService`, faute de quoi
+   tout le monde continuerait d'injecter le client nu **sans que rien ne le
+   signale**. La seconde extension se compose au même endroit.
+3. **Il faut une échappatoire nommée** pour les rares lectures qui doivent voir
+   les retirés — le rollback, un audit. Une échappatoire explicite vaut
+   infiniment mieux que six oublis possibles.
+
+L'e2e reste utile, mais il change de rôle : il ne remplace plus le filtre, il
+prouve que l'extension est branchée.
+
+⚠️ Et le point 6 porte un piège de forme, déjà nommé au §11.10 : les allergènes
+ont **trois** états significatifs (`null` = pas de fiche, `[]` = déclarée sans
+allergène, une liste = les codes) plus `incomplete`. Une colonne qui ne saurait
+en représenter que deux transformerait une ignorance en affirmation, et
+l'affirmation fabriquée serait « sans allergène ».
 
 **Le point 2 est une table neuve et vide.** Rien de ce qui est en vente ne change
 d'état au déploiement. Le premier push d'après remplira la réception.
@@ -1242,6 +1341,42 @@ demande qu'un déploiement soit **prêt à repartir**, pas seulement possible.
 | 7   | Le port de retour, pour la frise de la fiche produit                                                     | 5         |
 | 8   | `hash` en `@unique` **+ `byHash()` + `lastPublished()`** — indissociables (§4.3)                         | rien      |
 | 9   | Les **allergènes figés** sur `OrderLine`, codes **et** libellés (§11.10, §11.13)                         | rien      |
+| 10  | **Le retrait non destructif** (§11.1) — l'agrégat, le filtre par `$extends`, l'échappatoire (§9)         | rien      |
+| 11  | **L'écran de santé à trois lignes** (§5.1 bis) + la migration du workflow d'ops                          | 4, 5, 6   |
+
+🔴 **La tranche 10 conditionne le GESTE de rollback, pas la tranche 5.** La
+dépendance manquait. Poser les versions ne détruit rien ; mais dès qu'elles
+existent, revenir à l'une d'elles est trivialement à portée — « le rejeu, c'est
+l'ingestion » (§12). Or ré-ingérer une version ancienne retire les SKU entrés
+depuis, et `removeMany` **détruit** aujourd'hui leur décision par cascade. Ouvrir
+le geste avant la tranche 10, c'est offrir un bouton qui efface les prix négociés
+les plus récents.
+
+⚠️ **Et la tranche 10 est plus grosse qu'un `UPDATE` à la place d'un `DELETE`.**
+Elle change la **nature** du geste : marquer, c'est muter un état, donc
+`removeMany(skus)` — des primitives qui écrivent une colonne — devient exactement
+le « transaction script » que le CLAUDE.md §3.1 interdit. Le retrait doit passer
+par l'agrégat : `CatalogItem.withdraw()`, puis `saveMany`.
+
+Elle invalide aussi **deux textes qui affirment le contraire**, à réécrire dans le
+même lot plutôt qu'à découvrir en rouge :
+
+| Texte                                     | Ce qu'il dit aujourd'hui                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `test/catalog-ingest.e2e-spec.ts:166-175` | test **vert et nommé** — « un article retiré emporte sa décision », qui attend `catalogItemOverride.count() === 0` |
+| `catalog-item.repository.ts:28-34`        | « Leur décision part avec eux — un prix négocié ne veut plus rien dire sans l'article qu'il tarifait »             |
+
+Le test ne se supprime pas : il **s'inverse**, en gardant son JSDoc d'origine en
+citation. « L'autre face de la cascade, celle où elle est juste » était vrai tant
+que le retrait était définitif ; c'est le rollback qui l'a périmé, pas une erreur
+de jugement.
+
+⚠️ **La tranche 11 ne dépend PAS du port de retour**, contrairement à ce qu'une
+lecture rapide suggère. Sa première ligne — « R+1 ≠ R côté PIM » — se lit bien
+côté PIM, mais l'écran est un **front** : il compose deux appels, un au PIM et un
+au B2B, comme `b2b-integration.ts:96` en fait déjà un aujourd'hui. Le port du
+§6.3 sert quand un **backend** a besoin d'un fait de l'autre — la frise de la
+fiche produit. Un écran qui agrège n'en a pas besoin.
 
 ⚠️ **La tranche 8 ne se découpe pas.** Ses trois pièces se tiennent mutuellement
 (§4.3) : l'unicité seule rend l'écran faux après un retour en arrière,
@@ -2029,17 +2164,20 @@ A (forme canonique + empreinte)
 réception peut se bâtir en parallèle. D vient après C parce qu'il écarte des
 lignes d'une arrivée qui doit d'abord exister.
 
-⚠️ **Ce qui n'est PAS dans ce plan — et plus rien n'y attend une décision.**
-Les treize questions du §11 sont tranchées ; ce qui suit attend une
-**implémentation**, ce qui n'est pas la même chose :
+⚠️ **Ce qui a une tranche sans être sur le chemin critique.** Plus rien n'attend
+de décision — les treize questions du §11 sont tranchées. Ce qui suit attend une
+**implémentation**, ce qui n'est pas la même chose ; et chaque ligne porte
+désormais son numéro de tranche, parce qu'une décision sans accroche dans le §10
+est une décision qu'on redécouvre en production :
 
-| Ce qui reste                                       | Décidé au   | Pourquoi hors de ce plan                        |
-| -------------------------------------------------- | ----------- | ----------------------------------------------- |
-| Le retrait non destructif                          | §11.1       | précondition du §12, pas du cycle décrit ici    |
-| Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2) |
-| Le port de retour et la frise                      | §6.3        | dépend des versions (tranche 7)                 |
-| `hash` en `@unique`, `byHash()`, `lastPublished()` | §4.3, §11.7 | tranche 8, indépendante et indivisible          |
-| Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier             |
+| Ce qui reste                                       | Décidé au   | Où ça vit, et pourquoi c'est à part                |
+| -------------------------------------------------- | ----------- | -------------------------------------------------- |
+| Le retrait non destructif                          | §11.1       | **tranche 10** — précondition du GESTE de rollback |
+| Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
+| Le port de retour et la frise                      | §6.3        | dépend des versions (tranche 7)                    |
+| `hash` en `@unique`, `byHash()`, `lastPublished()` | §4.3, §11.7 | tranche 8, indépendante et indivisible             |
+| Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier                |
+| L'écran de santé, et le workflow d'ops qui migre   | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |
 
 ---
 
