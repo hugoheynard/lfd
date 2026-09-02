@@ -1,7 +1,10 @@
 import { CommandBus } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../../platform/time/clock.js";
-import { CatalogRevisionRepository } from "../../../../catalogue/revision/domain/ports/catalog-revision.repository.js";
+import {
+  CatalogRevisionRepository,
+  type RevisionPublication,
+} from "../../../../catalogue/revision/domain/ports/catalog-revision.repository.js";
 import { Test } from "@nestjs/testing";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
@@ -95,18 +98,24 @@ interface Harness {
   readonly service: B2bCatalogPushService;
   readonly bindings: SpyBindings;
   readonly sent: CatalogSnapshot[];
+  readonly publications: RevisionPublication[];
 }
 
 async function build(
   publishedIds: readonly string[],
   products: readonly ProductRecord[],
+  options: { readonly sendFails?: boolean } = {},
 ): Promise<Harness> {
   const bindings = new SpyBindings();
   const sent: CatalogSnapshot[] = [];
+  const publications: RevisionPublication[] = [];
 
   const live = {
     mode: "live" as const,
     send: (snapshot: CatalogSnapshot) => {
+      if (options.sendFails === true) {
+        return Promise.reject(new Error("la plateforme n'a pas répondu"));
+      }
       sent.push(snapshot);
       return Promise.resolve({
         acceptedProducts: snapshot.products.length,
@@ -137,7 +146,12 @@ async function build(
       },
       {
         provide: CatalogRevisionRepository,
-        useValue: { recordPublication: () => Promise.resolve() },
+        useValue: {
+          recordPublication: (publication: RevisionPublication) => {
+            publications.push(publication);
+            return Promise.resolve();
+          },
+        },
       },
       { provide: Clock, useValue: { now: () => new Date("2026-08-31T10:00:00.000Z") } },
       {
@@ -185,7 +199,7 @@ async function build(
     ],
   }).compile();
 
-  return { service: moduleRef.get(B2bCatalogPushService), bindings, sent };
+  return { service: moduleRef.get(B2bCatalogPushService), bindings, sent, publications };
 }
 
 describe("l’empreinte relie la relecture à l’envoi", () => {
@@ -337,5 +351,78 @@ describe("B2bCatalogPushService", () => {
       sku: "VIE-002-1",
       reason: "variant_sans_prix",
     });
+  });
+});
+
+/**
+ * **Ce que le canal a reçu s'inscrit sur la publication**, et nulle part
+ * ailleurs.
+ *
+ * C'est la seule valeur qui permette un jour de répondre à « le canal a-t-il ce
+ * que le référentiel produirait aujourd'hui ? ». L'empreinte de l'ancre ne le
+ * peut pas : elle décrit le catalogue, pas ce qu'un canal en tire.
+ */
+describe("l’empreinte de projection s’inscrit sur la publication", () => {
+  it("inscrit exactement celle que le push vient de rendre", async () => {
+    const { service, publications } = await build(["prd_1"], [product()]);
+
+    const summary = await service.push(false);
+
+    expect(publications).toHaveLength(1);
+    expect(publications[0]).toMatchObject({
+      channel: "b2b",
+      mode: "live",
+      outcome: "sent",
+      projectionFingerprint: summary.fingerprint,
+    });
+  });
+
+  /**
+   * 🔴 L'échec l'inscrit AUSSI, et c'est le cas qui compte le plus : le jour où
+   * l'envoi n'a pas abouti est le seul où l'on vient demander ce qu'on avait
+   * tenté d'envoyer. Ne poser l'empreinte qu'au succès rendrait la trace muette
+   * exactement quand on la lit.
+   */
+  it("inscrit ce qu’on avait tenté d’envoyer, même quand l’envoi échoue", async () => {
+    const { service, publications } = await build(["prd_1"], [product()], { sendFails: true });
+
+    await expect(service.push(false)).rejects.toThrow(/pas répondu/);
+
+    expect(publications).toHaveLength(1);
+    expect(publications[0]?.outcome).toBe("failed");
+    expect(typeof publications[0]?.projectionFingerprint).toBe("string");
+  });
+
+  /**
+   * Une simulation laisse une ligne elle aussi — délibérément, pour distinguer
+   * « jamais tenté » de « tenté à blanc ». C'est ce qui oblige TOUT lecteur
+   * cherchant « l'empreinte reçue » à filtrer `mode = 'live'` : sans ça, une
+   * simulation deviendrait la référence du canal.
+   */
+  it("inscrit aussi celle d’une simulation, sous son propre mode", async () => {
+    const { service, publications } = await build(["prd_1"], [product()]);
+
+    const summary = await service.push(true);
+
+    expect(publications[0]).toMatchObject({
+      mode: "dry-run",
+      outcome: "sent",
+      projectionFingerprint: summary.fingerprint,
+    });
+  });
+
+  /**
+   * Deux envois d'un catalogue inchangé portent la MÊME empreinte : c'est ce qui
+   * rend la lecture « le canal est-il à jour ? » possible sans comparer des
+   * payloads. Si elle bougeait d'un envoi à l'autre, le canal se dirait en écart
+   * de lui-même.
+   */
+  it("rend la même empreinte à deux envois d’un catalogue inchangé", async () => {
+    const { service, publications } = await build(["prd_1"], [product()]);
+
+    await service.push(false);
+    await service.push(false);
+
+    expect(publications[0]?.projectionFingerprint).toBe(publications[1]?.projectionFingerprint);
   });
 });

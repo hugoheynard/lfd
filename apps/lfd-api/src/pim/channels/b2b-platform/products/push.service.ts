@@ -129,14 +129,14 @@ export class B2bCatalogPushService {
         // L'échec s'inscrit AUSSI. Une trace qui n'existe qu'en cas de succès ne
         // raconte que les bons jours, et c'est le mauvais jour qu'on vient
         // relire.
-        await this.recordPublication(revision.id, driver.mode, "failed", null);
+        await this.recordPublication(revision.id, driver.mode, "failed", null, fingerprint);
         throw error;
       });
 
     if (driver.mode === "live") {
       await this.stamp(snapshot.products.map((product) => product.id));
     }
-    await this.recordPublication(revision.id, driver.mode, "sent", report);
+    await this.recordPublication(revision.id, driver.mode, "sent", report, fingerprint);
 
     return {
       mode: driver.mode,
@@ -148,12 +148,23 @@ export class B2bCatalogPushService {
     };
   }
 
-  /** Où cette révision est partie, et ce que la destination en a dit. */
+  /**
+   * Où cette révision est partie, ce que la destination en a dit, et **ce qui
+   * est parti** — l'empreinte de la projection.
+   *
+   * Elle s'inscrit dans les trois cas, y compris l'échec et la simulation. Ne la
+   * poser qu'au succès reviendrait à ne pas savoir ce qu'on avait tenté d'envoyer
+   * le jour où l'envoi a échoué, c'est-à-dire le seul jour où la question se
+   * pose. Le tri entre les trois est la charge du LECTEUR, qui filtre
+   * `mode = 'live' AND outcome = 'sent'` — pas celle de l'écrivain, qui perdrait
+   * l'information au lieu de la qualifier.
+   */
   private async recordPublication(
     revisionId: string,
     mode: string,
     outcome: string,
     report: unknown,
+    projectionFingerprint: string,
   ): Promise<void> {
     await this.revisions.recordPublication({
       revisionId,
@@ -161,6 +172,7 @@ export class B2bCatalogPushService {
       mode,
       outcome,
       report,
+      projectionFingerprint,
       publishedAt: new Date(this.clock.now()),
       publishedBy: currentRequestContext()?.actor.id ?? null,
     });

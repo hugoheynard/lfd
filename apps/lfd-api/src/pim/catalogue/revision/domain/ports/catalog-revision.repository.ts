@@ -13,6 +13,17 @@ export interface RevisionPublication {
   /** `sent` ou `failed`. L'échec s'inscrit : sinon on ne raconte que les bons jours. */
   readonly outcome: string;
   readonly report: unknown;
+  /**
+   * L'empreinte de la **projection** partie sur ce canal — jamais celle de
+   * l'ancre. L'ancre archive le catalogue ; la projection est ce qu'un canal en
+   * tire, et c'est elle seule qui répond à « le canal a-t-il reçu ce que le
+   * référentiel produirait aujourd'hui ? ».
+   *
+   * `null` pour un canal qui n'en produit pas. Une lecture qui cherche
+   * « l'empreinte reçue » filtre `mode = 'live'` **et** `outcome = 'sent'` : une
+   * simulation et un échec laissent une ligne eux aussi.
+   */
+  readonly projectionFingerprint: string | null;
   readonly publishedAt: Date;
   readonly publishedBy: string | null;
 }

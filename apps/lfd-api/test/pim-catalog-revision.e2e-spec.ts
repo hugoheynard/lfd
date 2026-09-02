@@ -511,6 +511,52 @@ describe("L'empreinte relie la relecture à l'envoi", () => {
   });
 });
 
+/**
+ * **L'empreinte de projection, jusqu'en base.**
+ *
+ * Ce que seul ce niveau prouve : que la valeur rendue par la route est
+ * exactement celle que la colonne porte. Un mapper qui la perdrait en chemin
+ * laisserait un `NULL` que rien ne distingue d'une ligne écrite avant la
+ * colonne — et la lecture qui viendra s'y fier lirait « jamais publié » d'un
+ * canal à jour.
+ */
+describe("L'empreinte de projection s'inscrit sur la publication", () => {
+  it("inscrit sur la ligne l'empreinte que la route vient de rendre", async () => {
+    await aSoldProduct();
+
+    const parti = jsonBody<{ fingerprint: string }>(
+      await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201),
+    );
+    await ctx.drain();
+
+    const publications = await ctx.prisma.catalogRevisionPublication.findMany();
+    expect(publications).toHaveLength(1);
+    expect(publications[0]).toMatchObject({
+      channel: "b2b",
+      mode: "live",
+      outcome: "sent",
+      projectionFingerprint: parti.fingerprint,
+    });
+  });
+
+  /**
+   * 🔴 La simulation porte la sienne, et c'est précisément ce qui oblige toute
+   * lecture de « l'empreinte reçue » à filtrer `mode = 'live'`. Sans le filtre,
+   * une simulation lancée après le dernier envoi deviendrait la référence du
+   * canal — et l'écran de santé dirait « à jour » d'un catalogue jamais parti.
+   */
+  it("laisse une simulation porter la sienne, sous son propre mode", async () => {
+    await aSoldProduct();
+
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await ctx.drain();
+
+    const [publication] = await ctx.prisma.catalogRevisionPublication.findMany();
+    expect(publication?.mode).toBe("dry-run");
+    expect(typeof publication?.projectionFingerprint).toBe("string");
+  });
+});
+
 describe("Le push pose et inscrit sa révision", () => {
   it("fige une révision avant d'envoyer, puis y inscrit sa destination", async () => {
     await aSoldProduct();

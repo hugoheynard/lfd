@@ -3838,6 +3838,28 @@ model CatalogRevisionPublication {
   /// Ce que la destination a répondu — compteurs, SKU retirés. `NULL` en échec.
   report Json?
 
+  /// **L'empreinte de la PROJECTION** partie sur ce canal — pas celle de l'ancre.
+  ///
+  /// C'est la seule valeur qui permette de répondre à « le canal a-t-il reçu ce
+  /// que le référentiel produirait aujourd'hui ? ». L'empreinte de l'ancre ne le
+  /// peut pas : l'ancre archive le catalogue, la projection est ce qu'un canal
+  /// en tire — deux catalogues distincts peuvent projeter la même chose, et un
+  /// même catalogue projette différemment selon le canal.
+  ///
+  /// Elle vit ICI plutôt que sur `b2b_channel_binding`, qui est une ligne **par
+  /// produit** : y ranger une empreinte de canal écrirait N fois la même valeur.
+  ///
+  /// 🔴 **Toute lecture « quelle empreinte ce canal a-t-il reçue » filtre
+  /// `mode = 'live' AND outcome = 'sent'`.** Une ligne existe aussi pour une
+  /// simulation et pour un échec ; sans le filtre, un dry-run devient la
+  /// référence — et `@@index([channel, publishedAt])` ne rattrape rien, il ne
+  /// porte ni le mode ni l'issue.
+  ///
+  /// `NULL` n'a qu'un sens : « écrite avant que la colonne existe ». Une ligne
+  /// n'existe que parce qu'un envoi a été tenté, et un envoi tenté a toujours
+  /// projeté quelque chose.
+  projectionFingerprint String? @map("projection_fingerprint")
+
   publishedAt DateTime @map("published_at")
   publishedBy String?  @map("published_by")
 

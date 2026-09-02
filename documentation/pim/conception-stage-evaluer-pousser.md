@@ -1420,10 +1420,11 @@ physique.
   ([`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md)
   §16) — ce qui **sort** est fermé, la lecture reste ouverte. Un `GET` d'aperçu
   est une lecture ; il ne le porte pas.
-- `push.service.ts:56` (l'instant de projection) et `:132` (le `stamp`) font
-  `new Date()` alors que `Clock` est injecté **et utilisé dix lignes plus haut**,
-  dans le même fichier. La tranche 2 rouvre ce fichier : on le nettoie en
-  passant. Même dette dans `check-catalog-parity.service.ts` (§5.1 bis).
+- ✅ **Fait à la tranche 2** : `push.service.ts` faisait `new Date()` pour
+  l'instant de projection et pour le `stamp`, alors que `Clock` était injecté
+  **et utilisé dix lignes plus haut** dans le même fichier. Les deux lisent
+  désormais le `Clock`. La même dette subsiste dans
+  `check-catalog-parity.service.ts:28` (§5.1 bis), et part avec la tranche 11.
 
 ---
 
@@ -1538,9 +1539,11 @@ décision elle-même.
 
    **Bénéfice non cherché** : le `NULL` y a enfin un seul sens (§9).
 
-   ⚠️ Dette relevée en chemin : `stamp()` appelle `new Date()` alors que
-   `this.clock` est injecté et utilisé dix lignes plus haut, dans le même
-   fichier.
+   ✅ Dette relevée en chemin, **réglée à la tranche 2** : `stamp()` et l'instant
+   de projection appelaient `new Date()` alors que `this.clock` était injecté et
+   utilisé dix lignes plus haut, dans le même fichier. Les deux lisent désormais
+   le `Clock`. Il en reste une, intacte, dans `check-catalog-parity.service.ts`
+   (§5.1 bis) — elle part avec la tranche 11.
 
 7. ✅ ~~**Concurrence et idempotence**~~ **TRANCHÉ le 2026-09-02 : la base
    refuse, l'application n'est plus seule à garder.**

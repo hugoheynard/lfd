@@ -88,6 +88,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
         ...(publication.report === undefined || publication.report === null
           ? {}
           : { report: toJsonObject(asRecord(publication.report)) }),
+        projectionFingerprint: publication.projectionFingerprint,
         publishedAt: publication.publishedAt,
         publishedBy: publication.publishedBy,
       },
