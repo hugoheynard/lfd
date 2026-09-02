@@ -64,7 +64,7 @@ export class ShopifyProductsController {
   @PublicationGesture()
   @Post("push")
   push(@Body(new ZodBody(pushPayloadSchema)) body: PushPayload): Promise<PushSummary> {
-    return this.pushService.push(body.productIds, body.dryRun ?? false);
+    return this.pushService.push(body.productIds, body.dryRun ?? false, body.hashes);
   }
 
   /** Le tableau de réconciliation à trois voies — par handle, ce qui a bougé. */

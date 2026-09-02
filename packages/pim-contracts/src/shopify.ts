@@ -13,6 +13,19 @@ export const pushPayloadSchema = z.object({
    * honnête même quand le canal est en `live`.
    */
   dryRun: z.boolean().optional(),
+  /**
+   * Les empreintes lues au pré-push, **par identifiant de produit**.
+   *
+   * Fournies, elles sont exigées : une fiche dont l'empreinte a bougé depuis la
+   * relecture ne part pas, et rend `drifted`. Le refus est **par fiche** — sur
+   * un envoi partiel, faire tomber tout le lot pour une fiche qui a bougé
+   * coûterait plus que le refus lui-même.
+   *
+   * ⚠️ Optionnelles, et c'est une étape : le back-office appelle déjà cette
+   * route sans elles, et un contrat servi ne se casse pas dans le même
+   * déploiement.
+   */
+  hashes: z.record(z.string().min(1), z.string().min(1)).optional(),
 });
 export type PushPayload = z.infer<typeof pushPayloadSchema>;
 
@@ -116,7 +129,14 @@ export interface ReconciliationDetailView {
 }
 
 export type SyncStatus = "never_pushed" | "up_to_date" | "drifted" | "failed";
-export type PushOutcome = "pushed" | "unchanged" | "failed";
+/**
+ * `drifted` : la fiche a changé **depuis la relecture**, elle n'est pas partie.
+ *
+ * Un refus par PRODUIT, jamais par lot — sur un envoi partiel (`productIds`),
+ * faire tomber les quatre-vingt-onze autres parce qu'une fiche a bougé coûterait
+ * plus cher que le refus lui-même.
+ */
+export type PushOutcome = "pushed" | "unchanged" | "failed" | "drifted";
 
 /** État de synchro d'un produit — alimente la colonne Shopify du tableau. */
 export interface ProductBindingView {
@@ -132,6 +152,16 @@ export interface PushReport {
   readonly sku: string;
   readonly outcome: PushOutcome;
   readonly message: string;
+  /**
+   * L'empreinte de ce qui partirait pour cette fiche.
+   *
+   * Rendue par l'aperçu pour que le push la redonne : sans elle, la simulation
+   * qu'on lit et l'envoi qui suit sont deux appels que rien ne rattache. Au
+   * grain du **produit**, parce que Shopify pousse un sous-ensemble — une
+   * empreinte globale ferait refuser un envoi de trois fiches parce qu'une
+   * quatrième, qu'on ne pousse pas, a bougé.
+   */
+  readonly hash: string;
 }
 
 /**

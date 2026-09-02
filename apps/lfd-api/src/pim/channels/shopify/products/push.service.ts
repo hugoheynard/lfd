@@ -59,7 +59,11 @@ export class ShopifyPushService {
    * et rapporte ce qui partirait sans appeler la boutique ni rien écrire — l'aperçu
    * reste honnête même en `live`, là où le dry-run *de mode* écrirait le binding.
    */
-  async push(productIds?: readonly string[], preview = false): Promise<PushSummary> {
+  async push(
+    productIds?: readonly string[],
+    preview = false,
+    expectedHashes?: Readonly<Record<string, string>>,
+  ): Promise<PushSummary> {
     const { mode } = await this.settings.read();
     const driver = this.driverFor(mode);
     const products =
@@ -82,7 +86,7 @@ export class ShopifyPushService {
       results.push(
         preview
           ? await this.previewOne(product, editorial)
-          : await this.pushOne(product, editorial, driver),
+          : await this.pushOne(product, editorial, driver, expectedHashes?.[product.id]),
       );
     }
 
@@ -128,6 +132,7 @@ export class ShopifyPushService {
         productId: product.id,
         sku: product.sku,
         outcome: "unchanged",
+        hash,
         message: "Déjà à jour — rien ne partirait.",
       };
     }
@@ -136,6 +141,7 @@ export class ShopifyPushService {
       productId: product.id,
       sku: product.sku,
       outcome: "pushed",
+      hash,
       message: `Partirait : « ${payload.handle} » (${payload.status}). Aucun appel, rien écrit.`,
     };
   }
@@ -172,6 +178,7 @@ export class ShopifyPushService {
         productId: snapshot.productId,
         sku,
         outcome: "pushed",
+        hash,
         message:
           driver.mode === "dry-run"
             ? `Rollback simulé vers v${version} (aucun appel réseau).`
@@ -180,7 +187,7 @@ export class ShopifyPushService {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Échec inattendu.";
       await this.recordFailure(snapshot.productId, message);
-      return { productId: snapshot.productId, sku, outcome: "failed", message };
+      return { productId: snapshot.productId, sku, outcome: "failed", message, hash };
     }
   }
 
@@ -198,9 +205,27 @@ export class ShopifyPushService {
     product: ProductRecord,
     editorial: ProductEditorialView | null,
     driver: ShopifyDriver,
+    expectedHash?: string,
   ): Promise<PushReport> {
     const payload = projectProduct(product, editorial, await this.soldOnStorefront(product));
     const hash = fingerprint(payload);
+
+    // 🔴 La fiche a bougé depuis la relecture : elle ne part pas, et **elle
+    // seule**. Faire tomber tout le lot punirait les quatre-vingt-onze autres
+    // pour une fiche qu'on ne pousse peut-être même pas volontairement — c'est
+    // pourquoi le grain est le produit ici, là où le canal B2B, qui livre tout,
+    // refuse en bloc.
+    //
+    // Avant TOUT effet de bord : ni appel réseau, ni snapshot, ni binding.
+    if (expectedHash !== undefined && expectedHash !== hash) {
+      return {
+        productId: product.id,
+        sku: product.sku,
+        outcome: "drifted",
+        hash,
+        message: "A changé depuis votre relecture — rien n'est parti pour cette fiche.",
+      };
+    }
 
     const existing = await this.prisma.shopifyProductBinding.findUnique({
       where: { productId: product.id },
@@ -213,6 +238,7 @@ export class ShopifyPushService {
         productId: product.id,
         sku: product.sku,
         outcome: "unchanged",
+        hash,
         message: "Déjà à jour.",
       };
     }
@@ -244,6 +270,7 @@ export class ShopifyPushService {
         productId: product.id,
         sku: product.sku,
         outcome: "pushed",
+        hash,
         message:
           (driver.mode === "dry-run" ? "Simulé (aucun appel réseau)." : "Poussé vers Shopify.") +
           note,
@@ -256,6 +283,7 @@ export class ShopifyPushService {
         productId: product.id,
         sku: product.sku,
         outcome: "failed",
+        hash,
         message,
       };
     }

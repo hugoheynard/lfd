@@ -16,7 +16,7 @@ import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sa
 import type { RecordSnapshotInput } from "../snapshot.service.js";
 import { ShopifySnapshotService } from "../snapshot.service.js";
 
-function product(): ProductRecord {
+function product(over: Partial<ProductRecord> = {}): ProductRecord {
   return {
     id: "p1",
     sku: "PATI-CROISSANT",
@@ -42,6 +42,7 @@ function product(): ProductRecord {
         nutrition: null,
       },
     ],
+    ...over,
   };
 }
 
@@ -72,6 +73,8 @@ async function build(
   mode: ChannelMode,
   bindingRow: { lastPushedHash: string } | null = null,
   editorials: ReadonlyMap<string, ProductEditorialView> = new Map(),
+  /** Le catalogue rendu par le double — un seul produit sauf mention contraire. */
+  catalogue: readonly ProductRecord[] = [product()],
 ): Promise<Harness> {
   const editorialAsks: string[][] = [];
   const recorded: RecordSnapshotInput[] = [];
@@ -118,7 +121,7 @@ async function build(
       {
         provide: CatalogueReader,
         useValue: {
-          byIds: () => Promise.resolve([product()]),
+          byIds: () => Promise.resolve([...catalogue]),
           // Le taux EFFECTIF, par produit : la fiche ne déroge pas ici, donc
           // c'est celui de sa famille.
           effectiveChannels: (items: readonly { id: string }[]) =>
@@ -311,6 +314,75 @@ describe("ShopifyPushService — snapshots", () => {
     expect(summary.results[0]?.outcome).toBe("unchanged");
     expect(h.livePushes).toHaveLength(0);
     expect(h.recorded).toHaveLength(0);
+  });
+});
+
+describe("ShopifyPushService — l’empreinte relie la relecture à l’envoi", () => {
+  /**
+   * Le pré-push RENDAIT déjà son verdict sans rendre son haché : il le
+   * calculait et le jetait. C'était tout ce qui manquait pour que la simulation
+   * et l'envoi cessent d'être deux appels que rien ne rattache.
+   */
+  it("rend le haché au pré-push, pour que le push le redonne", async () => {
+    const h = await build("live");
+
+    const summary = await h.service.push(["p1"], true);
+
+    expect(summary.results[0]?.hash).toBe(fingerprint(projectProduct(product(), null, true)));
+  });
+
+  it("laisse partir la fiche dont le haché correspond encore", async () => {
+    const h = await build("live");
+    const relu = await h.service.push(["p1"], true);
+    const hash = relu.results[0]?.hash ?? "";
+
+    const summary = await h.service.push(["p1"], false, { p1: hash });
+
+    expect(summary.results[0]?.outcome).toBe("pushed");
+    expect(h.livePushes).toHaveLength(1);
+  });
+
+  /**
+   * 🔴 Le refus est par FICHE, et rien ne part pour elle — ni appel réseau, ni
+   * snapshot, ni binding. Une garde qui laisserait un effet de bord derrière
+   * elle ne serait pas une garde.
+   */
+  it("REFUSE la fiche dont le haché a bougé, sans rien écrire", async () => {
+    const h = await build("live");
+
+    const summary = await h.service.push(["p1"], false, { p1: "un-hache-d-avant" });
+
+    expect(summary.results[0]?.outcome).toBe("drifted");
+    expect(h.livePushes).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+    expect(h.bindingUpserts).toHaveLength(0);
+  });
+
+  /**
+   * 🔴 La différence avec le canal B2B, et elle est délibérée : Shopify pousse
+   * un SOUS-ENSEMBLE. Faire tomber le lot entier parce qu'une fiche a bougé
+   * punirait toutes les autres — c'est pourquoi le grain est le produit ici, et
+   * le canal là-bas.
+   */
+  it("ne fait pas tomber le lot : les autres fiches partent quand même", async () => {
+    const h = await build("live", null, new Map(), [
+      product(),
+      product({ id: "p2", sku: "VIE-002" }),
+    ]);
+
+    const summary = await h.service.push(["p1", "p2"], false, { p1: "un-hache-d-avant" });
+
+    expect(summary.results.map((r) => r.outcome)).toEqual(["drifted", "pushed"]);
+    expect(h.livePushes).toHaveLength(1);
+  });
+
+  /** Sans haché, le push passe : le contrat servi n'est pas cassé (étape 1/3). */
+  it("laisse passer un push sans haché — le temps que l’écran les envoie", async () => {
+    const h = await build("live");
+
+    const summary = await h.service.push(["p1"]);
+
+    expect(summary.results[0]?.outcome).toBe("pushed");
   });
 });
 
