@@ -31,7 +31,7 @@ describe('applyLevel', () => {
   });
 
   it('reste sans effet quand on retire ce qui n’était pas accordé', () => {
-    expect(applyLevel(GRANTS, 'tech', 'none')).toEqual(GRANTS);
+    expect(applyLevel(GRANTS, 'pim_tax', 'none')).toEqual(GRANTS);
   });
 
   it('range toujours dans l’ordre du catalogue, jamais celui de la saisie', () => {

@@ -114,4 +114,13 @@ export interface B2bPushSummaryView {
   readonly candidates: number;
   readonly report: B2bIngestionReportView | null;
   readonly excluded: readonly B2bExclusionView[];
+  /**
+   * L'**empreinte** de ce qui vient d'être projeté — le jeton qui relie la
+   * relecture à l'envoi.
+   *
+   * L'écran la garde de sa simulation et la redonne au push réel ; si le
+   * catalogue a bougé entre les deux, le serveur refuse en `409` plutôt que
+   * d'envoyer autre chose que ce qui a été relu.
+   */
+  readonly fingerprint: string;
 }

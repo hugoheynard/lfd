@@ -8,6 +8,8 @@ import {
   FoldIconComponent,
 } from 'fold-ng';
 
+import { httpErrorMessage } from '@lfd/endpoints';
+
 import {
   B2bChannelApi,
   type B2bExclusionReason,
@@ -61,6 +63,14 @@ export class PublicationB2b {
   protected readonly error = signal<string | null>(null);
   /** Vrai une fois qu'une simulation a été lue — l'envoi réel s'y adosse. */
   protected readonly simulated = signal(false);
+  /**
+   * L'empreinte de la dernière projection lue.
+   *
+   * C'est le lien qui manquait entre l'écran et l'envoi : sans elle, « simuler »
+   * puis « envoyer » sont deux appels que rien ne rattache, et on peut expédier
+   * un catalogue que personne n'a relu.
+   */
+  private readonly relu = signal<string | null>(null);
 
   protected readonly excluded = computed(() =>
     (this.summary()?.excluded ?? []).map((item) => ({
@@ -81,14 +91,28 @@ export class PublicationB2b {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const summary = await this.api.push(dryRun);
+      // L'envoi redonne l'empreinte de la simulation qu'on vient de lire : le
+      // serveur refuse si le catalogue a bougé entre les deux. La simulation,
+      // elle, n'en envoie aucune — c'est elle qui la produit.
+      const summary = await this.api.push(dryRun, dryRun ? undefined : (this.relu() ?? undefined));
       this.summary.set(summary);
+      this.relu.set(summary.fingerprint);
       // Seule une simulation RÉELLEMENT rendue en dry-run arme l'envoi : le
       // serveur peut répondre `live` à une demande de simulation si les
       // réglages l'imposent, et on ne veut pas armer sur ce malentendu.
       this.simulated.set(summary.mode === 'dry-run');
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Envoi impossible.');
+      // 🔴 Un refus de dérive DÉSARME l'envoi. Sans ça, le bouton reste actif
+      // et le clic suivant repart avec la même empreinte périmée : l'écran
+      // boucle sur un refus que l'utilisateur ne sait pas défaire. Le geste de
+      // sortie est de re-simuler, et c'est ce que le désarmement impose.
+      this.simulated.set(false);
+      this.relu.set(null);
+      // `caught.message` d'une `HttpErrorResponse` vaut « Http failure response
+      // for … : 409 Conflict ». Le refus en français vit dans l'enveloppe, et
+      // `httpErrorMessage` sait l'y lire — c'est déjà ce qu'emploient la fiche
+      // produit et les emplacements.
+      this.error.set(httpErrorMessage(caught, 'Envoi impossible.'));
     } finally {
       this.busy.set(false);
     }
