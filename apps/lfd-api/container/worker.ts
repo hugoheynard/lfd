@@ -107,6 +107,15 @@ const RUNTIME_KEYS = [
   // cette liste, la poser dans Cloudflare ne l'ouvrirait pas, et rien ne le
   // dirait.
   "PIM_PUBLICATION_ENABLED",
+  // La boîte de réception du catalogue : livrer cesse d'être mettre en vente.
+  // Fermée par défaut, pour la même raison que la précédente — un déploiement
+  // qui ne s'est pas prononcé continue de faire ce qu'il faisait.
+  //
+  // Elle traverse pour la même raison aussi : sans elle ici, la poser dans
+  // Cloudflare ne l'ouvrirait pas. Le Worker la recevrait, le container jamais,
+  // et RIEN ne le dirait — c'est le mode de panne que ce test existe pour
+  // fermer.
+  "B2B_DELIVERY_INBOX",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
