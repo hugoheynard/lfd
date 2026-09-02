@@ -268,3 +268,28 @@ describe("projection Shopify — la matrice décide de la vitrine", () => {
     expect(projectProduct(product({ status: "published" }), null, true).status).toBe("ACTIVE");
   });
 });
+
+/**
+ * 🔴 **L'ancre du hachage Shopify** — la seule chose qui empêche un repush
+ * intégral silencieux.
+ *
+ * `lastPushedHash` est stocké en base : si la façon de hacher change, tous les
+ * produits paraissent modifiés, et le prochain push renvoie le catalogue entier
+ * contre les quotas d'appels du canal, pour zéro changement réel.
+ *
+ * La valeur ci-dessous a été mesurée le 2026-09-02, **avant** le remplacement de
+ * `localeCompare` par une comparaison de code — c'est elle qui prouve que ce
+ * remplacement fut neutre. Elle est figée volontairement.
+ *
+ * ⚠️ Deux causes la font bouger, et les deux méritent qu'on s'arrête : le tri
+ * des clés, et la projection elle-même. Dans les deux cas la question est la
+ * même — « ce repush est-il voulu ? » — et la réponse ne doit jamais être
+ * « j'ai mis à jour la valeur attendue ».
+ */
+describe("l’empreinte Shopify ne bouge pas sous nos pieds", () => {
+  it("rend l’empreinte figée du 2026-09-02", () => {
+    expect(fingerprint(projectProduct(product(), null, true))).toBe(
+      "41ad5afa8fbde47485dcecdb50036f53e4f3d72d76b9569f1a76f78702e64a1f",
+    );
+  });
+});

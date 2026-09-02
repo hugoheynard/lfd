@@ -176,13 +176,29 @@ export function fingerprint(payload: ShopifyProductPayload): string {
   return createHash("sha256").update(stableStringify(payload)).digest("hex");
 }
 
+/**
+ * ⚠️ Le tri des clés se fait par **comparaison de code**, jamais par
+ * `localeCompare`.
+ *
+ * Ce dernier lit la table de collation du runtime : deux versions de Node, ou
+ * une image de conteneur sans ICU complet, trient différemment. Et comme
+ * `lastPushedHash` est **stocké en base**, un changement d'ICU ferait paraître
+ * modifiés des produits que personne n'a touchés — donc un repush intégral,
+ * contre les quotas d'appels du canal, pour zéro changement réel.
+ *
+ * Le remplacement est **neutre sur les hachés existants**, et ça se vérifie
+ * plutôt que se suppose : les clés de ce payload sont toutes en `camelCase`
+ * ASCII, où les deux ordres coïncident. Mesuré le 2026-09-02 sur un payload
+ * complet — même empreinte, au caractère près. Un test l'ancre désormais sur
+ * une valeur figée : changer ce tri le fera rougir.
+ */
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(",")}]`;
   }
   if (typeof value === "object" && value !== null) {
     const entries = Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`);
     return `{${entries.join(",")}}`;
   }
