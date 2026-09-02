@@ -11,11 +11,13 @@ import {
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
+import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
 import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.reader.js";
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
+import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
 import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
@@ -61,6 +63,10 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
     { provide: CatalogReader, useClass: PrismaCatalogReader },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
     { provide: CanonicalPriceHistoryReader, useClass: PrismaCanonicalPriceHistoryReader },
+    // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
+    // continue d'écrire les faits en direct, et la bascule est un déploiement
+    // séparé, derrière un drapeau (§9 du document de conception).
+    { provide: CatalogDeliveryRepository, useClass: PrismaCatalogDeliveryRepository },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.

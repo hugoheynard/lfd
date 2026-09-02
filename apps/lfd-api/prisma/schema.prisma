@@ -2049,6 +2049,64 @@ model CatalogItem {
 /// La cascade sert l'autre cas, celui où elle est juste : un article réellement
 /// **retiré** du catalogue emporte sa décision, parce qu'un prix négocié ne veut
 /// plus rien dire sans l'article qu'il tarifait.
+/// **La boîte de réception du catalogue** — ce que le référentiel a livré, et
+/// que personne n'a encore accepté.
+///
+/// Elle existe parce que « livrer » et « mettre en vente » étaient le même
+/// geste, et qu'il appartenait au PIM : un article reçu était vendable dans la
+/// même requête, sans qu'aucun humain de la plateforme ne l'ait relu.
+///
+/// ⚠️ Un état sur l'article n'aurait pas suffi, et c'est le piège qu'on évite
+/// ici : il ne gate que les ARRIVÉES. Un article déjà en vente dont le PIM
+/// change le prix serait rafraîchi sur place, et le nouveau prix partirait au
+/// client sans relecture — le cas le plus sensible passerait, en croyant tout
+/// retenir.
+///
+/// Elle porte donc le snapshot **entier**, pas des faits par SKU. Un retrait est
+/// l'ABSENCE d'un SKU : il ne s'exprime pas dans une table de lignes entrantes,
+/// et sans le snapshot complet, « ce qui sort » ne serait pas validable.
+///
+/// Oui, c'est une copie de ce que le PIM a déjà produit. Une ligne, un JSON, pas
+/// un magasin adressé par contenu — mais une copie quand même. C'est le prix de
+/// « le B2B possède sa boîte de réception », et il vaut mieux le dire que le
+/// découvrir.
+model CatalogDelivery {
+  id String @id @default(cuid())
+
+  /// L'ancre PIM d'où vient cette livraison. Chaîne opaque, jamais une clé
+  /// étrangère : le référentiel est un autre contexte, et une jointure ici
+  /// franchirait la frontière que tout ce chantier tient.
+  revisionId String @map("revision_id")
+
+  /// Le snapshot reçu, **entier**, tel qu'il est arrivé.
+  snapshot Json
+
+  /// L'empreinte de la projection livrée — celle que le push a exigée.
+  /// Elle rattache l'arrivée à ce qui a été relu, et pas à autre chose.
+  fingerprint String
+
+  /// `pending` | `accepted` | `superseded`. Une arrivée close ne se rouvre pas :
+  /// la validation pose une version, et une version est immuable.
+  ///
+  /// `superseded` existe parce qu'une livraison REMPLACE l'arrivée en attente,
+  /// et qu'une arrivée remplacée sans avoir été lue n'a pas été acceptée. Les
+  /// confondre effacerait le seul fait qui compte ici : quelqu'un s'apprêtait à
+  /// relire quelque chose qui a disparu sous ses yeux.
+  status String @default("pending")
+
+  /// Les SKU écartés à la validation, s'il y en a eu. Ils gardent leurs faits
+  /// COURANTS — ils n'ont simplement pas changé.
+  excludedSkus Json? @map("excluded_skus")
+
+  receivedAt DateTime  @map("received_at")
+  acceptedAt DateTime? @map("accepted_at")
+  acceptedBy String?   @map("accepted_by")
+
+  @@index([status, receivedAt])
+  @@map("catalog_delivery")
+  @@schema("public")
+}
+
 model CatalogItemOverride {
   sku  String      @id
   item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Cascade)

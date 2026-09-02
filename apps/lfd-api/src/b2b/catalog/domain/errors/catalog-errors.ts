@@ -55,3 +55,25 @@ export class CannotFeatureHiddenItemError extends BusinessError {
     );
   }
 }
+
+/**
+ * Refus **métier** : on valide, ou on remplace, une arrivée déjà close.
+ *
+ * Rejouer une acceptation poserait une **seconde version** du même catalogue —
+ * et une version est immuable par construction. Ce refus est le pendant
+ * applicatif de la transition conditionnelle en base : deux clics simultanés
+ * n'en font passer qu'un, et le second l'apprend ici.
+ */
+export class DeliveryAlreadyClosedError extends BusinessError {
+  constructor(
+    readonly deliveryId: string,
+    readonly status: string,
+  ) {
+    super(
+      "catalog.delivery.already_closed",
+      status === "superseded"
+        ? "Cette arrivée a été remplacée par une livraison plus récente : rechargez l'écran."
+        : "Cette arrivée a déjà été validée.",
+    );
+  }
+}
