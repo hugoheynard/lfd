@@ -25,14 +25,31 @@ export class TakeCatalogRevisionCommand {
  *
  * ## Une capture identique ne pose rien
  *
- * L'empreinte de la révision est comparée à celle de la dernière. Égales, on
- * rend l'ancre existante sans en créer une seconde. Sans cette garde, un bouton
- * cliqué deux fois créerait deux ancres indiscernables, et l'histoire du
- * catalogue deviendrait une liste de doublons dans laquelle plus personne ne
- * retrouve la version qui compte.
+ * La garde demande « **cette ancre existe-t-elle ?** », par son empreinte. Elle
+ * demandait « est-ce la DERNIÈRE ? », ce qui en était une approximation — juste
+ * tant qu'on ne revient jamais en arrière, fausse dès qu'un catalogue revient à
+ * un état qu'il a déjà eu. Un aller-retour A → B → A posait alors une seconde
+ * ancre A, et l'histoire du catalogue gagnait un doublon que rien ne distingue
+ * de l'original.
  *
  * Un LIBELLÉ ne suffit pas à justifier une nouvelle ancre : nommer différemment
  * un catalogue identique ne le rend pas différent.
+ *
+ * ⚠️ **Ce que la garde ne tient PAS**, et il faut le dire : deux pushs
+ * simultanés lisent tous deux « rien », calculent la même empreinte, et écrivent
+ * tous deux. La lecture est hors transaction, et `catalog_revision.hash` n'est
+ * pas encore `@unique` — le resserrement demande un comptage des doublons en
+ * production avant d'être posé (§9, point 3 du document de conception). Tant
+ * qu'il n'est pas là, cette garde est la seule ligne de défense, alors qu'elle
+ * devrait n'être qu'une optimisation qui évite un aller-retour.
+ *
+ * ## Un push échoué ne laisse plus de déchet
+ *
+ * L'ancre est posée **avant** l'envoi — l'ordre est délibéré : elle dit ce qu'on
+ * s'apprête à publier, pas ce qui est parti. Un échec en laisse donc une sans
+ * publication. Au retry, l'empreinte la **retrouve** et la publication réussie
+ * s'inscrit dessus. Avec l'ancienne garde, la référence était la dernière ancre
+ * posée — orpheline comprise — et le doublon n'arrivait que par chance.
  */
 @CommandHandler(TakeCatalogRevisionCommand)
 export class TakeCatalogRevisionHandler implements ICommandHandler<
@@ -49,11 +66,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
   ) {}
 
   async execute(command: TakeCatalogRevisionCommand): Promise<TakenRevision> {
-    const [items, rules, latest] = await Promise.all([
-      this.source.snapshotItems(),
-      this.accounting.read(),
-      this.revisions.latest(),
-    ]);
+    const [items, rules] = await Promise.all([this.source.snapshotItems(), this.accounting.read()]);
 
     // Le rapport entre dans l'en-tête même ABSENT : `null` est un état du
     // catalogue ce jour-là, et le jour où quelqu'un le règle, le diff doit
@@ -63,11 +76,16 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
       items,
     );
 
-    if (latest !== null && latest.hash === revision.hash) {
+    // L'empreinte d'abord, la question ensuite : on ne peut pas demander « cette
+    // ancre existe-t-elle ? » avant de savoir laquelle. La lecture quitte donc
+    // le `Promise.all` — un aller-retour de plus par pose, contre une garde qui
+    // pose la bonne question.
+    const existing = await this.revisions.byHash(revision.hash);
+    if (existing !== null) {
       return {
-        id: latest.id,
-        reference: latest.reference,
-        hash: latest.hash,
+        id: existing.id,
+        reference: existing.reference,
+        hash: existing.hash,
         created: false,
       };
     }

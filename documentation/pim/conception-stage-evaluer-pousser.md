@@ -589,8 +589,17 @@ laisser un déchet.
    ?** ». Comparer à `latest()` était une approximation de cette question-là —
    juste tant qu'on ne revient jamais en arrière. L'unicité ne sert plus alors
    qu'à la course réelle entre deux pushs simultanés.
-2. **`latest()` devient `lastPublished()`** : la dernière ancre portant une
-   publication `live` / `sent`.
+2. **`latest()` devient `lastPublished()`** : l'ancre de la dernière publication
+   `live` / `sent`.
+
+   🔴 **Correction du 2026-09-02, trouvée en l'écrivant** : « la dernière ancre
+   PORTANT une publication réussie » — la formulation d'origine — rejoue le bug
+   qu'on ferme. Après A → B → A, l'ancre A reçoit une seconde publication mais
+   garde sa date de **pose** ; trier les ancres publiées par `takenAt` rend donc
+   **B**, et l'écran annonce des changements sur un catalogue qu'on vient de
+   republier entier. C'est le tableau ci-dessus, à un tri près. Il faut partir de
+   la **publication** (`publishedAt` décroissant) et remonter à son ancre.
+
 3. **Le port gagne `byHash()`**, qu'il n'a pas
    (`domain/ports/catalog-revision.repository.ts` : `latest`, `save`, `list`,
    `byReference`, `indexOf`, `recordPublication`, `payloadsOf`).
@@ -1252,6 +1261,32 @@ colonne qui porte déjà des doublons fait tomber la migration en production. Le
 comptage n'est pas une précaution de style : c'est la seule façon de savoir si
 la deuxième étape a du travail.
 
+⚠️ **Et les doublons ne sont pas hypothétiques.** Avant la tranche 8, la garde
+comparait à la dernière ancre POSÉE : un catalogue qui va de A à B puis revient
+à A posait une seconde ancre A. Un prix corrigé puis remis, une faute de frappe
+annulée — le cas est banal, donc la production en porte probablement.
+
+**Le comptage, à lancer avant de poser quoi que ce soit :**
+
+```sql
+SELECT hash, count(*) AS ancres, min(taken_at) AS premiere, max(taken_at) AS derniere
+FROM pim.catalog_revision
+GROUP BY hash HAVING count(*) > 1
+ORDER BY count(*) DESC;
+```
+
+Zéro ligne : le resserrement se pose tel quel. Sinon, il faut **choisir**, et ce
+n'est pas une décision d'implémentation : fusionner détruit la référence
+`R-XXXX` du doublon, sa date de pose et son auteur — une référence qu'on a pu
+citer dans une conversation cesserait de résoudre. Ses publications, elles, se
+reportent sans perte sur l'ancre gardée.
+
+🔴 **La tranche 8 a livré les deux autres pièces sans celle-ci** (2026-09-02), et
+c'est sûr : `byHash()` empêche déjà tout doublon par le chemin normal. Ce qui
+reste ouvert est la **course** entre deux pushs simultanés — exactement l'état
+d'avant, ni pire ni meilleur. La garde applicative est donc pour l'instant la
+seule ligne de défense, là où elle devrait n'être qu'une optimisation.
+
 🔴 **Le point 7 est le seul dont la BASCULE peut casser du comportement.**
 Marquer au lieu de supprimer n'est additif que dans le schéma : dès que
 `removeMany` marque, **toute lecture qui oublie le filtre remet un article retiré
@@ -1389,10 +1424,21 @@ au B2B, comme `b2b-integration.ts:96` en fait déjà un aujourd'hui. Le port du
 §6.3 sert quand un **backend** a besoin d'un fait de l'autre — la frise de la
 fiche produit. Un écran qui agrège n'en a pas besoin.
 
-⚠️ **La tranche 8 ne se découpe pas.** Ses trois pièces se tiennent mutuellement
-(§4.3) : l'unicité seule rend l'écran faux après un retour en arrière,
-`lastPublished()` seul laisse un doublon au retry d'un push échoué. Livrer l'une
-sans l'autre est pire que ne rien livrer.
+⚠️ **La tranche 8 ne se découpe pas — sauf par un bout, et il est nommé.** Ses
+trois pièces se tiennent mutuellement (§4.3) : l'unicité seule rend l'écran faux
+après un retour en arrière, `lastPublished()` seul laisse un doublon au retry
+d'un push échoué. Livrer l'une **de ces deux-là** sans l'autre est pire que ne
+rien livrer.
+
+✅ **Livré le 2026-09-02 : `byHash()` + `lastPublished()`.** Les deux ensemble,
+donc les deux garanties tenues — l'aller-retour rend l'ancre d'origine, et
+l'ancre orpheline d'un push échoué est adoptée au retry.
+
+⏸️ **`hash @unique` attend un comptage en production** (§9, point 3). Ce n'est
+pas un découpage de confort : `byHash()` referme déjà tous les chemins normaux,
+et la contrainte ne couvre plus que la course entre deux pushs simultanés. La
+poser sans compter ferait **tomber un déploiement** sur une table servie, et les
+doublons y sont probables — c'est la garde d'avant qui les fabriquait.
 
 ⚠️ **Les tranches 8 et 9 ne dépendent de rien et ne servent pas ce chantier.**
 Elles sont là parce que la revue du §11 les a mises au jour : l'une ferme une
@@ -2189,7 +2235,7 @@ est une décision qu'on redécouvre en production :
 | Le retrait non destructif                          | §11.1       | **tranche 10** — précondition du GESTE de rollback |
 | Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
 | Le port de retour et la frise                      | §6.3        | **tranche 7** — indépendante, le miroir suffit     |
-| `hash` en `@unique`, `byHash()`, `lastPublished()` | §4.3, §11.7 | tranche 8, indépendante et indivisible             |
+| `hash` en `@unique` — les deux autres sont livrées | §4.3, §11.7 | tranche 8 ; attend un comptage en production (§9)  |
 | Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier                |
 | L'écran de santé, et le workflow d'ops qui migre   | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |
 

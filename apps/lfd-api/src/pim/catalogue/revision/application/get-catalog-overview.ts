@@ -14,11 +14,20 @@ export class GetCatalogOverviewQuery {}
  * **Où en est le catalogue.**
  *
  * Il se calcule comme une capture qu'on ne poserait pas : on construit la
- * révision du catalogue tel qu'il est, et on la compare à la dernière ancre.
- * C'est ce qui permet de répondre « 3 articles ont changé depuis la 12 » sans
- * écrire une ligne — et de le répondre avec EXACTEMENT la même mécanique que la
- * pose, donc sans qu'un écran puisse annoncer un changement que la capture
- * ignorerait.
+ * révision du catalogue tel qu'il est, et on la compare à la dernière ancre
+ * **publiée**. C'est ce qui permet de répondre « 3 articles ont changé depuis la
+ * 12 » sans écrire une ligne — et de le répondre avec EXACTEMENT la même
+ * mécanique que la pose, donc sans qu'un écran puisse annoncer un changement que
+ * la capture ignorerait.
+ *
+ * 🔴 **Publiée, pas posée.** La référence était `latest()`, la dernière ancre
+ * POSÉE — et l'écart se voyait sur le cas le plus banal : un catalogue qui va de
+ * A à B puis revient à A se comparait à B et annonçait N changements sur un
+ * catalogue qu'on venait de republier entier.
+ *
+ * Conséquence assumée : un catalogue qu'on n'a jamais fait que **simuler** n'a
+ * pas de référence, et l'écran n'en affiche aucune. C'est exact — rien n'est
+ * parti, il n'y a rien à quoi se comparer.
  */
 @QueryHandler(GetCatalogOverviewQuery)
 export class GetCatalogOverviewHandler implements IQueryHandler<
@@ -35,7 +44,7 @@ export class GetCatalogOverviewHandler implements IQueryHandler<
     const [items, rules, latest] = await Promise.all([
       this.source.snapshotItems(),
       this.accounting.read(),
-      this.revisions.latest(),
+      this.revisions.lastPublished(),
     ]);
     const current = buildRevision(
       { proRatioBp: rules?.rules.proPriceRatio.basisPoints ?? null },

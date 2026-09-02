@@ -25,9 +25,54 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     super();
   }
 
-  async latest(): Promise<RevisionRecord | null> {
+  /**
+   * 🔴 **On part de la PUBLICATION, pas de l'ancre**, et l'ordre de lecture est
+   * tout le sujet.
+   *
+   * La rédaction évidente — les ancres qui ont `some` publication réussie,
+   * triées par `takenAt` — rejoue exactement le bug qu'on ferme. Après un
+   * aller-retour A → B → A, l'ancre A reçoit une seconde publication mais son
+   * `takenAt` reste le plus ancien : le tri par pose rendrait **B**, et l'écran
+   * annoncerait des changements sur un catalogue qu'on vient de republier
+   * entier. C'est le tableau du §4.3, à un tri près.
+   *
+   * D'où deux requêtes plutôt qu'une jointure triée : la dernière publication
+   * réussie, puis l'ancre qu'elle désigne. La table est petite — quelques lignes
+   * par push — et la seconde lecture est une clé primaire.
+   *
+   * Les DEUX filtres, et pas seulement `outcome` : une simulation s'inscrit
+   * aussi en `sent`, délibérément — c'est ce qui distingue « jamais tenté » de
+   * « tenté à blanc ». Oublier `mode` ferait d'un dry-run la référence du
+   * catalogue.
+   */
+  async lastPublished(): Promise<RevisionRecord | null> {
+    const publication = await this.prisma.catalogRevisionPublication.findFirst({
+      where: { mode: "live", outcome: "sent" },
+      orderBy: { publishedAt: "desc" },
+      select: { revisionId: true },
+    });
+    if (publication === null) {
+      return null;
+    }
+    const row = await this.prisma.catalogRevision.findUnique({
+      where: { id: publication.revisionId },
+      include: { _count: { select: { items: true } } },
+    });
+    return row === null ? null : toRecord(row);
+  }
+
+  /**
+   * `findFirst` et non `findUnique` : `hash` n'est pas encore `@unique` en base
+   * — le resserrement demande un comptage des doublons en production avant
+   * d'être posé (§9, point 3 du document de conception).
+   *
+   * D'où le tri **ascendant** : quand plusieurs ancres partagent l'empreinte,
+   * c'est la PREMIÈRE qui fait foi. Une ancre est un contenu, pas un moment.
+   */
+  async byHash(hash: string): Promise<RevisionRecord | null> {
     const row = await this.prisma.catalogRevision.findFirst({
-      orderBy: { takenAt: "desc" },
+      where: { hash },
+      orderBy: { takenAt: "asc" },
       include: { _count: { select: { items: true } } },
     });
     return row === null ? null : toRecord(row);

@@ -577,7 +577,7 @@ describe("L'empreinte de projection s'inscrit sur la publication", () => {
  * catalogue VIDE, ce qui ressemble trait pour trait à un push réussi : `201`,
  * une révision, une publication. Rien ne part pourtant.
  */
-async function aDeliverableProduct(): Promise<{ id: string; sku: string }> {
+async function aDeliverableProduct(): Promise<{ id: string; variantId: string; sku: string }> {
   const rateId = jsonBody<{ id: string }>(
     await staff().post("/pim/vat-rates").send({ name: "Alimentaire", percent: 5.5 }).expect(201),
   ).id;
@@ -605,7 +605,7 @@ async function aDeliverableProduct(): Promise<{ id: string; sku: string }> {
   const detail = jsonBody<{ variants: { sku: string; isDefault: boolean }[] }>(
     await staff().get(`${PRODUCTS}/${id}`).expect(200),
   );
-  return { id, sku: detail.variants.find((variant) => variant.isDefault)?.sku ?? "" };
+  return { id, variantId, sku: detail.variants.find((variant) => variant.isDefault)?.sku ?? "" };
 }
 
 /**
@@ -660,6 +660,124 @@ describe("GET /pim/channels/b2b/products/:id/delivery", () => {
 
   it("refuse une fiche inconnue plutôt que de rendre une frise vide", async () => {
     await staff().get("/pim/channels/b2b/products/prd_inconnu/delivery").expect(404);
+  });
+});
+
+/**
+ * **La référence du diff est la dernière PUBLICATION, pas la dernière pose.**
+ *
+ * Les deux se ressemblent au point qu'on les a confondues pendant tout le
+ * chantier, et l'écart se voit sur le cas le plus banal qui soit : un catalogue
+ * qui va de A à B puis revient à A. Rien ici ne tient sans le vrai SQL — c'est
+ * l'ordre de deux tables qui décide.
+ */
+describe("l'ancre de référence : publiée, pas posée", () => {
+  const OVERVIEW = `${REVISIONS}/overview`;
+
+  const pushLive = () => staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+
+  async function priced(product: string, variant: string, priceCents: number): Promise<void> {
+    await staff()
+      .put(`${PRODUCTS}/${product}/variants/${variant}/pricing`)
+      .send({ priceCents, weightGrams: null })
+      .expect(200);
+  }
+
+  /**
+   * 🔴 L'aller-retour. Avec l'ancienne garde — « est-ce la dernière ancre ? » —
+   * le retour à A posait une SECONDE ancre A. Avec l'unicité seule, il aurait été
+   * refusé mais la référence serait restée B, et l'écran aurait annoncé des
+   * changements sur un catalogue qu'on venait de republier entier. Les deux
+   * pièces ensemble, et seulement ensemble, donnent la bonne réponse.
+   */
+  it("rend l'ancre d'origine, et ne signale rien après un aller-retour", async () => {
+    const { id, variantId } = await aDeliverableProduct();
+    await pushLive();
+    await priced(id, variantId, 300);
+    await pushLive();
+    await priced(id, variantId, 200);
+    await pushLive();
+    await ctx.drain();
+
+    // DEUX ancres, pas trois : le retour à A ne pose rien.
+    expect(await ctx.prisma.catalogRevision.count()).toBe(2);
+
+    const premiere = await ctx.prisma.catalogRevision.findFirstOrThrow({
+      orderBy: { takenAt: "asc" },
+    });
+    const vue = jsonBody<{
+      lastRevision: { reference: string } | null;
+      sinceLastRevision: { added: number; removed: number; changed: number } | null;
+    }>(await staff().get(OVERVIEW).expect(200));
+
+    expect(vue.lastRevision?.reference).toBe(premiere.reference);
+    expect(vue.sinceLastRevision).toEqual({ added: 0, removed: 0, changed: 0 });
+  });
+
+  /**
+   * Une simulation laisse une ligne de publication, délibérément — c'est ce qui
+   * distingue « jamais tenté » de « tenté à blanc ». Sans le filtre sur le mode,
+   * elle deviendrait la référence, et l'écran se comparerait à un catalogue que
+   * personne n'a jamais reçu.
+   */
+  it("ignore une simulation, même la plus récente", async () => {
+    const { id, variantId } = await aDeliverableProduct();
+    await pushLive();
+    const partie = await ctx.prisma.catalogRevision.findFirstOrThrow();
+    await priced(id, variantId, 300);
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await ctx.drain();
+
+    const vue = jsonBody<{ lastRevision: { reference: string } | null }>(
+      await staff().get(OVERVIEW).expect(200),
+    );
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(2);
+    expect(vue.lastRevision?.reference).toBe(partie.reference);
+  });
+
+  /**
+   * Rien n'est jamais parti : il n'y a pas de référence, et l'écran le dit.
+   * C'est exact — se comparer à une ancre que personne n'a reçue donnerait un
+   * écart de zéro sur un catalogue qui n'est en vente nulle part.
+   */
+  it("n'a AUCUNE référence tant que rien n'a été publié", async () => {
+    await aDeliverableProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await ctx.drain();
+
+    const vue = jsonBody<{ lastRevision: unknown; sinceLastRevision: unknown }>(
+      await staff().get(OVERVIEW).expect(200),
+    );
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
+    expect(vue.lastRevision).toBeNull();
+    expect(vue.sinceLastRevision).toBeNull();
+  });
+
+  /**
+   * 🔴 L'ancre ORPHELINE, adoptée. Une ancre est posée AVANT l'envoi — l'ordre
+   * est délibéré — donc un push échoué en laisse une sans publication. La garde
+   * par empreinte la retrouve et la publication réussie s'inscrit dessus. Avec
+   * l'ancienne garde, le doublon n'était évité que par chance : la référence
+   * était la dernière ancre posée, orpheline comprise.
+   *
+   * L'orpheline est ici posée à la main, ce qui produit exactement le même état
+   * qu'un envoi échoué — une ancre, aucune publication — sans avoir à faire
+   * tomber le pilote.
+   */
+  it("adopte l'ancre orpheline au lieu d'en poser une seconde", async () => {
+    await aDeliverableProduct();
+    const orpheline = await take();
+    expect(orpheline.created).toBe(true);
+
+    await pushLive();
+    await ctx.drain();
+
+    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
+    const publications = await ctx.prisma.catalogRevisionPublication.findMany();
+    expect(publications).toHaveLength(1);
+    expect(publications[0]?.revisionId).toBe(orpheline.id);
   });
 });
 
