@@ -1,6 +1,7 @@
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
+import { DeliveryAlreadyClosedError } from "../src/b2b/catalog/domain/errors/catalog-errors.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
@@ -106,7 +107,7 @@ describe("la boîte de réception du catalogue", () => {
     await deliveries.deliver(delivered("empreinte-A"));
     const first = must(await deliveries.pending());
     first.accept(["VIE-001-1"], new Date("2026-01-02T00:00:00.000Z"), "staff_1");
-    await deliveries.save(first);
+    await deliveries.close(first);
 
     await deliveries.deliver(delivered("empreinte-B"));
 
@@ -126,9 +127,32 @@ describe("la boîte de réception du catalogue", () => {
     expect(waiting.excludedSkus).toBeNull();
 
     waiting.accept([], new Date("2026-01-02T00:00:00.000Z"), "staff_1");
-    await deliveries.save(waiting);
+    await deliveries.close(waiting);
 
     expect(must(await deliveries.byId(waiting.id)).excludedSkus).toEqual([]);
+  });
+
+  /**
+   * 🔴 L'idempotence, et elle ne peut se prouver qu'ICI. Deux validations
+   * simultanées lisent toutes deux une arrivée ouverte, la referment toutes
+   * deux en mémoire — un test de handler serait vert. Seule la condition dans
+   * le `where` empêche la seconde d'écrire, et donc de poser une seconde
+   * version du même catalogue.
+   */
+  it("REFUSE une seconde clôture, même sur un agrégat qui se croit ouvert", async () => {
+    await deliveries.deliver(delivered("empreinte-A"));
+    const un = must(await deliveries.pending());
+    const deux = must(await deliveries.pending());
+
+    un.accept([], new Date("2026-01-02T00:00:00.000Z"), "staff_1");
+    await deliveries.close(un);
+
+    // `deux` a été lu AVANT la clôture : en mémoire, il est encore ouvert.
+    deux.accept([], new Date("2026-01-02T00:00:00.000Z"), "staff_2");
+    await expect(deliveries.close(deux)).rejects.toThrow(DeliveryAlreadyClosedError);
+
+    const row = await ctx.prisma.catalogDelivery.findUnique({ where: { id: un.id } });
+    expect(row?.acceptedBy).toBe("staff_1");
   });
 
   /** Rien n'est arrivé : la lecture le dit, elle n'invente pas une arrivée vide. */

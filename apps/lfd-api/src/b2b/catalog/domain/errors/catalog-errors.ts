@@ -77,3 +77,23 @@ export class DeliveryAlreadyClosedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Refus **métier** : on écarte un SKU que ni l'arrivée ni le miroir ne
+ * connaissent.
+ *
+ * ⚠️ La garde ne dit PAS « absent de l'arrivée » : un retrait EST un SKU absent
+ * de l'arrivée, et l'interdire rendrait impossible le refus d'un retrait —
+ * c'est-à-dire le cas où l'on tient le plus à garder un article.
+ *
+ * Ce qu'elle attrape est plus étroit et plus utile : une faute de frappe, qui
+ * passerait sans bruit et laisserait croire qu'on a écarté quelque chose.
+ */
+export class UnknownExcludedSkuError extends BusinessError {
+  constructor(readonly skus: readonly string[]) {
+    super(
+      "catalog.delivery.unknown_excluded_sku",
+      `Impossible d'écarter ${skus.join(", ")} : ni dans l'arrivée, ni au catalogue.`,
+    );
+  }
+}

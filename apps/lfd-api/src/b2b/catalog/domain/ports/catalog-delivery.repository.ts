@@ -24,14 +24,22 @@ export abstract class CatalogDeliveryRepository {
   abstract byId(id: string): Promise<CatalogDelivery | null>;
 
   /**
-   * Écrit l'agrégat dans l'état où il est.
+   * Clôt une arrivée — `accepted` ou `superseded` — **conditionnellement**.
    *
-   * ⚠️ Une **livraison** n'est pas un `save` de plus : elle doit clore l'arrivée
-   * en attente et poser la nouvelle **dans la même transaction**, sinon l'index
-   * d'unicité refuse la seconde écriture et le PIM voit un échec là où il a
-   * livré. C'est {@link deliver} qui porte ce geste, et lui seul.
+   * 🔴 L'écriture porte `status = 'pending'` dans son `where`, et zéro ligne
+   * touchée veut dire « déjà close ». Ce n'est pas une précaution de style : un
+   * test en mémoire ne protège de rien, parce que deux validations simultanées
+   * lisent toutes deux une arrivée ouverte, la referment toutes deux en RAM, et
+   * écrivent toutes deux. La seconde poserait une seconde version du même
+   * catalogue — et une version est immuable par construction.
+   *
+   * Il n'existe pas de `save` général : une arrivée ne se modifie pas, elle se
+   * clôt. Une méthode qui écrirait un état quelconque rouvrirait la porte que
+   * l'agrégat ferme.
+   *
+   * @throws {DeliveryAlreadyClosedError} l'arrivée n'était plus en attente.
    */
-  abstract save(delivery: CatalogDelivery): Promise<void>;
+  abstract close(delivery: CatalogDelivery): Promise<void>;
 
   /**
    * Une nouvelle livraison **remplace** l'arrivée en attente.

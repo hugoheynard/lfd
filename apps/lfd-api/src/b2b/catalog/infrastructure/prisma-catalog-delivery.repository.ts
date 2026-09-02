@@ -9,6 +9,7 @@ import {
   type CatalogDeliveryState,
   type DeliveryStatus,
 } from "../domain/entities/catalog-delivery.js";
+import { DeliveryAlreadyClosedError } from "../domain/errors/catalog-errors.js";
 import { CatalogDeliveryRepository } from "../domain/ports/catalog-delivery.repository.js";
 
 /** La ligne telle que Prisma la rend. Aucun type `Prisma.*` ne sort d'ici. */
@@ -89,10 +90,17 @@ export class PrismaCatalogDeliveryRepository extends CatalogDeliveryRepository {
     return row === null ? null : toDomain(row);
   }
 
-  async save(delivery: CatalogDelivery): Promise<void> {
+  /**
+   * `updateMany` et non `update`, pour porter `status: "pending"` dans le
+   * `where` : `update` lèverait sur ligne absente, jamais sur ligne déjà close.
+   * Zéro ligne touchée est donc la RÉPONSE qu'on attend, pas une erreur de
+   * plomberie — c'est elle qui distingue « je viens de clore » de « quelqu'un
+   * l'a fait avant moi ».
+   */
+  async close(delivery: CatalogDelivery): Promise<void> {
     const state = delivery.toPersistence();
-    await this.prisma.catalogDelivery.update({
-      where: { id: state.id },
+    const { count } = await this.prisma.catalogDelivery.updateMany({
+      where: { id: state.id, status: "pending" },
       data: {
         status: state.status,
         // `Prisma.DbNull` et non `null` : sur une colonne `jsonb`, `null`
@@ -105,6 +113,9 @@ export class PrismaCatalogDeliveryRepository extends CatalogDeliveryRepository {
         acceptedBy: state.acceptedBy,
       },
     });
+    if (count === 0) {
+      throw new DeliveryAlreadyClosedError(state.id, state.status);
+    }
   }
 
   /**
@@ -122,7 +133,7 @@ export class PrismaCatalogDeliveryRepository extends CatalogDeliveryRepository {
       const waiting = await this.pending();
       if (waiting !== null) {
         waiting.supersede();
-        await this.save(waiting);
+        await this.close(waiting);
       }
       await this.prisma.catalogDelivery.create({
         data: {

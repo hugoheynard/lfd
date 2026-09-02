@@ -11,6 +11,7 @@ import {
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
+import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.handler.js";
 import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
@@ -67,6 +68,7 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
     // continue d'écrire les faits en direct, et la bascule est un déploiement
     // séparé, derrière un drapeau (§9 du document de conception).
     { provide: CatalogDeliveryRepository, useClass: PrismaCatalogDeliveryRepository },
+    AcceptDeliveryHandler,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.

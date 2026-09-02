@@ -34,7 +34,18 @@ export class IngestCatalogService {
     private readonly categories: CatalogCategoryProjection,
   ) {}
 
-  async apply(snapshot: CatalogSnapshot): Promise<IngestionOutcome> {
+  async apply(
+    snapshot: CatalogSnapshot,
+    excludedSkus: readonly string[] = [],
+  ): Promise<IngestionOutcome> {
+    // 🔴 Un SKU écarté garde ses faits COURANTS — il n'a simplement pas changé.
+    //
+    // Ça vaut dans les DEUX sens, et c'est ce qui rend le geste uniforme : un
+    // changement écarté ne s'écrit pas, et un RETRAIT écarté ne s'applique pas.
+    // On n'écarte donc pas une ligne mais un SKU, ce qui rend exprimable le
+    // refus d'un retrait — impossible autrement, un retrait n'étant qu'une
+    // absence dans le snapshot (§7.3 du document de conception).
+    const excluded = new Set(excludedSkus);
     const receivedAt = new Date(snapshot.generatedAt);
 
     // Les familles d'abord : les articles y font référence.
@@ -53,19 +64,23 @@ export class IngestCatalogService {
     const incoming = factsOf(snapshot, receivedAt);
     const existing = new Map((await this.items.loadAll()).map((item) => [item.sku, item]));
 
-    const toSave = incoming.map((facts) => {
-      const known = existing.get(facts.sku);
-      return known === undefined ? CatalogItem.receive(facts) : known.refreshFromPim(facts);
-    });
+    const toSave = incoming
+      .filter((facts) => !excluded.has(facts.sku))
+      .map((facts) => {
+        const known = existing.get(facts.sku);
+        return known === undefined ? CatalogItem.receive(facts) : known.refreshFromPim(facts);
+      });
     await this.items.saveMany(toSave);
 
     const arriving = new Set(incoming.map((facts) => facts.sku));
-    const removedSkus = [...existing.keys()].filter((sku) => !arriving.has(sku));
+    const removedSkus = [...existing.keys()].filter(
+      (sku) => !arriving.has(sku) && !excluded.has(sku),
+    );
     await this.items.removeMany(removedSkus);
 
     return {
       acceptedProducts: snapshot.products.length,
-      acceptedVariants: incoming.length,
+      acceptedVariants: toSave.length,
       acceptedCategories: snapshot.categories.length,
       removedSkus,
     };
