@@ -67,6 +67,10 @@ const SCOPE = [
   // `PushB2bCatalogCommand`. Il entre ici pour que le retour en arrière échoue,
   // faute de quoi le nettoyage ne tient qu'à la mémoire de celui qui l'a fait.
   "apps/lfd-api/src/pim/channels/b2b-platform/products/push.controller.ts",
+  // Né drainé le 2026-09-02 : la frise de livraison passe par
+  // `GetB2bProductDeliveryQuery`. Il entre ici le jour de sa naissance parce
+  // qu'un contrôleur neuf n'a aucune raison d'arriver avec une dette.
+  "apps/lfd-api/src/pim/channels/b2b-platform/products/product-delivery.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

@@ -10,6 +10,8 @@ import { B2bMembershipService } from "./membership/membership.service.js";
 import { DryRunB2bCatalogDriver } from "./products/driver.js";
 import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
 import { B2bCatalogFeedProjection } from "./products/feed-projection.service.js";
+import { GetB2bProductDeliveryHandler } from "./products/product-delivery.js";
+import { B2bProductDeliveryController } from "./products/product-delivery.controller.js";
 import { B2bPushController } from "./products/push.controller.js";
 import { B2bCatalogPushService } from "./products/push.service.js";
 
@@ -32,11 +34,15 @@ import { B2bCatalogPushService } from "./products/push.service.js";
   // les mentions d'étiquette une fois par push (D6), parce que le récepteur n'a
   // plus de quoi les fabriquer.
   imports: [PimDatabaseModule, CatalogueModule, AccountingRulesModule, AllergensModule],
-  controllers: [B2bMembershipController, B2bPushController],
+  controllers: [B2bMembershipController, B2bPushController, B2bProductDeliveryController],
   providers: [
     B2bMembershipService,
     B2bCatalogPushService,
     PushB2bCatalogHandler,
+    // La frise. Son port de RETOUR (`B2bDeliveryFactsReader`) n'est pas fourni
+    // ici : il est publié par ce module et relié par la racine de composition,
+    // seule à connaître les deux côtés du fil.
+    GetB2bProductDeliveryHandler,
     // La simulation est fournie ici ; l'envoi réel (`B2bCatalogDriver`) est
     // relié par la racine de composition, seule à connaître les deux côtés.
     DryRunB2bCatalogDriver,

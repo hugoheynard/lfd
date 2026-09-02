@@ -1,0 +1,44 @@
+<section class="bd-block" aria-labelledby="pr-b2b">
+  <fold-element-title id="pr-b2b" title="Sur la plateforme professionnelle" />
+  <fold-card>
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture de la plateforme…" />
+      }
+      @case ('error') {
+        <!-- Un échec ICI ne condamne pas la fiche : c'est l'autre contexte qui
+             n'a pas répondu, et l'édition continue. D'où un bloc qui se
+             réessaie tout seul plutôt qu'une page en erreur. -->
+        <p class="bd-said">La plateforme n'a pas répondu. Le reste de la fiche est intact.</p>
+        <button foldButton emphasis="outline" intent="neutral" (click)="reload()">Réessayer</button>
+      }
+      @case ('ready') {
+        <fold-timeline
+          [nodes]="nodes()"
+          orientation="vertical"
+          ariaLabel="Où en est cette fiche sur la plateforme professionnelle"
+        />
+
+        @if (awaitingSince(); as depuis) {
+          <fold-callout appearance="inset" variant="warning">
+            Une livraison attend d'être validée sur la plateforme depuis le
+            <strong>{{ depuis }}</strong
+            >. Tant que personne ne l'a relue, rien de ce qui vient d'être poussé n'est en vente.
+          </fold-callout>
+        }
+
+        @if (pushedButAbsent()) {
+          <!-- Le cas que l'audit du 2026-09-01 relevait sans pouvoir le
+               montrer : le push répond 201, la fiche paraît partie, et la
+               plateforme ne l'a pas. C'est presque toujours une exclusion à la
+               projection, pas une panne — d'où le geste nommé. -->
+          <fold-callout appearance="inset" variant="alert">
+            Poussée, mais la plateforme <strong>ne l'a pas</strong>. Elle a probablement été écartée
+            à la projection&nbsp;: vérifiez le prix, le taux de TVA professionnel et la matrice de
+            vente.
+          </fold-callout>
+        }
+      }
+    }
+  </fold-card>
+</section>

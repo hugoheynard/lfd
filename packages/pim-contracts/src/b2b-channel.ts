@@ -124,3 +124,56 @@ export interface B2bPushSummaryView {
    */
   readonly fingerprint: string;
 }
+
+/**
+ * ── La frise : où en est CETTE fiche sur la plateforme ───────────────────────
+ *
+ * L'écran savait dire « publiée au catalogue » et « poussée le 28 ». Il ne
+ * savait pas dire si la plateforme avait **accepté** — et c'est précisément
+ * l'endroit où le fil peut se rompre sans que rien ne sonne : une fiche publiée,
+ * poussée, et qui attend depuis trois jours qu'un commercial la relise.
+ *
+ * ⚠️ Des faits de **livraison**, jamais de commerce. Le prix négocié, les
+ * commandes, les clients ne remontent pas ici : le référentiel n'a pas à les
+ * connaître, et le jour où ces vues les porteraient, la frontière serait
+ * franchie par le contenu.
+ */
+
+/** Où en est UNE déclinaison, vue de la plateforme. */
+export interface B2bDeliveryFactsView {
+  readonly sku: string;
+  /**
+   * La plateforme la connaît-elle ?
+   *
+   * `false` recouvre deux cas qu'elle ne distingue pas encore — jamais arrivée,
+   * ou retirée depuis. L'écran s'en tient donc à « la plateforme ne l'a pas ».
+   */
+  readonly accepted: boolean;
+  /**
+   * Quand les faits **en vigueur** y ont été reçus. `null` si elle n'y est pas.
+   *
+   * Ce n'est pas la date du dernier push : une déclinaison écartée à la
+   * dernière validation garde la date de la livraison précédente, et l'écart
+   * entre les deux est exactement ce que la frise doit montrer.
+   */
+  readonly factsReceivedAt: string | null;
+  /** Depuis quand une arrivée **non validée** la touche. `null` = rien n'attend. */
+  readonly awaitingSince: string | null;
+}
+
+/**
+ * La frise d'une fiche : la décision, l'envoi, l'acceptation.
+ *
+ * Les trois dates viennent de trois endroits différents, et c'est le sujet —
+ * `publishedAt` est une décision du référentiel, `lastPushedAt` un acte
+ * technique, `factsReceivedAt` un fait de l'autre côté. Les rapprocher est la
+ * seule façon de voir lequel des trois manque.
+ */
+export interface B2bProductDeliveryView {
+  readonly productId: string;
+  /** `null` = la fiche n'est pas vendue aux professionnels. */
+  readonly publishedAt: string | null;
+  /** `null` = publiée sur le canal, mais **jamais partie**. */
+  readonly lastPushedAt: string | null;
+  readonly variants: readonly B2bDeliveryFactsView[];
+}

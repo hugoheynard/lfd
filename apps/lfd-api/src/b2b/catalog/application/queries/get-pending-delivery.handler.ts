@@ -1,30 +1,11 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
 import type { DeliveryChangeView, PendingDeliveryView } from "@lfd/contracts";
 
-import {
-  carriesAllergenChange,
-  diffDelivery,
-  type DeliveredItem,
-} from "../../domain/delivery-diff.js";
+import { carriesAllergenChange, diffDelivery } from "../../domain/delivery-diff.js";
 import { CatalogDeliveryRepository } from "../../domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
+import { deliveredItems, mirrorItems } from "../delivery-comparison.js";
 import { GetPendingDeliveryQuery } from "./get-pending-delivery.query.js";
-
-/** Le snapshot livré, aplati en articles comparables. */
-function deliveredItems(snapshot: CatalogSnapshot): DeliveredItem[] {
-  return snapshot.products.flatMap((product) =>
-    product.variants.map((variant) => ({
-      sku: variant.sku,
-      name: variant.name,
-      priceMillicents: variant.priceMillicents,
-      vatRatePercent: variant.vatRatePercent,
-      weightGrams: variant.weightGrams,
-      categoryId: product.categoryId,
-      allergens: variant.allergens,
-    })),
-  );
-}
 
 /**
  * **Ce qui attend, et ce que ça changerait.**
@@ -56,18 +37,7 @@ export class GetPendingDeliveryHandler implements IQueryHandler<
     }
 
     const incoming = deliveredItems(delivery.snapshot);
-    const mirror = (await this.items.loadAll()).map((item) => ({
-      sku: item.sku,
-      name: item.name,
-      // Le prix REÇU, jamais l'effectif : une négociation locale n'est pas une
-      // dérive du référentiel, et la signaler ferait sonner l'écran sur chaque
-      // client à qui l'on a consenti un tarif.
-      priceMillicents: item.pimPriceMillicents,
-      vatRatePercent: item.vatRatePercent,
-      weightGrams: item.weightGrams,
-      categoryId: item.categoryId,
-      allergens: item.allergens,
-    }));
+    const mirror = mirrorItems(await this.items.loadAll());
 
     const changes = diffDelivery(incoming, mirror);
     const nameBySku = new Map(

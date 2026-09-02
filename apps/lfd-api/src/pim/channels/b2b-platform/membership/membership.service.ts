@@ -33,6 +33,25 @@ export class B2bMembershipService {
     }));
   }
 
+  /**
+   * L'appartenance d'UNE fiche, ou `null` si elle n'est pas vendue aux pros.
+   *
+   * Séparée de {@link list} plutôt que filtrée par l'appelant : la frise d'une
+   * fiche ne rapatrie pas les quatre-vingt-quinze lignes du canal pour en lire
+   * une.
+   */
+  async bindingOf(productId: string): Promise<B2bMembershipView | null> {
+    const row = await this.prisma.b2bChannelBinding.findUnique({ where: { productId } });
+    return row === null
+      ? null
+      : {
+          productId: row.productId,
+          publishedAt: row.publishedAt.toISOString(),
+          publishedBy: row.publishedBy,
+          lastPushedAt: row.lastPushedAt?.toISOString() ?? null,
+        };
+  }
+
   /** Les identifiants seuls — ce dont la projection a besoin, sans le reste. */
   async publishedProductIds(): Promise<string[]> {
     const rows = await this.prisma.b2bChannelBinding.findMany({

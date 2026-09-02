@@ -7,6 +7,8 @@
  * SQL — une transaction, un `skipDuplicates`, une comparaison d'empreintes — et
  * un test unitaire les montrerait séparément, jamais ensemble.
  */
+import type { B2bProductDeliveryView } from "@lfd/pim-contracts";
+
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -461,8 +463,16 @@ describe("Diff entre deux ancres", () => {
  * corvée à ne pas oublier, et une ancre oubliée ne vaut rien. Accrochée au
  * push, elle se pose d'elle-même, et elle sait où elle est partie.
  */
-/** Un produit RÉELLEMENT vendu aux pros : sans appartenance au canal, il n'y a
- *  rien à pousser, donc rien à figer — et le test mesurerait ce vide. */
+/**
+ * Un produit **inscrit au canal** B2B — l'appartenance, et rien de plus.
+ *
+ * ⚠️ Ça suffit à faire compter un candidat, donc à poser une ancre et une
+ * publication ; ça ne suffit PAS à faire partir l'article. La projection
+ * l'écarte encore, faute de prix, de taux B2B et de contexte professionnel dans
+ * la matrice de sa famille — voir {@link aDeliverableProduct} quand c'est ce
+ * qui PART qu'on mesure. La phrase inverse a figuré ici, et elle a rendu vert
+ * un test qui poussait un catalogue vide.
+ */
 async function aSoldProduct(): Promise<string> {
   const { id } = await aProduct("Croissant");
   await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
@@ -522,7 +532,7 @@ describe("L'empreinte relie la relecture à l'envoi", () => {
  */
 describe("L'empreinte de projection s'inscrit sur la publication", () => {
   it("inscrit sur la ligne l'empreinte que la route vient de rendre", async () => {
-    await aSoldProduct();
+    await aDeliverableProduct();
 
     const parti = jsonBody<{ fingerprint: string }>(
       await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201),
@@ -546,7 +556,7 @@ describe("L'empreinte de projection s'inscrit sur la publication", () => {
    * canal — et l'écran de santé dirait « à jour » d'un catalogue jamais parti.
    */
   it("laisse une simulation porter la sienne, sous son propre mode", async () => {
-    await aSoldProduct();
+    await aDeliverableProduct();
 
     await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
     await ctx.drain();
@@ -554,6 +564,102 @@ describe("L'empreinte de projection s'inscrit sur la publication", () => {
     const [publication] = await ctx.prisma.catalogRevisionPublication.findMany();
     expect(publication?.mode).toBe("dry-run");
     expect(typeof publication?.projectionFingerprint).toBe("string");
+  });
+});
+
+/**
+ * Une fiche que le push emporte **vraiment**.
+ *
+ * ⚠️ `aSoldProduct` n'y suffit pas, et la nuance coûte cher à découvrir : elle
+ * ouvre l'appartenance au canal, mais la projection écarte encore la fiche —
+ * pas de prix, pas de taux B2B, et surtout aucun contexte professionnel dans la
+ * matrice de sa famille. Un push sur cette fixture-là pose l'ancre d'un
+ * catalogue VIDE, ce qui ressemble trait pour trait à un push réussi : `201`,
+ * une révision, une publication. Rien ne part pourtant.
+ */
+async function aDeliverableProduct(): Promise<{ id: string; sku: string }> {
+  const rateId = jsonBody<{ id: string }>(
+    await staff().post("/pim/vat-rates").send({ name: "Alimentaire", percent: 5.5 }).expect(201),
+  ).id;
+  const category = await aCategory();
+  // `pos_b2b` n'est pas une boutique : c'est la ligne de la plateforme dans la
+  // matrice, et elle existe sans avoir été créée.
+  await staff()
+    .put(`${CATEGORIES}/${category}/channels`)
+    .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
+    .expect(200);
+  await staff()
+    .put(`${CATEGORIES}/${category}/vat`)
+    .send({ vatByContext: { b2b: rateId } })
+    .expect(200);
+
+  const { id, variantId } = await aProduct("Croissant");
+  await staff()
+    .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+    .send({ priceCents: 200, weightGrams: null })
+    .expect(200);
+  await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
+  // Sans rapport professionnel, le push refuse plutôt que d'envoyer le plein tarif.
+  await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
+
+  const detail = jsonBody<{ variants: { sku: string; isDefault: boolean }[] }>(
+    await staff().get(`${PRODUCTS}/${id}`).expect(200),
+  );
+  return { id, sku: detail.variants.find((variant) => variant.isDefault)?.sku ?? "" };
+}
+
+/**
+ * **La frise : ce que la plateforme répond au référentiel.**
+ *
+ * Le trou qu'elle ferme est étroit et coûteux : l'écran savait dire « publiée »
+ * et « poussée le 28 », jamais si la plateforme avait **accepté**. Une fiche
+ * poussée que personne n'a validée s'affichait exactement comme une fiche en
+ * vente.
+ *
+ * Ce que seul ce niveau prouve : que le fait traverse le PORT — donc qu'il vient
+ * de l'autre contexte, et non d'un `findMany` que le même schéma Postgres
+ * rendrait possible sans qu'aucune porte ne le voie.
+ */
+describe("GET /pim/channels/b2b/products/:id/delivery", () => {
+  it("dit la décision, l'envoi et l'acceptation — les trois dates", async () => {
+    const { id, sku } = await aDeliverableProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await ctx.drain();
+
+    const frise = jsonBody<B2bProductDeliveryView>(
+      await staff().get(`/pim/channels/b2b/products/${id}/delivery`).expect(200),
+    );
+
+    expect(frise.publishedAt).not.toBeNull();
+    expect(frise.lastPushedAt).not.toBeNull();
+    expect(frise.variants).toHaveLength(1);
+    expect(frise.variants[0]).toMatchObject({ sku, accepted: true, awaitingSince: null });
+    expect(typeof frise.variants[0]?.factsReceivedAt).toBe("string");
+  });
+
+  /**
+   * 🔴 LE cas qui vaut la tranche. Publiée au canal, jamais poussée : la
+   * plateforme n'en sait rien. C'est l'état qu'aucun écran ne savait montrer, et
+   * celui où un commercial croit vendre quelque chose qui n'est nulle part.
+   */
+  it("distingue « publiée » de « acceptée » quand rien n'est encore parti", async () => {
+    const { id } = await aDeliverableProduct();
+
+    const frise = jsonBody<B2bProductDeliveryView>(
+      await staff().get(`/pim/channels/b2b/products/${id}/delivery`).expect(200),
+    );
+
+    expect(frise.publishedAt).not.toBeNull();
+    expect(frise.lastPushedAt).toBeNull();
+    expect(frise.variants[0]).toMatchObject({
+      accepted: false,
+      factsReceivedAt: null,
+      awaitingSince: null,
+    });
+  });
+
+  it("refuse une fiche inconnue plutôt que de rendre une frise vide", async () => {
+    await staff().get("/pim/channels/b2b/products/prd_inconnu/delivery").expect(404);
   });
 });
 

@@ -1181,7 +1181,10 @@ lecteur.
 
 ## 8. Ce que ça change aux écrans
 
-⚠️ Section **non vérifiée contre le front** — à confirmer avant chiffrage.
+⚠️ Section **partiellement vérifiée contre le front**. La ligne « Fiche
+produit » l'est depuis la tranche 7 : la frise vit dans `publish-rail`, sous les
+gestes de publication, et se recharge quand la fiche change. Les autres lignes
+restent à confirmer avant chiffrage.
 
 | Écran           | Après                                                                      |
 | --------------- | -------------------------------------------------------------------------- |
@@ -1189,7 +1192,7 @@ lecteur.
 | Révisions       | le bouton de pose manuelle **disparaît** (§4.1 bis) ; R+1 se lit tout seul |
 | Intégration B2B | trois lignes au lieu d'un écart, une seule alarmante (§5.1 bis)            |
 | B2B (nouveau)   | l'arrivée en attente, son diff, ses lignes écartables, sa validation       |
-| Fiche produit   | la frise — mais elle demande §6.3, donc elle vient en dernier              |
+| Fiche produit   | la frise, dans le rail de publication — trois dates, trois provenances     |
 
 🔴 **La V2 écrivait ici l'inverse de sa propre décision** : « le geste _figer_
 sort du push et devient explicite ». C'est exactement ce que le §4.1 bis refuse.
@@ -1338,7 +1341,7 @@ demande qu'un déploiement soit **prêt à repartir**, pas seulement possible.
 | 4   | Réception + validation, **ensemble** : `diffDelivery`, les SKU écartables (§6.2 bis, §7.3)               | rien      |
 | 5   | Les versions du catalogue accepté, et la référence sur `orders`                                          | 4         |
 | 6   | L'empreinte de projection **persistée** sur `catalog_revision_publication`                               | 1         |
-| 7   | Le port de retour, pour la frise de la fiche produit                                                     | 5         |
+| 7   | Le port de retour, pour la frise de la fiche produit                                                     | rien      |
 | 8   | `hash` en `@unique` **+ `byHash()` + `lastPublished()`** — indissociables (§4.3)                         | rien      |
 | 9   | Les **allergènes figés** sur `OrderLine`, codes **et** libellés (§11.10, §11.13)                         | rien      |
 | 10  | **Le retrait non destructif** (§11.1) — l'agrégat, le filtre par `$extends`, l'échappatoire (§9)         | rien      |
@@ -1370,6 +1373,14 @@ Le test ne se supprime pas : il **s'inverse**, en gardant son JSDoc d'origine en
 citation. « L'autre face de la cascade, celle où elle est juste » était vrai tant
 que le retrait était définitif ; c'est le rollback qui l'a périmé, pas une erreur
 de jugement.
+
+⚠️ **La tranche 7 ne dépend PAS des versions**, contrairement à ce que ce
+tableau a dit jusqu'au 2026-09-02. Le fait que la frise demande — « depuis quelle
+livraison les faits de ce SKU datent » — est porté par `catalog_items.received_at`,
+c'est-à-dire par le **miroir**, pas par l'archive. La version aurait pu le donner
+aussi, mais elle donnerait la date de la VALIDATION, qui diffère de celle des
+faits dès qu'un SKU a été écarté. La bonne source était la moins chère, et
+c'était aussi la plus exacte.
 
 ⚠️ **La tranche 11 ne dépend PAS du port de retour**, contrairement à ce qu'une
 lecture rapide suggère. Sa première ligne — « R+1 ≠ R côté PIM » — se lit bien
@@ -2177,7 +2188,7 @@ est une décision qu'on redécouvre en production :
 | -------------------------------------------------- | ----------- | -------------------------------------------------- |
 | Le retrait non destructif                          | §11.1       | **tranche 10** — précondition du GESTE de rollback |
 | Le compte d'abonnements affiché                    | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
-| Le port de retour et la frise                      | §6.3        | dépend des versions (tranche 7)                    |
+| Le port de retour et la frise                      | §6.3        | **tranche 7** — indépendante, le miroir suffit     |
 | `hash` en `@unique`, `byHash()`, `lastPublished()` | §4.3, §11.7 | tranche 8, indépendante et indivisible             |
 | Les allergènes figés sur `OrderLine`               | §11.10      | tranche 9, antérieure à ce chantier                |
 | L'écran de santé, et le workflow d'ops qui migre   | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |

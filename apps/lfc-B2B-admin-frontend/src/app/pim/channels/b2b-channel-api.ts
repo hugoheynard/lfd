@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { B2bPushSummaryView } from '@lfd/pim-contracts';
+import type { B2bProductDeliveryView, B2bPushSummaryView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -10,6 +10,8 @@ export type {
   B2bExclusionView,
   B2bIngestionReportView,
   B2bPushSummaryView,
+  B2bDeliveryFactsView,
+  B2bProductDeliveryView,
 } from '@lfd/pim-contracts';
 
 /**
@@ -37,6 +39,23 @@ export class B2bChannelApi {
         dryRun,
         ...(fingerprint === undefined ? {} : { fingerprint }),
       }),
+    );
+  }
+
+  /**
+   * **Où en est cette fiche sur la plateforme** : la décision, l'envoi,
+   * l'acceptation.
+   *
+   * Un appel à part, et pas un champ de plus sur le détail produit : il
+   * interroge l'AUTRE contexte à travers un port, donc il a son propre coût et
+   * son propre mode de défaillance. Le greffer sur la fiche ferait tomber
+   * l'édition d'un produit le jour où la plateforme répond mal.
+   */
+  delivery(productId: string): Promise<B2bProductDeliveryView> {
+    return firstValueFrom(
+      this.http.get<B2bProductDeliveryView>(
+        `${this.base}/channels/b2b/products/${productId}/delivery`,
+      ),
     );
   }
 }
