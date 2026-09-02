@@ -4,6 +4,7 @@ import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.m
 import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
+import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
 import { DryRunB2bCatalogDriver } from "./products/driver.js";
@@ -35,6 +36,7 @@ import { B2bCatalogPushService } from "./products/push.service.js";
   providers: [
     B2bMembershipService,
     B2bCatalogPushService,
+    PushB2bCatalogHandler,
     // La simulation est fournie ici ; l'envoi réel (`B2bCatalogDriver`) est
     // relié par la racine de composition, seule à connaître les deux côtés.
     DryRunB2bCatalogDriver,

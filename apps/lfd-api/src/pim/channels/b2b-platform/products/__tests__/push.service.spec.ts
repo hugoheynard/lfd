@@ -16,13 +16,13 @@ import { projectionFingerprint } from "../../../shared/domain/canonical-projecti
 import { ProjectionDriftError } from "../../../shared/domain/errors/projection-errors.js";
 
 /** Un snapshot vide mais valide — ce que le port rend quand rien n'est publié. */
-function emptySnapshot(generatedAt: string) {
+function emptySnapshot(generatedAt: string): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt,
     categories: [],
     products: [],
-  } as const;
+  };
 }
 
 /**

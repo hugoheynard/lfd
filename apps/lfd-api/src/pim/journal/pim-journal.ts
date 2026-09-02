@@ -115,6 +115,16 @@ export const PIM_EVENTS = {
    * posée et quand, ce que la révision, elle, ne dirait pas d'elle-même.
    */
   catalogRevisionTaken: "catalog_revision.taken",
+  /**
+   * **Une révision est partie vers un canal.** Distinct de sa pose : une ancre
+   * peut exister sans que rien ne soit sorti, et c'est même l'état d'un push
+   * qui a échoué.
+   *
+   * Le mode (`live` / `dry-run`) est dans le payload plutôt que dans deux faits
+   * séparés : une simulation laisse elle aussi une ligne de publication en base,
+   * et un journal qui la tairait laisserait des ancres sans explication.
+   */
+  catalogRevisionPushed: "catalog_revision.pushed",
   productCategoryCreated: "product_category.created",
   productCategoryRenamed: "product_category.renamed",
   /** Change le parent, donc l'héritage de TVA et de canaux en aval. */

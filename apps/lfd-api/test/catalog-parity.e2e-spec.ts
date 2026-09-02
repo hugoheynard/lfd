@@ -6,7 +6,8 @@
  * Prisma. C'est exactement le point où la fusion des processus se voit — deux
  * bases, un seul appel, aucun réseau.
  */
-import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
+import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
+import { projectionFingerprint } from "../src/pim/channels/shared/domain/canonical-projection.js";
 
 import {
   B2bCatalogFeedPreview,
@@ -31,35 +32,41 @@ class StubFeed extends B2bCatalogFeedPreview {
   }[] = [];
 
   preview(generatedAt: string): Promise<FeedPreview> {
+    const snapshot = this.snapshotAt(generatedAt);
     return Promise.resolve({
       candidates: this.products.length,
       excluded: [],
-      snapshot: {
-        version: CATALOG_SNAPSHOT_VERSION,
-        generatedAt,
-        categories: [],
-        products: this.products.map((variant) => ({
-          id: `prd_${variant.sku}`,
-          sku: variant.sku.replace(/-\d+$/, ""),
-          name: variant.name,
-          categoryId: "cat_vien",
-          kind: "daily" as const,
-          variants: [
-            {
-              sku: variant.sku,
-              name: variant.name,
-              priceMillicents: variant.priceMillicents,
-              weightGrams: null,
-              isDefault: true,
-              position: 0,
-              vatRatePercent: variant.vatRatePercent,
-              allergens: null,
-              allergenLabels: null,
-            },
-          ],
-        })),
-      },
+      fingerprint: projectionFingerprint(snapshot),
+      snapshot,
     });
+  }
+
+  private snapshotAt(generatedAt: string): CatalogSnapshot {
+    return {
+      version: CATALOG_SNAPSHOT_VERSION,
+      generatedAt,
+      categories: [],
+      products: this.products.map((variant) => ({
+        id: `prd_${variant.sku}`,
+        sku: variant.sku.replace(/-\d+$/, ""),
+        name: variant.name,
+        categoryId: "cat_vien",
+        kind: "daily" as const,
+        variants: [
+          {
+            sku: variant.sku,
+            name: variant.name,
+            priceMillicents: variant.priceMillicents,
+            weightGrams: null,
+            isDefault: true,
+            position: 0,
+            vatRatePercent: variant.vatRatePercent,
+            allergens: null,
+            allergenLabels: null,
+          },
+        ],
+      })),
+    };
   }
 }
 

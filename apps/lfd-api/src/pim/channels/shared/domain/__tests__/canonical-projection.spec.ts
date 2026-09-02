@@ -45,6 +45,7 @@ const category = (id: string, over: Partial<SyncCategory> = {}): SyncCategory =>
   slug: id,
   parentId: null,
   position: 0,
+  vatRatePercent: 5.5,
   ...over,
 });
 

@@ -34,6 +34,13 @@ export interface B2bPushSummary {
    * c'est la trace de ce qui est parti.
    */
   readonly fingerprint: string;
+  /**
+   * L'ancre posée par ce push — `null` quand il n'y avait rien à envoyer.
+   *
+   * Rendue parce que le fait de journal en a besoin comme sujet : « la révision
+   * R est partie vers b2b » se relit, « un push a eu lieu » ne se relit pas.
+   */
+  readonly revisionId: string | null;
 }
 
 @Injectable()
@@ -99,6 +106,7 @@ export class B2bCatalogPushService {
         report: null,
         excluded: [],
         fingerprint,
+        revisionId: null,
       };
     }
 
@@ -134,6 +142,7 @@ export class B2bCatalogPushService {
       report,
       excluded,
       fingerprint,
+      revisionId: revision.id,
     };
   }
 
