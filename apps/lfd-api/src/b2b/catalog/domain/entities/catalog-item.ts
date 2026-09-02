@@ -144,6 +144,35 @@ export class CatalogItem {
     return this.facts.priceMillicents;
   }
 
+  /**
+   * Les faits **reçus** du référentiel, en lecture.
+   *
+   * Exposés parce qu'un diff d'arrivée les compare un par un — et il compare
+   * les CODES d'allergènes, là où la vue d'administration rend des libellés
+   * déjà projetés. Deux besoins, deux formes : celle-ci est la brute, celle qui
+   * se compare.
+   */
+  get name(): string {
+    return this.facts.name;
+  }
+
+  get categoryId(): string {
+    return this.facts.categoryId;
+  }
+
+  get vatRatePercent(): number | null {
+    return this.facts.vatRatePercent;
+  }
+
+  get weightGrams(): number | null {
+    return this.facts.weightGrams;
+  }
+
+  /** Les codes GS1 déclarés — `null` (pas de fiche) ≠ `[]` (aucun allergène). */
+  get allergens(): readonly string[] | null {
+    return this.facts.allergens;
+  }
+
   get isHidden(): boolean {
     return this.decision.isHidden;
   }

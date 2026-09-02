@@ -149,6 +149,10 @@ export class CatalogDelivery {
     return this.status;
   }
 
+  get receivedAt(): Date {
+    return this.state.receivedAt;
+  }
+
   get excludedSkus(): readonly string[] | null {
     return this.excluded;
   }

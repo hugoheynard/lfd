@@ -414,6 +414,7 @@ export {
   setB2bPricePayloadSchema,
   setCatalogVisibilityPayloadSchema,
   setCatalogFeaturedPayloadSchema,
+  acceptDeliveryPayloadSchema,
 } from "./catalog-admin.js";
 export type {
   CatalogAdminItemView,
@@ -421,6 +422,9 @@ export type {
   SetB2bPricePayload,
   SetCatalogVisibilityPayload,
   SetCatalogFeaturedPayload,
+  AcceptDeliveryPayload,
+  DeliveryChangeView,
+  PendingDeliveryView,
 } from "./catalog-admin.js";
 export {
   staffSettlementSchema,

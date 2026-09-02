@@ -12,6 +12,7 @@ import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
 import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.handler.js";
+import { GetPendingDeliveryHandler } from "./application/queries/get-pending-delivery.handler.js";
 import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
@@ -23,6 +24,7 @@ import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-ite
 import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
+import { AdminCatalogDeliveryController } from "./http/admin-catalog-delivery.controller.js";
 import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 
@@ -51,7 +53,11 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
   // franchissement `b2b → pim` que la matrice autorise — un port, jamais une
   // table.
   imports: [B2bPlatformModule],
-  controllers: [AdminCatalogController, AdminCatalogParityController],
+  controllers: [
+    AdminCatalogController,
+    AdminCatalogParityController,
+    AdminCatalogDeliveryController,
+  ],
   providers: [
     IngestCatalogService,
     CheckCatalogParityService,
@@ -69,6 +75,7 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
     // séparé, derrière un drapeau (§9 du document de conception).
     { provide: CatalogDeliveryRepository, useClass: PrismaCatalogDeliveryRepository },
     AcceptDeliveryHandler,
+    GetPendingDeliveryHandler,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
