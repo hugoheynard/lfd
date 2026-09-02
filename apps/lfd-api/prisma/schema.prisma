@@ -3015,6 +3015,19 @@ model Product {
   categoryId String           @map("category_id")
   category   Category         @relation(fields: [categoryId], references: [id])
   status     ProductStatus    @default(draft)
+
+  /// ⚠️ **AUCUN LECTEUR, AUCUN ÉCRIVAIN** — constaté le 2026-09-02 sur tout le
+  /// dépôt : backend, les deux fronts, `packages/*`, le seed. La colonne existe
+  /// depuis sa migration de création (20260820160000) et vaut `{}` partout.
+  ///
+  /// Elle n'est pas signalée pour être supprimée mais pour **cesser de mentir** :
+  /// un champ nommé `attributes` sur `Product` laisse croire à des attributs
+  /// libres, c'est-à-dire à la seule capacité de PIM générique que ce référentiel
+  /// n'a pas. Le modèle est **fixe** ; ajouter un attribut est une migration.
+  ///
+  /// Deux sorties, et c'est une décision produit, pas technique : l'assumer comme
+  /// l'amorce des attributs libres — alors elle mérite un plan —, ou la retirer
+  /// en trois déploiements. La laisser sans mot est la seule mauvaise réponse.
   attributes Json             @default("{}")
   variants   ProductVariant[]
 

@@ -452,8 +452,17 @@ client, les vraies migrations et les vraies contraintes.
   commerce : dette explicitement notée dans le fichier, à basculer sur les
   factories du domaine dès que les entités existent.
 
-Le PIM n'a pas encore ce harnais (son unique e2e est un smoke test à Prisma
-stubbé) — même socle à porter le jour où on teste ses endpoints catalogue.
+**Le PIM a le même harnais, et il est fourni** : 15 fichiers `test/pim-*.e2e-spec.ts`,
+**192 tests**, sur le vrai Postgres jetable — cycle de vie d'une fiche,
+allergènes, révisions, matrice de canaux, atomicité du journal, mur d'accès,
+localisation, taux, contextes de vente. Trois autres e2e le traversent depuis le
+B2B (`catalog-ingest`, `catalog-parity`, `admin-catalog`).
+
+⚠️ Cette phrase disait le contraire jusqu'au 2026-09-02 — « son unique e2e est un
+smoke test à Prisma stubbé ». C'était vrai quand elle a été écrite, et elle a
+survécu à ce qui l'a périmée. Une consigne fausse dans le document qui fait
+autorité coûte plus qu'une absence de consigne : on ne teste pas ce qu'on croit
+déjà intestable.
 
 ### Anti-régression
 
