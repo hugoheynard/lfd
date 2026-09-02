@@ -1,17 +1,21 @@
 name: ops_catalog_parity
 
-# Compare, EN PRODUCTION, ce que le checkout facture aujourd'hui (le seed) à ce
-# qu'il facturerait après la bascule (le catalogue reçu du PIM).
+# Compare, EN PRODUCTION, ce que le RÉFÉRENTIEL publierait à ce que la
+# PLATEFORME vend — « le miroir est-il fidèle ? ».
 #
-# C'est l'étape 2 du plan de bascule de
-# `documentation/b2b/architecture-catalogue-synchronise.md`, et elle est non
-# négociable : le seed est l'autorité de prix depuis l'ouverture commerciale, et
-# un écart silencieux facture le mauvais montant sans que rien ne le signale.
+# ⚠️ Ce workflow a comparé autre chose. Il servait de feu vert avant la bascule
+# du seed : seed en place contre catalogue reçu, une fois, pour autoriser un
+# changement d'autorité de prix. Cette bascule est faite, la comparaison a changé
+# de sujet — et le workflow, lui, était resté sur l'ancienne forme du rapport. Il
+# lisait `seedCount`, `identical`, `extra`, `gap['seed']` : huit champs qui
+# n'existent plus. Il plantait sur sa première ligne, en silence, parce qu'on ne
+# le déclenche qu'à la main (réparé le 2026-09-02).
+#
+# Il n'est donc PAS temporaire, contrairement à ce qu'il affirmait : la question
+# « le miroir a-t-il décroché » ne se referme jamais.
 #
 # Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, secret
 # GitHub donc en écriture seule. Même raison que `ops_logs`.
-#
-# ⚠️ TEMPORAIRE. Ce workflow meurt avec le seed, à la slice C7.
 
 on:
   workflow_dispatch:
@@ -23,7 +27,7 @@ jobs:
   parity:
     runs-on: ubuntu-latest
     steps:
-      - name: Comparer le seed au catalogue reçu
+      - name: Comparer le référentiel au miroir de la plateforme
         env:
           API_BASE_URL: ${{ vars.LFD_API_URL }}
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
@@ -41,53 +45,74 @@ jobs:
 
           report = json.loads(os.environ["REPORT"])
 
-          def euros(cents):
-              return f"{cents / 100:.2f} €"
+          def euros(millicents):
+              # Millicentimes (10⁻⁵ €) → euros, comme `formatEuros` du dépôt :
+              # jusqu'à cinq décimales mais au moins deux. Arrondir au centime
+              # masquerait précisément l'écart que ce tableau vient signaler —
+              # deux prix distincts s'afficheraient « 2,10 € » et « 2,10 € ».
+              texte = f"{millicents / 100_000:.5f}".rstrip("0")
+              if len(texte.split(".")[1]) < 2:
+                  texte = f"{millicents / 100_000:.2f}"
+              return texte.replace(".", ",") + " €"
+
+          def taux(value):
+              return "—" if value is None else f"{value} %".replace(".", ",")
 
           print("## Parité du catalogue\n")
-          print(f"- Seed (autorité actuelle) : **{report['seedCount']}** articles")
-          print(f"- Reçu du PIM : **{report['receivedCount']}** articles\n")
+          print(f"- Publié par le référentiel : **{report['referenceCount']}** articles")
+          print(f"- Tenu par la plateforme : **{report['mirrorCount']}** articles\n")
 
-          if report["identical"]:
-              print("✅ **Aucun écart.** La bascule ne change aucun montant facturé.")
+          if report["inSync"]:
+              print("✅ **Le miroir est fidèle.** Rien ne diffère.")
               raise SystemExit(0)
 
-          print("⚠️ **Des écarts subsistent** — chacun doit s'expliquer avant de basculer.\n")
+          print("⚠️ **Le miroir diffère du référentiel** — chaque ligne doit s'expliquer.\n")
 
           if report["missing"]:
-              print("### 🔴 Vendus aujourd'hui, absents du catalogue reçu\n")
-              print("Après la bascule, un client qui les commande verrait son panier refusé.\n")
+              print("### 🔴 Publiés par le référentiel, absents du miroir\n")
+              print("Le pire cas : la boutique ne sait pas les vendre, et le client ne")
+              print("comprend pas pourquoi.\n")
               print(", ".join(f"`{sku}`" for sku in report["missing"]) + "\n")
 
+          if report["stale"]:
+              print("### 🔴 Dans le miroir, plus publiés\n")
+              print("Vendus alors que le référentiel les a retirés — l'autre moitié du")
+              print("même défaut.\n")
+              print(", ".join(f"`{sku}`" for sku in report["stale"]) + "\n")
+
           if report["priceGaps"]:
-              print("### 💶 Prix qui changent\n")
-              print("| SKU | Aujourd'hui | Après |")
+              print("### 💶 Prix qui diffèrent\n")
+              print("Le prix **canonique** des deux côtés — jamais le prix négocié, qui")
+              print("est une décision légitime de la plateforme. Chaque ligne est de l'argent.\n")
+              print("| SKU | Référentiel | Plateforme |")
               print("| --- | --- | --- |")
               for gap in report["priceGaps"]:
-                  print(f"| `{gap['sku']}` | {euros(gap['seed'])} | {euros(gap['received'])} |")
+                  print(f"| `{gap['sku']}` | {euros(gap['reference'])} | {euros(gap['mirror'])} |")
               print()
 
           if report["vatGaps"]:
-              print("### 🧾 Taux de TVA qui changent\n")
-              print("Attendu : le seed code 5,5 % pour tout, y compris le non-alimentaire.\n")
-              print("| SKU | Aujourd'hui | Après |")
+              print("### 🧾 Taux de TVA qui diffèrent\n")
+              print("Chaque ligne est un montant de TVA facturé à tort. `—` = article que")
+              print("la plateforme ne sait pas facturer (famille non réglée dans le PIM).\n")
+              print("| SKU | Référentiel | Plateforme |")
               print("| --- | --- | --- |")
               for gap in report["vatGaps"]:
-                  print(f"| `{gap['sku']}` | {gap['seed']} % | {gap['received']} % |")
+                  print(f"| `{gap['sku']}` | {taux(gap['reference'])} | {taux(gap['mirror'])} |")
               print()
 
           if report["nameGaps"]:
-              print("### ✏️ Noms qui changent\n")
+              print("### ✏️ Noms qui diffèrent\n")
               for gap in report["nameGaps"]:
-                  print(f"- `{gap['sku']}` : « {gap['seed']} » → « {gap['received']} »")
+                  print(f"- `{gap['sku']}` : référentiel « {gap['reference']} » → plateforme « {gap['mirror']} »")
               print()
-
-          if report["extra"]:
-              print("### ➕ Nouveautés reçues\n")
-              print(", ".join(f"`{sku}`" for sku in report["extra"]) + "\n")
           PY
 
-          # Le job ne rougit PAS sur un écart : à ce stade, des écarts sont le
-          # résultat attendu, pas une panne. Ce qu'on veut, c'est les LIRE.
-          # Rougir ferait de ce rapport une alarme qu'on apprend à ignorer.
+          # Le job ne rougit PAS sur un écart, et la raison a changé avec le
+          # sujet de la comparaison : un écart peut être du travail PIM NON
+          # ENCORE POUSSÉ, ce qui est parfaitement normal. Ce workflow ne sait
+          # pas distinguer « pas encore poussé » de « le miroir a décroché » —
+          # c'est le découpage en trois lignes de
+          # `documentation/pim/conception-stage-evaluer-pousser.md` (§5.1 bis)
+          # qui le rendra possible. En attendant, on veut LIRE les écarts ;
+          # rougir ferait de ce rapport une alarme qu'on apprend à ignorer.
           echo "Rapport lu — voir le résumé du job."
