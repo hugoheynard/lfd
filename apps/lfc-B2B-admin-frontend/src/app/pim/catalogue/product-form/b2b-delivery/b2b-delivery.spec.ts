@@ -34,34 +34,55 @@ function view(over: Partial<B2bProductDeliveryView> = {}): B2bProductDeliveryVie
 }
 
 class FakeChannel {
-  constructor(private readonly answer: B2bProductDeliveryView | Error) {}
+  readonly opened: { id: string; published: boolean }[] = [];
+
+  constructor(private answer: B2bProductDeliveryView | Error) {}
 
   delivery(): Promise<B2bProductDeliveryView> {
     return this.answer instanceof Error
       ? Promise.reject(this.answer)
       : Promise.resolve(this.answer);
   }
+
+  setMembership(id: string, published: boolean): Promise<void> {
+    this.opened.push({ id, published });
+    // Le canal ouvert : la relecture qui suit doit voir la fiche entrée.
+    if (!(this.answer instanceof Error)) {
+      this.answer = { ...this.answer, publishedAt: '2026-01-04T09:00:00.000Z' };
+    }
+    return Promise.resolve();
+  }
 }
 
-async function render(answer: B2bProductDeliveryView | Error) {
+async function render(answer: B2bProductDeliveryView | Error, api = new FakeChannel(answer)) {
   TestBed.configureTestingModule({
     imports: [B2bDelivery],
-    providers: [{ provide: B2bChannelApi, useValue: new FakeChannel(answer) }],
+    providers: [{ provide: B2bChannelApi, useValue: api }],
   });
   const fixture: ComponentFixture<B2bDelivery> = TestBed.createComponent(B2bDelivery);
   fixture.componentRef.setInput('productId', 'prd_1');
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return fixture;
+  return { fixture, api };
 }
 
 const text = (fixture: ComponentFixture<B2bDelivery>): string =>
   fixture.nativeElement.textContent ?? '';
 
+async function click(fixture: ComponentFixture<B2bDelivery>, label: string): Promise<void> {
+  const button = [...fixture.nativeElement.querySelectorAll('button')].find(
+    (node): node is HTMLButtonElement =>
+      node instanceof HTMLButtonElement && (node.textContent ?? '').includes(label),
+  );
+  button?.click();
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
+
 describe('B2bDelivery — la frise', () => {
   it('dit les trois étapes quand tout est passé', async () => {
-    const fixture = await render(view());
+    const { fixture } = await render(view());
 
     expect(text(fixture)).toContain('Publiée au canal professionnel');
     expect(text(fixture)).toContain('Poussée vers la plateforme');
@@ -75,7 +96,7 @@ describe('B2bDelivery — la frise', () => {
    * fiche en vente.
    */
   it('alerte quand la fiche est poussée et que la plateforme ne l’a pas', async () => {
-    const fixture = await render(
+    const { fixture } = await render(
       view({ variants: [variant({ accepted: false, factsReceivedAt: null })] }),
     );
 
@@ -89,7 +110,7 @@ describe('B2bDelivery — la frise', () => {
    * seule bannière sonne sur l'écran de validation.
    */
   it('ne crie pas sur une fiche que personne n’a encore poussée', async () => {
-    const fixture = await render(
+    const { fixture } = await render(
       view({
         lastPushedAt: null,
         variants: [variant({ accepted: false, factsReceivedAt: null })],
@@ -106,7 +127,7 @@ describe('B2bDelivery — la frise', () => {
    * chercher la panne au mauvais endroit.
    */
   it('dit l’attente de validation, et se tait sur l’anomalie', async () => {
-    const fixture = await render(
+    const { fixture } = await render(
       view({
         variants: [
           variant({
@@ -123,7 +144,7 @@ describe('B2bDelivery — la frise', () => {
   });
 
   it('compte les déclinaisons quand la plateforme n’en tient qu’une partie', async () => {
-    const fixture = await render(
+    const { fixture } = await render(
       view({
         variants: [
           variant({ sku: 'VIE-001-1' }),
@@ -140,9 +161,31 @@ describe('B2bDelivery — la frise', () => {
    * reste utilisable, et le bloc se réessaie tout seul.
    */
   it('laisse la fiche intacte quand la plateforme ne répond pas', async () => {
-    const fixture = await render(new Error('injoignable'));
+    const { fixture } = await render(new Error('injoignable'));
 
     expect(text(fixture)).toContain("n'a pas répondu");
     expect(text(fixture)).toContain('Réessayer');
+  });
+
+  /**
+   * 🔴 LE geste qui manquait, à l'endroit exact où la frise constate son
+   * absence. Elle affichait « Pas vendue aux professionnels » sans rien offrir,
+   * alors que la projection du canal DÉMARRE sur cette appartenance : une fiche
+   * hors canal n'est jamais candidate au push, et aucun écran ne l'écrivait.
+   */
+  it('offre d’ouvrir le canal là où elle constate qu’il est fermé', async () => {
+    const { fixture, api } = await render(view({ publishedAt: null, lastPushedAt: null }));
+
+    expect(text(fixture)).toContain('Pas vendue aux professionnels');
+    await click(fixture, 'Vendre sur la boutique B2B');
+
+    expect(api.opened).toEqual([{ id: 'prd_1', published: true }]);
+  });
+
+  /** Une fiche déjà sur le canal n'a rien à ouvrir : le geste disparaît. */
+  it('ne propose rien quand le canal est déjà ouvert', async () => {
+    const { fixture } = await render(view());
+
+    expect(text(fixture)).not.toContain('Vendre sur la boutique B2B');
   });
 });

@@ -4,9 +4,17 @@
 <div class="channels">
   <section class="channel">
     <fold-element-title variant="eyebrow" title="Boutique B2B" />
+    <!-- Cette section affirmait que la plateforme B2B « n'a pas de champ
+         propre ». C'était faux, et l'erreur coûtait cher : son APPARTENANCE au
+         canal est une propriété par fiche, et c'est elle qui décide si le push
+         emporte l'article. On la règle dans le rail, à côté de la frise qui en
+         montre l'effet — un réglage et son résultat séparés par deux colonnes
+         se relisent moins bien que collés. -->
     <p class="muted">
-      La plateforme professionnelle lit le nom, le prix et les allergènes du référentiel. Elle n'a
-      pas de champ propre — et c'est une information, pas un manque.
+      La plateforme professionnelle lit le nom, le prix et les allergènes du référentiel : aucun
+      champ à saisir ici. Ce qu'elle a en propre, c'est son <strong>appartenance au canal</strong>
+      — vendre cette fiche aux professionnels, ou non. Elle se règle dans la colonne de droite, sous
+      «&nbsp;Sur la plateforme professionnelle&nbsp;».
     </p>
   </section>
 
@@ -16,12 +24,14 @@
          ligne, donc une propriété du CANAL. Le B2B ne s'en sert pas — un
          professionnel qui commande en gros ne cherche pas le produit sur Google. -->
     <fold-field-list>
+      <!-- Le handle est DÉRIVÉ du nom, à la création et à chaque renommage
+           (`Product.rename` re-dérive le slug). Cette case disait « attribué à
+           la première poussée » : faux, et la branche vide ne s'affichait
+           jamais. ⚠️ Renommer une fiche déjà poussée déplace donc son URL
+           publique — et l'historique Shopify, unique par `(handle, version)`,
+           repart à v1 sous le nouveau handle. -->
       <fold-field label="Handle">
-        @if (store.slug(); as slug) {
-          <code class="sku">{{ slug }}</code>
-        } @else {
-          <span class="muted">attribué à la première poussée</span>
-        }
+        <code class="sku">{{ store.slug() }}</code>
       </fold-field>
     </fold-field-list>
     <p class="muted">

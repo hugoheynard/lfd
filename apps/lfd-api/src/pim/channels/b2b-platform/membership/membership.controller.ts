@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Put } from "@nestjs/common";
 import {
   setB2bMembershipPayloadSchema,
   setB2bMembershipsPayloadSchema,
+  type B2bMembershipBatchResult,
   type B2bMembershipView,
   type SetB2bMembershipPayload,
   type SetB2bMembershipsPayload,
@@ -44,7 +45,7 @@ export class B2bMembershipController {
   async setMany(
     @Body(new ZodBody(setB2bMembershipsPayloadSchema))
     body: SetB2bMembershipsPayload,
-  ): Promise<{ affected: number }> {
+  ): Promise<B2bMembershipBatchResult> {
     const affected = body.published
       ? await this.membership.publishMany(body.productIds, null)
       : await this.membership.unpublishMany(body.productIds);

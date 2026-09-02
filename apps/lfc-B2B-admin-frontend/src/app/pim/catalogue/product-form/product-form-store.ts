@@ -483,15 +483,17 @@ export class ProductFormStore {
   readonly sku: Signal<string> = this.skuValue;
 
   /**
-   * Le **slug** — le handle qui pilote l'URL publique. Lu, jamais saisi, et pour
-   * une raison plus forte que la référence : il est figé à la création (SEO —
-   * une URL qui change casse les liens et le référencement acquis). L'exposer
-   * en écriture proposerait de corriger ce que le backend refuse de bouger.
+   * Le **slug** — le handle qui pilote l'URL publique. Lu, jamais saisi : il est
+   * DÉRIVÉ du nom par le domaine, et l'exposer en écriture proposerait de
+   * corriger ce que le serveur recalcule.
    *
-   * Vide tant que le produit n'a pas été poussé : le handle naît de la première
-   * publication, pas de la création. Un slug « proposé » affiché ici prétendrait
-   * connaître l'algorithme du serveur — et le jour où ils divergent, l'écran
-   * aurait menti sans que rien ne le dise.
+   * ⚠️ Ce JSDoc a dit deux choses fausses, corrigées le 2026-09-02 : le handle
+   * ne naît pas de la première publication, et il n'est pas figé à la création.
+   * `Product.rename()` le **re-dérive** — donc renommer une fiche déjà poussée
+   * déplace son URL publique, et l'historique Shopify, unique par
+   * `(handle, version)`, repart à v1 sous le nouveau handle en laissant
+   * l'ancien orphelin. Le commentaire prétendait empêcher exactement ce qu'il
+   * décrivait.
    */
   private readonly slugValue = signal('');
   readonly slug: Signal<string> = this.slugValue;
@@ -1361,7 +1363,7 @@ export class ProductFormStore {
    * intactes. Quatre valeurs sont reprises, et ce sont exactement celles qu'un
    * statut déplace : l'état lui-même, la signature et sa péremption (le serveur
    * ne compte plus un statut comme une modification du contenu, mais c'est LUI
-   * qui le dit maintenant), et le `slug`, qui naît de la première publication.
+   * qui le dit maintenant), et le `slug`, que le serveur re-dérive du nom.
    */
   private async refreshLifecycle(id: string): Promise<void> {
     const detail = await this.products.getDetail(id);

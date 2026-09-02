@@ -72,6 +72,14 @@
         <fold-dropdown-item icon="upload" (selected)="pushSelected()">
           Pousser la sélection
         </fold-dropdown-item>
+        <!-- Ouvrir un canal se fait une fois, sur tout un catalogue : le geste
+             unitaire seul aurait demandé quatre-vingt-quinze clics. -->
+        <fold-dropdown-item icon="shopping-bag" (selected)="setB2bSelected(true)">
+          Vendre sur la boutique B2B
+        </fold-dropdown-item>
+        <fold-dropdown-item icon="eye-off" (selected)="setB2bSelected(false)">
+          Retirer de la boutique B2B
+        </fold-dropdown-item>
         <!-- UN seul item, et il dit ce qui se passe. « Supprimer la sélection »
              vivait ici à côté, avec une poubelle et un ton danger — et appelait
              exactement la même route. Qui voulait retirer une fiche cliquait
@@ -129,6 +137,15 @@
       <fold-badge [content]="syncLabel(p.id)" [variant]="syncVariant(p.id)" />
     </ng-template>
 
+    <!-- « hors canal » n'est pas une panne : c'est le défaut d'une fiche neuve.
+         « jamais poussée » l'est davantage — la décision est prise, le catalogue
+         ne l'a pas emportée. La colonne s'arrête là : dire « en vente »
+         demanderait d'interroger la plateforme fiche par fiche, ce que la frise
+         de la fiche produit fait, et pas un tableau. -->
+    <ng-template foldCell="b2b" let-p>
+      <fold-badge [content]="b2bLabel(p.id)" [variant]="b2bVariant(p.id)" />
+    </ng-template>
+
     <ng-template foldCell="actions" let-p>
       <div class="row-actions">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
@@ -140,6 +157,23 @@
           <fold-dropdown-item icon="upload" [disabled]="busy()" (selected)="push(p)">
             Pousser
           </fold-dropdown-item>
+          <!-- 🔴 Le geste qui manquait. La projection du canal démarre sur cette
+               appartenance : une fiche qui n'y est pas n'est JAMAIS candidate au
+               push, et aucun écran ne l'écrivait. « Vendre sur » et non
+               « publier » — ce dernier désigne déjà deux autres gestes. -->
+          @if (onB2bChannel(p.id)) {
+            <fold-dropdown-item icon="eye-off" [disabled]="busy()" (selected)="setB2b(p, false)">
+              Retirer de la boutique B2B
+            </fold-dropdown-item>
+          } @else {
+            <fold-dropdown-item
+              icon="shopping-bag"
+              [disabled]="busy()"
+              (selected)="setB2b(p, true)"
+            >
+              Vendre sur la boutique B2B
+            </fold-dropdown-item>
+          }
           @if (p.status === 'draft') {
             <fold-dropdown-item icon="check" [disabled]="busy()" (selected)="publish(p)">
               Publier au catalogue

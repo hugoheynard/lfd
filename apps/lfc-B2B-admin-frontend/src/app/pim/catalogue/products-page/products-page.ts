@@ -27,6 +27,7 @@ import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { soldContexts, type SoldContext } from '../sold-contexts';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
+import { B2bChannelApi, type B2bMembershipView } from '../../channels/b2b-channel-api';
 
 import {
   CatalogueApi,
@@ -50,6 +51,31 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
   up_to_date: 'success',
   drifted: 'warning',
   failed: 'alert',
+};
+
+/**
+ * **Où en est une fiche sur la boutique professionnelle**, vue de la liste.
+ *
+ * Trois états, et pas quatre : l'acceptation par la plateforme demande un appel
+ * par fiche (le port de retour), donc elle vit sur la FRISE de la fiche produit.
+ * Annoncer ici « en vente » sans l'avoir vérifié serait dire ce qu'on ne sait
+ * pas — la colonne s'arrête donc à ce que l'appartenance et la date de push
+ * suffisent à établir.
+ */
+type B2bChannelState = 'hors_canal' | 'jamais_poussee' | 'poussee';
+
+const B2B_LABELS: Record<B2bChannelState, string> = {
+  hors_canal: 'hors canal',
+  jamais_poussee: 'jamais poussée',
+  poussee: 'poussée',
+};
+
+const B2B_VARIANTS: Record<B2bChannelState, FoldBadgeVariant> = {
+  hors_canal: 'neutral',
+  // Décidée mais jamais partie : l'écart que le commercial doit voir, et le seul
+  // que cette colonne sache signaler.
+  jamais_poussee: 'warning',
+  poussee: 'success',
 };
 
 @Component({
@@ -84,6 +110,7 @@ export class ProductsPage {
   /** Le registre des contextes — même raison : la colonne « Canaux » les lit tous. */
   private readonly contexts = inject(SalesContextStore);
   private readonly shopify = inject(ShopifyApi);
+  private readonly b2b = inject(B2bChannelApi);
   private readonly router = inject(Router);
 
   protected readonly products = signal<Product[]>([]);
@@ -91,6 +118,7 @@ export class ProductsPage {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
+  protected readonly memberships = signal<B2bMembershipView[]>([]);
   protected readonly rates = signal<VatRate[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly query = signal('');
@@ -167,6 +195,9 @@ export class ProductsPage {
     { key: 'channels', label: 'Canaux', width: '12rem' },
     { key: 'status', label: 'État' },
     { key: 'sync', label: 'Shopify' },
+    // Deux canaux, deux colonnes. Celui qui FACTURE n'en avait aucune : la seule
+    // information sur la plateforme professionnelle était son absence.
+    { key: 'b2b', label: 'Boutique B2B' },
     { key: 'actions', label: '', align: 'right', width: '8rem' },
   ];
 
@@ -217,6 +248,59 @@ export class ProductsPage {
 
   protected syncLabel(productId: string): string {
     return SYNC_LABELS[this.syncStatus(productId)];
+  }
+
+  private readonly membershipById = computed(
+    () => new Map(this.memberships().map((entry) => [entry.productId, entry])),
+  );
+
+  protected b2bState(productId: string): B2bChannelState {
+    const found = this.membershipById().get(productId);
+    if (found === undefined) {
+      return 'hors_canal';
+    }
+    return found.lastPushedAt === null ? 'jamais_poussee' : 'poussee';
+  }
+
+  protected b2bLabel(productId: string): string {
+    return B2B_LABELS[this.b2bState(productId)];
+  }
+
+  protected b2bVariant(productId: string): FoldBadgeVariant {
+    return B2B_VARIANTS[this.b2bState(productId)];
+  }
+
+  protected onB2bChannel(productId: string): boolean {
+    return this.b2bState(productId) !== 'hors_canal';
+  }
+
+  /**
+   * Ouvre ou ferme le canal pour une fiche.
+   *
+   * 🔴 Le geste manquait ENTIÈREMENT : la projection du canal démarre sur cette
+   * appartenance, et aucun écran ne l'écrivait. Une fiche neuve ne pouvait
+   * atteindre la boutique professionnelle que par un appel d'API.
+   */
+  protected async setB2b(product: Product, published: boolean): Promise<void> {
+    await this.run(() => this.b2b.setMembership(product.id, published));
+  }
+
+  protected async setB2bSelected(published: boolean): Promise<void> {
+    const ids = this.selectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.b2b.setMemberships(ids, published);
+      await this.reload();
+      this.selection.set(new Set());
+    } catch (caught) {
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected syncVariant(productId: string): FoldBadgeVariant {
@@ -376,14 +460,16 @@ export class ProductsPage {
 
   private async reload(): Promise<void> {
     try {
-      const [products, categories, bindings, rates] = await Promise.all([
+      const [products, categories, bindings, memberships, rates] = await Promise.all([
         this.api.listProducts(),
         this.api.listCategories(),
         this.shopify.listBindings(),
+        this.b2b.memberships(),
         this.api.listVatRates(),
       ]);
       this.products.set(products);
       this.bindings.set(bindings);
+      this.memberships.set(memberships);
       this.rates.set(rates);
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {

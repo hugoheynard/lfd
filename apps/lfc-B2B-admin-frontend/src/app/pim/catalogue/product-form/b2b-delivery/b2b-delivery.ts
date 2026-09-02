@@ -183,6 +183,32 @@ export class B2bDelivery {
       : `Acceptée en partie — ${held} déclinaison${held > 1 ? 's' : ''} sur ${total}`;
   }
 
+  /**
+   * 🔴 **Le geste, à l'endroit exact où la frise constate son absence.**
+   *
+   * Elle affichait « Pas vendue aux professionnels » sans rien offrir : le
+   * réglage n'existait sur AUCUN écran, alors que la projection du canal démarre
+   * dessus — une fiche hors canal n'est jamais candidate au push. Une frise qui
+   * constate sans permettre d'agir apprend à être ignorée.
+   *
+   * ⚠️ « Vendre sur » et non « publier » : ce dernier désigne déjà la mise en
+   * ligne de la fiche ET l'envoi. Trois gestes sous un mot, c'est ce qui rendait
+   * l'enchaînement illisible.
+   */
+  protected async openChannel(): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.channel.setMembership(this.productId(), true);
+      await this.load(this.productId());
+    } catch {
+      this.state.set('error');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected readonly busy = signal(false);
+
   protected async load(id: string): Promise<void> {
     this.state.set('loading');
     try {

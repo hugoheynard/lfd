@@ -77,18 +77,22 @@ fait sonner l'écran tous les jours, donc jamais.
 
 **La question** : « qu'est-ce que j'ai, et où chaque fiche en est-elle ? »
 
-| Doit montrer                                            | État | Note                                                 |
-| ------------------------------------------------------- | ---- | ---------------------------------------------------- |
-| Référence, nom, famille                                 | ✅   |                                                      |
-| **État** de la fiche, en français, une couleur par état | ✅   | un brouillon n'est pas vert                          |
-| **Contextes de vente** (« Canaux »)                     | ✅   | la matrice — où la fiche se vend                     |
-| **Shopify** — l'état de synchronisation                 | ✅   |                                                      |
-| **Boutique B2B** — l'état de diffusion                  | ❌   | **la colonne manque** : Shopify en a une, le B2B non |
+| Doit montrer                                            | État | Note                                        |
+| ------------------------------------------------------- | ---- | ------------------------------------------- |
+| Référence, nom, famille                                 | ✅   |                                             |
+| **État** de la fiche, en français, une couleur par état | ✅   | un brouillon n'est pas vert                 |
+| **Contextes de vente** (« Canaux »)                     | ✅   | la matrice — où la fiche se vend            |
+| **Shopify** — l'état de synchronisation                 | ✅   |                                             |
+| **Boutique B2B** — l'état de diffusion                  | ✅   | `hors canal` · `jamais poussée` · `poussée` |
 
-🔴 **La colonne B2B est le manque le plus visible de cet écran.** Deux canaux,
-une seule colonne : le canal qui **facture** est le seul dont l'écran ne dit
-rien. Elle doit porter les mêmes états que la frise de la fiche (§5) —
-`hors canal` / `jamais poussée` / `poussée, en attente` / `en vente`.
+✅ **Posée le 2026-09-02.** Deux canaux, deux colonnes : celui qui **facture**
+n'en avait aucune.
+
+⚠️ **Trois états, et pas quatre.** L'acceptation par la plateforme demande un
+appel **par fiche** — le port de retour —, donc elle vit sur la frise (§5).
+Annoncer « en vente » dans un tableau sans l'avoir vérifié serait dire ce qu'on
+ne sait pas ; la colonne s'arrête à ce que l'appartenance et la date de push
+établissent.
 
 ⚠️ Et elle ne se confond pas avec « Canaux » : la matrice dit **où la fiche se
 vend**, l'appartenance dit **si le canal l'emporte**. La projection exige les
@@ -101,7 +105,7 @@ produit rien.
 | **Publier au catalogue** / **Dépublier**            | ✅   | selon l'état                                      |
 | **Archiver** — et rien qui lui ressemble            | ✅   | « Supprimer » a été retiré : deux items, un effet |
 | Pousser vers Shopify (unitaire et en lot)           | ✅   |                                                   |
-| **Vendre sur la boutique B2B** (unitaire et en lot) | ❌   | **le geste manque** — cf. §9                      |
+| **Vendre sur la boutique B2B** (unitaire et en lot) | ✅   | et **Retirer**, symétrique                        |
 
 ---
 
@@ -119,15 +123,14 @@ produit rien.
 | **Publication au catalogue** | le statut, et **que publier n'envoie rien**   | ✅   |
 | **Sur la plateforme pro**    | la frise : décision → envoi → acceptation     | ✅   |
 
-🔴 **La frise doit offrir le geste qu'elle décrit.** Elle affiche « Pas vendue
-aux professionnels » ; il n'existe aujourd'hui **aucun** moyen d'y remédier
-depuis un écran (§9). Une frise qui constate sans permettre d'agir apprend à
-être ignorée.
+✅ **La frise offre le geste qu'elle décrit** (2026-09-02). Elle affichait
+« Pas vendue aux professionnels » sans aucun moyen d'y remédier : une frise qui
+constate sans permettre d'agir apprend à être ignorée.
 
 ### Ce que la fiche doit refuser de laisser croire
 
 - **Le slug n'est pas figé** : il se dérive du nom, à la création **et à chaque
-  renommage**. Trois textes affirment le contraire. ⚠️
+  renommage**. Trois textes affirmaient le contraire — corrigés le 2026-09-02. ✅
 - **Renommer déplace le handle Shopify**, donc l'URL publique et l'historique des
   poussées. Si le produit veut que ce soit interdit, c'est une règle de domaine à
   poser ; tant qu'elle n'existe pas, l'écran doit **avertir** au renommage d'une
@@ -135,14 +138,16 @@ depuis un écran (§9). Une frise qui constate sans permettre d'agir apprend à
 
 ### La section « Intégrations »
 
-| Doit montrer                                         | État              |
-| ---------------------------------------------------- | ----------------- |
-| Shopify : le handle, l'état, ce qui partirait        | ⚠️ le handle seul |
-| Boutique B2B : l'appartenance au canal, et son geste | ❌                |
+| Doit montrer                                            | État              |
+| ------------------------------------------------------- | ----------------- |
+| Shopify : le handle, l'état, ce qui partirait           | ⚠️ le handle seul |
+| Boutique B2B : l'appartenance au canal, et où la régler | ✅                |
 
-⚠️ Elle affirme aujourd'hui que la plateforme B2B « n'a pas de champ propre ».
-C'est faux : son appartenance au canal **est** une propriété par fiche, et c'est
-justement celle qu'aucun écran ne règle.
+⚠️ Elle affirmait que la plateforme B2B « n'a pas de champ propre ». C'était
+faux — son appartenance au canal **est** une propriété par fiche —, et cette
+phrase est précisément ce qui rendait le réglage manquant invisible. Le geste vit
+dans le rail, collé à la frise qui en montre l'effet ; la section y renvoie
+plutôt que d'offrir une seconde bascule.
 
 ---
 
@@ -252,10 +257,10 @@ l'emportera au prochain envoi.
 
 | #   | L'écart                                                         | Écran                | Nature        |
 | --- | --------------------------------------------------------------- | -------------------- | ------------- |
-| 1   | Pas de colonne « Boutique B2B »                                 | liste produits       | ❌ manque     |
-| 2   | Pas de geste pour ouvrir le canal B2B                           | liste + fiche        | ❌ **bloque** |
-| 3   | « La plateforme B2B n'a pas de champ propre »                   | fiche · intégrations | ⚠️ faux       |
-| 4   | Le slug annoncé figé, et né de la publication                   | fiche · store        | ⚠️ faux       |
+| 1   | ~~Pas de colonne « Boutique B2B »~~                             | liste produits       | ✅ posée      |
+| 2   | ~~Pas de geste pour ouvrir le canal B2B~~                       | liste + fiche        | ✅ posé       |
+| 3   | ~~« La plateforme B2B n'a pas de champ propre »~~               | fiche · intégrations | ✅ corrigé    |
+| 4   | ~~Le slug annoncé figé, et né de la publication~~               | fiche · store        | ✅ corrigé    |
 | 5   | Renommer déplace le handle Shopify, sans avertissement          | fiche                | ❌ manque     |
 | 6   | Le push ne montre pas le contenu, donc le refus n'explique rien | publication          | ⚠️ tranche    |
 | 7   | Les lignes suspectes ne s'écartent pas d'elles-mêmes            | réception            | ❌ non décidé |

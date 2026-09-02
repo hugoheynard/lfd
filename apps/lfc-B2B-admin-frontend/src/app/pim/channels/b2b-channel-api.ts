@@ -1,6 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { B2bProductDeliveryView, B2bPushSummaryView } from '@lfd/pim-contracts';
+import type {
+  B2bMembershipBatchResult,
+  B2bMembershipView,
+  B2bProductDeliveryView,
+  B2bPushSummaryView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -12,6 +17,7 @@ export type {
   B2bPushSummaryView,
   B2bDeliveryFactsView,
   B2bProductDeliveryView,
+  B2bMembershipView,
 } from '@lfd/pim-contracts';
 
 /**
@@ -57,5 +63,45 @@ export class B2bChannelApi {
         `${this.base}/channels/b2b/products/${productId}/delivery`,
       ),
     );
+  }
+
+  /**
+   * **Qui est vendu aux professionnels** — l'appartenance au canal, fiche par
+   * fiche.
+   *
+   * 🔴 À ne pas confondre avec la matrice des contextes de vente, qui s'édite
+   * dans la fiche : celle-là dit **où** un article se vend, celle-ci dit **si le
+   * canal l'emporte**. La projection exige les DEUX, et c'est ce qui a rendu
+   * l'absence invisible — on réglait celle qu'on voyait, et rien ne partait.
+   */
+  memberships(): Promise<B2bMembershipView[]> {
+    return firstValueFrom(this.http.get<B2bMembershipView[]>(`${this.base}/channels/b2b/products`));
+  }
+
+  /**
+   * Ouvre ou ferme le canal pour une fiche.
+   *
+   * Idempotent côté serveur : rouvrir ne réécrit ni la date d'origine ni
+   * l'auteur — c'est la PREMIÈRE ouverture qui répond à « depuis quand ».
+   */
+  async setMembership(productId: string, published: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${this.base}/channels/b2b/products/${productId}`, { published }),
+    );
+  }
+
+  /**
+   * La même bascule, **en lot** — ouvrir un canal se fait une fois, sur tout un
+   * catalogue. Les identifiants restent explicites : pas de « tout ouvrir »
+   * magique qui emporterait un brouillon oublié.
+   */
+  async setMemberships(productIds: readonly string[], published: boolean): Promise<number> {
+    const { affected } = await firstValueFrom(
+      this.http.put<B2bMembershipBatchResult>(`${this.base}/channels/b2b/products`, {
+        productIds: [...productIds],
+        published,
+      }),
+    );
+    return affected;
   }
 }

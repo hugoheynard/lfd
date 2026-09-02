@@ -22,3 +22,10 @@
 fold-callout {
   margin-top: var(--fold-space-md);
 }
+
+/* Le bouton remplit la carte, comme les gestes du rail : c'est une action de
+   colonne, pas un lien au fil du texte. */
+.bd-cta {
+  width: 100%;
+  margin-top: var(--fold-space-md);
+}

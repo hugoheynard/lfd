@@ -27,6 +27,15 @@
           </fold-callout>
         }
 
+        <!-- 🔴 La frise constatait « pas vendue aux professionnels » sans offrir
+             le moindre geste : le réglage n'existait sur AUCUN écran. La
+             projection du canal démarre pourtant dessus. -->
+        @if (frise()?.publishedAt === null) {
+          <button foldButton class="bd-cta" [loading]="busy()" (click)="openChannel()">
+            Vendre sur la boutique B2B
+          </button>
+        }
+
         @if (pushedButAbsent()) {
           <!-- Le cas que l'audit du 2026-09-01 relevait sans pouvoir le
                montrer : le push répond 201, la fiche paraît partie, et la

@@ -30,6 +30,17 @@ export const setB2bMembershipsPayloadSchema = z.object({
 });
 export type SetB2bMembershipsPayload = z.infer<typeof setB2bMembershipsPayloadSchema>;
 
+/**
+ * Ce qu'une bascule **en lot** a réellement touché.
+ *
+ * Un nombre et non un « c'est fait » : ouvrir un canal sur quatre-vingt-quinze
+ * fiches et en voir passer quatre-vingt-treize est une information, et l'écran
+ * doit pouvoir dire laquelle.
+ */
+export interface B2bMembershipBatchResult {
+  readonly affected: number;
+}
+
 /** L'état d'un produit vis-à-vis du canal B2B. */
 export interface B2bMembershipView {
   readonly productId: string;

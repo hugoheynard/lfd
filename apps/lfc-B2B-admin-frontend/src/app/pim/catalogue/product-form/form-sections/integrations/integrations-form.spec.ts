@@ -35,11 +35,33 @@ describe('IntegrationsForm', () => {
     expect(field?.getAttribute('label')).toBe('Handle');
   });
 
-  it('dit que le handle manque plutôt que d’en inventer un', () => {
+  /**
+   * 🔴 Ce cas affirmait l'inverse : « attribué à la première poussée ». Le
+   * handle est DÉRIVÉ du nom par le domaine, à la création et à chaque
+   * renommage (`Product.rename()` re-dérive le slug) — il n'attend aucune
+   * poussée, et la branche vide ne s'affichait donc jamais.
+   */
+  it('n’annonce plus un handle attribué par la poussée', () => {
     setup();
     const fixture = TestBed.createComponent(IntegrationsForm);
     fixture.detectChanges();
     const field = (fixture.nativeElement as HTMLElement).querySelector('fold-field');
-    expect(field?.textContent).toContain('attribué à la première poussée');
+    expect(field?.textContent).not.toContain('attribué à la première poussée');
+  });
+
+  /**
+   * Ce que la plateforme B2B a en propre est son APPARTENANCE au canal — la
+   * propriété qui décide si le push emporte l'article. La section affirmait
+   * qu'elle « n'a pas de champ propre », et c'est cette phrase qui rendait le
+   * réglage manquant invisible.
+   */
+  it('nomme l’appartenance au canal comme la propriété B2B de la fiche', () => {
+    setup();
+    const fixture = TestBed.createComponent(IntegrationsForm);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).toContain('appartenance au canal');
+    expect(text).not.toContain("n'a pas de champ propre");
   });
 });

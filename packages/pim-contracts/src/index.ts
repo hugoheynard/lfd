@@ -154,6 +154,7 @@ export type {
   SetB2bMembershipPayload,
   SetB2bMembershipsPayload,
   B2bMembershipView,
+  B2bMembershipBatchResult,
   B2bExclusionReason,
   B2bExclusionView,
   B2bIngestionReportView,
