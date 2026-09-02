@@ -28,15 +28,88 @@
     </div>
   </fold-hero-card>
 
-  <!-- La seule chose à surveiller sur un canal sans connexion. -->
+  <!-- OÙ EN EST LE CATALOGUE — trois constats, une seule alarme.
+       L'écran en confondait trois sous un seul « écart ». Ils n'ont ni la même
+       cause, ni le même responsable, ni la même urgence : deux décrivent un
+       fonctionnement normal, et les noyer ensemble faisait un écran qu'on
+       n'ouvre plus. -->
   <fold-card class="parity">
     <header class="parity-head">
       <div class="parity-titles">
-        <fold-element-title title="Fidélité du miroir" />
+        <fold-element-title title="Où en est le catalogue" />
         <p class="parity-sub">
-          La boutique ne lit pas le référentiel : elle en tient une copie, et c'est cette copie
-          qu'elle facture. Si elle décroche, un prix ou un taux que personne n'a décidé part sur une
-          facture — sans que rien ne le signale.
+          La boutique ne lit pas le référentiel&nbsp;: elle en tient une copie, et c'est cette copie
+          qu'elle facture. Trois choses peuvent l'écarter de sa source, et une seule est anormale.
+        </p>
+      </div>
+      <button foldButton emphasis="outline" size="sm" [disabled]="reading()" (click)="read()">
+        {{ reading() ? 'Lecture…' : 'Relire' }}
+      </button>
+    </header>
+
+    @if (reading() && health() === null) {
+      <div class="parity-loading"><fold-spinner /> Lecture de l'état…</div>
+    } @else if (health(); as etat) {
+      <!-- 1. Le travail du référentiel qui n'est pas encore parti. Normal. -->
+      <fold-callout appearance="inset" variant="neutral">
+        @if (unpushed() > 0) {
+          <strong>{{ unpushed() }}</strong> changement{{ unpushed() > 1 ? 's' : '' }} au référentiel
+          depuis la dernière publication. C'est du travail en cours&nbsp;: il partira au prochain
+          push.
+        } @else {
+          <strong>Rien de neuf au référentiel</strong> depuis la dernière publication.
+        }
+      </fold-callout>
+
+      <!-- 2. Livré, pas encore relu. Normal aussi — c'est le geste qu'on a voulu. -->
+      <fold-callout appearance="inset" variant="neutral">
+        @if (awaiting() > 0) {
+          <strong>{{ awaiting() }}</strong> changement{{ awaiting() > 1 ? 's' : '' }} livré{{
+            awaiting() > 1 ? 's' : ''
+          }}
+          attend{{ awaiting() > 1 ? 'ent' : '' }} d'être relu{{ awaiting() > 1 ? 's' : '' }}. Rien
+          n'est en vente tant que personne n'a validé.
+        } @else {
+          <strong>Aucune arrivée en attente.</strong>
+        }
+      </fold-callout>
+
+      <!-- 3. LA SEULE QUI RÉVEILLE. Rien de normal ne la produit. -->
+      @if (etat.version === null) {
+        <fold-callout appearance="inset" variant="neutral">
+          <strong>Aucune version validée</strong>&nbsp;: il n'y a rien à quoi comparer ce que la
+          boutique tient. Ce contrôle deviendra parlant au premier catalogue validé.
+        </fold-callout>
+      } @else if (drift(); as ecart) {
+        @if (ecart.inSync) {
+          <fold-callout appearance="inset" variant="success">
+            <strong>La boutique porte exactement ce qui a été validé.</strong>
+            {{ etat.version.itemCount }} article{{ etat.version.itemCount > 1 ? 's' : '' }} figés.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert" announce>
+            <strong>La boutique a décroché de la version validée.</strong> Aucun geste normal ne
+            produit cet écart&nbsp;: ni un travail en cours, ni une arrivée en attente. Ce qui
+            reste&nbsp;: une ingestion interrompue, une écriture directe en base, une restauration
+            de sauvegarde.
+          </fold-callout>
+        }
+      }
+    }
+  </fold-card>
+
+  <!-- L'APERÇU AVANT PUSH, à la demande. Son référent est « ce que le
+       référentiel publierait maintenant », donc son écart est légitime en
+       permanence — le fil fait exprès que le miroir retarde. L'afficher d'office
+       rejouerait ce que les trois lignes viennent de démonter. -->
+  <fold-card class="parity">
+    <header class="parity-head">
+      <div class="parity-titles">
+        <fold-element-title title="Ce qui partirait au prochain push" />
+        <p class="parity-sub">
+          La comparaison entre ce que le référentiel publierait <em>maintenant</em> et ce que la
+          boutique tient. Un écart est ici <strong>attendu</strong>&nbsp;: c'est le travail qui
+          n'est pas encore parti.
         </p>
       </div>
       <button foldButton emphasis="outline" size="sm" [disabled]="loading()" (click)="check()">
@@ -54,8 +127,7 @@
 
       @if (report.inSync) {
         <fold-callout appearance="inset" variant="success">
-          <strong>Le miroir est fidèle.</strong> Rien ne diffère — ni un article, ni un prix, ni un
-          taux.
+          <strong>Rien à envoyer.</strong> La boutique porte déjà ce que le référentiel publierait.
         </fold-callout>
       } @else {
         @if (report.missing.length > 0) {
@@ -92,8 +164,8 @@
           </ul>
         }
         <p class="parity-fix">
-          Un écart se répare par un <strong>push</strong> depuis Publication — la boutique reprend
-          alors ce que le référentiel publie.
+          Ces écarts partent au prochain <strong>push</strong> depuis Publication. Ils ne sont pas
+          une anomalie&nbsp;: c'est ce qui reste à envoyer.
         </p>
       }
     }

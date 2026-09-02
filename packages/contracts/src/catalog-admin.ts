@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CatalogParityView } from "./catalog-parity.js";
+
 /**
  * Le catalogue **vu du paramétrage** — ce que le PIM envoie ET ce que la
  * plateforme décide, côte à côte.
@@ -160,3 +162,47 @@ export const acceptDeliveryPayloadSchema = z.object({
   excludedSkus: z.array(z.string().min(1)).default([]),
 });
 export type AcceptDeliveryPayload = z.infer<typeof acceptDeliveryPayloadSchema>;
+
+/**
+ * ── L'état de santé du catalogue vendu ───────────────────────────────────────
+ *
+ * L'écran confondait **trois** constats sous un seul « écart ». Ils n'ont ni la
+ * même cause, ni le même responsable, ni la même urgence :
+ *
+ * | Ce qu'on constate                     | Ce que ça veut dire                    | Alarme ? |
+ * | ------------------------------------- | -------------------------------------- | -------- |
+ * | R+1 ≠ R côté PIM                      | on travaille, rien n'est poussé        | non      |
+ * | une arrivée attend validation         | le PIM a poussé, personne n'a validé   | non      |
+ * | le miroir ≠ la dernière version       | **rien n'explique cet écart**          | **oui**  |
+ *
+ * Les deux premières se **lisent** ailleurs — côté PIM pour l'une, dans la boîte
+ * de réception pour l'autre. Seule la troisième est une comparaison, et c'est
+ * elle que cette vue porte : la seule ligne qui doit réveiller quelqu'un cesse
+ * d'être noyée par les deux qui ne le doivent pas.
+ */
+
+/** La version à laquelle le miroir est comparé. */
+export interface CatalogHealthVersionView {
+  readonly id: string;
+  /** L'ancre PIM d'où venait la livraison validée. */
+  readonly revisionId: string;
+  readonly createdAt: string;
+  readonly itemCount: number;
+}
+
+export interface CatalogHealthView {
+  /**
+   * La dernière version validée, ou `null` si aucune ne l'a été.
+   *
+   * `null` n'est pas une panne : c'est l'état d'une plateforme dont la boîte de
+   * réception n'a jamais été ouverte. Il n'y a alors **rien à quoi comparer**,
+   * et l'écran doit le dire au lieu d'annoncer un catalogue sain.
+   */
+  readonly version: CatalogHealthVersionView | null;
+  /**
+   * L'écart entre le miroir et cette version. `null` quand il n'y a pas de
+   * version — inventer un rapport vide dirait « tout va bien » d'un contrôle qui
+   * n'a pas eu lieu.
+   */
+  readonly drift: CatalogParityView | null;
+}

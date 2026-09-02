@@ -1,5 +1,5 @@
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
-import type { PendingDeliveryView } from "@lfd/contracts";
+import type { CatalogHealthView, PendingDeliveryView } from "@lfd/contracts";
 
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
@@ -309,5 +309,132 @@ describe("POST /admin/catalog/delivery/accept", () => {
       .post("/admin/catalog/delivery/accept")
       .send({ deliveryId: pending.id, excludedSkus: ["INCONNU-9"] })
       .expect(409);
+  });
+});
+
+/**
+ * **Le contrôle de santé : ce qu'on a validé, contre ce qu'on tient.**
+ *
+ * L'écran confondait trois constats sous un seul « écart ». Deux décrivent un
+ * fonctionnement normal — on travaille sur des fiches, une arrivée attend d'être
+ * relue — et se lisent ailleurs. Celui-ci est le seul que rien n'explique, donc
+ * le seul qui doive réveiller quelqu'un.
+ */
+describe("GET /admin/catalog/health", () => {
+  /**
+   * Aucune validation n'a eu lieu : il n'y a **rien à quoi comparer**. Rendre un
+   * rapport vide annoncerait un catalogue sain sur un contrôle qui n'a pas
+   * tourné.
+   */
+  it("ne compare rien tant qu'aucune version n'a été validée", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+
+    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
+
+    expect(vue).toEqual({ version: null, drift: null });
+  });
+
+  it("ne signale rien quand le miroir porte ce qui a été validé", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+
+    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
+
+    expect(vue.version).toMatchObject({ revisionId: pending.revisionId, itemCount: 2 });
+    expect(vue.drift?.inSync).toBe(true);
+  });
+
+  /**
+   * 🔴 L'écart qu'aucun geste n'explique. Rien de normal ne le produit : une
+   * ingestion interrompue, une écriture directe en base, une restauration de
+   * sauvegarde. C'est exactement ce qu'un contrôle de parité existe pour
+   * attraper, et ce qu'il ne savait pas montrer.
+   *
+   * L'écriture est faite en Prisma direct, à dessein : c'est la SEULE façon de
+   * produire un miroir que rien n'a décidé.
+   */
+  it("signale le prix que rien n'a décidé", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: { priceMillicents: 999_000 },
+    });
+
+    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
+
+    expect(vue.drift?.inSync).toBe(false);
+    expect(vue.drift?.priceGaps).toEqual([
+      { sku: "VIE-001-1", reference: 210_000, mirror: 999_000 },
+    ]);
+  });
+
+  /**
+   * 🔴 LE cas qui justifie de changer la source du miroir. Masquer un article est
+   * un geste normal, porté par l'agrégat et exposé au commercial par le droit
+   * `b2b_catalog:write`. Lu par `listSellable()`, chaque article masqué tombait
+   * en `missing` — c'est-à-dire sous la ligne « rien n'explique cet écart ». La
+   * décision qui donne le droit fabriquait le bruit que celle d'à côté prétendait
+   * supprimer.
+   */
+  it("ne compte PAS pour un écart un article qu'un commercial a masqué", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: "VIE-001-1", isHidden: true },
+    });
+
+    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
+
+    expect(vue.drift?.missing).toEqual([]);
+    expect(vue.drift?.inSync).toBe(true);
+  });
+
+  /**
+   * Le prix NÉGOCIÉ non plus : c'est une décision légitime de la plateforme, pas
+   * une dérive. Le raisonnement était déjà écrit dans le comparateur — pour le
+   * prix seul, alors que `LocalDecision` porte trois décisions.
+   */
+  it("ne compte PAS pour un écart un prix négocié", async () => {
+    await sell(snapshot([{ sku: "VIE-001" }]));
+    await toInbox(snapshot([{ sku: "VIE-001" }]));
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: "VIE-001-1", priceMillicents: 180_000 },
+    });
+
+    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
+
+    expect(vue.drift?.inSync).toBe(true);
   });
 });

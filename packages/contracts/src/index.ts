@@ -427,6 +427,8 @@ export type {
   AcceptDeliveryPayload,
   DeliveryChangeView,
   PendingDeliveryView,
+  CatalogHealthVersionView,
+  CatalogHealthView,
 } from "./catalog-admin.js";
 export {
   staffSettlementSchema,

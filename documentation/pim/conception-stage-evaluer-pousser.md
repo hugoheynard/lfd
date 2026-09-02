@@ -697,6 +697,24 @@ Le workflow **migre vers la route de santé**, dans le même lot que la tranche 
 ce qu'il surveille est « le miroir a-t-il décroché », pas « qu'est-ce que je
 m'apprête à envoyer ».
 
+🔴 **Et en le migrant, on découvre qu'il ne pouvait pas s'authentifier.** Il
+envoie `x-lfc-recompute-token` à `/admin/catalog/parity`, gardée par
+`@AdminSurface("b2b_catalog")` : une surface Auth0 qui attend un jeton porteur de
+staff. `RecomputeGuard` n'y est **pas** posé ; la requête rendait `401`. Le
+workflow avait été réparé le 2026-09-02 sur la FORME de son rapport, jamais sur
+sa serrure — et c'est exactement le mode de défaillance décrit ci-dessus, une
+seconde fois.
+
+Il vise donc `admin/ops/catalog-health`, une **porte machine** au chemin de la
+maison (`admin/ops/mail-check`, `admin/ops/identity-check`) : `@Public()` +
+`RecomputeGuard`. Deux serrures, une seule lecture — le fait mesuré ne dépend pas
+de qui demande.
+
+✅ **Et le job ROUGIT désormais.** L'ancienne version s'en abstenait, et
+l'écrivait : « ce workflow ne sait pas distinguer _pas encore poussé_ de _le
+miroir a décroché_ ». Il le sait, c'est tout l'objet de ce découpage — donc il
+n'y a plus de raison d'apprendre à ignorer ce rapport.
+
 Une seule des trois lignes est encore une parité — les deux autres se **lisent**,
 elles ne se comparent pas. C'est le vrai résultat du découpage : l'écran arrête d'être
 « un contrôle de parité » pour devenir « où en est le catalogue », et la seule
@@ -756,11 +774,10 @@ Le second cas se range **tout seul**, et du bon côté : un article dont le taux
 disparu côté PIM sort de la projection (motif `variant_sans_taux`), donc de la
 référence — il est bien « dans le miroir, plus publié ».
 
-⚠️ **Dette relevée en chemin, hors sujet mais à ne pas taire** :
-`check-catalog-parity.service.ts` appelle `new Date()` en couche application, ce
-que le `Clock` interdit (CLAUDE.md §3.2). Son JSDoc justifie même l'appel unique
-— ce qui rend la dette d'autant plus facile à ne jamais voir. À rebrancher quand
-on touchera ce fichier.
+✅ **Dette relevée en chemin, réglée à la tranche 11** :
+`check-catalog-parity.service.ts` appelait `new Date()` en couche application, ce
+que le `Clock` interdit (CLAUDE.md §3.2). Son JSDoc justifiait même l'appel
+unique — ce qui rendait la dette d'autant plus facile à ne jamais voir.
 
 ✅ **Et une objection écartée, vérifiée le 2026-09-02.** La contradiction
 d'architecture reprochait à ce service d'importer `B2bCatalogFeedPreview`
@@ -2270,7 +2287,7 @@ est une décision qu'on redécouvre en production :
 | Le port de retour et la frise                          | §6.3        | **tranche 7** — indépendante, le miroir suffit  |
 | ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02      |
 | Les allergènes figés sur `OrderLine`                   | §11.10      | tranche 9, antérieure à ce chantier             |
-| L'écran de santé, et le workflow d'ops qui migre       | §5.1 bis    | tranche 11 — un front qui agrège, pas un port   |
+| ~~L'écran de santé, et le workflow d'ops qui migre~~   | §5.1 bis    | ✅ tranche 11, livrée le 2026-09-02             |
 
 ---
 

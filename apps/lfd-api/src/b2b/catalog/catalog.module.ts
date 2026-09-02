@@ -32,7 +32,11 @@ import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminCatalogDeliveryController } from "./http/admin-catalog-delivery.controller.js";
 import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
+import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
+import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
+import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
+import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -70,10 +74,18 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
     AdminCatalogController,
     AdminCatalogParityController,
     AdminCatalogDeliveryController,
+    // La porte MACHINE du contrôle de santé : même requête, serrure partagée.
+    // Le workflow d'ops ne pouvait pas passer par la surface staff.
+    OpsCatalogHealthController,
   ],
   providers: [
     IngestCatalogService,
     CheckCatalogParityService,
+    // Le contrôle de SANTÉ : même comparateur, autre référent — la dernière
+    // version validée, et non la projection du moment.
+    CheckCatalogHealthService,
+    CheckCatalogParityHandler,
+    CheckCatalogHealthHandler,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,
     SetCatalogVisibilityHandler,

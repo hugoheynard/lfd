@@ -1,18 +1,52 @@
 name: ops_catalog_parity
 
-# Compare, EN PRODUCTION, ce que le RÉFÉRENTIEL publierait à ce que la
-# PLATEFORME vend — « le miroir est-il fidèle ? ».
+# Vérifie, EN PRODUCTION, que le miroir de la plateforme porte bien ce qui a été
+# VALIDÉ — « quelque chose a-t-il bougé qu'aucun geste n'explique ? ».
 #
-# ⚠️ Ce workflow a comparé autre chose. Il servait de feu vert avant la bascule
-# du seed : seed en place contre catalogue reçu, une fois, pour autoriser un
-# changement d'autorité de prix. Cette bascule est faite, la comparaison a changé
-# de sujet — et le workflow, lui, était resté sur l'ancienne forme du rapport. Il
-# lisait `seedCount`, `identical`, `extra`, `gap['seed']` : huit champs qui
-# n'existent plus. Il plantait sur sa première ligne, en silence, parce qu'on ne
-# le déclenche qu'à la main (réparé le 2026-09-02).
+# ⚠️ Ce workflow a comparé deux autres choses avant celle-ci, et les deux
+# changements valent d'être lus ensemble.
 #
-# Il n'est donc PAS temporaire, contrairement à ce qu'il affirmait : la question
-# « le miroir a-t-il décroché » ne se referme jamais.
+#   1. Il servait de feu vert avant la bascule du seed : seed en place contre
+#      catalogue reçu, une fois, pour autoriser un changement d'autorité de prix.
+#      Cette bascule est faite, la comparaison a changé de sujet — et le
+#      workflow, lui, était resté sur l'ancienne forme du rapport. Il lisait huit
+#      champs qui n'existaient plus, et plantait sur sa première ligne, en
+#      silence, parce qu'on ne le déclenche qu'à la main (réparé le 2026-09-02).
+#
+#   2. Il interrogeait ensuite `/admin/catalog/parity`, dont le référent est « ce
+#      que le référentiel publierait MAINTENANT ». Mauvais référent pour une
+#      surveillance : le fil catalogue fait exprès que le miroir retarde — le PIM
+#      pousse, personne n'a encore validé —, donc l'écart y est légitime **en
+#      permanence**. Un rapport qui signale tous les jours quelque chose de normal
+#      est un rapport qu'on n'ouvre plus.
+#
+# Il lit donc `/admin/catalog/health`, dont le référent est **la dernière version
+# validée**. Rien de normal ne produit cet écart-là : une ingestion interrompue,
+# une écriture directe en base, une restauration de sauvegarde.
+#
+# 🔴 **Et c'est pour ça qu'il ROUGIT maintenant.** L'ancienne version ne le
+# faisait pas, et le disait : « ce workflow ne sait pas distinguer *pas encore
+# poussé* de *le miroir a décroché* ». Il le sait — c'est tout l'objet du
+# découpage en trois lignes de
+# `documentation/pim/conception-stage-evaluer-pousser.md` (§5.1 bis). Les deux
+# constats qui décrivent un fonctionnement normal se lisent ailleurs ; celui-ci
+# est le seul qui doive réveiller quelqu'un.
+#
+# Il n'est PAS temporaire : la question « le miroir a-t-il décroché » ne se
+# referme jamais.
+#
+# 🔴 **Et il ne pouvait pas s'authentifier.** Il envoyait `x-lfc-recompute-token`
+# à `/admin/catalog/parity`, une route gardée par `@AdminSurface("b2b_catalog")`
+# — une surface Auth0 qui attend un jeton porteur de staff. Le `RecomputeGuard`
+# n'y était pas posé : la requête rendait `401`. Trouvé le 2026-09-02, en migrant
+# ce workflow. Le mode de défaillance est le même que celui décrit plus haut :
+# `workflow_dispatch`, donc muet jusqu'au jour où quelqu'un le lance.
+#
+# Il vise donc `admin/ops/catalog-health`, la porte MACHINE — le chemin de la
+# maison, celui de `admin/ops/mail-check` et `admin/ops/identity-check` : un
+# secret partagé pour une machine, une identité vérifiée pour une personne. Les
+# deux portes servent la même lecture ; le fait mesuré ne dépend pas de qui
+# demande.
 #
 # Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, secret
 # GitHub donc en écriture seule. Même raison que `ops_logs`.
@@ -27,23 +61,25 @@ jobs:
   parity:
     runs-on: ubuntu-latest
     steps:
-      - name: Comparer le référentiel au miroir de la plateforme
+      - name: Vérifier que le miroir porte ce qui a été validé
         env:
           API_BASE_URL: ${{ vars.LFD_API_URL }}
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
         run: |
           set -uo pipefail
           report=$(curl --fail-with-body --silent --show-error --max-time 30 \
-                   "${API_BASE_URL}/admin/catalog/parity" \
+                   "${API_BASE_URL}/admin/ops/catalog-health" \
                    -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
-            echo "::error::Comparaison injoignable — la porte machine-à-machine a refusé."
+            echo "::error::Contrôle injoignable — la porte machine-à-machine a refusé."
             exit 1
           }
 
           REPORT="${report}" python3 <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, os
+          import json, os, sys
 
-          report = json.loads(os.environ["REPORT"])
+          health = json.loads(os.environ["REPORT"])
+          version = health["version"]
+          drift = health["drift"]
 
           def euros(millicents):
               # Millicentimes (10⁻⁵ €) → euros, comme `formatEuros` du dépôt :
@@ -58,61 +94,73 @@ jobs:
           def taux(value):
               return "—" if value is None else f"{value} %".replace(".", ",")
 
-          print("## Parité du catalogue\n")
-          print(f"- Publié par le référentiel : **{report['referenceCount']}** articles")
-          print(f"- Tenu par la plateforme : **{report['mirrorCount']}** articles\n")
+          print("## Santé du catalogue vendu\n")
 
-          if report["inSync"]:
-              print("✅ **Le miroir est fidèle.** Rien ne diffère.")
+          # Pas de version : le contrôle n'a pas eu lieu, et ce n'est PAS une
+          # panne — c'est l'état d'une plateforme dont la boîte de réception n'a
+          # jamais été ouverte. Annoncer « tout va bien » serait le seul vrai
+          # défaut ici.
+          if version is None:
+              print("ℹ️ **Aucune version validée.** Il n'y a rien à quoi comparer le miroir.")
+              print("\nLa boîte de réception du catalogue n'a pas encore été ouverte")
+              print("(`B2B_DELIVERY_INBOX`). Ce contrôle deviendra parlant au premier")
+              print("catalogue validé.")
               raise SystemExit(0)
 
-          print("⚠️ **Le miroir diffère du référentiel** — chaque ligne doit s'expliquer.\n")
+          print(f"- Version de référence : `{version['id']}`, posée le {version['createdAt']}")
+          print(f"- Ancre du référentiel : `{version['revisionId']}`")
+          print(f"- Articles figés : **{version['itemCount']}**")
+          print(f"- Tenus par la plateforme : **{drift['mirrorCount']}**\n")
 
-          if report["missing"]:
-              print("### 🔴 Publiés par le référentiel, absents du miroir\n")
-              print("Le pire cas : la boutique ne sait pas les vendre, et le client ne")
-              print("comprend pas pourquoi.\n")
-              print(", ".join(f"`{sku}`" for sku in report["missing"]) + "\n")
+          if drift["inSync"]:
+              print("✅ **Le miroir porte exactement ce qui a été validé.**")
+              raise SystemExit(0)
 
-          if report["stale"]:
-              print("### 🔴 Dans le miroir, plus publiés\n")
-              print("Vendus alors que le référentiel les a retirés — l'autre moitié du")
-              print("même défaut.\n")
-              print(", ".join(f"`{sku}`" for sku in report["stale"]) + "\n")
+          print("🔴 **Le miroir a décroché de la version validée.**\n")
+          print("Aucun geste normal ne produit cet écart : ni un travail PIM non poussé,")
+          print("ni une arrivée en attente de relecture — ces deux-là se lisent ailleurs.")
+          print("Ce qui reste : une ingestion interrompue, une écriture directe en base,")
+          print("une restauration de sauvegarde.\n")
 
-          if report["priceGaps"]:
+          if drift["missing"]:
+              print("### Validés, absents du miroir\n")
+              print("La boutique ne sait pas les vendre alors qu'on a accepté de le faire.\n")
+              print(", ".join(f"`{sku}`" for sku in drift["missing"]) + "\n")
+
+          if drift["stale"]:
+              print("### Dans le miroir, absents de la version\n")
+              print("Vendus sans qu'aucune validation ne les ait fait entrer.\n")
+              print(", ".join(f"`{sku}`" for sku in drift["stale"]) + "\n")
+
+          if drift["priceGaps"]:
               print("### 💶 Prix qui diffèrent\n")
-              print("Le prix **canonique** des deux côtés — jamais le prix négocié, qui")
-              print("est une décision légitime de la plateforme. Chaque ligne est de l'argent.\n")
-              print("| SKU | Référentiel | Plateforme |")
+              print("Le prix **reçu** des deux côtés — jamais le prix négocié, qui est une")
+              print("décision légitime de la plateforme. Chaque ligne est de l'argent.\n")
+              print("| SKU | Version validée | Miroir |")
               print("| --- | --- | --- |")
-              for gap in report["priceGaps"]:
+              for gap in drift["priceGaps"]:
                   print(f"| `{gap['sku']}` | {euros(gap['reference'])} | {euros(gap['mirror'])} |")
               print()
 
-          if report["vatGaps"]:
+          if drift["vatGaps"]:
               print("### 🧾 Taux de TVA qui diffèrent\n")
               print("Chaque ligne est un montant de TVA facturé à tort. `—` = article que")
               print("la plateforme ne sait pas facturer (famille non réglée dans le PIM).\n")
-              print("| SKU | Référentiel | Plateforme |")
+              print("| SKU | Version validée | Miroir |")
               print("| --- | --- | --- |")
-              for gap in report["vatGaps"]:
+              for gap in drift["vatGaps"]:
                   print(f"| `{gap['sku']}` | {taux(gap['reference'])} | {taux(gap['mirror'])} |")
               print()
 
-          if report["nameGaps"]:
+          if drift["nameGaps"]:
               print("### ✏️ Noms qui diffèrent\n")
-              for gap in report["nameGaps"]:
-                  print(f"- `{gap['sku']}` : référentiel « {gap['reference']} » → plateforme « {gap['mirror']} »")
+              for gap in drift["nameGaps"]:
+                  print(f"- `{gap['sku']}` : version « {gap['reference']} » → miroir « {gap['mirror']} »")
               print()
-          PY
 
-          # Le job ne rougit PAS sur un écart, et la raison a changé avec le
-          # sujet de la comparaison : un écart peut être du travail PIM NON
-          # ENCORE POUSSÉ, ce qui est parfaitement normal. Ce workflow ne sait
-          # pas distinguer « pas encore poussé » de « le miroir a décroché » —
-          # c'est le découpage en trois lignes de
-          # `documentation/pim/conception-stage-evaluer-pousser.md` (§5.1 bis)
-          # qui le rendra possible. En attendant, on veut LIRE les écarts ;
-          # rougir ferait de ce rapport une alarme qu'on apprend à ignorer.
-          echo "Rapport lu — voir le résumé du job."
+          # 🔴 Le job ROUGIT. C'est le changement que le découpage en trois lignes
+          # autorise : cet écart-ci n'a aucune explication normale, donc il n'y a
+          # pas de raison d'apprendre à l'ignorer.
+          print("\n::error::Le miroir a décroché de la dernière version validée.", file=sys.stderr)
+          raise SystemExit(1)
+          PY
