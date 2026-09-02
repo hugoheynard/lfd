@@ -157,3 +157,58 @@ describe("CatalogItem — le push", () => {
     expect(refreshed.toPersistence().decision).toBeNull();
   });
 });
+
+/**
+ * Le retrait était une SUPPRESSION, et la décision commerciale partait en
+ * cascade. Le raisonnement était juste tant que le retrait était définitif ;
+ * c'est le retour arrière qui l'a périmé, pas une erreur de jugement.
+ */
+describe("CatalogItem — le retrait", () => {
+  const SORTIE = new Date("2026-03-01T09:00:00.000Z");
+
+  it("marque la sortie sans toucher à ce qui a été décidé", () => {
+    const item = CatalogItem.receive(facts());
+    item.setB2bPrice(180_000, "cecile");
+
+    item.withdraw(SORTIE);
+
+    expect(item.isWithdrawn).toBe(true);
+    expect(item.toPersistence()).toMatchObject({
+      withdrawnAt: SORTIE,
+      decision: { priceMillicents: 180_000, decidedBy: "cecile" },
+    });
+  });
+
+  /**
+   * C'est la PREMIÈRE sortie qui répond à « depuis quand ». Un second push qui
+   * ignore encore l'article ne doit pas effacer cette réponse.
+   */
+  it("ne redate pas un retrait déjà posé", () => {
+    const item = CatalogItem.receive(facts());
+    item.withdraw(SORTIE);
+
+    item.withdraw(new Date("2026-04-01T09:00:00.000Z"));
+
+    expect(item.toPersistence().withdrawnAt).toEqual(SORTIE);
+  });
+
+  /**
+   * 🔴 Le référentiel envoie l'article : il est au catalogue, point. C'est ce qui
+   * rend le retrait réversible — et le prix négocié le retrouve, puisque la
+   * décision traverse `refreshFromPim`.
+   */
+  it("un push qui rapporte l'article le remet en vente, décision comprise", () => {
+    const item = CatalogItem.receive(facts());
+    item.setB2bPrice(180_000, "cecile");
+    item.withdraw(SORTIE);
+
+    const revenu = item.refreshFromPim(facts({ priceMillicents: 210_000 }));
+
+    expect(revenu.isWithdrawn).toBe(false);
+    expect(revenu.effectivePriceMillicents).toBe(180_000);
+  });
+
+  it("naît en vente — un article reçu n'est jamais retiré", () => {
+    expect(CatalogItem.receive(facts()).isWithdrawn).toBe(false);
+  });
+});

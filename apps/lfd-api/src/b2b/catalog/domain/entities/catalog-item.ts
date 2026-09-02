@@ -99,6 +99,15 @@ const NO_DECISION: LocalDecision = {
 export interface CatalogItemState {
   readonly facts: PimFacts;
   /**
+   * Quand l'article a quitté la vente, ou `null` s'il y est.
+   *
+   * Il vit à côté des faits et de la décision parce qu'il n'est ni l'un ni
+   * l'autre : le PIM ne l'envoie pas — un retrait est une ABSENCE dans son
+   * snapshot — et aucun commercial ne le décide. C'est une conséquence, et elle
+   * a besoin de sa propre place.
+   */
+  readonly withdrawnAt: Date | null;
+  /**
    * `null` quand plus aucune décision ne subsiste : l'adaptateur **supprime**
    * alors la ligne d'override au lieu d'en écrire une neutre. « Revenir au prix
    * du PIM » redevient ainsi l'absence de décision, pas une décision vide.
@@ -110,6 +119,7 @@ export class CatalogItem {
   private constructor(
     private readonly facts: PimFacts,
     private decision: LocalDecision,
+    private withdrawnAt: Date | null,
   ) {}
 
   /**
@@ -117,14 +127,20 @@ export class CatalogItem {
    *
    * Nomme l'intention (`receive`, pas `new`) : cet article entre au catalogue
    * parce qu'un push l'a apporté, jamais parce que quelqu'un l'a créé ici.
+   *
+   * 🔴 Il naît **en vente**, et c'est ce qui remet en rayon un SKU retiré puis
+   * réintroduit : le miroir ne rend plus les retirés, donc un tel article
+   * repasse par ici, et son `withdrawnAt` est réécrit à `null`. Sans ça, il
+   * resterait invisible pour toujours — et rien ne le dirait, puisque le push
+   * l'annoncerait accepté.
    */
   static receive(facts: PimFacts): CatalogItem {
-    return new CatalogItem(facts, NO_DECISION);
+    return new CatalogItem(facts, NO_DECISION, null);
   }
 
   /** Reconstitue un article persisté, décision comprise. */
   static reconstitute(state: CatalogItemState): CatalogItem {
-    return new CatalogItem(state.facts, state.decision ?? NO_DECISION);
+    return new CatalogItem(state.facts, state.decision ?? NO_DECISION, state.withdrawnAt);
   }
 
   get sku(): string {
@@ -203,9 +219,47 @@ export class CatalogItem {
    * Rend un agrégat neuf portant la **même décision** : c'est ce qui garantit
    * qu'un push ne perd jamais un prix négocié. L'invariant n'est pas surveillé,
    * il est indisponible autrement.
+   *
+   * 🔴 **Et il remet l'article en vente.** Le référentiel l'envoie : il est au
+   * catalogue, point. C'est ce qui rend le retrait réversible — et le prix
+   * négocié le retrouve, puisque la décision traverse.
+   *
+   * Le repli inverse — préserver le retrait — a été écrit d'abord, et il perdait
+   * la décision : le miroir ne rendant pas les retirés, un article qui revient
+   * repassait par `receive`, donc sans décision, et `saveMany` supprimait
+   * l'override. La sortie n'est pas de préserver le retrait ici, c'est de faire
+   * lire les retirés à l'ingestion.
    */
   refreshFromPim(facts: PimFacts): CatalogItem {
-    return new CatalogItem(facts, this.decision);
+    return new CatalogItem(facts, this.decision, null);
+  }
+
+  /**
+   * **Retire l'article de la vente**, sans rien détruire.
+   *
+   * Le retrait était une SUPPRESSION, et la décision commerciale partait en
+   * cascade avec l'article. Le raisonnement était juste — « un prix négocié ne
+   * veut plus rien dire sans l'article qu'il tarifait » — tant que le retrait
+   * est définitif. Le retour arrière le périme : rejouer une version ancienne
+   * retire les SKU entrés depuis, donc détruirait les prix négociés des articles
+   * les PLUS récents.
+   *
+   * Idempotent : retirer deux fois ne repousse pas la date. C'est la première
+   * sortie qui répond à « depuis quand », et un second push ne doit pas effacer
+   * cette réponse.
+   *
+   * ⚠️ Ne prend pas d'horloge : le domaine reste pur, et l'instant vient de
+   * l'appelant qui en a un — c'est le même instant pour tout un lot.
+   */
+  withdraw(at: Date): void {
+    if (this.withdrawnAt === null) {
+      this.withdrawnAt = at;
+    }
+  }
+
+  /** L'article a quitté la vente. Sa décision, elle, l'attend. */
+  get isWithdrawn(): boolean {
+    return this.withdrawnAt !== null;
   }
 
   /**
@@ -282,6 +336,10 @@ export class CatalogItem {
       this.decision.priceMillicents === null &&
       !this.decision.isHidden &&
       !this.decision.isFeatured;
-    return { facts: this.facts, decision: untouched ? null : this.decision };
+    return {
+      facts: this.facts,
+      withdrawnAt: this.withdrawnAt,
+      decision: untouched ? null : this.decision,
+    };
   }
 }

@@ -2061,6 +2061,29 @@ model CatalogItem {
   /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
   receivedAt DateTime @map("received_at")
 
+  /// **Quand cet article a quitté la vente**, ou `NULL` s'il y est.
+  ///
+  /// Le retrait MARQUE, il ne supprime plus. Le choix inverse était motivé et
+  /// testé — « un prix négocié ne veut plus rien dire sans l'article qu'il
+  /// tarifait » — et il est juste TANT QUE LE RETRAIT EST DÉFINITIF. C'est le
+  /// retour arrière qui le périme : rejouer une version ancienne retire les SKU
+  /// entrés depuis, donc détruirait les prix négociés des articles les plus
+  /// récents — ceux sur lesquels un commercial vient de travailler.
+  ///
+  /// L'objection restante — un SKU réattribué ressusciterait un prix qui ne le
+  /// concerne pas — est tenue par une porte (`pnpm lint:sku-never-recycled`), pas
+  /// par une convention.
+  ///
+  /// 🔴 **La cascade vers `catalog_item_overrides` reste, elle ne se déclenche
+  /// plus.** C'est délibéré : la supprimer ferait croire qu'une suppression
+  /// physique est devenue sûre. Elle ne l'est pas — elle emporterait toujours la
+  /// décision commerciale.
+  ///
+  /// ⚠️ Un article qui REVIENT est remis en vente par le push lui-même :
+  /// l'ingestion le réécrit avec `withdrawn_at` à `NULL`. Sans ça, un SKU retiré
+  /// puis réintroduit resterait invisible pour toujours, et rien ne le dirait.
+  withdrawnAt DateTime? @map("withdrawn_at")
+
   override CatalogItemOverride?
 
   @@index([categoryId])

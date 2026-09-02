@@ -1,0 +1,12 @@
+-- Le retrait MARQUE, il ne supprime plus.
+--
+-- Additive dans le schéma : une colonne nullable, et rien ne change au
+-- déploiement. Ce qui change du comportement se joue dans le code — dès que
+-- `removeMany` marque au lieu de supprimer, toute lecture qui oublie le filtre
+-- remet un article retiré en vente. C'est la raison pour laquelle le filtre est
+-- posé par une extension du client, et non écrit six fois à la main.
+--
+-- La cascade `catalog_item_overrides → catalog_items` reste en place : elle ne
+-- se déclenche plus, et la retirer ferait croire qu'une suppression physique est
+-- devenue sûre. Elle emporterait toujours la décision commerciale.
+ALTER TABLE "public"."catalog_items" ADD COLUMN "withdrawn_at" TIMESTAMP(3);

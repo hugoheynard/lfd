@@ -10,7 +10,13 @@ export interface IngestionOutcome {
   readonly acceptedProducts: number;
   readonly acceptedVariants: number;
   readonly acceptedCategories: number;
-  /** Les SKU présents avant, absents du snapshot — donc retirés de la vente. */
+  /**
+   * Les SKU présents avant, absents du snapshot — donc **retirés de la vente**.
+   *
+   * Retirés, pas supprimés : leur ligne reste, leur prix négocié aussi, et un
+   * push qui les rapporte les remet en rayon. Le nom garde le mot du contrat de
+   * fil, que la plateforme rend à l'émetteur.
+   */
   readonly removedSkus: readonly string[];
 }
 
@@ -62,7 +68,13 @@ export class IngestCatalogService {
     );
 
     const incoming = factsOf(snapshot, receivedAt);
-    const existing = new Map((await this.items.loadAll()).map((item) => [item.sku, item]));
+    // 🔴 Les RETIRÉS compris, et c'est indispensable : un SKU réintroduit doit
+    // être reconnu comme connu pour que son prix négocié lui revienne. Vu par
+    // `loadAll()`, il serait absent, donc reçu à neuf — et `saveMany`
+    // supprimerait l'override d'un article qu'on vient de remettre en vente.
+    const existing = new Map(
+      (await this.items.loadAllIncludingWithdrawn()).map((item) => [item.sku, item]),
+    );
 
     const toSave = incoming
       .filter((facts) => !excluded.has(facts.sku))
@@ -70,19 +82,33 @@ export class IngestCatalogService {
         const known = existing.get(facts.sku);
         return known === undefined ? CatalogItem.receive(facts) : known.refreshFromPim(facts);
       });
-    await this.items.saveMany(toSave);
 
+    // 🔴 Le retrait MARQUE, il ne supprime plus — et il passe donc par l'agrégat.
+    //
+    // `removeMany(skus)` écrivait une colonne à partir de primitives : c'est le
+    // « transaction script » que le §3.1 interdit, et il n'était acceptable que
+    // parce que « supprimer » n'est pas muter un état. Marquer, si.
+    //
+    // Le même instant pour tout le lot, et il vient du snapshot : c'est la
+    // livraison qui retire, pas l'horloge de celui qui l'applique.
     const arriving = new Set(incoming.map((facts) => facts.sku));
-    const removedSkus = [...existing.keys()].filter(
-      (sku) => !arriving.has(sku) && !excluded.has(sku),
-    );
-    await this.items.removeMany(removedSkus);
+    const withdrawn = [...existing.entries()]
+      // `!item.isWithdrawn` : sans lui, chaque push réécrirait toute la liste
+      // des articles jamais retirés — un coût qui croît pour un résultat
+      // identique, `withdraw()` étant idempotent.
+      .filter(([sku, item]) => !arriving.has(sku) && !excluded.has(sku) && !item.isWithdrawn)
+      .map(([, item]) => {
+        item.withdraw(receivedAt);
+        return item;
+      });
+
+    await this.items.saveMany([...toSave, ...withdrawn]);
 
     return {
       acceptedProducts: snapshot.products.length,
       acceptedVariants: toSave.length,
       acceptedCategories: snapshot.categories.length,
-      removedSkus,
+      removedSkus: withdrawn.map((item) => item.sku),
     };
   }
 }

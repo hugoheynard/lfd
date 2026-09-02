@@ -111,6 +111,18 @@ async function toInbox(delivered: CatalogSnapshot): Promise<void> {
 
 let seq = 0;
 
+/**
+ * Le catalogue **en vente**, et pas la table entière.
+ *
+ * Depuis que le retrait marque au lieu de supprimer, `count()` compte aussi les
+ * quatre-vingt-douze articles du semis que le premier push a écartés. Ce que ces
+ * cas mesurent, c'est ce que la boutique vend — donc le filtre est le sujet, pas
+ * une commodité d'écriture.
+ */
+function sellable(): Promise<number> {
+  return ctx.prisma.catalogItem.count({ where: { withdrawnAt: null } });
+}
+
 /** Met le miroir dans un état connu — le chemin direct, celui d'aujourd'hui. */
 async function sell(snapshotToApply: CatalogSnapshot): Promise<void> {
   await ctx.app.get(B2bCatalogDriver).send(snapshotToApply, {
@@ -175,7 +187,7 @@ describe("POST /admin/catalog/delivery/accept", () => {
       .send({ deliveryId: pending.id, excludedSkus: [] })
       .expect(201);
 
-    expect(await ctx.prisma.catalogItem.count()).toBe(2);
+    expect(await sellable()).toBe(2);
     expect(await ctx.prisma.catalogDelivery.count({ where: { status: "accepted" } })).toBe(1);
   });
 
@@ -196,9 +208,12 @@ describe("POST /admin/catalog/delivery/accept", () => {
       .send({ deliveryId: pending.id, excludedSkus: ["PAT-002-1"] })
       .expect(201);
 
-    const skus = (await ctx.prisma.catalogItem.findMany({ select: { sku: true } })).map(
-      (row) => row.sku,
-    );
+    const skus = (
+      await ctx.prisma.catalogItem.findMany({
+        where: { withdrawnAt: null },
+        select: { sku: true },
+      })
+    ).map((row) => row.sku);
     expect(skus.sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
   });
 
@@ -213,7 +228,7 @@ describe("POST /admin/catalog/delivery/accept", () => {
     await staff().post("/admin/catalog/delivery/accept").send(body).expect(201);
     await staff().post("/admin/catalog/delivery/accept").send(body).expect(409);
 
-    expect(await ctx.prisma.catalogItem.count()).toBe(2);
+    expect(await sellable()).toBe(2);
   });
 
   it("pose UNE version, photographie de ce que la boutique vend désormais", async () => {

@@ -89,6 +89,10 @@ class MirrorDouble extends CatalogItemRepository {
     return Promise.resolve([...this.items]);
   }
 
+  loadAllIncludingWithdrawn(): Promise<CatalogItem[]> {
+    throw new Error("Le lecteur de faits ne parle QUE du catalogue en vente.");
+  }
+
   saveMany(): Promise<void> {
     throw new Error("Le lecteur de faits n'écrit rien.");
   }

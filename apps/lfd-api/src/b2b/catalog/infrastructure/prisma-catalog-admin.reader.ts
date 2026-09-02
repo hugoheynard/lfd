@@ -4,6 +4,7 @@ import type { CatalogAdminItemView, CatalogAllergenView } from "@lfd/contracts";
 import { findMapping } from "../../../pim/allergens/allergen-mapping.js";
 import { toInco } from "../../../pim/allergens/allergen-projection.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 
 /** La ligne rendue par Prisma, famille et décision jointes. */
@@ -37,6 +38,11 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
 
   async list(): Promise<CatalogAdminItemView[]> {
     const rows = await this.prisma.catalogItem.findMany({
+      // Les retirés dehors, comme partout ailleurs — et ici ça compte deux fois :
+      // c'est cette lecture que le contrôle de parité prend pour miroir, et un
+      // article retiré y apparaîtrait comme un écart avec le référentiel qui ne
+      // l'envoie plus.
+      where: { ...STILL_SOLD },
       include: { category: true, override: true },
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }],
     });

@@ -3,6 +3,7 @@ import type { OrderLineAllergens } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import { STILL_SOLD } from "./sellable-filter.js";
 
 /** La forme que Prisma rend, article + famille + décision locale éventuelle. */
 interface ItemRow {
@@ -43,7 +44,7 @@ export class PrismaCatalogReader extends CatalogReader {
 
   async findSku(sku: string): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findUnique({
-      where: { sku },
+      where: { sku, ...STILL_SOLD },
       include: { category: true, override: true },
     });
     if (row === null || row.override?.isHidden === true) {
@@ -56,7 +57,7 @@ export class PrismaCatalogReader extends CatalogReader {
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
   async findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
-      where: { productSku, isDefault: true },
+      where: { productSku, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
     });
     if (row === null || row.override?.isHidden === true) {
@@ -73,7 +74,7 @@ export class PrismaCatalogReader extends CatalogReader {
       return new Map();
     }
     const rows = await this.prisma.catalogItem.findMany({
-      where: { productSku: { in: [...productSkus] }, isDefault: true },
+      where: { productSku: { in: [...productSkus] }, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
@@ -90,6 +91,7 @@ export class PrismaCatalogReader extends CatalogReader {
   async listSellable(): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
+        ...STILL_SOLD,
         // Deux conditions indépendantes, donc un `AND` explicite : deux clés
         // `OR` dans le même objet se seraient écrasées en silence.
         AND: [

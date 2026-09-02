@@ -1220,7 +1220,7 @@ coder — s'y tromper coûte le double.
 | 4   | table `catalog_version`, **vide** (§7.3)                                  | la validation y écrit                                  | —                                                      |
 | 5   | `orders.catalog_version_id` **nullable**                                  | la passation le renseigne                              | **rien** — `NULL` = « on ne sait pas » (§7.5)          |
 | 6   | colonnes d'allergènes sur `order_lines` (§11.10)                          | la passation les fige, codes **et** libellés (§11.13)  | **rien** — trois états à préserver, cf. ci-dessous     |
-| 7   | `catalog_items.withdrawn_at` **nullable** (§11.1)                         | `removeMany` **marque** ; les six lectures filtrent    | **rien** — la cascade reste, elle ne se déclenche plus |
+| 7   | `catalog_items.withdrawn_at` **nullable** (§11.1)                         | l'agrégat **marque** ; les sept lectures filtrent      | **rien** — la cascade reste, elle ne se déclenche plus |
 
 🔴 **Les points 4 à 7 manquaient**, et c'est le §9 qui est censé être l'endroit
 où une migration dangereuse se voit. Relevé par la contradiction du 2026-09-02.
@@ -1311,34 +1311,51 @@ et le geste qui la crée est motivé par la sécurité des données.
 
 #### Ne pas vérifier le filtre — le rendre inoubliable
 
-Une porte syntaxique l'attraperait mal, et un e2e qui énumère les six ne protège
-que des six d'aujourd'hui. **Le filtre doit devenir structurel : on ne l'oublie
-plus parce qu'on ne l'écrit plus.**
+Une porte syntaxique l'attraperait mal, et un e2e qui énumère les lectures
+d'aujourd'hui ne protège que de celles-là.
 
-Le motif existe déjà dans le dépôt — `$extends` avec un intercepteur `query`,
-utilisé par `countedPrisma` (`platform/database/counted-prisma.ts`) et composé
-dans `database.module.ts:104`. Une seconde extension y injecte
-`withdrawnAt: null` dans le `where` de `catalogItem`, et le filtre cesse d'être
-une discipline.
+🔴 **L'extension `$extends` a été écrite, puis retirée** (2026-09-02). Le motif
+existe bien — `countedPrisma` (`platform/database/counted-prisma.ts`), composé
+dans `database.module.ts`. Deux faits l'ont écartée, et aucun ne se voyait avant
+d'ouvrir le code :
 
-⚠️ **Trois pièges, tous connus d'avance :**
+1. **Elle ne tient dans une transaction que posée SOUS le routage
+   transactionnel.** C'est le client global qui ouvre l'unité de travail
+   (`PrismaUnitOfWork`), et un client cadré construit par-dessus verrait ses
+   lectures re-routées vers un client de transaction **sans extension**. Il
+   faudrait donc la composer sur `PrismaService`, dans `platform/` — qui ne
+   connaît aucun contexte. Un socle qui sait qu'une table `catalog_items` existe
+   n'est plus un socle, et ce franchissement-là ne passe ni par un import ni par
+   une jointure : aucune porte ne le verrait.
+2. **Le motif se perdrait là où il compte le plus.** `accept-delivery` lit le
+   miroir **dans** une transaction. Un filtre qui s'y évapore ferait revenir un
+   article retiré comme « déjà connu », donc rafraîchi au lieu d'être remis en
+   vente. Silencieusement.
 
-1. **`findUnique` refuse un champ non unique dans son `where`.** Deux des six
-   lectures en sont (`prisma-catalog.reader.ts:42`,
-   `prisma-catalog-item.repository.ts:56`) : elles basculent en `findFirst`.
-   C'est le motif documenté de Prisma pour le retrait logique, pas un
-   contournement.
-2. **`$extends` rend un NOUVEAU client**, il ne modifie pas celui qu'on lui
-   passe — `counted-prisma.ts:18-22` le dit déjà, et en tire la conséquence :
-   le module fournit le résultat sous le jeton `PrismaService`, faute de quoi
-   tout le monde continuerait d'injecter le client nu **sans que rien ne le
-   signale**. La seconde extension se compose au même endroit.
-3. **Il faut une échappatoire nommée** pour les rares lectures qui doivent voir
-   les retirés — le rollback, un audit. Une échappatoire explicite vaut
-   infiniment mieux que six oublis possibles.
+Ce qui a été fait à la place : une constante nommée (`STILL_SOLD`) épandue dans
+chaque `where`, et **`pnpm lint:withdrawn-filter`** qui refuse qu'une lecture de
+`catalogItem` naisse sans elle — ou ailleurs que dans les trois adaptateurs qui
+la portent. Un rang en dessous de « inexprimable », et vrai dans tous les cas.
 
-L'e2e reste utile, mais il change de rôle : il ne remplace plus le filtre, il
-prouve que l'extension est branchée.
+⚠️ **Le premier des trois pièges annoncés était FAUX.** « `findUnique` refuse un
+champ non unique dans son `where` » ne vaut plus depuis Prisma 5 :
+`CatalogItemWhereUniqueInput` est un `AtLeast<…, "sku">` dans le client généré, et
+les lectures uniques portent le filtre sans changer d'opération. Aucune bascule
+en `findFirst` n'a eu lieu.
+
+Les deux autres tenaient. `$extends` rend bien un nouveau client — c'est ce qui
+condamnait la composition côté catalogue. Et l'échappatoire nommée existe :
+`loadAllIncludingWithdrawn()`, la lecture de l'ingestion, marquée
+`// withdrawn-filter: exempt` et **comptée et affichée** à chaque exécution de la
+porte.
+
+🔴 **Et un piège qu'aucune version du plan n'avait vu.** Faire lire les retirés à
+l'ingestion n'est pas un confort, c'est une **nécessité** : le miroir ne les rend
+plus, donc un SKU réintroduit y serait absent, reçu à neuf — et `saveMany`
+supprimerait l'override d'un article qu'on vient de remettre en vente. La
+destruction que tout ce point 7 cherche à empêcher serait revenue par la
+réintroduction. Corollaire : `refreshFromPim` **remet en vente**, puisque le
+référentiel qui envoie l'article l'affirme au catalogue.
 
 ⚠️ Et le point 6 porte un piège de forme, déjà nommé au §11.10 : les allergènes
 ont **trois** états significatifs (`null` = pas de fiche, `[]` = déclarée sans
@@ -1385,7 +1402,7 @@ demande qu'un déploiement soit **prêt à repartir**, pas seulement possible.
 | 7   | Le port de retour, pour la frise de la fiche produit                                                     | rien      |
 | 8   | `hash` en `@unique` **+ `byHash()` + `lastPublished()`** — indissociables (§4.3)                         | rien      |
 | 9   | Les **allergènes figés** sur `OrderLine`, codes **et** libellés (§11.10, §11.13)                         | rien      |
-| 10  | **Le retrait non destructif** (§11.1) — l'agrégat, le filtre par `$extends`, l'échappatoire (§9)         | rien      |
+| 10  | **Le retrait non destructif** (§11.1) — l'agrégat, le filtre nommé, la porte (§9)                        | rien      |
 | 11  | **L'écran de santé à trois lignes** (§5.1 bis) + la migration du workflow d'ops                          | 4, 5, 6   |
 
 🔴 **La tranche 10 conditionne le GESTE de rollback, pas la tranche 5.** La
@@ -1402,18 +1419,28 @@ Elle change la **nature** du geste : marquer, c'est muter un état, donc
 le « transaction script » que le CLAUDE.md §3.1 interdit. Le retrait doit passer
 par l'agrégat : `CatalogItem.withdraw()`, puis `saveMany`.
 
-Elle invalide aussi **deux textes qui affirment le contraire**, à réécrire dans le
-même lot plutôt qu'à découvrir en rouge :
+✅ **Livrée le 2026-09-02.** Le retrait passe par `CatalogItem.withdraw()`,
+`removeMany` a disparu du port, et une porte (`lint:withdrawn-filter`) tient le
+filtre à la place de l'extension que le plan proposait — pour deux raisons
+écrites au §9, dont une qui aurait fait entrer un nom de table métier dans
+`platform/`.
+
+Elle invalidait aussi **deux textes qui affirmaient le contraire**, réécrits dans
+le même lot plutôt que découverts en rouge :
 
 | Texte                                     | Ce qu'il dit aujourd'hui                                                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `test/catalog-ingest.e2e-spec.ts:166-175` | test **vert et nommé** — « un article retiré emporte sa décision », qui attend `catalogItemOverride.count() === 0` |
 | `catalog-item.repository.ts:28-34`        | « Leur décision part avec eux — un prix négocié ne veut plus rien dire sans l'article qu'il tarifait »             |
 
-Le test ne se supprime pas : il **s'inverse**, en gardant son JSDoc d'origine en
-citation. « L'autre face de la cascade, celle où elle est juste » était vrai tant
-que le retrait était définitif ; c'est le rollback qui l'a périmé, pas une erreur
-de jugement.
+Le test ne s'est pas supprimé : il **s'est inversé**, en gardant son JSDoc
+d'origine en citation. « L'autre face de la cascade, celle où elle est juste »
+était vrai tant que le retrait était définitif ; c'est le rollback qui l'a
+périmé, pas une erreur de jugement.
+
+Deux cas s'y sont ajoutés, qui n'existaient pas parce qu'ils n'étaient pas
+exprimables : un article qui **revient** retrouve son prix négocié, et un retrait
+déjà daté ne se redate pas au push suivant.
 
 ⚠️ **La tranche 7 ne dépend PAS des versions**, contrairement à ce que ce
 tableau a dit jusqu'au 2026-09-02. Le fait que la frise demande — « depuis quelle
@@ -2236,14 +2263,14 @@ de décision — les treize questions du §11 sont tranchées. Ce qui suit atten
 désormais son numéro de tranche, parce qu'une décision sans accroche dans le §10
 est une décision qu'on redécouvre en production :
 
-| Ce qui reste                                           | Décidé au   | Où ça vit, et pourquoi c'est à part                |
-| ------------------------------------------------------ | ----------- | -------------------------------------------------- |
-| Le retrait non destructif                              | §11.1       | **tranche 10** — précondition du GESTE de rollback |
-| Le compte d'abonnements affiché                        | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2)    |
-| Le port de retour et la frise                          | §6.3        | **tranche 7** — indépendante, le miroir suffit     |
-| ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02         |
-| Les allergènes figés sur `OrderLine`                   | §11.10      | tranche 9, antérieure à ce chantier                |
-| L'écran de santé, et le workflow d'ops qui migre       | §5.1 bis    | tranche 11 — un front qui agrège, pas un port      |
+| Ce qui reste                                           | Décidé au   | Où ça vit, et pourquoi c'est à part             |
+| ------------------------------------------------------ | ----------- | ----------------------------------------------- |
+| ~~Le retrait non destructif~~                          | §11.1       | ✅ tranche 10, livrée le 2026-09-02             |
+| Le compte d'abonnements affiché                        | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2) |
+| Le port de retour et la frise                          | §6.3        | **tranche 7** — indépendante, le miroir suffit  |
+| ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02      |
+| Les allergènes figés sur `OrderLine`                   | §11.10      | tranche 9, antérieure à ce chantier             |
+| L'écran de santé, et le workflow d'ops qui migre       | §5.1 bis    | tranche 11 — un front qui agrège, pas un port   |
 
 ---
 

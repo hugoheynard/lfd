@@ -10,6 +10,7 @@ import {
   type PimAllergenLabels,
 } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
+import { STILL_SOLD } from "./sellable-filter.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 interface ItemRow {
@@ -27,6 +28,7 @@ interface ItemRow {
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly receivedAt: Date;
+  readonly withdrawnAt: Date | null;
   readonly override: {
     readonly priceMillicents: number | null;
     readonly isHidden: boolean;
@@ -54,13 +56,30 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
 
   async load(sku: string): Promise<CatalogItem | null> {
     const row = await this.prisma.catalogItem.findUnique({
-      where: { sku },
+      where: { sku, ...STILL_SOLD },
       include: { override: true },
     });
     return row === null ? null : toDomain(row);
   }
 
   async loadAll(): Promise<CatalogItem[]> {
+    const rows = await this.prisma.catalogItem.findMany({
+      where: { ...STILL_SOLD },
+      include: { override: true },
+    });
+    return rows.map(toDomain);
+  }
+
+  /**
+   * La seule lecture qui voit les retirés — l'**échappatoire nommée** du filtre.
+   *
+   * Elle est exemptée dans `lint:withdrawn-filter`, qui la compte et l'affiche
+   * plutôt que de l'ignorer : une exception qu'on lit à chaque exécution ne
+   * dérive pas, une exception tacite si.
+   */
+  async loadAllIncludingWithdrawn(): Promise<CatalogItem[]> {
+    // withdrawn-filter: exempt — l'ingestion doit reconnaître un SKU réintroduit
+    // pour lui rendre sa décision commerciale.
     const rows = await this.prisma.catalogItem.findMany({ include: { override: true } });
     return rows.map(toDomain);
   }
@@ -170,13 +189,6 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       ]),
     );
   }
-
-  async removeMany(skus: readonly string[]): Promise<void> {
-    if (skus.length === 0) {
-      return;
-    }
-    await this.prisma.catalogItem.deleteMany({ where: { sku: { in: [...skus] } } });
-  }
 }
 
 /** Ligne ↔ agrégat. La décision absente devient « rien décidé », pas `undefined`. */
@@ -199,6 +211,7 @@ function toDomain(row: ItemRow): CatalogItem {
       allergenLabels: allergenLabelsOf(row.allergenLabels),
       receivedAt: row.receivedAt,
     },
+    withdrawnAt: row.withdrawnAt,
     decision:
       row.override === null
         ? null
@@ -243,6 +256,12 @@ function factsRow(state: CatalogItemState) {
             incomplete: facts.allergenLabels.incomplete,
           },
     receivedAt: facts.receivedAt,
+    // 🔴 Écrit à CHAQUE upsert, et c'est ce qui remet en rayon un article qui
+    // revient. Le miroir ne rend plus les retirés, donc un SKU réintroduit
+    // repasse par `CatalogItem.receive`, dont le retrait est `null` : la colonne
+    // est réécrite et l'article reparaît. L'omettre le laisserait invisible pour
+    // toujours, pendant que le push l'annoncerait accepté.
+    withdrawnAt: state.withdrawnAt,
   };
 }
 

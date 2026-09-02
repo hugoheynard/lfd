@@ -161,15 +161,31 @@ describe("le fil catalogue, côté plateforme", () => {
     const report = await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     expect(report).toMatchObject({ removedSkus: ["VIE-002-1"] });
-    expect(await ctx.prisma.catalogItem.count()).toBe(1);
+    // La LIGNE reste — le retrait marque. Ce qui disparaît, c'est la vente :
+    // le catalogue vendable n'en compte plus qu'un.
+    expect(await ctx.prisma.catalogItem.count()).toBe(2);
+    expect(await ctx.prisma.catalogItem.count({ where: { withdrawnAt: null } })).toBe(1);
   });
 
   /**
-   * L'autre face de la cascade, celle où elle est juste : un article retiré de la
-   * vente emporte sa décision de prix, parce qu'un tarif négocié ne veut plus
-   * rien dire sans l'article qu'il tarifait.
+   * 🔴 **Ce cas dit désormais l'inverse de ce qu'il disait**, et son ancien JSDoc
+   * mérite d'être cité plutôt qu'effacé :
+   *
+   * > « L'autre face de la cascade, celle où elle est juste : un article retiré
+   * > de la vente emporte sa décision de prix, parce qu'un tarif négocié ne veut
+   * > plus rien dire sans l'article qu'il tarifait. »
+   *
+   * C'était vrai **tant que le retrait était définitif**. Ce n'est pas un
+   * jugement qui a changé, c'est le monde : le retour arrière rejoue une version
+   * ancienne, donc retire les SKU entrés depuis — et détruirait les prix négociés
+   * des articles les PLUS récents, ceux sur lesquels un commercial vient de
+   * travailler.
+   *
+   * La cascade est toujours là dans le schéma. Elle ne se déclenche simplement
+   * plus, et la retirer ferait croire qu'une suppression physique est devenue
+   * sûre.
    */
-  it("un article retiré emporte sa décision", async () => {
+  it("un article retiré GARDE sa décision, qui l'attend", async () => {
     await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-001-1", priceMillicents: 180_000 },
@@ -177,7 +193,55 @@ describe("le fil catalogue, côté plateforme", () => {
 
     await push(snapshot([]));
 
-    expect(await ctx.prisma.catalogItemOverride.count()).toBe(0);
+    expect(await ctx.prisma.catalogItemOverride.count()).toBe(1);
+    const retire = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "VIE-001-1" },
+    });
+    expect(retire.withdrawnAt).toBeInstanceOf(Date);
+  });
+
+  /**
+   * 🔴 Le cas qui rend le retrait réversible, et le seul qui prouve que la
+   * réintroduction fonctionne. Le miroir ne rend plus les retirés, donc un SKU
+   * qui revient repasse par `CatalogItem.receive` — dont le retrait est `null`,
+   * et qui réécrit la colonne. Sans ce passage, l'article resterait invisible
+   * pour toujours pendant que le push l'annoncerait accepté.
+   */
+  it("remet en vente un article qui revient, avec le prix qu'on lui avait négocié", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: "VIE-001-1", priceMillicents: 180_000 },
+    });
+    await push(snapshot([]));
+
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+
+    const item = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "VIE-001-1" },
+      include: { override: true },
+    });
+    expect(item.withdrawnAt).toBeNull();
+    expect(item.override?.priceMillicents).toBe(180_000);
+  });
+
+  /**
+   * Le retrait est daté UNE fois. Deux pushes successifs qui l'ignorent tous
+   * deux ne repoussent pas la date : c'est la première sortie qui répond à
+   * « depuis quand », et un second push ne doit pas effacer cette réponse.
+   */
+  it("ne repousse pas la date d'un article déjà retiré", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshot([]));
+    const premier = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "VIE-001-1" },
+    });
+
+    await push(snapshot([]));
+
+    const second = await ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku: "VIE-001-1" },
+    });
+    expect(second.withdrawnAt).toEqual(premier.withdrawnAt);
   });
 });
 
