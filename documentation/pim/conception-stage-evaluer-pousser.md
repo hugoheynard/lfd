@@ -7,9 +7,10 @@
 
 > **Comment lire ce document.**
 >
-> - **Les treize questions du §11 sont toutes tranchées** (revue une par une avec
+> - **Douze des treize questions du §11 sont tranchées** (revue une par une avec
 >   Hugo, les 2026-09-01 et 09-02). Une décision ne se rediscute pas sans un
->   fait neuf.
+>   fait neuf — et la §11.11 a été **rouverte** le 2026-09-02 par un fait neuf :
+>   sa réponse s'adossait à une rétention d'infra qui n'est pas à nous.
 > - **Le plan du §15 est une proposition** : sa forme peut encore changer. Ne pas
 >   confondre les deux.
 > - **Chaque affirmation sur l'existant porte sa référence** — fichier et ligne.
@@ -361,7 +362,8 @@ qui doit la poser est celui qui a déjà lieu — la publication.
 disponible « pour figer avant une modification risquée ». Faux depuis le §4.1
 bis**, qui le retire : une ancre posée à la main déplace `latest()`, donc la
 référence de tous les diffs, silencieusement. Le besoin qu'il servait est
-tranché au §11.11 — c'est une sauvegarde, pas un bouton.
+rouvert au §11.11 — ce n'est pas un bouton, et ce n'est pas non plus une
+sauvegarde d'infra.
 
 L'ancre garde donc son rôle et son déclencheur. Ce document n'ajoute qu'une
 chose au push : le refus.
@@ -450,11 +452,12 @@ publication, et d'elle seule.
 `latest()` rend la dernière ancre **posée**, sans regarder si elle a été
 publiée — et elle reste vraie sans le bouton. Le §4.3 la corrige à la racine.
 
-✅ Le besoin qu'il servait — « un point de reprise avant une grosse manœuvre » —
-est légitime, et sa réponse **existe déjà, hors du code** : une sauvegarde
-restaurée vers une base neuve avant l'opération
-([`ops/runbook.md`](../ops/runbook.md)). Tranché au §11.11 : on ne construit
-aucun objet applicatif pour ça.
+🔴 Le besoin qu'il servait — « un point de reprise avant une grosse manœuvre » —
+est légitime, et il est **rouvert** (§11.11). La réponse d'origine renvoyait aux
+sauvegardes automatiques de Prisma Postgres ; elle ne tient pas, parce qu'un
+point de reprise adossé à une rétention d'infra n'est pas à nous. Ce qui reste
+acquis : ce n'est ni un bouton, ni une restauration — le référentiel ne va que
+vers l'avant, et se corriger y est une écriture normale.
 
 ### 4.2 « R quand c'est publié chez tout le monde » — deux précisions
 
@@ -1535,14 +1538,15 @@ physique.
 
 ---
 
-## 11. Les treize questions — toutes tranchées
+## 11. Les treize questions — douze tranchées, une rouverte
 
 ⚠️ Cette section s'appelait « Ce que ce document ne tranche pas ». Elle a été
 vidée une par une, en revue avec Hugo les 2026-09-01 et 2026-09-02, et l'ordre
 compte : **quatre d'entre elles se sont dissoutes en ouvrant un fichier** plutôt
 qu'en délibérant. La §11.3 était inexprimable et pas indécise ; la §11.5 avait
 un référent dans le code ; la §11.6 cachait une contradiction interne du §9 ; la
-§11.11 avait déjà sa réponse dans le runbook. Les questions gardées sans les
+§11.11 croyait avoir déjà sa réponse dans le runbook — et c'est la seule qui ait
+été **rouverte** depuis, faute que cette réponse soit à nous. Les questions gardées sans les
 rouvrir sont celles qui coûtent le plus cher, parce qu'elles finissent par
 ressembler à des choix.
 
@@ -1794,33 +1798,111 @@ décision elle-même.
     **affirmation**, sur les seules commandes qu'on ne peut plus vérifier — et
     ici l'affirmation fabriquée serait « sans allergène ».
 
-11. ✅ ~~**Le point de reprise avant une grosse manœuvre.**~~ **TRANCHÉ le
-    2026-09-02 : on ne construit rien — l'objet existe déjà, et il n'est pas
-    applicatif.**
+11. 🔴 ~~**Le point de reprise avant une grosse manœuvre.**~~ **ROUVERTE le
+    2026-09-02 par un fait neuf : la réponse s'adossait à une rétention d'infra
+    qui n'est pas à nous.**
 
-    **Une ancre ne peut pas jouer ce rôle**, et le §12 le dit déjà :
-    `RevisionItemInput` porte vingt champs, mais il manque `variant.id`,
-    `position`, `options`, `nutrition`, le `slug`, les familles entières et
-    l'appartenance au canal. « Une photographie, pas une sauvegarde. » Un objet
-    applicatif taillé pour la reprise serait une **demi-sauvegarde** — pire que
-    rien, parce qu'on lui ferait confiance le jour où on en a besoin.
+    _(Tranchée le 2026-09-02 le matin, rouverte le soir. Le récit est conservé :
+    ce qui a fait changer d'avis vaut la décision elle-même.)_
 
-    **Le vrai point de reprise est documenté** :
-    [`ops/runbook.md`](../ops/runbook.md) — sauvegardes automatiques Prisma
-    Postgres, et le geste exact, _restaurer vers une base neuve avant
-    l'opération donne une archive figée que la rétention n'effacera pas_.
-    Complet (toute la base), et il ne pollue pas `latest()`.
+    **Ce qui reste vrai de la décision d'origine**, et qui n'est pas en cause :
 
-    **Le retour arrière existe déjà là où il est possible** : par produit sur
-    Shopify (`rollback(handle, version)`), par ré-ingestion d'un snapshot de
-    version côté B2B (§12). Ce qui manquait n'était que le PIM — et le PIM, ça
-    se sauvegarde.
+    - **Une ancre ne peut pas jouer ce rôle telle quelle.** Vérifié champ par
+      champ contre `VariantSnapshot` : `RevisionItemInput` ne porte ni
+      `variant.id`, ni `options`, ni `position`, ni `nutrition`, ni le `slug` du
+      produit, ni l'arbre des familles, ni le conditionnement, ni l'appartenance
+      au canal (`B2bChannelBinding`, distincte de `soldContexts` qu'elle porte).
+    - **Un objet applicatif taillé pour la reprise serait une demi-sauvegarde**
+      — pire que rien, parce qu'on lui ferait confiance le jour où on en a
+      besoin.
+    - **Le retour arrière existe là où il est possible** : par produit sur
+      Shopify (`rollback(handle, version)`), par rejeu d'une version côté B2B
+      (§12).
 
-    ⚠️ **La réserve qui compte : la rétention est de TROIS JOURS** sur le plan
-    actuel. Le geste de pré-manœuvre n'est donc pas une précaution optionnelle,
-    c'est la seule façon d'avoir encore quelque chose le quatrième jour. Il est
-    manuel, il se fait **avant**, et sa place est dans la procédure de la
-    manœuvre — pas dans un bouton du back-office.
+    🔴 **Ce qui l'a rouverte : « ça ne peut pas être basé sur un temps de dispo
+    infra » (Hugo, 2026-09-02).** La réponse renvoyait aux sauvegardes
+    automatiques de Prisma Postgres — **trois jours de rétention**, une console
+    tierce, un plan tarifaire. C'est une dépendance qu'on ne contrôle pas, dans
+    le geste qu'on fait précisément quand tout le reste a lâché. Un point de
+    reprise doit être **à nous**, dans nos données.
+
+    ⚠️ **Et « restaurer » est le mauvais verbe.** Il ne vient que de ce que la
+    seule chose disponible était une sauvegarde d'infra. Le B2B ne restaure
+    rien : il **rejoue** — « le rejeu, c'est l'ingestion » (§12), on relit une
+    version et on la repasse par les agrégats, qui revalident. Restaurer en
+    place serait d'ailleurs impossible ici : **il n'y a qu'une base**
+    (`DATABASE_LFD_URL`, schémas `pim` + `public` + `growth` + `ops`), donc
+    rattraper une manœuvre PIM emporterait les commandes B2B, les paiements et
+    les comptes clients passés depuis — sur une plateforme en service.
+
+    #### 🔴 Le catalogue du PIM ne va QUE vers l'avant — et c'est structurel
+
+    _(Formulé par Hugo, vérifié le 2026-09-02.)_
+
+    Aucun agrégat n'y est supprimé physiquement : un produit **s'archive**, et
+    les seuls `deleteMany` du référentiel sont des remplacements en place de
+    lignes satellites. Les ancres sont append-only et immuables. Il n'existe
+    **aucun chemin de restauration** dans le code.
+
+    Se tromper se corrige donc par une **écriture normale**, par les agrégats,
+    tracée, qui produit une nouvelle ancre. C'est la bonne forme, et il n'y a pas
+    de bouton de retour arrière à ajouter.
+
+    **Mais avancer suppose de savoir ce que c'était.** C'est là qu'est la vraie
+    limite — pas dans l'absence d'un rollback, dans ce que l'archive retient.
+
+    #### Le cas de la dérogation — celui qui montre le trou
+
+    La TVA d'une fiche est soit **héritée** de sa famille, soit **dérogée**.
+    L'ancre stocke le taux **effectif**, héritage appliqué (`vatByContext`, « le
+    taux EFFECTIF par clé de contexte »). Donc :
+
+    | Dans la base                        | Dans l'ancre |
+    | ----------------------------------- | ------------ |
+    | déroge à 5,5 %                      | `5.5`        |
+    | hérite d'une famille réglée à 5,5 % | `5.5`        |
+
+    **Les deux sont indistinguables dans l'archive.** Or
+    `prisma-product.repository.ts:248` fait un `deleteMany` des dérogations à
+    chaque enregistrement, et pour une bonne raison écrite sur place : un
+    `upsert` par contexte laisserait vivre la ligne d'un contexte qu'on vient de
+    rendre à sa famille, et « je reviens à l'héritage » ressemblerait à « rien
+    changé ».
+
+    Conséquence : après une manœuvre qui touche les dérogations, la valeur
+    précédente n'existe **nulle part**. Ni en base — remplacée. Ni dans l'ancre —
+    résolue. Et le journal ne rattrape pas : `changesBetween` **abrège** les
+    longues valeurs, et son propre JSDoc le dit — « un journal n'est pas une
+    copie de la base ».
+
+    Le même raisonnement vaut pour tout ce que l'ancre ne porte pas : `options`,
+    `nutrition`, `position`, le `slug`, le conditionnement.
+
+    #### Ce qui reste à trancher
+
+    **La direction proposée** — pas encore décidée : ne pas photographier le PIM
+    entier (~35 tables ; ce serait un dump, et un dump partiel est pire que
+    rien), mais **rendre l'ancre complète sur l'agrégat produit**. La machine
+    existe déjà et elle est la bonne : `catalog_revision` + `catalog_content`
+    est un magasin adressé par contenu, dédupliqué, immuable. Elle archive
+    aujourd'hui la **projection** ; il s'agirait qu'elle archive la **fiche**.
+
+    Les tables de référence — allergènes, taux, points de vente, familles —
+    resteraient dehors, avec leur propre archive le jour où une manœuvre les
+    touche. Une archive par sujet est plus honnête qu'un fourre-tout qui prétend
+    tout couvrir.
+
+    ⚠️ **Le coût, sans l'enjoliver.** Changer ce que l'ancre hache rend les
+    anciennes ancres **incomparables** avec les nouvelles : le premier diff
+    après la bascule afficherait _tous_ les articles comme changés. C'est une
+    migration de sens sur une table servie, qui demande au minimum une version
+    de forme dans l'en-tête et un diff qui **refuse** de comparer deux formes
+    différentes plutôt que de mentir.
+
+    ⚠️ **Et ce qu'une ancre ne rendra jamais**, à dire plutôt qu'à laisser
+    croire : les octets des visuels (elle garde des URL), le journal, les
+    liaisons Shopify, l'historique des prix. Elle serait un point de reprise du
+    **contenu des fiches**, pas de l'état du référentiel.
 
 12. ~~**Le prix PIM par défaut est-il vendable ?**~~ **Tranché au §13** :
     oui — c'est le tarif pro, une politique de direction, pas une absence de
@@ -2274,20 +2356,20 @@ A (forme canonique + empreinte)
 réception peut se bâtir en parallèle. D vient après C parce qu'il écarte des
 lignes d'une arrivée qui doit d'abord exister.
 
-⚠️ **Ce qui a une tranche sans être sur le chemin critique.** Plus rien n'attend
-de décision — les treize questions du §11 sont tranchées. Ce qui suit attend une
-**implémentation**, ce qui n'est pas la même chose ; et chaque ligne porte
-désormais son numéro de tranche, parce qu'une décision sans accroche dans le §10
-est une décision qu'on redécouvre en production :
+⚠️ **Ce qui a une tranche sans être sur le chemin critique.** Les onze tranches
+du §10 sont livrées (2026-09-02). Ce qui reste tient en deux lignes, et elles ne
+sont pas de même nature — l'une attend une implémentation, l'autre une
+**décision** :
 
-| Ce qui reste                                           | Décidé au   | Où ça vit, et pourquoi c'est à part             |
-| ------------------------------------------------------ | ----------- | ----------------------------------------------- |
-| ~~Le retrait non destructif~~                          | §11.1       | ✅ tranche 10, livrée le 2026-09-02             |
-| Le compte d'abonnements affiché                        | §11.9       | une lecture, à greffer sur l'aperçu (tranche 2) |
-| Le port de retour et la frise                          | §6.3        | **tranche 7** — indépendante, le miroir suffit  |
-| ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02      |
-| Les allergènes figés sur `OrderLine`                   | §11.10      | tranche 9, antérieure à ce chantier             |
-| ~~L'écran de santé, et le workflow d'ops qui migre~~   | §5.1 bis    | ✅ tranche 11, livrée le 2026-09-02             |
+| Ce qui reste                                           | Décidé au   | Où ça en est                                     |
+| ------------------------------------------------------ | ----------- | ------------------------------------------------ |
+| ~~Le retrait non destructif~~                          | §11.1       | ✅ tranche 10, livrée le 2026-09-02              |
+| ~~Le port de retour et la frise~~                      | §6.3        | ✅ tranche 7, livrée le 2026-09-02               |
+| ~~`hash` en `@unique`, `byHash()`, `lastPublished()`~~ | §4.3, §11.7 | ✅ tranche 8, livrée entière le 2026-09-02       |
+| ~~Les allergènes figés sur `OrderLine`~~               | §11.10      | ✅ tranche 9, livrée le 2026-09-02               |
+| ~~L'écran de santé, et le workflow d'ops qui migre~~   | §5.1 bis    | ✅ tranche 11, livrée le 2026-09-02              |
+| Le compte d'abonnements affiché                        | §11.9       | **pas implémenté** — une lecture, sur l'aperçu   |
+| Le point de reprise du référentiel                     | §11.11      | 🔴 **rouvert** — décision à prendre, pas à coder |
 
 ---
 
