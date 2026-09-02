@@ -1,3 +1,4 @@
+import type { OrderLineAllergens } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 import type {
   CommitmentDecisionView,
@@ -162,6 +163,7 @@ export class OrderLinePricing {
       unitPriceMillicents: number;
       vatRate: number;
       category: string;
+      allergens: OrderLineAllergens | null;
     },
     quantity: number,
     parties: OrderParties,
@@ -219,6 +221,11 @@ export class OrderLinePricing {
         unitPriceMillicents: resolved.finalMillicents,
         vatRate: item.vatRate,
         quantity,
+        // Figés avec le prix, et pour une raison du même ordre : dans six mois,
+        // la déclaration aura pu être corrigée, et plus rien ne dirait sous
+        // laquelle cette commande a été passée. La différence est que le prix se
+        // conteste, tandis qu'un allergène se réclame.
+        allergens: item.allergens,
         // La trace part avec le prix, et pour la même raison : dans six mois, les
         // règles qui l'ont produit peuvent avoir été retirées. Sans elle, la seule
         // réponse à « pourquoi ce prix ? » serait « c'était le prix ».

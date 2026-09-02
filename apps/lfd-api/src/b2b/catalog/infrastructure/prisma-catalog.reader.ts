@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { OrderLineAllergens } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
@@ -12,6 +13,8 @@ interface ItemRow {
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
+  readonly allergens: unknown;
+  readonly allergenLabels: unknown;
   readonly category: {
     readonly id: string;
     readonly name: string;
@@ -156,5 +159,46 @@ function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
     categoryName: row.category.name,
     isDefault: row.isDefault,
     isFeatured: row.override?.isFeatured ?? false,
+    allergens: frozenAllergens(row),
   };
+}
+
+/**
+ * Les allergènes tels qu'ils seront **figés sur la ligne de commande**.
+ *
+ * ⚠️ Rien n'est fabriqué ici. Un article sans déclaration rend `null`, et
+ * jamais `{ codes: [] }` : la seconde forme affirmerait « aucun allergène » sur
+ * une fiche qui n'en porte pas encore, et cette affirmation-là finirait figée
+ * dans une commande — donc irrattrapable.
+ */
+function frozenAllergens(row: ItemRow): OrderLineAllergens | null {
+  const codes = Array.isArray(row.allergens)
+    ? row.allergens.filter((code): code is string => typeof code === "string")
+    : null;
+  const labelsRaw =
+    typeof row.allergenLabels === "object" && row.allergenLabels !== null
+      ? (row.allergenLabels as { labels?: unknown; incomplete?: unknown })
+      : null;
+  const labels = Array.isArray(labelsRaw?.labels)
+    ? labelsRaw.labels.flatMap((entry) =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof (entry as { category?: unknown }).category === "string" &&
+        typeof (entry as { label?: unknown }).label === "string"
+          ? [
+              {
+                category: (entry as { category: string }).category,
+                label: (entry as { label: string }).label,
+              },
+            ]
+          : [],
+      )
+    : null;
+
+  // Ni codes ni mentions : l'article est antérieur au fil qui les transporte.
+  // C'est une ABSENCE, et elle se propage telle quelle.
+  if (codes === null && labels === null) {
+    return null;
+  }
+  return { codes, labels, incomplete: labelsRaw?.incomplete === true };
 }

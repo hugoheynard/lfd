@@ -26,6 +26,7 @@ const CROISSANT: ResolvedCatalogItem = {
   categoryName: "Viennoiseries",
   isDefault: true,
   isFeatured: false,
+  allergens: null,
 };
 
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {

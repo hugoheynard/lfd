@@ -104,6 +104,9 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     name: item.name,
     unitPriceMillicents: item.unitPriceMillicents,
     vatRate: item.vatRate,
+    // Transporté TEL QUEL, sans défaut : ce que le checkout figera sur la ligne
+    // doit être ce que le référentiel déclare, ou rien.
+    allergens: item.allergens,
     category: shelf,
   };
 }

@@ -1,3 +1,5 @@
+import type { OrderLineAllergens } from "@lfd/contracts";
+
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
   readonly sku: string;
@@ -29,6 +31,17 @@ export interface ResolvedCatalogItem {
    */
   readonly isDefault: boolean;
   readonly isFeatured: boolean;
+  /**
+   * Ce que le référentiel déclare pour cet article — codes **et** mentions.
+   *
+   * Il traverse ce port pour une seule raison : être figé sur la ligne de
+   * commande. Les codes disent ce qui est vrai, les libellés ce qui a été dit au
+   * client, et la traduction n'est pas stable dans le temps.
+   *
+   * `null` = article reçu avant que le fil ne porte les mentions. Une absence,
+   * qu'aucun défaut ne doit transformer en « aucun allergène ».
+   */
+  readonly allergens: OrderLineAllergens | null;
 }
 
 /**

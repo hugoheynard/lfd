@@ -1,4 +1,4 @@
-import type { CatalogCategory } from "@lfd/contracts";
+import type { CatalogCategory, OrderLineAllergens } from "@lfd/contracts";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en centimes. */
 export interface PricedSku {
@@ -13,6 +13,17 @@ export interface CatalogItem extends PricedSku {
   readonly vatRate: number;
   /** Sa famille — ce par quoi un écran range 92 produits en cinq rayons. */
   readonly category: CatalogCategory;
+  /**
+   * **Ce qui est déclaré**, au moment où l'on résout la ligne.
+   *
+   * Transporté jusqu'ici pour être FIGÉ sur la commande, comme le prix l'est
+   * déjà : sans lui, plus rien ne dit sous quelle déclaration une commande a
+   * été passée dès qu'une livraison suivante la corrige.
+   *
+   * `null` = l'article n'en porte pas — une donnée reçue avant que le fil ne
+   * les transporte. Une absence, jamais « aucun allergène ».
+   */
+  readonly allergens: OrderLineAllergens | null;
 }
 
 /**

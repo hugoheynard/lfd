@@ -1,4 +1,6 @@
 import {
+  orderLineAllergensSchema,
+  type OrderLineAllergens,
   type AdminOrderRow,
   type AdminOrdersQuery,
   type BillingAddressPayload,
@@ -40,6 +42,7 @@ interface OrderLineRow {
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
   readonly pricingFloor: Prisma.JsonValue | null;
+  readonly allergens: Prisma.JsonValue | null;
   readonly pricingCommitment: Prisma.JsonValue | null;
 }
 
@@ -111,6 +114,7 @@ const ORDER_SELECT = {
       pricingFloored: true,
       pricingFloor: true,
       pricingCommitment: true,
+      allergens: true,
     },
   },
 } as const;
@@ -529,7 +533,26 @@ function toLineView(line: OrderLineRow): OrderLineView {
     quantity: line.quantity,
     lineTotalCents: line.lineTotalCents,
     pricing: parseTrace(line),
+    allergens: parseAllergens(line.allergens),
   };
+}
+
+/**
+ * Les allergènes figés, **validés** plutôt que castés — et une forme illisible
+ * rend `null`, jamais `[]`.
+ *
+ * C'est le même arbitrage que la trace de prix, avec un enjeu qui n'est pas le
+ * même : une facture doit rester consultable même si l'explication de son prix
+ * ne l'est plus. Ici, retomber sur une liste vide ferait AFFIRMER « aucun
+ * allergène » sur une commande dont on ne sait plus rien — la seule affirmation
+ * que ce dépôt ne doit jamais fabriquer.
+ */
+function parseAllergens(value: Prisma.JsonValue | null): OrderLineAllergens | null {
+  if (value === null) {
+    return null;
+  }
+  const parsed = orderLineAllergensSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 /**

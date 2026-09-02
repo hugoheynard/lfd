@@ -882,6 +882,28 @@ model OrderLine {
   /// cette ligne, le palier s'est joué sur la quantité de la commande.
   pricingCommitment Json? @map("pricing_commitment")
 
+  /// **Ce qui était déclaré au moment de commander** — codes GS1 ET mentions
+  /// d'étiquette, plus l'aveu que la liste a pu être amputée.
+  ///
+  /// Figé pour la même raison que le prix, et c'était la seule chose que la
+  /// ligne ne figeait pas : un client commandait une brioche déclarée sans
+  /// fruits à coque, une livraison suivante corrigeait la déclaration, et plus
+  /// rien ne disait sous quelle déclaration la commande avait été passée. Sur
+  /// réclamation, six mois plus tard, la réponse était un blanc.
+  ///
+  /// Les CODES disent ce qui est vrai, les LIBELLÉS ce qui a été dit au client.
+  /// Ne figer que les premiers reviendrait à relire une commande de 2026 avec le
+  /// référentiel de 2029 : un libellé se corrige, et un code sans obligation UE
+  /// disparaît de la projection sans bruit.
+  ///
+  /// ⚠️ DEUX niveaux d'absence, et les confondre serait le pire de ce dépôt.
+  /// `NULL` ici = commande passée **avant** que ce champ existe — on ne sait
+  /// pas. À l'intérieur, `codes: null` = aucune fiche réglementaire, `codes: []`
+  /// = fiche déclarée **sans allergène**. Un défaut à `[]` transformerait une
+  /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
+  /// vérifier — et l'affirmation fabriquée serait « sans allergène ».
+  allergens Json? @map("allergens")
+
   // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
   // quantités du panier ; la contrainte rend la règle structurelle plutôt que
   // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans

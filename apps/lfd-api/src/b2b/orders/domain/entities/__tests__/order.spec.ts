@@ -82,6 +82,7 @@ describe("Order.draft — calcul monétaire", () => {
         lineTotalCents: 600,
         // Ligne fabriquée à la main : sans résolution, il n'y a rien à tracer.
         pricing: null,
+        allergens: null,
       },
     ]);
   });

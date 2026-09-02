@@ -297,7 +297,7 @@ export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema, pickupOpeningSchema, pickupWindows } from "./pickup.js";
 export type { PickupOpening } from "./pickup.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
-export { adminOrdersQuerySchema } from "./order.js";
+export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
 export {
   clockTimeSchema,
@@ -401,6 +401,8 @@ export type {
   OrderQuotePayload,
   OrderQuoteLineView,
   OrderQuoteView,
+  OrderLineAllergens,
+  OrderLineAllergenLabel,
 } from "./order.js";
 export {
   catalogCategorySchema,

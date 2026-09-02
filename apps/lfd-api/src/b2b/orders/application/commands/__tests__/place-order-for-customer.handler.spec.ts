@@ -97,6 +97,7 @@ const CATALOG: Record<string, CatalogItem> = {
     unitPriceMillicents: 200_000,
     vatRate: 0,
     category: "viennoiserie",
+    allergens: null,
   },
 };
 
@@ -374,6 +375,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         unitPriceMillicents: 0,
         vatRate: 0,
         category: "viennoiserie",
+        allergens: null,
       },
     ]);
     const free = new PlaceOrderForCustomerHandler(

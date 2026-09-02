@@ -99,6 +99,7 @@ const noCustomerVolumes: CustomerVolumeReader = {
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
     category: "pain",
+    allergens: null,
     sku: "VIE-001",
     name: "Croissant",
     unitPriceMillicents: 200_000,
@@ -106,6 +107,7 @@ const CATALOG: Record<string, CatalogItem> = {
   },
   "VIE-002": {
     category: "pain",
+    allergens: null,
     sku: "VIE-002",
     name: "Pain au chocolat",
     unitPriceMillicents: 220_000,
@@ -380,6 +382,10 @@ describe("PlaceOrderHandler", () => {
           // Aucun engagement : le palier s'est joué sur la quantité du panier.
           commitment: null,
         },
+        // Le catalogue doublé n'en déclare pas : l'absence traverse telle
+        // quelle. Un `{ codes: [] }` ici affirmerait « aucun allergène », et
+        // cette affirmation partirait figée dans la commande.
+        allergens: null,
       },
     ]);
     expect(sink.placed?.subtotalCents).toBe(600);

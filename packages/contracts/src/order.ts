@@ -301,6 +301,79 @@ export interface OrderLineView {
    * peut plus vérifier.
    */
   readonly pricing: OrderLinePricingTrace | null;
+  /**
+   * **Ce qui était déclaré** au moment de commander.
+   *
+   * `null` sur une commande passée avant que ce champ n'existe. L'écran doit
+   * alors se taire — écrire « sans allergène » sur une ignorance serait
+   * l'affirmation la plus dangereuse que ce dépôt puisse produire.
+   */
+  readonly allergens: OrderLineAllergens | null;
+}
+
+/** Une mention d'étiquette telle qu'elle a été **dite au client**, ce jour-là. */
+export interface OrderLineAllergenLabel {
+  readonly category: string;
+  readonly label: string;
+}
+
+/**
+ * Les allergènes **figés sur la ligne**, comme le prix l'est déjà.
+ *
+ * ## Pourquoi les figer
+ *
+ * Une commande fige le prix, le taux, le nom et toute la trace de résolution.
+ * Les allergènes n'étaient figés **nulle part** : un client commandait une
+ * brioche déclarée sans fruits à coque, une livraison suivante corrigeait la
+ * déclaration, et plus rien ne disait sous quelle déclaration la commande avait
+ * été passée. Sur réclamation, six mois plus tard, la réponse était un blanc.
+ *
+ * Ça ne protège personne — la brioche est ce qu'elle est, et la commande est
+ * partie. Ça rend la commande **interprétable après coup**, ce que rien ne
+ * permettait.
+ *
+ * ## Pourquoi les codes ET les libellés
+ *
+ * La traduction n'est pas stable dans le temps : un libellé se corrige, et un
+ * code sans obligation UE disparaît de la projection sans bruit. Ne figer que
+ * les codes reviendrait à relire une commande de 2026 avec le référentiel de
+ * 2029. Les codes disent **ce qui est vrai**, les libellés **ce qui a été dit**.
+ */
+/**
+ * Le schéma qui relit ce qui a été écrit.
+ *
+ * Il existe parce que ce champ est un `jsonb` : écrit par une version du code,
+ * relu par une autre des mois plus tard. Zod est la seule barrière entre les
+ * deux — et sur ce champ-là, une forme inattendue doit rendre `null`
+ * (« on ne sait pas »), jamais une liste vide qui affirmerait « aucun
+ * allergène ».
+ */
+export const orderLineAllergensSchema = z.object({
+  codes: z.array(z.string().min(1)).nullable(),
+  labels: z.array(z.object({ category: z.string().min(1), label: z.string().min(1) })).nullable(),
+  incomplete: z.boolean(),
+});
+
+export interface OrderLineAllergens {
+  /**
+   * Les codes GS1 déclarés. **Trois états**, tous significatifs : `null` =
+   * aucune fiche réglementaire, `[]` = fiche déclarée sans allergène, une liste
+   * = les codes.
+   *
+   * Les deux premiers ne se confondent pas : l'un est un silence, l'autre une
+   * affirmation qu'un client a le droit de lire.
+   */
+  readonly codes: readonly string[] | null;
+  /** Les mentions projetées à l'époque. `null` suit `codes`. */
+  readonly labels: readonly OrderLineAllergenLabel[] | null;
+  /**
+   * Une mention a-t-elle pu être amputée ?
+   *
+   * Compte autant que les libellés : un code inconnu ou sans obligation UE
+   * disparaît de la projection sans bruit, et une liste vide qui se tait
+   * s'affiche « sans allergène ».
+   */
+  readonly incomplete: boolean;
 }
 
 /**

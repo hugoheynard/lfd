@@ -87,6 +87,22 @@ export class PrismaOrderRepository extends OrderRepository {
                 : { ...line.pricing.floorDecision },
             pricingCommitment:
               line.pricing?.commitment == null ? Prisma.DbNull : { ...line.pricing.commitment },
+            // Même distinction, et elle porte ici l'enjeu le plus lourd du
+            // fichier : `Prisma.DbNull` dit « on ne sait pas », là où un `[]`
+            // écrit affirmerait « aucun allergène ». Sur une commande qu'on
+            // relira après une réclamation, la seconde phrase est celle qu'on
+            // ne doit jamais fabriquer.
+            allergens:
+              line.allergens === null
+                ? Prisma.DbNull
+                : {
+                    codes: line.allergens.codes === null ? null : [...line.allergens.codes],
+                    labels:
+                      line.allergens.labels === null
+                        ? null
+                        : line.allergens.labels.map((entry) => ({ ...entry })),
+                    incomplete: line.allergens.incomplete,
+                  },
           })),
         },
       },

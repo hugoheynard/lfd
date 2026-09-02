@@ -15,6 +15,7 @@ const CATALOG: Record<string, CatalogItem> = {
     unitPriceMillicents: 220_000,
     vatRate: 5.5,
     category: "viennoiserie",
+    allergens: null,
   },
 };
 

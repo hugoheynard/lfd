@@ -239,12 +239,71 @@ describe("checkout → Order", () => {
           floorDecision: null,
           commitment: null,
         },
+        // La fixture de catalogue ne déclare rien : l'ABSENCE traverse telle
+        // quelle. C'est le point le plus important de ce champ — un `{codes: []}`
+        // ici affirmerait « aucun allergène » sur un article dont personne n'a
+        // rien dit, et cette affirmation partirait figée dans la commande.
+        allergens: null,
       },
     ]);
     // Alimentaire → 5,5 % : 600 HT + round(600 × 5,5 %) = 600 + 33 = 633 TTC.
     expect(stored?.subtotalCents).toBe(600);
     expect(stored?.vatCents).toBe(33);
     expect(stored?.totalCents).toBe(633);
+  });
+
+  /**
+   * 🔴 Le gel, bout en bout. Une commande fige le prix, le taux, le nom et toute
+   * la trace de résolution ; les allergènes n'étaient figés NULLE PART. Un client
+   * commandait une brioche déclarée sans fruits à coque, une livraison suivante
+   * corrigeait la déclaration, et plus rien ne disait sous quelle déclaration la
+   * commande avait été passée.
+   *
+   * Ce que seul ce niveau prouve : que la déclaration traverse le catalogue, la
+   * résolution de prix et le mapper Prisma — trois frontières où elle se perdait.
+   */
+  it("fige la déclaration d'allergènes telle qu'elle était au moment de commander", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: {
+        allergens: ["AW"],
+        allergenLabels: { labels: [{ category: "gluten", label: "gluten" }], incomplete: false },
+      },
+    });
+
+    await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201);
+
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+    expect(line?.allergens).toEqual({
+      codes: ["AW"],
+      labels: [{ category: "gluten", label: "gluten" }],
+      incomplete: false,
+    });
+  });
+
+  /**
+   * Et la déclaration figée ne bouge plus. C'est toute la raison d'être du
+   * champ : la corriger au catalogue ne réécrit pas ce qui a été dit au client.
+   */
+  it("ne réécrit pas la déclaration d'une commande déjà passée", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: { allergens: ["AW"], allergenLabels: { labels: [], incomplete: false } },
+    });
+    await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201);
+
+    // Le référentiel corrige : l'article déclare désormais aussi les fruits à coque.
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: { allergens: ["AW", "AN"] },
+    });
+
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+    expect(line?.allergens).toMatchObject({ codes: ["AW"] });
   });
 
   it("refuse un SKU inconnu (400), rien n'est écrit", async () => {
