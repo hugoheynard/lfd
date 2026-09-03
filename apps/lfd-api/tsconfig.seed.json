@@ -1,0 +1,28 @@
+{
+  // Compilation du seed du référentiel — `pnpm seed:pim`.
+  //
+  // Pourquoi une compilation, là où les autres scripts se lancent à la volée :
+  // le seed boote l'AppModule, donc la DI Nest par TYPE, donc `design:paramtypes`.
+  // Deux transpileurs sur trois ne savent pas l'émettre — esbuild (tsx) ne
+  // supporte pas `emitDecoratorMetadata` du tout, et ts-node 10.9 ne tourne plus
+  // sur le TypeScript 6.x que ce dépôt épingle (c'est ce qui a cassé
+  // `seed:growth`). Reste le compilateur de l'application, qui est de toute
+  // façon celui dont on veut le verdict.
+  //
+  // Sert aussi de garde de types : `tsconfig.json` n'inclut que `src`, donc rien
+  // dans `prisma/` n'était typé jusqu'ici.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-seed",
+    "declaration": false,
+    "declarationMap": false,
+    "removeComments": true
+  },
+  "include": [
+    "src",
+    "prisma/seed-pim.ts",
+    "prisma/seed-pim",
+    "prisma/seed-growth/fake-document-store.ts"
+  ],
+  "exclude": ["dist", "dist-seed", "node_modules", "test", "**/*.spec.ts"]
+}

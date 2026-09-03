@@ -21,10 +21,13 @@ export class SetProPriceRatioCommand {
  * exposerait à l'écran un état de la base — la ligne existe-t-elle — dont
  * personne n'a à se soucier.
  *
- * ⚠️ **Rien ne lit encore ce rapport.** Aucun prix ne change tant que la
- * tranche 4 ne l'a pas raccordé. Le journal, lui, part dès maintenant : une
- * lacune de trace ne se rattrape pas, et le jour où le raccordement se fera on
- * voudra savoir depuis quand le rapport valait ce qu'il vaut.
+ * ⚠️ **Ce rapport est lu, et son absence bloque tout le canal B2B.** La
+ * projection du miroir lève `ProPriceRatioNotSetError` avant de tarifer la
+ * moindre référence : sans ce réglage, un catalogue publié, vendu aux pros et
+ * tarifé n'envoie rien du tout, et l'écran de poussée n'affiche pas un miroir
+ * vide mais un refus. Cette phrase disait le contraire — « rien ne lit encore
+ * ce rapport », vrai jusqu'au raccordement de la tranche 4 — et elle y a
+ * survécu ; c'est le seed du référentiel qui l'a démentie, en butant dessus.
  */
 @CommandHandler(SetProPriceRatioCommand)
 export class SetProPriceRatioHandler implements ICommandHandler<SetProPriceRatioCommand, void> {

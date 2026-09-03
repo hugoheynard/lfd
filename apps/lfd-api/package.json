@@ -36,7 +36,7 @@
     "seed:growth:reset": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/reset-growth.ts",
     "backfill:naf": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/backfill-naf.ts",
     "seed:temoin": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-temoin-orders.ts",
-    "db:pim:seed": "tsx --env-file=.env prisma/pim-seed.ts"
+    "seed:pim": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed-pim.js"
   },
   "dependencies": {
     "@lfd/money": "workspace:*",

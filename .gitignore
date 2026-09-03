@@ -14,6 +14,7 @@ node_modules/
 
 # Builds locaux (toutes apps + packages)
 dist/
+dist-seed/
 out-tsc/
 build/
 tmp/

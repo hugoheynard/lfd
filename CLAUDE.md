@@ -823,6 +823,9 @@ pnpm --filter lfd-api test
 pnpm --filter lfd-api exec tsc --noEmit
 pnpm --filter lfd-api db:migrate  # / db:deploy, db:seed, db:studio
 pnpm --filter lfd-api db:test:setup  # base jetable des e2e
+pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible locale only)
+                                     #   SEED_PIM_SYNTHETIC_SHEETS=1 → allergènes INVENTÉS
+                                     #   SEED_PIM_PUBLISH_ALL=1      → tout ce qui est publiable
 
 pnpm lint               # turbo, toutes les apps
 pnpm test

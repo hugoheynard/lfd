@@ -9,9 +9,12 @@
     "isolatedModules": true,
     "outDir": "./dist",
     // Redondants avec le flag layer (tsc les hérite déjà via `extends`), mais
-    // déclarés en clair pour les transpileurs esbuild (tsx) qui ne résolvent PAS
-    // `extends` pour ces deux options : sans ça, la DI Nest par type casse sous
-    // tsx (paramtypes non émis) — cf. le seed handler-driven prisma/seed-growth.ts.
+    // déclarés en clair parce que les transpileurs ne résolvent pas `extends`.
+    //
+    // ⚠️ Les déclarer ne suffit pas à faire tourner la DI Nest par TYPE sous un
+    // transpileur : esbuild (donc tsx) ne supporte pas `emitDecoratorMetadata`
+    // du tout, et ts-node 10.9 ne tourne plus sur le TypeScript 6.x épinglé ici.
+    // Un script qui boote l'AppModule se COMPILE (cf. tsconfig.seed.json).
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },
