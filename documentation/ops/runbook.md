@@ -177,6 +177,28 @@ pas jusqu'à un. Cette moitié-là n'est tenue que par l'agrégat, qui redresse 
 carnet bancal à la lecture — donc seulement pour les sociétés dont quelqu'un
 touche les adresses.
 
+## Avant de déployer « un seul détenteur par société »
+
+⚠️ **À faire une seule fois, AVANT le merge dans `main`** qui emporte
+`20260903200000_un_seul_detenteur_par_societe`. Même forme que le contrôle
+ci-dessus : un index unique partiel, dont la pose échoue — sans rien écrire — si
+une société porte déjà deux détenteurs.
+
+```sql
+SELECT company_id, count(*) AS detenteurs
+  FROM public.memberships WHERE role = 'owner'
+ GROUP BY company_id HAVING count(*) > 1;
+```
+
+**Zéro ligne ⇒ déployer.** C'était le cas sur dev le 2026-09-03.
+
+**Une ligne ou plus ⇒ ne pas déployer tel quel**, et ne pas trancher en SQL : le
+choix « lequel des deux reste détenteur » est **commercial**, pas technique — le
+détenteur est celui dont l'adresse a ouvert le compte, et se tromper donne les
+clés de l'espace à la mauvaise personne. Remonter la liste, faire trancher, puis
+rétrograder les perdants (`role = 'admin'`, qui garde l'accès sans la détention)
+dans une migration qui précède celle-ci.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

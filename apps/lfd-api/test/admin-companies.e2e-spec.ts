@@ -15,9 +15,9 @@
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CompanyStatus } from "../src/platform/database/client/client.js";
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -174,6 +174,52 @@ describe("POST /admin/companies/:id/holder", () => {
     const response = await staff().post(`/admin/companies/${companyId}/holder`).send(holder);
 
     expect(response.status).toBe(409);
+  });
+
+  /**
+   * **La course que la garde applicative ne peut pas fermer.**
+   *
+   * Le refus normal vient d'`ensureNoRivalOwner`, éprouvé juste au-dessus. Mais
+   * il s'applique à une LECTURE faite avant l'écriture : deux commerciaux
+   * ouvrant l'accès détenteur à la même société dans la même seconde lisent
+   * tous les deux « personne », passent tous les deux, écrivent tous les deux.
+   *
+   * Ce test contourne donc délibérément la garde — écriture directe — pour
+   * éprouver le seul mécanisme qui tient sous concurrence : l'index unique
+   * partiel `memberships_one_owner`. Le `@@unique([user_id, company_id])`
+   * existant n'y suffit pas : il empêche une PERSONNE d'être deux fois membre,
+   * pas deux personnes d'être détenteur.
+   */
+  it("la BASE refuse un second détenteur, garde applicative contournée", async () => {
+    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const companyId = jsonBody<CreatedCompanyResponse>(created).id;
+    const rival = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|rival",
+      email: "rival@chezmilo.fr",
+    });
+
+    await expect(
+      attachTo(ctx.prisma, rival.id, companyId, CustomerRole.owner),
+    ).rejects.toMatchObject({ code: "P2002" });
+
+    const owners = await ctx.prisma.membership.count({
+      where: { companyId, role: CustomerRole.owner },
+    });
+    expect(owners).toBe(1);
+  });
+
+  /** Un rôle NON détenteur reste libre : l'index ne vise que `owner`. */
+  it("laisse une seconde personne rejoindre la société avec un autre rôle", async () => {
+    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const companyId = jsonBody<CreatedCompanyResponse>(created).id;
+    const colleague = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|compta",
+      email: "compta@chezmilo.fr",
+    });
+
+    await attachTo(ctx.prisma, colleague.id, companyId, CustomerRole.billing);
+
+    expect(await ctx.prisma.membership.count({ where: { companyId } })).toBe(2);
   });
 
   it("refuse une adresse invalide, et laisse le compte intact", async () => {

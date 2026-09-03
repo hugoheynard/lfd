@@ -118,8 +118,15 @@ export abstract class CompanyMemberRepository {
   /**
    * Le **détenteur** actuel de la société, `null` s'il n'y en a pas encore.
    *
-   * Sert à tenir l'invariant « un seul détenteur » : il ne s'attribue pas, donc
-   * il ne se duplique pas non plus.
+   * Sert à REFUSER LISIBLEMENT un second détenteur — pas à l'empêcher. La
+   * nuance a compté : cette lecture précède l'écriture, et la phrase qui tenait
+   * ici (« il ne s'attribue pas, donc il ne se duplique pas non plus ») décrivait
+   * une intention, pas un mécanisme. Deux commerciaux ouvrant l'accès détenteur
+   * à la même société dans la même seconde lisent tous les deux `null`.
+   *
+   * Ce qui l'empêche, depuis le 2026-09-03, est l'index unique partiel
+   * `memberships_one_owner`. Cette lecture reste : c'est elle qui nomme le cas
+   * et le geste de sortie, là où la base ne sait dire que « doublon ».
    */
   abstract findOwner(companyId: string): Promise<KnownAccount | null>;
 }

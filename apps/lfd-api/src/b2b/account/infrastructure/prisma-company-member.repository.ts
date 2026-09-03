@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { CompanyAlreadyHasOwnerError } from "../domain/errors/account-errors.js";
 import {
   CompanyMemberReader,
   CompanyMemberRepository,
@@ -115,11 +116,15 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     // courant (son lien s'est perdu). Échouer sur un doublon en ferait une
     // impasse, et ignorer le rôle demandé afficherait un rôle à l'écran en en
     // appliquant un autre.
-    await this.prisma.membership.upsert({
-      where: { userId_companyId: { userId, companyId } },
-      create: { userId, companyId, role },
-      update: { role },
-    });
+    try {
+      await this.prisma.membership.upsert({
+        where: { userId_companyId: { userId, companyId } },
+        create: { userId, companyId, role },
+        update: { role },
+      });
+    } catch (error) {
+      throw translateRivalOwner(error, companyId);
+    }
   }
 
   async findMember(userId: string, companyId: string): Promise<CompanyMemberRecord | null> {
@@ -154,4 +159,46 @@ function toMemberRecord(row: {
     status: row.user.status,
     joinedAt: row.createdAt,
   };
+}
+
+/**
+ * Traduit la violation de l'index `memberships_one_owner` en refus **métier**.
+ *
+ * Le refus normal vient d'`ensureNoRivalOwner`, en amont, sur une lecture. Ce
+ * chemin-ci n'existe que pour la **course** que cette lecture ne peut pas
+ * fermer : deux commerciaux ouvrant l'accès détenteur à la même société dans la
+ * même seconde lisent tous les deux « personne ».
+ *
+ * Ce qu'on gagne n'est PAS le statut — un `P2002` non traduit sort déjà en 409
+ * par `mapPersistenceError`. C'est le **message** : « ressource dupliquée » ne
+ * dit ni ce qui s'est passé, ni quoi faire, à quelqu'un qui n'a pas le code sous
+ * les yeux. Celui de `CompanyAlreadyHasOwnerError` nomme le cas réel et le geste
+ * de sortie, et les deux chemins deviennent indiscernables devant l'écran.
+ *
+ * Toute autre erreur repart telle quelle — on ne déguise pas une panne en
+ * conflit. Un `P2002` sur `(user_id, company_id)`, notamment, n'est pas celui-ci
+ * et ne doit pas emprunter ce message.
+ */
+function translateRivalOwner(error: unknown, companyId: string): unknown {
+  if (readField(error, "code") !== "P2002") {
+    return error;
+  }
+  const target = readField(readField(error, "meta"), "target");
+  return mentionsOwnerIndex(target) ? new CompanyAlreadyHasOwnerError(companyId) : error;
+}
+
+/**
+ * L'index violé est-il celui du détenteur ? Prisma nomme sa cible tantôt par une
+ * chaîne (index posé en SQL brut, notre cas), tantôt par une liste de champs.
+ */
+function mentionsOwnerIndex(target: unknown): boolean {
+  if (typeof target === "string") {
+    return target.includes("one_owner");
+  }
+  return Array.isArray(target) && target.some((field) => String(field).includes("one_owner"));
+}
+
+/** Une propriété d'un objet d'erreur — sans assertion, et sans supposer sa forme. */
+function readField(source: unknown, key: string): unknown {
+  return typeof source === "object" && source !== null ? Reflect.get(source, key) : undefined;
 }
