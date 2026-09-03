@@ -3,6 +3,73 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes). Rien de la proposition n'est codé.
 
+## En bref
+
+**Le problème.** Un client ne peut pas commander du pain pour demain à 23 h ce
+soir. Il faut une heure limite, réglable globalement puis nuançable par famille
+et par produit.
+
+**La surprise.** Cette heure limite **existe déjà** : une table, un écran de
+réglages, des tests. Mais **rien ne la fait respecter** — le code qui décide
+« trop tard » n'est appelé nulle part. Quelqu'un peut remplir cet écran
+aujourd'hui et croire que ça bloque. Ça ne bloque rien (§1).
+
+**Deux choses décident, et elles s'additionnent** (§5) :
+
+|                | Ce que ça dit                                      | Unité         | Où on le règle   |
+| -------------- | -------------------------------------------------- | ------------- | ---------------- |
+| **La cuisine** | combien de temps il faut pour fabriquer l'article  | des **jours** | le PIM           |
+| **La journée** | quand on arrête de prendre pour une journée donnée | une **heure** | les réglages B2B |
+
+| Pour samedi  | Fabrication                      | Commander avant |
+| ------------ | -------------------------------- | --------------- |
+| Un croissant | samedi                           | vendredi 18 h   |
+| Un entremets | inserts vendredi, montage samedi | **jeudi 18 h**  |
+
+L'entremets recule d'un jour parce que sa fabrication commence un jour plus tôt.
+La recette dit des **jours**, jamais une heure : une heure recopiée sur la fiche
+resterait figée le jour où le labo change la sienne.
+
+**Trois situations, pas deux** (§4) :
+
+| Quand                      | Ce qui se passe                                            |
+| -------------------------- | ---------------------------------------------------------- |
+| avant l'heure limite       | ça passe, prix normal                                      |
+| juste après — la **grâce** | ça passe **si** quelqu'un l'autorise, **et** c'est surtaxé |
+| après la grâce             | c'est non, et personne ne peut ouvrir                      |
+
+La grâce est une durée qu'on règle ; la **dérogation** est le geste du commercial
+au téléphone (§7) ; la **surtaxe** est ce que ça coûte, et elle s'ajoute au panier
+comme des frais de livraison — **jamais au prix de l'article** (§8).
+
+**Qui règle quoi** (§3) :
+
+- **le PIM** : une seule chose — les jours de fabrication d'une famille, d'un
+  produit, d'une déclinaison ;
+- **les réglages B2B**, page Retraits & livraisons : tout le reste — les heures,
+  les exceptions par comptoir et par jour, la grâce, le montant de la surtaxe ;
+- **la commande** : ce qui a été décidé ce jour-là, figé. Changer le tarif demain
+  ne réécrit pas ce qui est parti.
+
+**Deux choses à savoir avant de coder :**
+
+- 🔴 le calcul utilise l'heure locale du serveur, qui tourne en **UTC** : « 18 h »
+  vaut 20 h à Paris en été. Inoffensif tant que rien n'applique la règle, une
+  heure de commandes acceptées à tort le jour du branchement (§10) ;
+- ⚠️ le **taux de TVA de la surtaxe** n'est pas tranché : c'est une question
+  comptable, et la seule du dossier qui coûte rétroactivement (§8).
+
+**Et ce que la limite ne dit pas :** aucune capacité maximale n'existe. Elle
+répond « trop tard », **jamais « complet »** — une commande acceptée n'est pas
+une commande dont la production est garantie faisable (§5).
+
+**L'ordre des travaux** (§12) : réparer le fuseau, faire respecter la règle
+existante, puis la grâce, la dérogation, la surtaxe — et en parallèle les jours
+de fabrication dans le PIM. Les deux premières étapes ont une valeur propre et ne
+touchent pas au référentiel.
+
+---
+
 ## 1. Ce qui existe déjà — et qui n'est branché à rien
 
 L'heure limite n'est pas à inventer. Elle est **modélisée, contractualisée,
