@@ -126,6 +126,57 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Avant de déployer « un seul défaut de livraison »
+
+⚠️ **À faire une seule fois, AVANT le merge dans `main`** qui emporte
+`20260903190000_un_seul_defaut_de_livraison`.
+
+Cette migration pose un index **unique partiel** sur `addresses`. Sa pose échoue
+— sans rien écrire — si une société porte déjà **deux** adresses de livraison par
+défaut. Un échec de migration arrête le déploiement en cours de route ; le
+constater après coup coûte un aller-retour et une fenêtre d'indisponibilité.
+
+Le contrôle est une **lecture**. Il se passe par `psql`, avec la chaîne relue
+dans `Connection strings` de la console Prisma (la console n'a pas d'éditeur
+SQL — cf. « Remettre la production à blanc ») :
+
+```sql
+SELECT company_id, count(*) AS defauts
+  FROM public.addresses
+ WHERE kind = 'delivery' AND archived_at IS NULL AND is_default
+ GROUP BY company_id
+HAVING count(*) > 1;
+```
+
+**Zéro ligne ⇒ déployer.** C'était le cas sur dev le 2026-09-03.
+
+**Une ligne ou plus ⇒ ne pas déployer tel quel.** La réparation se fait par une
+migration qui précède celle-ci, jamais par un `UPDATE` d'astreinte : une
+correction manuelle en production diverge en silence de toute base reconstruite.
+La règle de départage est celle du domaine — `DeliveryAddressBook.settleDefault`
+garde le défaut en place s'il est valide, sinon promeut **la plus ancienne** :
+
+```sql
+UPDATE public.addresses a
+   SET is_default = false
+ WHERE a.kind = 'delivery' AND a.archived_at IS NULL AND a.is_default
+   AND a.id <> (
+     SELECT b.id FROM public.addresses b
+      WHERE b.company_id = a.company_id AND b.kind = 'delivery'
+        AND b.archived_at IS NULL AND b.is_default
+      ORDER BY b.created_at ASC LIMIT 1);
+```
+
+Ce que ça change pour le client concerné : le formulaire de commande
+présélectionne une autre de **ses** adresses. Rien n'est supprimé, rien ne part
+ailleurs — une commande **fige** ses lignes postales à la passation. La société
+était déjà dans un état indéfini, où l'application choisissait arbitrairement.
+
+**Ce que l'index ne dit pas** : « au moins un défaut ». Un index unique ne compte
+pas jusqu'à un. Cette moitié-là n'est tenue que par l'agrégat, qui redresse un
+carnet bancal à la lecture — donc seulement pour les sociétés dont quelqu'un
+touche les adresses.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

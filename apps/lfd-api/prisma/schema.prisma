@@ -680,8 +680,15 @@ model Address {
   ville      String
   pays       String
 
-  // Adresse de livraison par défaut. Invariant (appliqué en applicatif) :
-  // au plus une `livraison` à `true` par company ; exactement une `facturation`.
+  // Adresse de livraison par défaut.
+  //
+  // « **Au plus une** livraison à `true` par société » est tenu par un index
+  // unique PARTIEL, posé en SQL brut (`20260903190000_un_seul_defaut_de_livraison`)
+  // parce que Prisma ne sait pas décrire un index à prédicat. Ne pas le chercher
+  // ici : il existe en base, et un `migrate diff` ne propose pas de le retirer.
+  //
+  // « **Au moins une** » ne s'exprime pas par un index — c'est `DeliveryAddressBook`
+  // qui le tient, et lui seul. La règle vit donc à deux endroits, faute de mieux.
   isDefault Boolean @default(false) @map("is_default")
 
   // Consignes de LIVRAISON (note livreurs, créneaux préférés, contact sur place,
