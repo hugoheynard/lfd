@@ -1,7 +1,7 @@
 import { decideFloor, type PriceFloorPolicy } from "../floor-policy.js";
 
-const HARD = { mode: "amount", cents: 150 } as const;
-const DOOR = { mode: "amount", cents: 120 } as const;
+const HARD = { mode: "amount", millicents: 150 } as const;
+const DOOR = { mode: "amount", millicents: 120 } as const;
 
 function policy(minQuantity: number | null, minVolumeRatioBp: number | null): PriceFloorPolicy {
   return { hard: HARD, dynamic: { floor: DOOR, unlock: { minQuantity, minVolumeRatioBp } } };

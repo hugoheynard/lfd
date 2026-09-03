@@ -199,7 +199,7 @@ function floorOf(rowId: string, mode: string, value: number): PriceFloor {
     return { mode: "percent", bp: value };
   }
   if (mode === "amount") {
-    return { mode: "amount", cents: value };
+    return { mode: "amount", millicents: value };
   }
   throw new CorruptedPriceFloorError(rowId, `unité inconnue « ${mode} »`);
 }
@@ -250,7 +250,7 @@ export function floorViewFromRow(
         ? null
         : {
             mode: dynamic.floor.mode,
-            value: dynamic.floor.mode === "percent" ? dynamic.floor.bp : dynamic.floor.cents,
+            value: dynamic.floor.mode === "percent" ? dynamic.floor.bp : dynamic.floor.millicents,
             unlock: dynamic.unlock,
           },
     drift: floorDrift(
@@ -266,7 +266,7 @@ export function floorViewFromRow(
 }
 
 function magnitudeOf(alteration: PriceAlteration): number {
-  return alteration.mode === "percent" ? alteration.bp : alteration.cents;
+  return alteration.mode === "percent" ? alteration.bp : alteration.millicents;
 }
 
 function alterationOf(row: RuleRow): PriceAlteration {
@@ -277,7 +277,7 @@ function alterationOf(row: RuleRow): PriceAlteration {
     return { direction: row.direction, mode: "percent", bp: row.value };
   }
   if (row.mode === "amount") {
-    return { direction: row.direction, mode: "amount", cents: row.value };
+    return { direction: row.direction, mode: "amount", millicents: row.value };
   }
   throw new CorruptedPriceRuleError(row.id, `unité inconnue « ${String(row.mode)} »`);
 }

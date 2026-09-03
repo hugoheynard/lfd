@@ -126,8 +126,18 @@ export const priceEffectSchema = z
       nature: z.literal("alter"),
       direction: priceDirectionSchema,
       mode: priceModeSchema,
-      /** Points de base si `percent`, centimes si `amount`. **Toujours positif** :
-       *  le signe se dit par `direction`, jamais par le nombre. */
+      /**
+       * Points de base si `percent`, **millicentimes** si `amount`. Toujours
+       * positif : le signe se dit par `direction`, jamais par le nombre.
+       *
+       * Millicentimes et non centimes, parce qu'une altération modifie un PRIX
+       * UNITAIRE — et que tout prix unitaire vit en millicentimes dans ce
+       * fichier. Le commentaire disait « centimes » ; trois panneaux de saisie
+       * l'ont cru et ont converti les euros en centimes, si bien qu'une règle
+       * « −0,05 € » retirait 0,00005 € (corrigé le 2026-09-03). Un montant de
+       * PANIER — remise de retrait, frais de zone — reste, lui, en centimes :
+       * c'est une somme échangée, pas un prix unitaire.
+       */
       value: z.number().int().positive(),
     }),
   ])
@@ -226,7 +236,11 @@ export type DynamicFloorPayload = z.infer<typeof dynamicFloorSchema>;
 export const setPriceFloorPayloadSchema = z.object({
   scope: priceScopeSchema,
   mode: priceModeSchema,
-  /** Points de base du **prix canonique** si `percent`, centimes si `amount`. */
+  /**
+   * Points de base du **prix canonique** si `percent`, **millicentimes** si
+   * `amount` — un plancher est un prix unitaire. Cf. `priceEffectSchema.value`
+   * pour ce que « centimes » a coûté ici.
+   */
   value: z.number().int().positive(),
   /** La porte, ou `null` s'il n'y en a pas. */
   dynamic: dynamicFloorSchema.nullable().default(null),
@@ -693,7 +707,10 @@ export interface PricingItemView {
 export const volumeTierSchema = z.object({
   /** Quantité minimale **sur la commande**. Strictement positive. */
   minQuantity: z.number().int().positive(),
-  /** La remise : points de base si `percent`, centimes si `amount`. Positive. */
+  /**
+   * La remise : points de base si `percent`, **millicentimes** si `amount`.
+   * Positive. Un palier remise un prix unitaire — cf. `priceEffectSchema.value`.
+   */
   value: z.number().int().positive(),
 });
 export type VolumeTierPayload = z.infer<typeof volumeTierSchema>;

@@ -119,7 +119,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
         percentOff({ id: "geste", stage: "geste", bp: 2000 }),
         {
           ...percentOff({ id: "vol", stage: "volume", bp: 1 }),
-          alteration: { direction: "decrease", mode: "amount", cents: 500 },
+          alteration: { direction: "decrease", mode: "amount", millicents: 500 },
           label: "−5 €",
         } as PriceRule,
       ],
@@ -284,7 +284,7 @@ describe("resolvePrice — replace contre alter", () => {
 
 describe("resolvePrice — le plancher (fork 3)", () => {
   const floorPercent: PriceFloor = { mode: "percent", bp: 5000 };
-  const floorAmount: PriceFloor = { mode: "amount", cents: 150 };
+  const floorAmount: PriceFloor = { mode: "amount", millicents: 150 };
 
   it("relève le prix sous une fraction du canonique, et le CONSIGNE", () => {
     const result = resolvePrice(1000, [percentOff({ id: "p", bp: 9000 })], context(), floorPercent);
@@ -384,7 +384,7 @@ describe("le plancher naturel du système", () => {
     segmentId: null,
   };
 
-  const minus = (cents: number): PriceRule => ({
+  const minus = (millicents: number): PriceRule => ({
     stacksOverMercuriale: false,
     id: "geste",
     stage: "geste",
@@ -396,7 +396,7 @@ describe("le plancher naturel du système", () => {
     suspendedFrom: null,
     label: "geste",
     nature: "alter",
-    alteration: { direction: "decrease", mode: "amount", cents },
+    alteration: { direction: "decrease", mode: "amount", millicents },
   });
 
   it("ramène à zéro une baisse en euros plus grande que le prix, et le consigne", () => {
@@ -419,5 +419,48 @@ describe("le plancher naturel du système", () => {
 
     expect(resolved.finalMillicents).toBe(150);
     expect(resolved.clampedToZero).toBe(false);
+  });
+});
+
+/**
+ * **Régression : un montant est en MILLICENTIMES, pas en centimes.**
+ *
+ * Le champ s'appelait `cents`, et trois panneaux de saisie l'ont cru : ils
+ * convertissaient les euros en centimes, si bien qu'une règle posée « −0,05 € »
+ * retirait 0,00005 € — un facteur mille, silencieux, sur un écran en service
+ * (corrigé le 2026-09-03). Rien ne l'attrapait, parce que le domaine faisait
+ * exactement ce qu'on lui demandait avec le nombre qu'on lui donnait.
+ *
+ * Le test fixe donc l'UNITÉ, pas le calcul : 5 000 en entrée doivent retirer
+ * cinq centimes du prix, et pas autre chose.
+ */
+describe("l'unité d'une altération en montant", () => {
+  it("retire 0,05 € quand la règle porte 5 000 millicentimes", () => {
+    const geste: PriceRule = {
+      id: "geste",
+      stage: "geste",
+      scope: { type: "global", id: null },
+      audience: { type: "all", id: null },
+      minQuantity: null,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+      validTo: null,
+      suspendedFrom: null,
+      label: "Arrondi",
+      stacksOverMercuriale: false,
+      nature: "alter",
+      alteration: { direction: "decrease", mode: "amount", millicents: 5_000 },
+    };
+
+    // 2,50 € − 0,05 € = 2,45 €, en millicentimes.
+    expect(resolvePrice(250_000, [geste], context()).finalMillicents).toBe(245_000);
+  });
+
+  it("plancher en montant : 218 000 vaut 2,18 €, et relève à 2,18 €", () => {
+    const resolved = resolvePrice(250_000, [], context(), { mode: "amount", millicents: 218_000 });
+
+    expect(resolved.finalMillicents).toBe(250_000);
+    expect(
+      resolvePrice(200_000, [], context(), { mode: "amount", millicents: 218_000 }),
+    ).toMatchObject({ floored: true, finalMillicents: 218_000 });
   });
 });

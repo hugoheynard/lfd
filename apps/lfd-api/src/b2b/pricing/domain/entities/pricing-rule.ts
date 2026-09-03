@@ -131,7 +131,7 @@ export class PricingRule {
 
     if (draft.effect.nature === "alter") {
       const { alteration } = draft.effect;
-      const magnitude = alteration.mode === "percent" ? alteration.bp : alteration.cents;
+      const magnitude = alteration.mode === "percent" ? alteration.bp : alteration.millicents;
       if (!Number.isInteger(magnitude) || magnitude <= 0) {
         throw new InvalidAlterationError(magnitude);
       }

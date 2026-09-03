@@ -75,6 +75,6 @@ export function resolveScopedFloor(
  */
 export function floorMillicentsFor(floor: PriceFloor, canonicalMillicents: number): number {
   return floor.mode === "amount"
-    ? floor.cents
+    ? floor.millicents
     : roundToCents(fractionByBasisPoints(fromCents(canonicalMillicents), floor.bp));
 }

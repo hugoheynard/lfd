@@ -152,7 +152,7 @@ describe("PricingRule.create", () => {
         create({
           effect: {
             nature: "alter",
-            alteration: { direction: "increase", mode: "amount", cents: -50 },
+            alteration: { direction: "increase", mode: "amount", millicents: -50 },
           },
         }),
       ).toThrow(InvalidAlterationError);

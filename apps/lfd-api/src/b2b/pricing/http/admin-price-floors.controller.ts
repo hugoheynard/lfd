@@ -168,7 +168,9 @@ function toPolicy(payload: SetPriceFloorPayload): PriceFloorPolicy {
 }
 
 function toFloor(mode: "percent" | "amount", value: number): PriceFloor {
-  return mode === "percent" ? { mode: "percent", bp: value } : { mode: "amount", cents: value };
+  return mode === "percent"
+    ? { mode: "percent", bp: value }
+    : { mode: "amount", millicents: value };
 }
 
 const SCOPE_TYPES = ["global", "category", "product", "variant"] as const;

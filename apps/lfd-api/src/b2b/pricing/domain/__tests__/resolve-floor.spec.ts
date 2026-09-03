@@ -17,12 +17,12 @@ function floor(
   id: string,
   type: PriceScopeType,
   scopeId: string | null,
-  cents: number,
+  millicents: number,
 ): ScopedPriceFloor {
   return {
     id,
     scope: { type, id: scopeId },
-    policy: { hard: { mode: "amount", cents }, dynamic: null },
+    policy: { hard: { mode: "amount", millicents }, dynamic: null },
   };
 }
 
@@ -30,7 +30,7 @@ function floor(
 function resolveFloor(
   floors: readonly ScopedPriceFloor[],
   context: typeof CONTEXT,
-): { mode: string; cents?: number; bp?: number } | null {
+): { mode: string; millicents?: number; bp?: number } | null {
   return resolveScopedFloor(floors, context)?.policy.hard ?? null;
 }
 
@@ -51,7 +51,7 @@ describe("resolveFloor", () => {
   it("prend le plancher global à défaut de mieux", () => {
     expect(resolveFloor([floor("g", "global", null, 50)], CONTEXT)).toEqual({
       mode: "amount",
-      cents: 50,
+      millicents: 50,
     });
   });
 
@@ -61,7 +61,7 @@ describe("resolveFloor", () => {
   it("le plancher de la famille couvre l'article", () => {
     expect(resolveFloor([floor("c", "category", "viennoiserie", 120)], CONTEXT)).toEqual({
       mode: "amount",
-      cents: 120,
+      millicents: 120,
     });
   });
 
@@ -77,7 +77,7 @@ describe("resolveFloor", () => {
       floor("p", "product", "VIE-001", 100),
     ];
 
-    expect(resolveFloor(posés, CONTEXT)).toEqual({ mode: "amount", cents: 100 });
+    expect(resolveFloor(posés, CONTEXT)).toEqual({ mode: "amount", millicents: 100 });
   });
 
   it("la déclinaison l'emporte sur le produit, qui l'emporte sur la famille", () => {
@@ -88,7 +88,7 @@ describe("resolveFloor", () => {
       floor("v", "variant", "VIE-001-U", 40),
     ];
 
-    expect(resolveFloor(posés, CONTEXT)).toEqual({ mode: "amount", cents: 40 });
+    expect(resolveFloor(posés, CONTEXT)).toEqual({ mode: "amount", millicents: 40 });
   });
 
   it("l'ordre de la liste ne change rien", () => {

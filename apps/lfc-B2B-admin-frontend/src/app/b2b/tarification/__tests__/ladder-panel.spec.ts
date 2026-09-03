@@ -125,7 +125,16 @@ describe('la saisie du barème', () => {
     expect(panel['tiers']().length).toBe(1);
   });
 
-  it('convertit les euros en centimes, avec le même facteur', async () => {
+  /**
+   * **Régression : un montant part en MILLICENTIMES.**
+   *
+   * Ce cas affirmait l'inverse — « convertit les euros en centimes, avec le même
+   * facteur » — et attendait `20` pour 0,20 €. Il verrouillait le défaut : un
+   * palier « −0,20 € » remisait 0,0002 €. Le facteur n'est le même que pour les
+   * points de base ; un montant altère un PRIX UNITAIRE, qui vit en
+   * millicentimes.
+   */
+  it('convertit les euros en millicentimes, pas en centimes', async () => {
     const posted: SetVolumeLadderPayload[] = [];
     const panel = mount(posted).componentInstance;
     panel['setUnit']('amount');
@@ -134,7 +143,20 @@ describe('la saisie du barème', () => {
 
     await panel['submit']();
 
-    expect(posted[0]?.tiers).toEqual([{ minQuantity: 50, value: 20 }]);
+    expect(posted[0]?.tiers).toEqual([{ minQuantity: 50, value: 20_000 }]);
     expect(posted[0]?.unit).toBe('amount');
+  });
+
+  /** Le pourcentage, lui, n'a jamais changé : 5 % font 500 points de base. */
+  it('laisse un pourcentage en points de base', async () => {
+    const posted: SetVolumeLadderPayload[] = [];
+    const panel = mount(posted).componentInstance;
+    panel['setUnit']('percent');
+    fill(panel, [[50, 5]]);
+    panel['label'].set('Barème en pourcent');
+
+    await panel['submit']();
+
+    expect(posted[0]?.tiers).toEqual([{ minQuantity: 50, value: 500 }]);
   });
 });

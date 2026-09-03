@@ -143,14 +143,14 @@ function apply(running: Exact, rule: PriceRule): Exact {
 
   const { alteration } = rule;
   const direction = alteration.direction === "increase" ? 1 : -1;
-  const magnitude = alteration.mode === "percent" ? alteration.bp : alteration.cents;
+  const magnitude = alteration.mode === "percent" ? alteration.bp : alteration.millicents;
   if (!Number.isInteger(magnitude) || magnitude <= 0) {
     throw new InvalidAlterationError(magnitude);
   }
 
   return alteration.mode === "percent"
     ? scaleByBasisPoints(running, alteration.bp, direction)
-    : addCents(running, alteration.cents, direction);
+    : addCents(running, alteration.millicents, direction);
 }
 
 /**
@@ -165,6 +165,6 @@ function floorValue(floor: PriceFloor | null, canonicalMillicents: number): Exac
     return null;
   }
   return floor.mode === "amount"
-    ? fromCents(floor.cents)
+    ? fromCents(floor.millicents)
     : fractionByBasisPoints(fromCents(canonicalMillicents), floor.bp);
 }

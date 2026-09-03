@@ -129,9 +129,9 @@ function ruleData(
 }
 
 function magnitudeOf(
-  alteration: { mode: "percent"; bp: number } | { mode: "amount"; cents: number },
+  alteration: { mode: "percent"; bp: number } | { mode: "amount"; millicents: number },
 ): number {
-  return alteration.mode === "percent" ? alteration.bp : alteration.cents;
+  return alteration.mode === "percent" ? alteration.bp : alteration.millicents;
 }
 
 /**

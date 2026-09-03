@@ -132,7 +132,7 @@ function assertUnitScoped(scope: PriceScope, floor: PriceFloor): void {
 
 /** Grandeur strictement positive, et fraction qui ne dépasse pas le canonique. */
 function assertSaneFloor(floor: PriceFloor): void {
-  const magnitude = floor.mode === "percent" ? floor.bp : floor.cents;
+  const magnitude = floor.mode === "percent" ? floor.bp : floor.millicents;
   if (!Number.isInteger(magnitude) || magnitude <= 0) {
     throw new InvalidAlterationError(magnitude);
   }
@@ -159,7 +159,7 @@ function isStrictlyBelow(door: PriceFloor, wall: PriceFloor): boolean {
     return door.bp < wall.bp;
   }
   if (door.mode === "amount" && wall.mode === "amount") {
-    return door.cents < wall.cents;
+    return door.millicents < wall.millicents;
   }
   return true;
 }

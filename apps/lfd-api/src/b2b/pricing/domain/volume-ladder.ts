@@ -131,6 +131,6 @@ export function ladderAtTier(ladder: VolumeLadder, tier: VolumeTier): PriceRule 
     alteration:
       ladder.unit === "percent"
         ? { direction: "decrease", mode: "percent", bp: tier.value }
-        : { direction: "decrease", mode: "amount", cents: tier.value },
+        : { direction: "decrease", mode: "amount", millicents: tier.value },
   };
 }

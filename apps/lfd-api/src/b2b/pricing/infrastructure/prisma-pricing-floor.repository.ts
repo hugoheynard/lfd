@@ -98,5 +98,5 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
 }
 
 function magnitudeOf(floor: PriceFloor): number {
-  return floor.mode === "percent" ? floor.bp : floor.cents;
+  return floor.mode === "percent" ? floor.bp : floor.millicents;
 }

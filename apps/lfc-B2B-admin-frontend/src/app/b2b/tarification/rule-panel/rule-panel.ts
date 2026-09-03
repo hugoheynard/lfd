@@ -13,6 +13,7 @@ import { PriceAlterationField, type PriceAlteration } from '@lfd/b2b-ui/pricing'
 
 import { nativeValue } from '../../../shared/native-input';
 import { NotifyService } from '../../../notify.service';
+import { MILLICENTS_PER_CENT } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 
 /** Charge d'ouverture : sur quoi la règle porte, et comment le dire à l'écran. */
@@ -196,7 +197,11 @@ export class RulePanel {
       nature: 'alter',
       direction: alteration.direction,
       mode: alteration.mode,
-      value: alteration.mode === 'percent' ? alteration.bp : alteration.cents,
+      // Le champ partagé parle en CENTIMES, et c'est juste pour son autre
+      // usage — les ajustements de panier, qui sont des montants. Un prix
+      // unitaire, lui, vit en millicentimes : sans cette conversion, « −0,05 € »
+      // partait à 5 et retirait 0,00005 €.
+      value: alteration.mode === 'percent' ? alteration.bp : alteration.cents * MILLICENTS_PER_CENT,
     };
   }
 }

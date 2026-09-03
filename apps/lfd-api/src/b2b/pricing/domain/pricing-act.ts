@@ -133,7 +133,7 @@ export function describeFloorPolicy(policy: PriceFloorPolicy): string {
 }
 
 function floorAmount(floor: PriceFloor): string {
-  return floor.mode === "amount" ? euros(floor.cents) : `${percent(floor.bp)} % du tarif`;
+  return floor.mode === "amount" ? euros(floor.millicents) : `${percent(floor.bp)} % du tarif`;
 }
 
 function ratio(bp: number): string {
@@ -147,7 +147,7 @@ function describeEffect(rule: PriceRule): string {
   const sign = rule.alteration.direction === "decrease" ? "−" : "+";
   return rule.alteration.mode === "percent"
     ? `${sign}${percent(rule.alteration.bp)} %`
-    : `${sign}${euros(rule.alteration.cents)}`;
+    : `${sign}${euros(rule.alteration.millicents)}`;
 }
 
 function describeTarget(rule: PriceRule): string {
@@ -170,11 +170,17 @@ function describeWindowOf(validFrom: Date, validTo: Date | null): string {
 }
 
 /**
- * Les montants sont en centimes entiers et le restent : la division ne sert
+ * Les prix sont en **millicentimes** entiers et le restent : la division ne sert
  * qu'à l'affichage, dans une phrase qui ne sera jamais recalculée.
+ *
+ * Elle divisait par 100. Les trois valeurs qu'elle reçoit — le prix posé d'une
+ * mercuriale, un plancher en montant, une altération en euros — sont des PRIX
+ * UNITAIRES, donc en millicentimes depuis toujours : le journal annonçait
+ * « 1800,00 € » pour une mercuriale posée à 1,80 €. Personne ne l'avait vu parce
+ * qu'on relit un journal après coup, jamais pendant qu'on saisit.
  */
-function euros(cents: number): string {
-  return `${(cents / 100).toFixed(2).replace(".", ",")} €`;
+function euros(millicents: number): string {
+  return `${(millicents / 100_000).toFixed(2).replace(".", ",")} €`;
 }
 
 function percent(bp: number): string {

@@ -6,8 +6,8 @@ import type { PriceFloorPolicy } from "./floor-policy.js";
  *
  * Ces types sont ceux du **domaine**, volontairement redéclarés ici plutôt
  * qu'importés de `@lfd/b2b-ui/pricing` : le domaine ne dépend pas d'un paquet de
- * présentation. La forme est la même (`bp` / `cents`, entiers, grandeur toujours
- * positive, sens porté par `direction`) — et elle doit le rester : deux
+ * présentation. La forme est la même (`bp` / `millicents`, entiers, grandeur
+ * toujours positive, sens porté par `direction`) — et elle doit le rester : deux
  * vocabulaires pour la même chose finiraient par se contredire.
  */
 
@@ -61,17 +61,30 @@ export type PriceDirection = "increase" | "decrease";
  * La grandeur reste **toujours positive** : « −20 % » se dit par `direction`,
  * jamais par un signe. Deux façons d'exprimer la même chose finiraient par se
  * contredire.
+ *
+ * 🔴 **Le montant est en MILLICENTIMES**, et le champ le dit désormais. Il
+ * s'appelait `cents`, et ce nom a coûté cher : une altération modifie un PRIX
+ * UNITAIRE, qui vit en millicentimes dans tout le modèle — mais trois panneaux
+ * de saisie ont lu le nom du champ et converti des euros en centimes. Une règle
+ * « −0,05 € » retirait donc **0,00005 €**, silencieusement, sur un écran en
+ * service (corrigé le 2026-09-03).
+ *
+ * Le mot `cents` reste juste ailleurs, et c'est précisément le piège : un
+ * `CartAdjustment` — remise d'un point de retrait, frais d'une zone — porte un
+ * MONTANT, qui lui est bien en centimes. Deux unités, un seul mot : le nom devait
+ * trancher, puisque le type ne le peut pas.
  */
 export type PriceAlteration =
   | { readonly direction: PriceDirection; readonly mode: "percent"; readonly bp: number }
-  | { readonly direction: PriceDirection; readonly mode: "amount"; readonly cents: number };
+  | { readonly direction: PriceDirection; readonly mode: "amount"; readonly millicents: number };
 
 /**
  * Le **plancher**, à deux formes (décision du 2026-08-17).
  *
  * `percent` : une fraction du prix canonique, en points de base — elle suit le
- * tarif quand le PIM augmente. `amount` : une limite absolue en centimes, pour
- * un article dont on connaît un coût fixe qu'un pourcentage n'exprimerait pas.
+ * tarif quand le PIM augmente. `amount` : une limite absolue en **millicentimes**
+ * (un plancher est un prix unitaire, pas un montant), pour un article dont on
+ * connaît un coût fixe qu'un pourcentage n'exprimerait pas.
  *
  * C'est un **garde-fou** contre l'empilement accidentel, pas une règle de marge :
  * le prix de revient n'existe nulle part dans le modèle. Le jour où il existera,
@@ -79,7 +92,7 @@ export type PriceAlteration =
  */
 export type PriceFloor =
   | { readonly mode: "percent"; readonly bp: number }
-  | { readonly mode: "amount"; readonly cents: number };
+  | { readonly mode: "amount"; readonly millicents: number };
 
 /**
  * Un plancher **posé sur une portée** — la forme sous laquelle il se saisit et

@@ -355,7 +355,7 @@ function toDraft(payload: CreatePriceRulePayload): PricingRuleDraft {
                 : {
                     direction: payload.effect.direction,
                     mode: "amount",
-                    cents: payload.effect.value,
+                    millicents: payload.effect.value,
                   },
           },
     label: payload.label,

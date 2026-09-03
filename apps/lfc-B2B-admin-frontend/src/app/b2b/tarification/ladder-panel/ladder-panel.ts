@@ -9,6 +9,7 @@ import {
 
 import { nativeValue } from '../../../shared/native-input';
 import { NotifyService } from '../../../notify.service';
+import { magnitudeToWire } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 
 /** Charge d'ouverture : sur quoi le barème porte, et ce qui y est déjà posé. */
@@ -75,7 +76,10 @@ export class LadderPanel {
         (tier): tier is { minQuantity: number; value: number } =>
           tier.minQuantity !== null && tier.value !== null,
       )
-      .map((tier) => ({ minQuantity: tier.minQuantity, value: toWire(tier.value) })),
+      .map((tier) => ({
+        minQuantity: tier.minQuantity,
+        value: magnitudeToWire(tier.value, this.unit()),
+      })),
   );
 
   /**
@@ -167,20 +171,6 @@ export class LadderPanel {
       tiers.map((tier, position) => (position === index ? { ...tier, ...change } : tier)),
     );
   }
-}
-
-/**
- * La valeur telle que le fil l'attend : points de base si `percent`, centimes si
- * `amount`.
- *
- * Le facteur est le même dans les deux cas — 5 % font 500 bp, 0,20 € font 20
- * centimes — et ce n'est pas une coïncidence à exploiter en silence : les deux
- * unités du modèle sont des centièmes de leur unité naturelle. Une seule
- * conversion suffit donc, et ce commentaire existe pour qu'on ne la « corrige »
- * pas en croyant à un oubli.
- */
-function toWire(value: number): number {
-  return Math.round(value * 100);
 }
 
 function parseWhole(raw: string): number | null {

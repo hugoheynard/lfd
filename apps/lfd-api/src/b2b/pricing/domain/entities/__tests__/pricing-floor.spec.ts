@@ -19,14 +19,14 @@ describe("PricingFloor.pose", () => {
   it("pose un mur en euros, sans porte", () => {
     const floor = PricingFloor.pose(
       { type: "product", id: "VIE-001" },
-      { hard: { mode: "amount", cents: 150 }, dynamic: null },
+      { hard: { mode: "amount", millicents: 150 }, dynamic: null },
       "auth0|cecile",
     );
 
     expect(floor.asScopedFloor).toEqual({
       id: "product:VIE-001",
       scope: { type: "product", id: "VIE-001" },
-      policy: { hard: { mode: "amount", cents: 150 }, dynamic: null },
+      policy: { hard: { mode: "amount", millicents: 150 }, dynamic: null },
     });
   });
 
@@ -77,7 +77,11 @@ describe("PricingFloor.pose", () => {
 
   it("refuse une portée « famille » qui ne nomme aucune famille", () => {
     expect(() =>
-      PricingFloor.pose({ type: "category", id: null }, wall({ mode: "amount", cents: 100 }), "a"),
+      PricingFloor.pose(
+        { type: "category", id: null },
+        wall({ mode: "amount", millicents: 100 }),
+        "a",
+      ),
     ).toThrow(ScopeIdMismatchError);
   });
 
@@ -85,7 +89,7 @@ describe("PricingFloor.pose", () => {
     expect(() =>
       PricingFloor.pose(
         { type: "product", id: "VIE-001" },
-        wall({ mode: "amount", cents: 0 }),
+        wall({ mode: "amount", millicents: 0 }),
         "a",
       ),
     ).toThrow(InvalidAlterationError);
@@ -93,7 +97,7 @@ describe("PricingFloor.pose", () => {
 });
 
 describe("la porte", () => {
-  const HARD = { mode: "amount", cents: 150 } as const;
+  const HARD = { mode: "amount", millicents: 150 } as const;
   // Une porte en euros ne se pose que sur un ARTICLE : au-delà, le montant ne
   // veut rien dire. Cf. le bloc « une limite en euros » plus bas.
   const scope = { type: "product", id: "VIE-001" } as const;
@@ -105,7 +109,7 @@ describe("la porte", () => {
         {
           hard: HARD,
           dynamic: {
-            floor: { mode: "amount", cents: 120 },
+            floor: { mode: "amount", millicents: 120 },
             unlock: { minQuantity: 100, minVolumeRatioBp: null },
           },
         },
@@ -126,7 +130,7 @@ describe("la porte", () => {
         {
           hard: HARD,
           dynamic: {
-            floor: { mode: "amount", cents: 120 },
+            floor: { mode: "amount", millicents: 120 },
             unlock: { minQuantity: null, minVolumeRatioBp: null },
           },
         },
@@ -143,7 +147,7 @@ describe("la porte", () => {
         {
           hard: HARD,
           dynamic: {
-            floor: { mode: "amount", cents: 180 },
+            floor: { mode: "amount", millicents: 180 },
             unlock: { minQuantity: 100, minVolumeRatioBp: null },
           },
         },
@@ -182,7 +186,7 @@ describe("la porte", () => {
  * deux effets opposés. Une fraction, elle, suit l'article.
  */
 describe("une limite en euros", () => {
-  const AMOUNT = { mode: "amount", cents: 150 } as const;
+  const AMOUNT = { mode: "amount", millicents: 150 } as const;
 
   it("se pose sur un article", () => {
     expect(() =>
@@ -216,7 +220,7 @@ describe("une limite en euros", () => {
         {
           hard: { mode: "percent", bp: 6_000 },
           dynamic: {
-            floor: { mode: "amount", cents: 120 },
+            floor: { mode: "amount", millicents: 120 },
             unlock: { minQuantity: 100, minVolumeRatioBp: null },
           },
         },

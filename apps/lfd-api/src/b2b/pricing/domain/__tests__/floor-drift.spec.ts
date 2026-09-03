@@ -2,7 +2,7 @@ import { floorDrift, medianMillicents, STALE_DRIFT_BP } from "../floor-drift.js"
 
 const POSED = new Date("2026-01-01T00:00:00.000Z");
 const NOW = new Date("2026-08-17T00:00:00.000Z");
-const AMOUNT = { mode: "amount", cents: 150 } as const;
+const AMOUNT = { mode: "amount", millicents: 150 } as const;
 
 describe("l'écart entre l'intention et le tarif du jour", () => {
   it("mesure une hausse du tarif depuis la décision", () => {

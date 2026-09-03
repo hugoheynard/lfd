@@ -20,6 +20,7 @@ import {
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { NotifyService } from '../../../notify.service';
+import { magnitudeFromWire, magnitudeToWire } from '../pricing-format';
 import { ArchivePanel, type ArchivePanelData } from '../archive-panel/archive-panel';
 import { JournalPanel, type JournalPanelData } from '../journal-panel/journal-panel';
 import { TarificationService } from '../tarification.service';
@@ -166,7 +167,7 @@ export class FloorPanel {
       }
       if (data.current !== null) {
         this.mode.set(data.current.mode);
-        this.amount.set(data.current.value / 100);
+        this.amount.set(magnitudeFromWire(data.current.value, data.current.mode));
       }
     });
   }
@@ -205,7 +206,10 @@ export class FloorPanel {
       await this.tarification.setFloor({
         scope,
         mode: this.mode(),
-        value: Math.round(value * 100),
+        // Points de base si pourcentage, MILLICENTIMES si montant — les deux
+        // facteurs diffèrent. Ils étaient confondus, et une limite « 2,18 € »
+        // se posait à 0,00218 €.
+        value: magnitudeToWire(value, this.mode()),
         // Le MUR seul. La porte — un plancher plus bas déverrouillé par le
         // volume — est acceptée par le serveur mais pas encore saisissable ici :
         // envoyer `null` explicitement plutôt que d'omettre le champ, pour que

@@ -4,6 +4,7 @@ import type {
   ElasticityComparison,
   ItemElasticityView,
   PriceFloorView,
+  PriceMode,
   PriceRuleView,
   PriceScopePayload,
   PriceScopeType,
@@ -75,6 +76,40 @@ export function roomEuros(maxDiscountMillicents: number): string {
 
 export function roomPercent(maxDiscountBp: number): string {
   return `${(maxDiscountBp / 100).toFixed(1).replace('.', ',')} %`;
+}
+
+/**
+ * **Un centime vaut mille millicentimes.**
+ *
+ * Nommé plutôt que multiplié : c'est exactement le facteur qui manquait, et
+ * c'est celui qui rendait une règle « −0,05 € » égale à 0,00005 €.
+ */
+export const MILLICENTS_PER_CENT = 1_000;
+
+/**
+ * **Ce que l'écran saisit → ce que le fil attend.**
+ *
+ * Un pourcentage part en points de base (5 % → 500) ; un montant part en
+ * **millicentimes** (0,05 € → 5 000), parce qu'il altère un PRIX UNITAIRE et
+ * que tout prix unitaire vit en millicentimes dans le modèle.
+ *
+ * Les deux facteurs diffèrent, et c'est le fond de l'affaire : les trois
+ * panneaux de saisie appliquaient `× 100` aux deux, un commentaire à l'appui
+ * expliquant que « les deux unités du modèle sont des centièmes de leur unité
+ * naturelle » et demandant qu'on ne le « corrige » pas. C'était vrai des points
+ * de base, faux des montants — et le commentaire a protégé le défaut plus
+ * longtemps que le défaut ne se serait tenu seul.
+ *
+ * Écrit ICI, à un seul endroit, pour que les trois panneaux ne puissent plus
+ * diverger.
+ */
+export function magnitudeToWire(value: number, mode: PriceMode): number {
+  return mode === 'percent' ? Math.round(value * 100) : Math.round(value * 100_000);
+}
+
+/** L'inverse — pour rouvrir une limite déjà posée sur la valeur qu'on avait saisie. */
+export function magnitudeFromWire(value: number, mode: PriceMode): number {
+  return mode === 'percent' ? value / 100 : value / 100_000;
 }
 
 /**
