@@ -6,8 +6,12 @@
 // Aucune couleur n'est écrite ici : `foldSurface="chrome"` repointe la polarité
 // entière du sous-arbre (encres, bordures, surfaces, et les quatre teintes
 // d'étage de `styles.scss`), donc les mêmes rôles rendent la bonne valeur.
+// La carte respire au-dessus : collée aux compteurs, elle se lisait comme leur
+// prolongement, alors qu'elle change de portée — la synthèse parle de tout le
+// catalogue, la trace d'un seul article.
 :host {
   display: block;
+  padding-top: var(--fold-space-sm, 0.5rem);
 }
 
 .panel {

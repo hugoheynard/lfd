@@ -22,10 +22,24 @@
 .masthead {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md, 0.75rem);
-  margin-bottom: calc(-1 * var(--fold-space-2xl));
+  // **Collant.** C'est la seule zone de l'écran qui ne se modifie pas : on y lit
+  // ce que le moteur a conclu, et on veut le garder sous les yeux en descendant
+  // la grille. Au-dessus des en-têtes collants des tables, qui montent à 1.
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  gap: var(--fold-space-lg, 1rem);
+  // `bleed` avale le padding HAUT du layout — c'est ce qui colle la bande au
+  // chrome de l'app. Il avale du même coup l'espace SOUS elle : sans cette
+  // marge, la carte de mise en garde vient toucher la bande et les deux supports
+  // se lisent comme un seul.
+  margin-bottom: var(--fold-page-gap, 1.5rem);
   padding: var(--fold-space-lg, 1rem) var(--fold-page-gutter, 1.25rem) var(--fold-space-xl, 1.5rem);
-  background: var(--fold-color-surface-card);
+  // Le fond le PLUS SOMBRE que le chrome déclare, et non son fond de carte.
+  // La carte du chemin du prix reste un cran en dessous : deux crans de
+  // profondeur, mais pris plus bas dans la gamme, si bien que la bande cesse de
+  // se lire comme une grande carte et redevient un support.
+  background: var(--fold-color-bg-rail-secondary);
 }
 
 // Le titre à gauche, les sorties à droite, les compteurs sous le titre. C'est la
