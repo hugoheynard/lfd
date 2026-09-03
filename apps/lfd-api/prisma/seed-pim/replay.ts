@@ -38,13 +38,15 @@ export interface ReplayReport {
   created: number;
   updated: number;
   published: number;
+  /** Fiches que ce passage a signées — celles déjà signées ne le sont pas deux fois. */
+  signed: number;
   archived: number;
   /** Les fiches restées brouillon, et pourquoi — une ligne par fiche. */
   readonly refused: string[];
 }
 
 export function emptyReport(): ReplayReport {
-  return { created: 0, updated: 0, published: 0, archived: 0, refused: [] };
+  return { created: 0, updated: 0, published: 0, signed: 0, archived: 0, refused: [] };
 }
 
 export async function replayProducts(
@@ -54,9 +56,16 @@ export async function replayProducts(
   registry: Registry,
 ): Promise<ReplayReport> {
   const report = emptyReport();
+  // Les signatures déjà posées, lues UNE fois. Une fiche créée par ce passage
+  // n'y est pas, par construction — inutile de la chercher.
+  const alreadySigned = new Set(
+    (await prisma.productReadiness.findMany({ select: { productId: true } })).map(
+      (row) => row.productId,
+    ),
+  );
   for (const product of products) {
     try {
-      await replayProduct(bus, prisma, product, registry, report);
+      await replayProduct(bus, prisma, product, registry, report, alreadySigned);
     } catch (error: unknown) {
       report.refused.push(`${product.sku} — ${describe(error)}`);
     }
@@ -70,6 +79,7 @@ async function replayProduct(
   product: CorpusProduct,
   registry: Registry,
   report: ReplayReport,
+  alreadySigned: ReadonlySet<string>,
 ): Promise<void> {
   const categoryId = registry.categoriesByName.get(product.categoryName);
   if (categoryId === undefined) {
@@ -82,7 +92,7 @@ async function replayProduct(
   await fillVariant(bus, prisma, productId, product, declaration);
   await describeProduct(bus, productId, product);
   await placeOnMatrix(bus, productId, product, registry);
-  await settle(bus, productId, product, declaration !== null, report);
+  await settle(bus, productId, product, declaration !== null, report, alreadySigned);
 }
 
 /** Ouvre la fiche, ou retrouve celle que son SKU désigne déjà. */
@@ -202,6 +212,23 @@ async function placeOnMatrix(
  * c'est l'ordre du cycle : `declare-product-ready` inscrit qui affirme que la
  * fiche est juste, `publish-product` la met en vente. Les fondre ferait
  * disparaître celui des deux qui a du sens.
+ *
+ * ## On ne re-signe jamais
+ *
+ * `DeclareProductReadyCommand` n'est PAS idempotente, et elle a raison de ne
+ * pas l'être : re-signer redate, et une signature qu'on redate perd la seule
+ * chose qu'elle porte — depuis quand quelqu'un affirme que cette fiche est
+ * juste. C'est l'argument de `B2bMembershipService.publish`, au mot près.
+ *
+ * L'idempotence est donc ici, dans l'appelant : le seed signe ce qui n'est pas
+ * signé, et rien d'autre. Deux passages inscrivaient 190 signatures pour 95
+ * fiches — un journal qui racontait deux validations là où il n'y en avait
+ * qu'une.
+ *
+ * ⚠️ Corollaire assumé : si un passage MODIFIE une fiche déjà signée (un prix
+ * changé dans `catalogue.ts`), la signature devient **périmée**, et l'écran le
+ * dira. C'est le bon comportement : le seed a changé la fiche, personne ne l'a
+ * revalidée. Re-signer d'office affirmerait le contraire.
  */
 async function settle(
   bus: CommandBus,
@@ -209,6 +236,7 @@ async function settle(
   product: CorpusProduct,
   declared: boolean,
   report: ReplayReport,
+  alreadySigned: ReadonlySet<string>,
 ): Promise<void> {
   if (product.status === "archived") {
     await bus.execute<ArchiveProductCommand, void>(new ArchiveProductCommand(productId));
@@ -224,7 +252,10 @@ async function settle(
     );
     return;
   }
-  await bus.execute<DeclareProductReadyCommand, void>(new DeclareProductReadyCommand(productId));
+  if (!alreadySigned.has(productId)) {
+    await bus.execute<DeclareProductReadyCommand, void>(new DeclareProductReadyCommand(productId));
+    report.signed += 1;
+  }
   await bus.execute<PublishProductCommand, void>(new PublishProductCommand(productId));
   report.published += 1;
 }

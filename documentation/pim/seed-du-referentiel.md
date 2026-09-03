@@ -105,6 +105,19 @@ inutilisable pour deux motifs indépendants : son runner, et un import de
 `src`, donc **rien dans `prisma/` n'était typé** jusqu'à ce chantier. ESLint ne
 le couvre toujours pas (`pnpm lint` ne vise que `{src,apps,libs,test}`).
 
+## Signer n'est pas idempotent — le seed l'est
+
+`DeclareProductReadyCommand` redate à chaque appel, et elle a raison : une
+signature qu'on redate perd la seule chose qu'elle porte — depuis quand
+quelqu'un affirme que cette fiche est juste. L'idempotence vit donc dans le
+seed, qui **signe ce qui n'est pas signé, et rien d'autre**. Deux passages
+inscrivaient 190 signatures pour 95 fiches ; ils en inscrivent 95.
+
+⚠️ Corollaire assumé : si un passage modifie une fiche **déjà signée** — un prix
+changé dans `catalogue.ts` — la signature devient périmée et l'écran le dit.
+C'est le bon comportement : le seed a changé la fiche, personne ne l'a
+revalidée. Re-signer d'office affirmerait le contraire.
+
 ## Modifier le catalogue
 
 À la main, dans `catalogue.ts`. Tout s'y désigne par **clé portable** — nom de

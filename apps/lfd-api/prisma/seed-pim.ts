@@ -128,7 +128,8 @@ function summarize(counts: RegistryCounts, report: ReplayReport, channel: B2bCha
       `  référentiel — contextes=+${counts.contextsCreated} points de vente=+${counts.pointsCreated} ` +
       `taux=+${counts.ratesCreated} familles=+${counts.categoriesCreated}\n` +
       `  fiches — créées=${report.created} retrouvées=${report.updated} ` +
-      `mises en vente=${report.published} archivées=${report.archived}\n` +
+      `mises en vente=${report.published} signées=${report.signed} ` +
+      `archivées=${report.archived}\n` +
       `  canal B2B — vendues aux pros par la matrice=${channel.sold}, ` +
       `en vente sur le canal=${channel.opened}\n`,
   );
