@@ -1,21 +1,21 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { FoldButtonComponent } from 'fold-ng';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * **Le bandeau de synthèse** — les trois questions qu'on se pose en arrivant :
+ * **La ligne de synthèse** — les trois questions qu'on se pose en arrivant :
  * combien d'articles, combien portent une décision, et qu'est-ce qui cloche.
  *
- * Les deux tuiles d'alerte ne s'allument **que** si elles ont quelque chose à
- * dire. Un tableau de bord dont tous les chiffres crient n'en dit aucun — et
- * celui-ci se relit chaque matin.
+ * Une ligne et non des tuiles : cinq faits du même ordre se lisent d'un balayage
+ * quand ils partagent une ligne de base, alors qu'en cartes chacun réclame son
+ * cadre et l'œil se met à les compter.
  *
- * La tuile allumée porte une **barre** en plus de sa couleur : une couleur seule
- * ne se lit ni en daltonien, ni imprimée, ni en contraste forcé.
+ * Les deux compteurs d'alerte ne prennent leur teinte **que** s'ils ont quelque
+ * chose à dire. Un tableau de bord dont tous les chiffres crient n'en dit aucun —
+ * et celui-ci se relit chaque matin. Le chiffre reste **écrit** dans tous les
+ * cas : la couleur accélère la lecture, elle ne la porte pas.
  */
 @Component({
   selector: 'app-tarification-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent],
   templateUrl: './summary-bar.html',
   styleUrl: './summary-bar.scss',
 })
@@ -36,6 +36,4 @@ export class TarificationSummaryBar {
    * ne peut pas se refuser à la saisie, puisqu'il dépend de l'article.
    */
   readonly clampedCount = input.required<number>();
-
-  readonly archivesRequested = output<void>();
 }

@@ -14,118 +14,179 @@
         description="Le catalogue est vide. Publiez des produits sur le canal B2B, puis relancez un push."
       />
     } @else {
-      <app-tarification-summary
-        [itemCount]="itemCount()"
-        [alteredCount]="alteredCount()"
-        [flooredCount]="flooredCount()"
-        [staleFloorCount]="staleFloorCount()"
-        [clampedCount]="clampedCount()"
-        (archivesRequested)="openArchives()"
-      />
-
       <!--
-        **Le chemin du prix**, ancré ici et pas sous sa ligne. Il ne s'affiche
-        qu'une fois une ligne choisie : dépliée sur cent articles, la cascade
-        serait illisible, et c'est la seule raison pour laquelle cet écran a
-        maintenant une notion de sélection.
+        **Le corps de la page est un `fold-page-layout`.** C'est lui qui porte la
+        gouttière et le rythme vertical, par ses deux tokens — et non des marges
+        posées bloc par bloc, qui se désynchronisent du premier point de rupture
+        venu. Le bandeau de tête, lui, `bleed` : il annule EXACTEMENT cette
+        gouttière, donc il saigne jusqu'aux bords sans que rien ne soit à
+        resynchroniser.
+
+        Pas de `title` sur le layout : la page porte déjà son `<h1>` dans la
+        bande, et deux titres de premier niveau sur un écran n'en font aucun.
       -->
-      @if (selectedItem(); as focused) {
-        <app-price-path [item]="focused" (dismissed)="selectedSku.set(null)" />
-      }
+      <fold-page-layout>
+        <!--
+        **Le bandeau de tête.** Tout ce qui répond à « où en est-on ? » y vit :
+        le compte, ce qui cloche, les deux autres lectures du même prix, et le
+        chemin du prix quand une ligne est choisie.
 
-      <!-- Deux autres lectures du même prix : l'axe du TEMPS, et le prix d'UN
-           client à UNE quantité. Des liens et non des onglets — les deux se
-           partagent, et on n'y arrive pas en travaillant sur la grille. -->
-      <p class="other-readings">
-        <a routerLink="/b2b/tarification/frise">Voir la frise tarifaire →</a>
-        <a routerLink="/b2b/tarification/simulateur">Simuler un prix →</a>
-      </p>
+        Il est posé sur le CHROME, pleine largeur, et c'est la même partition que
+        partout ailleurs sur cet écran : le verdict sur le chrome, l'établi sur
+        le papier. Rien ne s'y modifie — on y lit ce que le moteur a conclu. La
+        grille en dessous, sur le papier, est l'endroit où l'on pose des règles.
 
-      <!--
+        Le chemin du prix y est une carte ENCORE PLUS SOMBRE que la bande : deux
+        crans de profondeur pour deux niveaux de lecture — la synthèse porte sur
+        tout le catalogue, la trace sur un seul article.
+      -->
+        <fold-page-section bleed class="masthead" foldSurface="chrome">
+          <div class="masthead-head">
+            <div class="masthead-identity">
+              <h1 class="masthead-title">Tarification catalogue</h1>
+              <!-- Le prix montré est celui d'AUJOURD'HUI : les règles sont datées,
+                 et la même grille lue demain ne rendra pas les mêmes nombres. -->
+              <fold-badge content="aujourd'hui" variant="info" />
+            </div>
+
+            <!-- Les deux autres lectures du même prix, et ce qui n'est plus là.
+               Des sorties de l'écran, en contour : ce ne sont pas des actions
+               sur la grille. -->
+            <div class="masthead-exits">
+              <a
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                routerLink="/b2b/tarification/frise"
+              >
+                Frise tarifaire →
+              </a>
+              <a
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                routerLink="/b2b/tarification/simulateur"
+              >
+                Simuler un prix →
+              </a>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                (click)="openArchives()"
+              >
+                Archives
+              </button>
+            </div>
+          </div>
+
+          <app-tarification-summary
+            [itemCount]="itemCount()"
+            [alteredCount]="alteredCount()"
+            [flooredCount]="flooredCount()"
+            [staleFloorCount]="staleFloorCount()"
+            [clampedCount]="clampedCount()"
+          />
+
+          <!--
+          Il ne s'affiche qu'une fois une ligne choisie : dépliée sur cent
+          articles, la cascade serait illisible, et c'est la seule raison pour
+          laquelle cet écran a maintenant une notion de sélection.
+        -->
+          @if (selectedItem(); as focused) {
+            <app-price-path [item]="focused" (dismissed)="selectedSku.set(null)" />
+          }
+        </fold-page-section>
+
+        <!--
         La mise en garde vient AVANT la grille parce qu'elle change la lecture de
         tout ce qui suit : sans elle, la colonne du prix passerait pour « le
         prix », alors qu'elle est le prix de vitrine. En une ligne, pas en pavé —
         elle se relit chaque jour et ne doit pas s'apprendre à être sautée.
       -->
-      <p class="caveat">
-        Prix d'<strong>un article</strong>, pour un client <strong>sans tarif négocié</strong>,
-        aujourd'hui. Les mercuriales et les paliers de volume existent et ne se voient pas ici : ils
-        dépendent de qui commande, et de combien.
-      </p>
+        <p class="caveat">
+          Prix d'<strong>un article</strong>, pour un client <strong>sans tarif négocié</strong>,
+          aujourd'hui. Les mercuriales et les paliers de volume existent et ne se voient pas ici :
+          ils dépendent de qui commande, et de combien.
+        </p>
 
-      <!--
+        <!--
         **La bande du catalogue.** Ce qui vaut pour tout, posé AU-DESSUS des
         rayons parce que c'est ce dont ils héritent : la limite dont chaque
         famille part, et les altérations que rien de plus précis n'a évincées.
         Sans elle, ces deux décisions existaient dans le modèle et n'étaient
         visibles nulle part.
       -->
-      <section class="shelf shelf-global">
-        <!--
+        <section class="shelf shelf-global">
+          <!--
           **Un socle, pas un rayon de plus.** Les trois portées du moteur —
           catalogue → famille → article — ne se distinguaient que par leur
           position verticale, ce qui disparaît dès qu'on défile. Le contraste de
           SUPPORT dit lequel des deux est le fondement : une bordure plus épaisse
           se serait lue comme une emphase, pas comme un héritage.
         -->
-        <header class="shelf-head" foldSurface="chrome">
-          <h2 class="shelf-name">Tout le catalogue</h2>
-          <span class="shelf-vat">ce dont chaque famille hérite</span>
-          <span class="shelf-spacer"></span>
-          <button
-            foldButton
-            size="sm"
-            emphasis="outline"
-            intent="neutral"
-            (click)="editGlobalFloor()"
-          >
-            {{
-              globalFloor() === null
-                ? 'Limite du catalogue'
-                : 'Limite : ' + floorLabel(globalFloor()!)
-            }}
-          </button>
-        </header>
+          <header class="shelf-head" foldSurface="chrome">
+            <h2 class="shelf-name">Tout le catalogue</h2>
+            <span class="shelf-vat">ce dont chaque famille hérite</span>
+            <span class="shelf-spacer"></span>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              (click)="editGlobalFloor()"
+            >
+              {{
+                globalFloor() === null
+                  ? 'Limite du catalogue'
+                  : 'Limite : ' + floorLabel(globalFloor()!)
+              }}
+            </button>
+          </header>
 
-        <div class="global-rules">
-          @for (rule of globalRules(); track rule.id) {
-            <app-rule-chip
-              [rule]="rule"
-              [showLabel]="true"
-              (toggled)="toggleRule($event)"
-              (journalRequested)="openRuleJournal($event)"
-              (archiveRequested)="removeRule($event)"
-            />
-          }
-          <button
-            type="button"
-            class="node-add node-add-inline"
-            aria-label="Ajouter une altération sur tout le catalogue"
-            (click)="addGlobalRule()"
-          >
-            +
-          </button>
-        </div>
-      </section>
+          <div class="global-rules">
+            @for (rule of globalRules(); track rule.id) {
+              <app-rule-chip
+                [rule]="rule"
+                [showLabel]="true"
+                (toggled)="toggleRule($event)"
+                (journalRequested)="openRuleJournal($event)"
+                (archiveRequested)="removeRule($event)"
+              />
+            }
+            <button
+              type="button"
+              class="node-add node-add-inline"
+              aria-label="Ajouter une altération sur tout le catalogue"
+              (click)="addGlobalRule()"
+            >
+              +
+            </button>
+          </div>
+        </section>
 
-      @for (category of categories(); track category.id) {
-        <app-shelf-table
-          [category]="category"
-          [selectedSku]="selectedSku()"
-          (picked)="toggleSelection($event)"
-          (categoryFloorRequested)="editCategoryFloor($event)"
-          (categoryRuleRequested)="addCategoryRule($event)"
-          (itemFloorRequested)="editItemFloor($event)"
-          (itemRuleRequested)="addItemRule($event)"
-          (ruleToggled)="toggleRule($event)"
-          (ruleJournalRequested)="openRuleJournal($event)"
-          (ruleArchiveRequested)="removeRule($event)"
-        />
-      }
+        @for (category of categories(); track category.id) {
+          <app-shelf-table
+            [category]="category"
+            [selectedSku]="selectedSku()"
+            (picked)="toggleSelection($event)"
+            (categoryFloorRequested)="editCategoryFloor($event)"
+            (categoryRuleRequested)="addCategoryRule($event)"
+            (itemFloorRequested)="editItemFloor($event)"
+            (itemRuleRequested)="addItemRule($event)"
+            (ruleToggled)="toggleRule($event)"
+            (ruleJournalRequested)="openRuleJournal($event)"
+            (ruleArchiveRequested)="removeRule($event)"
+          />
+        }
 
-      <p class="tally">
-        <strong>{{ alteredCount() }}</strong> article(s) portent au moins une altération.
-      </p>
+        <p class="tally">
+          <strong>{{ alteredCount() }}</strong> article(s) portent au moins une altération.
+        </p>
+      </fold-page-layout>
     }
   }
 }

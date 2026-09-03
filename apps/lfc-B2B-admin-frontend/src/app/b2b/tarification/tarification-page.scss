@@ -4,9 +4,63 @@
 // dans `shelf-table`, qui les tient avec une `fold-data-table` — l'ancienne
 // grille maison portait ici quatre cents lignes de style pour un tableau.
 :host {
+  display: block;
+}
+
+// --- Le bandeau de tête ----------------------------------------------------
+//
+// **Pleine largeur, sur le chrome.** Le contenu routé n'est pas encadré par une
+// gouttière — le shell le laisse toucher les bords — donc la bande n'a aucune
+// marge à annuler : elle porte sa propre respiration à l'intérieur, et c'est ce
+// qui lui permet de saigner jusqu'aux bords sans marge négative à resynchroniser
+// au moindre point de rupture.
+//
+// **Deux crans de profondeur.** La bande prend le fond de carte du chrome ; le
+// chemin du prix, à l'intérieur, prend le fond EN CREUX, qui est le plus sombre
+// du thème. Les deux niveaux disent deux portées de lecture : la synthèse parle
+// de tout le catalogue, la trace d'un seul article.
+.masthead {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xl);
+  gap: var(--fold-space-md, 0.75rem);
+  margin-bottom: calc(-1 * var(--fold-space-2xl));
+  padding: var(--fold-space-lg, 1rem) var(--fold-page-gutter, 1.25rem) var(--fold-space-xl, 1.5rem);
+  background: var(--fold-color-surface-card);
+}
+
+// Le titre à gauche, les sorties à droite, les compteurs sous le titre. C'est la
+// lecture de la démo, et elle tient à une chose : les sorties ne sont pas des
+// actions sur la grille, donc elles n'ont rien à faire sur le chemin de l'œil
+// qui descend du titre vers les chiffres.
+.masthead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 0.75rem) var(--fold-space-lg, 1rem);
+}
+
+.masthead-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  min-width: 0;
+}
+
+.masthead-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.masthead-exits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 // La mise en garde se relit chaque jour : une ligne, pas un pavé — sans quoi
@@ -101,15 +155,4 @@
 .node-add-inline {
   width: 1.85rem;
   height: 1.6rem;
-}
-
-// Les autres lectures du même prix — la frise, le simulateur. Une ligne de
-// liens, pas des boutons : ce sont des sorties de l'écran, pas des actions
-// dessus.
-.other-readings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-lg, 1rem);
-  margin: 0;
-  font-size: var(--fold-text-base, 0.875rem);
 }

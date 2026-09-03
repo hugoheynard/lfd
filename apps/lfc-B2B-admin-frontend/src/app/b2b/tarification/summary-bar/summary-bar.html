@@ -1,38 +1,39 @@
-<section class="summary" aria-label="Synthèse de la tarification">
-  <div class="stat">
-    <span class="stat-value">{{ itemCount() }}</span>
-    <span class="stat-label">articles tarifés</span>
-  </div>
+<!--
+  **Une ligne, pas des tuiles.** Cinq compteurs se lisent d'un balayage quand ils
+  partagent une ligne de base ; en cartes, chacun réclame son cadre et l'œil les
+  compte au lieu de les lire. Le nombre porte le poids, le libellé le sens.
 
-  <div class="stat" [class.is-lit]="alteredCount() > 0">
-    <span class="stat-value">{{ alteredCount() }}</span>
-    <span class="stat-label">portent une altération</span>
-  </div>
+  Les deux chiffres d'alerte ne prennent leur teinte QUE s'ils ont quelque chose
+  à dire : un tableau de bord dont tous les chiffres crient n'en dit aucun, et
+  celui-ci se relit chaque matin.
+-->
+<p class="summary" aria-label="Synthèse de la tarification">
+  <span class="stat">
+    <strong class="stat-value">{{ itemCount() }}</strong>
+    articles tarifés
+  </span>
+
+  <span class="stat" [class.is-lit]="alteredCount() > 0">
+    <strong class="stat-value">{{ alteredCount() }}</strong>
+    portent une altération
+  </span>
 
   <!-- Le seul chiffre de cet écran qui appelle un geste aujourd'hui : une règle
        n'y a pas produit son effet. -->
-  <div class="stat is-warning" [class.is-lit]="flooredCount() > 0">
-    <span class="stat-value">{{ flooredCount() }}</span>
-    <span class="stat-label">relevés par une limite</span>
-  </div>
+  <span class="stat is-warning" [class.is-lit]="flooredCount() > 0">
+    <strong class="stat-value">{{ flooredCount() }}</strong>
+    relevés par une limite
+  </span>
 
-  <div class="stat is-warning" [class.is-lit]="staleFloorCount() > 0">
-    <span class="stat-value">{{ staleFloorCount() }}</span>
-    <span class="stat-label">limites à confirmer</span>
-  </div>
+  <span class="stat is-warning" [class.is-lit]="staleFloorCount() > 0">
+    <strong class="stat-value">{{ staleFloorCount() }}</strong>
+    limites à confirmer
+  </span>
 
   <!-- La plus grave : une règle qui donne la marchandise. Elle ne s'allume
        quasiment jamais — et c'est exactement pour ce jour-là qu'elle existe. -->
-  <div class="stat is-alert" [class.is-lit]="clampedCount() > 0">
-    <span class="stat-value">{{ clampedCount() }}</span>
-    <span class="stat-label">ramenés à zéro</span>
-  </div>
-
-  <span class="spacer"></span>
-
-  <!-- L'entrée vers ce qui n'est plus là. Discrète : on la cherche rarement,
-       mais quand on la cherche, on sait quoi chercher. -->
-  <button foldButton emphasis="outline" intent="neutral" (click)="archivesRequested.emit()">
-    Archives
-  </button>
-</section>
+  <span class="stat is-alert" [class.is-lit]="clampedCount() > 0">
+    <strong class="stat-value">{{ clampedCount() }}</strong>
+    ramenés à zéro
+  </span>
+</p>

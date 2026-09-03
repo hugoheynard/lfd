@@ -12,7 +12,10 @@ import { formatEuros } from '@lfd/catalog-ui';
 import { floorLabel, ruleSentence } from './pricing-format';
 import {
   FoldButtonComponent,
+  FoldBadgeComponent,
   FoldEmptyStateComponent,
+  FoldPageLayoutComponent,
+  FoldPageSectionComponent,
   FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
@@ -77,7 +80,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     RouterLink,
     FoldButtonComponent,
+    FoldBadgeComponent,
     FoldEmptyStateComponent,
+    FoldPageLayoutComponent,
+    FoldPageSectionComponent,
     FoldSurfaceDirective,
     GridSkeleton,
     PricePath,

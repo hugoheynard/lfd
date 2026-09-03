@@ -1,60 +1,37 @@
+// Une LIGNE de compteurs, sur la bande de tête qui porte déjà son fond. Ni
+// carte, ni tuile : ce sont cinq faits du même ordre, et leur alignement sur une
+// seule ligne de base est ce qui permet de les lire d'un balayage.
 .summary {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-md, 0.75rem);
-  padding: var(--fold-space-lg, 1rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface-card);
-}
-
-.spacer {
-  flex: 1;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 7.5rem;
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
-
-  // La barre double la couleur : elle survit au daltonisme et à l'impression.
-  &.is-lit {
-    box-shadow: inset 3px 0 0 0 var(--fold-color-primary, currentcolor);
-  }
-
-  &.is-warning.is-lit {
-    box-shadow: inset 3px 0 0 0 var(--fold-color-warning-border, currentcolor);
-    background: var(--fold-color-warning-surface, rgb(180 120 0 / 8%));
-  }
-
-  // Un cran au-dessus de l'avertissement : ici la boutique donne la
-  // marchandise. La barre est plus épaisse, pour que la gravité se lise aussi
-  // sans la couleur.
-  &.is-alert.is-lit {
-    box-shadow: inset 5px 0 0 0 var(--fold-color-alert-border, currentcolor);
-    background: var(--fold-color-alert-surface, rgb(190 40 40 / 10%));
-  }
+  align-items: baseline;
+  gap: var(--fold-space-lg, 1rem);
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
 }
 
 .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.1;
+  margin-right: 0.3rem;
+  font-weight: 600;
+  color: var(--fold-color-text);
   font-variant-numeric: tabular-nums;
 }
 
-// Une tuile à zéro ne doit pas peser autant qu'une tuile qui compte.
+// Un compteur à zéro ne doit pas peser autant qu'un compteur qui compte : il
+// s'estompe entièrement, nombre compris.
 .stat:not(.is-lit) .stat-value {
-  color: var(--fold-color-text-muted);
+  color: inherit;
 }
 
-.stat-label {
-  font-size: var(--fold-text-xs, 0.75rem);
-  line-height: 1.3;
-  color: var(--fold-color-text-muted);
+// La teinte ne vient QU'AVEC le chiffre : « 0 relevés » en ambre ferait chercher
+// un problème qui n'existe pas.
+.stat.is-warning.is-lit,
+.stat.is-warning.is-lit .stat-value {
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+}
+
+.stat.is-alert.is-lit,
+.stat.is-alert.is-lit .stat-value {
+  color: var(--fold-color-alert-text, var(--fold-color-alert));
 }
