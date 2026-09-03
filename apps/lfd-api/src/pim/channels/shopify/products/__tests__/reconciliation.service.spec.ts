@@ -32,6 +32,7 @@ function product(): ProductRecord {
         position: 0,
         priceCents: 130,
         weightGrams: null,
+        regulatoryFollowsDefault: false,
         allergens: null,
         nutrition: null,
       },

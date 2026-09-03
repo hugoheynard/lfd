@@ -1,4 +1,7 @@
-import { InvalidVariantPricingError } from "../errors/product-errors.js";
+import {
+  DefaultVariantCannotFollowItselfError,
+  InvalidVariantPricingError,
+} from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
@@ -23,6 +26,18 @@ export interface VariantSnapshot {
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   readonly position: number;
+  /**
+   * Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+   *
+   * Un drapeau, et non l'absence de `allergens` : cette absence dit déjà « rien
+   * n'a été déclaré », l'état que l'invariant 7 refuse de mettre en vente. Lui
+   * faire dire aussi « hérite » ferait dire deux choses au même silence, dont
+   * l'une autoriserait la vente d'un article non étiqueté.
+   *
+   * Toujours `false` sur la déclinaison par défaut : elle ne peut pas se suivre
+   * elle-même.
+   */
+  readonly regulatoryFollowsDefault: boolean;
   /** Prix canonique en centimes ; `null` = pas encore tarifé. */
   readonly priceCents: number | null;
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
@@ -63,6 +78,7 @@ export class Variant {
   private weightGramsValue: number | null;
   private readonly allergensValue: readonly string[] | null;
   private readonly nutritionValue: VariantNutritionSnapshot | null;
+  private followsDefaultFlag: boolean;
 
   /**
    * L'instantané, et non onze arguments positionnels.
@@ -84,6 +100,7 @@ export class Variant {
     this.weightGramsValue = snapshot.weightGrams;
     this.allergensValue = snapshot.allergens;
     this.nutritionValue = snapshot.nutrition;
+    this.followsDefaultFlag = snapshot.regulatoryFollowsDefault;
   }
 
   /**
@@ -104,6 +121,45 @@ export class Variant {
       position: 0,
       priceCents: null,
       weightGrams: null,
+      // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
+      regulatoryFollowsDefault: false,
+      allergens: null,
+      nutrition: null,
+    });
+  }
+
+  /**
+   * Une déclinaison **de plus** — jamais la première, jamais celle par défaut.
+   *
+   * Elle naît **alignée** sur la fiche réglementaire du défaut, et c'est le seul
+   * état de naissance défendable : née nue, elle rendrait sa fiche impubliable
+   * (invariant 7), et — sur un produit DÉJÀ en vente — elle partirait au canal
+   * avec `allergens: null`, que le récepteur ne doit surtout pas lire comme
+   * « sans allergène ». Se désaligner est ensuite un geste, qui oblige à
+   * déclarer.
+   *
+   * Sans tarif : une seconde déclinaison existe précisément parce qu'elle se
+   * vend autrement. Recopier le prix du défaut inventerait une décision
+   * commerciale que personne n'a prise — et un prix faux se facture.
+   */
+  static open(input: {
+    id: string;
+    sku: Sku;
+    name: LocalizedText;
+    options: Readonly<Record<string, string>>;
+    position: number;
+  }): Variant {
+    return new Variant({
+      id: input.id,
+      sku: input.sku.value,
+      name: input.name,
+      options: input.options,
+      isDefault: false,
+      isDiscontinued: false,
+      position: input.position,
+      priceCents: null,
+      weightGrams: null,
+      regulatoryFollowsDefault: true,
       allergens: null,
       nutrition: null,
     });
@@ -129,9 +185,43 @@ export class Variant {
     return this.discontinuedFlag;
   }
 
-  /** Invariant 7 : `[]` compte comme déclaré — c'est une affirmation positive. */
-  get hasRegulatorySheet(): boolean {
+  get position(): number {
+    return this.positionValue;
+  }
+
+  /** Suit-elle la fiche du défaut plutôt que d'en porter une ? */
+  get regulatoryFollowsDefault(): boolean {
+    return this.followsDefaultFlag;
+  }
+
+  /**
+   * Invariant 7 : `[]` compte comme déclaré — c'est une affirmation positive.
+   *
+   * ⚠️ Ne répond que pour ELLE. Une déclinaison alignée n'en porte aucune, et
+   * c'est l'agrégat — seul à voir le défaut — qui décide si elle est couverte.
+   */
+  get hasOwnRegulatorySheet(): boolean {
     return this.allergensValue !== null;
+  }
+
+  /**
+   * S'aligne sur la fiche du défaut, ou reprend la sienne.
+   *
+   * Le geste ne touche **que le drapeau**. La fiche propre, si elle existait,
+   * reste en place et dort : s'aligner puis se désaligner rend ce qu'on avait
+   * écrit, plutôt que de le détruire au passage. Effacer aurait fait d'une case
+   * à cocher une suppression de donnée réglementaire — et le geste inverse ne
+   * l'aurait pas rendue.
+   *
+   * Une déclinaison alignée qui n'a jamais rien déclaré reste « non déclarée »
+   * pour elle-même ; c'est l'agrégat qui la dit couverte, parce que lui seul
+   * voit le défaut.
+   */
+  alignRegulatoryOnDefault(aligned: boolean): void {
+    if (aligned && this.defaultFlag) {
+      throw new DefaultVariantCannotFollowItselfError(this.skuValue);
+    }
+    this.followsDefaultFlag = aligned;
   }
 
   /**
@@ -161,6 +251,7 @@ export class Variant {
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,
+      regulatoryFollowsDefault: this.followsDefaultFlag,
       allergens: this.allergensValue,
       nutrition: this.nutritionValue,
     };

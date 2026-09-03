@@ -184,3 +184,33 @@ export class ArchivedProductNotReadyError extends BusinessError {
     );
   }
 }
+
+/**
+ * La déclinaison par défaut ne peut pas suivre la fiche réglementaire… d'elle-même.
+ *
+ * Le refus est ici et **aussi** en base (`CHECK`) : une fiche qui hérite d'elle
+ * même n'est jamais déclarée et n'est jamais refusée — elle passerait donc la
+ * mise en vente sans qu'aucun allergène ait été écrit.
+ */
+export class DefaultVariantCannotFollowItselfError extends DomainError {
+  constructor(sku: string) {
+    super(
+      "catalogue.variant.default_cannot_follow_itself",
+      `La déclinaison « ${sku} » est celle par défaut : elle porte sa fiche réglementaire, ` +
+        `elle ne peut pas la suivre.`,
+    );
+  }
+}
+
+/**
+ * On ne se désaligne pas d'une fiche qu'on n'a pas — et on n'aligne pas ce qui
+ * n'appartient pas à ce produit.
+ */
+export class VariantNotInProductError extends DomainError {
+  constructor(productId: string, variantId: string) {
+    super(
+      "catalogue.variant.not_in_product",
+      `La déclinaison « ${variantId} » n'appartient pas au produit « ${productId} ».`,
+    );
+  }
+}

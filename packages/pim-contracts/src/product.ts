@@ -134,7 +134,23 @@ export interface VariantView {
    */
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
-  /** `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré. */
+  /**
+   * Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+   *
+   * Toujours `false` sur le défaut, qui ne peut pas se suivre lui-même. L'écran
+   * en fait une case « aligner sur le défaut » : cochée, la carte réglementaire
+   * se lit sans se saisir.
+   */
+  readonly regulatoryFollowsDefault: boolean;
+  /**
+   * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
+   *
+   * ⚠️ **Résolue.** Une déclinaison alignée rend ici les allergènes du défaut,
+   * pas `null` : c'est ce qu'elle porte réellement sur l'étiquette et ce qui
+   * part aux canaux. Pour savoir si elle les possède ou les suit, lire
+   * {@link VariantView.regulatoryFollowsDefault} — c'est la seule question à
+   * laquelle ce champ ne répond pas.
+   */
   readonly allergens: readonly string[] | null;
   readonly nutrition: VariantNutritionView | null;
 }
@@ -289,6 +305,34 @@ export const setProductVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),
 });
 export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
+
+/**
+ * Ajouter une **déclinaison** à une fiche existante.
+ *
+ * `sku` reste ouvert pour la reprise d'une référence imposée, comme à la
+ * création d'un produit ; laissé vide, il se dérive du rang (`P-XXXXXX-3`).
+ *
+ * `options` est libre : le référentiel ne connaît pas d'axe de déclinaison, et
+ * en imposer un (taille/couleur) ferait rentrer au chausse-pied ce qui n'y
+ * rentre pas — un poids, un conditionnement, un affinage.
+ */
+export const addProductVariantPayloadSchema = z.object({
+  name: localizedTextSchema,
+  options: z.record(z.string(), z.string()).optional(),
+  sku: z.string().trim().min(1).optional(),
+});
+export type AddProductVariantPayload = z.infer<typeof addProductVariantPayloadSchema>;
+
+/**
+ * « Cette déclinaison a la même fiche réglementaire que celle par défaut. »
+ *
+ * Une affirmation, pas un réglage d'affichage : elle décide ce qui part sur
+ * l'étiquette et chez les canaux.
+ */
+export const alignVariantRegulatoryPayloadSchema = z.object({
+  aligned: z.boolean(),
+});
+export type AlignVariantRegulatoryPayload = z.infer<typeof alignVariantRegulatoryPayloadSchema>;
 
 /** La liste entière des visuels d'une fiche — {@link setMediaPayloadSchema}. */
 export const setProductMediaPayloadSchema = setMediaPayloadSchema;

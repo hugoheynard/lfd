@@ -7,6 +7,7 @@ import {
   ProductVatWithoutChannelError,
   ProductUnknownContextError,
   VariantNotFoundError,
+  VariantNotInProductError,
 } from "../errors/product-errors.js";
 import { Variant, type VariantPricing, type VariantSnapshot } from "./variant.js";
 import {
@@ -107,7 +108,7 @@ export class Product {
     private kindValue: ProductKind,
     private categoryIdValue: string,
     private statusValue: ProductStatus,
-    private readonly variantList: readonly Variant[],
+    private readonly variantList: Variant[],
     private vatByContextValue: ContextVat,
     private channelOverrideValue: SalesChannels | null,
   ) {}
@@ -273,7 +274,7 @@ export class Product {
       return false;
     }
     const missing = this.variantList
-      .filter((variant) => !variant.isDiscontinued && !variant.hasRegulatorySheet)
+      .filter((variant) => !variant.isDiscontinued && !this.isCovered(variant))
       .map((variant) => variant.sku);
     if (missing.length > 0) {
       throw new ProductNotPublishableError(this.identity, missing);
@@ -354,6 +355,100 @@ export class Product {
     return found;
   }
 
+  /**
+   * **La déclinaison par défaut** — l'invariant 2 garantit qu'il y en a une.
+   *
+   * Le `?? this.variantList[0]` n'est pas une prudence de plus : `at()` rend
+   * `T | undefined` quel que soit l'invariant, et le compilateur ne lit pas les
+   * garanties écrites en prose.
+   */
+  private get defaultVariant(): Variant {
+    return this.variantList.find((variant) => variant.isDefault) ?? this.variantList[0]!;
+  }
+
+  /**
+   * Cette déclinaison est-elle **étiquetable** — par sa propre fiche, ou par
+   * celle du défaut qu'elle suit ?
+   *
+   * La question ne peut pas vivre sur la déclinaison : elle seule ne voit pas le
+   * défaut, et un objet ne garantit que ce qu'il voit. C'est le même partage que
+   * pour les taux, où la fiche ne juge sa dérogation qu'une fois qu'on lui
+   * montre les canaux de sa famille.
+   */
+  private isCovered(variant: Variant): boolean {
+    return variant.regulatoryFollowsDefault
+      ? this.defaultVariant.hasOwnRegulatorySheet
+      : variant.hasOwnRegulatorySheet;
+  }
+
+  /**
+   * Ajoute une déclinaison — **jamais la première**, jamais celle par défaut.
+   *
+   * Elle prend le rang suivant, et sa fiche réglementaire suit celle du défaut :
+   * une déclinaison née nue rendrait le produit impubliable, et sur un produit
+   * déjà en vente elle partirait au canal sans allergènes déclarés.
+   *
+   * @returns la déclinaison ouverte — l'appelant a besoin de son id et de son SKU.
+   */
+  addVariant(input: {
+    id: string;
+    sku: Sku;
+    name: LocalizedText;
+    options: Readonly<Record<string, string>>;
+  }): Variant {
+    const variant = Variant.open({ ...input, position: this.nextVariantPosition });
+    this.variantList.push(variant);
+    return variant;
+  }
+
+  /**
+   * Le rang de la prochaine déclinaison — jamais leur nombre.
+   *
+   * Public parce que la RÉFÉRENCE en dérive (`P-XXXXXX-3`) et qu'elle se
+   * fabrique avant l'ajout, contre le registre. Le compter au dehors — un
+   * `count` en base, la longueur d'une liste — rouvrirait la porte à deux `-2`
+   * sous la même fiche le jour où une déclinaison est retirée du milieu : seul
+   * le registre les refuserait, et trop tard pour le dire bien.
+   */
+  get nextVariantPosition(): number {
+    return (
+      this.variantList.reduce((highest, variant) => Math.max(highest, variant.position), -1) + 1
+    );
+  }
+
+  /**
+   * Aligne une déclinaison sur la fiche du défaut, ou l'en détache.
+   *
+   * L'appartenance est tenue ici — une requête forgée ne peut pas aligner la
+   * déclinaison d'un autre produit, exactement comme pour le tarif.
+   */
+  alignVariantRegulatory(variantId: string, aligned: boolean): void {
+    const variant = this.variantList.find((candidate) => candidate.id === variantId);
+    if (variant === undefined) {
+      throw new VariantNotInProductError(this.identity, variantId);
+    }
+    variant.alignRegulatoryOnDefault(aligned);
+  }
+
+  /** La fiche du défaut, recopiée dans l'instantané d'une déclinaison alignée. */
+  private resolvedSnapshot(variant: Variant): VariantSnapshot {
+    const own = variant.snapshot();
+    if (!variant.regulatoryFollowsDefault) {
+      return own;
+    }
+    const source = this.defaultVariant.snapshot();
+    return { ...own, allergens: source.allergens, nutrition: source.nutrition };
+  }
+
+  /**
+   * L'instantané, **fiches réglementaires résolues**.
+   *
+   * Une déclinaison alignée sort d'ici avec les allergènes du défaut, pas avec
+   * `null`. C'est le seul endroit où le faire : tout ce qui consomme le
+   * référentiel — la projection des canaux, l'empreinte de révision, le rapport
+   * de parité — lit cet instantané, et résoudre l'héritage chez chacun d'eux
+   * finirait par donner trois réponses.
+   */
   snapshot(): ProductSnapshot {
     return {
       id: this.identity,
@@ -363,7 +458,7 @@ export class Product {
       kind: this.kindValue,
       categoryId: this.categoryIdValue,
       status: this.statusValue,
-      variants: this.variantList.map((variant) => variant.snapshot()),
+      variants: this.variantList.map((variant) => this.resolvedSnapshot(variant)),
       vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
     };

@@ -3290,6 +3290,16 @@ model ProductVariant {
   /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
   weightGrams Int? @map("weight_grams")
 
+  /// Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+  ///
+  /// Une colonne plutôt que l'absence de `nutrition` : cette absence dit déjà
+  /// « rien n'a été déclaré », l'état qui bloque la mise en vente (invariant 7).
+  /// Lui faire dire aussi « hérite » ferait dire deux choses au même silence,
+  /// dont l'une autoriserait la vente d'un article non étiqueté.
+  ///
+  /// Un `CHECK` interdit à la déclinaison par défaut de se suivre elle-même.
+  regulatoryFollowsDefault Boolean @default(false) @map("regulatory_follows_default")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

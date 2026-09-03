@@ -17,13 +17,19 @@ import {
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
+  addProductVariantPayloadSchema,
+  alignVariantRegulatoryPayloadSchema,
   type SetProductMediaPayload,
   type SetProductChannelsPayload,
   type SetProductVatPayload,
+  type AddProductVariantPayload,
+  type AlignVariantRegulatoryPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
+import { AddProductVariantCommand } from "../application/add-product-variant.js";
+import { AlignVariantRegulatoryCommand } from "../application/align-variant-regulatory.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductReadyCommand } from "../application/declare-product-ready.js";
@@ -144,6 +150,43 @@ export class ProductController {
    * Un `PUT` de remplacement comme les autres sections — l'écran envoie ce qu'il
    * affiche, carte vide comprise, et la carte vide est le retour à l'héritage.
    */
+  /**
+   * Ajoute une **déclinaison** à la fiche.
+   *
+   * Un `POST` sous la fiche, et non une ressource `/variants` à la racine : une
+   * déclinaison n'existe pas seule, son rang et sa référence se dérivent de son
+   * produit, et l'agrégat qui la reçoit est le produit.
+   */
+  @Post(":id/variants")
+  async addVariant(
+    @Param("id") id: string,
+    @Body(new ZodBody(addProductVariantPayloadSchema)) body: AddProductVariantPayload,
+  ) {
+    const variantId = await this.commands.execute<AddProductVariantCommand, string>(
+      new AddProductVariantCommand(id, body),
+    );
+    return { id: variantId };
+  }
+
+  /**
+   * Aligne une déclinaison sur la fiche réglementaire du défaut, ou l'en détache.
+   *
+   * Un `PUT` : l'écran envoie l'état de sa case, pas une bascule. Deux clics
+   * rapides sur une bascule laisseraient l'écran et la base en désaccord sans
+   * que rien ne le dise.
+   */
+  @Put(":id/variants/:variantId/regulatory-alignment")
+  async alignVariantRegulatory(
+    @Param("id") id: string,
+    @Param("variantId") variantId: string,
+    @Body(new ZodBody(alignVariantRegulatoryPayloadSchema)) body: AlignVariantRegulatoryPayload,
+  ) {
+    await this.commands.execute<AlignVariantRegulatoryCommand, void>(
+      new AlignVariantRegulatoryCommand(id, variantId, body.aligned),
+    );
+    return { id: variantId };
+  }
+
   @Put(":id/vat")
   async setProductVat(
     @Param("id") id: string,

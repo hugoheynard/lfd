@@ -128,6 +128,8 @@ export {
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
+  addProductVariantPayloadSchema,
+  alignVariantRegulatoryPayloadSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -147,6 +149,8 @@ export type {
   SetProductMediaPayload,
   SetProductChannelsPayload,
   SetProductVatPayload,
+  AddProductVariantPayload,
+  AlignVariantRegulatoryPayload,
 } from "./product.js";
 
 export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";

@@ -43,6 +43,7 @@ interface VariantRow {
   position: number;
   priceCents: number | null;
   weightGrams: number | null;
+  regulatoryFollowsDefault: boolean;
   nutrition: NutritionRow | null;
 }
 
@@ -85,6 +86,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     position: row.position,
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
+    regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     allergens:
       row.nutrition === null
         ? null
@@ -256,16 +258,42 @@ export class PrismaProductRepository extends ProductRepository {
         }),
       ),
       ...this.overrideOperations(snapshot),
+      // `upsert` et non `update` : une déclinaison AJOUTÉE par ce passage
+      // n'existe pas encore en base, et un `update` échouerait sur elle. La
+      // réservation de sa référence part avec, dans la même transaction — sans
+      // quoi un SKU vivrait sur une déclinaison que le registre ignore, et le
+      // prochain tirage pourrait le proposer à une autre.
       ...snapshot.variants.map((variant) =>
-        this.prisma.productVariant.update({
+        this.prisma.skuRegistry.upsert({
+          where: { value: variant.sku },
+          create: { value: variant.sku, ownerType: "variant", ownerId: variant.id },
+          update: {},
+        }),
+      ),
+      ...snapshot.variants.map((variant) =>
+        this.prisma.productVariant.upsert({
           where: { id: variant.id },
-          data: {
+          create: {
+            id: variant.id,
+            productId: snapshot.id,
+            sku: variant.sku,
+            name: localizedColumn(variant.name),
+            options: { ...variant.options },
+            isDefault: variant.isDefault,
+            isDiscontinued: variant.isDiscontinued,
+            position: variant.position,
+            priceCents: variant.priceCents,
+            weightGrams: variant.weightGrams,
+            regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
+          },
+          update: {
             name: localizedColumn(variant.name),
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
+            regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
           },
         }),
       ),

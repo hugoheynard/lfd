@@ -7,6 +7,8 @@ import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
 import { CreateCategoryHandler } from "./category/application/create-category.js";
+import { AddProductVariantHandler } from "./product/application/add-product-variant.js";
+import { AlignVariantRegulatoryHandler } from "./product/application/align-variant-regulatory.js";
 import { CreateProductHandler } from "./product/application/create-product.js";
 import { GetCategoryDetailHandler } from "./category/application/get-category-detail.js";
 import { ListCategoriesHandler } from "./category/application/list-categories.js";
@@ -119,6 +121,8 @@ import {
     ReorderCategoriesHandler,
     // Produits (CQRS) — un handler par cas.
     CreateProductHandler,
+    AddProductVariantHandler,
+    AlignVariantRegulatoryHandler,
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
     SetProductMediaHandler,

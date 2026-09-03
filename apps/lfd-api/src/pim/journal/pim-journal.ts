@@ -153,6 +153,15 @@ export const PIM_EVENTS = {
    * ce qu'on vient demander au journal six mois plus tard.
    */
   productCreated: "product.created",
+  /**
+   * Une déclinaison de plus sous la même fiche. Nommée `variant.*` et non
+   * `product.*` : le sujet du fait est le produit, mais ce qui a changé est une
+   * déclinaison, et l'historique d'une fiche doit pouvoir se lire en distinguant
+   * « on a modifié le produit » de « on lui a ajouté un article ».
+   */
+  variantAdded: "variant.added",
+  /** Elle suit désormais la fiche réglementaire du défaut, ou reprend la sienne. */
+  variantRegulatoryAligned: "variant.regulatory_aligned",
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**
