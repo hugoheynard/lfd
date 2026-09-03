@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type {
-  PriceFloorView,
   PriceRuleView,
+  PriceStepView,
   PricingBoardView,
   PricingCategoryView,
   PricingItemView,
@@ -17,14 +17,13 @@ import { RulePanel } from '../rule-panel/rule-panel';
 import { TarificationService } from '../tarification.service';
 
 /**
- * Ce que cet écran doit dire **sans se tromper**, et que rien d'autre ne garde :
+ * Ce que la PAGE doit tenir, et que rien d'autre ne garde : les compteurs de
+ * tête, l'ouverture des panneaux d'écriture, et la ligne dont on regarde le
+ * chemin du prix.
  *
- * - une règle de famille **supplantée** doit se voir barrée. Sans ça, le lecteur
- *   aligne deux remises dont une seule agit et additionne les deux ;
- * - une limite **héritée** doit se distinguer d'une limite posée ici, parce que
- *   poser la sienne fait sauter celle dont on hérite ;
- * - la mise en forme d'une règle doit dire l'étage, le sens et l'unité — c'est
- *   tout ce que le nœud montre.
+ * Ce qui appartient à la table d'un rayon — la limite héritée, la règle de
+ * famille supplantée, la marge négociable — a suivi la table dans
+ * `shelf-table.spec.ts` : c'est là que ces faits se rendent maintenant.
  */
 
 const EMPTY_BOARD: PricingBoardView = {
@@ -71,22 +70,6 @@ function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
   };
 }
 
-function floor(overrides: Partial<PriceFloorView> = {}): PriceFloorView {
-  return {
-    id: 'category:viennoiserie',
-    scope: { type: 'category', id: 'viennoiserie' },
-    mode: 'amount',
-    value: 150,
-    // Le mur seul : la porte n'est pas ce que ces cas mesurent.
-    dynamic: null,
-    // Le tarif n'a pas bougé sous cette limite.
-    drift: null,
-    createdBy: 'staff',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
 function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
   return {
     sku: 'VIE-001',
@@ -109,6 +92,19 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
   };
 }
 
+/** Un étage qui a agi. `scope` et `supersedes` sont ce que la trace déplie. */
+function step(overrides: Partial<PriceStepView> = {}): PriceStepView {
+  return {
+    stage: 'promotion',
+    ruleId: 'rule_1',
+    label: 'Promo',
+    scope: { type: 'product', id: 'VIE-001' },
+    resultMillicents: 180,
+    supersedes: [],
+    ...overrides,
+  };
+}
+
 function category(overrides: Partial<PricingCategoryView> = {}): PricingCategoryView {
   return {
     id: 'viennoiserie',
@@ -122,48 +118,6 @@ function category(overrides: Partial<PricingCategoryView> = {}): PricingCategory
     ...overrides,
   };
 }
-
-describe('la limite héritée', () => {
-  /**
-   * Poser sa propre limite fait sauter celle dont on hérite — y compris vers le
-   * bas. Confondre les deux à l'écran ferait prendre un remplacement pour un
-   * cumul.
-   */
-  it("distingue une limite reçue d'une limite posée ici", () => {
-    const screen = page();
-    const heritee = item({ ownFloor: null, effectiveFloor: floor() });
-    const propre = item({ ownFloor: floor(), effectiveFloor: floor() });
-
-    expect(screen['isInherited'](heritee)).toBe(true);
-    expect(screen['isInherited'](propre)).toBe(false);
-  });
-
-  it("ne parle pas d'héritage quand aucune limite ne s'applique", () => {
-    expect(page()['isInherited'](item())).toBe(false);
-  });
-});
-
-describe('la règle supplantée', () => {
-  /**
-   * Le point que l'écran doit dire : dans un même étage, la règle d'article
-   * REMPLACE celle de la famille. Elles ne s'enchaînent pas.
-   */
-  it('signale une règle de famille évincée par un article du rayon', () => {
-    const evincee = rule({ id: 'rule_famille' });
-    const shelf = category({
-      rules: [evincee],
-      items: [item({ supersededRuleIds: ['rule_famille'] }), item({ sku: 'VIE-002' })],
-    });
-
-    expect(page()['isSuperseded'](evincee, shelf)).toBe(true);
-  });
-
-  it('laisse intacte une règle que personne n’évince', () => {
-    const seule = rule({ id: 'rule_famille' });
-
-    expect(page()['isSuperseded'](seule, category({ rules: [seule] }))).toBe(false);
-  });
-});
 
 describe('les compteurs de tête', () => {
   it('compte les prix que la limite a relevés — le chiffre qui alerte', async () => {
@@ -182,28 +136,13 @@ describe('les compteurs de tête', () => {
 
   it("compte les articles qu'au moins un étage a touchés", async () => {
     const touche = item({
-      steps: [{ stage: 'promotion', ruleId: 'rule_1', label: 'Promo', resultMillicents: 180 }],
+      steps: [step()],
       finalMillicents: 180,
     });
     const screen = page({ ...EMPTY_BOARD, categories: [category({ items: [touche, item()] })] });
     await screen['load']();
 
     expect(screen['alteredCount']()).toBe(1);
-  });
-});
-
-describe('la remise accordable', () => {
-  const room = { floorMillicents: 150_000, maxDiscountMillicents: 50_000, maxDiscountBp: 2_500 };
-
-  /**
-   * Les deux unités sont rendues séparément et au même poids : le commercial
-   * choisit celle qu'il annonce, l'écran ne choisit pas pour lui.
-   */
-  it('donne les euros et les pourcents, chacun mis en forme pour être lu', () => {
-    const screen = page();
-
-    expect(screen['roomEuros'](room)).toContain('0,50');
-    expect(screen['roomPercent'](room)).toBe('25,0 %');
   });
 });
 
@@ -308,5 +247,84 @@ describe('suspendre et reprendre', () => {
     await Promise.resolve();
 
     expect(opened).toContain(RulePanel);
+  });
+});
+
+/**
+ * **La sélection de ligne**, que cet écran n'avait pas.
+ *
+ * Elle n'existe que pour le chemin du prix : dépliée sur cent articles, la
+ * cascade serait illisible, donc la trace montre un article à la fois — et il
+ * faut bien désigner lequel.
+ */
+describe('la ligne dont on regarde le chemin du prix', () => {
+  const board = (items: readonly PricingItemView[]): PricingBoardView => ({
+    ...EMPTY_BOARD,
+    categories: [category({ items: [...items] })],
+  });
+
+  it('ne montre aucune trace tant qu’aucune ligne n’est choisie', async () => {
+    const screen = page(board([item()]));
+    await screen['load']();
+
+    expect(screen['selectedItem']()).toBeNull();
+  });
+
+  it('désigne l’article choisi, et lui seul', async () => {
+    const screen = page(board([item(), item({ sku: 'VIE-002', name: 'Pain au chocolat' })]));
+    await screen['load']();
+
+    screen['toggleSelection'](item({ sku: 'VIE-002' }));
+
+    expect(screen['selectedItem']()?.sku).toBe('VIE-002');
+  });
+
+  /** Ouvrir et refermer sont le même geste sur la ligne. */
+  it('referme au second clic sur la même ligne', async () => {
+    const screen = page(board([item()]));
+    await screen['load']();
+
+    screen['toggleSelection'](item());
+    screen['toggleSelection'](item());
+
+    expect(screen['selectedItem']()).toBeNull();
+  });
+
+  /**
+   * **La trace suit le rechargement.** Poser une règle recharge depuis le
+   * serveur et reconstruit des objets neufs : une sélection tenue par référence
+   * se perdrait exactement au moment où l'on veut voir ce qu'elle a changé.
+   */
+  it('retrouve l’article après un rechargement qui l’a modifié', async () => {
+    const before = board([item({ finalMillicents: 200 })]);
+    const after = board([item({ finalMillicents: 180 })]);
+    let served = before;
+    const service: Pick<TarificationService, 'read'> = { read: () => Promise.resolve(served) };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: TarificationService, useValue: service },
+        { provide: FoldPanelHostService, useValue: {} },
+      ],
+    });
+    const screen = TestBed.runInInjectionContext(() => new TarificationPage());
+    await screen['load']();
+    screen['toggleSelection'](item());
+
+    served = after;
+    await screen['load']();
+
+    expect(screen['selectedItem']()?.finalMillicents).toBe(180);
+  });
+
+  /** Un article qui disparaît du tableau ne laisse pas une trace fantôme. */
+  it('oublie la trace d’un article que le tableau ne porte plus', async () => {
+    const screen = page(board([item()]));
+    await screen['load']();
+    screen['toggleSelection'](item());
+
+    screen['board'].set(board([item({ sku: 'VIE-999' })]));
+
+    expect(screen['selectedItem']()).toBeNull();
   });
 });

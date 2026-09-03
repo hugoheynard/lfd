@@ -3,7 +3,11 @@ import { PRICE_STAGE_LABELS } from '@lfd/contracts';
 import type {
   ElasticityComparison,
   ItemElasticityView,
+  PriceFloorView,
   PriceRuleView,
+  PriceScopePayload,
+  PriceScopeType,
+  PriceStage,
   PricingItemView,
 } from '@lfd/contracts';
 
@@ -71,6 +75,21 @@ export function roomEuros(maxDiscountMillicents: number): string {
 
 export function roomPercent(maxDiscountBp: number): string {
   return `${(maxDiscountBp / 100).toFixed(1).replace('.', ',')} %`;
+}
+
+/**
+ * **Une limite, en clair** — « 1,22 € » ou « 50 % du tarif ».
+ *
+ * Les deux formes ne sont pas interchangeables et le libellé le dit : un montant
+ * ne veut rien dire au-delà d'un article (« jamais sous 1,50 € » laisse passer
+ * une pièce montée et relève un croissant), une fraction suit l'article. Écrite
+ * ici plutôt que sur un composant, parce que la bande du catalogue et la table
+ * d'un rayon l'affichent toutes deux — et deux formulations divergeraient.
+ */
+export function floorLabel(floor: PriceFloorView): string {
+  return floor.mode === 'percent'
+    ? `${String(floor.value / 100)} % du tarif`
+    : formatEuros(floor.value);
 }
 
 /**
@@ -149,4 +168,383 @@ export function formatLongDay(day: string): string {
     year: 'numeric',
     timeZone: 'UTC',
   });
+}
+
+// ---------------------------------------------------------------------------
+// La trace du chemin du prix
+// ---------------------------------------------------------------------------
+
+/**
+ * **La portée d'un étage, écrite en adverbe.**
+ *
+ * `PRICE_SCOPE_LABELS` existe et ne convient pas ici : il nomme la CIBLE d'un
+ * champ de saisie (« Famille », « Produit »), là où la trace décrit une action
+ * (« portée famille »). Deux registres, deux tables — les fondre obligerait
+ * l'un des deux à mal se lire.
+ */
+const STEP_SCOPE_LABELS: Readonly<Record<PriceScopeType, string>> = {
+  global: 'portée catalogue',
+  category: 'portée famille',
+  product: 'portée article',
+  variant: 'portée déclinaison',
+};
+
+/**
+ * **La limite n'est pas un étage** — écrit une fois, à côté du pointillé qui le
+ * dessine. Elle s'applique en fin de chaîne quelle que soit sa place dans la
+ * lecture, et c'est la seule chose que la cascade pourrait faire mal lire.
+ */
+const OUT_OF_CHAIN: PricePathNote = { text: 'hors chaîne · s’applique après', tone: 'muted' };
+
+/** Ce que la limite protège, nommé par sa portée — jamais par un étage. */
+const FLOOR_SCOPE_LABELS: Readonly<Record<PriceScopeType, string>> = {
+  global: 'Limite catalogue',
+  category: 'Limite famille',
+  product: 'Limite article',
+  variant: 'Limite déclinaison',
+};
+
+/**
+ * Les nombres en toutes lettres, jusqu'à quatre — le nombre d'étages.
+ *
+ * Au-delà, ce ne sont plus des étages mais des règles évincées, dont le compte
+ * n'est pas borné : on repasse aux chiffres plutôt que d'écrire « treize ».
+ */
+const COUNT_WORDS: readonly string[] = ['zéro', 'un', 'deux', 'trois', 'quatre'];
+
+function countWord(count: number): string {
+  return COUNT_WORDS[count] ?? String(count);
+}
+
+/**
+ * Un montant **signé**, le signe ÉCRIT.
+ *
+ * Le signe est composé ici plutôt que laissé à `Intl` : la maison écrit `−`
+ * (U+2212) et non le trait d'union, et c'est déjà ce que font `deltaLabel` et
+ * `ruleEffect`. Trois conventions du signe sur le même écran finiraient par
+ * s'y voir.
+ */
+export function signedEuros(millicents: number): string {
+  const sign = millicents < 0 ? '−' : millicents > 0 ? '+' : '';
+  return `${sign}${formatEuros(Math.abs(millicents))}`;
+}
+
+/** La variation d'un étage, en pourcent du prix qui y entre. */
+function relativeLabel(entering: number, leaving: number): string | null {
+  if (entering <= 0 || leaving === entering) {
+    return null;
+  }
+  const ratio = (leaving - entering) / entering;
+  return `${ratio < 0 ? '−' : '+'}${Math.abs(ratio * 100)
+    .toFixed(1)
+    .replace('.', ',')} %`;
+}
+
+/** La nature d'un tronçon : ce qui décide de sa forme, jamais de son contenu. */
+export type PricePathLegKind = 'canonical' | 'stage' | 'floor' | 'final';
+
+/**
+ * **Une mention sous la légende**, avec le poids qu'elle doit avoir.
+ *
+ * Le ton est porté par la DONNÉE et non deviné du texte dans le gabarit : sinon
+ * la seule chose qui distinguerait « absorbé par la limite » de « canonique »
+ * serait une comparaison de chaînes dans un template, c'est-à-dire une décision
+ * produit cachée dans du HTML.
+ */
+export interface PricePathNote {
+  readonly text: string;
+  readonly tone: 'muted' | 'warn' | 'alert';
+}
+
+/**
+ * **Un tronçon du chemin du prix** — une colonne de la cascade, et sa légende.
+ *
+ * Tout y est déjà mis en forme. Le gabarit ne calcule rien, pas même une
+ * hauteur de barre : c'est ce qui permet d'éprouver la trace en énumérant des
+ * cas plutôt qu'en montant un composant, et ce qui garantit que les quatre
+ * mentions qui portent la décision produit (« absorbé par la limite »,
+ * « hors chaîne · s'applique après »…) s'écrivent à un seul endroit.
+ */
+export interface PricePathLeg {
+  readonly key: string;
+  readonly kind: PricePathLegKind;
+  /** L'étage, quand c'en est un — il porte la teinte du liseré. `null` sinon. */
+  readonly stage: PriceStage | null;
+  /** « Tarif catalogue », « Promotion −12,0 % », « Limite famille », « Prix final ». */
+  readonly title: string;
+  /** Le prix **à ce point de la chaîne** : la hauteur de la barre. */
+  readonly amountMillicents: number;
+  /** L'effet chiffré et signé, au-dessus de la barre. `null` = c'est le prix qui s'écrit. */
+  readonly effect: string | null;
+  /** « portée article ». `null` hors des étages : une limite n'en a pas au même sens. */
+  readonly scopeLabel: string | null;
+  /** Les règles évincées, mises en phrase — destinées au barré. */
+  readonly supersedes: readonly string[];
+  /** Les mentions sous la légende. Chacune est une décision produit, pas un ornement. */
+  readonly notes: readonly PricePathNote[];
+  /** La limite n'est PAS un étage : elle se dessine en pointillé, jamais en plein. */
+  readonly dashed: boolean;
+  /** La hauteur de la barre, en pourcent du plus haut prix de la chaîne. */
+  readonly heightPercent: number;
+}
+
+/**
+ * **Ce que la limite a REPRIS** sur ce que la chaîne avait produit, en
+ * millicentimes. `0` quand elle n'a pas mordu.
+ *
+ * C'est le nombre que l'écran ne savait pas dire, et le plus coûteux du moteur :
+ * une règle posée, un geste accordé, et presque rien qui arrive au client. Il
+ * demande `steps` ET `floored` réunis — donc la trace, pas la grille.
+ */
+export function floorRecoveryMillicents(item: PricingItemView): number {
+  if (!item.floored) {
+    return 0;
+  }
+  return Math.max(0, item.finalMillicents - chainEndMillicents(item));
+}
+
+/** Le prix au bout de la chaîne, AVANT que la limite ne s'en mêle. */
+function chainEndMillicents(item: PricingItemView): number {
+  const last = item.steps.at(-1);
+  return last === undefined ? item.canonicalMillicents : last.resultMillicents;
+}
+
+/**
+ * **Le chemin du prix, déplié** — le tarif d'entrée, chaque étage qui a agi, la
+ * limite, le prix final.
+ *
+ * La limite figure comme un tronçon parce qu'elle se voit, jamais comme un
+ * étage : elle s'applique **en fin de chaîne**, quelle que soit sa place dans la
+ * lecture, d'où le pointillé et la mention qui le dit. La dessiner pleine
+ * laisserait croire qu'elle compose avec les autres.
+ */
+export function pricePath(item: PricingItemView): readonly PricePathLeg[] {
+  const legs: PricePathLeg[] = [];
+  const room = item.negotiationRoom;
+
+  legs.push({
+    key: 'canonical',
+    kind: 'canonical',
+    stage: null,
+    title: 'Tarif catalogue',
+    amountMillicents: item.canonicalMillicents,
+    effect: null,
+    scopeLabel: null,
+    supersedes: [],
+    notes: [{ text: 'canonique', tone: 'muted' }],
+    dashed: false,
+    heightPercent: 0,
+  });
+
+  const lastIndex = item.steps.length - 1;
+  let entering = item.canonicalMillicents;
+  item.steps.forEach((step, index) => {
+    const relative = relativeLabel(entering, step.resultMillicents);
+    const notes: PricePathNote[] = [];
+    // « Absorbé » ne se déduit ni de `floored` seul ni de l'étape seule : c'est
+    // l'écart entre ce que le DERNIER étage a produit et ce que la limite a
+    // laissé passer. Le cas est celui qu'on ne voyait pas — une règle posée qui
+    // n'accorde presque rien, et personne pour s'en apercevoir.
+    if (index === lastIndex && absorbedByFloor(item, entering)) {
+      notes.push({ text: 'absorbé par la limite', tone: 'alert' });
+    }
+    legs.push({
+      key: `step-${String(index)}-${step.ruleId}`,
+      kind: 'stage',
+      stage: step.stage,
+      title:
+        relative === null
+          ? PRICE_STAGE_LABELS[step.stage]
+          : `${PRICE_STAGE_LABELS[step.stage]} ${relative}`,
+      amountMillicents: step.resultMillicents,
+      effect: signedEuros(step.resultMillicents - entering),
+      scopeLabel: step.scope === null ? null : STEP_SCOPE_LABELS[step.scope.type],
+      // Le perdant s'affiche dans la cellule du GAGNANT, barré : c'est la seule
+      // façon de dire que deux règles se disputaient le même étage sans
+      // dessiner une seconde chaîne à côté de la première.
+      supersedes: step.supersedes.map((rival) => `${rival.label} supplantée`),
+      notes,
+      dashed: false,
+      heightPercent: 0,
+    });
+    entering = step.resultMillicents;
+  });
+
+  if (room !== null) {
+    const recovery = floorRecoveryMillicents(item);
+    legs.push({
+      key: 'floor',
+      kind: 'floor',
+      stage: null,
+      title: floorTitle(item.effectiveFloor?.scope ?? null),
+      amountMillicents: room.floorMillicents,
+      effect: recovery > 0 ? signedEuros(recovery) : null,
+      scopeLabel: null,
+      supersedes: [],
+      notes: item.floored ? [OUT_OF_CHAIN, { text: 'a relevé', tone: 'warn' }] : [OUT_OF_CHAIN],
+      dashed: true,
+      heightPercent: 0,
+    });
+  }
+
+  legs.push({
+    key: 'final',
+    kind: 'final',
+    stage: null,
+    title: 'Prix final',
+    amountMillicents: item.finalMillicents,
+    effect: null,
+    scopeLabel: null,
+    supersedes: [],
+    notes: finalNotes(item),
+    dashed: false,
+    heightPercent: 0,
+  });
+
+  return withHeights(legs);
+}
+
+/**
+ * La limite a-t-elle repris tout ou partie de ce que le dernier étage venait
+ * d'accorder ?
+ */
+function absorbedByFloor(item: PricingItemView, enteringLastStep: number): boolean {
+  if (!item.floored) {
+    return false;
+  }
+  const produced = chainEndMillicents(item) - enteringLastStep;
+  const delivered = item.finalMillicents - enteringLastStep;
+  return Math.abs(delivered) < Math.abs(produced);
+}
+
+function floorTitle(scope: PriceScopePayload | null): string {
+  return scope === null ? 'Limite' : FLOOR_SCOPE_LABELS[scope.type];
+}
+
+/**
+ * Ce qui se dit sous le prix final.
+ *
+ * `null` de `negotiationRoom` vaut « pas de référence » et non « 0 € » : sans
+ * limite posée, il n'y a pas de marge définie, et annoncer un nombre supposerait
+ * un plancher que personne n'a décidé.
+ */
+function finalNotes(item: PricingItemView): readonly PricePathNote[] {
+  const notes: PricePathNote[] = [];
+  if (item.clampedToZero) {
+    notes.push({ text: 'ramené à zéro', tone: 'alert' });
+  }
+  const room = item.negotiationRoom;
+  if (room === null) {
+    notes.push({ text: 'pas de référence', tone: 'muted' });
+    return notes;
+  }
+  if (room.maxDiscountMillicents === 0) {
+    notes.push({ text: 'déjà au plancher', tone: 'warn' });
+  }
+  notes.push({ text: `négoce ${formatEuros(room.maxDiscountMillicents)}`, tone: 'muted' });
+  return notes;
+}
+
+/**
+ * Les hauteurs, **depuis zéro**.
+ *
+ * Un axe tronqué aurait rendu les écarts spectaculaires — 1,40 € et 1,22 €
+ * séparés par toute la hauteur du bloc — alors qu'ils valent 13 %. La cascade
+ * répond à « d'où vient ce prix », pas à « regardez comme ça chute » : c'est
+ * l'effet chiffré au-dessus de chaque barre qui porte la magnitude, et il est
+ * écrit.
+ */
+function withHeights(legs: readonly PricePathLeg[]): readonly PricePathLeg[] {
+  const tallest = Math.max(...legs.map((leg) => leg.amountMillicents), 0);
+  if (tallest <= 0) {
+    return legs;
+  }
+  return legs.map((leg) => ({
+    ...leg,
+    heightPercent: Math.round((leg.amountMillicents / tallest) * 1000) / 10,
+  }));
+}
+
+/**
+ * **Ce qui s'est passé, en une phrase.**
+ *
+ * Le livrable de la trace : elle répond à « qu'est-ce qui s'est passé ? » avant
+ * tout graphique, et c'est elle qu'on lit d'abord — la cascade dit *comment*,
+ * la phrase dit *quoi*. Quatre gabarits, et un cinquième que le moteur peut
+ * produire sans qu'aucune règle n'agisse : un tarif déjà sous sa propre limite.
+ */
+export function priceVerdict(item: PricingItemView): string {
+  const acted = item.steps.length;
+  const superseded = item.steps.reduce((total, step) => total + step.supersedes.length, 0);
+  const recovery = floorRecoveryMillicents(item);
+
+  const head =
+    acted === 0
+      ? 'Aucun étage n’a agi'
+      : `${capitalize(countWord(acted))} étage${acted > 1 ? 's' : ''} ${acted > 1 ? 'ont' : 'a'} agi`;
+
+  const clauses: string[] = [];
+  if (superseded > 0) {
+    clauses.push(
+      superseded > 1
+        ? `${countWord(superseded)} ont été supplantés`
+        : `${countWord(superseded)} a été supplanté`,
+    );
+  }
+  if (item.floored) {
+    clauses.push(
+      recovery > 0 ? `la limite a repris ${formatEuros(recovery)}` : 'la limite a relevé le prix',
+    );
+  }
+  if (item.clampedToZero) {
+    clauses.push('le prix a été ramené à zéro');
+  }
+
+  if (clauses.length === 0) {
+    return acted === 0 ? `${head}. Le prix est le tarif catalogue.` : `${head}.`;
+  }
+  const last = clauses[clauses.length - 1] ?? '';
+  const front = clauses.slice(0, -1);
+  return front.length === 0 ? `${head} et ${last}.` : `${head}, ${front.join(', ')}, et ${last}.`;
+}
+
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/**
+ * **Quels étages ont agi**, nommés, pour la colonne du prix final.
+ *
+ * Elle affichait « 3 étage(s) » : la seule chose que l'écran savait dire d'un
+ * tableau d'étapes résolues était sa longueur. Trois noms tiennent dans la même
+ * place et répondent à la question qu'on se pose en balayant la colonne — « une
+ * promotion, ou un geste ? ». Le détail, lui, est dans le chemin du prix.
+ *
+ * `null` quand aucun étage n'a agi : il n'y a alors rien à nommer, et l'absence
+ * de mention le dit déjà.
+ */
+export function stageTrail(item: PricingItemView): string | null {
+  if (item.steps.length === 0) {
+    return null;
+  }
+  return item.steps.map((step) => PRICE_STAGE_LABELS[step.stage].toLowerCase()).join(' · ');
+}
+
+/**
+ * **La largeur de la jauge d'effort**, ou `null` quand il n'y a pas de jauge à
+ * dessiner.
+ *
+ * `null` est le cas qui compte : sans référence, une barre vide se lirait
+ * « 0 % de l'objectif », ce qui est faux. `pricing-format` a déjà tranché que la
+ * bonne réponse est alors de ne rien afficher — la jauge suit.
+ *
+ * Écrêtée à 100 % pour la BARRE seulement : le libellé, lui, dit « 112 % ».
+ * Une barre qui déborderait de sa piste ne dirait rien de plus, et le chiffre
+ * reste écrit à côté.
+ */
+export function gaugeWidth(comparison: ElasticityComparison): string | null {
+  if (comparison.attainmentBp === null) {
+    return null;
+  }
+  return `${String(Math.min(Math.round(comparison.attainmentBp / 100), 100))}%`;
 }

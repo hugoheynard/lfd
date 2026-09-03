@@ -102,6 +102,48 @@ html[data-theme='navi'] {
   --fold-color-info-border: color-mix(in srgb, var(--lfc-ref-azure-500) 28%, transparent);
 }
 
+/* ── Les quatre étages du prix ──────────────────────────────────────────────
+   Un rôle par ÉTAGE, nommé par le métier, plutôt qu'un détournement des quatre
+   intentions génériques. Le détournement était en place et il ne tenait plus :
+   `volume` empruntait `info`, que la déclaration ci-dessus repointe vers un
+   azur — pendant que `mercuriale` emprunte `primary`, déjà navy. Les deux
+   étages **les plus proches dans la chaîne** étaient donc les moins
+   distinguables, et ce sont précisément ceux qu'il ne faut pas confondre : une
+   mercuriale scelle, un palier de volume non.
+
+   Il n'y avait aucune place libre à prendre. `success` est à `promotion`,
+   `warning` à `geste` : repointer `volume` vers l'une des deux aurait créé la
+   collision qu'on répare. Quatre étages veulent quatre teintes, et une
+   cinquième pour le FRANCHISSEMENT du scellement — qui empruntait `warning`, et
+   devenait donc invisible sur un `geste` déjà ambre, seule la duplication du
+   trait le distinguant.
+
+   Rôles `--lfc-*` et non `--fold-*` : un étage tarifaire est du vocabulaire
+   maison, pas une intention de design system. Les valeurs, elles, restent des
+   primitives fold — aucune couleur littérale n'entre dans l'app. La couleur ne
+   porte jamais l'information seule : `ruleSentence()` écrit l'étage en toutes
+   lettres à côté de chaque rail, et la trace du prix aussi. */
+html[data-theme='navi'] {
+  --lfc-stage-mercuriale: var(--fold-ref-signal-600);
+  --lfc-stage-volume: var(--fold-ref-teal-550);
+  --lfc-stage-promotion: var(--fold-ref-green-550);
+  --lfc-stage-geste: var(--fold-ref-amber-600);
+  --lfc-stage-piercing: var(--fold-ref-purple-500);
+}
+
+/* La seconde polarité. Un thème mixte redéclare TOUT ce qui rencontre le fond
+   sombre — c'est le contrat de `[data-surface="chrome"]`, et une famille qui ne
+   voyage qu'à moitié est exactement où les défauts de contraste se logent. Les
+   teintes `-600` / `-550` de la page rendent 2 à 3:1 sur le graphite ; chaque
+   étage prend donc le pas clair de sa propre teinte. */
+html[data-theme='navi'] [data-surface='chrome'] {
+  --lfc-stage-mercuriale: var(--fold-ref-signal-300);
+  --lfc-stage-volume: var(--fold-ref-teal-400);
+  --lfc-stage-promotion: var(--fold-ref-green-300);
+  --lfc-stage-geste: var(--fold-ref-amber-300);
+  --lfc-stage-piercing: var(--fold-ref-purple-300);
+}
+
 :root {
   --fold-page-gutter: clamp(1rem, 3vw, 1.5rem); /* 16 → 24 px */
   --fold-page-gap: clamp(1rem, 2.5vw, 1.5rem); /* 16 → 24 px */

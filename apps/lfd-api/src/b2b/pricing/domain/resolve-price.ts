@@ -10,7 +10,7 @@ import {
 import { PRICE_STAGES, type PriceFloor, type PriceRule, type PriceStep } from "./price-rule.js";
 import type { PricingContext, ResolvedPrice } from "./price-rule.js";
 import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";
-import { winnerOf } from "./specificity.js";
+import { applies, winnerOf } from "./specificity.js";
 
 /**
  * **La résolution de prix** — la fonction que tout le reste emballe.
@@ -61,14 +61,19 @@ export function resolvePrice(
   let sealedByRuleId: string | null = null;
 
   for (const stage of PRICE_STAGES) {
-    // Le gagnant de l'étage se désigne D'ABORD, le scellement décide ENSUITE
-    // s'il agit. L'ordre compte : filtrer les règles avant l'arbitrage
+    // Le gagnant de l'étage se désigne D'ABORD, le SCELLEMENT décide ENSUITE
+    // s'il agit. L'ordre compte : écarter les règles scellées avant l'arbitrage
     // laisserait une règle moins spécifique gagner un étage qu'elle avait
     // perdu, donc appliquerait une décision que l'éviction avait écartée.
-    const winner = winnerOf(
-      rules.filter((rule) => rule.stage === stage),
-      context,
-    );
+    //
+    // Les conditions d'application, elles, se filtrent ICI — `winnerOf` les
+    // refiltre, sans effet. Le détour vaut la seule chose qu'il rend : à cet
+    // instant, les PERDANTS de l'étage existent encore. Un cran plus loin il ne
+    // reste que le gagnant, et dire quelle règle il a évincée demanderait de
+    // refaire l'arbitrage ailleurs — ce que l'écran de tarification faisait, au
+    // risque que les deux réponses divergent.
+    const applicable = rules.filter((rule) => rule.stage === stage && applies(rule, context));
+    const winner = winnerOf(applicable, context);
     if (winner === null) {
       continue; // Étage transparent : il laisse passer le prix entrant.
     }
@@ -82,10 +87,14 @@ export function resolvePrice(
       stage,
       ruleId: winner.id,
       label: winner.label,
+      scope: winner.scope,
       // Arrondi pour l'AFFICHAGE seulement : `running` reste exact et poursuit
       // la chaîne. Reprendre cette valeur arrondie serait l'arrondi par étage
       // qu'on cherche justement à éviter.
       resultMillicents: roundToCents(running),
+      supersedes: applicable
+        .filter((rule) => rule.id !== winner.id)
+        .map((rule) => ({ ruleId: rule.id, label: rule.label })),
     });
     if (stage === "mercuriale") {
       sealedByRuleId = winner.id;

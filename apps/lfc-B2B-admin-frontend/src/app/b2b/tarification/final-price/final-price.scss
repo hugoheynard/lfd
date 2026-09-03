@@ -1,29 +1,16 @@
+// **Une cellule de table, plus une carte.** Le prix vivait dans une carte posée
+// dans une grille maison ; il vit maintenant dans la colonne « Prix final » d'une
+// `fold-data-table`, qui porte déjà le fond, le séparateur et le survol de
+// ligne. Un cadre de plus à l'intérieur d'une cellule bordée fait deux cadres.
+//
+// Ce que la carte disait par sa teinte — « une règle a touché ce prix », « une
+// limite l'a relevé » — reste dit, mais par les mots et par l'écart : la
+// mention « relevé au plancher » est écrite, en ambre, sous le prix.
 :host {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  justify-content: center;
   gap: 0.05rem;
-  min-height: 2.5rem;
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
-}
-
-// Un prix qu'une règle a touché n'est plus le tarif : il sort du fond en creux.
-:host(.is-changed) {
-  border-color: var(--fold-color-primary, var(--fold-color-border));
-  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
-  box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
-}
-
-// Relevé : une règle n'a PAS produit son effet, et ça se voit avant qu'un client
-// ne le remarque.
-:host(.is-floored) {
-  border-color: var(--fold-color-warning-border, currentcolor);
-  background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
 }
 
 .from {
@@ -61,6 +48,14 @@
   font-size: var(--fold-text-xs, 0.75rem);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+
+  // « Relevé » n'est pas une note parmi d'autres : c'est une règle qui n'a pas
+  // produit son effet, et c'est ce qui justifie la teinte de la carte entière.
+  &.is-floored {
+    color: var(--fold-color-warning-text, var(--fold-color-text));
+    font-weight: 600;
+  }
 }
 
 // La grille du barème, sous le prix unitaire : on la lit de haut en bas pour

@@ -441,12 +441,53 @@ export interface FloorDecisionView {
  * d'être du libellé : sans lui, expliquer un prix reviendrait à exposer le
  * vocabulaire interne du barème.
  */
+/**
+ * **La règle qui a perdu cet étage**, telle que la trace la nomme.
+ *
+ * Portée par l'étape **gagnante**, et non par un `supersededBy` sur la perdante.
+ * Ce n'est pas symétrique : la trace affiche le perdant DANS la cellule du
+ * gagnant, barré — la seule façon de dire « ces deux règles se disputaient le
+ * même étage » sans dessiner une seconde chaîne à côté de la première. Porté sur
+ * la perdante, il faudrait balayer toutes les règles de la portée pour chaque
+ * étape afin de retrouver qui a gagné.
+ */
+export interface PriceStepRivalView {
+  readonly ruleId: string;
+  readonly label: string;
+}
+
 export interface PriceStepView {
   readonly stage: PriceStage;
   readonly ruleId: string;
   readonly label: string;
+  /**
+   * **À quelle portée la règle a agi** — catalogue, famille, article.
+   *
+   * Portée par l'ÉTAPE plutôt que déduite de la règle, parce qu'une étape *est*
+   * le fait qu'une règle a agi à cette portée-là. La déduire obligerait le
+   * lecteur à retrouver la règle dans trois collections — et à la retrouver par
+   * un `ruleId` qui survit volontairement à sa suppression (cf.
+   * {@link OrderLinePricingTrace}), donc parfois pas du tout.
+   *
+   * `null` sur une trace **antérieure au 2026-09-03** : la portée n'y était pas
+   * consignée, et lui en inventer une réécrirait l'explication d'une facture
+   * déjà payée. Même arbitrage, mot pour mot, que
+   * {@link CommitmentDecisionView.retainedQuantity}.
+   */
+  readonly scope: PriceScopePayload | null;
   /** Le prix **au sortir** de cet étage. */
   readonly resultMillicents: number;
+  /**
+   * Les règles que celle-ci a **évincées** dans son étage. Vide = aucune.
+   *
+   * Vide **aussi** sur une trace persistée, tant que `jsonSteps` ne l'écrit pas :
+   * l'arbitrage entre deux règles d'admin explique un tableau de bord, pas une
+   * facture. Sur le tableau de tarification — qui résout à chaque lecture — il
+   * est toujours à jour. Un lecteur ne peut donc pas distinguer « aucune » de
+   * « pas consignée » sur une commande close, et c'est sans conséquence :
+   * l'écran n'affiche rien dans les deux cas.
+   */
+  readonly supersedes: readonly PriceStepRivalView[];
 }
 
 /**
@@ -463,6 +504,14 @@ export const priceStepsSchema = z.array(
     ruleId: z.string(),
     label: z.string(),
     resultMillicents: z.number().int(),
+    // Les deux champs du 2026-09-03 sont **défaillis**, jamais requis, et c'est
+    // la seule chose à ne pas changer ici : `parseTrace` rend `null` pour la
+    // trace ENTIÈRE dès qu'une étape ne se lit pas. Un champ requis rendrait
+    // donc muettes d'un coup toutes les commandes déjà passées — sans erreur,
+    // sans bruit, juste un « pourquoi ce prix ? » sans réponse sur tout
+    // l'historique.
+    scope: priceScopeSchema.nullable().default(null),
+    supersedes: z.array(z.object({ ruleId: z.string(), label: z.string() })).default([]),
   }),
 );
 

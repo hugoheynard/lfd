@@ -74,10 +74,35 @@ describe('la règle sur son nœud', () => {
   /**
    * La teinte de l'étage **double** un mot déjà présent dans le résumé. La
    * couleur n'est donc jamais seule à porter l'information — elle la renforce.
+   *
+   * Les **quatre** étages sont éprouvés, et pas deux : le rail les distinguait
+   * mal (mercuriale empruntait `primary`, volume empruntait `info-border`, tous
+   * deux bleus sous le thème navi), et ce sont les deux qu'il importe le plus de
+   * ne pas confondre — une mercuriale scelle la chaîne, un palier de volume non.
+   * Ce que ces assertions tiennent est le crochet ; la séparabilité des teintes,
+   * elle, tient aux quatre rôles `--lfc-stage-*` que ce crochet consomme.
    */
-  it("porte l'étage comme classe, en plus du mot", () => {
-    expect(classesOf(mount(rule()))).toContain('is-stage-promotion');
+  it('porte chacun des quatre étages comme classe, en plus du mot', () => {
+    expect(classesOf(mount(rule({ stage: 'mercuriale' })))).toContain('is-stage-mercuriale');
+    expect(classesOf(mount(rule({ stage: 'volume' })))).toContain('is-stage-volume');
+    expect(classesOf(mount(rule({ stage: 'promotion' })))).toContain('is-stage-promotion');
     expect(classesOf(mount(rule({ stage: 'geste' })))).toContain('is-stage-geste');
+  });
+
+  /**
+   * **Le franchissement se cumule à l'étage**, il ne le remplace pas — d'où deux
+   * classes sur le même nœud. Sa marque empruntait la teinte du `geste` : sur
+   * une règle de geste qui franchit le scellement, les deux se confondaient, et
+   * la décision la plus lourde qu'on puisse cocher ne tenait plus qu'à la
+   * duplication du trait.
+   */
+  it('cumule le franchissement du scellement avec son étage', () => {
+    for (const stage of ['mercuriale', 'volume', 'promotion', 'geste'] as const) {
+      const piercing = mount(rule({ stage, stacksOverMercuriale: true }));
+
+      expect(classesOf(piercing)).toContain('is-piercing');
+      expect(classesOf(piercing)).toContain(`is-stage-${stage}`);
+    }
   });
 
   it('annonce « en pause » quand elle est suspendue', () => {

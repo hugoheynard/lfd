@@ -13,6 +13,14 @@
         @if (!since.conclusive) {
           <span class="value">trop tôt ({{ since.observed.days }} j)</span>
         } @else if (attainmentLabel(since); as pct) {
+          <!-- La jauge ACCÉLÈRE la lecture, elle ne la remplace pas : le
+               pourcentage reste écrit à côté, et au-delà de 100 % il dit
+               « 112 % » alors que la barre, elle, est pleine. -->
+          @if (gaugeWidth(since); as width) {
+            <span class="gauge" aria-hidden="true">
+              <span class="gauge-fill" [style.width]="width"></span>
+            </span>
+          }
           <span class="value">{{ pct }} de l'objectif</span>
           <span class="detail">{{ volumes(since) }}</span>
         } @else {
@@ -24,9 +32,16 @@
     <div class="perf" [class.is-on-track]="isOnTrack(elastic.rolling)">
       <span class="label">{{ elastic.rolling.observed.days }} derniers jours</span>
       @if (attainmentLabel(elastic.rolling); as pct) {
+        @if (gaugeWidth(elastic.rolling); as width) {
+          <span class="gauge" aria-hidden="true">
+            <span class="gauge-fill" [style.width]="width"></span>
+          </span>
+        }
         <span class="value">{{ pct }} de l'objectif</span>
         <span class="detail">{{ volumes(elastic.rolling) }}</span>
       } @else {
+        <!-- Aucune barre ici, et c'est le cas qui compte : « pas de référence »
+             n'est pas « 0 % », et une piste vide dirait le second. -->
         <span class="value">pas de référence</span>
       }
     </div>

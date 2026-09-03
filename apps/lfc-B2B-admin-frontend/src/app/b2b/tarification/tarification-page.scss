@@ -1,38 +1,12 @@
-// Sept colonnes : cinq qui CONSTRUISENT le prix, lues de gauche à droite, puis
-// deux qui le COMMENTENT — ce qu'on peut encore lâcher, et ce que la baisse
-// oblige à vendre. La rupture entre les deux groupes est voulue : les cinq
-// premières se chaînent, les deux dernières se lisent.
-//
-// La grille est **explicite** : chaque cellule porte sa colonne (par sa classe)
-// et sa ligne (par un style lié). Le placement automatique aurait suffi tant
-// qu'aucune cellule ne s'étend ; le nœud de famille s'étend sur toute la hauteur
-// de son rayon, et à partir de là l'algorithme d'auto-placement décide de choses
-// qu'on ne veut pas lui laisser décider.
-
+// La page ne dessine plus que ce qui n'appartient à aucun rayon : la mise en
+// garde, la bande du catalogue, et les deux sorties vers les autres lectures du
+// même prix. Les sept colonnes, leurs cellules et leurs nœuds vivent désormais
+// dans `shelf-table`, qui les tient avec une `fold-data-table` — l'ancienne
+// grille maison portait ici quatre cents lignes de style pour un tableau.
 :host {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-2xl);
-}
-
-$col-gap: 2.25rem;
-
-// La couleur des traits de liaison, écrite une fois (variable Sass : elle ne
-// traverse pas le CSS livré).
-$link: var(--fold-color-text-faded, var(--fold-color-border));
-
-.legend,
-.grid {
-  display: grid;
-  grid-template-columns:
-    minmax(12rem, 1.3fr)
-    minmax(6.5rem, 0.8fr)
-    minmax(9rem, 1.1fr)
-    minmax(9rem, 1.1fr)
-    minmax(7rem, 0.8fr)
-    minmax(8rem, 0.9fr)
-    minmax(11rem, 1.2fr);
-  column-gap: $col-gap;
 }
 
 // La mise en garde se relit chaque jour : une ligne, pas un pavé — sans quoi
@@ -45,69 +19,32 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   color: var(--fold-color-text-muted);
 }
 
-// La légende colle en haut : sept colonnes se lisent mal quand leur nom est
-// resté trois écrans plus haut.
-.legend {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-lg, 1rem);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card);
-  box-shadow: 0 1px 0 var(--fold-color-border);
-}
-
-.legend-cell {
-  font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
+// **La bande du catalogue est un SOCLE**, pas un rayon de plus.
+//
+// Les trois portées du moteur — catalogue → famille → article — ne se
+// distinguaient que par leur position verticale, ce qui disparaît dès qu'on
+// défile. Son en-tête passe donc sur le chrome : un support sombre se lit comme
+// un fondement, là où une teinte se lisait comme une nuance et où une bordure
+// épaisse se serait lue comme une alerte.
+//
+// Le CORPS reste sur le papier, et c'est le point : ce qui vaut pour tout le
+// catalogue s'y modifie comme ailleurs. Seul l'en-tête dit d'où ça part.
 .shelf {
-  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
   background: var(--fold-color-surface-card);
-  // Deux ombres : une courte qui décolle la carte, une large et presque
-  // invisible qui l'assoit. Une seule grossit sans donner de poids.
+  overflow: hidden;
   box-shadow:
     0 1px 2px rgb(0 0 0 / 5%),
     0 8px 24px -16px rgb(0 0 0 / 18%);
 }
 
-// La bande du catalogue se distingue de ses rayons : c'est leur SOURCE, pas un
-// rayon de plus. Une teinte suffit — un cadre plus lourd l'aurait fait passer
-// pour une alerte.
-.shelf-global {
-  background: var(--fold-color-surface-subtle, var(--fold-color-surface-card));
-}
-
-.global-rules {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-md, 0.75rem);
-  padding: 0 var(--fold-space-xs, 0.25rem) var(--fold-space-sm, 0.5rem);
-}
-
-// **L'en-tête du rayon reste visible** pendant qu'on descend ses articles, sans
-// quoi on perd la famille dont on lit la limite.
-//
-// UNE déclaration, et c'est tout le sujet : elle existait en double, et la
-// seconde écrasait le `sticky` de la première. L'en-tête ne collait pas, et rien
-// ne le signalait — deux règles de même poids sur le même sélecteur ne se voient
-// qu'à la lecture.
 .shelf-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm, 0.5rem);
-  padding: var(--fold-space-xs, 0.25rem) var(--fold-space-xs, 0.25rem) var(--fold-space-md, 0.75rem);
-  background: linear-gradient(180deg, var(--fold-color-surface-card) 72%, transparent);
+  padding: var(--fold-space-md, 0.75rem) var(--fold-space-lg, 1rem);
+  background: var(--fold-color-surface-card);
 }
 
 .shelf-name {
@@ -132,358 +69,38 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   margin: 0;
 }
 
-// Les lignes respirent un cran de plus que les colonnes : c'est ce qui fait
-// qu'on lit UNE ligne d'un bout à l'autre plutôt qu'une colonne de haut en bas.
-.grid {
-  row-gap: var(--fold-space-md, 0.75rem);
-}
-
-// **La ligne se survole comme une ligne.** Sept cellules séparées par des
-// gouttières larges : sans lien visuel au survol, l'œil perd la ligne entre la
-// colonne 1 et la colonne 7, et lit le prix d'un autre article. `:has()` permet
-// de teinter les sœurs d'une cellule survolée sans ajouter d'élément de ligne
-// qui casserait la grille explicite.
-@media (hover: hover) {
-  .grid:has(.cell:hover) .cell:not(:hover) .node {
-    opacity: 0.72;
-    transition: opacity 120ms ease-out;
-  }
-}
-
-// **Chaque carte prend la hauteur de son contenu**, et se cale au MILIEU de sa
-// ligne. Étirer tout le monde faisait grandir la fiche d'un article, sa limite et
-// son prix parce qu'une colonne voisine portait trois altérations — trois cartes
-// vides et hautes pour une seule qui avait quelque chose à dire.
-//
-// L'alignement central suffit à tenir la lecture : les milieux restent sur la
-// même ligne d'un bout à l'autre, et c'est exactement là que passent les traits
-// de liaison.
-.cell {
-  position: relative;
+.global-rules {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-}
-
-// Sauf la colonne famille : son nœud couvre TOUS les articles du rayon, donc il
-// s'étire — c'est sa hauteur qui dit qu'il n'y en a qu'un pour tous.
-.col-family {
-  align-items: stretch;
-}
-
-.col-article {
-  grid-column: 1;
-}
-.col-limit {
-  grid-column: 2;
-}
-.col-family {
-  grid-column: 3;
-}
-.col-product {
-  grid-column: 4;
-}
-.col-final {
-  grid-column: 5;
-}
-.col-room {
-  grid-column: 6;
-}
-.col-elastic {
-  grid-column: 7;
-}
-
-// --- Les liens entre nœuds ------------------------------------------------
-// Le prix se construit de GAUCHE à DROITE, et les traits doivent le dire. Ils
-// sont donc pleins et contrastés, avec un chevron à l'arrivée : un pointillé
-// pâle se lisait comme une bordure de tableau, pas comme une relation.
-//
-// Le nœud de famille en reçoit UN seul (il est unique) et en renvoie autant
-// qu'il y a d'articles : d'où la barre verticale sur son bord droit, qui donne à
-// voir l'éventail. C'est aussi pourquoi il n'a pas de chevron — ce qui en part
-// n'arrive pas quelque part, ça se divise.
-
-.cell:not(.col-article)::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: -$col-gap;
-  width: $col-gap;
-  border-top: 1.5px solid $link;
-  opacity: 0.55;
-}
-
-.cell:not(.col-article):not(.col-family)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: -0.5rem;
-  width: 0.34rem;
-  height: 0.34rem;
-  border-top: 1.5px solid var(--fold-color-text-faded, var(--fold-color-border));
-  border-right: 1.5px solid $link;
-  opacity: 0.55;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-.col-family::after {
-  content: '';
-  position: absolute;
-  top: 0.9rem;
-  bottom: 0.9rem;
-  right: calc(-#{$col-gap} / 2);
-  border-left: 1.5px solid $link;
-  opacity: 0.55;
-}
-
-.col-product::before {
-  left: calc(-#{$col-gap} / 2);
-  width: calc(#{$col-gap} / 2);
-}
-
-// --- Les nœuds ------------------------------------------------------------
-
-// **Une carte**, pas une cellule de tableau : surface propre, ombre courte,
-// coins francs. Et une hauteur minimale COURTE — un nœud qui n'a qu'une ligne à
-// dire ne doit pas occuper la place d'un qui en a trois.
-.node {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.15rem;
-  min-height: 2.5rem;
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
-  box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
-  font: inherit;
-  text-align: left;
-}
-
-// Ce qui s'ouvre se soulève au survol — le relief dit « cliquable » avant que le
-// curseur ne le dise.
-@media (hover: hover) {
-  button.node:hover {
-    box-shadow: var(--fold-shadow-md, 0 2px 6px rgb(0 0 0 / 10%));
-  }
-}
-
-// **Le clavier voit ce que la souris voit.** Un anneau franc, posé à l'extérieur
-// pour ne pas rogner le contenu : sans lui, un écran fait de cartes cliquables se
-// parcourt en aveugle au `Tab`.
-button.node:focus-visible {
-  outline: 2px solid var(--fold-color-primary, currentcolor);
-  outline-offset: 2px;
-}
-
-// Le soulèvement est du mouvement : il ne s'ajoute que si le système l'accepte.
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  button.node {
-    transition:
-      box-shadow 120ms ease-out,
-      transform 120ms ease-out;
-  }
-
-  button.node:hover {
-    transform: translateY(-1px);
-  }
-}
-
-.node-article {
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
-  box-shadow: none;
-}
-
-.article-name {
-  font-weight: 600;
-  font-size: var(--fold-text-sm, 0.875rem);
-  line-height: 1.25;
-}
-
-.article-meta,
-.guard-meta {
-  font-size: var(--fold-text-xs, 0.75rem);
-  color: var(--fold-color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-// La limite est un **garde-fou**, pas un étage : elle s'applique en fin de
-// chaîne, quelle que soit sa place dans la lecture. Elle reste donc discrète
-// tant qu'elle n'a pas mordu, et ne s'allume que lorsqu'elle a relevé le prix.
-.node-guard {
-  border-style: dashed;
-  color: var(--fold-color-text-muted);
-  cursor: pointer;
-
-  &.is-inherited {
-    opacity: 0.75;
-  }
-
-  &.is-active {
-    border-style: solid;
-    border-color: var(--fold-color-warning-border, currentcolor);
-    background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
-    color: var(--fold-color-warning-text, var(--fold-color-text));
-    opacity: 1;
-  }
-}
-
-// « À confirmer » ne se confond pas avec « a relevé » : l'une dit que la limite
-// a MORDU, l'autre qu'elle a VIEILLI. Deux faits sans rapport, donc deux
-// marques distinctes.
-.node-guard.is-stale {
-  border-style: solid;
-  border-color: var(--fold-color-warning-border, currentcolor);
-}
-
-.guard-stale {
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  color: var(--fold-color-warning-text, var(--fold-color-text));
-}
-
-.guard-value {
-  font-weight: 600;
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-variant-numeric: tabular-nums;
-}
-
-.node-family,
-.node-product {
-  gap: var(--fold-space-sm, 0.5rem);
-  justify-content: center;
-  padding-top: var(--fold-space-sm, 0.5rem);
-  padding-bottom: var(--fold-space-sm, 0.5rem);
-}
-
-// Le nœud de famille couvre tout le rayon : ses règles se posent en HAUT, sinon
-// elles flotteraient au milieu d'une colonne vide.
-.node-family {
-  justify-content: flex-start;
-  padding-top: var(--fold-space-md, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
+  padding: var(--fold-space-md, 0.75rem) var(--fold-space-lg, 1rem);
 }
 
 // Le nœud « créer » : en pointillés, parce qu'il n'existe pas encore.
 .node-add {
-  align-items: center;
-  justify-content: center;
-  border-style: dashed;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.375rem);
   background: transparent;
   color: var(--fold-color-text-muted);
-  font-size: 1.1rem;
+  font: inherit;
+  font-size: 1rem;
   line-height: 1;
   cursor: pointer;
 
   &:hover,
   &:focus-visible {
     border-style: solid;
-    border-color: var(--fold-color-primary, var(--fold-color-text));
-    color: var(--fold-color-primary, var(--fold-color-text));
+    border-color: var(--fold-color-primary, currentcolor);
+    color: var(--fold-color-primary, currentcolor);
   }
 }
 
 .node-add-inline {
-  min-height: 1.75rem;
-  padding: 0.15rem;
-  border-radius: var(--fold-radius-sm, 0.375rem);
-}
-
-.node-add-tall {
-  min-height: 100%;
-}
-
-// La marge négociable : les DEUX unités au même poids typographique. Mettre le
-// pourcentage en sous-titre aurait choisi à la place du commercial celle qu'il
-// annonce au téléphone.
-.node-room {
-  align-items: flex-start;
-
-  &.is-spent,
-  &.is-undefined {
-    color: var(--fold-color-text-muted);
-  }
-
-  &.is-undefined {
-    border-style: dashed;
-  }
-}
-
-.room-values {
-  display: flex;
-  align-items: baseline;
-  gap: 0.35rem;
-}
-
-.room-value {
-  font-weight: 600;
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-variant-numeric: tabular-nums;
-}
-
-.room-sep {
-  color: var(--fold-color-text-muted);
-}
-
-.room-note {
-  font-size: var(--fold-text-xs, 0.75rem);
-  color: var(--fold-color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-// L'apparition des rayons, décalée : elle donne à voir que la page se remplit
-// de haut en bas, ce qui est l'ordre où on la lit. Purement décoratif — donc la
-// première chose à couper quand le système demande moins de mouvement.
-@media (prefers-reduced-motion: no-preference) {
-  .shelf {
-    animation: shelf-in 260ms ease-out both;
-  }
-
-  .shelf:nth-of-type(2) {
-    animation-delay: 40ms;
-  }
-
-  .shelf:nth-of-type(3) {
-    animation-delay: 80ms;
-  }
-
-  .shelf:nth-of-type(n + 4) {
-    animation-delay: 120ms;
-  }
-}
-
-@keyframes shelf-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.35rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (width < 82rem) {
-  .legend {
-    display: none;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-    row-gap: var(--fold-space-md, 0.75rem);
-  }
-
-  .cell,
-  .cell.col-family {
-    grid-column: 1;
-    grid-row: auto !important;
-  }
-
-  .cell::before,
-  .col-family::after {
-    display: none;
-  }
+  width: 1.85rem;
+  height: 1.6rem;
 }
 
 // Les autres lectures du même prix — la frise, le simulateur. Une ligne de

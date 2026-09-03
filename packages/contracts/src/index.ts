@@ -605,6 +605,7 @@ export type {
   PriceScopeType,
   PriceStage,
   OrderLinePricingTrace,
+  PriceStepRivalView,
   PriceStepView,
   DynamicFloorPayload,
   FloorDecisionView,

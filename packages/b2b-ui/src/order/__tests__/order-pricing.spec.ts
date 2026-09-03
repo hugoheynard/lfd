@@ -47,7 +47,14 @@ describe('la trace du prix, sur une ligne de commande', () => {
       pricing: {
         basePriceMillicents: 200,
         steps: [
-          { stage: 'promotion', ruleId: 'r1', label: 'Promo de rentrée', resultMillicents: 180 },
+          {
+            stage: 'promotion',
+            ruleId: 'r1',
+            label: 'Promo de rentrée',
+            scope: { type: 'global', id: null },
+            resultMillicents: 180,
+            supersedes: [],
+          },
         ],
         floored: false,
         floorDecision: null,
@@ -65,8 +72,22 @@ describe('la trace du prix, sur une ligne de commande', () => {
       pricing: {
         basePriceMillicents: 200,
         steps: [
-          { stage: 'promotion', ruleId: 'r1', label: 'Promo', resultMillicents: 160 },
-          { stage: 'geste', ruleId: 'r2', label: 'Geste', resultMillicents: 144 },
+          {
+            stage: 'promotion',
+            ruleId: 'r1',
+            label: 'Promo',
+            scope: { type: 'global', id: null },
+            resultMillicents: 160,
+            supersedes: [],
+          },
+          {
+            stage: 'geste',
+            ruleId: 'r2',
+            label: 'Geste',
+            scope: { type: 'global', id: null },
+            resultMillicents: 144,
+            supersedes: [],
+          },
         ],
         floored: false,
         floorDecision: null,

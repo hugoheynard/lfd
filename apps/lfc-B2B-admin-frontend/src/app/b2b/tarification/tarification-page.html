@@ -23,6 +23,16 @@
         (archivesRequested)="openArchives()"
       />
 
+      <!--
+        **Le chemin du prix**, ancré ici et pas sous sa ligne. Il ne s'affiche
+        qu'une fois une ligne choisie : dépliée sur cent articles, la cascade
+        serait illisible, et c'est la seule raison pour laquelle cet écran a
+        maintenant une notion de sélection.
+      -->
+      @if (selectedItem(); as focused) {
+        <app-price-path [item]="focused" (dismissed)="selectedSku.set(null)" />
+      }
+
       <!-- Deux autres lectures du même prix : l'axe du TEMPS, et le prix d'UN
            client à UNE quantité. Des liens et non des onglets — les deux se
            partagent, et on n'y arrive pas en travaillant sur la grille. -->
@@ -43,18 +53,6 @@
         dépendent de qui commande, et de combien.
       </p>
 
-      <!-- Les en-têtes de colonnes, posés UNE fois : la grille se lit de gauche
-           à droite comme le prix se construit. -->
-      <div class="legend" aria-hidden="true">
-        <span class="legend-cell col-article">Article · tarif</span>
-        <span class="legend-cell col-limit">Limite</span>
-        <span class="legend-cell col-family">Altération famille</span>
-        <span class="legend-cell col-product">Altération produit</span>
-        <span class="legend-cell col-final">Prix final</span>
-        <span class="legend-cell col-room">Remise accordable</span>
-        <span class="legend-cell col-elastic">Effort de volume</span>
-      </div>
-
       <!--
         **La bande du catalogue.** Ce qui vaut pour tout, posé AU-DESSUS des
         rayons parce que c'est ce dont ils héritent : la limite dont chaque
@@ -63,7 +61,14 @@
         visibles nulle part.
       -->
       <section class="shelf shelf-global">
-        <header class="shelf-head">
+        <!--
+          **Un socle, pas un rayon de plus.** Les trois portées du moteur —
+          catalogue → famille → article — ne se distinguaient que par leur
+          position verticale, ce qui disparaît dès qu'on défile. Le contraste de
+          SUPPORT dit lequel des deux est le fondement : une bordure plus épaisse
+          se serait lue comme une emphase, pas comme un héritage.
+        -->
+        <header class="shelf-head" foldSurface="chrome">
           <h2 class="shelf-name">Tout le catalogue</h2>
           <span class="shelf-vat">ce dont chaque famille hérite</span>
           <span class="shelf-spacer"></span>
@@ -104,188 +109,18 @@
       </section>
 
       @for (category of categories(); track category.id) {
-        <section class="shelf">
-          <header class="shelf-head">
-            <h2 class="shelf-name">{{ category.name }}</h2>
-            <fold-badge [content]="category.items.length + ' articles'" variant="neutral" />
-            @if (category.vatRatePercent !== null) {
-              <span class="shelf-vat">TVA {{ category.vatRatePercent }} %</span>
-            }
-            <span class="shelf-spacer"></span>
-            <button
-              foldButton
-              size="sm"
-              emphasis="outline"
-              intent="neutral"
-              (click)="editCategoryFloor(category)"
-            >
-              {{
-                category.floor === null
-                  ? 'Limite de famille'
-                  : 'Limite : ' + floorLabel(category.floor)
-              }}
-            </button>
-          </header>
-
-          <div class="grid">
-            @for (item of category.items; track item.sku; let row = $index) {
-              <!-- Colonne 1 — l'article et son tarif d'entrée. -->
-              <div class="cell col-article" [style.gridRow]="row + 1">
-                <div class="node node-article">
-                  <span class="article-name">{{ item.name }}</span>
-                  <span class="article-meta"
-                    >{{ item.sku }} · {{ euros(item.canonicalMillicents) }}</span
-                  >
-                </div>
-              </div>
-
-              <!-- Colonne 2 — la limite. Ce n'est PAS un étage : elle s'applique
-                   en fin de chaîne. Elle ne s'allume que lorsqu'elle a mordu. -->
-              <div class="cell col-limit" [style.gridRow]="row + 1">
-                @if (item.effectiveFloor !== null) {
-                  <button
-                    type="button"
-                    class="node node-guard"
-                    [class.is-active]="item.floored"
-                    [class.is-inherited]="isInherited(item)"
-                    [class.is-stale]="item.effectiveFloor.drift?.stale === true"
-                    [attr.data-scope]="scopeKey({ type: 'product', id: item.sku })"
-                    (click)="editItemFloor(item)"
-                  >
-                    <span class="guard-value">{{ floorLabel(item.effectiveFloor) }}</span>
-                    <span class="guard-meta">
-                      {{ isInherited(item) ? 'héritée' : 'propre'
-                      }}{{ item.floored ? ' · a relevé' : '' }}
-                    </span>
-                    @if (item.effectiveFloor.drift?.stale) {
-                      <!-- L'intention a vieilli : le tarif a bougé sous elle. -->
-                      <span class="guard-stale">à confirmer</span>
-                    }
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    class="node node-add"
-                    [attr.aria-label]="'Poser une limite sur ' + item.name"
-                    (click)="editItemFloor(item)"
-                  >
-                    +
-                  </button>
-                }
-              </div>
-
-              <!-- Colonne 3 — UN nœud pour toute la famille, de la hauteur de
-                   ses articles. C'est la forme qui dit qu'il n'y en a qu'un. -->
-              @if (row === 0) {
-                <div class="cell col-family" [style.gridRow]="'1 / span ' + category.items.length">
-                  @if (category.rules.length > 0) {
-                    <div class="node node-family">
-                      @for (rule of category.rules; track rule.id) {
-                        <app-rule-chip
-                          [rule]="rule"
-                          [superseded]="isSuperseded(rule, category)"
-                          [showLabel]="true"
-                          (toggled)="toggleRule($event)"
-                          (journalRequested)="openRuleJournal($event)"
-                          (archiveRequested)="removeRule($event)"
-                        />
-                      }
-                      <button
-                        type="button"
-                        class="node-add node-add-inline"
-                        [attr.aria-label]="'Ajouter une altération sur ' + category.name"
-                        (click)="addCategoryRule(category)"
-                      >
-                        +
-                      </button>
-                    </div>
-                  } @else {
-                    <button
-                      type="button"
-                      class="node node-add node-add-tall"
-                      [attr.data-scope]="scopeKey({ type: 'category', id: category.id })"
-                      [attr.aria-label]="'Ajouter une altération sur ' + category.name"
-                      (click)="addCategoryRule(category)"
-                    >
-                      +
-                    </button>
-                  }
-                </div>
-              }
-
-              <!-- Colonne 4 — ce qui vise cet article nommément. -->
-              <div class="cell col-product" [style.gridRow]="row + 1">
-                @if (item.rules.length > 0) {
-                  <div class="node node-product">
-                    @for (rule of item.rules; track rule.id) {
-                      <app-rule-chip
-                        [rule]="rule"
-                        (toggled)="toggleRule($event)"
-                        (journalRequested)="openRuleJournal($event)"
-                        (archiveRequested)="removeRule($event)"
-                      />
-                    }
-                    <button
-                      type="button"
-                      class="node-add node-add-inline"
-                      [attr.aria-label]="'Ajouter une altération sur ' + item.name"
-                      (click)="addItemRule(item)"
-                    >
-                      +
-                    </button>
-                  </div>
-                } @else {
-                  <button
-                    type="button"
-                    class="node node-add"
-                    [attr.data-scope]="scopeKey({ type: 'product', id: item.sku })"
-                    [attr.aria-label]="'Ajouter une altération sur ' + item.name"
-                    (click)="addItemRule(item)"
-                  >
-                    +
-                  </button>
-                }
-              </div>
-
-              <!-- Colonne 5 — ce qui sort de la chaîne, et la grille du barème. -->
-              <div class="cell col-final" [style.gridRow]="row + 1">
-                <app-final-price [item]="item" />
-              </div>
-
-              <!-- Colonne 6 — ce qu'un commercial peut encore lâcher. Les DEUX
-                   unités au même poids : il choisit celle qu'il annonce. -->
-              <div class="cell col-room" [style.gridRow]="row + 1">
-                @if (item.negotiationRoom; as room) {
-                  <div class="node node-room" [class.is-spent]="room.maxDiscountMillicents === 0">
-                    <div class="room-values">
-                      <span class="room-value">{{ roomEuros(room) }}</span>
-                      <span class="room-sep">·</span>
-                      <span class="room-value">{{ roomPercent(room) }}</span>
-                    </div>
-                    <span class="room-note">
-                      @if (room.maxDiscountMillicents === 0) {
-                        déjà au plancher
-                      } @else {
-                        jusqu'à {{ euros(room.floorMillicents) }}
-                      }
-                    </span>
-                  </div>
-                } @else {
-                  <div class="node node-room is-undefined">
-                    <span class="room-note">aucune limite posée</span>
-                  </div>
-                }
-              </div>
-
-              <!-- Colonne 7 — ce que l'altération oblige à vendre, et où on en
-                   est. La comparaison qui juge la RÈGLE d'abord, la glissante
-                   ensuite : elles ne répondent pas à la même question. -->
-              <div class="cell col-elastic" [style.gridRow]="row + 1">
-                <app-volume-effort [elasticity]="item.elasticity" />
-              </div>
-            }
-          </div>
-        </section>
+        <app-shelf-table
+          [category]="category"
+          [selectedSku]="selectedSku()"
+          (picked)="toggleSelection($event)"
+          (categoryFloorRequested)="editCategoryFloor($event)"
+          (categoryRuleRequested)="addCategoryRule($event)"
+          (itemFloorRequested)="editItemFloor($event)"
+          (itemRuleRequested)="addItemRule($event)"
+          (ruleToggled)="toggleRule($event)"
+          (ruleJournalRequested)="openRuleJournal($event)"
+          (ruleArchiveRequested)="removeRule($event)"
+        />
       }
 
       <p class="tally">

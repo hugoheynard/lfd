@@ -1,0 +1,72 @@
+<div class="panel" foldSurface="chrome">
+  <header class="head">
+    <p class="eyebrow">
+      Chemin du prix ·
+      <span class="subject">{{ item().name }}</span>
+    </p>
+
+    <!-- La phrase de verdict est le livrable : elle répond à « qu'est-ce qui
+         s'est passé ? » avant tout graphique. La cascade dit comment. -->
+    <p class="verdict">{{ verdict() }}</p>
+
+    <div class="triptych">
+      <span class="from">{{ euros(item().canonicalMillicents) }}</span>
+      <span class="to">{{ euros(item().finalMillicents) }}</span>
+      @if (delta(); as ecart) {
+        <span class="gap" [class.is-up]="!discount()">{{ ecart }}</span>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="dismiss"
+      aria-label="Refermer le chemin du prix"
+      (click)="dismissed.emit()"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="cascade">
+    <!-- La ligne de plancher traverse toute la cascade : c'est ce qui donne à
+         voir d'un coup quelles barres la limite aurait coupées. -->
+    @if (floorLeg(); as floor) {
+      <div class="floor-line" [style.bottom.%]="floor.heightPercent" aria-hidden="true">
+        <span class="floor-tag">limite {{ euros(floor.amountMillicents) }}</span>
+      </div>
+    }
+
+    @for (leg of legs(); track leg.key) {
+      <div class="column" [class]="'is-' + leg.kind" [attr.data-stage]="leg.stage">
+        <!-- L'effet est SIGNÉ et écrit : « −0,17 € ». Le signe ne se déduit pas
+             d'une couleur, qui ne se lit ni en daltonien ni imprimée. -->
+        <span class="effect">{{ leg.effect ?? euros(leg.amountMillicents) }}</span>
+        <div class="bar" [class.is-dashed]="leg.dashed" [style.height.%]="leg.heightPercent"></div>
+      </div>
+    }
+  </div>
+
+  <!-- La légende est alignée sur les MÊMES colonnes que la cascade : c'est ce
+       qui permet de lire une barre et son explication du même regard. -->
+  <ul class="legend">
+    @for (leg of legs(); track leg.key) {
+      <li class="entry" [class.is-dashed]="leg.dashed" [attr.data-stage]="leg.stage">
+        <span class="entry-title">{{ leg.title }}</span>
+
+        @if (leg.scopeLabel; as scope) {
+          <span class="entry-scope">{{ scope }}</span>
+        }
+
+        <!-- Le perdant apparaît dans la cellule du GAGNANT, barré : la seule
+             façon de dire que deux règles se disputaient le même étage. -->
+        @for (loser of leg.supersedes; track loser) {
+          <span class="entry-lost">{{ loser }}</span>
+        }
+
+        @for (note of leg.notes; track note.text) {
+          <span class="entry-note" [class]="'is-' + note.tone">{{ note.text }}</span>
+        }
+      </li>
+    }
+  </ul>
+</div>

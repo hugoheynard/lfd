@@ -207,13 +207,38 @@ export function volumeQuantityOf(context: PricingContext): number {
   return context.cumulativeQuantity ?? context.quantity;
 }
 
+/** Une règle qui **a perdu son étage** contre plus spécifique. */
+export interface PriceStepRival {
+  readonly ruleId: string;
+  readonly label: string;
+}
+
 /** Un étage qui a produit un effet — l'unité de la trace. */
 export interface PriceStep {
   readonly stage: PriceStage;
   readonly ruleId: string;
   readonly label: string;
+  /**
+   * **La portée à laquelle la règle a agi.**
+   *
+   * Recopiée depuis la règle gagnante au moment où elle gagne : une étape est le
+   * fait qu'une règle a agi *à cette portée-là*, et ce fait ne se redéduit pas
+   * d'un `ruleId` qui survit à la suppression de sa règle.
+   */
+  readonly scope: PriceScope;
   /** Le prix **au sortir** de cet étage, arrondi pour l'affichage. */
   readonly resultMillicents: number;
+  /**
+   * Les règles que la gagnante a **évincées** dans cet étage. Vide = aucune.
+   *
+   * Consigné plutôt qu'oublié, pour la même raison que {@link ResolvedPrice.floored}
+   * et {@link ResolvedPrice.sealedRuleIds} : c'est une décision que le moteur
+   * prend et dont rien ne restait. Un commercial voyant sa règle sans effet ne
+   * pouvait pas dire si elle avait expiré, si elle était scellée, ou si une
+   * règle plus précise la remplaçait — les deux premiers cas étaient déjà dits,
+   * le troisième ne l'était pas.
+   */
+  readonly supersedes: readonly PriceStepRival[];
 }
 
 /**

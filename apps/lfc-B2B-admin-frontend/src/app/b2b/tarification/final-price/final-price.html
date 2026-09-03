@@ -9,10 +9,16 @@
   <span class="delta" [class.is-up]="!discount()">{{ ecart }}</span>
 }
 
+<!-- Les étages sont NOMMÉS, pas comptés. « 3 étage(s) » était tout ce que cet
+     écran savait dire d'un tableau d'étapes résolues, alors que la question
+     qu'on se pose en balayant la colonne est « une promotion, ou un geste ? ».
+     Les deux mentions cohabitent : « relevé » dit qu'une règle n'a pas produit
+     son effet, la traînée dit lesquelles ont essayé. -->
 @if (item().floored) {
-  <span class="note">relevé au plancher</span>
-} @else if (item().steps.length > 0) {
-  <span class="note">{{ item().steps.length }} étage(s)</span>
+  <span class="note is-floored">relevé au plancher</span>
+}
+@if (trail(); as stages) {
+  <span class="note">{{ stages }}</span>
 }
 
 @if (tiers().length > 0) {

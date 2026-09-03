@@ -1,0 +1,166 @@
+<fold-page-section [title]="category().name" titleVariant="heading" separator>
+  <!--
+    **Le tiroir de rayon.** Les deux décisions qui valent pour TOUS les articles
+    du rayon — sa limite et ses altérations — vivent ici, côte à côte. Elles
+    occupaient une colonne de la grille, fusionnée sur toute la hauteur : une
+    forme qui disait bien « il n'y en a qu'une », au prix d'une colonne que rien
+    ne remplissait jamais et qui décalait les six autres.
+  -->
+  <div class="tool" sectionActions>
+    <fold-badge [content]="items().length + ' articles'" variant="neutral" />
+    @if (category().vatRatePercent !== null) {
+      <span class="vat">TVA {{ category().vatRatePercent }} %</span>
+    }
+
+    <span class="rules">
+      @for (rule of category().rules; track rule.id) {
+        <app-rule-chip
+          [rule]="rule"
+          [superseded]="isSuperseded(rule)"
+          [showLabel]="true"
+          (toggled)="ruleToggled.emit($event)"
+          (journalRequested)="ruleJournalRequested.emit($event)"
+          (archiveRequested)="ruleArchiveRequested.emit($event)"
+        />
+        @if (isSuperseded(rule)) {
+          <!-- Le nœud est unique : il ne peut pas être barré pour un article et
+               pas pour son voisin. Le libellé porte la nuance. -->
+          <span class="superseded">supplantée sur certains articles</span>
+        }
+      }
+      <button
+        type="button"
+        class="add"
+        [attr.aria-label]="'Ajouter une altération sur ' + category().name"
+        (click)="categoryRuleRequested.emit(category())"
+      >
+        +
+      </button>
+    </span>
+
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      (click)="categoryFloorRequested.emit(category())"
+    >
+      {{
+        category().floor === null
+          ? 'Limite de famille'
+          : 'Limite : ' + floorLabel(category().floor!)
+      }}
+    </button>
+  </div>
+
+  <fold-data-table
+    [caption]="'Tarification — ' + category().name"
+    hover
+    stickyFirst
+    density="compact"
+    [columns]="columns"
+    [rows]="items()"
+    [rowKey]="rowKey"
+    [rowTone]="rowTone"
+    [empty]="empty"
+  >
+    <!-- L'article, son tarif d'entrée, et le seul geste de LECTURE de la table :
+         choisir la ligne dont on déplie le chemin du prix. -->
+    <ng-template foldCell="article" let-row>
+      <button
+        type="button"
+        class="pick"
+        [attr.aria-pressed]="selectedSku() === row.sku"
+        (click)="picked.emit(row)"
+      >
+        <span class="article-name">{{ row.name }}</span>
+        <span class="article-meta">{{ row.sku }} · {{ euros(row.canonicalMillicents) }}</span>
+        <span class="article-trace">
+          {{ selectedSku() === row.sku ? 'chemin du prix affiché ↑' : 'voir le chemin du prix' }}
+        </span>
+      </button>
+    </ng-template>
+
+    <!-- La limite n'est PAS un étage : elle s'applique en fin de chaîne, quelle
+         que soit sa place dans la lecture. Elle reste donc discrète tant qu'elle
+         n'a pas mordu. -->
+    <ng-template foldCell="limit" let-row>
+      @if (row.effectiveFloor; as floor) {
+        <button
+          type="button"
+          class="guard"
+          [class.is-active]="row.floored"
+          [class.is-inherited]="isInherited(row)"
+          [class.is-stale]="floor.drift?.stale === true"
+          (click)="itemFloorRequested.emit(row)"
+        >
+          <span class="guard-value">{{ floorLabel(floor) }}</span>
+          <span class="guard-meta"
+            >{{ isInherited(row) ? 'héritée' : 'propre'
+            }}{{ row.floored ? ' · a relevé' : '' }}</span
+          >
+          @if (floor.drift?.stale) {
+            <!-- L'intention a vieilli : le tarif a bougé sous elle. -->
+            <span class="guard-stale">à confirmer</span>
+          }
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="add"
+          [attr.aria-label]="'Poser une limite sur ' + row.name"
+          (click)="itemFloorRequested.emit(row)"
+        >
+          +
+        </button>
+      }
+    </ng-template>
+
+    <ng-template foldCell="product" let-row>
+      @for (rule of row.rules; track rule.id) {
+        <app-rule-chip
+          [rule]="rule"
+          [showLabel]="true"
+          (toggled)="ruleToggled.emit($event)"
+          (journalRequested)="ruleJournalRequested.emit($event)"
+          (archiveRequested)="ruleArchiveRequested.emit($event)"
+        />
+      }
+      <button
+        type="button"
+        class="add"
+        [attr.aria-label]="'Ajouter une altération sur ' + row.name"
+        (click)="itemRuleRequested.emit(row)"
+      >
+        +
+      </button>
+    </ng-template>
+
+    <ng-template foldCell="final" let-row>
+      <app-final-price [item]="row" />
+    </ng-template>
+
+    <!-- Les DEUX unités au même poids : le commercial choisit celle qu'il
+         annonce au téléphone, l'écran ne choisit pas pour lui. -->
+    <ng-template foldCell="room" let-row>
+      @if (row.negotiationRoom; as room) {
+        <span class="room" [class.is-spent]="room.maxDiscountMillicents === 0">
+          {{ roomEuros(room.maxDiscountMillicents) }} · {{ roomPercent(room.maxDiscountBp) }}
+        </span>
+        <span class="room-note">
+          @if (room.maxDiscountMillicents === 0) {
+            déjà au plancher
+          } @else {
+            jusqu'à {{ euros(room.floorMillicents) }}
+          }
+        </span>
+      } @else {
+        <span class="room-note">aucune limite posée</span>
+      }
+    </ng-template>
+
+    <ng-template foldCell="effort" let-row>
+      <app-volume-effort [elasticity]="row.elasticity" />
+    </ng-template>
+  </fold-data-table>
+</fold-page-section>

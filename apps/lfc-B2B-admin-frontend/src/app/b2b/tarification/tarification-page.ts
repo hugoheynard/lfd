@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
-  NegotiationRoom,
-  PriceFloorView,
   PriceRuleView,
   PriceScopePayload,
   PricingBoardView,
@@ -11,23 +9,24 @@ import type {
 import { RouterLink } from '@angular/router';
 import { formatEuros } from '@lfd/catalog-ui';
 
-import { roomEuros, roomPercent, ruleSentence } from './pricing-format';
+import { floorLabel, ruleSentence } from './pricing-format';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldPanelHostService,
+  FoldSurfaceDirective,
 } from 'fold-ng';
 
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { ArchivesPanel } from './archives-panel/archives-panel';
-import { FinalPrice } from './final-price/final-price';
+
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
+import { PricePath } from './price-path/price-path';
 import { LadderPanel, type LadderPanelData } from './ladder-panel/ladder-panel';
 import { RuleChip } from './rule-chip/rule-chip';
+import { ShelfTable } from './shelf-table/shelf-table';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
-import { VolumeEffort } from './volume-effort/volume-effort';
 import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
 import { TarificationService } from './tarification.service';
@@ -77,14 +76,14 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
-    FinalPrice,
+    FoldSurfaceDirective,
     GridSkeleton,
+    PricePath,
     RuleChip,
+    ShelfTable,
     TarificationSummaryBar,
-    VolumeEffort,
   ],
   templateUrl: './tarification-page.html',
   styleUrl: './tarification-page.scss',
@@ -99,16 +98,10 @@ export class TarificationPage {
   protected readonly euros = formatEuros;
 
   // La mise en forme vit à côté, en fonctions pures : le composant expose, il ne
-  // calcule pas.
-
-  /** Les deux unités de la marge, prises sur la vue plutôt que sur deux nombres. */
-  protected roomEuros(room: NegotiationRoom): string {
-    return roomEuros(room.maxDiscountMillicents);
-  }
-
-  protected roomPercent(room: NegotiationRoom): string {
-    return roomPercent(room.maxDiscountBp);
-  }
+  // calcule pas. Ce qui ne concerne QUE la table d'un rayon — l'héritage d'une
+  // limite, l'éviction d'une règle de famille — a suivi la table dans son
+  // composant : la page ne les lisait plus.
+  protected readonly floorLabel = floorLabel;
 
   protected readonly categories = computed<readonly PricingCategoryView[]>(
     () => this.board()?.categories ?? [],
@@ -166,6 +159,37 @@ export class TarificationPage {
     return scopes.size;
   });
 
+  /**
+   * **L'article dont on regarde le chemin du prix**, ou `null`.
+   *
+   * Une sélection portée par la page, et non un dépli en place sous la ligne :
+   * la cascade a besoin de toute la largeur, et un dépli ferait sauter la grille
+   * de cent trente pixels à chaque clic — sur cent lignes, on perdrait celle
+   * qu'on venait d'ouvrir.
+   *
+   * Le SKU plutôt que l'article : un rechargement reconstruit des objets neufs,
+   * et une sélection tenue par référence se perdrait à chaque règle posée —
+   * exactement au moment où l'on veut voir ce qu'elle a changé.
+   */
+  protected readonly selectedSku = signal<string | null>(null);
+
+  protected readonly selectedItem = computed<PricingItemView | null>(() => {
+    const sku = this.selectedSku();
+    if (sku === null) {
+      return null;
+    }
+    return (
+      this.categories()
+        .flatMap((category) => category.items)
+        .find((item) => item.sku === sku) ?? null
+    );
+  });
+
+  /** Un second clic referme : ouvrir et fermer sont le même geste sur la ligne. */
+  protected toggleSelection(item: PricingItemView): void {
+    this.selectedSku.update((current) => (current === item.sku ? null : item.sku));
+  }
+
   constructor() {
     void this.load();
   }
@@ -178,21 +202,6 @@ export class TarificationPage {
     } catch {
       this.state.set('error');
     }
-  }
-
-  protected floorLabel(floor: PriceFloorView): string {
-    return floor.mode === 'percent'
-      ? `${String(floor.value / 100)} % du tarif`
-      : formatEuros(floor.value);
-  }
-
-  /** La limite de l'article vient-elle d'ailleurs ? Le nœud le dit alors. */
-  protected isInherited(item: PricingItemView): boolean {
-    return item.ownFloor === null && item.effectiveFloor !== null;
-  }
-
-  protected isSuperseded(rule: PriceRuleView, category: PricingCategoryView): boolean {
-    return category.items.some((item) => item.supersededRuleIds.includes(rule.id));
   }
 
   /** La limite et les règles qui valent pour **tout le catalogue**. */

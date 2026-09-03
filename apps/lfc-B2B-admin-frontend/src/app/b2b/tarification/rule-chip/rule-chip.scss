@@ -10,20 +10,27 @@
   border-left: 3px solid var(--fold-color-border);
 }
 
+// Les quatre étages tirent leur teinte d'un rôle NOMMÉ PAR L'ÉTAGE
+// (`--lfc-stage-*`, posé dans `styles.scss`), et non plus des intentions
+// génériques. Ces dernières n'en offraient que trois séparables : `mercuriale`
+// prenait `primary`, déjà navy, et `volume` prenait `info-border`, que le thème
+// repointe vers un azur — deux bleus pour les deux étages qu'il importe le plus
+// de distinguer, puisqu'une mercuriale scelle la chaîne et qu'un palier de
+// volume non.
 :host(.is-stage-mercuriale) {
-  border-left-color: var(--fold-color-primary, currentcolor);
+  border-left-color: var(--lfc-stage-mercuriale, var(--fold-color-primary, currentcolor));
 }
 
 :host(.is-stage-volume) {
-  border-left-color: var(--fold-color-info-border, var(--fold-color-primary, currentcolor));
+  border-left-color: var(--lfc-stage-volume, var(--fold-color-primary, currentcolor));
 }
 
 :host(.is-stage-promotion) {
-  border-left-color: var(--fold-color-success-border, currentcolor);
+  border-left-color: var(--lfc-stage-promotion, var(--fold-color-success-border, currentcolor));
 }
 
 :host(.is-stage-geste) {
-  border-left-color: var(--fold-color-warning-border, currentcolor);
+  border-left-color: var(--lfc-stage-geste, var(--fold-color-warning-border, currentcolor));
 }
 
 // Supplantée : elle s'appliquait et n'a pas gagné son étage. Barrée, pas
@@ -107,8 +114,14 @@
 // Franchit le scellement : le rail se dédouble. Le fait est déjà écrit dans le
 // résumé (« par-dessus mercuriale ») — la marque le renforce, elle ne le porte
 // pas seule, et elle survit à un rendu en couleurs forcées.
+//
+// Sa teinte est la CINQUIÈME, distincte des quatre étages. Elle empruntait
+// `warning-border`, celle du `geste` : sur une règle de geste qui franchissait
+// le scellement, les deux marques se superposaient dans la même couleur, et
+// seule la duplication du trait restait pour dire la décision la plus lourde
+// qu'on puisse cocher.
 :host(.is-piercing) {
   border-left-style: double;
   border-left-width: 4px;
-  border-left-color: var(--fold-color-warning-border, currentcolor);
+  border-left-color: var(--lfc-stage-piercing, var(--fold-color-warning-border, currentcolor));
 }
