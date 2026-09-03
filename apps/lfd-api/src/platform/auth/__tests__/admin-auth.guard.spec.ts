@@ -1,7 +1,7 @@
 import { Controller, Get, Req, UseGuards, type INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { App } from "supertest/types";
+import type { App } from "supertest/types";
 
 import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL } from "../../config/bootstrap-admin-email.js";
 import { AppConfig } from "../../config/app-config.js";

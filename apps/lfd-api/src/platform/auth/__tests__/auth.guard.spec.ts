@@ -3,7 +3,7 @@ import { UnauthorizedException } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { App } from "supertest/types";
+import type { App } from "supertest/types";
 import { AccessTokenVerifier } from "../access-token.verifier.js";
 import { AuthGuard } from "../auth.guard.js";
 import { PrincipalResolver } from "../principal.resolver.js";

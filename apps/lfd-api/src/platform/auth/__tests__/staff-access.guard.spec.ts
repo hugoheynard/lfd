@@ -2,7 +2,7 @@ import type { StaffPermission } from "@lfd/contracts";
 import { Controller, Get, Patch, Post, UseGuards, type INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { App } from "supertest/types";
+import type { App } from "supertest/types";
 
 import { AppConfig } from "../../config/app-config.js";
 import { AdminAuthGuard } from "../admin-auth.guard.js";
