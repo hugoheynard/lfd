@@ -19,12 +19,22 @@ Ce qui suit attend donc un usage réel, pas un créneau.
 
 ### 1. Les modules qui n'écrivent rien
 
-Le référentiel a ses sept faits, la croissance les siens (leads, rendez-vous,
-commandes, comptes). **N'écrivent encore rien** : les avenants de commande, la
-tarification, les emplacements, les réglages de plateforme, les dérogations de
-permission.
+⚠️ **Cette liste en comptait cinq et n'en vaut qu'un.** Vérifiée le 2026-09-03,
+handler par handler, contre `publishTraced` / `ActivityRecorder` :
 
-Le dernier est le plus gênant : « qui a ouvert la compta à Marc, et quand »
+| ce qui était listé            | état réel                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| la tarification               | **écrit** — `volume-commitment.handlers`. Et les règles et planchers ont leur PROPRE journal, servi par `GET /admin/pricing/journal` |
+| les emplacements              | **écrit** — `pickup-address.handlers`                                                                                                |
+| les réglages de plateforme    | **le contexte n'existe plus** — c'est la route morte que le runbook visait encore                                                    |
+| les avenants de commande      | **aucun contexte de ce nom**                                                                                                         |
+| les dérogations de permission | ✅ toujours vrai — et c'est le seul                                                                                                  |
+
+Écrire une liste de cinq où un seul item tient a un coût précis : le point qui
+compte s'y noie. Celui-ci était même annoncé « le plus gênant » à la ligne
+suivante, sous quatre items dont deux nomment du code disparu.
+
+**Le seul qui reste, et pourquoi il compte** : « qui a ouvert la compta à Marc, et quand »
 n'est répondable que par `granted_by` / `granted_at` sur la ligne de dérogation
 — donc seulement pour l'écart **actuel**, jamais pour celui qui a été retiré.
 
