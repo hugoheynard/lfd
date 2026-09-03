@@ -68,6 +68,7 @@
            creuse un vide DANS une boîte, ce qui se lit comme un trou plutôt
            que comme une frontière. Un bord ferme, et 16px suffisent alors. -->
       <div class="sections">
+        <app-variant-bar />
         @for (section of sections; track section.key) {
           <fold-card>
             <fold-page-section
@@ -78,11 +79,23 @@
               (openChange)="setSectionOpen(section.key, $event)"
             >
               <span sectionSubtitle>{{ section.description }}</span>
-              <app-section-state
-                sectionActions
-                [section]="section.key"
-                (save)="saveSection($event)"
-              />
+              <!-- VERROUILLÉE : cette carte est portée par la FICHE, pas par
+                   l'article ouvert. On retire l'action d'enregistrement plutôt
+                   que de la désactiver — un bouton grisé fait chercher la
+                   permission qui manque, là où il n'en manque aucune. -->
+              @if (!store.lockedSections().has(section.key)) {
+                <app-section-state
+                  sectionActions
+                  [section]="section.key"
+                  (save)="saveSection($event)"
+                />
+              }
+              @if (store.lockedSections().has(section.key)) {
+                <fold-callout appearance="inset" variant="neutral">
+                  Portée par la fiche, commune à toutes ses déclinaisons. Ouvrir
+                  <strong>Défaut</strong> pour la modifier.
+                </fold-callout>
+              }
               @switch (section.key) {
                 @case ('identite') {
                   <app-identity-form />

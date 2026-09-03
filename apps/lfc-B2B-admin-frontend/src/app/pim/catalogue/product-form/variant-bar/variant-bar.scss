@@ -1,0 +1,57 @@
+.variant-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  margin-block-end: var(--fold-space-md);
+  border-block-end: 1px solid var(--fold-color-border-subtle);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Un onglet, pas un bouton : ce qui est ouvert se lit au trait sous le libellé,
+   comme partout ailleurs — un fond plein aurait ressemblé à une action. */
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  text-align: start;
+  color: var(--fold-color-text-muted);
+
+  &.is-selected {
+    border-block-end-color: var(--fold-color-primary-border);
+    color: var(--fold-color-text);
+  }
+}
+
+.tab-label {
+  font-size: var(--fold-text-sm);
+}
+
+.tab-sku {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+}
+
+.create {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+  padding-block-end: var(--fold-space-xs);
+}
+
+.add {
+  margin-block-end: var(--fold-space-xs);
+}

@@ -16,6 +16,7 @@ import { SOURCE_LOCALE } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
+import { EMPTY_NUTRITION, type NutritionValues } from '../data/models';
 import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
 import type { UpdateVariantPricingPayload } from '@lfd/pim-contracts';
@@ -24,28 +25,8 @@ import type { UpdateVariantPricingPayload } from '@lfd/pim-contracts';
 // HT canonique ; le front l'expose en euros dans `priceEur` (TTC/HT relève de la
 // couche pricing, différé). Canaux/flags neutralisés (contexte commerce).
 
-/** Valeurs nutritionnelles pour 100 g (édition) ; `null` = non renseigné. */
-export interface NutritionValues {
-  readonly energyKcal: number | null;
-  readonly fatG: number | null;
-  readonly saturatedFatG: number | null;
-  readonly carbsG: number | null;
-  readonly sugarsG: number | null;
-  readonly proteinG: number | null;
-  readonly saltG: number | null;
-  readonly glycemicIndex: number | null;
-}
-
-const EMPTY_NUTRITION: NutritionValues = {
-  energyKcal: null,
-  fatG: null,
-  saturatedFatG: null,
-  carbsG: null,
-  sugarsG: null,
-  proteinG: null,
-  saltG: null,
-  glycemicIndex: null,
-};
+/** Le type vit dans le modèle ; réexporté ici pour ses appelants historiques. */
+export type { NutritionValues } from '../data/models';
 
 /** Couche éditoriale à plat (FR), champs vides = chaîne vide — pour l'édition. */
 /**
@@ -145,6 +126,15 @@ function defaultVariant(product: ProductView): VariantView | undefined {
   return product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
 }
 
+/**
+ * La déclinaison ENTIÈRE, et non trois champs.
+ *
+ * Elle n'en portait que cinq, parce que la page n'en éditait qu'une : le prix,
+ * le poids et la fiche réglementaire étaient aplatis sur le produit comme s'ils
+ * lui appartenaient. Ils appartiennent à un ARTICLE, et une fiche peut en avoir
+ * plusieurs — la page ne pouvait donc pas en montrer un second sans redemander
+ * au serveur ce qu'il venait de rendre.
+ */
 function toVariant(variant: VariantView): Variant {
   return {
     id: variant.id,
@@ -152,7 +142,13 @@ function toVariant(variant: VariantView): Variant {
     name: variant.name,
     isDefault: variant.isDefault,
     isDiscontinued: variant.isDiscontinued,
+    position: variant.position,
+    priceCents: variant.priceCents,
+    weightGrams: variant.weightGrams,
+    regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
     allergens: variant.allergens === null ? null : [...variant.allergens],
+    mayContain: [...(variant.nutrition?.mayContain ?? [])],
+    nutrition: toNutritionValues(variant.nutrition),
   };
 }
 
@@ -321,6 +317,32 @@ export class ProductHttpApi {
     const body = new FormData();
     body.append('file', file);
     return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
+  }
+
+  /**
+   * Ajoute une **déclinaison** à la fiche.
+   *
+   * Le nom seul : le rang, la référence et l'alignement réglementaire sont
+   * décidés par le serveur. Les proposer ici donnerait à l'écran une opinion sur
+   * une référence qu'il ne sait pas rendre unique.
+   */
+  async addVariant(productId: string, name: LocalizedText): Promise<string> {
+    const { id } = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(this.url(`products/${productId}/variants`), { name }),
+    );
+    return id;
+  }
+
+  /**
+   * « Cette déclinaison a la même fiche réglementaire que celle par défaut. »
+   *
+   * Un `PUT` de l'état de la case, jamais une bascule : deux clics rapides sur
+   * une bascule laisseraient l'écran et la base en désaccord sans un mot.
+   */
+  alignVariantRegulatory(productId: string, variantId: string, aligned: boolean): Promise<void> {
+    return this.put(`products/${productId}/variants/${variantId}/regulatory-alignment`, {
+      aligned,
+    });
   }
 
   /**

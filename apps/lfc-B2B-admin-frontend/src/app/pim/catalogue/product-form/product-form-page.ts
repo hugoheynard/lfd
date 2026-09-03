@@ -35,6 +35,7 @@ import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
+import { VariantBar } from './variant-bar/variant-bar';
 import { SectionState } from '../section-state/section-state';
 
 /** L'espace de noms des plis de CET écran — une fiche produit se replie comme
@@ -72,6 +73,7 @@ interface PageSection {
     FoldAsideLayoutComponent,
     FoldPageSectionComponent,
     SectionState,
+    VariantBar,
     PublishRail,
     IdentityForm,
     PricingForm,

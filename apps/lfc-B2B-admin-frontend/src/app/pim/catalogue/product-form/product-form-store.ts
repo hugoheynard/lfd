@@ -26,6 +26,7 @@ import type {
   Category,
   ProductKind,
   ProductStatus,
+  Variant,
   VatRate,
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
@@ -306,6 +307,22 @@ function writeText(
 }
 
 /**
+ * Ce qu'une déclinaison porte d'ÉDITABLE — le brouillon qu'on met de côté en
+ * changeant d'article.
+ *
+ * Ni le nom ni la référence : ils ne s'éditent pas encore ici, et les stocker
+ * ferait croire le contraire.
+ */
+interface VariantDraft {
+  readonly priceEur: number | null;
+  readonly weightGrams: number | null;
+  readonly declaresNone: boolean;
+  readonly selected: readonly string[];
+  readonly nutrition: NutritionValues;
+  readonly regulatoryAligned: boolean;
+}
+
+/**
  * Store du formulaire produit — **fourni au niveau de la page** (une instance
  * par formulaire) et injecté par tous les panneaux. Détient l'état, les appels
  * réseau et la logique (chargement, hydratation, save par section, dirty). La
@@ -559,7 +576,30 @@ export class ProductFormStore {
    */
   private readonly productIdValue = signal('');
   readonly productId: Signal<string> = this.productIdValue;
+  /**
+   * **Les déclinaisons de la fiche**, telles que le serveur les a rendues.
+   *
+   * Elles ne servaient à rien : la page aplatissait la déclinaison par défaut
+   * dans le produit et n'en éditait qu'une. Une fiche peut en avoir plusieurs,
+   * et ce sont elles qui portent le prix, le poids et la fiche réglementaire.
+   */
+  private readonly variantsValue = signal<readonly Variant[]>([]);
+  readonly variants: Signal<readonly Variant[]> = this.variantsValue;
+
   private readonly variantId = signal('');
+  /** La déclinaison qu'on édite — le défaut à l'ouverture. */
+  readonly selectedVariantId: Signal<string> = this.variantId;
+
+  /**
+   * Les brouillons des déclinaisons qu'on a quittées **sans enregistrer**.
+   *
+   * Basculer d'un article à l'autre ne doit rien perdre : ce qui était tapé est
+   * mis de côté ici, et rendu au retour. Sans cette mise de côté, il aurait
+   * fallu soit bloquer la bascule sur une section modifiée — donc interdire de
+   * comparer deux articles, ce qu'on vient précisément d'ouvrir — soit jeter la
+   * saisie sans un mot.
+   */
+  private readonly drafts = new Map<string, VariantDraft>();
   private readonly statusMap = signal<Partial<Record<FormSection, SectionStatus>>>({});
   private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
 
@@ -1225,15 +1265,48 @@ export class ProductFormStore {
 
   saveFiche(): Promise<void> {
     return this.save('fiche', async () => {
-      await this.products.saveNutrition(this.productId(), this.variantId(), {
-        allergens: this.declaresNone() ? [] : this.selected(),
-        nutrition: this.nutrition(),
-      });
+      // L'alignement PART EN PREMIER, et il décide du reste. Aligner puis
+      // déclarer écrirait une fiche propre sur une déclinaison qui n'en porte
+      // plus — une donnée réglementaire orpheline, que le prochain
+      // désalignement ferait réapparaître sans que personne l'ait écrite.
+      if (!this.editingDefault()) {
+        await this.products.alignVariantRegulatory(
+          this.productId(),
+          this.variantId(),
+          this.regulatoryAligned(),
+        );
+      }
+      if (!this.regulatoryAligned()) {
+        await this.products.saveNutrition(this.productId(), this.variantId(), {
+          allergens: this.declaresNone() ? [] : this.selected(),
+          nutrition: this.nutrition(),
+        });
+      }
       // Le poids voyage par la route du TARIF, qui porte prix ET poids sur la
       // déclinaison. Les deux valeurs partent à chaque fois : la section qui
       // n'a pas bougé renvoie ce qu'elle avait, rien ne se perd.
       await this.saveVariantFacts();
+      // Corriger la fiche du DÉFAUT change ce que voient toutes celles qui le
+      // suivent. On relit donc la liste — et seulement elle : c'est le serveur
+      // qui résout l'héritage, et le refaire ici en donnerait une seconde
+      // version, qui finirait par diverger.
+      if (this.editingDefault()) {
+        await this.reloadVariants();
+      }
     });
+  }
+
+  /**
+   * Relit les déclinaisons **sans toucher à ce qui est à l'écran**.
+   *
+   * Ni les brouillons des autres articles, ni les lignes de base : une saisie en
+   * cours ailleurs n'a pas à disparaître parce qu'on vient d'enregistrer ici.
+   */
+  private async reloadVariants(): Promise<void> {
+    const detail = await this.products.getDetail(this.productId());
+    if (detail !== null) {
+      this.variantsValue.set(detail.product.variants);
+    }
   }
 
   /** Prix + poids de la déclinaison — une route, deux sections qui l'appellent. */
@@ -1378,6 +1451,95 @@ export class ProductFormStore {
   }
 
   /** Enregistre UNE section — le bouton posé à droite de son titre. */
+  /**
+   * **Les onglets de la barre**, prêts à rendre — le composant n'en dérive rien.
+   *
+   * Le libellé vient d'ici et pas du gabarit : « Défaut » puis « Déclinaison
+   * 2 », c'est une règle de nommage, et une règle dans un gabarit est une règle
+   * qu'aucun test unitaire n'atteint.
+   */
+  readonly variantTabs = computed(() =>
+    this.variants().map((variant) => ({
+      id: variant.id,
+      label: variant.isDefault ? 'Défaut' : `Déclinaison ${String(variant.position + 1)}`,
+      sku: variant.sku,
+      isDefault: variant.isDefault,
+      selected: variant.id === this.variantId(),
+    })),
+  );
+
+  /** La déclinaison éditée est-elle celle par défaut ? */
+  readonly editingDefault = computed(
+    () => this.variants().find((variant) => variant.id === this.variantId())?.isDefault ?? true,
+  );
+
+  /**
+   * Cette section appartient-elle à la FICHE, donc verrouillée sur une autre
+   * déclinaison que le défaut ?
+   *
+   * La réponse est ici parce qu'elle vient du MODÈLE : identité, communication
+   * et visuels sont portées par le produit, une déclinaison ne peut pas en
+   * diverger. Une case à cocher sur ces cartes-là promettrait une divergence que
+   * la base refuse.
+   */
+  readonly lockedSections: Signal<ReadonlySet<FormSection>> = computed(() =>
+    this.editingDefault()
+      ? new Set<FormSection>()
+      : new Set<FormSection>(['identite', 'communication', 'visuels']),
+  );
+
+  /**
+   * La case « aligner sur le défaut » de la carte réglementaire.
+   *
+   * Elle fait partie du brouillon de la déclinaison, pas d'un réglage à part :
+   * décocher ouvre la saisie, et ce qu'on tape ensuite part avec elle au même
+   * enregistrement.
+   */
+  readonly regulatoryAligned = signal(false);
+
+  /**
+   * Bascule sur une autre déclinaison — **sans rien perdre**.
+   *
+   * Ce qui était tapé est mis de côté, ce que l'autre avait est rendu, et les
+   * lignes de base des deux sections qui appartiennent à un article sont
+   * reprises : sans elles, l'écran annoncerait « modifié » sur une saisie qu'on
+   * vient seulement d'afficher.
+   */
+  selectVariant(id: string): void {
+    if (id === this.variantId() || !this.variants().some((variant) => variant.id === id)) {
+      return;
+    }
+    this.drafts.set(this.variantId(), this.currentDraft());
+    this.variantId.set(id);
+    this.applyDraft(this.drafts.get(id) ?? this.draftOf(id));
+    this.rebaseVariantSections();
+  }
+
+  /**
+   * Ajoute une déclinaison, puis l'ouvre.
+   *
+   * Le serveur décide de sa référence, de son rang et de son alignement — d'où
+   * une relecture complète plutôt qu'une ligne peinte d'avance : trois valeurs
+   * inventées ici seraient trois occasions de mentir.
+   */
+  async addVariant(name: string): Promise<void> {
+    const id = this.productId();
+    if (id === '' || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const created = await this.products.addVariant(id, { [SOURCE_LOCALE]: name.trim() });
+      await this.hydrate(id);
+      this.selectVariant(created);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   saveOne(key: FormSection): Promise<void> {
     switch (key) {
       case 'identite':
@@ -1440,6 +1602,10 @@ export class ProductFormStore {
           [...this.selected()].sort(),
           this.nutrition(),
           this.weightGrams(),
+          // Cocher « aligner sur le défaut » EST une modification de la section :
+          // sans lui, la case bascule et le bouton d'enregistrement n'apparaît
+          // pas — donc la case ne fait rien, et rien ne le dit.
+          this.regulatoryAligned(),
         ]);
       case 'communication':
         return JSON.stringify(this.editorial());
@@ -1448,6 +1614,61 @@ export class ProductFormStore {
         // modification, et un instantané insensible à l'ordre l'ignorerait.
         return JSON.stringify(this.media());
     }
+  }
+
+  /** Ce qui est à l'écran, mis en forme de brouillon. */
+  private currentDraft(): VariantDraft {
+    return {
+      priceEur: this.priceEur(),
+      weightGrams: this.weightGrams(),
+      declaresNone: this.declaresNone(),
+      selected: [...this.selected()],
+      nutrition: this.nutrition(),
+      regulatoryAligned: this.regulatoryAligned(),
+    };
+  }
+
+  /** Ce que le SERVEUR porte pour cette déclinaison — l'état sans brouillon. */
+  private draftOf(variantId: string): VariantDraft {
+    const variant = this.variants().find((candidate) => candidate.id === variantId);
+    const allergens = variant?.allergens ?? null;
+    return {
+      priceEur:
+        variant?.priceCents === undefined || variant.priceCents === null
+          ? null
+          : variant.priceCents / 100,
+      weightGrams: variant?.weightGrams ?? null,
+      // `[]` est une AFFIRMATION (« aucun allergène »), `null` une absence de
+      // réponse. Les confondre transformerait un oubli de saisie en promesse.
+      declaresNone: allergens !== null && allergens.length === 0,
+      selected: allergens === null ? [] : [...allergens],
+      nutrition: variant?.nutrition ?? EMPTY_NUTRITION,
+      regulatoryAligned: variant?.regulatoryFollowsDefault ?? false,
+    };
+  }
+
+  private applyDraft(draft: VariantDraft): void {
+    this.priceEur.set(draft.priceEur);
+    this.weightGrams.set(draft.weightGrams);
+    this.declaresNone.set(draft.declaresNone);
+    this.selected.set([...draft.selected]);
+    this.nutrition.set(draft.nutrition);
+    this.regulatoryAligned.set(draft.regulatoryAligned);
+  }
+
+  /**
+   * Reprend la ligne de base des SEULES sections qui appartiennent à un article.
+   *
+   * Reprendre tout effacerait, en changeant d'onglet, une modification en cours
+   * sur l'identité ou la communication — qui, elles, sont portées par la fiche
+   * et n'ont pas bougé.
+   */
+  private rebaseVariantSections(): void {
+    this.baseline.update((base) => ({
+      ...base,
+      tarif: this.snapshot('tarif'),
+      fiche: this.snapshot('fiche'),
+    }));
   }
 
   private captureBaseline(): void {
@@ -1472,26 +1693,31 @@ export class ProductFormStore {
     this.nameText.set(product.name);
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
-    this.priceEur.set(product.priceEur ?? null);
+    // Le prix, le poids et la fiche réglementaire appartiennent à un ARTICLE :
+    // ils se lisent sur la déclinaison ouverte, plus sur le produit aplati.
     this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
-    this.weightGrams.set(product.weightGrams ?? null);
+
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);
     this.readinessValue.set(detail.readiness);
     this.readinessStaleValue.set(detail.readinessStale);
-    this.nutrition.set(detail.nutrition);
-    const variant = product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
+
+    this.variantsValue.set(product.variants);
+    // On garde la déclinaison ouverte si elle existe encore — une relecture
+    // après enregistrement ne doit pas ramener l'écran sur le défaut.
+    const kept = product.variants.find((entry) => entry.id === this.variantId());
+    const variant =
+      kept ?? product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');
-    // Les DEUX champs sont posés dans les trois branches. Ils ne l'étaient pas :
-    // `[]` ne remettait que `declaresNone`, une liste non vide ne remettait que
-    // `selected`. Une seconde hydratation sur la même instance pouvait donc
-    // laisser `declaresNone` à `true` au-dessus d'une sélection non vide — et
-    // `saveFiche()` aurait alors envoyé `[]`, effaçant les allergènes déclarés
-    // sans un mot (audit 2026-09-01, §13).
-    const allergens = detail.allergens;
-    this.declaresNone.set(allergens !== null && allergens.length === 0);
-    this.selected.set(allergens === null ? [] : [...allergens]);
+    this.drafts.clear();
+    // Les six champs éditables de la déclinaison sont posés ENSEMBLE, par le
+    // même chemin que la bascule d'onglet. Ils ne l'étaient pas : `[]` ne
+    // remettait que `declaresNone`, une liste non vide ne remettait que
+    // `selected`. Une seconde hydratation pouvait donc laisser `declaresNone` à
+    // `true` au-dessus d'une sélection non vide — et `saveFiche()` aurait envoyé
+    // `[]`, effaçant les allergènes déclarés sans un mot (audit 2026-09-01, §13).
+    this.applyDraft(this.draftOf(this.variantId()));
     this.captureBaseline();
     await this.loadCitedAllergens(id);
   }

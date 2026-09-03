@@ -1,0 +1,45 @@
+<!-- Rendue seulement quand la fiche est enregistrée : on n'ajoute pas d'article
+     à un produit qui n'existe pas encore. -->
+@if (store.isEdit()) {
+  <nav class="variant-bar" aria-label="Déclinaisons de la fiche">
+    <ul class="tabs">
+      @for (tab of store.variantTabs(); track tab.id) {
+        <li>
+          <button
+            type="button"
+            class="tab"
+            [class.is-selected]="tab.selected"
+            [attr.aria-current]="tab.selected ? 'true' : null"
+            (click)="store.selectVariant(tab.id)"
+          >
+            <span class="tab-label">{{ tab.label }}</span>
+            <!-- La référence sous le libellé : c'est elle qu'on dicte au labo et
+                 qu'on retrouve dans un envoi, pas « Déclinaison 2 ». -->
+            <span class="tab-sku">{{ tab.sku }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+
+    @if (creating()) {
+      <form class="create" (submit)="create(); $event.preventDefault()">
+        <fold-input
+          class="create-name"
+          label="Nom de la déclinaison"
+          placeholder="Boîte de 220 g"
+          [(value)]="draftName"
+        />
+        <button foldButton type="submit" [disabled]="store.busy() || draftName().trim() === ''">
+          Créer
+        </button>
+        <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+          Annuler
+        </button>
+      </form>
+    } @else {
+      <button foldButton emphasis="outline" class="add" [disabled]="store.busy()" (click)="open()">
+        Créer une déclinaison
+      </button>
+    }
+  </nav>
+}

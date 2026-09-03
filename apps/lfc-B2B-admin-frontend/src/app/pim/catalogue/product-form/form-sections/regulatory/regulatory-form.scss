@@ -77,3 +77,11 @@
   flex-direction: column;
   gap: var(--fold-space-xs);
 }
+
+/* HÉRITÉ : on montre ce qui s'applique, on empêche d'y toucher.
+   Masquer aurait été pire — la question qu'on se pose devant une déclinaison
+   alignée est « et elle porte quoi, alors ? », pas « où est passée la carte ». */
+.stack.is-inherited {
+  opacity: 0.55;
+  pointer-events: none;
+}

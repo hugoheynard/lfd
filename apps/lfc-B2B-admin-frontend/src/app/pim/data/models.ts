@@ -78,14 +78,64 @@ export interface SoldChannel {
  */
 export type SalesChannels = readonly SoldChannel[];
 
+/**
+ * Valeurs nutritionnelles pour 100 g ; `null` = non renseigné.
+ *
+ * Ici et non dans la couche API : c'est une donnée que la page ÉDITE, portée
+ * par une déclinaison. La déclarer chez l'appelant HTTP obligeait le modèle à
+ * importer l'API pour se décrire lui-même.
+ */
+export interface NutritionValues {
+  readonly energyKcal: number | null;
+  readonly fatG: number | null;
+  readonly saturatedFatG: number | null;
+  readonly carbsG: number | null;
+  readonly sugarsG: number | null;
+  readonly proteinG: number | null;
+  readonly saltG: number | null;
+  readonly glycemicIndex: number | null;
+}
+
+/** Aucune valeur renseignée — huit `null`, jamais huit zéros. */
+export const EMPTY_NUTRITION: NutritionValues = {
+  energyKcal: null,
+  fatG: null,
+  saturatedFatG: null,
+  carbsG: null,
+  sugarsG: null,
+  proteinG: null,
+  saltG: null,
+  glycemicIndex: null,
+};
+
 export interface Variant {
   id: string;
   sku: string;
   name: LocalizedText;
   isDefault: boolean;
   isDiscontinued: boolean;
-  /** `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré. */
+  /** Le rang, à partir de 0 — c'est lui que la référence suffixe (`-1`, `-2`). */
+  position: number;
+  /** Prix public TTC en centimes ; `null` = pas encore tarifé. */
+  priceCents: number | null;
+  weightGrams: number | null;
+  /**
+   * Elle **suit la fiche réglementaire de celle par défaut**.
+   *
+   * Toujours `false` sur le défaut, qui ne peut pas se suivre lui-même. C'est ce
+   * drapeau que la case « aligner sur le défaut » pilote.
+   */
+  regulatoryFollowsDefault: boolean;
+  /**
+   * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
+   *
+   * ⚠️ **Résolue** : une déclinaison alignée porte ici les allergènes du défaut.
+   * Pour savoir si elle les possède ou les suit, lire
+   * {@link Variant.regulatoryFollowsDefault}.
+   */
   allergens: string[] | null;
+  mayContain: string[];
+  nutrition: NutritionValues;
 }
 
 export interface Product {
