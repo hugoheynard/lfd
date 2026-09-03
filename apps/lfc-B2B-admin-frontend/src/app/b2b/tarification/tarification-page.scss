@@ -65,12 +65,21 @@
 
 // La mise en garde se relit chaque jour : une ligne, pas un pavé — sans quoi
 // elle s'apprend à être sautée.
-.caveat {
+//
+// La carte porte le fond, le filet et le rayon ; il ne reste ici que la
+// typographie de la phrase. Le corps est en encre secondaire et les deux points
+// qui CHANGENT la lecture — un article, sans tarif négocié — reprennent l'encre
+// pleine : ce sont eux qu'on doit retenir en balayant, pas la phrase entière.
+.caveat p {
   margin: 0;
-  padding-left: var(--fold-space-md, 0.75rem);
-  border-left: 2px solid var(--fold-color-border);
-  line-height: 1.5;
-  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.55;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+}
+
+.caveat strong {
+  color: var(--fold-color-text);
+  font-weight: 600;
 }
 
 // **La bande du catalogue est un SOCLE**, pas un rayon de plus.

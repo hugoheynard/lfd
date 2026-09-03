@@ -13,6 +13,7 @@ import { floorLabel, ruleSentence } from './pricing-format';
 import {
   FoldButtonComponent,
   FoldBadgeComponent,
+  FoldCardComponent,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
@@ -81,6 +82,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     RouterLink,
     FoldButtonComponent,
     FoldBadgeComponent,
+    FoldCardComponent,
     FoldEmptyStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,

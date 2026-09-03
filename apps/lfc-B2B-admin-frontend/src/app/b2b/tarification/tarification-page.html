@@ -102,16 +102,26 @@
         </fold-page-section>
 
         <!--
-        La mise en garde vient AVANT la grille parce qu'elle change la lecture de
-        tout ce qui suit : sans elle, la colonne du prix passerait pour « le
-        prix », alors qu'elle est le prix de vitrine. En une ligne, pas en pavé —
-        elle se relit chaque jour et ne doit pas s'apprendre à être sautée.
-      -->
-        <p class="caveat">
-          Prix d'<strong>un article</strong>, pour un client <strong>sans tarif négocié</strong>,
-          aujourd'hui. Les mercuriales et les paliers de volume existent et ne se voient pas ici :
-          ils dépendent de qui commande, et de combien.
-        </p>
+          La mise en garde vient AVANT la grille parce qu'elle change la lecture
+          de tout ce qui suit : sans elle, la colonne du prix passerait pour « le
+          prix », alors qu'elle est le prix de vitrine. En une ligne, pas en
+          pavé — elle se relit chaque jour et ne doit pas s'apprendre à être
+          sautée.
+
+          Une CARTE, et non un filet latéral. Le filet la rangeait dans la
+          famille des apartés, ceux qu'on saute ; posée sur le même papier que
+          les rayons, elle est du même ordre qu'eux — une pièce de la page, la
+          première qu'on lit. `radius="sm"` et `padding="sm"` : elle porte une
+          phrase et non une section, et le rayon d'une carte de rayon la ferait
+          passer pour un bloc de contenu.
+        -->
+        <fold-card class="caveat" radius="sm" padding="sm">
+          <p>
+            Prix d'<strong>un article</strong>, pour un client <strong>sans tarif négocié</strong>,
+            aujourd'hui. Les mercuriales et les paliers de volume existent et ne se voient pas ici :
+            ils dépendent de qui commande, et de combien.
+          </p>
+        </fold-card>
 
         <!--
         **La bande du catalogue.** Ce qui vaut pour tout, posé AU-DESSUS des
