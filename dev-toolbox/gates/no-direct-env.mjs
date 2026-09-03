@@ -63,7 +63,14 @@ const ALLOWED_SUFFIXES = [
   // que c'est lui qui dit « je suis hors application ».
   "prisma/clone-dev.ts",
   "prisma/dev-db-url.ts",
-  "prisma/pim-seed.ts",
+  // La seed du référentiel : `prisma/pim-seed.ts` jusqu'au 2026-09-02, éclatée
+  // depuis en un point d'entrée et ses modules. La dérogation avait survécu au
+  // fichier qu'elle couvrait — exactement la dérive que ce commentaire est
+  // censé empêcher, et qui a rendu cette porte rouge sans que rien de neuf ne
+  // lise l'environnement.
+  "prisma/seed-pim.ts",
+  "prisma/seed-pim/declarations.ts",
+  "prisma/seed-pim/replay.ts",
   "prisma/reset-growth.ts",
   "prisma/seed-fiche.ts",
   "prisma/seed-growth.ts",
