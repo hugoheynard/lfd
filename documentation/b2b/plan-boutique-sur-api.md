@@ -6,6 +6,10 @@
 > qu'il fait de l'existant a été ouverte dans le dépôt, pas rappelée de mémoire ;
 > la liste des vérifications est en fin de document.
 
+> **Qui pose une promotion**, et faut-il déplacer l'autorité du prix vers le
+> référentiel, est tranché à côté — sans changer les lots 1 et 2 :
+> [`decision-qui-pose-une-promotion.md`](decision-qui-pose-une-promotion.md).
+
 ---
 
 ## 1. Le fait qui commande tout
