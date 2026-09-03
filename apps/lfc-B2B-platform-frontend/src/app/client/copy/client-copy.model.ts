@@ -30,9 +30,10 @@ export interface ClientCopy {
   };
 
   readonly nav: {
-    /** Les cinq destinations, dans l'ordre — cf. `ClientNav`. */
+    /** Les six destinations, dans l'ordre — cf. `ClientNav`. */
     readonly destinations: {
       readonly espace: string;
+      readonly shop: string;
       readonly orders: string;
       readonly invoices: string;
       readonly baskets: string;

@@ -24,7 +24,7 @@ import { ClientNav } from '../client-nav.service';
  * Il prend tout l'écran parce qu'à 390 px il n'y a pas de place pour deux
  * choses à la fois — un tiroir qui laisse voir la page sous un voile fait
  * cohabiter deux sujets et n'en sert bien aucun. La réf en profite pour donner
- * aux cinq destinations leur voix typographique : capitales, numérotées, une
+ * aux six destinations leur voix typographique : capitales, numérotées, une
  * par ligne.
  *
  * C'est un `<dialog>` natif, comme `ClientDialog` et pour les mêmes raisons —

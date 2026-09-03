@@ -17,7 +17,7 @@ import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
  *
  * - le **bandeau**, qui change avec l'écran (un titre, une action), et dont le
  *   dégradé descend de l'encre de la barre jusqu'à celle de la sous-barre ;
- * - la **sous-barre**, qui ne change jamais — mêmes cinq destinations, même
+ * - la **sous-barre**, qui ne change jamais — mêmes six destinations, même
  *   ordre, partout.
  *
  * Ils sont ensemble parce que la couture est à zéro : la fin du dégradé doit
@@ -28,7 +28,7 @@ import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
  *
  * C'est aussi ce qui garde la navigation hors de portée des écrans. Si le
  * bandeau ET la sous-barre étaient du contenu de page, chaque écran
- * re-déclarerait les cinq destinations — et la règle qui compte (leur ordre ne
+ * re-déclarerait les six destinations — et la règle qui compte (leur ordre ne
  * change jamais) ne serait plus tenue que par la relecture.
  */
 @Component({

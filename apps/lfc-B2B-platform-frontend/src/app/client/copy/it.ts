@@ -30,6 +30,7 @@ export const IT: ClientCopy = {
   nav: {
     destinations: {
       espace: 'Il mio spazio',
+      shop: 'Negozio',
       orders: 'Ordini',
       invoices: 'Fatture',
       baskets: 'Carrelli ricorrenti',

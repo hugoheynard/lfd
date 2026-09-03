@@ -9,12 +9,12 @@ import { MOCK_CLIENT } from '../mock-client';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'espace' | 'orders' | 'invoices' | 'baskets' | 'account';
+  readonly id: 'espace' | 'shop' | 'orders' | 'invoices' | 'baskets' | 'account';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
    *
-   * Faux ne retire pas la destination : la réf pose que **l'ordre des cinq ne
+   * Faux ne retire pas la destination : la réf pose que **l'ordre des six ne
    * change jamais** entre le menu mobile, la sous-barre et le rail. Une
    * destination qui disparaîtrait le temps qu'on écrive son écran ferait bouger
    * les quatre autres, et l'habitude du pouce avec.
@@ -28,11 +28,30 @@ interface Destination {
  * Le PANIER n'en fait pas partie : il vit dans la barre d'app, où il est
  * atteignable depuis n'importe quel écran sans ouvrir de menu. Un panier a une
  * quantité qui change en permanence — il appartient au chrome permanent, pas à
- * une liste de destinations qu'on parcourt. La boutique non plus : on n'y va
- * pas, on y arrive par une commande.
+ * une liste de destinations qu'on parcourt.
+ *
+ * ⚠️ Ce commentaire écartait aussi la BOUTIQUE — « on n'y va pas, on y arrive
+ * par une commande ». Le rayon a cessé de le justifier : il se VISITE sans
+ * qu'aucun mode de service ait été choisi, et c'est écrit dans `rayon-page`
+ * (« c'est ce que "je visite la boutique" promet » ; le mode n'est exigé que
+ * pour régler). Une destination atteignable sans préalable et qu'aucun menu
+ * n'annonce n'est pas une décision de parcours, c'est une porte cachée : il
+ * fallait passer par « Nouvelle commande » et répondre à une question pour
+ * voir le catalogue, alors que le regarder ne demande rien.
+ *
+ * Elle vient en DEUXIÈME, et pas en tête : `espace` est l'ancre — c'est là
+ * qu'on atterrit en se connectant, et le déplacer changerait l'habitude du
+ * pouce sur toutes les surfaces à la fois. La boutique se range donc juste
+ * après, avec ce qu'on FAIT, devant ce qu'on CONSULTE (commandes, factures,
+ * paniers, compte).
+ *
+ * ⚠️ Elle ne fait pas double emploi avec la tuile « Nouvelle commande » du haut
+ * du menu : celle-là OUVRE une commande — mode de service d'abord —, celle-ci
+ * mène au rayon. Deux intentions, deux adresses.
  */
 const DESTINATIONS: readonly Destination[] = [
   { id: 'espace', route: '/mon-espace', ready: true },
+  { id: 'shop', route: '/nouvelle-commande/boutique', ready: true },
   { id: 'orders', route: '/mes-commandes', ready: true },
   { id: 'invoices', route: '/mes-factures', ready: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: false },
@@ -57,7 +76,7 @@ export interface NavItem {
 }
 
 /**
- * Les cinq destinations de l'app cliente, comptées.
+ * Les six destinations de l'app cliente, comptées.
  *
  * Un seul endroit les déclare, et les trois surfaces qui les affichent (menu
  * mobile, sous-barre desktop, et le rail le jour où il existera) le lisent : la

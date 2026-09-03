@@ -5,7 +5,7 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientNav } from '../client-nav.service';
 
 /**
- * La SOUS-BARRE : les cinq destinations, en permanence, sous la barre de marque.
+ * La SOUS-BARRE : les six destinations, en permanence, sous la barre de marque.
  *
  * C'est la disposition recommandée par la réf sur les trois construites (rail
  * latéral, sous-barre, onglets dans la barre) : elle rend au contenu les 264 px

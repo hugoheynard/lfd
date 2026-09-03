@@ -32,8 +32,11 @@
   display: inline-flex;
   align-items: center;
   gap: var(--fold-space-sm);
-  /* 22 px de part et d'autre : la mesure de la réf, celle qui pose les cinq
-     onglets de 123 à 930 px dans les 1106 px utiles. */
+  /* 22 px de part et d'autre : la mesure de la réf, celle qui posait les cinq
+     onglets de 123 à 930 px dans les 1106 px utiles. Ils sont SIX depuis que la
+     boutique est une destination ; les onglets sont en `flex: none` et se
+     suivent, donc la réf ne décrit plus la fin de la rangée — vérifié à
+     1100 px, elle tient sans déborder. La marge, elle, n'a pas bougé. */
   padding: 0 22px;
   color: var(--lfc-color-on-primary-muted);
   text-decoration: none;

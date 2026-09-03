@@ -19,11 +19,12 @@ const AT_THE_LABO: ServiceChoice = {
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
   { path: 'mon-espace', children: [] },
+  { path: 'nouvelle-commande/boutique', children: [] },
   { path: 'nouvelle-commande/panier', children: [] },
 ];
 
 /** L'ordre que la réf FIGE, et qu'aucune surface n'a le droit de réarranger. */
-const ORDER = ['espace', 'orders', 'invoices', 'baskets', 'account'];
+const ORDER = ['espace', 'shop', 'orders', 'invoices', 'baskets', 'account'];
 
 describe('Les destinations du menu', () => {
   beforeEach(() => {
@@ -88,11 +89,30 @@ describe('Les destinations du menu', () => {
     expect(nav.current()).toBe('/mon-espace');
   });
 
+  /**
+   * La boutique était atteignable et pourtant annoncée nulle part : il fallait
+   * ouvrir « Nouvelle commande » et répondre à la question du mode de service
+   * pour voir le catalogue — alors que le rayon se visite sans rien choisir.
+   * Ce test fige l'adresse autant que la présence : pointer la tuile
+   * `/nouvelle-commande` la ferait rentrer par la question qu'elle contourne.
+   */
+  it('mène AU RAYON, pas à la question du mode de service', async () => {
+    const nav = TestBed.inject(ClientNav);
+    const shop = nav.items().find((i) => i.id === 'shop');
+    expect(shop?.route).toBe('/nouvelle-commande/boutique');
+    expect(shop?.ready).toBe(true);
+    // Aucun compteur : un rayon ne se compte pas, il se parcourt.
+    expect(shop?.countShort).toBe('');
+
+    await TestBed.inject(Router).navigateByUrl('/nouvelle-commande/boutique');
+    expect(nav.current()).toBe('/nouvelle-commande/boutique');
+  });
+
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {
     const nav = TestBed.inject(ClientNav);
     expect(nav.items().find((i) => i.id === 'espace')?.ready).toBe(true);
     // Les paniers récurrents sont la dernière destination sans écran. Le drapeau
-    // ne retire PAS l'entrée : l'ordre des cinq ne bouge jamais d'une surface à
+    // ne retire PAS l'entrée : l'ordre des six ne bouge jamais d'une surface à
     // l'autre, et l'habitude du pouce avec.
     expect(nav.items().find((i) => i.id === 'baskets')?.ready).toBe(false);
   });

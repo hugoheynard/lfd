@@ -28,6 +28,7 @@ export const EN: ClientCopy = {
   nav: {
     destinations: {
       espace: 'My space',
+      shop: 'Shop',
       orders: 'Orders',
       invoices: 'Invoices',
       baskets: 'Recurring baskets',

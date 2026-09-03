@@ -22,6 +22,7 @@ export const FR: ClientCopy = {
   nav: {
     destinations: {
       espace: 'Mon espace',
+      shop: 'Boutique',
       orders: 'Commandes',
       invoices: 'Factures',
       baskets: 'Paniers récurrents',
