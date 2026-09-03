@@ -422,6 +422,12 @@ src/orders/application/commands/__tests__/place-order.handler.spec.ts
 Seule exception : les e2e HTTP, qui traversent l'app entière et n'appartiennent à
 aucun module — ils restent dans `test/*.e2e-spec.ts` à la racine de l'app.
 
+`pnpm lint:tests-colocated` le tient, sur `apps/lfd-api/src` **et lui seul** :
+les frontends prescrivent l'inverse (« un spec par NOUVEAU composant,
+colocalisé »), et un dossier par composant y rend déjà visible ce qui est testé.
+La raison de la règle côté backend est la même que celle de leur exception : on
+doit voir en ouvrant `src/` **ce qui est éprouvé et ce qui ne l'est pas**.
+
 ### Les trois niveaux, tous obligatoires
 
 1. **Unitaire domaine** — value objects, entités, services purs. Aucun Nest,
@@ -859,6 +865,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
+pnpm lint:gates         # les 22 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

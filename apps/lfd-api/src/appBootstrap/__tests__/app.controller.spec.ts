@@ -1,9 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { AppController } from "./app.controller.js";
-import { AppService } from "./app.service.js";
-import { AppConfig } from "../platform/config/app-config.js";
-import { StartupReport } from "../platform/startup/startup-report.service.js";
-import type { MissingCapability } from "../platform/startup/capability-audit.js";
+import { AppController } from "../app.controller.js";
+import { AppService } from "../app.service.js";
+import { AppConfig } from "../../platform/config/app-config.js";
+import { StartupReport } from "../../platform/startup/startup-report.service.js";
+import type { MissingCapability } from "../../platform/startup/capability-audit.js";
 
 /** Deux canaux éteints, un de chaque gravité — de quoi vérifier les compteurs. */
 const MISSING: readonly MissingCapability[] = [

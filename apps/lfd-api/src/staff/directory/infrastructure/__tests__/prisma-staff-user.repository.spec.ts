@@ -1,18 +1,18 @@
 import type { StaffRole } from "@lfd/contracts";
 import { Test } from "@nestjs/testing";
 
-import { AppConfig } from "../../../platform/config/app-config.js";
-import { Clock } from "../../../platform/time/clock.js";
-import { StaffAccessCache } from "../../permissions/staff-access-cache.port.js";
-import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../../../platform/config/bootstrap-admin-email.js";
+import { AppConfig } from "../../../../platform/config/app-config.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAccessCache } from "../../../permissions/staff-access-cache.port.js";
+import { PrismaService } from "../../../../platform/database/prisma.service.js";
+import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../../../../platform/config/bootstrap-admin-email.js";
 import {
   LastStaffAdminError,
   ProtectedStaffUserError,
   SelfDemotionError,
-} from "../domain/staff-user-errors.js";
-import { StaffUserRepository } from "../domain/staff-user.repository.js";
-import { PrismaStaffUserRepository } from "./prisma-staff-user.repository.js";
+} from "../../domain/staff-user-errors.js";
+import { StaffUserRepository } from "../../domain/staff-user.repository.js";
+import { PrismaStaffUserRepository } from "../prisma-staff-user.repository.js";
 
 /** Ligne minimale renvoyée par le fake `findUnique` — ce que les gardes lisent. */
 interface Row {

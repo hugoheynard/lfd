@@ -5,14 +5,14 @@ import {
   assertRemovalAllowed,
   assertStatusChangeAllowed,
   type StaffMutationTarget,
-} from "./staff-access.policy.js";
+} from "../staff-access.policy.js";
 import {
   AdminOverrideRefusedError,
   LastStaffAdminError,
   ProtectedStaffUserError,
   SelfDemotionError,
   StaffGrantByOverrideError,
-} from "../directory/domain/staff-user-errors.js";
+} from "../../directory/domain/staff-user-errors.js";
 
 /** Un administrateur ordinaire, avec un collègue admin derrière lui. */
 function admin(overrides: Partial<StaffMutationTarget> = {}): StaffMutationTarget {

@@ -83,7 +83,14 @@ jobs:
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
   # ── Les gates du dépôt ──────────────────────────────────────────────────────
-  # Dix-sept portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  # Vingt et une portes qui balaient TOUT le dépôt, et non l'app d'à côté.
+  #
+  # Elles étaient dix-sept le 2026-09-03, et le compte écrit ici disait juste —
+  # ce qui ne voulait pas dire que le dépôt était gardé : `mermaid`,
+  # `sku-never-recycled` et `withdrawn-filter` existaient, passaient dans
+  # `pnpm lint:gates` en local, et ne tournaient nulle part ici. Une porte qu'on
+  # n'ouvre qu'en la poussant soi-même n'est pas une porte, et un compte exact
+  # de ce qui tourne ne dit rien de ce qui manque.
   #
   # Elles vivaient réparties entre le job backend et le job des fronts, ce qui
   # ne se voyait pas tant que ces deux-là tournaient à chaque push. Depuis que
@@ -202,6 +209,26 @@ jobs:
       # momentum pendant la nuit.
       - name: "Gate : aucune date absolue dans une fixture"
         run: pnpm lint:test-dates
+
+      # Un `.spec.ts` posé à côté de sa source se fond dans la liste : on ne voit
+      # plus le trou de couverture, on voit des fichiers. Trois y échappaient sur
+      # 253 — assez peu pour que personne ne le remarque, assez pour que la règle
+      # cesse d'en être une. Backend seul : les frontends prescrivent l'inverse.
+      - name: "Gate : les tests du backend vivent dans un __tests__/"
+        run: pnpm lint:tests-colocated
+
+      # Les trois qui suivaient existaient sans jamais tourner ici : elles
+      # passaient en local, dans `pnpm lint:gates`, et ne gardaient donc RIEN sur
+      # une pull request. Une porte qu'on n'ouvre qu'en la poussant soi-même
+      # n'est pas une porte.
+      - name: "Gate : un SKU ne se réattribue jamais"
+        run: pnpm lint:sku-never-recycled
+
+      - name: "Gate : les lectures d'articles portent le filtre du retrait"
+        run: pnpm lint:withdrawn-filter
+
+      - name: "Gate : les diagrammes de la doc se dessinent"
+        run: pnpm lint:mermaid
 
       # Le découpage des shards e2e se fait par durée. Une suite sans mesure
       # tourne quand même — le périmètre vient du disque — mais avec un poids
