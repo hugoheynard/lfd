@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { DeliveryChangeView, PendingDeliveryView } from '@lfd/contracts';
+import type { DeliveryChangeView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -10,6 +10,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { PendingDeliveryStore } from './pending-delivery.store';
 import { ReceptionService } from './reception.service';
 
 /** Les champs, dits en français — un écran qui affiche `vatRate` ne se relit pas. */
@@ -65,9 +66,18 @@ const KINDS: Readonly<Record<DeliveryChangeView['kind'], string>> = {
 export class ReceptionPage {
   private readonly reception = inject(ReceptionService);
   private readonly notify = inject(NotifyService);
+  private readonly deliveries = inject(PendingDeliveryStore);
 
   protected readonly state = signal<'loading' | 'error' | 'ready'>('loading');
-  protected readonly delivery = signal<PendingDeliveryView | null>(null);
+  /**
+   * L'arrivée en attente vient du STORE, pas d'une copie locale.
+   *
+   * Le bandeau de l'espace B2B lit le même signal : valider ici le fait donc
+   * disparaître là-bas sans câblage. Deux copies du même fait auraient fini par
+   * diverger, et le premier symptôme aurait été un bandeau qui survit à la
+   * validation qu'on vient de faire.
+   */
+  protected readonly delivery = this.deliveries.pending;
   protected readonly busy = signal(false);
   /** Les SKU que l'opérateur écarte — vidés à chaque rechargement. */
   private readonly excluded = signal<ReadonlySet<string>>(new Set());
@@ -98,7 +108,9 @@ export class ReceptionPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.delivery.set(await this.reception.pending());
+      // `refresh` LÈVE — c'est ici qu'on veut le savoir : on est venu sur cet
+      // écran pour relire une arrivée, et ne rien afficher serait un mensonge.
+      await this.deliveries.refresh();
       // Une relecture repart à zéro : garder les exclusions d'une arrivée
       // précédente ferait écarter des articles que personne n'a regardés.
       this.excluded.set(new Set());

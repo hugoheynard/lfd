@@ -1,0 +1,31 @@
+<!-- Sous l'en-tête de l'application, au-dessus de la page routée, et sur les
+     seules pages `b2b/`. `appearance="flat"` : une ligne qui touche ses bords,
+     pas une carte posée — c'est un état de la section, pas un contenu de page.
+
+     `announce` parce qu'il APPARAÎT après un chargement, ce qui est le cas pour
+     lequel l'entrée existe ; sans lui, personne au lecteur d'écran n'apprend
+     qu'une arrivée attend.
+
+     Gardé par la permission de la route qu'il propose : un bandeau qui mène à
+     un 403 est pire que pas de bandeau. -->
+@if (pending(); as delivery) {
+  <fold-callout
+    *appCan="'b2b_catalog:read'"
+    class="delivery-banner"
+    [variant]="variant()"
+    appearance="flat"
+    announce
+  >
+    Le référentiel a livré <strong>{{ summary() }}</strong
+    >. Rien n'est en vente tant que l'arrivée n'a pas été relue.
+    <!-- `size="sm"` : la doc du composant le demande — un callout est une ligne
+         de texte, et un contrôle pleine taille en fait une barre. `outline`
+         plutôt que le `solid` par défaut : l'action ACCOMPAGNE le message, et
+         une seconde surface teintée sur une ligne déjà teintée se lit mal. -->
+    <a actions foldButton size="sm" emphasis="outline" routerLink="/b2b/reception">
+      Relire l’arrivée
+    </a>
+  </fold-callout>
+}
+
+<router-outlet />
