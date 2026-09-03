@@ -259,14 +259,31 @@ charger l'agrégat (repo.load → toDomain)
 - La **factory nomme l'intention** (`Company.declare()`, pas `new Company()`) et
   refuse un état initial invalide.
 
-**Référence à suivre — puis à compléter :** `src/account/` (`Company.declare()`,
-~11 value-objects, `create-company.handler` qui construit l'agrégat et le passe
-au port). ⚠️ Il ne va aujourd'hui **au bout que sur la création** : les _updates_
-d'`account` — et **tout** `subscriptions` / `orders` — écrivent encore en CRUD
-(colonnes ciblées, invariants dans les handlers). **C'est de la dette assumée, à
-rembourser, pas un motif pour en ajouter.** Un nouveau cas de mutation sur un
-agrégat à invariants se fait par le cycle ci-dessus, pas par une écriture nue de
-plus.
+**Référence à suivre :** `src/b2b/account/` — `Company.declare()`, ~11 value
+objects, et `create-company.handler` qui construit l'agrégat et le passe au port.
+
+⚠️ **Ce paragraphe a affirmé le contraire jusqu'au 2026-09-03.** Il disait que
+les _updates_ d'`account` et « **tout** `subscriptions` / `orders` » écrivaient
+encore en CRUD. C'était vrai quand il a été écrit, et il a survécu à ce qui l'a
+périmé : `SubscriptionRepository` fait `load`/`save` sur l'agrégat, `orders`
+prend l'agrégat en `place()`, et le statut, les termes et le KBIS d'une société
+passent tous par des méthodes de `Company`. Une consigne fausse dans le document
+qui fait autorité coûte plus qu'une absence de consigne — elle envoie rembourser
+une dette au mauvais endroit.
+
+**Ce qui reste vraiment**, et c'est court : rien dans `account`. Ce qui a été
+rendu au domaine le 2026-09-03 — `DeliveryAddressBook` (l'adresse par défaut) et
+`KbisDeposit` (un nouveau fichier n'est jamais certifié) — l'a été en rendant
+chaque règle **structurelle** plutôt qu'appliquée : le carnet porte un
+`defaultId` unique, le dépôt neuf n'a pas de champ de certification à remettre à
+zéro. C'est le geste à copier, pas la simple bascule vers `load`/`save`.
+
+**Les écritures nues qui restent sont justifiées, et leur justification est
+écrite au-dessus d'elles.** `OrderRepository.markPaid` /
+`markPaymentFailed` sont des projections d'événement Stripe, idempotentes et
+conditionnées en base ; `markHandedOver` ferme une course entre deux comptoirs.
+Une load→save y perdrait l'atomicité pour zéro invariant de plus. Ne pas les
+« corriger » : les lire.
 
 **Où NE PAS mettre d'agrégat :** un contexte de **config sans transition ni
 invariant** (`platform-settings`, `pickup-addresses`, `delivery-zones`,
