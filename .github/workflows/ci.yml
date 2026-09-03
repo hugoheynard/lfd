@@ -225,6 +225,16 @@ jobs:
       - name: "Gate : aucune échappatoire de typage"
         run: pnpm lint:no-type-escapes
 
+      # `CLAUDE.md` §3.2 interdit `new Date()` / `Date.now()` hors de
+      # l'adaptateur `Clock` depuis des mois — sans qu'aucun outil ne le tienne.
+      # Quatre sites de temps MÉTIER lisaient donc le mur, dont le chemin qui
+      # facture et un `now: Date = new Date()` en paramètre par défaut : un
+      # appelant qui l'oubliait ne recevait pas une erreur, mais une réponse
+      # plausible. Un prix qu'on ne peut pas rejouer à un instant nommé ne se
+      # défend pas devant le client qui le conteste.
+      - name: "Gate : le temps passe par le port Clock"
+        run: pnpm lint:clock-port
+
       # Les trois qui suivaient existaient sans jamais tourner ici : elles
       # passaient en local, dans `pnpm lint:gates`, et ne gardaient donc RIEN sur
       # une pull request. Une porte qu'on n'ouvre qu'en la poussant soi-même

@@ -304,6 +304,10 @@ valables pour **tous** les backends.
 - **Port `Clock`** (`now(): Instant`, lit le contexte) — le domaine et l'application
   dépendent de l'**abstraction** (DIP). **`new Date()` / `Date.now()` interdits hors de
   l'adaptateur `Clock`.** `FixedClock` en test → logique temporelle déterministe.
+  🔴 **`lint:clock-port` le tient depuis le 2026-09-03** — avant, c'était de la
+  prose, et quatre sites de temps métier lisaient le mur. La porte couvre aussi
+  `Math.random()` ; ses huit dérogations (adaptateur, ingress, sondes de latence,
+  log, cache de jeton) portent chacune sa raison écrite.
 - **Port `IdGenerator` (ULID)** — triable par le temps. **`Math.random()` / `Date.now()`
   interdits pour fabriquer un identifiant** (non-déterministe **et** risque de collision).
 - **Temps métier = autorité du `Clock` backend.** Un temps **propagé** (gateway
@@ -316,8 +320,14 @@ valables pour **tous** les backends.
 
 > Ces primitives sont un **socle**, pas une option : la logique temporelle (expirations,
 > fenêtres, cohortes) est intestable sans `Clock`, et l'observabilité inexistante sans
-> `traceId`. Tout `new Date()` / `Math.random()` déjà en place est une **dette** à
-> rebrancher (cf. `Company.activate`, numéros de commande/référence).
+> `traceId`.
+>
+> ⚠️ Ce paragraphe désignait `Company.activate` et les numéros de commande comme
+> la dette à rebrancher. **Elle l'est** : `activate(activatedAt: Date, …)` prend
+> son instant en paramètre, et la porte ne trouve plus rien. Ce qui restait
+> vraiment, et qu'aucune de ces deux citations ne nommait, était ailleurs — la
+> **tarification**, c'est-à-dire l'endroit où se tromper coûte le plus. Une
+> consigne qui pointe la mauvaise dette envoie rembourser au mauvais endroit.
 
 ---
 
@@ -871,7 +881,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 22 portes du dépôt, d'un coup
+pnpm lint:gates         # les 23 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
