@@ -1,14 +1,31 @@
 # TODO — notifications e-mail
 
-> **État au 2026-08-09** : le transport existe et est branché
-> (`@lfd/mailer`, `MailerModule` global, deux gabarits d'alerte interne).
-> **Aucun e-mail ne part encore** — il n'y a pas de point d'appel.
+> **État au 2026-09-03** : des e-mails partent, et depuis longtemps. Cinq
+> chemins les envoient — l'ouverture d'un accès client
+> (`grant-account-access.service`), l'invitation staff
+> (`open-staff-access.service`), la création et la mise à jour d'un membre de
+> l'équipe (`staff-user.handlers`), les alertes de compte
+> (`dispatch-alert-channels.service`) et le contrôle du courrier
+> (`admin-mail-check.controller`).
+>
+> ⚠️ **Cet en-tête affirmait le contraire jusqu'au 2026-09-03** — « aucun e-mail
+> ne part encore, il n'y a pas de point d'appel », daté du 2026-08-09. C'était
+> vrai ce jour-là. Le corps du document, lui, a été tenu à jour (voir la note du
+> 2026-08-16 sur la mise en service Resend) : c'est l'en-tête qui a survécu à ce
+> qui l'a périmé, et c'est lui qu'on lit en premier. `CLAUDE.md` §0 dit d'ailleurs
+> depuis l'ouverture commerciale qu'« un e-mail parti est parti ».
+>
+> **Ce qui reste ouvert est plus étroit que ce document ne le laissait croire** :
+> les DEUX points d'appel listés ci-dessous — rendez-vous pris, demande de
+> contact déposée — ne sont toujours pas branchés. Vérifié : aucun envoi dans
+> `b2b/growth`, aucun sur la demande de support.
 >
 > Audit : [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md) §P0-3.
 > Jalon : [`../release-plan-2026-08.md`](../release-plan-2026-08.md) J2.
 
 ## Fait
 
+- **Cinq chemins d'envoi réels**, cf. l'en-tête.
 - `@lfd/mailer` — Resend, mode à blanc sans clé, disjoncteur, primitives de
   rendu. Les gabarits sont un **paramètre de type** : le paquet ne connaît pas
   le vocabulaire des apps.
