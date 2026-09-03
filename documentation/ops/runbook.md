@@ -43,12 +43,20 @@ distingue « déployé » de « configuré ».
 ## Vérifier que le mur tient
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://lfd-api.lafoliedouce.workers.dev/platform-settings
-curl -s -o /dev/null -w "%{http_code}\n" https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/platform-settings
+curl -s -o /dev/null -w "%{http_code}\n" https://lfd-api.lafoliedouce.workers.dev/health
+curl -s -o /dev/null -w "%{http_code}\n" https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/health
+curl -s -o /dev/null -w "%{http_code}\n" https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/admin/pricing
 ```
 
-Attendu : **404** puis **200**. Un `200` sur la première ligne veut dire que la
-porte directe est rouverte.
+Attendu : **404**, **200**, **401**. Un `200` sur la première ligne veut dire que
+la porte directe est rouverte.
+
+⚠️ Ce contrôle visait `/platform-settings` jusqu'au 2026-09-03. **Cette route
+n'existe plus**, et un 404 des DEUX côtés ressemblait à un mur qui tient alors
+qu'il ne mesurait qu'une adresse morte. D'où les trois lignes : `/health` est
+publique et prouve que la gateway sert ; une route `admin` doit rendre **401**
+sans jeton, ce qui prouve en plus que l'application est bien derrière — un mur
+qu'on ne teste que sur du 404 ne distingue pas « fermé » de « rien ».
 
 ⚠️ Tant que l'ancien Worker `lfc-b2b-backend` n'est pas supprimé, teste-le AUSSI :
 il porte encore les mêmes secrets et la même image, et sa porte directe est
