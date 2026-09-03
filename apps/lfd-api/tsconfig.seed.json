@@ -21,6 +21,7 @@
   "include": [
     "src",
     "prisma/seed-pim.ts",
+    "prisma/seed-delivery.ts",
     "prisma/seed-pim",
     "prisma/seed-growth/fake-document-store.ts"
   ],

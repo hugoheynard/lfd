@@ -72,6 +72,11 @@ const ALLOWED_SUFFIXES = [
   "prisma/seed-pim/declarations.ts",
   "prisma/seed-pim/replay.ts",
   "prisma/reset-growth.ts",
+  // Le push local du catalogue vers le B2B — il n'existait aucun moyen de
+  // fabriquer une livraison à relire sur un poste, la route étant murée par un
+  // jeton Auth0 réel. Son seul drapeau dit s'il SIMULE ou s'il envoie, et son
+  // défaut est de simuler.
+  "prisma/seed-delivery.ts",
   "prisma/seed-fiche.ts",
   "prisma/seed-growth.ts",
   "prisma/seed-temoin-orders.ts",
