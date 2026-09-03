@@ -198,20 +198,22 @@ describe('la remise accordable', () => {
 
 describe('la ligne dont on regarde le chemin du prix', () => {
   /**
-   * Le ton de ligne est le seul accent que fold expose sans cases à cocher, et
-   * la sélection en a plus besoin que les états : « relevé au plancher » est
-   * écrit dans la cellule du prix, une sélection muette ne l'est nulle part.
+   * **La sélection ne partage PAS le canal du ton de ligne.** L'ambre y dit
+   * qu'une limite a relevé le prix ; le lui prêter donnait à une ligne
+   * simplement choisie l'exacte apparence d'une ligne en défaut. La sélection se
+   * marque dans la cellule d'identité, où `aria-pressed` la porte aussi pour qui
+   * n'a pas la couleur.
    */
-  it('marque la ligne choisie, et elle seule', () => {
+  it('ne teinte pas la ligne choisie comme une ligne en défaut', () => {
     const shelf = category({ items: [item(), item({ sku: 'VIE-002' })] });
     const table = mount(shelf, 'VIE-002').componentInstance;
 
-    expect(table['rowTone'](item({ sku: 'VIE-002' }))).toBe('warning');
-    expect(table['rowTone'](item())).toBeNull();
+    expect(table['rowTone'](item({ sku: 'VIE-002' }))).toBeNull();
   });
 
-  it('ne marque aucune ligne tant qu’aucune n’est choisie', () => {
-    expect(mount(category()).componentInstance['rowTone'](item())).toBeNull();
+  it('marque la ligne choisie dans sa cellule d’identité', () => {
+    expect(mount(category(), 'VIE-001').nativeElement.innerHTML).toContain('aria-pressed="true"');
+    expect(mount(category()).nativeElement.innerHTML).toContain('aria-pressed="false"');
   });
 
   it('dit sur la ligne choisie que sa trace est affichée plus haut', () => {
@@ -220,6 +222,28 @@ describe('la ligne dont on regarde le chemin du prix', () => {
 
   it('invite les autres lignes à s’ouvrir', () => {
     expect(text(mount(category()))).toContain('voir le chemin du prix');
+  });
+});
+
+/**
+ * **Le ton de ligne dit l'état du prix.** Une ligne en ambre est une ligne où
+ * une règle n'a pas produit son effet ; une ligne en rouge est la boutique qui
+ * donne la marchandise. Les deux faits sont aussi ÉCRITS dans la cellule du prix
+ * final, donc la couleur ne les porte jamais seule.
+ */
+describe('le ton de ligne', () => {
+  it('teinte en avertissement la ligne qu’une limite a relevée', () => {
+    const table = mount(category()).componentInstance;
+
+    expect(table['rowTone'](item({ floored: true }))).toBe('warning');
+    expect(table['rowTone'](item())).toBeNull();
+  });
+
+  /** Un prix ramené à zéro passe devant : c'est le plus grave des deux. */
+  it('fait passer le prix ramené à zéro devant la limite', () => {
+    const table = mount(category()).componentInstance;
+
+    expect(table['rowTone'](item({ floored: true, clampedToZero: true }))).toBe('alert');
   });
 });
 

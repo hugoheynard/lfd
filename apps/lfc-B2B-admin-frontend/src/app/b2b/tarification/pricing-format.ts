@@ -446,23 +446,64 @@ function finalNotes(item: PricingItemView): readonly PricePathNote[] {
 }
 
 /**
- * Les hauteurs, **depuis zéro**.
+ * La part de hauteur réservée au tronçon le PLUS BAS de la chaîne.
  *
- * Un axe tronqué aurait rendu les écarts spectaculaires — 1,40 € et 1,22 €
- * séparés par toute la hauteur du bloc — alors qu'ils valent 13 %. La cascade
- * répond à « d'où vient ce prix », pas à « regardez comme ça chute » : c'est
- * l'effet chiffré au-dessus de chaque barre qui porte la magnitude, et il est
- * écrit.
+ * L'axe est donc **tronqué**, et c'est une décision, pas un raccourci : une
+ * chaîne va couramment de 2,50 € à 2,18 €. Mesurées depuis zéro, ses cinq barres
+ * tiennent entre 87 % et 100 % — cinq rectangles que rien ne distingue, sur un
+ * graphique dont l'unique raison d'être est de montrer des marches.
+ *
+ * Ce qui rend la troncature admissible ici, et qui manquerait ailleurs : la
+ * **magnitude est écrite**, signe compris, au-dessus de chaque barre. La barre
+ * ordonne, elle ne chiffre pas — c'est l'inverse d'un graphique de presse, où
+ * l'axe tronqué ment parce qu'il est seul à parler.
+ */
+const SHORTEST_BAR_PERCENT = 42;
+
+/**
+ * Les hauteurs, sur l'amplitude RÉELLE de la chaîne.
+ *
+ * Le pourcentage vaut pour la piste — pas pour le bloc entier, qui porte aussi
+ * l'étiquette d'effet. C'est ce qui permet à la ligne de plancher de se poser au
+ * même pourcentage que les barres : deux échelles pour un seul dessin, et le
+ * trait tombe à côté de ce qu'il prétend couper.
  */
 function withHeights(legs: readonly PricePathLeg[]): readonly PricePathLeg[] {
-  const tallest = Math.max(...legs.map((leg) => leg.amountMillicents), 0);
+  const amounts = legs.map((leg) => leg.amountMillicents);
+  const tallest = Math.max(...amounts, 0);
+  const shortest = Math.min(...amounts, tallest);
   if (tallest <= 0) {
     return legs;
   }
+  const span = tallest - shortest;
   return legs.map((leg) => ({
     ...leg,
-    heightPercent: Math.round((leg.amountMillicents / tallest) * 1000) / 10,
+    // Une chaîne plate — aucun étage n'a agi — n'a pas d'amplitude : toutes ses
+    // barres valent le même prix, donc la même hauteur. Les échelonner sur une
+    // amplitude nulle demanderait de diviser par zéro, et n'aurait rien à dire.
+    heightPercent:
+      span === 0
+        ? 100
+        : Math.round(
+            (SHORTEST_BAR_PERCENT +
+              (100 - SHORTEST_BAR_PERCENT) * ((leg.amountMillicents - shortest) / span)) *
+              10,
+          ) / 10,
   }));
+}
+
+/**
+ * **Un morceau de la phrase de verdict.**
+ *
+ * La phrase se rend en segments plutôt qu'en une chaîne, pour une seule raison :
+ * le NOMBRE qu'elle annonce — ce que la limite a repris — doit ressortir, et un
+ * gabarit ne peut pas emphaser l'intérieur d'une chaîne sans passer par du HTML
+ * injecté. Le découpage est donc porté par la donnée, là où il se teste.
+ */
+export interface PriceVerdictPart {
+  readonly text: string;
+  /** Le chiffre dont la phrase parle — mis en avant, jamais coloré seul. */
+  readonly emphasis: boolean;
 }
 
 /**
@@ -473,7 +514,7 @@ function withHeights(legs: readonly PricePathLeg[]): readonly PricePathLeg[] {
  * la phrase dit *quoi*. Quatre gabarits, et un cinquième que le moteur peut
  * produire sans qu'aucune règle n'agisse : un tarif déjà sous sa propre limite.
  */
-export function priceVerdict(item: PricingItemView): string {
+export function priceVerdict(item: PricingItemView): readonly PriceVerdictPart[] {
   const acted = item.steps.length;
   const superseded = item.steps.reduce((total, step) => total + step.supersedes.length, 0);
   const recovery = floorRecoveryMillicents(item);
@@ -483,29 +524,62 @@ export function priceVerdict(item: PricingItemView): string {
       ? 'Aucun étage n’a agi'
       : `${capitalize(countWord(acted))} étage${acted > 1 ? 's' : ''} ${acted > 1 ? 'ont' : 'a'} agi`;
 
-  const clauses: string[] = [];
+  // Une clause est faite de segments : celle de la limite porte le montant, qui
+  // est le seul mot de la phrase qu'on doit pouvoir lire sans la lire.
+  const clauses: (readonly PriceVerdictPart[])[] = [];
   if (superseded > 0) {
-    clauses.push(
-      superseded > 1
-        ? `${countWord(superseded)} ont été supplantés`
-        : `${countWord(superseded)} a été supplanté`,
-    );
+    clauses.push([
+      {
+        text:
+          superseded > 1
+            ? `${countWord(superseded)} ont été supplantés`
+            : `${countWord(superseded)} a été supplanté`,
+        emphasis: false,
+      },
+    ]);
   }
   if (item.floored) {
     clauses.push(
-      recovery > 0 ? `la limite a repris ${formatEuros(recovery)}` : 'la limite a relevé le prix',
+      recovery > 0
+        ? [
+            { text: 'la limite a repris ', emphasis: false },
+            { text: formatEuros(recovery), emphasis: true },
+          ]
+        : [{ text: 'la limite a relevé le prix', emphasis: false }],
     );
   }
   if (item.clampedToZero) {
-    clauses.push('le prix a été ramené à zéro');
+    clauses.push([{ text: 'le prix a été ramené à zéro', emphasis: false }]);
   }
 
   if (clauses.length === 0) {
-    return acted === 0 ? `${head}. Le prix est le tarif catalogue.` : `${head}.`;
+    return [
+      {
+        text: acted === 0 ? `${head}. Le prix est le tarif catalogue.` : `${head}.`,
+        emphasis: false,
+      },
+    ];
   }
-  const last = clauses[clauses.length - 1] ?? '';
+
+  const parts: PriceVerdictPart[] = [];
+  const last = clauses[clauses.length - 1] ?? [];
   const front = clauses.slice(0, -1);
-  return front.length === 0 ? `${head} et ${last}.` : `${head}, ${front.join(', ')}, et ${last}.`;
+  parts.push({ text: front.length === 0 ? `${head} et ` : `${head}, `, emphasis: false });
+  front.forEach((clause) => {
+    parts.push(...clause, { text: ', ', emphasis: false });
+  });
+  if (front.length > 0) {
+    parts.push({ text: 'et ', emphasis: false });
+  }
+  parts.push(...last, { text: '.', emphasis: false });
+  return parts;
+}
+
+/** La phrase à plat — pour les tests, et pour tout lecteur qui n'a pas de balises. */
+export function priceVerdictText(item: PricingItemView): string {
+  return priceVerdict(item)
+    .map((part) => part.text)
+    .join('');
 }
 
 function capitalize(word: string): string {

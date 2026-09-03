@@ -107,6 +107,18 @@
   opacity: 0;
 }
 
+// **La ligne choisie se marque ICI**, dans sa cellule d'identité, et en teinte
+// de MARQUE — pas en ambre. L'ambre est au ton de ligne, qui dit qu'une limite a
+// relevé le prix : deux faits sans rapport ne peuvent pas partager une couleur
+// sans qu'on finisse par lire l'un pour l'autre.
+.pick[aria-pressed='true'] {
+  margin: calc(-1 * var(--fold-space-xs, 0.25rem)) calc(-1 * var(--fold-space-sm, 0.5rem));
+  padding: var(--fold-space-xs, 0.25rem) var(--fold-space-sm, 0.5rem);
+  border-radius: var(--fold-radius-sm, 0.375rem);
+  background: var(--fold-color-primary-surface);
+  box-shadow: inset 3px 0 0 var(--fold-color-primary);
+}
+
 .pick[aria-pressed='true'] .article-trace,
 .pick:hover .article-trace,
 .pick:focus-visible .article-trace {

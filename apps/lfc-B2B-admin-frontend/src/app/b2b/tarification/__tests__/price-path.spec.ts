@@ -16,6 +16,7 @@ import {
   gaugeWidth,
   pricePath,
   priceVerdict,
+  priceVerdictText,
   signedEuros,
   stageTrail,
 } from '../pricing-format';
@@ -221,15 +222,33 @@ describe('le chemin du prix', () => {
   });
 
   /**
-   * Les hauteurs partent de ZÉRO. Un axe tronqué aurait fait passer 13 % d'écart
-   * pour un effondrement — la cascade répond à « d'où vient ce prix », pas à
-   * « regardez comme ça chute ».
+   * **L'axe est tronqué, et c'est une décision.** Mesurée depuis zéro, une chaîne
+   * qui va de 2,50 € à 2,18 € tient entre 87 % et 100 % : cinq rectangles que
+   * rien ne distingue, sur un graphique dont l'unique raison d'être est de
+   * montrer des marches.
+   *
+   * Ce qui rend la troncature admissible ici : la magnitude est **écrite**,
+   * signe compris, au-dessus de chaque barre. La barre ordonne, elle ne chiffre
+   * pas.
    */
-  it('mesure les barres depuis zéro, sur le plus haut prix de la chaîne', () => {
+  it('échelonne les barres sur l’amplitude réelle de la chaîne', () => {
     const legs = pricePath(absorbedGesture());
 
+    // Le plus haut prix touche le plafond, le plus bas se pose sur le plancher
+    // de lisibilité — et tout le reste s'ordonne entre les deux.
     expect(legs[0]?.heightPercent).toBe(100);
-    expect(legs[4]?.heightPercent).toBe(87.1);
+    expect(Math.min(...legs.map((leg) => leg.heightPercent))).toBe(42);
+    expect(legs[4]?.heightPercent).toBe(52.5);
+  });
+
+  /**
+   * Une chaîne plate n'a pas d'amplitude : l'échelonner demanderait de diviser
+   * par zéro, et n'aurait rien à dire. Toutes ses barres valent le même prix.
+   */
+  it('donne la même hauteur à toutes les barres quand rien n’a bougé', () => {
+    const legs = pricePath(item());
+
+    expect(legs.every((leg) => leg.heightPercent === 100)).toBe(true);
   });
 
   /** Un article offert n'a aucune barre à dessiner, et surtout aucune division. */
@@ -256,17 +275,17 @@ describe('le chemin du prix', () => {
 describe('la phrase de verdict', () => {
   /** Le livrable de la trace : elle répond avant tout graphique. */
   it('énonce les trois faits d’un coup, comme une phrase', () => {
-    expect(priceVerdict(absorbedGesture())).toBe(
+    expect(priceVerdictText(absorbedGesture())).toBe(
       'Deux étages ont agi, un a été supplanté, et la limite a repris 0,04 €.',
     );
   });
 
   it('dit qu’aucun étage n’a agi, et pourquoi le prix est celui-là', () => {
-    expect(priceVerdict(item())).toBe('Aucun étage n’a agi. Le prix est le tarif catalogue.');
+    expect(priceVerdictText(item())).toBe('Aucun étage n’a agi. Le prix est le tarif catalogue.');
   });
 
   it('accorde le singulier sur un seul étage', () => {
-    expect(priceVerdict(item({ steps: [step()], finalMillicents: 123_000 }))).toBe(
+    expect(priceVerdictText(item({ steps: [step()], finalMillicents: 123_000 }))).toBe(
       'Un étage a agi.',
     );
   });
@@ -283,7 +302,7 @@ describe('la phrase de verdict', () => {
       negotiationRoom: room({ floorMillicents: 150_000 }),
     });
 
-    expect(priceVerdict(raised)).toBe('Aucun étage n’a agi et la limite a repris 0,10 €.');
+    expect(priceVerdictText(raised)).toBe('Aucun étage n’a agi et la limite a repris 0,10 €.');
   });
 
   it('accorde le pluriel sur plusieurs règles supplantées', () => {
@@ -299,7 +318,27 @@ describe('la phrase de verdict', () => {
       finalMillicents: 123_000,
     });
 
-    expect(priceVerdict(contested)).toBe('Un étage a agi et deux ont été supplantés.');
+    expect(priceVerdictText(contested)).toBe('Un étage a agi et deux ont été supplantés.');
+  });
+});
+
+/**
+ * **Le montant que la limite a repris se détache.** C'est le seul mot de la
+ * phrase qu'on doit pouvoir lire sans la lire — d'où le découpage en segments,
+ * porté par la donnée plutôt que par une balise posée dans le gabarit.
+ */
+describe('le montant du verdict', () => {
+  it('isole le montant repris, et lui seul', () => {
+    const emphasised = priceVerdict(absorbedGesture()).filter((part) => part.emphasis);
+
+    expect(emphasised).toHaveLength(1);
+    expect(emphasised[0]?.text).toContain('0,04');
+  });
+
+  it('n’emphase rien quand la limite n’a pas mordu', () => {
+    const parts = priceVerdict(item({ steps: [step()], finalMillicents: 123_000 }));
+
+    expect(parts.some((part) => part.emphasis)).toBe(false);
   });
 });
 
@@ -377,11 +416,11 @@ describe('le panneau du chemin du prix', () => {
    * cohabiter sur le même élément, sinon la mise en forme d'une cascade entière
    * disparaît sans qu'aucun test de modèle ne s'en aperçoive.
    */
-  it('garde la classe de colonne en plus de la nature du tronçon', () => {
+  it('garde la classe de piste en plus de la nature du tronçon', () => {
     const markup = html(mount(absorbedGesture()));
 
-    expect(markup).toContain('class="column is-canonical"');
-    expect(markup).toContain('class="column is-final"');
+    expect(markup).toContain('class="track is-canonical"');
+    expect(markup).toContain('class="track is-final"');
   });
 
   it('porte l’étage en attribut, pour que le liseré prenne sa teinte', () => {

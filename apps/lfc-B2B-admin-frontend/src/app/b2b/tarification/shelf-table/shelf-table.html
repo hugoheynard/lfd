@@ -67,9 +67,14 @@
     <!-- L'article, son tarif d'entrée, et le seul geste de LECTURE de la table :
          choisir la ligne dont on déplie le chemin du prix. -->
     <ng-template foldCell="article" let-row>
+      <!-- Nommé explicitement : le contenu de ce bouton est trois lignes dont
+           deux sont du chiffre, et l'arbre d'accessibilité en tirait un bouton
+           SANS NOM. Au clavier, la table se parcourait donc en « bouton,
+           bouton, bouton ». -->
       <button
         type="button"
         class="pick"
+        [attr.aria-label]="'Chemin du prix de ' + row.name"
         [attr.aria-pressed]="selectedSku() === row.sku"
         (click)="picked.emit(row)"
       >
@@ -92,6 +97,7 @@
           [class.is-active]="row.floored"
           [class.is-inherited]="isInherited(row)"
           [class.is-stale]="floor.drift?.stale === true"
+          [attr.aria-label]="'Modifier la limite de ' + row.name"
           (click)="itemFloorRequested.emit(row)"
         >
           <span class="guard-value">{{ floorLabel(floor) }}</span>

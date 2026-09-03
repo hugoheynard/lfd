@@ -41,6 +41,7 @@ export class PricePath {
   protected readonly euros = formatEuros;
 
   protected readonly legs = computed(() => pricePath(this.item()));
+  /** La phrase, en segments : le montant que la limite a repris s'y détache. */
   protected readonly verdict = computed(() => priceVerdict(this.item()));
   protected readonly delta = computed(() => deltaLabel(this.item()));
   protected readonly discount = computed(() => isDiscount(this.item()));

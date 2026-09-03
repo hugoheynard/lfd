@@ -103,17 +103,23 @@ export class ShelfTable {
   protected readonly rowKey = (item: PricingItemView): string => item.sku;
 
   /**
-   * **Le ton de ligne marque la ligne CHOISIE**, celle dont le chemin du prix est
-   * déplié en haut.
+   * **Le ton de ligne dit l'ÉTAT du prix**, jamais la sélection.
    *
-   * C'est le seul accent de ligne que fold expose sans passer par des cases à
-   * cocher, et la sélection en a plus besoin que les états : « relevé au
-   * plancher » et « ramené à zéro » sont **écrits** dans la cellule du prix
-   * final, donc lisibles sans couleur ; une sélection muette, elle, rendrait la
-   * trace introuvable — on ne devine pas qu'une ligne s'ouvre.
+   * Une ligne en ambre est une ligne où la limite a relevé le prix, donc où une
+   * règle n'a pas produit son effet. C'est le seul chiffre de cet écran qui
+   * appelle un geste aujourd'hui, et le bandeau de tête le compte — la teinte
+   * est ce qui permet de le retrouver dans quatre-vingt-douze lignes.
+   *
+   * `alert` passe devant `warning` : un prix ramené à zéro, c'est la boutique
+   * qui donne la marchandise. Les deux faits sont **écrits** dans la cellule du
+   * prix final, donc la couleur ne les porte jamais seule.
+   *
+   * La sélection se marque ailleurs, dans la cellule de l'article et en teinte
+   * de marque. Les faire partager ce canal donnait à une ligne simplement
+   * choisie l'exacte apparence d'une ligne en défaut.
    */
   protected readonly rowTone = (item: PricingItemView): FoldTableTone =>
-    item.sku === this.selectedSku() ? 'warning' : null;
+    item.clampedToZero ? 'alert' : item.floored ? 'warning' : null;
 
   protected roomEuros(maxDiscountMillicents: number): string {
     return roomEuros(maxDiscountMillicents);

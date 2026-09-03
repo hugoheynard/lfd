@@ -15,6 +15,10 @@
   flex-direction: column;
   gap: var(--fold-space-lg, 1rem);
   padding: var(--fold-space-lg, 1rem);
+  // Un filet, même sur un fond en creux : sans lui, la carte se fond dans la
+  // bande dès que l'écran est réglé bas, et les deux crans de profondeur qui
+  // disent « ceci est une autre portée » disparaissent.
+  border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
   background: var(--fold-color-surface-sunken);
 }
@@ -30,17 +34,22 @@
   padding-right: 1.5rem;
 }
 
+// Le sur-titre en MONOSPACE : c'est le registre des micro-libellés de l'écran —
+// celui des en-têtes de colonnes et de l'étiquette de plancher. Il range cette
+// ligne dans le mobilier, pas dans le propos.
 .eyebrow {
   grid-column: 1;
   margin: 0;
+  font-family: var(--fold-font-mono, ui-monospace, monospace);
   font-size: 0.63rem;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
 }
 
 .subject {
+  font-family: var(--fold-font-sans, system-ui);
   color: var(--fold-color-text);
   text-transform: none;
   letter-spacing: normal;
@@ -52,8 +61,18 @@
   grid-column: 1;
   margin: 0;
   max-width: 46rem;
+  font-size: var(--fold-text-sm, 0.875rem);
   line-height: 1.45;
   color: var(--fold-color-text-secondary);
+}
+
+// Ce que la limite a repris : le seul mot de la phrase qu'on doit pouvoir lire
+// sans la lire. En ambre, la teinte de la limite partout ailleurs sur l'écran —
+// et il reste écrit, donc la couleur ne le porte pas seule.
+.verdict-amount {
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 // Le triptyque : d'où l'on part, où l'on arrive, et l'écart. Le tarif d'entrée
@@ -120,10 +139,12 @@
 // --- La cascade -----------------------------------------------------------
 //
 // `grid-auto-flow: column` plutôt qu'un `repeat(N, …)` : le nombre de tronçons
-// varie d'un article à l'autre (zéro à quatre étages, une limite ou pas), et la
-// légende doit tomber sur EXACTEMENT les mêmes colonnes. Une seule déclaration
-// partagée, donc rien à resynchroniser.
-.cascade,
+// varie d'un article à l'autre (zéro à quatre étages, une limite ou pas), et les
+// trois rangées — étiquettes, pistes, légende — doivent tomber sur EXACTEMENT
+// les mêmes colonnes. Une seule déclaration partagée, donc rien à
+// resynchroniser.
+.labels,
+.tracks,
 .legend {
   display: grid;
   grid-auto-flow: column;
@@ -132,21 +153,28 @@
 }
 
 .cascade {
-  position: relative;
-  height: 8.25rem;
-  align-items: end;
-}
-
-.column {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.3rem;
+  gap: 0.35rem;
+}
+
+// La rangée des pistes porte la hauteur, et elle seule : c'est sur elle que les
+// barres ET la ligne de plancher se mesurent, ce qui est la seule façon qu'ils
+// tombent au même endroit.
+.tracks {
+  position: relative;
+  height: 6.5rem;
+}
+
+.track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   height: 100%;
 }
 
 .effect {
+  text-align: center;
   font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 600;
   color: var(--fold-color-text-secondary);
@@ -154,54 +182,77 @@
   white-space: nowrap;
 }
 
-// La barre porte sa teinte d'étage sur son LISERÉ, jamais en fond : quatre
-// aplats colorés côte à côte se liraient comme un graphique de parts, alors que
-// c'est une chaîne.
+// Le prix final est le point d'arrivée : il se lit avant les étapes.
+.effect.is-final {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 700;
+  color: var(--fold-color-text);
+}
+
+.effect.is-floor {
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+}
+
+.effect[data-stage='mercuriale'] {
+  color: var(--lfc-stage-mercuriale, var(--fold-color-primary));
+}
+.effect[data-stage='volume'] {
+  color: var(--lfc-stage-volume, var(--fold-color-primary));
+}
+.effect[data-stage='promotion'] {
+  color: var(--lfc-stage-promotion, var(--fold-color-success-text));
+}
+.effect[data-stage='geste'] {
+  color: var(--lfc-stage-geste, var(--fold-color-warning-text));
+}
+
+// La barre porte sa teinte d'étage sur son LISERÉ et, très dilué, sur son
+// remplissage. Le liseré seul laissait cinq rectangles gris que rien ne
+// distinguait à distance ; un aplat franc, lui, ferait lire un graphique de
+// parts là où c'est une chaîne. Le fond reste donc un voile — il rattache la
+// barre à sa légende, il ne la colorie pas.
+//
+// La largeur est bornée : étirées sur toute leur colonne, cinq barres jointives
+// se lisent comme un histogramme continu, alors que ce sont cinq états
+// successifs du même prix.
 .bar {
   width: 100%;
+  max-width: 5.5rem;
   min-height: 0.2rem;
   border-radius: var(--fold-radius-sm, 0.375rem) var(--fold-radius-sm, 0.375rem) 0 0;
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--fold-color-text) 20%, transparent);
   border-bottom: 0;
-  border-top: 3px solid var(--fold-color-border);
-  background: color-mix(in srgb, var(--fold-color-text) 10%, transparent);
+  border-top: 3px solid color-mix(in srgb, var(--fold-color-text) 30%, transparent);
+  background: color-mix(in srgb, var(--fold-color-text) 12%, transparent);
 }
 
 // Le tarif d'entrée est NEUTRE : il n'est le fait d'aucune décision.
-.is-canonical .bar {
-  border-top-color: color-mix(in srgb, var(--fold-color-text) 30%, transparent);
-}
-
+// Le prix final, lui, est le point d'arrivée — cerclé en teinte de marque.
 .is-final .bar {
+  border-color: var(--fold-color-primary);
   border-top-color: var(--fold-color-primary);
-  background: var(--fold-color-primary-surface);
+  background: color-mix(in srgb, var(--fold-color-primary) 22%, transparent);
 }
 
-// **La limite n'est pas un étage.** Pointillé, jamais trait plein — et son
-// libellé le redit en toutes lettres, parce qu'un pointillé seul se lit comme
-// « provisoire » aussi bien que comme « hors chaîne ».
-.bar.is-dashed {
-  border-style: dashed;
+// **La limite n'est pas un étage.** Pointillé sur TOUT son pourtour, jamais un
+// trait plein — et son libellé le redit en toutes lettres, parce qu'un pointillé
+// seul se lit comme « provisoire » aussi bien que comme « hors chaîne ».
+.is-floor .bar {
+  border: 1px dashed var(--fold-color-warning-border);
   border-bottom: 0;
-  border-top-color: var(--fold-color-warning-border);
-  background: transparent;
+  background: color-mix(in srgb, var(--fold-color-warning) 18%, transparent);
 }
 
-[data-stage='mercuriale'] .bar {
-  border-top-color: var(--lfc-stage-mercuriale, var(--fold-color-primary));
-}
-[data-stage='volume'] .bar {
-  border-top-color: var(--lfc-stage-volume, var(--fold-color-primary));
-}
-[data-stage='promotion'] .bar {
-  border-top-color: var(--lfc-stage-promotion, var(--fold-color-success-border));
-}
-[data-stage='geste'] .bar {
-  border-top-color: var(--lfc-stage-geste, var(--fold-color-warning-border));
+@each $stage in mercuriale, volume, promotion, geste {
+  .track[data-stage='#{$stage}'] .bar {
+    border-color: color-mix(in srgb, var(--lfc-stage-#{$stage}) 38%, transparent);
+    border-top-color: var(--lfc-stage-#{$stage});
+    background: color-mix(in srgb, var(--lfc-stage-#{$stage}) 16%, transparent);
+  }
 }
 
-// La ligne de plancher traverse toute la cascade : elle donne à voir d'un coup
-// quelles barres la limite aurait coupées.
+// La ligne de plancher traverse toute la rangée des pistes : elle donne à voir
+// d'un coup quelles barres la limite aurait coupées.
 .floor-line {
   position: absolute;
   left: 0;
@@ -214,8 +265,9 @@
 
 .floor-tag {
   padding: 0 0.25rem;
+  font-family: var(--fold-font-mono, ui-monospace, monospace);
   font-size: 0.6rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--fold-color-warning-text);
   font-variant-numeric: tabular-nums;
   transform: translateY(-100%);
