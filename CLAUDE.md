@@ -567,7 +567,13 @@ la même bombe, déguisée en donnée métier.
 ## 6. Qualité de code
 
 - **Zéro `any`, zéro `as unknown as T`, zéro `@ts-ignore`, zéro
-  `eslint-disable`.** Si les types résistent, le modèle est faux — on corrige le
+  `eslint-disable`.** `pnpm lint:no-type-escapes` tient les trois derniers
+  depuis le 2026-09-03 — le premier l'était déjà par ESLint. Directives : zéro,
+  partout. `as unknown as` : **seize fichiers**, tous des tests, comptés et
+  affichés ; un fichier hors liste qui en gagne un échoue, un fichier nettoyé
+  qui reste inscrit échoue aussi. Un cast compte **plus** dans un test que dans
+  du code de production : c'est lui qui laisse un doublé dériver du port qu'il
+  prétend jouer, sans que rien ne rougisse. Si les types résistent, le modèle est faux — on corrige le
   modèle. Les règles correspondantes sont en `error` dans les deux backends
   (`no-explicit-any`, `no-floating-promises`, `no-unsafe-argument` durcies le
   2026-07-30 : les deux bases étaient déjà propres, la dette de départ est donc

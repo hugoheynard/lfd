@@ -217,6 +217,14 @@ jobs:
       - name: "Gate : les tests du backend vivent dans un __tests__/"
         run: pnpm lint:tests-colocated
 
+      # `CLAUDE.md` §6 interdit `any`, `as unknown as`, `@ts-ignore` et
+      # `eslint-disable` d'une seule phrase — et seule la moitié en avait une
+      # porte (`no-explicit-any`, par ESLint). Le cast compte PLUS dans un test
+      # que dans du code de production : c'est lui qui laisse un doublé dériver
+      # du port qu'il prétend jouer, sans que rien ne rougisse.
+      - name: "Gate : aucune échappatoire de typage"
+        run: pnpm lint:no-type-escapes
+
       # Les trois qui suivaient existaient sans jamais tourner ici : elles
       # passaient en local, dans `pnpm lint:gates`, et ne gardaient donc RIEN sur
       # une pull request. Une porte qu'on n'ouvre qu'en la poussant soi-même
