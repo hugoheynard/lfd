@@ -130,25 +130,14 @@ const PORT_SURFACE = {
  * Vide depuis le 2026-08-19 : les sept franchissements trouvés à la pose du gate
  * ont tous été résorbés. Une entrée qui réapparaît ici doit donc porter une
  * décision, pas une commodité.
+ *
+ * Deux y sont revenues le 2026-09-03 avec la surface de port — le back-office
+ * RECALCULAIT les mentions d'allergènes depuis `pim/allergens/` — et en sont
+ * reparties le jour même : il lit désormais ce que le PIM a projeté. Elles
+ * auront duré le temps d'un arbitrage, ce qui est exactement la durée de vie
+ * qu'une entrée d'ici doit avoir.
  */
-const KNOWN = new Map([
-  [
-    "b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts → pim/allergens/allergen-mapping.js",
-    "Ouvert le 2026-09-03 avec la surface de port. Ce lecteur RECALCULE les " +
-      "mentions d'étiquette à partir des codes stockés, alors que " +
-      "`catalog_items.allergen_labels` porte déjà ce que le PIM a projeté à " +
-      "l'émission (D6). Il y a donc deux sources de libellés dans le B2B, et " +
-      "l'écran d'administration lit la mauvaise. Le retrait est un ARBITRAGE, " +
-      "pas un remplacement : les articles reçus avant la v5 du fil n'ont pas " +
-      "de mentions tant qu'un push complet n'a pas eu lieu, et l'affichage " +
-      "d'allergènes est une surface réglementaire en service.",
-  ],
-  [
-    "b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts → pim/allergens/allergen-projection.js",
-    "Même arbitrage que `allergen-mapping.js` — `toInco` est l'autre moitié du " +
-      "recalcul. Les deux partent ensemble ou pas du tout.",
-  ],
-]);
+const KNOWN = new Map([]);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {

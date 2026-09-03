@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { CatalogAdminItemView, CatalogAllergenView } from "@lfd/contracts";
 
-import { findMapping } from "../../../pim/allergens/allergen-mapping.js";
-import { toInco } from "../../../pim/allergens/allergen-projection.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { allergenLabelsOf } from "./allergen-labels.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 
@@ -15,6 +14,7 @@ interface AdminRow {
   readonly priceMillicents: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
+  readonly allergenLabels: unknown;
   readonly receivedAt: Date;
   readonly category: {
     readonly id: string;
@@ -74,7 +74,7 @@ function toView(row: AdminRow): CatalogAdminItemView {
     // lignes d'avant le fil v2 n'ont pas été repoussées.
     vatRatePercent:
       row.vatRatePercent?.toNumber() ?? row.category.vatRatePercent?.toNumber() ?? null,
-    ...allergensOf(row.allergens),
+    ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,
     decidedBy: row.override?.decidedBy ?? null,
@@ -84,55 +84,56 @@ function toView(row: AdminRow): CatalogAdminItemView {
 }
 
 /**
- * Les codes stockés, rendus en **catégories d'étiquette**.
+ * **Ce que le PIM a projeté**, rendu à l'écran — et l'aveu que la liste peut
+ * être amputée.
  *
- * C'est ici que la projection INCO trouve enfin son appelant : elle était
- * écrite et testée depuis le début, et personne ne s'en servait — le PIM
- * stockait des codes GS1 que rien ne traduisait jamais pour un lecteur.
+ * ⚠️ Cette fonction RECALCULAIT les mentions, jusqu'au 2026-09-03, en appelant
+ * `findMapping` et `toInco` — c'est-à-dire une table de 30 codes **figée dans le
+ * TypeScript**. Pendant ce temps, la boutique lisait ce que le PIM avait projeté
+ * depuis le référentiel **administrable en base**. Deux sources pour la même
+ * affirmation réglementaire, et le back-office lisait la mauvaise :
  *
- * Les codes inconnus du référentiel sont écartés et **signalés** plutôt que de
- * faire tomber tout l'écran : `toInco` lève sur un code qu'il ne connaît pas,
- * ce qui est juste à l'écriture et disproportionné à la lecture. Une fiche
- * amputée qui se tait serait pire — d'où le drapeau.
+ * - le référentiel est **administrable**, et le runbook recommande de créer des
+ *   **entrées maison** (`official = false`) que la table figée ne connaîtra
+ *   jamais. Un article en déclarant une s'affiche correctement en boutique et
+ *   **« fiche incomplète »** en rouge au back-office : l'écran accuse d'un oubli
+ *   causé par une table que le staff n'a pas le droit de modifier. C'est un
+ *   écart de MÉCANISME, pas un incident constaté — mais il ne demande qu'une
+ *   entrée maison pour devenir réel, et c'est le geste normal ;
+ * - le libellé lui-même divergeait — le nom de la catégorie en base d'un côté,
+ *   un `INCO_LABELS` gelé de l'autre.
+ *
+ * La plateforme n'a **plus** le référentiel réglementaire (D6) : elle subit les
+ * mentions comme le reste du fil. C'est ce que `catalog_items.allergen_labels`
+ * porte, et c'est désormais tout ce que cette fonction lit.
+ *
+ * Exportée pour le test : les quatre états ne se prouvent pas à travers Prisma.
  */
-/**
- * Projette les codes stockés vers ce que l'écran montre, et dit si la liste
- * rendue est **amputée**.
- *
- * Exporté pour le test : la règle qu'il porte est celle qui a menti en
- * production, et elle ne se prouve pas à travers Prisma.
- *
- * ⚠️ Un code déclaré disparaît de la projection de **deux** façons : parce
- * qu'il est inconnu du référentiel, ou parce qu'il est connu mais **sans
- * obligation UE** — `toInco` écarte les deux. Les deux amputent la liste, donc
- * les deux rendent la fiche incomplète.
- *
- * Régression : seul le premier cas était compté. Une déclinaison déclarant
- * `SO` (noix de coco), `BWD` (sarrasin) ou `NM` (maïs) rendait `[]` avec
- * `allergensIncomplete: false`, que l'écran catalogue affichait « Sans
- * allergène » — l'affirmation positive « aucun allergène » sur un article qui
- * en déclare un, sur une surface en service depuis le 2026-08-17.
- */
-export function allergensOf(raw: unknown): {
+export function allergensOf(
+  rawCodes: unknown,
+  rawLabels: unknown,
+): {
   allergens: readonly CatalogAllergenView[] | null;
   allergensIncomplete: boolean;
 } {
-  if (!Array.isArray(raw)) {
+  if (!Array.isArray(rawCodes)) {
     // Pas de fiche déclarée. Surtout pas `[]`, qui affirmerait « aucun ».
     return { allergens: null, allergensIncomplete: false };
   }
-  const codes = raw.filter((code): code is string => typeof code === "string");
-  // Un code n'est REPRÉSENTÉ que s'il ressort de la projection : connu du
-  // référentiel, ET porteur d'une catégorie INCO.
-  const represented = codes.filter((code) => {
-    const mapping = findMapping(code);
-    return mapping !== undefined && mapping.incoCategory !== null;
-  });
+  const projected = allergenLabelsOf(rawLabels);
+  if (projected === null) {
+    // **Une fiche existe, et on ne sait pas la rendre.** C'est l'article reçu
+    // avant la v5 du fil, que seul un push complet garnira. `[]` dit « fiche
+    // déclarée » et le drapeau dit « ce que tu vois est amputé » : ensemble, ils
+    // interdisent au gabarit d'écrire « Sans allergène », qui serait le seul
+    // mensonge possible ici.
+    return { allergens: [], allergensIncomplete: true };
+  }
   return {
-    allergens: toInco(represented, "fr").map((allergen) => ({
-      category: allergen.category,
-      label: allergen.label,
+    allergens: projected.labels.map((label) => ({
+      category: label.category,
+      label: label.label,
     })),
-    allergensIncomplete: represented.length !== codes.length,
+    allergensIncomplete: projected.incomplete,
   };
 }

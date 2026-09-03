@@ -38,7 +38,18 @@ beforeEach(async () => {
 
 const SKU = "VIE-001-1";
 
-function snapshot(priceMillicents: number): CatalogSnapshot {
+/** Ce qu'une déclinaison porte de réglementaire sur le fil. */
+interface SheetOnWire {
+  readonly allergens: string[] | null;
+  readonly allergenLabels: {
+    labels: { category: string; label: string }[];
+    incomplete: boolean;
+  } | null;
+}
+
+const NO_SHEET: SheetOnWire = { allergens: null, allergenLabels: null };
+
+function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
@@ -61,8 +72,7 @@ function snapshot(priceMillicents: number): CatalogSnapshot {
         kind: "daily",
         variants: [
           {
-            allergens: null,
-            allergenLabels: null,
+            ...sheet,
             sku: SKU,
             name: "Croissant",
             priceMillicents,
@@ -83,8 +93,8 @@ function snapshot(priceMillicents: number): CatalogSnapshot {
  * Le prix se donne en **centimes** — un tarif s'écrit comme on le prononce — et
  * part sur le fil en millicentimes, l'unité des prix unitaires.
  */
-function push(cents: number) {
-  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents)), {
+function push(cents: number, sheet: SheetOnWire = NO_SHEET) {
+  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents), sheet), {
     revisionId: "rev_e2e",
     fingerprint: "empreinte-e2e",
   });
@@ -121,6 +131,93 @@ describe("GET /admin/catalog", () => {
     const response = await ctx.http().get("/admin/catalog");
 
     expect(response.status).toBe(401);
+  });
+});
+
+/**
+ * **La fiche réglementaire, du fil jusqu'à l'écran.**
+ *
+ * Ce chemin n'était traversé par aucun e2e : la fixture ne poussait que
+ * `allergens: null`, donc le seul état qui ne dit rien. Sur une surface en
+ * service depuis le 2026-08-17, et un champ dont une erreur est un défaut de
+ * conformité, c'était le trou le plus cher du fichier.
+ *
+ * Ce que seul ce niveau prouve : les mentions traversent réellement le `jsonb`
+ * de `catalog_items.allergen_labels` — l'aller-retour de sérialisation compris —
+ * et ressortent identiques à ce que le référentiel a projeté.
+ */
+describe("GET /admin/catalog — la fiche d'allergènes", () => {
+  const GLUTEN = { category: "gluten", label: "Céréales contenant du gluten" };
+
+  /** Ce que la lecture rend du champ réglementaire, quel que soit le reste. */
+  async function sheetOf(): Promise<{
+    allergens: { category: string; label: string }[] | null;
+    allergensIncomplete: boolean;
+  }> {
+    const response = await asStaff().get("/admin/catalog");
+    const [item] = jsonBody<unknown[]>(response) as {
+      allergens: { category: string; label: string }[] | null;
+      allergensIncomplete: boolean;
+    }[];
+    return {
+      allergens: item?.allergens ?? null,
+      allergensIncomplete: item?.allergensIncomplete === true,
+    };
+  }
+
+  it("distingue « aucune fiche » de « fiche sans allergène »", async () => {
+    expect(await sheetOf()).toEqual({ allergens: null, allergensIncomplete: false });
+
+    await ctx.reset();
+    await push(200, { allergens: [], allergenLabels: { labels: [], incomplete: false } });
+
+    expect(await sheetOf()).toEqual({ allergens: [], allergensIncomplete: false });
+  });
+
+  /**
+   * **La preuve que l'écran SUBIT les mentions au lieu de les recalculer.**
+   *
+   * Le libellé poussé ici n'est pas celui que la table figée de
+   * `allergen-mapping.ts` produit pour `UW` : si l'écran le rend tel quel, c'est
+   * qu'il ne repasse plus par elle. C'était le cas jusqu'au 2026-09-03, avec
+   * pour conséquence deux sources de vérité pour une même affirmation
+   * réglementaire — le référentiel administrable côté boutique, une table gelée
+   * côté back-office.
+   */
+  it("rend le libellé du RÉFÉRENTIEL, pas celui d'une table figée", async () => {
+    const fromReferential = { category: "gluten", label: "Gluten (libellé du référentiel)" };
+    await ctx.reset();
+    await push(200, {
+      allergens: ["UW"],
+      allergenLabels: { labels: [fromReferential], incomplete: false },
+    });
+
+    expect(await sheetOf()).toEqual({
+      allergens: [fromReferential],
+      allergensIncomplete: false,
+    });
+  });
+
+  it("reporte l'aveu d'amputation que le référentiel a émis", async () => {
+    await ctx.reset();
+    await push(200, {
+      allergens: ["UW", "SO"],
+      allergenLabels: { labels: [GLUTEN], incomplete: true },
+    });
+
+    expect(await sheetOf()).toEqual({ allergens: [GLUTEN], allergensIncomplete: true });
+  });
+
+  /**
+   * **L'article reçu avant la v5 du fil** : des codes, pas de mentions. L'écran
+   * ne doit jamais en conclure « sans allergène » — la liste vide n'est lisible
+   * qu'accompagnée du drapeau, et le gabarit garde sa branche derrière lui.
+   */
+  it("n'affirme jamais « sans allergène » sur des codes sans mentions", async () => {
+    await ctx.reset();
+    await push(200, { allergens: ["UW"], allergenLabels: null });
+
+    expect(await sheetOf()).toEqual({ allergens: [], allergensIncomplete: true });
   });
 });
 

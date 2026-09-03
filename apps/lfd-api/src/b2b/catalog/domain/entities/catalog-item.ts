@@ -59,6 +59,12 @@ export interface PimFacts {
    * référentiel réglementaire (D6). `null` suit `allergens` — et vaut aussi pour
    * un article reçu avant la v5 du fil, que seul un push complet garnira.
    *
+   * ⚠️ Cette phrase a été **fausse** du 2026-08-31 au 2026-09-03 :
+   * `prisma-catalog-admin.reader.ts` recalculait bel et bien, depuis une table
+   * figée, pendant que ce commentaire affirmait le contraire à trois lignes de
+   * la colonne prévue pour l'en dispenser. Une doctrine écrite ne tient pas une
+   * frontière — c'est `lint:context-boundaries` qui la tient désormais.
+   *
    * `incomplete` compte autant que les libellés : un code sans obligation UE ou
    * inconnu disparaît de la projection sans bruit, et une liste vide qui se tait
    * s'affiche « sans allergène ».

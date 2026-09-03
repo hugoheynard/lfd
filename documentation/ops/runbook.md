@@ -324,12 +324,32 @@ La bascule se fait en **trois temps**, et l'ordre compte :
 
 3. **Seulement alors**, retirer `toInco` / `findMapping` du lecteur B2B
    (`src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts`) et servir
-   `allergen_labels`. Le faire avant viderait la colonne allergènes de l'écran
-   d'administration sur tous les articles reçus avant le temps 2.
+   `allergen_labels`.
 
-Entre le temps 1 et le temps 3, l'écran lit `null` sur les articles anciens et
-affiche « sans fiche ». C'est **faux mais prudent** : jamais « sans allergène »,
-qui serait une affirmation positive sur un champ réglementé.
+   🔴 **Le code du temps 3 est écrit et mergé sur `dev` depuis le 2026-09-03.**
+   Il ne doit donc pas atteindre `main` avant que la requête du temps 2 rende
+   `0` **en production** — le faire avant priverait de mentions tous les
+   articles reçus avant le push.
+
+   Ce que ces articles affichent alors, si l'ordre n'est pas tenu : ni les
+   mentions, ni « sans allergène », mais le badge rouge **« fiche incomplète »**.
+   L'écran dit « une fiche existe et je ne sais pas la rendre », ce qui est vrai.
+   C'est gênant et voyant — délibérément : un état intermédiaire qui se voit se
+   corrige, un état intermédiaire discret s'installe.
+
+Entre le temps 1 et le temps 3, l'écran projette encore lui-même et n'a donc pas
+de trou. Après le temps 3 sans le temps 2, il en a un — d'où l'ordre.
+
+**Pourquoi ce temps 3 n'est pas cosmétique.** Tant qu'il n'est pas fait, la même
+affirmation réglementaire a **deux sources** : la boutique lit ce que le PIM a
+projeté depuis le référentiel administrable, le back-office le recalcule depuis
+une table de 30 codes figée dans le TypeScript (`allergen-mapping.ts`). Le
+runbook recommande par ailleurs de créer des **entrées maison**
+(`official = false`) — que cette table ne connaîtra jamais. Un article les
+déclarant s'affiche correctement en boutique et « fiche incomplète » en rouge au
+back-office : l'écran accuse d'un oubli causé par une table que le staff n'a pas
+le droit de modifier. Le libellé diverge de même — nom de la catégorie en base
+d'un côté, `INCO_LABELS` gelé de l'autre.
 
 ## Retirer le référentiel d'allergènes — l'ordre de démontage
 
