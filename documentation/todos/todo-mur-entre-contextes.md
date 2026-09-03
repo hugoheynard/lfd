@@ -1,6 +1,10 @@
-# TODO — le mur entre contextes ne tient plus que par la revue
+# TODO — le mur entre contextes
 
 **Ouvert le 2026-08-31**, en écrivant le référentiel d'allergènes.
+
+> 🟢 **Les deux portes sont posées le 2026-09-03.** Ce document n'est plus un
+> plan : il ne reste que l'**arbitrage allergènes** (§ « Ce qui reste »), tenu
+> entre-temps par deux exceptions nommées dans `context-boundaries`.
 
 ## Le fait
 
@@ -27,13 +31,15 @@ mais **sans cliquet** : rien n'empêchera le suivant.
 
 ## Ce que les portes tiennent — et ce qu'elles ne tiennent pas
 
-| Porte                     | État                                                                                                                                                  |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint:context-boundaries` | ⚠️ autorise `b2b → pim` **sans réserve** — `pim` figure dans les cibles permises de `b2b`, là où la matrice de `CLAUDE.md` §3 dit « port uniquement » |
-| `lint:cross-schema-join`  | ⚠️ surveille `["public","growth","staff","pim","b2b"]` — `ops` manque alors qu'il existe, `staff` et `b2b` n'existent pas comme schémas Postgres      |
+| Porte                     | État au 2026-09-03                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `lint:context-boundaries` | ✅ `b2b → pim` par `pim/channels/b2b-platform/` uniquement, + 2 exceptions nommées |
+| `lint:cross-schema-join`  | ✅ lit les schémas dans le `datasource` — plus de liste à tenir à jour             |
 
-La seconde est la plus gênante : la porte censée voir un franchissement **en
-SQL** surveille deux schémas fantômes et en ignore un réel.
+⚠️ **Ce qu'aucune des deux ne tient** : une classe de `platform/` qui interroge
+les tables d'un domaine en Prisma direct. Le graphe d'imports ne la voit pas
+(elle n'importe rien du domaine) et la porte SQL ne lit que le SQL écrit à la
+main. C'est arrivé deux fois, et ça reste la brèche ouverte.
 
 ## L'inventaire — ce qui reste avant de pouvoir resserrer
 
@@ -70,16 +76,33 @@ lire `allergen_labels` à l'écran d'administration — et accepter que les arti
 reçus avant la v5 du fil n'aient pas de libellés tant qu'un push complet n'a pas
 eu lieu. C'est un arbitrage, pas un remplacement mécanique.
 
-## Le geste, quand on le fera
+## Le geste — fait le 2026-09-03
 
-1. Aligner la liste de `cross-schema-join` sur le `datasource` réel
-   (`public`, `growth`, `ops`, `pim`) — correction pure, sans débat.
-2. Resserrer `context-boundaries` : `b2b → pim` **par port uniquement**, comme
-   la matrice le dit déjà en prose. Ça demande d'abord que D6 ait retiré le
-   dernier import direct, sinon la porte casse au premier passage.
+1. ✅ **`cross-schema-join` lit le `datasource`** au lieu de recopier sa liste.
+   La correction n'est pas d'avoir écrit la bonne liste, c'est d'avoir supprimé
+   la recopie : un commentaire affirmait déjà que les deux étaient identiques,
+   et il a couvert l'écart tout du long.
 
-L'ordre compte : resserrer avant D6 ferait rougir la CI sur du code qu'on est en
-train de corriger.
+   Falsifié, et c'est ce qui prouve que la couverture est réelle : la **même**
+   requête `public.orders JOIN ops.traffic_samples` passe sous l'ancienne liste
+   et échoue sous la nouvelle (`public × ops`).
+
+2. ✅ **`context-boundaries` tient « port uniquement »** par un préfixe de
+   chemin : `b2b → pim` n'est permis que sous `pim/channels/b2b-platform/`. Le
+   choix du chemin plutôt qu'une convention de nommage est délibéré — un dossier
+   se voit en ouvrant `src/`, un suffixe `.port.ts` se discute.
+
+   Falsifié : un septième import vers `pim/allergens/` fait échouer la porte, en
+   nommant le fichier fautif et la surface légitime.
+
+**L'ordre annoncé n'a pas été suivi, et c'est assumé.** Il fallait retirer les
+deux imports concrets AVANT de resserrer, sinon la porte casse. Mais leur
+retrait est un arbitrage réglementaire (ci-dessous), pas un remplacement — et
+faire attendre le cliquet derrière un arbitrage, c'est laisser la porte ouverte
+au **septième** import pendant ce temps. Les deux imports sont donc inscrits en
+**exceptions nommées et datées**, avec leur raison entière. Le mécanisme est
+prévu pour ça : « une entrée sans raison n'est pas une exception, c'est un
+oubli — et la liste ne grandit pas : elle se vide. »
 
 ## Ce que ça ne remet pas en cause
 

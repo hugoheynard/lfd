@@ -85,11 +85,23 @@ par identifiant opaque + **snapshot** (une `OrderLine` B2B porte le SKU PIM en
 `string` avec copie du prix/nom/TVA au moment de la commande) — jamais par
 jointure ni par import de modèle Prisma.
 
-⚠️ Et les portes ne suffisent pas à le tenir : `lint:context-boundaries`
-autorise aujourd'hui `b2b → pim` **sans réserve** (elle liste `pim` dans les
-cibles permises), et `lint:cross-schema-join` surveille une liste de schémas
-qui ne correspond plus au datasource. Le mur repose donc sur la revue. Le
-resserrer est un chantier ouvert, noté dans `documentation/todos/`.
+Depuis le **2026-09-03**, les deux portes le tiennent pour de bon :
+
+- `lint:context-boundaries` n'autorise plus `b2b → pim` que par
+  `pim/channels/b2b-platform/` — le canal que le référentiel publie POUR la
+  plateforme, et où tout est classe abstraite. Atteindre l'intérieur du PIM
+  échoue en nommant la surface légitime. Deux exceptions datées subsistent
+  (le recalcul des mentions d'allergènes), chacune avec sa raison ; la liste ne
+  grandit pas, elle se vide.
+- `lint:cross-schema-join` **lit** désormais les schémas dans le `datasource`
+  au lieu de les recopier. Sa liste en dur portait `staff` et `b2b`, qui n'ont
+  jamais été des schémas Postgres, et ignorait `ops`, qui en est un : une même
+  requête `public × ops` passait sous l'ancienne liste et échoue sous la
+  nouvelle.
+
+⚠️ Ce que ça ne tient toujours pas : une classe de `platform/` qui interroge
+les tables d'un domaine en Prisma direct. Le graphe d'imports ne la voit pas,
+et la porte SQL ne lit que le SQL écrit à la main. C'est arrivé deux fois.
 
 Corollaire : pas de `packages/shared-types` global qui mélangerait les deux
 langages. Un type partagé n'est légitime que s'il est vraiment transverse

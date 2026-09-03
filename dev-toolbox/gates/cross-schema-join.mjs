@@ -6,9 +6,9 @@
  * celui-ci tient la base — et c'est le plus important des deux, parce qu'une
  * jointure ne se voit pas dans un graphe d'imports.
  *
- * Le jour où `pim`, `staff` et `b2b` partagent une base à quatre schémas, une
- * seule requête `pim.products JOIN b2b.orders` suffit à ce que plus personne ne
- * possède rien : le modèle a beau être découpé, la lecture ne l'est plus, et on
+ * Ce jour est arrivé : depuis B4, `pim` et le commerce partagent UNE base à
+ * quatre schémas (`public`, `growth`, `ops`, `pim`). Une seule requête
+ * `pim.product JOIN public.orders` suffit à ce que plus personne ne possède rien : le modèle a beau être découpé, la lecture ne l'est plus, et on
  * ne peut plus déplacer un schéma sans casser l'autre. C'est ce qui fait la god
  * app, et ça arrive en une ligne, un soir de fatigue.
  *
@@ -27,8 +27,33 @@ import { join, relative } from "node:path";
 const ROOT = process.cwd();
 const SRC = "apps/lfd-api/src";
 
-/** Les schémas déclarés — même liste que le `datasource` de Prisma. */
-const SCHEMAS = ["public", "growth", "staff", "pim", "b2b"];
+const SCHEMA_FILE = "apps/lfd-api/prisma/schema.prisma";
+
+/**
+ * Les schémas surveillés, **lus dans le `datasource`** au lieu d'être recopiés.
+ *
+ * La liste était écrite en dur, avec un commentaire affirmant qu'elle valait
+ * celle de Prisma. Elle ne la valait plus : elle portait `staff` et `b2b`, qui
+ * n'ont jamais été des schémas Postgres, et ignorait `ops`, qui en est un. La
+ * porte censée voir un franchissement en SQL surveillait donc deux fantômes et
+ * manquait un réel — et son commentaire l'a couverte tout du long.
+ *
+ * Recopier une liste, c'est promettre de la tenir à jour. La lire supprime la
+ * promesse : un `@@schema` ajouté au datasource est surveillé le jour même, et
+ * un schéma retiré cesse de l'être sans que personne y pense.
+ */
+function declaredSchemas() {
+  const source = readFileSync(join(ROOT, SCHEMA_FILE), "utf8");
+  const line = /^\s*schemas\s*=\s*\[([^\]]*)\]/m.exec(source);
+  if (line === null) {
+    console.error(`\n❌ Aucun \`schemas = [...]\` dans ${SCHEMA_FILE} — la porte ne sait plus`);
+    console.error("   ce qu'elle surveille, et une porte qui l'ignore ne garde rien.\n");
+    process.exit(1);
+  }
+  return [...line[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+}
+
+const SCHEMAS = declaredSchemas();
 
 /** Le client généré n'est pas du code écrit ici. */
 const SKIP = new Set(["node_modules", "dist", "client", "coverage"]);

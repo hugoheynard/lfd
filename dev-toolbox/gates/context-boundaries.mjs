@@ -91,6 +91,31 @@ const ALLOWED = {
 };
 
 /**
+ * **« Port uniquement » — la matrice le disait en prose, ceci le tient.**
+ *
+ * `CLAUDE.md` §3 écrit `b2b → pim : port uniquement`, et la table `ALLOWED`
+ * ci-dessus ne sait dire qu'une **direction**. Elle autorisait donc `b2b → pim`
+ * sans réserve, là où la règle dit « par la porte que le référentiel publie ».
+ * L'écart n'était pas théorique : deux fonctions concrètes de `pim/allergens/`
+ * étaient déjà importées.
+ *
+ * Ce que « port uniquement » veut dire concrètement, et pourquoi ce préfixe :
+ * `pim/channels/b2b-platform/` **est** le canal que le référentiel publie POUR
+ * la plateforme marchande. Ce qu'on y trouve est fait pour être consommé de
+ * l'extérieur — `B2bCatalogDriver`, `B2bCatalogFeedPreview`,
+ * `B2bDeliveryFactsReader` sont des classes abstraites. Le reste de `pim/` est
+ * l'intérieur du référentiel : ses tables, ses règles, son vocabulaire.
+ *
+ * La frontière est donc un **chemin**, pas une convention de nommage — un
+ * dossier se voit en ouvrant `src/`, un suffixe `.port.ts` se discute.
+ *
+ * @type {Record<string, string>}
+ */
+const PORT_SURFACE = {
+  "b2b→pim": "pim/channels/b2b-platform/",
+};
+
+/**
  * Les franchissements **connus**, tolérés le temps de l'étape B2.
  *
  * Chacun porte sa raison et sa cible. Une entrée sans raison n'est pas une
@@ -106,7 +131,24 @@ const ALLOWED = {
  * ont tous été résorbés. Une entrée qui réapparaît ici doit donc porter une
  * décision, pas une commodité.
  */
-const KNOWN = new Map([]);
+const KNOWN = new Map([
+  [
+    "b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts → pim/allergens/allergen-mapping.js",
+    "Ouvert le 2026-09-03 avec la surface de port. Ce lecteur RECALCULE les " +
+      "mentions d'étiquette à partir des codes stockés, alors que " +
+      "`catalog_items.allergen_labels` porte déjà ce que le PIM a projeté à " +
+      "l'émission (D6). Il y a donc deux sources de libellés dans le B2B, et " +
+      "l'écran d'administration lit la mauvaise. Le retrait est un ARBITRAGE, " +
+      "pas un remplacement : les articles reçus avant la v5 du fil n'ont pas " +
+      "de mentions tant qu'un push complet n'a pas eu lieu, et l'affichage " +
+      "d'allergènes est une surface réglementaire en service.",
+  ],
+  [
+    "b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts → pim/allergens/allergen-projection.js",
+    "Même arbitrage que `allergen-mapping.js` — `toInco` est l'autre moitié du " +
+      "recalcul. Les deux partent ensemble ou pas du tout.",
+  ],
+]);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -133,7 +175,7 @@ function topOf(relativePath) {
  * Les imports de paquets (`@lfd/…`, `@nestjs/…`) ne sont pas concernés : la
  * frontière qu'on tient ici est **interne** à l'application.
  */
-function importedTop(fromRelative, specifier) {
+function importedPath(fromRelative, specifier) {
   if (!specifier.startsWith(".")) {
     return null;
   }
@@ -145,13 +187,16 @@ function importedTop(fromRelative, specifier) {
       segments.push(part);
     }
   }
-  return topOf(segments.join("/"));
+  const path = segments.join("/");
+  const top = topOf(path);
+  return top === null ? null : { top, path };
 }
 
 const IMPORT = /(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+["']([^"']+)["']/g;
 
 const unknownDirs = new Set();
 const violations = [];
+const offSurface = [];
 const unusedExceptions = new Set(KNOWN.keys());
 
 for (const absolute of walk(join(ROOT, SRC))) {
@@ -168,24 +213,38 @@ for (const absolute of walk(join(ROOT, SRC))) {
 
   const source = readFileSync(absolute, "utf8");
   for (const match of source.matchAll(IMPORT)) {
-    const toTop = importedTop(fromRelative, match[1]);
-    if (toTop === null || toTop === fromTop) {
+    const target = importedPath(fromRelative, match[1]);
+    if (target === null || target.top === fromTop) {
       continue;
     }
-    const toBlock = BLOCK_OF[toTop];
+    const toBlock = BLOCK_OF[target.top];
     if (toBlock === undefined) {
-      unknownDirs.add(toTop);
+      unknownDirs.add(target.top);
       continue;
     }
-    if (toBlock === fromBlock || ALLOWED[fromBlock].has(toBlock)) {
+    if (toBlock === fromBlock) {
       continue;
     }
-    const key = `${fromRelative} → ${toTop}`;
+    if (!ALLOWED[fromBlock].has(toBlock)) {
+      const key = `${fromRelative} → ${target.top}`;
+      if (KNOWN.has(key)) {
+        unusedExceptions.delete(key);
+        continue;
+      }
+      violations.push({ key, fromBlock, toBlock });
+      continue;
+    }
+    // La direction est permise ; reste à savoir PAR OÙ.
+    const surface = PORT_SURFACE[`${fromBlock}→${toBlock}`];
+    if (surface === undefined || target.path.startsWith(surface)) {
+      continue;
+    }
+    const key = `${fromRelative} → ${target.path}`;
     if (KNOWN.has(key)) {
       unusedExceptions.delete(key);
       continue;
     }
-    violations.push({ key, fromBlock, toBlock });
+    offSurface.push({ key, fromBlock, toBlock, surface });
   }
 }
 
@@ -209,6 +268,18 @@ if (violations.length > 0) {
   console.error(
     "\n   Le franchissement passe par un PORT déclaré chez l'appelant, jamais par un import direct.",
   );
+}
+
+if (offSurface.length > 0) {
+  failed = true;
+  console.error("\n❌ Franchissements HORS de la surface publiée :\n");
+  for (const { key, fromBlock, toBlock, surface } of offSurface) {
+    console.error(
+      `   ${key}\n      ${fromBlock} → ${toBlock} est permis, mais par ${SRC}/${surface} uniquement.`,
+    );
+  }
+  console.error("\n   Ce qui manque se publie dans le canal, en classe ABSTRAITE — on n'atteint");
+  console.error("   pas l'intérieur d'un autre bloc parce qu'on en connaît le chemin.");
 }
 
 if (unusedExceptions.size > 0) {
