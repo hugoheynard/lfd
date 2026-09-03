@@ -160,6 +160,53 @@ describe('la publication B2B lit son aperçu toute seule', () => {
     expect(api.pushes.at(-1)).toEqual({ dryRun: false, fingerprint: 'empreinte-A' });
   });
 
+  /**
+   * Les cinq nombres sont la première réponse de l'écran. Le détail se déplie
+   * derrière ; la synthèse, elle, doit être là sans qu'on ait rien à ouvrir.
+   */
+  it('affiche la synthèse chiffrée avant tout détail', async () => {
+    const api = new FakeApi();
+    api.next = preview({
+      outgoing: [
+        { sku: 'A', name: 'A', priceMillicents: 1, vatRatePercent: 5.5, change: 'added' },
+        { sku: 'B', name: 'B', priceMillicents: 1, vatRatePercent: 5.5, change: 'changed' },
+        { sku: 'C', name: 'C', priceMillicents: 1, vatRatePercent: 5.5, change: 'unchanged' },
+      ],
+      removed: ['D'],
+      excluded: [{ sku: 'E', reason: 'variant_sans_prix' }],
+    });
+    const { fixture } = await make(api);
+
+    const figures = [...fixture.nativeElement.querySelectorAll('.figures > div')].map(
+      (node: Element) => node.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(figures).toEqual(['Entrent1', 'Changent1', 'Retirés1', 'Inchangés1', 'Écartés1']);
+  });
+
+  /**
+   * « Et le reste ? » se demande une fois. La liste existe, repliée : dépliée
+   * d'office, quarante lignes immobiles enterreraient les trois qui bougent.
+   */
+  it('liste les inchangés sous leur propre section', async () => {
+    const api = new FakeApi();
+    api.next = preview({
+      outgoing: [
+        {
+          sku: 'PAI-001',
+          name: 'Baguette',
+          priceMillicents: 1,
+          vatRatePercent: 5.5,
+          change: 'unchanged',
+        },
+      ],
+    });
+    const { fixture } = await make(api);
+
+    const text: string = fixture.nativeElement.textContent;
+    expect(text).toContain('Ce qui ne change pas');
+    expect(text).toContain('1 article(s) déjà à jour');
+  });
+
   /** Rien à envoyer n'est pas une panne : c'est la réponse la plus fréquente. */
   it('désarme l’envoi quand rien ne bouge', async () => {
     const api = new FakeApi();

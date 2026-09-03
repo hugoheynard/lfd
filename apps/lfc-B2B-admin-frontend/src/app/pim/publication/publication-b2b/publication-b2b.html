@@ -12,22 +12,22 @@
   @if (loading()) {
     <fold-loading message="Lecture de ce qui partirait…" />
   } @else if (preview(); as p) {
-    <!-- L'écart d'abord, le détail ensuite : la question est « qu'est-ce que ça
-         change », pas « que contient le catalogue ». -->
+    <!-- LES CHIFFRES D'ABORD. La question qu'on se pose en ouvrant cet écran est
+         « qu'est-ce que ça change », et elle a cinq nombres pour réponse. Le
+         détail vient après, pour ceux qui veulent savoir lesquels. -->
+    <dl class="figures">
+      @for (figure of figures(); track figure.label) {
+        <div [class.is-zero]="figure.value === 0">
+          <dt>{{ figure.label }}</dt>
+          <dd>{{ figure.value }}</dd>
+        </div>
+      }
+    </dl>
+
     @if (settled()) {
       <fold-callout appearance="inset" variant="neutral">
         <strong>La boutique est à jour.</strong> {{ p.outgoing.length }} article(s) en vente, aucun
         écart. Un envoi ne changerait rien.
-      </fold-callout>
-    } @else {
-      <fold-callout appearance="inset" variant="info">
-        <strong>{{ moving().length }} article(s) à envoyer</strong>
-        @if (p.removed.length > 0) {
-          · <strong>{{ p.removed.length }} à retirer de la vente</strong>
-        }
-        @if (unchangedCount() > 0) {
-          · {{ unchangedCount() }} inchangé(s)
-        }
       </fold-callout>
     }
 
@@ -51,46 +51,42 @@
     }
 
     @if (moving().length > 0) {
-      <!-- Ce qui BOUGE, nommément. On ne liste pas les inchangés : ils sont le
-           gros du catalogue, et les afficher noierait les quelques lignes qu'on
-           vient regarder. -->
-      <table class="outgoing">
-        <caption>
-          Ce que cet envoi changerait
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Référence</th>
-            <th scope="col">Nom</th>
-            <th scope="col" class="num">Prix HT</th>
-            <th scope="col" class="num">TVA</th>
-            <th scope="col">Effet</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of moving(); track item.sku) {
+      <fold-page-section title="Ce que cet envoi changerait" separator>
+        <table class="outgoing">
+          <thead>
             <tr>
-              <td>
-                <code>{{ item.sku }}</code>
-              </td>
-              <td>{{ item.name }}</td>
-              <td class="num">{{ euros(item.priceMillicents) }} €</td>
-              <td class="num">
-                @if (item.vatRatePercent === null) {
-                  <span class="unset">non réglé</span>
-                } @else {
-                  {{ item.vatRatePercent }} %
-                }
-              </td>
-              <td>
-                <span class="change" [attr.data-change]="item.change">{{
-                  changeLabel(item.change)
-                }}</span>
-              </td>
+              <th scope="col">Référence</th>
+              <th scope="col">Nom</th>
+              <th scope="col" class="num">Prix HT</th>
+              <th scope="col" class="num">TVA</th>
+              <th scope="col">Effet</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (item of moving(); track item.sku) {
+              <tr>
+                <td>
+                  <code>{{ item.sku }}</code>
+                </td>
+                <td>{{ item.name }}</td>
+                <td class="num">{{ euros(item.priceMillicents) }} €</td>
+                <td class="num">
+                  @if (item.vatRatePercent === null) {
+                    <span class="unset">non réglé</span>
+                  } @else {
+                    {{ item.vatRatePercent }} %
+                  }
+                </td>
+                <td>
+                  <span class="change" [attr.data-change]="item.change">{{
+                    changeLabel(item.change)
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </fold-page-section>
     }
 
     @if (p.removed.length > 0) {
@@ -118,6 +114,48 @@
           }
         </ul>
       </fold-callout>
+    }
+
+    @if (steady().length > 0) {
+      <!-- REPLIÉ. La réponse à « et le reste ? » se donne une fois, pour se
+           rassurer ; dépliée d'office elle enterrerait sous quarante lignes
+           immobiles les trois qui bougent. -->
+      <fold-page-section
+        title="Ce qui ne change pas"
+        [description]="steady().length + ' article(s) déjà à jour dans la boutique'"
+        separator
+        collapsible
+        [(open)]="steadyOpen"
+      >
+        <table class="outgoing">
+          <thead>
+            <tr>
+              <th scope="col">Référence</th>
+              <th scope="col">Nom</th>
+              <th scope="col" class="num">Prix HT</th>
+              <th scope="col" class="num">TVA</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of steady(); track item.sku) {
+              <tr>
+                <td>
+                  <code>{{ item.sku }}</code>
+                </td>
+                <td>{{ item.name }}</td>
+                <td class="num">{{ euros(item.priceMillicents) }} €</td>
+                <td class="num">
+                  @if (item.vatRatePercent === null) {
+                    <span class="unset">non réglé</span>
+                  } @else {
+                    {{ item.vatRatePercent }} %
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </fold-page-section>
     }
   } @else {
     <fold-empty-state

@@ -14,17 +14,35 @@
   padding-inline-start: var(--fold-space-lg);
 }
 
+/* Les cinq nombres, en tête. Même idiome que la vue d'ensemble du catalogue :
+   deux écrans qui répondent en chiffres doivent se lire pareil. */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+  margin: 0 0 var(--fold-space-md);
+
+  dt {
+    font-size: var(--fold-text-xs);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--fold-text-2xl);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Un zéro reste lisible mais s'efface : il dit « rien ici », pas « regarde ». */
+  .is-zero dd {
+    color: var(--fold-color-text-muted);
+  }
+}
+
 .outgoing {
   width: 100%;
   border-collapse: collapse;
-  margin-block-start: var(--fold-space-md);
   font-size: var(--fold-text-sm);
-
-  caption {
-    text-align: start;
-    padding-block-end: var(--fold-space-xs);
-    color: var(--fold-color-text-muted);
-  }
 
   th,
   td {

@@ -7,6 +7,7 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
+  FoldPageSectionComponent,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -73,6 +74,7 @@ const CHANGES: Readonly<Record<string, string>> = {
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    FoldPageSectionComponent,
   ],
   templateUrl: './publication-b2b.html',
   styleUrl: './publication-b2b.scss',
@@ -101,9 +103,38 @@ export class PublicationB2b {
     (this.preview()?.outgoing ?? []).filter((item) => item.change !== 'unchanged'),
   );
 
-  protected readonly unchangedCount = computed(
-    () => (this.preview()?.outgoing.length ?? 0) - this.moving().length,
+  /**
+   * Ce que l'envoi ne toucherait pas — le gros du catalogue.
+   *
+   * Listé, mais **replié** : c'est la réponse à « et le reste ? », qu'on se pose
+   * une fois pour se rassurer, pas la réponse à « qu'est-ce que je m'apprête à
+   * faire ». Déplié par défaut, il enterrerait les quelques lignes qui bougent
+   * sous quarante qui ne bougent pas.
+   */
+  protected readonly steady = computed(() =>
+    (this.preview()?.outgoing ?? []).filter((item) => item.change === 'unchanged'),
   );
+
+  /**
+   * La synthèse, en tête — les cinq nombres qui répondent avant tout détail.
+   *
+   * Un `0` s'affiche comme les autres : une ligne absente se lirait « pas
+   * calculé », alors qu'elle dit « rien dans cette catégorie ».
+   */
+  protected readonly figures = computed(() => {
+    const view = this.preview();
+    return [
+      { label: 'Entrent', value: this.countOf('added') },
+      { label: 'Changent', value: this.countOf('changed') },
+      { label: 'Retirés', value: view?.removed.length ?? 0 },
+      { label: 'Inchangés', value: this.steady().length },
+      { label: 'Écartés', value: view?.excluded.length ?? 0 },
+    ];
+  });
+
+  private countOf(change: string): number {
+    return (this.preview()?.outgoing ?? []).filter((item) => item.change === change).length;
+  }
 
   /**
    * Rien ne bouge : ni entrée, ni changement, ni retrait.
@@ -115,6 +146,9 @@ export class PublicationB2b {
   protected readonly settled = computed(
     () => this.moving().length === 0 && (this.preview()?.removed.length ?? 0) === 0,
   );
+
+  /** Replié d'entrée, et rouvert par le lecteur seul. */
+  protected readonly steadyOpen = signal(false);
 
   constructor() {
     void this.load();
