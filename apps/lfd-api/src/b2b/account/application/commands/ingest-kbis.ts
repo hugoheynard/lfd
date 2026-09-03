@@ -1,4 +1,6 @@
+import type { Clock } from "../../../../platform/time/clock.js";
 import type { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import type { CompanyRepository } from "../../domain/ports/company.repository.js";
 import type { DocumentStore } from "../../../../platform/storage/document-store.js";
@@ -20,6 +22,7 @@ export async function ingestKbis(
   store: DocumentStore,
   companies: CompanyRepository,
   events: DomainEventPublisher,
+  clock: Clock,
 ): Promise<void> {
   // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
   // au stockage : on ne range jamais un fichier douteux.
@@ -31,12 +34,20 @@ export async function ingestKbis(
     bytes: file.bytes,
     contentType: file.contentType,
   });
-  await companies.saveKbisMetadata(companyId, {
+  const company = await companies.load(companyId);
+  if (company === null) {
+    throw new CompanyNotFoundError(companyId);
+  }
+  // Un dépôt neuf n'est jamais certifié : c'est l'agrégat qui le garantit, par
+  // construction, et non plus l'adaptateur en remettant quatre colonnes à zéro.
+  company.depositKbis({
     storageKey,
     fileName: file.fileName,
     contentType: file.contentType,
     size: file.size,
+    uploadedAt: clock.now(),
   });
+  await companies.save(company);
 
   events.publish(new CompanyStepReachedEvent(companyId, "kbis"));
 }

@@ -117,7 +117,6 @@ function sampleCompany(): Company {
 function companiesRecorder(recorder: Recorder): CompanyRepository {
   return {
     declareUnowned: () => Promise.resolve(""),
-    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("company_new"),
     load: () => Promise.resolve(sampleCompany()),
@@ -125,7 +124,6 @@ function companiesRecorder(recorder: Recorder): CompanyRepository {
       recorder.writes.push("primary");
       return Promise.resolve();
     },
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 }

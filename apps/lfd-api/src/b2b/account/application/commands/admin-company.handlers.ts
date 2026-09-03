@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../../platform/time/clock.js";
+
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
@@ -41,6 +43,7 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
     private readonly store: DocumentStore,
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: UploadKbisByStaffCommand): Promise<void> {
@@ -51,6 +54,7 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
       this.store,
       this.companies,
       this.events,
+      this.clock,
     );
     // Tracé APRÈS, et hors transaction — seul acte du lot dans ce cas. Le dépôt
     // range d'abord le fichier au stockage objet, qui n'a pas de transaction :

@@ -4,15 +4,10 @@ import { CompanyStatus, CustomerRole } from "../../../platform/database/client/c
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { referenceFrom } from "../../../platform/id/reference.js";
-import { Clock } from "../../../platform/time/clock.js";
 import { Company, type CompanySoftState } from "../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
-import {
-  CompanyRepository,
-  type KbisCertification,
-  type KbisLocation,
-  type KbisMetadata,
-} from "../domain/ports/company.repository.js";
+import { CompanyRepository, type KbisLocation } from "../domain/ports/company.repository.js";
+import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 
 /** Préfixe de la référence société — ce que le `P-` du produit est à un article. */
@@ -56,7 +51,6 @@ async function pickFreeCompanyReference(
 export class PrismaCompanyRepository extends CompanyRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly clock: Clock,
     private readonly ids: IdGenerator,
   ) {
     super();
@@ -208,6 +202,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
             },
       suspensionCause: row.suspensionCause,
       nafCode: row.nafCode,
+      kbis: kbisOf(row),
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
@@ -247,43 +242,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         preferredPickupAddressId: state.fulfillmentPreference.pickupAddressId,
         preferredDeliveryAddressId: state.fulfillmentPreference.deliveryAddressId,
         deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
-      },
-    });
-  }
-
-  async saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void> {
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: {
-        kbisStorageKey: meta.storageKey,
-        kbisFileName: meta.fileName,
-        kbisContentType: meta.contentType,
-        kbisSize: meta.size,
-        kbisUploadedAt: this.clock.now(),
-        // Nouveau fichier ⇒ certification précédente invalidée, trace comprise :
-        // laisser le nom d'un agent sur un extrait qu'il n'a jamais vu ferait
-        // mentir la trace.
-        kbisCertifiedAt: null,
-        kbisCertifiedBySub: null,
-        kbisCertifiedByName: null,
-        kbisCertifiedByRole: null,
-      },
-    });
-  }
-
-  async saveKbisCertification(
-    companyId: string,
-    certification: KbisCertification | null,
-  ): Promise<void> {
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: {
-        kbisCertifiedAt: certification?.at ?? null,
-        kbisCertifiedBySub: certification?.bySub ?? null,
-        // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence,
-        // pas un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
-        kbisCertifiedByName: blankToNull(certification?.byName),
-        kbisCertifiedByRole: blankToNull(certification?.byRole),
+        ...kbisColumns(state.kbis),
       },
     });
   }
@@ -368,4 +327,90 @@ function contactColumns(contact: CompanySoftState["contact"]): {
 /** Une chaîne vide n'est pas une valeur : c'est une absence. */
 function blankToNull(value: string | undefined): string | null {
   return value === undefined || value.trim() === "" ? null : value;
+}
+
+/** Les colonnes du KBIS d'une ligne `companies`, avant rehydratation. */
+interface KbisRow {
+  readonly kbisStorageKey: string | null;
+  readonly kbisFileName: string | null;
+  readonly kbisContentType: string | null;
+  readonly kbisSize: number | null;
+  readonly kbisUploadedAt: Date | null;
+  readonly kbisCertifiedAt: Date | null;
+  readonly kbisCertifiedBySub: string | null;
+  readonly kbisCertifiedByName: string | null;
+  readonly kbisCertifiedByRole: string | null;
+}
+
+/**
+ * Ligne → dépôt, ou `null` quand aucun extrait n'est arrivé.
+ *
+ * Les quatre colonnes du fichier sont nullables **ensemble** : elles sont
+ * écrites d'un seul geste. On exige quand même les quatre, plutôt que de se
+ * fier à `kbisStorageKey` seul — une ligne à moitié écrite donnerait un dépôt
+ * dont le domaine croirait le fichier complet.
+ */
+function kbisOf(row: KbisRow): KbisDeposit | null {
+  if (
+    row.kbisStorageKey === null ||
+    row.kbisFileName === null ||
+    row.kbisContentType === null ||
+    row.kbisSize === null
+  ) {
+    return null;
+  }
+  return KbisDeposit.reconstitute(
+    {
+      storageKey: row.kbisStorageKey,
+      fileName: row.kbisFileName,
+      contentType: row.kbisContentType,
+      size: row.kbisSize,
+      // Un extrait déposé avant que la colonne existe : sa date est inconnue,
+      // pas « maintenant ». On prend l'époque plutôt que de mentir sur un fait.
+      uploadedAt: row.kbisUploadedAt ?? new Date(0),
+    },
+    // La trace n'est pas séparable de l'instant : sans `at`, il n'y a pas de
+    // certification, quel que soit ce que les trois autres colonnes portent.
+    row.kbisCertifiedAt === null
+      ? null
+      : {
+          at: row.kbisCertifiedAt,
+          bySub: row.kbisCertifiedBySub ?? "",
+          byName: row.kbisCertifiedByName ?? "",
+          byRole: row.kbisCertifiedByRole ?? "",
+        },
+  );
+}
+
+/**
+ * Dépôt → colonnes. Toutes écrites à chaque fois, y compris à `null` : c'est ce
+ * qui fait qu'un remplacement d'extrait efface la certification précédente sans
+ * qu'aucune ligne ici ne parle de remise à zéro — l'agrégat a rendu un dépôt
+ * neuf, et un dépôt neuf n'a pas de certification.
+ */
+function kbisColumns(kbis: KbisDeposit | null): {
+  kbisStorageKey: string | null;
+  kbisFileName: string | null;
+  kbisContentType: string | null;
+  kbisSize: number | null;
+  kbisUploadedAt: Date | null;
+  kbisCertifiedAt: Date | null;
+  kbisCertifiedBySub: string | null;
+  kbisCertifiedByName: string | null;
+  kbisCertifiedByRole: string | null;
+} {
+  const certification = kbis?.certification ?? null;
+  return {
+    kbisStorageKey: kbis?.file.storageKey ?? null,
+    kbisFileName: kbis?.file.fileName ?? null,
+    kbisContentType: kbis?.file.contentType ?? null,
+    kbisSize: kbis?.file.size ?? null,
+    kbisUploadedAt: kbis?.file.uploadedAt ?? null,
+    kbisCertifiedAt: certification?.at ?? null,
+    kbisCertifiedBySub: certification?.bySub ?? null,
+    // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence, pas
+    // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
+    kbisCertifiedByName: blankToNull(certification?.byName),
+    kbisCertifiedByRole: blankToNull(certification?.byRole),
+  };
 }

@@ -36,14 +36,12 @@ function doubles(
   const companies: CompanyRepository = {
     load: () => Promise.resolve(null),
     save: () => Promise.resolve(),
-    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(options.siretTaken === true),
     declareOwnedBy: (company, ownerUserId) => {
       declared.push({ company, ownerUserId });
       return Promise.resolve("company_new");
     },
     declareUnowned: () => Promise.resolve("company_new"),
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 

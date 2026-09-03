@@ -63,13 +63,11 @@ function bookWith(
   const written: Written = { contacts: [], alignedRoles: [] };
 
   const companies: CompanyRepository = {
-    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("cmp_1"),
     declareUnowned: () => Promise.resolve("cmp_1"),
     load: () => Promise.resolve(company),
     save: () => Promise.resolve(),
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 

@@ -13,10 +13,16 @@ export abstract class CompanyRepository {
   abstract load(companyId: string): Promise<Company | null>;
 
   /**
-   * Persiste l'état **souple** d'un agrégat chargé (identité souple + contact) —
-   * il prend l'agrégat, jamais des colonnes. Le statut, les termes et le KBIS ont
-   * leurs propres transitions (méthodes ci-dessous) tant que Company ne les porte
-   * pas encore.
+   * Persiste l'état d'un agrégat chargé — il prend l'agrégat, jamais des
+   * colonnes.
+   *
+   * Le **KBIS** y est entré le 2026-09-03. Il avait deux écritures ciblées
+   * (`saveKbisMetadata`, `saveKbisCertification`) au motif qu'il était « couplé
+   * au stockage objet ». Le couplage est dans le handler, qui range le fichier
+   * dans R2 avant d'écrire quoi que ce soit ; ce que les écritures ciblées
+   * emportaient vraiment, c'était la seule règle du KBIS — un nouveau fichier
+   * n'est jamais certifié — appliquée par l'adaptateur Prisma en remettant
+   * quatre colonnes à `null`.
    */
   abstract save(company: Company): Promise<void>;
 
@@ -46,50 +52,14 @@ export abstract class CompanyRepository {
   abstract declareUnowned(company: Company): Promise<string>;
 
   /**
-   * Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2), et
-   * **remet la certification à zéro** : un nouveau fichier n'est jamais certifié
-   * tant que le staff ne l'a pas revalidé.
-   */
-  abstract saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void>;
-
-  /**
-   * Où lire le KBIS pour le télécharger, ou `null` s'il n'y en a pas. Read
-   * étroit, compagnon direct de l'écriture ci-dessus — la clé de stockage et le
-   * `contentType` sont des détails infra, absents de la vue `/me`.
+   * Où lire le KBIS pour le télécharger, ou `null` s'il n'y en a pas.
+   *
+   * Read **étroit**, et il reste séparé de l'agrégat exprès : servir un fichier
+   * n'a pas besoin de charger une société entière, et la clé de stockage comme
+   * le `contentType` sont des détails d'infrastructure — ils n'ont jamais
+   * traversé la vue `/me`.
    */
   abstract kbisLocation(companyId: string): Promise<KbisLocation | null>;
-
-  /**
-   * Pose — ou retire (`null`) — la **certification** du KBIS déposé.
-   *
-   * Certifier n'est pas une donnée saisie : c'est un agent qui a ouvert
-   * l'extrait, l'a comparé à ce qui est enregistré, et engage sa parole. D'où la
-   * trace jointe, et d'où le retrait possible : un clic de trop doit pouvoir se
-   * défaire, sinon personne n'osera cliquer.
-   */
-  abstract saveKbisCertification(
-    companyId: string,
-    certification: KbisCertification | null,
-  ): Promise<void>;
-}
-
-/** Qui a certifié, et quand. Le nom et le titre sont figés à cet instant. */
-export interface KbisCertification {
-  readonly at: Date;
-  /** Le `sub` du token staff — l'identifiant qui survit à un changement de nom. */
-  readonly bySub: string;
-  /** Instantané du nom d'usage, vide si le `sub` n'est dans aucune fiche. */
-  readonly byName: string;
-  /** Instantané du périmètre, vide de même. */
-  readonly byRole: string;
-}
-
-/** Métadonnées d'un KBIS déposé (le fichier vit dans le stockage objet). */
-export interface KbisMetadata {
-  readonly storageKey: string;
-  readonly fileName: string;
-  readonly contentType: string;
-  readonly size: number;
 }
 
 /** De quoi servir le fichier au téléchargement. */

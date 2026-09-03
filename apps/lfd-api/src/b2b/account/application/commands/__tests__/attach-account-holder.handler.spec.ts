@@ -78,9 +78,7 @@ function doubles(
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("cmp_owned"),
     declareUnowned: () => Promise.resolve("cmp_unowned"),
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
-    saveKbisCertification: () => Promise.resolve(),
   };
 
   const access = new FakeAccess(

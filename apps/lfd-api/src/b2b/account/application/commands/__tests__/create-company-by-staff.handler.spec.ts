@@ -48,7 +48,6 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
   const companies: CompanyRepository = {
     load: () => Promise.resolve(null),
     save: () => Promise.resolve(),
-    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(options.siretTaken === true),
     declareOwnedBy: () => {
       owned.count += 1;
@@ -58,7 +57,6 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
       unowned.push(company);
       return Promise.resolve("company_unowned");
     },
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 

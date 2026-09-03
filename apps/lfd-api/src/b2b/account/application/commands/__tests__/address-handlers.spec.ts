@@ -133,12 +133,10 @@ function companiesReturningSample(): CompanyRepository {
   });
   return {
     declareUnowned: () => Promise.resolve(""),
-    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("company_new"),
     load: () => Promise.resolve(company),
     save: () => Promise.resolve(),
-    saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 }

@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { CompanyNotFoundError, KbisNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import {
   KbisCertificationRevokedEvent,
@@ -37,9 +37,9 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
   ) {}
 
   async execute(command: CertifyKbisCommand): Promise<void> {
-    const kbis = await this.companies.kbisLocation(command.companyId);
-    if (kbis === null) {
-      throw new KbisNotFoundError(command.companyId);
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
     }
 
     const agent = await this.staff.identify(command.staffSub);
@@ -48,13 +48,16 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     // pas QUAND ni par qui le jour où la vérification sera retirée. Une panne
     // de journal annule donc la certification plutôt que de l'écrire en
     // aveugle — c'est ce qui rend la trace opposable.
+    // `certifyKbis` refuse s'il n'y a pas d'extrait — la garde était ici, sur un
+    // port de LECTURE lu juste avant une écriture nue. Une vue ne garantit rien.
+    company.certifyKbis({
+      at,
+      bySub: command.staffSub,
+      byName: agent?.name ?? "",
+      byRole: agent?.role ?? "",
+    });
     await this.uow.run(async () => {
-      await this.companies.saveKbisCertification(command.companyId, {
-        at,
-        bySub: command.staffSub,
-        byName: agent?.name ?? "",
-        byRole: agent?.role ?? "",
-      });
+      await this.companies.save(company);
       await this.events.publishTraced(new KbisCertifiedEvent(command.companyId, at));
     });
   }
@@ -98,8 +101,9 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
     // Sans cette trace, le retrait serait INTROUVABLE le lendemain : l'état
     // courant redevient « déposé, pas vérifié », comme si rien ne s'était passé.
     // `suspended` reste à faux — plus aucun retrait ne coupe l'accès.
+    company.revokeKbisCertification();
     await this.uow.run(async () => {
-      await this.companies.saveKbisCertification(command.companyId, null);
+      await this.companies.save(company);
       await this.events.publishTraced(
         new KbisCertificationRevokedEvent(command.companyId, this.clock.now(), false),
       );

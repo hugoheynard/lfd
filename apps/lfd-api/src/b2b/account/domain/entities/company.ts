@@ -4,6 +4,7 @@ import {
   CompanyHasNoHolderError,
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
+  KbisNotFoundError,
 } from "../errors/account-errors.js";
 import { NO_FULFILLMENT_PREFERENCE } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
@@ -14,6 +15,11 @@ import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
 import { Siret } from "../value-objects/siret.js";
+import {
+  KbisDeposit,
+  type KbisCertification,
+  type KbisFile,
+} from "../value-objects/kbis-deposit.js";
 
 const TEXT_MAX_LENGTH = 160;
 
@@ -77,12 +83,23 @@ export interface ReconstituteCompanyInput {
    * a simplement pas — ce qui est l'état de tout le portefeuille existant.
    */
   readonly fulfillmentPreference?: FulfillmentPreferenceView;
+  /**
+   * L'extrait KBIS déposé, **facultatif** de la même façon : une société sans
+   * papiers déposés n'en a pas, et c'est l'état de départ de toutes.
+   */
+  readonly kbis?: KbisDeposit | null;
 }
 
 /**
  * État sérialisé pour l'adaptateur : identité souple + contact + termes de
- * règlement + statut/activation. Le **KBIS** garde son écriture propre (couplée
- * au stockage objet R2), hors de cet agrégat.
+ * règlement + statut/activation + **KBIS**.
+ *
+ * Le KBIS avait une écriture propre, « couplée au stockage objet R2 ». La
+ * justification ne tenait pas : le couplage est dans le HANDLER, qui range le
+ * fichier avant d'écrire quoi que ce soit, et il le reste. L'agrégat ne connaît
+ * que la clé de stockage — une chaîne — et cette écriture séparée laissait la
+ * seule vraie règle du KBIS (un nouveau fichier n'est jamais certifié) dans
+ * l'adaptateur Prisma.
  */
 export interface CompanySoftState {
   readonly enseigne: string;
@@ -114,6 +131,8 @@ export interface CompanySoftState {
   readonly nafCode: string;
   /** Comment ce client est servi d'habitude — un défaut, jamais une contrainte. */
   readonly fulfillmentPreference: FulfillmentPreferenceView;
+  /** L'extrait déposé et sa certification, ou `null` — écrit avec le reste. */
+  readonly kbis: KbisDeposit | null;
 }
 
 /**
@@ -128,8 +147,13 @@ export interface CompanySoftState {
  * mute pas après déclaration. Ce qui évolue le fait par des **méthodes métier**,
  * jamais par écriture de colonne : identité souple (`editSoftIdentity`), contact
  * (`changePrimaryContact`), crédits de règlement (`requestTerm` / `grantTerms`),
- * activation (`activate`). `toPersistence()` sérialise ces
- * champs mutables ; le KBIS garde son écriture propre (couplée au stockage).
+ * activation (`activate`), papiers (`depositKbis` / `certifyKbis`).
+ * `toPersistence()` sérialise l'ensemble.
+ *
+ * Le KBIS « gardait son écriture propre, couplée au stockage » — c'était écrit
+ * ici. Le couplage est dans le HANDLER, qui range le fichier dans R2 avant
+ * d'écrire quoi que ce soit, et il y reste : cet agrégat ne connaît qu'une clé.
+ * Ce que l'écriture séparée emportait vraiment, c'était la seule règle du KBIS.
  */
 export class Company {
   private constructor(
@@ -149,6 +173,8 @@ export class Company {
     private suspensionCauseValue: SuspensionCause | null,
     /** Code NAF résolu depuis le SIRET (via l'API entreprises) — vide tant qu'inconnu. */
     private nafCodeValue: string,
+    /** L'extrait déposé, ou `null` : aucun papier n'est encore arrivé. */
+    private kbisValue: KbisDeposit | null,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact | null): Company {
@@ -178,6 +204,8 @@ export class Company {
       null,
       // NAF inconnu à la déclaration : résolu peu après depuis le SIRET (best-effort).
       "",
+      // Aucun papier : un compte s'ouvre sans, ils arrivent ensuite.
+      null,
     );
   }
 
@@ -199,6 +227,7 @@ export class Company {
       input.activatedBy,
       input.suspensionCause,
       input.nafCode,
+      input.kbis ?? null,
     );
   }
 
@@ -418,6 +447,56 @@ export class Company {
     };
   }
 
+  /** L'extrait déposé et son éventuelle certification, ou `null`. */
+  get kbis(): KbisDeposit | null {
+    return this.kbisValue;
+  }
+
+  /**
+   * Enregistre l'extrait déposé.
+   *
+   * **Un remplacement décertifie**, et ce n'est pas une ligne de code ici : le
+   * dépôt neuf n'a simplement pas de certification. La règle a cessé d'être un
+   * geste (« remettre quatre colonnes à null ») pour devenir une propriété.
+   *
+   * L'appelant a déjà rangé le fichier dans le stockage objet — cet agrégat ne
+   * connaît qu'une clé.
+   */
+  depositKbis(file: KbisFile): void {
+    this.kbisValue = KbisDeposit.deposit(file);
+  }
+
+  /**
+   * Pose la certification : un agent a ouvert l'extrait, l'a comparé à ce qui
+   * est enregistré, et engage sa parole.
+   *
+   * @throws {KbisNotFoundError} aucun extrait déposé. Certifier « à blanc »
+   * produirait un compte dont personne n'a jamais vu les papiers — exactement ce
+   * que la certification est censée empêcher. La garde était dans le handler,
+   * qui lisait la présence du fichier par un port de LECTURE avant d'écrire en
+   * aveugle ; une vue ne garantit rien, l'agrégat si.
+   */
+  certifyKbis(certification: KbisCertification): void {
+    if (this.kbisValue === null) {
+      throw new KbisNotFoundError(this.identityId ?? "");
+    }
+    this.kbisValue = this.kbisValue.certify(certification);
+  }
+
+  /**
+   * Retire la certification sans toucher au fichier, **et sans toucher au
+   * compte** : plus aucun retrait ne suspend (décision commerciale assumée).
+   *
+   * Idempotent, y compris sans extrait : décertifier ce qui ne l'est pas ne fait
+   * rien, et ne se refuse pas — un refus obligerait l'appelant à distinguer deux
+   * situations qui mènent au même état.
+   */
+  revokeKbisCertification(): void {
+    if (this.kbisValue !== null) {
+      this.kbisValue = this.kbisValue.revoke();
+    }
+  }
+
   get status(): CompanyStatus {
     return this.statusValue;
   }
@@ -547,6 +626,7 @@ export class Company {
       activatedBy: this.activatedByValue,
       suspensionCause: this.suspensionCauseValue,
       nafCode: this.nafCodeValue,
+      kbis: this.kbisValue,
     };
   }
 }
