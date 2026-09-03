@@ -1,6 +1,7 @@
 import { CATALOG_CATEGORY_ORDER, type PriceRuleView, type PricingBoardView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { Clock } from "../../../platform/time/clock.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
 import {
@@ -58,6 +59,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     private readonly elasticity: BoardElasticityService,
     private readonly ladders: VolumeLadderReader,
     private readonly history: CanonicalPriceHistoryReader,
+    private readonly clock: Clock,
   ) {
     super();
   }
@@ -75,7 +77,11 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // Pris une fois : l'âge d'une limite et la résolution des prix doivent
     // parler du même instant. Le défaut est maintenant ; une date donnée rend
     // l'écran tel qu'il était.
-    const at = instant ?? new Date();
+    //
+    // « Maintenant » vient de l'horloge de la REQUÊTE, pas du mur : elle est
+    // gelée à l'ingress, donc `read` et `readForScreen` appelées dans la même
+    // requête voient le même instant — et un test peut la figer.
+    const at = instant ?? this.clock.now();
     return this.assemble(await this.load(at), at);
   }
 
@@ -94,7 +100,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
    * mesuré sans point de coupure, donc muet.
    */
   async readForScreen(instant?: Date): Promise<PricingBoardView> {
-    const at = instant ?? new Date();
+    const at = instant ?? this.clock.now();
     const loaded = await this.load(at);
     const ruleDates = new Map(loaded.rules.map((entry) => [entry.rule.id, entry.rule.validFrom]));
     return this.elasticity.enrich(this.assemble(loaded, at), ruleDates, at);

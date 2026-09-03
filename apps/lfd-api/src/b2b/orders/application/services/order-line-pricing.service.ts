@@ -27,6 +27,7 @@ import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-
 import type { VolumeCommitment } from "../../../pricing/domain/volume-commitment.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 import type { OrderParties } from "./order-parties.js";
+import { Clock } from "../../../../platform/time/clock.js";
 
 /**
  * Une ligne résolue : **ce qui part sur la commande**, et ce qui n'y part pas.
@@ -83,6 +84,7 @@ export class OrderLinePricing {
     private readonly volumeLadders: VolumeLadderReader,
     private readonly commitments: VolumeCommitmentReader,
     private readonly customerVolumes: CustomerVolumeReader,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -133,7 +135,14 @@ export class OrderLinePricing {
     // L'instant est pris UNE fois pour toute la commande : deux lignes résolues à
     // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
     // du basculement d'une promotion.
-    const at = new Date();
+    //
+    // Et il vient de l'horloge de la REQUÊTE, pas du mur. Ce paragraphe prenait
+    // soin de ne lire l'instant qu'une fois, puis le lisait au mauvais endroit :
+    // le devis et la commande qu'il confirme sont deux requêtes, et rien ne les
+    // obligeait à voir la même fenêtre de promotion. C'est le chemin qui
+    // FACTURE — un prix s'y défend devant le client, donc il doit être rejouable
+    // à un instant nommé, pas dépendre de la milliseconde du serveur.
+    const at = this.clock.now();
 
     // Le catalogue est résolu EN UN LOT, avant la boucle : depuis qu'il vient de
     // la base, le résoudre ligne à ligne ferait une requête par ligne de panier

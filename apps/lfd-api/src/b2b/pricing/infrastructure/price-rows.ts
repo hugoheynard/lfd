@@ -232,11 +232,17 @@ function dynamicOf(row: FloorRow): DynamicFloor | null {
  * @param currentCanonicalMillicents le tarif représentatif **d'aujourd'hui** pour la
  *   portée visée, ou `null` si l'appelant ne sait pas le calculer. Passé plutôt
  *   que lu ici : ce fichier convertit des lignes, il n'interroge pas le catalogue.
+ * @param now l'instant de lecture — **exigé**, jamais deviné. Il valait
+ *   `new Date()` par défaut : un appelant qui l'oubliait recevait alors l'heure
+ *   du mur au lieu de l'horloge de la requête, et l'âge d'un plancher s'en
+ *   trouvait calculé contre un instant que rien ne gelait. Personne ne s'en
+ *   servait — les deux appelants passaient déjà les trois arguments — donc ce
+ *   défaut n'était qu'un piège en attente. Sans lui, l'oubli ne compile plus.
  */
 export function floorViewFromRow(
   row: FloorRow,
-  currentCanonicalMillicents: number | null = null,
-  now: Date = new Date(),
+  currentCanonicalMillicents: number | null,
+  now: Date,
 ): PriceFloorView {
   const scoped = floorFromRow(row);
   const dynamic = scoped.policy.dynamic;

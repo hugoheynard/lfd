@@ -47,6 +47,14 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
 }
 import { PlaceOrderForCustomerCommand } from "../place-order-for-customer.command.js";
 import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handler.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+
+/**
+ * L'instant où les prix sont résolus. Une constante plutôt qu'un `new Date()` :
+ * le service lit désormais l'horloge de la requête, et un test qui laisserait
+ * le mur décider retomberait sur la bombe des fenêtres glissantes.
+ */
+const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
 
 /**
  * Catalogue **sans règle tarifaire** : le comportement du système avant qu'une
@@ -244,6 +252,7 @@ function handler(
         noVolumeLadders,
         noCommitments,
         noCustomerVolumes,
+        new FixedClock(PRICED_AT),
       ),
       currentCatalogVersion,
       pickups,
@@ -401,6 +410,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           noVolumeLadders,
           noCommitments,
           noCustomerVolumes,
+          new FixedClock(PRICED_AT),
         ),
         currentCatalogVersion,
         pickups,

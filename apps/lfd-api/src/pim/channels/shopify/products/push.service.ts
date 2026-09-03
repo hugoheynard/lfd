@@ -15,6 +15,7 @@ import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales
 import { contextIsSold } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
 import { ShopifySnapshotService } from "./snapshot.service.js";
 import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
+import { Clock } from "../../../../platform/time/clock.js";
 
 /** Le mode d'un pilote, dans le vocabulaire des snapshots (`dry-run` → `dry_run`). */
 function snapshotMode(driver: ShopifyDriver): "live" | "dry_run" {
@@ -52,6 +53,7 @@ export class ShopifyPushService {
     private readonly collections: ShopifyCollectionsService,
     private readonly taxPlan: TaxCollectionsPlan,
     private readonly contexts: SalesContextRegistry,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -388,7 +390,10 @@ export class ShopifyPushService {
   ): Promise<void> {
     const data = {
       lastPushedHash: fields.hash,
-      lastPushedAt: new Date(),
+      // L'horloge de la requête, pas le mur : c'est la date qu'on relit pour
+      // savoir si la boutique est à jour, donc un fait métier — et un push qui
+      // touche cinquante fiches doit toutes les dater du même instant.
+      lastPushedAt: this.clock.now(),
       syncStatus: "up_to_date" as const,
       lastError: null,
       ...(fields.productGid === null ? {} : { shopifyProductGid: fields.productGid }),

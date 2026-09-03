@@ -15,6 +15,11 @@ import { ShopifyPushService } from "../push.service.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { RecordSnapshotInput } from "../snapshot.service.js";
 import { ShopifySnapshotService } from "../snapshot.service.js";
+import { Clock } from "../../../../../platform/time/clock.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+
+/** L'instant du push — nommé, pour que la date écrite soit assertable. */
+const PUSHED_AT = new Date("2026-01-15T09:00:00.000Z");
 
 function product(over: Partial<ProductRecord> = {}): ProductRecord {
   return {
@@ -120,6 +125,9 @@ async function build(
   const moduleRef = await Test.createTestingModule({
     providers: [
       ShopifyPushService,
+      // `lastPushedAt` vient du port, plus du mur : le doublé le fige, sinon
+      // « la boutique est-elle à jour ? » se répondrait à la milliseconde près.
+      { provide: Clock, useValue: new FixedClock(PUSHED_AT) },
       {
         provide: CatalogueReader,
         useValue: {
