@@ -19,16 +19,20 @@
 // chemin du prix, à l'intérieur, prend le fond EN CREUX, qui est le plus sombre
 // du thème. Les deux niveaux disent deux portées de lecture : la synthèse parle
 // de tout le catalogue, la trace d'un seul article.
+// L'hôte garde la mise en page de `fold-page-section` : un `display:flex` posé
+// ici écrasait la sienne pour rien, puisque c'est `stack` qui espace le corps.
 .masthead {
-  display: flex;
-  flex-direction: column;
   // **Collant.** C'est la seule zone de l'écran qui ne se modifie pas : on y lit
   // ce que le moteur a conclu, et on veut le garder sous les yeux en descendant
   // la grille. Au-dessus des en-têtes collants des tables, qui montent à 1.
   position: sticky;
   top: 0;
   z-index: 4;
-  gap: var(--fold-space-lg, 1rem);
+  // `stack` fait espacer les trois blocs par la section elle-même. Un `gap` posé
+  // ici ne servait à rien : il visait l'hôte de `fold-page-section`, dont le
+  // corps est un `display:block` — le titre, les compteurs et la trace se
+  // touchaient donc, et seul un padding sur la carte les séparait.
+  --fold-page-section-gap: var(--fold-space-md, 0.75rem);
   // `bleed` avale le padding HAUT du layout — c'est ce qui colle la bande au
   // chrome de l'app. Il avale du même coup l'espace SOUS elle : sans cette
   // marge, la carte de mise en garde vient toucher la bande et les deux supports

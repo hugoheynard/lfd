@@ -9,9 +9,13 @@
 // La carte respire au-dessus : collée aux compteurs, elle se lisait comme leur
 // prolongement, alors qu'elle change de portée — la synthèse parle de tout le
 // catalogue, la trace d'un seul article.
+// La carte respire nettement au-dessus, EN PLUS du rythme de la bande : collée
+// aux compteurs, elle se lisait comme leur prolongement, alors qu'elle change de
+// portée — la synthèse parle de tout le catalogue, la trace d'un seul article.
+// C'est ce décrochage qui dit qu'on passe de l'un à l'autre.
 :host {
   display: block;
-  padding-top: var(--fold-space-sm, 0.5rem);
+  padding-top: var(--fold-space-lg, 1rem);
 }
 
 .panel {
