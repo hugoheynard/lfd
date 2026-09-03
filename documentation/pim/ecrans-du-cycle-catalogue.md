@@ -352,13 +352,22 @@ Elle répond à **« qu'est-ce qui part »**. C'est le seul écran qui envoie.
 
 **Doit porter, pour chaque canal**
 
-- Deux gestes nommés pareil partout : **Simuler**, puis **Envoyer**. Envoyer est
-  refusé tant qu'on n'a pas simulé, et n'envoie que ce que la simulation a rendu
-  (l'empreinte relue voyage avec l'envoi).
+- ✅ **L'aperçu se calcule à l'ouverture, il ne se demande pas.** Ce document
+  prescrivait « deux gestes : **Simuler**, puis **Envoyer** ». C'était décrire
+  une contrainte technique comme un choix d'usage : on ne décide pas d'envoyer
+  sans voir ce qui partirait, donc toute visite commençait par ce clic. Il
+  existait parce que simuler ÉCRIVAIT — `push({dryRun:true})` posait une ancre de
+  révision à chaque regard. Depuis
+  `GET /b2b/admin/catalog/push-preview`, regarder est une lecture ; il reste
+  **Envoyer**, et un **Recalculer** pour relire à la demande.
+- L'empreinte de l'aperçu affiché voyage avec l'envoi : si le catalogue a bougé
+  depuis l'ouverture, le serveur refuse en `409`.
 - **Ce qui part**, ligne à ligne — et surtout **ce qui ne part pas** : les
   écartés, avec leur cause.
-- 🔴 **Ce que l'envoi va RETIRER, SKU par SKU.** La simulation laisse
+- ✅ **Ce que l'envoi va RETIRER, SKU par SKU.** La simulation laissait
   `removedSkus` vide — elle seule supposerait de connaître l'état d'en face.
+  L'aperçu, lui, confronte la projection au miroir : il nomme les sortants, et
+  marque chaque article entrant / changé / inchangé.
   ⚠️ Ce document a d'abord écrit « aucun écran ne le montre » : **c'est faux**.
   `GET /b2b/admin/catalog/parity` rend `stale` — « dans le miroir, plus publiés »
   ([`catalog-parity.ts`](../../packages/contracts/src/catalog-parity.ts)) — calculé
@@ -415,7 +424,7 @@ Shopify.
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------- |
 | 1   | La décision « vendu aux pros » est écrite deux fois (matrice **et** binding), et les deux ont divergé — 41 contre 1                           | modèle + `/pim/produits`              | 🔴      |
 | 2   | La projection B2B ne consulte le statut nulle part : un brouillon est vendu aux professionnels (Shopify, lui, garde déjà)                     | modèle                                | 🔴      |
-| 3   | La simulation ne NOMME pas ce que l'envoi va retirer là où on appuie sur Envoyer — le calcul existe, il est sur un autre écran                | `/pim/publication`                    | 🔴      |
+| 3   | ~~La simulation ne NOMME pas ce que l'envoi va retirer là où on appuie sur Envoyer~~ — **corrigé** : `GET push-preview`, chargé à l'ouverture | `/pim/publication`                    | ✅      |
 | 4   | La colonne `B2B`, les actions _Vendre sur / Retirer_ de la liste **et le bouton de la fiche** (`b2b-delivery.ts:201`) partent avec le binding | `/pim/produits` · `/pim/produits/:id` | 🟠      |
 | 5   | Le clic sur la ligne n'ouvre pas la fiche ; « Ouvrir la fiche » est une entrée de menu                                                        | `/pim/produits`                       | 🟠      |
 | 6   | La chaîne est coupée entre la Vue d'ensemble et Intégrations                                                                                  | `/pim/catalogue`                      | 🟠      |

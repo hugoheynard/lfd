@@ -55,8 +55,16 @@ export abstract class B2bCatalogDriver {
 export class DryRunB2bCatalogDriver extends B2bCatalogDriver {
   readonly mode = "dry-run" as const;
 
-  send(snapshot: CatalogSnapshot): Promise<CatalogIngestionReport> {
-    return Promise.resolve({
+  /**
+   * Le rapport, **sans origine**.
+   *
+   * Une simulation n'a pas d'ancre à citer : elle n'en pose plus. Le paramètre
+   * `origin` de {@link B2bCatalogDriver.send} restait donc à remplir avec un
+   * identifiant qu'il fallait d'abord fabriquer — et c'est précisément ce qui
+   * faisait qu'un simple regard écrivait une révision.
+   */
+  simulate(snapshot: CatalogSnapshot): CatalogIngestionReport {
+    return {
       // Une simulation n'entre nulle part : ni faits de vente, ni réception.
       status: "applied" as const,
       acceptedProducts: snapshot.products.length,
@@ -67,6 +75,11 @@ export class DryRunB2bCatalogDriver extends B2bCatalogDriver {
       acceptedCategories: snapshot.categories.length,
       removedSkus: [],
       appliedAt: snapshot.generatedAt,
-    });
+    };
+  }
+
+  /** Le port reste honoré : l'origine est simplement sans emploi ici. */
+  send(snapshot: CatalogSnapshot): Promise<CatalogIngestionReport> {
+    return Promise.resolve(this.simulate(snapshot));
   }
 }

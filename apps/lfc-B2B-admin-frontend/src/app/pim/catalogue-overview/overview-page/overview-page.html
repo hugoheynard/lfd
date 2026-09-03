@@ -48,10 +48,12 @@
       <fold-page-section title="Depuis la dernière publication" separator>
         @if (o.lastRevision === null) {
           <!-- « PUBLIÉE », pas « posée » : la référence est l'ancre de la
-               dernière publication réussie. Des ancres peuvent très bien
-               exister — une simulation en pose une — sans qu'aucune ne soit
-               partie. Cette phrase disait « aucune révision posée » et
-               mentionnait un bouton de pose manuelle qui n'existe plus. -->
+               dernière publication réussie. Des ancres peuvent exister sans
+               qu'aucune ne soit partie — un envoi qui échoue en laisse une.
+               Cette phrase disait « aucune révision posée » et mentionnait un
+               bouton de pose manuelle qui n'existe plus ; elle citait aussi la
+               simulation comme poseuse d'ancre, ce qui a cessé d'être vrai le
+               jour où regarder est devenu une lecture. -->
           <p class="ov-note">
             Aucune révision <strong>publiée</strong>. La référence apparaîtra au premier envoi réel
             vers un canal&nbsp;: une simulation ne compte pas.

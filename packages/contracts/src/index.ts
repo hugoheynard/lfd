@@ -658,6 +658,12 @@ export type {
 } from "./activity-journal.js";
 
 export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
+export type {
+  B2bPushChange,
+  B2bPushPreviewExclusion,
+  B2bPushPreviewItem,
+  B2bPushPreviewView,
+} from "./catalog-push-preview.js";
 export {
   contentLocaleSchema,
   socialLinkSchema,

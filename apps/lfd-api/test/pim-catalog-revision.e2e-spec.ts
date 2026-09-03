@@ -502,7 +502,7 @@ describe("L'empreinte relie la relecture à l'envoi", () => {
     expect(await ctx.prisma.catalogRevision.count()).toBe(0);
   });
 
-  it("laisse partir le push dont l'empreinte vient de la simulation", async () => {
+  it("laisse partir le push dont l'empreinte vient de la relecture", async () => {
     await aSoldProduct();
 
     const relu = jsonBody<{ fingerprint: string }>(
@@ -513,11 +513,13 @@ describe("L'empreinte relie la relecture à l'envoi", () => {
 
     await staff()
       .post("/pim/channels/b2b/push")
-      .send({ dryRun: true, fingerprint: empreinte })
+      .send({ dryRun: false, fingerprint: empreinte })
       .expect(201);
     await ctx.drain();
 
-    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(2);
+    // UNE publication, pas deux : la relecture n'en inscrit aucune. Ce cas en
+    // attendait deux — il datait du temps où regarder écrivait.
+    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(1);
   });
 });
 
@@ -550,20 +552,29 @@ describe("L'empreinte de projection s'inscrit sur la publication", () => {
   });
 
   /**
-   * 🔴 La simulation porte la sienne, et c'est précisément ce qui oblige toute
-   * lecture de « l'empreinte reçue » à filtrer `mode = 'live'`. Sans le filtre,
-   * une simulation lancée après le dernier envoi deviendrait la référence du
-   * canal — et l'écran de santé dirait « à jour » d'un catalogue jamais parti.
+   * 🔴 **Une simulation n'inscrit plus rien.**
+   *
+   * Ce cas affirmait l'inverse : elle portait son empreinte sous son propre
+   * mode, ce qui obligeait toute lecture de « l'empreinte reçue » à filtrer
+   * `mode = 'live'` — sans quoi une simulation lancée après le dernier envoi
+   * serait devenue la référence du canal.
+   *
+   * Le filtre reste bon ; ce qui a disparu, c'est ce qu'il devait écarter.
+   * Regarder a désormais sa propre route en lecture, et une simulation ne pose
+   * plus d'ancre — donc plus de publication, qui pendait à cette ancre.
    */
-  it("laisse une simulation porter la sienne, sous son propre mode", async () => {
+  it("n'inscrit rien pour une simulation, mais rend quand même son empreinte", async () => {
     await aDeliverableProduct();
 
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    const vu = jsonBody<{ fingerprint: string; revisionId: string | null }>(
+      await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201),
+    );
     await ctx.drain();
 
-    const [publication] = await ctx.prisma.catalogRevisionPublication.findMany();
-    expect(publication?.mode).toBe("dry-run");
-    expect(typeof publication?.projectionFingerprint).toBe("string");
+    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(0);
+    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
+    expect(typeof vu.fingerprint).toBe("string");
+    expect(vu.revisionId).toBeNull();
   });
 });
 
@@ -715,12 +726,14 @@ describe("l'ancre de référence : publiée, pas posée", () => {
   });
 
   /**
-   * Une simulation laisse une ligne de publication, délibérément — c'est ce qui
-   * distingue « jamais tenté » de « tenté à blanc ». Sans le filtre sur le mode,
-   * elle deviendrait la référence, et l'écran se comparerait à un catalogue que
-   * personne n'a jamais reçu.
+   * Une simulation ne pose plus d'ancre du tout : il n'y a donc **rien à
+   * ignorer**, et le compte le prouve mieux qu'un filtre.
+   *
+   * Ce cas attendait deux ancres pour un seul envoi, la seconde venant du
+   * regard. C'était exactement l'accumulation qu'on a supprimée — un catalogue
+   * regardé cent fois portait cent ancres pour une publication.
    */
-  it("ignore une simulation, même la plus récente", async () => {
+  it("ne pose aucune ancre pour une simulation, même après un changement", async () => {
     const { id, variantId } = await aDeliverableProduct();
     await pushLive();
     const partie = await ctx.prisma.catalogRevision.findFirstOrThrow();
@@ -732,7 +745,7 @@ describe("l'ancre de référence : publiée, pas posée", () => {
       await staff().get(OVERVIEW).expect(200),
     );
 
-    expect(await ctx.prisma.catalogRevision.count()).toBe(2);
+    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
     expect(vue.lastRevision?.reference).toBe(partie.reference);
   });
 
@@ -750,7 +763,8 @@ describe("l'ancre de référence : publiée, pas posée", () => {
       await staff().get(OVERVIEW).expect(200),
     );
 
-    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
+    // Zéro, et non plus une : le regard qui la posait n'écrit plus.
+    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
     expect(vue.lastRevision).toBeNull();
     expect(vue.sinceLastRevision).toBeNull();
   });
@@ -819,7 +833,10 @@ describe("Le push pose et inscrit sa révision", () => {
   it("fige une révision avant d'envoyer, puis y inscrit sa destination", async () => {
     await aSoldProduct();
 
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    // Sur un envoi RÉEL : c'est le seul qui ancre désormais. Ce cas passait par
+    // une simulation, plus commode à écrire — et c'est ainsi qu'un chemin de
+    // lecture s'est retrouvé couvert par les tests de l'écriture.
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
     await ctx.drain();
 
     const revisions = await ctx.prisma.catalogRevision.findMany({
@@ -829,7 +846,7 @@ describe("Le push pose et inscrit sa révision", () => {
     expect(revisions[0]?.publications).toHaveLength(1);
     expect(revisions[0]?.publications[0]).toMatchObject({
       channel: "b2b",
-      mode: "dry-run",
+      mode: "live",
       outcome: "sent",
     });
   });
@@ -842,8 +859,8 @@ describe("Le push pose et inscrit sa révision", () => {
   it("n'ajoute pas d'ancre quand le catalogue n'a pas bougé, mais bien une publication", async () => {
     await aSoldProduct();
 
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
     await ctx.drain();
 
     expect(await ctx.prisma.catalogRevision.count()).toBe(1);

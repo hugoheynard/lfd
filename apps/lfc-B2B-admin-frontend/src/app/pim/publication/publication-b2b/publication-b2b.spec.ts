@@ -1,27 +1,60 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import type { B2bPushPreviewView } from '@lfd/contracts';
 import type { B2bPushSummaryView } from '@lfd/pim-contracts';
 import { B2bChannelApi } from '../../channels/b2b-channel-api';
 import { PublicationB2b } from './publication-b2b';
 
 /**
- * Ce que ces cas tiennent : **le jeton fait l'aller-retour**.
+ * Ce que ces cas tiennent, et c'est deux choses.
  *
- * L'écran simule, lit ce qui partirait, puis envoie. Sans l'empreinte rendue par
- * la simulation et redonnée à l'envoi, ces deux gestes sont deux appels que rien
- * ne rattache — et on peut expédier un catalogue que personne n'a relu. C'est le
- * trou que le serveur sait désormais refuser ; encore faut-il que l'écran lui en
- * donne les moyens.
+ * **L'aperçu se lit tout seul.** Il y avait un bouton « Simuler », et il ne
+ * proposait aucun choix : on ne décide pas d'envoyer sans voir ce qui partirait,
+ * donc toute visite commençait par ce clic. Il n'existait que parce que simuler
+ * ÉCRIVAIT — `push({dryRun:true})` pose une ancre de révision. Aucun appel de
+ * `push` en simulation ne doit donc plus partir de cet écran.
  *
- * On passe par le DOM plutôt que par l'instance : les membres du composant sont
- * `protected`, et surtout c'est le gabarit qui câble les boutons — `tsc` ne le
- * lit pas.
+ * **Le jeton fait l'aller-retour.** Sans l'empreinte rendue par l'aperçu et
+ * redonnée à l'envoi, regarder et envoyer sont deux appels que rien ne rattache
+ * — et on expédie un catalogue que personne n'a relu.
+ *
+ * On passe par le DOM plutôt que par l'instance : les membres sont `protected`,
+ * et surtout c'est le gabarit qui câble les boutons — `tsc` ne le lit pas.
  */
+
+function preview(over: Partial<B2bPushPreviewView> = {}): B2bPushPreviewView {
+  return {
+    outgoing: [
+      {
+        sku: 'CHO-001',
+        name: 'Gros florentin lait',
+        priceMillicents: 250_000,
+        vatRatePercent: 5.5,
+        change: 'added',
+      },
+    ],
+    candidates: 3,
+    excluded: [],
+    removed: [],
+    fingerprint: 'empreinte-A',
+    parity: {
+      referenceCount: 1,
+      mirrorCount: 0,
+      missing: ['CHO-001'],
+      stale: [],
+      priceGaps: [],
+      vatGaps: [],
+      nameGaps: [],
+      inSync: false,
+    },
+    ...over,
+  };
+}
 
 function summary(over: Partial<B2bPushSummaryView> = {}): B2bPushSummaryView {
   return {
-    mode: 'dry-run',
+    mode: 'live',
     candidates: 3,
     report: null,
     excluded: [],
@@ -32,25 +65,33 @@ function summary(over: Partial<B2bPushSummaryView> = {}): B2bPushSummaryView {
 
 /** Note ce que l'écran a demandé — c'est tout le sujet. */
 class FakeApi {
-  readonly calls: { dryRun: boolean; fingerprint?: string }[] = [];
-  next: B2bPushSummaryView = summary();
-  rejectLive: Error | null = null;
+  readonly calls: string[] = [];
+  readonly pushes: { dryRun: boolean; fingerprint?: string }[] = [];
+  next: B2bPushPreviewView = preview();
+  rejectPush: Error | null = null;
+
+  preview(): Promise<B2bPushPreviewView> {
+    this.calls.push('preview');
+    return Promise.resolve(this.next);
+  }
 
   push(dryRun: boolean, fingerprint?: string): Promise<B2bPushSummaryView> {
-    this.calls.push(fingerprint === undefined ? { dryRun } : { dryRun, fingerprint });
-    if (!dryRun && this.rejectLive !== null) {
-      return Promise.reject(this.rejectLive);
-    }
-    return Promise.resolve(this.next);
+    this.calls.push('push');
+    this.pushes.push(fingerprint === undefined ? { dryRun } : { dryRun, fingerprint });
+    return this.rejectPush === null ? Promise.resolve(summary()) : Promise.reject(this.rejectPush);
   }
 }
 
-function make(api: FakeApi) {
+async function make(api: FakeApi) {
   TestBed.configureTestingModule({
     imports: [PublicationB2b],
     providers: [{ provide: B2bChannelApi, useValue: api }],
   });
   const fixture = TestBed.createComponent(PublicationB2b);
+  fixture.detectChanges();
+  // L'aperçu part au constructeur : sans cette attente, on assert sur l'écran
+  // de chargement et le test passerait pour de mauvaises raisons.
+  await fixture.whenStable();
   fixture.detectChanges();
 
   const buttonNamed = (label: string): HTMLButtonElement => {
@@ -73,63 +114,90 @@ function make(api: FakeApi) {
   return { fixture, click, buttonNamed };
 }
 
-describe('la publication B2B transporte l’empreinte', () => {
-  it('ne joint aucune empreinte à la simulation — c’est elle qui la produit', async () => {
+describe('la publication B2B lit son aperçu toute seule', () => {
+  it('charge ce qui partirait à l’ouverture, sans aucun clic', async () => {
     const api = new FakeApi();
-    const { click } = make(api);
+    await make(api);
 
-    await click('Simuler');
-
-    expect(api.calls).toEqual([{ dryRun: true }]);
+    expect(api.calls).toEqual(['preview']);
   });
 
-  it('redonne à l’envoi l’empreinte lue à la simulation', async () => {
+  it('ne demande JAMAIS de simulation — regarder ne doit rien écrire', async () => {
     const api = new FakeApi();
-    const { click } = make(api);
+    const { click } = await make(api);
 
-    await click('Simuler');
-    api.next = summary({ mode: 'live' });
     await click('Envoyer');
 
-    expect(api.calls).toEqual([{ dryRun: true }, { dryRun: false, fingerprint: 'empreinte-A' }]);
+    expect(api.pushes.every((call) => !call.dryRun)).toBe(true);
   });
 
-  /** Envoyer n'est possible qu'après une simulation : sans jeton, pas d'envoi. */
-  it('garde l’envoi désarmé tant que rien n’a été simulé', () => {
-    const { buttonNamed } = make(new FakeApi());
+  it('redonne à l’envoi l’empreinte de l’aperçu affiché', async () => {
+    const api = new FakeApi();
+    const { click } = await make(api);
 
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
+    await click('Envoyer');
+
+    expect(api.pushes).toEqual([{ dryRun: false, fingerprint: 'empreinte-A' }]);
   });
 
   /**
    * 🔴 Le cas qui évite la boucle. Un refus de dérive laisse l'empreinte
-   * périmée : si l'envoi restait armé, le clic suivant repartirait avec elle et
-   * l'écran bouclerait sur un refus que l'utilisateur ne saurait pas défaire.
-   * Le geste de sortie est de re-simuler, et le désarmement l'impose.
+   * périmée : repartir avec elle bouclerait sur un refus que l'utilisateur ne
+   * saurait pas défaire. La relecture d'après l'envoi la remplace, et elle a
+   * lieu que l'envoi ait réussi ou non.
    */
-  it('désarme l’envoi après un refus, pour forcer une nouvelle relecture', async () => {
+  it('relit après un refus, et repart avec la NOUVELLE empreinte', async () => {
     const api = new FakeApi();
-    api.rejectLive = new Error('Le catalogue a changé depuis votre relecture');
-    const { click, buttonNamed } = make(api);
+    api.rejectPush = new Error('Le catalogue a changé depuis votre relecture');
+    const { click } = await make(api);
 
-    await click('Simuler');
+    await click('Envoyer');
+    api.rejectPush = null;
+    api.next = preview({ fingerprint: 'empreinte-B' });
     await click('Envoyer');
 
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
-    expect(api.calls).toHaveLength(2);
+    expect(api.calls).toEqual(['preview', 'push', 'preview', 'push', 'preview']);
+    expect(api.pushes.at(-1)).toEqual({ dryRun: false, fingerprint: 'empreinte-A' });
   });
 
-  /** Une nouvelle simulation remplace le jeton : on n'envoie jamais l'ancien. */
-  it('renvoie l’empreinte la PLUS RÉCENTE, pas la première', async () => {
+  /** Rien à envoyer n'est pas une panne : c'est la réponse la plus fréquente. */
+  it('désarme l’envoi quand rien ne bouge', async () => {
     const api = new FakeApi();
-    const { click } = make(api);
+    api.next = preview({
+      outgoing: [
+        {
+          sku: 'CHO-001',
+          name: 'Gros florentin lait',
+          priceMillicents: 250_000,
+          vatRatePercent: 5.5,
+          change: 'unchanged',
+        },
+      ],
+      removed: [],
+      parity: {
+        referenceCount: 1,
+        mirrorCount: 1,
+        missing: [],
+        stale: [],
+        priceGaps: [],
+        vatGaps: [],
+        nameGaps: [],
+        inSync: true,
+      },
+    });
+    const { buttonNamed } = await make(api);
 
-    await click('Simuler');
-    api.next = summary({ fingerprint: 'empreinte-B' });
-    await click('Simuler');
-    api.next = summary({ mode: 'live', fingerprint: 'empreinte-B' });
-    await click('Envoyer');
+    expect(buttonNamed('Envoyer').disabled).toBe(true);
+  });
 
-    expect(api.calls.at(-1)).toEqual({ dryRun: false, fingerprint: 'empreinte-B' });
+  /** Ce que la simulation ne pouvait pas voir : ce que l'envoi RETIRE. */
+  it('nomme les articles que l’envoi retirerait de la vente', async () => {
+    const api = new FakeApi();
+    api.next = preview({ removed: ['PAI-014', 'PAI-015'] });
+    const { fixture } = await make(api);
+
+    const text: string = fixture.nativeElement.textContent;
+    expect(text).toContain('PAI-014');
+    expect(text).toContain('PAI-015');
   });
 });

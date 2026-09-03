@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import type { B2bPushPreviewView } from '@lfd/contracts';
 import type {
   B2bMembershipBatchResult,
   B2bMembershipView,
@@ -8,8 +9,10 @@ import type {
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
+import { B2B_API_BASE } from '../../api/api-config';
 import { API_BASE_URL } from '../data/api';
 
+export type { B2bPushPreviewItem, B2bPushPreviewView } from '@lfd/contracts';
 export type {
   B2bExclusionReason,
   B2bExclusionView,
@@ -33,7 +36,26 @@ export class B2bChannelApi {
   private readonly base = inject(API_BASE_URL);
 
   /**
-   * @param fingerprint l'empreinte rendue par la simulation qu'on vient de lire.
+   * **Ce que l'envoi ferait, s'il partait maintenant** — une LECTURE.
+   *
+   * Servie par la plateforme (`admin/catalog`) et non par le référentiel, parce
+   * qu'elle a besoin des deux côtés : la projection du PIM et l'état du canal.
+   * La frontière l'impose — `pim` ne lit jamais `b2b`, alors que `b2b` lit un
+   * port publié par `pim`. C'est déjà le chemin qu'emprunte le contrôle de
+   * parité.
+   *
+   * Elle remplace le clic « Simuler » : celui-ci appelait `push({dryRun:true})`,
+   * qui traverse la tuyauterie d'envoi et **pose une ancre de révision** à
+   * chaque regard.
+   */
+  preview(): Promise<B2bPushPreviewView> {
+    return firstValueFrom(
+      this.http.get<B2bPushPreviewView>(`${B2B_API_BASE}/admin/catalog/push-preview`),
+    );
+  }
+
+  /**
+   * @param fingerprint l'empreinte rendue par l'aperçu qu'on vient de lire.
    *   Le serveur refuse en `409` si le catalogue a bougé depuis — c'est ce qui
    *   empêche d'envoyer autre chose que ce qui a été relu. Omise en simulation :
    *   c'est elle qui la produit.

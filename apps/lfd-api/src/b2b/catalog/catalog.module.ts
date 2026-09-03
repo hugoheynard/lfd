@@ -37,6 +37,7 @@ import { CheckCatalogParityService } from "./application/check-catalog-parity.se
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
 import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
 import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
+import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -85,6 +86,7 @@ import { CheckCatalogParityHandler } from "./application/queries/check-catalog-p
     // version validée, et non la projection du moment.
     CheckCatalogHealthService,
     CheckCatalogParityHandler,
+    PreviewCatalogPushHandler,
     CheckCatalogHealthHandler,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,

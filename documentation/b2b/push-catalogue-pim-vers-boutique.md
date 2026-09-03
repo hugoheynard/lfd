@@ -71,20 +71,22 @@ sequenceDiagram
     autonumber
     actor S as Staff (back-office)
     participant UI as Publication ▸ Boutique B2B
+    participant PV as PreviewCatalogPushHandler<br/><i>(b2b — lecture)</i>
     participant PU as B2bCatalogPushService<br/><i>(pim)</i>
     participant PR as projectCatalog<br/><i>(pure)</i>
     participant DR as B2bCatalogDriver<br/><b>le port</b>
     participant IN as IngestCatalogService<br/><i>(b2b)</i>
     participant DB as schéma public
 
-    S->>UI: Simuler
-    UI->>PU: POST /pim/channels/b2b/push {dryRun:true}
-    PU->>PR: projette le catalogue publié
-    PR-->>PU: snapshot v2 + écartés (avec motif)
-    PU-->>UI: mode "dry-run" · rien n'a bougé
+    S->>UI: ouvre l'écran
+    UI->>PV: GET /admin/catalog/push-preview
+    PV->>PR: projette le catalogue publié
+    PR-->>PV: snapshot v2 + écartés (avec motif)
+    PV->>DB: lit le miroir
+    PV-->>UI: ce qui part · ce qui change · ce qui SORT · empreinte
 
     S->>UI: Envoyer
-    UI->>PU: POST … {dryRun:false}
+    UI->>PU: POST … {dryRun:false, fingerprint}
     PU->>PR: projette (à nouveau, même instant)
     PR-->>PU: snapshot v2
     PU->>DR: send(snapshot)
@@ -96,6 +98,30 @@ sequenceDiagram
     PU->>PU: estampille lastPushedAt<br/><b>seulement maintenant</b>
     PU-->>UI: mode "live" · ce qui est parti, ce qui a été écarté
 ```
+
+### Regarder est une LECTURE, et ça n'a pas toujours été le cas
+
+L'aperçu passait par ce même `POST` avec `dryRun: true`. Il traversait donc
+toute la tuyauterie d'envoi : il **posait une ancre de révision** et inscrivait
+une ligne de publication en mode `dry-run`. D'où un bouton « Simuler » — on ne
+déclenche pas des écritures au chargement d'une page — et d'où des ancres qui
+s'accumulaient à chaque coup d'œil, alors qu'une ancre est censée dire ce qu'on
+s'apprête à publier.
+
+Deux conséquences de la bascule, et la seconde était impossible avant :
+
+- **`GET /admin/catalog/push-preview` n'écrit rien**, donc l'écran le charge en
+  s'ouvrant. Le `POST … {dryRun:true}` reste servi le temps qu'un appelant tiers
+  s'en détache, mais il n'ancre plus lui non plus.
+- **Les retraits sont visibles.** Le pilote à blanc l'avouait : « seul
+  `removedSkus` reste vide, et c'est correct : lui seul suppose de connaître
+  l'état de l'autre côté ». La lecture, elle, confronte la projection au miroir
+  — donc elle sait ce que l'envoi **sortirait de la vente**. C'est la moitié de
+  la question qu'aucun écran ne posait.
+
+Elle vit côté `b2b` et non côté `pim`, et la frontière l'impose : il faut les
+deux côtés, or `pim` ne lit jamais `b2b`. C'est déjà le chemin qu'emprunte le
+contrôle de parité, dont cette lecture réutilise la confrontation.
 
 **Deux détails qui ont l'air anodins et ne le sont pas :**
 

@@ -1,10 +1,11 @@
 import { Controller, Get } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
-import type { CatalogHealthView } from "@lfd/contracts";
+import type { B2bPushPreviewView, CatalogHealthView } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { CheckCatalogHealthQuery } from "../application/queries/check-catalog-health.query.js";
 import { CheckCatalogParityQuery } from "../application/queries/check-catalog-parity.query.js";
+import { PreviewCatalogPushQuery } from "../application/queries/preview-catalog-push.query.js";
 import type { ParityReport } from "../domain/catalog-parity.js";
 
 /**
@@ -28,7 +29,23 @@ import type { ParityReport } from "../domain/catalog-parity.js";
 export class AdminCatalogParityController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** L'aperçu avant push : ce qui partirait, contre ce qu'on tient. */
+  /**
+   * **L'aperçu d'envoi** — ce qui partirait, ce que ça changerait, ce que ça
+   * retirerait. La lecture que l'écran de publication charge à l'ouverture.
+   *
+   * Un `GET`, et c'est tout le sujet : la même question passait par
+   * `POST push { dryRun: true }`, qui traverse la tuyauterie d'envoi et **pose
+   * une ancre de révision** à chaque regard. Une révision doit dire ce qu'on
+   * s'apprête à publier ; une ancre par coup d'œil ne dit plus rien.
+   */
+  @Get("push-preview")
+  pushPreview(): Promise<B2bPushPreviewView> {
+    return this.queries.execute<PreviewCatalogPushQuery, B2bPushPreviewView>(
+      new PreviewCatalogPushQuery(),
+    );
+  }
+
+  /** L'écart seul, sans la projection — quatre consommateurs, dont un ops. */
   @Get("parity")
   parity(): Promise<ParityReport> {
     return this.queries.execute<CheckCatalogParityQuery, ParityReport>(

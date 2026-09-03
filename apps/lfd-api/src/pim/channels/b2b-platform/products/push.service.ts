@@ -99,6 +99,26 @@ export class B2bCatalogPushService {
       }
     }
 
+    // 🔴 **Une simulation n'écrit rien, et sort ici.** Elle traversait tout ce
+    // qui suit — ancre de révision comprise — et posait donc une ancre à chaque
+    // regard, alors qu'une révision est censée dire ce qu'on s'apprête à
+    // publier. Cent ancres pour zéro publication ne disent plus rien.
+    //
+    // L'aperçu de l'écran ne passe plus par cette route : il lit
+    // `GET admin/catalog/push-preview`, qui confronte en plus la projection au
+    // miroir — ce qu'un dry-run ne peut pas faire, faute de connaître l'autre
+    // côté. Ce chemin reste servi le temps qu'un appelant tiers s'en détache.
+    if (dryRunRequested) {
+      return {
+        mode: this.dryRun.mode,
+        candidates,
+        report: candidates === 0 ? null : this.dryRun.simulate(snapshot),
+        excluded,
+        fingerprint,
+        revisionId: null,
+      };
+    }
+
     if (candidates === 0) {
       return {
         mode: driver.mode,

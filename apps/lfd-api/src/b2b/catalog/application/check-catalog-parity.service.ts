@@ -1,11 +1,15 @@
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
-import { B2bCatalogFeedPreview } from "../../../pim/channels/b2b-platform/products/feed-preview.js";
+import {
+  B2bCatalogFeedPreview,
+  type FeedPreview,
+} from "../../../pim/channels/b2b-platform/products/feed-preview.js";
 import {
   compareToReference,
   type MirrorEntry,
   type ParityReport,
+  type ReferenceEntry,
 } from "../domain/catalog-parity.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 
@@ -46,6 +50,20 @@ export class CheckCatalogParityService {
   ) {}
 
   async check(): Promise<ParityReport> {
+    return (await this.confront()).parity;
+  }
+
+  /**
+   * La confrontation elle-même — **la projection ET son écart**, en un passage.
+   *
+   * `check()` n'en garde que l'écart, parce que c'est tout ce que ses quatre
+   * consommateurs demandent. L'aperçu avant envoi, lui, a besoin des deux : ce
+   * qui partirait, et ce que ça changerait au canal. Les deux lectures sont
+   * faites ensemble et non par deux appelants successifs — sans quoi l'écran
+   * comparerait une projection à un miroir lus à deux instants différents, et
+   * l'empreinte qu'il garderait ne serait pas celle qu'il montre.
+   */
+  async confront(): Promise<CatalogConfrontation> {
     // L'instant est pris UNE fois, sur le `Clock`. Il venait d'un `new Date()`
     // en couche application — que le CLAUDE.md §3.2 interdit — et le JSDoc
     // justifiait même l'appel unique, ce qui rendait la dette d'autant plus
@@ -64,8 +82,20 @@ export class CheckCatalogParityService {
       })),
     );
 
-    return compareToReference(reference, mirror.map(asMirrorEntry));
+    return {
+      preview,
+      reference,
+      parity: compareToReference(reference, mirror.map(asMirrorEntry)),
+    };
   }
+}
+
+/** Ce qu'un passage de confrontation rend : les deux côtés, et leur écart. */
+export interface CatalogConfrontation {
+  readonly preview: FeedPreview;
+  /** La projection aplatie en articles — l'unité que la comparaison manipule. */
+  readonly reference: readonly ReferenceEntry[];
+  readonly parity: ParityReport;
 }
 
 /** Le miroir, réduit aux quatre champs que la comparaison regarde. */

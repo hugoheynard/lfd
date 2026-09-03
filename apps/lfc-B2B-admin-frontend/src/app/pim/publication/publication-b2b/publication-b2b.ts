@@ -6,6 +6,7 @@ import {
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldLoadingStateComponent,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -13,6 +14,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   B2bChannelApi,
   type B2bExclusionReason,
+  type B2bPushPreviewView,
   type B2bPushSummaryView,
 } from '../../channels/b2b-channel-api';
 
@@ -29,18 +31,37 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
   variant_sans_taux: 'prix sans taux B2B',
 };
 
+/** Ce que l'envoi ferait à un article, dit à qui regarde. */
+const CHANGES: Readonly<Record<string, string>> = {
+  added: 'entre',
+  changed: 'change',
+  unchanged: 'inchangé',
+};
+
 /**
  * Publication vers la **boutique B2B** — la plateforme qui encaisse.
  *
- * Cet onglet manquait, et son absence coûtait cher : le canal savait pousser
- * côté serveur, mais rien dans le back-office ne l'appelait. Un taux de TVA
- * révisé, un prix corrigé, un produit publié n'atteignaient donc jamais la
- * boutique — qui continuait de vendre l'état du dernier push, sans que rien ne
- * le dise.
+ * ## L'aperçu se calcule à l'ouverture, il ne se demande plus
  *
- * On **simule** d'abord (par défaut), on lit ce qui partirait et ce qui serait
- * écarté, puis on envoie. Le mode rendu par le serveur est réaffiché à chaque
- * fois : sans ça on croit pousser pour de vrai.
+ * Il y avait un bouton « Simuler », et il fallait le cliquer avant de pouvoir
+ * envoyer quoi que ce soit. Ce n'était pas un choix offert : cent pour cent des
+ * visites commençaient par ce clic, puisqu'on ne décide pas d'envoyer sans voir
+ * ce qui partirait.
+ *
+ * Il existait pour une raison technique, pas pour une raison d'usage : simuler
+ * appelait `push({dryRun:true})`, qui traverse la tuyauterie d'envoi et **pose
+ * une ancre de révision**. On ne déclenche pas des écritures au chargement d'une
+ * page — d'où le bouton, et d'où des ancres qui s'accumulaient à chaque regard.
+ *
+ * L'aperçu est maintenant une lecture (`GET admin/catalog/push-preview`). Il
+ * n'écrit rien, donc l'écran le charge en s'ouvrant.
+ *
+ * ## Et il voit enfin les retraits
+ *
+ * La simulation ne les voyait pas — le pilote à blanc l'avouait : seul
+ * `removedSkus` restait vide, parce que lui seul suppose de connaître l'état de
+ * l'autre côté. L'aperçu confronte la projection au miroir : ce qui entre, ce
+ * qui change, ce qui **sort de la vente**.
  */
 @Component({
   selector: 'app-publication-b2b',
@@ -51,6 +72,7 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldLoadingStateComponent,
   ],
   templateUrl: './publication-b2b.html',
   styleUrl: './publication-b2b.scss',
@@ -58,63 +80,91 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
 export class PublicationB2b {
   private readonly api = inject(B2bChannelApi);
 
-  protected readonly summary = signal<B2bPushSummaryView | null>(null);
+  protected readonly preview = signal<B2bPushPreviewView | null>(null);
+  protected readonly sent = signal<B2bPushSummaryView | null>(null);
   protected readonly busy = signal(false);
+  protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  /** Vrai une fois qu'une simulation a été lue — l'envoi réel s'y adosse. */
-  protected readonly simulated = signal(false);
-  /**
-   * L'empreinte de la dernière projection lue.
-   *
-   * C'est le lien qui manquait entre l'écran et l'envoi : sans elle, « simuler »
-   * puis « envoyer » sont deux appels que rien ne rattache, et on peut expédier
-   * un catalogue que personne n'a relu.
-   */
-  private readonly relu = signal<string | null>(null);
 
   protected readonly excluded = computed(() =>
-    (this.summary()?.excluded ?? []).map((item) => ({
+    (this.preview()?.excluded ?? []).map((item) => ({
       sku: item.sku,
-      label: REASONS[item.reason],
+      // Le motif voyage en chaîne — son vocabulaire appartient au référentiel,
+      // et le contrat de la plateforme ne l'importe pas. Un motif inconnu se
+      // montre tel quel plutôt que de disparaître.
+      label: REASONS[item.reason as B2bExclusionReason] ?? item.reason,
     })),
   );
 
-  protected simulate(): Promise<void> {
-    return this.run(true);
+  /** Ce qui bouge vraiment — l'inchangé est le gros du catalogue, et il attend. */
+  protected readonly moving = computed(() =>
+    (this.preview()?.outgoing ?? []).filter((item) => item.change !== 'unchanged'),
+  );
+
+  protected readonly unchangedCount = computed(
+    () => (this.preview()?.outgoing.length ?? 0) - this.moving().length,
+  );
+
+  /**
+   * Rien ne bouge : ni entrée, ni changement, ni retrait.
+   *
+   * `parity.inSync` répondrait presque, mais pas tout à fait — il compte aussi
+   * les écarts de nom, qu'un envoi corrige au même titre. On lit donc ce qu'on
+   * affiche, plutôt qu'un booléen calculé sur un périmètre voisin.
+   */
+  protected readonly settled = computed(
+    () => this.moving().length === 0 && (this.preview()?.removed.length ?? 0) === 0,
+  );
+
+  constructor() {
+    void this.load();
   }
 
-  protected send(): Promise<void> {
-    return this.run(false);
+  protected changeLabel(change: string): string {
+    return CHANGES[change] ?? change;
   }
 
-  private async run(dryRun: boolean): Promise<void> {
+  protected euros(millicents: number): string {
+    return (millicents / 100_000).toFixed(2);
+  }
+
+  protected async load(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      this.preview.set(await this.api.preview());
+    } catch (caught) {
+      this.error.set(httpErrorMessage(caught, 'Aperçu impossible à lire.'));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Envoie ce qui est à l'écran — et rien d'autre.
+   *
+   * L'empreinte de l'aperçu accompagne l'envoi : si le catalogue a bougé depuis
+   * l'ouverture, le serveur refuse en `409` plutôt que d'expédier autre chose
+   * que ce qui a été relu. Le geste de sortie est de recharger, et c'est ce que
+   * fait le rechargement en fin de méthode — y compris après un refus.
+   */
+  protected async send(): Promise<void> {
+    const fingerprint = this.preview()?.fingerprint;
+    if (fingerprint === undefined) {
+      return;
+    }
     this.busy.set(true);
     this.error.set(null);
     try {
-      // L'envoi redonne l'empreinte de la simulation qu'on vient de lire : le
-      // serveur refuse si le catalogue a bougé entre les deux. La simulation,
-      // elle, n'en envoie aucune — c'est elle qui la produit.
-      const summary = await this.api.push(dryRun, dryRun ? undefined : (this.relu() ?? undefined));
-      this.summary.set(summary);
-      this.relu.set(summary.fingerprint);
-      // Seule une simulation RÉELLEMENT rendue en dry-run arme l'envoi : le
-      // serveur peut répondre `live` à une demande de simulation si les
-      // réglages l'imposent, et on ne veut pas armer sur ce malentendu.
-      this.simulated.set(summary.mode === 'dry-run');
+      this.sent.set(await this.api.push(false, fingerprint));
     } catch (caught) {
-      // 🔴 Un refus de dérive DÉSARME l'envoi. Sans ça, le bouton reste actif
-      // et le clic suivant repart avec la même empreinte périmée : l'écran
-      // boucle sur un refus que l'utilisateur ne sait pas défaire. Le geste de
-      // sortie est de re-simuler, et c'est ce que le désarmement impose.
-      this.simulated.set(false);
-      this.relu.set(null);
-      // `caught.message` d'une `HttpErrorResponse` vaut « Http failure response
-      // for … : 409 Conflict ». Le refus en français vit dans l'enveloppe, et
-      // `httpErrorMessage` sait l'y lire — c'est déjà ce qu'emploient la fiche
-      // produit et les emplacements.
       this.error.set(httpErrorMessage(caught, 'Envoi impossible.'));
     } finally {
       this.busy.set(false);
+      // Après un envoi comme après un refus, ce qui est à l'écran est périmé :
+      // le canal a changé, ou le catalogue avait déjà changé. Le relire est la
+      // seule façon d'en sortir.
+      await this.load();
     }
   }
 }

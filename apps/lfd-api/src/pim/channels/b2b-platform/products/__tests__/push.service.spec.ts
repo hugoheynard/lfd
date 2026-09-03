@@ -99,6 +99,8 @@ interface Harness {
   readonly bindings: SpyBindings;
   readonly sent: CatalogSnapshot[];
   readonly publications: RevisionPublication[];
+  /** Les ancres prises pendant le passage — une simulation ne doit en prendre aucune. */
+  readonly revisions: unknown[];
 }
 
 async function build(
@@ -109,6 +111,7 @@ async function build(
   const bindings = new SpyBindings();
   const sent: CatalogSnapshot[] = [];
   const publications: RevisionPublication[] = [];
+  const revisions: unknown[] = [];
 
   const live = {
     mode: "live" as const,
@@ -141,7 +144,10 @@ async function build(
       {
         provide: CommandBus,
         useValue: {
-          execute: () => Promise.resolve({ id: "rev_1", version: 1, hash: "h", created: true }),
+          execute: (command: unknown) => {
+            revisions.push(command);
+            return Promise.resolve({ id: "rev_1", version: 1, hash: "h", created: true });
+          },
         },
       },
       {
@@ -199,7 +205,7 @@ async function build(
     ],
   }).compile();
 
-  return { service: moduleRef.get(B2bCatalogPushService), bindings, sent, publications };
+  return { service: moduleRef.get(B2bCatalogPushService), bindings, sent, publications, revisions };
 }
 
 describe("l’empreinte relie la relecture à l’envoi", () => {
@@ -462,21 +468,30 @@ describe("l’empreinte de projection s’inscrit sur la publication", () => {
   });
 
   /**
-   * Une simulation laisse une ligne elle aussi — délibérément, pour distinguer
-   * « jamais tenté » de « tenté à blanc ». C'est ce qui oblige TOUT lecteur
-   * cherchant « l'empreinte reçue » à filtrer `mode = 'live'` : sans ça, une
-   * simulation deviendrait la référence du canal.
+   * 🔴 **Une simulation n'écrit plus rien** — ni ancre, ni ligne de publication.
+   *
+   * Ce cas affirmait le contraire, et sa raison était réelle : distinguer
+   * « jamais tenté » de « tenté à blanc ». Elle a cessé de l'être le jour où
+   * regarder a eu sa propre route en lecture (`GET admin/catalog/push-preview`,
+   * qui confronte en plus la projection au miroir). Une simulation n'est alors
+   * plus une tentative dont on garderait trace : c'est un coup d'œil.
+   *
+   * Ce qu'elle coûtait, elle : la ligne de publication pend à une ancre, donc
+   * chaque simulation en posait une. Une ancre est censée dire ce qu'on
+   * s'apprête à publier — cent ancres pour zéro publication ne disent plus rien,
+   * et le compte se lit sur l'écran d'ensemble comme sur celui des révisions.
    */
-  it("inscrit aussi celle d’une simulation, sous son propre mode", async () => {
-    const { service, publications } = await build(["prd_1"], [product()]);
+  it("n’inscrit RIEN pour une simulation — ni publication, ni ancre", async () => {
+    const { service, publications, revisions } = await build(["prd_1"], [product()]);
 
     const summary = await service.push(true);
 
-    expect(publications[0]).toMatchObject({
-      mode: "dry-run",
-      outcome: "sent",
-      projectionFingerprint: summary.fingerprint,
-    });
+    expect(publications).toHaveLength(0);
+    expect(revisions).toHaveLength(0);
+    // Le rapport reste cohérent avec ce qui partirait : un aperçu qui annonce
+    // zéro n'apprend rien à qui s'apprête à pousser.
+    expect(summary.report?.acceptedProducts).toBe(1);
+    expect(summary.revisionId).toBeNull();
   });
 
   /**
