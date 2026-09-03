@@ -163,6 +163,29 @@ process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
  */
 process.env["PIM_PUBLICATION_ENABLED"] = "true";
 
+/**
+ * La **boîte de réception du catalogue est fermée** dans les tests.
+ *
+ * Écrasement dur, et il vient d'une panne réelle : `B2B_DELIVERY_INBOX=true`
+ * dans un `.env` local suffisait à faire tomber **31 tests de 4 suites**. Le
+ * drapeau aiguille le push du référentiel vers une arrivée EN ATTENTE au lieu
+ * de l'appliquer ; les suites poussent puis relisent aussitôt, et lisaient donc
+ * un catalogue vide. L'échec ne ressemblait pas à sa cause — il sortait en
+ * `allergens: null`, c'est-à-dire la fiche réglementaire d'un article qui
+ * n'existait pas.
+ *
+ * C'est le miroir exact du cas Stripe décrit plus haut : là, le `.env` local
+ * cachait un manque qui n'éclatait qu'en CI ; ici, il ajoute un réglage que la
+ * CI n'a pas, et la CI reste verte pendant que le poste de travail est rouge.
+ * Les deux sens du même défaut — un e2e n'exerce pas la même application selon
+ * la machine — et le remède est le même : épingler.
+ *
+ * Les suites qui éprouvent la boîte déposent l'arrivée **par le port**
+ * (`catalog-delivery-review.e2e-spec.ts`) ; l'aiguillage lui-même est le sujet
+ * du test unitaire du driver, qui fournit sa propre `AppConfig`.
+ */
+process.env["B2B_DELIVERY_INBOX"] = "false";
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;
