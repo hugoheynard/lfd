@@ -34,21 +34,6 @@
   }
 </fold-fieldset>
 
-<!-- ALIGNER SUR LE DÉFAUT — jamais sur la déclinaison par défaut, qui ne peut
-     pas se suivre elle-même. Cochée, la fiche réglementaire se lit sans se
-     saisir : ce qui s'affiche dessous est celle du défaut, et corriger le
-     défaut la corrige ici aussi. -->
-@if (!store.editingDefault()) {
-  <fold-callout appearance="inset" variant="info">
-    <fold-checkbox
-      label="Aligner sur la déclinaison par défaut"
-      hint="Même recette, même étiquette. Une correction sur le défaut vaut aussi ici."
-      [checked]="store.regulatoryAligned()"
-      (checkedChange)="store.regulatoryAligned.set($event)"
-    />
-  </fold-callout>
-}
-
 <hr class="rule" />
 
 <div class="stack" [class.is-inherited]="store.regulatoryAligned()">

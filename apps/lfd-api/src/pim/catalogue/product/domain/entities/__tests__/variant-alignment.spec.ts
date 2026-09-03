@@ -70,6 +70,7 @@ describe("une déclinaison ajoutée naît alignée", () => {
       // recopier le prix du défaut inventerait une décision commerciale.
       priceCents: null,
       regulatoryFollowsDefault: true,
+      pricingFollowsDefault: false,
     });
   });
 
@@ -107,9 +108,65 @@ describe("l’invariant 7 lit l’alignement", () => {
     const product = withDefaultDeclared(aProduct());
     const variantId = addVariant(product);
 
-    product.alignVariantRegulatory(variantId, false);
+    product.alignVariant(variantId, "regulatory", false);
 
     expect(() => product.publish()).toThrow(ProductNotPublishableError);
+  });
+});
+
+describe("le tarif s’aligne aussi, et ne s’aligne PAS d’office", () => {
+  /**
+   * Une seconde déclinaison existe le plus souvent parce qu'elle se vend
+   * autrement. Naître alignée sur le prix du défaut ferait facturer un montant
+   * que personne n'a décidé — et un prix faux, lui, part sur la facture.
+   */
+  it("naît avec son propre tarif, pas celui du défaut", () => {
+    const product = withDefaultDeclared(aProduct());
+
+    addVariant(product);
+
+    expect(product.snapshot().variants[1]).toMatchObject({
+      pricingFollowsDefault: false,
+      priceCents: null,
+    });
+  });
+
+  it("prend prix ET poids du défaut une fois aligné", () => {
+    const product = Product.reconstitute({
+      ...aProduct().snapshot(),
+      variants: [{ ...aProduct().snapshot().variants[0]!, priceCents: 250, weightGrams: 100 }],
+    });
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "pricing", true);
+
+    // Les deux ENSEMBLE : un prix hérité au-dessus d'un poids propre décrirait
+    // un article que personne ne vend.
+    expect(product.snapshot().variants[1]).toMatchObject({
+      priceCents: 250,
+      weightGrams: 100,
+    });
+  });
+
+  it("refuse que le défaut suive son propre tarif", () => {
+    const product = aProduct();
+
+    expect(() => product.alignVariant("var_1", "pricing", true)).toThrow(
+      DefaultVariantCannotFollowItselfError,
+    );
+  });
+
+  /** Les deux sections sont indépendantes : suivre l'étiquette n'est pas suivre le prix. */
+  it("aligne une section sans toucher à l’autre", () => {
+    const product = withDefaultDeclared(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "regulatory", false);
+
+    expect(product.snapshot().variants[1]).toMatchObject({
+      regulatoryFollowsDefault: false,
+      pricingFollowsDefault: false,
+    });
   });
 });
 
@@ -125,7 +182,7 @@ describe("l’instantané résout l’héritage", () => {
     const product = withDefaultDeclared(aProduct());
     const variantId = addVariant(product);
 
-    product.alignVariantRegulatory(variantId, false);
+    product.alignVariant(variantId, "regulatory", false);
 
     expect(product.snapshot().variants[1]?.allergens).toBeNull();
   });
@@ -135,7 +192,7 @@ describe("les refus de l’alignement", () => {
   it("refuse que la déclinaison par défaut se suive elle-même", () => {
     const product = aProduct();
 
-    expect(() => product.alignVariantRegulatory("var_1", true)).toThrow(
+    expect(() => product.alignVariant("var_1", "regulatory", true)).toThrow(
       DefaultVariantCannotFollowItselfError,
     );
   });
@@ -143,7 +200,7 @@ describe("les refus de l’alignement", () => {
   it("refuse d’aligner une déclinaison qui n’est pas de cette fiche", () => {
     const product = aProduct();
 
-    expect(() => product.alignVariantRegulatory("var_ailleurs", true)).toThrow(
+    expect(() => product.alignVariant("var_ailleurs", "regulatory", true)).toThrow(
       VariantNotInProductError,
     );
   });

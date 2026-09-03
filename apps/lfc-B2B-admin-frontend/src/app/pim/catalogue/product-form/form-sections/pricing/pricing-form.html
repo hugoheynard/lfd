@@ -1,8 +1,13 @@
 <!-- La forme de la maquette : le prix à gauche, étroit, et à sa droite le bloc
      qui dit d'où viennent les taux. Les deux se lisent ensemble parce qu'ils
      répondent à la même question — combien, et sous quel régime. -->
+<!-- HÉRITÉ : on montre ce qui s'applique, on empêche d'y toucher. Masquer
+     serait pire — la question devant une déclinaison alignée est « et elle
+     vaut combien, alors ? », pas « où est passé le prix ». Seule la colonne du
+     PRIX se grise : les canaux et les taux d'à côté sont portés par la fiche
+     et se lisent pareil sur toutes ses déclinaisons. -->
 <div class="tarif">
-  <div class="stack">
+  <div class="stack" [class.is-inherited]="store.pricingAligned()">
     <label class="field">
       <!-- L'étiquette ne se calcule plus : il n'y a qu'une assiette. Elle a été
            une expression ternaire tant qu'une fiche pouvait porter un montant

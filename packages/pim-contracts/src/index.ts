@@ -129,7 +129,8 @@ export {
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
-  alignVariantRegulatoryPayloadSchema,
+  alignVariantPayloadSchema,
+  variantAspectSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -150,7 +151,8 @@ export type {
   SetProductChannelsPayload,
   SetProductVatPayload,
   AddProductVariantPayload,
-  AlignVariantRegulatoryPayload,
+  AlignVariantPayload,
+  VariantAspect,
 } from "./product.js";
 
 export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";

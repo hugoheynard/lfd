@@ -72,6 +72,7 @@ function seedProduct(): ProductSnapshot {
         priceCents: null,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,
       },

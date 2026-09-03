@@ -35,6 +35,7 @@ import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
+import { SectionAlignment } from './section-alignment/section-alignment';
 import { VariantBar } from './variant-bar/variant-bar';
 import { SectionState } from '../section-state/section-state';
 
@@ -73,6 +74,7 @@ interface PageSection {
     FoldAsideLayoutComponent,
     FoldPageSectionComponent,
     SectionState,
+    SectionAlignment,
     VariantBar,
     PublishRail,
     IdentityForm,

@@ -160,8 +160,15 @@ export const PIM_EVENTS = {
    * « on a modifié le produit » de « on lui a ajouté un article ».
    */
   variantAdded: "variant.added",
-  /** Elle suit désormais la fiche réglementaire du défaut, ou reprend la sienne. */
-  variantRegulatoryAligned: "variant.regulatory_aligned",
+  /**
+   * Elle suit désormais le défaut sur une section — ou reprend la sienne.
+   *
+   * La SECTION est dans la charge (`aspect`), pas dans le type : « aligné » est
+   * le même fait qu'on parle d'étiquette ou de prix, et deux types jumeaux
+   * obligeraient tout lecteur du journal à connaître la liste des sections
+   * alignables pour ne rien manquer.
+   */
+  variantAligned: "variant.aligned",
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**

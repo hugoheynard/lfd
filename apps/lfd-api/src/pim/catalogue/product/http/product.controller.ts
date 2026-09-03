@@ -18,18 +18,18 @@ import {
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
-  alignVariantRegulatoryPayloadSchema,
+  alignVariantPayloadSchema,
   type SetProductMediaPayload,
   type SetProductChannelsPayload,
   type SetProductVatPayload,
   type AddProductVariantPayload,
-  type AlignVariantRegulatoryPayload,
+  type AlignVariantPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { AddProductVariantCommand } from "../application/add-product-variant.js";
-import { AlignVariantRegulatoryCommand } from "../application/align-variant-regulatory.js";
+import { AlignVariantOnDefaultCommand } from "../application/align-variant-on-default.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductReadyCommand } from "../application/declare-product-ready.js";
@@ -169,20 +169,24 @@ export class ProductController {
   }
 
   /**
-   * Aligne une déclinaison sur la fiche réglementaire du défaut, ou l'en détache.
+   * Aligne une déclinaison sur le défaut pour UNE section, ou l'en détache.
    *
    * Un `PUT` : l'écran envoie l'état de sa case, pas une bascule. Deux clics
    * rapides sur une bascule laisseraient l'écran et la base en désaccord sans
    * que rien ne le dise.
+   *
+   * La section voyage dans le corps et non dans le chemin : c'est le même
+   * geste sur le même objet, et une route par section aurait multiplié les
+   * chemins à murer au fur et à mesure que la liste s'allonge.
    */
-  @Put(":id/variants/:variantId/regulatory-alignment")
-  async alignVariantRegulatory(
+  @Put(":id/variants/:variantId/alignment")
+  async alignVariant(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
-    @Body(new ZodBody(alignVariantRegulatoryPayloadSchema)) body: AlignVariantRegulatoryPayload,
+    @Body(new ZodBody(alignVariantPayloadSchema)) body: AlignVariantPayload,
   ) {
-    await this.commands.execute<AlignVariantRegulatoryCommand, void>(
-      new AlignVariantRegulatoryCommand(id, variantId, body.aligned),
+    await this.commands.execute<AlignVariantOnDefaultCommand, void>(
+      new AlignVariantOnDefaultCommand(id, variantId, body.aspect, body.aligned),
     );
     return { id: variantId };
   }

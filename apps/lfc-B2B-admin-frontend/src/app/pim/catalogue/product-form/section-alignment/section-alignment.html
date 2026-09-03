@@ -1,0 +1,25 @@
+@if (row(); as alignment) {
+  @switch (alignment.kind) {
+    @case ('alignable') {
+      <!-- La case, jamais sur la déclinaison par défaut : elle ne peut pas se
+           suivre elle-même. Cochée, la carte se lit sans se saisir, et une
+           correction sur le défaut vaut ici aussi. -->
+      <fold-callout class="alignment" appearance="inset" variant="info">
+        <fold-checkbox
+          label="Aligner sur la déclinaison par défaut"
+          hint="Ce qui suit se lit sur le défaut. Le corriger là-bas le corrige ici."
+          [checked]="alignment.aligned"
+          (checkedChange)="store.setAlignment(section(), $event)"
+        />
+      </fold-callout>
+    }
+    @case ('product') {
+      <!-- Pas de case : le modèle ne laisse pas cette carte diverger. En poser
+           une promettrait une divergence que la base refuse. -->
+      <fold-callout class="alignment" appearance="inset" variant="neutral">
+        Portée par la fiche, commune à toutes ses déclinaisons. Ouvrir
+        <strong>Défaut</strong> pour la modifier.
+      </fold-callout>
+    }
+  }
+}

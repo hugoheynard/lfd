@@ -12,7 +12,7 @@ import type {
   VariantView,
   LocalizedText,
 } from '@lfd/pim-contracts';
-import { SOURCE_LOCALE } from '@lfd/pim-contracts';
+import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -146,6 +146,7 @@ function toVariant(variant: VariantView): Variant {
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
+    pricingFollowsDefault: variant.pricingFollowsDefault,
     allergens: variant.allergens === null ? null : [...variant.allergens],
     mayContain: [...(variant.nutrition?.mayContain ?? [])],
     nutrition: toNutritionValues(variant.nutrition),
@@ -334,15 +335,18 @@ export class ProductHttpApi {
   }
 
   /**
-   * « Cette déclinaison a la même fiche réglementaire que celle par défaut. »
+   * « Cette déclinaison suit celle par défaut, sur cette section. »
    *
    * Un `PUT` de l'état de la case, jamais une bascule : deux clics rapides sur
    * une bascule laisseraient l'écran et la base en désaccord sans un mot.
    */
-  alignVariantRegulatory(productId: string, variantId: string, aligned: boolean): Promise<void> {
-    return this.put(`products/${productId}/variants/${variantId}/regulatory-alignment`, {
-      aligned,
-    });
+  alignVariant(
+    productId: string,
+    variantId: string,
+    aspect: VariantAspect,
+    aligned: boolean,
+  ): Promise<void> {
+    return this.put(`products/${productId}/variants/${variantId}/alignment`, { aspect, aligned });
   }
 
   /**

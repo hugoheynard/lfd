@@ -9,7 +9,12 @@ import {
   VariantNotFoundError,
   VariantNotInProductError,
 } from "../errors/product-errors.js";
-import { Variant, type VariantPricing, type VariantSnapshot } from "./variant.js";
+import {
+  Variant,
+  type VariantAspect,
+  type VariantPricing,
+  type VariantSnapshot,
+} from "./variant.js";
 import {
   slugify,
   type LocalizedText,
@@ -376,7 +381,7 @@ export class Product {
    * montre les canaux de sa famille.
    */
   private isCovered(variant: Variant): boolean {
-    return variant.regulatoryFollowsDefault
+    return variant.follows("regulatory")
       ? this.defaultVariant.hasOwnRegulatorySheet
       : variant.hasOwnRegulatorySheet;
   }
@@ -422,22 +427,31 @@ export class Product {
    * L'appartenance est tenue ici — une requête forgée ne peut pas aligner la
    * déclinaison d'un autre produit, exactement comme pour le tarif.
    */
-  alignVariantRegulatory(variantId: string, aligned: boolean): void {
+  alignVariant(variantId: string, aspect: VariantAspect, aligned: boolean): void {
     const variant = this.variantList.find((candidate) => candidate.id === variantId);
     if (variant === undefined) {
       throw new VariantNotInProductError(this.identity, variantId);
     }
-    variant.alignRegulatoryOnDefault(aligned);
+    variant.alignOnDefault(aspect, aligned);
   }
 
-  /** La fiche du défaut, recopiée dans l'instantané d'une déclinaison alignée. */
+  /**
+   * Ce que le défaut prête à une déclinaison alignée, section par section.
+   *
+   * Le prix et le poids voyagent ENSEMBLE, jamais l'un sans l'autre : un prix
+   * hérité au-dessus d'un poids propre décrirait un article que personne ne
+   * vend, et c'est le couple que la section « Tarif » enregistre.
+   */
   private resolvedSnapshot(variant: Variant): VariantSnapshot {
     const own = variant.snapshot();
-    if (!variant.regulatoryFollowsDefault) {
-      return own;
-    }
     const source = this.defaultVariant.snapshot();
-    return { ...own, allergens: source.allergens, nutrition: source.nutrition };
+    const regulatory = variant.follows("regulatory")
+      ? { allergens: source.allergens, nutrition: source.nutrition }
+      : {};
+    const pricing = variant.follows("pricing")
+      ? { priceCents: source.priceCents, weightGrams: source.weightGrams }
+      : {};
+    return { ...own, ...regulatory, ...pricing };
   }
 
   /**

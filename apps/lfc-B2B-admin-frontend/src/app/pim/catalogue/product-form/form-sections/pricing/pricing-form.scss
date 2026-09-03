@@ -109,3 +109,9 @@
 .muted {
   color: var(--fold-color-text-faded);
 }
+
+/* Hérité du défaut : lisible, pas modifiable. */
+.stack.is-inherited {
+  opacity: 0.55;
+  pointer-events: none;
+}

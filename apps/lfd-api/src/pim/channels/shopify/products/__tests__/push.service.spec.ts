@@ -39,6 +39,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
         priceCents: 130,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,
       },

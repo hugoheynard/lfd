@@ -197,6 +197,34 @@ export interface CategoryInheritanceView {
 /** Les sections **enregistrables** — la seule source des clés de section. */
 export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication' | 'visuels';
 
+/** Ce qu'une déclinaison peut suivre du défaut — le vocabulaire du serveur. */
+export type VariantAspect = 'regulatory' | 'pricing';
+
+/**
+ * **Ce que la ligne sous l'en-tête d'une carte doit dire.**
+ *
+ * Trois états et pas deux, parce que « rien à aligner » et « portée par la
+ * fiche » ne sont pas la même réponse : la première vaut sur la déclinaison par
+ * défaut, où l'alignement n'a pas de sens ; la seconde vaut sur une carte que
+ * le MODÈLE ne laisse pas diverger, et elle doit dire où aller la modifier.
+ *
+ * Le calcul est ici et non dans le gabarit : c'est une règle de modèle, et une
+ * règle dans un gabarit est une règle qu'aucun test unitaire n'atteint.
+ */
+export type SectionAlignment =
+  /** Une case à cocher : cette section s'aligne. */
+  | { readonly kind: 'alignable'; readonly aspect: VariantAspect; readonly aligned: boolean }
+  /** Portée par la fiche — commune à toutes les déclinaisons. */
+  | { readonly kind: 'product' }
+  /** Rien à dire : on édite la déclinaison par défaut. */
+  | { readonly kind: 'none' };
+
+/** Quelle section suit quoi. Les absentes sont portées par la FICHE. */
+const ALIGNABLE: Partial<Record<FormSection, VariantAspect>> = {
+  tarif: 'pricing',
+  fiche: 'regulatory',
+};
+
 /**
  * Les quatre gestes du cycle de vie, nommés par l'**intention**.
  *
@@ -320,6 +348,7 @@ interface VariantDraft {
   readonly selected: readonly string[];
   readonly nutrition: NutritionValues;
   readonly regulatoryAligned: boolean;
+  readonly pricingAligned: boolean;
 }
 
 /**
@@ -1251,7 +1280,21 @@ export class ProductFormStore {
 
   savePricing(): Promise<void> {
     return this.save('tarif', async () => {
-      await this.saveVariantFacts();
+      // L'alignement PART EN PREMIER, et il décide du reste — même règle que
+      // sur la fiche réglementaire : aligner puis écrire un prix laisserait un
+      // montant propre sur une déclinaison qui n'en porte plus, et le prochain
+      // désalignement le ferait réapparaître sans que personne l'ait décidé.
+      if (!this.editingDefault()) {
+        await this.products.alignVariant(
+          this.productId(),
+          this.variantId(),
+          'pricing',
+          this.pricingAligned(),
+        );
+      }
+      if (!this.pricingAligned()) {
+        await this.saveVariantFacts();
+      }
       // Le prix et son régime partent ENSEMBLE : ils sont dans la même section,
       // et enregistrer l'un sans l'autre laisserait l'écran vert sur une moitié
       // de décision.
@@ -1260,6 +1303,10 @@ export class ProductFormStore {
       // posés, et les envoyer séparément laisserait une fenêtre où l'un des deux
       // gestes est passé et l'autre non.
       await this.products.saveChannels(this.productId(), this.channelsOverride());
+      // Corriger le tarif du DÉFAUT change ce que voient celles qui le suivent.
+      if (this.editingDefault()) {
+        await this.reloadVariants();
+      }
     });
   }
 
@@ -1270,9 +1317,10 @@ export class ProductFormStore {
       // plus — une donnée réglementaire orpheline, que le prochain
       // désalignement ferait réapparaître sans que personne l'ait écrite.
       if (!this.editingDefault()) {
-        await this.products.alignVariantRegulatory(
+        await this.products.alignVariant(
           this.productId(),
           this.variantId(),
+          'regulatory',
           this.regulatoryAligned(),
         );
       }
@@ -1284,8 +1332,12 @@ export class ProductFormStore {
       }
       // Le poids voyage par la route du TARIF, qui porte prix ET poids sur la
       // déclinaison. Les deux valeurs partent à chaque fois : la section qui
-      // n'a pas bougé renvoie ce qu'elle avait, rien ne se perd.
-      await this.saveVariantFacts();
+      // n'a pas bougé renvoie ce qu'elle avait, rien ne se perd. Sauf quand le
+      // tarif est HÉRITÉ — écrire alors poserait un prix propre que personne
+      // n'a saisi, et détacherait la déclinaison sans qu'on l'ait demandé.
+      if (!this.pricingAligned()) {
+        await this.saveVariantFacts();
+      }
       // Corriger la fiche du DÉFAUT change ce que voient toutes celles qui le
       // suivent. On relit donc la liste — et seulement elle : c'est le serveur
       // qui résout l'héritage, et le refaire ici en donnerait une seconde
@@ -1497,6 +1549,49 @@ export class ProductFormStore {
    */
   readonly regulatoryAligned = signal(false);
 
+  /** La même case, sur la carte « Tarif & TVA » — prix ET poids ensemble. */
+  readonly pricingAligned = signal(false);
+
+  /**
+   * La ligne à rendre sous l'en-tête de CHAQUE carte, prête à afficher.
+   *
+   * Une carte n'a pas à savoir si elle est alignable : elle demande sa ligne et
+   * la rend. Ce qui suit le défaut, ce qui appartient à la fiche et ce qui n'a
+   * rien à dire sont trois faits du modèle, pas trois conditions de gabarit.
+   */
+  readonly alignments: Signal<ReadonlyMap<FormSection, SectionAlignment>> = computed(() => {
+    const rows = new Map<FormSection, SectionAlignment>();
+    for (const section of SAVEABLE) {
+      rows.set(section.key, this.alignmentOf(section.key));
+    }
+    return rows;
+  });
+
+  /** Bascule la case d'une carte — l'écran ne connaît que sa section. */
+  setAlignment(section: FormSection, aligned: boolean): void {
+    if (ALIGNABLE[section] === 'pricing') {
+      this.pricingAligned.set(aligned);
+    }
+    if (ALIGNABLE[section] === 'regulatory') {
+      this.regulatoryAligned.set(aligned);
+    }
+  }
+
+  private alignmentOf(section: FormSection): SectionAlignment {
+    if (this.editingDefault()) {
+      return { kind: 'none' };
+    }
+    const aspect = ALIGNABLE[section];
+    if (aspect === undefined) {
+      return { kind: 'product' };
+    }
+    return {
+      kind: 'alignable',
+      aspect,
+      aligned: aspect === 'pricing' ? this.pricingAligned() : this.regulatoryAligned(),
+    };
+  }
+
   /**
    * Bascule sur une autre déclinaison — **sans rien perdre**.
    *
@@ -1593,7 +1688,14 @@ export class ProductFormStore {
       case 'identite':
         return JSON.stringify([this.nameText(), this.kind(), this.categoryId()]);
       case 'tarif':
-        return JSON.stringify([this.priceEur(), this.vatOverride(), this.channelsOverride()]);
+        // La case « aligner » EST une modification de la section : sans elle,
+        // elle bascule et le bouton d'enregistrement n'apparaît pas.
+        return JSON.stringify([
+          this.priceEur(),
+          this.vatOverride(),
+          this.channelsOverride(),
+          this.pricingAligned(),
+        ]);
       case 'fiche':
         // Le poids net est de CETTE section : la grille est « pour 100 g », et
         // sans lui elle ne dit rien de ce qu'on vend.
@@ -1625,6 +1727,7 @@ export class ProductFormStore {
       selected: [...this.selected()],
       nutrition: this.nutrition(),
       regulatoryAligned: this.regulatoryAligned(),
+      pricingAligned: this.pricingAligned(),
     };
   }
 
@@ -1644,6 +1747,7 @@ export class ProductFormStore {
       selected: allergens === null ? [] : [...allergens],
       nutrition: variant?.nutrition ?? EMPTY_NUTRITION,
       regulatoryAligned: variant?.regulatoryFollowsDefault ?? false,
+      pricingAligned: variant?.pricingFollowsDefault ?? false,
     };
   }
 
@@ -1654,6 +1758,7 @@ export class ProductFormStore {
     this.selected.set([...draft.selected]);
     this.nutrition.set(draft.nutrition);
     this.regulatoryAligned.set(draft.regulatoryAligned);
+    this.pricingAligned.set(draft.pricingAligned);
   }
 
   /**

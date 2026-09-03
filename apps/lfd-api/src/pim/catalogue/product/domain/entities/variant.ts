@@ -18,6 +18,19 @@ export interface VariantNutritionSnapshot {
   readonly glycemicIndex: number | null;
 }
 
+/**
+ * Ce qu'une déclinaison peut **suivre** de celle par défaut.
+ *
+ * Une union nommée et non deux méthodes jumelles : le jour où une troisième
+ * section devient alignable, c'est une valeur de plus ici et une colonne de
+ * plus en base — pas un troisième chemin à tenir d'accord avec les deux autres.
+ *
+ * Il n'y en a que deux, et c'est le MODÈLE qui le décide : l'identité, la
+ * communication et les visuels sont portés par la fiche, donc une déclinaison
+ * ne peut pas en diverger — il n'y a rien à aligner sur ce qu'on ne possède pas.
+ */
+export type VariantAspect = "regulatory" | "pricing";
+
 export interface VariantSnapshot {
   readonly id: string;
   readonly sku: string;
@@ -38,6 +51,14 @@ export interface VariantSnapshot {
    * elle-même.
    */
   readonly regulatoryFollowsDefault: boolean;
+  /**
+   * Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids
+   * ensemble, jamais l'un sans l'autre : un prix hérité au-dessus d'un poids
+   * propre décrirait un article que personne ne vend.
+   *
+   * Toujours `false` sur la déclinaison par défaut.
+   */
+  readonly pricingFollowsDefault: boolean;
   /** Prix canonique en centimes ; `null` = pas encore tarifé. */
   readonly priceCents: number | null;
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
@@ -78,7 +99,7 @@ export class Variant {
   private weightGramsValue: number | null;
   private readonly allergensValue: readonly string[] | null;
   private readonly nutritionValue: VariantNutritionSnapshot | null;
-  private followsDefaultFlag: boolean;
+  private readonly followsDefault: Record<VariantAspect, boolean>;
 
   /**
    * L'instantané, et non onze arguments positionnels.
@@ -100,7 +121,10 @@ export class Variant {
     this.weightGramsValue = snapshot.weightGrams;
     this.allergensValue = snapshot.allergens;
     this.nutritionValue = snapshot.nutrition;
-    this.followsDefaultFlag = snapshot.regulatoryFollowsDefault;
+    this.followsDefault = {
+      regulatory: snapshot.regulatoryFollowsDefault,
+      pricing: snapshot.pricingFollowsDefault,
+    };
   }
 
   /**
@@ -123,6 +147,7 @@ export class Variant {
       weightGrams: null,
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
+      pricingFollowsDefault: false,
       allergens: null,
       nutrition: null,
     });
@@ -160,6 +185,10 @@ export class Variant {
       priceCents: null,
       weightGrams: null,
       regulatoryFollowsDefault: true,
+      // Le TARIF, lui, ne s'aligne pas d'office : une seconde déclinaison
+      // existe le plus souvent parce qu'elle se vend autrement, et un prix
+      // hérité par défaut se facturerait sans que personne l'ait décidé.
+      pricingFollowsDefault: false,
       allergens: null,
       nutrition: null,
     });
@@ -191,7 +220,16 @@ export class Variant {
 
   /** Suit-elle la fiche du défaut plutôt que d'en porter une ? */
   get regulatoryFollowsDefault(): boolean {
-    return this.followsDefaultFlag;
+    return this.followsDefault.regulatory;
+  }
+
+  /** Suit-elle le tarif du défaut — prix et poids — plutôt que le sien ? */
+  get pricingFollowsDefault(): boolean {
+    return this.followsDefault.pricing;
+  }
+
+  follows(aspect: VariantAspect): boolean {
+    return this.followsDefault[aspect];
   }
 
   /**
@@ -205,7 +243,7 @@ export class Variant {
   }
 
   /**
-   * S'aligne sur la fiche du défaut, ou reprend la sienne.
+   * S'aligne sur le défaut pour CETTE section, ou reprend la sienne.
    *
    * Le geste ne touche **que le drapeau**. La fiche propre, si elle existait,
    * reste en place et dort : s'aligner puis se désaligner rend ce qu'on avait
@@ -215,13 +253,14 @@ export class Variant {
    *
    * Une déclinaison alignée qui n'a jamais rien déclaré reste « non déclarée »
    * pour elle-même ; c'est l'agrégat qui la dit couverte, parce que lui seul
-   * voit le défaut.
+   * voit le défaut. Même partage pour le tarif : elle n'a pas de prix à elle,
+   * et c'est l'instantané de l'agrégat qui y met celui du défaut.
    */
-  alignRegulatoryOnDefault(aligned: boolean): void {
+  alignOnDefault(aspect: VariantAspect, aligned: boolean): void {
     if (aligned && this.defaultFlag) {
       throw new DefaultVariantCannotFollowItselfError(this.skuValue);
     }
-    this.followsDefaultFlag = aligned;
+    this.followsDefault[aspect] = aligned;
   }
 
   /**
@@ -251,7 +290,8 @@ export class Variant {
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,
-      regulatoryFollowsDefault: this.followsDefaultFlag,
+      regulatoryFollowsDefault: this.followsDefault.regulatory,
+      pricingFollowsDefault: this.followsDefault.pricing,
       allergens: this.allergensValue,
       nutrition: this.nutritionValue,
     };

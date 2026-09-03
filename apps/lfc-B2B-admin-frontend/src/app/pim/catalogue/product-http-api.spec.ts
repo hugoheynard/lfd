@@ -13,6 +13,7 @@ interface BackendVariantLike {
   priceCents: number | null;
   weightGrams: number | null;
   regulatoryFollowsDefault: boolean;
+  pricingFollowsDefault: boolean;
   allergens: readonly string[] | null;
   nutrition: null;
 }
@@ -29,6 +30,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     priceCents: 450,
     weightGrams: 250,
     regulatoryFollowsDefault: false,
+    pricingFollowsDefault: false,
     allergens: null,
     nutrition: null,
     ...overrides,

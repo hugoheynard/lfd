@@ -90,12 +90,12 @@
                   (save)="saveSection($event)"
                 />
               }
-              @if (store.lockedSections().has(section.key)) {
-                <fold-callout appearance="inset" variant="neutral">
-                  Portée par la fiche, commune à toutes ses déclinaisons. Ouvrir
-                  <strong>Défaut</strong> pour la modifier.
-                </fold-callout>
-              }
+              <!-- L'héritage se dit ICI, sous l'en-tête, pour TOUTES les cartes
+                   — au même endroit, qu'il y ait une case, une mention, ou
+                   rien. Une case au milieu d'une carte et absente des autres
+                   oblige à chercher, section par section, s'il y a quelque
+                   chose à savoir. -->
+              <app-section-alignment [section]="section.key" />
               @switch (section.key) {
                 @case ('identite') {
                   <app-identity-form />

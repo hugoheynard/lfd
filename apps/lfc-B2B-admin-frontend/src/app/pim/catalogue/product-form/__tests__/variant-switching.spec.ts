@@ -40,6 +40,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     priceCents: 250,
     weightGrams: 100,
     regulatoryFollowsDefault: false,
+    pricingFollowsDefault: false,
     allergens: ['AM'],
     mayContain: [],
     nutrition: EMPTY_NUTRITION,
@@ -100,8 +101,8 @@ class FakeApi {
     this.calls.push({ name: 'addVariant', args });
     return Promise.resolve('var_3');
   }
-  alignVariantRegulatory(...args: unknown[]) {
-    this.calls.push({ name: 'alignVariantRegulatory', args });
+  alignVariant(...args: unknown[]) {
+    this.calls.push({ name: 'alignVariant', args });
     return Promise.resolve();
   }
   saveNutrition(...args: unknown[]) {
@@ -229,6 +230,79 @@ describe('les cartes portées par la fiche se verrouillent', () => {
   });
 });
 
+describe('la ligne sous l’en-tête de chaque carte', () => {
+  /**
+   * La MÊME ligne au même endroit sur toutes les cartes : c'est ce qui la rend
+   * lisible. Une case au milieu d'une carte et absente des autres oblige à
+   * chercher, section par section, s'il y a quelque chose à savoir.
+   */
+  it('n’a rien à dire sur la déclinaison par défaut', async () => {
+    const { store } = await setup();
+
+    expect([...store.alignments().values()].map((row) => row.kind)).toEqual([
+      'none',
+      'none',
+      'none',
+      'none',
+      'none',
+    ]);
+  });
+
+  it('offre une case au tarif et à la fiche, une mention aux autres', async () => {
+    const { store } = await setup();
+
+    store.selectVariant('var_2');
+
+    const rows = store.alignments();
+    expect(rows.get('tarif')).toMatchObject({ kind: 'alignable', aspect: 'pricing' });
+    expect(rows.get('fiche')).toMatchObject({ kind: 'alignable', aspect: 'regulatory' });
+    expect(rows.get('identite')?.kind).toBe('product');
+    expect(rows.get('communication')?.kind).toBe('product');
+    expect(rows.get('visuels')?.kind).toBe('product');
+  });
+
+  it('bascule la bonne section, et LAISSE l’autre où elle était', async () => {
+    const { store } = await setup();
+    store.selectVariant('var_2');
+    // On part d'un état où les deux DIFFÈRENT : sinon « l'autre n'a pas bougé »
+    // se vérifierait tout seul, et le cas ne prouverait rien.
+    store.setAlignment('fiche', false);
+
+    store.setAlignment('tarif', true);
+
+    expect(store.pricingAligned()).toBe(true);
+    expect(store.regulatoryAligned()).toBe(false);
+  });
+});
+
+describe('le tarif hérité ne s’écrit pas', () => {
+  /**
+   * 🔴 Écrire un prix pendant qu'il est hérité poserait un montant propre que
+   * personne n'a saisi, et détacherait la déclinaison sans qu'on l'ait demandé.
+   */
+  it('n’envoie AUCUN prix tant que la case est cochée', async () => {
+    const { store, api } = await setup();
+    store.selectVariant('var_2');
+    store.setAlignment('tarif', true);
+
+    await store.saveOne('tarif');
+
+    expect(api.calls.map((call) => call.name)).toContain('alignVariant');
+    expect(api.calls.map((call) => call.name)).not.toContain('savePricing');
+  });
+
+  it('tarifie pour de bon dès qu’on la décoche', async () => {
+    const { store, api } = await setup();
+    store.selectVariant('var_2');
+    store.setAlignment('tarif', false);
+    store.priceEur.set(4.2);
+
+    await store.saveOne('tarif');
+
+    expect(api.calls.map((call) => call.name)).toContain('savePricing');
+  });
+});
+
 describe('la case « aligner sur le défaut »', () => {
   it('n’envoie AUCUNE déclaration tant qu’elle est cochée', async () => {
     const { store, api } = await setup();
@@ -236,7 +310,7 @@ describe('la case « aligner sur le défaut »', () => {
 
     await store.saveOne('fiche');
 
-    expect(api.calls.map((call) => call.name)).toContain('alignVariantRegulatory');
+    expect(api.calls.map((call) => call.name)).toContain('alignVariant');
     expect(api.calls.map((call) => call.name)).not.toContain('saveNutrition');
   });
 
@@ -247,9 +321,10 @@ describe('la case « aligner sur le défaut »', () => {
 
     await store.saveOne('fiche');
 
-    expect(api.calls.filter((call) => call.name === 'alignVariantRegulatory')[0]?.args).toEqual([
+    expect(api.calls.filter((call) => call.name === 'alignVariant')[0]?.args).toEqual([
       'prd_1',
       'var_2',
+      'regulatory',
       false,
     ]);
     expect(api.calls.map((call) => call.name)).toContain('saveNutrition');

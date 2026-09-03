@@ -143,6 +143,14 @@ export interface VariantView {
    */
   readonly regulatoryFollowsDefault: boolean;
   /**
+   * Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids.
+   *
+   * ⚠️ `priceCents` et `weightGrams` sont **résolus** comme les allergènes : ils
+   * rendent ici ceux du défaut. C'est ce drapeau, et lui seul, qui dit d'où ils
+   * viennent.
+   */
+  readonly pricingFollowsDefault: boolean;
+  /**
    * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
    *
    * ⚠️ **Résolue.** Une déclinaison alignée rend ici les allergènes du défaut,
@@ -324,15 +332,26 @@ export const addProductVariantPayloadSchema = z.object({
 export type AddProductVariantPayload = z.infer<typeof addProductVariantPayloadSchema>;
 
 /**
- * « Cette déclinaison a la même fiche réglementaire que celle par défaut. »
+ * « Cette déclinaison suit celle par défaut, sur cette section. »
  *
- * Une affirmation, pas un réglage d'affichage : elle décide ce qui part sur
- * l'étiquette et chez les canaux.
+ * Une affirmation, pas un réglage d'affichage : sur le réglementaire elle décide
+ * ce qui part sur l'étiquette, sur le tarif ce qui est facturé.
  */
-export const alignVariantRegulatoryPayloadSchema = z.object({
+/**
+ * Ce qu'une déclinaison peut suivre du défaut.
+ *
+ * Deux valeurs, et c'est le MODÈLE qui le décide : l'identité, la communication
+ * et les visuels sont portés par la fiche, donc une déclinaison ne peut pas en
+ * diverger — il n'y a rien à aligner sur ce qu'on ne possède pas.
+ */
+export const variantAspectSchema = z.enum(["regulatory", "pricing"]);
+export type VariantAspect = z.infer<typeof variantAspectSchema>;
+
+export const alignVariantPayloadSchema = z.object({
+  aspect: variantAspectSchema,
   aligned: z.boolean(),
 });
-export type AlignVariantRegulatoryPayload = z.infer<typeof alignVariantRegulatoryPayloadSchema>;
+export type AlignVariantPayload = z.infer<typeof alignVariantPayloadSchema>;
 
 /** La liste entière des visuels d'une fiche — {@link setMediaPayloadSchema}. */
 export const setProductMediaPayloadSchema = setMediaPayloadSchema;

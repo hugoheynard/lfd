@@ -3300,6 +3300,14 @@ model ProductVariant {
   /// Un `CHECK` interdit à la déclinaison par défaut de se suivre elle-même.
   regulatoryFollowsDefault Boolean @default(false) @map("regulatory_follows_default")
 
+  /// Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids.
+  ///
+  /// `false` par défaut, y compris pour l'existant : une seconde déclinaison
+  /// existe le plus souvent parce qu'elle se vend à un autre prix, et basculer
+  /// l'existant vers l'héritage ferait facturer le prix du défaut sur des
+  /// articles qui portaient le leur.
+  pricingFollowsDefault Boolean @default(false) @map("pricing_follows_default")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

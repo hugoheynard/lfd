@@ -1,0 +1,6 @@
+/* Collée sous l'en-tête, détachée du contenu : c'est une mention sur la carte,
+   pas son premier champ. */
+.alignment {
+  display: block;
+  margin-block-end: var(--fold-space-md);
+}

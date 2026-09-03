@@ -127,6 +127,13 @@ export interface Variant {
    */
   regulatoryFollowsDefault: boolean;
   /**
+   * Elle **suit le tarif de celle par défaut** — prix ET poids.
+   *
+   * ⚠️ `priceCents` et `weightGrams` sont alors **résolus** : ils portent ceux
+   * du défaut. C'est ce drapeau, et lui seul, qui dit d'où ils viennent.
+   */
+  pricingFollowsDefault: boolean;
+  /**
    * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
    *
    * ⚠️ **Résolue** : une déclinaison alignée porte ici les allergènes du défaut.

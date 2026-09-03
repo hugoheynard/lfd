@@ -25,6 +25,7 @@ function product(overrides: Partial<ProductRecord> = {}): ProductRecord {
         priceCents: 2400,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,
       },

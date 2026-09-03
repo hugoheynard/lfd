@@ -44,6 +44,7 @@ interface VariantRow {
   priceCents: number | null;
   weightGrams: number | null;
   regulatoryFollowsDefault: boolean;
+  pricingFollowsDefault: boolean;
   nutrition: NutritionRow | null;
 }
 
@@ -87,6 +88,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
+    pricingFollowsDefault: row.pricingFollowsDefault,
     allergens:
       row.nutrition === null
         ? null
@@ -285,6 +287,7 @@ export class PrismaProductRepository extends ProductRepository {
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
+            pricingFollowsDefault: variant.pricingFollowsDefault,
           },
           update: {
             name: localizedColumn(variant.name),
@@ -294,6 +297,7 @@ export class PrismaProductRepository extends ProductRepository {
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
+            pricingFollowsDefault: variant.pricingFollowsDefault,
           },
         }),
       ),
