@@ -11,6 +11,40 @@
 
 ---
 
+## ⏱️ Relecture du 2026-09-03 — ce qui reste vrai
+
+**Cet audit est une PHOTO datée du 2026-08-09, pas un état courant.** Vingt-cinq
+jours plus tard, la plupart de ses constats sont refermés — et il continuait
+d'être désigné « point d'entrée avant tout arbitrage ». Un audit qui garde ce
+statut sans être relu envoie travailler sur des boucles déjà fermées, et pire :
+il fait croire à des trous de sécurité qui n'existent plus.
+
+Le texte d'origine est **conservé intact** en dessous : c'est un procès-verbal, on
+n'y touche pas. Voici seulement ce qu'il en reste, chaque verdict porté par une
+preuve ouverte ce jour-là.
+
+| Constat                      | Verdict 2026-09-03 | Preuve                                                                                                                 |
+| ---------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| **P0-1**                     | ✅ clos            | `admin/orders`, `admin/order-drafts`, `admin/order-cutoffs`, `admin/production`, `admin/handover` sont montés          |
+| **P0-2**                     | ✅ clos            | `Order` porte ses transitions (`markPaid`, `markPaymentFailed`, `markHandedOver` — cf. `CLAUDE.md` §3.1)               |
+| **P0-3**                     | ✅ clos            | contexte `staff/notifications`, `admin/notifications` + `/push`, et `packages/mailer` (Resend, coupe-circuit)          |
+| **P0-4**                     | ✅ clos            | `commercial/support/support-queue/` côté back-office                                                                   |
+| **P0-6**                     | ✅ clos            | `.github/workflows/ci.yml`, et 22 portes de dépôt (`pnpm lint:gates`)                                                  |
+| **P1-3**                     | ✅ clos            | `StaffAccessGuard`, **69** contrôleurs `@AdminSurface`, `ROLE_GRANTS`, dérogations, + `admin-surface-coverage.spec.ts` |
+| **P1-4**                     | 🔴 **vrai**        | `schedule-appointment.handler.ts` prend toujours `subjectType`/`subjectId` du payload sans les résoudre                |
+| P0-5, P1-1, P1-2, P1-5, P1-6 | ⚪ non revérifiés  | hors du temps de cette passe — les rouvrir avant de s'en servir                                                        |
+
+🔴 **P1-3 était le plus coûteux à laisser traîner.** Il affirmait que « tout
+porteur d'un jeton staff peut tout faire — y compris suspendre, **résilier** ».
+C'est faux depuis que le mur staff existe, et un test échoue désormais si une
+seule surface `/admin/*` oublie de déclarer son périmètre. Une phrase de ce
+calibre, laissée en place, ne se contente pas d'être périmée : elle décrit un
+produit qu'on n'a pas, à l'endroit qu'on lit avant d'arbitrer.
+
+**Le seul constat encore vivant est P1-4**, et il n'a pas bougé d'une ligne.
+
+---
+
 ## Le constat en une phrase
 
 La plateforme client sait **produire** des faits — une commande, un panier

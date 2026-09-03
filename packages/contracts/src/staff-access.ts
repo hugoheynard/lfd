@@ -310,10 +310,16 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_payments: "write",
     b2b_settings: "read",
     pim_catalog: "read",
-    // Le seul `write` de la comptabilité en dehors des commandes : poser un
-    // taux et le corriger. **Pas** le pousser vers un canal — `pim_channels`
-    // n'est pas à elle, et c'est précisément ce que l'ancienne ressource
-    // `catalog` ne permettait pas de dire.
+    // Poser un taux et le corriger. **Pas** le pousser vers un canal —
+    // `pim_channels` n'est pas à elle, et c'est précisément ce que l'ancienne
+    // ressource `catalog` ne permettait pas de dire.
+    //
+    // Ce commentaire annonçait « le seul `write` de la comptabilité en dehors
+    // des commandes » : c'est faux, et ça l'était déjà. `b2b_payments: "write"`
+    // ouvre `POST`/`PUT`/`DELETE .../mandate` — poser un mandat SEPA, en
+    // déposer la preuve, le révoquer. Un compte de ce qui est ouvert n'a pas le
+    // droit d'être approximatif : c'est ce qu'on relit pour savoir si un rôle
+    // est trop large.
     pim_tax: "write",
     staff_notifications: "write",
   },
