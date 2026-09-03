@@ -5,7 +5,14 @@ import type {
   DeliveryAddressPayload,
 } from "@lfd/contracts";
 
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { Company } from "../../../domain/entities/company.js";
+import { DeliveryAddressBook } from "../../../domain/entities/delivery-address-book.js";
+import { CompanyRepository } from "../../../domain/ports/company.repository.js";
+import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
 import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
@@ -67,29 +74,78 @@ function membershipReturning(role: CompanyRole | null): MembershipReader {
   return { roleOf: () => Promise.resolve(role) };
 }
 
+/**
+ * Carnet doublé, **partagé entre les appels** d'un même scénario : c'est ce qui
+ * permet d'enchaîner ajout → modification → défaut → archivage sur le même état,
+ * et donc de vérifier l'effet de chaque geste plutôt que le seul fait qu'une
+ * méthode ait été appelée.
+ */
 function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
+  const book = DeliveryAddressBook.reconstitute({
+    companyId: "c1",
+    entries: [
+      {
+        id: "a1",
+        lines: { ...BILLING },
+        specs: DELIVERY.specs,
+        createdAt: new Date("2026-01-01T08:00:00Z"),
+        archivedAt: null,
+      },
+    ],
+    defaultId: "a1",
+  });
   return {
     saveBilling: () => {
       recorder.writes.push("billing");
       return Promise.resolve();
     },
-    addDelivery: () => {
-      recorder.writes.push("add");
-      return Promise.resolve("addr_new");
-    },
-    updateDelivery: () => {
-      recorder.writes.push("update");
-      return Promise.resolve();
-    },
-    archiveDelivery: () => {
-      recorder.writes.push("archive");
-      return Promise.resolve();
-    },
-    setDefaultDelivery: () => {
-      recorder.writes.push("default");
+    loadDeliveryBook: () => Promise.resolve(book),
+    saveDeliveryBook: (saved) => {
+      recorder.writes.push(`carnet:${saved.deliveries().length}`);
       return Promise.resolve();
     },
   };
+}
+
+/** Société doublée — l'archivage la relit pour nettoyer sa préférence. */
+function companiesReturningSample(): CompanyRepository {
+  const company = Company.reconstitute({
+    id: "c1",
+    raisonSociale: "PQ Marais",
+    enseigne: "Le Pain Quotidien",
+    formeJuridique: "SAS",
+    siret: "81245678900021",
+    vatNumber: "",
+    contact: ContactDetails.create({
+      firstName: "Camille",
+      lastName: "Rousseau",
+      fonction: "",
+      email: "camille@pqmarais.fr",
+      phone: "",
+    }),
+    grantedTerms: [],
+    requestedTerm: null,
+    status: "active",
+    activatedAt: new Date("2026-01-05T09:00:00Z"),
+    activatedBy: null,
+    suspensionCause: null,
+    nafCode: "",
+  });
+  return {
+    declareUnowned: () => Promise.resolve(""),
+    saveKbisCertification: () => Promise.resolve(),
+    existsBySiret: () => Promise.resolve(false),
+    declareOwnedBy: () => Promise.resolve("company_new"),
+    load: () => Promise.resolve(company),
+    save: () => Promise.resolve(),
+    saveKbisMetadata: () => Promise.resolve(),
+    kbisLocation: () => Promise.resolve(null),
+  };
+}
+
+/** L'horloge et la fabrique d'identifiants, gelées. */
+function clock(): FixedClock {
+  return new FixedClock(new Date("2026-02-03T10:00:00Z"));
 }
 
 function readerRecorder(recorder: Recorder): CompanyAddressReader {
@@ -124,6 +180,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
         membershipReturning(null),
         addressesRecorder(recorder),
         events(),
+        new FixedIdGenerator("addr"),
+        clock(),
       ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
@@ -145,20 +203,31 @@ describe("handlers d'adresses — les murs member / admin", () => {
     const admin = membershipReturning("owner");
     const repo = addressesRecorder(recorder);
 
-    await new AddDeliveryAddressHandler(admin, repo, events()).execute(
-      new AddDeliveryAddressCommand("u1", "c1", DELIVERY),
-    );
+    await new AddDeliveryAddressHandler(
+      admin,
+      repo,
+      events(),
+      new FixedIdGenerator("addr"),
+      clock(),
+    ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
     await new UpdateDeliveryAddressHandler(admin, repo).execute(
       new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY),
     );
     await new SetDefaultDeliveryAddressHandler(admin, repo).execute(
       new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"),
     );
-    await new RemoveDeliveryAddressHandler(admin, repo).execute(
-      new RemoveDeliveryAddressCommand("u1", "c1", "a1"),
-    );
+    await new RemoveDeliveryAddressHandler(
+      admin,
+      repo,
+      companiesReturningSample(),
+      clock(),
+      new DirectUnitOfWork(),
+    ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 
-    expect(recorder.writes).toEqual(["add", "update", "default", "archive"]);
+    // Le carnet compte deux adresses après l'ajout, et retombe à une seule
+    // quand `a1` est archivée : chaque geste a bien porté, pas seulement été
+    // appelé.
+    expect(recorder.writes).toEqual(["carnet:2", "carnet:2", "carnet:2", "carnet:1"]);
   });
 
   it("un simple membre LIT les adresses ; un non-membre reçoit 404", async () => {

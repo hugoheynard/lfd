@@ -20,6 +20,8 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    await this.addresses.setDefaultDelivery(command.companyId, command.addressId);
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    book.makeDefault(command.addressId);
+    await this.addresses.saveDeliveryBook(book);
   }
 }

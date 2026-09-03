@@ -1,17 +1,21 @@
-import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
+import type { BillingAddressPayload } from "@lfd/contracts";
+
+import type { DeliveryAddressBook } from "../entities/delivery-address-book.js";
 
 /**
- * Port d'**écriture** des adresses d'une entreprise — une facturation (unique) et
- * N livraisons (une par défaut).
+ * Port d'**écriture** des adresses d'une entreprise.
  *
- * Chaque méthode porte `companyId` : c'est le mur. Une écriture qui viserait
- * l'adresse d'une **autre** entreprise ne doit rien toucher — l'implémentation
- * filtre sur (`id` ET `companyId`) et signale l'absence plutôt que d'agir à
- * l'aveugle.
+ * Deux natures, deux traitements — et c'est délibéré :
  *
- * Les charges sont les DTO **validés** de `@lfd/contracts` : la forme et les
- * invariants (créneau `début < fin`, bornes GPS) sont déjà garantis à la
- * frontière, le port n'a plus qu'à persister.
+ * - la **facturation** est unique et sans règle qui puisse refuser son écriture.
+ *   Elle reste un CRUD honnête : lui inventer un agrégat serait de la cérémonie
+ *   (cf. `CLAUDE.md` §3.1, « où NE PAS mettre d'agrégat ») ;
+ * - les **livraisons** forment un carnet dont l'adresse par défaut est une règle
+ *   d'ensemble. Elles passent donc par l'agrégat : on charge, on mute par ses
+ *   méthodes, on rend le carnet entier.
+ *
+ * Le `companyId` reste le mur des deux côtés : `loadDeliveryBook` ne rend que ce
+ * qui appartient à l'entreprise, et le carnet le reporte dans son écriture.
  */
 export abstract class CompanyAddressRepository {
   /**
@@ -21,31 +25,22 @@ export abstract class CompanyAddressRepository {
   abstract saveBilling(companyId: string, payload: BillingAddressPayload): Promise<void>;
 
   /**
-   * Ajoute une adresse de **livraison** et renvoie son identifiant. Devient le
-   * défaut si elle le demande, ou si c'est la première livraison de l'entreprise.
+   * Charge le **carnet de livraison** de l'entreprise — archivées comprises, car
+   * l'agrégat écrit l'ensemble et doit donc porter ce qu'il a lu.
+   *
+   * Rend un carnet **vide** plutôt que `null` quand l'entreprise n'a aucune
+   * adresse : un carnet sans adresse est un état normal, pas une absence.
    */
-  abstract addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<string>;
+  abstract loadDeliveryBook(companyId: string): Promise<DeliveryAddressBook>;
 
   /**
-   * Remplace une adresse de livraison.
-   * @throws {CompanyAddressNotFoundError} l'`id` n'appartient pas à `companyId`.
+   * Persiste le carnet **en une transaction** : les lignes, les archivages, et
+   * l'unique `is_default`.
+   *
+   * L'adaptateur réécrit `is_default` sur **toutes** les livraisons de
+   * l'entreprise à partir du seul `defaultId` du carnet. C'est ce qui fait que
+   * l'invariant traverse la frontière : le domaine ne peut pas exprimer deux
+   * défauts, et l'écriture ne peut pas en fabriquer.
    */
-  abstract updateDelivery(
-    companyId: string,
-    addressId: string,
-    payload: DeliveryAddressPayload,
-  ): Promise<void>;
-
-  /**
-   * Archive une adresse de livraison (jamais de DELETE physique). Réattribue le
-   * défaut à une autre livraison si l'archivée l'était.
-   * @throws {CompanyAddressNotFoundError} l'`id` n'appartient pas à `companyId`.
-   */
-  abstract archiveDelivery(companyId: string, addressId: string): Promise<void>;
-
-  /**
-   * Désigne l'adresse de livraison par défaut (l'unique à `true`).
-   * @throws {CompanyAddressNotFoundError} l'`id` n'appartient pas à `companyId`.
-   */
-  abstract setDefaultDelivery(companyId: string, addressId: string): Promise<void>;
+  abstract saveDeliveryBook(book: DeliveryAddressBook): Promise<void>;
 }

@@ -1,8 +1,11 @@
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { Company } from "../../../domain/entities/company.js";
+import { DeliveryAddressBook } from "../../../domain/entities/delivery-address-book.js";
 import { CompanyAddressRepository } from "../../../domain/ports/company-address.repository.js";
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
@@ -93,10 +96,11 @@ function companies(): CompanyRepository {
 function addresses(): CompanyAddressRepository {
   return {
     saveBilling: () => Promise.resolve(),
-    addDelivery: () => Promise.resolve("addr_7"),
-    updateDelivery: () => Promise.resolve(),
-    setDefaultDelivery: () => Promise.resolve(),
-    archiveDelivery: () => Promise.resolve(),
+    loadDeliveryBook: () =>
+      Promise.resolve(
+        DeliveryAddressBook.reconstitute({ companyId: "c1", entries: [], defaultId: null }),
+      ),
+    saveDeliveryBook: () => Promise.resolve(),
   };
 }
 
@@ -155,14 +159,16 @@ describe("Les actes du staff au journal", () => {
     const addressId = await new AddDeliveryAddressByStaffHandler(
       addresses(),
       events,
+      new FixedIdGenerator("addr"),
+      new FixedClock(new Date("2026-02-03T10:00:00Z")),
       new DirectUnitOfWork(),
     ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY));
 
     // L'identifiant rendu est bien celui qui part au journal : sans lui, on
     // saurait qu'une adresse a été ajoutée sans savoir laquelle.
-    expect(addressId).toBe("addr_7");
+    expect(addressId).toBe("addr_000001");
     expect(events.traced[0]?.journalFact().payload).toEqual({
-      addressId: "addr_7",
+      addressId: "addr_000001",
       ville: "Paris",
       codePostal: "75004",
     });

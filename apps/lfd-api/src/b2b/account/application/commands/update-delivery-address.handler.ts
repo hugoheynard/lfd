@@ -5,7 +5,13 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { UpdateDeliveryAddressCommand } from "./address-commands.js";
 
-/** Remplace une adresse de livraison, réservé au gestionnaire de l'entreprise. */
+/**
+ * Remplace une adresse de livraison, réservé au gestionnaire de l'entreprise.
+ *
+ * Le carnet est chargé **pour cette entreprise** : une adresse d'une autre est
+ * absente du carnet, donc introuvable — le mur ne dépend plus d'un `where` qu'un
+ * appel pourrait oublier.
+ */
 @CommandHandler(UpdateDeliveryAddressCommand)
 export class UpdateDeliveryAddressHandler implements ICommandHandler<
   UpdateDeliveryAddressCommand,
@@ -20,8 +26,8 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    // Le repository filtre sur (id ET companyId) : une adresse d'une autre
-    // entreprise est traitée comme absente, jamais modifiée.
-    await this.addresses.updateDelivery(command.companyId, command.addressId, command.payload);
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    book.edit(command.addressId, command.payload);
+    await this.addresses.saveDeliveryBook(book);
   }
 }

@@ -1,7 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../../platform/time/clock.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import {
   CompanyAddressNotFoundError,
   CompanyNotFoundError,
@@ -69,12 +71,17 @@ export class AddDeliveryAddressByStaffHandler implements ICommandHandler<
   constructor(
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: AddDeliveryAddressByStaffCommand): Promise<string> {
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    const created = this.ids.next();
+    book.add(created, command.payload, this.clock.now());
     const addressId = await this.uow.run(async () => {
-      const created = await this.addresses.addDelivery(command.companyId, command.payload);
+      await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
         new DeliveryAddressAddedByStaffEvent(command.companyId, created, command.payload),
       );
@@ -162,8 +169,10 @@ export class UpdateDeliveryAddressByStaffHandler implements ICommandHandler<
   ) {}
 
   async execute(command: UpdateDeliveryAddressByStaffCommand): Promise<void> {
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    book.edit(command.addressId, command.payload);
     await this.uow.run(async () => {
-      await this.addresses.updateDelivery(command.companyId, command.addressId, command.payload);
+      await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
         new DeliveryAddressUpdatedByStaffEvent(
           command.companyId,
@@ -187,8 +196,10 @@ export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
   ) {}
 
   async execute(command: SetDefaultDeliveryByStaffCommand): Promise<void> {
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    book.makeDefault(command.addressId);
     await this.uow.run(async () => {
-      await this.addresses.setDefaultDelivery(command.companyId, command.addressId);
+      await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
         new DefaultDeliverySetByStaffEvent(command.companyId, command.addressId),
       );
@@ -203,13 +214,32 @@ export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
 > {
   constructor(
     private readonly addresses: CompanyAddressRepository,
+    private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
+    private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: RemoveDeliveryAddressByStaffCommand): Promise<void> {
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    book.archive(command.addressId, this.clock.now());
+
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    // Jumeau du geste client : une préférence qui désignait l'archivée retombe
+    // sur « le défaut du moment », que le carnet vient de recalculer.
+    const orphaned = company.fulfillmentPreference.deliveryAddressId === command.addressId;
+    if (orphaned) {
+      company.preferFulfillment({ ...company.fulfillmentPreference, deliveryAddressId: null });
+    }
+
     await this.uow.run(async () => {
-      await this.addresses.archiveDelivery(command.companyId, command.addressId);
+      await this.addresses.saveDeliveryBook(book);
+      if (orphaned) {
+        await this.companies.save(company);
+      }
       await this.events.publishTraced(
         new DeliveryAddressRemovedByStaffEvent(command.companyId, command.addressId),
       );
