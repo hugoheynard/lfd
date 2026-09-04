@@ -28,6 +28,7 @@
   "test/me.e2e-spec.ts": 4024,
   "test/ops-traffic.e2e-spec.ts": 4361,
   "test/ops-vitals.e2e-spec.ts": 2851,
+  "test/order-cutoffs.e2e-spec.ts": 3766,
   "test/orders.e2e-spec.ts": 4202,
   "test/pickup-addresses.e2e-spec.ts": 3808,
   "test/pim-allergens.e2e-spec.ts": 6951,

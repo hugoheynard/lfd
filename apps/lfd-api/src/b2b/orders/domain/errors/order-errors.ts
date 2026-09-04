@@ -175,3 +175,26 @@ export class HandoverRefusedError extends BusinessError {
     super("orders.handover.refused", reason);
   }
 }
+
+/**
+ * **L'heure limite de commande pour cette journée est passée.** Refus métier
+ * (409) : le panier est valide, c'est le calendrier qui s'y oppose, et le client
+ * peut choisir une autre date.
+ *
+ * Le message nomme le geste de sortie plutôt que la règle. Quelqu'un à qui l'on
+ * dit « limite dépassée » ne sait pas quoi faire ; quelqu'un à qui l'on dit
+ * « choisissez une autre date, ou appelez-nous » sait les deux. Le second chemin
+ * existe : une saisie du back-office n'est pas soumise à cette limite
+ * (cf. `ensureWithinOrderCutoff`).
+ *
+ * La date demandée est portée par l'erreur — pas interpolée dans le message :
+ * un écran la reformate à sa façon, un e-mail à la sienne.
+ */
+export class PastOrderCutoffError extends BusinessError {
+  constructor(readonly fulfillmentDate: string) {
+    super(
+      "orders.cutoff.past",
+      "Il est trop tard pour être servi à cette date. Choisissez une autre date, ou appelez-nous.",
+    );
+  }
+}

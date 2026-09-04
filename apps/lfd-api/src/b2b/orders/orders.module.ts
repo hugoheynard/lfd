@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
+import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
+import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -26,6 +28,7 @@ import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
+import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
@@ -63,6 +66,7 @@ import { OrdersController } from "./http/orders.controller.js";
   imports: [
     PickupAddressesModule,
     DeliveryZonesModule,
+    OrderCutoffsModule,
     PaymentsModule,
     CatalogModule,
     PricingModule,
@@ -98,6 +102,12 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
+    // `useExisting` et non `useClass` : une SEULE instance lit la table des
+    // règles. Le contexte `orders` n'en voit que `list()` — le port étroit —
+    // pendant que les réglages gardent le repository complet. Deux instances
+    // n'auraient rien cassé aujourd'hui, mais auraient rendu légitime, demain,
+    // d'ajouter un cache à l'une et pas à l'autre.
+    { provide: OrderCutoffReader, useExisting: OrderCutoffRepository },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },

@@ -1,7 +1,11 @@
 # L'heure limite de commande, la grâce, et la surtaxe de retard
 
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
-> (§3 et suivantes). Rien de la proposition n'est codé.
+> (§3 et suivantes).
+>
+> ✅ **Lots 0 et 1 livrés le 2026-09-04** : le fuseau est explicite et la règle
+> est opposée aux commandes client. Le reste — grâce, dérogation, surtaxe,
+> chaîne de fabrication — n'est pas codé.
 
 ## En bref
 
@@ -9,10 +13,11 @@
 soir. Il faut une heure limite, réglable globalement puis nuançable par famille
 et par produit.
 
-**La surprise.** Cette heure limite **existe déjà** : une table, un écran de
-réglages, des tests. Mais **rien ne la fait respecter** — le code qui décide
-« trop tard » n'est appelé nulle part. Quelqu'un peut remplir cet écran
-aujourd'hui et croire que ça bloque. Ça ne bloque rien (§1).
+**La surprise.** Cette heure limite **existait déjà** : une table, un écran de
+réglages, des tests. Mais **rien ne la faisait respecter** — le code qui décide
+« trop tard » n'était appelé nulle part. On pouvait remplir cet écran et croire
+que ça bloquait. ✅ **C'est branché depuis le 2026-09-04** : une commande client
+arrivée trop tard est refusée, et rien n'est écrit (§1).
 
 **Deux choses décident, et elles s'additionnent** (§5) :
 
@@ -53,9 +58,10 @@ comme des frais de livraison — **jamais au prix de l'article** (§8).
 
 **Deux choses à savoir avant de coder :**
 
-- 🔴 le calcul utilise l'heure locale du serveur, qui tourne en **UTC** : « 18 h »
-  vaut 20 h à Paris en été. Inoffensif tant que rien n'applique la règle, une
-  heure de commandes acceptées à tort le jour du branchement (§10) ;
+- ✅ le calcul lisait l'heure locale du **serveur**, qui tourne en UTC : « 18 h »
+  y valait 20 h à Paris en été. Corrigé — la conversion passe explicitement par
+  `Europe/Paris`, et les tests des contrats tournent en UTC pour que la panne se
+  reproduise ici plutôt qu'en production (§10) ;
 - ⚠️ le **taux de TVA de la surtaxe** n'est pas tranché : c'est une question
   comptable, et la seule du dossier qui coûte rétroactivement (§8).
 
@@ -63,14 +69,14 @@ comme des frais de livraison — **jamais au prix de l'article** (§8).
 répond « trop tard », **jamais « complet »** — une commande acceptée n'est pas
 une commande dont la production est garantie faisable (§5).
 
-**L'ordre des travaux** (§12) : réparer le fuseau, faire respecter la règle
-existante, puis la grâce, la dérogation, la surtaxe — et en parallèle les jours
-de fabrication dans le PIM. Les deux premières étapes ont une valeur propre et ne
-touchent pas au référentiel.
+**L'ordre des travaux** (§12) : ~~réparer le fuseau~~, ~~faire respecter la règle
+existante~~ — **faits** —, puis la grâce, la dérogation, la surtaxe, et en
+parallèle les jours de fabrication dans le PIM. Les deux premières avaient une
+valeur propre et n'ont pas touché au référentiel.
 
 ---
 
-## 1. Ce qui existe déjà — et qui n'est branché à rien
+## 1. Ce qui existait déjà — et que rien n'appliquait
 
 L'heure limite n'est pas à inventer. Elle est **modélisée, contractualisée,
 testée et administrable** depuis le back-office :
@@ -88,20 +94,28 @@ faut avoir commandé `daysBefore` jours avant à telle **heure locale** ».
 `resolveOrderCutoff` arbitre en quatre rangs — point+jour, point, défaut+jour,
 défaut — et `orderCutoffInstant` en tire l'instant butoir.
 
-### 🔴 Personne ne l'applique
+### 🔴 Personne ne l'appliquait — corrigé le 2026-09-04
 
-`resolveOrderCutoff` et `orderCutoffInstant` **ne sont appelés nulle part** hors
+`resolveOrderCutoff` et `orderCutoffInstant` n'étaient appelés **nulle part** hors
 de leur propre spec. Vérifié sur `apps/lfd-api/src`, `apps/lfd-api/test`,
 `packages/*/src` et les deux fronts, hors client Prisma généré.
 
-`PlaceOrderHandler` ne vérifie qu'une chose avant de passer commande :
+`PlaceOrderHandler` ne vérifiait qu'une chose avant de passer commande :
 l'appartenance à l'entreprise. Aucune garde temporelle, ni dans le handler, ni
 dans `OrderDrafting`, ni sur le devis.
 
-**Ce que ça change pour cette demande.** Le travail n'est pas « ajouter une heure
-limite » : c'est **la brancher**, et profiter du branchement pour lui donner
-l'axe qui lui manque. Un écran de réglages qui ne refuse rien est pire qu'une
-absence de règle — quelqu'un le remplit et croit la limite tenue.
+**Ce que ça a changé pour cette demande.** Le travail n'était pas « ajouter une
+heure limite » : c'était **la brancher**, et profiter du branchement pour lui
+donner l'axe qui lui manque. Un écran de réglages qui ne refuse rien est pire
+qu'une absence de règle — quelqu'un le remplit et croit la limite tenue.
+
+**Depuis, la garde existe** : `ensureWithinOrderCutoff`
+(`src/b2b/orders/domain/services/order-cutoff-guard.ts`), appelée par
+`OrderDrafting` après la résolution de l'acheminement, sur les deux portes
+d'entrée. Elle refuse en **409 `orders.cutoff.past`** et n'écrit rien.
+
+⚠️ Le constat reste écrit plutôt qu'effacé : il dit pourquoi le lot 1 passait
+avant tout le reste, et c'est la seule chose que le code ne raconte pas.
 
 ## 2. L'échelle demandée est déjà écrite ailleurs
 
@@ -490,7 +504,7 @@ catalogue. Tant que le **lot 1** de
 rien pour porter cet affichage — l'application côté serveur, elle, ne l'attend
 pas.
 
-## 10. 🔴 Le piège du fuseau, à régler AVANT de brancher quoi que ce soit
+## 10. ✅ Le piège du fuseau — réglé le 2026-09-04
 
 `orderCutoffInstant` construit son instant avec le constructeur `Date` local :
 
@@ -511,14 +525,27 @@ décalage est dormant tant que rien n'applique la règle. Il devient une heure d
 commandes acceptées à tort le jour du branchement — et il **change avec la
 saison**, ce qui est la pire façon de découvrir un bug.
 
-Trois choses, dans cet ordre :
+Les trois gestes, faits, et dans cet ordre :
 
-1. **Poser `ENV TZ=Europe/Paris`** dans le `Dockerfile`, et l'écrire.
-2. **Ne pas s'en contenter** : une variable d'environnement se perd en migrant
-   d'image. La conversion se fait par `Intl.DateTimeFormat` avec
-   `timeZone: "Europe/Paris"`, pas par le constructeur local.
-3. **Un test qui échoue avant le correctif**, exécuté sous `TZ=UTC` — sinon il
-   passe sur le poste d'Hugo et nulle part ailleurs.
+1. **`ENV TZ=Europe/Paris`** dans le `Dockerfile`, avec sa raison écrite.
+2. **Sans s'en contenter** : une variable d'environnement se perd en migrant
+   d'image, et la panne serait alors silencieuse. Le calcul convertit désormais
+   explicitement par `Europe/Paris` — il ne consulte plus le fuseau du process.
+3. **Le runner des contrats tourne en `TZ=UTC`**
+   (`packages/contracts/jest.config.cjs`), c'est-à-dire comme la production. Les
+   assertions portent sur l'instant absolu (`toISOString`), jamais sur
+   `getHours()` — qui aurait passé sur un poste réglé sur Paris et nulle part
+   ailleurs. Deux cas couvrent **l'été et l'hiver** : un décalage figé en dur
+   passerait l'un et casserait l'autre.
+
+### Ce qui a servi, et qui existait déjà
+
+La conversion n'a pas été réécrite. `paris-time.ts` la portait depuis les
+créneaux de rendez-vous — deux passes, les deux bascules DST traitées, sa propre
+spec. Il vivait dans `b2b/growth/domain/` ; il est **remonté dans
+`@lfd/contracts`**, d'où le contrat des heures limites l'atteint. Une seconde
+implémentation aurait divergé sur la bascule d'octobre, et l'écart ne se serait
+vu qu'un dimanche par an.
 
 ⚠️ `lint:clock-port` ne couvre pas ce code : sa racine de scan est
 `apps/lfd-api/src` (`dev-toolbox/gates/clock-port.mjs:36`), et `orderCutoffInstant`
@@ -586,14 +613,37 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 
 | #   | Lot                                                                                                   | Dépend de                               |
 | --- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 0   | **Le fuseau** (§10) : `TZ`, conversion explicite, test sous `TZ=UTC`                                  | —                                       |
-| 1   | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier nommée, e2e sur le refus          | 0                                       |
+| ✅0 | **Le fuseau** (§10) : `TZ`, conversion explicite, test sous `TZ=UTC`                                  | —                                       |
+| ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier nommée, e2e sur le refus          | 0                                       |
 | 2   | **La grâce** : `graceMinutes` par rang, les trois états, section de réglages                          | 1                                       |
 | 3   | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                      | 2                                       |
 | 4   | **La surtaxe** : réglage, terme de panier, gel sur la commande, **TVA tranchée** (§8)                 | 3                                       |
 | 5   | **La chaîne de fabrication côté PIM** : table, écrans famille / fiche / déclinaison, remontée d'arbre | —                                       |
 | 6   | **Le fil** : `snapshot` v6, colonne miroir, l'addition dans la garde                                  | 1, 5                                    |
 | 7   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                     | 6 + lot 1 de `plan-boutique-sur-api.md` |
+
+### Ce que le lot 1 a laissé ouvert, volontairement
+
+- **Le back-office n'est pas soumis à la limite.** Le membre de l'équipe au
+  téléphone EST l'autorité qui déroge ; tant que la dérogation n'est pas un objet
+  en propre, lui opposer la limite lui retirerait une capacité qu'il a
+  aujourd'hui sans rien lui donner. L'exemption est écrite dans la garde, datée,
+  et couverte par un test qui **changera de sens** au lot 3.
+- **Le devis (`POST /orders/quote`) ne refuse rien.** Une lecture ne mute pas et
+  n'a pas non plus à bloquer : c'est au lot 7 de griser une date à la sélection.
+  Refuser au devis ferait découvrir la limite au moment le plus tardif et le
+  moins explicable.
+- ✅ **Les jours de service sont devenus relatifs.** `SERVICE_DAY = "2026-09-01"`
+  vivait dans six suites e2e, et `admin-pricing` en portait trois de plus en dur
+  — sept fichiers. Elles restaient vertes faute de règle semée, mais depuis le
+  lot 1 **un jour de service est comparé à l'horloge** : la première suite qui
+  aurait semé une règle avec cette constante aurait trouvé une bombe déjà armée.
+  Toutes passent désormais par `serviceDay()` du harnais e2e, pendant de
+  `daysAgo()`.
+
+  ⚠️ Les fenêtres `validFrom` / `validTo` d'`admin-pricing` restent **absolues**,
+  et c'est l'exception écrite du document racine : elles ne sont comparées
+  qu'entre elles — adjacence, chevauchement —, jamais à l'horloge.
 
 Deux remarques d'ordre :
 

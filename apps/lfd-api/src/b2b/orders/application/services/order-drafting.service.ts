@@ -28,6 +28,9 @@ import {
   PickupClosedAtRequestedTimeError,
   PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
+import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
+import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { lineTotalCents } from "@lfd/money";
@@ -54,6 +57,15 @@ export interface OrderContent {
 
 /** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
 interface ResolvedFulfillment {
+  /**
+   * Le point de retrait **effectivement** retenu, ou `null` en coursier.
+   *
+   * Distinct de `content.pickupAddressId`, qui peut être nul en retrait quand le
+   * client n'a rien choisi : c'est alors le point par défaut qui sert, et c'est
+   * SA règle d'heure limite qui s'applique. Opposer celle du défaut plateforme
+   * refuserait — ou laisserait passer — au nom d'un point qui ne remet rien.
+   */
+  readonly pickupAddressId: string | null;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddress: BillingAddressPayload | null;
@@ -86,6 +98,8 @@ export class OrderDrafting {
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
+    private readonly cutoffs: OrderCutoffReader,
+    private readonly clock: Clock,
   ) {}
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
@@ -108,6 +122,11 @@ export class OrderDrafting {
       0,
     );
     const acheminement = await this.resolveFulfillment(content, subtotalCents);
+    // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
+    // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
+    // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
+    // d'opposer la mauvaise règle, ce qui est un refus faux.
+    await this.ensureNotTooLate(content, acheminement, parties);
     const agreed = agreeFulfillment(
       {
         window: content.requestedWindow,
@@ -161,6 +180,32 @@ export class OrderDrafting {
   }
 
   /**
+   * Oppose l'heure limite de commande, s'il y en a une à opposer.
+   *
+   * Ne lit les règles que lorsqu'il y a une date à juger : un appel de plus par
+   * commande, pour un réglage que la plupart des plateformes n'ont pas, se paie
+   * sur toutes les commandes. `requestedDeliveryDate` est obligatoire au contrat
+   * (`orderPayloadSchema`) ; la garde typée couvre les appelants internes, pas
+   * une entrée HTTP.
+   */
+  private async ensureNotTooLate(
+    content: OrderContent,
+    acheminement: ResolvedFulfillment,
+    parties: OrderParties,
+  ): Promise<void> {
+    if (content.requestedDeliveryDate === null) {
+      return;
+    }
+    ensureWithinOrderCutoff({
+      rules: await this.cutoffs.list(),
+      pickupAddressId: acheminement.pickupAddressId,
+      fulfillmentDate: content.requestedDeliveryDate,
+      placedByStaffId: parties.placedByStaffId,
+      now: this.clock.now(),
+    });
+  }
+
+  /**
    * Les réglages qui **préremplissent** cette commande.
    *
    * En coursier ils viennent de l'adresse du carnet — et seulement si elle en
@@ -200,6 +245,7 @@ export class OrderDrafting {
         throw new PickupClosedAtRequestedTimeError();
       }
       return {
+        pickupAddressId: point.id,
         deliveryZoneId: null,
         deliveryAddress: null,
         pickupAddress: toSnapshot(point),
@@ -221,6 +267,7 @@ export class OrderDrafting {
       throw new NoDeliveryZoneForPostalCodeError(address.codePostal);
     }
     return {
+      pickupAddressId: null,
       deliveryZoneId: zone.id,
       deliveryAddress: address,
       pickupAddress: null,

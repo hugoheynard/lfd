@@ -32,6 +32,7 @@ import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladd
 import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
@@ -258,6 +259,8 @@ function handler(
       pickups,
       zones,
       noDeliveryDefaults(),
+      noOrderCutoffs,
+      new FixedClock(PRICED_AT),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -265,6 +268,14 @@ function handler(
     new FakeConfig(clientBaseUrl),
   );
 }
+
+/**
+ * **Aucune règle d'heure limite** — le défaut de la plateforme, et donc le seul
+ * état où ces spécifications-ci n'ont rien à voir avec le calendrier. Les refus
+ * pour cause de limite dépassée s'éprouvent dans `order-cutoff-guard.spec.ts`
+ * (la règle, pure) et dans `orders.e2e-spec.ts` (la porte HTTP).
+ */
+const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
 
 describe("PlaceOrderForCustomerHandler — le mur", () => {
   it("vérifie l'appartenance de L'ACHETEUR, pas celle du commercial", async () => {
@@ -416,6 +427,8 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         pickups,
         zones,
         noDeliveryDefaults(),
+        noOrderCutoffs,
+        new FixedClock(PRICED_AT),
       ),
       repo(sink),
       payments(intents),
