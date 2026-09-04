@@ -72,3 +72,14 @@ export interface OrderCutoffWaiverView {
    */
   readonly usedByOrderId: string | null;
 }
+
+/**
+ * Ce que rend l'octroi d'une dérogation.
+ *
+ * Déclaré ici et pas dans le front : une forme de réponse redéclarée côté client
+ * en devient une copie, et une copie ne suit pas — le serveur change, le front
+ * compile toujours, et l'écran affiche `undefined`.
+ */
+export interface CreatedOrderCutoffWaiverResponse {
+  readonly id: string;
+}

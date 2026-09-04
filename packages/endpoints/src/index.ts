@@ -216,6 +216,31 @@ export const PROD_CORS_ORIGINS: string[] = [
  * (réseau/CORS). À défaut, un repli générique. Typé `unknown` + narrowing (pas
  * d'`as`) pour rester agnostique d'Angular (`HttpErrorResponse` structurel).
  */
+/**
+ * Le **code** de l'enveloppe d'erreur, ou `null`.
+ *
+ * Voisin de {@link httpErrorMessage}, et pour la même raison : l'enveloppe est
+ * un contrat, et la lire à la main dans chaque écran en ferait autant de copies
+ * — dont certaines oublieraient qu'un `status: 0` n'a pas de corps.
+ *
+ * Le message s'AFFICHE, le code se BRANCHE. Un écran qui veut réagir à un refus
+ * précis — proposer une dérogation quand l'heure limite est passée, par exemple
+ * — teste le code ; comparer des messages traduits reviendrait à faire dépendre
+ * un enchaînement d'une chaîne qu'un relecteur peut reformuler.
+ *
+ * Typé `unknown` + narrowing (pas d'`as`) pour rester agnostique d'Angular.
+ */
+export function httpErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null || !("error" in error)) {
+    return null;
+  }
+  const body = error.error;
+  if (typeof body !== "object" || body === null || !("code" in body)) {
+    return null;
+  }
+  return typeof body.code === "string" ? body.code : null;
+}
+
 export function httpErrorMessage(error: unknown, fallback = "Une erreur est survenue."): string {
   if (typeof error !== "object" || error === null) {
     return fallback;

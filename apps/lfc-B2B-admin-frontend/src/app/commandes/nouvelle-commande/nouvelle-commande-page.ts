@@ -1,3 +1,6 @@
+import { PermissionsStore } from '../../auth/permissions.store';
+import { isGraceRefusal } from './grace-refusal';
+import { OrderCutoffWaiversService } from '../order-cutoff-waivers.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,6 +15,7 @@ import {
   FoldBackLinkComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldInputComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
@@ -103,6 +107,7 @@ const EMPTY_SPECS: DeliverySpecs = {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldInputComponent,
     FoldLoadingStateComponent,
     PanierCommande,
     SourceProduits,
@@ -115,6 +120,8 @@ export class NouvelleCommandePage {
 
   private readonly companies = inject(AdminCompaniesService);
   private readonly orders = inject(AdminOrdersService);
+  private readonly waivers = inject(OrderCutoffWaiversService);
+  private readonly permissions = inject(PermissionsStore);
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
@@ -147,6 +154,30 @@ export class NouvelleCommandePage {
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   protected readonly submitting = signal(false);
+
+  /**
+   * La saisie **refusée pour cause d'heure limite, mais encore rattrapable**.
+   *
+   * On garde le brouillon plutôt que de demander au commercial de tout
+   * ressaisir : il a le client en ligne, et le refus arrive au moment le plus
+   * coûteux pour lui. `null` = rien à rattraper.
+   */
+  protected readonly lateDraft = signal<OrderDraft | null>(null);
+  protected readonly waiverReason = signal('');
+  protected readonly granting = signal(false);
+
+  /**
+   * Le droit d'accorder une dérogation est **distinct** de celui de saisir : la
+   * ressource `b2b_order_waivers` existe pour ça. On le relit avant de proposer
+   * le geste — un bouton qui répondrait 403 vaut moins qu'un bouton absent, et
+   * la phrase du refus dit alors à qui s'adresser.
+   */
+  protected readonly canWaive = computed(() => this.permissions.can('b2b_order_waivers:write'));
+
+  /** Un motif réel, comme le serveur l'exige. « ok » n'explique rien. */
+  protected readonly waiverReady = computed(
+    () => this.waiverReason().trim().length >= 5 && !this.granting(),
+  );
   protected readonly savingDraft = signal(false);
   /** Le brouillon repris à l'ouverture, pour le dire à l'écran. Vide sinon. */
   protected readonly resumedAt = signal('');
@@ -375,6 +406,45 @@ export class NouvelleCommandePage {
     }
   }
 
+  /**
+   * Accorde la dérogation, puis **repasse la commande**.
+   *
+   * Deux appels et pas un : la dérogation est un objet à elle, avec son droit,
+   * son motif et son auteur. La glisser dans la charge de la commande l'aurait
+   * rendue invisible — et aurait donné le pouvoir de déroger à quiconque peut
+   * saisir.
+   */
+  protected async onWaiveAndPlace(): Promise<void> {
+    const draft = this.lateDraft();
+    if (draft === null || !this.waiverReady()) {
+      return;
+    }
+    this.granting.set(true);
+    try {
+      await this.waivers.grant({
+        companyId: this.id(),
+        fulfillmentDate: draft.requestedDeliveryDate,
+        reason: this.waiverReason().trim(),
+      });
+    } catch (error) {
+      this.notify.error(error, "La dérogation n'a pas pu être accordée.");
+      this.granting.set(false);
+      return;
+    }
+    this.granting.set(false);
+    await this.onPlace(draft);
+  }
+
+  protected onWaiverReason(event: Event): void {
+    this.waiverReason.set((event.target as HTMLInputElement).value);
+  }
+
+  /** Referme le rattrapage : le commercial choisit une autre date. */
+  protected onDismissLate(): void {
+    this.lateDraft.set(null);
+    this.waiverReason.set('');
+  }
+
   protected async onPlace(draft: OrderDraft): Promise<void> {
     this.submitting.set(true);
     try {
@@ -412,10 +482,21 @@ export class NouvelleCommandePage {
       if (placed.paymentUrl !== undefined) {
         await this.copy(placed.paymentUrl);
       }
+      this.lateDraft.set(null);
+      this.waiverReason.set('');
       this.notify.success(`Commande ${placed.orderNumber} enregistrée.`);
       await this.router.navigate(['/commandes', placed.id]);
-    } catch {
-      this.notify.error(null, "La commande n'a pas pu être enregistrée.");
+    } catch (error) {
+      // Le refus « encore rattrapable » n'est pas une panne : on garde la saisie
+      // et on propose le geste, plutôt qu'un toast qui laisse le commercial
+      // deviner ce qu'il peut faire.
+      if (isGraceRefusal(error)) {
+        this.lateDraft.set(draft);
+        this.notify.refused(error, "L'heure limite est passée pour cette date.");
+      } else {
+        this.lateDraft.set(null);
+        this.notify.error(error, "La commande n'a pas pu être enregistrée.");
+      }
     } finally {
       this.submitting.set(false);
     }

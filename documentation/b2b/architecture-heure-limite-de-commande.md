@@ -473,6 +473,32 @@ s'accorde **avant** la commande. Le commercial décroche, décide — et le **cl
 peut finir sa commande lui-même**. C'était impossible avec une exemption, qui ne
 valait que pour qui saisissait.
 
+### Le geste, là où le refus tombe
+
+Le bandeau apparaît **dans l'écran de saisie**, au moment exact du refus — pas
+dans un écran de réglages qu'il faudrait aller ouvrir. Le commercial a le client
+en ligne : lui demander de tout ressaisir ailleurs serait faire payer au client
+le prix de notre découpage.
+
+La saisie est **gardée** plutôt que perdue, le motif se tape sur place, et un
+seul bouton accorde puis repasse la commande. Deux appels HTTP et non un : la
+dérogation est un objet à elle, avec son droit, son motif et son auteur. La
+glisser dans la charge de la commande l'aurait rendue invisible — et aurait donné
+le pouvoir de déroger à quiconque peut saisir.
+
+Trois détails qui comptent :
+
+- **Le droit est relu avant d'offrir le geste.** Sans `b2b_order_waivers:write`,
+  le bandeau dit à qui s'adresser au lieu d'afficher un bouton qui répondrait 403.
+- **On teste le CODE du refus, jamais son message.** Celui-ci est écrit pour être
+  lu par un humain, et un relecteur a le droit de le reformuler sans casser un
+  enchaînement d'écran.
+- **`orders.cutoff.past` n'ouvre rien.** Après la grâce personne ne passe, et
+  proposer une dérogation là coûterait un appel pour rien — plus la confiance qui
+  va avec. Un test le dit explicitement, à côté de la panne réseau : une coupure
+  n'a pas de corps de réponse, et sans ce cas elle ferait apparaître un
+  rattrapage sur une commande dont on ne sait rien.
+
 ### Qui peut l'accorder
 
 Une ressource à elle, `b2b_order_waivers`. Ni `b2b_orders` — prendre une commande

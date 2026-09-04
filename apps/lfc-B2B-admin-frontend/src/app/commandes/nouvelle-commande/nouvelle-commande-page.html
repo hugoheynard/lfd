@@ -43,6 +43,48 @@
       </fold-callout>
     }
 
+    @if (lateDraft(); as late) {
+      <!-- Le refus arrive au moment le plus coûteux : le client est en ligne. On
+           garde la saisie et on propose le geste ici, plutôt qu'un toast qui
+           laisse deviner ce qui reste possible. -->
+      <fold-callout variant="warning" title="Heure limite passée — encore rattrapable">
+        <p>
+          Cette commande arrive après l'heure limite du
+          <strong>{{ late.requestedDeliveryDate }}</strong
+          >, mais la fenêtre de rattrapage court encore. Une <strong>dérogation</strong> la laisse
+          passer&nbsp;: elle vaut pour ce client et cette date seulement, et reste au journal avec
+          votre nom.
+        </p>
+
+        @if (canWaive()) {
+          <fold-input
+            label="Motif de la dérogation"
+            placeholder="Client bloqué en tournée, rupture chez lui…"
+            [value]="waiverReason()"
+            (valueChange)="waiverReason.set($event)"
+          />
+          <div class="nc-waiver-actions">
+            <button foldButton [disabled]="!waiverReady()" (click)="onWaiveAndPlace()">
+              Accorder et passer la commande
+            </button>
+            <button foldButton emphasis="soft" (click)="onDismissLate()">
+              Choisir une autre date
+            </button>
+          </div>
+        } @else {
+          <!-- Accorder une dérogation est un droit à part : le dire plutôt que
+               d'afficher un bouton qui répondrait 403. -->
+          <p>
+            Vous n'avez pas le droit d'accorder une dérogation. Demandez-la à un responsable, ou
+            choisissez une autre date.
+          </p>
+          <button foldButton emphasis="soft" (click)="onDismissLate()">
+            Choisir une autre date
+          </button>
+        }
+      </fold-callout>
+    }
+
     <div class="nc-columns">
       <app-source-produits
         class="nc-col nc-left"
