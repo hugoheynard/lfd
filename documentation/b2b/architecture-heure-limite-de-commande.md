@@ -517,10 +517,19 @@ la première décide pour toujours, la seconde pour un client et un jour.
 Accordée à `admin` et à `commercial` — c'est lui qui décroche, et lui qui sait
 s'il reste de la place (§5 : aucune capacité maximale n'est écrite).
 
-## 8. ✅ La surtaxe n'est pas un prix — livrée le 2026-09-04
+## 8. ✅ La surtaxe est un prix de panier — livrée le 2026-09-04
 
-C'est la frontière la plus facile à rater. La formule du total porte désormais
-son terme :
+**C'est un prix**, soumis à la TVA, à un taux qu'on choisit. Ce qu'il faut
+distinguer, et c'est la frontière la plus facile à rater, c'est qu'il porte sur
+**la commande** et non sur un article : il ne descend pas dans le moteur de prix.
+
+⚠️ Ce titre a dit « la surtaxe n'est pas un prix » jusqu'au 2026-09-04. Il
+voulait dire « pas un prix d'article », et la section entière ne parle que de
+ça — mais lu seul, il enseignait le contraire de ce qui est vrai. Un titre est
+ce qu'on retient d'une section ; celui-là faisait douter qu'un montant qu'on
+facture soit un prix.
+
+La formule du total porte son terme :
 
 ```
 total = max(0, subtotal − discount) + deliveryFee + lateFee + vat
@@ -584,6 +593,38 @@ comptoir, ni de l'article.
 
 Le taux **voyage avec la commande**, comme l'ajustement qui l'a produite : le
 changer demain ne réécrit pas ce qu'une commande partie disait.
+
+### ⚠️ Le réglage recopie la VALEUR du taux, pas son identité — assumé le 2026-09-04
+
+`order_late_fee.vat_rate_percent` vaut `20`. Rien ne le relie à « Normal ». On
+dit « on mappe sur un taux du référentiel », et l'écran le fait au moment du
+choix — mais ce qui est enregistré est un nombre.
+
+Partout ailleurs, le dépôt sépare les deux, et très consistamment :
+
+| Où                           | Ce qui est stocké                                          |
+| ---------------------------- | ---------------------------------------------------------- |
+| Une famille, une fiche (PIM) | `vat_rate_id` — clé étrangère vers `VatRate`, par contexte |
+| Le fil vers le B2B           | la **valeur**, recalculée à chaque projection              |
+| Une ligne de commande        | la valeur, **figée**                                       |
+| **Le réglage de la surtaxe** | la valeur — et rien ne la recalcule                        |
+
+**Ce que ça coûte :** la comptabilité a `pim_tax:write`. Le jour où elle passe
+« Normal » de 20 à 21 %, toutes les fiches suivent — elles pointent le taux — et
+la surtaxe reste à 20 %, sans que rien ne le dise. Le bandeau « hors
+référentiel » de l'écran ne se voit que si quelqu'un l'ouvre.
+
+**Pourquoi on le garde quand même :** `order_late_fee` est en schéma `public` et
+`VatRate` en schéma `pim`. Une clé étrangère y est **interdite** — c'est ce que
+`lint:cross-schema-join` tient. Le B2B ne détient jamais l'identité d'un taux ;
+il ne reçoit que des valeurs, apportées par le fil. S'aligner voudrait donc dire
+stocker l'identifiant opaque **et** ouvrir un port sur
+`pim/channels/b2b-platform/`, qui ne publie aujourd'hui que des produits — plus
+trancher ce qui se passe si le taux disparaît entre le réglage et la commande.
+
+C'est un chantier, pas une correction, et il ne se déclenche que si la dérive se
+produit. Écrit ici pour qu'on la reconnaisse ce jour-là, au lieu de chercher un
+bug dans le calcul de TVA.
 
 ### L'écran, et pourquoi il est là où il est
 

@@ -381,15 +381,15 @@ model Company {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships     Membership[]
-  contacts        CompanyContact[]
-  addresses       Address[]
-  orders          Order[]
+  memberships        Membership[]
+  contacts           CompanyContact[]
+  addresses          Address[]
+  orders             Order[]
   /// Les dérogations d'heure limite accordées à ce client.
   orderCutoffWaivers OrderCutoffWaiver[]
-  orderDraft      OrderDraft?
-  supportRequests SupportRequest[]
-  mandates        PaymentMandate[]
+  orderDraft         OrderDraft?
+  supportRequests    SupportRequest[]
+  mandates           PaymentMandate[]
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]
@@ -1119,10 +1119,18 @@ model OrderLateFee {
 
   /// **Le taux appliqué à la surtaxe**, en %, choisi parmi ceux du référentiel.
   ///
-  /// Un pourcentage et non une référence au taux du PIM : le commerce ne lit pas
-  /// les tables du référentiel, et un article porte déjà son taux de la même
-  /// façon (`CatalogItem.vatRatePercent`) pour la même raison — ce qui se facture
-  /// doit pouvoir se facturer seul.
+  /// Un pourcentage et non une référence au taux du PIM : `order_late_fee` est en
+  /// schéma `public`, `VatRate` en schéma `pim`, et une clé étrangère y est
+  /// interdite — le commerce ne détient jamais l'identité d'un taux, seulement
+  /// des valeurs.
+  ///
+  /// ⚠️ Ce commentaire invoquait `CatalogItem.vatRatePercent` comme précédent
+  /// « pour la même raison ». La forme est la même, la garantie ne l'est pas :
+  /// celui de l'article est **recalculé par le fil** à chaque projection, donc
+  /// il suit le référentiel. Celui-ci est recopié une fois et rien ne le
+  /// rafraîchit — un taux re-valué au PIM laisse la surtaxe derrière, en
+  /// silence. Assumé, et décrit dans
+  /// `documentation/b2b/architecture-heure-limite-de-commande.md` §8.
   ///
   /// **Sans valeur par défaut.** Inventer 20 % ou 5,5 % facturerait un taux que
   /// personne n'a décidé, sur toutes les commandes tardives et rétroactivement.
