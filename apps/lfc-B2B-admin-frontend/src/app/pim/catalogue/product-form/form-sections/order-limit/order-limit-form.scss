@@ -51,3 +51,9 @@
   display: flex;
   gap: var(--fold-space-xs);
 }
+
+/* La ligne d'héritage colle à l'en-tête, comme sur les autres cartes : c'est ce
+   qui la rend lisible sans la chercher. */
+.alignment {
+  margin-block-end: var(--fold-space-sm);
+}

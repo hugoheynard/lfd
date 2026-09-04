@@ -115,9 +115,14 @@
               }
             </fold-page-section>
           </fold-card>
-        }
 
-        <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
+          <!-- Les deux cartes qui suivent vivent HORS de la machinerie
+               d'enregistrement de la fiche — un autre agrégat, un autre
+               contexte. Elles sont rendues ici, dans la boucle, uniquement pour
+               tomber au bon endroit dans la lecture : sous le sujet auquel elles
+               répondent, et pas reléguées en fin de page. -->
+          @if (section.key === 'tarif') {
+            <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
              « Combien ça coûte » et « jusqu'à quand on en prend » sont deux
              sujets : le premier est une décision commerciale, le second une
              contrainte de production. Les empiler dans une carte apprendrait
@@ -129,23 +134,24 @@
              Pas d'`app-section-state` : la limite vit sur un AUTRE agrégat, dans
              un autre contexte, et son panneau enregistre seul. Un indicateur
              partagé avec « Tout enregistrer » affirmerait qu'il la sauve. -->
-        <fold-card>
-          <fold-page-section
-            title="Limite de commande"
-            separator
-            collapsible
-            [open]="sectionOpen('limite')()"
-            (openChange)="setSectionOpen('limite', $event)"
-          >
-            <span sectionSubtitle>
-              Jusqu'à quand on prend commande de cet article. Ce qui n'est pas posé ici est hérité
-              de sa famille, puis du réglage général.
-            </span>
-            <app-order-limit-form />
-          </fold-page-section>
-        </fold-card>
-
-        <!-- INGRÉDIENTS — sous les allergènes, et pas avec eux. Ce que la fiche
+            <fold-card>
+              <fold-page-section
+                title="Limite de commande"
+                separator
+                collapsible
+                [open]="sectionOpen('limite')()"
+                (openChange)="setSectionOpen('limite', $event)"
+              >
+                <span sectionSubtitle>
+                  Jusqu'à quand on prend commande de cet article. Ce qui n'est pas posé ici est
+                  hérité de sa famille, puis du réglage général.
+                </span>
+                <app-order-limit-form />
+              </fold-page-section>
+            </fold-card>
+          }
+          @if (section.key === 'fiche') {
+            <!-- INGRÉDIENTS — sous les allergènes, et pas avec eux. Ce que la fiche
              revendique sur la PROVENANCE : un badge, un argument de vente. La
              liste réglementaire (ordonnée par masse, avec quantités) appartient
              à la déclinaison, avec ses allergènes ; cf.
@@ -154,21 +160,23 @@
              Pas d'`app-section-state` : la section vit sur un autre agrégat et
              porte son propre bouton. Un indicateur partagé avec « Tout
              enregistrer » affirmerait qu'il la sauve, ce qui est faux. -->
-        <fold-card>
-          <fold-page-section
-            title="Ingrédients"
-            separator
-            collapsible
-            [open]="sectionOpen('ingredients')()"
-            (openChange)="setSectionOpen('ingredients', $event)"
-          >
-            <span sectionSubtitle>
-              D'où vient ce qu'il y a dedans — facultatif, et sans effet sur la publiabilité.
-              L'ordre est le vôtre : c'est un argument, pas une mesure.
-            </span>
-            <app-ingredients-form />
-          </fold-page-section>
-        </fold-card>
+            <fold-card>
+              <fold-page-section
+                title="Ingrédients"
+                separator
+                collapsible
+                [open]="sectionOpen('ingredients')()"
+                (openChange)="setSectionOpen('ingredients', $event)"
+              >
+                <span sectionSubtitle>
+                  D'où vient ce qu'il y a dedans — facultatif, et sans effet sur la publiabilité.
+                  L'ordre est le vôtre : c'est un argument, pas une mesure.
+                </span>
+                <app-ingredients-form />
+              </fold-page-section>
+            </fold-card>
+          }
+        }
 
         <!-- Une section en lecture seule : elle n'a pas d'enregistrement
              propre, donc pas d'indicateur d'état. -->

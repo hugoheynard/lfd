@@ -6,12 +6,14 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import type { OrderTimeLimitScopeType, OrderTimeLimitView } from '@lfd/pim-contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldPanelHostService,
 } from 'fold-ng';
 
@@ -50,7 +52,14 @@ import { ownRule, type OrderLimitRow } from './order-limit-row';
 @Component({
   selector: 'app-order-limit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldCalloutComponent, RouterLink],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCheckboxComponent,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
   templateUrl: './order-limit-form.html',
   styleUrls: ['../form-section.scss', './order-limit-form.scss'],
 })
@@ -64,36 +73,53 @@ export class OrderLimitForm {
   protected readonly failed = signal(false);
   protected readonly pendingRemoval = signal<string | null>(null);
 
-  /**
-   * Les deux portées que cette fiche peut poser. La déclinaison n'apparaît que
-   * lorsqu'il y en a une de sélectionnée — sans elle, la ligne viserait le vide.
-   */
-  protected readonly rows = computed<readonly OrderLimitRow[]>(() => {
+  /** La règle portée par **la fiche**, commune à toutes ses déclinaisons. */
+  protected readonly productRow = computed<OrderLimitRow | null>(() => {
     const productId = this.store.productId();
     if (productId === '') {
-      return [];
+      return null;
     }
-    const rules = this.rules();
-    const variantId = this.store.selectedVariantId();
-    const product: OrderLimitRow = {
+    return {
       scopeType: 'product',
       scopeId: productId,
       label: 'Cette fiche, toutes déclinaisons',
-      rule: ownRule(rules, 'product', productId),
+      rule: ownRule(this.rules(), 'product', productId),
     };
-    if (variantId === '') {
-      return [product];
-    }
-    return [
-      product,
-      {
-        scopeType: 'variant',
-        scopeId: variantId,
-        label: 'Cette déclinaison seulement',
-        rule: ownRule(rules, 'variant', variantId),
-      },
-    ];
   });
+
+  /** La règle propre à la déclinaison ouverte, ou `null` s'il n'y en a pas. */
+  protected readonly variantRow = computed<OrderLimitRow | null>(() => {
+    const variantId = this.store.selectedVariantId();
+    if (variantId === '') {
+      return null;
+    }
+    return {
+      scopeType: 'variant',
+      scopeId: variantId,
+      label: 'Cette déclinaison seulement',
+      rule: ownRule(this.rules(), 'variant', variantId),
+    };
+  });
+
+  /**
+   * La déclinaison **suit la fiche** — c'est-à-dire qu'elle ne pose rien.
+   *
+   * L'alignement n'est pas un drapeau stocké : c'est l'ABSENCE d'une règle sur
+   * la portée `variant`. Un drapeau en plus aurait pu contredire la règle qu'il
+   * décrit, et il aurait fallu décider lequel des deux fait foi.
+   */
+  protected readonly variantAligned = computed(() => this.variantRow()?.rule == null);
+
+  /**
+   * ⚠️ La case s'affiche **même sur la déclinaison par défaut**, à la différence
+   * des autres cartes de cette fiche.
+   *
+   * Elles alignent sur la déclinaison PAR DÉFAUT, qui ne peut pas se suivre
+   * elle-même. Ici l'échelle est `déclinaison → produit → famille → global` :
+   * il n'y a pas de rang « déclinaison par défaut », et toute déclinaison —
+   * celle-là comprise — peut suivre sa fiche ou s'en écarter.
+   */
+  protected readonly canAlign = computed(() => this.variantRow() !== null);
 
   constructor() {
     // Rechargé quand la fiche change d'identité : rester sur les règles de la
@@ -129,6 +155,30 @@ export class OrderLimitForm {
     return gracePhrase(rule.graceMinutes);
   }
 
+  /**
+   * Aligner **retire** la règle de la déclinaison ; désaligner ouvre le panneau
+   * pour en poser une.
+   *
+   * L'écriture est immédiate, à la différence des cases d'alignement des autres
+   * cartes qui n'entrent en vigueur qu'à l'enregistrement de la fiche. La raison
+   * est la même que pour le reste de cette carte : la limite vit dans un autre
+   * contexte, et rien ici ne participe au « Tout enregistrer ». Une case qui
+   * attendrait un bouton qui ne la sauve pas serait un piège.
+   */
+  protected async onAlign(aligned: boolean): Promise<void> {
+    const row = this.variantRow();
+    if (row === null) {
+      return;
+    }
+    if (!aligned) {
+      this.edit(row);
+      return;
+    }
+    if (row.rule !== null) {
+      await this.remove(row.rule);
+    }
+  }
+
   protected edit(row: OrderLimitRow): void {
     const ref = this.panelHost.open(LimitPanel, {
       data: {
@@ -156,7 +206,7 @@ export class OrderLimitForm {
     this.pendingRemoval.set(null);
     try {
       await this.api.remove(rule.id);
-      this.notify.success('Limite retirée — cet article suit de nouveau sa famille.');
+      this.notify.success('Limite retirée — cet article suit de nouveau ce dont il hérite.');
       await this.load();
     } catch (error) {
       this.notify.error(error);

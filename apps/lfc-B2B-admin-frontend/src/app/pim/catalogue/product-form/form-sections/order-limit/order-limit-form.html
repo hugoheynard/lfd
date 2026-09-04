@@ -7,46 +7,34 @@
       <button foldButton emphasis="soft" size="sm" (click)="load()">Réessayer</button>
     </fold-callout>
   } @else {
+    @if (canAlign()) {
+      <!-- La ligne d'héritage, sous l'en-tête, comme sur les autres cartes. Ce
+           qu'elle aligne diffère : les autres suivent la déclinaison PAR DÉFAUT,
+           qui ne peut pas se suivre elle-même ; ici l'échelle passe par la
+           FICHE, et toute déclinaison peut la suivre — celle par défaut
+           comprise. -->
+      <fold-callout class="alignment" appearance="inset" variant="info">
+        <fold-checkbox
+          label="Aligner sur la fiche"
+          hint="Cette déclinaison suit alors la fiche, sa famille, puis le réglage général. Aligner retire la limite qui lui est propre."
+          [checked]="variantAligned()"
+          (checkedChange)="onAlign($event)"
+        />
+      </fold-callout>
+    }
+
     <ul class="ol-rows">
-      @for (row of rows(); track row.scopeId) {
+      @if (productRow(); as row) {
         <li class="ol-row">
           <span class="ol-scope">{{ row.label }}</span>
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: row }" />
+        </li>
+      }
 
-          @if (row.rule; as rule) {
-            <span class="ol-values">
-              <fold-badge [content]="days(rule)" variant="neutral" />
-              <fold-badge [content]="time(rule)" variant="neutral" />
-              <fold-badge [content]="grace(rule)" variant="neutral" />
-            </span>
-            <span class="ol-actions">
-              <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Modifier</button>
-              @if (pendingRemoval() === rule.id) {
-                <button foldButton intent="danger" size="sm" (click)="remove(rule)">
-                  Confirmer
-                </button>
-                <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">
-                  Annuler
-                </button>
-              } @else {
-                <button
-                  foldButton
-                  emphasis="soft"
-                  intent="danger"
-                  size="sm"
-                  (click)="askRemove(rule)"
-                >
-                  Retirer
-                </button>
-              }
-            </span>
-          } @else {
-            <span class="ol-inherited">Hérité</span>
-            <span class="ol-actions">
-              <button foldButton emphasis="soft" size="sm" (click)="edit(row)">
-                Poser une limite
-              </button>
-            </span>
-          }
+      @if (!variantAligned() && variantRow(); as row) {
+        <li class="ol-row">
+          <span class="ol-scope">{{ row.label }}</span>
+          <ng-container *ngTemplateOutlet="values; context: { $implicit: row }" />
         </li>
       }
     </ul>
@@ -58,3 +46,31 @@
     <a routerLink="/pim/limites-de-commande">Limites de commande</a>.
   </p>
 </div>
+
+<!-- Une seule écriture des trois valeurs et de leurs boutons : deux copies
+     auraient fini par diverger sur ce que « Hérité » veut dire. -->
+<ng-template #values let-row>
+  @if (row.rule; as rule) {
+    <span class="ol-values">
+      <fold-badge [content]="days(rule)" variant="neutral" />
+      <fold-badge [content]="time(rule)" variant="neutral" />
+      <fold-badge [content]="grace(rule)" variant="neutral" />
+    </span>
+    <span class="ol-actions">
+      <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Modifier</button>
+      @if (pendingRemoval() === rule.id) {
+        <button foldButton intent="danger" size="sm" (click)="remove(rule)">Confirmer</button>
+        <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">Annuler</button>
+      } @else {
+        <button foldButton emphasis="soft" intent="danger" size="sm" (click)="askRemove(rule)">
+          Retirer
+        </button>
+      }
+    </span>
+  } @else {
+    <span class="ol-inherited">Hérité</span>
+    <span class="ol-actions">
+      <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Poser une limite</button>
+    </span>
+  }
+</ng-template>

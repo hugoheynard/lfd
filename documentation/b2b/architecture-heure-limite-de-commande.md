@@ -747,6 +747,32 @@ Trois règles que la carte tient :
   imposée. Un second panneau aurait divergé du premier sur la sémantique de
   l'héritage, et c'est précisément là qu'une divergence ne se verrait pas.
 
+### ⚠️ L'alignement d'une déclinaison ne dit pas la même chose qu'ailleurs
+
+La carte reprend l'idiome de la fiche — un encart sous l'en-tête, une case — mais
+**pas son référent**. Les autres cartes alignent sur la **déclinaison par
+défaut** ; l'échelle des limites, elle, est
+`déclinaison → produit → famille → global` et **n'a pas ce rang**. La case dit
+donc « Aligner sur **la fiche** ».
+
+Conséquence visible : la case apparaît **aussi sur la déclinaison par défaut**,
+là où les autres cartes la masquent — celle-là ne peut pas se suivre elle-même,
+mais elle peut suivre sa fiche.
+
+Deux autres écarts, assumés :
+
+- **L'alignement n'est pas un drapeau stocké**, c'est l'ABSENCE d'une règle sur
+  la portée `variant`. Un drapeau en plus aurait pu contredire la règle qu'il
+  décrit, et il aurait fallu décider lequel des deux fait foi.
+- **La case écrit immédiatement**, quand les autres attendent l'enregistrement de
+  la fiche. Même raison que le reste de la carte : rien ici ne participe au
+  « Tout enregistrer », et une case qui attendrait un bouton qui ne la sauve pas
+  serait un piège.
+
+Ajouter un rang « déclinaison par défaut » à l'échelle rendrait l'idiome
+identique — mais ce serait une décision de modèle, qui remonte jusqu'au fil et à
+la résolution du référentiel. Pas une retouche d'écran.
+
 Deux choses que l'écran dit et qui ne vont pas de soi :
 
 - **`Hérité` plutôt qu'un blanc.** Un champ vide se lit « aucune limite », soit
