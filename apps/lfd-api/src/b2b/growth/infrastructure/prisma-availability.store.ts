@@ -11,7 +11,7 @@ import {
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import type { AvailabilityConfig } from "../domain/availability.js";
-import { instantToLocal } from "../domain/paris-time.js";
+import { instantToLocal } from "@lfd/contracts";
 import { AvailabilityStore } from "../domain/ports/availability.store.js";
 
 /** Clé du singleton de politique — une ligne, jamais deux. */

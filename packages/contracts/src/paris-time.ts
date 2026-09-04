@@ -1,9 +1,16 @@
 /**
  * Conversion **heure locale d'Europe/Paris ↔ instant UTC**, en fonctions pures.
  *
- * Pourquoi ici et pas dans `infra/` : c'est une règle **métier** (« les horaires
- * du commercial sont ceux de Paris »), déterministe et sans I/O. Elle se teste
- * sans Nest, sans base et sans horloge.
+ * Pourquoi dans le **contrat partagé** : trois sujets en ont besoin — les
+ * créneaux de rendez-vous, les heures limites de commande, et les écrans qui
+ * affichent les deux. Le module a d'abord vécu dans `b2b/growth/domain/`, au
+ * motif que « les horaires du commercial sont ceux de Paris » en faisait une
+ * règle métier. C'était vrai et trop étroit : le fuseau n'appartient pas au
+ * commercial, il appartient à la maison. Une seconde implémentation aurait
+ * divergé sur les deux bascules ci-dessous, et l'écart ne se serait vu qu'un
+ * dimanche par an.
+ *
+ * Déterministe et sans I/O : se teste sans Nest, sans base et sans horloge.
  *
  * Pourquoi pas une lib : `Intl` porte déjà la base de fuseaux de Node. Une
  * dépendance de plus n'apporterait ici que du poids.

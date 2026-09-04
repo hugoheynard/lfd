@@ -10,7 +10,7 @@ import {
   AppointmentTransitionError,
   InvalidAppointmentError,
 } from "../errors/appointment-errors.js";
-import { addMinutes } from "../paris-time.js";
+import { addMinutes } from "@lfd/contracts";
 
 /**
  * Agrégat **Appointment** — un rendez-vous commercial posé sur un créneau.

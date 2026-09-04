@@ -41,6 +41,16 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
+# Le fuseau de la MAISON, pas celui de l'image. `node:22-slim` n'en pose aucun,
+# donc le process tournait en UTC : une heure limite de commande saisie « 18:00 »
+# y valait 20 h à Paris l'été et 19 h l'hiver — un décalage qui change avec la
+# saison, sur du code inchangé.
+#
+# ⚠️ C'est une ceinture, pas la bretelle. Le calcul lui-même ne s'y fie PAS : il
+# convertit explicitement par `Europe/Paris` (`packages/contracts/src/paris-time.ts`),
+# parce qu'une variable d'environnement se perd en changeant d'image et que la
+# panne serait alors silencieuse. Les deux, et dans cet ordre.
+ENV TZ=Europe/Paris
 # La révision est GRAVÉE DANS L'IMAGE, jamais transmise par le Worker : c'est ce
 # qui en fait une réponse fiable à « qu'est-ce qui tourne, là, maintenant ? ».
 # Passée par le Worker, elle changerait sans que l'image change, et l'instance

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { weekdaySchema, type Weekday } from "./address.js";
+import { addDays, localToInstant, weekdayOf } from "./paris-time.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on peut commander (ou déposer un
@@ -31,21 +32,24 @@ import { weekdaySchema, type Weekday } from "./address.js";
  */
 
 /**
- * Les jours dans l'ordre de `Date.getDay()` — l'index EST le jour JS. Sert à
+ * Les jours dans l'ordre de `Date.getUTCDay()` — l'index EST le jour JS. Sert à
  * traduire une date en {@link Weekday} sans table de correspondance dispersée.
  */
 const WEEKDAY_BY_JS_DAY: readonly Weekday[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
- * Le jour de la semaine d'une date ISO (`YYYY-MM-DD`), en **heure locale**.
+ * Le jour de la semaine d'une date ISO (`YYYY-MM-DD`).
  *
  * On réutilise le {@link Weekday} des créneaux de livraison plutôt qu'un entier :
  * deux représentations du même jour dans un seul contrat, c'est la garantie
  * qu'un jour finira décalé d'une unité quelque part.
+ *
+ * ⚠️ Passait par `new Date(y, m, d).getDay()`, donc par le fuseau du **process**.
+ * Une date nue n'a pourtant pas de fuseau : `weekdayOf` la lit en UTC, ce qui la
+ * rend identique sur le poste d'un développeur et dans un conteneur.
  */
 export function weekdayOfDate(isoDate: string): Weekday {
-  const [year = 0, month = 1, day = 1] = isoDate.split("-").map(Number);
-  return WEEKDAY_BY_JS_DAY[new Date(year, month - 1, day).getDay()] ?? "mon";
+  return WEEKDAY_BY_JS_DAY[weekdayOf(isoDate)] ?? "mon";
 }
 
 /** `HH:MM` en 24 h — l'heure locale du laboratoire, pas un instant UTC. */
@@ -124,12 +128,49 @@ export function resolveOrderCutoff(
 /**
  * L'instant limite pour un acheminement demandé le jour `fulfillmentDate`.
  *
- * Rend une `Date` construite en **heure locale** : la limite est celle du four,
- * pas celle d'UTC. Un `daysBefore` de 1 sur `2026-08-12` à `18:00` donne le
- * 11 août à 18 h.
+ * L'heure de la règle est une heure de **pendule d'Europe/Paris** — celle du
+ * four —, jamais un instant UTC. Un `daysBefore` de 1 sur `2026-08-12` à `18:00`
+ * donne le 11 août à 18 h **à Paris**, soit 16 h UTC en été et 17 h en hiver.
+ *
+ * 🔴 **Cette fonction construisait son instant avec `new Date(y, m, d, h, min)`**,
+ * c'est-à-dire dans le fuseau du **process**. Le conteneur tourne en UTC : une
+ * limite saisie à 18 h y valait 20 h à Paris l'été, 19 h l'hiver — un décalage
+ * qui change avec la saison, sur du code inchangé. Il est resté invisible tant
+ * que rien n'appliquait la règle.
+ *
+ * @returns `null` quand cette heure locale **n'existe pas** ce jour-là — l'heure
+ * sautée du passage à l'heure d'été. Un instant faux rendu sans le dire serait
+ * pire ; l'appelant décide, et {@link isPastOrderCutoff} choisit de ne pas
+ * refuser (une heure, une nuit par an, et seulement pour une limite réglée entre
+ * 2 h et 3 h du matin).
  */
-export function orderCutoffInstant(rule: OrderCutoffView, fulfillmentDate: string): Date {
-  const [year = 0, month = 1, day = 1] = fulfillmentDate.split("-").map(Number);
-  const [hours = 0, minutes = 0] = rule.time.split(":").map(Number);
-  return new Date(year, month - 1, day - rule.daysBefore, hours, minutes, 0, 0);
+export function orderCutoffInstant(rule: OrderCutoffView, fulfillmentDate: string): Date | null {
+  return localToInstant(addDays(fulfillmentDate, -rule.daysBefore), rule.time);
+}
+
+/**
+ * **Est-il trop tard** pour demander un acheminement le jour `fulfillmentDate` ?
+ *
+ * Le seul endroit qui compare la limite à l'horloge. `now` est **fourni** — il
+ * vient du `Clock` côté serveur — pour que la décision reste déterministe et
+ * testable, et pour qu'un fuseau de navigateur ne s'invite pas dans un refus.
+ *
+ * Rend `false` — donc « ça passe » — dans les deux cas où il n'y a rien à
+ * opposer : aucune règle ne couvre cet acheminement, ou l'heure de la règle
+ * n'existe pas ce jour-là (cf. {@link orderCutoffInstant}). Refuser sur l'un ou
+ * l'autre reviendrait à bloquer une commande légitime au nom d'un réglage
+ * absent ou d'un artefact de calendrier.
+ */
+export function isPastOrderCutoff(
+  rules: readonly OrderCutoffView[],
+  pickupAddressId: string | null,
+  fulfillmentDate: string,
+  now: Date,
+): boolean {
+  const rule = resolveOrderCutoff(rules, pickupAddressId, weekdayOfDate(fulfillmentDate));
+  if (rule === null) {
+    return false;
+  }
+  const limit = orderCutoffInstant(rule, fulfillmentDate);
+  return limit !== null && now.getTime() > limit.getTime();
 }

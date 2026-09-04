@@ -3,7 +3,7 @@ import type { SlotsView } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { slotsFor } from "../../domain/availability.js";
-import { localToInstant } from "../../domain/paris-time.js";
+import { localToInstant } from "@lfd/contracts";
 import { AppointmentRepository } from "../../domain/ports/appointment.repository.js";
 import { AvailabilityStore } from "../../domain/ports/availability.store.js";
 import { GetSlotsQuery } from "./get-slots.query.js";

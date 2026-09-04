@@ -13,7 +13,7 @@ import {
   minutesOfDay,
   timeOfMinutes,
   weekdayOf,
-} from "./paris-time.js";
+} from "@lfd/contracts";
 import { mergeIntervals, subtractIntervals, type MinuteInterval } from "./minute-interval.js";
 
 /**

@@ -302,6 +302,7 @@ export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
 export {
   clockTimeSchema,
   orderCutoffPayloadSchema,
+  isPastOrderCutoff,
   orderCutoffInstant,
   resolveOrderCutoff,
   weekdayOfDate,
@@ -311,6 +312,18 @@ export type {
   OrderCutoffPayload,
   OrderCutoffView,
 } from "./order-cutoff.js";
+
+export {
+  BUSINESS_TIME_ZONE,
+  addDays,
+  addMinutes,
+  instantToLocal,
+  localToInstant,
+  minutesOfDay,
+  timeOfMinutes,
+  weekdayOf,
+} from "./paris-time.js";
+export type { LocalMoment } from "./paris-time.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,

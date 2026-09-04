@@ -7,7 +7,7 @@ import type {
 } from "@lfd/contracts";
 
 import { Appointment } from "../domain/entities/appointment.js";
-import { instantToLocal } from "../domain/paris-time.js";
+import { instantToLocal } from "@lfd/contracts";
 
 /**
  * Traduction ligne `appointments` ↔ agrégat / vue. Les colonnes `status`,
