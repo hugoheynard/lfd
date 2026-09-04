@@ -160,7 +160,7 @@ export function resolveOrderCutoff(
  * 2 h et 3 h du matin).
  */
 export function orderCutoffInstant(rule: OrderCutoffView, fulfillmentDate: string): Date | null {
-  return localToInstant(addDays(fulfillmentDate, -rule.daysBefore), rule.time);
+  return orderLimitInstant(rule, fulfillmentDate);
 }
 
 /**
@@ -173,6 +173,21 @@ export function orderCutoffInstant(rule: OrderCutoffView, fulfillmentDate: strin
  * avec `open` ferait passer en silence ce qui doit être décidé.
  */
 export type OrderCutoffStatus = "open" | "grace" | "closed";
+
+/**
+ * **Une limite résolue**, d'où qu'elle vienne : la règle du commerce, ou celle
+ * que le référentiel a résolue pour l'article.
+ *
+ * Le type existe pour que la décision cesse de dépendre de la SOURCE. Depuis que
+ * les articles portent leur propre limite, deux chemins produisent la même
+ * chose ; les faire décider chacun de leur côté aurait garanti qu'ils divergent
+ * sur une borne.
+ */
+export interface OrderLimitSpec {
+  readonly daysBefore: number;
+  readonly time: string;
+  readonly graceMinutes: number;
+}
 
 /** Ce que la règle applicable dit d'un acheminement, et de quoi le raconter. */
 export interface OrderCutoffDecision {
@@ -221,13 +236,40 @@ export function decideOrderCutoff(
   if (rule === null) {
     return NOTHING_TO_OPPOSE;
   }
-  const limit = orderCutoffInstant(rule, fulfillmentDate);
+  return { ...decideOrderLimit(rule, fulfillmentDate, now), rule };
+}
+
+/**
+ * La même décision, à partir d'une **limite déjà résolue** — celle que le
+ * référentiel envoie avec l'article, ou celle qu'une règle du commerce produit.
+ *
+ * C'est ici que vivent les trois états et leurs bornes ; `decideOrderCutoff` ne
+ * fait plus que choisir la règle avant d'appeler cette fonction. Deux
+ * implémentations auraient fini par diverger sur une borne, et l'écart n'aurait
+ * concerné qu'une des deux sources — donc qu'une partie du catalogue.
+ *
+ * `limit` à `null` = rien à opposer, et la commande passe.
+ */
+export function decideOrderLimit(
+  limit: OrderLimitSpec | null,
+  fulfillmentDate: string,
+  now: Date,
+): OrderCutoffDecision {
   if (limit === null) {
-    return { ...NOTHING_TO_OPPOSE, rule };
+    return NOTHING_TO_OPPOSE;
   }
-  const graceEnd = new Date(limit.getTime() + rule.graceMinutes * MINUTE_MS);
+  const at0 = orderLimitInstant(limit, fulfillmentDate);
+  if (at0 === null) {
+    return NOTHING_TO_OPPOSE;
+  }
+  const graceEnd = new Date(at0.getTime() + limit.graceMinutes * MINUTE_MS);
   const at = now.getTime();
   const status: OrderCutoffStatus =
-    at <= limit.getTime() ? "open" : at <= graceEnd.getTime() ? "grace" : "closed";
-  return { status, rule, limit, graceEnd };
+    at <= at0.getTime() ? "open" : at <= graceEnd.getTime() ? "grace" : "closed";
+  return { status, rule: null, limit: at0, graceEnd };
+}
+
+/** L'instant limite d'une limite résolue. Même conversion que {@link orderCutoffInstant}. */
+export function orderLimitInstant(limit: OrderLimitSpec, fulfillmentDate: string): Date | null {
+  return localToInstant(addDays(fulfillmentDate, -limit.daysBefore), limit.time);
 }

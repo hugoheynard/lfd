@@ -38,6 +38,20 @@ const archivedFactsSchema = z.object({
       incomplete: z.boolean(),
     })
     .nullable(),
+  /**
+   * `.nullish()` et non `.nullable()`, et la nuance porte tout : les versions
+   * archivées AVANT le fil v6 n'ont pas ce champ du tout. Un `.nullable()` nu
+   * les rendrait illisibles — et une version de catalogue qu'on ne peut plus
+   * relire est une commande dont on ne sait plus d'où venaient les articles.
+   */
+  orderTimeLimit: z
+    .object({
+      daysBefore: z.number().int(),
+      time: z.string(),
+      graceMinutes: z.number().int(),
+    })
+    .nullish()
+    .transform((value) => value ?? null),
   // Écrit en ISO dans le `jsonb` : `Date` n'est pas une valeur JSON, et la
   // conversion doit être explicite plutôt que subie du sérialiseur.
   receivedAt: z.coerce.date(),
@@ -92,6 +106,17 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
         : {
             labels: facts.allergenLabels.labels.map((entry) => ({ ...entry })),
             incomplete: facts.allergenLabels.incomplete,
+          },
+    // Écrite telle quelle, ou absente. Une version archivée doit pouvoir dire
+    // sous quelle limite un article était vendu ce jour-là — c'est le même
+    // raisonnement que le prix figé sur la ligne de commande.
+    orderTimeLimit:
+      facts.orderTimeLimit === null
+        ? null
+        : {
+            daysBefore: facts.orderTimeLimit.daysBefore,
+            time: facts.orderTimeLimit.time,
+            graceMinutes: facts.orderTimeLimit.graceMinutes,
           },
     receivedAt: facts.receivedAt.toISOString(),
   };

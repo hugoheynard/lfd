@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 5;
+export const CATALOG_SNAPSHOT_VERSION = 6;
 
 /**
  * Une famille de produits, **à plat**.
@@ -180,8 +180,45 @@ export const syncVariantSchema = z.object({
    * l'inverse — « aucune fiche » ne doit pas se lire « aucun allergène ».
    */
   allergenLabels: syncAllergenLabelsSchema.nullable(),
+  /**
+   * **Jusqu'à quand on prend commande de cet article** — résolu à l'émission.
+   *
+   * L'émetteur envoie la valeur **résolue**, jamais l'échelle qui l'a produite
+   * (`global → famille → produit → déclinaison`, avec un héritage champ par
+   * champ). Le récepteur n'a pas à connaître l'arbre des familles pour savoir
+   * quand un SKU ferme — même raisonnement que `vatRatePercent` : un article se
+   * vend seul, il doit pouvoir dire seul quand il ferme.
+   *
+   * `null` = **aucune limite pour cet article**, et c'est net : l'émetteur a
+   * regardé et n'a rien trouvé. À ne pas confondre avec un champ ABSENT, qui dit
+   * « ce push est antérieur à la v6 » — d'où la montée de version plutôt qu'un
+   * ajout silencieux.
+   *
+   * Les trois valeurs voyagent ensemble et sont toutes requises **une fois le
+   * champ présent** : une limite sans heure ne se compare à rien, et un
+   * rattrapage sans limite n'a rien à rattraper. L'héritage a déjà fait son
+   * travail avant ce point ; ce qui sort est complet ou absent.
+   */
+  orderTimeLimit: z
+    .object({
+      /** Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même. */
+      daysBefore: z.number().int().min(0).max(14),
+      /** `HH:MM` en heure de pendule d'**Europe/Paris**, jamais un instant UTC. */
+      time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM"),
+      /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
+      graceMinutes: z.number().int().min(0).max(720),
+    })
+    .nullable(),
 });
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
+
+/**
+ * La limite résolue telle qu'elle voyage — les trois valeurs, complètes.
+ *
+ * Extraite du schéma plutôt que redéclarée : une seconde définition finirait par
+ * autoriser un `graceMinutes` optionnel d'un côté et pas de l'autre.
+ */
+export type SyncOrderTimeLimit = NonNullable<SyncVariant["orderTimeLimit"]>;
 
 /** Un produit et ses déclinaisons vendables. Au moins une, sinon rien à vendre. */
 export const syncProductSchema = z.object({
@@ -208,6 +245,46 @@ export const catalogSnapshotSchema = z.object({
   products: z.array(syncProductSchema),
 });
 export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
+
+/**
+ * **Le même snapshot, relu depuis un stockage** — et volontairement plus
+ * tolérant que celui du fil.
+ *
+ * L'inbox de revue garde une arrivée en `jsonb` jusqu'à ce qu'un humain la
+ * valide. Cette attente **traverse les déploiements** : une livraison mise en
+ * file un mardi peut être relue le jeudi, sur un code qui a changé entre-temps.
+ * La revalider avec le schéma du fil la rendrait illisible au premier champ
+ * ajouté — c'est-à-dire qu'un ajout de champ ferait disparaître une livraison en
+ * attente, sans rien casser visiblement au moment du déploiement.
+ *
+ * Deux assouplissements, et deux seulement :
+ *
+ * - **la version est acceptée si elle est CONNUE**, pas seulement si elle est la
+ *   dernière. Une arrivée d'une version qu'on ne connaît pas reste refusée : le
+ *   but est de relire le passé, jamais de deviner l'avenir ;
+ * - **les champs ajoutés après coup peuvent manquer**, et prennent alors la
+ *   valeur qui décrit le mieux ce silence — ici `null`, « aucune limite », ce
+ *   qui est exactement le comportement d'avant leur existence.
+ *
+ * Le schéma du fil, lui, **reste strict** : un émetteur qui oublie un champ doit
+ * échouer à l'émission, pas produire une arrivée dégradée.
+ */
+export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
+  version: z.union([z.literal(5), z.literal(6)]),
+  products: z.array(
+    syncProductSchema.extend({
+      variants: z
+        .array(
+          syncVariantSchema.extend({
+            orderTimeLimit: syncVariantSchema.shape.orderTimeLimit
+              .optional()
+              .transform((value) => value ?? null),
+          }),
+        )
+        .min(1),
+    }),
+  ),
+});
 
 /**
  * Ce que le récepteur répond, pour que l'émetteur puisse **enregistrer** ce que
@@ -247,3 +324,10 @@ export const catalogIngestionReportSchema = z.object({
   status: z.enum(["applied", "queued"]).default("applied"),
 });
 export type CatalogIngestionReport = z.infer<typeof catalogIngestionReportSchema>;
+
+/**
+ * Un snapshot **tel qu'il ressort d'un stockage** : une version connue, et les
+ * champs récents éventuellement absents. Tout `CatalogSnapshot` en est un —
+ * l'inverse n'est pas vrai.
+ */
+export type StoredCatalogSnapshot = z.infer<typeof storedCatalogSnapshotSchema>;

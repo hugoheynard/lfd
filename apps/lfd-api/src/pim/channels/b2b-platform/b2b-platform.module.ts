@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.module.js";
 import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
+import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
@@ -33,7 +34,13 @@ import { B2bCatalogPushService } from "./products/push.service.js";
   // `AllergensModule` fournit le lecteur du référentiel : la projection y prend
   // les mentions d'étiquette une fois par push (D6), parce que le récepteur n'a
   // plus de quoi les fabriquer.
-  imports: [PimDatabaseModule, CatalogueModule, AccountingRulesModule, AllergensModule],
+  imports: [
+    OrderTimeLimitationModule,
+    PimDatabaseModule,
+    CatalogueModule,
+    AccountingRulesModule,
+    AllergensModule,
+  ],
   controllers: [B2bMembershipController, B2bPushController, B2bProductDeliveryController],
   providers: [
     B2bMembershipService,

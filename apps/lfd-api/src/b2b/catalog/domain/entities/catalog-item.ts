@@ -25,6 +25,24 @@ import {
  */
 
 /** Ce que le PIM envoie pour un article — les faits, sans aucune décision. */
+/**
+ * **Jusqu'à quand on prend commande de cet article**, tel que le référentiel l'a
+ * résolu. Les trois valeurs vont ensemble : une limite sans heure ne se compare
+ * à rien, un rattrapage sans limite n'a rien à rattraper.
+ *
+ * Déclaré ici et non importé du fil : le domaine du commerce ne dépend pas du
+ * schéma de transport. Les deux se ressemblent aujourd'hui, et c'est normal —
+ * l'un décrit ce qu'on reçoit, l'autre ce qu'on tient.
+ */
+export interface OrderTimeLimitFacts {
+  /** Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même. */
+  readonly daysBefore: number;
+  /** `HH:MM` en heure de pendule d'**Europe/Paris**, jamais un instant UTC. */
+  readonly time: string;
+  /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
+  readonly graceMinutes: number;
+}
+
 export interface PimFacts {
   readonly sku: string;
   readonly productId: string;
@@ -70,6 +88,13 @@ export interface PimFacts {
    * s'affiche « sans allergène ».
    */
   readonly allergenLabels: PimAllergenLabels | null;
+  /**
+   * La limite de commande de cet article, ou `null` = **le référentiel n'en
+   * déclare aucune**. Distinct d'un article d'avant le fil v6, qui porte lui
+   * aussi `null` — les deux se comportent pareil, et c'est voulu : dans les deux
+   * cas, le commerce retombe sur sa propre règle.
+   */
+  readonly orderTimeLimit: OrderTimeLimitFacts | null;
   readonly receivedAt: Date;
 }
 
@@ -180,6 +205,14 @@ export class CatalogItem {
 
   get categoryId(): string {
     return this.facts.categoryId;
+  }
+
+  /**
+   * La limite de commande déclarée par le référentiel pour cet article, ou
+   * `null` — auquel cas c'est la règle du commerce qui s'applique.
+   */
+  get orderTimeLimit(): OrderTimeLimitFacts | null {
+    return this.facts.orderTimeLimit;
   }
 
   get vatRatePercent(): number | null {

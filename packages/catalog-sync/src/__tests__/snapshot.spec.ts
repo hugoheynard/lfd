@@ -1,4 +1,9 @@
-import { CATALOG_SNAPSHOT_VERSION, catalogSnapshotSchema, syncVariantSchema } from "../snapshot.js";
+import {
+  CATALOG_SNAPSHOT_VERSION,
+  catalogSnapshotSchema,
+  storedCatalogSnapshotSchema,
+  syncVariantSchema,
+} from "../snapshot.js";
 
 /**
  * Ce que ces tests éprouvent, ce n'est pas Zod : c'est que **les refus promis par
@@ -16,6 +21,9 @@ const variant = {
   vatRatePercent: 5.5,
   allergens: ["AW"],
   allergenLabels: { labels: [{ category: "milk", label: "Lait" }], incomplete: false },
+  // Aucune limite de commande : l'état de la quasi-totalité du catalogue, et
+  // celui que les cas ci-dessous supposent quand ils parlent d'autre chose.
+  orderTimeLimit: null,
 };
 
 const snapshot = {
@@ -204,5 +212,56 @@ describe("les mentions d’étiquette de l’article", () => {
     };
 
     expect(syncVariantSchema.safeParse(muette).success).toBe(false);
+  });
+});
+
+/**
+ * **Régression : une arrivée en attente devenait illisible à chaque champ
+ * ajouté.**
+ *
+ * L'inbox de revue garde un snapshot en `jsonb` jusqu'à ce qu'un humain le
+ * valide, et cette attente traverse les déploiements. Le dépôt le revalidait
+ * avec le schéma du FIL : ajouter `orderTimeLimit` a donc fait disparaître les
+ * arrivées en attente — sans rien casser visiblement au déploiement, et donc
+ * sans qu'on relie la cause à l'effet (constaté et corrigé le 2026-09-04).
+ */
+describe("storedCatalogSnapshotSchema — relire ce qu'on a stocké", () => {
+  /** Un snapshot tel qu'une version ANTÉRIEURE du fil l'a écrit. */
+  function v5(): Record<string, unknown> {
+    const ancien = JSON.parse(JSON.stringify(snapshot)) as Record<string, unknown>;
+    ancien["version"] = 5;
+    const produits = ancien["products"] as { variants: Record<string, unknown>[] }[];
+    for (const produit of produits) {
+      for (const declinaison of produit.variants) {
+        delete declinaison["orderTimeLimit"];
+      }
+    }
+    return ancien;
+  }
+
+  it("relit une arrivée d'une version antérieure, champ absent compris", () => {
+    const parsed = storedCatalogSnapshotSchema.safeParse(v5());
+    expect(parsed.success).toBe(true);
+    // Le silence prend la valeur qui le décrit : « aucune limite », soit
+    // exactement le comportement d'avant l'existence du champ.
+    expect(parsed.data?.products[0]?.variants[0]?.orderTimeLimit).toBeNull();
+  });
+
+  /**
+   * Le schéma du FIL, lui, reste strict : un émetteur qui oublie un champ doit
+   * échouer à l'émission, pas produire une arrivée dégradée. C'est toute la
+   * raison d'avoir deux schémas plutôt qu'un seul assoupli.
+   */
+  it("laisse le schéma du fil REFUSER ce que le stockage accepte", () => {
+    expect(catalogSnapshotSchema.safeParse(v5()).success).toBe(false);
+  });
+
+  /**
+   * « Connue », pas « quelconque » : le but est de relire le passé, jamais de
+   * deviner l'avenir. Une arrivée d'une version qu'on ne connaît pas reste
+   * refusée, comme elle l'a toujours été.
+   */
+  it("refuse quand même une version inconnue", () => {
+    expect(storedCatalogSnapshotSchema.safeParse({ ...snapshot, version: 99 }).success).toBe(false);
   });
 });

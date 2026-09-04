@@ -8,6 +8,8 @@ import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allerge
 import { projectionFingerprint } from "../../shared/domain/canonical-projection.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import { OrderTimeLimitRepository } from "../../../order-time-limitation/domain/ports/order-time-limit.repository.js";
+import { resolveLimitsByVariant } from "./order-time-limits.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
 import { projectCatalog } from "./projection.js";
@@ -40,6 +42,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     private readonly membership: B2bMembershipService,
     private readonly accounting: AccountingRulesRepository,
     private readonly allergens: AllergenCatalogueReader,
+    private readonly orderTimeLimits: OrderTimeLimitRepository,
   ) {
     super();
   }
@@ -80,17 +83,24 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // seule fois par projection** (D6) : la plateforme B2B n'a plus de quoi
     // traduire un code GS1 en mention d'étiquette, donc c'est le PIM qui
     // projette — mais `projectCatalog` reste pure, elle reçoit le projecteur.
-    const [vatByProduct, channelsByProduct, allergenCatalogue] = await Promise.all([
+    const [vatByProduct, channelsByProduct, allergenCatalogue, timeLimitRules] = await Promise.all([
       this.catalogue.vatPercents(products),
       this.catalogue.effectiveChannels(products),
       this.allergens.catalogue(),
+      this.orderTimeLimits.list(),
     ]);
+    // L'échelle du référentiel s'arrête ICI : ce qui traverse le fil est la
+    // valeur résolue de chaque déclinaison, jamais les rangs qui l'ont produite.
+    // La plateforme n'a donc pas à connaître l'arbre des familles pour savoir
+    // quand un article ferme — même raison que pour le taux de TVA.
+    const limitByVariantId = resolveLimitsByVariant(products, categories, timeLimitRules);
     const { snapshot, excluded } = projectCatalog(
       products,
       categories,
       vatByProduct,
       channelsByProduct,
       rules.rules.proPriceRatio.basisPoints,
+      limitByVariantId,
       // Le canal est monolingue français : l'aplatissement se fait à l'émission
       // plutôt que de transporter un objet localisé que personne ne lira.
       IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),

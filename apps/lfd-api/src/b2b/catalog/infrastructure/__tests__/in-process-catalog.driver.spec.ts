@@ -18,7 +18,7 @@ import { InProcessB2bCatalogDriver } from "../in-process-catalog.driver.js";
  * lequel.
  */
 
-const snapshot: CatalogSnapshot = {
+const snapshot: StoredCatalogSnapshot = {
   version: CATALOG_SNAPSHOT_VERSION,
   generatedAt: "2026-01-01T00:00:00.000Z",
   categories: [],

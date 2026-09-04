@@ -24,6 +24,9 @@ interface ItemRow {
   readonly vatRatePercent: { toNumber(): number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly orderLimitDaysBefore: number | null;
+  readonly orderLimitTime: string | null;
+  readonly orderLimitGraceMinutes: number | null;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly override: {
@@ -188,6 +191,27 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   }
 }
 
+/**
+ * Les trois colonnes de limite ↔ un objet, ou `null`.
+ *
+ * **Tout ou rien** : il suffit qu'une des trois manque pour qu'il n'y ait pas de
+ * limite. Une limite sans heure ne se compare à rien, et reconstruire un objet
+ * partiel donnerait au commerce une règle qu'il croirait pouvoir appliquer.
+ * L'ingestion les écrit ensemble ; cette lecture-ci refuse de recoller ce qui
+ * aurait été séparé à la main.
+ */
+function orderTimeLimitOf(row: ItemRow) {
+  const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes } = row;
+  if (orderLimitDaysBefore === null || orderLimitTime === null || orderLimitGraceMinutes === null) {
+    return null;
+  }
+  return {
+    daysBefore: orderLimitDaysBefore,
+    time: orderLimitTime,
+    graceMinutes: orderLimitGraceMinutes,
+  };
+}
+
 /** Ligne ↔ agrégat. La décision absente devient « rien décidé », pas `undefined`. */
 function toDomain(row: ItemRow): CatalogItem {
   return CatalogItem.reconstitute({
@@ -206,6 +230,7 @@ function toDomain(row: ItemRow): CatalogItem {
       vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),
+      orderTimeLimit: orderTimeLimitOf(row),
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
@@ -242,6 +267,9 @@ function factsRow(state: CatalogItemState) {
     // Même repli, même raison : `undefined` laisserait la colonne inchangée sur
     // un upsert, et un article dont la fiche a été retirée dans le PIM garderait
     // des mentions d'étiquette que plus rien ne déclare.
+    orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
+    orderLimitTime: facts.orderTimeLimit?.time ?? null,
+    orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
     allergenLabels:
       facts.allergenLabels === null
         ? Prisma.DbNull

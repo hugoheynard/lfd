@@ -16,6 +16,9 @@ interface ItemRow {
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly orderLimitDaysBefore: number | null;
+  readonly orderLimitTime: string | null;
+  readonly orderLimitGraceMinutes: number | null;
   readonly category: {
     readonly id: string;
     readonly name: string;
@@ -162,6 +165,26 @@ function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
     isDefault: row.isDefault,
     isFeatured: row.override?.isFeatured ?? false,
     allergens: frozenAllergens(row),
+    orderTimeLimit: orderTimeLimitOf(row),
+  };
+}
+
+/**
+ * Les trois colonnes de limite ↔ un objet, ou `null`.
+ *
+ * **Tout ou rien** : il suffit qu'une des trois manque pour qu'il n'y ait pas de
+ * limite. Une limite sans heure ne se compare à rien, et recoller un objet
+ * partiel donnerait au checkout une règle qu'il croirait pouvoir appliquer.
+ */
+function orderTimeLimitOf(row: ItemRow): ResolvedCatalogItem["orderTimeLimit"] {
+  const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes } = row;
+  if (orderLimitDaysBefore === null || orderLimitTime === null || orderLimitGraceMinutes === null) {
+    return null;
+  }
+  return {
+    daysBefore: orderLimitDaysBefore,
+    time: orderLimitTime,
+    graceMinutes: orderLimitGraceMinutes,
   };
 }
 

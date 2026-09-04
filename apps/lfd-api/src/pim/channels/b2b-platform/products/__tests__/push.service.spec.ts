@@ -190,6 +190,8 @@ async function build(
                       ),
                       // Rapport neutre : ce test parle de PUSH, pas de tarif.
                       10_000,
+                      // Aucune limite de commande : ce test parle d'estampille.
+                      new Map(),
                       // Référentiel vide : aucune fiche n'est déclarée ici, donc
                       // rien à projeter — ce test parle d'estampille.
                       IncoProjector.from([], "fr"),

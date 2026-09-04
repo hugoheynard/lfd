@@ -29,6 +29,7 @@ import {
   PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
+import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
@@ -100,6 +101,7 @@ export class OrderDrafting {
     private readonly deliveryDefaults: DeliveryDefaultsReader,
     private readonly cutoffs: OrderCutoffReader,
     private readonly clock: Clock,
+    private readonly catalog: ProductCatalogReader,
   ) {}
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
@@ -182,11 +184,19 @@ export class OrderDrafting {
   /**
    * Oppose l'heure limite de commande, s'il y en a une à opposer.
    *
-   * Ne lit les règles que lorsqu'il y a une date à juger : un appel de plus par
-   * commande, pour un réglage que la plupart des plateformes n'ont pas, se paie
-   * sur toutes les commandes. `requestedDeliveryDate` est obligatoire au contrat
-   * (`orderPayloadSchema`) ; la garde typée couvre les appelants internes, pas
-   * une entrée HTTP.
+   * **Deux sources.** Chaque article peut porter la sienne, résolue par le
+   * référentiel sur son échelle ; celui qui n'en a pas retombe sur la règle du
+   * commerce. La garde arbitre : elle prend la décision la plus fermée parmi les
+   * lignes, parce qu'un panier ne se découpe pas.
+   *
+   * Les deux lectures ne se font que lorsqu'il y a une date à juger. Le
+   * catalogue est relu ici plutôt que repris de la résolution de prix : celle-ci
+   * rend des lignes tarifées, pas les articles, et lui faire porter la limite
+   * mêlerait deux sujets sur le chemin qui facture. Une lecture par clé primaire
+   * sur les SKU du panier est le bon prix pour cette séparation.
+   *
+   * `requestedDeliveryDate` est obligatoire au contrat (`orderPayloadSchema`) ;
+   * la garde typée couvre les appelants internes, pas une entrée HTTP.
    */
   private async ensureNotTooLate(
     content: OrderContent,
@@ -196,8 +206,17 @@ export class OrderDrafting {
     if (content.requestedDeliveryDate === null) {
       return;
     }
+    const skus = content.lines.map((line) => line.sku);
+    const [fallback, items] = await Promise.all([
+      this.cutoffs.list(),
+      this.catalog.resolveMany(skus),
+    ]);
     ensureWithinOrderCutoff({
-      rules: await this.cutoffs.list(),
+      // Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
+      // règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu
+      // —, et pas ici pour une heure.
+      lines: skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null })),
+      fallback,
       pickupAddressId: acheminement.pickupAddressId,
       fulfillmentDate: content.requestedDeliveryDate,
       placedByStaffId: parties.placedByStaffId,

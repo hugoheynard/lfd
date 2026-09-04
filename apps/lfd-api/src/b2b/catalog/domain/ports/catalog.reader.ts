@@ -19,6 +19,16 @@ export interface ResolvedCatalogItem {
   /** Le prix du PIM, gardé pour que l'écran puisse montrer l'écart. */
   readonly pimPriceMillicents: number;
   readonly vatRate: number;
+  /**
+   * **Jusqu'à quand on prend commande de cet article**, tel que le référentiel
+   * l'a résolu. `null` = il n'en déclare aucune, et la règle du commerce
+   * s'applique.
+   */
+  readonly orderTimeLimit: {
+    readonly daysBefore: number;
+    readonly time: string;
+    readonly graceMinutes: number;
+  } | null;
   readonly categoryId: string;
   readonly categoryName: string;
   /**

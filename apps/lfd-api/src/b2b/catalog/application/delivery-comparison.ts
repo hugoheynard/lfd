@@ -1,4 +1,4 @@
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
+import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import type { CatalogItem } from "../domain/entities/catalog-item.js";
 import type { DeliveredItem } from "../domain/delivery-diff.js";
@@ -13,7 +13,7 @@ import type { DeliveredItem } from "../domain/delivery-diff.js";
  */
 
 /** Le snapshot livré, aplati en articles comparables. */
-export function deliveredItems(snapshot: CatalogSnapshot): DeliveredItem[] {
+export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[] {
   return snapshot.products.flatMap((product) =>
     product.variants.map((variant) => ({
       sku: variant.sku,

@@ -107,6 +107,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     // Transporté TEL QUEL, sans défaut : ce que le checkout figera sur la ligne
     // doit être ce que le référentiel déclare, ou rien.
     allergens: item.allergens,
+    orderTimeLimit: item.orderTimeLimit,
     category: shelf,
   };
 }

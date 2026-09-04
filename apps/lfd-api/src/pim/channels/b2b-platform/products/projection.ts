@@ -3,6 +3,7 @@ import type {
   SyncAllergenLabels,
   SyncCategory,
   SyncProduct,
+  SyncOrderTimeLimit,
   SyncVariant,
 } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
@@ -92,6 +93,7 @@ function projectVariant(
   htPriceMillicents: number,
   vatRatePercent: number | null,
   inco: IncoProjector,
+  orderTimeLimit: SyncOrderTimeLimit | null,
 ): SyncVariant {
   // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
   // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en aval.
@@ -109,6 +111,10 @@ function projectVariant(
     vatRatePercent,
     allergens: declared === null ? null : [...declared],
     allergenLabels: declared === null ? null : labelsOf(inco.project(declared)),
+    // Résolue en amont, comme le taux : `null` dit « l'émetteur a regardé et n'a
+    // rien trouvé », pas « on ne sait pas ». La distinction tient parce que le
+    // champ est TOUJOURS présent depuis la v6 du fil.
+    orderTimeLimit,
   };
 }
 
@@ -140,6 +146,7 @@ function sortVariants(
   vatRatePercent: number | null,
   proRatioBp: number,
   inco: IncoProjector,
+  limitByVariantId: ReadonlyMap<string, SyncOrderTimeLimit>,
 ): {
   sellable: SyncVariant[];
   excluded: Exclusion[];
@@ -174,7 +181,18 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
     }
-    sellable.push(projectVariant(variant, htMillicents, vatRatePercent, inco));
+    // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
+    // explicite par déclinaison : l'immense majorité des articles n'en a pas, et
+    // une entrée par article ne dirait rien de plus.
+    sellable.push(
+      projectVariant(
+        variant,
+        htMillicents,
+        vatRatePercent,
+        inco,
+        limitByVariantId.get(variant.id) ?? null,
+      ),
+    );
   }
 
   return { sellable, excluded };
@@ -228,6 +246,15 @@ export function projectCatalog(
    */
   proRatioBp: number,
   /**
+   * **La limite de commande de chaque déclinaison**, déjà résolue — l'échelle du
+   * référentiel et son héritage champ par champ ont fait leur travail avant.
+   *
+   * Passée plutôt que recalculée, pour la même raison que le taux : la règle n'a
+   * qu'une écriture, et cette fonction reste pure. Une déclinaison absente de la
+   * carte n'a **aucune** limite.
+   */
+  limitByVariantId: ReadonlyMap<string, SyncOrderTimeLimit>,
+  /**
    * Le référentiel d'allergènes, lu **une fois par push** et passé ici (D6) —
    * reçu plutôt que cherché, comme le taux et le rapport pro, ce qui garde
    * cette projection pure. Le récepteur n'a plus de quoi traduire un code GS1
@@ -262,6 +289,7 @@ export function projectCatalog(
       vatOf(vatByProduct.get(product.id) ?? {}),
       proRatioBp,
       inco,
+      limitByVariantId,
     );
     excluded.push(...rejected);
 

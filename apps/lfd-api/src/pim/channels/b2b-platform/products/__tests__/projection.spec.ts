@@ -1,3 +1,4 @@
+import type { SyncOrderTimeLimit } from "@lfd/catalog-sync";
 import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
@@ -85,6 +86,14 @@ function sold(channels: SalesChannels = [{ pointOfSaleId: "pos_b2b", context: "b
 const NO_DISCOUNT = 10_000;
 
 /**
+ * **Aucune limite de commande déclarée** — l'état du référentiel tant que
+ * personne n'en a posé, et donc le cas de la quasi-totalité du catalogue. Les
+ * projections ci-dessous ne parlent pas de ce sujet ; celles qui en parlent le
+ * disent (`describe` dédié).
+ */
+const NO_LIMITS = new Map<string, SyncOrderTimeLimit>();
+
+/**
  * Le référentiel d'allergènes tel que la base le sert, **passé** à la projection
  * (D6). Trois entrées suffisent à couvrir les trois sorts d'un code déclaré :
  *
@@ -127,6 +136,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -152,6 +162,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -177,6 +188,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 20 }),
       sold(),
       9_000,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -199,6 +211,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 5.5 }),
       sold(),
       9_000,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -221,6 +234,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -230,6 +244,7 @@ describe("projectCatalog", () => {
       vat({ b2b: 10 }),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -250,6 +265,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5 }),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -272,6 +288,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5 }),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -290,6 +307,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -309,6 +327,7 @@ describe("projectCatalog", () => {
       vat({ takeaway: 5.5, b2b: 20 }),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -324,6 +343,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -342,6 +362,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -368,6 +389,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -388,6 +410,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -412,6 +435,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -430,6 +454,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -446,6 +471,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -464,6 +490,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -478,6 +505,7 @@ describe("projectCatalog", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -499,6 +527,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       vat(),
       sold([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -516,6 +545,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       vat(),
       new Map(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );
@@ -541,6 +571,7 @@ describe("projectCatalog — les allergènes", () => {
       vat(),
       sold(),
       NO_DISCOUNT,
+      NO_LIMITS,
       INCO,
       AT,
     );

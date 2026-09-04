@@ -1,4 +1,4 @@
-import type { CatalogCategory, OrderLineAllergens } from "@lfd/contracts";
+import type { CatalogCategory, OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en centimes. */
 export interface PricedSku {
@@ -24,6 +24,16 @@ export interface CatalogItem extends PricedSku {
    * les transporte. Une absence, jamais « aucun allergène ».
    */
   readonly allergens: OrderLineAllergens | null;
+  /**
+   * **Jusqu'à quand on prend commande de cet article**, résolu par le
+   * référentiel et reçu par le fil.
+   *
+   * `null` = il n'en déclare aucune, et c'est alors la règle du commerce qui
+   * s'applique. Indistinguable — volontairement — d'un article reçu avant que le
+   * fil ne transporte les limites : dans les deux cas, on retombe sur la règle
+   * du commerce, ce qui est le comportement d'hier.
+   */
+  readonly orderTimeLimit: OrderLimitSpec | null;
 }
 
 /**

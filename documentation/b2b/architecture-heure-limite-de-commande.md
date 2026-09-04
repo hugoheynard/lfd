@@ -3,15 +3,14 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes).
 >
-> ✅ **Lots 0 à 3 livrés le 2026-09-04** : le fuseau est explicite, la règle est
-> opposée aux commandes client, le **rattrapage** existe — il change le message,
-> pas encore le verdict —, et le contexte **`order-time-limitation`** porte
-> l'échelle du référentiel avec son héritage champ par champ.
+> ✅ **Lots 0 à 3 et 5 livrés le 2026-09-04.** Le fuseau est explicite, la règle
+> est opposée aux commandes client, le **rattrapage** existe — il change le
+> message, pas encore le verdict —, le contexte **`order-time-limitation`** porte
+> l'échelle du référentiel avec son héritage champ par champ, et **le fil les
+> raccorde** : une limite posée dans le PIM est opposée par le commerce.
 >
-> ⚠️ **Les deux moitiés ne sont pas encore raccordées** : la garde du B2B lit
-> toujours l'ancienne règle, et personne ne consomme la résolution du
-> référentiel. C'est le lot 5 (le fil). Le reste — écran, dérogation, surtaxe —
-> n'est pas codé.
+> Restent l'écran de saisie (lot 4), la dérogation (6), la surtaxe (7), la
+> boutique (8) et le démontage de l'ancienne règle (9).
 
 ## En bref
 
@@ -355,22 +354,16 @@ C'est aussi pourquoi la **dérogation** (§7) reste un geste humain : la personn
 qui l'accorde est celle qui sait s'il reste de la place. Automatiser l'ouverture
 supposerait une capacité écrite, qui n'existe pas.
 
-## 6. Ce qui traverse le fil
+## 6. ✅ Ce qui traverse le fil — livré le 2026-09-04
 
 Le référentiel **résout**, la plateforme **applique**. Ce qui voyage est donc la
 limite résolue d'une déclinaison, jamais l'échelle.
 
-Le fil passe par `packages/catalog-sync/src/snapshot.ts`
-(`CATALOG_SNAPSHOT_VERSION = 5`). On y ajoute, en **optionnel** :
+`syncVariantSchema` porte `orderTimeLimit` et le fil passe en **version 6** :
 
 ```ts
-// syncVariantSchema
 orderTimeLimit: z
-  .object({
-    daysBefore: z.number().int().min(0).max(14),
-    time: orderLimitTimeSchema,
-    graceMinutes: z.number().int().min(0).max(720),
-  })
+  .object({ daysBefore, time, graceMinutes })
   .nullable(),
 ```
 
@@ -378,18 +371,53 @@ Trois exigences, chacune pour une raison :
 
 - **Le PIM envoie la valeur RÉSOLUE**, pas les rangs. La plateforme n'a pas à
   connaître l'arbre des familles pour savoir quand un SKU ferme — même
-  raisonnement que `vatRatePercent` sur `CatalogItem` : c'est l'article qu'on
-  vend, c'est lui qui doit savoir quand il ferme.
+  raisonnement que `vatRatePercent` : un article se vend seul, il doit pouvoir
+  dire seul quand il ferme.
 - **`null` = aucune limite**, et c'est net : le référentiel a regardé et n'a rien
-  trouvé. C'est différent d'un champ absent, qui dirait « ce push est antérieur
-  au fil v6 » — d'où la montée de version.
-- **Le champ est optionnel et le schéma monte en `version: 6`.** Un contrat déjà
-  servi ne se casse pas : les lignes de `CatalogItem` d'avant le premier push
-  complet portent `NULL`, et l'ancienne règle continue de s'appliquer jusqu'à ce
-  qu'elles soient rafraîchies.
+  trouvé.
+- **Les trois valeurs vont ensemble ou pas du tout.** Une limite sans heure ne se
+  compare à rien ; un rattrapage sans limite n'a rien à rattraper. L'héritage
+  champ par champ a fait son travail avant le fil : ce qui en sort est complet ou
+  absent, et les deux lectures du miroir (`prisma-catalog-item`,
+  `prisma-catalog.reader`) refusent de recoller un objet partiel.
 
-⚠️ **Pas encore fait.** Aujourd'hui la garde du B2B lit toujours `OrderCutoff`
-(§11). Le fil est le lot qui les raccorde.
+### 🔴 Ce que la montée de version a failli casser
+
+Une arrivée attend dans l'**inbox de revue** qu'un humain la valide, stockée en
+`jsonb`. Cette attente **traverse les déploiements** : une livraison mise en file
+un mardi peut être relue le jeudi, sur un code qui a changé entre-temps.
+
+Le dépôt revalidait ce `jsonb` avec le **schéma du fil**. Un champ ajouté rendait
+donc illisible toute arrivée en attente — sans rien casser visiblement au moment
+du déploiement, et donc sans que personne ne relie la cause à l'effet. Constaté
+en écrivant ce lot, par une suite e2e qui a rougi.
+
+Le correctif sépare les deux schémas, et la séparation vaut d'être nommée :
+
+|                               | Ce qu'il garantit                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `catalogSnapshotSchema`       | ce qu'un **émetteur doit produire** — strict, version courante, champs requis               |
+| `storedCatalogSnapshotSchema` | ce qu'un **stockage peut rendre** — versions connues, champs récents éventuellement absents |
+
+Deux assouplissements, et deux seulement : la version est acceptée si elle est
+**connue** (jamais « quelconque » — le but est de relire le passé, pas de deviner
+l'avenir), et un champ ajouté après coup prend la valeur qui décrit le mieux son
+absence. Le schéma du fil, lui, reste strict : un émetteur qui oublie un champ
+doit échouer à l'émission, pas produire une arrivée dégradée.
+
+### Ce que la garde en fait
+
+Chaque ligne du panier oppose **sa** limite si l'article en porte une, et retombe
+sur la règle du commerce sinon. La décision retenue est la **plus fermée** des
+lignes.
+
+🔴 **L'article REMPLACE la règle du commerce, il ne la resserre pas.** Prendre le
+plus contraignant des deux aurait rendu impossible de déclarer un article
+commandable plus tard que le reste — c'est-à-dire l'usage même du rang `produit`.
+
+Un panier ne se découpe pas : accepter les lignes ouvertes et refuser les autres
+demanderait de savoir quoi faire d'une commande amputée, et personne ne l'a
+décidé. C'est au lot 8 de le dire ligne par ligne **avant** la validation.
 
 ## 7. La dérogation
 
@@ -597,9 +625,11 @@ pense ; le type l'exige.
 
 ### B2B (schéma `public`) — ce qui reste, et ce qui s'en va
 
-- `CatalogItem` gagnera `orderLimitDaysBefore`, `orderLimitTime`,
+- ✅ `CatalogItem` porte `orderLimitDaysBefore`, `orderLimitTime`,
   `orderLimitGraceMinutes` — la valeur **résolue** reçue du fil, `NULL` = aucune
-  limite pour cet article.
+  limite pour cet article. Migration additive
+  `20260904140000_limite_de_commande_au_miroir` : `NULL` partout, donc le
+  comportement d'hier jusqu'au premier push en v6.
 - `Order` gagnera `lateFeeCents` + `lateFeeAdjustment`, calqués sur
   `discountCents` / `discountAdjustment` (§8).
 - Une table `order_cutoff_waiver` pour les dérogations de §7.

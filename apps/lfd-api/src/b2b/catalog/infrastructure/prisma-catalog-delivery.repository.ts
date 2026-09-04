@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { catalogSnapshotSchema } from "@lfd/catalog-sync";
+import { storedCatalogSnapshotSchema } from "@lfd/catalog-sync";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -38,15 +38,23 @@ function statusOf(raw: string): DeliveryStatus {
 }
 
 /**
- * Le snapshot est **revalidé** à la relecture, par le schéma du fil.
+ * Le snapshot est **revalidé** à la relecture, par le schéma de **stockage**.
  *
  * Un `jsonb` n'a pas de forme : sans cette passe, une colonne corrompue — une
  * migration ratée, une écriture à la main — remonterait jusqu'aux faits de vente
  * en se faisant passer pour un catalogue. Le coût est une validation Zod par
  * lecture ; le gain est qu'aucune arrivée informe ne devienne un prix.
+ *
+ * 🔴 **Le schéma de stockage, et non celui du fil.** Une arrivée attend ici
+ * qu'un humain la valide, et cette attente traverse les déploiements : une
+ * livraison mise en file un mardi peut être relue le jeudi, sur un code qui a
+ * changé. Avec le schéma du fil, le premier champ ajouté au snapshot aurait fait
+ * **disparaître les arrivées en attente** — sans rien casser visiblement au
+ * moment du déploiement, et donc sans que personne ne relie la cause à l'effet.
+ * Constaté le 2026-09-04, en ajoutant la limite de commande.
  */
 function snapshotOf(raw: unknown): CatalogDeliveryState["snapshot"] {
-  return catalogSnapshotSchema.parse(raw);
+  return storedCatalogSnapshotSchema.parse(raw);
 }
 
 /** Les SKU écartés : `null` (jamais validée) et `[]` (rien d'écarté) diffèrent. */

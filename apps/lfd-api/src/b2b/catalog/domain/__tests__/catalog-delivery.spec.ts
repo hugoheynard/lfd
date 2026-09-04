@@ -12,7 +12,7 @@ import { DeliveryAlreadyClosedError } from "../errors/catalog-errors.js";
  * qu'un, et le second l'apprend ici.
  */
 
-const snapshot: CatalogSnapshot = {
+const snapshot: StoredCatalogSnapshot = {
   version: CATALOG_SNAPSHOT_VERSION,
   // Le sujet de ces cas est l'état de l'arrivée, jamais une date comparée à
   // l'horloge : celle-ci ne sert qu'à remplir le contrat du snapshot.

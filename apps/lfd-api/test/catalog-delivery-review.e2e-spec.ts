@@ -82,6 +82,7 @@ function snapshot(
           vatRatePercent: 5.5,
           allergens: variant.allergens === undefined ? null : variant.allergens,
           allergenLabels: null,
+          orderTimeLimit: null,
         },
       ],
     })),

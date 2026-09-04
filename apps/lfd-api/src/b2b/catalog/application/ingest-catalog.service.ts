@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
+import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CatalogItem, type PimFacts } from "../domain/entities/catalog-item.js";
 import { CatalogCategoryProjection } from "../domain/ports/catalog-category.projection.js";
@@ -41,7 +41,7 @@ export class IngestCatalogService {
   ) {}
 
   async apply(
-    snapshot: CatalogSnapshot,
+    snapshot: StoredCatalogSnapshot,
     excludedSkus: readonly string[] = [],
   ): Promise<IngestionOutcome> {
     // 🔴 Un SKU écarté garde ses faits COURANTS — il n'a simplement pas changé.
@@ -114,7 +114,7 @@ export class IngestCatalogService {
 }
 
 /** Aplatit produits × déclinaisons en faits d'articles, dans l'ordre reçu. */
-function factsOf(snapshot: CatalogSnapshot, receivedAt: Date): PimFacts[] {
+function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] {
   return snapshot.products.flatMap((product) =>
     product.variants.map((variant) => ({
       sku: variant.sku,
@@ -132,6 +132,9 @@ function factsOf(snapshot: CatalogSnapshot, receivedAt: Date): PimFacts[] {
       // Projetées par le PIM (D6) : la plateforme n'a plus le référentiel
       // réglementaire, elle range ce qu'on lui envoie.
       allergenLabels: variant.allergenLabels,
+      // Résolue par le référentiel, rangée telle quelle : la plateforme ne
+      // connaît pas l'échelle qui l'a produite, et n'a pas à la connaître.
+      orderTimeLimit: variant.orderTimeLimit,
       receivedAt,
     })),
   );

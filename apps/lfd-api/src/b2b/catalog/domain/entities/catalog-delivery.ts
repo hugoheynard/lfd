@@ -1,4 +1,14 @@
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
+import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
+
+/**
+ * Ce qu'une arrivée porte : un snapshot **tel qu'il a été reçu**, pas
+ * nécessairement de la dernière version du fil.
+ *
+ * Une arrivée attend qu'un humain la valide, et cette attente traverse les
+ * déploiements. Typer ce champ sur la version courante affirmerait qu'aucune
+ * arrivée ne survit à un changement de fil — ce qui est faux, et ce qui les
+ * ferait disparaître silencieusement le jour où on le croit.
+ */
 
 import { DeliveryAlreadyClosedError } from "../errors/catalog-errors.js";
 
@@ -14,7 +24,7 @@ export type DeliveryStatus = "pending" | "accepted" | "superseded";
 export interface CatalogDeliveryState {
   readonly id: string;
   readonly revisionId: string;
-  readonly snapshot: CatalogSnapshot;
+  readonly snapshot: StoredCatalogSnapshot;
   readonly fingerprint: string;
   readonly status: DeliveryStatus;
   readonly excludedSkus: readonly string[] | null;
@@ -69,7 +79,7 @@ export class CatalogDelivery {
   static receive(input: {
     readonly id: string;
     readonly revisionId: string;
-    readonly snapshot: CatalogSnapshot;
+    readonly snapshot: StoredCatalogSnapshot;
     readonly fingerprint: string;
     readonly receivedAt: Date;
   }): CatalogDelivery {
@@ -137,7 +147,7 @@ export class CatalogDelivery {
     return this.state.revisionId;
   }
 
-  get snapshot(): CatalogSnapshot {
+  get snapshot(): StoredCatalogSnapshot {
     return this.state.snapshot;
   }
 

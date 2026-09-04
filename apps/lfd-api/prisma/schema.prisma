@@ -2076,6 +2076,21 @@ model CatalogItem {
   /// jamais « sans allergène ». Suit ensuite `allergens` : `NULL` si `NULL`.
   allergenLabels Json? @map("allergen_labels")
 
+  /// **Jusqu'à quand on prend commande de cet article**, résolu par le PIM.
+  ///
+  /// Les trois vont ensemble ou pas du tout : `NULL` partout = aucune limite
+  /// pour cet article, et le commerce retombe alors sur sa propre règle. Une
+  /// limite sans heure ne se compare à rien, un rattrapage sans limite n'a rien
+  /// à rattraper — l'héritage champ par champ a déjà fait son travail côté
+  /// référentiel, ce qui arrive ici est complet ou absent.
+  ///
+  /// `NULL` sur les lignes d'avant le fil v6, tant qu'un push complet n'a pas
+  /// tourné : elles gardent donc le comportement d'hier, ce qui est exactement
+  /// ce qu'on veut d'une bascule additive.
+  orderLimitDaysBefore   Int?    @map("order_limit_days_before")
+  orderLimitTime         String? @map("order_limit_time")
+  orderLimitGraceMinutes Int?    @map("order_limit_grace_minutes")
+
   /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
   receivedAt DateTime @map("received_at")
 

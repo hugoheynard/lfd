@@ -303,13 +303,16 @@ export {
   clockTimeSchema,
   orderCutoffPayloadSchema,
   decideOrderCutoff,
+  decideOrderLimit,
   orderCutoffInstant,
+  orderLimitInstant,
   resolveOrderCutoff,
   weekdayOfDate,
 } from "./order-cutoff.js";
 export type {
   CreatedOrderCutoffResponse,
   OrderCutoffDecision,
+  OrderLimitSpec,
   OrderCutoffPayload,
   OrderCutoffStatus,
   OrderCutoffView,

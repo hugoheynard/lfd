@@ -1,3 +1,4 @@
+import { OrderTimeLimitRepository } from "../../../../order-time-limitation/domain/ports/order-time-limit.repository.js";
 import { Test } from "@nestjs/testing";
 
 import { AccountingRules } from "../../../../accounting-rules/domain/entities/accounting-rules.js";
@@ -64,6 +65,9 @@ async function build(options: {
     providers: [
       B2bCatalogFeedProjection,
       { provide: CatalogueReader, useValue: options.catalogue },
+      // Aucune limite de commande déclarée : le sujet de cette suite est le
+      // rapport pro, pas l'heure. Un double vide plutôt qu'un cas de plus.
+      { provide: OrderTimeLimitRepository, useValue: { list: () => Promise.resolve([]) } },
       {
         provide: B2bMembershipService,
         useValue: { publishedProductIds: () => Promise.resolve([...options.publishedIds]) },

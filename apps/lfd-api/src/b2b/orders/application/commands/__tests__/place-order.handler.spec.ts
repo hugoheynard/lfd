@@ -248,6 +248,7 @@ function drafting(
     noDeliveryDefaults(),
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
+    catalog,
   );
 }
 

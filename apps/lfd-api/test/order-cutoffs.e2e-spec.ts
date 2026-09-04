@@ -247,6 +247,111 @@ describe("le rattrapage, quand il est réglé", () => {
   });
 });
 
+/**
+ * Sème la limite que le RÉFÉRENTIEL a résolue pour un article, telle que le fil
+ * la dépose sur le miroir. Les trois colonnes vont ensemble.
+ *
+ * ⚠️ Le miroir stocke le SKU de la **déclinaison** (`VIE-001-1`), que le PIM
+ * dérive de celui du produit ; c'est sous le SKU **produit** que l'adaptateur la
+ * présente au checkout. Le paramètre est donc celui qu'une commande porte, et la
+ * dérivation se fait ici — l'écrire à l'envers ferait chercher une ligne qui
+ * n'existe pas, ce qui est exactement ce qui est arrivé en écrivant ce test.
+ */
+async function seedArticleLimit(
+  orderSku: string,
+  limit: { daysBefore: number; time: string; graceMinutes: number } | null,
+): Promise<void> {
+  await ctx.prisma.catalogItem.update({
+    where: { sku: `${orderSku}-1` },
+    data: {
+      orderLimitDaysBefore: limit?.daysBefore ?? null,
+      orderLimitTime: limit?.time ?? null,
+      orderLimitGraceMinutes: limit?.graceMinutes ?? null,
+    },
+  });
+}
+
+describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
+  /**
+   * Ce que seul l'e2e prouve : les trois colonnes du miroir arrivent jusqu'à la
+   * garde. Entre les deux il y a un lecteur Prisma, un port, un service de
+   * composition et un handler — chacun typé, aucun éprouvé ensemble.
+   */
+  it("refuse sur la limite de l'article, là où la règle du commerce laisserait passer", async () => {
+    // Le commerce ferme la veille à 00:01 : pour une remise dans 30 jours, il
+    // reste 29 jours. L'article, lui, demande 60 jours de préavis.
+    await seedCutoff({ daysBefore: 1, time: "00:01" });
+    await seedArticleLimit("VIE-001", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: serviceDay(30) }))
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  /**
+   * 🔴 L'article **remplace** la règle du commerce, il ne se contente pas de la
+   * resserrer. Sans ça, le rang `produit` ne pourrait jamais déclarer un article
+   * commandable plus tard que le reste — l'usage même pour lequel il existe.
+   */
+  it("laisse passer sur la limite de l'article, là où le commerce refuserait", async () => {
+    // Le commerce a fermé (limite hier) ; l'article, lui, ferme dans 30 jours.
+    await seedCutoff({ daysBefore: 1, time: "00:01" });
+    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+
+    await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: serviceDay(0) }))
+      .expect(201);
+
+    expect(await orderCount()).toBe(1);
+  });
+
+  it("retombe sur la règle du commerce quand l'article ne déclare rien", async () => {
+    await seedCutoff({ daysBefore: 1, time: "00:01" });
+    await seedArticleLimit("VIE-001", null);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: serviceDay(0) }))
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+  });
+
+  /**
+   * **Le panier ferme quand sa ligne la plus urgente ferme.** Une ligne encore
+   * ouverte ne sauve pas les autres : un panier ne se découpe pas.
+   */
+  it("prend la ligne la plus fermée d'un panier mixte", async () => {
+    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+    await seedArticleLimit("VIE-002", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(
+        order({
+          requestedDeliveryDate: serviceDay(30),
+          lines: [
+            { sku: "VIE-001", quantity: 1 },
+            { sku: "VIE-002", quantity: 1 },
+          ],
+        }),
+      )
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+});
+
 describe("la saisie du back-office n'y est pas soumise", () => {
   /**
    * Exemption **datée**, et c'est le seul endroit où elle se voit de bout en

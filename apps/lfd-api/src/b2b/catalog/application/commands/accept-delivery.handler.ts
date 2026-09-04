@@ -1,5 +1,5 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
+import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-error.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -125,7 +125,7 @@ export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryComm
    * écarté quelque chose.
    */
   private async refuseUnknownExclusions(
-    snapshot: CatalogSnapshot,
+    snapshot: StoredCatalogSnapshot,
     excludedSkus: readonly string[],
   ): Promise<void> {
     if (excludedSkus.length === 0) {
