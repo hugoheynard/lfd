@@ -1023,6 +1023,8 @@ Deux écarts subsistent, et ils sont assumés :
 | Une surtaxe sans taux **lève** au lieu de retomber sur un défaut     | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts` |
 | Un seul réglage de surtaxe, tenu par la base                         | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`             |
 | Le réglage n'est lu que si une dérogation a servi                    | `OrderDrafting.lateFeeFor` ; `test/order-cutoffs.e2e-spec.ts`                         |
+| Le rang global ne se retire pas sous les règles qui en dépendent     | `GlobalOrderTimeLimitStillNeededError` ; `test/pim-order-time-limits.e2e-spec.ts`     |
+| Retirer une limite verse ses trois valeurs au journal                | `RemoveOrderTimeLimitHandler` ; `order-time-limit.handlers.spec.ts`                   |
 | La surtaxe et sa trace remontent jusqu'à la **vue** de la commande   | `GET /orders/:id` ; `test/order-cutoffs.e2e-spec.ts`                                  |
 | Elle s'affiche APRÈS la remise et la livraison, jamais avant         | `orderTotalRows` ; `packages/b2b-ui/src/order/__tests__/order-totals.spec.ts`         |
 | Aucune ligne quand il n'y a pas de surtaxe                           | même spec — trois lignes seulement : sous-total, TVA, total                           |

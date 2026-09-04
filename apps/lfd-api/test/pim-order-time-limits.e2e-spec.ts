@@ -127,6 +127,52 @@ describe("retirer une limite", () => {
   it("404 sur une règle qui n'existe pas", async () => {
     await staff().delete(`${LIMITS}/inexistant`).expect(404);
   });
+
+  /**
+   * 🔴 Le verrou, éprouvé de bout en bout : l'héritage étant champ par champ,
+   * une famille qui ne pose que l'heure emprunte son délai au global. Retirer
+   * le global la rendrait MUETTE — pas plus permissive — et l'écran
+   * continuerait de l'afficher comme si elle s'appliquait.
+   *
+   * Ce que seul l'e2e prouve ici : le refus traverse le contrôleur avec le bon
+   * statut, et la règle est TOUJOURS là après. Un refus qui supprime quand même
+   * serait pire que pas de refus.
+   */
+  it("refuse de retirer le rang global quand une règle inférieure en dépend", async () => {
+    const global = jsonBody<{ id: string }>(
+      await staff()
+        .put(LIMITS)
+        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
+        .expect(200),
+    );
+    // Une heure, pas de délai : elle ne se suffit pas.
+    await staff()
+      .put(LIMITS)
+      .send({ scope: { type: "category", id: "patisserie" }, time: "16:00" })
+      .expect(200);
+
+    const refusal = await staff().delete(`${LIMITS}/${global.id}`).expect(409);
+
+    expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.global_still_needed" });
+    expect(await list()).toHaveLength(2);
+  });
+
+  it("laisse retirer le rang global quand chaque autre règle se suffit", async () => {
+    const global = jsonBody<{ id: string }>(
+      await staff()
+        .put(LIMITS)
+        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
+        .expect(200),
+    );
+    // Délai ET heure : celle-là ne doit rien au rang du dessus.
+    await staff()
+      .put(LIMITS)
+      .send({ scope: { type: "category", id: "patisserie" }, daysBefore: 2, time: "16:00" })
+      .expect(200);
+
+    await staff().delete(`${LIMITS}/${global.id}`).expect(204);
+    expect(await list()).toHaveLength(1);
+  });
 });
 
 describe("ce que la base refuse, même hors du domaine", () => {

@@ -58,11 +58,20 @@ une livraison passe, et **plus rien ne refuse une commande en retard sur toute l
 plateforme**. Sans écran, sans porte, sans test qui le dise. Aujourd'hui
 `OrderCutoff` couvre ce trou.
 
-**Le lot ne peut pas se faire sans refermer ça**, et pas par une vérification :
-par un **refus**. Retirer le dernier rang global doit devenir impossible une
-fois qu'il est la seule règle — c'est-à-dire un refus de l'agrégat, pas une
-consigne de runbook. Tant que ce verrou n'existe pas, le déploiement A échange
-une règle tenue contre une convention.
+✅ **Le verrou existe depuis le 2026-09-04.**
+`RemoveOrderTimeLimitHandler` refuse de retirer le rang **global** dès qu'une
+autre règle ne pose pas à elle seule le délai **et** l'heure —
+`GlobalOrderTimeLimitStillNeededError`, 409, et le message **nomme** les règles
+en cause. Un refus, pas une consigne de runbook.
+
+⚠️ Ce que le verrou ne couvre pas, et qui reste voulu : retirer un rang global
+**seul de son espèce** passe. Il n'y a alors rien à rendre muet, et « je
+n'oppose plus de limite » est un état légitime, écrit dans la garde. Ce qu'on
+ferme, c'est de le faire sans le voir.
+
+Reste donc, avant le déploiement A, la précondition qui ne se code pas : que le
+rang global **existe** et qu'une livraison le portant soit passée. Le verrou
+empêche de le retirer par mégarde ; il n'oblige personne à le poser.
 
 ## 2. ✅ Ce qu'on perd, et pourquoi on l'accepte
 

@@ -7,7 +7,9 @@ import type { WriteTicket } from "../../../journal/pim-journal.js";
 import { OrderTimeLimit } from "../../domain/entities/order-time-limit.js";
 import {
   EmptyOrderTimeLimitError,
+  GlobalOrderTimeLimitStillNeededError,
   InvalidOrderTimeLimitScopeError,
+  OrderTimeLimitNotFoundError,
 } from "../../domain/errors/order-time-limit-errors.js";
 import { OrderTimeLimitRepository } from "../../domain/ports/order-time-limit.repository.js";
 import type { LimitScope } from "../../domain/value-objects/limit-scope.js";
@@ -179,10 +181,28 @@ describe("SetOrderTimeLimitHandler", () => {
 });
 
 describe("RemoveOrderTimeLimitHandler", () => {
-  it("délègue la suppression au port", async () => {
+  function view(over: Partial<OrderTimeLimitView> = {}): OrderTimeLimitView {
+    return {
+      id: "id_global",
+      scope: { type: "global", id: null },
+      scopeLabel: null,
+      daysBefore: 1,
+      time: "18:00",
+      graceMinutes: null,
+      ...over,
+    };
+  }
+
+  interface RemoveDoubles {
+    readonly handler: RemoveOrderTimeLimitHandler;
+    readonly removed: string[];
+    readonly journal: RecordingJournal;
+  }
+
+  function removeDoubles(rules: readonly OrderTimeLimitView[]): RemoveDoubles {
     const removed: string[] = [];
     const limits = {
-      list: () => Promise.resolve([] as readonly OrderTimeLimitView[]),
+      list: () => Promise.resolve(rules),
       findByScope: () => Promise.resolve(null),
       save: () => Promise.resolve(),
       remove: (id: string, _ticket: WriteTicket) => {
@@ -191,12 +211,126 @@ describe("RemoveOrderTimeLimitHandler", () => {
       },
     } satisfies OrderTimeLimitRepository;
     const journal = new RecordingJournal();
+    return {
+      handler: new RemoveOrderTimeLimitHandler(limits, journal, new DirectUnitOfWork()),
+      removed,
+      journal,
+    };
+  }
 
-    await new RemoveOrderTimeLimitHandler(limits, journal, new DirectUnitOfWork()).execute(
-      new RemoveOrderTimeLimitCommand("id_1"),
-    );
+  it("délègue la suppression au port", async () => {
+    const { handler, removed, journal } = removeDoubles([view({ id: "id_1" })]);
+
+    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
 
     expect(removed).toEqual(["id_1"]);
     expect(journal.types()).toEqual(["order_time_limit.removed"]);
+  });
+
+  /**
+   * Régression : le fait ne portait qu'un `payload: {}`, alors que son JSDoc
+   * promettait d'y verser les trois valeurs. Après la suppression, le journal
+   * est le SEUL endroit où la règle a existé — un fait vide n'atteste que d'une
+   * suppression sans objet.
+   */
+  it("verse dans le journal ce que la règle disait avant de la retirer", async () => {
+    const { handler, journal } = removeDoubles([
+      view({
+        id: "id_1",
+        scope: { type: "category", id: "cat_1" },
+        time: "16:00",
+        graceMinutes: 30,
+      }),
+    ]);
+
+    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
+
+    expect(journal.entries[0]?.payload).toEqual({
+      scope: "category:cat_1",
+      daysBefore: 1,
+      time: "16:00",
+      graceMinutes: 30,
+    });
+  });
+
+  /**
+   * 🔴 Le verrou. L'héritage est champ par champ : une famille qui ne pose que
+   * l'heure emprunte son délai au global, et la résolution rend `null` dès qu'un
+   * des deux manque. Retirer le global la rendrait MUETTE — pas plus permissive
+   * — pendant que l'écran continuerait de l'afficher.
+   */
+  it("refuse de retirer le rang global quand une règle inférieure en dépend", async () => {
+    const { handler, removed, journal } = removeDoubles([
+      view(),
+      view({
+        id: "id_cat",
+        scope: { type: "category", id: "cat_1" },
+        scopeLabel: "Viennoiserie",
+        daysBefore: null,
+        time: "16:00",
+      }),
+    ]);
+
+    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_global"))).rejects.toThrow(
+      GlobalOrderTimeLimitStillNeededError,
+    );
+    // Ni écriture, ni trace : un fait journalisé pour une décision refusée
+    // laisserait dans le journal quelque chose qui n'a jamais eu lieu.
+    expect(removed).toEqual([]);
+    expect(journal.types()).toEqual([]);
+  });
+
+  /** Le refus NOMME la règle en cause : il est lu par du personnel sans le code sous les yeux. */
+  it("nomme les règles qui deviendraient muettes", async () => {
+    const { handler } = removeDoubles([
+      view(),
+      view({
+        id: "id_cat",
+        scope: { type: "category", id: "cat_1" },
+        scopeLabel: "Viennoiserie",
+        time: null,
+      }),
+    ]);
+
+    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_global"))).rejects.toThrow(
+      /Viennoiserie/u,
+    );
+  });
+
+  it("laisse retirer le global quand chaque autre règle se suffit à elle-même", async () => {
+    // Délai ET heure : celle-là ne doit rien au rang du dessus.
+    const { handler, removed } = removeDoubles([
+      view(),
+      view({
+        id: "id_cat",
+        scope: { type: "category", id: "cat_1" },
+        scopeLabel: "Pain",
+        daysBefore: 2,
+        time: "14:00",
+      }),
+    ]);
+
+    await handler.execute(new RemoveOrderTimeLimitCommand("id_global"));
+
+    expect(removed).toEqual(["id_global"]);
+  });
+
+  it("laisse retirer un rang global seul de son espèce", async () => {
+    // Il n'y a rien à rendre muet, et « je n'oppose plus de limite » reste un
+    // état légitime — c'est le défaut écrit dans la garde.
+    const { handler, removed } = removeDoubles([view()]);
+
+    await handler.execute(new RemoveOrderTimeLimitCommand("id_global"));
+
+    expect(removed).toEqual(["id_global"]);
+  });
+
+  it("refuse un identifiant que personne ne porte", async () => {
+    const { handler, journal } = removeDoubles([view()]);
+
+    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_absent"))).rejects.toThrow(
+      OrderTimeLimitNotFoundError,
+    );
+    expect(journal.types()).toEqual([]);
   });
 });
