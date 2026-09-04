@@ -4,47 +4,42 @@
   gap: var(--fold-space-md);
 }
 
-.ol-hint {
-  margin: 0;
-  color: var(--fold-color-text-secondary);
-}
-
-.ol-hint {
-  font-size: var(--fold-text-xs);
-}
-
-.ol-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ol-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-md);
-  padding: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
-}
-
-.ol-scope {
-  flex: 1;
-  min-width: 12rem;
-  font-weight: var(--fold-weight-medium);
+/* La ligne d'héritage colle à l'en-tête, comme sur les autres cartes : c'est ce
+   qui la rend lisible sans la chercher. */
+.alignment {
+  margin-block-end: var(--fold-space-xs);
 }
 
 .ol-values {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xl);
+  margin: 0;
+}
+
+.ol-values div {
+  display: flex;
+  flex-direction: column;
   gap: var(--fold-space-xs);
 }
 
-.ol-inherited {
+.ol-values dt {
   color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.ol-values dd {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  margin: 0;
+}
+
+/* La provenance se lit APRÈS la valeur, et en retrait : c'est la valeur qu'on
+   cherche, l'origine ne sert qu'à savoir où aller la changer. */
+.ol-from {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
 }
 
 .ol-actions {
@@ -52,8 +47,8 @@
   gap: var(--fold-space-xs);
 }
 
-/* La ligne d'héritage colle à l'en-tête, comme sur les autres cartes : c'est ce
-   qui la rend lisible sans la chercher. */
-.alignment {
-  margin-block-end: var(--fold-space-sm);
+.ol-hint {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
 }

@@ -1,18 +1,16 @@
 <div class="ol">
   @if (failed()) {
-    <!-- « Aucune limite propre » et « on n'a pas pu lire » ne se ressemblent que
-         sur un écran mal fait. -->
+    <!-- « Aucune limite » et « on n'a pas pu lire » ne se ressemblent que sur un
+         écran mal fait. -->
     <fold-callout variant="alert">
       Les limites de commande n'ont pas pu être lues.
       <button foldButton emphasis="soft" size="sm" (click)="load()">Réessayer</button>
     </fold-callout>
   } @else {
     @if (canAlign()) {
-      <!-- La ligne d'héritage, sous l'en-tête, comme sur les autres cartes. Ce
-           qu'elle aligne diffère : les autres suivent la déclinaison PAR DÉFAUT,
-           qui ne peut pas se suivre elle-même ; ici l'échelle passe par la
-           FICHE, et toute déclinaison peut la suivre — celle par défaut
-           comprise. -->
+      <!-- La ligne d'héritage, sous l'en-tête, comme sur les autres cartes.
+           Absente sur la déclinaison par défaut : c'est elle qui porte ce que la
+           fiche déclare, elle ne peut pas s'aligner sur elle-même. -->
       <fold-callout class="alignment" appearance="inset" variant="info">
         <fold-checkbox
           label="Aligner sur la fiche"
@@ -23,21 +21,82 @@
       </fold-callout>
     }
 
-    <ul class="ol-rows">
-      @if (productRow(); as row) {
-        <li class="ol-row">
-          <span class="ol-scope">{{ row.label }}</span>
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: row }" />
-        </li>
+    @if (shown(); as row) {
+      @if (applies(row)) {
+        <dl class="ol-values">
+          <div>
+            <dt>Délai</dt>
+            <dd>
+              {{ days(row) }}
+              @if (fromDays(row); as from) {
+                <span class="ol-from">de {{ from }}</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Heure</dt>
+            <dd>
+              {{ time(row) }}
+              @if (fromTime(row); as from) {
+                <span class="ol-from">de {{ from }}</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Rattrapage</dt>
+            <dd>
+              {{ grace(row) }}
+              @if (fromGrace(row); as from) {
+                <span class="ol-from">de {{ from }}</span>
+              }
+            </dd>
+          </div>
+        </dl>
+      } @else {
+        <!-- Contre-intuitif, donc dit : l'échelle exige le jour ET l'heure. Une
+             famille qui ne pose qu'une heure ne produit aucune limite, et on
+             croirait avoir réglé quelque chose. -->
+        <fold-callout appearance="inset" variant="neutral">
+          <strong>Aucune limite ne s'applique</strong> à cet article&nbsp;: il faut un délai
+          <em>et</em> une heure pour qu'une commande puisse être refusée.
+        </fold-callout>
       }
 
-      @if (!variantAligned() && variantRow(); as row) {
-        <li class="ol-row">
-          <span class="ol-scope">{{ row.label }}</span>
-          <ng-container *ngTemplateOutlet="values; context: { $implicit: row }" />
-        </li>
+      @if (editable()) {
+        <div class="ol-actions">
+          @if (row.rule; as rule) {
+            <button foldButton emphasis="soft" size="sm" (click)="edit(row)">
+              Modifier la limite de {{ row.label | lowercase }}
+            </button>
+            @if (pendingRemoval() === rule.id) {
+              <button foldButton intent="danger" size="sm" (click)="remove(rule)">Confirmer</button>
+              <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">Annuler</button>
+            } @else {
+              <button
+                foldButton
+                emphasis="soft"
+                intent="danger"
+                size="sm"
+                (click)="askRemove(rule)"
+              >
+                Retirer
+              </button>
+            }
+          } @else {
+            <button foldButton emphasis="soft" size="sm" (click)="edit(row)">
+              Poser une limite sur {{ row.label | lowercase }}
+            </button>
+          }
+        </div>
+      } @else {
+        <!-- Pas de bouton grisé : il ferait chercher la permission qui manque,
+             là où il n'en manque aucune. On dit où le geste se trouve. -->
+        <p class="ol-hint">
+          Porté par la fiche. Ouvrir <strong>la déclinaison par défaut</strong> pour le modifier, ou
+          décocher ci-dessus pour donner sa limite à celle-ci.
+        </p>
       }
-    </ul>
+    }
   }
 
   <!-- Ce dont la fiche hérite ne se modifie pas ici : le dire, et dire où. -->
@@ -46,31 +105,3 @@
     <a routerLink="/pim/limites-de-commande">Limites de commande</a>.
   </p>
 </div>
-
-<!-- Une seule écriture des trois valeurs et de leurs boutons : deux copies
-     auraient fini par diverger sur ce que « Hérité » veut dire. -->
-<ng-template #values let-row>
-  @if (row.rule; as rule) {
-    <span class="ol-values">
-      <fold-badge [content]="days(rule)" variant="neutral" />
-      <fold-badge [content]="time(rule)" variant="neutral" />
-      <fold-badge [content]="grace(rule)" variant="neutral" />
-    </span>
-    <span class="ol-actions">
-      <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Modifier</button>
-      @if (pendingRemoval() === rule.id) {
-        <button foldButton intent="danger" size="sm" (click)="remove(rule)">Confirmer</button>
-        <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">Annuler</button>
-      } @else {
-        <button foldButton emphasis="soft" intent="danger" size="sm" (click)="askRemove(rule)">
-          Retirer
-        </button>
-      }
-    </span>
-  } @else {
-    <span class="ol-inherited">Hérité</span>
-    <span class="ol-actions">
-      <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Poser une limite</button>
-    </span>
-  }
-</ng-template>

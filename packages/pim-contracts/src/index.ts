@@ -238,3 +238,15 @@ export type {
   SetOrderTimeLimitResponse,
   ResolvedOrderTimeLimit,
 } from "./order-time-limit.js";
+
+export {
+  categoryPathOf,
+  explainOrderTimeLimit,
+  resolveOrderTimeLimit,
+} from "./order-time-limit-resolution.js";
+export type {
+  CategoryNode,
+  ExplainedOrderTimeLimit,
+  LimitTarget,
+  ResolvedField,
+} from "./order-time-limit-resolution.js";

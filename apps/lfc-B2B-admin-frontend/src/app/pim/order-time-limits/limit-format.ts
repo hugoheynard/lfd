@@ -91,3 +91,24 @@ export function byPrecision(a: OrderTimeLimitView, b: OrderTimeLimitView): numbe
     scopeLabel(a).localeCompare(scopeLabel(b), 'fr')
   );
 }
+
+/**
+ * D'où vient une valeur héritée, dit à la personne qui regarde.
+ *
+ * Nommer le rang plutôt qu'écrire « Hérité » : l'héritage se faisant **champ par
+ * champ**, les trois valeurs d'une ligne peuvent venir de trois rangs
+ * différents. Une mention unique aurait donc menti sur deux tiers de la ligne —
+ * et « Hérité » tout court ne dit de toute façon pas ce qui s'applique.
+ */
+export function provenanceLabel(from: OrderTimeLimitScopeType): string {
+  switch (from) {
+    case 'variant':
+      return 'cette déclinaison';
+    case 'product':
+      return 'la fiche';
+    case 'category':
+      return 'sa famille';
+    case 'global':
+      return 'le réglage général';
+  }
+}

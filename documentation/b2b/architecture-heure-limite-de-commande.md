@@ -747,40 +747,47 @@ Trois règles que la carte tient :
   imposée. Un second panneau aurait divergé du premier sur la sémantique de
   l'héritage, et c'est précisément là qu'une divergence ne se verrait pas.
 
-### ⚠️ L'alignement d'une déclinaison ne dit pas la même chose qu'ailleurs
+### La carte montre ce qui S'APPLIQUE, pas ce qui est posé
 
-La carte reprend l'idiome de la fiche — un encart sous l'en-tête, une case — mais
-**pas son référent**. Les autres cartes alignent sur la **déclinaison par
-défaut** ; l'échelle des limites, elle, est
-`déclinaison → produit → famille → global` et **n'a pas ce rang**. La case dit
-donc « Aligner sur **la fiche** ».
+Une carte qui n'afficherait que la règle propre à la fiche écrirait « Hérité »
+sans dire de quoi — c'est-à-dire rien. Elle résout donc **l'échelle entière** et
+nomme, **pour chaque valeur**, le rang qui la pose :
 
-Conséquence visible : la case apparaît **aussi sur la déclinaison par défaut**,
-là où les autres cartes la masquent — celle-là ne peut pas se suivre elle-même,
-mais elle peut suivre sa fiche.
+> Délai · **La veille** _de sa famille_ — Heure · **16:00** _de la fiche_ —
+> Rattrapage · **45 min** _du réglage général_
 
-Deux autres écarts, assumés :
+Trois rangs sur une ligne, ce qui est exactement ce que l'héritage champ par
+champ produit. Une mention unique pour l'ensemble aurait menti sur deux tiers de
+la ligne.
+
+Elle dit aussi **quand rien ne s'applique** : si le délai ou l'heure manque
+partout, aucune limite n'existe. C'est le cas contre-intuitif où l'on croit avoir
+réglé quelque chose, et l'afficher vaut mieux que trois valeurs dont une vide.
+
+🔴 **La résolution n'a pas été recopiée.** Elle est remontée dans
+`@lfd/pim-contracts` — avec le parcours d'ancêtres et son garde-fou anti-cycle,
+qui existait alors en double. Le référentiel réexporte depuis le contrat, donc
+aucun de ses imports n'a bougé. C'était le seul choix défendable : l'écran et la
+commande ne se lisent pas au même endroit, et leur désaccord n'aurait sauté aux
+yeux de personne.
+
+### L'alignement suit l'idiome de la fiche, sans exception
+
+La case ne s'affiche **pas sur la déclinaison par défaut** — c'est elle qui porte
+ce que la fiche déclare, elle ne peut pas s'aligner sur elle-même. Sur une autre,
+la case « Aligner sur la fiche » ; alignée, la carte dit « Porté par la fiche.
+Ouvrir la déclinaison par défaut pour le modifier », exactement comme les autres
+cartes portées par le produit. Pas de bouton grisé, qui ferait chercher une
+permission qui ne manque pas.
+
+Deux écarts subsistent, et ils sont assumés :
 
 - **L'alignement n'est pas un drapeau stocké**, c'est l'ABSENCE d'une règle sur
   la portée `variant`. Un drapeau en plus aurait pu contredire la règle qu'il
   décrit, et il aurait fallu décider lequel des deux fait foi.
 - **La case écrit immédiatement**, quand les autres attendent l'enregistrement de
-  la fiche. Même raison que le reste de la carte : rien ici ne participe au
-  « Tout enregistrer », et une case qui attendrait un bouton qui ne la sauve pas
-  serait un piège.
-
-Ajouter un rang « déclinaison par défaut » à l'échelle rendrait l'idiome
-identique — mais ce serait une décision de modèle, qui remonte jusqu'au fil et à
-la résolution du référentiel. Pas une retouche d'écran.
-
-Deux choses que l'écran dit et qui ne vont pas de soi :
-
-- **`Hérité` plutôt qu'un blanc.** Un champ vide se lit « aucune limite », soit
-  l'inverse de ce que `null` veut dire.
-- **Un avertissement quand aucune règle globale n'existe.** Le résultat est
-  contre-intuitif : l'échelle exige le jour ET l'heure, donc une famille qui ne
-  pose qu'une heure, sans global pour porter le délai, ne produit **aucune**
-  limite. On croirait avoir réglé quelque chose.
+  la fiche. Rien ici ne participe au « Tout enregistrer », et une case qui
+  attendrait un bouton qui ne la sauve pas serait un piège.
 
 ### Ce que les lots livrés ont laissé ouvert, volontairement
 

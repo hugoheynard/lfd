@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { OrderTimeLimitView } from '@lfd/pim-contracts';
 
-import { ownRule } from '../order-limit-row';
+import { limitApplies, ownRule } from '../order-limit-row';
 
 function rule(type: OrderTimeLimitView['scope']['type'], id: string | null): OrderTimeLimitView {
   return {
@@ -47,5 +47,41 @@ describe('ownRule', () => {
 
   it('rend null sur une liste vide', () => {
     expect(ownRule([], 'product', 'p1')).toBeNull();
+  });
+});
+
+describe('limitApplies', () => {
+  const posed = <T>(value: T) => ({ value, from: 'global' as const });
+
+  it('applique une limite quand le jour ET l’heure sont résolus', () => {
+    expect(limitApplies({ daysBefore: posed(1), time: posed('18:00'), graceMinutes: null })).toBe(
+      true,
+    );
+  });
+
+  /**
+   * 🔴 Le cas contre-intuitif, et la raison pour laquelle l'écran le dit : une
+   * famille qui ne pose qu'une heure, sans rien au-dessus pour porter le délai,
+   * ne produit AUCUNE limite. On croirait avoir réglé quelque chose.
+   */
+  it("n'applique rien quand le délai manque", () => {
+    expect(limitApplies({ daysBefore: null, time: posed('18:00'), graceMinutes: null })).toBe(
+      false,
+    );
+  });
+
+  it("n'applique rien quand l'heure manque", () => {
+    expect(limitApplies({ daysBefore: posed(1), time: null, graceMinutes: null })).toBe(false);
+  });
+
+  /**
+   * Le rattrapage seul ne fait pas une limite — et son absence n'en empêche pas
+   * une : non déclaré vaut « limite ferme », pas « on ne sait pas ».
+   */
+  it('ignore le rattrapage dans la décision', () => {
+    expect(limitApplies({ daysBefore: null, time: null, graceMinutes: posed(45) })).toBe(false);
+    expect(
+      limitApplies({ daysBefore: posed(1), time: posed('18:00'), graceMinutes: posed(0) }),
+    ).toBe(true);
   });
 });

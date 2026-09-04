@@ -1,3 +1,4 @@
+import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,11 +7,14 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import type { OrderTimeLimitScopeType, OrderTimeLimitView } from '@lfd/pim-contracts';
 import {
-  FoldBadgeComponent,
+  categoryPathOf,
+  explainOrderTimeLimit,
+  type OrderTimeLimitScopeType,
+  type OrderTimeLimitView,
+} from '@lfd/pim-contracts';
+import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
@@ -18,46 +22,54 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../../../notify.service';
-import { daysPhrase, gracePhrase, timePhrase } from '../../../../order-time-limits/limit-format';
+import { CategoryStore } from '../../../category-store';
+import {
+  daysPhrase,
+  gracePhrase,
+  provenanceLabel,
+  timePhrase,
+} from '../../../../order-time-limits/limit-format';
 import { LimitPanel } from '../../../../order-time-limits/limit-panel/limit-panel';
 import { OrderTimeLimitsService } from '../../../../order-time-limits/order-time-limits.service';
 import { ProductFormStore } from '../../product-form-store';
-import { ownRule, type OrderLimitRow } from './order-limit-row';
+import { limitApplies, ownRule, type OrderLimitRow } from './order-limit-row';
 
 /**
  * **Limite de commande** — jusqu'à quand on prend commande de cet article.
  *
- * ## Pourquoi ici et pas dans les réglages
+ * ## Elle montre ce qui S'APPLIQUE, pas seulement ce qui est posé
  *
- * L'écran général (`/pim/limites-de-commande`) pose le rang **global** et les
- * **familles** : ce sont des décisions de maison. Le rang produit et le rang
- * déclinaison, eux, répondent à « combien de temps demande CET article » — et
- * c'est en le regardant qu'on se pose la question. Un sélecteur de produit dans
- * un écran de réglages ferait chercher au mauvais endroit.
+ * Une carte qui n'afficherait que la règle propre à cette fiche écrirait
+ * « Hérité » sans dire de quoi — c'est-à-dire rien. L'écran résout donc
+ * l'échelle entière et nomme, **pour chaque valeur**, le rang qui la pose : une
+ * heure peut venir de la famille, un délai de la fiche et un rattrapage du
+ * réglage général, sur la même ligne.
  *
- * ## Ce que l'encart montre, et ce qu'il ne montre pas
+ * La résolution est celle du référentiel, importée du contrat. La recopier ici
+ * aurait été le pire des deux mondes : l'écran et la commande ne se lisent pas
+ * au même endroit, donc leur désaccord n'aurait sauté aux yeux de personne.
  *
- * Uniquement ce que cette fiche **pose elle-même**. Ce dont elle hérite n'y est
- * pas : l'afficher ferait croire qu'on le modifie en modifiant ici, et on en
- * poserait une seconde copie sur le produit sans s'en rendre compte. Le renvoi
- * vers l'écran général dit où la règle héritée se change.
+ * ## L'alignement suit l'idiome de la fiche
  *
- * ## Il ne participe PAS à l'enregistrement de la fiche
+ * Sur la déclinaison **par défaut**, pas de case : c'est elle qui porte la
+ * limite de la fiche, comme pour les autres cartes. Sur une autre, la case
+ * « Aligner sur la fiche » — cochée, la déclinaison ne pose rien et suit ;
+ * décochée, elle a la sienne.
  *
- * La limite vit dans un autre contexte, avec sa propre route. L'encart lit et
- * écrit seul, par un panneau qui enregistre en se fermant — donc rien à
- * accrocher au garde « modifications non enregistrées », et rien à perdre en
- * quittant l'écran.
+ * ## Elle ne participe PAS à l'enregistrement de la fiche
+ *
+ * La limite vit dans un autre contexte, avec sa propre route. Le panneau écrit
+ * seul en se fermant, et la case écrit immédiatement — rien à accrocher au garde
+ * « modifications non enregistrées », et rien à perdre en quittant l'écran.
  */
 @Component({
   selector: 'app-order-limit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCheckboxComponent,
-    NgTemplateOutlet,
+    LowerCasePipe,
     RouterLink,
   ],
   templateUrl: './order-limit-form.html',
@@ -65,6 +77,7 @@ import { ownRule, type OrderLimitRow } from './order-limit-row';
 })
 export class OrderLimitForm {
   private readonly api = inject(OrderTimeLimitsService);
+  private readonly categories = inject(CategoryStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
   protected readonly store = inject(ProductFormStore);
@@ -73,7 +86,15 @@ export class OrderLimitForm {
   protected readonly failed = signal(false);
   protected readonly pendingRemoval = signal<string | null>(null);
 
-  /** La règle portée par **la fiche**, commune à toutes ses déclinaisons. */
+  /** La lignée de familles de cette fiche, la plus proche d'abord. */
+  private readonly categoryPath = computed(() =>
+    categoryPathOf(this.categories.items(), this.store.categoryId()),
+  );
+
+  /**
+   * La ligne de **la fiche** : ce qu'elle pose, et ce qui s'applique à elle
+   * quand aucune déclinaison ne s'en écarte.
+   */
   protected readonly productRow = computed<OrderLimitRow | null>(() => {
     const productId = this.store.productId();
     if (productId === '') {
@@ -82,22 +103,33 @@ export class OrderLimitForm {
     return {
       scopeType: 'product',
       scopeId: productId,
-      label: 'Cette fiche, toutes déclinaisons',
+      label: 'Cette fiche',
       rule: ownRule(this.rules(), 'product', productId),
+      effective: explainOrderTimeLimit(this.rules(), {
+        variantId: null,
+        productId,
+        categoryPath: this.categoryPath(),
+      }),
     };
   });
 
-  /** La règle propre à la déclinaison ouverte, ou `null` s'il n'y en a pas. */
+  /** La ligne de la déclinaison ouverte, ou `null` s'il n'y en a pas. */
   protected readonly variantRow = computed<OrderLimitRow | null>(() => {
+    const productId = this.store.productId();
     const variantId = this.store.selectedVariantId();
-    if (variantId === '') {
+    if (productId === '' || variantId === '') {
       return null;
     }
     return {
       scopeType: 'variant',
       scopeId: variantId,
-      label: 'Cette déclinaison seulement',
+      label: 'Cette déclinaison',
       rule: ownRule(this.rules(), 'variant', variantId),
+      effective: explainOrderTimeLimit(this.rules(), {
+        variantId,
+        productId,
+        categoryPath: this.categoryPath(),
+      }),
     };
   });
 
@@ -111,22 +143,33 @@ export class OrderLimitForm {
   protected readonly variantAligned = computed(() => this.variantRow()?.rule == null);
 
   /**
-   * ⚠️ La case s'affiche **même sur la déclinaison par défaut**, à la différence
-   * des autres cartes de cette fiche.
-   *
-   * Elles alignent sur la déclinaison PAR DÉFAUT, qui ne peut pas se suivre
-   * elle-même. Ici l'échelle est `déclinaison → produit → famille → global` :
-   * il n'y a pas de rang « déclinaison par défaut », et toute déclinaison —
-   * celle-là comprise — peut suivre sa fiche ou s'en écarter.
+   * La case ne s'affiche **pas sur la déclinaison par défaut**, comme sur les
+   * autres cartes : c'est elle qui porte ce que la fiche déclare, elle ne peut
+   * pas s'aligner sur elle-même.
    */
-  protected readonly canAlign = computed(() => this.variantRow() !== null);
+  protected readonly canAlign = computed(
+    () => this.variantRow() !== null && !this.store.editingDefault(),
+  );
+
+  /** La ligne qu'on montre : celle de la déclinaison si elle s'écarte, sinon la fiche. */
+  protected readonly shown = computed<OrderLimitRow | null>(() =>
+    this.canAlign() && !this.variantAligned() ? this.variantRow() : this.productRow(),
+  );
+
+  /**
+   * La ligne montrée est-elle **modifiable ici** ?
+   *
+   * Sur une déclinaison alignée, non : ce qu'on lit est porté par la fiche, et
+   * c'est en ouvrant la déclinaison par défaut qu'on le change — exactement ce
+   * que disent les autres cartes portées par le produit.
+   */
+  protected readonly editable = computed(() => !this.canAlign() || !this.variantAligned());
 
   constructor() {
     // Rechargé quand la fiche change d'identité : rester sur les règles de la
     // précédente ferait modifier un article en croyant en modifier un autre.
     effect(() => {
-      const productId = this.store.productId();
-      if (productId !== '') {
+      if (this.store.productId() !== '') {
         void this.load();
       }
     });
@@ -137,34 +180,42 @@ export class OrderLimitForm {
       this.rules.set(await this.api.list());
       this.failed.set(false);
     } catch {
-      // On ne montre pas une liste vide : « aucune limite propre » et « on n'a
-      // pas pu lire » ne se ressemblent que sur un écran mal fait.
+      // On ne montre pas une carte vide : « aucune limite » et « on n'a pas pu
+      // lire » ne se ressemblent que sur un écran mal fait.
       this.failed.set(true);
     }
   }
 
-  protected days(rule: OrderTimeLimitView): string {
-    return daysPhrase(rule.daysBefore);
+  protected applies(row: OrderLimitRow): boolean {
+    return limitApplies(row.effective);
   }
 
-  protected time(rule: OrderTimeLimitView): string {
-    return timePhrase(rule.time);
+  protected days(row: OrderLimitRow): string {
+    return daysPhrase(row.effective.daysBefore?.value ?? null);
   }
 
-  protected grace(rule: OrderTimeLimitView): string {
-    return gracePhrase(rule.graceMinutes);
+  protected time(row: OrderLimitRow): string {
+    return timePhrase(row.effective.time?.value ?? null);
   }
 
-  /**
-   * Aligner **retire** la règle de la déclinaison ; désaligner ouvre le panneau
-   * pour en poser une.
-   *
-   * L'écriture est immédiate, à la différence des cases d'alignement des autres
-   * cartes qui n'entrent en vigueur qu'à l'enregistrement de la fiche. La raison
-   * est la même que pour le reste de cette carte : la limite vit dans un autre
-   * contexte, et rien ici ne participe au « Tout enregistrer ». Une case qui
-   * attendrait un bouton qui ne la sauve pas serait un piège.
-   */
+  /** `null` = personne ne le pose ⇒ limite ferme, et c'est une réponse. */
+  protected grace(row: OrderLimitRow): string {
+    return gracePhrase(row.effective.graceMinutes?.value ?? 0);
+  }
+
+  /** D'où vient cette valeur, ou `null` quand c'est cette portée qui la pose. */
+  protected fromDays(row: OrderLimitRow): string | null {
+    return this.origin(row, row.effective.daysBefore?.from);
+  }
+
+  protected fromTime(row: OrderLimitRow): string | null {
+    return this.origin(row, row.effective.time?.from);
+  }
+
+  protected fromGrace(row: OrderLimitRow): string | null {
+    return this.origin(row, row.effective.graceMinutes?.from);
+  }
+
   protected async onAlign(aligned: boolean): Promise<void> {
     const row = this.variantRow();
     if (row === null) {
@@ -184,7 +235,7 @@ export class OrderLimitForm {
       data: {
         rule: row.rule,
         categories: [],
-        preset: { scope: scopeOf(row.scopeType, row.scopeId), label: row.label },
+        preset: { scope: { type: row.scopeType, id: row.scopeId }, label: row.label },
       },
     });
     void ref.closed.then((saved) => {
@@ -212,11 +263,12 @@ export class OrderLimitForm {
       this.notify.error(error);
     }
   }
-}
 
-function scopeOf(
-  type: OrderTimeLimitScopeType,
-  id: string,
-): { type: OrderTimeLimitScopeType; id: string } {
-  return { type, id };
+  /** Rien à dire quand la valeur vient de la portée qu'on regarde. */
+  private origin(row: OrderLimitRow, from: OrderTimeLimitScopeType | undefined): string | null {
+    if (from === undefined || from === row.scopeType) {
+      return null;
+    }
+    return provenanceLabel(from);
+  }
 }
