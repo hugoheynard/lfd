@@ -90,18 +90,34 @@ Ce document a d'abord raisonné **par appel**, parce que c'est ce que le code
 montre. Combien d'appels on fait est une décision de **produit**, et c'est le
 levier multiplicatif, quand l'autre est additif.
 
-La preuve est dans le back-office : `nouvelle-commande-page.ts` porte un
-`effect()` sur les lignes du panier qui appelle `refreshQuote` **à chaque
-changement**, sans debounce. Composer une commande de dix lignes une par une,
-c'est dix appels — de 3, 6, 9… opérations.
+La preuve est dans le back-office, et elle est **mesurée** :
+`nouvelle-commande-page.ts` porte un `effect()` sur `cart.lines()` qui appelle
+`refreshQuote` **sans debounce et sans déduplication** — sa seule garde est le
+panier vide.
+
+Une saisie ordinaire — huit références ajoutées, quatre quantités reprises, une
+ligne retirée — produit **quatorze émissions du signal, donc treize appels**.
+Chacun coûte `3 × lignes + 2` opérations, et les lignes grandissent au fur et à
+mesure : **~251 opérations** pour une commande que le seul devis de validation
+aurait chiffrée en **26**.
+
+⚠️ Et la déduplication n'existe pas : reposer la **même** quantité ré-émet. Un
+champ qui perd puis reprend le focus, une flèche haut puis bas — c'est le cas le
+plus coûteux pour rien, et le plus facile à produire.
+
+La mesure est un **test**, pas une estimation :
+`commandes/nouvelle-commande/__tests__/quote-call-count.spec.ts`. Il rougira le
+jour où quelqu'un posera un debounce, et c'est le moment où l'on voudra relire ce
+calcul.
 
 ### L'arithmétique
 
-|                                                    | appels | opérations |
-| -------------------------------------------------- | ------ | ---------- |
-| Panier d'aujourd'hui, 10 lignes ajoutées une à une | 10     | ~165       |
-| Hydratation à l'ouverture + devis au checkout      | **2**  | ~306       |
-| Le même, **avec le hissage de §7**                 | 2      | **~10**    |
+|                                                        | appels | opérations |
+| ------------------------------------------------------ | ------ | ---------- |
+| Panier d'aujourd'hui — saisie de 8 lignes, **mesurée** | **13** | **~251**   |
+| Un seul devis, au moment de valider                    | 1      | 26         |
+| Hydratation à l'ouverture + devis au checkout          | **2**  | ~306       |
+| Le même, **avec le hissage de §7**                     | 2      | **~10**    |
 
 🔴 **Le résultat n'est pas celui qu'on attend** : une hydratation ne réduit pas
 les opérations, elle les **concentre**. Charger la boutique entière, c'est le
@@ -250,6 +266,33 @@ filtrent déjà.
 **Ce qui le rend possible**, et c'est le seul point qui décide : le `WHERE`
 n'utilise **ni la quantité ni le cumul**. La décision d'engagement, qui en
 dépend, peut donc rester après la lecture, à sa place.
+
+### 🔴 « Une fois par appel » veut dire une VARIABLE LOCALE, pas un stockage
+
+La question se pose, parce que le dépôt a un `AsyncLocalStorage` : le
+`RequestContext` d'ingress. Ce n'est **pas** le bon endroit, et il vaut mieux
+l'écrire que le laisser redécouvrir.
+
+- `priceAll` mutualise **déjà** deux choses de cette nature — le catalogue et les
+  engagements — sous forme de `const`, passées à `resolveOne` en argument. Les
+  matériaux seraient le troisième du même genre : aucun mécanisme nouveau, une
+  ligne de plus au même endroit ;
+- **un CLS cache la dépendance.** `resolveOne` lirait quelque chose d'invisible
+  dans sa signature, à l'opposé de ce que ce dépôt fait partout — ports injectés,
+  `at` passé, `parties` passé ;
+- **il rendrait impures les fonctions qui décident.** `resolvePrice` se teste
+  aujourd'hui sans base et sans contexte ; lire un CLS obligerait chaque test à
+  en monter un ;
+- **le contexte de requête est volontairement étroit** — `now`, `traceId`,
+  `actor` : des faits **ambiants**. Des candidats de prix ne le sont pas, ils
+  dépendent du panier, c'est-à-dire d'un argument ;
+- enfin la **portée** ne serait pas la bonne : le CLS vit le temps de la
+  **requête**, les matériaux le temps de **l'appel**. Les deux coïncident
+  aujourd'hui parce que l'instant est gelé par requête — les lier serait vrai par
+  accident.
+
+Et pas un cache non plus, ni en mémoire ni ailleurs : ce qu'on décrit ici vit et
+meurt dans une pile d'appels.
 
 Ce que ça touche, chiffré plutôt qu'esquissé :
 
