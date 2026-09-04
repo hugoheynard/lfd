@@ -2774,6 +2774,55 @@ model WebhookEvent {
 // - textes traduisibles = `Json` `{ fr, en? }` (`fr` obligatoire).
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// **Le point d'arrêt de prise de commande**, posé sur une portée du catalogue.
+///
+/// Une ligne par portée : `global` ferme toute la production, `category` dit
+/// qu'une famille n'a pas la même charge, `product` / `variant` le cas
+/// particulier — jusqu'au conditionnement, parce que le pot de 200 g et le seau
+/// de 5 kg ne se préparent pas pareil.
+///
+/// 🔴 **Les trois valeurs sont nullables, et c'est la décision structurante.**
+/// L'héritage se fait CHAMP PAR CHAMP : un rang pose ce qu'il change et hérite
+/// du reste. Le jour où le labo passe de 18 h à 16 h, tout ce qui n'a pas
+/// d'heure propre suit — alors qu'une règle recopiée entière serait restée
+/// figée, en silence, sur chaque article qui l'avait dupliquée.
+///
+/// `NULL` ne veut donc pas dire « aucune limite » : il veut dire **« ce rang ne
+/// se prononce pas »**. Confondre les deux empêcherait de déclarer une famille
+/// explicitement libre sous un global contraignant.
+///
+/// ⚠️ Comme pour `PriceFloor`, l'unicité réelle n'est PAS dans ce modèle :
+/// `@@unique([scopeType, scopeId])` laisserait passer deux règles globales,
+/// Postgres tenant deux `NULL` pour distincts. C'est l'index unique
+/// `order_time_limit_one_per_scope` sur `coalesce(scope_id, '')`, posé en SQL
+/// par la migration, qui porte la garantie.
+model OrderTimeLimit {
+  id String @id
+
+  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
+  /// seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même.
+  daysBefore Int? @map("days_before")
+
+  /// `HH:MM` en heure de pendule d'**Europe/Paris**, jamais un instant UTC.
+  time String?
+
+  /// Le rattrapage après la limite, en minutes. Non déclaré ⇒ `0` à la
+  /// résolution, c'est-à-dire une limite ferme.
+  graceMinutes Int? @map("grace_minutes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([scopeType])
+  @@map("order_time_limit")
+  @@schema("pim")
+}
+
 enum ProductKind {
   daily
   made_to_order

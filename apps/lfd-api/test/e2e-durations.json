@@ -38,6 +38,7 @@
   "test/pim-ingredients.e2e-spec.ts": 6237,
   "test/pim-journal-atomicity.e2e-spec.ts": 1932,
   "test/pim-localized.e2e-spec.ts": 4313,
+  "test/pim-order-time-limits.e2e-spec.ts": 4838,
   "test/pim-points-of-sale.e2e-spec.ts": 6006,
   "test/pim-product-lifecycle.e2e-spec.ts": 2961,
   "test/pim-publication-switch.e2e-spec.ts": 3757,

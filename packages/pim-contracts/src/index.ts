@@ -221,3 +221,19 @@ export type {
   VariantAllergenGapView,
   ProductIngredientAllergensView,
 } from "./ingredient.js";
+
+export {
+  ORDER_TIME_LIMIT_SCOPES,
+  ORDER_TIME_LIMIT_SCOPE_LABELS,
+  orderLimitTimeSchema,
+  orderTimeLimitPayloadSchema,
+  orderTimeLimitScopeSchema,
+  orderTimeLimitScopeTypeSchema,
+} from "./order-time-limit.js";
+export type {
+  OrderTimeLimitPayload,
+  OrderTimeLimitScope,
+  OrderTimeLimitScopeType,
+  OrderTimeLimitView,
+  ResolvedOrderTimeLimit,
+} from "./order-time-limit.js";

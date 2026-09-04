@@ -7,6 +7,7 @@ import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { ShopifyModule } from "./channels/shopify/shopify.module.js";
 import { IngredientsModule } from "./ingredients/ingredients.module.js";
+import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
 import { PublicationModule } from "./publication/publication.module.js";
 import { VatRatesModule } from "./vat-rates/vat-rates.module.js";
 import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
@@ -39,6 +40,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     PointsOfSaleModule,
     SalesContextsModule,
     IngredientsModule,
+    OrderTimeLimitationModule,
     PublicationModule,
     ShopifyModule,
     B2bPlatformModule,
@@ -58,6 +60,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
           PointsOfSaleModule,
           SalesContextsModule,
           IngredientsModule,
+          OrderTimeLimitationModule,
           PublicationModule,
           {
             path: "channels",

@@ -3,10 +3,15 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes).
 >
-> ✅ **Lots 0, 1 et 2 livrés le 2026-09-04** : le fuseau est explicite, la règle
-> est opposée aux commandes client, et le **rattrapage** existe — il change le
-> message, pas encore le verdict. Le reste — dérogation, surtaxe, chaîne de
-> fabrication — n'est pas codé.
+> ✅ **Lots 0 à 3 livrés le 2026-09-04** : le fuseau est explicite, la règle est
+> opposée aux commandes client, le **rattrapage** existe — il change le message,
+> pas encore le verdict —, et le contexte **`order-time-limitation`** porte
+> l'échelle du référentiel avec son héritage champ par champ.
+>
+> ⚠️ **Les deux moitiés ne sont pas encore raccordées** : la garde du B2B lit
+> toujours l'ancienne règle, et personne ne consomme la résolution du
+> référentiel. C'est le lot 5 (le fil). Le reste — écran, dérogation, surtaxe —
+> n'est pas codé.
 
 ## En bref
 
@@ -20,21 +25,27 @@ réglages, des tests. Mais **rien ne la faisait respecter** — le code qui déc
 que ça bloquait. ✅ **C'est branché depuis le 2026-09-04** : une commande client
 arrivée trop tard est refusée, et rien n'est écrit (§1).
 
-**Deux choses décident, et elles s'additionnent** (§5) :
+**Une seule échelle, dans le référentiel** (§5) :
 
-|                | Ce que ça dit                                      | Unité         | Où on le règle   |
-| -------------- | -------------------------------------------------- | ------------- | ---------------- |
-| **La cuisine** | combien de temps il faut pour fabriquer l'article  | des **jours** | le PIM           |
-| **La journée** | quand on arrête de prendre pour une journée donnée | une **heure** | les réglages B2B |
+```
+déclinaison → produit → famille (en remontant l'arbre) → global
+```
 
-| Pour samedi  | Fabrication                      | Commander avant |
-| ------------ | -------------------------------- | --------------- |
-| Un croissant | samedi                           | vendredi 18 h   |
-| Un entremets | inserts vendredi, montage samedi | **jeudi 18 h**  |
+| Rang                          | Ce qu'il dit                                        |
+| ----------------------------- | --------------------------------------------------- |
+| **global**                    | on ferme toute la production à telle heure          |
+| **famille**                   | la viennoiserie et le pain n'ont pas la même charge |
+| **produit** / **déclinaison** | le cas particulier, jusqu'au conditionnement        |
 
-L'entremets recule d'un jour parce que sa fabrication commence un jour plus tôt.
-La recette dit des **jours**, jamais une heure : une heure recopiée sur la fiche
-resterait figée le jour où le labo change la sienne.
+🔴 **L'héritage se fait champ par champ.** « Le pain ferme à 16 h » ne recopie pas
+le nombre de jours ; « l'entremets demande un jour de plus » ne recopie pas
+l'heure. Le jour où le labo passe de 18 h à 16 h, tout ce qui n'a pas d'heure
+propre suit — alors qu'une règle recopiée entière serait restée figée, en
+silence, sur chaque article qui l'avait dupliquée.
+
+Le point de retrait et la livraison n'y entrent pas : un point de retrait n'est
+ni un lieu de production ni un lieu de livraison, et l'ancien modèle qui s'y
+accrochait ne pouvait donner **aucune** limite propre aux commandes livrées.
 
 **Trois situations, pas deux** (§4) :
 
@@ -76,10 +87,9 @@ lot 3, pour qui l'accorde.
 répond « trop tard », **jamais « complet »** — une commande acceptée n'est pas
 une commande dont la production est garantie faisable (§5).
 
-**L'ordre des travaux** (§12) : ~~réparer le fuseau~~, ~~faire respecter la règle
-existante~~ — **faits** —, puis la grâce, la dérogation, la surtaxe, et en
-parallèle les jours de fabrication dans le PIM. Les deux premières avaient une
-valeur propre et n'ont pas touché au référentiel.
+**L'ordre des travaux** (§12) : le fuseau, la règle opposée, la grâce et
+l'échelle du référentiel sont **faits**. Restent l'écran de saisie, le fil qui
+raccorde les deux moitiés, puis la dérogation et la surtaxe.
 
 ---
 
@@ -150,52 +160,85 @@ veille et le seau de 5 kg trois jours avant n'a pas d'heure limite « du produit
 
 ## 3. La frontière, en une phrase
 
-> **Le référentiel déclare des propriétés d'ARTICLES.
-> La plateforme déclare des propriétés d'EXPLOITATION.
+> **Le référentiel déclare JUSQU'À QUAND on prend commande.
+> La plateforme l'applique.
 > La commande fige ce qui a été convenu.**
 
-| Ce qu'on règle                                                | Où                                        |
-| ------------------------------------------------------------- | ----------------------------------------- |
-| Le **préavis** d'une famille, d'un produit, d'une déclinaison | **PIM** — ça suit la fiche                |
-| Le **défaut**, les exceptions par comptoir et par jour        | **B2B**, Réglages → Retraits & livraisons |
-| La **durée de grâce**, le **montant de la surtaxe**           | idem                                      |
-| La **dérogation accordée**, la **surtaxe appliquée**          | **figées sur la commande**                |
+| Ce qu'on règle                                                              | Où                                        |
+| --------------------------------------------------------------------------- | ----------------------------------------- |
+| Toute l'échelle — global, famille, produit, déclinaison                     | **PIM**, contexte `order-time-limitation` |
+| L'**application** : refuser, distinguer la grâce, nommer le geste de sortie | **B2B**, à la passation                   |
+| La **dérogation accordée**, la **surtaxe appliquée**                        | **figées sur la commande**                |
 
-### Pourquoi le défaut reste au B2B
+### ⚠️ Deux renversements assumés, et leurs raisons
 
-Il a d'abord été proposé de le remonter au référentiel, avec les autres rangs.
-C'était une erreur, et elle se voyait à son coût : il fallait une colonne
-`source`, un refus d'écriture au repository, une ligne en lecture seule à
-l'écran et une bascule en trois déploiements — **tout cet appareillage n'existait
-que pour empêcher une boucle que la coupure elle-même créait** (le staff corrige
-la ligne, le push suivant la réécrit, personne ne voit passer l'annulation).
+Ce document a affirmé deux fois le contraire. Les deux inversions sont écrites
+plutôt qu'effacées : une consigne qui change sans dire pourquoi se refait dans
+l'autre sens six mois plus tard.
 
-Quand une conception a besoin d'un garde-fou contre un problème qu'elle
-introduit, c'est la conception qu'il faut changer. Les trois raisons de fond :
+**1. « Le défaut reste au B2B » (2026-09-04, matin).** L'argument était que les
+quatre rangs de l'heure limite formaient une seule échelle, réglée par une seule
+personne, et que la couper en deux applications coûtait un aller-retour. Il était
+juste **pour l'échelle d'alors** — celle dimensionnée par point de retrait. Il
+tombe avec elle.
 
-1. **C'est une échelle, pas quatre réglages.** Le rang 4 de `resolveOrderCutoff`
-   est le plancher des trois autres. Le mettre dans une autre application met une
-   seule échelle dans deux écrans.
-2. **C'est la même personne qui règle les quatre rangs.** « On ferme la veille à
-   18 h, sauf à Courchevel où c'est 16 h » est une seule phrase. La couper en
-   deux applications force un aller-retour pour l'écrire.
-3. **Le défaut parle d'exploitation, pas de catalogue.** Il dit quand la journée
-   du labo ferme — pas ce que l'article demande.
+**2. « L'axe point de retrait × jour » lui-même.** Un `PickupAddress` n'est ni un
+lieu de production ni un lieu de livraison : c'est l'endroit où un client vient
+chercher. La conséquence se voyait dans le code — une commande **livrée** ne
+pouvait matcher aucune règle de point (`packages/contracts/src/order-cutoff.ts`),
+donc toute la moitié livrée du commerce n'avait qu'une seule limite possible.
 
-Et une contrainte qui, de toute façon, l'interdisait en partie : l'axe est
-dimensionné par `pickupAddressId`, une ligne de `PickupAddress` (schéma `public`,
-`schema.prisma:1024`). Le référentiel a bien une notion de lieu — `PointOfSale`,
-schéma `pim`, `:3124` — mais **ce n'est pas la même table et rien ne les relie**
-(grep `PointOfSale` dans `src/b2b` : vide). Descendre l'axe demanderait une clé
-étrangère `pim → public`, que le document racine interdit.
+Ce qui fait varier une limite, c'est **ce qu'on produit** : la viennoiserie et le
+pain n'ont pas la même charge, un entremets à inserts gelés démarre la veille du
+montage. D'où une échelle de catalogue, et un contexte à elle.
 
-### La page devient cohérente
+### Pourquoi un contexte à part, et pourquoi dans le PIM
 
-`reglages/retraits-livraisons/` porte déjà trois sections : **points de
-retrait**, **heures limites**, **zones de livraison**. La grâce et la surtaxe y
-entrent sans forcer, parce que les cinq répondent à la même question : _à quelles
-conditions on achemine_. Le PIM, lui, garde exactement une chose — **combien de
-préavis un article demande**.
+`order-time-limitation` n'est ni un coin du catalogue ni un réglage de
+plateforme. Ce qu'il porte n'est pas une propriété de la fiche — un préavis n'est
+pas un ingrédient — et n'appartient pas au commerce, qui ne fait que l'appliquer.
+C'est une **contrainte de production**.
+
+Il vit dans le référentiel pour une raison assumée, et non pour une raison
+théorique : la contrainte est de production, mais le référentiel est le seul
+endroit où « toute la production », « la viennoiserie » et « cet entremets » se
+nomment déjà, avec leur arbre. La reconstruire ailleurs aurait demandé de
+dupliquer cet arbre — et deux arbres d'une même hiérarchie finissent par se
+contredire.
+
+### 🔴 Ce qui a fait durer l'erreur : la place de l'écran
+
+L'ancienne règle se réglait dans **Réglages → Retraits & livraisons**, entre les
+points de retrait et les zones. Cette place-là n'était pas neutre : elle
+**affirmait** que l'heure limite est une affaire d'acheminement. Tout le monde
+l'a lue ainsi, moi compris, et j'ai passé deux tours à défendre une échelle
+dimensionnée par point de retrait — en argumentant depuis la cohérence de la
+page, c'est-à-dire depuis la conséquence d'une erreur pour justifier l'erreur.
+
+**L'emplacement d'un écran est une affirmation sur le modèle.** Mal placé, il
+enseigne le mauvais modèle à chaque personne qui l'ouvre, y compris à celles qui
+écrivent le code — et il le fait sans jamais rien affirmer par écrit, donc sans
+que rien puisse le contredire.
+
+Conséquence pour le lot 4 : le réglage prend **sa propre entrée**, pas une
+section dans une page existante. « Jusqu'à quand on prend commande » est un sujet
+en soi, à côté de la TVA, des allergènes et des conditionnements — pas un
+sous-titre sous les zones de livraison. Le ranger « près de » quelque chose
+serait refaire la même faute avec un autre voisin.
+
+### Le jour de la semaine : abandonné, et documenté
+
+L'ancien modèle permettait « le samedi, ce n'est pas la même heure ». C'est un
+argument de charge, donc légitime — et il n'est **pas** repris.
+
+La raison est de coût : ajouter le jour ferait un produit cartésien avec les
+quatre rangs de portée, et la résolution passerait de quatre à huit chemins,
+chacun à tester et à expliquer à qui remplit l'écran. Tant que personne n'a
+demandé une limite propre au samedi, c'est de la complexité payée d'avance.
+
+**C'est rajoutable sans rien casser** : une colonne nullable de plus et un rang
+dans l'ordre de résolution. La décision est notée ici pour qu'on la retrouve — et
+pour qu'on ne la reprenne pas en croyant réparer un oubli.
 
 ## 4. Trois états, pas deux
 
@@ -218,239 +261,135 @@ borne dure, pas un défaut surchargeable.
 l'exclure ferait refuser quelqu'un qui a cliqué à l'heure dite.
 
 ✅ **Livré le 2026-09-04** : `decideOrderCutoff` (contrat) → `ensureWithinOrderCutoff`
-(garde), avec `graceMinutes` par rang. **Deux erreurs distinctes** plutôt qu'un
-drapeau, parce que ce qui les sépare n'est pas un détail d'affichage mais **ce
-que le lecteur doit faire** : changer de date, ou décrocher. Un code unique
-aurait fait dire la même phrase aux deux, et le rattrapage n'aurait servi à
-personne.
+(garde). **Deux erreurs distinctes** plutôt qu'un drapeau, parce que ce qui les
+sépare n'est pas un détail d'affichage mais **ce que le lecteur doit faire** :
+changer de date, ou décrocher.
 
-La grâce est **une durée** (minutes), pas une seconde heure : `limite + grâce`
-suit automatiquement chaque rang de l'échelle, alors qu'une heure absolue aurait
-dû être ressaisie sur chacun — et se serait retrouvée, un jour, avant sa propre
-limite.
+⚠️ La grâce ne laisse encore passer **personne**. Elle change le message, pas le
+verdict — c'est la dérogation qui s'en servira.
 
-## 5. La résolution — deux contraintes de natures différentes
+## 5. L'échelle, et l'héritage champ par champ
 
-C'est ici que la première version se trompait, et l'exemple qui le montre est
-celui d'un entremets à **inserts gelés** : les inserts se font la veille du
-montage.
-
-### La cuisine se compte en JOURS, l'exploitation en HEURES
-
-|               | **Contrainte de cuisine**                               | **Contrainte de la journée**                            |
-| ------------- | ------------------------------------------------------- | ------------------------------------------------------- |
-| Dit quoi      | « cet article demande N jours de fabrication en amont » | « on arrête de prendre pour une journée à telle heure » |
-| Unité         | des **jours**                                           | une **heure**                                           |
-| Change quand  | la recette change                                       | les horaires du labo changent                           |
-| Déclarée dans | le **PIM**                                              | le **B2B**                                              |
-
-La première version donnait au référentiel un couple `daysBefore` **et** `time`,
-c'est-à-dire une heure à lui. C'était la même faute que celle corrigée en §3, en
-plus discret : le jour où le labo passe de 18 h à 16 h, chaque article portant sa
-propre heure **reste à 18 h**, silencieusement, et il faut les rouvrir un par un.
-
-**Le référentiel ne déclare donc qu'un nombre de jours.** Aucune heure.
-
-### La composition est une addition, pas un arbitrage
-
-Les deux ne se disputent pas : elles mesurent des choses différentes et elles
-**s'empilent**.
+Une seule échelle, celle du catalogue, la même que celle des prix
+(`PriceScopeType`) — deux vocabulaires de portée pour la même idée finiraient par
+diverger, et le back-office montrerait « Famille » d'un côté et « Catégorie » de
+l'autre.
 
 ```
-instant limite = (jour de remise − prepDays − daysBefore) à l'heure `time`
-                                   └ cuisine ┘   └──── exploitation ────┘
+déclinaison → produit → famille la plus proche → … → racine → global
 ```
 
-- `prepDays` — la longueur de la chaîne de fabrication **en amont** de la remise.
-  0 pour un croissant qu'on cuit le matin même, 1 pour l'entremets dont les
-  inserts prennent la veille.
-- `daysBefore` + `time` — le préavis dont l'exploitation a besoin **avant** qu'une
-  journée de fabrication démarre. C'est la règle `OrderCutoff` existante,
-  inchangée.
+| Rang            | Ce qu'il dit                                                                             |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| **global**      | on ferme toute la production à telle heure                                               |
+| **famille**     | la viennoiserie et le pain n'ont pas la même charge                                      |
+| **produit**     | le cas particulier                                                                       |
+| **déclinaison** | jusqu'au conditionnement — le pot de 200 g et le seau de 5 kg ne se préparent pas pareil |
 
-L'entremets, concrètement, avec une règle « pour samedi, commander vendredi
-avant 18 h » :
+### 🔴 L'héritage se fait CHAMP PAR CHAMP
 
-| Article                 | `prepDays` | Chaîne                           | Il faut commander avant |
-| ----------------------- | ---------- | -------------------------------- | ----------------------- |
-| Croissant, remis samedi | 0          | cuisson samedi                   | **vendredi 18 h**       |
-| Entremets, remis samedi | 1          | inserts vendredi, montage samedi | **jeudi 18 h**          |
+C'est la décision qui fait tenir le reste. Chaque champ — `daysBefore`, `time`,
+`graceMinutes` — prend la **première valeur non nulle** en descendant l'échelle.
+Un rang pose ce qu'il change, et hérite du reste.
 
-### Ce que ça supprime
+| Ce qu'on veut dire                      | Ce qu'on écrit                                       |
+| --------------------------------------- | ---------------------------------------------------- |
+| « le pain ferme à 16 h »                | une heure sur la famille, **pas** le nombre de jours |
+| « l'entremets demande un jour de plus » | des jours sur le produit, **pas** l'heure            |
+| « les entremets ne se rattrapent pas »  | `graceMinutes: 0` sur le produit, rien d'autre       |
 
-Trois choses que la première version portait tombent, et c'est le signe que le
-modèle est meilleur :
+L'alternative — un rang qui se prononce l'emporte **entièrement** — aurait obligé
+chaque article à recopier l'heure du labo pour changer d'un seul jour. Le jour où
+cette heure passe de 18 h à 16 h, **chaque copie serait restée figée, en
+silence**. C'est la même faute que celle corrigée en §3, à un rang près.
 
-1. **Le `min` de deux instants** devient une soustraction de plus. Un entier
-   s'explique à quelqu'un qui remplit un écran ; une composition de deux instants,
-   non.
-2. **Le débat « remplacer ou cumuler »** n'a plus d'objet. `prepDays ≥ 0`, donc le
-   référentiel ne peut que **retarder** la limite, jamais l'avancer.
-3. **L'argument « il faut pouvoir relâcher »** était faux. Je l'avais écrit en
-   pensant qu'une canette de `resale` doit pouvoir se commander plus tard qu'une
-   viennoiserie. C'est vrai, mais ce n'est pas une affaire de fabrication : une
-   canette a `prepDays = 0` comme le croissant. Ce qui la distingue, c'est
-   qu'**elle ne passe pas par la production du tout** — voir la question ouverte
-   ci-dessous.
+### `null` ne veut pas dire « aucune limite »
 
-### L'échelle sur `prepDays`
+Il veut dire **« ce rang ne se prononce pas »**. Confondre les deux empêcherait
+de déclarer une famille explicitement libre sous un global contraignant.
 
-Elle reste celle de §2, remontée d'arbre comprise, mais elle ne porte plus qu'un
-entier :
+Corollaire : une règle dont les trois valeurs sont nulles est **refusée**. Une
+ligne muette se lirait, à l'écran, comme « une règle existe ici » alors qu'elle
+laisserait tout hériter. Pour ne rien dire, on **supprime** la règle — c'est le
+même geste, et il est lisible.
 
-```
-déclinaison ?? produit ?? famille la plus proche en remontant l'arbre ?? 0
-```
+### Ce qui rend « aucune limite »
 
-- **`null` = « ne se prononce pas »**, distinct de `0` = « aucune fabrication en
-  amont ». Sans la distinction, on ne peut pas déclarer une famille explicitement
-  sans chaîne sous un défaut qui en a une.
-- **La remontée d'arbre est obligatoire** : `Category` porte `parentId`
-  (auto-relation `CategoryTree`), on prend le plus proche ancêtre qui se prononce.
-- **Le rang déclinaison porte son poids** : le pot de 200 g et le seau de 5 kg
-  d'un même produit n'ont pas la même chaîne.
-
-Si rien n'est saisi côté PIM, tout vaut `0`, l'addition se réduit à la règle B2B,
-et le comportement est **exactement** celui d'aujourd'hui.
+Une limite n'existe que si **le jour et l'heure** sont tous deux résolus.
+Inventer un défaut (« la veille à 18 h ») ferait refuser des commandes au nom
+d'une règle que personne n'a écrite. Le rattrapage, lui, a un défaut honnête :
+non déclaré = limite ferme = `0`. C'est la seule des trois valeurs dont l'absence
+a un sens univoque.
 
 ```mermaid
 flowchart TD
-    L["Ligne de commande<br/>(SKU, jour de remise)"] --> A
-    L --> B
+    L["Ligne de commande<br/>(SKU, jour de remise)"] --> R
 
-    subgraph CUISINE["Le référentiel — en jours"]
-        A["prepDays : déclinaison ?<br/>puis produit, puis famille"] --> A2["sinon 0"]
+    subgraph LADDER["Le référentiel — order-time-limitation"]
+        R["Déclinaison ?"] --> P["Produit ?"]
+        P --> C["Famille, en remontant l'arbre"]
+        C --> G["Global"]
     end
 
-    subgraph EXPLOIT["La plateforme — en heures"]
-        B["daysBefore + time :<br/>comptoir + jour, comptoir,<br/>défaut + jour, défaut"]
-    end
-
-    CUISINE --> S["jour de remise<br/>− prepDays − daysBefore<br/>à l'heure time"]
-    EXPLOIT --> S
-    S --> CMP{"Maintenant<br/>avant la limite ?"}
+    LADDER --> F{"Jour ET heure<br/>résolus ?"}
+    F -->|non| OPEN["Aucune limite — ça passe"]
+    F -->|oui| CMP{"Maintenant<br/>avant la limite ?"}
     CMP -->|oui| OK["Passe, prix normal"]
-    CMP -->|non| G{"Avant la fin<br/>de grâce ?"}
-    G -->|non| KO["Refus, ligne par ligne"]
-    G -->|oui| W{"Une dérogation<br/>couvre cette date ?"}
-    W -->|non| KO
+    CMP -->|non| GR{"Avant la fin<br/>de grâce ?"}
+    GR -->|non| KO["Refus définitif"]
+    GR -->|oui| W{"Une dérogation<br/>couvre cette date ?"}
+    W -->|non| CALL["Refus — mais appelez-nous"]
     W -->|oui| TAX["Passe + surtaxe de panier"]
 ```
 
 ### La limite dit « trop tard », jamais « complet »
 
 Aucune **capacité maximale** n'est écrite nulle part dans le dépôt, et il n'est
-pas prévu d'en écrire une ici : le volume se régule aujourd'hui au jugement.
+pas prévu d'en écrire une ici : le volume se régule au jugement.
 
-Il faut donc que le refus le dise. « Trop tard pour jeudi » et « jeudi est plein »
-sont deux phrases différentes, et une commande **acceptée** par l'heure limite
-n'est pas une commande dont la production est garantie faisable. Quiconque lit un
-refus — client sur la boutique, commercial au téléphone — ne doit pas pouvoir en
-déduire l'inverse.
+Il faut donc que le refus le dise. « Trop tard pour jeudi » et « jeudi est
+plein » sont deux phrases différentes, et une commande **acceptée** par l'heure
+limite n'est pas une commande dont la production est garantie faisable.
 
 C'est aussi pourquoi la **dérogation** (§7) reste un geste humain : la personne
 qui l'accorde est celle qui sait s'il reste de la place. Automatiser l'ouverture
 supposerait une capacité écrite, qui n'existe pas.
 
-### ⚠️ Question ouverte : les articles qui ne passent pas par la production
-
-Une canette de `resale` pourrait légitimement s'ajouter le matin même, alors que
-le pain a fermé la veille. Ce n'est ni une chaîne de fabrication (`prepDays = 0`)
-ni un comptoir : c'est un **flux** différent — du stock qu'on met dans un sac, pas
-une fournée.
-
-`ProductKind` (`daily` | `made_to_order` | `resale`) nomme déjà ce flux, et il
-traverse déjà le fil (`syncProductSchema`). Deux sorties :
-
-- **une dimension de plus sur `OrderCutoff`** (`productKind` nullable) — cohérent
-  avec les dimensions existantes, mais la résolution passe de 4 à 8 rangs, et
-  chacun doit être testé ;
-- **rien**, et on assume que tout ferme à la même heure.
-
-Non tranché, et volontairement : ça ne bloque aucun lot avant le 6, et le trancher
-maintenant se ferait sans savoir si le cas se présente vraiment.
-
-### ⚠️ Question ouverte : la dimension « point de retrait » nomme mal son sujet
-
-L'objection, posée le 2026-09-04 : _l'heure limite est un fait de commande, pas
-un fait de point de retrait._ Elle est juste, et elle va plus loin qu'un
-renommage.
-
-Un `PickupAddress` n'est **ni un lieu de production, ni un lieu de livraison** :
-c'est l'endroit où un client vient chercher. Ce qui fait varier une heure limite,
-lui, est ailleurs — c'est le dernier moment où l'on peut encore glisser une
-commande dans **ce qui part** : une fournée, un chargement, une tournée. Le
-modèle a pris le seul objet à portée qui ressemblait à un lieu.
-
-Ça tient tant que le comptoir est le labo et qu'il n'y en a qu'un. Deux
-symptômes disent que ça ne tiendra pas :
-
-- 🔴 **Une livraison ne peut matcher aucune règle de point**, par construction
-  (`packages/contracts/src/order-cutoff.ts:131`). Toute la moitié livrée du
-  commerce n'a donc **qu'une seule** heure limite, celle du défaut. Un secteur de
-  vallée dont le camion part à 5 h ne peut pas fermer plus tôt qu'une livraison
-  en ville — et c'est exactement le genre d'écart que
-  [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md)
-  décrit par ailleurs.
-- Le jour où un point de retrait cesse d'être un labo — un relais, une boutique
-  qui reçoit —, la règle resterait accrochée à lui alors que la contrainte
-  viendrait de qui l'approvisionne.
-
-**Trois sorties, non tranchées :**
-
-|                           | Ce que ça donne                                              | Ce que ça coûte                                                     |
-| ------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
-| **Garder**                | rien à faire                                                 | la livraison reste à une seule heure limite                         |
-| **Généraliser**           | une portée de **remise** : un point OU une zone de livraison | une colonne nullable de plus, et la résolution passe de 4 à 6 rangs |
-| **Retirer le rang point** | l'échelle tombe à `jour` puis `défaut`                       | une colonne supprimée sur une table servie : trois déploiements     |
-
-**Le déclencheur, et il est simple :** _deux acheminements du même jour ferment-ils
-à des heures différentes ?_ Si la réponse est oui pour deux **zones de livraison**,
-c'est « généraliser », et l'ajout est additif. Si elle est non partout, c'est
-« retirer », et l'échelle se simplifie. Tant que la question n'est pas posée à
-l'exploitation, changer le modèle serait deviner.
-
-⚠️ Ce qui n'est **pas** en cause : le `weekday`. Le jour d'acheminement est bien
-un fait de la commande, et « le samedi ne ressemble pas au mardi » reste vrai
-quel que soit l'objet auquel on accroche l'autre dimension.
-
-### ⚠️ Conséquence hors périmètre : la journée de production n'est plus unique
-
-`packages/contracts/src/order.ts:114` dit de `requestedDeliveryDate` : « Jour de
-retrait/livraison. **Obligatoire** : c'est la journée de production. » Cette
-identité est vraie tant que tout se fabrique le jour de la remise. Un entremets à
-inserts gelés la rompt : il occupe **vendredi et samedi**.
-
-Ça ne gêne pas l'heure limite — l'addition ci-dessus suffit à la calculer. Ça
-gênera le jour où un plan de production existera : le plan du vendredi devra
-contenir « faire les inserts du samedi ». Il n'y en a pas aujourd'hui — le seul
-existant est `GetProductionBatchHandler`, qui lit les commandes d'une date sans
-rien planifier. **Noté ici pour ne pas être redécouvert** au moment de l'écrire,
-pas pour être traité maintenant.
-
 ## 6. Ce qui traverse le fil
 
-Seule la **chaîne de fabrication** voyage : le reste est déjà du bon côté.
+Le référentiel **résout**, la plateforme **applique**. Ce qui voyage est donc la
+limite résolue d'une déclinaison, jamais l'échelle.
 
-Le fil PIM → boutique passe par `packages/catalog-sync/src/snapshot.ts`
-(`CATALOG_SNAPSHOT_VERSION = 5`). On y ajoute, en **optionnel**, le préavis
-résolu pour chaque déclinaison :
+Le fil passe par `packages/catalog-sync/src/snapshot.ts`
+(`CATALOG_SNAPSHOT_VERSION = 5`). On y ajoute, en **optionnel** :
 
 ```ts
 // syncVariantSchema
-prepDays: z.number().int().min(0).max(14).nullable(),
+orderTimeLimit: z
+  .object({
+    daysBefore: z.number().int().min(0).max(14),
+    time: orderLimitTimeSchema,
+    graceMinutes: z.number().int().min(0).max(720),
+  })
+  .nullable(),
 ```
 
-Deux exigences non négociables :
+Trois exigences, chacune pour une raison :
 
-- **Le PIM envoie la valeur RÉSOLUE**, pas les trois rangs. La plateforme n'a pas
-  à connaître l'arbre des familles pour savoir quand un SKU ferme — même
-  raisonnement que `vatRatePercent` sur `CatalogItem` (`schema.prisma:2036` :
-  « c'est l'article qu'on vend, c'est lui qui doit savoir se facturer »).
-- **Le champ est nullable et le schéma monte de version.** Un contrat déjà servi
-  ne se casse pas : `version: 6`, champ optionnel, et les lignes de `CatalogItem`
-  d'avant le premier push complet portent `NULL` — « on ne sait pas », donc
-  traitées comme `0` : le comportement d'aujourd'hui, à l'identique.
+- **Le PIM envoie la valeur RÉSOLUE**, pas les rangs. La plateforme n'a pas à
+  connaître l'arbre des familles pour savoir quand un SKU ferme — même
+  raisonnement que `vatRatePercent` sur `CatalogItem` : c'est l'article qu'on
+  vend, c'est lui qui doit savoir quand il ferme.
+- **`null` = aucune limite**, et c'est net : le référentiel a regardé et n'a rien
+  trouvé. C'est différent d'un champ absent, qui dirait « ce push est antérieur
+  au fil v6 » — d'où la montée de version.
+- **Le champ est optionnel et le schéma monte en `version: 6`.** Un contrat déjà
+  servi ne se casse pas : les lignes de `CatalogItem` d'avant le premier push
+  complet portent `NULL`, et l'ancienne règle continue de s'appliquer jusqu'à ce
+  qu'elles soient rafraîchies.
+
+⚠️ **Pas encore fait.** Aujourd'hui la garde du B2B lit toujours `OrderCutoff`
+(§11). Le fil est le lot qui les raccorde.
 
 ## 7. La dérogation
 
@@ -619,53 +558,62 @@ pas là.
 
 **Additif, aucune colonne resserrée, aucune valeur de production déplacée.**
 
-### PIM (schéma `pim`) — la chaîne de fabrication, et elle seule
+### ✅ PIM (schéma `pim`) — l'échelle, et elle seule
 
 Une table, pas des colonnes sur `Product` et `Category` : le rang `variant` en
 demanderait une troisième, et un champ nul sur trois tables ne dit pas d'où vient
 la valeur.
 
 ```prisma
-model ProductPrepTime {
+model OrderTimeLimit {
   id String @id
 
-  /// `category` | `product` | `variant` — mêmes valeurs que `PriceScopeType`.
-  /// Pas de `global` : le défaut est un fait d'exploitation (§3).
-  scopeType String @map("scope_type")
-  scopeId   String @map("scope_id")
+  /// `global` | `category` | `product` | `variant`.
+  /// `scopeId` est `NULL` **si et seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
 
-  /// **Des jours, jamais une heure** (§5) : l'heure appartient à l'exploitation,
-  /// et une heure recopiée ici resterait figée quand le labo change la sienne.
-  prepDays Int @map("prep_days")
-
-  @@unique([scopeType, scopeId])
-  @@map("product_prep_time")
-  @@schema("pim")
+  /// Les trois nullables : `NULL` = **ce rang ne se prononce pas** (§5).
+  daysBefore   Int?    @map("days_before")
+  time         String? // `HH:MM` en heure de pendule d'Europe/Paris
+  graceMinutes Int?    @map("grace_minutes")
 }
 ```
 
-### B2B (schéma `public`)
+Deux garanties que le modèle Prisma **ne porte pas**, et que la migration
+`20260904120000_point_d_arret_de_prise_de_commande` pose en SQL :
 
-- ✅ `OrderCutoff` porte `graceMinutes Int @default(0)` — la durée de §4, par
-  rang, donc surchargeable comme l'heure elle-même. Migration additive
-  `20260904100000_grace_apres_heure_limite` : `0` partout, donc aucune ligne
-  existante ne se met à accepter quoi que ce soit de plus.
-- Les réglages de plateforme gagnent le **montant de la surtaxe** :
-  `lateFeeMode CartAdjustmentMode?` + `lateFeeValue Int?`, la même paire que
-  `DeliveryZone` et `PickupAddress`.
-- `CatalogItem` gagne `prepDays Int?` — la valeur **résolue** reçue du fil,
-  `NULL` = ne se prononce pas, donc `0` au calcul.
-- `Order` gagne `lateFeeCents Int @default(0)` et `lateFeeAdjustment Json?`,
-  calqués sur `discountCents` / `discountAdjustment`.
+- `order_time_limit_one_per_scope` sur `("scope_type", coalesce("scope_id", ''))`
+  — un `@@unique` nu laisserait passer **deux règles globales**, Postgres tenant
+  chaque `NULL` pour distinct, et la résolution deviendrait dépendante de l'ordre
+  de lecture. Même leçon que `price_floors_one_per_scope` ;
+- `CHECK (("scope_type" = 'global') = ("scope_id" IS NULL))` — la règle vit déjà
+  dans le value object, mais un `UPDATE` manuel ou un futur adaptateur
+  passeraient à côté de lui.
+
+L'écriture est **inexprimable sans trace** : le port prend un `WriteTicket`, et
+un ticket ne se frappe qu'en journalisant. Une consigne aurait demandé qu'on y
+pense ; le type l'exige.
+
+### B2B (schéma `public`) — ce qui reste, et ce qui s'en va
+
+- `CatalogItem` gagnera `orderLimitDaysBefore`, `orderLimitTime`,
+  `orderLimitGraceMinutes` — la valeur **résolue** reçue du fil, `NULL` = aucune
+  limite pour cet article.
+- `Order` gagnera `lateFeeCents` + `lateFeeAdjustment`, calqués sur
+  `discountCents` / `discountAdjustment` (§8).
 - Une table `order_cutoff_waiver` pour les dérogations de §7.
-- Les quatre rangs de `resolveOrderCutoff`, sa contrainte d'unicité et ses
-  12 tests **ne bougent pas**.
+- 🔴 **`OrderCutoff` est superseded.** Elle reste en place et servie tant que le
+  fil n'apporte pas les limites : la retirer avant serait retirer la seule règle
+  appliquée. Son démontage est un lot à part, en trois déploiements — étendre
+  (le fil), basculer (la garde lit la limite de l'article et retombe sur
+  `OrderCutoff` tant qu'elle est nulle), resserrer (l'écran et la table
+  disparaissent).
 
 ### Il n'y a pas de commande sans date
 
-La première version prévoyait le cas d'une commande sans jour de remise. Il
-n'existe pas : `orderPayloadSchema` rend `requestedDeliveryDate` **obligatoire**
-(`packages/contracts/src/order.ts:115`), avec sa raison écrite — « sans date elle
+`orderPayloadSchema` rend `requestedDeliveryDate` **obligatoire**
+(`packages/contracts/src/order.ts`), avec sa raison écrite — « sans date elle
 n'entre dans aucune journée de fabrication ». La colonne
 `Order.requestedDeliveryDate` est nullable pour les lignes anciennes, pas pour ce
 qu'on accepte aujourd'hui.
@@ -676,48 +624,40 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 
 ## 12. Les lots
 
-| #   | Lot                                                                                                   | Dépend de                               |
-| --- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| ✅0 | **Le fuseau** (§10) : `TZ`, conversion explicite, test sous `TZ=UTC`                                  | —                                       |
-| ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier nommée, e2e sur le refus          | 0                                       |
-| ✅2 | **La grâce** : `graceMinutes` par rang, les trois états, section de réglages                          | 1                                       |
-| 3   | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                      | 2                                       |
-| 4   | **La surtaxe** : réglage, terme de panier, gel sur la commande, **TVA tranchée** (§8)                 | 3                                       |
-| 5   | **La chaîne de fabrication côté PIM** : table, écrans famille / fiche / déclinaison, remontée d'arbre | —                                       |
-| 6   | **Le fil** : `snapshot` v6, colonne miroir, l'addition dans la garde                                  | 1, 5                                    |
-| 7   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                     | 6 + lot 1 de `plan-boutique-sur-api.md` |
+| #   | Lot                                                                                                                       | Dépend de                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| ✅0 | **Le fuseau** : `TZ`, conversion explicite, runner en `TZ=UTC`                                                            | —                                       |
+| ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier, e2e sur le refus                                     | 0                                       |
+| ✅2 | **La grâce** : trois états, deux codes d'erreur distincts                                                                 | 1                                       |
+| ✅3 | **Le contexte `order-time-limitation`** : l'échelle, l'héritage champ par champ, les deux contraintes en base, le journal | —                                       |
+| 4   | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                 | 3                                       |
+| 5   | **Le fil** : `snapshot` v6, colonnes miroir, la garde lit la limite de l'article                                          | 1, 3                                    |
+| 6   | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                          | 2                                       |
+| 7   | **La surtaxe** : réglage, terme de panier, gel sur la commande, **TVA tranchée** (§8)                                     | 6                                       |
+| 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                         | 5 + lot 1 de `plan-boutique-sur-api.md` |
+| 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                       | 5                                       |
 
-### Ce que le lot 1 a laissé ouvert, volontairement
+### Ce que les lots livrés ont laissé ouvert, volontairement
 
 - **Le back-office n'est pas soumis à la limite.** Le membre de l'équipe au
   téléphone EST l'autorité qui déroge ; tant que la dérogation n'est pas un objet
   en propre, lui opposer la limite lui retirerait une capacité qu'il a
   aujourd'hui sans rien lui donner. L'exemption est écrite dans la garde, datée,
-  et couverte par un test qui **changera de sens** au lot 3.
-- **Le devis (`POST /orders/quote`) ne refuse rien.** Une lecture ne mute pas et
-  n'a pas non plus à bloquer : c'est au lot 7 de griser une date à la sélection.
-  Refuser au devis ferait découvrir la limite au moment le plus tardif et le
-  moins explicable.
-- ✅ **Les jours de service sont devenus relatifs.** `SERVICE_DAY = "2026-09-01"`
-  vivait dans six suites e2e, et `admin-pricing` en portait trois de plus en dur
-  — sept fichiers. Elles restaient vertes faute de règle semée, mais depuis le
-  lot 1 **un jour de service est comparé à l'horloge** : la première suite qui
-  aurait semé une règle avec cette constante aurait trouvé une bombe déjà armée.
-  Toutes passent désormais par `serviceDay()` du harnais e2e, pendant de
-  `daysAgo()`.
+  et couverte par un test qui **changera de sens** au lot 6.
+- **Le devis et le brouillon ne refusent rien.** Une lecture ne mute pas et n'a
+  pas à bloquer ; un brouillon n'est pas un engagement. C'est au lot 8 de griser
+  une date à la sélection.
+- **Le référentiel résout, mais personne ne lit encore sa résolution.** Le lot 3
+  a livré l'échelle et son service de résolution ; c'est le lot 5 qui les
+  raccorde à la garde. D'ici là, la seule règle appliquée reste `OrderCutoff`.
 
-  ⚠️ Les fenêtres `validFrom` / `validTo` d'`admin-pricing` restent **absolues**,
-  et c'est l'exception écrite du document racine : elles ne sont comparées
-  qu'entre elles — adjacence, chevauchement —, jamais à l'horloge.
+### Deux remarques d'ordre
 
-Deux remarques d'ordre :
-
-- **Le lot 1 a une valeur propre.** Il ferme le trou entre un écran qui promet et
-  un serveur qui ne refuse pas, et il ne demande rien au PIM. Tout le reste en
-  dépend, parce que grâce, dérogation et surtaxe n'ont pas de sens tant que rien
-  n'est refusé.
-- **Le lot 5 est indépendant** et peut se mener en parallèle : il n'ajoute qu'une
-  déclaration, sans consommateur, jusqu'au lot 6.
+- **Le lot 1 avait une valeur propre** : il fermait le trou entre un écran qui
+  promettait et un serveur qui ne refusait pas. Tout le reste en dépend, parce
+  que grâce, dérogation et surtaxe n'ont pas de sens tant que rien n'est refusé.
+- **Le lot 3 est indépendant** et l'a été : il n'ajoute qu'une déclaration, sans
+  consommateur, jusqu'au lot 5.
 
 ## 13. Ce qui a été vérifié, et où
 
@@ -746,4 +686,8 @@ Deux remarques d'ordre :
 | Les trois états, les deux bornes incluses                            | `packages/contracts/src/__tests__/order-cutoff.spec.ts`                           |
 | Deux codes distincts (`cutoff.grace` / `cutoff.past`)                | `src/b2b/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts` |
 | Une livraison ne peut matcher aucune règle de point                  | `packages/contracts/src/order-cutoff.ts:131`                                      |
+| L'échelle et l'héritage champ par champ                              | `src/pim/order-time-limitation/domain/services/__tests__/`                        |
+| Une règle globale unique, tenue par `coalesce(scope_id,'')`          | `test/pim-order-time-limits.e2e-spec.ts`                                          |
+| Une portée contradictoire refusée par la base                        | idem, `CHECK order_time_limit_scope_id_iff_not_global`                            |
+| Écrire sans journaliser est inexprimable (`WriteTicket`)             | `src/pim/order-time-limitation/domain/ports/`                                     |
 | La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                      |

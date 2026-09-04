@@ -15,7 +15,7 @@
  * tient plus.
  */
 
-/** La chose dont l'événement parle — onze sujets, énumérés plutôt que comptés. */
+/** La chose dont l'événement parle — douze sujets, énumérés plutôt que comptés. */
 export type PimSubjectType =
   | "vat_rate"
   | "product"
@@ -27,7 +27,8 @@ export type PimSubjectType =
   | "ingredient"
   | "appellation"
   | "allergen_category"
-  | "allergen_entry";
+  | "allergen_entry"
+  | "order_time_limit";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -284,6 +285,18 @@ export const PIM_EVENTS = {
   allergenEntryUpdated: "allergen_entry.updated",
   allergenEntryArchived: "allergen_entry.archived",
   allergenEntryRestored: "allergen_entry.restored",
+
+  /**
+   * **Un point d'arrêt de prise de commande a été posé** sur une portée.
+   *
+   * Un seul fait pour la création et le remplacement, parce qu'il n'y a qu'une
+   * règle par portée : « posé » décrit exactement ce qui s'est produit, alors
+   * que distinguer `created` de `updated` obligerait le lecteur à recoller deux
+   * types pour suivre une seule valeur dans le temps.
+   */
+  orderTimeLimitSet: "order_time_limit.set",
+  /** Retirée : l'article retombe sur le rang du dessus. */
+  orderTimeLimitRemoved: "order_time_limit.removed",
 } as const;
 
 /**
