@@ -20,9 +20,11 @@
 `priceAll` au lieu d'une fois par article — de `3 × N` lectures à `3`.
 
 **Il ne fait pas** : accélérer la résolution, toucher aux étages, à l'éviction,
-aux planchers dynamiques, ni au nombre d'appels que les écrans déclenchent. Ce
-dernier est mesuré ailleurs — **13 appels pour une saisie de huit lignes** — et
-il rend plus que ce plan. Celui-ci n'est pas le premier à faire.
+ni aux planchers dynamiques.
+
+Le **nombre d'appels**, lui, est dans ce plan — en **lot 0**, et c'est le premier
+à faire. Ce document a d'abord été écrit sans lui, ce qui était incohérent :
+il affirmait « le front rend plus » et proposait un plan sans front.
 
 ## 2. 🔴 Ce que l'index N'EST PAS : un gain de vitesse
 
@@ -55,7 +57,62 @@ les lectures tombent.
 > **Le seul gain de ce plan est le compte d'opérations facturées.** Tout ce qui
 > ressemble à de la vitesse est du maintien.
 
-## 3. 🔴 Le lot 1 a changé : un test, pas un champ
+## 3. Lot 0 — le front cesse de demander à chaque frappe
+
+**Le premier à faire, et le seul dont le gain ne dépend d'aucune mesure.**
+
+`nouvelle-commande-page.ts` porte un `effect()` sur `cart.lines()` qui appelle
+`refreshQuote` sans debounce et sans déduplication. Mesuré :
+**13 appels pour une saisie de huit lignes** — 8 ajouts, 4 reprises de quantité,
+1 retrait — soit ~251 opérations là où le seul devis de validation en coûterait 26. Le test est
+`commandes/nouvelle-commande/__tests__/quote-call-count.spec.ts`.
+
+### Deux gestes, dans cet ordre de valeur
+
+1. **Dédupliquer.** Le panier ré-émet même quand la quantité **ne change pas de
+   valeur** — un champ qui perd puis reprend le focus, une flèche haut puis bas.
+   La clé de comparaison est le couple `sku × quantité` du panier ; si elle est
+   identique, il n'y a rien à redemander. Gratuit, et ça attrape le cas le plus
+   bête ;
+2. **Amortir.** Une saisie est une rafale : on ne chiffre qu'à l'accalmie. Il
+   n'existe **aucun idiome de debounce dans le dépôt** — la recherche ne rend que
+   le test ci-dessus. Ce lot en pose donc un, et il servira deux fois (cf. plus
+   bas).
+
+⚠️ La garde existante — « le panier a pu changer pendant l'aller-retour : on ne
+pose un devis que s'il parle encore du panier courant » — **reste**. Elle protège
+d'une réponse en retard ; la déduplication empêche l'appel. Deux problèmes
+différents.
+
+### 🔴 Ce que ce lot NE fait pas : hydrater
+
+Le comptoir n'est pas la boutique, et la différence décide :
+
+|                        | ce que l'écran doit montrer                                        | donc                                                |
+| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------- |
+| **Panier back-office** | le prix **vivant**, pendant qu'un commercial le lit au téléphone   | amortir, jamais différer au checkout                |
+| **Boutique client**    | un prix qu'on peut hydrater à l'ouverture et confirmer au checkout | `volumeTiers` rend la sélection possible sans appel |
+
+Les paliers étant des **résolutions complètes à leur quantité**, la boutique
+sélectionne au lieu de calculer. Le comptoir, lui, a quelqu'un qui attend une
+réponse : différer y serait un défaut, pas une économie. Cf.
+`optimisation-resolution-de-prix.md` §3.
+
+### Où l'idiome vit
+
+Dans le back-office d'abord, là où le besoin est. **Second consommateur connu** :
+le lot 2 de [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md), qui branchera
+la boutique sur `POST /orders/quote`. Le jour où il arrive, l'idiome monte dans
+`@lfd/b2b-ui` — pas avant : un utilitaire partagé écrit pour un seul appelant se
+révèle toujours mal découpé quand le second arrive.
+
+### Comment on saura
+
+Le test de comptage **pin le nombre**. Après ce lot, il doit être repris à la
+valeur nouvelle — ce n'est pas un test qu'on supprime, c'est la mesure qui
+continue. Cible : **2 à 3 appels** pour la même saisie, contre 13.
+
+## 4. Lot 1 — un test, pas un champ
 
 La première version faisait porter à `ScopedPriceFloor` un `suspendedFrom`, au
 motif que l'invariant « un plancher archivé n'arbitre plus » n'était pas
@@ -86,7 +143,7 @@ il n'est qu'un élagage pour les règles et les barèmes (qui, eux, replient
 dans la règle qu'il fabrique). Cette asymétrie doit rester lisible : c'est elle
 qui interdit de charger les planchers plus largement.
 
-## 4. Lot 2 — l'index, et sa clé
+## 5. Lot 2 — l'index, et sa clé
 
 `matchesScope` ne connaît que quatre formes : `global` (vrai sans condition), et
 trois **égalités** — `category:<id>`, `product:<sku>`, `variant:<sku>`. Un article
@@ -121,7 +178,7 @@ son arbitrage et `AmbiguousPriceRulesError` — lequel survit à l'index : deux
 règles strictement aussi spécifiques ont la même clé, et `winnerOf` détecte
 l'égalité indépendamment de l'ordre.
 
-## 5. Lot 3 — hisser
+## 6. Lot 3 — hisser
 
 Les trois lectures sortent de la boucle. L'ordre n'est pas une préférence :
 hisser sans indexer échange des lectures contre du balayage (§2).
@@ -152,19 +209,20 @@ une régression d'ISP. **La forme à retenir** : la méthode de lot devient l'un
 lecture, et `candidatesFor` se réécrit **par-dessus** — un appel de lot à une
 seule portée. Un `WHERE`, deux entrées.
 
-## 6. Ce que ça touche, recompté
+## 7. Ce que ça touche, recompté
 
 |                                     | quoi                                                                                                     |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | 3 ports + 3 adaptateurs             | la méthode de lot ; `candidatesFor` réécrit par-dessus                                                   |
 | 2 suites de handlers                | `place-order.handler.spec.ts`, `place-order-for-customer.handler.spec.ts`                                |
 | 1 e2e neuf                          | le plancher archivé (lot 1)                                                                              |
+| 1 écran + son test de comptage      | `nouvelle-commande-page.ts` (lot 0)                                                                      |
 | 3 appelants de `resolveScopedFloor` | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts` — inchangés, mais à relire |
 
 ⚠️ Le lot 1 ne touche **plus** `ScopedPriceFloor`, `price-rows.ts`,
 `pricing-floor.ts` ni leurs specs : c'est un test, pas un changement de type.
 
-## 7. Ce qui reste par article, et pourquoi
+## 8. Ce qui reste par article, et pourquoi
 
 - **la décision d'engagement** — elle dépend de la quantité et du cumul, que le
   `WHERE` n'utilise pas. C'est ce qui rend le hissage possible ;
@@ -173,7 +231,7 @@ seule portée. Un `WHERE`, deux entrées.
   plancher **global** à porte de volume les rendrait obligatoires sur chaque
   ligne. Batchables (mêmes fenêtres pour tout le panier), **lot suivant**.
 
-## 8. La porte
+## 9. La porte
 
 `optimisation-resolution-de-prix.md` §6 : si `priceAll` pèse **moins de 20 %** des
 opérations facturées, les lots 2 et 3 ne s'ouvrent pas. Le **lot 1 fait
@@ -186,7 +244,7 @@ résolution datée existe, le hissage ferait revenir une règle archivée depuis
 `unarchivedAt()` porte cette sémantique et n'est utilisé que par le tableau de
 bord.
 
-## 9. Ce qui a été vérifié, et où
+## 10. Ce qui a été vérifié, et où
 
 | Affirmation                                                      | Vérifiée dans                                                                      |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
