@@ -73,18 +73,19 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
         variants: [
           {
             ...sheet,
+            id: "var_1",
             sku: SKU,
             name: "Croissant",
             priceMillicents,
             weightGrams: null,
             isDefault: true,
-            orderTimeLimit: null,
             position: 0,
             vatRatePercent: 5.5,
           },
         ],
       },
     ],
+    orderTimeLimits: [],
   };
 }
 

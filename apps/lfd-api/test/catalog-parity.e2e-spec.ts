@@ -54,6 +54,7 @@ class StubFeed extends B2bCatalogFeedPreview {
         kind: "daily" as const,
         variants: [
           {
+            id: `var_${variant.sku}`,
             sku: variant.sku,
             name: variant.name,
             priceMillicents: variant.priceMillicents,
@@ -63,10 +64,10 @@ class StubFeed extends B2bCatalogFeedPreview {
             vatRatePercent: variant.vatRatePercent,
             allergens: null,
             allergenLabels: null,
-            orderTimeLimit: null,
           },
         ],
       })),
+      orderTimeLimits: [],
     };
   }
 }

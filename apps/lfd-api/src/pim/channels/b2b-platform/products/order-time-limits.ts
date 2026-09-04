@@ -1,60 +1,29 @@
-import type { SyncOrderTimeLimit } from "@lfd/catalog-sync";
-import { categoryPathOf, type CategoryNode, type OrderTimeLimitView } from "@lfd/pim-contracts";
-
-import { resolveOrderTimeLimit } from "../../../order-time-limitation/domain/services/resolve-order-time-limit.js";
+import type { SyncOrderTimeLimitRule } from "@lfd/catalog-sync";
+import type { OrderTimeLimitView } from "@lfd/pim-contracts";
 
 /**
- * Ce qu'il faut d'un produit pour lui résoudre une limite — et rien de plus.
+ * **Une règle du référentiel → une règle du fil.**
  *
- * Volontairement plus étroit que `ProductRecord`, auquel il est structurellement
- * satisfait : cette fonction ne lit ni le prix, ni les allergènes, ni les
- * canaux. Le déclarer ainsi la rend éprouvable sans fabriquer une fiche
- * complète, donc **sans le `as unknown as` qu'un doublage partiel aurait
- * exigé** — un cast dans un test coûte plus cher qu'ailleurs, c'est lui qui
- * laisse un double dériver de ce qu'il prétend jouer.
+ * La conversion est explicite alors que `OrderTimeLimitView` satisfait déjà la
+ * forme du fil — et c'est tout l'intérêt : la vue porte en plus son
+ * identifiant et son `scopeLabel`, c'est-à-dire le NOM de la famille visée.
+ * Passer la vue telle quelle aurait laissé ces deux champs entrer dans le
+ * snapshot, donc dans son empreinte : renommer une famille aurait produit une
+ * livraison, et le récepteur aurait reçu une clé qui ne lui sert à rien.
+ *
+ * Le typage ne l'aurait pas vu — TypeScript accepte le surplus dès que l'objet
+ * n'est pas un littéral. C'est exactement le genre de fuite qu'une projection
+ * doit refuser à la main.
+ *
+ * Cette fonction remplace `resolveLimitsByVariant`, qui descendait l'échelle ici
+ * pour n'envoyer que des valeurs. La v7 envoie les rangs ; la descente vit
+ * désormais dans `@lfd/catalog-sync`, partagée par les deux rives.
  */
-export interface LimitTargetProduct {
-  readonly id: string;
-  readonly categoryId: string;
-  readonly variants: readonly { readonly id: string }[];
-}
-
-/**
- * **La limite de commande de chaque déclinaison**, résolue une fois pour tout le
- * push.
- *
- * Résoudre ici plutôt que dans la projection garde cette dernière pure, et
- * surtout garde l'échelle du référentiel d'un seul côté du fil : la plateforme
- * reçoit des valeurs, jamais des rangs.
- *
- * Les déclinaisons **sans limite** ne sont pas dans la carte. Une entrée par
- * article dirait la même chose plus longuement, et l'immense majorité du
- * catalogue n'a aucune limite propre.
- */
-export function resolveLimitsByVariant(
-  products: readonly LimitTargetProduct[],
-  categories: readonly CategoryNode[],
-  rules: readonly OrderTimeLimitView[],
-): ReadonlyMap<string, SyncOrderTimeLimit> {
-  // Le raccourci qui compte : sans aucune règle, il n'y a rien à résoudre, et on
-  // évite de remonter l'arbre de quatre-vingt-dix produits pour rien.
-  if (rules.length === 0) {
-    return new Map();
-  }
-  const resolved = new Map<string, SyncOrderTimeLimit>();
-
-  for (const product of products) {
-    const categoryPath = categoryPathOf(categories, product.categoryId);
-    for (const variant of product.variants) {
-      const limit = resolveOrderTimeLimit(rules, {
-        variantId: variant.id,
-        productId: product.id,
-        categoryPath,
-      });
-      if (limit !== null) {
-        resolved.set(variant.id, limit);
-      }
-    }
-  }
-  return resolved;
+export function toSyncRule(rule: OrderTimeLimitView): SyncOrderTimeLimitRule {
+  return {
+    scope: { type: rule.scope.type, id: rule.scope.id },
+    daysBefore: rule.daysBefore,
+    time: rule.time,
+    graceMinutes: rule.graceMinutes,
+  };
 }

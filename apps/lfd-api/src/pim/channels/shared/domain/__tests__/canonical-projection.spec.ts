@@ -18,6 +18,7 @@ import { canonicalProjection, projectionFingerprint } from "../canonical-project
  */
 
 const variant = (sku: string, over: Partial<SyncVariant> = {}): SyncVariant => ({
+  id: `var_${sku}`,
   sku,
   name: `Déclinaison ${sku}`,
   priceMillicents: 210_000,
@@ -27,7 +28,6 @@ const variant = (sku: string, over: Partial<SyncVariant> = {}): SyncVariant => (
   vatRatePercent: 5.5,
   allergens: ["AU"],
   allergenLabels: { labels: [{ category: "gluten", label: "gluten" }], incomplete: false },
-  orderTimeLimit: null,
   ...over,
 });
 
@@ -58,6 +58,7 @@ const snapshot = (over: Partial<CatalogSnapshot> = {}): CatalogSnapshot => ({
   generatedAt: "2026-01-01T00:00:00.000Z",
   categories: [category("c_vie"), category("c_pat")],
   products: [product("VIE-001"), product("PAT-002")],
+  orderTimeLimits: [],
   ...over,
 });
 

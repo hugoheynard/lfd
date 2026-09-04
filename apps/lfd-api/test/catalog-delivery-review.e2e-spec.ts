@@ -73,6 +73,7 @@ function snapshot(
       kind: "daily" as const,
       variants: [
         {
+          id: `var_${variant.sku}`,
           sku: `${variant.sku}-1`,
           name: `Article ${variant.sku}`,
           priceMillicents: variant.priceMillicents ?? 210_000,
@@ -82,10 +83,10 @@ function snapshot(
           vatRatePercent: 5.5,
           allergens: variant.allergens === undefined ? null : variant.allergens,
           allergenLabels: null,
-          orderTimeLimit: null,
         },
       ],
     })),
+    orderTimeLimits: [],
   } satisfies CatalogSnapshot;
 }
 

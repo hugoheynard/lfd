@@ -21,6 +21,9 @@ const FIELDS: Readonly<Record<string, string>> = {
   weight: 'poids',
   category: 'famille',
   allergens: 'allergènes',
+  // Depuis la v7 du fil. Elle ne se comparait pas : changer la limite globale
+  // produisait une arrivée annoncée « 0 changement », validée à l'aveugle.
+  orderLimit: 'limite de commande',
 };
 
 /** Ce que l'arrivée fait à un article, dit comme on le lit. */

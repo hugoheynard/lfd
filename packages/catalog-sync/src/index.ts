@@ -3,6 +3,7 @@ export {
   syncAllergenLabelSchema,
   syncAllergenLabelsSchema,
   syncCategorySchema,
+  syncOrderTimeLimitRuleSchema,
   syncVariantSchema,
   syncProductSchema,
   catalogSnapshotSchema,
@@ -14,9 +15,22 @@ export type {
   SyncAllergenLabels,
   SyncCategory,
   SyncOrderTimeLimit,
+  SyncOrderTimeLimitRule,
   SyncVariant,
   SyncProduct,
   CatalogSnapshot,
   StoredCatalogSnapshot,
   CatalogIngestionReport,
 } from "./snapshot.js";
+export {
+  categoryPathOf,
+  explainOrderTimeLimit,
+  resolveOrderTimeLimit,
+} from "./order-time-limit-resolution.js";
+export type {
+  CategoryNode,
+  ExplainedOrderTimeLimit,
+  LimitTarget,
+  OrderTimeLimitScopeType,
+  ResolvedField,
+} from "./order-time-limit-resolution.js";

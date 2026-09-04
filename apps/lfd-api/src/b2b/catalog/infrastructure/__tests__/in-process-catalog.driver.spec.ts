@@ -31,6 +31,7 @@ const snapshot: CatalogSnapshot = {
       kind: "daily",
       variants: [
         {
+          id: "var_1",
           sku: "VIE-001-1",
           name: "Croissant",
           priceMillicents: 210_000,
@@ -40,11 +41,11 @@ const snapshot: CatalogSnapshot = {
           vatRatePercent: 5.5,
           allergens: null,
           allergenLabels: null,
-          orderTimeLimit: null,
         },
       ],
     },
   ],
+  orderTimeLimits: [],
 };
 
 const ORIGIN = { revisionId: "rev_7", fingerprint: "empreinte-A" };

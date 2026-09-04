@@ -50,6 +50,7 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
       kind: "daily" as const,
       variants: [
         {
+          id: `var_${variant.sku}`,
           sku: variant.sku,
           name: variant.sku,
           priceMillicents: variant.priceMillicents ?? 210_000,
@@ -59,10 +60,10 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
           vatRatePercent: 5.5,
           allergens: null,
           allergenLabels: null,
-          orderTimeLimit: null,
         },
       ],
     })),
+    orderTimeLimits: [],
   };
 }
 

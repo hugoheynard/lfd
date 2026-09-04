@@ -35,6 +35,7 @@ const snapshot = (skus: readonly string[]): CatalogSnapshot => ({
     kind: "daily" as const,
     variants: [
       {
+        id: `var_${sku}`,
         sku: `${sku}-1`,
         name: sku,
         priceMillicents: 210_000,
@@ -44,10 +45,10 @@ const snapshot = (skus: readonly string[]): CatalogSnapshot => ({
         vatRatePercent: 5.5,
         allergens: null,
         allergenLabels: null,
-        orderTimeLimit: null,
       },
     ],
   })),
+  orderTimeLimits: [],
 });
 
 interface Journal {

@@ -3,7 +3,7 @@ import type {
   SyncAllergenLabels,
   SyncCategory,
   SyncProduct,
-  SyncOrderTimeLimit,
+  SyncOrderTimeLimitRule,
   SyncVariant,
 } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
@@ -93,7 +93,6 @@ function projectVariant(
   htPriceMillicents: number,
   vatRatePercent: number | null,
   inco: IncoProjector,
-  orderTimeLimit: SyncOrderTimeLimit | null,
 ): SyncVariant {
   // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
   // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en aval.
@@ -102,6 +101,9 @@ function projectVariant(
   // n'est que le passage du `readonly` du domaine au tableau du schéma de fil.
   const declared = variant.allergens;
   return {
+    // L'identifiant traverse depuis la v7 : une règle de rang « déclinaison »
+    // vise celui-ci, et le récepteur ne pourrait pas la rattacher au SKU seul.
+    id: variant.id,
     sku: variant.sku,
     name: frenchOf(variant.name),
     priceMillicents: htPriceMillicents,
@@ -111,10 +113,6 @@ function projectVariant(
     vatRatePercent,
     allergens: declared === null ? null : [...declared],
     allergenLabels: declared === null ? null : labelsOf(inco.project(declared)),
-    // Résolue en amont, comme le taux : `null` dit « l'émetteur a regardé et n'a
-    // rien trouvé », pas « on ne sait pas ». La distinction tient parce que le
-    // champ est TOUJOURS présent depuis la v6 du fil.
-    orderTimeLimit,
   };
 }
 
@@ -146,7 +144,6 @@ function sortVariants(
   vatRatePercent: number | null,
   proRatioBp: number,
   inco: IncoProjector,
-  limitByVariantId: ReadonlyMap<string, SyncOrderTimeLimit>,
 ): {
   sellable: SyncVariant[];
   excluded: Exclusion[];
@@ -184,15 +181,7 @@ function sortVariants(
     // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
     // explicite par déclinaison : l'immense majorité des articles n'en a pas, et
     // une entrée par article ne dirait rien de plus.
-    sellable.push(
-      projectVariant(
-        variant,
-        htMillicents,
-        vatRatePercent,
-        inco,
-        limitByVariantId.get(variant.id) ?? null,
-      ),
-    );
+    sellable.push(projectVariant(variant, htMillicents, vatRatePercent, inco));
   }
 
   return { sellable, excluded };
@@ -246,14 +235,14 @@ export function projectCatalog(
    */
   proRatioBp: number,
   /**
-   * **La limite de commande de chaque déclinaison**, déjà résolue — l'échelle du
-   * référentiel et son héritage champ par champ ont fait leur travail avant.
+   * **L'échelle des limites de commande**, telle quelle.
    *
-   * Passée plutôt que recalculée, pour la même raison que le taux : la règle n'a
-   * qu'une écriture, et cette fonction reste pure. Une déclinaison absente de la
-   * carte n'a **aucune** limite.
+   * Depuis la v7 du fil, ce sont les RÈGLES qui traversent et non leur
+   * résolution : une règle globale se recopiait sur N articles, et un diff qui
+   * compare des SKU n'avait rien à dire d'un changement qui n'est pas par SKU.
+   * Cette projection ne descend donc plus l'échelle — elle la transporte.
    */
-  limitByVariantId: ReadonlyMap<string, SyncOrderTimeLimit>,
+  orderTimeLimits: readonly SyncOrderTimeLimitRule[],
   /**
    * Le référentiel d'allergènes, lu **une fois par push** et passé ici (D6) —
    * reçu plutôt que cherché, comme le taux et le rapport pro, ce qui garde
@@ -289,7 +278,6 @@ export function projectCatalog(
       vatOf(vatByProduct.get(product.id) ?? {}),
       proRatioBp,
       inco,
-      limitByVariantId,
     );
     excluded.push(...rejected);
 
@@ -320,6 +308,7 @@ export function projectCatalog(
         .filter((category) => usedCategories.has(category.id))
         .map(projectCategory),
       products: kept,
+      orderTimeLimits: [...orderTimeLimits],
     },
     excluded,
   };

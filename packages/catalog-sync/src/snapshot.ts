@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 6;
+export const CATALOG_SNAPSHOT_VERSION = 7;
 
 /**
  * Une famille de produits, **à plat**.
@@ -108,6 +108,18 @@ export type SyncAllergenLabels = z.infer<typeof syncAllergenLabelsSchema>;
  * traiter cet écart, pas le découvrir.
  */
 export const syncVariantSchema = z.object({
+  /**
+   * L'identifiant de la déclinaison **chez l'émetteur**.
+   *
+   * Il traverse depuis la v7, et pour une seule raison : une règle de rang
+   * « déclinaison » vise cet identifiant-là. Sans lui, le récepteur ne saurait
+   * pas à quel article une telle règle s'applique — il ne connaît que le SKU,
+   * et traduire côté émetteur aurait mis deux clés pour une chose sur le fil.
+   *
+   * `sku` reste la clé du récepteur : c'est elle qui identifie un article
+   * vendable, et elle ne change pas quand le référentiel réorganise ses fiches.
+   */
+  id: z.string().min(1),
   sku: z.string().min(1),
   name: z.string().min(1),
   /**
@@ -180,45 +192,68 @@ export const syncVariantSchema = z.object({
    * l'inverse — « aucune fiche » ne doit pas se lire « aucun allergène ».
    */
   allergenLabels: syncAllergenLabelsSchema.nullable(),
-  /**
-   * **Jusqu'à quand on prend commande de cet article** — résolu à l'émission.
-   *
-   * L'émetteur envoie la valeur **résolue**, jamais l'échelle qui l'a produite
-   * (`global → famille → produit → déclinaison`, avec un héritage champ par
-   * champ). Le récepteur n'a pas à connaître l'arbre des familles pour savoir
-   * quand un SKU ferme — même raisonnement que `vatRatePercent` : un article se
-   * vend seul, il doit pouvoir dire seul quand il ferme.
-   *
-   * `null` = **aucune limite pour cet article**, et c'est net : l'émetteur a
-   * regardé et n'a rien trouvé. À ne pas confondre avec un champ ABSENT, qui dit
-   * « ce push est antérieur à la v6 » — d'où la montée de version plutôt qu'un
-   * ajout silencieux.
-   *
-   * Les trois valeurs voyagent ensemble et sont toutes requises **une fois le
-   * champ présent** : une limite sans heure ne se compare à rien, et un
-   * rattrapage sans limite n'a rien à rattraper. L'héritage a déjà fait son
-   * travail avant ce point ; ce qui sort est complet ou absent.
-   */
-  orderTimeLimit: z
-    .object({
-      /** Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même. */
-      daysBefore: z.number().int().min(0).max(14),
-      /** `HH:MM` en heure de pendule d'**Europe/Paris**, jamais un instant UTC. */
-      time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM"),
-      /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
-      graceMinutes: z.number().int().min(0).max(720),
-    })
-    .nullable(),
 });
+
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
 
 /**
- * La limite résolue telle qu'elle voyage — les trois valeurs, complètes.
+ * **Une règle de l'échelle**, telle qu'elle traverse — le rang, et ce qu'il pose.
  *
- * Extraite du schéma plutôt que redéclarée : une seconde définition finirait par
- * autoriser un `graceMinutes` optionnel d'un côté et pas de l'autre.
+ * ⚠️ **Renversement assumé de la v6.** Le fil portait la limite **résolue** de
+ * chaque déclinaison, sur l'argument qu'« un article se vend seul, il doit
+ * pouvoir dire seul quand il ferme ». L'argument valait pour le taux de TVA ; il
+ * ne valait pas ici, et trois symptômes le disaient :
+ *
+ * - **une règle globale se recopiait sur N articles.** La changer réécrivait le
+ *   catalogue entier, pour une décision qui tient en une ligne ;
+ * - **le diff d'arrivée ne pouvait rien en dire.** Il compare des SKU, et un
+ *   changement qui n'est pas par SKU n'y a pas de place : passer la limite
+ *   globale de 18 h à 16 h produisait une livraison annoncée « 0 changement »,
+ *   qu'un humain devait valider à l'aveugle ;
+ * - **la boîte de réception n'avait donc rien à valider**, alors que fermer deux
+ *   heures plus tôt sur toute la plateforme est exactement ce qu'on veut voir
+ *   passer devant quelqu'un.
+ *
+ * Ce qui traverse est donc la **donnée**, plus le résultat de son calcul. Le
+ * récepteur résout avec {@link resolveOrderTimeLimit}, la même descente que le
+ * référentiel — une seule implémentation, dans ce paquet, parce qu'elle est
+ * désormais partagée par les deux rives.
+ *
+ * Les trois valeurs sont **nullables séparément** : c'est l'héritage champ par
+ * champ. « Le pain ferme à 16 h » ne redit pas le nombre de jours.
  */
-export type SyncOrderTimeLimit = NonNullable<SyncVariant["orderTimeLimit"]>;
+export const syncOrderTimeLimitRuleSchema = z.object({
+  scope: z.object({
+    type: z.enum(["global", "category", "product", "variant"]),
+    /** L'identifiant de la cible ; `null` — et seulement — pour le rang global. */
+    id: z.string().min(1).nullable(),
+  }),
+  /** Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même. */
+  daysBefore: z.number().int().min(0).max(14).nullable(),
+  /** `HH:MM` en heure de pendule d'**Europe/Paris**, jamais un instant UTC. */
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM")
+    .nullable(),
+  /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
+  graceMinutes: z.number().int().min(0).max(720).nullable(),
+});
+export type SyncOrderTimeLimitRule = z.infer<typeof syncOrderTimeLimitRuleSchema>;
+
+/**
+ * **La limite d'un article, une fois l'échelle descendue** — les trois valeurs,
+ * complètes.
+ *
+ * Elle ne traverse plus (cf. {@link syncOrderTimeLimitRuleSchema}) mais reste le
+ * type de ce que la résolution rend, et de ce que le miroir range : une limite
+ * n'existe que si le jour ET l'heure sont résolus, et le rattrapage a un défaut
+ * honnête — pas de rattrapage déclaré vaut `0`, limite ferme.
+ */
+export interface SyncOrderTimeLimit {
+  readonly daysBefore: number;
+  readonly time: string;
+  readonly graceMinutes: number;
+}
 
 /** Un produit et ses déclinaisons vendables. Au moins une, sinon rien à vendre. */
 export const syncProductSchema = z.object({
@@ -243,6 +278,16 @@ export const catalogSnapshotSchema = z.object({
   generatedAt: z.string().datetime({ offset: true }),
   categories: z.array(syncCategorySchema),
   products: z.array(syncProductSchema),
+  /**
+   * **L'échelle des limites de commande**, telle que le référentiel la pose.
+   *
+   * Quelques lignes pour tout le catalogue, là où la v6 en recopiait une par
+   * déclinaison. Un tableau **vide** est le cas courant et il est net : personne
+   * n'a posé de limite, donc rien ne ferme. À ne pas confondre avec le champ
+   * ABSENT d'un snapshot antérieur à la v7, où la limite voyageait ailleurs —
+   * c'est la VERSION qui distingue les deux, jamais la longueur du tableau.
+   */
+  orderTimeLimits: z.array(syncOrderTimeLimitRuleSchema),
 });
 export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
 
@@ -270,20 +315,35 @@ export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
  * échouer à l'émission, pas produire une arrivée dégradée.
  */
 export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
-  version: z.union([z.literal(5), z.literal(6)]),
+  version: z.union([z.literal(5), z.literal(6), z.literal(7)]),
   products: z.array(
     syncProductSchema.extend({
       variants: z
         .array(
           syncVariantSchema.extend({
-            orderTimeLimit: syncVariantSchema.shape.orderTimeLimit
-              .optional()
-              .transform((value) => value ?? null),
+            // Absent avant la v7 : le fil n'y portait pas l'identifiant de la
+            // déclinaison, faute d'en avoir eu besoin.
+            id: z.string().min(1).optional(),
+            // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
+            // n'est plus émise, et reste lisible : une arrivée mise en file un
+            // mardi peut être relue le jeudi, sur un code qui a changé.
+            orderTimeLimit: z
+              .object({
+                daysBefore: z.number().int().min(0).max(14),
+                time: z
+                  .string()
+                  .regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM"),
+                graceMinutes: z.number().int().min(0).max(720),
+              })
+              .nullable()
+              .optional(),
           }),
         )
         .min(1),
     }),
   ),
+  /** Absentes avant la v7 : l'échelle ne traversait pas. */
+  orderTimeLimits: z.array(syncOrderTimeLimitRuleSchema).optional(),
 });
 
 /**
@@ -329,5 +389,13 @@ export type CatalogIngestionReport = z.infer<typeof catalogIngestionReportSchema
  * Un snapshot **tel qu'il ressort d'un stockage** : une version connue, et les
  * champs récents éventuellement absents. Tout `CatalogSnapshot` en est un —
  * l'inverse n'est pas vrai.
+ *
+ * ⚠️ Les champs assouplis restent **optionnels en sortie**, sans valeur de
+ * remplacement. Un `.transform(v => v ?? null)` serait plus confortable à lire
+ * et rendrait le type de sortie exigeant : un snapshot du fil, qui ne porte plus
+ * ces champs, cesserait d'en être un — et la phrase ci-dessus deviendrait
+ * fausse. Surtout, la valeur de remplacement effacerait la seule chose qui
+ * compte ici : la différence entre « absent » et « posé à rien ». C'est la
+ * VERSION qui dit comment lire, jamais la présence d'un champ.
  */
 export type StoredCatalogSnapshot = z.infer<typeof storedCatalogSnapshotSchema>;

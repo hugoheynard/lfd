@@ -39,13 +39,28 @@ export interface DeliveredItem {
    * une affirmation qu'un client a le droit de lire.
    */
   readonly allergens: readonly string[] | null;
+  /**
+   * **Jusqu'à quand on prend commande de cet article**, résolue.
+   *
+   * Elle n'était pas comparée, et le fil ne la portait alors qu'en valeur par
+   * déclinaison : passer la limite globale de 18 h à 16 h produisait donc une
+   * arrivée annoncée **« 0 changement »**, qu'un humain devait valider à
+   * l'aveugle. Un diff qui ignore un champ ne dit pas « rien n'a bougé », il ne
+   * dit rien du tout — et c'est pire, parce qu'on le lit comme le premier.
+   */
+  readonly orderTimeLimit: {
+    readonly daysBefore: number;
+    readonly time: string;
+    readonly graceMinutes: number;
+  } | null;
 }
 
 /** Ce qu'une arrivée fait à un SKU. */
 export type SkuChangeKind = "added" | "removed" | "changed";
 
 /** Les champs comparés, nommés — jamais un booléen « a changé ». */
-export type ChangedField = "name" | "price" | "vatRate" | "weight" | "category" | "allergens";
+export type ChangedField =
+  "name" | "price" | "vatRate" | "weight" | "category" | "allergens" | "orderLimit";
 
 /** Ce qui arrive à UN sku. */
 export interface SkuChange {
@@ -79,6 +94,28 @@ function sameAllergens(left: readonly string[] | null, right: readonly string[] 
   return [...left].sort().every((code, index) => code === sortedRight[index]);
 }
 
+/**
+ * Deux limites sont-elles la même ?
+ *
+ * `null` contre une limite compte, et dans les deux sens : un article qui cesse
+ * de fermer et un article qui se met à fermer sont l'un et l'autre une nouvelle.
+ * Les trois valeurs se comparent ensemble parce qu'elles voyagent ensemble —
+ * une limite n'existe qu'entière.
+ */
+function sameLimit(
+  left: DeliveredItem["orderTimeLimit"],
+  right: DeliveredItem["orderTimeLimit"],
+): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  return (
+    left.daysBefore === right.daysBefore &&
+    left.time === right.time &&
+    left.graceMinutes === right.graceMinutes
+  );
+}
+
 /** Les champs qui diffèrent entre ce qui arrive et ce qu'on tient. */
 function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly ChangedField[] {
   const fields: ChangedField[] = [];
@@ -99,6 +136,9 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   }
   if (!sameAllergens(incoming.allergens, mirror.allergens)) {
     fields.push("allergens");
+  }
+  if (!sameLimit(incoming.orderTimeLimit, mirror.orderTimeLimit)) {
+    fields.push("orderLimit");
   }
   return fields;
 }

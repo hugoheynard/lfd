@@ -9,7 +9,7 @@ import { projectionFingerprint } from "../../shared/domain/canonical-projection.
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { OrderTimeLimitRepository } from "../../../order-time-limitation/domain/ports/order-time-limit.repository.js";
-import { resolveLimitsByVariant } from "./order-time-limits.js";
+import { toSyncRule } from "./order-time-limits.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
 import { projectCatalog } from "./projection.js";
@@ -89,18 +89,18 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       this.allergens.catalogue(),
       this.orderTimeLimits.list(),
     ]);
-    // L'échelle du référentiel s'arrête ICI : ce qui traverse le fil est la
-    // valeur résolue de chaque déclinaison, jamais les rangs qui l'ont produite.
-    // La plateforme n'a donc pas à connaître l'arbre des familles pour savoir
-    // quand un article ferme — même raison que pour le taux de TVA.
-    const limitByVariantId = resolveLimitsByVariant(products, categories, timeLimitRules);
+    // L'échelle traverse TELLE QUELLE depuis la v7. Elle s'arrêtait ici, et le
+    // fil ne portait que sa résolution — ce qui recopiait une règle globale sur
+    // N articles et rendait son changement indescriptible : le diff d'arrivée
+    // compare des SKU, et « la limite globale passe à 16 h » n'est pas un
+    // changement de SKU. La boîte de réception annonçait « 0 changement ».
     const { snapshot, excluded } = projectCatalog(
       products,
       categories,
       vatByProduct,
       channelsByProduct,
       rules.rules.proPriceRatio.basisPoints,
-      limitByVariantId,
+      timeLimitRules.map(toSyncRule),
       // Le canal est monolingue français : l'aplatissement se fait à l'émission
       // plutôt que de transporter un objet localisé que personne ne lira.
       IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),
@@ -126,5 +126,6 @@ function emptySnapshot(generatedAt: string): FeedPreview["snapshot"] {
     generatedAt,
     categories: [],
     products: [...EMPTY_SNAPSHOT_PRODUCTS],
+    orderTimeLimits: [],
   };
 }

@@ -2,6 +2,7 @@ import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import type { CatalogItem } from "../domain/entities/catalog-item.js";
 import type { DeliveredItem } from "../domain/delivery-diff.js";
+import { snapshotLimitReader } from "../domain/snapshot-limits.js";
 
 /**
  * **Les deux côtés d'une comparaison d'arrivée**, mis à la même forme.
@@ -14,6 +15,9 @@ import type { DeliveredItem } from "../domain/delivery-diff.js";
 
 /** Le snapshot livré, aplati en articles comparables. */
 export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[] {
+  // Résolue ici comme à l'ingestion, et par le MÊME lecteur : l'écran de
+  // validation doit montrer ce que la validation appliquera, pas autre chose.
+  const limitOf = snapshotLimitReader(snapshot);
   return snapshot.products.flatMap((product) =>
     product.variants.map((variant) => ({
       sku: variant.sku,
@@ -23,6 +27,7 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       weightGrams: variant.weightGrams,
       categoryId: product.categoryId,
       allergens: variant.allergens,
+      orderTimeLimit: limitOf(product, variant),
     })),
   );
 }
@@ -43,5 +48,6 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     weightGrams: item.weightGrams,
     categoryId: item.categoryId,
     allergens: item.allergens,
+    orderTimeLimit: item.orderTimeLimit,
   }));
 }

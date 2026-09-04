@@ -166,6 +166,69 @@ des catégories, pour que la plateforme range sans deviner.
 Le taux de TVA réel est un gain immédiat : le B2B code aujourd'hui 5,5 % en dur
 pour tout, y compris le non-alimentaire.
 
+### 🔴 Ce qui monte sur le fil, et ce qui n'y monte pas — le critère
+
+La question revient à chaque champ : « le fil, ou un appel ? ». La réponse n'est
+pas « le fil est plus moderne » — c'est même l'inverse. La réplication d'état est
+le remède aux frontières de **processus** : chaînes de latence, pannes en
+cascade. Le PIM et le B2B sont deux dossiers du même Nest, une base, un
+déploiement. Il n'y a pas de réseau à assurer.
+
+Le critère est donc ailleurs :
+
+> **Répliquer quand la copie a une raison MÉTIER. Appeler quand on veut juste la
+> valeur courante.**
+
+Le catalogue a cette raison, et elle est excellente : le miroir B2B est une copie
+**validée**. La boîte de réception existe pour qu'une correction d'allergène
+n'entre pas en vente sans qu'un humain l'ait lue, et pour qu'un prix soit gelé à
+une version qu'on puisse produire six mois plus tard. Ça justifie toute la
+cérémonie — la version, l'empreinte, l'attente.
+
+Trois questions qui trient vite un champ candidat :
+
+1. **varie-t-il par article ?** Sinon il n'a rien à faire dans une structure par
+   article ;
+2. **une valeur périmée est-elle fausse, ou seulement imparfaite ?** Fausse ⇒ le
+   fil ment, parce qu'il retarde ;
+3. **est-il lu pour DÉCIDER, ou pour afficher ?**
+
+### La v7, et la faute qu'elle corrige
+
+La **limite de commande** est entrée sur le fil en v6 sous sa forme **résolue** :
+une valeur par déclinaison, l'échelle `global → famille → produit → déclinaison`
+étant descendue à l'émission. L'argument était celui du taux de TVA — « un
+article se vend seul, il doit pouvoir dire seul quand il ferme ». Il ne tenait
+pas, et trois symptômes le disaient :
+
+- **une règle globale se recopiait sur N articles.** La changer réécrivait le
+  catalogue entier, pour une décision qui tient en une ligne ;
+- **le diff d'arrivée ne pouvait rien en dire.** Il compare des SKU, et un
+  changement qui n'est pas par SKU n'y avait pas de place : passer la limite
+  globale de 18 h à 16 h produisait une livraison annoncée **« 0 changement »** ;
+- **la boîte de réception n'avait donc rien à valider**, alors que fermer deux
+  heures plus tôt sur toute la plateforme est exactement ce qu'on veut voir
+  passer devant quelqu'un.
+
+La **v7** transporte donc les **règles** et non leur résultat, et la plateforme
+descend l'échelle elle-même — avec la **même** implémentation
+(`@lfd/catalog-sync`), parce qu'une descente par rive aurait fini par diverger
+sans que personne le voie : l'écran du référentiel et la garde de commande ne se
+lisent pas au même endroit. Deux conséquences dans le contrat : la déclinaison
+gagne son `id` (un rang « déclinaison » vise celui-ci, pas le SKU), et le
+snapshot gagne `orderTimeLimits`.
+
+⚠️ **C'est la VERSION qui dit où lire la limite, jamais la présence du champ.**
+Un snapshot v7 sans règle et un v6 rendent tous deux un tableau vide, et ne
+disent pas la même chose : le premier « personne n'a posé de limite », le second
+« la limite voyage ailleurs ». Se fier au tableau effacerait toutes les limites
+d'une arrivée v6 restée en file pendant le déploiement — silencieusement, et sur
+la seule règle qui refuse une commande en retard.
+
+Et le diff compare désormais la limite résolue, article par article : le fil
+porte une ligne, l'écran de validation en montre les conséquences. Les deux sont
+justes — ce qu'on valide, ce sont les articles qui vont fermer plus tôt.
+
 ---
 
 ## Comment le PIM prouve son identité au B2B — secret partagé (2026-08-17)

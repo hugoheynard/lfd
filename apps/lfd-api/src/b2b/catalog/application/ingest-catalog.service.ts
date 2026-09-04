@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CatalogItem, type PimFacts } from "../domain/entities/catalog-item.js";
+import { snapshotLimitReader } from "../domain/snapshot-limits.js";
 import { CatalogCategoryProjection } from "../domain/ports/catalog-category.projection.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 
@@ -115,6 +116,7 @@ export class IngestCatalogService {
 
 /** Aplatit produits × déclinaisons en faits d'articles, dans l'ordre reçu. */
 function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] {
+  const limitOf = snapshotLimitReader(snapshot);
   return snapshot.products.flatMap((product) =>
     product.variants.map((variant) => ({
       sku: variant.sku,
@@ -132,9 +134,8 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       // Projetées par le PIM (D6) : la plateforme n'a plus le référentiel
       // réglementaire, elle range ce qu'on lui envoie.
       allergenLabels: variant.allergenLabels,
-      // Résolue par le référentiel, rangée telle quelle : la plateforme ne
-      // connaît pas l'échelle qui l'a produite, et n'a pas à la connaître.
-      orderTimeLimit: variant.orderTimeLimit,
+      // Résolue ICI depuis la v7 du fil (cf. `limitReader`).
+      orderTimeLimit: limitOf(product, variant),
       receivedAt,
     })),
   );

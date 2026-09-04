@@ -19,6 +19,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@lfd/catalog-sync": "workspace:*",
     "@lfd/money": "workspace:*",
     "zod": "catalog:"
   },

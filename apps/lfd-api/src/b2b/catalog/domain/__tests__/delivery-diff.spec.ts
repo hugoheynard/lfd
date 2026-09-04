@@ -23,6 +23,7 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   weightGrams: 80,
   categoryId: "c_vie",
   allergens: ["AU"],
+  orderTimeLimit: null,
   ...over,
 });
 
@@ -137,5 +138,65 @@ describe("le diff d'une arrivée", () => {
       expect(carriesAllergenChange(nom)).toBe(false);
       expect(carriesAllergenChange(retrait)).toBe(false);
     });
+  });
+});
+
+describe("la limite de commande", () => {
+  /**
+   * 🔴 **Régression : une arrivée annoncée « 0 changement ».**
+   *
+   * Le champ ne se comparait pas. Passer la limite globale de 18 h à 16 h
+   * fermait deux heures de prise de commande sur toute la plateforme, et
+   * l'écran de validation n'avait rien à en dire — quelqu'un devait valider à
+   * l'aveugle. Un diff qui ignore un champ ne dit pas « rien n'a bougé » ; il ne
+   * dit rien du tout, et c'est pire, parce qu'on le lit comme le premier.
+   */
+  it("signale une limite qui change d'heure", () => {
+    const before = item("VIE-001", {
+      orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    });
+    const after = item("VIE-001", {
+      orderTimeLimit: { daysBefore: 1, time: "16:00", graceMinutes: 0 },
+    });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["orderLimit"] },
+    ]);
+  });
+
+  it("signale une limite qui apparaît, et une qui disparaît", () => {
+    // Les deux sens comptent : un article qui se met à fermer et un article qui
+    // cesse de fermer sont l'un et l'autre une nouvelle.
+    const sans = item("VIE-001", { orderTimeLimit: null });
+    const avec = item("VIE-001", {
+      orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    });
+
+    expect(diffDelivery([avec], [sans])[0]?.fields).toEqual(["orderLimit"]);
+    expect(diffDelivery([sans], [avec])[0]?.fields).toEqual(["orderLimit"]);
+  });
+
+  it("signale un rattrapage qui change, la limite restant la même", () => {
+    // Le rattrapage décide qui peut encore passer par dérogation : le taire
+    // ferait valider en croyant que rien ne bouge.
+    const before = item("VIE-001", {
+      orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    });
+    const after = item("VIE-001", {
+      orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 30 },
+    });
+
+    expect(diffDelivery([after], [before])[0]?.fields).toEqual(["orderLimit"]);
+  });
+
+  it("ne signale rien quand la limite est identique", () => {
+    const limite = { daysBefore: 1, time: "18:00", graceMinutes: 30 };
+
+    expect(
+      diffDelivery(
+        [item("VIE-001", { orderTimeLimit: { ...limite } })],
+        [item("VIE-001", { orderTimeLimit: { ...limite } })],
+      ),
+    ).toEqual([]);
   });
 });

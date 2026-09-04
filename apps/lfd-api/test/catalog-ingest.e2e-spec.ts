@@ -12,7 +12,11 @@
  * les deux tests de secret partagé — il n'y a plus de secret, plus de porte, et
  * plus rien à refuser : c'est le gain, pas un trou de couverture.
  */
-import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
+import {
+  CATALOG_SNAPSHOT_VERSION,
+  type CatalogSnapshot,
+  type SyncOrderTimeLimitRule,
+} from "@lfd/catalog-sync";
 
 import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
@@ -77,6 +81,7 @@ function snapshot(
         kind: "daily" as const,
         variants: [
           {
+            id: `var_${sku}`,
             sku: `${sku}-1`,
             name: `Produit ${sku}`,
             priceMillicents,
@@ -86,13 +91,14 @@ function snapshot(
             vatRatePercent,
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
-            // Le sujet de cette suite est l'ingestion des faits, pas l'heure :
-            // aucune limite déclarée, comme la quasi-totalité du catalogue.
-            orderTimeLimit: null,
           },
         ],
       }),
     ),
+    // Le sujet de cette fabrique est l'ingestion des faits, pas l'heure :
+    // l'échelle est vide, comme sur la quasi-totalité du catalogue. Un cas
+    // dédié la remplit plus bas.
+    orderTimeLimits: [],
   };
 }
 
@@ -395,6 +401,125 @@ describe("les mentions d’étiquette traversent le fil", () => {
     });
 
     expect(row.allergenLabels).toBeNull();
+  });
+});
+
+/**
+ * **L'échelle des limites traverse ; sa résolution arrive** (v7 du fil).
+ *
+ * Ce que seul ce niveau prouve : les colonnes `order_limit_*` du miroir sont
+ * remplies par une DESCENTE faite à l'ingestion, à partir de quelques règles —
+ * là où la v6 recopiait une valeur toute faite sur chaque déclinaison, si bien
+ * que passer la limite globale de 18 h à 16 h réécrivait le catalogue entier.
+ *
+ * Un test du service verrait la descente ; il ne verrait ni ce que Postgres
+ * garde, ni que les trois colonnes restent vides quand personne n'a rien posé.
+ */
+describe("les limites de commande traversent le fil, en RÈGLES", () => {
+  function rule(
+    scope: SyncOrderTimeLimitRule["scope"],
+    values: Omit<SyncOrderTimeLimitRule, "scope">,
+  ): SyncOrderTimeLimitRule {
+    return { scope, ...values };
+  }
+
+  /** L'échelle se pose sur le snapshot, plus sur les déclinaisons. */
+  function withLimits(
+    base: CatalogSnapshot,
+    orderTimeLimits: readonly SyncOrderTimeLimitRule[],
+  ): CatalogSnapshot {
+    return { ...base, orderTimeLimits: [...orderTimeLimits] };
+  }
+
+  function limitOf(sku: string) {
+    return ctx.prisma.catalogItem.findUniqueOrThrow({
+      where: { sku },
+      select: {
+        orderLimitDaysBefore: true,
+        orderLimitTime: true,
+        orderLimitGraceMinutes: true,
+      },
+    });
+  }
+
+  /**
+   * 🔴 Le cœur de la v7 : UNE règle globale, aucune limite portée par les
+   * déclinaisons, et chaque article ingéré porte la limite résolue.
+   */
+  it("résout une règle globale sur chaque article ingéré", async () => {
+    await push(
+      withLimits(
+        snapshot([
+          { sku: "VIE-001", priceMillicents: 200_000 },
+          { sku: "VIE-002", priceMillicents: 220_000 },
+        ]),
+        [rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: null })],
+      ),
+    );
+
+    // `graceMinutes` vaut `0` : le `null` du fil dit « ce rang ne se prononce
+    // pas », et pas de rattrapage déclaré signifie limite ferme.
+    const attendu = {
+      orderLimitDaysBefore: 1,
+      orderLimitTime: "18:00",
+      orderLimitGraceMinutes: 0,
+    };
+    expect(await limitOf("VIE-001-1")).toEqual(attendu);
+    expect(await limitOf("VIE-002-1")).toEqual(attendu);
+  });
+
+  /**
+   * L'héritage est **champ par champ**, et il l'est jusqu'ici : la famille ne
+   * redit pas le nombre de jours du global, la déclinaison ne redit pas
+   * l'heure de sa famille. Ce cas éprouve au passage le rang « déclinaison »,
+   * seul motif pour lequel l'identifiant traverse depuis la v7.
+   */
+  it("compose les rangs, du global à la déclinaison", async () => {
+    await push(
+      withLimits(
+        snapshot([
+          { sku: "VIE-001", priceMillicents: 200_000 },
+          { sku: "VIE-002", priceMillicents: 220_000 },
+        ]),
+        [
+          rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: 30 }),
+          rule(
+            { type: "category", id: CATEGORY.id },
+            { daysBefore: null, time: "16:00", graceMinutes: null },
+          ),
+          rule(
+            { type: "variant", id: "var_VIE-002" },
+            { daysBefore: 3, time: null, graceMinutes: null },
+          ),
+        ],
+      ),
+    );
+
+    expect(await limitOf("VIE-001-1")).toEqual({
+      orderLimitDaysBefore: 1,
+      orderLimitTime: "16:00",
+      orderLimitGraceMinutes: 30,
+    });
+    expect(await limitOf("VIE-002-1")).toEqual({
+      orderLimitDaysBefore: 3,
+      orderLimitTime: "16:00",
+      orderLimitGraceMinutes: 30,
+    });
+  });
+
+  /**
+   * Le cas courant, et il doit rester net : aucune règle, donc rien ne ferme.
+   * Une valeur inventée ici refuserait des commandes au nom d'une décision que
+   * personne n'a prise.
+   */
+  it("laisse les trois colonnes vides quand l'échelle est vide", async () => {
+    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+
+    expect(await limitOf("VIE-001-1")).toEqual({
+      orderLimitDaysBefore: null,
+      orderLimitTime: null,
+      orderLimitGraceMinutes: null,
+    });
   });
 });
 

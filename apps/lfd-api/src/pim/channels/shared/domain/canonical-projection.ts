@@ -88,6 +88,15 @@ export function canonicalProjection(snapshot: CatalogSnapshot): CanonicalProject
   return {
     version: snapshot.version,
     categories: [...snapshot.categories].sort((left, right) => byKey(left.id, right.id)),
+    // Triées par RANG puis par cible : l'ordre dans lequel le référentiel les
+    // rend n'est pas garanti, et une empreinte qui bouge parce qu'une lecture a
+    // permuté deux règles ferait refuser un push qui n'envoie rien d'autre.
+    orderTimeLimits: [...snapshot.orderTimeLimits].sort((left, right) =>
+      byKey(
+        `${left.scope.type}:${left.scope.id ?? ""}`,
+        `${right.scope.type}:${right.scope.id ?? ""}`,
+      ),
+    ),
     products: [...snapshot.products]
       .sort((left, right) => byKey(left.sku, right.sku))
       .map(canonicalProduct),

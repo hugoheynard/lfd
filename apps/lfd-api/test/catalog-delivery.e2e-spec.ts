@@ -56,6 +56,7 @@ const snapshot = (generatedAt: string): CatalogSnapshot => ({
   generatedAt,
   categories: [],
   products: [],
+  orderTimeLimits: [],
 });
 
 let seq = 0;

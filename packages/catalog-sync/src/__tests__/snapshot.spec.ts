@@ -12,6 +12,9 @@ import {
  */
 
 const variant = {
+  // Traverse depuis la v7 : une règle de rang « déclinaison » vise cet
+  // identifiant-là, et le SKU seul ne permettrait pas de la rattacher.
+  id: "var_1",
   sku: "VIE-001-1",
   name: "Croissant",
   priceMillicents: 200,
@@ -21,9 +24,6 @@ const variant = {
   vatRatePercent: 5.5,
   allergens: ["AW"],
   allergenLabels: { labels: [{ category: "milk", label: "Lait" }], incomplete: false },
-  // Aucune limite de commande : l'état de la quasi-totalité du catalogue, et
-  // celui que les cas ci-dessous supposent quand ils parlent d'autre chose.
-  orderTimeLimit: null,
 };
 
 const snapshot = {
@@ -50,6 +50,8 @@ const snapshot = {
       variants: [variant],
     },
   ],
+  // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.
+  orderTimeLimits: [],
 };
 
 describe("catalogSnapshotSchema", () => {
@@ -230,21 +232,51 @@ describe("storedCatalogSnapshotSchema — relire ce qu'on a stocké", () => {
   function v5(): Record<string, unknown> {
     const ancien = JSON.parse(JSON.stringify(snapshot)) as Record<string, unknown>;
     ancien["version"] = 5;
+    delete ancien["orderTimeLimits"];
     const produits = ancien["products"] as { variants: Record<string, unknown>[] }[];
     for (const produit of produits) {
       for (const declinaison of produit.variants) {
-        delete declinaison["orderTimeLimit"];
+        delete declinaison["id"];
       }
     }
     return ancien;
   }
 
-  it("relit une arrivée d'une version antérieure, champ absent compris", () => {
+  it("relit une arrivée d'une version antérieure, champs absents compris", () => {
     const parsed = storedCatalogSnapshotSchema.safeParse(v5());
     expect(parsed.success).toBe(true);
-    // Le silence prend la valeur qui le décrit : « aucune limite », soit
-    // exactement le comportement d'avant l'existence du champ.
-    expect(parsed.data?.products[0]?.variants[0]?.orderTimeLimit).toBeNull();
+    expect(parsed.data?.products[0]?.variants[0]?.id).toBeUndefined();
+    expect(parsed.data?.orderTimeLimits).toBeUndefined();
+  });
+
+  /**
+   * 🔴 **Une v6 garde sa limite RÉSOLUE, que la v7 n'émet plus.**
+   *
+   * Une arrivée mise en file avant le déploiement porte la limite sur chaque
+   * déclinaison ; la v7 la porte au niveau du snapshot, sous forme de règles.
+   * Si le stockage cessait de relire l'ancien champ, valider cette arrivée-là
+   * effacerait toutes les limites du catalogue — silencieusement, et sur la
+   * seule règle qui refuse une commande en retard.
+   */
+  it("relit la limite résolue d'une arrivée v6", () => {
+    const v6 = JSON.parse(JSON.stringify(snapshot)) as Record<string, unknown>;
+    v6["version"] = 6;
+    delete v6["orderTimeLimits"];
+    const produits = v6["products"] as { variants: Record<string, unknown>[] }[];
+    for (const produit of produits) {
+      for (const declinaison of produit.variants) {
+        delete declinaison["id"];
+        declinaison["orderTimeLimit"] = { daysBefore: 1, time: "18:00", graceMinutes: 0 };
+      }
+    }
+
+    const parsed = storedCatalogSnapshotSchema.safeParse(v6);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.products[0]?.variants[0]?.orderTimeLimit).toEqual({
+      daysBefore: 1,
+      time: "18:00",
+      graceMinutes: 0,
+    });
   });
 
   /**

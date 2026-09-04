@@ -1,4 +1,4 @@
-import type { SyncOrderTimeLimit } from "@lfd/catalog-sync";
+import type { SyncOrderTimeLimitRule } from "@lfd/catalog-sync";
 import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
@@ -91,7 +91,8 @@ const NO_DISCOUNT = 10_000;
  * projections ci-dessous ne parlent pas de ce sujet ; celles qui en parlent le
  * disent (`describe` dédié).
  */
-const NO_LIMITS = new Map<string, SyncOrderTimeLimit>();
+/** Aucune règle : depuis la v7, l'échelle traverse et le vide est le cas courant. */
+const NO_LIMITS: readonly SyncOrderTimeLimitRule[] = [];
 
 /**
  * Le référentiel d'allergènes tel que la base le sert, **passé** à la projection
