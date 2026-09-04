@@ -55,7 +55,15 @@
                 <span class="rule-day">{{ day(rule) }}</span>
               </div>
 
-              <span class="rule-when">{{ sentence(rule) }}</span>
+              <span class="rule-when">
+                {{ sentence(rule) }}
+                <!-- Le rattrapage ne s'affiche QUE s'il existe : l'absence est le
+                     cas normal, et l'écrire partout noierait les règles qui en
+                     ont un. -->
+                @if (grace(rule); as label) {
+                  <fold-badge [content]="label" variant="neutral" />
+                }
+              </span>
 
               <div class="rule-actions">
                 @if (pendingRemoval() === rule.id) {

@@ -41,6 +41,17 @@
     <input type="time" [value]="time()" (change)="onTime($event)" required />
   </label>
 
+  <fold-select
+    label="Rattrapage après l'heure"
+    hint="Fenêtre pendant laquelle un client en retard est refusé AVEC une invitation à appeler, au lieu d'un refus sec."
+    [value]="graceMinutes().toString()"
+    (valueChange)="onGrace($event)"
+  >
+    @for (choice of graceChoices; track choice.value) {
+      <option [value]="choice.value">{{ choice.label }}</option>
+    }
+  </fold-select>
+
   @if (!timeIsValid()) {
     <fold-callout variant="alert">Renseignez une heure au format HH:MM.</fold-callout>
   }

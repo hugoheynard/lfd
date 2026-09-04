@@ -1079,6 +1079,17 @@ model OrderCutoff {
   /// `HH:MM` en heure LOCALE du laboratoire, pas un instant UTC.
   time       String
 
+  /// **Le rattrapage accordé après la limite**, en minutes. `0` = aucun.
+  ///
+  /// Une durée et non une seconde heure : `limite + grâce` suit chaque rang de
+  /// l'échelle, là où une heure absolue aurait dû être ressaisie sur chacun — et
+  /// se serait retrouvée, un jour, avant sa propre limite.
+  ///
+  /// Ce qu'elle ouvre n'est pas le libre-service : dans cette fenêtre la
+  /// commande est refusée au client avec un autre message, celui qui dit
+  /// d'appeler. C'est la dérogation (à venir) qui s'en servira.
+  graceMinutes Int @default(0) @map("grace_minutes")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

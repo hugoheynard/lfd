@@ -1,6 +1,6 @@
 import type { OrderCutoffView } from "@lfd/contracts";
 
-import { PastOrderCutoffError } from "../../errors/order-errors.js";
+import { OrderCutoffGraceError, PastOrderCutoffError } from "../../errors/order-errors.js";
 import { ensureWithinOrderCutoff } from "../order-cutoff-guard.js";
 
 /**
@@ -24,6 +24,7 @@ function rule(over: Partial<OrderCutoffView> = {}): OrderCutoffView {
     weekday: null,
     daysBefore: 1,
     time: "18:00",
+    graceMinutes: 0,
     ...over,
   };
 }
@@ -52,7 +53,7 @@ describe("ensureWithinOrderCutoff", () => {
     expect(() => guard({ now: CUTOFF_INSTANT })).not.toThrow();
   });
 
-  it("refuse après la limite, en nommant la date demandée", () => {
+  it("refuse définitivement après la limite quand aucune grâce n'est réglée", () => {
     try {
       guard({ now: "2026-08-11T16:01:00.000Z" });
       throw new Error("le refus attendu n'a pas eu lieu");
@@ -80,6 +81,52 @@ describe("ensureWithinOrderCutoff", () => {
     expect(() =>
       guard({ now: "2030-01-01T00:00:00.000Z", placedByStaffId: "staff_1" }),
     ).not.toThrow();
+  });
+
+  describe("avec une grâce réglée", () => {
+    const GRACIOUS = [rule({ graceMinutes: 45 })];
+
+    /**
+     * Deux erreurs et non un drapeau, parce que ce qui les distingue est **ce
+     * que le lecteur doit faire** : changer de date, ou décrocher. Un code
+     * unique aurait fait dire la même phrase aux deux, et le rattrapage
+     * n'aurait servi à personne.
+     */
+    it("refuse par une AUTRE erreur dans la fenêtre de rattrapage", () => {
+      try {
+        guard({ rules: GRACIOUS, now: "2026-08-11T16:10:00.000Z" });
+        throw new Error("le refus attendu n'a pas eu lieu");
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(OrderCutoffGraceError);
+        expect(error).not.toBeInstanceOf(PastOrderCutoffError);
+        // L'instant est porté brut : c'est l'écran qui décide de dire
+        // « jusqu'à 18 h 45 » ou « encore 12 minutes ».
+        expect((error as OrderCutoffGraceError).graceEndsAt.toISOString()).toBe(
+          "2026-08-11T16:45:00.000Z",
+        );
+      }
+    });
+
+    it("redevient un refus définitif une fois le rattrapage écoulé", () => {
+      expect(() => guard({ rules: GRACIOUS, now: "2026-08-11T16:45:01.000Z" })).toThrow(
+        PastOrderCutoffError,
+      );
+    });
+
+    /**
+     * La grâce n'ouvre RIEN au client : elle change le message, pas le verdict.
+     * Tant que la dérogation n'existe pas, personne ne passe dans cette fenêtre
+     * — et confondre les deux ferait croire le contraire à qui lit ce test.
+     */
+    it("ne laisse toujours PERSONNE passer dans la fenêtre", () => {
+      expect(() => guard({ rules: GRACIOUS, now: "2026-08-11T16:10:00.000Z" })).toThrow();
+    });
+
+    it("n'oppose rien au back-office, ni la limite ni la grâce", () => {
+      expect(() =>
+        guard({ rules: GRACIOUS, now: "2026-08-11T16:10:00.000Z", placedByStaffId: "staff_1" }),
+      ).not.toThrow();
+    });
   });
 
   it("oppose la règle du POINT plutôt que celle du défaut", () => {

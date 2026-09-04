@@ -23,6 +23,7 @@ interface CutoffRow {
   readonly weekday: string | null;
   readonly daysBefore: number;
   readonly time: string;
+  readonly graceMinutes: number;
 }
 
 @Injectable()
@@ -102,6 +103,7 @@ function toView(row: CutoffRow, labels: ReadonlyMap<string, string>): OrderCutof
     weekday: toWeekday(row.weekday),
     daysBefore: row.daysBefore,
     time: row.time,
+    graceMinutes: row.graceMinutes,
   };
 }
 

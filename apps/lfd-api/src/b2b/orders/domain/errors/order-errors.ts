@@ -177,15 +177,15 @@ export class HandoverRefusedError extends BusinessError {
 }
 
 /**
- * **L'heure limite de commande pour cette journée est passée.** Refus métier
- * (409) : le panier est valide, c'est le calendrier qui s'y oppose, et le client
- * peut choisir une autre date.
+ * **L'heure limite est passée, et la grâce aussi.** Refus métier (409) : le
+ * panier est valide, c'est le calendrier qui s'y oppose, et le client peut
+ * choisir une autre date.
  *
  * Le message nomme le geste de sortie plutôt que la règle. Quelqu'un à qui l'on
  * dit « limite dépassée » ne sait pas quoi faire ; quelqu'un à qui l'on dit
- * « choisissez une autre date, ou appelez-nous » sait les deux. Le second chemin
- * existe : une saisie du back-office n'est pas soumise à cette limite
- * (cf. `ensureWithinOrderCutoff`).
+ * « choisissez une autre date » sait quoi faire. **Il ne renvoie PAS vers le
+ * téléphone** : après la grâce, personne ne peut ouvrir — promettre un recours
+ * qui n'existe pas coûte un appel pour rien, et la confiance qui va avec.
  *
  * La date demandée est portée par l'erreur — pas interpolée dans le message :
  * un écran la reformate à sa façon, un e-mail à la sienne.
@@ -194,7 +194,35 @@ export class PastOrderCutoffError extends BusinessError {
   constructor(readonly fulfillmentDate: string) {
     super(
       "orders.cutoff.past",
-      "Il est trop tard pour être servi à cette date. Choisissez une autre date, ou appelez-nous.",
+      "Il est trop tard pour être servi à cette date. Choisissez une autre date.",
+    );
+  }
+}
+
+/**
+ * **La limite est passée mais la grâce court encore.** Refus métier (409), et
+ * un refus **différent** du précédent : la commande n'est pas perdue, elle
+ * demande qu'un humain la reprenne.
+ *
+ * Deux erreurs plutôt qu'un drapeau sur une seule, parce que ce qui les
+ * distingue n'est pas un détail d'affichage mais **ce que le lecteur doit
+ * faire** : changer de date, ou décrocher. Un code unique aurait fait dire la
+ * même phrase aux deux, et le rattrapage n'aurait servi à personne.
+ *
+ * ⚠️ Ce refus reste un refus **tant que la dérogation n'existe pas**. Quand elle
+ * arrivera, cette même fenêtre deviendra un passage — pour qui l'accorde.
+ *
+ * `graceEndsAt` est porté brut : c'est l'écran qui décide de dire « jusqu'à
+ * 18 h 45 » ou « encore 12 minutes », pas le domaine.
+ */
+export class OrderCutoffGraceError extends BusinessError {
+  constructor(
+    readonly fulfillmentDate: string,
+    readonly graceEndsAt: Date,
+  ) {
+    super(
+      "orders.cutoff.grace",
+      "L'heure limite est passée pour cette date, mais c'est encore rattrapable : appelez-nous.",
     );
   }
 }

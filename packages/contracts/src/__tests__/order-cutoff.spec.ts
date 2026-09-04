@@ -1,5 +1,5 @@
 import {
-  isPastOrderCutoff,
+  decideOrderCutoff,
   orderCutoffInstant,
   resolveOrderCutoff,
   weekdayOfDate,
@@ -14,6 +14,7 @@ function rule(over: Partial<OrderCutoffView> = {}): OrderCutoffView {
     weekday: null,
     daysBefore: 1,
     time: "18:00",
+    graceMinutes: 0,
     ...over,
   };
 }
@@ -128,41 +129,82 @@ describe("weekdayOfDate", () => {
   });
 });
 
-describe("isPastOrderCutoff", () => {
+describe("decideOrderCutoff — les trois états", () => {
   const RULES = [rule({ id: "def", daysBefore: 1, time: "18:00" })];
-  // Mercredi 12 août 2026, remise demandée. Limite : mardi 11 à 18 h Paris.
+  // Mercredi 12 août 2026. Limite : mardi 11 à 18 h Paris, soit 16:00Z.
   const FULFILLMENT_DAY = "2026-08-12";
+  const LIMIT = "2026-08-11T16:00:00.000Z";
 
-  it("laisse passer une minute avant la limite", () => {
-    const now = new Date("2026-08-11T15:59:00.000Z"); // 17:59 à Paris
-    expect(isPastOrderCutoff(RULES, null, FULFILLMENT_DAY, now)).toBe(false);
+  function at(instant: string, rules: readonly OrderCutoffView[] = RULES) {
+    return decideOrderCutoff(rules, null, FULFILLMENT_DAY, new Date(instant));
+  }
+
+  it("est `open` une minute avant la limite", () => {
+    expect(at("2026-08-11T15:59:00.000Z").status).toBe("open");
   });
 
-  it("refuse une minute après la limite", () => {
-    const now = new Date("2026-08-11T16:01:00.000Z"); // 18:01 à Paris
-    expect(isPastOrderCutoff(RULES, null, FULFILLMENT_DAY, now)).toBe(true);
+  /**
+   * **La borne est incluse**, et ce n'est pas un détail : une limite affichée
+   * « 18 h » doit accepter 18 h 00 min 00 s. L'exclure ferait refuser quelqu'un
+   * qui a lu l'écran et cliqué à l'heure dite.
+   */
+  it("est `open` PILE à la limite", () => {
+    expect(at(LIMIT).status).toBe("open");
   });
 
-  it("laisse passer PILE à l'heure — la limite est incluse", () => {
-    const now = new Date("2026-08-11T16:00:00.000Z");
-    expect(isPastOrderCutoff(RULES, null, FULFILLMENT_DAY, now)).toBe(false);
+  it("est `closed` juste après, quand aucune grâce n'est réglée", () => {
+    expect(at("2026-08-11T16:00:01.000Z").status).toBe("closed");
+  });
+
+  describe("avec une grâce de 45 minutes", () => {
+    const GRACIOUS = [rule({ id: "def", daysBefore: 1, time: "18:00", graceMinutes: 45 })];
+
+    it("passe en `grace` après la limite, pas en `closed`", () => {
+      expect(at("2026-08-11T16:01:00.000Z", GRACIOUS).status).toBe("grace");
+    });
+
+    it("reste `grace` PILE à la fin du rattrapage — l'autre borne est incluse aussi", () => {
+      expect(at("2026-08-11T16:45:00.000Z", GRACIOUS).status).toBe("grace");
+    });
+
+    it("bascule `closed` une seconde après", () => {
+      expect(at("2026-08-11T16:45:01.000Z", GRACIOUS).status).toBe("closed");
+    });
+
+    it("expose les deux instants, pour que l'écran puisse les dire", () => {
+      const decision = at("2026-08-11T16:10:00.000Z", GRACIOUS);
+      expect(decision.limit?.toISOString()).toBe(LIMIT);
+      expect(decision.graceEnd?.toISOString()).toBe("2026-08-11T16:45:00.000Z");
+      expect(decision.rule?.id).toBe("def");
+    });
+  });
+
+  /**
+   * `graceMinutes: 0` — le défaut de la colonne — referme le rattrapage sur la
+   * limite. C'est ce qui rend la bascule invisible pour l'existant : aucune
+   * ligne déjà en base ne se met à accepter quoi que ce soit de plus.
+   */
+  it("ne crée aucune fenêtre quand la grâce vaut 0", () => {
+    const decision = at("2026-08-11T16:00:01.000Z");
+    expect(decision.status).toBe("closed");
+    expect(decision.graceEnd?.toISOString()).toBe(LIMIT);
   });
 
   /**
    * Le défaut volontaire du contrat : une plateforme qui n'a rien configuré ne
    * refuse rien. Le comportement d'aujourd'hui, à l'identique.
    */
-  it("ne refuse rien quand aucune règle ne couvre l'acheminement", () => {
-    expect(isPastOrderCutoff([], null, FULFILLMENT_DAY, new Date("2030-01-01T00:00:00.000Z"))).toBe(
-      false,
-    );
+  it("est `open` quand aucune règle ne couvre l'acheminement", () => {
+    expect(at("2030-01-01T00:00:00.000Z", []).status).toBe("open");
   });
 
-  it("ne refuse rien quand l'heure de la règle n'existe pas ce jour-là", () => {
-    const gap = [rule({ daysBefore: 1, time: "02:30" })];
-    expect(isPastOrderCutoff(gap, null, "2026-03-30", new Date("2030-01-01T00:00:00.000Z"))).toBe(
-      false,
-    );
+  it("est `open` quand l'heure de la règle n'existe pas ce jour-là", () => {
+    const gap = [rule({ daysBefore: 1, time: "02:30", graceMinutes: 45 })];
+    const decision = decideOrderCutoff(gap, null, "2026-03-30", new Date("2030-01-01T00:00:00Z"));
+    expect(decision.status).toBe("open");
+    // La règle est bien celle retenue : c'est l'INSTANT qui manque, pas la règle.
+    expect(decision.rule?.time).toBe("02:30");
+    expect(decision.limit).toBeNull();
   });
 
   it("prend la règle du POINT quand il y en a une", () => {
@@ -170,9 +212,9 @@ describe("isPastOrderCutoff", () => {
       rule({ id: "labo", pickupAddressId: "labo", daysBefore: 2, time: "12:00" }),
       rule({ id: "def", daysBefore: 1, time: "18:00" }),
     ];
-    // Limite du labo : lundi 10 à 12 h Paris (10 h UTC). Le défaut dirait mardi 18 h.
+    // Limite du labo : lundi 10 à 12 h Paris (10:00Z). Le défaut dirait mardi 18 h.
     const now = new Date("2026-08-10T10:30:00.000Z");
-    expect(isPastOrderCutoff(rules, "labo", FULFILLMENT_DAY, now)).toBe(true);
-    expect(isPastOrderCutoff(rules, null, FULFILLMENT_DAY, now)).toBe(false);
+    expect(decideOrderCutoff(rules, "labo", FULFILLMENT_DAY, now).status).toBe("closed");
+    expect(decideOrderCutoff(rules, null, FULFILLMENT_DAY, now).status).toBe("open");
   });
 });

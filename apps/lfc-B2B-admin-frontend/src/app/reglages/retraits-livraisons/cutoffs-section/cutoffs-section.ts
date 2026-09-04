@@ -15,7 +15,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { CutoffPanel, type CutoffPanelData } from './cutoff-panel/cutoff-panel';
-import { cutoffSentence, scopeLabel, weekdayLabel } from './cutoff-format';
+import { cutoffSentence, graceSentence, scopeLabel, weekdayLabel } from './cutoff-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -115,6 +115,10 @@ export class CutoffsSection {
 
   protected day(rule: OrderCutoffView): string {
     return weekdayLabel(rule.weekday);
+  }
+
+  protected grace(rule: OrderCutoffView): string | null {
+    return graceSentence(rule);
   }
 
   protected sentence(rule: OrderCutoffView): string {

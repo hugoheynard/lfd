@@ -24,7 +24,7 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { OrderCutoffsService } from '../../order-cutoffs.service';
-import { WEEKDAY_CHOICES } from '../cutoff-format';
+import { GRACE_CHOICES, WEEKDAY_CHOICES } from '../cutoff-format';
 
 /** Charge d'ouverture : la règle à éditer, ou `null` pour en créer une. */
 export interface CutoffPanelData {
@@ -48,10 +48,15 @@ const ANY = '';
 /**
  * Panneau **Heure limite** — crée ou édite une règle.
  *
- * Trois champs seulement, mais chacun porte un sens qu'il faut nommer : à quoi
- * la règle s'applique (un point, ou le défaut), quel jour d'acheminement elle
- * vise, et **combien de jours avant** la limite tombe. Ce dernier n'est pas une
- * décoration : « 18 h » sans lui ne dit pas 18 h de quel jour.
+ * Chaque champ porte un sens qu'il faut nommer : à quoi la règle s'applique (un
+ * point, ou le défaut), quel jour d'acheminement elle vise, **combien de jours
+ * avant** la limite tombe — ce dernier n'est pas une décoration, « 18 h » sans
+ * lui ne dit pas 18 h de quel jour — et le **rattrapage** accordé après.
+ *
+ * Le rattrapage n'ouvre rien en libre-service : dans cette fenêtre le client est
+ * refusé avec un autre message, celui qui dit d'appeler. Le récapitulatif le dit
+ * en toutes lettres, parce que « 45 minutes de grâce » se lit spontanément comme
+ * « 45 minutes de plus pour commander », et que ce serait faux.
  */
 @Component({
   selector: 'app-cutoff-panel',
@@ -74,12 +79,14 @@ export class CutoffPanel {
 
   protected readonly weekdays = WEEKDAY_CHOICES;
   protected readonly daysBeforeChoices = DAYS_BEFORE_CHOICES;
+  protected readonly graceChoices = GRACE_CHOICES;
   protected readonly any = ANY;
 
   protected readonly pickupAddressId = signal<string | null>(null);
   protected readonly weekday = signal<Weekday | null>(null);
   protected readonly daysBefore = signal(1);
   protected readonly time = signal('18:00');
+  protected readonly graceMinutes = signal(0);
   protected readonly saving = signal(false);
 
   protected readonly points = computed(() => this.data()?.points ?? []);
@@ -95,7 +102,12 @@ export class CutoffPanel {
   protected readonly recap = computed(() => {
     const choice = DAYS_BEFORE_CHOICES.find((entry) => entry.value === this.daysBefore());
     const when = choice?.label.toLowerCase() ?? `${this.daysBefore()} jours avant`;
-    return `Pour un acheminement ce jour-là, il faudra avoir commandé ${when} à ${this.time()}.`;
+    const base = `Pour un acheminement ce jour-là, il faudra avoir commandé ${when} à ${this.time()}.`;
+    const grace = this.graceMinutes();
+    if (grace === 0) {
+      return base;
+    }
+    return `${base} Pendant les ${grace} minutes suivantes, la commande sera refusée avec une invitation à appeler — elle ne passera pas toute seule.`;
   });
 
   /** L'heure doit être un `HH:MM` réel — le même schéma que le serveur exigera. */
@@ -112,6 +124,7 @@ export class CutoffPanel {
       this.weekday.set(rule.weekday);
       this.daysBefore.set(rule.daysBefore);
       this.time.set(rule.time);
+      this.graceMinutes.set(rule.graceMinutes);
     });
   }
 
@@ -125,6 +138,10 @@ export class CutoffPanel {
 
   protected onDaysBefore(value: string): void {
     this.daysBefore.set(Number(value));
+  }
+
+  protected onGrace(value: string): void {
+    this.graceMinutes.set(Number(value));
   }
 
   protected onTime(event: Event): void {
@@ -142,6 +159,7 @@ export class CutoffPanel {
       weekday: this.weekday(),
       daysBefore: this.daysBefore(),
       time: this.time(),
+      graceMinutes: this.graceMinutes(),
     };
     try {
       if (rule === null) {

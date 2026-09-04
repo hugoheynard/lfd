@@ -70,6 +70,19 @@ export const orderCutoffPayloadSchema = z.object({
   daysBefore: z.number().int().min(0).max(14).default(1),
   /** L'heure de la limite, ce jour-là. */
   time: clockTimeSchema,
+  /**
+   * Le **rattrapage** accordé après la limite, en minutes. `0` = aucun.
+   *
+   * Une **durée** et non une seconde heure : `limite + grâce` suit
+   * automatiquement chaque rang de l'échelle, alors qu'une heure absolue aurait
+   * dû être ressaisie sur chacun — et se serait retrouvée, un jour, avant sa
+   * propre limite.
+   *
+   * Plafonnée à 12 h. Au-delà, ce n'est plus un rattrapage : c'est une autre
+   * heure limite, et elle doit se saisir comme telle pour rester lisible par
+   * qui lit l'écran de réglages.
+   */
+  graceMinutes: z.number().int().min(0).max(720).default(0),
 });
 export type OrderCutoffPayload = z.infer<typeof orderCutoffPayloadSchema>;
 
@@ -82,6 +95,8 @@ export interface OrderCutoffView {
   readonly weekday: Weekday | null;
   readonly daysBefore: number;
   readonly time: string;
+  /** Le rattrapage après la limite, en minutes. `0` = aucun. */
+  readonly graceMinutes: number;
 }
 
 /** Réponse de création d'une règle. */
@@ -149,28 +164,70 @@ export function orderCutoffInstant(rule: OrderCutoffView, fulfillmentDate: strin
 }
 
 /**
- * **Est-il trop tard** pour demander un acheminement le jour `fulfillmentDate` ?
+ * Les **trois états** d'une demande d'acheminement, dans l'ordre du temps.
+ *
+ * Un binaire passe/refuse ne suffit pas : entre la limite et la fin de grâce, la
+ * commande n'est ni acceptable en libre-service ni définitivement perdue — elle
+ * demande qu'un humain la reprenne. Confondre cet état avec `closed` ferait
+ * répondre « trop tard » à quelqu'un qu'un coup de fil sauverait ; le confondre
+ * avec `open` ferait passer en silence ce qui doit être décidé.
+ */
+export type OrderCutoffStatus = "open" | "grace" | "closed";
+
+/** Ce que la règle applicable dit d'un acheminement, et de quoi le raconter. */
+export interface OrderCutoffDecision {
+  readonly status: OrderCutoffStatus;
+  /** La règle retenue, ou `null` s'il n'y en a aucune (tout passe). */
+  readonly rule: OrderCutoffView | null;
+  /** L'instant limite, ou `null` : aucune règle, ou heure inexistante ce jour-là. */
+  readonly limit: Date | null;
+  /** L'instant où la grâce se ferme. Égal à `limit` quand il n'y a pas de grâce. */
+  readonly graceEnd: Date | null;
+}
+
+/** Une décision qui n'oppose rien — aucune règle, ou rien de calculable. */
+const NOTHING_TO_OPPOSE: OrderCutoffDecision = {
+  status: "open",
+  rule: null,
+  limit: null,
+  graceEnd: null,
+};
+
+const MINUTE_MS = 60 * 1000;
+
+/**
+ * **Où en est** une demande d'acheminement le jour `fulfillmentDate` ?
  *
  * Le seul endroit qui compare la limite à l'horloge. `now` est **fourni** — il
  * vient du `Clock` côté serveur — pour que la décision reste déterministe et
  * testable, et pour qu'un fuseau de navigateur ne s'invite pas dans un refus.
  *
- * Rend `false` — donc « ça passe » — dans les deux cas où il n'y a rien à
- * opposer : aucune règle ne couvre cet acheminement, ou l'heure de la règle
- * n'existe pas ce jour-là (cf. {@link orderCutoffInstant}). Refuser sur l'un ou
- * l'autre reviendrait à bloquer une commande légitime au nom d'un réglage
- * absent ou d'un artefact de calendrier.
+ * Rend `open` dans les deux cas où il n'y a rien à opposer : aucune règle ne
+ * couvre cet acheminement, ou l'heure de la règle n'existe pas ce jour-là
+ * (cf. {@link orderCutoffInstant}). Refuser sur l'un ou l'autre bloquerait une
+ * commande légitime au nom d'un réglage absent ou d'un artefact de calendrier.
+ *
+ * **Les deux bornes sont incluses** : à la seconde de la limite on est encore
+ * `open`, à la seconde de la fin de grâce encore `grace`. Une limite affichée
+ * « 18 h » doit accepter 18 h 00 min 00 s — c'est ce que lit celui qui commande.
  */
-export function isPastOrderCutoff(
+export function decideOrderCutoff(
   rules: readonly OrderCutoffView[],
   pickupAddressId: string | null,
   fulfillmentDate: string,
   now: Date,
-): boolean {
+): OrderCutoffDecision {
   const rule = resolveOrderCutoff(rules, pickupAddressId, weekdayOfDate(fulfillmentDate));
   if (rule === null) {
-    return false;
+    return NOTHING_TO_OPPOSE;
   }
   const limit = orderCutoffInstant(rule, fulfillmentDate);
-  return limit !== null && now.getTime() > limit.getTime();
+  if (limit === null) {
+    return { ...NOTHING_TO_OPPOSE, rule };
+  }
+  const graceEnd = new Date(limit.getTime() + rule.graceMinutes * MINUTE_MS);
+  const at = now.getTime();
+  const status: OrderCutoffStatus =
+    at <= limit.getTime() ? "open" : at <= graceEnd.getTime() ? "grace" : "closed";
+  return { status, rule, limit, graceEnd };
 }

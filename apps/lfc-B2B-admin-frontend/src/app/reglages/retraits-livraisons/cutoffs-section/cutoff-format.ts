@@ -46,3 +46,35 @@ function dayPhrase(daysBefore: number): string {
       return `${daysBefore} jours avant`;
   }
 }
+
+/**
+ * Les rattrapages proposés. Des paliers plutôt qu'un champ libre : ce réglage se
+ * discute en quarts d'heure, et une saisie libre inviterait le « 37 min » que
+ * personne ne saura justifier six mois plus tard.
+ */
+export const GRACE_CHOICES: readonly { readonly value: number; readonly label: string }[] = [
+  { value: 0, label: 'Aucun — la limite est ferme' },
+  { value: 15, label: "15 minutes après l'heure" },
+  { value: 30, label: '30 minutes' },
+  { value: 45, label: '45 minutes' },
+  { value: 60, label: '1 heure' },
+  { value: 120, label: '2 heures' },
+];
+
+/**
+ * Le rattrapage en clair, ou `null` quand il n'y en a pas.
+ *
+ * `null` plutôt qu'une phrase vide : l'absence de rattrapage n'est pas une
+ * information à afficher sur chaque ligne, c'est le cas normal. Ne rien montrer
+ * fait ressortir les règles qui, elles, en ont un.
+ */
+export function graceSentence(rule: OrderCutoffView): string | null {
+  if (rule.graceMinutes === 0) {
+    return null;
+  }
+  if (rule.graceMinutes % 60 === 0) {
+    const hours = rule.graceMinutes / 60;
+    return `+ ${hours} h de rattrapage`;
+  }
+  return `+ ${rule.graceMinutes} min de rattrapage`;
+}

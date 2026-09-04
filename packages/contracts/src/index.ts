@@ -302,14 +302,16 @@ export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
 export {
   clockTimeSchema,
   orderCutoffPayloadSchema,
-  isPastOrderCutoff,
+  decideOrderCutoff,
   orderCutoffInstant,
   resolveOrderCutoff,
   weekdayOfDate,
 } from "./order-cutoff.js";
 export type {
   CreatedOrderCutoffResponse,
+  OrderCutoffDecision,
   OrderCutoffPayload,
+  OrderCutoffStatus,
   OrderCutoffView,
 } from "./order-cutoff.js";
 

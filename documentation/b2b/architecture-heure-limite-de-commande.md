@@ -3,9 +3,10 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes).
 >
-> ✅ **Lots 0 et 1 livrés le 2026-09-04** : le fuseau est explicite et la règle
-> est opposée aux commandes client. Le reste — grâce, dérogation, surtaxe,
-> chaîne de fabrication — n'est pas codé.
+> ✅ **Lots 0, 1 et 2 livrés le 2026-09-04** : le fuseau est explicite, la règle
+> est opposée aux commandes client, et le **rattrapage** existe — il change le
+> message, pas encore le verdict. Le reste — dérogation, surtaxe, chaîne de
+> fabrication — n'est pas codé.
 
 ## En bref
 
@@ -46,6 +47,12 @@ resterait figée le jour où le labo change la sienne.
 La grâce est une durée qu'on règle ; la **dérogation** est le geste du commercial
 au téléphone (§7) ; la **surtaxe** est ce que ça coûte, et elle s'ajoute au panier
 comme des frais de livraison — **jamais au prix de l'article** (§8).
+
+⚠️ **Aujourd'hui la grâce ne laisse encore passer personne.** Elle est réglable
+et opposée, mais dans sa fenêtre le client est refusé par une **autre erreur**
+(`orders.cutoff.grace`), celle qui invite à appeler — au lieu du refus sec
+(`orders.cutoff.past`), qui ne renvoie vers rien. Elle deviendra un passage au
+lot 3, pour qui l'accorde.
 
 **Qui règle quoi** (§3) :
 
@@ -205,6 +212,18 @@ grâce. Ce qui donne trois états, et non un binaire passe/refuse.
 affichage, et la vraie limite devient « quand le commercial a envie ». C'est une
 borne dure, pas un défaut surchargeable.
 
+**Les deux bornes sont incluses** : à la seconde de la limite on est encore
+`open`, à la seconde de la fin de grâce encore `grace`. Une limite affichée
+« 18 h » doit accepter 18 h 00 min 00 s — c'est ce que lit celui qui commande, et
+l'exclure ferait refuser quelqu'un qui a cliqué à l'heure dite.
+
+✅ **Livré le 2026-09-04** : `decideOrderCutoff` (contrat) → `ensureWithinOrderCutoff`
+(garde), avec `graceMinutes` par rang. **Deux erreurs distinctes** plutôt qu'un
+drapeau, parce que ce qui les sépare n'est pas un détail d'affichage mais **ce
+que le lecteur doit faire** : changer de date, ou décrocher. Un code unique
+aurait fait dire la même phrase aux deux, et le rattrapage n'aurait servi à
+personne.
+
 La grâce est **une durée** (minutes), pas une seconde heure : `limite + grâce`
 suit automatiquement chaque rang de l'échelle, alors qu'une heure absolue aurait
 dû être ressaisie sur chacun — et se serait retrouvée, un jour, avant sa propre
@@ -350,6 +369,50 @@ traverse déjà le fil (`syncProductSchema`). Deux sorties :
 
 Non tranché, et volontairement : ça ne bloque aucun lot avant le 6, et le trancher
 maintenant se ferait sans savoir si le cas se présente vraiment.
+
+### ⚠️ Question ouverte : la dimension « point de retrait » nomme mal son sujet
+
+L'objection, posée le 2026-09-04 : _l'heure limite est un fait de commande, pas
+un fait de point de retrait._ Elle est juste, et elle va plus loin qu'un
+renommage.
+
+Un `PickupAddress` n'est **ni un lieu de production, ni un lieu de livraison** :
+c'est l'endroit où un client vient chercher. Ce qui fait varier une heure limite,
+lui, est ailleurs — c'est le dernier moment où l'on peut encore glisser une
+commande dans **ce qui part** : une fournée, un chargement, une tournée. Le
+modèle a pris le seul objet à portée qui ressemblait à un lieu.
+
+Ça tient tant que le comptoir est le labo et qu'il n'y en a qu'un. Deux
+symptômes disent que ça ne tiendra pas :
+
+- 🔴 **Une livraison ne peut matcher aucune règle de point**, par construction
+  (`packages/contracts/src/order-cutoff.ts:131`). Toute la moitié livrée du
+  commerce n'a donc **qu'une seule** heure limite, celle du défaut. Un secteur de
+  vallée dont le camion part à 5 h ne peut pas fermer plus tôt qu'une livraison
+  en ville — et c'est exactement le genre d'écart que
+  [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md)
+  décrit par ailleurs.
+- Le jour où un point de retrait cesse d'être un labo — un relais, une boutique
+  qui reçoit —, la règle resterait accrochée à lui alors que la contrainte
+  viendrait de qui l'approvisionne.
+
+**Trois sorties, non tranchées :**
+
+|                           | Ce que ça donne                                              | Ce que ça coûte                                                     |
+| ------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **Garder**                | rien à faire                                                 | la livraison reste à une seule heure limite                         |
+| **Généraliser**           | une portée de **remise** : un point OU une zone de livraison | une colonne nullable de plus, et la résolution passe de 4 à 6 rangs |
+| **Retirer le rang point** | l'échelle tombe à `jour` puis `défaut`                       | une colonne supprimée sur une table servie : trois déploiements     |
+
+**Le déclencheur, et il est simple :** _deux acheminements du même jour ferment-ils
+à des heures différentes ?_ Si la réponse est oui pour deux **zones de livraison**,
+c'est « généraliser », et l'ajout est additif. Si elle est non partout, c'est
+« retirer », et l'échelle se simplifie. Tant que la question n'est pas posée à
+l'exploitation, changer le modèle serait deviner.
+
+⚠️ Ce qui n'est **pas** en cause : le `weekday`. Le jour d'acheminement est bien
+un fait de la commande, et « le samedi ne ressemble pas au mardi » reste vrai
+quel que soit l'objet auquel on accroche l'autre dimension.
 
 ### ⚠️ Conséquence hors périmètre : la journée de production n'est plus unique
 
@@ -583,8 +646,10 @@ model ProductPrepTime {
 
 ### B2B (schéma `public`)
 
-- `OrderCutoff` gagne `graceMinutes Int @default(0)` — la durée de §4, par rang,
-  donc surchargeable comme l'heure elle-même.
+- ✅ `OrderCutoff` porte `graceMinutes Int @default(0)` — la durée de §4, par
+  rang, donc surchargeable comme l'heure elle-même. Migration additive
+  `20260904100000_grace_apres_heure_limite` : `0` partout, donc aucune ligne
+  existante ne se met à accepter quoi que ce soit de plus.
 - Les réglages de plateforme gagnent le **montant de la surtaxe** :
   `lateFeeMode CartAdjustmentMode?` + `lateFeeValue Int?`, la même paire que
   `DeliveryZone` et `PickupAddress`.
@@ -615,7 +680,7 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 | --- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
 | ✅0 | **Le fuseau** (§10) : `TZ`, conversion explicite, test sous `TZ=UTC`                                  | —                                       |
 | ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier nommée, e2e sur le refus          | 0                                       |
-| 2   | **La grâce** : `graceMinutes` par rang, les trois états, section de réglages                          | 1                                       |
+| ✅2 | **La grâce** : `graceMinutes` par rang, les trois états, section de réglages                          | 1                                       |
 | 3   | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                      | 2                                       |
 | 4   | **La surtaxe** : réglage, terme de panier, gel sur la commande, **TVA tranchée** (§8)                 | 3                                       |
 | 5   | **La chaîne de fabrication côté PIM** : table, écrans famille / fiche / déclinaison, remontée d'arbre | —                                       |
@@ -656,25 +721,29 @@ Deux remarques d'ordre :
 
 ## 13. Ce qui a été vérifié, et où
 
-| Affirmation                                                          | Vérifié                                                                      |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `OrderCutoff` existe, point × jour, heure locale                     | `apps/lfd-api/prisma/schema.prisma:1068-1092`                                |
-| Résolution en quatre rangs, 12 tests                                 | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`   |
-| **Aucun appelant** hors spec                                         | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré            |
-| `PlaceOrderHandler` ne vérifie que l'appartenance                    | `src/b2b/orders/application/commands/place-order.handler.ts`                 |
-| La page réglages porte déjà retraits + limites + zones               | `apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/`          |
-| `PickupAddress` (public) et `PointOfSale` (pim) sans lien            | `schema.prisma:1024` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide   |
-| `PriceScopeType` = global/category/product/variant                   | `packages/contracts/src/pricing.ts:83`                                       |
-| `Category.parentId` auto-relation                                    | `schema.prisma:2812-2845`                                                    |
-| `ProductKind` = daily / made_to_order / resale                       | `schema.prisma:2766`                                                         |
-| Snapshot en version 5, `syncVariantSchema`                           | `packages/catalog-sync/src/snapshot.ts:24,110`                               |
-| `total = max(0, subtotal − discount) + deliveryFee + vat`            | `schema.prisma`, section `Order`                                             |
-| `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`   | `schema.prisma:141, 1040, 1104`                                              |
-| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux           | `src/b2b/orders/domain/services/vat.ts`                                      |
-| `requestedDeliveryDate` **obligatoire** au contrat, colonne nullable | `packages/contracts/src/order.ts:114-117` ; `schema.prisma`, section `Order` |
-| « c'est la journée de production » — l'identité que §5 nuance        | `packages/contracts/src/order.ts:114`                                        |
-| Aucun plan de production n'existe, seulement une lecture par date    | `src/b2b/orders/application/queries/get-production-batch.handler.ts`         |
-| `placedByStaffId` → origine `back_office`                            | `src/b2b/orders/domain/services/order-origin.ts`                             |
-| **Aucun `TZ`** dans le `Dockerfile` ni dans `wrangler.jsonc`         | `apps/lfd-api/Dockerfile`, `apps/lfd-api/wrangler.jsonc`                     |
-| `lint:clock-port` ne scanne que `apps/lfd-api/src`                   | `dev-toolbox/gates/clock-port.mjs:36`                                        |
-| La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                 |
+| Affirmation                                                          | Vérifié                                                                           |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `OrderCutoff` existe, point × jour, heure locale                     | `apps/lfd-api/prisma/schema.prisma:1068-1092`                                     |
+| Résolution en quatre rangs, 12 tests                                 | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`        |
+| **Aucun appelant** hors spec                                         | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                 |
+| `PlaceOrderHandler` ne vérifie que l'appartenance                    | `src/b2b/orders/application/commands/place-order.handler.ts`                      |
+| La page réglages porte déjà retraits + limites + zones               | `apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/`               |
+| `PickupAddress` (public) et `PointOfSale` (pim) sans lien            | `schema.prisma:1024` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide        |
+| `PriceScopeType` = global/category/product/variant                   | `packages/contracts/src/pricing.ts:83`                                            |
+| `Category.parentId` auto-relation                                    | `schema.prisma:2812-2845`                                                         |
+| `ProductKind` = daily / made_to_order / resale                       | `schema.prisma:2766`                                                              |
+| Snapshot en version 5, `syncVariantSchema`                           | `packages/catalog-sync/src/snapshot.ts:24,110`                                    |
+| `total = max(0, subtotal − discount) + deliveryFee + vat`            | `schema.prisma`, section `Order`                                                  |
+| `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`   | `schema.prisma:141, 1040, 1104`                                                   |
+| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux           | `src/b2b/orders/domain/services/vat.ts`                                           |
+| `requestedDeliveryDate` **obligatoire** au contrat, colonne nullable | `packages/contracts/src/order.ts:114-117` ; `schema.prisma`, section `Order`      |
+| « c'est la journée de production » — l'identité que §5 nuance        | `packages/contracts/src/order.ts:114`                                             |
+| Aucun plan de production n'existe, seulement une lecture par date    | `src/b2b/orders/application/queries/get-production-batch.handler.ts`              |
+| `placedByStaffId` → origine `back_office`                            | `src/b2b/orders/domain/services/order-origin.ts`                                  |
+| **Aucun `TZ`** dans le `Dockerfile` ni dans `wrangler.jsonc`         | `apps/lfd-api/Dockerfile`, `apps/lfd-api/wrangler.jsonc`                          |
+| `lint:clock-port` ne scanne que `apps/lfd-api/src`                   | `dev-toolbox/gates/clock-port.mjs:36`                                             |
+| `graceMinutes` par rang, migration additive à `0`                    | `prisma/migrations/20260904100000_grace_apres_heure_limite/`                      |
+| Les trois états, les deux bornes incluses                            | `packages/contracts/src/__tests__/order-cutoff.spec.ts`                           |
+| Deux codes distincts (`cutoff.grace` / `cutoff.past`)                | `src/b2b/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts` |
+| Une livraison ne peut matcher aucune règle de point                  | `packages/contracts/src/order-cutoff.ts:131`                                      |
+| La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                      |

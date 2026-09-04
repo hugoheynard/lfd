@@ -12,7 +12,7 @@
  * Deux frontières doublées : la signature du jeton (staff comme client) et la
  * passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
  */
-import type { BillingAddressPayload } from "@lfd/contracts";
+import { addDays, instantToLocal, type BillingAddressPayload } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -90,6 +90,7 @@ async function seedCutoff(rule: {
   weekday?: string | null;
   daysBefore: number;
   time: string;
+  graceMinutes?: number;
 }): Promise<void> {
   await ctx.prisma.orderCutoff.create({
     data: {
@@ -97,8 +98,32 @@ async function seedCutoff(rule: {
       weekday: rule.weekday ?? null,
       daysBefore: rule.daysBefore,
       time: rule.time,
+      graceMinutes: rule.graceMinutes ?? 0,
     },
   });
+}
+
+/**
+ * Sème une règle dont la limite **est tombée il y a `minutesAgo`**, et rend le
+ * jour d'acheminement à demander pour qu'elle s'applique.
+ *
+ * 🔴 Écrire `{ daysBefore: 0, time: "00:00", graceMinutes: 720 }` en pensant
+ * « la limite est passée, le rattrapage court » marche — jusqu'à midi. Après, la
+ * fenêtre est close et le test rougit sans qu'une ligne ait bougé. Un rattrapage
+ * se compte en minutes ; le borner avec une heure de pendule et un nombre de
+ * jours le rend dépendant de l'heure à laquelle la suite tourne.
+ *
+ * On part donc de l'instant voulu et on le traduit en règle, jamais l'inverse :
+ * `instantToLocal` donne le jour et l'heure de PARIS de cette limite, et
+ * l'acheminement est calé deux jours plus loin pour rester dans le futur quelle
+ * que soit l'heure.
+ */
+const LIMIT_DAYS_BEFORE = 2;
+
+async function seedCutoffPassedBy(minutesAgo: number, graceMinutes: number): Promise<string> {
+  const limit = instantToLocal(new Date(Date.now() - minutesAgo * 60_000));
+  await seedCutoff({ daysBefore: LIMIT_DAYS_BEFORE, time: limit.time, graceMinutes });
+  return addDays(limit.day, LIMIT_DAYS_BEFORE);
 }
 
 function order(over: Record<string, unknown> = {}): Record<string, unknown> {
@@ -184,6 +209,41 @@ describe("l'heure limite est opposée au client", () => {
 
     expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
     expect(await orderCount()).toBe(0);
+  });
+});
+
+describe("le rattrapage, quand il est réglé", () => {
+  /**
+   * La fenêtre de grâce est un **refus différent**, pas un passage. Ce que seul
+   * l'e2e prouve : le code voyage jusqu'au client sous la bonne forme, et rien
+   * n'est écrit — un rattrapage qui laisserait une commande en base serait pire
+   * qu'une absence de rattrapage.
+   */
+  it("refuse en `orders.cutoff.grace` dans la fenêtre, sans rien écrire", async () => {
+    // Limite passée il y a 10 min, rattrapage de 45 : on est dedans, à toute heure.
+    const day = await seedCutoffPassedBy(10, 45);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.grace" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  it("redevient `orders.cutoff.past` une fois le rattrapage écoulé", async () => {
+    // Même limite, mais un rattrapage de 5 min : il est écoulé depuis 5 min.
+    const day = await seedCutoffPassedBy(10, 5);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
   });
 });
 
