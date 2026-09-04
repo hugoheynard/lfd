@@ -133,8 +133,25 @@ Trois conséquences, toutes déjà écrites là-bas :
 
 La vue client est donc une vue **neuve et étroite**, pas `PricingItemView`
 réexporté. Le mur du devis protège la mercuriale d'un concurrent ; celui-ci
-protège la machinerie qui fabrique nos prix. Ce sont deux murs, et le second n'a
-pas encore été posé parce qu'aucune route client ne servait de prix.
+protège la machinerie qui fabrique nos prix. Ce sont deux murs.
+
+⚠️ **Ce paragraphe disait « le second n'a pas encore été posé parce qu'aucune
+route client ne servait de prix ». C'était faux**, et ça l'était en écrivant :
+`POST /orders/quote` est une surface client, et elle rendait `OrderQuoteView`
+entière — `steps` (identifiant et **libellé commercial** de chaque règle, plus
+les rivales évincées), `sealedByRuleId`, `sealedRuleIds`, `floorMillicents` (le
+plancher, donc la marge) et `floored`. Aucun front ne l'appelait ; la route,
+elle, était ouverte à qui porte un jeton.
+
+✅ **Colmaté le 2026-09-04**, indépendamment de ce chantier :
+`CustomerOrderQuoteView` et `toCustomerQuote` dans `@lfd/contracts`, une
+conversion **explicite** champ par champ — un `omit` aurait laissé la vue
+s'élargir en silence. Le cas e2e qui éprouvait le scellement a changé de porte
+plutôt que de disparaître : il vit désormais sur `/admin/orders/quote`, où il a
+un lecteur légitime.
+
+🔴 **Et ça change le lot 2.** Il consiste à brancher la boutique publique sur
+cette route : il l'aurait fait sur la réponse non rétrécie.
 
 **La règle de tri** : un champ passe s'il répond à « combien ça me coûte, et à
 partir de quelle quantité ça baisse ». Tout le reste reste au back-office.

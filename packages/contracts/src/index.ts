@@ -408,6 +408,7 @@ export {
   ORDER_ORIGIN_LABELS,
   recurringDeltasSchema,
   orderQuotePayloadSchema,
+  toCustomerQuote,
 } from "./order.js";
 export type {
   OrderStatus,
@@ -428,6 +429,8 @@ export type {
   OrderQuotePayload,
   OrderQuoteLineView,
   OrderQuoteView,
+  CustomerOrderQuoteLineView,
+  CustomerOrderQuoteView,
   OrderLineAllergens,
   OrderLineAllergenLabel,
 } from "./order.js";

@@ -646,6 +646,81 @@ export interface OrderQuoteLineView {
   readonly floorMillicents: number | null;
 }
 
+/**
+ * **Le devis tel qu'un CLIENT le reçoit** — la même résolution, amputée de la
+ * machinerie qui la produit.
+ *
+ * 🔴 `POST /orders/quote` est une surface **client**, et elle rendait
+ * `OrderQuoteView` en entier : `steps` (l'identifiant ET le libellé commercial
+ * de chaque règle, plus les rivales qu'elle a évincées), `sealedByRuleId`,
+ * `sealedRuleIds`, `floorMillicents` — le plancher, c'est-à-dire la marge — et
+ * `floored`, qui dit qu'une limite a relevé ce prix, donc qu'il en existe une.
+ *
+ * Aucun front client ne l'appelait encore ; la route, elle, était ouverte à qui
+ * porte un jeton. Le mur du devis protège la mercuriale d'un CONCURRENT ; il ne
+ * protégeait pas la machinerie qui fabrique nos prix contre le client lui-même.
+ *
+ * **La règle de tri** : un champ passe s'il répond à « combien ça me coûte, et à
+ * partir de quelle quantité ça baisse ». Le reste appartient au comptoir.
+ *
+ * ⚠️ Une vue NEUVE et non des champs rendus optionnels : un champ absent
+ * « parce que client » et un champ absent « parce qu'il n'y en a pas » se
+ * liraient pareil, et la distinction reviendrait au front. La conversion est
+ * explicite ({@link toCustomerQuote}) parce que TypeScript accepte le surplus
+ * dès que l'objet n'est pas un littéral — un champ ajouté demain à la vue staff
+ * fuirait sans qu'une ligne rougisse.
+ */
+export interface CustomerOrderQuoteLineView {
+  readonly sku: string;
+  readonly productName: string;
+  /** Le tarif d'entrée, avant tout étage — celui du catalogue. */
+  readonly canonicalMillicents: number;
+  /** Le prix **réellement facturé** à cette quantité, pour ce client. */
+  readonly unitPriceMillicents: number;
+  readonly quantity: number;
+  readonly vatRate: number;
+  /**
+   * Le barème qui vise l'article, palier par palier, ou `null`.
+   *
+   * Il reste : `minQuantity`, `unitPriceMillicents` et `discountBp` ne nomment
+   * aucune règle et ne disent aucune marge — ce sont des prix que ce client
+   * obtiendrait vraiment, donc la moitié exacte de la règle de tri.
+   *
+   * Ce qu'il divulgue tout de même, et qu'il faut assumer plutôt que découvrir :
+   * **la forme de l'échelle**, c'est-à-dire où les seuils sont posés.
+   */
+  readonly volumeTiers: readonly VolumeTierPriceView[] | null;
+}
+
+/** Le devis d'un client : ses lignes, et le sous-total HT. */
+export interface CustomerOrderQuoteView {
+  readonly lines: readonly CustomerOrderQuoteLineView[];
+  readonly subtotalCents: number;
+}
+
+/**
+ * Le devis staff → le devis client, **champ par champ**.
+ *
+ * Écrite comme une liste explicite, jamais comme un `omit` : retirer des clés
+ * laisse la vue s'élargir en silence, alors qu'une liste oblige à décider pour
+ * chaque champ ajouté. C'est la seule barrière qui survive à un contributeur qui
+ * ne connaît pas ce commentaire.
+ */
+export function toCustomerQuote(view: OrderQuoteView): CustomerOrderQuoteView {
+  return {
+    subtotalCents: view.subtotalCents,
+    lines: view.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      canonicalMillicents: line.canonicalMillicents,
+      unitPriceMillicents: line.unitPriceMillicents,
+      quantity: line.quantity,
+      vatRate: line.vatRate,
+      volumeTiers: line.volumeTiers,
+    })),
+  };
+}
+
 export interface OrderQuoteView {
   readonly lines: readonly OrderQuoteLineView[];
   /**

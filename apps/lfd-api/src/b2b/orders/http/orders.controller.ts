@@ -7,7 +7,9 @@ import {
   type PlacedOrderResponse,
   orderQuotePayloadSchema,
   type OrderQuotePayload,
+  type CustomerOrderQuoteView,
   type OrderQuoteView,
+  toCustomerQuote,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -68,15 +70,30 @@ export class OrdersController {
    * Le `companyId` du CORPS est muré exactement comme sur `POST /orders` : le
    * client doit en être membre. Un devis rend un prix négocié ; sans ce mur, on
    * sonderait la mercuriale d'un concurrent en devinant son identifiant.
+   *
+   * 🔴 **Et la réponse est RÉTRÉCIE.** Ce mur-ci protège la mercuriale d'un
+   * concurrent ; il ne protégeait pas la machinerie qui fabrique nos prix contre
+   * le client lui-même. La route rendait `OrderQuoteView` en entier — donc
+   * `steps` (l'identifiant et le **libellé commercial** de chaque règle, plus
+   * les rivales qu'elle a évincées), `sealedByRuleId`, `sealedRuleIds`,
+   * `floorMillicents` (le plancher, c'est-à-dire la marge) et `floored`.
+   *
+   * Aucun front client ne l'appelait ; la route, elle, était ouverte à qui porte
+   * un jeton. Le rétrécissement passe par une conversion explicite, pas par un
+   * type plus étroit : TypeScript accepte le surplus dès que l'objet n'est pas
+   * un littéral, et un champ ajouté demain à la vue staff fuirait sans qu'une
+   * ligne rougisse.
    */
   @Post("quote")
   @HttpCode(HttpStatus.OK)
   async quote(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
-  ): Promise<OrderQuoteView> {
-    return this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
-      new QuoteOrderQuery(user.userId, payload, false),
+  ): Promise<CustomerOrderQuoteView> {
+    return toCustomerQuote(
+      await this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
+        new QuoteOrderQuery(user.userId, payload, false),
+      ),
     );
   }
 

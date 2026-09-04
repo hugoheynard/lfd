@@ -12,7 +12,14 @@ import { centsFromMillicents, millicentsFromCents } from "@lfd/money";
  *    chaîne HTTP → handler → drafting → résolution → `order_lines`.
  */
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const SERVICE_DAY = serviceDay();
@@ -35,10 +42,23 @@ const fakeGateway = {
   publishableKey: () => "pk_test",
 };
 
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+};
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({
+    overrides: [
+      { token: PaymentGateway, value: fakeGateway },
+      // La suite appelle une route ADMIN depuis qu'elle y a déplacé le
+      // scellement : le vérificateur de jeton staff est la seule frontière que
+      // le harnais double, faute d'un tenant Auth0 et de ses clés privées.
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+    ],
+  });
 });
 
 afterAll(async () => {
@@ -522,17 +542,62 @@ describe("POST /orders/quote — la grille et le scellement", () => {
     ]);
   });
 
+  /**
+   * 🔴 **Ce que le devis d'un CLIENT ne dit pas.**
+   *
+   * La route rendait la vue staff entière : `steps` — l'identifiant et le
+   * libellé commercial de chaque règle, plus les rivales qu'elle a évincées —,
+   * `sealedByRuleId`, `sealedRuleIds`, `floorMillicents` (le plancher, donc la
+   * marge) et `floored`. Le mur du devis protège la mercuriale d'un concurrent ;
+   * il ne protégeait pas la machinerie qui fabrique nos prix contre le client.
+   *
+   * L'assertion porte sur les **clés**, pas sur des `toBeUndefined()` : un champ
+   * ajouté demain à la vue staff passerait entre les mailles d'une liste
+   * d'absences, jamais entre celles d'un jeu de clés exact.
+   */
+  it("ne rend au client ni le chemin du prix, ni le plancher, ni les règles", async () => {
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+
+    const body = jsonBody<{ lines: Record<string, unknown>[] }>(await quote(1).expect(200));
+    const line = body.lines[0] ?? {};
+
+    expect(Object.keys(line).sort()).toEqual([
+      "canonicalMillicents",
+      "productName",
+      "quantity",
+      "sku",
+      "unitPriceMillicents",
+      "vatRate",
+      "volumeTiers",
+    ]);
+  });
+});
+
+/**
+ * Le même scellement, **au comptoir** — là où il a un lecteur légitime.
+ *
+ * Le cas vivait sur la route CLIENT, qui ne doit plus le voir. Il n'est pas
+ * supprimé pour autant : sans ce champ, un commercial ne saurait pas si sa
+ * promotion a expiré, si elle a été évincée par plus spécifique, ou si le tarif
+ * négocié du client l'écarte. Il change de porte, pas de sujet.
+ */
+describe("POST /admin/orders/quote — le scellement, côté comptoir", () => {
   it("nomme la mercuriale qui scelle, et la règle qu'elle écarte", async () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
 
     const body = jsonBody<{
       lines: { sealedByRuleId: string | null; sealedRuleIds: string[] }[];
-    }>(await quote(1).expect(200));
+    }>(
+      await ctx
+        .asSub(E2E_STAFF_SUB)
+        .post("/admin/orders/quote")
+        .send({ companyId: null, lines: [{ sku: SKU, quantity: 1 }] })
+        .expect(200),
+    );
 
     expect(body.lines[0]?.sealedByRuleId).toBe("merc");
-    // Sans ce champ, un commercial ne saurait pas si sa promotion a expiré, si
-    // elle a été évincée par plus spécifique, ou si le tarif du client l'écarte.
     expect(body.lines[0]?.sealedRuleIds).toEqual(["promo"]);
   });
 });
