@@ -28,6 +28,7 @@ import { CommunicationForm } from './form-sections/communication/communication-f
 import { IdentityForm } from './form-sections/identity/identity-form';
 import { IntegrationsForm } from './form-sections/integrations/integrations-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
+import { OrderLimitForm } from './form-sections/order-limit/order-limit-form';
 import { IngredientsForm } from './form-sections/ingredients/ingredients-form';
 import { RegulatoryForm } from './form-sections/regulatory/regulatory-form';
 import { VisualsForm } from './form-sections/visuals/visuals-form';
@@ -79,6 +80,7 @@ interface PageSection {
     PublishRail,
     IdentityForm,
     PricingForm,
+    OrderLimitForm,
     RegulatoryForm,
     IngredientsForm,
     CommunicationForm,

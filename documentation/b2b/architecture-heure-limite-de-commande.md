@@ -718,10 +718,34 @@ déclinaisons compris, avec leur nom et de quoi les retirer. Une règle qu'on ne
 voit pas est une règle qu'on ne peut plus corriger.
 
 Il ne **pose** pas de limite sur un produit ni sur une déclinaison, et c'est un
-choix : ça se fera depuis **la fiche du produit**. C'est là qu'on regarde quand
-on se demande ce que CET article demande, et un sélecteur de produit dans un
-écran de réglages ferait chercher au mauvais endroit — exactement la faute que
-§3 raconte, avec un autre voisin.
+choix : ✅ ça se fait depuis **la fiche du produit**, dans **sa propre carte**.
+C'est là qu'on regarde quand on se demande ce que CET article demande, et un
+sélecteur de produit dans un écran de réglages ferait chercher au mauvais
+endroit — exactement la faute que §3 raconte, avec un autre voisin.
+
+### La carte de la fiche, et pourquoi elle est à elle
+
+Elle a d'abord été posée **sous le tarif**, dans la section « Tarif &
+logistique ». Corrigé le jour même : « combien ça coûte » et « jusqu'à quand on
+en prend » sont deux sujets — le premier est une décision commerciale, le second
+une contrainte de production. Les empiler dans une carte apprend que le second
+dépend du premier, et c'est exactement de cette façon que l'ancienne heure limite
+a fait croire pendant des mois qu'elle relevait de l'acheminement.
+
+Trois règles que la carte tient :
+
+- **Elle ne montre que ce que la fiche pose elle-même.** Ce dont elle hérite n'y
+  est pas : l'afficher ferait croire qu'on le modifie en modifiant ici, et on en
+  poserait une seconde copie sur le produit — copie qui ne suivrait pas le jour
+  où la famille change. Un renvoi dit où la règle héritée se change.
+- **Elle ne participe pas à l'enregistrement de la fiche.** La limite vit dans un
+  autre contexte, avec sa propre route ; son panneau écrit seul en se fermant.
+  Pas d'indicateur d'état partagé avec « Tout enregistrer », qui affirmerait
+  qu'il la sauve — le même raisonnement que la carte Ingrédients, déjà écrit
+  dans ce gabarit.
+- **C'est le panneau de l'écran général**, étendu pour accepter une portée
+  imposée. Un second panneau aurait divergé du premier sur la sémantique de
+  l'héritage, et c'est précisément là qu'une divergence ne se verrait pas.
 
 Deux choses que l'écran dit et qui ne vont pas de soi :
 

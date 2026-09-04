@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import type {
   OrderTimeLimitPayload,
+  OrderTimeLimitScope,
   OrderTimeLimitScopeType,
   OrderTimeLimitView,
 } from '@lfd/pim-contracts';
@@ -36,6 +37,15 @@ export interface LimitPanelData {
   readonly rule: OrderTimeLimitView | null;
   /** Les familles, pour le sélecteur de portée. */
   readonly categories: readonly LimitTargetChoice[];
+  /**
+   * Une portée **imposée**, quand le panneau s'ouvre depuis l'objet lui-même —
+   * la fiche d'un produit, une de ses déclinaisons.
+   *
+   * Le sélecteur disparaît alors : on est déjà dans le contexte de la cible, et
+   * proposer d'en changer inviterait à poser depuis cet écran une règle qui vise
+   * autre chose que ce qu'on regarde.
+   */
+  readonly preset?: { readonly scope: OrderTimeLimitScope; readonly label: string };
 }
 
 /** La valeur qui dit « ce rang ne se prononce pas » dans les sélecteurs. */
@@ -124,10 +134,16 @@ export class LimitPanel {
    * création. Le confondre ferait perdre la trace de ce qui s'appliquait à
    * l'ancienne portée.
    */
-  protected readonly scopeLocked = computed(() => !this.isCreate());
+  protected readonly scopeLocked = computed(
+    () => !this.isCreate() || this.data()?.preset !== undefined,
+  );
 
   /** Ce que la portée vise, en clair, quand elle est verrouillée. */
   protected readonly lockedScopeLabel = computed(() => {
+    const preset = this.data()?.preset;
+    if (preset !== undefined) {
+      return preset.label;
+    }
     const rule = this.editing();
     return rule === null ? '' : scopeLabel(rule);
   });
@@ -166,6 +182,11 @@ export class LimitPanel {
 
   constructor() {
     effect(() => {
+      const preset = this.data()?.preset;
+      if (preset !== undefined) {
+        this.scopeType.set(preset.scope.type);
+        this.scopeId.set(preset.scope.id);
+      }
       const rule = this.data()?.rule ?? null;
       if (rule === null) {
         return;

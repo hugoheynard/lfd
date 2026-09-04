@@ -117,6 +117,34 @@
           </fold-card>
         }
 
+        <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
+             « Combien ça coûte » et « jusqu'à quand on en prend » sont deux
+             sujets : le premier est une décision commerciale, le second une
+             contrainte de production. Les empiler dans une carte apprendrait
+             que le second dépend du premier, ce qui est faux — et c'est
+             exactement de cette façon que l'ancienne heure limite, rangée sous
+             « Retraits & livraisons », a fait croire pendant des mois qu'elle
+             était une affaire d'acheminement.
+
+             Pas d'`app-section-state` : la limite vit sur un AUTRE agrégat, dans
+             un autre contexte, et son panneau enregistre seul. Un indicateur
+             partagé avec « Tout enregistrer » affirmerait qu'il la sauve. -->
+        <fold-card>
+          <fold-page-section
+            title="Limite de commande"
+            separator
+            collapsible
+            [open]="sectionOpen('limite')()"
+            (openChange)="setSectionOpen('limite', $event)"
+          >
+            <span sectionSubtitle>
+              Jusqu'à quand on prend commande de cet article. Ce qui n'est pas posé ici est hérité
+              de sa famille, puis du réglage général.
+            </span>
+            <app-order-limit-form />
+          </fold-page-section>
+        </fold-card>
+
         <!-- INGRÉDIENTS — sous les allergènes, et pas avec eux. Ce que la fiche
              revendique sur la PROVENANCE : un badge, un argument de vente. La
              liste réglementaire (ordonnée par masse, avec quantités) appartient

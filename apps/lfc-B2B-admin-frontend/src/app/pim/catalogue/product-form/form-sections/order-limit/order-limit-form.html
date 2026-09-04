@@ -1,0 +1,60 @@
+<div class="ol">
+  @if (failed()) {
+    <!-- « Aucune limite propre » et « on n'a pas pu lire » ne se ressemblent que
+         sur un écran mal fait. -->
+    <fold-callout variant="alert">
+      Les limites de commande n'ont pas pu être lues.
+      <button foldButton emphasis="soft" size="sm" (click)="load()">Réessayer</button>
+    </fold-callout>
+  } @else {
+    <ul class="ol-rows">
+      @for (row of rows(); track row.scopeId) {
+        <li class="ol-row">
+          <span class="ol-scope">{{ row.label }}</span>
+
+          @if (row.rule; as rule) {
+            <span class="ol-values">
+              <fold-badge [content]="days(rule)" variant="neutral" />
+              <fold-badge [content]="time(rule)" variant="neutral" />
+              <fold-badge [content]="grace(rule)" variant="neutral" />
+            </span>
+            <span class="ol-actions">
+              <button foldButton emphasis="soft" size="sm" (click)="edit(row)">Modifier</button>
+              @if (pendingRemoval() === rule.id) {
+                <button foldButton intent="danger" size="sm" (click)="remove(rule)">
+                  Confirmer
+                </button>
+                <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">
+                  Annuler
+                </button>
+              } @else {
+                <button
+                  foldButton
+                  emphasis="soft"
+                  intent="danger"
+                  size="sm"
+                  (click)="askRemove(rule)"
+                >
+                  Retirer
+                </button>
+              }
+            </span>
+          } @else {
+            <span class="ol-inherited">Hérité</span>
+            <span class="ol-actions">
+              <button foldButton emphasis="soft" size="sm" (click)="edit(row)">
+                Poser une limite
+              </button>
+            </span>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <!-- Ce dont la fiche hérite ne se modifie pas ici : le dire, et dire où. -->
+  <p class="ol-hint">
+    La règle générale et celles des familles se posent dans
+    <a routerLink="/pim/limites-de-commande">Limites de commande</a>.
+  </p>
+</div>
