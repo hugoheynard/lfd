@@ -18,7 +18,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CatalogVersion } from "../src/b2b/catalog/domain/entities/catalog-version.js";
 import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
 import { CatalogVersionRepository } from "../src/b2b/catalog/domain/ports/catalog-version.repository.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { lineTotalCents } from "@lfd/money";
 
@@ -52,8 +52,11 @@ beforeEach(async () => {
  * Le jour de **service** d'une commande de test. Obligatoire depuis que
  * `orderContentShape` l'exige : une commande sans jour de retrait/livraison
  * n'entrerait dans aucune journée de production.
+ *
+ * **Relatif**, et plus une date en dur : depuis que l'heure limite est opposée à
+ * la passation (2026-09-04), un jour de service est comparé à l'horloge.
  */
-const SERVICE_DAY = "2026-09-01";
+const SERVICE_DAY = serviceDay();
 
 /** Aucun point semé : un retrait qui le désigne doit échouer, pas réussir par hasard. */
 const NO_PICKUP = "pickup_absent";

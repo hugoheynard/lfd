@@ -15,7 +15,7 @@ import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, serviceDay, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -40,6 +40,17 @@ const fakeGateway = {
   },
   publishableKey: () => "pk_test",
 };
+
+/**
+ * Le jour de service des commandes semées ici. Relatif : depuis que l'heure
+ * limite est opposée à la passation, une date figée dans le passé deviendrait un
+ * refus dès qu'une règle serait semée.
+ *
+ * ⚠️ Les fenêtres `validFrom` / `validTo` de ce fichier restent **absolues**, et
+ * c'est l'exception écrite : elles ne sont comparées qu'entre elles (adjacence,
+ * chevauchement), jamais à l'horloge.
+ */
+const SERVICE_DAY = serviceDay();
 
 let ctx: E2eContext;
 
@@ -871,7 +882,7 @@ describe("le rapport prix / volume", () => {
       .send({
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
-        requestedDeliveryDate: "2026-09-01",
+        requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
       });
     // La commande est datée d'aujourd'hui par défaut : on la recule pour la
@@ -1187,7 +1198,7 @@ describe("l’écran daté et la comparaison", () => {
       .send({
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
-        requestedDeliveryDate: "2026-09-01",
+        requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
       });
     await ctx.prisma.order.update({
@@ -1555,7 +1566,7 @@ describe("POST /admin/pricing/projection", () => {
       .send({
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
-        requestedDeliveryDate: "2026-09-01",
+        requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity: 600 }],
       })
       .expect(201);

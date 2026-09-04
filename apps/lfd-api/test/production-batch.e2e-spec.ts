@@ -15,11 +15,11 @@ import type { ProductionBatchView } from "@lfd/contracts";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const MEMBER = "auth0|member";
-const SERVICE_DAY = "2026-09-01";
+const SERVICE_DAY = serviceDay();
 
 /** Le contact que la société a renseigné sur son adresse, AVANT de commander. */
 const CONTACT_DU_JOUR = { prenom: "Camille", nom: "Rousseau", telephone: "0142710844" };

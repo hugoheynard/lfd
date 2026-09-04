@@ -15,15 +15,18 @@ import type { AdminOrderRow, OrderView, PlacedOrderResponse } from "@lfd/contrac
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
  * Le jour de **service** d'une commande de test. Obligatoire depuis que
- * `orderContentShape` l'exige : sans lui, la commande n'entrerait dans aucune
- * journée de production.
+ * `orderContentShape` l'exige : une commande sans jour de retrait/livraison
+ * n'entrerait dans aucune journée de production.
+ *
+ * **Relatif**, et plus une date en dur : depuis que l'heure limite est opposée à
+ * la passation (2026-09-04), un jour de service est comparé à l'horloge.
  */
-const SERVICE_DAY = "2026-09-01";
+const SERVICE_DAY = serviceDay();
 
 /** L'id du point semé par le test courant (cf. `orders.e2e-spec`). */
 let pickupId = "pickup_absent";

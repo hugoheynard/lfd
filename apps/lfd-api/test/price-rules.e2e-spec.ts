@@ -12,10 +12,10 @@ import { centsFromMillicents, millicentsFromCents } from "@lfd/money";
  *    chaîne HTTP → handler → drafting → résolution → `order_lines`.
  */
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
-const SERVICE_DAY = "2026-09-01";
+const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
 
 /**

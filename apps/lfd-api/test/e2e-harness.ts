@@ -253,6 +253,25 @@ export function daysAgo(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
 
+/**
+ * Un **jour de service** à venir, au format `AAAA-MM-JJ`. Par défaut dans une
+ * semaine.
+ *
+ * Le pendant de {@link daysAgo} pour ce qu'une commande demande. Une constante
+ * en dur — `"2026-09-01"` a vécu dans sept suites — n'est pas seulement une date
+ * qui vieillit : depuis que l'**heure limite de commande** est opposée à la
+ * passation (2026-09-04), un jour de service est **comparé à l'horloge**. Une
+ * date figée dans le passé attend qu'une suite sème une règle pour devenir un
+ * refus que rien dans le diff n'expliquera.
+ *
+ * Une semaine plutôt qu'un jour : ça laisse de la place sous n'importe quelle
+ * règle plausible (`daysBefore` va jusqu'à 14, mais aucune fixture ne va si
+ * loin), et ça reste lisible comme « une commande pour la semaine prochaine ».
+ */
+export function serviceDay(inDays = 7): string {
+  return new Date(Date.now() + inDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 export const E2E_STAFF_SUB = "staff-e2e";
 
 /** L'e-mail de la fiche d'annuaire qui incarne l'opérateur des tests. */
