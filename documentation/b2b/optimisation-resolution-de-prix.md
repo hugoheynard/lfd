@@ -113,6 +113,20 @@ d'appels est une affaire de conception d'écran, le coût de celui qui reste une
 affaire de lecture. **Et le hissage compte DAVANTAGE sous une hydratation**, pas
 moins : c'est elle qui crée le gros appel.
 
+### La forme générale, pour la prochaine fois
+
+> **Un bon back ne rattrape pas un mauvais front.**
+
+L'asymétrie est structurelle, et elle vaut au-delà du prix : le serveur
+**additionne** — trois lectures par article, c'est `+3N`, une fois —, l'écran
+**multiplie** — un `effect()` sans debounce, c'est `×N` sur tout ce qui suit, y
+compris sur un serveur parfaitement batché.
+
+Optimiser le serveur **divise une constante** ; ça ne supprime jamais un facteur.
+D'où l'ordre des mesures de §6, et le fait que la quatrième — le nombre d'appels
+par session — soit celle qu'il faut prendre en premier alors que ce document ne
+pensait pas à la prendre du tout.
+
 ### Ce qui rend une hydratation _correcte_, et pas seulement optimiste
 
 `volumeTiers`. Chaque palier est une résolution complète **à cette quantité** —
