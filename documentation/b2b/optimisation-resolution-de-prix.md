@@ -305,14 +305,51 @@ Ce que ça touche, chiffré plutôt qu'esquissé :
   oublié : `PriceProjectionQuery`. Il hisse déjà pour son propre usage ;
 - **`ScopedPriceFloor`** gagne son cycle de vie, ou le filtre reste en SQL (§4).
 
-### Le coût qui MONTE, et que la première version passait sous silence
+### 🔴 Le hissage ne se fait pas sans INDEXER — les deux sont un seul lot
 
 `resolvePrice` balaie le tableau des candidats **quatre fois par article**, une
-par étage. Charger pour l'union du panier fait passer ce balayage de « les règles
-de cet article » à « les règles du panier », par article — c'est-à-dire
-exactement le produit `articles × règles` contre lequel le tableau de bord met en
-garde. Sur des dizaines de règles c'est du bruit ; c'est la mesure 3 de §6 qui
-dit à partir de quand ça cesse de l'être.
+par étage. Aujourd'hui c'est gratuit : `rules` contient les candidats de CET
+article, déjà resserrés par le SQL sur sa portée et son audience — une poignée.
+
+Hissé, `rules` devient l'union du panier, et on la rebalaie **pour chaque
+article** : c'est exactement le produit `articles × règles` contre lequel le
+tableau de bord met en garde. Le hissage économise des lectures et paie en
+balayages.
+
+Ce qui l'annule tient à une coupure nette dans `applies` :
+
+|                                                | constant sur la requête | varie par article |
+| ---------------------------------------------- | ----------------------- | ----------------- |
+| `isInForce(rule, at)`, `isSuspended(rule, at)` | ✅                      |                   |
+| `matchesAudience(rule.audience, context)`      | ✅                      |                   |
+| `matchesScope(rule.scope, context)`            |                         | ✅                |
+| `rule.minQuantity` contre la quantité mesurée  |                         | ✅                |
+
+D'où la forme, en trois temps :
+
+1. **une fois par requête** — filtrer sur le temps et l'audience : les règles
+   vivantes pour ce client, à cet instant ;
+2. **indexer par portée** —
+   `Map<stage, Map<"global" | "category:X" | "product:Y" | "variant:Z", règles>>` ;
+3. **par article** — quatre lectures de clé, puis `minQuantity` sur le peu qui
+   remonte.
+
+Pas un `Set` : l'appartenance ne suffit pas, `supersedes` a besoin des
+**perdants** de l'étage. Une multi-map.
+
+Et c'est du O(1) **réel**, pas seulement asymptotique : la contrainte d'exclusion
+`price_rules_no_overlap` interdit deux règles de même étage, même portée et même
+audience qui se chevauchent dans le temps. Une clé rend donc une règle — deux au
+plus, quand une règle « tous » coexiste avec une règle « ce client ».
+
+Le motif existe déjà, à l'identique : `mostSpecificFirst`, dans le résolveur de
+limites de commande, construit une `Map` clé `type:id` et **pioche les clés
+attendues** au lieu de trier. Son commentaire dit pourquoi — « le tri aurait
+demandé un rang numérique par famille, donc une seconde expression de la
+profondeur de l'arbre ».
+
+⚠️ **Conséquence sur le périmètre** : hisser sans indexer déplace le coût au lieu
+de le retirer. Les deux ne sont pas deux options à comparer, c'est un seul lot.
 
 ### Ce que ça ne doit pas devenir
 
@@ -337,6 +374,8 @@ dit à partir de quand ça cesse de l'être.
 | Le simulateur hisse déjà ses trois lecteurs                                     | `price-projection.query.ts`                                               |
 | Le tableau de bord charge en lot                                                | `prisma-pricing-board.reader.ts`, `load()`                                |
 | Les index de la forme du `WHERE` existent                                       | migration `20260817160000_plancher_de_prix`                               |
+| Une clé de portée rend au plus deux règles par étage                            | contrainte d'exclusion `price_rules_no_overlap`                           |
+| Le motif d'indexation par clé de portée existe déjà                             | `mostSpecificFirst`, dans `@lfd/catalog-sync`                             |
 | Le transport dépend du schéma d'URL ; le dev est en `postgresql://`             | `prisma.service.ts` ; `apps/lfd-api/.env`                                 |
 | Le panier back-office redemande un devis à **chaque** changement, sans debounce | `nouvelle-commande-page.ts`, l'`effect()` sur les lignes → `refreshQuote` |
 | Chaque palier est une résolution complète à sa quantité                         | `volume-tier-prices.ts` ; JSDoc d'`OrderQuoteLineView.volumeTiers`        |
