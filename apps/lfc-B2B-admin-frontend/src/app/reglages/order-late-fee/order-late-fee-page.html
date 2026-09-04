@@ -1,0 +1,94 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement de la surtaxe…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger la surtaxe">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <fold-card>
+      <div cardHeader class="head">
+        <h2 class="section-title">Ce qu'une commande rattrapée coûte</h2>
+        <p class="section-desc">
+          Quand un commercial accorde une <strong>dérogation</strong> à la limite de commande, ce
+          supplément s'ajoute au panier — comme des frais de livraison, et
+          <strong>jamais au prix d'un article</strong>. Il s'applique après la remise et n'est
+          jamais remisé&nbsp;: on ne fait pas de geste commercial sur une pénalité de retard.
+        </p>
+      </div>
+
+      <div class="form">
+        <!-- « Aucune » n'est pas un montant de zéro : le réglage disparaît, et
+             le rattrapage redevient gratuit. C'est un état valable, pas un trou
+             de configuration. -->
+        <lfd-price-alteration-field
+          label="Montant de la surtaxe"
+          lockedDirection="increase"
+          noneLabel="Aucune — le rattrapage est gratuit"
+          [value]="feeAlteration()"
+          (valueChange)="setFee($event)"
+        />
+
+        <!-- Le taux ne se demande QUE s'il y a quelque chose à taxer : sans
+             surtaxe, il n'y a pas de taux à trouver. -->
+        @if (fee() !== null) {
+          <fold-listbox
+            label="Taux de TVA"
+            required
+            placeholder="Choisir un taux"
+            hint="Pris parmi les taux du référentiel. Il n'y a pas de valeur par défaut."
+            [options]="rateChoices()"
+            [value]="rateValue()"
+            (selectionChange)="onRate($event)"
+          />
+        }
+
+        @if (ratesUnavailable()) {
+          <fold-callout variant="warning">
+            Les taux du référentiel n'ont pas pu être chargés. Le réglage reste lisible, mais la
+            liste des choix est vide&nbsp;:
+            <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="load()">
+              réessayer
+            </button>
+          </fold-callout>
+        }
+
+        @if (orphanRate()) {
+          <fold-callout variant="warning">
+            Le taux enregistré ne correspond plus à aucun taux du référentiel — il a dû être modifié
+            ou supprimé. Les commandes déjà parties gardent le leur&nbsp;; celles à venir porteront
+            ce qui est choisi ici.
+          </fold-callout>
+        }
+
+        @if (missingRate()) {
+          <fold-callout variant="alert">
+            Choisissez le taux. Sans lui, le serveur <strong>refuse de calculer</strong> une
+            commande rattrapée plutôt que d'inventer un taux&nbsp;— un défaut plausible se
+            facturerait en silence, et rétroactivement.
+          </fold-callout>
+        } @else {
+          <fold-callout variant="info">{{ recap() }}</fold-callout>
+        }
+      </div>
+
+      <div cardFooter class="foot">
+        <button foldButton [disabled]="missingRate() || saving()" (click)="submit()">
+          Enregistrer
+        </button>
+      </div>
+    </fold-card>
+
+    <!-- Où se règle l'autre moitié du sujet. La surtaxe n'a de sens que face à
+         une limite : sans limite, aucune commande n'est jamais tardive. -->
+    <fold-callout appearance="inset" variant="neutral">
+      Jusqu'à quand on prend commande — et le rattrapage accordé d'office — se règlent au
+      référentiel.
+      <a actions foldButton size="sm" emphasis="outline" routerLink="/pim/limites-de-commande">
+        Limites de commande
+      </a>
+    </fold-callout>
+  }
+}

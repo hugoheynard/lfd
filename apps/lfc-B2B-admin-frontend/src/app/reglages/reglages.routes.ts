@@ -32,6 +32,18 @@ export const reglagesRoutes: Routes = [
           import('./retraits-livraisons/reglages-pickup-page').then((m) => m.ReglagesPickupPage),
       },
       {
+        // 🔴 PAS une carte de « Retraits & livraisons », où vivent pourtant les
+        // deux autres ajustements de panier (la remise d'un point, le frais
+        // d'une zone). Ces deux-là appartiennent à un objet d'acheminement ; la
+        // surtaxe n'appartient à rien de tel. L'heure limite globale a vécu là
+        // et a enseigné pendant des mois qu'elle était une affaire
+        // d'acheminement — on ne recommence pas avec ce qu'elle coûte.
+        path: 'surtaxe-de-retard',
+        title: 'Surtaxe de retard — LFC B2B admin',
+        loadComponent: () =>
+          import('./order-late-fee/order-late-fee-page').then((m) => m.OrderLateFeePage),
+      },
+      {
         path: 'facturation',
         title: 'Facturation — LFC B2B admin',
         loadComponent: () =>

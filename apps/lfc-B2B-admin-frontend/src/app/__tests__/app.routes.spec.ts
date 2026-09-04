@@ -77,6 +77,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
 
   reglages: 'b2b_settings:read',
   'reglages/retraits-livraisons': null,
+  // Hérite du mur de `reglages` (`b2b_settings:read`) : ce que coûte une
+  // dérogation est une politique tarifaire de la maison, au même rang que le
+  // frais d'une zone. Décider COMBIEN n'est pas décider QUI peut en accorder
+  // une — ce second droit-là est `b2b_order_waivers`, et il vit au comptoir.
+  'reglages/surtaxe-de-retard': null,
   // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,

@@ -21,6 +21,10 @@ import { PermissionsStore } from '../auth/permissions.store';
  *
  * - **Retraits & livraisons** — les points de retrait (laboratoires), fallback
  *   d'acheminement tant que la livraison n'existe pas.
+ * - **Surtaxe de retard** — ce qu'une dérogation à la limite de commande coûte
+ *   au client. Un onglet à elle, et pas une carte sous les retraits : c'est
+ *   précisément en rangeant l'heure limite là-bas qu'on a fait croire pendant
+ *   des mois qu'elle était une affaire d'acheminement.
  * - **Commercial** — les seuils d'alerte du pipeline d'acquisition.
  */
 @Component({
@@ -51,6 +55,13 @@ export class ReglagesPage {
       label: 'Retraits & livraisons',
       link: 'retraits-livraisons',
       icon: 'briefcase',
+      needs: 'b2b_settings:read',
+    },
+    {
+      key: 'surtaxe-de-retard',
+      label: 'Surtaxe de retard',
+      link: 'surtaxe-de-retard',
+      icon: 'clock',
       needs: 'b2b_settings:read',
     },
     {

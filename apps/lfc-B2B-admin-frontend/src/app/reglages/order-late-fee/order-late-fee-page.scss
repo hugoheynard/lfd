@@ -1,0 +1,31 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.head {
+  margin-bottom: var(--fold-space-md);
+}
+
+.section-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-lg);
+}
+
+.section-desc {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+// Les trois contrôles et leurs encadrés : une colonne, un rythme unique.
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+}

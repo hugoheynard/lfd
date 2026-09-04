@@ -9,8 +9,10 @@
 > `order-time-limitation` porte l'échelle avec son héritage champ par champ, le
 > fil les raccorde, et l'écran existe.
 >
-> La **surtaxe** est réglable et facturée côté serveur ; il lui manque son écran.
-> Restent la boutique (8) et le démontage de l'ancienne règle (9).
+> ✅ **Le lot 7 est livré** : la surtaxe se règle depuis « Réglages → Surtaxe de
+> retard », se facture, se taxe au taux choisi et se fige sur la commande. Reste
+> à l'AFFICHER sur la commande. Puis la boutique (8) et le démontage de
+> l'ancienne règle (9).
 
 ## En bref
 
@@ -88,10 +90,10 @@ lot 3, pour qui l'accorde.
 répond « trop tard », **jamais « complet »** — une commande acceptée n'est pas
 une commande dont la production est garantie faisable (§5).
 
-**L'ordre des travaux** (§12) : les lots 0 à 6 sont **faits** — le fuseau, la
+**L'ordre des travaux** (§12) : les lots 0 à 7 sont **faits** — le fuseau, la
 règle appliquée, la grâce, l'échelle du référentiel, son écran, le fil, la
-dérogation. Le lot 7 l'est côté serveur. Restent son écran, la boutique et le
-démontage de l'ancienne règle.
+dérogation, la surtaxe et son réglage. Restent l'affichage de la surtaxe sur la
+commande, la boutique et le démontage de l'ancienne règle.
 
 ---
 
@@ -582,10 +584,41 @@ comptoir, ni de l'article.
 Le taux **voyage avec la commande**, comme l'ajustement qui l'a produite : le
 changer demain ne réécrit pas ce qu'une commande partie disait.
 
-⚠️ **Ce qui reste ouvert :** l'écran de réglage (le montant, et le choix du taux
-dans la liste du référentiel) et l'affichage de la surtaxe sur la commande. Le
-serveur est complet et éprouvé ; le montant ne se règle pour l'instant que par
-appel HTTP.
+### L'écran, et pourquoi il est là où il est
+
+Le réglage vit sous **« Réglages → Surtaxe de retard »**
+(`/reglages/surtaxe-de-retard`), un onglet à lui.
+
+Les deux autres ajustements de panier vivent pourtant sous « Retraits &
+livraisons », et y poser le troisième aurait été le geste facile. Mais ces
+deux-là appartiennent à un **objet d'acheminement** — ils sont édités là parce
+qu'un point et une zone y sont édités. La surtaxe n'appartient à rien de tel :
+c'est une politique de la maison. L'y ranger aurait refait exactement la faute
+que ce dossier corrige, l'heure limite globale ayant enseigné pendant des mois,
+sans jamais l'écrire, qu'elle était une affaire d'acheminement.
+
+Et dans les **Réglages** plutôt que dans l'espace B2B : on n'y va pas pour
+travailler, on y va pour paramétrer une fois. Le prix d'un rattrapage se décide
+une fois par an ; la tarification B2B se reprend tous les jours.
+
+Trois choses que l'écran tient, et qui se perdraient sans elles :
+
+- **il n'envoie jamais un montant sans taux.** Le serveur lève ; l'écran refuse
+  d'enregistrer et dit ce qui se passerait, plutôt que de laisser découvrir la
+  règle en production ;
+- **« aucune » n'est pas zéro.** Cocher la case retire le réglage (`DELETE`) au
+  lieu d'écrire un montant nul — « 0 € de surtaxe » et « pas de surtaxe » ne se
+  relisent pas pareil six mois plus tard ;
+- **un taux disparu du référentiel reste proposé**, signalé. Sans ça, ouvrir
+  l'écran effacerait silencieusement le taux réglé, faute d'option
+  correspondante dans le sélecteur.
+
+Ce qui voyage vers le serveur est un **pourcentage nu**, jamais l'identifiant
+d'un taux : le B2B ne dépend d'aucune table du référentiel, et cet écran est la
+seule jonction entre les deux.
+
+⚠️ **Ce qui reste ouvert :** l'**affichage** de la surtaxe sur la commande. Elle
+est calculée, taxée et figée, mais aucune vue ne la montre encore.
 
 ## 9. Ce que la boutique en montre
 
@@ -743,7 +776,7 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 | ✅4 | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                 | 3                                       |
 | ✅5 | **Le fil** : `snapshot` v6, colonnes miroir, la garde lit la limite de l'article                                          | 1, 3                                    |
 | ✅6 | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                          | 2                                       |
-| ~7  | **La surtaxe** : réglage, terme de panier, gel sur la commande, TVA réglable (§8) — **serveur livré, écran à faire**      | 6                                       |
+| ✅7 | **La surtaxe** : réglage et son écran, terme de panier, gel sur la commande, TVA réglable (§8)                            | 6                                       |
 | 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                         | 5 + lot 1 de `plan-boutique-sur-api.md` |
 | 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                       | 5                                       |
 
@@ -856,9 +889,11 @@ Deux écarts subsistent, et ils sont assumés :
 - ~~Le référentiel résout, mais personne ne lit encore sa résolution.~~ **Tombé
   au lot 5** : la garde lit la limite de l'article, et `OrderCutoff` n'est plus
   qu'un repli tant que le fil n'a rien apporté.
-- **La surtaxe n'a pas d'écran.** Le serveur la règle, la calcule, la taxe et la
-  fige ; le montant ne se pose pour l'instant que par appel HTTP, et la commande
-  ne l'affiche nulle part. C'est le seul morceau du lot 7 qui manque, et il est
+- ~~La surtaxe n'a pas d'écran.~~ **Tombé au lot 7** : elle se règle sous
+  « Réglages → Surtaxe de retard ».
+- **La surtaxe ne s'affiche pas sur la commande.** Elle est calculée, taxée et
+  figée avec l'ajustement qui l'a produite, mais aucune vue ne la montre — ni au
+  comptoir, ni au client. C'est le seul morceau du lot 7 qui manque, et il est
   dit ici plutôt que rangé dans un lot suivant.
 
 ### Deux remarques d'ordre
@@ -910,3 +945,7 @@ Deux écarts subsistent, et ils sont assumés :
 | Une surtaxe sans taux **lève** au lieu de retomber sur un défaut     | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts` |
 | Un seul réglage de surtaxe, tenu par la base                         | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`             |
 | Le réglage n'est lu que si une dérogation a servi                    | `OrderDrafting.lateFeeFor` ; `test/order-cutoffs.e2e-spec.ts`                         |
+| L'écran n'envoie jamais un montant sans taux                         | `reglages/order-late-fee/__tests__/order-late-fee-page.spec.ts` (admin front)         |
+| « Aucune » retire le réglage au lieu d'écrire un montant nul         | même spec — `clear()` appelé, `save()` non                                            |
+| Un taux disparu du référentiel reste proposé, et signalé             | même spec — `orphanRate`, et le choix reste dans la liste                             |
+| L'écran survit à des taux qui ne répondent pas                       | même spec — `state` reste `ready`, `orphanRate` reste faux                            |
