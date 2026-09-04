@@ -21,6 +21,8 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -251,12 +253,27 @@ describe("le rattrapage, quand il est réglé", () => {
  * Sème la limite que le RÉFÉRENTIEL a résolue pour un article, telle que le fil
  * la dépose sur le miroir. Les trois colonnes vont ensemble.
  *
+ * ⚠️ **Elle écrit le miroir en direct, elle ne passe pas par le fil.** C'est
+ * assumé : le sujet de ces cas est la GARDE, et pousser un snapshot complet
+ * remplacerait le catalogue semé par le harnais — dont ces mêmes tests lisent
+ * les prix. Ce que le fil dépose est éprouvé ailleurs
+ * (`catalog-ingest-facts.e2e-spec.ts`), et la couture entre les deux moitiés
+ * l'est ci-dessous, par le seul cas qui parte vraiment d'une règle.
+ *
  * ⚠️ Le miroir stocke le SKU de la **déclinaison** (`VIE-001-1`), que le PIM
  * dérive de celui du produit ; c'est sous le SKU **produit** que l'adaptateur la
  * présente au checkout. Le paramètre est donc celui qu'une commande porte, et la
  * dérivation se fait ici — l'écrire à l'envers ferait chercher une ligne qui
  * n'existe pas, ce qui est exactement ce qui est arrivé en écrivant ce test.
  */
+/** Pousse un snapshot comme le référentiel le pousse — même port, même origine. */
+function push(body: Parameters<B2bCatalogDriver["send"]>[0]) {
+  return ctx.app.get(B2bCatalogDriver).send(body, {
+    revisionId: "rev_cutoffs",
+    fingerprint: "empreinte-cutoffs",
+  });
+}
+
 async function seedArticleLimit(
   orderSku: string,
   limit: { daysBefore: number; time: string; graceMinutes: number } | null,
@@ -272,6 +289,49 @@ async function seedArticleLimit(
 }
 
 describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
+  /**
+   * 🔴 **La couture, de bout en bout : une RÈGLE refuse une commande.**
+   *
+   * Le seul cas du dépôt qui parte d'une règle du référentiel et finisse sur un
+   * refus au checkout. Entre les deux : la v7 du fil, la descente d'échelle côté
+   * plateforme, trois colonnes du miroir, un lecteur Prisma, un port et la
+   * garde. Chaque moitié a ses tests ; c'est leur JONCTION que rien ne tenait,
+   * et c'est exactement là qu'une v7 se casse — un identifiant de déclinaison
+   * qui ne correspond à rien, une règle rangée sous un rang qui ne vise pas.
+   *
+   * Il pousse un catalogue à UN article, ce qui retire les autres : sans
+   * importance, ce cas ne commande que celui-là, et le harnais resème à chaque
+   * test.
+   */
+  it("refuse une commande à partir d'une règle poussée par le fil", async () => {
+    await push(
+      snapshotOf(
+        [{ sku: "VIE-001", priceMillicents: 200_000 }],
+        [
+          // Le rang global, celui qui ne vise personne en particulier : il doit
+          // atteindre un article qu'aucune règle ne nomme.
+          {
+            scope: { type: "global", id: null },
+            daysBefore: 60,
+            time: "23:59",
+            graceMinutes: null,
+          },
+        ],
+      ),
+    );
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(
+        order({ requestedDeliveryDate: serviceDay(30), lines: [{ sku: "VIE-001", quantity: 1 }] }),
+      )
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+
   /**
    * Ce que seul l'e2e prouve : les trois colonnes du miroir arrivent jusqu'à la
    * garde. Entre les deux il y a un lecteur Prisma, un port, un service de

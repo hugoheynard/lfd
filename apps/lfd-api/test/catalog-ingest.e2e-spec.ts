@@ -12,14 +12,11 @@
  * les deux tests de secret partagé — il n'y a plus de secret, plus de porte, et
  * plus rien à refuser : c'est le gain, pas un trou de couverture.
  */
-import {
-  CATALOG_SNAPSHOT_VERSION,
-  type CatalogSnapshot,
-  type SyncOrderTimeLimitRule,
-} from "@lfd/catalog-sync";
+import { type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -43,65 +40,6 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
 });
 
-const CATEGORY = {
-  id: "cat_vien",
-  name: "Viennoiseries",
-  slug: "viennoiseries",
-  parentId: null,
-  position: 0,
-  vatRatePercent: 5.5,
-};
-
-function snapshot(
-  skus: readonly {
-    sku: string;
-    priceMillicents: number;
-    vatRatePercent?: number | null;
-    allergens?: readonly string[] | null;
-    /** Les mentions déjà projetées par le PIM (v5 du fil). */
-    allergenLabels?: { labels: { category: string; label: string }[]; incomplete: boolean } | null;
-  }[],
-): CatalogSnapshot {
-  return {
-    version: CATALOG_SNAPSHOT_VERSION,
-    generatedAt: "2026-08-17T08:00:00.000Z",
-    categories: [CATEGORY],
-    products: skus.map(
-      ({
-        sku,
-        priceMillicents,
-        vatRatePercent = 5.5,
-        allergens = ["AW"],
-        allergenLabels = null,
-      }) => ({
-        id: `prd_${sku}`,
-        sku,
-        name: `Produit ${sku}`,
-        categoryId: CATEGORY.id,
-        kind: "daily" as const,
-        variants: [
-          {
-            id: `var_${sku}`,
-            sku: `${sku}-1`,
-            name: `Produit ${sku}`,
-            priceMillicents,
-            weightGrams: null,
-            isDefault: true,
-            position: 0,
-            vatRatePercent,
-            allergens: allergens === null ? null : [...allergens],
-            allergenLabels,
-          },
-        ],
-      }),
-    ),
-    // Le sujet de cette fabrique est l'ingestion des faits, pas l'heure :
-    // l'échelle est vide, comme sur la quasi-totalité du catalogue. Un cas
-    // dédié la remplit plus bas.
-    orderTimeLimits: [],
-  };
-}
-
 function push(body: CatalogSnapshot) {
   // L'origine voyage avec le snapshot depuis que la plateforme peut le RECEVOIR
   // au lieu de l'appliquer : elle a besoin de l'ancre et de l'empreinte, qu'elle
@@ -114,7 +52,7 @@ function push(body: CatalogSnapshot) {
 
 describe("le fil catalogue, côté plateforme", () => {
   it("écrit le catalogue et rend des compteurs", async () => {
-    const report = await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    const report = await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     expect(report).toMatchObject({
       acceptedProducts: 1,
@@ -126,7 +64,7 @@ describe("le fil catalogue, côté plateforme", () => {
   });
 
   it("reçoit le taux de TVA de la famille, au lieu de le supposer", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     const category = await ctx.prisma.catalogCategory.findUniqueOrThrow({
       where: { id: CATEGORY.id },
@@ -142,13 +80,13 @@ describe("le fil catalogue, côté plateforme", () => {
    * seul ce test la met sous tension.
    */
   it("un push ne perd pas les décisions déjà prises", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-001-1", priceMillicents: 180_000, decidedBy: "cecile" },
     });
 
     // Le PIM augmente son prix : le miroir doit suivre, la décision rester.
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 220_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 220_000 }]));
 
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({
       where: { sku: "VIE-001-1" },
@@ -161,13 +99,13 @@ describe("le fil catalogue, côté plateforme", () => {
 
   it("retire ce qui a disparu du snapshot, et le NOMME", async () => {
     await push(
-      snapshot([
+      snapshotOf([
         { sku: "VIE-001", priceMillicents: 200_000 },
         { sku: "VIE-002", priceMillicents: 220_000 },
       ]),
     );
 
-    const report = await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    const report = await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     expect(report).toMatchObject({ removedSkus: ["VIE-002-1"] });
     // La LIGNE reste — le retrait marque. Ce qui disparaît, c'est la vente :
@@ -195,12 +133,12 @@ describe("le fil catalogue, côté plateforme", () => {
    * sûre.
    */
   it("un article retiré GARDE sa décision, qui l'attend", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-001-1", priceMillicents: 180_000 },
     });
 
-    await push(snapshot([]));
+    await push(snapshotOf([]));
 
     expect(await ctx.prisma.catalogItemOverride.count()).toBe(1);
     const retire = await ctx.prisma.catalogItem.findUniqueOrThrow({
@@ -217,13 +155,13 @@ describe("le fil catalogue, côté plateforme", () => {
    * pour toujours pendant que le push l'annoncerait accepté.
    */
   it("remet en vente un article qui revient, avec le prix qu'on lui avait négocié", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-001-1", priceMillicents: 180_000 },
     });
-    await push(snapshot([]));
+    await push(snapshotOf([]));
 
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({
       where: { sku: "VIE-001-1" },
@@ -239,13 +177,13 @@ describe("le fil catalogue, côté plateforme", () => {
    * « depuis quand », et un second push ne doit pas effacer cette réponse.
    */
   it("ne repousse pas la date d'un article déjà retiré", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
-    await push(snapshot([]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([]));
     const premier = await ctx.prisma.catalogItem.findUniqueOrThrow({
       where: { sku: "VIE-001-1" },
     });
 
-    await push(snapshot([]));
+    await push(snapshotOf([]));
 
     const second = await ctx.prisma.catalogItem.findUniqueOrThrow({
       where: { sku: "VIE-001-1" },
@@ -254,284 +192,6 @@ describe("le fil catalogue, côté plateforme", () => {
   });
 });
 
-describe("le taux de TVA arrive sur l’ARTICLE", () => {
-  /**
-   * Le défaut corrigé : la boutique retrouvait le taux en rejoignant la
-   * famille, donc la ligne facturée dépendait d'une jointure et d'un
-   * rafraîchissement de famille réussi. Un article se vend seul ; il doit
-   * pouvoir se facturer seul.
-   */
-  it("écrit le taux reçu sur la ligne d’article", async () => {
-    await push(snapshot([{ sku: "VIE-002", priceMillicents: 220_000, vatRatePercent: 20 }]));
-
-    const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-002-1" } });
-
-    expect(item.vatRatePercent?.toNumber()).toBe(20);
-  });
-
-  /** Famille non réglée dans le référentiel : l'article entre sans taux. */
-  it("laisse le taux vide quand le référentiel n’en a pas", async () => {
-    await push(snapshot([{ sku: "VIE-003", priceMillicents: 240_000, vatRatePercent: null }]));
-
-    const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-003-1" } });
-
-    expect(item.vatRatePercent).toBeNull();
-  });
-});
-
-describe("les allergènes traversent le fil", () => {
-  /**
-   * Les trois états doivent arriver DISTINCTS jusqu'à la colonne. C'est la
-   * seule faute qui compte sur ce champ : confondre « rien n'a été déclaré »
-   * avec « rien ne s'y trouve », c'est afficher un oubli de saisie comme une
-   * promesse au consommateur.
-   */
-  it("distingue « pas de fiche », « fiche vide » et « des codes »", async () => {
-    await push(
-      snapshot([
-        { sku: "ALG-001", priceMillicents: 100_000, allergens: ["AW", "AM"] },
-        { sku: "ALG-002", priceMillicents: 100_000, allergens: [] },
-        { sku: "ALG-003", priceMillicents: 100_000, allergens: null },
-      ]),
-    );
-
-    const rows = await ctx.prisma.catalogItem.findMany({
-      where: { sku: { in: ["ALG-001-1", "ALG-002-1", "ALG-003-1"] } },
-      orderBy: { sku: "asc" },
-      select: { sku: true, allergens: true },
-    });
-
-    expect(rows.map((row) => row.allergens)).toEqual([["AW", "AM"], [], null]);
-  });
-
-  it("efface la fiche quand le PIM la retire", async () => {
-    // Un `undefined` laisserait la colonne inchangée sur l'upsert, et l'article
-    // garderait des allergènes que le référentiel ne déclare plus.
-    await push(snapshot([{ sku: "ALG-004", priceMillicents: 100_000, allergens: ["AW"] }]));
-    await push(snapshot([{ sku: "ALG-004", priceMillicents: 100_000, allergens: null }]));
-
-    const row = await ctx.prisma.catalogItem.findUnique({
-      where: { sku: "ALG-004-1" },
-      select: { allergens: true },
-    });
-
-    expect(row?.allergens).toBeNull();
-  });
-});
-
-/**
- * **Les mentions d'étiquette arrivent projetées** (D6, v5 du fil).
- *
- * La plateforme n'a plus le référentiel réglementaire : elle range ce que le
- * PIM lui envoie, `incomplete` compris. Le vrai SQL compte ici — c'est une
- * colonne `jsonb` de plus, et le repli `DbNull` de l'upsert est exactement ce
- * qui empêche une fiche retirée de laisser des mentions derrière elle.
- */
-describe("les mentions d’étiquette traversent le fil", () => {
-  const MENTIONS = {
-    labels: [{ category: "gluten", label: "Céréales contenant du gluten" }],
-    incomplete: false,
-  };
-
-  it("écrit les mentions à côté des codes, sans les remplacer", async () => {
-    await push(
-      snapshot([
-        {
-          sku: "LBL-001",
-          priceMillicents: 100_000,
-          allergens: ["UW"],
-          allergenLabels: MENTIONS,
-        },
-      ]),
-    );
-
-    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
-      where: { sku: "LBL-001-1" },
-      select: { allergens: true, allergenLabels: true },
-    });
-
-    expect(row.allergens).toEqual(["UW"]);
-    expect(row.allergenLabels).toEqual(MENTIONS);
-  });
-
-  /**
-   * Le drapeau doit survivre au transport : sans lui, l'écran lirait une liste
-   * vide comme « sans allergène » sur un article qui déclare la noix de coco.
-   */
-  it("conserve l’aveu d’une liste amputée", async () => {
-    await push(
-      snapshot([
-        {
-          sku: "LBL-002",
-          priceMillicents: 100_000,
-          allergens: ["SO"],
-          allergenLabels: { labels: [], incomplete: true },
-        },
-      ]),
-    );
-
-    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
-      where: { sku: "LBL-002-1" },
-      select: { allergenLabels: true },
-    });
-
-    expect(row.allergenLabels).toEqual({ labels: [], incomplete: true });
-  });
-
-  it("efface les mentions quand le PIM retire la fiche", async () => {
-    await push(
-      snapshot([
-        {
-          sku: "LBL-003",
-          priceMillicents: 100_000,
-          allergens: ["UW"],
-          allergenLabels: MENTIONS,
-        },
-      ]),
-    );
-    await push(
-      snapshot([
-        { sku: "LBL-003", priceMillicents: 100_000, allergens: null, allergenLabels: null },
-      ]),
-    );
-
-    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({
-      where: { sku: "LBL-003-1" },
-      select: { allergenLabels: true },
-    });
-
-    expect(row.allergenLabels).toBeNull();
-  });
-});
-
-/**
- * **L'échelle des limites traverse ; sa résolution arrive** (v7 du fil).
- *
- * Ce que seul ce niveau prouve : les colonnes `order_limit_*` du miroir sont
- * remplies par une DESCENTE faite à l'ingestion, à partir de quelques règles —
- * là où la v6 recopiait une valeur toute faite sur chaque déclinaison, si bien
- * que passer la limite globale de 18 h à 16 h réécrivait le catalogue entier.
- *
- * Un test du service verrait la descente ; il ne verrait ni ce que Postgres
- * garde, ni que les trois colonnes restent vides quand personne n'a rien posé.
- */
-describe("les limites de commande traversent le fil, en RÈGLES", () => {
-  function rule(
-    scope: SyncOrderTimeLimitRule["scope"],
-    values: Omit<SyncOrderTimeLimitRule, "scope">,
-  ): SyncOrderTimeLimitRule {
-    return { scope, ...values };
-  }
-
-  /** L'échelle se pose sur le snapshot, plus sur les déclinaisons. */
-  function withLimits(
-    base: CatalogSnapshot,
-    orderTimeLimits: readonly SyncOrderTimeLimitRule[],
-  ): CatalogSnapshot {
-    return { ...base, orderTimeLimits: [...orderTimeLimits] };
-  }
-
-  function limitOf(sku: string) {
-    return ctx.prisma.catalogItem.findUniqueOrThrow({
-      where: { sku },
-      select: {
-        orderLimitDaysBefore: true,
-        orderLimitTime: true,
-        orderLimitGraceMinutes: true,
-      },
-    });
-  }
-
-  /**
-   * 🔴 Le cœur de la v7 : UNE règle globale, aucune limite portée par les
-   * déclinaisons, et chaque article ingéré porte la limite résolue.
-   */
-  it("résout une règle globale sur chaque article ingéré", async () => {
-    await push(
-      withLimits(
-        snapshot([
-          { sku: "VIE-001", priceMillicents: 200_000 },
-          { sku: "VIE-002", priceMillicents: 220_000 },
-        ]),
-        [rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: null })],
-      ),
-    );
-
-    // `graceMinutes` vaut `0` : le `null` du fil dit « ce rang ne se prononce
-    // pas », et pas de rattrapage déclaré signifie limite ferme.
-    const attendu = {
-      orderLimitDaysBefore: 1,
-      orderLimitTime: "18:00",
-      orderLimitGraceMinutes: 0,
-    };
-    expect(await limitOf("VIE-001-1")).toEqual(attendu);
-    expect(await limitOf("VIE-002-1")).toEqual(attendu);
-  });
-
-  /**
-   * L'héritage est **champ par champ**, et il l'est jusqu'ici : la famille ne
-   * redit pas le nombre de jours du global, la déclinaison ne redit pas
-   * l'heure de sa famille. Ce cas éprouve au passage le rang « déclinaison »,
-   * seul motif pour lequel l'identifiant traverse depuis la v7.
-   */
-  it("compose les rangs, du global à la déclinaison", async () => {
-    await push(
-      withLimits(
-        snapshot([
-          { sku: "VIE-001", priceMillicents: 200_000 },
-          { sku: "VIE-002", priceMillicents: 220_000 },
-        ]),
-        [
-          rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: 30 }),
-          rule(
-            { type: "category", id: CATEGORY.id },
-            { daysBefore: null, time: "16:00", graceMinutes: null },
-          ),
-          rule(
-            { type: "variant", id: "var_VIE-002" },
-            { daysBefore: 3, time: null, graceMinutes: null },
-          ),
-        ],
-      ),
-    );
-
-    expect(await limitOf("VIE-001-1")).toEqual({
-      orderLimitDaysBefore: 1,
-      orderLimitTime: "16:00",
-      orderLimitGraceMinutes: 30,
-    });
-    expect(await limitOf("VIE-002-1")).toEqual({
-      orderLimitDaysBefore: 3,
-      orderLimitTime: "16:00",
-      orderLimitGraceMinutes: 30,
-    });
-  });
-
-  /**
-   * Le cas courant, et il doit rester net : aucune règle, donc rien ne ferme.
-   * Une valeur inventée ici refuserait des commandes au nom d'une décision que
-   * personne n'a prise.
-   */
-  it("laisse les trois colonnes vides quand l'échelle est vide", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
-
-    expect(await limitOf("VIE-001-1")).toEqual({
-      orderLimitDaysBefore: null,
-      orderLimitTime: null,
-      orderLimitGraceMinutes: null,
-    });
-  });
-});
-
-/**
- * **L'historique du tarif, relu.**
- *
- * Le vrai SQL est indispensable ici : la trace est écrite par un `createMany`
- * dans la transaction de l'article, et relue par un `DISTINCT ON`. Ce que ces
- * cas tiennent, c'est que les deux emploient la **même clé** — l'article. Ils
- * n'existaient pas, et l'écriture comme la lecture avaient chacune l'air juste
- * en isolation : c'est leur rencontre qui était fausse.
- */
 describe("l'historique du tarif canonique", () => {
   const AFTER = new Date("2100-01-01T00:00:00.000Z");
 
@@ -546,7 +206,7 @@ describe("l'historique du tarif canonique", () => {
    * appelants ont en main.
    */
   it("se relit par SKU de PRODUIT, l'unité vendue", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
     const pricing = await history().pricingAt(AFTER);
 
@@ -558,7 +218,7 @@ describe("l'historique du tarif canonique", () => {
   });
 
   it("historise le taux AVEC le prix — sans lui, la ligne n'est pas facturable", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
 
     expect((await history().pricingAt(AFTER)).get("VIE-001")).toEqual({
       sku: "VIE-001",
@@ -573,8 +233,8 @@ describe("l'historique du tarif canonique", () => {
    * n'a eu lieu.
    */
   it("trace un changement de TAUX seul, à prix constant", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 10 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 10 }]));
 
     expect(await ctx.prisma.catalogPriceHistory.count()).toBe(2);
     expect((await history().pricingAt(AFTER)).get("VIE-001")?.vatRatePercent).toBe(10);
@@ -586,7 +246,7 @@ describe("l'historique du tarif canonique", () => {
    * l'historique illisible en une semaine.
    */
   it("n'écrit rien quand ni le prix ni le taux n'ont bougé", async () => {
-    const same = snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]);
+    const same = snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]);
     await push(same);
     await push(same);
 
@@ -595,7 +255,7 @@ describe("l'historique du tarif canonique", () => {
 
   /** L'histoire commence quand on l'écrit — avant, il n'y a rien à affirmer. */
   it("ne rend rien avant sa propre première trace", async () => {
-    await push(snapshot([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
     const startsAt = await history().startsAt();
     expect(startsAt).not.toBeNull();
 
