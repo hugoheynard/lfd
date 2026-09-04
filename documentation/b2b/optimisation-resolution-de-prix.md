@@ -12,6 +12,10 @@ contradiction a établi.**
 > (§7). Le premier est multiplicatif ; le second devient plus important quand on
 > a appliqué le premier, pas moins.
 >
+> **Ce document constate. Il ne propose rien à écrire** — le remède est dans
+> [`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md), et §6 dit à quelle
+> condition il s'ouvre.
+>
 > ⚠️ **Sa première version se trompait de diagnostic** : elle parlait de latence
 > et d'allers-retours. Ce qu'elle disait est conservé là où c'était juste, et
 > nommé là où ça ne l'était pas — un document qui efface ses erreurs apprend à
@@ -257,108 +261,27 @@ et **aucune ne demande d'écrire le remède** :
 `priceAll` pèse **moins de 20 %** des opérations facturées, ce document se
 referme sans code. Une porte de sortie sans chiffre ne se franchit jamais.
 
-## 7. La forme du remède, si la mesure le justifie
+## 7. Le remède vit dans son propre plan
 
-Charger les règles, planchers et barèmes **une fois par appel à `priceAll`**,
-pour l'union des portées du panier, puis les distribuer aux fonctions pures qui
-filtrent déjà.
+Ce document **s'arrête au constat**. La forme du remède, ses lots, son inventaire
+et ses arbitrages sont dans
+[`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md).
 
-**Ce qui le rend possible**, et c'est le seul point qui décide : le `WHERE`
-n'utilise **ni la quantité ni le cumul**. La décision d'engagement, qui en
-dépend, peut donc rester après la lecture, à sa place.
+La séparation n'est pas cosmétique : ce document a porté pendant une heure une
+version du remède qui promettait « résoudre en O(1) » sur un plafond de « deux
+règles par clé de portée ». **Les deux étaient faux** — la contrainte d'exclusion
+porte aussi sur `min_quantity`, et un gabarit pose une règle par palier, donc
+plusieurs dans le même seau. Le plan les a retirées ; les garder ici en aurait
+fait deux documents qui se contredisent, c'est-à-dire le pire des deux.
 
-### 🔴 « Une fois par appel » veut dire une VARIABLE LOCALE, pas un stockage
+Ce qu'il faut retenir ici, et qui appartient bien au constat :
 
-La question se pose, parce que le dépôt a un `AsyncLocalStorage` : le
-`RequestContext` d'ingress. Ce n'est **pas** le bon endroit, et il vaut mieux
-l'écrire que le laisser redécouvrir.
-
-- `priceAll` mutualise **déjà** deux choses de cette nature — le catalogue et les
-  engagements — sous forme de `const`, passées à `resolveOne` en argument. Les
-  matériaux seraient le troisième du même genre : aucun mécanisme nouveau, une
-  ligne de plus au même endroit ;
-- **un CLS cache la dépendance.** `resolveOne` lirait quelque chose d'invisible
-  dans sa signature, à l'opposé de ce que ce dépôt fait partout — ports injectés,
-  `at` passé, `parties` passé ;
-- **il rendrait impures les fonctions qui décident.** `resolvePrice` se teste
-  aujourd'hui sans base et sans contexte ; lire un CLS obligerait chaque test à
-  en monter un ;
-- **le contexte de requête est volontairement étroit** — `now`, `traceId`,
-  `actor` : des faits **ambiants**. Des candidats de prix ne le sont pas, ils
-  dépendent du panier, c'est-à-dire d'un argument ;
-- enfin la **portée** ne serait pas la bonne : le CLS vit le temps de la
-  **requête**, les matériaux le temps de **l'appel**. Les deux coïncident
-  aujourd'hui parce que l'instant est gelé par requête — les lier serait vrai par
-  accident.
-
-Et pas un cache non plus, ni en mémoire ni ailleurs : ce qu'on décrit ici vit et
-meurt dans une pile d'appels.
-
-Ce que ça touche, chiffré plutôt qu'esquissé :
-
-- **trois ports** gagnent une méthode de lot (`price-rule.reader.ts`,
-  `price-floor.reader.ts`, `volume-ladder.reader.ts`) et **trois adaptateurs**
-  l'implémentent ;
-- **deux suites** doublent ces ports (`place-order.handler.spec.ts`,
-  `place-order-for-customer.handler.spec.ts`), trois `candidatesFor` chacune ;
-- **un second consommateur** appelle les mêmes lecteurs et doit être décidé, pas
-  oublié : `PriceProjectionQuery`. Il hisse déjà pour son propre usage ;
-- **`ScopedPriceFloor`** gagne son cycle de vie, ou le filtre reste en SQL (§4).
-
-### 🔴 Le hissage ne se fait pas sans INDEXER — les deux sont un seul lot
-
-`resolvePrice` balaie le tableau des candidats **quatre fois par article**, une
-par étage. Aujourd'hui c'est gratuit : `rules` contient les candidats de CET
-article, déjà resserrés par le SQL sur sa portée et son audience — une poignée.
-
-Hissé, `rules` devient l'union du panier, et on la rebalaie **pour chaque
-article** : c'est exactement le produit `articles × règles` contre lequel le
-tableau de bord met en garde. Le hissage économise des lectures et paie en
-balayages.
-
-Ce qui l'annule tient à une coupure nette dans `applies` :
-
-|                                                | constant sur la requête | varie par article |
-| ---------------------------------------------- | ----------------------- | ----------------- |
-| `isInForce(rule, at)`, `isSuspended(rule, at)` | ✅                      |                   |
-| `matchesAudience(rule.audience, context)`      | ✅                      |                   |
-| `matchesScope(rule.scope, context)`            |                         | ✅                |
-| `rule.minQuantity` contre la quantité mesurée  |                         | ✅                |
-
-D'où la forme, en trois temps :
-
-1. **une fois par requête** — filtrer sur le temps et l'audience : les règles
-   vivantes pour ce client, à cet instant ;
-2. **indexer par portée** —
-   `Map<stage, Map<"global" | "category:X" | "product:Y" | "variant:Z", règles>>` ;
-3. **par article** — quatre lectures de clé, puis `minQuantity` sur le peu qui
-   remonte.
-
-Pas un `Set` : l'appartenance ne suffit pas, `supersedes` a besoin des
-**perdants** de l'étage. Une multi-map.
-
-Et c'est du O(1) **réel**, pas seulement asymptotique : la contrainte d'exclusion
-`price_rules_no_overlap` interdit deux règles de même étage, même portée et même
-audience qui se chevauchent dans le temps. Une clé rend donc une règle — deux au
-plus, quand une règle « tous » coexiste avec une règle « ce client ».
-
-Le motif existe déjà, à l'identique : `mostSpecificFirst`, dans le résolveur de
-limites de commande, construit une `Map` clé `type:id` et **pioche les clés
-attendues** au lieu de trier. Son commentaire dit pourquoi — « le tri aurait
-demandé un rang numérique par famille, donc une seconde expression de la
-profondeur de l'arbre ».
-
-⚠️ **Conséquence sur le périmètre** : hisser sans indexer déplace le coût au lieu
-de le retirer. Les deux ne sont pas deux options à comparer, c'est un seul lot.
-
-### Ce que ça ne doit pas devenir
-
-- **Pas un cache.** Un prix est daté ; un cache ouvre une fenêtre où deux clients
-  voient deux vérités — le contraire de ce que ce moteur garantit ;
-- **Pas une dénormalisation.** Recopier les règles ailleurs, c'est le double
-  référentiel que ce dépôt referme partout ;
-- **Pas « charger tout ».** C'est le geste du tableau de bord, qui affiche tout.
-  Le chemin qui facture connaît ses SKU : il charge pour eux.
+- **charger une fois par appel** fait tomber les lectures de `3 × N` à `3` ;
+- **indexer par portée** n'accélère rien : ça empêche seulement le CPU de
+  reprendre ce que les lectures rendent. Sans l'index, hisser échange des
+  lectures contre du produit `articles × règles` ;
+- donc **le seul gain est le compte d'opérations facturées**, et il ne se
+  poursuit que si §6 le justifie.
 
 ## 8. Ce qui a été vérifié, et où
 
@@ -374,8 +297,6 @@ de le retirer. Les deux ne sont pas deux options à comparer, c'est un seul lot.
 | Le simulateur hisse déjà ses trois lecteurs                                     | `price-projection.query.ts`                                               |
 | Le tableau de bord charge en lot                                                | `prisma-pricing-board.reader.ts`, `load()`                                |
 | Les index de la forme du `WHERE` existent                                       | migration `20260817160000_plancher_de_prix`                               |
-| Une clé de portée rend au plus deux règles par étage                            | contrainte d'exclusion `price_rules_no_overlap`                           |
-| Le motif d'indexation par clé de portée existe déjà                             | `mostSpecificFirst`, dans `@lfd/catalog-sync`                             |
 | Le transport dépend du schéma d'URL ; le dev est en `postgresql://`             | `prisma.service.ts` ; `apps/lfd-api/.env`                                 |
 | Le panier back-office redemande un devis à **chaque** changement, sans debounce | `nouvelle-commande-page.ts`, l'`effect()` sur les lignes → `refreshQuote` |
 | Chaque palier est une résolution complète à sa quantité                         | `volume-tier-prices.ts` ; JSDoc d'`OrderQuoteLineView.volumeTiers`        |
