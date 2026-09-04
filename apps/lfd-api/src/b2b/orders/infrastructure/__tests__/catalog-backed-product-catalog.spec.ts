@@ -27,6 +27,7 @@ const CROISSANT: ResolvedCatalogItem = {
   isDefault: true,
   isFeatured: false,
   allergens: null,
+  orderTimeLimit: null,
 };
 
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {

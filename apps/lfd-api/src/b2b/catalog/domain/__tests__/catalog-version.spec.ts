@@ -22,6 +22,7 @@ function facts(sku: string, over: Partial<PimFacts> = {}): PimFacts {
     vatRatePercent: 5.5,
     allergens: null,
     allergenLabels: null,
+    orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
     ...over,
   };

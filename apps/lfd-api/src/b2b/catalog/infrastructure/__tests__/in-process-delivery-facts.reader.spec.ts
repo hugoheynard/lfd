@@ -30,6 +30,7 @@ function facts(sku: string, over: Partial<PimFacts> = {}): PimFacts {
     vatRatePercent: 5.5,
     allergens: null,
     allergenLabels: null,
+    orderTimeLimit: null,
     receivedAt: RECU_LE,
     ...over,
   };
@@ -58,6 +59,7 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
           vatRatePercent: 5.5,
           allergens: null,
           allergenLabels: null,
+          orderTimeLimit: null,
         },
       ],
     })),

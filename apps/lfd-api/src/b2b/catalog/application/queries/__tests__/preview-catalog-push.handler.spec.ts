@@ -1,3 +1,4 @@
+import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 import type { CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { B2bCatalogFeedPreview } from "../../../../../pim/channels/b2b-platform/products/feed-preview.js";
@@ -38,7 +39,7 @@ function parity(over: Partial<ParityReport> = {}): ParityReport {
 }
 
 const EMPTY_SNAPSHOT: CatalogSnapshot = {
-  version: 5,
+  version: CATALOG_SNAPSHOT_VERSION,
   generatedAt: "2026-01-01T00:00:00.000Z",
   categories: [],
   products: [],

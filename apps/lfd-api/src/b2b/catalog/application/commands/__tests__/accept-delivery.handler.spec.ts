@@ -44,6 +44,7 @@ const snapshot = (skus: readonly string[]): CatalogSnapshot => ({
         vatRatePercent: 5.5,
         allergens: null,
         allergenLabels: null,
+        orderTimeLimit: null,
       },
     ],
   })),
@@ -77,6 +78,7 @@ function mirrorItem(sku: string, priceMillicents = 210_000): CatalogItem {
     vatRatePercent: 5.5,
     allergens: null,
     allergenLabels: null,
+    orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };
   return CatalogItem.receive(facts);

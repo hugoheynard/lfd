@@ -78,6 +78,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             priceMillicents,
             weightGrams: null,
             isDefault: true,
+            orderTimeLimit: null,
             position: 0,
             vatRatePercent: 5.5,
           },

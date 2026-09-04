@@ -86,6 +86,9 @@ function snapshot(
             vatRatePercent,
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
+            // Le sujet de cette suite est l'ingestion des faits, pas l'heure :
+            // aucune limite déclarée, comme la quasi-totalité du catalogue.
+            orderTimeLimit: null,
           },
         ],
       }),

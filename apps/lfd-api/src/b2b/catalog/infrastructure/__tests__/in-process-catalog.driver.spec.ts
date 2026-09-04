@@ -18,7 +18,7 @@ import { InProcessB2bCatalogDriver } from "../in-process-catalog.driver.js";
  * lequel.
  */
 
-const snapshot: StoredCatalogSnapshot = {
+const snapshot: CatalogSnapshot = {
   version: CATALOG_SNAPSHOT_VERSION,
   generatedAt: "2026-01-01T00:00:00.000Z",
   categories: [],
@@ -40,6 +40,7 @@ const snapshot: StoredCatalogSnapshot = {
           vatRatePercent: 5.5,
           allergens: null,
           allergenLabels: null,
+          orderTimeLimit: null,
         },
       ],
     },

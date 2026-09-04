@@ -1,4 +1,4 @@
-import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
+import { CATALOG_SNAPSHOT_VERSION, type StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CatalogDelivery } from "../entities/catalog-delivery.js";
 import { DeliveryAlreadyClosedError } from "../errors/catalog-errors.js";

@@ -16,6 +16,7 @@ const CATALOG: Record<string, CatalogItem> = {
     vatRate: 5.5,
     category: "viennoiserie",
     allergens: null,
+    orderTimeLimit: null,
   },
 };
 

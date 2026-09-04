@@ -27,6 +27,7 @@ const variant = (sku: string, over: Partial<SyncVariant> = {}): SyncVariant => (
   vatRatePercent: 5.5,
   allergens: ["AU"],
   allergenLabels: { labels: [{ category: "gluten", label: "gluten" }], incomplete: false },
+  orderTimeLimit: null,
   ...over,
 });
 
