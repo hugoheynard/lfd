@@ -67,6 +67,7 @@ const CUTOFF: OrderCutoffPayload = {
   weekday: null,
   daysBefore: 1,
   time: "17:00",
+  graceMinutes: 0,
 };
 
 function zones(): DeliveryZoneRepository {
@@ -172,6 +173,7 @@ describe("Les réglages commerciaux au journal", () => {
       weekday: null,
       daysBefore: 1,
       time: "17:00",
+      graceMinutes: 0,
     });
   });
 

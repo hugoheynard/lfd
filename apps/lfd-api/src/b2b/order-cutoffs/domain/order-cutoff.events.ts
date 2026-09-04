@@ -11,8 +11,8 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
  * jour-là**, et qui l'avait posée. L'état courant ne le dira pas : il aura
  * peut-être changé depuis, précisément à cause de cette réclamation.
  *
- * La charge porte donc la règle entière : elle tient en quatre champs, et
- * chacun change la réponse.
+ * La charge porte donc la règle entière : elle tient en cinq champs, et chacun
+ * change la réponse.
  */
 export const ORDER_CUTOFF_FACTS = {
   created: "order_cutoff.created",
@@ -28,6 +28,10 @@ function ruleOf(payload: OrderCutoffPayload): Record<string, unknown> {
     weekday: payload.weekday,
     daysBefore: payload.daysBefore,
     time: payload.time,
+    // Le rattrapage EN FAIT PARTIE : passer de « limite ferme » à « 45 minutes »
+    // change ce que la plateforme accepte, et un journal qui l'omettrait
+    // laisserait ce changement-là sans trace.
+    graceMinutes: payload.graceMinutes,
   };
 }
 
