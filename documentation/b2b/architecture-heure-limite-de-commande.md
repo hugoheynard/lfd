@@ -9,9 +9,10 @@
 > `order-time-limitation` porte l'échelle avec son héritage champ par champ, le
 > fil les raccorde, et l'écran existe.
 >
-> ✅ **Le lot 7 est livré** : la surtaxe se règle depuis « Réglages → Surtaxe de
-> retard », se facture, se taxe au taux choisi et se fige sur la commande. Reste
-> à l'AFFICHER sur la commande. Puis la boutique (8) et le démontage de
+> ✅ **Le lot 7 est livré en entier** : la surtaxe se règle depuis « Réglages →
+> Surtaxe de retard », se facture, se taxe au taux choisi, se fige sur la
+> commande — et s'y **lit**, avec son ajustement et son taux, sur la même page
+> côté client et côté comptoir. Restent la boutique (8) et le démontage de
 > l'ancienne règle (9).
 
 ## En bref
@@ -617,8 +618,45 @@ Ce qui voyage vers le serveur est un **pourcentage nu**, jamais l'identifiant
 d'un taux : le B2B ne dépend d'aucune table du référentiel, et cet écran est la
 seule jonction entre les deux.
 
-⚠️ **Ce qui reste ouvert :** l'**affichage** de la surtaxe sur la commande. Elle
-est calculée, taxée et figée, mais aucune vue ne la montre encore.
+### Comment la commande la montre
+
+Une ligne de plus au récapitulatif du rail droit, sur `lfd-order-detail` — donc
+la **même** des deux côtés : le client la voit, le commercial voit la même
+phrase, et une conversation au téléphone se raccroche à quelque chose.
+
+```
+Sous-total HT             600,00 €
+Retrait — Labo Chambéry  − 60,00 €     ← −10 %
+Livraison HT                5,00 €
+Surtaxe de retard HT        5,00 €     ← 5,00 € · TVA 20 %
+TVA                        31,70 €
+Total TTC                 581,70 €
+```
+
+(540,00 de marchandises à 5,5 % = 29,70 ; 5,00 de transport et 5,00 de surtaxe
+à 20 % = 1,00 chacun. Le total additionne 540 + 5 + 5 + 31,70.)
+
+Trois décisions, et chacune se voit dans l'exemple :
+
+- **la ligne est placée après la remise et la livraison**, dans l'ordre où la
+  formule additionne. Remontée d'un cran, elle se lirait comme remisée — ce
+  qu'elle n'est pas ;
+- **elle ne paraît que si elle existe.** « Surtaxe 0,00 € » ferait chercher un
+  retard qui n'a pas eu lieu, sur l'immense majorité des commandes ;
+- **son taux de TVA est dit là et nulle part ailleurs.** Les marchandises
+  portent le leur ligne à ligne ; la surtaxe est la seule ligne dont on ne
+  pourrait pas retrouver le taux, puisque le réglage qui l'a fixé aura changé.
+
+Le second niveau est **facultatif à l'affichage**, et c'est délibéré bien que
+l'agrégat interdise déjà le cas : `ensureLateFeeMatches` refuse une surtaxe sans
+l'ajustement qui la justifie, donc aucune commande ne devrait porter l'un sans
+l'autre. Si l'une y arrive quand même — une écriture hors agrégat, une reprise
+de données —, la ligne s'affiche sans sa trace plutôt que de disparaître : un
+récapitulatif amputé ne s'additionne plus, et c'est le total qu'on croit.
+
+Le récapitulatif entier est sorti du composant dans `order-pricing.ts` à cette
+occasion — c'est de l'arithmétique de lecture, et l'ordre des lignes est
+précisément ce qu'on veut pouvoir éprouver sans monter un gabarit.
 
 ## 9. Ce que la boutique en montre
 
@@ -891,10 +929,9 @@ Deux écarts subsistent, et ils sont assumés :
   qu'un repli tant que le fil n'a rien apporté.
 - ~~La surtaxe n'a pas d'écran.~~ **Tombé au lot 7** : elle se règle sous
   « Réglages → Surtaxe de retard ».
-- **La surtaxe ne s'affiche pas sur la commande.** Elle est calculée, taxée et
-  figée avec l'ajustement qui l'a produite, mais aucune vue ne la montre — ni au
-  comptoir, ni au client. C'est le seul morceau du lot 7 qui manque, et il est
-  dit ici plutôt que rangé dans un lot suivant.
+- ~~La surtaxe ne s'affiche pas sur la commande.~~ **Tombé le 2026-09-04** :
+  `lfd-order-detail` porte sa ligne, avec son ajustement et son taux. Le lot 7
+  n'a plus de reste.
 
 ### Deux remarques d'ordre
 
@@ -945,6 +982,10 @@ Deux écarts subsistent, et ils sont assumés :
 | Une surtaxe sans taux **lève** au lieu de retomber sur un défaut     | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts` |
 | Un seul réglage de surtaxe, tenu par la base                         | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`             |
 | Le réglage n'est lu que si une dérogation a servi                    | `OrderDrafting.lateFeeFor` ; `test/order-cutoffs.e2e-spec.ts`                         |
+| La surtaxe et sa trace remontent jusqu'à la **vue** de la commande   | `GET /orders/:id` ; `test/order-cutoffs.e2e-spec.ts`                                  |
+| Elle s'affiche APRÈS la remise et la livraison, jamais avant         | `orderTotalRows` ; `packages/b2b-ui/src/order/__tests__/order-totals.spec.ts`         |
+| Aucune ligne quand il n'y a pas de surtaxe                           | même spec — trois lignes seulement : sous-total, TVA, total                           |
+| Le taux est rendu en pourcentage, pas en fraction                    | `formatLateFeeTerms` ; même spec (« 0,2 % » se lit comme un montant plausible)        |
 | L'écran n'envoie jamais un montant sans taux                         | `reglages/order-late-fee/__tests__/order-late-fee-page.spec.ts` (admin front)         |
 | « Aucune » retire le réglage au lieu d'écrire un montant nul         | même spec — `clear()` appelé, `save()` non                                            |
 | Un taux disparu du référentiel reste proposé, et signalé             | même spec — `orphanRate`, et le choix reste dans la liste                             |

@@ -35,3 +35,23 @@ export type OrderLateFeePayload = z.infer<typeof orderLateFeePayloadSchema>;
  * commande tardive sans la facturer.
  */
 export type OrderLateFeeView = OrderLateFeePayload | null;
+
+/**
+ * **La surtaxe telle qu'une commande la porte** — l'ajustement qui l'a produite
+ * et le taux qui l'a taxée, figés le jour de la passation.
+ *
+ * Le taux voyage AVEC le montant, et ce n'est pas de la redondance : il ne se
+ * recalcule pas. Le réglage aura changé, et rien sur la commande ne permettrait
+ * alors de dire à quel taux elle a été facturée — ce qui est précisément la
+ * question qu'un comptable pose six mois plus tard.
+ *
+ * Un `type` et non une `interface` : une interface n'a pas de signature d'index
+ * implicite, donc TypeScript refuse de la ranger dans un `jsonb` sans cast — et
+ * le cast ferait taire le seul mécanisme qui vérifie qu'on y range du
+ * sérialisable.
+ */
+export const lateFeeAdjustmentSchema = z.object({
+  adjustment: cartAdjustmentSchema,
+  vatRatePercent: z.number().min(0).max(100),
+});
+export type LateFeeAdjustment = z.infer<typeof lateFeeAdjustmentSchema>;

@@ -8,6 +8,8 @@ import {
   type CartAdjustment,
   cartAdjustmentSchema,
   type FulfillmentMethod,
+  type LateFeeAdjustment,
+  lateFeeAdjustmentSchema,
   type OrderLineView,
   type OrderLinePricingTrace,
   priceStepsSchema,
@@ -63,6 +65,8 @@ interface OrderRow {
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
+  readonly lateFeeCents: number;
+  readonly lateFeeAdjustment: Prisma.JsonValue | null;
   readonly vatCents: number;
   readonly totalCents: number;
   readonly currency: string;
@@ -92,6 +96,8 @@ const ORDER_SELECT = {
   discountCents: true,
   discountAdjustment: true,
   deliveryFeeCents: true,
+  lateFeeCents: true,
+  lateFeeAdjustment: true,
   vatCents: true,
   totalCents: true,
   currency: true,
@@ -496,6 +502,8 @@ function toOrderView(row: OrderRow): OrderView {
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
     deliveryFeeCents: row.deliveryFeeCents,
+    lateFeeCents: row.lateFeeCents,
+    lateFeeAdjustment: parseLateFee(row.lateFeeAdjustment),
     vatCents: row.vatCents,
     totalCents: row.totalCents,
     currency: row.currency,
@@ -517,6 +525,17 @@ function toOrderView(row: OrderRow): OrderView {
  */
 function parseAdjustment(value: Prisma.JsonValue | null): CartAdjustment | null {
   return value === null ? null : cartAdjustmentSchema.parse(value);
+}
+
+/**
+ * Snapshot JSON → l'ajustement ET le taux figés de la surtaxe, ou `null`.
+ *
+ * Validé comme la remise, et pour la même raison : toute commande antérieure à
+ * la colonne porte `null`, et un JSON d'une autre forme n'a pas à remonter en
+ * vue. Le taux en fait partie — il ne se recalcule pas depuis le montant.
+ */
+function parseLateFee(value: Prisma.JsonValue | null): LateFeeAdjustment | null {
+  return value === null ? null : lateFeeAdjustmentSchema.parse(value);
 }
 
 /** Snapshot JSON → écarts vs gabarit récurrent, ou `null`. */

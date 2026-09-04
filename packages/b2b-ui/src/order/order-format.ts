@@ -1,6 +1,12 @@
 import { formatAdjustmentValue } from '../pricing/price-alteration.model';
 
-import type { CartAdjustment, FulfillmentMethod, OrderStatus, PaymentStatus } from '@lfd/contracts';
+import type {
+  CartAdjustment,
+  FulfillmentMethod,
+  LateFeeAdjustment,
+  OrderStatus,
+  PaymentStatus,
+} from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
 /**
@@ -108,6 +114,34 @@ export function formatMillicents(millicents: number): string {
 /** Un taux de TVA `0.055` → « 5,5 % ». */
 export function formatVatRate(rate: number): string {
   return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(rate * 100)} %`;
+}
+
+/**
+ * Le même taux, mais donné en **pourcentage** : `5.5` → « 5,5 % ».
+ *
+ * Deux fonctions pour une seule mise en forme, parce que les deux unités
+ * existent vraiment dans les données : une ligne de commande fige `vatRate` en
+ * fraction, la surtaxe de retard fige `vatRatePercent` en pourcentage. Le
+ * facteur 100 vit ici, une fois, nommé — laissé au site d'appel, il finit un
+ * jour du mauvais côté de la division, et « 20 % » devient « 0,2 % » sur une
+ * facture.
+ */
+export function formatVatPercent(percent: number): string {
+  return formatVatRate(percent / 100);
+}
+
+/**
+ * Ce qu'une surtaxe de retard **dit d'elle-même** : « 15 % · TVA 20 % ».
+ *
+ * Sans signe : la ligne majore, sa place dans le récapitulatif le dit déjà, et
+ * un « + » de plus à côté d'un montant positif se lit comme une correction.
+ *
+ * Le taux est donné **avec**, ici et nulle part ailleurs. Les marchandises
+ * portent le leur ligne à ligne ; la surtaxe est la seule ligne dont on ne
+ * pourrait pas le retrouver — le réglage qui l'a fixé aura changé.
+ */
+export function formatLateFeeTerms(frozen: LateFeeAdjustment): string {
+  return `${formatAdjustmentValue(frozen.adjustment)} · TVA ${formatVatPercent(frozen.vatRatePercent)}`;
 }
 
 /**

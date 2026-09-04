@@ -11,6 +11,7 @@ import {
   fulfillmentWindowSchema,
 } from "./address.js";
 import type { CartAdjustment } from "./cart-adjustment.js";
+import type { LateFeeAdjustment } from "./order-late-fee.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -446,9 +447,29 @@ export interface OrderView {
   readonly discountAdjustment: CartAdjustment | null;
   /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
   readonly deliveryFeeCents: number;
-  /** TVA totale (marchandises par taux + livraison), en centimes. */
+  /**
+   * Surtaxe de commande tardive, HT, en centimes. `0` si aucune — c'est-à-dire
+   * dans l'immense majorité des cas : elle n'existe que si un commercial a
+   * accordé une dérogation à la limite de commande.
+   */
+  readonly lateFeeCents: number;
+  /**
+   * **Ce qui a produit** `lateFeeCents`, figé à la commande : l'ajustement et
+   * le taux de TVA retenus ce jour-là.
+   *
+   * Même raison que {@link OrderView.discountAdjustment}, plus une : le taux
+   * d'une surtaxe est un **réglage**, et il n'a pas de défaut. Le relire demain
+   * donnerait celui d'aujourd'hui. `null` = aucune surtaxe.
+   */
+  readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  /** TVA totale (marchandises par taux + livraison + surtaxe), en centimes. */
   readonly vatCents: number;
-  /** Total **TTC** = `max(0, subtotal − discount) + deliveryFee + vat`. */
+  /**
+   * Total **TTC** = `max(0, subtotal − discount) + deliveryFee + lateFee + vat`.
+   *
+   * L'ordre des termes n'est pas cosmétique : la surtaxe s'ajoute **après** la
+   * remise. On ne fait pas de geste commercial sur une pénalité de retard.
+   */
   readonly totalCents: number;
   readonly currency: string;
   /** Panier récurrent d'origine (« récurrent »), ou `null` (commande ponctuelle). */

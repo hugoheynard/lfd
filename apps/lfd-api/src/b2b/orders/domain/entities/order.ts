@@ -6,6 +6,7 @@ import {
   type OrderFulfillment as AgreedFulfillment,
   type CartAdjustment,
   type FulfillmentMethod,
+  type LateFeeAdjustment,
   type PaymentStatus,
 } from "@lfd/contracts";
 
@@ -104,31 +105,6 @@ export interface OrderToPlace {
 }
 
 /**
- * L'ajustement figé doit **reproduire** le montant retenu. Sans ce contrôle, une
- * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
- * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
- *
- * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
- */
-/**
- * L'ajustement figé et le taux qui ont produit la surtaxe.
- *
- * Le taux voyage AVEC : un montant sans son taux ne se justifie pas devant un
- * comptable, et il ne se recalcule pas — le réglage aura changé.
- */
-/*
- * ⚠️ Un `type` et non une `interface`, et ce n'est pas une préférence : une
- * interface n'a pas de signature d'index implicite, donc TypeScript refuse de
- * la voir comme un objet JSON. L'écrire en interface obligeait à un cast à
- * l'écriture — c'est-à-dire à faire taire le seul mécanisme qui vérifie que ce
- * qu'on range dans un `jsonb` est sérialisable.
- */
-export type LateFeeAdjustment = {
-  readonly adjustment: CartAdjustment;
-  readonly vatRatePercent: number;
-};
-
-/**
  * La surtaxe correspond-elle à l'ajustement qui la prétend ?
  *
  * Même garde que pour la remise, et pour la même raison : les deux nombres
@@ -149,6 +125,13 @@ function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): vo
   }
 }
 
+/**
+ * L'ajustement figé doit **reproduire** le montant retenu. Sans ce contrôle, une
+ * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
+ * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
+ *
+ * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
+ */
 function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
   if (input.discountAdjustment === null) {
     return;

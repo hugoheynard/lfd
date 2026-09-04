@@ -406,6 +406,39 @@ describe("la surtaxe de commande tardive", () => {
   });
 
   /**
+   * La surtaxe est **lisible** par le client, pas seulement écrite en base.
+   *
+   * Elle a vécu deux jours facturée et invisible : le total montait de 5 €, et
+   * le récapitulatif n'avait aucune ligne pour le dire. Un montant qu'on ne
+   * peut pas justifier à l'écran est un appel au support, pas une facture.
+   */
+  it("rend la surtaxe et sa trace figée sur la vue de la commande", async () => {
+    await setLateFee(500, 20);
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    const created = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001", quantity: 3 }] }))
+      .expect(201);
+
+    const view = await ctx
+      .asSub(MEMBER)
+      .get(`/orders/${(created.body as { id: string }).id}`)
+      .expect(200);
+
+    expect(view.body).toMatchObject({
+      lateFeeCents: 500,
+      lateFeeAdjustment: {
+        adjustment: { mode: "amount", cents: 500 },
+        vatRatePercent: 20,
+      },
+      totalCents: 600 + 500 + 133,
+    });
+  });
+
+  /**
    * 🔴 **Une commande à l'heure ne paie rien**, réglage ou pas. C'est le retard
    * qu'on facture, pas le panier.
    */

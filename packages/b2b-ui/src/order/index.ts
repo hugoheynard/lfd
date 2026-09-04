@@ -16,14 +16,17 @@ export {
   fulfillmentLabel,
   formatAdjustment,
   formatCents,
+  formatLateFeeTerms,
   formatMillicents,
+  formatVatPercent,
   formatVatRate,
   formatOrderDate,
   formatOrderDay,
   formatOrderInstant,
 } from './order-format';
 export { resolveZoneForPostalCode } from './delivery-zone';
-export { entryPriceOf, priceStepLabels, wasFloored } from './order-pricing';
+export { entryPriceOf, orderTotalRows, priceStepLabels, wasFloored } from './order-pricing';
+export type { TotalRow } from './order-pricing';
 export { buildTimeline, canSettle, toTimelineNodes } from './order-timeline';
 export type { OrderAudience, StepState, TimelineStep } from './order-timeline';
 export { QrCode } from './qr-code/qr-code';

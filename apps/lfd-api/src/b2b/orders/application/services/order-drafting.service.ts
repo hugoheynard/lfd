@@ -3,6 +3,7 @@ import {
   type BillingAddressPayload,
   type CartAdjustment,
   type FulfillmentMethod,
+  type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type PickupAddressView,
 } from "@lfd/contracts";
@@ -21,7 +22,7 @@ import {
   type FulfillmentDefaults,
   windowFitsPickup,
 } from "../../domain/services/agreed-fulfillment.js";
-import { Order, type LateFeeAdjustment } from "../../domain/entities/order.js";
+import { Order } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
   NoDeliveryZoneForPostalCodeError,

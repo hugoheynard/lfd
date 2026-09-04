@@ -1,7 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { BillingAddressPayload, OrderLineView, OrderView } from '@lfd/contracts';
 
-import { entryPriceOf, priceStepLabels, wasFloored } from '../order-pricing';
+import {
+  entryPriceOf,
+  orderTotalRows,
+  priceStepLabels,
+  wasFloored,
+  type TotalRow,
+} from '../order-pricing';
 import {
   FoldAsideLayoutComponent,
   FoldBadgeComponent,
@@ -12,7 +18,6 @@ import {
 } from 'fold-ng';
 
 import {
-  formatAdjustment,
   formatCents,
   formatOrderDate,
   formatOrderInstant,
@@ -54,32 +59,11 @@ export interface OrderDocument {
   readonly unavailable?: string;
 }
 
-/**
- * D'où vient la remise. Une seule source aujourd'hui — le point de retrait — et
- * son nom est déjà figé dans le snapshot d'adresse : on ne le redemande pas au
- * serveur, et il reste juste même si le point est renommé ou supprimé après coup.
- */
-function discountLabel(order: OrderView): string {
-  const point = order.fulfillmentMethod === 'pickup' ? order.pickupAddress : null;
-  return point === null || point.label === '' ? 'Remise' : `Retrait — ${point.label}`;
-}
-
 /** Une ligne retirée du gabarit récurrent, prête à afficher. */
 interface RemovedLine {
   readonly sku: string;
   readonly name: string;
   readonly quantity: number;
-}
-
-/** Une ligne du récapitulatif de montants, dans le rail droit. */
-interface TotalRow {
-  readonly key: string;
-  readonly label: string;
-  readonly value: string;
-  /** Second niveau sous le libellé — le taux d'une remise, par exemple. */
-  readonly hint?: string;
-  /** Le total TTC — mis en avant, et lui seul. */
-  readonly strong: boolean;
 }
 
 /**
@@ -211,50 +195,8 @@ export class OrderDetail {
     return order.fulfillmentMethod === 'delivery' ? order.deliveryAddress : order.pickupAddress;
   });
 
-  /**
-   * Le récapitulatif des montants, dans le rail droit. Remise et livraison ne
-   * sont **rendues que si elles existent** : une ligne « Remise 0,00 € » invite
-   * à chercher une remise qu'on n'a pas eue.
-   */
-  protected readonly totals = computed<readonly TotalRow[]>(() => {
-    const order = this.order();
-    const rows: TotalRow[] = [
-      {
-        key: 'subtotal',
-        label: 'Sous-total HT',
-        value: formatCents(order.subtotalCents),
-        strong: false,
-      },
-    ];
-    if (order.discountCents > 0) {
-      // La remise se NOMME : d'où elle vient, à quel taux, pour combien. « Remise
-      // 70,68 € » toute seule oblige à ouvrir les réglages pour comprendre.
-      const adjustment = order.discountAdjustment;
-      rows.push({
-        key: 'discount',
-        label: discountLabel(order),
-        ...(adjustment === null ? {} : { hint: formatAdjustment(adjustment) }),
-        value: `− ${formatCents(order.discountCents)}`,
-        strong: false,
-      });
-    }
-    if (order.deliveryFeeCents > 0) {
-      rows.push({
-        key: 'delivery',
-        label: 'Livraison HT',
-        value: formatCents(order.deliveryFeeCents),
-        strong: false,
-      });
-    }
-    rows.push({ key: 'vat', label: 'TVA', value: formatCents(order.vatCents), strong: false });
-    rows.push({
-      key: 'total',
-      label: 'Total TTC',
-      value: formatCents(order.totalCents),
-      strong: true,
-    });
-    return rows;
-  });
+  /** Le récapitulatif des montants — assemblé par `orderTotalRows`, pas ici. */
+  protected readonly totals = computed<readonly TotalRow[]>(() => orderTotalRows(this.order()));
 
   /** SKU ajoutés pour cette échéance vis-à-vis du gabarit récurrent. */
   protected readonly addedSkus = computed<ReadonlySet<string>>(
