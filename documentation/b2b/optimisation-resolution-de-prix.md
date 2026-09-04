@@ -5,7 +5,12 @@ contradiction a établi.**
 
 > Ce document touche **l'argent**, deux fois : il parle du chemin qui facture, et
 > le coût qu'il décrit est une **facture**. Il ne propose de changer aucun prix —
-> et §3 dit précisément à quelle condition c'est vrai.
+> et §4 dit précisément à quelle condition c'est vrai.
+>
+> **Deux leviers, et ils ne se remplacent pas** : le NOMBRE d'appels, qui est une
+> décision d'écran (§3), et le coût de chacun, qui est une affaire de lecture
+> (§7). Le premier est multiplicatif ; le second devient plus important quand on
+> a appliqué le premier, pas moins.
 >
 > ⚠️ **Sa première version se trompait de diagnostic** : elle parlait de latence
 > et d'allers-retours. Ce qu'elle disait est conservé là où c'était juste, et
@@ -79,7 +84,64 @@ lit là, pas au chronomètre.
 **Il ne reste donc qu'un seul chemin** qui porte la forme `3 × N` : `priceAll`,
 c'est-à-dire le devis et la commande. C'est peu — et c'est le chemin qui facture.
 
-## 3. 🔴 La sûreté d'un hissage : vraie pour les règles, FAUSSE pour les planchers
+## 3. 🔴 Le vrai levier n'est pas le coût d'un appel — c'est leur NOMBRE
+
+Ce document a d'abord raisonné **par appel**, parce que c'est ce que le code
+montre. Combien d'appels on fait est une décision de **produit**, et c'est le
+levier multiplicatif, quand l'autre est additif.
+
+La preuve est dans le back-office : `nouvelle-commande-page.ts` porte un
+`effect()` sur les lignes du panier qui appelle `refreshQuote` **à chaque
+changement**, sans debounce. Composer une commande de dix lignes une par une,
+c'est dix appels — de 3, 6, 9… opérations.
+
+### L'arithmétique
+
+|                                                    | appels | opérations |
+| -------------------------------------------------- | ------ | ---------- |
+| Panier d'aujourd'hui, 10 lignes ajoutées une à une | 10     | ~165       |
+| Hydratation à l'ouverture + devis au checkout      | **2**  | ~306       |
+| Le même, **avec le hissage de §7**                 | 2      | **~10**    |
+
+🔴 **Le résultat n'est pas celui qu'on attend** : une hydratation ne réduit pas
+les opérations, elle les **concentre**. Charger la boutique entière, c'est le
+plus grand N du système — quatre-vingt-douze articles, donc près de trois cents
+opérations en un seul appel.
+
+Les deux leviers ne s'opposent donc pas, et ne se remplacent pas : le nombre
+d'appels est une affaire de conception d'écran, le coût de celui qui reste une
+affaire de lecture. **Et le hissage compte DAVANTAGE sous une hydratation**, pas
+moins : c'est elle qui crée le gros appel.
+
+### Ce qui rend une hydratation _correcte_, et pas seulement optimiste
+
+`volumeTiers`. Chaque palier est une résolution complète **à cette quantité** —
+« pas un `canonique × (1 − remise)`, qui mentirait dès qu'une promotion compose
+avec le palier ». Le front n'a donc rien à calculer : il **sélectionne** le
+palier qui correspond à la quantité affichée.
+
+C'est de la lecture, pas de l'arithmétique — exactement ce que le lot 2 de
+`plan-boutique-sur-api.md` cherche (« le front cesse de calculer »), et ça
+s'obtient sans un appel de plus.
+
+### Les deux risques, et pourquoi ils sont petits
+
+- **La dérive dans le temps.** Entre l'hydratation et le checkout, une promotion
+  peut expirer. Le devis du checkout la rattrape, et `POST /orders` re-résout de
+  toute façon : le client n'est jamais **facturé** un prix périmé — au pire il en
+  voit un corrigé au dernier écran.
+
+  ⚠️ À distinguer de ce que `plan-boutique-sur-api.md` refuse, et qui se
+  ressemble de loin : là, c'est le prix **canonique** contre le **négocié**, un
+  écart systématique, sur chaque ligne, tout le temps. Ici, une dérive rare sur
+  un prix déjà négocié. Ce n'est pas la même faute, et la seconde s'assume.
+
+- **Le défaut connu des paliers.** La grille est calculée avec la décision de
+  plancher prise à la quantité d'origine, donc un plancher **dynamique** peut
+  faire diverger le vrai prix. C'est un défaut du serveur, pas de la conception
+  d'écran : il existe déjà pour le devis d'aujourd'hui.
+
+## 4. 🔴 La sûreté d'un hissage : vraie pour les règles, FAUSSE pour les planchers
 
 La première version tenait sa thèse d'un commentaire du lecteur de **règles** :
 
@@ -120,7 +182,7 @@ prix « rejouable à un instant nommé ». Le jour où `priceAll` accepte une da
 passée, le hissage ferait revenir une règle archivée depuis : `unarchivedAt()`
 existe pour cette sémantique, et n'est utilisé que par le tableau de bord.
 
-## 4. Le précédent transposable est à un dossier, pas à deux
+## 5. Le précédent transposable est à un dossier, pas à deux
 
 La première version citait `BoardMaterials`. Mauvaise cible : ce JSDoc raisonne
 sur des **tableaux dérivés recopiés en mémoire**, pas sur des lectures de base.
@@ -140,11 +202,11 @@ plus large : la portée change d'un article à l'autre. Ce qui rend ça praticab
 et qu'il faut vérifier avant d'écrire — c'est que l'union des portées d'un panier
 reste petite : `global`, au plus quelques rayons, et les SKU du panier.
 
-## 5. Ce qu'il faut mesurer, et le seuil qui décide
+## 6. Ce qu'il faut mesurer, et le seuil qui décide
 
 `architecture-prix-boutique.md` §7 pose la règle, et elle reste juste : « à
-mesurer avant d'optimiser, et à ne pas optimiser d'avance ». Trois mesures, et
-**aucune ne demande d'écrire le remède** :
+mesurer avant d'optimiser, et à ne pas optimiser d'avance ». **Quatre** mesures,
+et **aucune ne demande d'écrire le remède** :
 
 1. **Les opérations par chemin** — un devis de dix lignes, une commande, une
    ouverture du tableau tarifaire. L'instrument existe (`counted-prisma.ts`,
@@ -152,16 +214,20 @@ mesurer avant d'optimiser, et à ne pas optimiser d'avance ». Trois mesures, et
    chemin est un petit travail, pas un chantier ;
 2. **La part du forfait** que `priceAll` représente sur un mois réel. C'est le
    chiffre qui décide : une optimisation qui rend 3 % du forfait ne vaut pas le
-   risque décrit en §3 ;
+   risque décrit en §4 ;
 3. **Les volumes** de `PriceRule`, `PriceFloor` et `VolumeLadder` non archivées.
    Ils disent si « charger pour l'union du panier » tient, et à partir de quand
-   le balayage en mémoire coûte plus que les lectures évitées.
+   le balayage en mémoire coûte plus que les lectures évitées ;
+4. **Le nombre d'APPELS par session**, écran par écran (§3). C'est la mesure que
+   la première version ne pensait même pas à prendre, et c'est la seule qui porte
+   un facteur **multiplicatif** : un panier qui redemande à chaque frappe coûte
+   plus cher qu'un moteur mal batché.
 
 🔴 **Le seuil, posé d'avance pour qu'il puisse arrêter le chantier** : si
 `priceAll` pèse **moins de 20 %** des opérations facturées, ce document se
 referme sans code. Une porte de sortie sans chiffre ne se franchit jamais.
 
-## 6. La forme du remède, si la mesure le justifie
+## 7. La forme du remède, si la mesure le justifie
 
 Charger les règles, planchers et barèmes **une fois par appel à `priceAll`**,
 pour l'union des portées du panier, puis les distribuer aux fonctions pures qui
@@ -180,7 +246,7 @@ Ce que ça touche, chiffré plutôt qu'esquissé :
   `place-order-for-customer.handler.spec.ts`), trois `candidatesFor` chacune ;
 - **un second consommateur** appelle les mêmes lecteurs et doit être décidé, pas
   oublié : `PriceProjectionQuery`. Il hisse déjà pour son propre usage ;
-- **`ScopedPriceFloor`** gagne son cycle de vie, ou le filtre reste en SQL (§3).
+- **`ScopedPriceFloor`** gagne son cycle de vie, ou le filtre reste en SQL (§4).
 
 ### Le coût qui MONTE, et que la première version passait sous silence
 
@@ -188,7 +254,7 @@ Ce que ça touche, chiffré plutôt qu'esquissé :
 par étage. Charger pour l'union du panier fait passer ce balayage de « les règles
 de cet article » à « les règles du panier », par article — c'est-à-dire
 exactement le produit `articles × règles` contre lequel le tableau de bord met en
-garde. Sur des dizaines de règles c'est du bruit ; c'est la mesure 3 de §5 qui
+garde. Sur des dizaines de règles c'est du bruit ; c'est la mesure 3 de §6 qui
 dit à partir de quand ça cesse de l'être.
 
 ### Ce que ça ne doit pas devenir
@@ -200,22 +266,24 @@ dit à partir de quand ça cesse de l'être.
 - **Pas « charger tout ».** C'est le geste du tableau de bord, qui affiche tout.
   Le chemin qui facture connaît ses SKU : il charge pour eux.
 
-## 7. Ce qui a été vérifié, et où
+## 8. Ce qui a été vérifié, et où
 
-| Affirmation                                                         | Vérifiée dans                                                        |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 3 lectures par article, dans `resolveOne`                           | `order-line-pricing.service.ts`, le `Promise.all` de `resolveOne`    |
-| +1 si un engagement couvre l'article                                | `commitmentDecision` → `customerVolumes.volumesFor`                  |
-| +2 si le plancher a une porte de volume                             | `observedRatio` → deux `skuVolumes.volumesFor`                       |
-| Les articles et les trois lecteurs sont en **parallèle**            | `priceAll` et `resolveOne`, deux `Promise.all`                       |
-| L'unité facturée est l'appel ORM, et le dépôt la compte             | `schema-ops.counter.ts`, `counted-prisma.ts`                         |
-| Le `WHERE` des **règles** est un élagage rejoué en mémoire          | `prisma-price-rule.reader.ts` ; `isSuspended`                        |
-| Le `WHERE` des **planchers** est portant                            | `prisma-price-floor.reader.ts` ; `ScopedPriceFloor` ; `resolveFloor` |
-| Le simulateur hisse déjà ses trois lecteurs                         | `price-projection.query.ts`                                          |
-| Le tableau de bord charge en lot                                    | `prisma-pricing-board.reader.ts`, `load()`                           |
-| Les index de la forme du `WHERE` existent                           | migration `20260817160000_plancher_de_prix`                          |
-| Le transport dépend du schéma d'URL ; le dev est en `postgresql://` | `prisma.service.ts` ; `apps/lfd-api/.env`                            |
-| La production est en `prisma+postgres://`                           | `documentation/ops/secrets-et-variables.md`                          |
+| Affirmation                                                                     | Vérifiée dans                                                             |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 3 lectures par article, dans `resolveOne`                                       | `order-line-pricing.service.ts`, le `Promise.all` de `resolveOne`         |
+| +1 si un engagement couvre l'article                                            | `commitmentDecision` → `customerVolumes.volumesFor`                       |
+| +2 si le plancher a une porte de volume                                         | `observedRatio` → deux `skuVolumes.volumesFor`                            |
+| Les articles et les trois lecteurs sont en **parallèle**                        | `priceAll` et `resolveOne`, deux `Promise.all`                            |
+| L'unité facturée est l'appel ORM, et le dépôt la compte                         | `schema-ops.counter.ts`, `counted-prisma.ts`                              |
+| Le `WHERE` des **règles** est un élagage rejoué en mémoire                      | `prisma-price-rule.reader.ts` ; `isSuspended`                             |
+| Le `WHERE` des **planchers** est portant                                        | `prisma-price-floor.reader.ts` ; `ScopedPriceFloor` ; `resolveFloor`      |
+| Le simulateur hisse déjà ses trois lecteurs                                     | `price-projection.query.ts`                                               |
+| Le tableau de bord charge en lot                                                | `prisma-pricing-board.reader.ts`, `load()`                                |
+| Les index de la forme du `WHERE` existent                                       | migration `20260817160000_plancher_de_prix`                               |
+| Le transport dépend du schéma d'URL ; le dev est en `postgresql://`             | `prisma.service.ts` ; `apps/lfd-api/.env`                                 |
+| Le panier back-office redemande un devis à **chaque** changement, sans debounce | `nouvelle-commande-page.ts`, l'`effect()` sur les lignes → `refreshQuote` |
+| Chaque palier est une résolution complète à sa quantité                         | `volume-tier-prices.ts` ; JSDoc d'`OrderQuoteLineView.volumeTiers`        |
+| La production est en `prisma+postgres://`                                       | `documentation/ops/secrets-et-variables.md`                               |
 
 **Non vérifié, et à ne pas présenter comme acquis** : toute latence, toute part
 du forfait, tout volume réel de règles, et le comportement de la concurrence sous
