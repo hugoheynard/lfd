@@ -1,0 +1,112 @@
+<fold-page-layout icon="clock" title="Limites de commande">
+  <p description>
+    <strong>Jusqu'à quand on prend commande</strong> pour une journée d'acheminement donnée. Une
+    règle par portée&nbsp;: toute la production, une famille, un produit, une déclinaison — la plus
+    précise l'emporte.
+  </p>
+
+  <fold-callout appearance="inset" variant="info">
+    L'héritage se fait <strong>champ par champ</strong>&nbsp;: «&nbsp;le pain ferme à
+    16&nbsp;h&nbsp;» ne recopie pas le délai, «&nbsp;l'entremets demande un jour de plus&nbsp;» ne
+    recopie pas l'heure. Le jour où la production change son heure, tout ce qui n'en a pas une
+    propre suit.
+  </fold-callout>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des limites…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les limites">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <fold-card>
+        <div class="head">
+          <button foldButton size="sm" icon="plus" (click)="add()">Poser une limite</button>
+        </div>
+
+        @if (ordered().length === 0) {
+          <!-- Aucune règle = aucune limite. Ce n'est pas une page vide, c'est un
+               état du référentiel, et il vaut mieux le dire. -->
+          <fold-empty-state
+            title="Aucune limite de commande"
+            subtitle="Tant qu'aucune règle n'existe, une commande est acceptée quelle que soit l'heure — c'est la règle du commerce qui s'applique alors, si elle en a une."
+          >
+            <fold-icon empty-icon name="clock" [size]="28" />
+          </fold-empty-state>
+        } @else {
+          @if (hasNoGlobal()) {
+            <!-- Contre-intuitif, donc dit : l'échelle exige le jour ET l'heure.
+                 Une famille qui ne pose qu'une heure, sans global pour porter le
+                 délai, ne produit AUCUNE limite. -->
+            <fold-callout variant="warning">
+              Aucune règle ne couvre <strong>toute la production</strong>. Une portée qui n'hérite
+              d'aucun délai ne produit aucune limite&nbsp;: il faut le jour <em>et</em> l'heure pour
+              qu'une commande puisse être refusée.
+            </fold-callout>
+          }
+
+          <ul class="limits">
+            @for (rule of ordered(); track rule.id) {
+              <li class="limit">
+                <div class="limit-scope">
+                  <span class="limit-name">{{ scope(rule) }}</span>
+                  <fold-badge [content]="kind(rule)" variant="neutral" />
+                </div>
+
+                <dl class="limit-values">
+                  <div>
+                    <dt>Délai</dt>
+                    <dd>{{ days(rule) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Heure</dt>
+                    <dd>{{ time(rule) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Rattrapage</dt>
+                    <dd>{{ grace(rule) }}</dd>
+                  </div>
+                </dl>
+
+                <div class="limit-actions">
+                  @if (editable(rule)) {
+                    <button foldButton emphasis="soft" size="sm" (click)="edit(rule)">
+                      Modifier
+                    </button>
+                  }
+                  @if (pendingRemoval() === rule.id) {
+                    <button foldButton intent="danger" size="sm" (click)="remove(rule)">
+                      Confirmer
+                    </button>
+                    <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">
+                      Annuler
+                    </button>
+                  } @else {
+                    <button
+                      foldButton
+                      emphasis="soft"
+                      intent="danger"
+                      size="sm"
+                      (click)="askRemove(rule)"
+                    >
+                      Retirer
+                    </button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </fold-card>
+
+      <fold-callout appearance="inset" variant="neutral">
+        Les limites d'un <strong>produit</strong> ou d'une <strong>déclinaison</strong> se posent
+        depuis la fiche du produit&nbsp;— c'est là qu'on regarde quand on se demande ce que cet
+        article demande. Elles se lisent et se retirent ici.
+      </fold-callout>
+    }
+  }
+</fold-page-layout>

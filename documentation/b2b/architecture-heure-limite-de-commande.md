@@ -3,14 +3,15 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes).
 >
-> ✅ **Lots 0 à 3 et 5 livrés le 2026-09-04.** Le fuseau est explicite, la règle
-> est opposée aux commandes client, le **rattrapage** existe — il change le
-> message, pas encore le verdict —, le contexte **`order-time-limitation`** porte
-> l'échelle du référentiel avec son héritage champ par champ, et **le fil les
-> raccorde** : une limite posée dans le PIM est opposée par le commerce.
+> ✅ **Lots 0 à 5 livrés le 2026-09-04.** Le fuseau est explicite, la règle est
+> opposée aux commandes client, le **rattrapage** existe — il change le message,
+> pas encore le verdict —, le contexte **`order-time-limitation`** porte
+> l'échelle du référentiel avec son héritage champ par champ, **le fil les
+> raccorde**, et **l'écran existe** : `/pim/limites-de-commande`, sa propre
+> entrée.
 >
-> Restent l'écran de saisie (lot 4), la dérogation (6), la surtaxe (7), la
-> boutique (8) et le démontage de l'ancienne règle (9).
+> Restent la dérogation (6), la surtaxe (7), la boutique (8) et le démontage de
+> l'ancienne règle (9).
 
 ## En bref
 
@@ -667,6 +668,27 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 | 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                         | 5 + lot 1 de `plan-boutique-sur-api.md` |
 | 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                       | 5                                       |
 
+### Ce que l'écran fait, et ce qu'il ne fait pas
+
+Il **pose** les rangs `global` et `famille`, et **liste** tout — produits et
+déclinaisons compris, avec leur nom et de quoi les retirer. Une règle qu'on ne
+voit pas est une règle qu'on ne peut plus corriger.
+
+Il ne **pose** pas de limite sur un produit ni sur une déclinaison, et c'est un
+choix : ça se fera depuis **la fiche du produit**. C'est là qu'on regarde quand
+on se demande ce que CET article demande, et un sélecteur de produit dans un
+écran de réglages ferait chercher au mauvais endroit — exactement la faute que
+§3 raconte, avec un autre voisin.
+
+Deux choses que l'écran dit et qui ne vont pas de soi :
+
+- **`Hérité` plutôt qu'un blanc.** Un champ vide se lit « aucune limite », soit
+  l'inverse de ce que `null` veut dire.
+- **Un avertissement quand aucune règle globale n'existe.** Le résultat est
+  contre-intuitif : l'échelle exige le jour ET l'heure, donc une famille qui ne
+  pose qu'une heure, sans global pour porter le délai, ne produit **aucune**
+  limite. On croirait avoir réglé quelque chose.
+
 ### Ce que les lots livrés ont laissé ouvert, volontairement
 
 - **Le back-office n'est pas soumis à la limite.** Le membre de l'équipe au
@@ -720,4 +742,6 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 | Une règle globale unique, tenue par `coalesce(scope_id,'')`          | `test/pim-order-time-limits.e2e-spec.ts`                                          |
 | Une portée contradictoire refusée par la base                        | idem, `CHECK order_time_limit_scope_id_iff_not_global`                            |
 | Écrire sans journaliser est inexprimable (`WriteTicket`)             | `src/pim/order-time-limitation/domain/ports/`                                     |
+| L'écran a sa propre entrée, section « Général »                      | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                   |
+| `Hérité` distinct d'un rattrapage nul explicite                      | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                    |
 | La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                      |

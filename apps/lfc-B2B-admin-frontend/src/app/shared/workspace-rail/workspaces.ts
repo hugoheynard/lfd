@@ -218,6 +218,17 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // GÉNÉRAL — ce qu'on règle une fois et qui vaut pour tout le reste. En
   // DERNIER, à l'inverse de l'ordre où on y touche : on ouvre le référentiel
   // pour éditer des fiches tous les jours, et ceci trois fois par an.
+  // « Jusqu'à quand on prend commande » est un sujet en soi, pas un sous-titre
+  // sous les zones de livraison : un point de retrait n'est ni un lieu de
+  // production ni un lieu de livraison, et le ranger là a enseigné le mauvais
+  // modèle pendant des mois.
+  {
+    key: 'order-time-limits',
+    label: 'Limites de commande',
+    link: '/pim/limites-de-commande',
+    icon: 'clock',
+    section: 'Général',
+  },
   {
     key: 'vat',
     label: 'Taux de TVA',

@@ -1,0 +1,58 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  @if (scopeLocked()) {
+    <!-- La portée ne se change pas : déplacer une règle est une suppression
+         suivie d'une création, pas une modification. -->
+    <fold-callout appearance="inset" variant="neutral">
+      S'applique à <strong>{{ lockedScopeLabel() }}</strong>
+    </fold-callout>
+  } @else {
+    <fold-listbox
+      label="S'applique à"
+      [options]="scopeChoices()"
+      [value]="scopeValue()"
+      (selectionChange)="onScope($event)"
+    />
+  }
+
+  <fold-listbox
+    label="Le délai"
+    [options]="daysChoices"
+    [value]="daysBefore()"
+    (selectionChange)="onDays($event)"
+  />
+
+  <!-- `<input type="time">` en natif : fold ne couvre pas les heures, et le
+       contrôle du navigateur vaut mieux qu'un masque maison. VIDE = hérite du
+       rang supérieur ; un second contrôle « hériter / préciser » aurait posé la
+       même question deux fois. -->
+  <label class="time">
+    <span class="time-label">L'heure</span>
+    <input type="time" [value]="time()" (change)="onTime($event)" />
+    <span class="time-hint">Laisser vide pour hériter du rang supérieur.</span>
+  </label>
+
+  <fold-listbox
+    label="Le rattrapage"
+    [options]="graceChoices"
+    [value]="graceMinutes()"
+    (selectionChange)="onGrace($event)"
+  />
+
+  @if (!saysSomething()) {
+    <fold-callout variant="alert">
+      Renseignez au moins un des trois réglages. Pour qu'un rang ne se prononce sur rien, supprimez
+      sa règle&nbsp;: c'est le même geste, et il se lit.
+    </fold-callout>
+  }
+
+  <fold-callout variant="info">{{ recap() }}</fold-callout>
+</div>
+
+<div class="actions">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">
+    {{ isCreate() ? 'Poser la limite' : 'Enregistrer' }}
+  </button>
+</div>

@@ -106,6 +106,18 @@ export const pimRoutes: Routes = [
           import('./product-settings/packaging-page/packaging-page').then((m) => m.PackagingPage),
       },
       {
+        // Sa PROPRE entrée, et pas une section d'un écran voisin. La règle a
+        // vécu sous « Retraits & livraisons », et cette place-là affirmait —
+        // sans jamais l'écrire — que l'heure limite est une affaire
+        // d'acheminement. Tout le monde l'a lue ainsi pendant des mois.
+        path: 'limites-de-commande',
+        title: 'Limites de commande — LFC B2B admin',
+        loadComponent: () =>
+          import('./order-time-limits/order-time-limits-page/order-time-limits-page').then(
+            (m) => m.OrderTimeLimitsPage,
+          ),
+      },
+      {
         path: 'appellations',
         title: 'Appellations — LFC B2B admin',
         loadComponent: () =>
