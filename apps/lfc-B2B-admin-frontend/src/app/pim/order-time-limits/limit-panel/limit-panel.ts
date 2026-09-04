@@ -24,7 +24,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { OrderTimeLimitsService } from '../order-time-limits.service';
-import { daysPhrase, gracePhrase, scopeLabel } from '../limit-format';
+import { absenceLabel, daysPhrase, gracePhrase, scopeLabel } from '../limit-format';
 
 /** Une cible proposable : une famille du catalogue. */
 export interface LimitTargetChoice {
@@ -51,8 +51,12 @@ export interface LimitPanelData {
 /** La valeur qui dit « ce rang ne se prononce pas » dans les sélecteurs. */
 const INHERIT = '';
 
+/**
+ * Les délais proposés, **sans** l'entrée d'absence : celle-ci se libelle
+ * différemment selon le rang, et la coller ici en dur ferait promettre au rang
+ * global un « rang supérieur » qui n'existe pas.
+ */
 const DAYS_CHOICES: FoldSelectOption<string>[] = [
-  { value: INHERIT, label: 'Hériter du rang supérieur' },
   { value: '0', label: 'Le jour même' },
   { value: '1', label: 'La veille' },
   { value: '2', label: "L'avant-veille" },
@@ -61,7 +65,6 @@ const DAYS_CHOICES: FoldSelectOption<string>[] = [
 ];
 
 const GRACE_CHOICES: FoldSelectOption<string>[] = [
-  { value: INHERIT, label: 'Hériter du rang supérieur' },
   { value: '0', label: 'Aucun — la limite est ferme' },
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },
@@ -110,9 +113,44 @@ export class LimitPanel {
 
   readonly data = input<LimitPanelData | undefined>(undefined);
 
-  protected readonly daysChoices = DAYS_CHOICES;
-  protected readonly graceChoices = GRACE_CHOICES;
   protected readonly inherit = INHERIT;
+
+  /**
+   * 🔴 **Le rang global est la RACINE : il n'hérite de rien.**
+   *
+   * Y proposer « Hériter du rang supérieur » envoyait chercher une règle plus
+   * haut, qu'on ne trouvait jamais. Ce que l'absence veut dire là-bas est tout
+   * autre — et bien plus lourd : sans délai ni heure, aucune limite ne
+   * s'applique nulle part.
+   */
+  protected readonly daysChoices = computed<FoldSelectOption<string>[]>(() => [
+    { value: INHERIT, label: this.absence('daysBefore') },
+    ...DAYS_CHOICES,
+  ]);
+
+  protected readonly graceChoices = computed<FoldSelectOption<string>[]>(() => [
+    { value: INHERIT, label: this.absence('graceMinutes') },
+    ...GRACE_CHOICES,
+  ]);
+
+  /** Ce que « laisser vide » veut dire pour l'heure, à ce rang-ci. */
+  protected readonly timeHint = computed(() =>
+    this.scopeType() === 'global'
+      ? "Laisser vide si la production ne ferme à aucune heure fixe. Sans heure, aucune limite ne s'applique."
+      : 'Laisser vide pour hériter du rang supérieur.',
+  );
+
+  /**
+   * ⚠️ Au rang global, une règle sans délai OU sans heure **ne refuse rien**.
+   *
+   * Contre-intuitif, donc dit : on croirait avoir réglé quelque chose. Ce n'est
+   * pas un refus — un rang inférieur peut compléter — mais tel quel, la règle
+   * est inerte.
+   */
+  protected readonly globalIncomplete = computed(
+    () =>
+      this.scopeType() === 'global' && (this.daysBefore() === INHERIT || this.time().trim() === ''),
+  );
 
   protected readonly scopeType = signal<OrderTimeLimitScopeType>('global');
   protected readonly scopeId = signal<string | null>(null);
@@ -174,9 +212,10 @@ export class LimitPanel {
 
   /** La règle relue en une phrase, pour la vérifier avant d'enregistrer. */
   protected readonly recap = computed(() => {
-    const jours = daysPhrase(numberOrNull(this.daysBefore()));
-    const heure = this.time().trim() === '' ? 'Hérité' : this.time();
-    const grace = gracePhrase(numberOrNull(this.graceMinutes()));
+    const scope = this.scopeType();
+    const jours = daysPhrase(numberOrNull(this.daysBefore()), scope);
+    const heure = this.time().trim() === '' ? absenceLabel(scope, 'time') : this.time();
+    const grace = gracePhrase(numberOrNull(this.graceMinutes()), scope);
     return `Délai : ${jours.toLowerCase()} · Heure : ${heure} · Rattrapage : ${grace.toLowerCase()}.`;
   });
 
@@ -246,6 +285,13 @@ export class LimitPanel {
 
   protected cancel(): void {
     this.ref.close();
+  }
+
+  /** Le libellé de l'absence, pour le rang en cours d'édition. */
+  private absence(field: 'daysBefore' | 'time' | 'graceMinutes'): string {
+    return this.scopeType() === 'global'
+      ? absenceLabel('global', field)
+      : `${absenceLabel(this.scopeType(), field)} du rang supérieur`;
   }
 }
 

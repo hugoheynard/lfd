@@ -191,16 +191,16 @@ export class OrderLimitForm {
   }
 
   protected days(row: OrderLimitRow): string {
-    return daysPhrase(row.effective.daysBefore?.value ?? null);
+    return daysPhrase(row.effective.daysBefore?.value ?? null, row.scopeType);
   }
 
   protected time(row: OrderLimitRow): string {
-    return timePhrase(row.effective.time?.value ?? null);
+    return timePhrase(row.effective.time?.value ?? null, row.scopeType);
   }
 
   /** `null` = personne ne le pose ⇒ limite ferme, et c'est une réponse. */
   protected grace(row: OrderLimitRow): string {
-    return gracePhrase(row.effective.graceMinutes?.value ?? 0);
+    return gracePhrase(row.effective.graceMinutes?.value ?? 0, row.scopeType);
   }
 
   /** D'où vient cette valeur, ou `null` quand c'est cette portée qui la pose. */

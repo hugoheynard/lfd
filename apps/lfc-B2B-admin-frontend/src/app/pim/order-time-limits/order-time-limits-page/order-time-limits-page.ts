@@ -160,15 +160,15 @@ export class OrderTimeLimitsPage {
   }
 
   protected days(rule: OrderTimeLimitView): string {
-    return daysPhrase(rule.daysBefore);
+    return daysPhrase(rule.daysBefore, rule.scope.type);
   }
 
   protected time(rule: OrderTimeLimitView): string {
-    return timePhrase(rule.time);
+    return timePhrase(rule.time, rule.scope.type);
   }
 
   protected grace(rule: OrderTimeLimitView): string {
-    return gracePhrase(rule.graceMinutes);
+    return gracePhrase(rule.graceMinutes, rule.scope.type);
   }
 
   /** Poser se fait ici pour le global et les familles ; le reste vient des fiches. */

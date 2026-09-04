@@ -4,8 +4,28 @@ import {
   type OrderTimeLimitView,
 } from '@lfd/pim-contracts';
 
-/** Ce qu'on écrit quand un rang ne se prononce pas — et hérite donc du dessus. */
-export const INHERITED = 'Hérité';
+/**
+ * Ce qu'une valeur absente veut dire — et **ça dépend du rang**.
+ *
+ * 🔴 `global` est la racine : il n'a pas de rang supérieur, donc rien à hériter.
+ * Une valeur absente y veut dire « personne ne la pose », et la conséquence est
+ * lourde — sans délai ni heure, **aucune limite ne s'applique nulle part**.
+ * Écrire « Hérité » sur cette ligne-là promettrait une règle plus haut, qu'on
+ * chercherait sans jamais la trouver.
+ *
+ * Le **rattrapage** fait exception à l'exception : son absence a une valeur par
+ * défaut honnête (`0`, la limite est ferme), et au rang global cette valeur EST
+ * la réponse. On écrit donc « Aucun », pas « Non défini ».
+ */
+export function absenceLabel(
+  scopeType: OrderTimeLimitScopeType,
+  field: 'daysBefore' | 'time' | 'graceMinutes',
+): string {
+  if (scopeType !== 'global') {
+    return 'Hérité';
+  }
+  return field === 'graceMinutes' ? 'Aucun' : 'Non défini';
+}
 
 /**
  * Ce que la règle vise, en clair : « Toute la production », ou le nom de la
@@ -34,9 +54,9 @@ export function scopeKind(type: OrderTimeLimitScopeType): string {
  * Une phrase plutôt qu'un `J−1` : c'est ce qu'on dira au téléphone, et un
  * nombre de jours nu se lit à l'envers une fois sur deux.
  */
-export function daysPhrase(daysBefore: number | null): string {
+export function daysPhrase(daysBefore: number | null, scopeType: OrderTimeLimitScopeType): string {
   if (daysBefore === null) {
-    return INHERITED;
+    return absenceLabel(scopeType, 'daysBefore');
   }
   switch (daysBefore) {
     case 0:
@@ -50,19 +70,22 @@ export function daysPhrase(daysBefore: number | null): string {
   }
 }
 
-/** L'heure, ou `Hérité`. */
-export function timePhrase(time: string | null): string {
-  return time ?? INHERITED;
+/** L'heure, ou ce que son absence veut dire à ce rang. */
+export function timePhrase(time: string | null, scopeType: OrderTimeLimitScopeType): string {
+  return time ?? absenceLabel(scopeType, 'time');
 }
 
 /**
- * Le rattrapage en clair. `0` se dit **« Aucun »** et non `Hérité` : c'est une
+ * Le rattrapage en clair. `0` se dit **« Aucun »** et non « Hérité » : c'est une
  * décision — la limite est ferme — et la confondre avec un silence ferait croire
  * qu'un rang supérieur peut encore l'ouvrir.
  */
-export function gracePhrase(graceMinutes: number | null): string {
+export function gracePhrase(
+  graceMinutes: number | null,
+  scopeType: OrderTimeLimitScopeType,
+): string {
   if (graceMinutes === null) {
-    return INHERITED;
+    return absenceLabel(scopeType, 'graceMinutes');
   }
   if (graceMinutes === 0) {
     return 'Aucun';

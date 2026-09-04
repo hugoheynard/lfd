@@ -747,6 +747,27 @@ Trois règles que la carte tient :
   imposée. Un second panneau aurait divergé du premier sur la sémantique de
   l'héritage, et c'est précisément là qu'une divergence ne se verrait pas.
 
+### 🔴 Le rang global est la racine : il n'hérite de rien
+
+Le panneau proposait « **Hériter du rang supérieur** » sur toutes les portées, y
+compris `global`. Au-dessus du global il n'y a rien : le mot envoyait chercher
+une règle qu'on ne trouverait jamais.
+
+Ce que l'absence veut dire dépend donc du rang, et l'écran le dit :
+
+| Rang                            | Délai / Heure absents        | Rattrapage absent |
+| ------------------------------- | ---------------------------- | ----------------- |
+| famille · produit · déclinaison | **Hérité du rang supérieur** | **Hérité**        |
+| **global**                      | **Non défini**               | **Aucun**         |
+
+Le rattrapage fait exception à l'exception : son absence a une valeur par défaut
+honnête — la limite est ferme —, et au rang global cette valeur **est** la
+réponse. « Non défini » y serait aussi faux que « Hérité ».
+
+Et la conséquence se dit, parce qu'elle est lourde et contre-intuitive : au rang
+global, sans délai **et** sans heure, la règle ne refuse rien du tout. Un bandeau
+l'annonce dans le panneau, et le libellé de l'heure aussi.
+
 ### La carte montre ce qui S'APPLIQUE, pas ce qui est posé
 
 Une carte qui n'afficherait que la règle propre à la fiche écrirait « Hérité »

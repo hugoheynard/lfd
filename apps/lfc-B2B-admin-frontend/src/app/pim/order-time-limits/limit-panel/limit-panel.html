@@ -18,7 +18,7 @@
 
   <fold-listbox
     label="Le délai"
-    [options]="daysChoices"
+    [options]="daysChoices()"
     [value]="daysBefore()"
     (selectionChange)="onDays($event)"
   />
@@ -30,15 +30,25 @@
   <label class="time">
     <span class="time-label">L'heure</span>
     <input type="time" [value]="time()" (change)="onTime($event)" />
-    <span class="time-hint">Laisser vide pour hériter du rang supérieur.</span>
+    <span class="time-hint">{{ timeHint() }}</span>
   </label>
 
   <fold-listbox
     label="Le rattrapage"
-    [options]="graceChoices"
+    [options]="graceChoices()"
     [value]="graceMinutes()"
     (selectionChange)="onGrace($event)"
   />
+
+  @if (globalIncomplete()) {
+    <!-- Contre-intuitif, donc dit : l'échelle exige le jour ET l'heure. Une
+         règle globale amputée n'est pas refusée — un rang inférieur peut la
+         compléter — mais telle quelle, elle ne refuse rien. -->
+    <fold-callout variant="warning">
+      Sans <strong>délai</strong> et sans <strong>heure</strong>, cette règle ne refusera aucune
+      commande&nbsp;: il faut les deux pour qu'une limite existe.
+    </fold-callout>
+  }
 
   @if (!saysSomething()) {
     <fold-callout variant="alert">
