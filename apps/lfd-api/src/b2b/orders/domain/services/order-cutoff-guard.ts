@@ -53,21 +53,30 @@ const SEVERITY: Readonly<Record<OrderCutoffDecision["status"], number>> = {
  * décidé. C'est au lot 8 (la boutique) de le dire ligne par ligne AVANT la
  * validation, pas au serveur de trancher après.
  *
- * ## Ce qui n'est PAS refusé, et pourquoi
+ * ## La dérogation est le SEUL chemin de sortie
  *
- * - **Aucune limite nulle part** : tout passe. Une plateforme qui n'a rien réglé
- *   ne doit pas refuser au nom d'une limite que personne n'a posée.
- * - **Une saisie du back-office** (`placedByStaffId` non nul). Le membre de
- *   l'équipe au téléphone EST l'autorité qui déroge : tant que la dérogation
- *   n'est pas un objet en propre, lui opposer la limite retirerait au personnel
- *   une capacité qu'il a aujourd'hui, sans rien lui donner en échange.
+ * ⚠️ **Le back-office n'est plus exempté.** Il l'a été, faute de mécanisme :
+ * l'équipe au téléphone était l'autorité qui déroge, sans motif, sans auteur et
+ * sans trace — rien ne distinguait une décision d'un oubli. Elle passe désormais
+ * par une dérogation comme tout le monde, et cette dérogation-là porte un nom,
+ * une raison et une date.
  *
- * 🔴 **Cette exemption est datée.** Elle tombe avec le lot 6 de
- * `documentation/b2b/architecture-heure-limite-de-commande.md` : la dérogation
- * deviendra alors le seul chemin de sortie, et elle ne pourra ouvrir que DANS la
- * grâce.
+ * 🔴 **Une dérogation n'ouvre que la GRÂCE.** Elle n'est consultée que dans cet
+ * état : après le rattrapage, personne ne passe, dérogation ou pas. La borne
+ * n'est pas vérifiée ici, elle est **inexprimable** — il n'y a pas de branche
+ * qui pourrait la franchir.
  *
- * @throws {OrderCutoffGraceError} la limite est passée, le rattrapage court.
+ * ## Ce qui n'est PAS refusé
+ *
+ * **Aucune limite nulle part** : tout passe. Une plateforme qui n'a rien réglé
+ * ne doit pas refuser au nom d'une limite que personne n'a posée.
+ *
+ * @returns l'identifiant de la dérogation **utilisée**, ou `null`. Un `ensure*`
+ * qui rend une valeur détonne, et c'est assumé : cette fonction est la seule à
+ * savoir si l'autorisation a été dépensée, et la redemander ailleurs voudrait
+ * dire rejouer toute la décision — donc pouvoir en obtenir une autre.
+ * @throws {OrderCutoffGraceError} la limite est passée, le rattrapage court, et
+ * aucune dérogation ne couvre cette journée.
  * @throws {PastOrderCutoffError} la limite ET le rattrapage sont passés.
  */
 export function ensureWithinOrderCutoff(input: {
@@ -76,17 +85,18 @@ export function ensureWithinOrderCutoff(input: {
   readonly fallback: readonly OrderCutoffView[];
   readonly pickupAddressId: string | null;
   readonly fulfillmentDate: string;
-  readonly placedByStaffId: string | null;
+  /** La dérogation ouverte de ce client pour cette journée, ou `null`. */
+  readonly waiver: { readonly id: string } | null;
   readonly now: Date;
-}): void {
-  if (input.placedByStaffId !== null) {
-    return;
-  }
+}): string | null {
   const decision = strictestOf(input);
   if (decision.status === "open") {
-    return;
+    return null;
   }
   if (decision.status === "grace" && decision.graceEnd !== null) {
+    if (input.waiver !== null) {
+      return input.waiver.id;
+    }
     throw new OrderCutoffGraceError(input.fulfillmentDate, decision.graceEnd);
   }
   throw new PastOrderCutoffError(input.fulfillmentDate);

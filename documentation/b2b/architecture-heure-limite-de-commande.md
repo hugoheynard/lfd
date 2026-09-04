@@ -3,15 +3,13 @@
 > Écrit le 2026-09-04. Décrit **ce qui existe** (§1) et **ce qui est proposé**
 > (§3 et suivantes).
 >
-> ✅ **Lots 0 à 5 livrés le 2026-09-04.** Le fuseau est explicite, la règle est
-> opposée aux commandes client, le **rattrapage** existe — il change le message,
-> pas encore le verdict —, le contexte **`order-time-limitation`** porte
-> l'échelle du référentiel avec son héritage champ par champ, **le fil les
-> raccorde**, et **l'écran existe** : `/pim/limites-de-commande`, sa propre
-> entrée.
+> ✅ **Lots 0 à 6 livrés le 2026-09-04.** Le fuseau est explicite, la règle est
+> opposée à **tout le monde** — l'exemption du back-office est tombée —, le
+> rattrapage existe et la **dérogation** l'ouvre, le contexte
+> `order-time-limitation` porte l'échelle avec son héritage champ par champ, le
+> fil les raccorde, et l'écran existe.
 >
-> Restent la dérogation (6), la surtaxe (7), la boutique (8) et le démontage de
-> l'ancienne règle (9).
+> Restent la surtaxe (7), la boutique (8) et le démontage de l'ancienne règle (9).
 
 ## En bref
 
@@ -265,8 +263,8 @@ l'exclure ferait refuser quelqu'un qui a cliqué à l'heure dite.
 sépare n'est pas un détail d'affichage mais **ce que le lecteur doit faire** :
 changer de date, ou décrocher.
 
-⚠️ La grâce ne laisse encore passer **personne**. Elle change le message, pas le
-verdict — c'est la dérogation qui s'en servira.
+✅ **Depuis le lot 6, la grâce s'ouvre** — pour qui détient une dérogation, et
+pour personne d'autre.
 
 ## 5. L'échelle, et l'héritage champ par champ
 
@@ -420,52 +418,71 @@ Un panier ne se découpe pas : accepter les lignes ouvertes et refuser les autre
 demanderait de savoir quoi faire d'une commande amputée, et personne ne l'a
 décidé. C'est au lot 8 de le dire ligne par ligne **avant** la validation.
 
-## 7. La dérogation
-
-> **Lecture retenue** : « par appel » = un membre de l'équipe prend la commande
-> **au téléphone** et accorde l'exception. Le dépôt la porte déjà — `Order`
-> distingue `placedByUserId` (au nom de qui) et `placedByStaffId` (qui l'a
-> saisie), et `orderOriginOf` en dérive l'origine `back_office`.
+## 7. ✅ La dérogation — livrée le 2026-09-04
 
 Une dérogation n'est **pas** une règle. Elle ne modifie rien dans le référentiel
 ni dans les réglages : c'est une **autorisation de passer**, nommée, datée,
-bornée et tracée.
+bornée et tracée, qui vise **un client** et **une journée d'acheminement**.
 
-```
-DÉROGATION = { entreprise, date d'acheminement, motif, auteur, expiration }
-```
+### Ce qu'elle porte, et pourquoi chacun compte
 
-Six propriétés, chacune parce que son absence a un coût :
+|                                |                                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| une **entreprise**             | c'est le mur : une exception accordée par téléphone n'ouvre pas la porte aux autres                                 |
+| une **journée d'acheminement** | pas « ce client est dispensé » — une dispense permanente est un réglage, et doit se voir comme tel                  |
+| un **motif**, obligatoire      | une exception sans raison écrite devient la règle en trois mois, et personne ne sait dire quand ça a basculé        |
+| son **auteur**                 | un `StaffUser.id`, pas une clé étrangère : une décision ne disparaît pas parce qu'on retire quelqu'un de l'annuaire |
 
-1. **Elle vise UNE date d'acheminement.** Pas « ce client est dispensé » — une
-   dispense permanente est un réglage, et elle doit se voir comme tel.
-2. **Elle ne s'applique qu'à une entreprise.** C'est le mur : une exception
-   accordée par téléphone ne peut pas ouvrir la porte aux autres.
-3. **Elle ne peut ouvrir que DANS la grâce** (§4). Elle ne porte donc **pas**
-   d'heure à elle : la borne est celle de la grâce, et une heure propre lui
-   permettrait de la dépasser — ce que §4 interdit.
-4. **Elle porte un motif obligatoire.** Une exception sans raison écrite devient
-   la règle en trois mois.
-5. **Elle nomme son auteur** (`StaffUser.id`, pas une clé étrangère — même
-   raisonnement que `placedByStaffId` : une pièce ne disparaît pas parce qu'on
-   retire quelqu'un de l'annuaire).
-6. **Elle expire.** Au plus tard à la fin de grâce qu'elle vise.
+### 🔴 Ce qu'elle ne porte pas, et c'est là que tient la garantie
 
-Elle est **consommée**, pas supprimée : `usedByOrderId` renseigné au passage.
-« Pas de DELETE physique » vaut ici, et une dérogation accordée puis non utilisée
-est une information de gestion.
+**Ni heure, ni instant d'expiration.** Sa borne est la **grâce**, et la garde ne
+la consulte que dans cet état : une dérogation ne peut donc **jamais** ouvrir une
+journée close, quoi qu'elle contienne. La borne n'est pas vérifiée, elle est
+**inexprimable** — il n'existe pas de branche qui pourrait la franchir.
 
-⚠️ **Elle vivait avec une heure à elle dans la première version de ce document.**
-C'était avant que la grâce existe : l'heure de la dérogation jouait le rôle de
-borne. Maintenant que la borne est un réglage, une seconde heure sur l'acte ne
-ferait que permettre de la contourner.
+Une heure propre aurait créé un second moyen de dire la même chose, et le second
+aurait fini par dépasser le premier. Un instant d'expiration aurait dû approximer
+une fin de grâce qui n'existe pas : depuis que chaque article porte sa limite, un
+panier en a autant que de lignes. Une approximation dans un mécanisme d'exception
+finit toujours par devenir la règle.
 
-**Où elle vit** : côté B2B (schéma `public`). Elle parle d'une commande et d'un
-client, pas d'un article.
+### Elle est consommée, pas supprimée
 
-**Qui peut l'accorder** : une ressource dédiée dans `ROLE_GRANTS`. Ni
-`b2b_settings` (qui donne le droit d'éditer _la règle_, ce qui n'est pas le même
-geste), ni un simple droit de saisie de commande.
+`usedByOrderId` est renseigné **après** la persistance de la commande. Avant, on
+brûlerait l'autorisation d'une commande qui échoue ensuite, et le client devrait
+rappeler pour obtenir une seconde fois ce qu'il avait déjà.
+
+**Une décision, une commande** : l'index partiel `order_cutoff_waiver_one_open`
+n'autorise qu'une autorisation **ouverte** par client et par jour, et une
+consommée ne rouvre rien. Sans cela, une seule décision couvrirait toute la
+journée d'un client — ce qui est une dispense, pas une exception.
+
+Une dérogation consommée ne se **retire** pas non plus : elle atteste ce qui
+s'est passé, et une commande passée ne se dépasse pas. Le refus vient de la
+requête (`where usedByOrderId: null`), pas d'un test qu'un second chemin
+d'écriture pourrait oublier.
+
+### ⚠️ L'exemption du back-office est tombée
+
+Elle a existé faute de mécanisme : l'équipe au téléphone était l'autorité qui
+déroge, **sans motif, sans auteur et sans trace** — rien ne distinguait une
+décision d'un oubli. Elle passe désormais par une dérogation comme tout le monde.
+
+Ce que ça change au-delà de la trace : la dérogation étant un objet, elle
+s'accorde **avant** la commande. Le commercial décroche, décide — et le **client
+peut finir sa commande lui-même**. C'était impossible avec une exemption, qui ne
+valait que pour qui saisissait.
+
+### Qui peut l'accorder
+
+Une ressource à elle, `b2b_order_waivers`. Ni `b2b_orders` — prendre une commande
+et rouvrir une journée de production close ne sont pas le même geste, et
+quelqu'un qui saisit toute la journée n'a pas à pouvoir faire le second. Ni
+`b2b_settings`, qui édite **la règle** quand celle-ci accorde **une exception** :
+la première décide pour toujours, la seconde pour un client et un jour.
+
+Accordée à `admin` et à `commercial` — c'est lui qui décroche, et lui qui sait
+s'il reste de la place (§5 : aucune capacité maximale n'est écrite).
 
 ## 8. La surtaxe n'est pas un prix
 
@@ -691,11 +708,8 @@ Deux choses que l'écran dit et qui ne vont pas de soi :
 
 ### Ce que les lots livrés ont laissé ouvert, volontairement
 
-- **Le back-office n'est pas soumis à la limite.** Le membre de l'équipe au
-  téléphone EST l'autorité qui déroge ; tant que la dérogation n'est pas un objet
-  en propre, lui opposer la limite lui retirerait une capacité qu'il a
-  aujourd'hui sans rien lui donner. L'exemption est écrite dans la garde, datée,
-  et couverte par un test qui **changera de sens** au lot 6.
+- ~~Le back-office n'est pas soumis à la limite.~~ **Tombé au lot 6**, comme
+  annoncé : le test qui la couvrait a changé de sens plutôt que d'être supprimé.
 - **Le devis et le brouillon ne refusent rien.** Une lecture ne mute pas et n'a
   pas à bloquer ; un brouillon n'est pas un engagement. C'est au lot 8 de griser
   une date à la sélection.
@@ -742,6 +756,9 @@ Deux choses que l'écran dit et qui ne vont pas de soi :
 | Une règle globale unique, tenue par `coalesce(scope_id,'')`          | `test/pim-order-time-limits.e2e-spec.ts`                                          |
 | Une portée contradictoire refusée par la base                        | idem, `CHECK order_time_limit_scope_id_iff_not_global`                            |
 | Écrire sans journaliser est inexprimable (`WriteTicket`)             | `src/pim/order-time-limitation/domain/ports/`                                     |
+| Une dérogation n'ouvre que la grâce, jamais une journée close        | `src/b2b/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`             |
+| Une seule autorisation ouverte par client et par jour                | `order_cutoff_waiver_one_open` ; `test/order-cutoffs.e2e-spec.ts`                 |
+| Une consommée ne rouvre rien et ne se retire pas                     | idem                                                                              |
 | L'écran a sa propre entrée, section « Général »                      | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                   |
 | `Hérité` distinct d'un rattrapage nul explicite                      | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                    |
 | La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                      |

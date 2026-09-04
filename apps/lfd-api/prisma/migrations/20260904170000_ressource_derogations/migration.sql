@@ -1,0 +1,14 @@
+-- **La ressource d'accès des dérogations d'heure limite.**
+--
+-- Accorder une dérogation et prendre une commande ne sont pas le même geste :
+-- quelqu'un qui saisit toute la journée n'a pas à pouvoir rouvrir une journée de
+-- production close. Ni `b2b_settings` non plus — ce droit-là édite LA RÈGLE,
+-- celui-ci accorde UNE EXCEPTION, et la première décide pour toujours quand la
+-- seconde décide pour un client et un jour.
+--
+-- **Additif et irréversible en pratique** : Postgres sait ajouter une valeur à
+-- un type énuméré, il ne sait pas en retirer une sans reconstruire le type. Ce
+-- n'est pas un problème ici — une valeur en trop dans un enum n'est portée par
+-- aucune ligne tant que personne ne l'accorde, et le retour arrière consiste à
+-- ne pas s'en servir.
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'b2b_order_waivers' BEFORE 'b2b_settings';

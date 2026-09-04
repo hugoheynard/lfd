@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contracts';
+import type {
+  OrderTimeLimitPayload,
+  OrderTimeLimitView,
+  SetOrderTimeLimitResponse,
+} from '@lfd/pim-contracts';
 
 import { API_BASE_URL } from '../data/api';
 
@@ -25,8 +29,8 @@ export class OrderTimeLimitsService {
   }
 
   /** Crée ou remplace la règle de cette portée. Rend son identifiant. */
-  async set(payload: OrderTimeLimitPayload): Promise<{ id: string }> {
-    return firstValueFrom(this.http.put<{ id: string }>(this.url(), payload));
+  async set(payload: OrderTimeLimitPayload): Promise<SetOrderTimeLimitResponse> {
+    return firstValueFrom(this.http.put<SetOrderTimeLimitResponse>(this.url(), payload));
   }
 
   async remove(id: string): Promise<void> {

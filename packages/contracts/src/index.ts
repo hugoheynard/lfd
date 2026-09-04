@@ -318,6 +318,9 @@ export type {
   OrderCutoffView,
 } from "./order-cutoff.js";
 
+export { orderCutoffWaiverPayloadSchema, waiverDateSchema } from "./order-cutoff-waiver.js";
+export type { OrderCutoffWaiverPayload, OrderCutoffWaiverView } from "./order-cutoff-waiver.js";
+
 export {
   BUSINESS_TIME_ZONE,
   addDays,

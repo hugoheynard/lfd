@@ -39,6 +39,7 @@ import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.rea
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
@@ -125,6 +126,7 @@ const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
     category: "pain",
     allergens: null,
+    orderTimeLimit: null,
     sku: "VIE-001",
     name: "Croissant",
     unitPriceMillicents: 200_000,
@@ -133,6 +135,7 @@ const CATALOG: Record<string, CatalogItem> = {
   "VIE-002": {
     category: "pain",
     allergens: null,
+    orderTimeLimit: null,
     sku: "VIE-002",
     name: "Pain au chocolat",
     unitPriceMillicents: 220_000,
@@ -226,6 +229,16 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
  */
 const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
 
+/**
+ * **Aucune dérogation ouverte**, et rien à consommer : ces spécifications-ci ne
+ * parlent pas d'heure limite. Le sujet s'éprouve dans `order-cutoff-guard.spec`
+ * (la règle) et dans `order-cutoffs.e2e-spec` (la porte HTTP).
+ */
+const noWaivers: OrderCutoffWaiverGate = {
+  openFor: () => Promise.resolve(null),
+  consume: () => Promise.resolve(),
+};
+
 function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
@@ -249,6 +262,7 @@ function drafting(
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
     catalog,
+    noWaivers,
   );
 }
 
@@ -340,6 +354,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -360,6 +376,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -376,6 +394,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       published,
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -398,6 +418,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await expect(
@@ -415,6 +437,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(intentSink),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -434,6 +458,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(
@@ -480,6 +506,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(
@@ -511,6 +539,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await expect(
@@ -532,6 +562,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -550,6 +582,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await expect(
@@ -567,6 +601,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -586,6 +622,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -620,6 +658,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await expect(
@@ -646,6 +686,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(intentSink),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -669,6 +711,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(intentSink),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -688,6 +732,8 @@ describe("PlaceOrderHandler", () => {
       capturingRepo(sink),
       payments(intentSink),
       events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));

@@ -33,6 +33,7 @@ import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.rea
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
@@ -108,6 +109,7 @@ const CATALOG: Record<string, CatalogItem> = {
     vatRate: 0,
     category: "viennoiserie",
     allergens: null,
+    orderTimeLimit: null,
   },
 };
 
@@ -262,11 +264,14 @@ function handler(
       noOrderCutoffs,
       new FixedClock(PRICED_AT),
       catalog,
+      noWaivers,
     ),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new RecordingPublisher(),
     new FakeConfig(clientBaseUrl),
+    noWaivers,
+    new FixedClock(PRICED_AT),
   );
 }
 
@@ -277,6 +282,16 @@ function handler(
  * (la règle, pure) et dans `orders.e2e-spec.ts` (la porte HTTP).
  */
 const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
+
+/**
+ * **Aucune dérogation ouverte**, et rien à consommer : ces spécifications-ci ne
+ * parlent pas d'heure limite. Le sujet s'éprouve dans `order-cutoff-guard.spec`
+ * (la règle) et dans `order-cutoffs.e2e-spec` (la porte HTTP).
+ */
+const noWaivers: OrderCutoffWaiverGate = {
+  openFor: () => Promise.resolve(null),
+  consume: () => Promise.resolve(),
+};
 
 describe("PlaceOrderForCustomerHandler — le mur", () => {
   it("vérifie l'appartenance de L'ACHETEUR, pas celle du commercial", async () => {
@@ -409,6 +424,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         vatRate: 0,
         category: "viennoiserie",
         allergens: null,
+        orderTimeLimit: null,
       },
     ]);
     const free = new PlaceOrderForCustomerHandler(
@@ -431,11 +447,14 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         noOrderCutoffs,
         new FixedClock(PRICED_AT),
         catalog,
+        noWaivers,
       ),
       repo(sink),
       payments(intents),
       new RecordingPublisher(),
       new FakeConfig("https://boutique.lfc.fr"),
+      noWaivers,
+      new FixedClock(PRICED_AT),
     );
 
     const result = await free.execute(

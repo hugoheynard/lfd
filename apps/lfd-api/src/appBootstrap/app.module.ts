@@ -11,6 +11,7 @@ import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
+import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
@@ -67,6 +68,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     AuthModule,
     // Config globale (feature flags d'activation) — avant les contextes qui la lisent.
     OrderCutoffsModule,
+    OrderWaiversModule,
     PickupAddressesModule,
     CatalogModule,
     DeliveryZonesModule,

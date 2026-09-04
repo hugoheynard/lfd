@@ -115,3 +115,14 @@ export interface ResolvedOrderTimeLimit {
   readonly time: string;
   readonly graceMinutes: number;
 }
+
+/**
+ * Ce que rend la pose d'une limite.
+ *
+ * Déclaré ICI et pas dans le front : une forme de réponse redéclarée côté client
+ * en devient une **copie**, et une copie ne suit pas — le serveur change, le
+ * front compile toujours, et l'écran affiche `undefined`.
+ */
+export interface SetOrderTimeLimitResponse {
+  readonly id: string;
+}

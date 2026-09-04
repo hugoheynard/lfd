@@ -352,32 +352,145 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
   });
 });
 
-describe("la saisie du back-office n'y est pas soumise", () => {
-  /**
-   * Exemption **datée**, et c'est le seul endroit où elle se voit de bout en
-   * bout. Elle tombe avec le lot 3 de
-   * `documentation/b2b/architecture-heure-limite-de-commande.md` : la dérogation
-   * deviendra alors le chemin de sortie, et ce test changera de sens.
-   */
-  it("laisse l'équipe passer une commande après la limite", async () => {
-    await seedCutoff({ daysBefore: 1, time: "00:01" });
+/** Accorde une dérogation par la route staff, comme le ferait le back-office. */
+async function grantWaiver(day: string, reason = "Client bloqué en tournée"): Promise<string> {
+  const response = await ctx
+    .asSub(STAFF)
+    .post("/admin/order-cutoff-waivers")
+    .send({ companyId, fulfillmentDate: day, reason })
+    .expect(201);
+  return (response.body as { id: string }).id;
+}
 
-    await ctx
+describe("la dérogation, seul chemin de sortie", () => {
+  /**
+   * 🔴 **L'exemption du back-office est tombée**, et c'est le sens de ce lot.
+   *
+   * Elle a existé faute de mécanisme : l'équipe passait sans motif, sans auteur
+   * et sans trace, et rien ne distinguait une décision d'un oubli. Ce test
+   * disait l'inverse jusqu'au 2026-09-04 — il a changé de sens, comme annoncé.
+   */
+  it("refuse une saisie du back-office sans dérogation, comme n'importe qui", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+
+    const response = await ctx
       .asSub(STAFF)
       .post("/admin/orders")
       .send({
         companyId,
-        // La commande est passée AU NOM du client : le mur porte sur lui, pas
-        // sur le membre de l'équipe, qui n'est membre de rien par construction.
         buyerUserId: buyerId,
         settlement: "link",
-        requestedDeliveryDate: serviceDay(0),
+        requestedDeliveryDate: day,
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         lines: [{ sku: "VIE-001", quantity: 12 }],
       })
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.grace" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  /**
+   * Ce que seul l'e2e prouve : la dérogation accordée par une route et la
+   * commande passée par une AUTRE se rejoignent en base. Entre les deux il y a
+   * deux contrôleurs, deux bus et deux ports — chacun typé, aucun éprouvé
+   * ensemble.
+   */
+  it("laisse passer le CLIENT lui-même une fois la dérogation accordée", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    const waiverId = await grantWaiver(day);
+
+    await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
       .expect(201);
 
+    // Consommée, pas supprimée : elle atteste ce qu'elle a laissé passer.
+    const waiver = await ctx.prisma.orderCutoffWaiver.findUniqueOrThrow({
+      where: { id: waiverId },
+    });
+    expect(waiver.usedByOrderId).not.toBeNull();
+    expect(waiver.usedAt).not.toBeNull();
+  });
+
+  /**
+   * **Une décision, une commande.** Sans ça, une seule dérogation couvrirait
+   * toute la journée d'un client — ce qui est une dispense, pas une exception.
+   */
+  it("ne rouvre rien une fois consommée", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(201);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(409);
+    expect(response.body).toMatchObject({ code: "orders.cutoff.grace" });
     expect(await orderCount()).toBe(1);
+  });
+
+  /**
+   * 🔴 **Une dérogation n'ouvre QUE la grâce.** Après le rattrapage, personne ne
+   * passe — et ce n'est pas une vérification : la garde ne consulte une
+   * autorisation que dans l'état `grace`.
+   */
+  it("n'ouvre rien une fois le rattrapage écoulé", async () => {
+    const day = await seedCutoffPassedBy(10, 5);
+    await grantWaiver(day);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(409);
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  it("refuse une seconde autorisation ouverte pour le même client et le même jour", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    const response = await ctx
+      .asSub(STAFF)
+      .post("/admin/order-cutoff-waivers")
+      .send({ companyId, fulfillmentDate: day, reason: "Une seconde fois" })
+      .expect(409);
+    expect(response.body).toMatchObject({ code: "orders.waiver.already_open" });
+  });
+
+  it("refuse une dérogation sans motif réel", async () => {
+    await ctx
+      .asSub(STAFF)
+      .post("/admin/order-cutoff-waivers")
+      .send({ companyId, fulfillmentDate: serviceDay(0), reason: "ok" })
+      .expect(400);
+  });
+
+  /**
+   * Retirer ce qui n'a pas servi, oui. Ce qui a servi, non : la dérogation
+   * atteste ce qui s'est passé, et une commande passée ne se dépasse pas.
+   */
+  it("retire une dérogation inutilisée, jamais une consommée", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    const first = await grantWaiver(day);
+    await ctx.asSub(STAFF).delete(`/admin/order-cutoff-waivers/${first}`).expect(204);
+
+    const second = await grantWaiver(day);
+    await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(201);
+    await ctx.asSub(STAFF).delete(`/admin/order-cutoff-waivers/${second}`).expect(404);
   });
 });

@@ -37,15 +37,15 @@ function guard(over: {
   lines?: readonly LineOrderLimit[];
   fallback?: readonly OrderCutoffView[];
   pickupAddressId?: string | null;
-  placedByStaffId?: string | null;
+  waiver?: { id: string } | null;
   now?: string;
-}): void {
-  ensureWithinOrderCutoff({
+}): string | null {
+  return ensureWithinOrderCutoff({
     lines: over.lines ?? [line("VIE-001")],
     fallback: over.fallback ?? [commerceRule()],
     pickupAddressId: over.pickupAddressId ?? null,
     fulfillmentDate: FULFILLMENT_DAY,
-    placedByStaffId: over.placedByStaffId ?? null,
+    waiver: over.waiver ?? null,
     now: new Date(over.now ?? CUTOFF_INSTANT),
   });
 }
@@ -166,20 +166,50 @@ describe("la limite de l'ARTICLE, quand le référentiel en déclare une", () =>
   });
 });
 
-describe("l'exemption du back-office", () => {
+describe("la dérogation, seul chemin de sortie", () => {
+  const GRACIEUX: OrderLimitSpec = { daysBefore: 1, time: "18:00", graceMinutes: 45 };
+  /** 18 h 10 à Paris le mardi : la limite est passée, le rattrapage court. */
+  const DANS_LA_GRACE = "2026-08-11T16:10:00.000Z";
+
+  it("laisse passer dans la grâce, et rend l'autorisation dépensée", () => {
+    const spent = guard({
+      lines: [line("ENT-001", GRACIEUX)],
+      waiver: { id: "w1" },
+      now: DANS_LA_GRACE,
+    });
+    // L'identifiant remonte : c'est l'appelant qui la consommera, APRÈS avoir
+    // persisté la commande.
+    expect(spent).toBe("w1");
+  });
+
+  it("ne rend rien quand la commande passe sans avoir eu besoin d'elle", () => {
+    expect(guard({ waiver: { id: "w1" }, now: "2026-08-11T15:59:00.000Z" })).toBeNull();
+  });
+
   /**
-   * Exemption **datée** : elle tombe avec la dérogation (lot 6), qui deviendra
-   * le seul chemin de sortie. Ce test changera alors de sens — et c'est voulu :
-   * il documente une décision temporaire, pas un acquis.
+   * 🔴 **Une dérogation n'ouvre QUE la grâce.** Après le rattrapage, personne ne
+   * passe — et ce n'est pas vérifié ici, c'est inexprimable : la branche qui
+   * consulte l'autorisation n'existe que dans l'état `grace`.
    */
-  it("n'oppose ni la règle du commerce ni celle de l'article", () => {
-    const strict: OrderLimitSpec = { daysBefore: 9, time: "00:01", graceMinutes: 0 };
+  it("n'ouvre RIEN une fois le rattrapage écoulé", () => {
     expect(() =>
       guard({
-        lines: [line("ENT-001", strict)],
-        now: "2030-01-01T00:00:00.000Z",
-        placedByStaffId: "staff_1",
+        lines: [line("ENT-001", GRACIEUX)],
+        waiver: { id: "w1" },
+        now: "2026-08-11T16:45:01.000Z",
       }),
-    ).not.toThrow();
+    ).toThrow(PastOrderCutoffError);
+  });
+
+  /**
+   * **Le back-office n'est plus exempté**, et c'est le sens de ce lot. Il l'a
+   * été faute de mécanisme : l'équipe passait sans motif, sans auteur et sans
+   * trace, et rien ne distinguait une décision d'un oubli. Elle passe désormais
+   * par une dérogation comme tout le monde.
+   */
+  it("refuse une saisie du back-office sans dérogation, comme n'importe qui", () => {
+    expect(() =>
+      guard({ lines: [line("ENT-001", GRACIEUX)], waiver: null, now: DANS_LA_GRACE }),
+    ).toThrow(OrderCutoffGraceError);
   });
 });

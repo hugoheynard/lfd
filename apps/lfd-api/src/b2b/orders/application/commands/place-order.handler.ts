@@ -1,3 +1,5 @@
+import { Clock } from "../../../../platform/time/clock.js";
+import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
@@ -34,6 +36,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly orders: OrderRepository,
     private readonly payments: PaymentGateway,
     private readonly events: DomainEventPublisher,
+    private readonly waivers: OrderCutoffWaiverGate,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
@@ -47,13 +51,17 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       ensureOrderMember(role, companyId);
     }
 
-    const order = await this.drafting.draft(
+    const { order, waiverUsed } = await this.drafting.draft(
       { companyId, placedByUserId: command.actorUserId, placedByStaffId: null },
       payload,
     );
 
     const intent = await this.settle(order, companyId);
     const placed = await this.orders.place(order);
+
+    // La dérogation se consomme APRÈS la persistance : la brûler avant aurait
+    // laissé le client sans autorisation pour une commande qui n'existe pas.
+    await this.spendWaiver(waiverUsed, placed.id);
 
     // Fait de domaine, publié APRÈS persistance (on ne journalise pas une commande
     // qui n'a pas pris). Le journal croissance écoute ; l'échec d'un abonné ne
@@ -80,6 +88,21 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         amountCents: order.totalCents,
       },
     };
+  }
+
+  /**
+   * Marque l'autorisation comme dépensée, s'il y en a eu une.
+   *
+   * L'échec n'est **pas** absorbé : une dérogation qui reste ouverte après avoir
+   * servi laisserait passer une seconde commande tardive sur une seule décision.
+   * Mieux vaut une commande qui échoue bruyamment qu'une exception qui se
+   * dédouble en silence.
+   */
+  private async spendWaiver(waiverId: string | null, orderId: string): Promise<void> {
+    if (waiverId === null) {
+      return;
+    }
+    await this.waivers.consume(waiverId, orderId, this.clock.now());
   }
 
   /**

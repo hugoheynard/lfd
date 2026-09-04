@@ -109,6 +109,18 @@ export const staffResourceSchema = z.enum([
    * (`orders`, `companies`, `settings`) : trois droits pour un seul sujet.
    */
   "b2b_alerts",
+  /**
+   * Les **dérogations d'heure limite** — autoriser une commande arrivée après
+   * la limite, dans la fenêtre de rattrapage.
+   *
+   * Une ressource à elle, et pas `b2b_orders` : prendre une commande et
+   * outrepasser la limite du labo ne sont pas le même geste. Quelqu'un qui
+   * saisit toute la journée n'a pas à pouvoir rouvrir une journée de production
+   * close. Ni `b2b_settings` non plus — ce droit-là édite **la règle**, celui-ci
+   * accorde **une exception**, et la première décide pour toujours quand la
+   * seconde décide pour un client et un jour.
+   */
+  "b2b_order_waivers",
   /** Le reste du paramétrage : contenu, zones de livraison, créneaux, retraits. */
   "b2b_settings",
 
@@ -189,6 +201,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_support: "Demandes clients",
   b2b_payments: "Moyens de paiement",
   b2b_alerts: "Alertes",
+  b2b_order_waivers: "Dérogations d'heure limite",
   b2b_settings: "Réglages plateforme",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
@@ -261,6 +274,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_support: "write",
     b2b_payments: "write",
     b2b_alerts: "write",
+    b2b_order_waivers: "write",
     b2b_settings: "write",
     staff_access: "write",
     staff_notifications: "write",
@@ -293,6 +307,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_support: "write",
     b2b_payments: "read",
     b2b_alerts: "write",
+    // C'est lui qui décroche quand un client appelle en retard, et lui qui sait
+    // s'il reste de la place — aucune capacité écrite ne le dit à sa place.
+    b2b_order_waivers: "write",
     b2b_settings: "read",
     // Il VOIT le référentiel, il n'y touche pas. C'est exactement la séparation
     // que le découpage rend exprimable : avant, le même mot désignait le

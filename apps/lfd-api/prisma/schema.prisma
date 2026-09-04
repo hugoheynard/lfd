@@ -225,6 +225,7 @@ enum StaffResource {
   b2b_support
   b2b_payments
   b2b_alerts
+  b2b_order_waivers
   b2b_settings
 
   staff_access
@@ -384,6 +385,8 @@ model Company {
   contacts        CompanyContact[]
   addresses       Address[]
   orders          Order[]
+  /// Les dérogations d'heure limite accordées à ce client.
+  orderCutoffWaivers OrderCutoffWaiver[]
   orderDraft      OrderDraft?
   supportRequests SupportRequest[]
   mandates        PaymentMandate[]
@@ -1065,6 +1068,52 @@ model PickupAddress {
 /// tous les jours. La plus spécifique gagne (`resolveOrderCutoff`, côté contrat).
 /// La limite se compte en `daysBefore` + `time` depuis la date d'ACHEMINEMENT
 /// demandée : « 18 h » seul serait ambigu.
+/// **La dérogation d'heure limite** — l'autorisation de passer une commande
+/// arrivée après la limite, dans la fenêtre de rattrapage.
+///
+/// Elle vise UN client et UNE journée d'acheminement. Pas « ce client est
+/// dispensé » : une dispense permanente est un réglage, et elle doit se voir
+/// comme tel.
+///
+/// 🔴 **Aucune heure, aucun instant d'expiration**, et c'est structurel : sa
+/// borne est la **grâce**, que la garde est seule à connaître — elle ne consulte
+/// une dérogation que dans cet état. Une dérogation ne peut donc jamais ouvrir
+/// une journée close, quoi qu'elle porte. La borne n'est pas vérifiée, elle est
+/// inexprimable.
+///
+/// `grantedByStaffId` est un `StaffUser.id` et **pas une clé étrangère** : une
+/// décision ne disparaît pas parce qu'on retire quelqu'un de l'annuaire — même
+/// raisonnement que `Order.placedByStaffId`.
+model OrderCutoffWaiver {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  /// La journée d'acheminement visée. Une date, jamais un instant.
+  fulfillmentDate DateTime @map("fulfillment_date") @db.Date
+
+  /// Pourquoi. Obligatoire — une exception sans raison écrite devient la règle.
+  reason String
+
+  grantedByStaffId String   @map("granted_by_staff_id")
+  grantedAt        DateTime @default(now()) @map("granted_at")
+
+  /// La commande qui s'en est servie, ou `NULL` — elle attend encore.
+  /// **Consommée, pas supprimée** : celle qui a servi doit pouvoir être reliée à
+  /// ce qu'elle a laissé passer, et c'est de là que viendra la surtaxe.
+  usedByOrderId String?   @map("used_by_order_id")
+  usedAt        DateTime? @map("used_at")
+
+  /// ⚠️ L'unicité réelle n'est PAS ici : `@@unique` ne sait pas dire « une seule
+  /// **non consommée** ». C'est l'index partiel `order_cutoff_waiver_one_open`,
+  /// posé en SQL, qui interdit deux autorisations ouvertes pour le même client
+  /// le même jour — sans quoi « la » dérogation deviendrait une question de tri.
+  @@index([companyId, fulfillmentDate])
+  @@map("order_cutoff_waiver")
+  @@schema("public")
+}
+
 model OrderCutoff {
   id String @id @default(cuid())
 

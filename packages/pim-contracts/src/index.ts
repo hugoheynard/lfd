@@ -235,5 +235,6 @@ export type {
   OrderTimeLimitScope,
   OrderTimeLimitScopeType,
   OrderTimeLimitView,
+  SetOrderTimeLimitResponse,
   ResolvedOrderTimeLimit,
 } from "./order-time-limit.js";

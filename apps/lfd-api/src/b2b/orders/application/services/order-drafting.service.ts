@@ -29,6 +29,7 @@ import {
   PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -54,6 +55,17 @@ export interface OrderContent {
   readonly signatureRequired?: boolean | undefined;
   readonly note: string;
   readonly lines: readonly OrderLineRequest[];
+}
+
+/**
+ * Une commande composée, et ce qu'il a fallu pour qu'elle passe.
+ *
+ * `waiverUsed` n'est pas une information d'affichage : c'est une dette que
+ * l'appelant doit solder après persistance, en consommant l'autorisation.
+ */
+export interface DraftedOrder {
+  readonly order: Order;
+  readonly waiverUsed: string | null;
 }
 
 /** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
@@ -102,10 +114,19 @@ export class OrderDrafting {
     private readonly cutoffs: OrderCutoffReader,
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
+    private readonly waivers: OrderCutoffWaiverGate,
   ) {}
 
-  /** Compose la commande. Le règlement reste à décider par l'appelant. */
-  async draft(parties: OrderParties, content: OrderContent): Promise<Order> {
+  /**
+   * Compose la commande. Le règlement reste à décider par l'appelant.
+   *
+   * Rend **aussi** la dérogation dépensée, s'il y en a eu une : l'appelant doit
+   * la consommer APRÈS avoir persisté la commande. La rendre ici plutôt que de
+   * consommer sur place n'est pas de la timidité — consommer une autorisation
+   * pour une commande qui échoue ensuite la brûlerait, et le client devrait
+   * rappeler pour en obtenir une seconde qu'il avait déjà.
+   */
+  async draft(parties: OrderParties, content: OrderContent): Promise<DraftedOrder> {
     // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
     // tomberait pile entre les deux ne peut alors que rendre l'estampille
     // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
@@ -128,7 +149,7 @@ export class OrderDrafting {
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
-    await this.ensureNotTooLate(content, acheminement, parties);
+    const waiverUsed = await this.ensureNotTooLate(content, acheminement, parties);
     const agreed = agreeFulfillment(
       {
         window: content.requestedWindow,
@@ -137,7 +158,7 @@ export class OrderDrafting {
       },
       await this.defaultsFor(content),
     );
-    return Order.draft({
+    const order = Order.draft({
       agreed,
       companyId: parties.companyId,
       placedByUserId: parties.placedByUserId,
@@ -158,6 +179,7 @@ export class OrderDrafting {
       discountAdjustment: acheminement.discountAdjustment,
       deliveryFeeCents: acheminement.deliveryFeeCents,
     });
+    return { order, waiverUsed };
   }
 
   /**
@@ -202,16 +224,21 @@ export class OrderDrafting {
     content: OrderContent,
     acheminement: ResolvedFulfillment,
     parties: OrderParties,
-  ): Promise<void> {
+  ): Promise<string | null> {
     if (content.requestedDeliveryDate === null) {
-      return;
+      return null;
     }
     const skus = content.lines.map((line) => line.sku);
-    const [fallback, items] = await Promise.all([
+    const [fallback, items, waiver] = await Promise.all([
       this.cutoffs.list(),
       this.catalog.resolveMany(skus),
+      // Une commande sans entreprise n'a pas de dérogation possible : elle
+      // n'appartient à personne à qui on aurait pu en accorder une.
+      parties.companyId === null
+        ? Promise.resolve(null)
+        : this.waivers.openFor(parties.companyId, content.requestedDeliveryDate),
     ]);
-    ensureWithinOrderCutoff({
+    return ensureWithinOrderCutoff({
       // Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
       // règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu
       // —, et pas ici pour une heure.
@@ -219,7 +246,7 @@ export class OrderDrafting {
       fallback,
       pickupAddressId: acheminement.pickupAddressId,
       fulfillmentDate: content.requestedDeliveryDate,
-      placedByStaffId: parties.placedByStaffId,
+      waiver,
       now: this.clock.now(),
     });
   }

@@ -4,6 +4,7 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
+import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -67,6 +68,7 @@ import { OrdersController } from "./http/orders.controller.js";
     PickupAddressesModule,
     DeliveryZonesModule,
     OrderCutoffsModule,
+    OrderWaiversModule,
     PaymentsModule,
     CatalogModule,
     PricingModule,

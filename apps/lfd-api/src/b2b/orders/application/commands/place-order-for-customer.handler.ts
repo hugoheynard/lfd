@@ -1,3 +1,5 @@
+import { Clock } from "../../../../platform/time/clock.js";
+import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
@@ -50,6 +52,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly payments: PaymentGateway,
     private readonly events: DomainEventPublisher,
     private readonly config: AppConfig,
+    private readonly waivers: OrderCutoffWaiverGate,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
@@ -62,13 +66,20 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     const role = await this.guard.roleOf(buyerUserId, companyId);
     ensureOrderMember(role, companyId);
 
-    const order = await this.drafting.draft(
+    const { order, waiverUsed } = await this.drafting.draft(
       { companyId, placedByUserId: buyerUserId, placedByStaffId: command.staffUserId },
       payload,
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);
     const placed = await this.orders.place(order);
+
+    // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
+    // pas : restée ouverte, elle laisserait passer une seconde commande tardive
+    // sur une seule décision.
+    if (waiverUsed !== null) {
+      await this.waivers.consume(waiverUsed, placed.id, this.clock.now());
+    }
 
     // Le fait de domaine porte l'ACHETEUR, pas le commercial : c'est bien ce
     // client-là qui vient de commander, et le journal croissance compte des

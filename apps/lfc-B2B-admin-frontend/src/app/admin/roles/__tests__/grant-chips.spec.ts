@@ -38,7 +38,13 @@ describe('grantGroups', () => {
     expect(grantGroups([])).toEqual([]);
   });
 
+  /**
+   * Un compte, et c'est son intérêt : ajouter une ressource sans y penser fait
+   * rougir ce test. `b2b_order_waivers` l'a fait passer de 19 à 20 le
+   * 2026-09-04 — accorder une dérogation d'heure limite est un droit à part de
+   * la prise de commande.
+   */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(19);
+    expect(RESOURCE_COUNT).toBe(20);
   });
 });
