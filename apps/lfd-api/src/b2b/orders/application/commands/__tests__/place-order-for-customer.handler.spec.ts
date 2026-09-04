@@ -34,6 +34,7 @@ import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.rea
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
+import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
@@ -265,6 +266,7 @@ function handler(
       new FixedClock(PRICED_AT),
       catalog,
       noWaivers,
+      noLateFee,
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -288,6 +290,12 @@ const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
  * parlent pas d'heure limite. Le sujet s'éprouve dans `order-cutoff-guard.spec`
  * (la règle) et dans `order-cutoffs.e2e-spec` (la porte HTTP).
  */
+/**
+ * **Aucune surtaxe réglée** — l'état par défaut, et un état valable : rattraper
+ * sans facturer est un choix. Ces spécifications ne parlent pas d'argent tardif.
+ */
+const noLateFee: OrderLateFeeReader = { current: () => Promise.resolve(null) };
+
 const noWaivers: OrderCutoffWaiverGate = {
   openFor: () => Promise.resolve(null),
   consume: () => Promise.resolve(),
@@ -448,6 +456,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         new FixedClock(PRICED_AT),
         catalog,
         noWaivers,
+        noLateFee,
       ),
       repo(sink),
       payments(intents),

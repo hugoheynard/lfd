@@ -63,6 +63,17 @@ export interface DraftOrderInput {
   readonly discountAdjustment: CartAdjustment | null;
   /** Frais de livraison (zone) déjà résolu, HT, en centimes. */
   readonly deliveryFeeCents: number;
+  /**
+   * **La surtaxe de commande tardive**, quand une dérogation a laissé passer.
+   *
+   * `0` = aucune, et c'est le cas de l'immense majorité des commandes. Elle
+   * s'ajoute au panier comme les frais de zone et ne touche à AUCUN prix
+   * d'article : les étages tarifaires répondent à ce qu'un article vaut, la
+   * surtaxe à comment la commande a été passée.
+   */
+  readonly lateFeeCents: number;
+  /** L'ajustement ET le taux qui l'ont produite, figés. `null` si aucune. */
+  readonly lateFeeAdjustment: LateFeeAdjustment | null;
 }
 
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
@@ -83,6 +94,8 @@ export interface OrderToPlace {
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
+  readonly lateFeeCents: number;
+  readonly lateFeeAdjustment: LateFeeAdjustment | null;
   readonly vatCents: number;
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
@@ -97,6 +110,45 @@ export interface OrderToPlace {
  *
  * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
  */
+/**
+ * L'ajustement figé et le taux qui ont produit la surtaxe.
+ *
+ * Le taux voyage AVEC : un montant sans son taux ne se justifie pas devant un
+ * comptable, et il ne se recalcule pas — le réglage aura changé.
+ */
+/*
+ * ⚠️ Un `type` et non une `interface`, et ce n'est pas une préférence : une
+ * interface n'a pas de signature d'index implicite, donc TypeScript refuse de
+ * la voir comme un objet JSON. L'écrire en interface obligeait à un cast à
+ * l'écriture — c'est-à-dire à faire taire le seul mécanisme qui vérifie que ce
+ * qu'on range dans un `jsonb` est sérialisable.
+ */
+export type LateFeeAdjustment = {
+  readonly adjustment: CartAdjustment;
+  readonly vatRatePercent: number;
+};
+
+/**
+ * La surtaxe correspond-elle à l'ajustement qui la prétend ?
+ *
+ * Même garde que pour la remise, et pour la même raison : les deux nombres
+ * arrivent séparément de l'appelant, et rien d'autre ne les relie. Un montant
+ * qui ne découle pas de son ajustement rendrait la trace figée mensongère —
+ * c'est-à-dire pire qu'absente.
+ */
+function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
+  const frozen = input.lateFeeAdjustment;
+  if (frozen === null) {
+    if (input.lateFeeCents !== 0) {
+      throw new InvalidOrderPaymentError("Surtaxe sans ajustement qui la justifie.");
+    }
+    return;
+  }
+  if (cartAdjustmentCents(frozen.adjustment, subtotalCents) !== input.lateFeeCents) {
+    throw new InvalidOrderPaymentError("La surtaxe ne correspond pas à son ajustement.");
+  }
+}
+
 function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
   if (input.discountAdjustment === null) {
     return;
@@ -135,6 +187,8 @@ export class Order {
     private readonly discountCents: number,
     private readonly discountAdjustment: CartAdjustment | null,
     private readonly deliveryFeeCents: number,
+    private readonly lateFeeCents: number,
+    private readonly lateFeeAdjustment: LateFeeAdjustment | null,
     private readonly subtotalCentsValue: number,
     private readonly vatCentsValue: number,
     private readonly totalCentsValue: number,
@@ -145,8 +199,8 @@ export class Order {
     if (input.lines.length === 0) {
       throw new EmptyOrderError();
     }
-    if (input.discountCents < 0 || input.deliveryFeeCents < 0) {
-      throw new InvalidOrderPaymentError("Remise et frais doivent être positifs.");
+    if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
+      throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
     }
     const fulfillment = normalizeFulfillment(input.fulfillment);
     const lines = input.lines.map((line) => OrderLine.create(line));
@@ -155,10 +209,20 @@ export class Order {
       lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
       discountCents: input.discountCents,
       deliveryFeeCents: input.deliveryFeeCents,
+      lateFeeCents: input.lateFeeCents,
+      lateFeeVatRate: input.lateFeeAdjustment?.vatRatePercent ?? null,
     });
     ensureDiscountMatches(input, subtotalCents);
+    ensureLateFeeMatches(input, subtotalCents);
+    // La surtaxe s'ajoute APRÈS la remise, sur la même ligne que les frais de
+    // zone : c'est un terme de panier, pas une correction du sous-total. La
+    // placer avant la remise la ferait remiser — on ne fait pas de geste
+    // commercial sur une pénalité de retard.
     const totalCents =
-      Math.max(0, subtotalCents - input.discountCents) + input.deliveryFeeCents + vatCents;
+      Math.max(0, subtotalCents - input.discountCents) +
+      input.deliveryFeeCents +
+      input.lateFeeCents +
+      vatCents;
     return new Order(
       input.companyId,
       input.placedByUserId,
@@ -172,6 +236,8 @@ export class Order {
       input.discountCents,
       input.discountAdjustment,
       input.deliveryFeeCents,
+      input.lateFeeCents,
+      input.lateFeeAdjustment,
       subtotalCents,
       vatCents,
       totalCents,
@@ -217,6 +283,8 @@ export class Order {
       discountCents: this.discountCents,
       discountAdjustment: this.discountAdjustment,
       deliveryFeeCents: this.deliveryFeeCents,
+      lateFeeCents: this.lateFeeCents,
+      lateFeeAdjustment: this.lateFeeAdjustment,
       vatCents: this.vatCentsValue,
       totalCents: this.totalCentsValue,
       paymentStatus: this.payment.status,

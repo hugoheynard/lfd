@@ -362,6 +362,121 @@ async function grantWaiver(day: string, reason = "Client bloqué en tournée"): 
   return (response.body as { id: string }).id;
 }
 
+/** Règle la surtaxe de commande tardive, comme le ferait l'écran de réglages. */
+async function setLateFee(cents: number, vatRatePercent: number): Promise<void> {
+  await ctx
+    .asSub(STAFF)
+    .put("/admin/order-late-fee")
+    .send({ fee: { mode: "amount", cents }, vatRatePercent })
+    .expect(204);
+}
+
+describe("la surtaxe de commande tardive", () => {
+  /**
+   * Ce que seul l'e2e prouve : le réglage posé par une route, la dérogation
+   * accordée par une autre et la commande passée par une troisième se
+   * rejoignent en base, avec le bon total. Entre les trois il y a un agrégat,
+   * deux ports et un moteur de TVA — chacun typé, aucun éprouvé ensemble.
+   */
+  it("facture la surtaxe quand une dérogation a laissé passer, TVA comprise", async () => {
+    await setLateFee(500, 20);
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001", quantity: 3 }] }))
+      .expect(201);
+
+    const placed = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: (response.body as { id: string }).id },
+    });
+    expect(placed.lateFeeCents).toBe(500);
+    // L'ajustement ET son taux, figés : un montant sans son taux ne se justifie
+    // pas devant un comptable, et il ne se recalcule pas.
+    expect(placed.lateFeeAdjustment).toMatchObject({
+      adjustment: { mode: "amount", cents: 500 },
+      vatRatePercent: 20,
+    });
+    // Croissant 200 c × 3 = 600 HT, TVA 5,5 % = 33 ; surtaxe 500 à 20 % = 100.
+    expect(placed.subtotalCents).toBe(600);
+    expect(placed.vatCents).toBe(133);
+    expect(placed.totalCents).toBe(600 + 500 + 133);
+  });
+
+  /**
+   * 🔴 **Une commande à l'heure ne paie rien**, réglage ou pas. C'est le retard
+   * qu'on facture, pas le panier.
+   */
+  it("ne facture rien à une commande arrivée à l'heure", async () => {
+    await setLateFee(500, 20);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: serviceDay(30) }))
+      .expect(201);
+
+    const placed = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: (response.body as { id: string }).id },
+    });
+    expect(placed.lateFeeCents).toBe(0);
+    expect(placed.lateFeeAdjustment).toBeNull();
+  });
+
+  /**
+   * Aucun réglage = rattraper **gratuitement**, et c'est un choix valable. Un
+   * montant par défaut aurait facturé une décision que personne n'a prise.
+   */
+  it("laisse passer sans rien facturer quand aucune surtaxe n'est réglée", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(201);
+
+    const placed = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: (response.body as { id: string }).id },
+    });
+    expect(placed.lateFeeCents).toBe(0);
+  });
+
+  it("se retire, et les dérogations redeviennent gratuites", async () => {
+    await setLateFee(500, 20);
+    await ctx.asSub(STAFF).delete("/admin/order-late-fee").expect(204);
+
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(201);
+
+    const placed = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: (response.body as { id: string }).id },
+    });
+    expect(placed.lateFeeCents).toBe(0);
+  });
+
+  /**
+   * Le taux n'a **pas** de valeur par défaut : le réglage est refusé sans lui
+   * plutôt que d'inventer 20 % ou 5,5 %, qui se factureraient rétroactivement
+   * sur toutes les commandes tardives.
+   */
+  it("refuse un réglage sans taux de TVA", async () => {
+    await ctx
+      .asSub(STAFF)
+      .put("/admin/order-late-fee")
+      .send({ fee: { mode: "amount", cents: 500 } })
+      .expect(400);
+  });
+});
+
 describe("la dérogation, seul chemin de sortie", () => {
   /**
    * 🔴 **L'exemption du back-office est tombée**, et c'est le sens de ce lot.

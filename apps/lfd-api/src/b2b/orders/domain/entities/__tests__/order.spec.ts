@@ -57,6 +57,8 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     discountCents: 0,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    lateFeeAdjustment: null,
     ...over,
   };
 }
@@ -109,6 +111,8 @@ describe("Order.draft — calcul monétaire", () => {
         pickupAddress: null,
       },
       deliveryFeeCents: 2000,
+      lateFeeCents: 0,
+      lateFeeAdjustment: null,
     });
     expect(state.deliveryFeeCents).toBe(2000);
     expect(state.vatCents).toBe(400);

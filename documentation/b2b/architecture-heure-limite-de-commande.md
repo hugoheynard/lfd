@@ -9,7 +9,8 @@
 > `order-time-limitation` porte l'échelle avec son héritage champ par champ, le
 > fil les raccorde, et l'écran existe.
 >
-> Restent la surtaxe (7), la boutique (8) et le démontage de l'ancienne règle (9).
+> La **surtaxe** est réglable et facturée côté serveur ; il lui manque son écran.
+> Restent la boutique (8) et le démontage de l'ancienne règle (9).
 
 ## En bref
 
@@ -67,8 +68,8 @@ lot 3, pour qui l'accorde.
 
 - **le PIM** : une seule chose — les jours de fabrication d'une famille, d'un
   produit, d'une déclinaison ;
-- **les réglages B2B**, page Retraits & livraisons : tout le reste — les heures,
-  les exceptions par comptoir et par jour, la grâce, le montant de la surtaxe ;
+- **les réglages B2B** : tout le reste — les heures, les exceptions par comptoir
+  et par jour, la grâce, et le montant de la surtaxe avec son taux de TVA ;
 - **la commande** : ce qui a été décidé ce jour-là, figé. Changer le tarif demain
   ne réécrit pas ce qui est parti.
 
@@ -78,16 +79,19 @@ lot 3, pour qui l'accorde.
   y valait 20 h à Paris en été. Corrigé — la conversion passe explicitement par
   `Europe/Paris`, et les tests des contrats tournent en UTC pour que la panne se
   reproduise ici plutôt qu'en production (§10) ;
-- ⚠️ le **taux de TVA de la surtaxe** n'est pas tranché : c'est une question
-  comptable, et la seule du dossier qui coûte rétroactivement (§8).
+- ✅ le **taux de TVA de la surtaxe** était la seule question du dossier qui
+  coûte rétroactivement. Elle est tranchée en la sortant du code : le taux est un
+  **réglage** pointant un taux existant du référentiel, **sans défaut** — une
+  surtaxe sans taux lève plutôt que d'en inventer un (§8).
 
 **Et ce que la limite ne dit pas :** aucune capacité maximale n'existe. Elle
 répond « trop tard », **jamais « complet »** — une commande acceptée n'est pas
 une commande dont la production est garantie faisable (§5).
 
-**L'ordre des travaux** (§12) : le fuseau, la règle opposée, la grâce et
-l'échelle du référentiel sont **faits**. Restent l'écran de saisie, le fil qui
-raccorde les deux moitiés, puis la dérogation et la surtaxe.
+**L'ordre des travaux** (§12) : les lots 0 à 6 sont **faits** — le fuseau, la
+règle appliquée, la grâce, l'échelle du référentiel, son écran, le fil, la
+dérogation. Le lot 7 l'est côté serveur. Restent son écran, la boutique et le
+démontage de l'ancienne règle.
 
 ---
 
@@ -510,13 +514,19 @@ la première décide pour toujours, la seconde pour un client et un jour.
 Accordée à `admin` et à `commercial` — c'est lui qui décroche, et lui qui sait
 s'il reste de la place (§5 : aucune capacité maximale n'est écrite).
 
-## 8. La surtaxe n'est pas un prix
+## 8. ✅ La surtaxe n'est pas un prix — livrée le 2026-09-04
 
-C'est la frontière la plus facile à rater. Le schéma porte la formule du total :
+C'est la frontière la plus facile à rater. La formule du total porte désormais
+son terme :
 
 ```
-total = max(0, subtotal − discount) + deliveryFee + vat
+total = max(0, subtotal − discount) + deliveryFee + lateFee + vat
 ```
+
+L'ordre des termes n'est pas cosmétique : la surtaxe s'ajoute **après** la
+remise, sur la ligne des frais. On ne fait pas de geste commercial sur une
+pénalité de retard — un test le dit, parce que l'inverse s'écrit en déplaçant
+une parenthèse.
 
 Deux modificateurs de panier existent déjà, **hors du moteur de prix** :
 `discountCents` (remise de retrait, portée par `PickupAddress`) et
@@ -542,18 +552,40 @@ Comme `discountAdjustment`, l'ajustement qui l'a produite est **figé sur la
 commande** : changer le tarif demain ne doit pas réécrire ce qu'une commande
 partie disait.
 
-### ⚠️ Le taux de TVA de la surtaxe n'est pas tranché ici
+### 🔴 Le taux de TVA est un RÉGLAGE, sans défaut
 
-Le moteur sait déjà porter un terme non-marchandise à son propre taux —
-`DELIVERY_VAT_RATE = 20`, avec sa raison écrite : le transport est une
-prestation, son taux ne se paramètre pas.
+La question était ouverte, et c'était la seule du dossier qui coûte de l'argent
+si on se trompe — sur toutes les commandes tardives, rétroactivement. Elle est
+tranchée : **le taux se règle**, en pointant un taux existant du référentiel.
 
-Une majoration pour commande tardive est **probablement accessoire à la livraison
-des marchandises**, donc suivant leurs taux au prorata (5,5 / 20) plutôt qu'un
-20 % forfaitaire. **Probablement** : c'est une question comptable, et c'est la
-seule du dossier qui coûte de l'argent si on se trompe — sur toutes les commandes
-tardives, rétroactivement. À trancher avant le lot correspondant, par quelqu'un
-dont c'est le métier.
+C'est plus simple que les deux options qu'on comparait, et pour une raison de
+fond : personne ici n'est comptable, et une constante en dur aurait figé dans le
+code une réponse que seul un comptable peut donner. Un réglage la met là où elle
+se corrige — et à l'endroit où quelqu'un dont c'est le métier peut la changer
+sans déploiement.
+
+**Il n'y a pas de défaut**, et c'est le point qui tient tout le reste :
+
+- `computeVatCents` **lève** `MissingLateFeeVatRateError` quand une surtaxe
+  arrive sans taux. Retomber sur 20 % ou sur 5,5 % ferait exactement ce qu'on
+  cherchait à éviter : facturer un taux inventé, silencieusement, partout ;
+- une erreur bruyante coûte **une** commande. Un défaut plausible coûte toutes
+  celles qu'on n'a pas regardées ;
+- **aucun réglage du tout reste un état valable** — pas de surtaxe, donc pas de
+  taux à trouver. Ce n'est pas un trou de configuration, c'est le rattrapage
+  gratuit.
+
+Le réglage est **unique** — un `CHECK "id" = 'singleton'` — parce que le coût
+couvert est la reprise d'une production close : il ne dépend ni du client, ni du
+comptoir, ni de l'article.
+
+Le taux **voyage avec la commande**, comme l'ajustement qui l'a produite : le
+changer demain ne réécrit pas ce qu'une commande partie disait.
+
+⚠️ **Ce qui reste ouvert :** l'écran de réglage (le montant, et le choix du taux
+dans la liste du référentiel) et l'affichage de la surtaxe sur la commande. Le
+serveur est complet et éprouvé ; le montant ne se règle pour l'instant que par
+appel HTTP.
 
 ## 9. Ce que la boutique en montre
 
@@ -674,9 +706,13 @@ pense ; le type l'exige.
   limite pour cet article. Migration additive
   `20260904140000_limite_de_commande_au_miroir` : `NULL` partout, donc le
   comportement d'hier jusqu'au premier push en v6.
-- `Order` gagnera `lateFeeCents` + `lateFeeAdjustment`, calqués sur
-  `discountCents` / `discountAdjustment` (§8).
-- Une table `order_cutoff_waiver` pour les dérogations de §7.
+- ✅ `Order` porte `lateFeeCents` + `lateFeeAdjustment`, calqués sur
+  `discountCents` / `discountAdjustment` (§8), et un `order_late_fee` singleton
+  porte le réglage — `mode`, `value`, `vat_rate_percent`. Migration additive
+  `20260904190000_surtaxe_de_commande_tardive`.
+- ✅ Une table `order_cutoff_waiver` pour les dérogations de §7, avec son index
+  unique partiel `order_cutoff_waiver_one_open` et son `CHECK`
+  `order_cutoff_waiver_used_together`.
 - 🔴 **`OrderCutoff` est superseded.** Elle reste en place et servie tant que le
   fil n'apporte pas les limites : la retirer avant serait retirer la seule règle
   appliquée. Son démontage est un lot à part, en trois déploiements — étendre
@@ -704,10 +740,10 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 | ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier, e2e sur le refus                                     | 0                                       |
 | ✅2 | **La grâce** : trois états, deux codes d'erreur distincts                                                                 | 1                                       |
 | ✅3 | **Le contexte `order-time-limitation`** : l'échelle, l'héritage champ par champ, les deux contraintes en base, le journal | —                                       |
-| 4   | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                 | 3                                       |
-| 5   | **Le fil** : `snapshot` v6, colonnes miroir, la garde lit la limite de l'article                                          | 1, 3                                    |
-| 6   | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                          | 2                                       |
-| 7   | **La surtaxe** : réglage, terme de panier, gel sur la commande, **TVA tranchée** (§8)                                     | 6                                       |
+| ✅4 | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                 | 3                                       |
+| ✅5 | **Le fil** : `snapshot` v6, colonnes miroir, la garde lit la limite de l'article                                          | 1, 3                                    |
+| ✅6 | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                          | 2                                       |
+| ~7  | **La surtaxe** : réglage, terme de panier, gel sur la commande, TVA réglable (§8) — **serveur livré, écran à faire**      | 6                                       |
 | 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                         | 5 + lot 1 de `plan-boutique-sur-api.md` |
 | 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                       | 5                                       |
 
@@ -817,9 +853,13 @@ Deux écarts subsistent, et ils sont assumés :
 - **Le devis et le brouillon ne refusent rien.** Une lecture ne mute pas et n'a
   pas à bloquer ; un brouillon n'est pas un engagement. C'est au lot 8 de griser
   une date à la sélection.
-- **Le référentiel résout, mais personne ne lit encore sa résolution.** Le lot 3
-  a livré l'échelle et son service de résolution ; c'est le lot 5 qui les
-  raccorde à la garde. D'ici là, la seule règle appliquée reste `OrderCutoff`.
+- ~~Le référentiel résout, mais personne ne lit encore sa résolution.~~ **Tombé
+  au lot 5** : la garde lit la limite de l'article, et `OrderCutoff` n'est plus
+  qu'un repli tant que le fil n'a rien apporté.
+- **La surtaxe n'a pas d'écran.** Le serveur la règle, la calcule, la taxe et la
+  fige ; le montant ne se pose pour l'instant que par appel HTTP, et la commande
+  ne l'affiche nulle part. C'est le seul morceau du lot 7 qui manque, et il est
+  dit ici plutôt que rangé dans un lot suivant.
 
 ### Deux remarques d'ordre
 
@@ -831,38 +871,42 @@ Deux écarts subsistent, et ils sont assumés :
 
 ## 13. Ce qui a été vérifié, et où
 
-| Affirmation                                                          | Vérifié                                                                           |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `OrderCutoff` existe, point × jour, heure locale                     | `apps/lfd-api/prisma/schema.prisma:1068-1092`                                     |
-| Résolution en quatre rangs, 12 tests                                 | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`        |
-| **Aucun appelant** hors spec                                         | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                 |
-| `PlaceOrderHandler` ne vérifie que l'appartenance                    | `src/b2b/orders/application/commands/place-order.handler.ts`                      |
-| La page réglages porte déjà retraits + limites + zones               | `apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/`               |
-| `PickupAddress` (public) et `PointOfSale` (pim) sans lien            | `schema.prisma:1024` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide        |
-| `PriceScopeType` = global/category/product/variant                   | `packages/contracts/src/pricing.ts:83`                                            |
-| `Category.parentId` auto-relation                                    | `schema.prisma:2812-2845`                                                         |
-| `ProductKind` = daily / made_to_order / resale                       | `schema.prisma:2766`                                                              |
-| Snapshot en version 5, `syncVariantSchema`                           | `packages/catalog-sync/src/snapshot.ts:24,110`                                    |
-| `total = max(0, subtotal − discount) + deliveryFee + vat`            | `schema.prisma`, section `Order`                                                  |
-| `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`   | `schema.prisma:141, 1040, 1104`                                                   |
-| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux           | `src/b2b/orders/domain/services/vat.ts`                                           |
-| `requestedDeliveryDate` **obligatoire** au contrat, colonne nullable | `packages/contracts/src/order.ts:114-117` ; `schema.prisma`, section `Order`      |
-| « c'est la journée de production » — l'identité que §5 nuance        | `packages/contracts/src/order.ts:114`                                             |
-| Aucun plan de production n'existe, seulement une lecture par date    | `src/b2b/orders/application/queries/get-production-batch.handler.ts`              |
-| `placedByStaffId` → origine `back_office`                            | `src/b2b/orders/domain/services/order-origin.ts`                                  |
-| **Aucun `TZ`** dans le `Dockerfile` ni dans `wrangler.jsonc`         | `apps/lfd-api/Dockerfile`, `apps/lfd-api/wrangler.jsonc`                          |
-| `lint:clock-port` ne scanne que `apps/lfd-api/src`                   | `dev-toolbox/gates/clock-port.mjs:36`                                             |
-| `graceMinutes` par rang, migration additive à `0`                    | `prisma/migrations/20260904100000_grace_apres_heure_limite/`                      |
-| Les trois états, les deux bornes incluses                            | `packages/contracts/src/__tests__/order-cutoff.spec.ts`                           |
-| Deux codes distincts (`cutoff.grace` / `cutoff.past`)                | `src/b2b/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts` |
-| Une livraison ne peut matcher aucune règle de point                  | `packages/contracts/src/order-cutoff.ts:131`                                      |
-| L'échelle et l'héritage champ par champ                              | `src/pim/order-time-limitation/domain/services/__tests__/`                        |
-| Une règle globale unique, tenue par `coalesce(scope_id,'')`          | `test/pim-order-time-limits.e2e-spec.ts`                                          |
-| Une portée contradictoire refusée par la base                        | idem, `CHECK order_time_limit_scope_id_iff_not_global`                            |
-| Écrire sans journaliser est inexprimable (`WriteTicket`)             | `src/pim/order-time-limitation/domain/ports/`                                     |
-| Une dérogation n'ouvre que la grâce, jamais une journée close        | `src/b2b/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`             |
-| Une seule autorisation ouverte par client et par jour                | `order_cutoff_waiver_one_open` ; `test/order-cutoffs.e2e-spec.ts`                 |
-| Une consommée ne rouvre rien et ne se retire pas                     | idem                                                                              |
-| L'écran a sa propre entrée, section « Général »                      | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                   |
-| `Hérité` distinct d'un rattrapage nul explicite                      | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                    |
-| La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                      |
+| Affirmation                                                          | Vérifié                                                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `OrderCutoff` existe, point × jour, heure locale                     | `apps/lfd-api/prisma/schema.prisma:1068-1092`                                         |
+| Résolution en quatre rangs, 12 tests                                 | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`            |
+| **Aucun appelant** hors spec                                         | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                     |
+| `PlaceOrderHandler` ne vérifie que l'appartenance                    | `src/b2b/orders/application/commands/place-order.handler.ts`                          |
+| La page réglages porte déjà retraits + limites + zones               | `apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/`                   |
+| `PickupAddress` (public) et `PointOfSale` (pim) sans lien            | `schema.prisma:1024` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide            |
+| `PriceScopeType` = global/category/product/variant                   | `packages/contracts/src/pricing.ts:83`                                                |
+| `Category.parentId` auto-relation                                    | `schema.prisma:2812-2845`                                                             |
+| `ProductKind` = daily / made_to_order / resale                       | `schema.prisma:2766`                                                                  |
+| Snapshot en version 5, `syncVariantSchema`                           | `packages/catalog-sync/src/snapshot.ts:24,110`                                        |
+| `total = max(0, subtotal − discount) + deliveryFee + lateFee + vat`  | `src/b2b/orders/domain/entities/order.ts`                                             |
+| `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`   | `schema.prisma:141, 1040, 1104`                                                       |
+| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux           | `src/b2b/orders/domain/services/vat.ts`                                               |
+| `requestedDeliveryDate` **obligatoire** au contrat, colonne nullable | `packages/contracts/src/order.ts:114-117` ; `schema.prisma`, section `Order`          |
+| « c'est la journée de production » — l'identité que §5 nuance        | `packages/contracts/src/order.ts:114`                                                 |
+| Aucun plan de production n'existe, seulement une lecture par date    | `src/b2b/orders/application/queries/get-production-batch.handler.ts`                  |
+| `placedByStaffId` → origine `back_office`                            | `src/b2b/orders/domain/services/order-origin.ts`                                      |
+| **Aucun `TZ`** dans le `Dockerfile` ni dans `wrangler.jsonc`         | `apps/lfd-api/Dockerfile`, `apps/lfd-api/wrangler.jsonc`                              |
+| `lint:clock-port` ne scanne que `apps/lfd-api/src`                   | `dev-toolbox/gates/clock-port.mjs:36`                                                 |
+| `graceMinutes` par rang, migration additive à `0`                    | `prisma/migrations/20260904100000_grace_apres_heure_limite/`                          |
+| Les trois états, les deux bornes incluses                            | `packages/contracts/src/__tests__/order-cutoff.spec.ts`                               |
+| Deux codes distincts (`cutoff.grace` / `cutoff.past`)                | `src/b2b/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts`     |
+| Une livraison ne peut matcher aucune règle de point                  | `packages/contracts/src/order-cutoff.ts:131`                                          |
+| L'échelle et l'héritage champ par champ                              | `src/pim/order-time-limitation/domain/services/__tests__/`                            |
+| Une règle globale unique, tenue par `coalesce(scope_id,'')`          | `test/pim-order-time-limits.e2e-spec.ts`                                              |
+| Une portée contradictoire refusée par la base                        | idem, `CHECK order_time_limit_scope_id_iff_not_global`                                |
+| Écrire sans journaliser est inexprimable (`WriteTicket`)             | `src/pim/order-time-limitation/domain/ports/`                                         |
+| Une dérogation n'ouvre que la grâce, jamais une journée close        | `src/b2b/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`                 |
+| Une seule autorisation ouverte par client et par jour                | `order_cutoff_waiver_one_open` ; `test/order-cutoffs.e2e-spec.ts`                     |
+| Une consommée ne rouvre rien et ne se retire pas                     | idem                                                                                  |
+| L'écran a sa propre entrée, section « Général »                      | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                       |
+| `Hérité` distinct d'un rattrapage nul explicite                      | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                        |
+| La boutique lit un mock, pas une route catalogue                     | `apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts`                          |
+| La surtaxe s'ajoute APRÈS la remise, et n'est pas remisée            | `src/b2b/orders/domain/entities/__tests__/order.spec.ts`                              |
+| Une surtaxe sans taux **lève** au lieu de retomber sur un défaut     | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts` |
+| Un seul réglage de surtaxe, tenu par la base                         | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`             |
+| Le réglage n'est lu que si une dérogation a servi                    | `OrderDrafting.lateFeeFor` ; `test/order-cutoffs.e2e-spec.ts`                         |

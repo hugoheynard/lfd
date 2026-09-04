@@ -65,6 +65,11 @@ export class PrismaOrderRepository extends OrderRepository {
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
         deliveryFeeCents: state.deliveryFeeCents,
+        lateFeeCents: state.lateFeeCents,
+        // L'ajustement ET son taux, figés ensemble : un montant sans son taux ne
+        // se justifie pas devant un comptable, et il ne se recalcule pas — le
+        // réglage aura changé.
+        lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
         vatCents: state.vatCents,
         totalCents: state.totalCents,
         paymentStatus: state.paymentStatus,

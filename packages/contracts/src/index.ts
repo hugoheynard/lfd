@@ -319,6 +319,8 @@ export type {
 } from "./order-cutoff.js";
 
 export { orderCutoffWaiverPayloadSchema, waiverDateSchema } from "./order-cutoff-waiver.js";
+export { orderLateFeePayloadSchema } from "./order-late-fee.js";
+export type { OrderLateFeePayload, OrderLateFeeView } from "./order-late-fee.js";
 export type {
   CreatedOrderCutoffWaiverResponse,
   OrderCutoffWaiverPayload,

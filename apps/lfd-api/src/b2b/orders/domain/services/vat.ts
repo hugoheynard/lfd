@@ -1,3 +1,5 @@
+import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
+
 /**
  * Moteur de **TVA** de la commande — pur et déterministe.
  *
@@ -26,6 +28,20 @@
  */
 export const DELIVERY_VAT_RATE = 20;
 
+/**
+ * Une surtaxe sans taux ne se facture pas.
+ *
+ * Une **erreur technique** et non métier : ce n'est pas une demande refusée mais
+ * un réglage incomplet qui a franchi les gardes d'écriture. Elle ne devrait
+ * jamais sortir — le réglage exige son taux — et si elle sort, c'est un bug à
+ * corriger, pas une phrase à montrer au client.
+ */
+export class MissingLateFeeVatRateError extends TechnicalError {
+  constructor() {
+    super("orders.late_fee.vat_rate_missing", "Surtaxe sans taux de TVA.");
+  }
+}
+
 /** Une ligne pour le calcul : son total **HT** (centimes) et son taux (en %). */
 export interface VatLine {
   readonly htCents: number;
@@ -41,6 +57,21 @@ export interface VatInput {
   readonly deliveryFeeCents: number;
   /** Taux de la livraison en %, défaut {@link DELIVERY_VAT_RATE}. */
   readonly deliveryVatRate?: number;
+  /** Surtaxe de commande tardive, HT, en centimes. `0` = aucune. */
+  readonly lateFeeCents: number;
+  /**
+   * Taux de la surtaxe en %, **sans valeur par défaut**.
+   *
+   * Contrairement au transport — dont le taux est une constante de domaine parce
+   * qu'une prestation de transport est au taux normal, point — celui de la
+   * surtaxe est un **réglage** : personne ne sait encore s'il suit les
+   * marchandises ou la prestation, et inventer une réponse la facturerait
+   * rétroactivement sur toutes les commandes tardives.
+   *
+   * Il ne peut donc pas manquer quand `lateFeeCents` n'est pas nul, et
+   * {@link computeVatCents} le refuse plutôt que de retomber sur un défaut.
+   */
+  readonly lateFeeVatRate: number | null;
 }
 
 /**
@@ -63,5 +94,15 @@ export function computeVatCents(input: VatInput): number {
 
   const deliveryRate = input.deliveryVatRate ?? DELIVERY_VAT_RATE;
   vat += Math.round((input.deliveryFeeCents * deliveryRate) / 100);
+
+  // La surtaxe porte SON taux, réglé, jamais un défaut. Un montant taxé au
+  // hasard se rattrape à la main, commande par commande — et seulement si
+  // quelqu'un s'en aperçoit.
+  if (input.lateFeeCents !== 0) {
+    if (input.lateFeeVatRate === null) {
+      throw new MissingLateFeeVatRateError();
+    }
+    vat += Math.round((input.lateFeeCents * input.lateFeeVatRate) / 100);
+  }
   return vat;
 }

@@ -1,10 +1,8 @@
 import type { OrderTimeLimitScopeType, OrderTimeLimitView } from "@lfd/pim-contracts";
 
-import {
-  resolveLimitsByVariant,
-  type CategoryNode,
-  type LimitTargetProduct,
-} from "../order-time-limits.js";
+import type { CategoryNode } from "@lfd/pim-contracts";
+
+import { resolveLimitsByVariant, type LimitTargetProduct } from "../order-time-limits.js";
 
 function rule(
   type: OrderTimeLimitScopeType,

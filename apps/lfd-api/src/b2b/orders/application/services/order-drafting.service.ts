@@ -21,7 +21,7 @@ import {
   type FulfillmentDefaults,
   windowFitsPickup,
 } from "../../domain/services/agreed-fulfillment.js";
-import { Order } from "../../domain/entities/order.js";
+import { Order, type LateFeeAdjustment } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
   NoDeliveryZoneForPostalCodeError,
@@ -30,6 +30,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
+import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -115,6 +116,7 @@ export class OrderDrafting {
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
     private readonly waivers: OrderCutoffWaiverGate,
+    private readonly lateFees: OrderLateFeeReader,
   ) {}
 
   /**
@@ -150,6 +152,10 @@ export class OrderDrafting {
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
     const waiverUsed = await this.ensureNotTooLate(content, acheminement, parties);
+    // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
+    // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
+    // se paierait sur toutes les commandes à l'heure.
+    const late = await this.lateFeeFor(waiverUsed, subtotalCents);
     const agreed = agreeFulfillment(
       {
         window: content.requestedWindow,
@@ -178,6 +184,12 @@ export class OrderDrafting {
       discountCents: acheminement.discountCents,
       discountAdjustment: acheminement.discountAdjustment,
       deliveryFeeCents: acheminement.deliveryFeeCents,
+      // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
+      // elle qui atteste le retard, et une commande à l'heure n'a rien à
+      // rattraper. Sans réglage, elle vaut zéro — rattraper sans facturer est un
+      // choix valable.
+      lateFeeCents: late.cents,
+      lateFeeAdjustment: late.frozen,
     });
     return { order, waiverUsed };
   }
@@ -201,6 +213,33 @@ export class OrderDrafting {
     lines: readonly OrderLineRequest[],
   ): Promise<ResolvedOrderLine[]> {
     return this.linePricing.explain(lines, parties);
+  }
+
+  /**
+   * Ce que le retard coûte, **et seulement quand il y a eu retard**.
+   *
+   * `null` de dérogation ⇒ rien à facturer. Réglage absent ⇒ rien non plus :
+   * rattraper sans facturer est un choix valable, et inventer un montant
+   * facturerait une décision que personne n'a prise.
+   *
+   * Le taux voyage avec le montant. Un montant sans son taux ne se justifie pas
+   * devant un comptable, et il ne se recalcule pas — le réglage aura changé.
+   */
+  private async lateFeeFor(
+    waiverUsed: string | null,
+    subtotalCents: number,
+  ): Promise<{ cents: number; frozen: LateFeeAdjustment | null }> {
+    if (waiverUsed === null) {
+      return { cents: 0, frozen: null };
+    }
+    const setting = await this.lateFees.current();
+    if (setting === null) {
+      return { cents: 0, frozen: null };
+    }
+    return {
+      cents: cartAdjustmentCents(setting.adjustment, subtotalCents),
+      frozen: { adjustment: setting.adjustment, vatRatePercent: setting.vatRatePercent },
+    };
   }
 
   /**
