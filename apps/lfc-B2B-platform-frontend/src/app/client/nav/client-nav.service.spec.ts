@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 
-import { ClientCart } from '../client-cart.service';
+import { ClientCart } from '../cart/client-cart.service';
 import { ClientOrder, type ServiceChoice } from '../client-order.service';
 import { ClientOrders } from '../client-orders.service';
 import { ClientNav } from './client-nav.service';

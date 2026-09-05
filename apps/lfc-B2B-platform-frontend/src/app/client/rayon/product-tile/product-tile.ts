@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../../client/cart-total';
+import { formatEuro } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopProduct } from '../../../client/mock-shop';
 

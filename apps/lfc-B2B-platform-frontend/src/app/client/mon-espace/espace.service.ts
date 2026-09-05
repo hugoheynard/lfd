@@ -1,7 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 
-import { formatEuro } from '../cart-total';
-import { ClientCart } from '../client-cart.service';
+import { formatEuro } from '../format-money';
+import { ClientCart } from '../cart/client-cart.service';
 import { ClientOrders } from '../client-orders.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { MOCK_CLIENT } from '../mock-client';

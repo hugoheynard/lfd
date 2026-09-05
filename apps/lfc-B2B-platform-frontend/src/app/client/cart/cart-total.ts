@@ -1,4 +1,4 @@
-import { type ShopProduct, vatOf } from './mock-shop';
+import { type ShopProduct, vatOf } from '../mock-shop';
 
 /** Une ligne de panier : une référence et sa quantité. */
 export interface CartLine {
@@ -60,14 +60,4 @@ export function priceCart(
     .map(([rate, amount]) => ({ rate, amount }));
 
   return { subtotal, discount, fee, vat, total: subtotal - discount + fee };
-}
-
-/** Un prix en euros → « 5,50 € ». La virgule est décimale, ici. */
-export function formatEuro(value: number): string {
-  return `${value.toFixed(2).replace('.', ',')} €`;
-}
-
-/** Un taux → « 5,5 % ». Le taux entier ne traîne pas de décimale inutile. */
-export function formatRate(rate: number): string {
-  return `${String(rate).replace('.', ',')} %`;
 }

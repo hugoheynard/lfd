@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { ClientCart } from '../../../client/client-cart.service';
+import { ClientCart } from '../../cart/client-cart.service';
 import { ClientOrder } from '../../../client/client-order.service';
 import { FR } from '../../../client/copy/fr';
 import { RayonPage } from './rayon-page';

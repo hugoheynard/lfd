@@ -15,7 +15,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { formatEuro } from '../../cart-total';
+import { formatEuro } from '../../format-money';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import type { HistoryOrder, OrderOrigin, OrderPayment, OrderStatus } from '../../mock-orders';
 import { OrderDetail } from '../order-detail/order-detail';

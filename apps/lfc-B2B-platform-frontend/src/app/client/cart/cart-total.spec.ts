@@ -1,5 +1,5 @@
-import { type CartLine, formatEuro, formatRate, priceCart } from './cart-total';
-import { productById } from './mock-shop';
+import { type CartLine, priceCart } from './cart-total';
+import { productById } from '../mock-shop';
 
 function line(id: string, quantity: number): CartLine {
   const product = productById(id);
@@ -54,19 +54,5 @@ describe('priceCart', () => {
     expect(empty.subtotal).toBe(0);
     expect(empty.vat).toEqual([]);
     expect(empty.total).toBe(0);
-  });
-});
-
-describe('formatEuro', () => {
-  it('écrit la virgule décimale et garde les deux décimales', () => {
-    expect(formatEuro(5.5)).toBe('5,50 €');
-    expect(formatEuro(16.375)).toBe('16,38 €');
-  });
-});
-
-describe('formatRate', () => {
-  it('ne colle pas de décimale à un taux entier', () => {
-    expect(formatRate(5.5)).toBe('5,5 %');
-    expect(formatRate(10)).toBe('10 %');
   });
 });

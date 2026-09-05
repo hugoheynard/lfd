@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro, formatRate } from '../../../client/cart-total';
-import { ClientCart } from '../../../client/client-cart.service';
-import { ClientOrder } from '../../../client/client-order.service';
-import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { VAT_SALE } from '../../../client/mock-shop';
+import { formatEuro, formatRate } from '../../format-money';
+import { CartUpsell } from '../cart-upsell.service';
+import { ClientCart } from '../client-cart.service';
+import { ClientOrder } from '../../client-order.service';
+import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { VAT_SALE } from '../../mock-shop';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -34,6 +35,7 @@ export class CartSummary {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
+  private readonly upsell = inject(CartUpsell);
   private readonly order = inject(ClientOrder);
 
   protected readonly totals = this.cart.totals;
@@ -72,7 +74,7 @@ export class CartSummary {
   });
 
   protected readonly upsellLabel = computed(() => {
-    const piece = this.cart.upsell();
+    const piece = this.upsell.suggestion();
     return piece === null ? null : fill(this.t().shop.upsell, { name: piece.name });
   });
 
@@ -81,7 +83,7 @@ export class CartSummary {
   }
 
   protected addUpsell(): void {
-    const piece = this.cart.upsell();
+    const piece = this.upsell.suggestion();
     if (piece !== null) {
       this.cart.add(piece.id);
     }

@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { formatEuro } from '../../../client/cart-total';
-import { ClientCart } from '../../../client/client-cart.service';
-import { ClientChrome } from '../../../client/client-chrome.service';
-import { ClientOrder } from '../../../client/client-order.service';
-import { ClientOrders } from '../../../client/client-orders.service';
-import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
+import { formatEuro } from '../../format-money';
+import { ClientCart } from '../client-cart.service';
+import { ClientChrome } from '../../client-chrome.service';
+import { ClientOrder } from '../../client-order.service';
+import { ClientOrders } from '../../client-orders.service';
+import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
 
 /**

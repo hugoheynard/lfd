@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../cart-total';
-import { ClientCart } from '../../client-cart.service';
+import { formatEuro } from '../../format-money';
+import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 
 /**

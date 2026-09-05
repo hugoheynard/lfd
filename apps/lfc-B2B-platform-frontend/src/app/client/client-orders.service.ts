@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 
-import { type CartTotals } from './cart-total';
-import { ClientCart } from './client-cart.service';
+import { type CartTotals } from './cart/cart-total';
+import { ClientCart } from './cart/client-cart.service';
 import { ClientOrder, type ServiceChoice } from './client-order.service';
 import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
 import { MOCK_ORDER_REF } from './mock-shop';

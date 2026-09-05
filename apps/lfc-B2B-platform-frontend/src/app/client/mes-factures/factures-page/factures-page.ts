@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../cart-total';
+import { formatEuro } from '../../format-money';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientChrome } from '../../client-chrome.service';

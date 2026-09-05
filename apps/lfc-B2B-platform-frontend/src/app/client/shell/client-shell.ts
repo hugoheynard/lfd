@@ -7,7 +7,7 @@ import { ClientIdentity } from '../client-identity.service';
 import { ClientFoot } from '../foot/client-foot';
 import { ClientMenu } from '../nav/client-menu/client-menu';
 import { ClientBand } from '../nav/client-band/client-band';
-import { ClientCartPill } from '../nav/client-cart-pill/client-cart-pill';
+import { ClientCartPill } from '../cart/client-cart-pill/client-cart-pill';
 import { ClientOnboarding } from '../client-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';

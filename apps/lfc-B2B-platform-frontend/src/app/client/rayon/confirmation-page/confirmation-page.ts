@@ -9,7 +9,7 @@ import {
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro, formatRate } from '../../../client/cart-total';
+import { formatEuro, formatRate } from '../../../client/format-money';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';

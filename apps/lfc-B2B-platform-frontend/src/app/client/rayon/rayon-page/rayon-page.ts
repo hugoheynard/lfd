@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../../client/cart-total';
-import { ClientCart } from '../../../client/client-cart.service';
+import { formatEuro } from '../../../client/format-money';
+import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrder } from '../../../client/client-order.service';
 import { ClientOrders } from '../../../client/client-orders.service';
@@ -14,8 +14,8 @@ import {
   SHOP_CATEGORIES,
   SHOP_PRODUCTS,
 } from '../../../client/mock-shop';
-import { CartBar } from '../cart-bar/cart-bar';
-import { CartSummary } from '../cart-summary/cart-summary';
+import { CartBar } from '../../cart/cart-bar/cart-bar';
+import { CartSummary } from '../../cart/cart-summary/cart-summary';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { ProductTile } from '../product-tile/product-tile';
 import { RayonSheet } from '../rayon-sheet/rayon-sheet';

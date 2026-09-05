@@ -205,7 +205,7 @@ export const routes: Routes = [
         path: 'nouvelle-commande/panier',
         title: 'Mon panier — La Folie Coffee',
         loadComponent: () =>
-          import('./client/rayon/panier-page/panier-page').then((m) => m.PanierPage),
+          import('./client/cart/panier-page/panier-page').then((m) => m.PanierPage),
       },
       {
         path: 'nouvelle-commande/confirmee',

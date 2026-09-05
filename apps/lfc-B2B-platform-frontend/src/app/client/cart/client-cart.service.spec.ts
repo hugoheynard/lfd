@@ -1,8 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
 import { ClientCart } from './client-cart.service';
-import { ClientOrder, type ServiceChoice } from './client-order.service';
-import { ClientOrders } from './client-orders.service';
+import { ClientOrder, type ServiceChoice } from '../client-order.service';
+import { ClientOrders } from '../client-orders.service';
+import { SHOP_PRODUCTS } from '../mock-shop';
+
+/** Le rang d'une référence dans le rayon — l'ordre que le panier doit suivre. */
+const order = (id: string): number => SHOP_PRODUCTS.findIndex((p) => p.id === id);
 
 const AT_THE_LABO: ServiceChoice = {
   mode: 'pickup',
@@ -25,42 +29,55 @@ function reload(): { cart: ClientCart; order: ClientOrder; orders: ClientOrders 
   };
 }
 
-describe('Le panier et le mode de service, relus du navigateur', () => {
+describe('Les règles du panier', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({});
   });
 
-  it('survit à un rechargement — le panier n’est pas perdu par un F5', () => {
-    const cart = TestBed.inject(ClientCart);
-    cart.add('croissant');
-    cart.add('croissant');
-    cart.add('ski');
-    TestBed.flushEffects();
-
-    expect(reload().cart.quantityOf('croissant')).toBe(2);
-  });
-
-  it('le mode de service aussi : la boutique ne renvoie plus à la question', () => {
+  /**
+   * Le mode de service survit lui aussi au rechargement : sans lui, la boutique
+   * renverrait à la question à chaque F5. Il vit dans `ClientOrder`, mais c'est
+   * le panier qui en dépend pour son décompte — d'où sa place ici.
+   */
+  it('le mode de service survit au rechargement', () => {
     TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
     TestBed.flushEffects();
 
     expect(reload().order.choice()?.place).toBe('Le Labo');
   });
 
-  it('oublie une référence qui n’est plus au catalogue plutôt que de tomber', () => {
-    localStorage.setItem('lfc.cart', JSON.stringify({ croissant: 2, fantome: 3 }));
+  /**
+   * Une référence inconnue est ignorée **en silence** : la laisser entrer
+   * mettrait dans l'état une ligne qu'aucun écran ne saurait afficher, et le
+   * dépôt la relirait ensuite comme un panier corrompu.
+   */
+  it('n’ajoute pas une référence que le catalogue ne connaît pas', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('fantome');
 
-    const { cart } = reload();
-    expect(cart.quantityOf('croissant')).toBe(2);
-    expect(cart.count()).toBe(2);
+    expect(cart.isEmpty()).toBe(true);
   });
 
-  it('un contenu illisible est traité comme absent, pas comme une erreur', () => {
-    localStorage.setItem('lfc.cart', 'ceci n’est pas du JSON');
+  /** Le panier se relit comme la boutique se parcourt, pas comme on l'a rempli. */
+  it('rend les lignes dans l’ordre du RAYON, pas dans celui des ajouts', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('quiche');
+    cart.add('croissant');
 
-    expect(reload().cart.isEmpty()).toBe(true);
+    const shown = cart.lines().map((line) => line.product.id);
+    expect(shown).toEqual([...shown].sort((a, b) => order(a) - order(b)));
+  });
+
+  it('compte les PIÈCES, pas les références', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('croissant');
+    cart.add('croissant');
+    cart.add('quiche');
+
+    expect(cart.count()).toBe(3);
+    expect(cart.lines()).toHaveLength(2);
   });
 
   it('retirer la dernière pièce retire la LIGNE : une ligne à zéro n’existe pas', () => {
