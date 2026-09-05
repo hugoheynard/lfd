@@ -92,6 +92,13 @@ const NO_DISCOUNT = 10_000;
  * disent (`describe` dédié).
  */
 /** Aucune règle : depuis la v7, l'échelle traverse et le vide est le cas courant. */
+/**
+ * Aucune fiche n'a de ligne ni de visuel — le cas courant, et le seul que ces
+ * tests-ci éprouvent : ils portent sur le PRIX et les allergènes. La vitrine a
+ * son propre fichier.
+ */
+const NO_SHOWCASE = new Map<string, never>();
+
 const NO_LIMITS: readonly SyncOrderTimeLimitRule[] = [];
 
 /**
@@ -139,6 +146,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -165,6 +173,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -191,6 +200,7 @@ describe("projectCatalog", () => {
       9_000,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -214,6 +224,7 @@ describe("projectCatalog", () => {
       9_000,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -237,6 +248,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
     const at10 = projectCatalog(
@@ -247,6 +259,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -268,6 +281,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -291,6 +305,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -310,6 +325,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -330,6 +346,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -346,6 +363,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -365,6 +383,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -392,6 +411,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -413,6 +433,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -438,6 +459,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -457,6 +479,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -474,6 +497,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -493,6 +517,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -508,6 +533,7 @@ describe("projectCatalog", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -530,6 +556,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -548,6 +575,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
 
@@ -574,6 +602,7 @@ describe("projectCatalog — les allergènes", () => {
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
+      NO_SHOWCASE,
       AT,
     );
     return snapshot.products[0]?.variants[0];

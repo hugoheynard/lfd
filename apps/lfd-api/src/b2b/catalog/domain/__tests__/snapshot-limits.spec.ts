@@ -94,6 +94,27 @@ describe("snapshotLimitReader", () => {
     expect(firstOf(snapshot)).toEqual({ daysBefore: 1, time: "16:00", graceMinutes: 30 });
   });
 
+  /**
+   * 🔴 Régression : la borne de compatibilité était écrite « version courante »,
+   * donc elle GLISSAIT à chaque bump du fil. La v8 n'a rien changé aux limites,
+   * et pourtant une arrivée v7 mise en file s'est mise à répondre « aucune
+   * limite » — sur la seule règle qui refuse une commande en retard. Une borne
+   * désigne la version qui a changé la forme, pas la dernière en date.
+   */
+  it("descend encore l'échelle d'une v7 après un bump qui ne la concerne pas", () => {
+    const snapshot = {
+      ...snapshotOf({
+        orderTimeLimits: [
+          { scope: { type: "global", id: null }, daysBefore: 1, time: "16:00", graceMinutes: 30 },
+        ],
+      }),
+      // Une arrivée d'AVANT la v8, mise en file et relue après la bascule.
+      version: 7 as const,
+    };
+
+    expect(firstOf(snapshot)).toEqual({ daysBefore: 1, time: "16:00", graceMinutes: 30 });
+  });
+
   it("rend `null` quand une arrivée v7 ne porte aucune règle", () => {
     expect(firstOf(snapshotOf({}))).toBeNull();
   });

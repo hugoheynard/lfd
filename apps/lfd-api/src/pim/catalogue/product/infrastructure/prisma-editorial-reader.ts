@@ -56,23 +56,43 @@ export class PrismaEditorialReader extends EditorialReader {
   }
 
   async mediaOf(productId: string): Promise<readonly ProductMediaRecord[]> {
+    return (await this.mediaOfProducts([productId])).get(productId) ?? [];
+  }
+
+  async mediaOfProducts(
+    productIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly ProductMediaRecord[]>> {
+    if (productIds.length === 0) {
+      return new Map();
+    }
     const rows = await this.prisma.productMedia.findMany({
-      where: { productId },
+      where: { productId: { in: [...productIds] } },
       orderBy: { position: "asc" },
       include: { media: true },
     });
-    return rows.map((row) => ({
-      role: row.role,
-      url: row.media.url,
-      name: row.media.name,
-      // L'alternative est stockée localisée, et relue telle quelle. Le repli sur
-      // l'URL vaut mieux que la chaîne vide qu'on rendait : une alternative
-      // absente doit se voir, pas se confondre avec une alternative écrite.
-      alt: localizedOf(row.media.alt) ?? { [SOURCE_LOCALE]: row.media.url },
-      width: row.media.width,
-      height: row.media.height,
-      bytes: row.media.bytes,
-      contentType: row.media.contentType,
-    }));
+
+    const byProduct = new Map<string, ProductMediaRecord[]>();
+    for (const row of rows) {
+      const record: ProductMediaRecord = {
+        role: row.role,
+        url: row.media.url,
+        name: row.media.name,
+        // L'alternative est stockée localisée, et relue telle quelle. Le repli sur
+        // l'URL vaut mieux que la chaîne vide qu'on rendait : une alternative
+        // absente doit se voir, pas se confondre avec une alternative écrite.
+        alt: localizedOf(row.media.alt) ?? { [SOURCE_LOCALE]: row.media.url },
+        width: row.media.width,
+        height: row.media.height,
+        bytes: row.media.bytes,
+        contentType: row.media.contentType,
+      };
+      const bucket = byProduct.get(row.productId);
+      if (bucket === undefined) {
+        byProduct.set(row.productId, [record]);
+      } else {
+        bucket.push(record);
+      }
+    }
+    return byProduct;
   }
 }

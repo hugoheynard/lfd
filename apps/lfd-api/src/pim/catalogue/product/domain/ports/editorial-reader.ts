@@ -64,4 +64,16 @@ export abstract class EditorialReader {
    * remplacées par rien.
    */
   abstract mediaOf(productId: string): Promise<readonly ProductMediaRecord[]>;
+
+  /**
+   * Les visuels de plusieurs produits, indexés par identifiant et ordonnés.
+   *
+   * En lot pour la même raison que {@link findByProducts} : une projection de
+   * canal traverse tout le catalogue publiable, et un appel par fiche y coûterait
+   * autant d'allers-retours que de produits. Un produit sans visuel est **absent**
+   * de la carte, jamais présent à `[]` — l'absence se lit alors comme telle.
+   */
+  abstract mediaOfProducts(
+    productIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly ProductMediaRecord[]>>;
 }

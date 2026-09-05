@@ -1,10 +1,22 @@
 import {
-  CATALOG_SNAPSHOT_VERSION,
   categoryPathOf,
   resolveOrderTimeLimit,
   type StoredCatalogSnapshot,
   type SyncOrderTimeLimit,
 } from "@lfd/catalog-sync";
+
+/**
+ * La version du fil à partir de laquelle **l'ÉCHELLE traverse** — avant, c'était
+ * sa résolution, recopiée sur chaque déclinaison.
+ *
+ * 🔴 **Un nombre, et surtout pas `CATALOG_SNAPSHOT_VERSION`.** Ce test-là était
+ * écrit « version courante », et il a menti dès le bump suivant : la v8 ajoute
+ * l'éditorial, ne change rien aux limites, et une arrivée v7 mise en file s'est
+ * mise à répondre « aucune limite » — sur la seule règle qui refuse une commande
+ * en retard. Une borne de compatibilité désigne la version qui A CHANGÉ la
+ * forme ; l'accrocher à la courante la fait glisser à chaque bump.
+ */
+const ORDER_TIME_LIMIT_RULES_SINCE = 7;
 
 /** Un produit et une déclinaison du snapshot, réduits à ce que la résolution lit. */
 type SnapshotProduct = StoredCatalogSnapshot["products"][number];
@@ -28,6 +40,10 @@ type SnapshotVariant = SnapshotProduct["variants"][number];
  * déploiement — silencieusement, et sur la seule règle qui refuse une commande
  * en retard.
  *
+ * ⚠️ Et la borne est {@link ORDER_TIME_LIMIT_RULES_SINCE}, pas la version
+ * courante : lire « courante » faisait glisser la compatibilité d'un cran à
+ * chaque bump du fil, quel qu'en soit le sujet.
+ *
  * Écrite ici plutôt que chez ses deux appelants — l'ingestion et la comparaison
  * d'arrivée — parce qu'une seconde descente aurait fini par lire l'ancien champ
  * d'un seul côté : l'écran de validation aurait alors montré autre chose que ce
@@ -40,7 +56,7 @@ type SnapshotVariant = SnapshotProduct["variants"][number];
 export function snapshotLimitReader(
   snapshot: StoredCatalogSnapshot,
 ): (product: SnapshotProduct, variant: SnapshotVariant) => SyncOrderTimeLimit | null {
-  if (snapshot.version < CATALOG_SNAPSHOT_VERSION) {
+  if (snapshot.version < ORDER_TIME_LIMIT_RULES_SINCE) {
     return (_product, variant) => variant.orderTimeLimit ?? null;
   }
   const rules = snapshot.orderTimeLimits ?? [];

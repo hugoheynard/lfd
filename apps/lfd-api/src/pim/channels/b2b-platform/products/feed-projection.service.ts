@@ -8,6 +8,8 @@ import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allerge
 import { projectionFingerprint } from "../../shared/domain/canonical-projection.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
+import { showcaseOf } from "./showcase.js";
 import { OrderTimeLimitRepository } from "../../../order-time-limitation/domain/ports/order-time-limit.repository.js";
 import { toSyncRule } from "./order-time-limits.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
@@ -43,6 +45,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     private readonly accounting: AccountingRulesRepository,
     private readonly allergens: AllergenCatalogueReader,
     private readonly orderTimeLimits: OrderTimeLimitRepository,
+    private readonly editorials: EditorialReader,
   ) {
     super();
   }
@@ -83,12 +86,20 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // seule fois par projection** (D6) : la plateforme B2B n'a plus de quoi
     // traduire un code GS1 en mention d'étiquette, donc c'est le PIM qui
     // projette — mais `projectCatalog` reste pure, elle reçoit le projecteur.
-    const [vatByProduct, channelsByProduct, allergenCatalogue, timeLimitRules] = await Promise.all([
-      this.catalogue.vatPercents(products),
-      this.catalogue.effectiveChannels(products),
-      this.allergens.catalogue(),
-      this.orderTimeLimits.list(),
-    ]);
+    //
+    // L'éditorial et les visuels les rejoignent depuis la v8, en DEUX lectures
+    // pour tout le lot : ce sont des satellites du produit, absents de
+    // `ProductRecord` par construction, et un appel par fiche coûterait ici
+    // quatre-vingt-quinze allers-retours pour une ligne et une image.
+    const [vatByProduct, channelsByProduct, allergenCatalogue, timeLimitRules, notes, medias] =
+      await Promise.all([
+        this.catalogue.vatPercents(products),
+        this.catalogue.effectiveChannels(products),
+        this.allergens.catalogue(),
+        this.orderTimeLimits.list(),
+        this.editorials.findByProducts(productIds),
+        this.editorials.mediaOfProducts(productIds),
+      ]);
     // L'échelle traverse TELLE QUELLE depuis la v7. Elle s'arrêtait ici, et le
     // fil ne portait que sa résolution — ce qui recopiait une règle globale sur
     // N articles et rendait son changement indescriptible : le diff d'arrivée
@@ -104,6 +115,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       // Le canal est monolingue français : l'aplatissement se fait à l'émission
       // plutôt que de transporter un objet localisé que personne ne lira.
       IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),
+      showcaseOf(products, notes, medias),
       generatedAt,
     );
     // L'empreinte se calcule ICI, sur la projection qu'on vient de produire :

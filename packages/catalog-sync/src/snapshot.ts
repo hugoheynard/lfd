@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 7;
+export const CATALOG_SNAPSHOT_VERSION = 8;
 
 /**
  * Une famille de produits, **à plat**.
@@ -256,6 +256,26 @@ export interface SyncOrderTimeLimit {
 }
 
 /** Un produit et ses déclinaisons vendables. Au moins une, sinon rien à vendre. */
+/**
+ * **Le visuel principal d'une fiche**, tel qu'une vitrine l'affiche.
+ *
+ * Un seul, et c'est le `hero` du référentiel : une boutique montre une pièce
+ * par référence. La galerie reste chez l'émetteur — la transporter ferait
+ * voyager des octets qu'aucun écran du récepteur ne demande.
+ *
+ * Les dimensions accompagnent l'URL parce qu'elles ne servent qu'ensemble :
+ * sans elles, la grille ne peut pas réserver la place et la vitrine saute au
+ * chargement. `null` = pas mesuré (visuel saisi par son URL), jamais zéro.
+ */
+export const syncMediaSchema = z.object({
+  url: z.string().min(1),
+  /** Le texte alternatif, **aplati en français** comme le reste du fil. */
+  alt: z.string(),
+  width: z.number().int().positive().nullable(),
+  height: z.number().int().positive().nullable(),
+});
+export type SyncMedia = z.infer<typeof syncMediaSchema>;
+
 export const syncProductSchema = z.object({
   id: z.string().min(1),
   sku: z.string().min(1),
@@ -263,6 +283,23 @@ export const syncProductSchema = z.object({
   categoryId: z.string().min(1),
   kind: z.enum(["daily", "made_to_order", "resale"]),
   variants: z.array(syncVariantSchema).min(1),
+  /**
+   * La **ligne de vitrine** — `descriptionShort` du référentiel, aplatie en
+   * français. `null` = aucun éditorial saisi.
+   *
+   * Une seule des sept lignes éditoriales traverse, et c'est délibéré : une
+   * boutique en montre une sous le nom. Faire voyager `descriptionLong`,
+   * `story`, `pairing` et le SEO donnerait au récepteur quatre champs qu'aucun
+   * écran ne lit et qu'il faudrait pourtant tenir à jour — et le jour où il en
+   * affiche un, c'est une décision de produit, pas un élargissement de tuyau.
+   *
+   * ⚠️ **`null` n'est pas la chaîne vide.** Rien n'a été écrit, ce qui n'est pas
+   * la même chose qu'une ligne effacée ; l'écran de réception doit pouvoir dire
+   * lequel des deux vient d'arriver.
+   */
+  note: z.string().nullable(),
+  /** Le visuel principal, ou `null` si la fiche n'en porte pas. */
+  image: syncMediaSchema.nullable(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -315,9 +352,14 @@ export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
  * échouer à l'émission, pas produire une arrivée dégradée.
  */
 export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
-  version: z.union([z.literal(5), z.literal(6), z.literal(7)]),
+  version: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
   products: z.array(
     syncProductSchema.extend({
+      // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
+      // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
+      // visuel » — ce qui est exact : elle n'en portait pas.
+      note: z.string().nullable().optional(),
+      image: syncMediaSchema.nullable().optional(),
       variants: z
         .array(
           syncVariantSchema.extend({

@@ -2,6 +2,7 @@ import type {
   CatalogSnapshot,
   SyncAllergenLabels,
   SyncCategory,
+  SyncMedia,
   SyncProduct,
   SyncOrderTimeLimitRule,
   SyncVariant,
@@ -55,6 +56,20 @@ export interface Exclusion {
   /** SKU du produit ou de la déclinaison concernée. */
   readonly sku: string;
   readonly reason: B2bExclusionReason;
+}
+
+/**
+ * **Ce qu'une vitrine montre d'une fiche** : une ligne et une pièce.
+ *
+ * Résolu en amont et passé ici, comme le taux et le rapport pro — l'éditorial
+ * et les médias sont deux satellites du produit, avec leur propre table et leur
+ * propre rythme, et les charger dans cette fonction la rendrait impure pour un
+ * champ que le calcul n'utilise pas.
+ */
+export interface Showcase {
+  /** `null` = aucun éditorial saisi. La chaîne vide serait une ligne effacée. */
+  readonly note: string | null;
+  readonly image: SyncMedia | null;
 }
 
 export interface Projection {
@@ -250,6 +265,13 @@ export function projectCatalog(
    * en mention d'étiquette : le référentiel est une donnée du PIM.
    */
   inco: IncoProjector,
+  /**
+   * La ligne et le visuel de chaque fiche, par identifiant de produit.
+   *
+   * Absent de la carte = la fiche n'en porte aucun, ce que le fil transporte
+   * comme `null` — et non comme une chaîne vide, qui dirait « effacé ».
+   */
+  showcase: ReadonlyMap<string, Showcase>,
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -290,6 +312,7 @@ export function projectCatalog(
     }
 
     usedCategories.add(category.id);
+    const shown = showcase.get(product.id);
     kept.push({
       id: product.id,
       sku: product.sku,
@@ -297,6 +320,8 @@ export function projectCatalog(
       categoryId: product.categoryId,
       kind: product.kind,
       variants: sellable,
+      note: shown?.note ?? null,
+      image: shown?.image ?? null,
     });
   }
 

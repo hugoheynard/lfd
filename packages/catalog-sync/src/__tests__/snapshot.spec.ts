@@ -48,6 +48,14 @@ const snapshot = {
       categoryId: "cat_vien",
       kind: "daily",
       variants: [variant],
+      // Traversent depuis la v8 : une vitrine montre une ligne et une pièce.
+      note: "Tourage patient, beurre qui ne triche pas",
+      image: {
+        url: "https://media.example/croissant.jpg",
+        alt: "Un croissant",
+        width: 800,
+        height: 800,
+      },
     },
   ],
   // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.
@@ -227,6 +235,84 @@ describe("les mentions d’étiquette de l’article", () => {
  * arrivées en attente — sans rien casser visiblement au déploiement, et donc
  * sans qu'on relie la cause à l'effet (constaté et corrigé le 2026-09-04).
  */
+describe("l'éditorial et le visuel, depuis la v8", () => {
+  /**
+   * `null` n'est PAS la chaîne vide : rien n'a été saisi, ce qui n'est pas une
+   * ligne effacée. L'écran de réception doit pouvoir dire lequel des deux vient
+   * d'arriver, donc le fil doit pouvoir les distinguer.
+   */
+  it("accepte une fiche sans ligne ni visuel — le référentiel n'en impose aucun", () => {
+    const bare = {
+      ...snapshot,
+      products: [{ ...snapshot.products[0], note: null, image: null }],
+    };
+
+    expect(catalogSnapshotSchema.safeParse(bare).success).toBe(true);
+  });
+
+  it("distingue une ligne ABSENTE d'une ligne vide", () => {
+    const emptied = { ...snapshot, products: [{ ...snapshot.products[0], note: "" }] };
+
+    expect(catalogSnapshotSchema.parse(emptied).products[0]?.note).toBe("");
+    expect(catalogSnapshotSchema.parse(snapshot).products[0]?.note).not.toBeNull();
+  });
+
+  /**
+   * Les deux dimensions ne servent qu'ensemble : sans elles, la grille ne peut
+   * pas réserver la place du visuel et la vitrine saute au chargement. `null` =
+   * pas mesuré, jamais zéro — d'où le refus.
+   */
+  it("refuse une dimension nulle plutôt que de la faire passer pour « pas mesuré »", () => {
+    const flat = {
+      ...snapshot,
+      products: [
+        {
+          ...snapshot.products[0],
+          image: { url: "https://media.example/x.jpg", alt: "", width: 0, height: 800 },
+        },
+      ],
+    };
+
+    expect(catalogSnapshotSchema.safeParse(flat).success).toBe(false);
+  });
+
+  it("refuse un visuel sans URL — il n'y aurait rien à afficher", () => {
+    const noUrl = {
+      ...snapshot,
+      products: [
+        { ...snapshot.products[0], image: { url: "", alt: "", width: null, height: null } },
+      ],
+    };
+
+    expect(catalogSnapshotSchema.safeParse(noUrl).success).toBe(false);
+  });
+
+  /**
+   * 🔴 Une arrivée mise en file AVANT la bascule doit rester lisible : elle se
+   * relit « ni ligne ni visuel », ce qui est exact — elle n'en portait pas.
+   */
+  it("relit une arrivée d'avant la v8, qui n'en portait aucun", () => {
+    const older = {
+      ...snapshot,
+      version: 7,
+      products: [
+        {
+          id: "prd_1",
+          sku: "VIE-001",
+          name: "Croissant",
+          categoryId: "cat_vien",
+          kind: "daily",
+          variants: [variant],
+        },
+      ],
+    };
+
+    const parsed = storedCatalogSnapshotSchema.safeParse(older);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.products[0]?.note).toBeUndefined();
+  });
+});
+
 describe("storedCatalogSnapshotSchema — relire ce qu'on a stocké", () => {
   /** Un snapshot tel qu'une version ANTÉRIEURE du fil l'a écrit. */
   function v5(): Record<string, unknown> {

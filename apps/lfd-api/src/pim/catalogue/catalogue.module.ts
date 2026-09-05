@@ -173,6 +173,9 @@ import {
   // Le dépôt des révisions sort d'ici : le canal B2B inscrit sa publication SUR
   // l'ancre qu'il vient de figer, et c'est le seul moyen qu'une ancre sache où
   // elle est partie. Le reste de la mécanique (source, capture) ne sort pas.
-  exports: [CatalogueReader, CatalogRevisionRepository],
+  // `EditorialReader` sort depuis la v8 du fil : le canal B2B emporte la ligne
+  // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
+  // sort en lecture seule — l'écriture reste ici.
+  exports: [CatalogueReader, CatalogRevisionRepository, EditorialReader],
 })
 export class CatalogueModule {}

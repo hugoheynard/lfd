@@ -12,6 +12,7 @@ import { AllergenCatalogueReader } from "../../../../allergens/domain/ports/alle
 import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../../membership/membership.service.js";
 import { B2bCatalogFeedProjection } from "../feed-projection.service.js";
+import { EditorialReader } from "../../../../catalogue/product/domain/ports/editorial-reader.js";
 
 /**
  * **Le garde qui protège la boutique d'un réglage manquant.**
@@ -68,6 +69,14 @@ async function build(options: {
       // Aucune limite de commande déclarée : le sujet de cette suite est le
       // rapport pro, pas l'heure. Un double vide plutôt qu'un cas de plus.
       { provide: OrderTimeLimitRepository, useValue: { list: () => Promise.resolve([]) } },
+      // Ni éditorial ni visuel : même raison. La vitrine a son propre fichier.
+      {
+        provide: EditorialReader,
+        useValue: {
+          findByProducts: () => Promise.resolve(new Map()),
+          mediaOfProducts: () => Promise.resolve(new Map()),
+        },
+      },
       {
         provide: B2bMembershipService,
         useValue: { publishedProductIds: () => Promise.resolve([...options.publishedIds]) },

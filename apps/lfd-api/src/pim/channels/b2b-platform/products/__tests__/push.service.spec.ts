@@ -196,6 +196,8 @@ async function build(
                       // Référentiel vide : aucune fiche n'est déclarée ici, donc
                       // rien à projeter — ce test parle d'estampille.
                       IncoProjector.from([], "fr"),
+                      // Ni ligne ni visuel : ce test parle d'estampille.
+                      new Map(),
                       generatedAt,
                     ),
                     candidates: publishedIds.length,
