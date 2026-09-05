@@ -173,6 +173,26 @@ il n'est qu'un élagage pour les règles et les barèmes (qui, eux, replient
 dans la règle qu'il fabrique). Cette asymétrie doit rester lisible : c'est elle
 qui interdit de charger les planchers plus largement.
 
+### ✅ Livré le 2026-09-05 — et il y avait DEUX filtres, pas un
+
+Le plan disait « la disparition du `WHERE archivedAt IS NULL` », au singulier. Il
+y en a deux, dans deux fichiers, et ils ne servent pas le même écran :
+
+- `PrismaPricingBoardReader.load` charge les planchers pour **le tableau**, avec
+  `unarchivedAt(at)` — la lecture datée ;
+- `PrismaPriceFloorReader.candidatesFor` les charge pour **la résolution**, avec
+  `archivedAt: null` — et c'est celui-là qui **facture** : projection, devis,
+  commande.
+
+Un verrou posé sur le seul écran aurait laissé sans garde la moitié qui engage.
+Le test traverse donc les deux : le tableau (`GET /admin/pricing`) **et** la
+projection (`POST /admin/pricing/projection`).
+
+Il a été éprouvé comme un verrou doit l'être — en retirant chaque filtre à tour
+de rôle : **les deux mutations le font échouer**. Le premier essai, mutant le
+mauvais fichier, passait au vert et aurait fait croire à une couverture qui
+n'existait pas.
+
 ## 5. Lot 2 — l'index, et sa clé
 
 `matchesScope` ne connaît que quatre formes : `global` (vrai sans condition), et

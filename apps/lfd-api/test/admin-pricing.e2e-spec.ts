@@ -845,6 +845,55 @@ describe("l'écran de tarification", () => {
   });
 
   /**
+   * 🔴 **L'autre moitié, et c'est elle qui tient le `WHERE archivedAt IS NULL`.**
+   *
+   * Pour les planchers, ce filtre est **portant** : rien d'autre n'écarte une
+   * limite archivée. C'est une asymétrie avec les règles et les barèmes, qui
+   * replient leur `archivedAt` dans `suspendedFrom` et le rejouent dans le
+   * moteur — le filtre n'y est qu'un élagage, et le prix resterait juste sans
+   * lui. Charger les planchers plus largement, « pour l'écran des archives » ou
+   * pour un index, ferait donc arbitrer des limites retirées : le prix
+   * remonterait au mur d'une décision que personne n'applique plus.
+   *
+   * Ce cas était le champ `suspendedFrom` que le plan des matériaux de prix
+   * voulait ajouter à `ScopedPriceFloor`. Le champ aurait menti — `price_floors`
+   * n'a pas de pause, et son `archivedAt` est remis à `null` à chaque re-pose,
+   * donc il ne dit pas « a cessé d'agir à T ». Le test, lui, ne promet rien
+   * qu'il ne montre.
+   */
+  it("cesse de relever le prix dès que la limite est archivée", async () => {
+    await postRule({ effect: alter(5000) }); // 200 → 100
+    await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "global", id: null }, mode: "percent", value: 7_500 });
+    expect((await croissant()).finalMillicents).toBe(150_000);
+
+    const archived = await staff()
+      .post("/admin/pricing/floors/global/archive")
+      .send({ reason: "La limite ne vaut plus" });
+    expect(archived.status).toBe(204);
+
+    const item = await croissant();
+    expect(item.floored).toBe(false);
+    // La remise de moitié passe en entier : plus rien ne la relève.
+    expect(item.finalMillicents).toBe(100_000);
+    expect(item.effectiveFloor).toBeNull();
+
+    // 🔴 Et sur l'autre chemin, celui qui facture. L'écran et la résolution
+    // chargent les planchers par DEUX requêtes distinctes — `readForScreen` a la
+    // sienne, `PriceFloorReader.candidatesFor` la sienne — et seule la seconde
+    // est celle du devis et de la commande. Ne verrouiller que l'écran laisserait
+    // la moitié qui engage sans garde.
+    const projected = jsonBody<{ points: { unitPriceMillicents: number }[] }>(
+      await staff()
+        .post("/admin/pricing/projection")
+        .send({ companyId: null, sku: SKU, cumulativeQuantities: [1] })
+        .expect(200),
+    );
+    expect(projected.points[0]?.unitPriceMillicents).toBe(100_000);
+  });
+
+  /**
    * Le prix montré est celui d'UN article commandé par quelqu'un sans tarif
    * négocié. L'écran doit le dire : sinon cette colonne passe pour « le prix »,
    * alors qu'elle est le prix de vitrine.
