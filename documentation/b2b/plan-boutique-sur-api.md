@@ -189,6 +189,89 @@ qui n'existent que dans le front. Reverser ces visuels dans le PIM est un travai
 de **contenu**, pas de code : il se décide (garde-t-on les illustrations ? des
 photos ?) avant de s'exécuter.
 
+## 4 bis. L'arbitrage du 2026-09-05 — la boutique est PUBLIQUE
+
+Le lot 1 tranchait pour le **prix négocié**, mur compris. Cette décision
+supposait une boutique authentifiée. **Elle ne l'est pas**, et ça se lit dans
+deux fichiers : `app.html` rend la branche cliente sans attendre Auth0
+(« elle n'attend pas Auth0 »), et aucune route sous `ClientShell` ne porte de
+`canActivate` — seul `/login` est hors du shell client.
+
+Un prix négocié demande une société ; un visiteur n'en a pas. La route sert donc
+le **prix canonique**, qui pour lui EST le prix. Trois conséquences, et la
+troisième est la seule qui coûte :
+
+1. la route est **publique**, throttlée comme `pickup-addresses` — le précédent
+   existant pour une surface anonyme (60/min/IP, « la partie la plus exposée de
+   l'API ») ;
+2. elle est **cachable**, puisqu'elle ne dépend d'aucun client ;
+3. 🔴 **le sursaut que le lot 1 craignait revient le jour où un client connecté
+   parcourt la boutique.** Il verrait le canonique, puis sa mercuriale au
+   premier devis. Ce jour-là, la route doit servir SON prix — et ce sera un
+   second chemin, pas une modification de celui-ci. Écrit maintenant pour ne pas
+   être découvert alors.
+
+### Ce qui rend le lot plus petit que le plan ne le disait
+
+`ProductCatalogReader.all()` existe déjà — « le catalogue entier, dans l'ordre
+où il se parcourt », ajouté pour le back-office. Il rend exactement ce qu'une
+vitrine demande, moins l'éditorial : `sku`, `name`, `unitPriceMillicents` (HT),
+`vatRate`, `category`, `allergens`, `orderTimeLimit`. Et il n'écarte pas au
+hasard : un article sans taux de TVA n'est pas vendable, un retiré non plus.
+
+Le lot 1 n'a donc pas de lecture à écrire. Il a une **vue étroite** à définir et
+un contrôleur à poser.
+
+## 4 ter. L'hydratation en UN point, côté front
+
+C'est la vraie forme du lot 2, et elle vient de la mesure du coût : « le front
+multiplie, le back additionne ». Aujourd'hui **vingt-deux fichiers** importent
+`mock-shop` en direct — seize hors tests. Chacun est une porte sur la même
+donnée, et aucun ne sait qu'elle viendra du réseau.
+
+Une seule porte : un dépôt `ShopCatalogue`, hydraté **une fois** à l'ouverture
+de la boutique, que tout le reste lit. Ce que ça change, au-delà du nombre
+d'appels :
+
+- **le panier cesse de connaître le catalogue.** `cart.store.ts` valide
+  aujourd'hui ses références contre `productById` ; il les validera contre ce
+  que le serveur a rendu ;
+- **`cart-total.ts` perd sa raison d'être** — c'est le lot 2 d'origine, et il
+  n'est pas en conflit : un panier qui lit des prix hydratés n'a plus à
+  recomposer une TVA à partir d'un flottant ;
+- **l'état de chargement devient un état de l'écran.** Aucun écran client n'en a
+  aujourd'hui, parce qu'aucun n'attend le réseau. Les conventions de l'app le
+  prescrivent déjà : `fold-loading`, `fold-empty-state`, jamais de balisage
+  maison.
+
+⚠️ Et un fait à ne pas contourner : `client/` n'utilise **aucun**
+`fold-empty-state` aujourd'hui — il ne vit que dans `legacy/`. La règle est
+écrite comme permanente ; l'espace client est en dérive complète vis-à-vis
+d'elle. Brancher le réseau est le moment où ça cesse d'être cosmétique, puisque
+l'échec de chargement devient un état réel.
+
+## 4 quater. Ce qui manque et qui n'est PAS de l'argent
+
+L'éditorial et les visuels ne traversent nulle part : ni le fil (v7 porte
+`sku`, `name`, `kind`, `categoryId`, `variants`, prix, TVA, poids, allergènes,
+limites — et rien d'autre), ni le miroir (`CatalogItem` n'a aucune colonne pour
+les porter), ni la vue. Le PIM les a (`pim.product_media` → `MediaAsset`, avec
+`url`, `alt`, point focal ; `pim.product_editorial`).
+
+La boutique en a besoin de deux : **une ligne de fournil** et **une vignette**.
+Sans elles, elle montre un nom et un prix — ce qui est vrai, et laid.
+
+🔴 **L'arbitrage reste ouvert**, parce qu'il coûte très différemment :
+
+|                                  | ce que ça demande                                                                     | ce que ça rend                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **A. Faire voyager l'éditorial** | fil v8, colonnes au miroir, `diffDelivery` qui les voit, semis du contenu dans le PIM | la boutique complète, et la fin du dernier mock |
+| **B. Brancher le prix d'abord**  | rien de plus que les lots 1 et 2                                                      | des noms et des prix VRAIS, sans note ni photo  |
+
+L'option B n'est pas un demi-chantier : c'est l'ordre que ce plan a déjà posé
+(« l'argent d'abord, l'éditorial ensuite — l'argent est faux, l'éditorial est
+seulement absent »). Elle rend la boutique honnête avant de la rendre belle.
+
 ## 5. Ce que ce plan ne fait pas
 
 - **Il ne touche pas au moteur de prix.** Il lui donne un second lecteur.
