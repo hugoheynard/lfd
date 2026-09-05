@@ -10,11 +10,18 @@
 > fausse aucune facture — le serveur re-résout tout à la passation — mais c'est
 > le nombre qu'un commercial lit au téléphone.
 >
+> Le **§3 bis** répond à une question distincte, posée après coup : le motif de
+> résolution est-il le bon ? **Oui** — et il dit ce qu'il faut refuser de lui
+> substituer. La seule faille de conception qu'il relève n'est pas dans le motif :
+> c'est une **couture manquante**, que le plan de performance en cours construit
+> à moitié sans le savoir.
+>
 > Un audit porte sa date. Celui-ci ne se mettra pas à jour tout seul.
 
 **Ce qu'il couvre.** Tout ce qui transforme un catalogue en un montant : le
-moteur d'étages, la ventilation de TVA, les deux paniers, le devis, l'agrégat
-`Order`, et les onze documents de prix du dépôt.
+moteur d'étages et **le jugement porté sur son motif** (§3 bis), la ventilation
+de TVA, les deux paniers, le devis, l'agrégat `Order`, et les onze documents de
+prix du dépôt.
 
 **Ce qu'il ne couvre pas.** L'encaissement (Stripe, SEPA), la facturation
 (📐 zéro code, cf. §5), et le caviardage des montants — trois sujets voisins qui
@@ -274,6 +281,119 @@ La sortie est une mesure, pas un geste : compter en production les
 `catalog_items` à `vat_rate_percent IS NULL` dont la famille en a un. Zéro ⇒ le
 repli tombe. Autre chose ⇒ le repli tient, et on sait enfin ce qu'il tient.
 
+### D9 🟡 `minQuantity` veut dire deux choses selon l'étage
+
+`specificity.ts`, `CONTRACT_STAGES` : `mercuriale` et `volume` lisent le seuil
+sur `volumeQuantityOf(context)` — le cumul de l'engagement s'il y en a un —
+tandis que `promotion` et `geste` le lisent sur `context.quantity`, la commande
+en cours.
+
+Le raisonnement est juste, et il est écrit : « à partir de 50 pièces » sur une
+promotion est une incitation au panier, et la lire sur la saison l'accorderait
+dès la première livraison d'un client annuel.
+
+Ce qui n'est écrit nulle part, c'est la conséquence à la saisie : **la même
+colonne, le même champ de formulaire, deux sémantiques**, et rien dans le nom ne
+dit laquelle. Qui tape « 50 » sur l'écran de tarification obtient « 50 dans
+cette commande » ou « 50 sur la saison » selon une liste déroulante placée
+ailleurs dans le même formulaire. Le prix qui en sortira sera juste, et
+inexplicable.
+
+Ce n'est pas un défaut de motif, c'est un défaut de **nom**. Deux concepts
+nommés, ou l'écran qui affiche la mesure à côté du seuil.
+
+---
+
+## 3 bis. Le moteur de résolution — le motif est bon, la couture manque
+
+Un audit qui ne relève que des défauts laisse croire que tout est à refaire.
+Ce n'est pas le cas ici, et le dire est utile : le moteur d'étages est la
+pièce la mieux conçue de toute la chaîne d'argent. Cette section dit **pourquoi
+il ne faut pas y toucher**, et **le seul endroit où il faut**.
+
+### Ce qui le rend fiable, et qui n'est pas courant
+
+Ce n'est pas « des règles empilées » : c'est un **pipeline ordonné à arbitrage
+par étage**, plus un scellement, plus une contrainte finale. Quatre propriétés
+portent sa fiabilité :
+
+1. **`resolvePrice` est pure** — `(canonique, matériaux, contexte, plancher) →
+(prix, trace)`. Ni base, ni horloge, ni réseau : l'instant est **dans** le
+   contexte. Elle s'éprouve en énumérant des cas, pas en montant un environnement.
+2. **Un seul arrondi**, en fin de chaîne, le calcul restant rationnel.
+   `PriceStep.resultMillicents` est explicitement marqué « pour l'affichage
+   seulement » — reprendre cette valeur rétablirait l'arrondi par étage.
+3. **La trace est produite par la passe qui calcule.** L'explication ne peut pas
+   diverger du prix parce qu'il n'y a pas deux passes.
+4. **`compareSpecificity` et `winnerOf` sont exportés et réutilisés par l'écran.**
+   C'est le geste anti-divergence qui compte le plus : la frise des recouvrements
+   désigne le gagnant avec l'arbitrage qui **facture**, au lieu d'en
+   réimplémenter un second.
+
+`ladderAsRule` est un **Adapter** exemplaire : le barème est présenté comme la
+règle d'étage volume qu'il est à cette quantité, donc ni la résolution ni la
+spécificité n'apprennent un cas de plus.
+
+### Ce qu'il faut refuser si on le propose
+
+| Proposition                                                   | Pourquoi c'est pire                                                                                                                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Des **handlers injectés** à la place de `PRICE_STAGES`        | **L'ordre EST la sémantique.** Un tableau le rend lisible en un endroit ; des handlers l'éparpillent dans un module de composition. Et ce n'est pas un `switch` : ajouter un étage coûte une ligne de donnée, la boucle ne change pas. |
+| Faire du **plancher un étage**                                | Il gagnerait une fenêtre de validité et une audience qu'il n'a **délibérément pas** — c'est le sujet du §4 d'`optimisation-resolution-de-prix.md`. Un plancher est une **post-condition**, pas une transformation.                     |
+| Un **moteur de règles** configurable (DSL, table de décision) | Perte du compilateur et d'une trace nommée dans le métier, contre une configurabilité que personne n'a demandée. Et une table de décision n'exprime pas la **composition** — chaque étage s'applique à la sortie du précédent.         |
+| **Séparer** le calcul de la trace                             | C'est la propriété n°3. La casser est le moyen le plus sûr de faire mentir un écran.                                                                                                                                                   |
+| **Formaliser un pattern Specification** sur `applies`         | Il l'est déjà en substance (`matchesScope`, `matchesAudience`, `isInForce`, composés). Le formaliser ajoute de la cérémonie sans rien fermer.                                                                                          |
+
+### 🔴 La seule vraie faille : `resolvePrice` est pure, mais trop petite
+
+Les décisions qui comptent ne sont pas dedans. Elles sont dans
+`OrderLinePricing.resolveOne` — **quatre-vingt-dix lignes `async`** qui
+tranchent : quel engagement couvre l'article, quelle mesure est retenue, quel
+plancher le vise, quel étage du plancher s'ouvre, et comment le barème devient
+une règle. Cette **recette** n'existe qu'à cet endroit, et elle ne se teste
+qu'avec sept doubles.
+
+Ce n'est pas une inquiétude théorique : `optimisation-resolution-de-prix.md`
+compte **3 lectures par article** dans cette méthode, et
+`plan-materiaux-de-prix.md` existe entièrement pour les hisser. Le design fait
+déjà mal, et le dépôt le sait.
+
+Ce qui manque n'est pas un motif exotique — c'est **une couture entre
+« rassembler les matériaux » et « les appliquer »**, celle que `inForceFor`
+esquisse déjà pour la fenêtre et l'audience.
+
+**Et elle coûte moins cher qu'elle n'en a l'air.** L'objection évidente est que
+les deux lectures de `resolveOne` sont **paresseuses** par conception — aucune
+requête si le plancher n'a pas de porte, aucune si aucun engagement ne couvre
+l'article — et qu'un hissage la perdrait. Vérifié : les deux gardes sont des
+**prédicats purs sur des matériaux déjà chargés** —
+`scoped.policy.dynamic?.unlock.minVolumeRatioBp == null` pour le ratio,
+`commitmentFor(live, …)` pour l'engagement. La collecte se hisse donc **sans
+perdre la paresse**, et sans protocole en deux phases.
+
+```
+priceLine(materials, evidence, context): ResolvedOrderLine   // pure
+```
+
+`resolveOne` se réduit alors à : construire le contexte → demander les preuves
+que les prédicats purs réclament → appeler `priceLine`. La recette redevient
+énumérable en test, sans doublé.
+
+### 🔴 Le piège du plan en cours
+
+Ce hissage est déjà écrit — mais dans `plan-materiaux-de-prix.md`, **comme un
+lot de coût, pas de conception**. La différence n'est pas rhétorique : un plan
+de performance s'arrête quand la facture cesse de faire mal, et laisse la
+couture à moitié posée.
+
+C'est déjà visible. Le lot 2 est livré, `pricing/domain/scope-index.ts` existe
+avec ses six exports et son spec — et **son seul appelant est son propre spec**.
+Une pièce de machinerie dont le seul consommateur est son test n'est pas une
+optimisation livrée, c'est une couture ouverte.
+
+Requalifier le lot 3 en lot de **conception** lui donne ce qui lui manque : un
+consommateur, et une raison de finir.
+
 ---
 
 ## 4. Ce que la documentation promet et que le code ne fait pas
@@ -351,20 +471,27 @@ aujourd'hui pour brancher les paliers croira que le front ne multiplie pas.
 
 Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 
-| Lot    | Ce qu'il fait                                                                                                                                                  | Pourquoi maintenant                                                    |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **P1** | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.               | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.     |
-| **P2** | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`. | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.            |
-| **P3** | `D6` : renommer les trois `*Cents` du simulateur, corriger les deux JSDoc. La porte de P2 les tient ensuite.                                                   | Ce sont les modèles qu'on recopie.                                     |
-| **P4** | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                            | Une définition du TTC, pas deux.                                       |
-| **P5** | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                       | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes. |
-| **P6** | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                               | Une ligne facturée ne doit pas dépendre d'une jointure de famille.     |
-| **P7** | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.               | C'est la racine commune ; les trois autres en sont les symptômes.      |
-| **P8** | `D7` : le panier hérité passe en centimes entiers.                                                                                                             | À faire quand on y touche, pas avant.                                  |
+| Lot     | Ce qu'il fait                                                                                                                                                                                                       | Pourquoi maintenant                                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                    | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                 |
+| **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                      | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                        |
+| **P3**  | `D6` : renommer les trois `*Cents` du simulateur, corriger les deux JSDoc. La porte de P2 les tient ensuite.                                                                                                        | Ce sont les modèles qu'on recopie.                                                 |
+| **P4**  | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                 | Une définition du TTC, pas deux.                                                   |
+| **P5**  | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                            | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.             |
+| **P6**  | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                    | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                 |
+| **P7**  | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                    | C'est la racine commune ; les trois autres en sont les symptômes.                  |
+| **P8**  | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                  | À faire quand on y touche, pas avant.                                              |
+| **P9**  | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                      | Un prix juste et inexplicable coûte un litige, pas un correctif.                   |
+| **P10** | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend. | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles. |
 
-**P7 est le seul qui demande une conception**, et il touche à l'argent : la
-convention du dépôt impose alors un contradicteur **avant** de le soumettre.
-P1 à P6 sont des corrections dont chacune tient dans un commit.
+**Deux lots demandent une conception, et les deux touchent à l'argent** : `P7`
+et `P10`. La convention du dépôt impose alors un contradicteur **avant** de les
+soumettre. `P1` à `P6` et `P9` sont des corrections dont chacune tient dans un
+commit.
+
+⚠️ **`P10` ne se justifie pas par la performance, et c'est tout l'objet du §3 bis.**
+Le présenter comme une optimisation, c'est reproduire ce qui a laissé le lot 2
+sans appelant.
 
 ⚠️ **P1 n'est pas urgent au sens de la production** : rien n'est facturé faux, et
 le geste ne détruit rien. Il est urgent au sens de l'usage — c'est un écran en
@@ -384,7 +511,9 @@ Chaque affirmation sur l'existant vient d'un fichier ouvert le 2026-09-05 :
 - `apps/lfd-api/src/b2b/orders/application/{services/order-drafting.service.ts,
 services/order-line-pricing.service.ts, queries/quote-order.handler.ts,
 queries/list-catalog.handler.ts}`
-- `apps/lfd-api/src/b2b/pricing/domain/{resolve-price.ts,price-rule.ts}`
+- `apps/lfd-api/src/b2b/pricing/domain/{resolve-price.ts,price-rule.ts,
+specificity.ts, floor-policy.ts, volume-ladder.ts, scope-index.ts}`,
+  `pricing/application/pricing-context.ts`
 - `apps/lfd-api/src/b2b/catalog/{application/queries/read-shop-catalogue.ts,
 infrastructure/prisma-catalog.reader.ts, domain/ports/catalog.reader.ts}`
 - `apps/lfd-api/prisma/schema.prisma` (colonnes `price_millicents`)
@@ -408,6 +537,18 @@ commitment-bench.ts, simulateur-page.{ts,html}}`
 - qu'il n'existe pas d'autre site de calcul : la recherche a porté sur
   `vatRate`, `Millicents`, `* quantity` et `formatCents`. Un calcul qui
   n'emploierait aucun des quatre lui échapperait.
+
+Le §3 bis, en plus, n'affirme pas :
+
+- que les **3 lectures par article** soient un chiffre mesuré ici — il vient
+  d'`optimisation-resolution-de-prix.md`, et il n'a pas été recompté ;
+- que la couture proposée soit la seule forme possible. Ce qui est **vérifié**,
+  c'est que les deux gardes de paresse de `resolveOne` sont des prédicats purs
+  sur des matériaux déjà chargés — donc qu'un hissage ne coûte pas la paresse.
+  La forme exacte de `priceLine` reste à concevoir, et c'est le sens de `P10` ;
+- qu'un jugement de motif soit un fait. « Le motif est bon » est un avis, appuyé
+  sur quatre propriétés vérifiables une par une — c'est celles-là qu'il faut
+  contredire, pas la conclusion.
 
 **Ce qui n'a pas été fait :** le contradicteur. Ce document touche à l'argent, et
 la convention du dépôt le rend obligatoire — il n'a pas été lancé, sur consigne
