@@ -1,7 +1,14 @@
 # Le décompte du panier — en HT, comme la facture
 
-> **État : 📐 doc-first.** Écrit le 2026-09-05. Rien n'est codé de ce qui suit ;
-> ce qui est décrit de l'existant a été relu dans le dépôt le même jour (§9).
+> **État : 🟢 livré, sauf B5.** Écrit puis bâti le 2026-09-05. B1 à B4 sont dans
+> le code ; **B5 (la surtaxe de retard) attend la réponse du §7.2**.
+>
+> Les §2 à §6 décrivent le raisonnement TEL QU'IL A ÉTÉ FAIT, avant la bascule —
+> ils sont conservés parce que c'est là qu'est la démonstration, pas dans le
+> résultat. Chaque écart porte désormais son encart de sortie. Ce qui a été
+> tranché : **les frais de zone sont hors taxe** (Hugo, 2026-09-05), et le
+> panier ne qualifie plus un taux par catégorie — chaque article porte le sien,
+> résolu par le back, par héritage de famille ou en propre.
 
 Ce document dit **ce que le panier doit montrer**, dans quel ordre, et ce que le
 rayon doit écrire à côté d'un prix. Il ne décrit pas un écran de plus : il
@@ -142,6 +149,11 @@ un prix et la caisse en prélève un autre.
 L'écart vaut `20 % × frais`. Les zones de la maquette portent 20 € et 50 € ; s'il
 s'agit bien de montants HT, l'écart est de 4 € et 10 €.
 
+> ✅ **Corrigé le 2026-09-05 (B2).** Les frais de zone sont hors taxe — c'est
+> tranché. Le décompte les passe désormais à `ventilateVat` comme un terme hors
+> remise au taux du transport, et le test de non-régression porte l'exemple du
+> §1 : « porte sa TVA à 20 %, comme la caisse la facture ».
+
 ⚠️ **Ce document n'affirme pas que ce sont les frais de production.** Il affirme
 que le front ajoute les frais hors taxe et que `computeVatCents` les taxe. La
 valeur réelle des zones est à confronter aux données avant de chiffrer le
@@ -179,6 +191,13 @@ c'est quand même à retirer : à trois taux la légende n'apporte plus rien que
 d'une convention à deux valeurs.
 
 **Proposition : supprimer la légende.** `TVA 5,5 %` se suffit.
+
+> ✅ **Fait le 2026-09-05 (B3).** `vat-rates.ts` est supprimé, la légende avec.
+> Le taux d'une ligne n'est plus qualifié par une famille de produits : chaque
+> article porte le sien (`ShopItemView.vatRatePercent`), résolu par le back — en
+> propre ou hérité de sa famille — et le décompte se contente de grouper. Une
+> ligne par taux, sans exception : c'est une exigence légale, pas une mise en
+> page.
 
 ### 4.4 La surtaxe de commande tardive n'est jamais montrée
 
@@ -246,6 +265,16 @@ appelle la même fonction avec les mêmes entrées.
 ✅ Une implémentation, aucun aller-retour, et le décompte reste exact
 localement. **C'est la recommandation.**
 
+> ✅ **B est livré le 2026-09-05 (B1).** `ventilateVat` vit dans
+> `packages/money/src/vat.ts`. Il y avait **trois** copies, pas deux : le
+> domaine `orders`, le panier de la boutique, et `legacy/data/vat.ts`, dont
+> l'en-tête assumait la duplication en toutes lettres. Les trois délèguent
+> désormais. Un changement de comportement à connaître : un extra rejoint le
+> **groupe de son taux** au lieu d'être arrondi à part, ce qui peut déplacer un
+> total d'un centime sur une commande portant à la fois de la marchandise à
+> 20 % et des frais — dans le sens juste. Les 10 tests existants de
+> `computeVatCents` passent inchangés.
+
 Ce qui la rend possible, et qui est vérifié : `@lfd/money` n'a **aucune**
 dépendance de production, et le domaine `orders` l'importe déjà
 (`order-line.ts`). La règle « le domaine ne dépend de rien » n'est donc pas
@@ -274,30 +303,35 @@ le déplacement, pas après (§7).
 
 ## 7. Ce qu'il reste à trancher
 
-1. **Les frais de zone sont-ils HT ?** Le domaine le suppose (`VatInput`
-   documente « HT »). Le front les traite en TTC. Il faut une réponse unique, et
-   c'est elle qui dit si le §4.1 est un bug d'affichage ou de facturation.
+1. ~~**Les frais de zone sont-ils HT ?**~~ **Oui** (Hugo, 2026-09-05). Le §4.1
+   était donc un bug de FACTURATION affiché, pas une question d'unité.
 2. **La surtaxe de commande tardive concerne-t-elle le parcours client ?** Si
-   oui, elle doit apparaître au décompte, entre le coursier et la TVA.
-3. **La fiche produit montre-t-elle le TTC en second niveau**, ou seulement le
-   HT ? (Le §5 le propose ; c'est un choix de vitrine, pas de comptabilité.)
-4. **La légende par taux disparaît-elle** (§4.3) ?
+   oui, elle doit apparaître au décompte, entre le coursier et la TVA. **Reste
+   ouverte** — c'est le seul lot non livré (B5).
+3. ~~**La fiche produit montre-t-elle le TTC en second niveau ?**~~ Non : elle
+   montre le HT, mention comprise, comme le rayon. Un second nombre à côté du
+   premier redemanderait au lecteur de choisir lequel compte.
+4. ~~**La légende par taux disparaît-elle ?**~~ Oui (§4.3).
 
 ---
 
 ## 8. Les lots
 
-| Lot | Ce qu'il fait                                                                                                                   | Dépend de |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| B1  | La ventilation par taux descend dans `@lfd/money`, testée ; `computeVatCents` l'appelle et somme. Aucun comportement ne change. | —         |
-| B2  | Le coursier porte sa TVA au décompte du panier. **Corrige l'écart de montant.** Test de non-régression sur l'exemple du §1.     | B1, §7.1  |
-| B3  | Le décompte passe en HT : sous-total HT, remise/coursier, une ligne par taux, total TTC. La légende tombe.                      | B1        |
-| B4  | Le rayon, la fiche et le bouton portent la mention `HT`. Copie fr/en/it.                                                        | B3        |
-| B5  | La surtaxe de commande tardive, **si** le §7.2 dit qu'elle s'applique.                                                          | §7.2      |
+| Lot    | Ce qu'il fait                                                                                              | État              |
+| ------ | ---------------------------------------------------------------------------------------------------------- | ----------------- |
+| **B1** | La ventilation par taux descend dans `@lfd/money`, testée ; les **trois** copies délèguent.                | ✅ 2026-09-05     |
+| **B2** | Le coursier porte sa TVA au décompte du panier. **Corrige l'écart de montant.**                            | ✅ 2026-09-05     |
+| **B3** | Le décompte passe en HT : sous-total HT, remise/coursier, une ligne par taux, total TTC. La légende tombe. | ✅ 2026-09-05     |
+| **B4** | Le rayon, la fiche et le bouton portent la mention `HT`. Copie fr/en/it.                                   | ✅ 2026-09-05     |
+| B5     | La surtaxe de commande tardive, **si** le §7.2 dit qu'elle s'applique.                                     | ⏸️ attend le §7.2 |
 
-B1 est incolore par construction — c'est ce qui permet de la livrer d'abord et
-de vérifier qu'elle ne bouge rien avant que quoi que ce soit d'autre s'appuie
-dessus.
+B1 était incolore par construction — c'est ce qui a permis de la livrer d'abord
+et de vérifier qu'elle ne bougeait rien (les 10 tests de `computeVatCents`
+passent inchangés) avant que quoi que ce soit d'autre s'appuie dessus.
+
+**Ce que la commande passée porte désormais** : `PlacedLine.unitPriceCents` est
+en **hors taxe**. Elle figeait du TTC, c'est-à-dire une unité que ni la caisse ni
+la facture n'emploient.
 
 ---
 
@@ -323,5 +357,17 @@ toutes les valeurs (§4.5) ; que la surtaxe de retard atteint aujourd'hui un
 panier client (§4.4).
 
 **Ce qui n'a pas été fait** : le contradicteur. Ce plan touche à l'argent, et la
-convention du dépôt le rend obligatoire — il n'a pas été lancé ici, sur
-consigne de session. À passer avant de bâtir B2.
+convention du dépôt le rend obligatoire — il n'a pas été lancé, sur consigne de
+session. Ce qu'il aurait pu attraper reste donc à relire à la main.
+
+**Ce que la mise en œuvre a appris, et que le plan ne disait pas** :
+
+- il y avait **trois** implémentations de la ventilation, pas deux —
+  `legacy/data/vat.ts` en portait une, et son propre en-tête l'assumait ;
+- la remise ne divergeait effectivement pas (§4.5), et la bascule s'est donc
+  faite sans qu'aucun total de marchandise ne bouge : le seul nombre modifié est
+  celui d'une livraison ;
+- `pnpm lint` était **déjà rouge** sur `dev` avant ce chantier, sur trois
+  fichiers qu'aucun lot ne touchait. Les tests, les portes et le build AOT
+  étaient verts — le lint, lui, n'avait pas été lancé à la racine. Corrigé dans
+  la foulée.
