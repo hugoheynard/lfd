@@ -15,7 +15,7 @@
           <lfd-cart-row
             [name]="line.name"
             [unitPriceMillicents]="line.unitPriceMillicents"
-            [canonicalPriceCents]="line.canonicalPriceCents"
+            [canonicalPriceMillicents]="line.canonicalPriceMillicents"
             [quantity]="line.quantity"
             (quantityChange)="cart().setQuantity(line.sku, $event)"
             (remove)="cart().remove(line.sku)"

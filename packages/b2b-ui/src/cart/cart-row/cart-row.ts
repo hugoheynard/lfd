@@ -10,6 +10,7 @@ import {
 import { FoldButtonIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { formatCents, formatMillicents } from '../../order/order-format';
+import { strikedPriceOf } from './striked-price';
 
 /**
  * `lfd-cart-row` — **un article dans un panier**, tel que le client le voit.
@@ -20,9 +21,12 @@ import { formatCents, formatMillicents } from '../../order/order-format';
  * nu de l'autre — alors que c'est au téléphone que la différence coûte le plus
  * cher : le commercial décrit une ligne que le client ne reconnaît pas.
  *
- * **Le prix est en centimes**, et le formatage vit ici. Le panier client
- * raisonne en euros flottants ; lui laisser formater sa ligne aurait donné deux
- * arrondis pour un même montant.
+ * **Le prix unitaire est en MILLICENTIMES**, et le formatage vit ici. Ce
+ * paragraphe disait « en centimes », et que le panier client raisonnait en
+ * euros flottants : les deux étaient vrais quand ils ont été écrits, et faux
+ * depuis le 2026-09-05 — le client compte en centimes entiers comme la caisse,
+ * et le prix unitaire porte ses trois décimales. Laisser un appelant formater
+ * sa ligne donnerait deux arrondis pour un même montant.
  *
  * La quantité passe par `fold-number-input` : le stepper vaut mieux qu'un champ
  * libre pour la manipulation la plus fréquente de l'écran, et il borne la saisie
@@ -41,7 +45,7 @@ import { formatCents, formatMillicents } from '../../order/order-format';
 })
 export class CartRow {
   readonly name = input.required<string>();
-  /** Prix unitaire **HT**, en centimes. */
+  /** Prix unitaire **HT**, en **millicentimes** — comme son nom le dit. */
   readonly unitPriceMillicents = input.required<number>();
   readonly quantity = input.required<number>();
 
@@ -54,7 +58,7 @@ export class CartRow {
    * téléphone un tarif que la commande contredit ensuite — et ne peut même pas
    * dire au client qu'il bénéficie de quelque chose.
    */
-  readonly canonicalPriceCents = input<number | null>(null);
+  readonly canonicalPriceMillicents = input<number | null>(null);
 
   /** L'unité de vente, telle qu'on la dit — « / kg », « la pièce ». */
   readonly unit = input('');
@@ -70,13 +74,10 @@ export class CartRow {
 
   protected readonly unitPrice = computed(() => formatMillicents(this.unitPriceMillicents()));
 
-  /** Le tarif barré — affiché **seulement** s'il diffère de ce qui est facturé. */
-  protected readonly strikedPrice = computed(() => {
-    const canonical = this.canonicalPriceCents();
-    return canonical === null || canonical === this.unitPriceMillicents()
-      ? null
-      : formatCents(canonical);
-  });
+  /** Le tarif barré — cf. {@link strikedPriceOf}, qui porte la règle et l'unité. */
+  protected readonly strikedPrice = computed(() =>
+    strikedPriceOf(this.canonicalPriceMillicents(), this.unitPriceMillicents()),
+  );
   protected readonly lineTotal = computed(() =>
     // Le total de ligne s'ARRONDIT, une seule fois, ici : c'est un montant.
     // Le prix unitaire, lui, garde ses décimales — les confondre afficherait un

@@ -27,8 +27,8 @@ export interface CartLine {
  */
 /** Une ligne du panier, au prix que le serveur facturera. */
 export interface PricedCartLine extends CartLine {
-  /** Le tarif d'entrée, ou `null` quand aucune règle ne l'a fait bouger. */
-  readonly canonicalPriceCents: number | null;
+  /** Le tarif d'entrée en **millicentimes**, ou `null` si rien ne l'a fait bouger. */
+  readonly canonicalPriceMillicents: number | null;
 }
 
 export class CartStore {
@@ -60,8 +60,12 @@ export class CartStore {
     return this.lines$().map((line) => {
       const billed = quoted.get(line.sku);
       return billed === undefined || billed === line.unitPriceMillicents
-        ? { ...line, canonicalPriceCents: null }
-        : { ...line, unitPriceMillicents: billed, canonicalPriceCents: line.unitPriceMillicents };
+        ? { ...line, canonicalPriceMillicents: null }
+        : {
+            ...line,
+            unitPriceMillicents: billed,
+            canonicalPriceMillicents: line.unitPriceMillicents,
+          };
     });
   });
 
