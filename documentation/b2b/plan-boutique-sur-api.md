@@ -1,6 +1,17 @@
 # La boutique lit l'API — et l'argent cesse d'avoir deux sources
 
-**Ouvert le 2026-09-03.**
+**Ouvert le 2026-09-03. — 🟢 Livré le 2026-09-05.**
+
+> **Ce que ce plan décrit est fait.** La boutique s'hydrate de
+> `GET /shop/catalogue` en un point (`ShopCatalogue`), `mock-shop.ts` est
+> supprimé, le panier compte en centimes et millicentimes entiers, et le seed du
+> référentiel pousse jusqu'au miroir — 35 des 38 articles servis portent leur
+> ligne de vitrine. Le corps du plan est conservé tel qu'il a été écrit : c'est
+> le raisonnement qui vaut, pas l'état.
+>
+> Ce qui reste : les **packshots**. Le fil les transporte depuis la v8 et
+> `showcaseOf` choisit par rôle, mais la base de développement ne porte qu'un
+> visuel — il manque des photographies, pas du code.
 
 > Ce plan touche **l'argent** et une **surface en ligne**. Chaque affirmation
 > qu'il fait de l'existant a été ouverte dans le dépôt, pas rappelée de mémoire ;

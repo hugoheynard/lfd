@@ -7,6 +7,13 @@
 > avant d'ajouter au panier**.
 >
 > Statut : **audit + plan, rien d'implémenté.** Date : 2026-08-04.
+>
+> ⚠️ **Relu le 2026-09-05.** Le constat « semé en dur des deux côtés » n'est plus
+> vrai : la boutique lit `GET /shop/catalogue`, et le seed du référentiel pousse
+> jusqu'au miroir. La roadmap de ce document, elle, n'a pas été reprise — la
+> quantité avant l'ajout au panier est arrivée par un autre chemin
+> (`QuantityRail`, `fold-number-input` au panier). Lire ce doc comme un audit
+> DATÉ, pas comme l'état courant.
 
 ## Périmètre & fichiers concernés
 
