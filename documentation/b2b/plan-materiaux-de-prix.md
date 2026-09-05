@@ -189,6 +189,10 @@ seconde a coûté la première version : `resolvePrice` a besoin des **perdants*
 l'étage pour `supersedes`, et un gabarit met plusieurs règles dans un seau (§2).
 
 ⚠️ Le précédent `mostSpecificFirst` (`@lfd/catalog-sync`) est une `Map` **1:1** :
+| `volumeTierPrices` rend `null` sans barème gagnant | `volume-tier-prices.ts`, `winningLadder` |
+| Elle n'énumère que les paliers du barème | `volume-tier-prices.ts`, `ladder.tiers.map` |
+| Une mercuriale à paliers est **une règle par palier** | `template-to-rules.ts` |
+| La grille réutilise le plancher résolu à la quantité d'origine | `volume-tier-prices.ts`, l'argument `floor` |
 il ne le peut que parce que `order_time_limit_one_per_scope` garantit une ligne
 par portée. Il vaut donc pour les **planchers** — `price_floors_one_per_scope`
 donne la même garantie — et ne dit rien du cas qui pose problème.
@@ -239,7 +243,102 @@ une régression d'ISP. **La forme à retenir** : la méthode de lot devient l'un
 lecture, et `candidatesFor` se réécrit **par-dessus** — un appel de lot à une
 seule portée. Un `WHERE`, deux entrées.
 
-## 7. Ce que ça touche, recompté
+## 7. Lot 4 — la grille exhaustive, et le front qui sélectionne
+
+**À faire juste après le lot 0, dont il est la suite.** Il n'attend pas la porte
+de §9 : il complète une réponse aujourd'hui incomplète, ce qui est une correction
+avant d'être une économie.
+
+### Le fait
+
+`volumeTierPrices` rend **`null`** dès qu'aucun `VolumeLadder` ne gagne, et
+n'énumère que **les paliers de ce barème**.
+
+Or une mercuriale à paliers **n'est pas un barème** : `template-to-rules.ts` la
+pose en **une règle par palier**, avec des `minQuantity` différents. Ces seuils-là
+ne sont donc pas dans la grille.
+
+### Ce que ça coûte aujourd'hui, et demain
+
+**Aujourd'hui, c'est une sous-réponse, pas un faux prix.** Chaque ligne servie est
+une résolution complète ; il en manque. Un commercial qui demande « à combien je
+lui fais les 100 ? » pour un client à mercuriale négociée et sans barème public
+ne voit **aucune** grille.
+
+**Demain, ça devient un faux prix.** Dès qu'un front **sélectionne** dans cette
+grille comme si elle était exhaustive — ce que le lot fait précisément pour
+supprimer des appels —, il affiche le prix d'un palier qui n'existe pas dans sa
+grille, c'est-à-dire le prix d'entrée, à un client qui a négocié mieux. Et pour
+les clients qui comptent.
+
+### Le geste
+
+Énumérer **l'union des seuils qui affectent l'article** — les `minQuantity` des
+paliers du barème gagnant **et** ceux des règles qui visent l'article — puis
+résoudre chacun par `resolvePrice`, exactement comme aujourd'hui.
+
+- **on n'invente aucun palier** : on en révèle qui existaient déjà, posés par une
+  mercuriale ;
+- **chaque ligne reste une résolution complète** à sa quantité — c'est ce qui
+  interdit un `canonique × (1 − remise)`, et ça ne change pas ;
+- la grille cesse d'être `null` quand une règle à seuil vise l'article sans
+  qu'aucun barème ne le fasse.
+
+### 🔴 Le défaut connu devient portant, et doit être tranché ICI
+
+La grille est aujourd'hui calculée avec la **décision de plancher prise à la
+quantité d'origine** : `volumeTierPrices` reçoit le plancher `applied` résolu à la
+quantité du panier et le réutilise pour tous les paliers. Un plancher **dynamique**
+peut donc faire diverger le prix réel de celui qu'annonce la ligne.
+
+Tant que la grille n'est qu'un indicatif lu au téléphone, l'écart s'excuse. Dès
+qu'un front **facture ce qu'elle annonce**, il ne s'excuse plus. Ce lot doit donc
+choisir, et l'écrire :
+
+- soit **résoudre le plancher à la quantité de chaque palier** — la grille devient
+  exacte, et coûte une décision de plancher par palier ;
+- soit **exclure du calcul les articles à plancher dynamique**, et rendre `null`
+  plutôt qu'un chiffre qu'on sait approximatif.
+
+Ne pas trancher, c'est laisser le front s'appuyer sur une valeur dont on sait
+déjà qu'elle peut mentir.
+
+### Ce que le front en fait
+
+Il **sélectionne** le palier correspondant à la quantité affichée. Conséquences
+sur la saisie mesurée au §3 :
+
+| geste                | appels aujourd'hui | avec la grille                        |
+| -------------------- | ------------------ | ------------------------------------- |
+| Changer une quantité | 1                  | **0**                                 |
+| Ajouter un article   | 1                  | 1 — sa grille n'est pas encore connue |
+| Changer de client    | 1                  | 1 — la mercuriale change              |
+
+Sur les treize gestes de la session mesurée, les **quatre reprises de quantité**
+tombent à zéro. C'est le gain que le lot 0 ne pouvait pas obtenir, et il ne
+demande rien de plus au navigateur qu'une comparaison de seuils.
+
+### 🔴 Ce qu'on ne fait toujours PAS : partager `resolvePrice`
+
+La tentation est réelle — le moteur est une fonction **pure**, elle se partagerait
+techniquement. Trois raisons de ne pas le faire, et ce sont des faits :
+
+- **ses entrées sont le secret.** Résoudre localement demande toutes les règles,
+  avec leurs libellés commerciaux, et tous les planchers — or un plancher **est**
+  la marge. C'est ce que `CustomerOrderQuoteView` vient de retirer de la surface
+  client ; le remettre en entier dans un navigateur serait strictement pire ;
+- **il lui manque de la donnée serveur** : `observedRatio` lit l'historique de
+  volume par SKU, la décision d'engagement lit le cumul commandé du client ;
+- **il lui manque l'horloge.** `resolvePrice` prend un `at` ; côté front ce serait
+  celle du poste du client, et une promotion expirerait selon l'heure de son
+  téléphone. C'est exactement ce que le port `Clock` existe pour empêcher.
+
+> **La règle, et elle vaut au-delà du prix :** vers notre propre serveur, on peut
+> faire traverser les **règles** — c'est ce que fait la v7 du fil pour l'heure
+> limite. Vers un **navigateur**, seulement le **résolu**. Le snapshot de
+> catalogue tient depuis toujours par cette ligne.
+
+## 8. Ce que ça touche, recompté
 
 |                                     | quoi                                                                                                     |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -247,12 +346,13 @@ seule portée. Un `WHERE`, deux entrées.
 | 2 suites de handlers                | `place-order.handler.spec.ts`, `place-order-for-customer.handler.spec.ts`                                |
 | 1 e2e neuf                          | le plancher archivé (lot 1)                                                                              |
 | 1 écran + son test de comptage      | `nouvelle-commande-page.ts` (lot 0)                                                                      |
+| 1 fonction de domaine               | `volumeTierPrices` — l'union des seuils, et l'arbitrage du plancher dynamique (lot 4)                    |
 | 3 appelants de `resolveScopedFloor` | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts` — inchangés, mais à relire |
 
 ⚠️ Le lot 1 ne touche **plus** `ScopedPriceFloor`, `price-rows.ts`,
 `pricing-floor.ts` ni leurs specs : c'est un test, pas un changement de type.
 
-## 8. Ce qui reste par article, et pourquoi
+## 9. Ce qui reste par article, et pourquoi
 
 - **la décision d'engagement** — elle dépend de la quantité et du cumul, que le
   `WHERE` n'utilise pas. C'est ce qui rend le hissage possible ;
@@ -261,7 +361,7 @@ seule portée. Un `WHERE`, deux entrées.
   plancher **global** à porte de volume les rendrait obligatoires sur chaque
   ligne. Batchables (mêmes fenêtres pour tout le panier), **lot suivant**.
 
-## 9. La porte
+## 10. La porte
 
 `optimisation-resolution-de-prix.md` §6 : si `priceAll` pèse **moins de 20 %** des
 opérations facturées, les lots 2 et 3 ne s'ouvrent pas. Le **lot 1 fait
@@ -274,7 +374,7 @@ résolution datée existe, le hissage ferait revenir une règle archivée depuis
 `unarchivedAt()` porte cette sémantique et n'est utilisé que par le tableau de
 bord.
 
-## 10. Ce qui a été vérifié, et où
+## 11. Ce qui a été vérifié, et où
 
 | Affirmation                                                      | Vérifiée dans                                                                      |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
