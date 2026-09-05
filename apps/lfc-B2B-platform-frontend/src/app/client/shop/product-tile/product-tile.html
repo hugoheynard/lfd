@@ -34,7 +34,10 @@
   </button>
 
   <div class="foot">
-    <span class="price">{{ price() }}</span>
+    <span class="price">
+      {{ price() }}
+      <span class="price-ht">{{ t().shop.htSuffix }}</span>
+    </span>
 
     <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
          de porter trois cibles au lieu d'une. -->

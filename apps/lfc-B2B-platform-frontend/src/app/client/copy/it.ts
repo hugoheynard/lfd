@@ -212,6 +212,7 @@ export const IT: ClientCopy = {
     shelvesGroup: 'I reparti',
     add: 'Aggiungi',
     priceHt: '{price} IVA escl.',
+    htSuffix: 'IVA escl.',
     addAria: 'Aggiungi {name}',
     removeAria: 'Togli {name}',
     cartBar: '{count} pezzi nel carrello',

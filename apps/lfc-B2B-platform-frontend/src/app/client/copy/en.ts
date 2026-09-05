@@ -209,6 +209,7 @@ export const EN: ClientCopy = {
     shelvesGroup: 'The shelves',
     add: 'Add',
     priceHt: '{price} excl. VAT',
+    htSuffix: 'excl. VAT',
     addAria: 'Add {name}',
     removeAria: 'Remove {name}',
     cartBar: '{count} items in the basket',

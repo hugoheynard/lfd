@@ -43,17 +43,16 @@ export class ProductTile {
   protected readonly t = inject(ClientCopyService).t;
 
   /**
-   * Le prix **hors taxe**, mention comprise.
+   * Le prix **hors taxe**, sans sa mention — le gabarit la pose à côté.
    *
    * Un prix alimentaire affiché sans mention se lit TTC en France : `1,00 €` sur
-   * une vignette qui pense HT ment à son lecteur. La mention n'est donc pas une
-   * décoration mais la seule chose qui rend l'affichage exact — et la boutique
-   * s'adresse à des professionnels, qui raisonnent en HT.
+   * une vignette qui pense HT ment à son lecteur. Elle est donc obligatoire.
+   * Mais elle QUALIFIE le prix, elle n'en fait pas partie : écrite du même
+   * corps et de la même graisse, elle pesait autant que le montant qu'on vient
+   * lire. D'où deux fragments plutôt qu'une chaîne.
    */
   protected readonly price = computed(() =>
-    fill(this.t().shop.priceHt, {
-      price: formatCents(unitPriceCents(this.product().unitPriceMillicents)),
-    }),
+    formatCents(unitPriceCents(this.product().unitPriceMillicents)),
   );
 
   /** Le visuel du référentiel, ou l'illustration de son rayon. */

@@ -241,8 +241,21 @@ export interface ClientCopy {
      * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
      * et un prix alimentaire sans mention se lit TTC : la mention n'est pas une
      * décoration, c'est ce qui empêche la vignette de mentir.
+     *
+     * La forme ASSEMBLÉE, pour tout ce qui n'a qu'une chaîne à poser — un fait
+     * de fiche, un libellé de bouton.
      */
     readonly priceHt: string;
+    /**
+     * La seule mention, sans le montant : la vignette la compose elle-même pour
+     * lui donner un registre plus discret que le prix, qu'elle ne fait que
+     * qualifier.
+     *
+     * ⚠️ Elle doit rester la **fin** de {@link priceHt} — deux mots pour la même
+     * chose sont deux mots qui divergent. `client-copy.spec.ts` le vérifie dans
+     * les trois langues.
+     */
+    readonly htSuffix: string;
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;

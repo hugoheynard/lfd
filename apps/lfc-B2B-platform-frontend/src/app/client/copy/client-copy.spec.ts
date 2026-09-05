@@ -58,6 +58,22 @@ describe('dictionnaires de l’app cliente', () => {
     }
   });
 
+  /**
+   * 🔴 **Deux mots pour la même chose sont deux mots qui divergent.**
+   *
+   * La vignette compose « 2,13 € » + « HT » pour donner à la mention un registre
+   * plus discret que le prix ; la fiche et le bouton n'ont qu'une chaîne à
+   * poser et prennent la forme assemblée. Les deux doivent dire le même mot, y
+   * compris le jour où quelqu'un traduit l'une sans l'autre.
+   */
+  it('la mention hors taxe termine sa forme assemblée, dans les trois langues', () => {
+    for (const [code, dict] of Object.entries(DICTS)) {
+      expect({ [code]: dict.shop.priceHt.endsWith(` ${dict.shop.htSuffix}`) }).toEqual({
+        [code]: true,
+      });
+    }
+  });
+
   it('remplace les jetons, et laisse le reste intact', () => {
     expect(fill('Ouvrez le message envoyé à {email} — une heure.', { email: 'a@b.fr' })).toBe(
       'Ouvrez le message envoyé à a@b.fr — une heure.',

@@ -37,6 +37,19 @@ describe('ProductTile', () => {
   });
 
   it('porte la mention dans la langue affichée', () => {
-    expect(priceText().endsWith(FR.shop.priceHt.replace('{price} ', ''))).toBe(true);
+    expect(priceText().endsWith(FR.shop.htSuffix)).toBe(true);
+  });
+
+  /**
+   * La mention QUALIFIE le montant, elle ne le double pas : elle vit dans son
+   * propre élément pour porter un registre plus discret. Écrite du même corps,
+   * elle pesait autant que le prix qu'on vient lire.
+   */
+  it('sépare la mention du montant, pour pouvoir la rendre discrète', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.price-ht')?.textContent?.trim()).toBe(FR.shop.htSuffix);
+    // Le montant seul, sans la mention collée dedans.
+    expect(el.querySelector('.price')?.firstChild?.textContent?.trim()).toBe('1,40 €');
   });
 });

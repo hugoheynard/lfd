@@ -205,6 +205,7 @@ export const FR: ClientCopy = {
     shelvesGroup: 'Les rayons',
     add: 'Ajouter',
     priceHt: '{price} HT',
+    htSuffix: 'HT',
     addAria: 'Ajouter {name}',
     removeAria: 'Retirer {name}',
     cartBar: '{count} pièces au panier',

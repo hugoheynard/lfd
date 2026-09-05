@@ -1,6 +1,17 @@
 :host {
   display: block;
   min-width: 0;
+
+  /**
+   * Le ratio du visuel, en VARIABLE et non en hauteur fixe.
+   *
+   * Il était posé en pixels — 84 en pile, 104 au bureau — pendant que la
+   * largeur suivait la colonne. Le visuel s'aplatissait donc à mesure que
+   * l'écran grandissait : 4/3 à 390 px, 2,3/1 à 1400, **3,9/1 à 1920**, où le
+   * `cover` rognait le haut et le bas du packshot jusqu'à n'en garder qu'une
+   * frise. Une hauteur fixe ne tient un cadrage qu'à une seule largeur.
+   */
+  --lfc-product-tile-ratio: 4 / 3;
 }
 
 .tile {
@@ -16,7 +27,7 @@
 .media {
   position: relative;
   flex: none;
-  height: 84px;
+  aspect-ratio: var(--lfc-product-tile-ratio);
   background: var(--fold-color-surface-band);
 }
 
@@ -151,6 +162,9 @@
 
 .price {
   flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
   white-space: nowrap;
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-md);
@@ -158,6 +172,16 @@
   letter-spacing: -0.015em;
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
+}
+
+/* La mention qualifie le montant, elle ne le double pas : plus petite, moins
+   grasse, en texte discret. Au même corps, l'œil lisait deux informations de
+   même poids là où il n'y en a qu'une. */
+.price-ht {
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  color: var(--lfc-color-text-subtle);
 }
 
 .rail {
@@ -220,10 +244,6 @@
 }
 
 @media (min-width: 900px) {
-  .media {
-    height: 104px;
-  }
-
   .narrow-only {
     display: none;
   }

@@ -1,3 +1,11 @@
+/**
+ * En pile : **trois colonnes fixes**, et c'est un choix.
+ *
+ * Une grille fluide y retomberait toute seule à une colonne sous ~440 px, et
+ * une vignette pleine largeur se parcourt moins bien au pouce que trois. La
+ * tuile fait alors ~112 px, et c'est pour ça qu'elle change de GESTES plutôt
+ * que de taille (cf. `ProductTile`).
+ */
 :host {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -31,7 +39,18 @@
 }
 
 @media (min-width: 900px) {
+  /**
+   * Au-delà du pli, c'est le NOMBRE de colonnes qui suit la largeur, pas la
+   * taille des vignettes. Trois colonnes fixes donnaient des tuiles de 410 px
+   * sur un écran de 1920 — une photo de croissant étirée sur une demi-colonne
+   * de journal. Le plancher tient la vignette autour de 210-240 px, et l'écran
+   * en met simplement plus.
+   *
+   * `min(210px, 100%)` et pas `210px` seul : dans un conteneur plus étroit que
+   * le plancher, la piste déborderait.
+   */
   :host {
+    grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
     gap: 11px;
   }
 }
