@@ -61,6 +61,21 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-argument": "error",
       "prettier/prettier": ["error", { endOfLine: "auto" }],
 
+      // --- Un paramètre PRÉFIXÉ `_` est intentionnellement inutilisé -------
+      // Le référentiel passe un `WriteTicket` — un jeton fantôme, sans champ
+      // lisible, dont l'unique rôle est de PROUVER à la compilation que
+      // l'appelant a journalisé avant d'écrire. Un adaptateur ne le lit donc
+      // jamais, et ne peut pas non plus le supprimer : le retirer rendrait
+      // l'écriture appelable sans preuve.
+      //
+      // Le défaut `after-used` laissait passer ce même `_` partout SAUF en
+      // dernière position — soit exactement là où un jeton se pose. La règle
+      // était donc vraie une fois sur deux, ce qui est la pire des trois.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+
       // --- L'environnement ne se lit QUE via AppConfig ---------------------
       // Sans ça, la passerelle serait contournée au premier oubli.
       "no-restricted-properties": [

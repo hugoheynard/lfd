@@ -6,6 +6,7 @@
  * mégarde serait public le jour du déploiement — d'où un test qui énumère les
  * clés au lieu de vérifier celles qu'il attend.
  */
+import type { ShopCatalogueView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
@@ -48,14 +49,26 @@ function push(products: Parameters<typeof snapshotOf>[0]) {
 /** Sans jeton : c'est tout l'objet de cette route. */
 const shop = () => request(ctx.app.getHttpServer()).get("/shop/catalogue");
 
+/**
+ * La vitrine, **typée**.
+ *
+ * `supertest` rend un corps `any`, et un `any` qui circule dans un test laisse
+ * la vue dériver sans que rien ne rougisse : un champ renommé au contrat ne
+ * casserait que l'assertion qui le nomme, pas les autres.
+ */
+async function catalogue(): Promise<ShopCatalogueView> {
+  const response = await shop();
+  return response.body as ShopCatalogueView;
+}
+
 describe("la vitrine publique", () => {
   it("répond SANS jeton — on visite avant de s'identifier", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    const { status, body } = await shop();
+    const { status } = await shop();
 
     expect(status).toBe(200);
-    expect(body.items).toHaveLength(1);
+    expect((await catalogue()).items).toHaveLength(1);
   });
 
   it("rend la ligne de vitrine et le packshot reçus du référentiel", async () => {
@@ -63,7 +76,7 @@ describe("la vitrine publique", () => {
       { sku: "VIE-001", priceMillicents: 140_000, note: "Tourage patient", image: SHOT },
     ]);
 
-    expect((await shop()).body.items[0]).toMatchObject({
+    expect((await catalogue()).items[0]).toMatchObject({
       name: "Produit VIE-001",
       note: "Tourage patient",
       image: SHOT,
@@ -83,7 +96,7 @@ describe("la vitrine publique", () => {
   it("expose le SKU du PRODUIT, celui que la caisse accepte", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    expect((await shop()).body.items[0].sku).toBe("VIE-001");
+    expect((await catalogue()).items[0]?.sku).toBe("VIE-001");
   });
 
   /**
@@ -99,9 +112,9 @@ describe("la vitrine publique", () => {
   it("ne laisse passer que ce qu'une vitrine montre", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    const { body } = await shop();
+    const body = await catalogue();
     expect(Object.keys(body).sort()).toEqual(["items", "shelves"]);
-    expect(Object.keys(body.items[0]).sort()).toEqual([
+    expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
       "image",
       "isFeatured",
       "name",
@@ -111,7 +124,7 @@ describe("la vitrine publique", () => {
       "unitPriceMillicents",
       "vatRatePercent",
     ]);
-    expect(Object.keys(body.shelves[0]).sort()).toEqual(["id", "name", "position"]);
+    expect(Object.keys(body.shelves[0] ?? {}).sort()).toEqual(["id", "name", "position"]);
   });
 
   it("sert le prix DÉCIDÉ ici quand il y en a un, pas celui du référentiel", async () => {
@@ -120,8 +133,8 @@ describe("la vitrine publique", () => {
       data: { sku: "VIE-001-1", priceMillicents: 120_000, decidedBy: "cecile" },
     });
 
-    const { body } = await shop();
-    expect(body.items[0].unitPriceMillicents).toBe(120_000);
+    const body = await catalogue();
+    expect(body.items[0]?.unitPriceMillicents).toBe(120_000);
     // Et le prix du référentiel ne suit pas : l'écart est la négociation.
     expect(JSON.stringify(body)).not.toContain("140000");
   });
@@ -135,7 +148,7 @@ describe("la vitrine publique", () => {
       data: { sku: "VIE-002-1", isHidden: true },
     });
 
-    expect((await shop()).body.items.map((item: { sku: string }) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
   });
 
   /**
@@ -150,9 +163,9 @@ describe("la vitrine publique", () => {
   it("retombe sur le taux de la famille quand l'article n'en porte pas", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000, vatRatePercent: null }]);
 
-    const { body } = await shop();
+    const body = await catalogue();
     expect(body.items).toHaveLength(1);
-    expect(body.items[0].vatRatePercent).toBe(CATEGORY.vatRatePercent);
+    expect(body.items[0]?.vatRatePercent).toBe(CATEGORY.vatRatePercent);
   });
 
   it("ne montre pas un article retiré du référentiel", async () => {
@@ -162,7 +175,7 @@ describe("la vitrine publique", () => {
     ]);
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    expect((await shop()).body.items.map((item: { sku: string }) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
   });
 
   /**
@@ -172,14 +185,14 @@ describe("la vitrine publique", () => {
   it("ne range que les rayons réellement peuplés", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    const { body } = await shop();
+    const body = await catalogue();
     expect(body.shelves).toEqual([{ id: CATEGORY.id, name: CATEGORY.name, position: 0 }]);
   });
 
   it("rend une vitrine vide sans tomber, quand rien n'est en vente", async () => {
-    const { status, body } = await shop();
+    const { status } = await shop();
 
     expect(status).toBe(200);
-    expect(body).toEqual({ shelves: [], items: [] });
+    expect(await catalogue()).toEqual({ shelves: [], items: [] });
   });
 });
