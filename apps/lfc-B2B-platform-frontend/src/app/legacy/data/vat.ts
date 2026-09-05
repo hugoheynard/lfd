@@ -1,14 +1,20 @@
+import { DELIVERY_VAT_RATE, ventilateVat } from '@lfd/money';
+
 /**
  * TVA côté **client** — aperçu pur, en **centimes** (comme le serveur, qui reste
- * l'autorité au checkout). Miroir de `orders/domain/services/vat.ts` du backend :
- * les prix sont HT, la TVA se calcule par **taux** (5,5 % alimentaire, 20 %
- * livraison), remise déduite au prorata de chaque groupe. On duplique cette
- * petite logique côté front car `@lfd/contracts` reste **type-only** ici (sinon
- * zod entre dans le bundle) — elle ne fait que refléter l'affichage.
+ * l'autorité au checkout).
+ *
+ * 🔴 **Le calcul a été rendu à `@lfd/money` le 2026-09-05.** Ce fichier en
+ * portait une copie, et son propre en-tête l'assumait — « on duplique cette
+ * petite logique côté front ». Trois copies vivaient alors dans le dépôt, et
+ * celle du panier de la boutique ne taxait pas le coursier : elle annonçait au
+ * client quatre euros de moins que ce que la caisse facturait sur des frais de
+ * vingt. C'est ce que coûte un synonyme d'arithmétique d'argent.
+ *
+ * Il ne reste ici que les deux signatures que le front hérité appelle.
  */
 
-/** Taux de la prestation de livraison (transport) — taux normal. */
-export const DELIVERY_VAT_RATE = 20;
+export { DELIVERY_VAT_RATE };
 
 /** Une ligne pour le calcul : total **HT** (centimes) et taux (%). */
 export interface VatLineCents {
@@ -24,25 +30,17 @@ export interface VatByRateCents {
 
 /**
  * TVA **des marchandises** par taux (centimes), remise déduite au prorata du
- * poids HT de chaque groupe. Arrondi par groupe. Trié par taux croissant ;
- * les groupes à TVA nulle sont retirés.
+ * poids HT de chaque groupe. Trié par taux croissant ; les groupes à TVA nulle
+ * sont retirés.
  */
 export function goodsVatByRateCents(
   lines: readonly VatLineCents[],
   discountCents = 0,
 ): readonly VatByRateCents[] {
-  const subtotal = lines.reduce((sum, line) => sum + line.htCents, 0);
-  const baseByRate = new Map<number, number>();
-  for (const line of lines) {
-    baseByRate.set(line.vatRate, (baseByRate.get(line.vatRate) ?? 0) + line.htCents);
-  }
-  return [...baseByRate]
-    .map(([rate, base]) => {
-      const discountShare = subtotal > 0 ? (discountCents * base) / subtotal : 0;
-      return { rate, vatCents: Math.round(((base - discountShare) * rate) / 100) };
-    })
-    .filter((line) => line.vatCents > 0)
-    .sort((a, b) => a.rate - b.rate);
+  return ventilateVat({ lines, discountCents, extras: [] }).vat.map((share) => ({
+    rate: share.rate,
+    vatCents: share.amountCents,
+  }));
 }
 
 /** Entrées du calcul de TVA d'une commande (aperçu checkout). */
@@ -55,10 +53,17 @@ export interface VatInputCents {
 
 /** TVA totale (centimes) : marchandises (remise déduite) + livraison. */
 export function computeVatCents(input: VatInputCents): number {
-  const goods = goodsVatByRateCents(input.lines, input.discountCents).reduce(
-    (sum, line) => sum + line.vatCents,
-    0,
-  );
-  const deliveryRate = input.deliveryVatRate ?? DELIVERY_VAT_RATE;
-  return goods + Math.round((input.deliveryFeeCents * deliveryRate) / 100);
+  return ventilateVat({
+    lines: input.lines,
+    discountCents: input.discountCents,
+    extras:
+      input.deliveryFeeCents === 0
+        ? []
+        : [
+            {
+              htCents: input.deliveryFeeCents,
+              vatRate: input.deliveryVatRate ?? DELIVERY_VAT_RATE,
+            },
+          ],
+  }).vatTotalCents;
 }

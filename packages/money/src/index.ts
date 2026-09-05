@@ -18,3 +18,5 @@ export {
   roundToCents,
   divideByBasisPoints,
 } from "./exact.js";
+export { DELIVERY_VAT_RATE, ventilateVat } from "./vat.js";
+export type { VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";

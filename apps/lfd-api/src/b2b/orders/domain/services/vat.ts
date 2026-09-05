@@ -1,3 +1,5 @@
+import { DELIVERY_VAT_RATE, ventilateVat, type VatLine } from "@lfd/money";
+
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
@@ -9,24 +11,22 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
  * Les **frais de livraison** (service coursier) portent leur propre taux — 20 %
  * par défaut (prestation de transport).
  *
- * Tout est en **centimes entiers** ; l'arrondi se fait par groupe (règle usuelle),
- * jamais sur une somme flottante globale.
+ * 🔴 **Le calcul lui-même vit dans `@lfd/money`** depuis le 2026-09-05. Il était
+ * écrit ici, et deux copies en vivaient côté front ; celle du panier ne taxait
+ * pas le coursier et annonçait donc au client un total inférieur à ce que cette
+ * fonction facture. Ce module garde ce qui lui appartient vraiment — les règles
+ * de la COMMANDE : ce que la remise touche, ce qu'elle ne touche pas, et le
+ * refus de facturer une surtaxe sans taux.
+ *
+ * ⚠️ Un extra rejoint désormais le **groupe de son taux** au lieu d'être arrondi
+ * à part. Sur une commande qui porte à la fois de la marchandise à 20 % et des
+ * frais de livraison, le total de TVA peut donc bouger d'un centime — dans le
+ * sens juste : une facture porte une ligne par taux, calculée sur l'assiette
+ * totale de ce taux.
  */
 
-/**
- * Taux de la prestation de livraison (transport) — taux normal.
- *
- * Une **constante de domaine**, et pas une donnée : le taux d'une prestation de
- * transport est le taux normal, il ne se paramètre pas par boutique. Les taux
- * des marchandises, eux, sont de la donnée — ils viennent du PIM, article par
- * article (cf. `documentation/pim/contextes-et-points-de-vente.md`).
- *
- * Une constante `DEFAULT_FOOD_VAT_RATE` vivait ici et n'était lue que par son
- * propre test : elle nommait un « défaut alimentaire » que rien n'appliquait, ce
- * qui laissait croire qu'un article sans taux serait facturé à 5,5 %. Il est
- * écarté de la vente. Nommer un défaut qui n'existe pas est pire que rien.
- */
-export const DELIVERY_VAT_RATE = 20;
+export { DELIVERY_VAT_RATE };
+export type { VatLine };
 
 /**
  * Une surtaxe sans taux ne se facture pas.
@@ -40,12 +40,6 @@ export class MissingLateFeeVatRateError extends TechnicalError {
   constructor() {
     super("orders.late_fee.vat_rate_missing", "Surtaxe sans taux de TVA.");
   }
-}
-
-/** Une ligne pour le calcul : son total **HT** (centimes) et son taux (en %). */
-export interface VatLine {
-  readonly htCents: number;
-  readonly vatRate: number;
 }
 
 /** Entrées du calcul de TVA d'une commande. */
@@ -62,11 +56,11 @@ export interface VatInput {
   /**
    * Taux de la surtaxe en %, **sans valeur par défaut**.
    *
-   * Contrairement au transport — dont le taux est une constante de domaine parce
-   * qu'une prestation de transport est au taux normal, point — celui de la
-   * surtaxe est un **réglage** : personne ne sait encore s'il suit les
-   * marchandises ou la prestation, et inventer une réponse la facturerait
-   * rétroactivement sur toutes les commandes tardives.
+   * Contrairement au transport — dont le taux est une constante parce qu'une
+   * prestation de transport est au taux normal, point — celui de la surtaxe est
+   * un **réglage** : personne ne sait encore s'il suit les marchandises ou la
+   * prestation, et inventer une réponse la facturerait rétroactivement sur
+   * toutes les commandes tardives.
    *
    * Il ne peut donc pas manquer quand `lateFeeCents` n'est pas nul, et
    * {@link computeVatCents} le refuse plutôt que de retomber sur un défaut.
@@ -76,25 +70,30 @@ export interface VatInput {
 
 /**
  * TVA totale de la commande, en centimes. Somme de la TVA des marchandises (par
- * taux, remise déduite au prorata) et de la TVA de la livraison.
+ * taux, remise déduite au prorata), de la livraison et de la surtaxe.
  */
 export function computeVatCents(input: VatInput): number {
-  const subtotal = input.lines.reduce((sum, line) => sum + line.htCents, 0);
+  return ventilateVat({
+    lines: input.lines,
+    discountCents: input.discountCents,
+    extras: extrasOf(input),
+  }).vatTotalCents;
+}
 
-  const baseByRate = new Map<number, number>();
-  for (const line of input.lines) {
-    baseByRate.set(line.vatRate, (baseByRate.get(line.vatRate) ?? 0) + line.htCents);
+/**
+ * Les termes que la remise ne touche pas.
+ *
+ * Un montant nul n'entre pas : une ligne à zéro ne change aucun total, mais
+ * elle obligerait la surtaxe à porter un taux qu'aucune commande n'a réglé.
+ */
+function extrasOf(input: VatInput): readonly VatLine[] {
+  const extras: VatLine[] = [];
+  if (input.deliveryFeeCents !== 0) {
+    extras.push({
+      htCents: input.deliveryFeeCents,
+      vatRate: input.deliveryVatRate ?? DELIVERY_VAT_RATE,
+    });
   }
-
-  let vat = 0;
-  for (const [rate, base] of baseByRate) {
-    const discountShare = subtotal > 0 ? (input.discountCents * base) / subtotal : 0;
-    vat += Math.round(((base - discountShare) * rate) / 100);
-  }
-
-  const deliveryRate = input.deliveryVatRate ?? DELIVERY_VAT_RATE;
-  vat += Math.round((input.deliveryFeeCents * deliveryRate) / 100);
-
   // La surtaxe porte SON taux, réglé, jamais un défaut. Un montant taxé au
   // hasard se rattrape à la main, commande par commande — et seulement si
   // quelqu'un s'en aperçoit.
@@ -102,7 +101,7 @@ export function computeVatCents(input: VatInput): number {
     if (input.lateFeeVatRate === null) {
       throw new MissingLateFeeVatRateError();
     }
-    vat += Math.round((input.lateFeeCents * input.lateFeeVatRate) / 100);
+    extras.push({ htCents: input.lateFeeCents, vatRate: input.lateFeeVatRate });
   }
-  return vat;
+  return extras;
 }
