@@ -95,7 +95,12 @@
     width: 100%;
     max-width: var(--lfc-column);
     margin-inline: auto;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    /* 360 et non 320 : à 320, le nom d'une ligne de panier n'avait que 191 px
+       et « Pain de mie brioché 500 g cuit » passait sur deux lignes, ce qui
+       montait la ligne à 99 px — cinq références remplissaient la colonne. La
+       vitrine y perd une colonne au-delà de 1400 px, et gagne des vignettes
+       plus larges : c'est le bon côté du marché. */
+    grid-template-columns: minmax(0, 1fr) 360px;
     grid-template-areas:
       'search side'
       'chips side'

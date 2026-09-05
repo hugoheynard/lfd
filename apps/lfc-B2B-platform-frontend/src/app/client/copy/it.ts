@@ -242,6 +242,8 @@ export const IT: ClientCopy = {
     fee: 'Corriere',
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
+    clear: 'Svuota il carrello',
+    dropAria: 'Rimuovi {name} dal carrello',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     browse: 'Vedi il banco',

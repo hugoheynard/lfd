@@ -293,6 +293,10 @@ export interface ClientCopy {
      */
     readonly vat: string;
     readonly total: string;
+    /** La sortie du panier : tout retirer d'un coup. */
+    readonly clear: string;
+    /** `{name}` est remplacé par la pièce. La corbeille retire la LIGNE. */
+    readonly dropAria: string;
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;
     readonly payHint: string;

@@ -1,27 +1,58 @@
-/* La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste. */
+/**
+ * La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste.
+ *
+ * **Deux rangées, et le nom a la première pour lui seul.** Sur une rangée, le
+ * champ (92 px), le total (~62) et la corbeille (34) plus leurs écarts ne
+ * laissaient au nom que le reste, et il fallait une colonne de 450 px pour
+ * qu'il tienne. Le nom se lit en premier : il prend toute la largeur, et les
+ * trois contrôles se partagent la rangée du dessous, qui était à moitié vide.
+ */
 :host {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'what what what'
+    'qty sum drop';
   align-items: center;
-  gap: 13px;
+  gap: 9px 13px;
   padding: 13px 15px;
 }
 
 .qty {
-  flex: none;
+  grid-area: qty;
+  justify-self: start;
+  /* Assez large pour deux chiffres et les deux boutons empilés, pas plus : le
+     nom garde le reste. */
+  width: 92px;
+}
+
+/* Discrète au repos : elle n'est pas le geste qu'on vient faire, elle est
+   celui qu'on cherche quand on a changé d'avis. */
+.drop {
+  grid-area: drop;
+  justify-self: end;
   display: grid;
   place-items: center;
-  min-width: 26px;
-  height: 26px;
-  border-radius: var(--fold-space-sm);
-  background: var(--fold-color-primary-surface);
-  color: var(--lfc-color-primary-vivid);
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-bold);
-  font-variant-numeric: tabular-nums;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: none;
+  color: var(--lfc-color-text-subtle);
+  cursor: pointer;
+
+  fold-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: var(--fold-color-alert);
+  }
 }
 
 .what {
+  grid-area: what;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -44,6 +75,8 @@
 }
 
 .sum {
+  grid-area: sum;
+  justify-self: end;
   flex: none;
   white-space: nowrap;
   font-family: var(--fold-font-label);

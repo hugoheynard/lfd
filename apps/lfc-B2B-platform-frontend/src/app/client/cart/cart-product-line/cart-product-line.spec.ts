@@ -7,6 +7,11 @@ import { CartProductLine } from './cart-product-line';
 describe('CartProductLine', () => {
   let fixture: ComponentFixture<CartProductLine>;
 
+  const field = (): HTMLInputElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      'fold-number-input input',
+    );
+
   const text = (selector: string): string =>
     (fixture.nativeElement as HTMLElement).querySelector(selector)?.textContent?.trim() ?? '';
 
@@ -26,7 +31,7 @@ describe('CartProductLine', () => {
   it('porte la quantité, le nom et le prix unitaire hors taxe', () => {
     render(1);
 
-    expect(text('.qty')).toBe('1');
+    expect(field()?.value).toBe('1');
     expect(text('.name')).toBe('Croissant au beurre');
     expect(text('.unit')).toBe('1,40 € HT');
   });
@@ -41,5 +46,44 @@ describe('CartProductLine', () => {
 
     expect(text('.unit')).toBe('1,40 € HT');
     expect(text('.sum')).toBe('4,20 €');
+  });
+
+  /**
+   * 🔴 Le champ EMPILÉ de fold, pas le rail du rayon : au panier on corrige une
+   * quantité, on n'en ajoute pas une. Douze croissants ne se retirent pas en
+   * douze appuis, et le champ se tape.
+   */
+  it('règle sa quantité par un champ, pas par un rail', () => {
+    render(2);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('fold-number-input')).not.toBeNull();
+    expect(el.querySelector('app-quantity-rail')).toBeNull();
+  });
+
+  /** C'est la LIGNE qu'on nomme : le produit se lit avant la quantité. */
+  it('porte le nom du produit comme nom accessible', () => {
+    render(1);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.getAttribute('role')).toBe('group');
+    expect(el.getAttribute('aria-label')).toBe('Croissant au beurre');
+  });
+
+  /**
+   * 🔴 La corbeille retire la LIGNE, pas une pièce — et c'est le seul chemin
+   * vers zéro, puisque le champ s'arrête à un.
+   */
+  it('distingue la corbeille du réglage de quantité', () => {
+    render(12);
+    let dropped = 0;
+    let quantities = 0;
+    fixture.componentInstance.dropped.subscribe(() => (dropped += 1));
+    fixture.componentInstance.quantityChange.subscribe(() => (quantities += 1));
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.drop')?.click();
+
+    expect(dropped).toBe(1);
+    expect(quantities).toBe(0);
   });
 });

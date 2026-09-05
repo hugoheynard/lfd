@@ -235,6 +235,8 @@ export const FR: ClientCopy = {
     fee: 'Coursier',
     vat: 'TVA {rate}',
     total: 'Total TTC',
+    clear: 'Vider le panier',
+    dropAria: 'Retirer {name} du panier',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
     browse: 'Voir le rayon',

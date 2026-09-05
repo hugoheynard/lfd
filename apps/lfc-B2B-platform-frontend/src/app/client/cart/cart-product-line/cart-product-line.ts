@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { unitPriceCents } from '@lfd/money';
+import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { formatCents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
@@ -20,17 +21,35 @@ import { type CartLine, lineHtCents } from '../cart-total';
  * parent qui préformate est un parent qui peut oublier la mention, et rien ne
  * le lui dirait.
  *
+ * Elle règle sa quantité par `fold-number-input`, boutons **empilés dans le
+ * champ**. Le rail du rayon (« − 3 + ») aurait fait un troisième contrôle à
+ * apprendre, et surtout : au rayon on ajoute une pièce à la fois, au panier on
+ * corrige — douze croissants ne se retirent pas en douze appuis. Le champ se
+ * tape, il s'arrête à un, et la corbeille est le seul chemin vers zéro.
+ *
+ * `lfd-cart-row`, le panier du back-office, emploie le même composant : c'est
+ * là qu'est la mutualisation qui paie — le CONTRÔLE, pas la peinture.
+ *
  * ⚠️ Le trait qui la sépare de la suivante appartient à la LISTE, pas à elle —
  * une ligne ne connaît pas sa voisine, et un composant ne pose pas son écart.
  */
 @Component({
   selector: 'li[app-cart-product-line]',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldIconComponent, FoldNumberInputComponent],
+  // Le stepper n'expose pas de nom accessible : c'est la LIGNE qu'on nomme, et
+  // le produit se lit alors avant la quantité comme avant la corbeille.
+  host: { role: 'group', '[attr.aria-label]': 'name()' },
   templateUrl: './cart-product-line.html',
   styleUrl: './cart-product-line.scss',
 })
 export class CartProductLine {
   readonly line = input.required<CartLine>();
+
+  /** La quantité voulue, telle que le champ la rend. Jamais zéro : cf. `min`. */
+  readonly quantityChange = output<number>();
+  /** Retirer la ligne ENTIÈRE — la corbeille, pas le « − ». */
+  readonly dropped = output<void>();
 
   private readonly t = inject(ClientCopyService).t;
 
@@ -53,4 +72,19 @@ export class CartProductLine {
    * pièces, et c'est tout ce que le millicentime existe pour tenir.
    */
   protected readonly sum = computed(() => formatCents(lineHtCents(this.line())));
+
+  protected readonly dropLabel = computed(() =>
+    fill(this.t().cart.dropAria, { name: this.name() }),
+  );
+
+  /**
+   * Le champ rend `null` quand on le vide. On ne propage pas ce vide : un champ
+   * en cours d'édition n'est pas une intention de retirer la ligne — c'est ce
+   * que la corbeille dit, et elle seule.
+   */
+  protected onQuantity(value: number | null): void {
+    if (value !== null) {
+      this.quantityChange.emit(value);
+    }
+  }
 }

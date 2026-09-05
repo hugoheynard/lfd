@@ -48,6 +48,42 @@ describe('CartSummary', () => {
     expect(items.every((item) => item.tagName === 'LI')).toBe(true);
   });
 
+  /**
+   * Le décompte CÂBLE les gestes de la ligne : elle les remonte, il les
+   * applique. C'est le partage habituel — la ligne ne connaît pas le panier.
+   */
+  it('applique le réglage de quantité venu d’une ligne', () => {
+    // Le « + » du champ empilé, dans la PREMIÈRE ligne — pas dans la liste
+    // entière, dont le dernier bouton appartiendrait à la seconde. `fold`
+    // empile l'incrément AU-DESSUS du décrément, donc c'est le premier.
+    const first = el().querySelector('.lines > li');
+    const plus = first?.querySelectorAll<HTMLButtonElement>('fold-number-input button')[0];
+
+    plus?.click();
+    fixture.detectChanges();
+
+    expect(cart.quantityOf('VIE-001')).toBe(3);
+  });
+
+  it('la corbeille d’une ligne retire la ligne, pas une pièce', () => {
+    const bin = el().querySelector<HTMLButtonElement>('.drop');
+
+    bin?.click();
+    fixture.detectChanges();
+
+    expect(cart.quantityOf('VIE-001')).toBe(0);
+    expect(el().querySelectorAll('.lines > li')).toHaveLength(1);
+  });
+
+  /** Vider est une sortie : elle existe, et elle disparaît quand il n'y a rien. */
+  it('offre de vider, et retire l’offre sur un panier vide', () => {
+    el().querySelector<HTMLButtonElement>('.empty-out')?.click();
+    fixture.detectChanges();
+
+    expect(cart.isEmpty()).toBe(true);
+    expect(el().querySelector('.empty-out')).toBeNull();
+  });
+
   it('récapitule en HT et rend le total toutes taxes comprises', () => {
     const labels = [...el().querySelectorAll('.count dt')].map((dt) => dt.textContent?.trim());
 

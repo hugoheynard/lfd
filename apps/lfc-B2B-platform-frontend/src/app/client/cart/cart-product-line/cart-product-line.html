@@ -1,6 +1,29 @@
-<span class="qty">{{ quantity() }}</span>
 <span class="what">
   <span class="name">{{ name() }}</span>
   <span class="unit">{{ unit() }}</span>
 </span>
+
 <span class="sum">{{ sum() }}</span>
+
+<!-- Le stepper EMPILÉ de fold : les deux gestes tiennent dans la largeur du
+     champ, et la quantité se tape directement — douze croissants ne se règlent
+     pas en douze appuis. -->
+<fold-number-input
+  class="qty"
+  size="sm"
+  align="center"
+  spinner="plusminus"
+  controls="inside"
+  integer
+  [min]="1"
+  [step]="1"
+  [value]="quantity()"
+  (valueChange)="onQuantity($event)"
+/>
+
+<!-- La corbeille retire la LIGNE, pas une pièce : c'est le geste qu'on cherche
+     quand on a changé d'avis, et c'est aussi le seul chemin vers zéro — le
+     champ s'arrête à un. -->
+<button class="drop" type="button" [attr.aria-label]="dropLabel()" (click)="dropped.emit()">
+  <fold-icon name="bin" />
+</button>

@@ -11,6 +11,23 @@
   min-height: 0;
 }
 
+/* Un lien plus qu'un bouton : le poids visuel dit la fréquence du geste. */
+.empty-out {
+  align-self: center;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-text-subtle);
+  font-size: var(--fold-text-xs);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.empty-out:hover {
+  color: var(--fold-color-alert);
+}
+
 .empty {
   margin: 0;
   padding: 22px 4px;

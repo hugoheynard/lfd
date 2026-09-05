@@ -4,7 +4,12 @@
   } @else {
     <ul class="lines">
       @for (line of lines(); track line.product.sku) {
-        <li app-cart-product-line [line]="line"></li>
+        <li
+          app-cart-product-line
+          [line]="line"
+          (quantityChange)="cart.setQuantity(line.product.sku, $event)"
+          (dropped)="cart.drop(line.product.sku)"
+        ></li>
       }
     </ul>
   }
@@ -55,3 +60,9 @@
     <dd>{{ money(totals().totalCents) }}</dd>
   </div>
 </dl>
+
+<!-- Vider est une SORTIE, pas une action de premier plan : discrète, sous le
+     total, loin du bouton qui règle. -->
+@if (!cart.isEmpty()) {
+  <button class="empty-out" type="button" (click)="cart.clear()">{{ t().cart.clear }}</button>
+}

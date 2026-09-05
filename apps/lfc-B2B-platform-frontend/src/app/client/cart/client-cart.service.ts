@@ -102,6 +102,31 @@ export class ClientCart {
     this.store.setQuantity(productId, this.store.quantityOf(productId) - 1);
   }
 
+  /**
+   * Poser la quantité d'une ligne — ce que fait un champ, par opposition au
+   * « + » qui en ajoute une.
+   *
+   * Le catalogue garde la porte comme pour {@link add} : une référence qu'il
+   * ne connaît pas n'entre pas dans un état qu'aucun écran ne saurait afficher.
+   */
+  setQuantity(productId: string, quantity: number): void {
+    if (this.catalogue.itemOf(productId) === null) {
+      return;
+    }
+    this.store.setQuantity(productId, quantity);
+  }
+
+  /**
+   * Retirer la LIGNE, quelle que soit sa quantité — la corbeille du panier.
+   *
+   * Distinct de {@link remove}, qui décompte : quand on a changé d'avis sur
+   * douze croissants, appuyer douze fois n'est pas un geste. Le dépôt ramène
+   * déjà zéro à l'absence, donc il n'y a rien de plus à dire ici.
+   */
+  drop(productId: string): void {
+    this.store.setQuantity(productId, 0);
+  }
+
   clear(): void {
     this.store.clear();
   }

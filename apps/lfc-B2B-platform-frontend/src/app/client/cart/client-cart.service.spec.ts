@@ -139,6 +139,32 @@ describe('Les règles du panier', () => {
     expect(cart.isEmpty()).toBe(true);
   });
 
+  /**
+   * 🔴 La corbeille du panier retire la LIGNE, quelle que soit sa quantité.
+   * `remove` décompte ; sur douze croissants, il faudrait douze appuis.
+   */
+  it('retirer la ligne ne demande pas de la décompter', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+    cart.add('VIE-001');
+    cart.add('VIE-001');
+    cart.add('SAL-001');
+
+    cart.drop('VIE-001');
+
+    expect(cart.quantityOf('VIE-001')).toBe(0);
+    expect(cart.quantityOf('SAL-001')).toBe(1);
+  });
+
+  it('retirer une ligne absente ne fait rien, et ne la crée pas', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+
+    cart.drop('SAL-001');
+
+    expect(cart.count()).toBe(1);
+  });
+
   it('ne fige rien sans mode de service ni sans panier', () => {
     const orders = TestBed.inject(ClientOrders);
     expect(orders.place()).toBeNull();
