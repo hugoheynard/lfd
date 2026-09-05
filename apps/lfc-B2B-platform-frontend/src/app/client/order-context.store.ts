@@ -51,15 +51,28 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
 }
 
 /**
- * Ce qui a été décidé à l'écran de commande, et que la boutique porte ensuite.
+ * **Le contexte de la commande** — ce qui a été décidé à l'écran de commande, et
+ * que tous les écrans suivants portent.
  *
- * Le mode n'est jamais une étape passée : la barre du rayon le rappelle, le
+ * Un **store** : un état et sa persistance, aucun comportement. Il s'appelait
+ * `ClientOrder`, à une lettre de `ClientOrders` qui garde les commandes PASSÉES
+ * — deux noms voisins pour deux choses sans rapport, et rien dans le premier ne
+ * disait qu'il n'y avait là qu'un état.
+ *
+ * Le mode n'est jamais une étape passée : `OrderContextBar` le rappelle, le
  * panier le récapitule, la confirmation le répète. Il vit donc plus longtemps
  * qu'un écran — et, depuis qu'il est relu du navigateur, plus longtemps qu'un
  * onglet : rafraîchir la boutique ne renvoie plus à la question.
+ *
+ * 🔴 **Le `null` est un état de plein droit**, pas un trou à combler : « je
+ * n'ai pas encore dit où je suis servi » est ce que la boutique laisse faire —
+ * on visite d'abord, on choisit ensuite. Il n'est exigé qu'au règlement. C'est
+ * pour ça que ses lecteurs l'INJECTENT au lieu de le recevoir : un état absent
+ * qui descend en entrée est un état qu'un parent peut oublier de passer, et le
+ * défaut se lirait alors comme « aucun service » plutôt que comme un oubli.
  */
 @Injectable({ providedIn: 'root' })
-export class ClientOrder {
+export class OrderContextStore {
   readonly choice = signal<ServiceChoice | null>(readLocal(KEY, parseChoice));
 
   constructor() {

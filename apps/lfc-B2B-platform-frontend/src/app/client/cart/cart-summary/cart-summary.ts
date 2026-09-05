@@ -4,7 +4,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { formatEuro, formatRate } from '../../format-money';
 import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
-import { ClientOrder } from '../../client-order.service';
+import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { VAT_SALE } from '../../shop/mock-shop';
 
@@ -36,7 +36,7 @@ export class CartSummary {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   private readonly upsell = inject(CartUpsell);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
 
   protected readonly totals = this.cart.totals;
 

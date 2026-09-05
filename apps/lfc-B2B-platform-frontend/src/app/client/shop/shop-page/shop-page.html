@@ -1,24 +1,4 @@
-<!-- LA BARRE DE CONTEXTE. Le mode n'est jamais une étape passée : il tient sur
-     une ligne, et « Changer » ramène à la question sans perdre le panier. -->
-@if (choice(); as service) {
-  <button class="context" type="button" (click)="backToService()">
-    <span class="badge">{{
-      service.mode === 'pickup' ? t().cart.pickupGroup : t().cart.deliveryGroup
-    }}</span>
-    <span class="where">{{ service.place }} · {{ service.slot }}</span>
-    <span class="change">{{ t().shop.changeService }}</span>
-  </button>
-} @else {
-  <!-- Visiter d'abord, choisir ensuite : la barre demande le mode au lieu de le
-       rappeler, et rien n'est bloqué avant le règlement. -->
-  <button class="context ask" type="button" (click)="backToService()">
-    <span class="where">
-      <span class="ask-title">{{ t().shop.pickService }}</span>
-      <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
-    </span>
-    <span class="change">{{ t().shop.changeService }}</span>
-  </button>
-}
+<app-order-context-bar (changeRequested)="backToService()" />
 
 <div class="shop">
   <div class="search">

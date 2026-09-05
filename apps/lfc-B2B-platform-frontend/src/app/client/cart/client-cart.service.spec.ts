@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { ClientCart } from './client-cart.service';
-import { ClientOrder, type ServiceChoice } from '../client-order.service';
+import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
 import { SHOP_PRODUCTS } from '../shop/mock-shop';
 
@@ -19,12 +19,12 @@ const AT_THE_LABO: ServiceChoice = {
 };
 
 /** Une instance NEUVE, comme après un rechargement de page. */
-function reload(): { cart: ClientCart; order: ClientOrder; orders: ClientOrders } {
+function reload(): { cart: ClientCart; order: OrderContextStore; orders: ClientOrders } {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({});
   return {
     cart: TestBed.inject(ClientCart),
-    order: TestBed.inject(ClientOrder),
+    order: TestBed.inject(OrderContextStore),
     orders: TestBed.inject(ClientOrders),
   };
 }
@@ -38,11 +38,11 @@ describe('Les règles du panier', () => {
 
   /**
    * Le mode de service survit lui aussi au rechargement : sans lui, la boutique
-   * renverrait à la question à chaque F5. Il vit dans `ClientOrder`, mais c'est
+   * renverrait à la question à chaque F5. Il vit dans `OrderContextStore`, mais c'est
    * le panier qui en dépend pour son décompte — d'où sa place ici.
    */
   it('le mode de service survit au rechargement', () => {
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.flushEffects();
 
     expect(reload().order.choice()?.place).toBe('Le Labo');
@@ -90,7 +90,7 @@ describe('Les règles du panier', () => {
 
   it('régler fige la commande et vide le panier : ce qui est payé n’est plus en cours', () => {
     const cart = TestBed.inject(ClientCart);
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     cart.add('croissant');
     cart.add('quiche');
 
@@ -107,7 +107,7 @@ describe('Les règles du panier', () => {
     const orders = TestBed.inject(ClientOrders);
     expect(orders.place()).toBeNull();
 
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     expect(orders.place()).toBeNull();
   });
 });

@@ -5,7 +5,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { formatEuro } from '../../../client/format-money';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
-import { ClientOrder } from '../../../client/client-order.service';
+import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { ALL_SHELVES, productById, SHOP_CATEGORIES, SHOP_PRODUCTS } from '../mock-shop';
@@ -15,6 +15,7 @@ import { ProductSheet } from '../product-sheet/product-sheet';
 import { ProductTile } from '../product-tile/product-tile';
 import { ShelfSheet } from '../shelf-sheet/shelf-sheet';
 import { ShelfBanner } from '../shelf-banner/shelf-banner';
+import { OrderContextBar } from './order-context-bar/order-context-bar';
 
 /** Retire accents et casse : « éclair » et « eclair » cherchent la même chose. */
 function fold(text: string): string {
@@ -25,7 +26,7 @@ function fold(text: string): string {
 }
 
 /**
- * Le rayon — une vitrine, pas une liste.
+ * La boutique — une vitrine, pas une liste.
  *
  * Trois colonnes plutôt qu'une : quatorze références en liste verticale
  * faisaient quatorze écrans de pouce. En grille, six pièces sont visibles sans
@@ -36,8 +37,9 @@ function fold(text: string): string {
  * rayon on a rangé quoi. Chercher remet donc le filtre à zéro — les deux
  * répondent à la même question, et une seule peut gagner.
  *
- * Le mode de service n'est jamais une étape passée : la barre le rappelle en
- * permanence, et sans lui l'écran renvoie à la question qu'on a sautée.
+ * Le mode de service n'est jamais une étape passée : `OrderContextBar` le
+ * rappelle en permanence, et sans lui l'écran renvoie à la question qu'on a
+ * sautée.
  */
 @Component({
   selector: 'app-shop-page',
@@ -46,6 +48,7 @@ function fold(text: string): string {
     CartBar,
     CartSummary,
     FoldIconComponent,
+    OrderContextBar,
     ProductSheet,
     ProductTile,
     ShelfSheet,
@@ -57,7 +60,7 @@ function fold(text: string): string {
 export class ShopPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
 
   protected readonly t = inject(ClientCopyService).t;
@@ -117,7 +120,6 @@ export class ShopPage {
     fill(this.t().cart.pay, { total: formatEuro(this.cart.totals().total) }),
   );
 
-  /** La bannière porte l'histoire du rayon FILTRÉ — « Tout » a la sienne. */
   /** Le rappel du service, sur une ligne — vide tant qu'aucun n'est pris. */
   protected readonly whereLabel = computed(() => {
     const service = this.choice();

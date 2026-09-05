@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { type CartTotals } from './cart/cart-total';
 import { ClientCart } from './cart/client-cart.service';
-import { ClientOrder, type ServiceChoice } from './client-order.service';
+import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
 import { MOCK_ORDER_REF } from './shop/mock-shop';
 
@@ -59,7 +59,7 @@ function isPlaced(value: unknown): value is PlacedOrder {
 @Injectable({ providedIn: 'root' })
 export class ClientOrders {
   private readonly cart = inject(ClientCart);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
 
   private readonly placed = signal<readonly PlacedOrder[]>(readLocal(KEY, parseOrders) ?? []);
 

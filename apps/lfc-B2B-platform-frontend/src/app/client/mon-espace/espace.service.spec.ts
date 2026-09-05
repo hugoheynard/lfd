@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { ClientCart } from '../cart/client-cart.service';
-import { ClientOrder, type ServiceChoice } from '../client-order.service';
+import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
 import { ClientEspace } from './espace.service';
 
@@ -37,7 +37,7 @@ describe('Ce qui attend une action', () => {
   });
 
   it('met la commande prête EN TÊTE, et c’est elle qui porte la crème', () => {
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('croissant');
     TestBed.inject(ClientOrders).place();
 
@@ -63,7 +63,7 @@ describe('Ce qui attend une action', () => {
   });
 
   it('nomme le lieu par sa forme PRÉPOSITIONNELLE — « au Labo », jamais « Le Labo »', () => {
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('croissant');
     TestBed.inject(ClientOrders).place();
 

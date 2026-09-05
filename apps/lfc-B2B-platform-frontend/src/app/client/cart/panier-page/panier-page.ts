@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { formatEuro } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientChrome } from '../../client-chrome.service';
-import { ClientOrder } from '../../client-order.service';
+import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
@@ -26,7 +26,7 @@ import { CartSummary } from '../cart-summary/cart-summary';
 export class PanierPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
 
   protected readonly t = inject(ClientCopyService).t;

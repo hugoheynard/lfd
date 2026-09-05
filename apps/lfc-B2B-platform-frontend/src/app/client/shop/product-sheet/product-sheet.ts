@@ -3,7 +3,7 @@ import { FoldIconComponent } from 'fold-ng';
 
 import { formatEuro } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
-import { ClientOrder } from '../../../client/client-order.service';
+import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { categoryOf, ovenHoursOf, type ShopProduct } from '../mock-shop';
 
@@ -33,7 +33,7 @@ export class ProductSheet {
   readonly removed = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
 
   protected readonly shelf = computed(() => {
     const product = this.product();

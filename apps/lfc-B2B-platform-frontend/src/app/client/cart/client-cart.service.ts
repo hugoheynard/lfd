@@ -2,7 +2,7 @@ import { computed, inject, Injectable } from '@angular/core';
 
 import { type CartLine, type CartTotals, priceCart } from './cart-total';
 import { CartStore } from './cart.store';
-import { ClientOrder } from '../client-order.service';
+import { OrderContextStore } from '../order-context.store';
 import { productById, SHOP_PRODUCTS } from '../shop/mock-shop';
 
 /**
@@ -28,7 +28,7 @@ import { productById, SHOP_PRODUCTS } from '../shop/mock-shop';
 @Injectable({ providedIn: 'root' })
 export class ClientCart {
   private readonly store = inject(CartStore);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
 
   /** Les lignes, dans l'ordre du rayon — pas dans l'ordre des ajouts. */
   readonly lines = computed<readonly CartLine[]>(() => {

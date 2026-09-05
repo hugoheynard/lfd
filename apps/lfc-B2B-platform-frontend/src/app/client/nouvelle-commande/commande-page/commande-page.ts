@@ -14,7 +14,7 @@ import { ClientBannerBlock } from '../../../client/nav/client-banner-block/clien
 import { ClientBannerOutlet } from '../../../client/nav/client-banner';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
-import { ClientOrder, type ServiceChoice } from '../../../client/client-order.service';
+import { OrderContextStore, type ServiceChoice } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { MOCK_CLIENT } from '../../../client/mock-client';
 import { RappelPanel } from '../../../login/accueil-page/rappel-panel/rappel-panel';
@@ -64,7 +64,7 @@ export class CommandePage {
    *  sources se seraient désaccordées le jour où le panneau de rappel s'ouvre. */
   protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
-  private readonly order = inject(ClientOrder);
+  private readonly order = inject(OrderContextStore);
 
   protected readonly t = inject(ClientCopyService).t;
 

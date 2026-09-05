@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { ClientCart } from '../../cart/client-cart.service';
-import { ClientOrder } from '../../../client/client-order.service';
+import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
 import { ShopPage } from './shop-page';
 
@@ -30,7 +30,7 @@ describe('ShopPage', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({ imports: [ShopPage], providers: [provideRouter([])] });
-    TestBed.inject(ClientOrder).choice.set({
+    TestBed.inject(OrderContextStore).choice.set({
       mode: 'pickup',
       place: 'Le Labo',
       at: 'au Labo',

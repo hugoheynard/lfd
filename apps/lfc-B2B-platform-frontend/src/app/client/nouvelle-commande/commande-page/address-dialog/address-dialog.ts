@@ -10,7 +10,7 @@ import {
 import { FoldButtonComponent, FoldIconComponent, FoldInputComponent } from 'fold-ng';
 
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
-import type { ServiceChoice } from '../../../../client/client-order.service';
+import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../../client/client-identity.service';
 import {

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 
 import { ClientCart } from '../cart/client-cart.service';
-import { ClientOrder, type ServiceChoice } from '../client-order.service';
+import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
 import { ClientNav } from './client-nav.service';
 
@@ -50,7 +50,7 @@ describe('Les destinations du menu', () => {
   });
 
   it('compte les commandes réellement passées, pas une valeur tenue à part', () => {
-    TestBed.inject(ClientOrder).choice.set(AT_THE_LABO);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('croissant');
     TestBed.inject(ClientOrders).place();
 
