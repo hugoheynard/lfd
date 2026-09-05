@@ -1,0 +1,54 @@
+/* La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste. */
+:host {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 15px;
+}
+
+.qty {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: var(--fold-space-sm);
+  background: var(--fold-color-primary-surface);
+  color: var(--lfc-color-primary-vivid);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.unit {
+  font-size: var(--fold-text-xs);
+  color: var(--lfc-color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.sum {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}

@@ -2,13 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { FoldIconComponent } from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
+import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
-import { unitPriceCents } from '@lfd/money';
-
-import { lineHtCents } from '../cart-total';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -28,7 +26,7 @@ import { lineHtCents } from '../cart-total';
 @Component({
   selector: 'app-cart-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [CartProductLine, FoldIconComponent],
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })
@@ -43,22 +41,14 @@ export class CartSummary {
 
   protected readonly totals = this.cart.totals;
 
-  protected readonly lines = computed(() =>
-    this.cart.lines().map((line) => ({
-      id: line.product.sku,
-      quantity: line.quantity,
-      name: line.product.name,
-      // Le prix unitaire porte la mention : c'est le seul montant de la liste
-      // qu'on lirait spontanément TTC. Les totaux, eux, sont couverts par le
-      // « Sous-total HT » qui les suit.
-      unit: fill(this.t().shop.priceHt, {
-        price: formatCents(unitPriceCents(line.product.unitPriceMillicents)),
-      }),
-      // L'arrondi a lieu au TOTAL de ligne, jamais sur l'unité multipliée : deux
-      // fois « 1,40 € » ne font pas forcément le total de deux pièces.
-      sum: formatCents(lineHtCents(line)),
-    })),
-  );
+  /**
+   * Les lignes telles quelles : `CartProductLine` formate les siennes.
+   *
+   * Ce décompte préformatait chaque ligne en chaînes, et la mention `HT` se
+   * posait donc ici, loin de l'endroit qui l'affiche. Un parent qui préformate
+   * est un parent qui peut l'oublier, sans que rien ne le lui dise.
+   */
+  protected readonly lines = this.cart.lines;
 
   /** La remise, telle qu'elle se lit : « Remise retrait au Labo −10 % ». */
   protected readonly discountLabel = computed(() => {

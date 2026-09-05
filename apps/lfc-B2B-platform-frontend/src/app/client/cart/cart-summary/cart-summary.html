@@ -3,15 +3,8 @@
     <p class="empty">{{ t().shop.cartEmpty }}</p>
   } @else {
     <ul class="lines">
-      @for (line of lines(); track line.id) {
-        <li class="line">
-          <span class="qty">{{ line.quantity }}</span>
-          <span class="what">
-            <span class="name">{{ line.name }}</span>
-            <span class="unit">{{ line.unit }}</span>
-          </span>
-          <span class="sum">{{ line.sum }}</span>
-        </li>
+      @for (line of lines(); track line.product.sku) {
+        <li app-cart-product-line [line]="line"></li>
       }
     </ul>
   }
