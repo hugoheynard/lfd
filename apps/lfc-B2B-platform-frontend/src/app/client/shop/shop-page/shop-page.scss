@@ -8,13 +8,17 @@
   background: var(--fold-color-bg-page);
 }
 
-/* ── La barre de contexte ─────────────────────────────────────────────────── */
+/* ── La colonne de droite ─────────────────────────────────────────────────── */
 
-/* Seul le PLACEMENT reste ici — la barre est un composant, sa mise en forme lui
-   appartient. La marge, elle, dit son écart au reste de la page : c'est le
-   parent qui la connaît. */
-app-order-context-bar {
-  margin: var(--fold-space-md) var(--fold-space-lg) 0;
+/* Elle porte le rappel du service PUIS le panier. En pile elle n'est qu'une
+   rangée de plus, en tête de grille, et le panier n'y est pas.
+   Seul le PLACEMENT est ici : la barre et le panier sont des composants, leur
+   mise en forme leur appartient. L'écart vient du `gap`, jamais d'une marge. */
+.side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 /* ── La grille de l'écran ─────────────────────────────────────────────────── */
@@ -38,7 +42,7 @@ app-order-context-bar {
      hors du cadre par la droite. Le zéro autorise la colonne à être plus étroite
      que son contenu, et c'est le rail qui défile — lui seul. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'search' 'chips' 'head' 'banner' 'grid';
+  grid-template-areas: 'side' 'search' 'chips' 'head' 'banner' 'grid';
   gap: var(--fold-space-md);
   padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-2xl);
 }
@@ -78,10 +82,6 @@ app-order-context-bar {
     display: none;
   }
 
-  app-order-context-bar {
-    margin: var(--fold-space-lg) 26px 0;
-  }
-
   /* Trois colonnes, et le panier PERMANENT à droite : au bureau, ce qu'on a
      déjà pris n'a pas à se mériter un écran. La colonne de gauche ne porte que
      les rayons — une vraie liste, sur toute la hauteur.
@@ -93,10 +93,10 @@ app-order-context-bar {
   .shop {
     grid-template-columns: 250px minmax(0, 1fr) 320px;
     grid-template-areas:
-      'chips search basket'
-      'chips banner basket'
-      'chips head basket'
-      'chips grid basket';
+      'chips search side'
+      'chips banner side'
+      'chips head side'
+      'chips grid side';
     align-items: start;
     gap: 20px;
     padding: 20px 26px 24px;
@@ -118,11 +118,28 @@ app-order-context-bar {
     align-self: start;
   }
 
-  .basket.wide-only {
-    display: block;
+  /* 🔴 **La colonne ne dépasse jamais la fenêtre.** Sans plafond, un panier de
+     douze références poussait le bouton de règlement sous le pli : le panier
+     « permanent » restait visible, mais son seul geste ne l'était plus. La
+     hauteur est donc bornée à la fenêtre, la LISTE défile à l'intérieur, et le
+     rappel du service comme le règlement gardent leur place. */
+  .side {
     position: sticky;
     top: 20px;
-    grid-area: basket;
+    /* ⚠️ Le plafond se compte sur la ZONE DÉFILANTE du shell, pas sur la
+       fenêtre : le contenu défile sous l'en-tête, qui n'est pas dans le calcul.
+       `100vh - 40px` laissait donc dépasser exactement la hauteur de l'en-tête,
+       et le bouton de règlement retombait sous le pli — le défaut qu'on venait
+       de corriger, déplacé de 64 pixels. */
+    max-height: calc(100dvh - var(--lfc-header-height, 64px) - 40px);
+  }
+
+  .basket.wide-only {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
     padding: 17px;
     border: 1px solid var(--fold-color-border);
     border-radius: var(--lfc-radius-xl);
@@ -130,11 +147,10 @@ app-order-context-bar {
   }
 
   .basket-head {
+    flex: none;
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 13px;
+    flex-direction: column;
+    gap: 2px;
 
     h2 {
       margin: 0;
@@ -146,11 +162,17 @@ app-order-context-bar {
     }
 
     span {
-      flex: none;
       font-size: var(--fold-text-xs);
       color: var(--lfc-color-text-subtle);
-      white-space: nowrap;
     }
+  }
+
+  /* Le trait détache le règlement du décompte : ce qui est au-dessus se lit,
+     ce qui est en dessous s'actionne. */
+  .basket-foot {
+    flex: none;
+    padding-top: 14px;
+    border-top: 1px solid var(--fold-color-border);
   }
 
   .pay {
@@ -158,8 +180,7 @@ app-order-context-bar {
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 50px;
-    margin-top: 15px;
+    height: 52px;
     border: 0;
     border-radius: var(--fold-radius-lg);
     background: var(--fold-color-primary);

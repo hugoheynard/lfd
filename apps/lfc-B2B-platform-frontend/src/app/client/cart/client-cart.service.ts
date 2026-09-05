@@ -33,6 +33,22 @@ export class ClientCart {
   private readonly catalogue = inject(ShopCatalogue);
 
   constructor() {
+    /**
+     * 🔴 **Le panier demande le catalogue lui-même.**
+     *
+     * Ses lignes se projettent à travers lui : sans catalogue, un panier plein
+     * se lit comme un panier vide. L'hydratation était déclenchée par l'écran du
+     * RAYON, et lui seul — recharger la page sur le panier, ou y arriver par un
+     * lien, montrait donc zéro pièce et un total à zéro, avec le vrai panier
+     * intact dans le navigateur. La pastille du bandeau comptait zéro pour la
+     * même raison, sur tous les écrans.
+     *
+     * Ce n'est pas une requête de trop : partout où le panier est construit, sa
+     * pastille est affichée, donc le catalogue est nécessaire. `hydrate()` est
+     * idempotent — l'appel du rayon reste sans effet.
+     */
+    void this.catalogue.hydrate();
+
     // Le catalogue arrive du réseau : l'élagage des références disparues ne peut
     // pas se faire à la relecture du stockage, il se fait ici, une fois qu'on
     // sait ce qui est encore en vente. Cf. `CartStore.keepOnly`.

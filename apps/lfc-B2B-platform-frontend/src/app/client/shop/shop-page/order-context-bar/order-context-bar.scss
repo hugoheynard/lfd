@@ -2,17 +2,19 @@
   display: block;
 }
 
-/* La barre elle-même. Sa MARGE n'est pas ici : un composant ne pose pas son
-   écart au voisin, c'est la page qui le place. */
+/* La barre elle-même — une CARTE, du même rayon et de la même surface que le
+   panier sous elle : au bureau les deux se lisent comme un seul bloc, le cadre
+   de la commande puis son contenu. Sa MARGE n'est pas ici : un composant ne
+   pose pas son écart au voisin, c'est la page qui le place. */
 .bar {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 var(--fold-space-md);
-  height: 40px;
+  padding: 10px var(--fold-space-md);
+  min-height: 44px;
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
+  border-radius: var(--lfc-radius-xl);
   background: var(--fold-color-surface-card);
   cursor: pointer;
 }
@@ -21,8 +23,6 @@
    haute que la barre de contexte — et le beurre pâle, parce qu'il reste quelque
    chose à faire. */
 .bar.ask {
-  height: auto;
-  padding: 10px var(--fold-space-md);
   border-color: var(--lfc-color-accent-border);
   background: var(--lfc-color-accent-surface);
 }

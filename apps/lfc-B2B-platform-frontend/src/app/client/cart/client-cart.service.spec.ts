@@ -4,6 +4,7 @@ import { ClientCart } from './client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -32,6 +33,34 @@ function reload(): { cart: ClientCart; order: OrderContextStore; orders: ClientO
     orders: TestBed.inject(ClientOrders),
   };
 }
+
+/**
+ * 🔴 **Régression : un rechargement sur le panier le montrait vide.**
+ *
+ * Les lignes se projettent à travers le catalogue, et seul l'écran du rayon
+ * l'hydratait. Arriver au panier par un lien — ou simplement y recharger la
+ * page — donnait donc un panier vide et un total à zéro, alors que le vrai
+ * panier était intact dans le navigateur.
+ */
+describe('Le panier au premier écran venu', () => {
+  it('demande le catalogue lui-même, sans attendre le rayon', () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const catalogue = TestBed.inject(ShopCatalogue);
+    expect(catalogue.status()).toBe('idle');
+
+    TestBed.inject(ClientCart);
+
+    const asked = TestBed.inject(HttpTestingController).expectOne((request) =>
+      request.url.endsWith('/shop/catalogue'),
+    );
+    expect(asked.request.method).toBe('GET');
+    expect(catalogue.status()).toBe('loading');
+  });
+});
 
 describe('Les règles du panier', () => {
   beforeEach(() => {
