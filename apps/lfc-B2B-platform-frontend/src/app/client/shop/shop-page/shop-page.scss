@@ -82,36 +82,29 @@
     display: none;
   }
 
-  /* Trois colonnes, et le panier PERMANENT à droite : au bureau, ce qu'on a
-     déjà pris n'a pas à se mériter un écran. La colonne de gauche ne porte que
-     les rayons — une vraie liste, sur toute la hauteur.
-     La carte de rayon, elle, reste dans la COLONNE CENTRALE, sous la
-     recherche : elle raconte le rayon qu'on vient de choisir, donc elle
-     appartient à la colonne qui le montre. Rangée à gauche, elle passait pour
-     un second élément de navigation à côté des pastilles, et se lisait avant
-     la question qu'elle commente. */
+  /* Deux colonnes, et le panier PERMANENT à droite : au bureau, ce qu'on a
+     déjà pris n'a pas à se mériter un écran.
+     Il y en avait TROIS — les rayons tenaient une colonne de gauche. Elle a
+     disparu avec le rail vertical : les pastilles reviennent au-dessus de la
+     vitrine, comme en pile, et l'écran cesse d'être le seul à réclamer toute la
+     largeur de la fenêtre.
+     🔴 **La boutique tient désormais dans la COLONNE DE PAGE** (`--lfc-column`),
+     comme les autres écrans. C'était la vraie gêne : trois colonnes pleine
+     fenêtre ne se lisaient pas comme une page du même produit. */
   .shop {
-    grid-template-columns: 250px minmax(0, 1fr) 320px;
+    width: 100%;
+    max-width: var(--lfc-column);
+    margin-inline: auto;
+    grid-template-columns: minmax(0, 1fr) 320px;
     grid-template-areas:
-      'chips search side'
-      'chips banner side'
-      'chips head side'
-      'chips grid side';
+      'search side'
+      'chips side'
+      'banner side'
+      'head side'
+      'grid side';
     align-items: start;
     gap: 20px;
     padding: 20px 26px 24px;
-  }
-
-  /* 🔴 **Les deux colonnes latérales ne défilent pas avec la vitrine.** Un
-     panier « permanent » qui disparaît au premier défilement ne l'est que le
-     temps d'un écran, et changer de rayon obligerait à remonter. Elles se
-     collent donc, comme le panier le faisait déjà seul.
-     Ce n'est PAS la même chose que « seule la vitrine défile » : c'est bien
-     l'écran qui bouge, et ces deux-là restent. Le vrai découpage demanderait le
-     shell en `scroll="stage"` — cf. le commentaire de `shop-page.ts`. */
-  .shelves {
-    position: sticky;
-    top: 20px;
   }
 
   .banner {

@@ -1,5 +1,4 @@
 <nav [attr.aria-label]="t().shop.shelvesGroup">
-  <p class="title wide-only">{{ t().shop.shelvesGroup }}</p>
   <div class="chips">
     @for (item of shelves(); track item.id) {
       <button

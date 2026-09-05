@@ -2,17 +2,6 @@
   min-width: 0;
 }
 
-.title {
-  display: none;
-  margin: 0 0 11px;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
-}
-
 /* En pile, le rail déborde volontairement la gouttière de la page pour partir du
    bord de l'écran — d'où la marge négative, l'un des chevauchements que les
    conventions admettent. Elle vise `--fold-space-lg` parce que c'est la
@@ -51,33 +40,27 @@
   }
 }
 
-/* Au-delà du pli, le rail devient une vraie liste dans une carte : il y a la
-   place, et une colonne se parcourt mieux qu'un ruban qui défile. */
+/**
+ * Au-delà du pli, **les mêmes pastilles**.
+ *
+ * Le rail y devenait une liste verticale dans une carte, et cette colonne
+ * coûtait plus qu'elle ne rendait : elle poussait la boutique à occuper toute
+ * la largeur de la fenêtre, là où les autres écrans tiennent dans la colonne de
+ * page. Une navigation qui change de nature au pli demande aussi à être apprise
+ * deux fois.
+ *
+ * Seuls deux réglages diffèrent, et ils suivent le contenant :
+ * - le débord de gouttière ne vaut qu'en pile, où le ruban part du bord ;
+ * - les pastilles REVIENNENT À LA LIGNE au lieu de défiler — il y a la place,
+ *   et un défilement horizontal caché se manque, au bureau, faute de geste
+ *   naturel pour le déclencher.
+ */
 @media (min-width: 900px) {
-  :host {
-    display: block;
-    padding: 15px 16px;
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--lfc-radius-xl);
-    background: var(--fold-color-surface-card);
-  }
-
-  .title.wide-only {
-    display: block;
-  }
-
   .chips {
-    flex-direction: column;
-    gap: 4px;
+    flex-wrap: wrap;
+    row-gap: 7px;
     margin-inline: 0;
     padding-inline: 0;
     overflow-x: visible;
-
-    button {
-      justify-content: flex-start;
-      border-color: transparent;
-      background: none;
-      border-radius: 9px;
-    }
   }
 }
