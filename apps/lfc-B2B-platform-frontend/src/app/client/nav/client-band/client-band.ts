@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import { ClientBanner } from '../client-banner';
+import { ClientChrome } from '../../client-chrome.service';
 import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
 
 /**
@@ -39,6 +40,12 @@ import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
   styleUrl: './client-band.scss',
 })
 export class ClientBand {
+  /**
+   * La sous-barre suit le MENU, pas la bande : un visiteur n'a nulle part où
+   * aller depuis ici, mais il a droit au bandeau — la boutique lui est ouverte.
+   */
+  protected readonly chrome = inject(ClientChrome);
+
   /** ⚠️ `read: ViewContainerRef` — sans lui on récupérerait l'élément, pas le
    *  conteneur, et l'insertion n'aurait nulle part où aller. */
   private readonly slot = viewChild.required('slot', { read: ViewContainerRef });

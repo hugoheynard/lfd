@@ -77,12 +77,14 @@
     }
   </div>
 
-  <!-- LA DESCENTE : le bandeau de l'écran, puis la sous-barre. Elle n'existe
-       que pour un client reconnu — un visiteur n'a pas de destinations à
-       parcourir — et la bande du shell se replie quand rien n'y est projeté. -->
-  @if (chrome.menu()) {
-    <app-client-band subheader />
-  }
+  <!-- LA DESCENTE : le bandeau de l'écran, puis la sous-barre.
+       ⚠️ Elle n'était montée QUE pour un client reconnu, et la boutique est
+       ouverte aux visiteurs : son bandeau — le rappel du service et le panier
+       en cours — disparaissait donc pour ceux à qui elle s'adresse d'abord. Ce
+       qui appartient au client reconnu, ce sont les DESTINATIONS ; la bande
+       elle-même se replie quand rien n'y est projeté, et c'est elle qui décide
+       maintenant. -->
+  <app-client-band subheader />
 
   <router-outlet />
 
