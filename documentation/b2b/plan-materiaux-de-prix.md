@@ -232,6 +232,39 @@ son arbitrage et `AmbiguousPriceRulesError` — lequel survit à l'index : deux
 règles strictement aussi spécifiques ont la même clé, et `winnerOf` détecte
 l'égalité indépendamment de l'ordre.
 
+### ✅ Livré le 2026-09-05 — et il n'a encore aucun appelant
+
+`scope-index.ts` porte la clé, l'index et la pioche ; `inForceFor` porte l'autre
+moitié du tableau ci-dessus — la fenêtre, la suspension et l'audience, passées
+**une fois** sur l'ensemble plutôt qu'une fois par ligne. Elle vit dans
+`specificity.ts`, à côté des trois prédicats qu'elle réutilise : les recopier
+aurait mis deux vérités sur la même règle.
+
+`isInForce` et `isSuspended` ont été **resserrés sur les champs qu'ils lisent**
+au lieu de `PriceRule` : un barème porte la même fenêtre sans être une règle, et
+un plancher n'en porte aucune. C'était nécessaire pour qu'`inForceFor` les
+traite ensemble, et c'est de l'ISP, pas une commodité.
+
+🔴 **Rien ne l'appelle encore, et c'est l'ordre voulu** (§2) : hisser sans
+indexer échangerait des lectures contre du produit `articles × règles`. Le lot 3
+lui donne son appelant. Un module sans appelant est une dette s'il reste seul —
+celui-ci est un préalable, et il se lit à la date de son commit.
+
+⚠️ **La porte du §10 n'a pas été franchie sur un chiffre.** Elle demande la part
+de `priceAll` dans les opérations facturées d'un mois réel, et cette donnée est
+en production. Le lot a été ouvert par décision, pas par mesure — c'est
+recevable, mais ça doit se lire ici plutôt que se deviner.
+
+### L'équivalence est testée contre le prédicat, pas contre une liste
+
+`scope-index.spec.ts` compare ce que l'index rend à ce que `matchesScope`
+retenait, sur **toutes** les portées représentables — y compris celle que
+l'invariant de `PriceScope` interdit sans que le type l'empêche (`category` sans
+identifiant). Une liste de cas écrite à la main aurait recopié la même hypothèse
+des deux côtés : le jour où `matchesScope` gagne une cinquième forme, elle
+resterait verte pendant que l'index perdrait des candidats — donc facturerait le
+prix d'à côté.
+
 ## 6. Lot 3 — hisser
 
 Les trois lectures sortent de la boucle. L'ordre n'est pas une préférence :

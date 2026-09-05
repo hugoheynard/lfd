@@ -110,13 +110,20 @@ function matchesAudience(audience: PriceAudience, context: PricingContext): bool
 }
 
 /**
- * La règle est-elle en vigueur à l'instant demandé ?
+ * Le matériau est-il en vigueur à l'instant demandé ?
+ *
+ * Typé sur les deux champs qu'il lit, et non sur `PriceRule` : un barème porte
+ * la même fenêtre sans être une règle, et {@link inForceFor} les traite
+ * ensemble.
  *
  * Borne basse **incluse**, borne haute **exclue** : deux règles qui se succèdent
  * au même instant ne se chevauchent alors jamais, et personne n'a à se demander
  * laquelle s'applique à minuit pile.
  */
-function isInForce(rule: PriceRule, at: Date): boolean {
+function isInForce(
+  rule: { readonly validFrom: Date; readonly validTo: Date | null },
+  at: Date,
+): boolean {
   if (rule.validFrom.getTime() > at.getTime()) {
     return false;
   }
@@ -124,7 +131,7 @@ function isInForce(rule: PriceRule, at: Date): boolean {
 }
 
 /**
- * La règle a-t-elle été **interrompue** avant cet instant ?
+ * Le matériau a-t-il été **interrompu** avant cet instant ?
  *
  * Comparé à l'instant de résolution et non à « maintenant », et c'est ce qui rend
  * la suspension honnête : une promotion suspendue le 12 s'appliquait encore le
@@ -136,7 +143,7 @@ function isInForce(rule: PriceRule, at: Date): boolean {
  * qui est l'endroit fait pour ça — et les commandes déjà passées portent leur
  * trace figée, donc rien de facturé ne dépend de cette relecture.
  */
-function isSuspended(rule: PriceRule, at: Date): boolean {
+function isSuspended(rule: { readonly suspendedFrom: Date | null }, at: Date): boolean {
   return rule.suspendedFrom !== null && rule.suspendedFrom.getTime() <= at.getTime();
 }
 
@@ -150,6 +157,40 @@ function isSuspended(rule: PriceRule, at: Date): boolean {
  * saison l'accorderait dès la première livraison d'un client annuel.
  */
 const CONTRACT_STAGES: readonly PriceStage[] = ["mercuriale", "volume"];
+
+/**
+ * **Ce qui ne dépend pas de l'article** : la fenêtre, la suspension, l'audience.
+ *
+ * Les trois se jugent sur l'instant et sur le client, tous deux gelés pour la
+ * durée d'un appel. Les passer une fois sur l'ensemble des matériaux, plutôt
+ * qu'une fois par ligne de panier, est ce qui rend un chargement en lot aussi
+ * étroit que les lectures par article qu'il remplace.
+ *
+ * 🔴 **Ce n'est pas un raccourci : `applies` refait le travail.** Filtrer ici ne
+ * dispense de rien en aval, et c'est délibéré — la fonction pure doit rester
+ * juste quand on l'appelle avec un tableau fabriqué à la main, ce qui est le cas
+ * dans chacun de ses tests. Le gain est de ne pas transporter jusqu'à
+ * `resolvePrice` des matériaux dont on sait déjà qu'ils ne diront rien.
+ *
+ * Générique sur la forme plutôt que sur `PriceRule` : un **barème** porte les
+ * mêmes quatre champs sans être une règle, et un plancher n'en porte aucun —
+ * il n'a ni fenêtre ni audience, par décision (cf. `ScopedPriceFloor`).
+ */
+export function inForceFor<
+  T extends {
+    readonly audience: PriceAudience;
+    readonly validFrom: Date;
+    readonly validTo: Date | null;
+    readonly suspendedFrom: Date | null;
+  },
+>(items: readonly T[], context: PricingContext): T[] {
+  return items.filter(
+    (item) =>
+      isInForce(item, context.at) &&
+      !isSuspended(item, context.at) &&
+      matchesAudience(item.audience, context),
+  );
+}
 
 /**
  * Toutes les conditions d'application, réunies.
