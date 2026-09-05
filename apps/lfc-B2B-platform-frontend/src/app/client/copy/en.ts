@@ -198,7 +198,7 @@ export const EN: ClientCopy = {
     allShelves: 'Everything',
     allShelvesTitle: 'The whole counter',
     resultsFor: 'Results for “{query}”',
-    pieces: '{count} items',
+    piecesUnit: 'items',
     learnMore: 'Find out more',
     emptyTitle: 'Nothing under that name.',
     emptyHint: 'Try “bread”, “tart”, or tap a shelf.',

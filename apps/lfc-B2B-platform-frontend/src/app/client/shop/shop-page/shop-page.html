@@ -1,29 +1,15 @@
 <app-order-context-bar (changeRequested)="backToService()" />
 
 <div class="shop">
-  <div class="search">
-    <label class="field">
-      <fold-icon name="search" aria-hidden="true" />
-      <input
-        type="search"
-        [value]="query()"
-        [attr.placeholder]="t().shop.searchPlaceholder"
-        [attr.aria-label]="t().shop.searchPlaceholder"
-        (input)="search($event)"
-      />
-      @if (query() !== '') {
-        <button
-          class="clear"
-          type="button"
-          [attr.aria-label]="t().shop.clearSearch"
-          (click)="query.set('')"
-        >
-          <fold-icon name="close" />
-        </button>
-      }
-    </label>
-    <span class="count wide-only">{{ countLabel() }}</span>
-  </div>
+  <fold-search
+    class="search"
+    [(value)]="query"
+    [placeholder]="t().shop.searchPlaceholder"
+    [ariaLabel]="t().shop.searchPlaceholder"
+    [clearLabel]="t().shop.clearSearch"
+    [resultCount]="products().length"
+    [resultLabel]="t().shop.piecesUnit"
+  />
 
   <nav class="shelves" [attr.aria-label]="t().shop.shelvesGroup">
     <p class="shelves-title wide-only">{{ t().shop.shelvesGroup }}</p>
@@ -43,7 +29,6 @@
 
   <div class="head">
     <h1>{{ heading() }}</h1>
-    <span class="count narrow-only">{{ countLabel() }}</span>
   </div>
 
   <app-shelf-banner class="banner" [shelf]="shelf()" (opened)="openStory.set(shelf())" />

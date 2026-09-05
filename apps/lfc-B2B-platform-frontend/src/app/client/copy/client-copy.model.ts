@@ -222,7 +222,11 @@ export interface ClientCopy {
     /** `{query}` est remplacé par ce qui a été cherché. */
     readonly resultsFor: string;
     /** `{count}` est remplacé par le nombre de références montrées. */
-    readonly pieces: string;
+    /**
+     * Le MOT seul — « pièces », pas « {count} pièces ». C'est `fold-search` qui
+     * pose le nombre devant, et il le fait pour que le compte soit ANNONCÉ.
+     */
+    readonly piecesUnit: string;
     readonly learnMore: string;
     readonly emptyTitle: string;
     readonly emptyHint: string;

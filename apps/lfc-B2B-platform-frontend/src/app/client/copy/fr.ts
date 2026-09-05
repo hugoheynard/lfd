@@ -194,7 +194,7 @@ export const FR: ClientCopy = {
     allShelves: 'Tout',
     allShelvesTitle: 'Tout le rayon',
     resultsFor: 'Résultats pour « {query} »',
-    pieces: '{count} pièces',
+    piecesUnit: 'pièces',
     learnMore: 'En savoir plus',
     emptyTitle: 'Rien sous ce nom.',
     emptyHint: 'Essayez « pain », « tarte », ou touchez un rayon.',

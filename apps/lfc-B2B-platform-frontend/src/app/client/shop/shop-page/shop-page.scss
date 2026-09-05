@@ -32,66 +32,10 @@ app-order-context-bar {
   padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-2xl);
 }
 
+/* La recherche est `fold-search` : la loupe, la croix et le compte lui
+   appartiennent. Il ne reste ici que sa PLACE dans la grille. */
 .search {
   grid-area: search;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.field {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-
-  fold-icon {
-    flex: none;
-    width: 17px;
-    height: 17px;
-    color: var(--lfc-color-text-subtle);
-  }
-
-  input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    padding: 0;
-    background: none;
-    font-family: var(--fold-font-sans);
-    font-size: var(--fold-text-base);
-    color: var(--fold-color-text);
-  }
-
-  /* La croix native de `type=search` doublerait la nôtre, sans son gabarit. */
-  input::-webkit-search-cancel-button {
-    appearance: none;
-  }
-}
-
-.clear {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-band);
-  color: var(--fold-color-text-muted);
-  cursor: pointer;
-
-  fold-icon {
-    width: 12px;
-    height: 12px;
-  }
 }
 
 .shelves {
@@ -162,13 +106,6 @@ app-order-context-bar {
     text-transform: uppercase;
     color: var(--lfc-color-text-subtle);
   }
-}
-
-.count {
-  flex: none;
-  white-space: nowrap;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-faded);
 }
 
 /* La bannière et la barre du panier sont des composants : l'écran ne leur donne
@@ -273,10 +210,6 @@ app-order-context-bar {
 
   .banner {
     align-self: start;
-  }
-
-  .count.wide-only {
-    display: inline;
   }
 
   .head h1 {

@@ -13,8 +13,13 @@ describe('ShopPage', () => {
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const tiles = (): HTMLElement[] => Array.from(el().querySelectorAll('app-product-tile'));
   const chips = (): HTMLButtonElement[] => Array.from(el().querySelectorAll('.chips button'));
+  /**
+   * Le champ vit désormais DANS `fold-search` : la boutique ne dessine plus sa
+   * loupe, sa croix ni son compte. On vise le contrôle par son élément — pas
+   * une classe de la lib, qui ne nous appartient pas.
+   */
   const field = (): HTMLInputElement => {
-    const input = el().querySelector('.field input');
+    const input = el().querySelector('fold-search input');
     if (!(input instanceof HTMLInputElement)) {
       throw new Error('Le champ de recherche a disparu du rayon.');
     }
@@ -76,6 +81,37 @@ describe('ShopPage', () => {
 
     expect(tiles().length).toBe(1);
     expect(el().textContent).toContain('Éclair');
+  });
+
+  /**
+   * 🔴 **L'autre sens, et c'est lui qui a coûté une version de `fold-search`.**
+   *
+   * Choisir un rayon efface la recherche — sinon la boîte continuerait
+   * d'afficher « eclair » au-dessus d'une grille qui montre tous les pains. Ça
+   * n'était possible qu'en pilotant le champ de l'EXTÉRIEUR : une recherche qui
+   * n'expose qu'un `output` ne peut pas être vidée, et c'est ce que le `model()`
+   * de `value` a rendu possible (fold-ng 0.25.0).
+   */
+  it('choisir un rayon VIDE le champ, pas seulement le filtre', () => {
+    type('eclair');
+    expect(field().value).toBe('eclair');
+
+    chips()[2]?.click();
+    fixture.detectChanges();
+
+    expect(field().value).toBe('');
+    // Et la grille suit : « Pains », les trois, pas l'éclair.
+    expect(tiles().length).toBe(3);
+  });
+
+  /** Le compte que la boutique annonce est celui de ce qu'elle montre. */
+  it('annonce autant de pièces qu’elle en affiche', () => {
+    const count = (): string => el().querySelector('fold-search p')?.textContent?.trim() ?? '';
+    expect(count()).toBe(`14 ${FR.shop.piecesUnit}`);
+
+    type('pain');
+
+    expect(count()).toBe(`${String(tiles().length)} ${FR.shop.piecesUnit}`);
   });
 
   it('ignore les accents : « eclair » et « éclair » cherchent la même chose', () => {

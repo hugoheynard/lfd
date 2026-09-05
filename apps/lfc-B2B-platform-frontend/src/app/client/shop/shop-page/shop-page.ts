@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldSearchComponent } from 'fold-ng';
 
 import { formatEuro } from '../../../client/format-money';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -47,7 +47,7 @@ function fold(text: string): string {
   imports: [
     CartBar,
     CartSummary,
-    FoldIconComponent,
+    FoldSearchComponent,
     OrderContextBar,
     ProductSheet,
     ProductTile,
@@ -108,10 +108,6 @@ export class ShopPage {
       : (SHOP_CATEGORIES.find((s) => s.id === shelf)?.shelf ?? c.allShelvesTitle);
   });
 
-  protected readonly countLabel = computed(() =>
-    fill(this.t().shop.pieces, { count: String(this.products().length) }),
-  );
-
   protected readonly cartLabel = computed(() =>
     fill(this.t().shop.cartBar, { count: String(this.cart.count()) }),
   );
@@ -156,18 +152,6 @@ export class ShopPage {
   protected pickShelf(id: string): void {
     this.shelf.set(id);
     this.query.set('');
-  }
-
-  /**
-   * Le champ est natif : la recherche du rayon a besoin d'une loupe, d'une croix
-   * conditionnelle et d'une remise à zéro COMMANDÉE de l'extérieur (choisir un
-   * rayon efface la recherche), ce que `fold-search` ne laisse pas faire.
-   */
-  protected search(event: Event): void {
-    const field = event.target;
-    if (field instanceof HTMLInputElement) {
-      this.query.set(field.value);
-    }
   }
 
   protected backToService(): void {
