@@ -10,7 +10,21 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs';
+
+import { quoteKeyOf } from './quote-key';
+
+/**
+ * L'accalmie au bout de laquelle on chiffre, en millisecondes.
+ *
+ * Assez court pour qu'un commercial au téléphone ne sente pas d'attente entre le
+ * dernier chiffre tapé et le prix affiché ; assez long pour qu'une quantité
+ * saisie à deux chiffres ne compte qu'une fois. Ce n'est pas un réglage : c'est
+ * la durée d'une frappe, et elle ne dépend d'aucun environnement.
+ */
+const QUOTE_DEBOUNCE_MS = 300;
 import {
   FoldBackLinkComponent,
   FoldButtonComponent,
@@ -209,31 +223,74 @@ export class NouvelleCommandePage {
     return company !== null && company.status === 'active' && company.grantedTerms.length > 0;
   });
 
+  /**
+   * Ce dont le prix dépend, et rien d'autre — cf. `quoteKeyOf`.
+   *
+   * Un `computed` plutôt qu'une lecture dans le pipeline : c'est lui qui rend la
+   * déduplication possible, et le garder à côté de ce qu'il compare le rend
+   * lisible d'un coup d'œil.
+   */
+  private readonly quoteKey = computed(() => quoteKeyOf(this.id(), this.cart.lines()));
+
   constructor() {
     effect(() => {
       void this.load(this.id());
     });
 
     /**
-     * **Le prix que le serveur facturera**, redemandé dès que le panier change.
+     * **Le prix que le serveur facturera**, redemandé quand le panier change —
+     * et seulement alors.
      *
      * Il dépend du client (sa mercuriale) et de la quantité (le palier atteint) :
      * ni l'un ni l'autre ne se calcule ici. Sans cet appel, la colonne affichait
      * le tarif du catalogue pendant que la validation facturait autre chose — et
      * le commercial l'annonçait au téléphone.
      *
-     * Le devis est **oublié avant** d'être redemandé : garder l'ancien pendant
-     * l'aller-retour ferait lire un prix qui correspond à un autre panier.
+     * ## Deux garde-fous, et ils ne font pas la même chose
+     *
+     * Cette estimation a longtemps été redemandée à **chaque émission** de
+     * `cart.lines()`, qui rend un tableau neuf à chaque geste. Mesuré : **13
+     * appels pour une saisie de huit lignes**, dont plusieurs ne demandaient
+     * rien de nouveau. Chacun coûte `3 × lignes + 2` opérations facturées côté
+     * serveur.
+     *
+     * - `distinctUntilChanged` sur la **clé du panier** écarte ce qui ne change
+     *   rien : reposer la même quantité, un champ qui perd puis reprend le
+     *   focus. Cf. `quote-key.ts` pour ce qui entre dans cette clé ;
+     * - `debounceTime` écarte la **rafale** : une saisie est une salve de gestes,
+     *   et seul son état d'arrivée mérite un aller-retour.
+     *
+     * ## Oublier tout de suite, redemander plus tard
+     *
+     * Le `tap` vient **avant** l'amortissement, délibérément : le prix affiché
+     * est faux dès l'instant où le panier change, et le garder pendant qu'on
+     * attend l'accalmie ferait lire un montant qui ne correspond plus à rien. On
+     * oublie au premier geste, on redemande une fois seulement.
+     *
+     * 🔴 **Ce qu'on n'a pas fait, et pourquoi** : différer l'estimation au
+     * moment de valider. Le comptoir n'est pas la boutique — quelqu'un lit ce
+     * prix au téléphone pendant la saisie. L'amortir est une économie ; le
+     * différer serait un défaut. Cf.
+     * `documentation/b2b/plan-materiaux-de-prix.md` §3.
      */
-    effect(() => {
-      const lines = this.cart.lines();
-      const companyId = this.id();
-      if (lines.length === 0) {
-        return;
-      }
-      this.cart.forgetQuote();
-      void this.refreshQuote(companyId, lines);
-    });
+    toObservable(this.quoteKey)
+      .pipe(
+        distinctUntilChanged(),
+        tap((key) => {
+          if (key !== '') {
+            this.cart.forgetQuote();
+          }
+        }),
+        filter((key) => key !== ''),
+        debounceTime(QUOTE_DEBOUNCE_MS),
+        takeUntilDestroyed(),
+      )
+      // La lecture se fait à l'ARRIVÉE, pas à l'émission : après l'amortissement,
+      // c'est l'état courant du panier qu'on chiffre, jamais celui qui a déclenché
+      // la salve.
+      .subscribe(() => {
+        void this.refreshQuote(this.id(), this.cart.lines());
+      });
   }
 
   /**

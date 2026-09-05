@@ -22,9 +22,14 @@
 **Il ne fait pas** : accélérer la résolution, toucher aux étages, à l'éviction,
 ni aux planchers dynamiques.
 
-Le **nombre d'appels**, lui, est dans ce plan — en **lot 0**, et c'est le premier
-à faire. Ce document a d'abord été écrit sans lui, ce qui était incohérent :
-il affirmait « le front rend plus » et proposait un plan sans front.
+Le **nombre d'appels**, lui, est dans ce plan — en **lot 0**, ✅ livré. Ce
+document a d'abord été écrit sans lui, ce qui était incohérent : il affirmait
+« le front rend plus » et proposait un plan sans front.
+
+⚠️ Et son gain s'est révélé **plus petit qu'annoncé** en le construisant : au
+comptoir, chaque appel correspond à une intention, et seuls les gestes redondants
+se retirent (§3). « Le front rend plus » reste vrai pour la **boutique**, qui peut
+hydrater ; pas pour la saisie assistée.
 
 ## 2. 🔴 Ce que l'index N'EST PAS : un gain de vitesse
 
@@ -106,11 +111,36 @@ la boutique sur `POST /orders/quote`. Le jour où il arrive, l'idiome monte dans
 `@lfd/b2b-ui` — pas avant : un utilitaire partagé écrit pour un seul appelant se
 révèle toujours mal découpé quand le second arrive.
 
-### Comment on saura
+### ✅ Livré le 2026-09-05 — et la cible annoncée était fausse
 
-Le test de comptage **pin le nombre**. Après ce lot, il doit être repris à la
-valeur nouvelle — ce n'est pas un test qu'on supprime, c'est la mesure qui
-continue. Cible : **2 à 3 appels** pour la même saisie, contre 13.
+Le plan visait « **2 à 3 appels** contre 13 ». C'était faux, et le construire l'a
+montré : la déduplication et l'amortissement ne retirent que les appels
+**redondants**, jamais les intentionnels.
+
+Sur la session mesurée — huit références ajoutées, quatre quantités reprises, une
+ligne retirée — les treize gestes produisent **treize états différents du
+panier**. Chacun change ce que le serveur facturerait ; aucun n'est retirable, et
+il ne faut pas vouloir les retirer : le commercial lit ce prix au téléphone entre
+deux clics.
+
+Ce que les deux garde-fous retirent vraiment :
+
+|                                                                                | retiré par                                                     |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Reposer la même quantité, un focus perdu puis repris, une flèche haut puis bas | la **déduplication** — coût zéro, ces gestes ne demandent rien |
+| Les deux chiffres d'une quantité tapée d'affilée                               | l'**amortissement**, 300 ms                                    |
+| Huit clics espacés de deux secondes                                            | **rien**, et c'est juste                                       |
+
+Le gain n'est donc pas un facteur : c'est la suppression d'un bruit dont on ne
+connaît pas encore le volume réel. Il se mesurera par la **mesure 4** de
+`optimisation-resolution-de-prix.md` §6 — les appels par session, en usage — pas
+par une simulation de gestes.
+
+⚠️ **Ce que ça change pour le reste du plan** : le levier du front est plus petit
+qu'annoncé. « Le front rend plus que ce plan » reste vrai pour la boutique, qui
+peut hydrater ; ce n'est **pas** vrai pour le comptoir, où chaque appel
+correspond à une intention. Les lots 2 et 3, eux, gardent leur gain entier — ils
+divisent le coût de chaque appel, quel qu'en soit le nombre.
 
 ## 4. Lot 1 — un test, pas un champ
 

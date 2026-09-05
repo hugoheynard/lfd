@@ -1,90 +1,117 @@
-import { effect, Injector, runInInjectionContext } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import type { CartLine } from '../cart.store';
 import { CartStore } from '../cart.store';
+import { quoteKeyOf } from '../quote-key';
 
 /**
- * **Combien d'appels au devis une saisie déclenche** — la mesure, pas l'estimation.
+ * **Combien de devis une saisie déclenche** — la mesure, tenue dans le temps.
  *
- * `nouvelle-commande-page.ts` porte un `effect()` sur `cart.lines()` qui appelle
- * `refreshQuote` **sans debounce et sans déduplication** : sa seule garde est le
- * panier vide. Une émission du signal vaut donc un appel HTTP, et un appel vaut
- * `3 × lignes + 2` opérations facturées côté serveur — trois lectures par
- * article dans `resolveOne`, plus le catalogue et les engagements, eux
- * mutualisés.
+ * Avant les garde-fous, l'écran appelait à **chaque émission** de `cart.lines()`,
+ * qui rend un tableau neuf à chaque geste : 13 appels pour la session ci-dessous,
+ * ~251 opérations facturées côté serveur.
  *
- * Ce test ne juge pas ce nombre : il le **rend visible**. Le jour où quelqu'un
- * pose un debounce ou une hydratation, il rougit — et c'est exactement le moment
- * où l'on veut relire le calcul.
+ * Ce que ce fichier mesure aujourd'hui, c'est le nombre d'**états distincts** du
+ * panier — donc le nombre d'appels que `distinctUntilChanged` laisse passer.
  *
- * Mesuré le 2026-09-04 sur la session ci-dessous : **13 appels, ~251
- * opérations**, là où un seul devis au moment de valider en coûterait 26. Cf.
- * `documentation/b2b/optimisation-resolution-de-prix.md` §3.
+ * ⚠️ **Ce n'est pas le nombre final.** Le `debounceTime` de l'écran en retire
+ * encore, mais seulement ce qui arrive en rafale — deux chiffres tapés d'affilée
+ * dans un champ de quantité. Il ne retire rien à huit clics espacés de deux
+ * secondes, et c'est voulu : chacun est une intention, et le commercial lit le
+ * prix au téléphone entre deux. Ce que la déduplication retire, ce sont les
+ * gestes qui ne demandent rien de nouveau.
  */
-const product = (n: number) => ({
+const product = (n: number): Omit<CartLine, 'quantity'> => ({
   sku: `VIE-${String(n).padStart(3, '0')}`,
   name: `Produit ${String(n)}`,
   unitPriceMillicents: 200_000,
 });
 
+const COMPANY = 'c_1';
+
+/** Les états distincts qu'une suite de gestes produit — donc les appels laissés passer. */
+function distinctStates(gestures: readonly ((cart: CartStore) => void)[]): number {
+  const cart = new CartStore();
+  const seen: string[] = [];
+  for (const gesture of gestures) {
+    gesture(cart);
+    const key = quoteKeyOf(COMPANY, cart.lines());
+    if (key !== '' && key !== seen.at(-1)) {
+      seen.push(key);
+    }
+  }
+  return seen.length;
+}
+
 describe('le nombre de devis qu’une saisie déclenche', () => {
-  it('émet une fois par mutation du panier — donc un appel par geste', () => {
-    TestBed.configureTestingModule({});
-    const cart = new CartStore();
-    const injector = TestBed.inject(Injector);
-    let emissions = 0;
+  it('compte un appel par état RÉELLEMENT nouveau du panier', () => {
+    // La saisie d'un commercial au téléphone : huit références ajoutées, quatre
+    // quantités reprises, une ligne retirée. Treize gestes, treize états
+    // différents — la déduplication ne retire rien ici, et c'est juste : chacun
+    // change ce que le serveur facturerait.
+    const gestures = [
+      ...Array.from({ length: 8 }, (_, index) => (cart: CartStore) => {
+        cart.add(product(index + 1), 12);
+      }),
+      ...Array.from({ length: 4 }, (_, index) => (cart: CartStore) => {
+        cart.setQuantity(product(index + 1).sku, 24);
+      }),
+      (cart: CartStore) => {
+        cart.remove(product(8).sku);
+      },
+    ];
 
-    runInInjectionContext(injector, () => {
-      effect(() => {
-        cart.lines();
-        emissions += 1;
-      });
-    });
-    TestBed.flushEffects();
-
-    // Une saisie ordinaire, telle qu'un commercial la fait au téléphone : huit
-    // références ajoutées, quatre quantités reprises, une ligne retirée.
-    for (let index = 1; index <= 8; index += 1) {
-      cart.add(product(index), 12);
-      TestBed.flushEffects();
-    }
-    for (let index = 1; index <= 4; index += 1) {
-      cart.setQuantity(product(index).sku, 24);
-      TestBed.flushEffects();
-    }
-    cart.remove(product(8).sku);
-    TestBed.flushEffects();
-
-    // 1 émission initiale (panier vide — l'écran n'appelle pas) + 13 mutations.
-    expect(emissions).toBe(14);
+    expect(distinctStates(gestures)).toBe(13);
   });
 
   /**
-   * La déduplication n'existe pas : reposer la MÊME quantité ré-émet.
+   * 🔴 Ce que la déduplication retire, et que le signal ne voyait pas.
    *
-   * C'est le cas le plus coûteux pour rien, et le plus facile à produire — un
-   * champ de quantité qui perd puis reprend le focus, une flèche haut puis bas.
+   * `cart.lines()` ré-émet même quand la quantité **ne change pas de valeur** —
+   * un champ qui perd puis reprend le focus, une flèche haut puis bas. Avant
+   * `quoteKeyOf`, chacun de ces gestes coûtait un aller-retour et une facture.
    */
-  it('ré-émet même quand la quantité ne change pas de valeur', () => {
-    TestBed.configureTestingModule({});
-    const cart = new CartStore();
-    const injector = TestBed.inject(Injector);
-    let emissions = 0;
+  it('ne compte rien quand un geste ne change pas le panier', () => {
+    const gestures = [
+      (cart: CartStore) => {
+        cart.add(product(1), 12);
+      },
+      // Reposer la même quantité, trois fois.
+      (cart: CartStore) => {
+        cart.setQuantity(product(1).sku, 12);
+      },
+      (cart: CartStore) => {
+        cart.setQuantity(product(1).sku, 12);
+      },
+      (cart: CartStore) => {
+        cart.setQuantity(product(1).sku, 12);
+      },
+    ];
 
-    runInInjectionContext(injector, () => {
-      effect(() => {
-        cart.lines();
-        emissions += 1;
-      });
-    });
-    cart.add(product(1), 12);
-    TestBed.flushEffects();
-    const before = emissions;
+    expect(distinctStates(gestures)).toBe(1);
+  });
 
-    cart.setQuantity(product(1).sku, 12);
-    TestBed.flushEffects();
+  it('ne compte rien pour un retrait suivi d’un ajout identique', () => {
+    // Le panier revient à l'état qu'il avait : il n'y a rien à redemander, et
+    // l'ordre des lignes n'entre pas dans la clé.
+    const gestures = [
+      (cart: CartStore) => {
+        cart.add(product(1), 12);
+      },
+      (cart: CartStore) => {
+        cart.add(product(2), 6);
+      },
+      (cart: CartStore) => {
+        cart.remove(product(2).sku);
+      },
+      (cart: CartStore) => {
+        cart.add(product(2), 6);
+      },
+    ];
 
-    expect(emissions).toBe(before + 1);
+    // Trois états distincts : {1}, {1,2}, {1} — puis le retour à {1,2}, qui
+    // diffère du précédent. Le quatrième geste compte donc, et le troisième
+    // aussi : seul un geste qui ne change RIEN est gratuit.
+    expect(distinctStates(gestures)).toBe(4);
   });
 });
