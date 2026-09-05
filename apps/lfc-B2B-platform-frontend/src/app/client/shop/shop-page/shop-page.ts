@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FoldSearchComponent } from 'fold-ng';
+import { FoldElementTitleComponent, FoldSearchComponent } from 'fold-ng';
 
 import { formatEuro } from '../../../client/format-money';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -48,6 +48,7 @@ function fold(text: string): string {
   imports: [
     CartBar,
     CartSummary,
+    FoldElementTitleComponent,
     FoldSearchComponent,
     OrderContextBar,
     ProductSheet,

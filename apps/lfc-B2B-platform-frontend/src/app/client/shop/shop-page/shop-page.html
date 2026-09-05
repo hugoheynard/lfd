@@ -17,9 +17,7 @@
     (picked)="pickShelf($event)"
   />
 
-  <div class="head">
-    <h1>{{ heading() }}</h1>
-  </div>
+  <fold-element-title class="head" variant="caps" [level]="1" [title]="heading()" />
 
   <app-shelf-banner class="banner" [shelf]="shelf()" (opened)="openStory.set(shelf())" />
 

@@ -53,22 +53,10 @@ app-order-context-bar {
    partir du bord de l'écran, et le `scroll-padding` rend son inset au premier
    d'entre eux. */
 
+/* Le titre du rayon est `fold-element-title` : son registre appartient à la
+   bibliothèque, pas à cet écran. Il ne reste ici que sa case. */
 .head {
   grid-area: head;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
-
-  h1 {
-    margin: 0;
-    font-family: var(--fold-font-label);
-    font-size: var(--fold-text-xs);
-    font-weight: var(--fold-weight-extrabold);
-    letter-spacing: var(--lfc-tracking-eyebrow);
-    text-transform: uppercase;
-    color: var(--lfc-color-text-subtle);
-  }
 }
 
 /* La bannière et la barre du panier sont des composants : l'écran ne leur donne
@@ -114,16 +102,20 @@ app-order-context-bar {
     padding: 20px 26px 24px;
   }
 
-  .banner {
-    align-self: start;
+  /* 🔴 **Les deux colonnes latérales ne défilent pas avec la vitrine.** Un
+     panier « permanent » qui disparaît au premier défilement ne l'est que le
+     temps d'un écran, et changer de rayon obligerait à remonter. Elles se
+     collent donc, comme le panier le faisait déjà seul.
+     Ce n'est PAS la même chose que « seule la vitrine défile » : c'est bien
+     l'écran qui bouge, et ces deux-là restent. Le vrai découpage demanderait le
+     shell en `scroll="stage"` — cf. le commentaire de `shop-page.ts`. */
+  .shelves {
+    position: sticky;
+    top: 20px;
   }
 
-  .head h1 {
-    font-family: var(--fold-font-label);
-    font-size: var(--lfc-text-heading);
-    font-weight: var(--lfc-weight-black);
-    letter-spacing: -0.024em;
-    color: var(--fold-color-text);
+  .banner {
+    align-self: start;
   }
 
   .basket.wide-only {
