@@ -26,7 +26,7 @@
  * large qu'on désactiverait à la première exception.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 /** Une chaîne littérale qui ressemble à une date ISO. */
 const ISO_LITERAL = /["'`]\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?["'`]/u;
@@ -39,11 +39,17 @@ const ISO_LITERAL = /["'`]\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?["'`]/u;
 const SEED_CALL = /\bseed\s*\(/u;
 
 function testFiles() {
-  return execFileSync("git", ["ls-files", "apps/*/test/*.ts", "apps/*/src/**/*.spec.ts"], {
-    encoding: "utf8",
-  })
-    .split("\n")
-    .filter(Boolean);
+  return (
+    execFileSync("git", ["ls-files", "apps/*/test/*.ts", "apps/*/src/**/*.spec.ts"], {
+      encoding: "utf8",
+    })
+      .split("\n")
+      // ⚠️ `git ls-files` liste ce que l'INDEX connaît, pas ce qui est sur le
+      // disque : un fichier supprimé mais pas encore mis en scène y figure
+      // encore, et la porte mourait alors sur un `ENOENT` au lieu de dire ce
+      // qu'elle vérifie.
+      .filter((file) => file !== "" && existsSync(file))
+  );
 }
 
 const violations = [];

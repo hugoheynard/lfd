@@ -34,7 +34,7 @@
  * Usage : `pnpm lint:mermaid` (branché dans `lint:gates`).
  */
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { JSDOM } from "jsdom";
 
@@ -86,7 +86,11 @@ mermaid.initialize({ startOnLoad: false });
 const files = execSync('git ls-files "*.md"', { cwd: ROOT, encoding: "utf8" })
   .trim()
   .split("\n")
-  .filter((path) => path !== "");
+  // ⚠️ `git ls-files` liste ce que l'INDEX connaît, pas ce qui est sur le
+  // disque : un fichier supprimé mais pas encore mis en scène y figure
+  // encore, et la porte mourait alors sur un `ENOENT` au lieu de dire ce
+  // qu'elle vérifie.
+  .filter((path) => path !== "" && existsSync(`${ROOT}/${path}`));
 
 const broken = [];
 const unportable = [];

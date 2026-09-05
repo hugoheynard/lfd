@@ -69,13 +69,19 @@ const NEUTRAL = new Set([
 ]);
 
 function frontFiles() {
-  return execFileSync(
-    "git",
-    ["ls-files", "apps/lfc-B2B-admin-frontend/src", "apps/lfc-B2B-platform-frontend/src"],
-    { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
-  )
-    .split("\n")
-    .filter((file) => file.endsWith(".ts"));
+  return (
+    execFileSync(
+      "git",
+      ["ls-files", "apps/lfc-B2B-admin-frontend/src", "apps/lfc-B2B-platform-frontend/src"],
+      { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
+    )
+      .split("\n")
+      // ⚠️ `git ls-files` liste ce que l'INDEX connaît, pas ce qui est sur le
+      // disque : un fichier supprimé mais pas encore mis en scène y figure
+      // encore, et la porte mourait alors sur un `ENOENT` au lieu de dire ce
+      // qu'elle vérifie. Deux suppressions de composant l'ont fait tomber.
+      .filter((file) => file.endsWith(".ts") && existsSync(file))
+  );
 }
 
 /** Les noms qu'un bloc d'import déclare, quel qu'en soit le module. */

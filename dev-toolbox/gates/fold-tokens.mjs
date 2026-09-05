@@ -23,7 +23,7 @@
  * Usage : `pnpm lint:fold-tokens` (branché en CI).
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
@@ -60,12 +60,18 @@ function trackedFiles() {
     `apps/*.${ext}`,
     `packages/*.${ext}`,
   ]);
-  return execFileSync("git", ["ls-files", ...patterns], {
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
-    .split("\n")
-    .filter(Boolean);
+  return (
+    execFileSync("git", ["ls-files", ...patterns], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split("\n")
+      // ⚠️ `git ls-files` liste ce que l'INDEX connaît, pas ce qui est sur le
+      // disque : un fichier supprimé mais pas encore mis en scène y figure
+      // encore, et la porte mourait alors sur un `ENOENT` au lieu de dire ce
+      // qu'elle vérifie.
+      .filter((file) => file !== "" && existsSync(file))
+  );
 }
 
 const declared = declaredTokens();
