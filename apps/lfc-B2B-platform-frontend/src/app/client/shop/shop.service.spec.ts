@@ -1,7 +1,10 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 
 import { FR } from '../copy/fr';
-import { ALL_SHELVES, SHOP_CATEGORIES, SHOP_PRODUCTS } from './mock-shop';
+import { ALL_SHELVES } from './shelves';
+import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS, TEST_SHELVES } from './shop-catalogue.fixture';
+import { ShopCatalogue } from './shop-catalogue.store';
 import { Shop } from './shop.service';
 import { ShopStore } from './shop.store';
 
@@ -9,27 +12,28 @@ describe('Shop — ce que la boutique montre', () => {
   let shop: Shop;
   let store: ShopStore;
 
-  const shown = (): string[] => shop.products().map((p) => p.id);
+  const shown = (): string[] => shop.products().map((item) => item.sku);
 
   beforeEach(() => {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [ShopStore, Shop] });
+    TestBed.configureTestingModule({ providers: [ShopStore, Shop, provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     store = TestBed.inject(ShopStore);
     shop = TestBed.inject(Shop);
   });
 
   it('ouvre sur tout le catalogue, sans filtre', () => {
-    expect(shown()).toHaveLength(SHOP_PRODUCTS.length);
+    expect(shown()).toHaveLength(TEST_ITEMS.length);
     expect(shop.heading()).toBe(FR.shop.allShelvesTitle);
     expect(shop.activeShelf()).toBe(ALL_SHELVES);
   });
 
   it('un rayon ne montre que ses pièces', () => {
-    const shelf = SHOP_CATEGORIES[0];
+    const shelf = TEST_SHELVES[0];
     shop.browse(shelf?.id ?? '');
 
-    expect(shop.products().every((p) => p.category === shelf?.id)).toBe(true);
-    expect(shop.heading()).toBe(shelf?.shelf);
+    expect(shop.products().every((item) => item.shelfId === shelf?.id)).toBe(true);
+    expect(shop.heading()).toBe(shelf?.name);
   });
 
   /**
@@ -38,7 +42,7 @@ describe('Shop — ce que la boutique montre', () => {
    * moitié des réponses.
    */
   it('la recherche ignore le rayon choisi, et traverse tout le catalogue', () => {
-    shop.browse(SHOP_CATEGORIES[0]?.id ?? '');
+    shop.browse(TEST_SHELVES[0]?.id ?? '');
     store.query.set('pain');
 
     const names = shop.products().map((p) => p.name);
@@ -56,10 +60,10 @@ describe('Shop — ce que la boutique montre', () => {
   });
 
   it('cherche aussi dans la note, pas seulement dans le nom', () => {
-    const withNote = SHOP_PRODUCTS.find((p) => p.note.trim() !== '');
-    store.query.set(withNote?.note.split(' ')[0] ?? '');
+    const withNote = TEST_ITEMS.find((item) => (item.note ?? '').trim() !== '');
+    store.query.set(withNote?.note?.split(' ')[0] ?? '');
 
-    expect(shown()).toContain(withNote?.id);
+    expect(shown()).toContain(withNote?.sku);
   });
 
   it('rend une liste vide plutôt que tout le rayon quand rien ne répond', () => {
@@ -76,15 +80,15 @@ describe('Shop — ce que la boutique montre', () => {
    */
   it('choisir un rayon oublie le terme cherché', () => {
     store.query.set('eclair');
-    shop.browse(SHOP_CATEGORIES[1]?.id ?? '');
+    shop.browse(TEST_SHELVES[1]?.id ?? '');
 
     expect(store.query()).toBe('');
-    expect(shop.heading()).toBe(SHOP_CATEGORIES[1]?.shelf);
+    expect(shop.heading()).toBe(TEST_SHELVES[1]?.name);
   });
 
   it('n’allume aucune pastille pendant une recherche', () => {
-    shop.browse(SHOP_CATEGORIES[0]?.id ?? '');
-    expect(shop.activeShelf()).toBe(SHOP_CATEGORIES[0]?.id);
+    shop.browse(TEST_SHELVES[0]?.id ?? '');
+    expect(shop.activeShelf()).toBe(TEST_SHELVES[0]?.id);
 
     store.query.set('pain');
 
@@ -104,12 +108,12 @@ describe('Shop — ce que la boutique montre', () => {
    * seulement une fois les trois réunies dans la même classe.
    */
   it('ne prend pas des espaces pour une recherche, nulle part', () => {
-    const shelf = SHOP_CATEGORIES[0];
+    const shelf = TEST_SHELVES[0];
     shop.browse(shelf?.id ?? '');
     store.query.set('   ');
 
-    expect(shop.heading()).toBe(shelf?.shelf);
-    expect(shop.products().every((p) => p.category === shelf?.id)).toBe(true);
+    expect(shop.heading()).toBe(shelf?.name);
+    expect(shop.products().every((item) => item.shelfId === shelf?.id)).toBe(true);
     // Et le rail reste allumé : la grille n'a pas changé, le rail non plus.
     expect(shop.activeShelf()).toBe(shelf?.id);
   });

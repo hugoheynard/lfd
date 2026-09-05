@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro, formatRate } from '../../format-money';
+import { formatCents, formatRate } from '../../format-money';
 import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
-import { VAT_SALE } from '../../shop/mock-shop';
+import { lineTotalCents } from '@lfd/money';
+
+import { ttcMillicentsOf } from '../cart-total';
+import { VAT_SALE } from '../../shop/vat-rates';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -42,11 +45,13 @@ export class CartSummary {
 
   protected readonly lines = computed(() =>
     this.cart.lines().map((line) => ({
-      id: line.product.id,
+      id: line.product.sku,
       quantity: line.quantity,
       name: line.product.name,
-      unit: formatEuro(line.product.price),
-      sum: formatEuro(line.product.price * line.quantity),
+      unit: formatCents(lineTotalCents(ttcMillicentsOf(line.product), 1)),
+      // L'arrondi a lieu au TOTAL de ligne, jamais sur l'unité multipliée : deux
+      // fois « 1,40 € » ne font pas forcément le total de deux pièces.
+      sum: formatCents(lineTotalCents(ttcMillicentsOf(line.product), line.quantity)),
     })),
   );
 
@@ -60,7 +65,7 @@ export class CartSummary {
   });
 
   protected readonly feeLabel = computed(() => {
-    const fee = this.totals().fee;
+    const fee = this.totals().feeCents;
     return fee === 0 ? null : this.t().cart.fee;
   });
 
@@ -69,7 +74,7 @@ export class CartSummary {
     return this.totals().vat.map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
       scope: share.rate === VAT_SALE ? c.vatSale : c.vatSweet,
-      amount: formatEuro(share.amount),
+      amount: formatCents(share.amountCents),
     }));
   });
 
@@ -78,14 +83,15 @@ export class CartSummary {
     return piece === null ? null : fill(this.t().shop.upsell, { name: piece.name });
   });
 
-  protected money(value: number): string {
-    return formatEuro(value);
+  /** Les totaux arrivent en centimes ; le gabarit ne connaît que des libellés. */
+  protected money(cents: number): string {
+    return formatCents(cents);
   }
 
   protected addUpsell(): void {
     const piece = this.upsell.suggestion();
     if (piece !== null) {
-      this.cart.add(piece.id);
+      this.cart.add(piece.sku);
     }
   }
 }

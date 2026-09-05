@@ -17,7 +17,26 @@
 
   <app-shelf-banner class="banner" [shelf]="shop.shelf()" (opened)="openStory.set(shop.shelf())" />
 
-  <app-shelf-grid class="grid" [products]="shop.products()" (opened)="openPiece.set($event)" />
+  @switch (status()) {
+    @case ('failed') {
+      <!-- L'échec est un ÉTAT, pas un écran vide : on dit ce qui s'est passé et
+           on offre le seul geste utile. -->
+      <fold-empty-state
+        class="grid"
+        tone="alert"
+        [title]="t().shop.loadFailedTitle"
+        [subtitle]="t().shop.loadFailedHint"
+      >
+        <button foldButton type="button" (click)="retry()">{{ t().shop.loadRetry }}</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <app-shelf-grid class="grid" [products]="shop.products()" (opened)="openPiece.set($event)" />
+    }
+    @default {
+      <fold-loading class="grid" [message]="t().shop.loading" />
+    }
+  }
 
   <!-- LE PANIER PERMANENT, au-delà du pli seulement. En pile, c'est la barre du
        bas qui en tient lieu : 320 px de colonne sur 390 px d'écran, il ne

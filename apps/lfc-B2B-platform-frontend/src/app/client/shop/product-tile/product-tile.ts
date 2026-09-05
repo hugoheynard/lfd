@@ -1,9 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../../client/format-money';
+import { formatCents } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import type { ShopProduct } from '../mock-shop';
+import type { ShopItemView } from '@lfd/contracts';
+import { lineTotalCents } from '@lfd/money';
+
+import { ttcMillicentsOf } from '../../cart/cart-total';
+import { artOf } from '../shelf-display';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -28,7 +32,7 @@ import type { ShopProduct } from '../mock-shop';
   styleUrl: './product-tile.scss',
 })
 export class ProductTile {
-  readonly product = input.required<ShopProduct>();
+  readonly product = input.required<ShopItemView>();
 
   /** Ce qu'il y a déjà au panier. Zéro : la pastille redevient un « + ». */
   readonly quantity = input(0);
@@ -39,7 +43,12 @@ export class ProductTile {
 
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly price = computed(() => formatEuro(this.product().price));
+  protected readonly price = computed(() =>
+    formatCents(lineTotalCents(ttcMillicentsOf(this.product()), 1)),
+  );
+
+  /** Le visuel du référentiel, ou l'illustration de son rayon. */
+  protected readonly art = computed(() => artOf(this.product()));
 
   protected readonly addLabel = computed(() =>
     fill(this.t().shop.addAria, { name: this.product().name }),

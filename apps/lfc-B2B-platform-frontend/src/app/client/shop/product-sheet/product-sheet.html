@@ -7,8 +7,10 @@
     (closed)="closed.emit()"
   >
     <span dialog-media class="photo">
-      <img [src]="'products/' + piece.image + '.svg'" alt="" />
-      @if (piece.signature) {
+      @if (art(); as visual) {
+        <img [src]="visual.url" [attr.alt]="visual.alt" />
+      }
+      @if (piece.isFeatured) {
         <span class="signature">{{ t().product.signature }}</span>
       }
     </span>

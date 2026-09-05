@@ -3,10 +3,13 @@ import { TestBed } from '@angular/core/testing';
 import { ClientCart } from './client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
-import { SHOP_PRODUCTS } from '../shop/mock-shop';
+import { provideHttpClient } from '@angular/common/http';
+
+import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
 
 /** Le rang d'une référence dans le rayon — l'ordre que le panier doit suivre. */
-const order = (id: string): number => SHOP_PRODUCTS.findIndex((p) => p.id === id);
+const order = (sku: string): number => TEST_ITEMS.findIndex((item) => item.sku === sku);
 
 const AT_THE_LABO: ServiceChoice = {
   mode: 'pickup',
@@ -22,6 +25,7 @@ const AT_THE_LABO: ServiceChoice = {
 function reload(): { cart: ClientCart; order: OrderContextStore; orders: ClientOrders } {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({});
+  hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   return {
     cart: TestBed.inject(ClientCart),
     order: TestBed.inject(OrderContextStore),
@@ -33,7 +37,8 @@ describe('Les règles du panier', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
   /**
@@ -55,7 +60,7 @@ describe('Les règles du panier', () => {
    */
   it('n’ajoute pas une référence que le catalogue ne connaît pas', () => {
     const cart = TestBed.inject(ClientCart);
-    cart.add('fantome');
+    cart.add('INCONNU');
 
     expect(cart.isEmpty()).toBe(true);
   });
@@ -63,18 +68,18 @@ describe('Les règles du panier', () => {
   /** Le panier se relit comme la boutique se parcourt, pas comme on l'a rempli. */
   it('rend les lignes dans l’ordre du RAYON, pas dans celui des ajouts', () => {
     const cart = TestBed.inject(ClientCart);
-    cart.add('quiche');
-    cart.add('croissant');
+    cart.add('SAL-001');
+    cart.add('VIE-001');
 
-    const shown = cart.lines().map((line) => line.product.id);
+    const shown = cart.lines().map((line) => line.product.sku);
     expect(shown).toEqual([...shown].sort((a, b) => order(a) - order(b)));
   });
 
   it('compte les PIÈCES, pas les références', () => {
     const cart = TestBed.inject(ClientCart);
-    cart.add('croissant');
-    cart.add('croissant');
-    cart.add('quiche');
+    cart.add('VIE-001');
+    cart.add('VIE-001');
+    cart.add('SAL-001');
 
     expect(cart.count()).toBe(3);
     expect(cart.lines()).toHaveLength(2);
@@ -82,8 +87,8 @@ describe('Les règles du panier', () => {
 
   it('retirer la dernière pièce retire la LIGNE : une ligne à zéro n’existe pas', () => {
     const cart = TestBed.inject(ClientCart);
-    cart.add('eclair');
-    cart.remove('eclair');
+    cart.add('PAT-001');
+    cart.remove('PAT-001');
 
     expect(cart.lines()).toEqual([]);
   });
@@ -91,15 +96,16 @@ describe('Les règles du panier', () => {
   it('régler fige la commande et vide le panier : ce qui est payé n’est plus en cours', () => {
     const cart = TestBed.inject(ClientCart);
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
-    cart.add('croissant');
-    cart.add('quiche');
+    cart.add('VIE-001');
+    cart.add('SAL-001');
 
     const placed = TestBed.inject(ClientOrders).place();
 
     expect(placed?.pieces).toBe(2);
     expect(placed?.lines.map((l) => l.name)).toEqual(['Croissant au beurre', 'Quiche du jour']);
-    // Le prix est FIGÉ dans la commande, pas relu du catalogue plus tard.
-    expect(placed?.lines[0]?.unitPrice).toBe(1.4);
+    // Le prix est FIGÉ dans la commande, en centimes TTC, pas relu du catalogue
+    // plus tard : 1,40 € HT à 5,5 % font 1,48 € payés.
+    expect(placed?.lines[0]?.unitPriceCents).toBe(148);
     expect(cart.isEmpty()).toBe(true);
   });
 

@@ -1,6 +1,6 @@
 import { computed, inject, Injectable } from '@angular/core';
 
-import { formatEuro } from '../format-money';
+import { formatCents, formatEuro } from '../format-money';
 import { ClientCart } from '../cart/client-cart.service';
 import { ClientOrders } from '../client-orders.service';
 import { ClientCopyService } from '../copy/client-copy.service';
@@ -56,7 +56,7 @@ export class ClientEspace {
         id: 'cart',
         title: copy.cartTitle,
         icon: '',
-        lines: [formatEuro(this.cart.totals().total), copy.cartWhen],
+        lines: [formatCents(this.cart.totals().totalCents), copy.cartWhen],
         action: copy.cartAction,
         route: '/nouvelle-commande/panier',
         badge: copy.cartBadge,

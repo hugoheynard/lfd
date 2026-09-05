@@ -1,6 +1,10 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ALL_SHELVES, SHOP_CATEGORIES } from '../../mock-shop';
+import { provideHttpClient } from '@angular/common/http';
+
+import { ALL_SHELVES } from '../../shelves';
+import { hydrateWith, TEST_CATALOGUE, TEST_SHELVES } from '../../shop-catalogue.fixture';
+import { ShopCatalogue } from '../../shop-catalogue.store';
 import { FR } from '../../../copy/fr';
 import { ShelfNav } from './shelf-nav';
 
@@ -15,20 +19,24 @@ describe('ShelfNav', () => {
       .map((b) => b.textContent?.trim() ?? '');
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [ShelfNav] });
+    TestBed.configureTestingModule({ imports: [ShelfNav], providers: [provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     fixture = TestBed.createComponent(ShelfNav);
     fixture.detectChanges();
   });
 
   it('ouvre par « Tout », puis les familles du catalogue dans l’ordre', () => {
-    expect(labels(chips())).toEqual([FR.shop.allShelves, ...SHOP_CATEGORIES.map((c) => c.label)]);
+    expect(labels(chips())).toEqual([
+      FR.shop.allShelves,
+      ...TEST_SHELVES.map((shelf) => shelf.name),
+    ]);
   });
 
   it('allume le rayon qu’on lui désigne, et lui seul', () => {
-    fixture.componentRef.setInput('active', SHOP_CATEGORIES[1]?.id);
+    fixture.componentRef.setInput('active', TEST_SHELVES[1]?.id);
     fixture.detectChanges();
 
-    expect(lit()).toEqual([SHOP_CATEGORIES[1]?.label ?? '']);
+    expect(lit()).toEqual([TEST_SHELVES[1]?.name ?? '']);
   });
 
   /**
@@ -57,7 +65,7 @@ describe('ShelfNav', () => {
 
     chips()[2]?.click();
 
-    expect(picked).toEqual([SHOP_CATEGORIES[1]?.id]);
+    expect(picked).toEqual([TEST_SHELVES[1]?.id]);
   });
 });
 

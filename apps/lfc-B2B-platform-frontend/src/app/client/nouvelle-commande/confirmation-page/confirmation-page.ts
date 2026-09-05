@@ -9,12 +9,12 @@ import {
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro, formatRate } from '../../../client/format-money';
+import { formatCents, formatRate } from '../../../client/format-money';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
-import { VAT_SALE } from '../../shop/mock-shop';
+import { VAT_SALE } from '../../shop/vat-rates';
 
 /**
  * La commande passée.
@@ -72,7 +72,7 @@ export class ConfirmationPage {
     return (this.order()?.totals.vat ?? []).map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
       scope: share.rate === VAT_SALE ? c.vatSale : c.vatSweet,
-      amount: formatEuro(share.amount),
+      amount: formatCents(share.amountCents),
     }));
   });
 
@@ -88,8 +88,9 @@ export class ConfirmationPage {
     });
   }
 
-  protected money(value: number): string {
-    return formatEuro(value);
+  /** Les totaux figés arrivent en centimes ; le gabarit ne voit que des libellés. */
+  protected money(cents: number): string {
+    return formatCents(cents);
   }
 
   protected notYet(): void {

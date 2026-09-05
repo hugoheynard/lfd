@@ -30,20 +30,20 @@
 <dl class="count">
   <div class="row">
     <dt>{{ t().cart.subtotal }}</dt>
-    <dd>{{ money(totals().subtotal) }}</dd>
+    <dd>{{ money(totals().subtotalCents) }}</dd>
   </div>
 
   @if (discountLabel(); as label) {
     <div class="row saved">
       <dt>{{ label }}</dt>
-      <dd>−{{ money(totals().discount) }}</dd>
+      <dd>−{{ money(totals().discountCents) }}</dd>
     </div>
   }
 
   @if (feeLabel(); as label) {
     <div class="row">
       <dt>{{ label }}</dt>
-      <dd>{{ money(totals().fee) }}</dd>
+      <dd>{{ money(totals().feeCents) }}</dd>
     </div>
   }
 
@@ -60,6 +60,6 @@
 
   <div class="row grand">
     <dt>{{ t().cart.total }}</dt>
-    <dd>{{ money(totals().total) }}</dd>
+    <dd>{{ money(totals().totalCents) }}</dd>
   </div>
 </dl>

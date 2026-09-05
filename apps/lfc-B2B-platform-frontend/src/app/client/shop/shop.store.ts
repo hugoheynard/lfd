@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-import { ALL_SHELVES } from './mock-shop';
+import { ALL_SHELVES } from './shelves';
 
 /**
  * **Ce que le client regarde** — le terme cherché, et le rayon choisi.

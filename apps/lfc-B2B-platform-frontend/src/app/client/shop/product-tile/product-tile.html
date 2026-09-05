@@ -1,10 +1,10 @@
 <div class="tile">
   <div class="media">
     <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
-      <img [src]="'products/' + product().image + '.svg'" alt="" />
+      <img [src]="art().url" [attr.alt]="art().alt" />
     </button>
 
-    @if (product().signature) {
+    @if (product().isFeatured) {
       <!-- L'étoile en pile, le mot au-delà du pli : à 112 px de large, un badge
            écrit mangerait la moitié de la photo. -->
       <span class="star narrow-only" aria-hidden="true">★</span>

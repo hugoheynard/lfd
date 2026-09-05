@@ -4,13 +4,17 @@ import { type CartTotals } from './cart/cart-total';
 import { ClientCart } from './cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
-import { MOCK_ORDER_REF } from './shop/mock-shop';
+import { lineTotalCents } from '@lfd/money';
+
+import { ttcMillicentsOf } from './cart/cart-total';
+import { MOCK_ORDER_REF } from './shop/mock-order';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {
   readonly name: string;
   readonly quantity: number;
-  readonly unitPrice: number;
+  /** En **centimes TTC**, figé : le prix payé ce jour-là, pas celui d'aujourd'hui. */
+  readonly unitPriceCents: number;
 }
 
 /**
@@ -82,10 +86,14 @@ export class ClientOrders {
     const order: PlacedOrder = {
       reference: this.nextReference(),
       service,
-      lines: lines.map((l) => ({
-        name: l.product.name,
-        quantity: l.quantity,
-        unitPrice: l.product.price,
+      lines: lines.map((line) => ({
+        name: line.product.name,
+        quantity: line.quantity,
+        // FIGÉ à la passation, en centimes TTC : une commande passée doit dire
+        // le prix qu'elle a coûté, pas celui que le catalogue affiche
+        // aujourd'hui. C'est le même raisonnement que le serveur applique à sa
+        // ligne de commande.
+        unitPriceCents: lineTotalCents(ttcMillicentsOf(line.product), 1),
       })),
       pieces: this.cart.count(),
       totals: this.cart.totals(),

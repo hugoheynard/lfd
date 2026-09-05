@@ -1,6 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 
+import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from '../cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
@@ -30,20 +33,21 @@ describe('Les destinations du menu', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideRouter(ROUTES)] });
+    TestBed.configureTestingModule({ providers: [provideRouter(ROUTES), provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
   it('garde le même ordre, panier vide comme panier plein', () => {
     const nav = TestBed.inject(ClientNav);
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
 
-    TestBed.inject(ClientCart).add('croissant');
+    TestBed.inject(ClientCart).add('VIE-001');
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
   });
 
   it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {
     const nav = TestBed.inject(ClientNav);
-    TestBed.inject(ClientCart).add('croissant');
+    TestBed.inject(ClientCart).add('VIE-001');
     // Une quantité qui change en permanence appartient au chrome permanent : si
     // le panier revenait ici, il y aurait deux endroits où lire le même nombre.
     expect(nav.items().some((i) => i.id === 'cart')).toBe(false);
@@ -51,7 +55,7 @@ describe('Les destinations du menu', () => {
 
   it('compte les commandes réellement passées, pas une valeur tenue à part', () => {
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
-    TestBed.inject(ClientCart).add('croissant');
+    TestBed.inject(ClientCart).add('VIE-001');
     TestBed.inject(ClientOrders).place();
 
     const orders = TestBed.inject(ClientNav)

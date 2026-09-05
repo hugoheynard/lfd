@@ -34,7 +34,7 @@
       @if (discountLabel(); as label) {
         <div class="row saved">
           <dt>{{ label }}</dt>
-          <dd>−{{ money(done.totals.discount) }}</dd>
+          <dd>−{{ money(done.totals.discountCents) }}</dd>
         </div>
       }
       @for (vat of vatLines(); track vat.label) {
@@ -47,7 +47,7 @@
       }
       <div class="row paid">
         <dt>{{ t().done.paidOnline }}</dt>
-        <dd>{{ money(done.totals.total) }}</dd>
+        <dd>{{ money(done.totals.totalCents) }}</dd>
       </div>
     </dl>
 

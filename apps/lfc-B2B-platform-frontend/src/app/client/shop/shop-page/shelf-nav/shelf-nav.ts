@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { ALL_SHELVES, SHOP_CATEGORIES } from '../../mock-shop';
+import { ShopCatalogue } from '../../shop-catalogue.store';
+import { ALL_SHELVES } from '../../shelves';
 
 /**
  * **Le rail des rayons** — « Tout » puis les six familles.
  *
- * Il construit sa liste lui-même : elle ne dépend que du catalogue et du
+ * Il construit sa liste lui-même : elle ne dépend que du catalogue HYDRATÉ et du
  * dictionnaire de langue, jamais de l'écran qui l'affiche. La faire descendre en
  * entrée aurait obligé chaque page à recopier la même concaténation, et deux
  * copies finissent par ne plus s'accorder sur l'ordre.
+ *
+ * Les rayons arrivent déjà **peuplés et ordonnés** par le serveur : la vitrine
+ * ne trie pas et ne filtre pas — un rayon vide n'y est simplement jamais.
  *
  * 🔴 **Il ne sait rien de la recherche**, et c'est délibéré. Chercher traverse
  * les rayons, donc aucune pastille n'est active pendant une recherche — mais
@@ -36,9 +40,10 @@ export class ShelfNav {
   readonly picked = output<string>();
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly catalogue = inject(ShopCatalogue);
 
   protected readonly shelves = computed(() => [
     { id: ALL_SHELVES, label: this.t().shop.allShelves },
-    ...SHOP_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+    ...this.catalogue.shelves().map((shelf) => ({ id: shelf.id, label: shelf.name })),
   ]);
 }

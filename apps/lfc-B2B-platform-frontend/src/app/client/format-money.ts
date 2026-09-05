@@ -14,6 +14,18 @@ export function formatEuro(value: number): string {
   return `${value.toFixed(2).replace('.', ',')} €`;
 }
 
+/**
+ * Un montant en **centimes** → « 5,50 € ».
+ *
+ * C'est la forme qui compte désormais : le serveur facture en centimes entiers,
+ * et le front les affiche sans jamais repasser par un flottant. `formatEuro`
+ * reste pour ce qui n'a pas encore de source serveur — une facture de maquette,
+ * un relevé — et disparaîtra avec elle.
+ */
+export function formatCents(cents: number): string {
+  return formatEuro(cents / 100);
+}
+
 /** Un taux → « 5,5 % ». Le taux entier ne traîne pas de décimale inutile. */
 export function formatRate(rate: number): string {
   return `${String(rate).replace('.', ',')} %`;

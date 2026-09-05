@@ -34,6 +34,7 @@
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
+    "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
     "@sentry/angular": "catalog:",
     "@stripe/stripe-js": "catalog:",

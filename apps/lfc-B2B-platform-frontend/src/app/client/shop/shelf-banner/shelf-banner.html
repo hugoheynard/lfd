@@ -1,5 +1,5 @@
 <button class="banner" type="button" (click)="opened.emit()">
-  <img [src]="'products/' + image() + '.svg'" alt="" />
+  <img [src]="image()" alt="" />
   <span class="veil" aria-hidden="true"></span>
   <span class="text">
     <span class="title">{{ story().tag }}</span>

@@ -2,7 +2,10 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ClientCart } from '../../../cart/client-cart.service';
 import { FR } from '../../../copy/fr';
-import { SHOP_PRODUCTS } from '../../mock-shop';
+import { provideHttpClient } from '@angular/common/http';
+
+import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop-catalogue.fixture';
+import { ShopCatalogue } from '../../shop-catalogue.store';
 import { ShelfGrid } from './shelf-grid';
 
 describe('ShelfGrid', () => {
@@ -15,11 +18,12 @@ describe('ShelfGrid', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [ShelfGrid] });
+    TestBed.configureTestingModule({ imports: [ShelfGrid], providers: [provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     cart = TestBed.inject(ClientCart);
     cart.clear();
     fixture = TestBed.createComponent(ShelfGrid);
-    fixture.componentRef.setInput('products', SHOP_PRODUCTS.slice(0, 3));
+    fixture.componentRef.setInput('products', TEST_ITEMS.slice(0, 3));
     fixture.detectChanges();
   });
 
@@ -47,12 +51,12 @@ describe('ShelfGrid', () => {
    * redescende n'aurait ajouté que deux relais.
    */
   it('ajoute au panier sans passer par la page', () => {
-    const first = SHOP_PRODUCTS[0];
+    const first = TEST_ITEMS[0];
     // Le geste rapide de la première pièce — la pastille qui porte la quantité.
     tiles()[0]?.querySelector<HTMLButtonElement>('.quick')?.click();
     fixture.detectChanges();
 
-    expect(cart.quantityOf(first?.id ?? '')).toBe(1);
+    expect(cart.quantityOf(first?.sku ?? '')).toBe(1);
     // Et la pièce le montre : la pastille affiche ce qu'on vient d'y mettre.
     expect(tiles()[0]?.querySelector('.quick')?.textContent?.trim()).toBe('1');
   });
@@ -64,7 +68,7 @@ describe('ShelfGrid', () => {
 
     tiles()[1]?.querySelector<HTMLButtonElement>('.photo')?.click();
 
-    expect(opened).toEqual([SHOP_PRODUCTS[1]?.id]);
+    expect(opened).toEqual([TEST_ITEMS[1]?.sku]);
     // Elle ne pose aucune feuille : ce n'est pas son état.
     expect(el().querySelector('app-product-sheet')).toBeNull();
   });

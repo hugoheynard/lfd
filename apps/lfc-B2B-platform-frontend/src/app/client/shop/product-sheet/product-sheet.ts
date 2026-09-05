@@ -1,11 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../../client/format-money';
+import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { categoryOf, ovenHoursOf, type ShopProduct } from '../mock-shop';
+import type { ShopItemView } from '@lfd/contracts';
+import { lineTotalCents } from '@lfd/money';
+
+import { ttcMillicentsOf } from '../../cart/cart-total';
+import { artOf, ovenHoursOf } from '../shelf-display';
+import { ShopCatalogue } from '../shop-catalogue.store';
 
 /**
  * La fiche d'une pièce — le geste LENT du rayon.
@@ -24,7 +29,7 @@ import { categoryOf, ovenHoursOf, type ShopProduct } from '../mock-shop';
 })
 export class ProductSheet {
   /** `null` ferme la feuille : il n'y a pas de fiche sans pièce à montrer. */
-  readonly product = input.required<ShopProduct | null>();
+  readonly product = input.required<ShopItemView | null>();
 
   readonly quantity = input(0);
 
@@ -35,9 +40,20 @@ export class ProductSheet {
   protected readonly t = inject(ClientCopyService).t;
   private readonly order = inject(OrderContextStore);
 
+  private readonly catalogue = inject(ShopCatalogue);
+
+  /** Le nom du rayon vient du CATALOGUE : c'est lui qui range, pas cet écran. */
   protected readonly shelf = computed(() => {
     const product = this.product();
-    return product === null ? '' : (categoryOf(product)?.label ?? '');
+    if (product === null) {
+      return '';
+    }
+    return this.catalogue.shelves().find((shelf) => shelf.id === product.shelfId)?.name ?? '';
+  });
+
+  protected readonly art = computed(() => {
+    const product = this.product();
+    return product === null ? null : artOf(product);
   });
 
   /**
@@ -59,8 +75,8 @@ export class ProductSheet {
             value: `${choice.place} · ${choice.slot}`,
           };
     return [
-      { key: c.unitPrice, value: formatEuro(product.price) },
-      { key: c.oven, value: ovenHoursOf(product.category) },
+      { key: c.unitPrice, value: formatCents(lineTotalCents(ttcMillicentsOf(product), 1)) },
+      { key: c.oven, value: ovenHoursOf(product.shelfId) },
       where,
     ];
   });
@@ -80,6 +96,8 @@ export class ProductSheet {
       return '';
     }
     const pieces = Math.max(this.quantity(), 1);
-    return fill(this.t().product.cta, { price: formatEuro(product.price * pieces) });
+    return fill(this.t().product.cta, {
+      price: formatCents(lineTotalCents(ttcMillicentsOf(product), pieces)),
+    });
   });
 }

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { storyOf } from '../mock-shelf-stories';
-import { packshotOf } from '../mock-shop';
+import { shelfArtOf } from '../shelf-display';
 
 /**
  * L'invitation à en savoir plus sur le rayon qu'on regarde.
@@ -27,5 +27,5 @@ export class ShelfBanner {
   protected readonly t = inject(ClientCopyService).t;
 
   protected readonly story = computed(() => storyOf(this.shelf()));
-  protected readonly image = computed(() => packshotOf(this.shelf()));
+  protected readonly image = computed(() => shelfArtOf(this.shelf()));
 }

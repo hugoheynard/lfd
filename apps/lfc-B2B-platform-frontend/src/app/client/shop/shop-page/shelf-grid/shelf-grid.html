@@ -4,12 +4,12 @@
     <p class="none-hint">{{ t().shop.emptyHint }}</p>
   </div>
 }
-@for (piece of products(); track piece.id) {
+@for (piece of products(); track piece.sku) {
   <app-product-tile
     [product]="piece"
-    [quantity]="cart.quantityOf(piece.id)"
-    (opened)="opened.emit(piece.id)"
-    (added)="cart.add(piece.id)"
-    (removed)="cart.remove(piece.id)"
+    [quantity]="cart.quantityOf(piece.sku)"
+    (opened)="opened.emit(piece.sku)"
+    (added)="cart.add(piece.sku)"
+    (removed)="cart.remove(piece.sku)"
   />
 }

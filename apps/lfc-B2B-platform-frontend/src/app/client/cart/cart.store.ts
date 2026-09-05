@@ -1,14 +1,23 @@
 import { effect, Injectable, signal, type Signal } from '@angular/core';
 
 import { isRecord, readLocal, readNumber, writeLocal } from '../local-store';
-import { productById } from '../shop/mock-shop';
 
 const KEY = 'cart';
 
 /**
- * Le panier relu du navigateur : on ne garde que les références qui EXISTENT
- * encore au catalogue, avec une quantité entière positive. Un produit retiré du
- * rayon disparaît ainsi du panier au lieu de le faire tomber.
+ * Le panier relu du navigateur : des quantités entières positives, et rien
+ * d'autre.
+ *
+ * 🔴 **Il ne vérifie plus que la référence existe au catalogue**, et ce n'est
+ * pas un renoncement : le catalogue vient du réseau désormais, et il n'est pas
+ * là quand ce dépôt naît. Vérifier ici demanderait d'attendre une requête pour
+ * relire une clé de stockage — c'est-à-dire de faire dépendre l'état local d'un
+ * serveur joignable.
+ *
+ * L'oubli des références disparues n'a pas disparu pour autant : il a changé de
+ * moment. `ClientCart` l'élague dès que le catalogue arrive, et ses lignes ne
+ * montrent de toute façon que ce que le catalogue connaît — une référence
+ * inconnue est invisible avant même d'être élaguée.
  */
 function parseCart(raw: unknown): Readonly<Record<string, number>> | null {
   if (!isRecord(raw)) {
@@ -17,7 +26,7 @@ function parseCart(raw: unknown): Readonly<Record<string, number>> | null {
   const clean: Record<string, number> = {};
   for (const [id, value] of Object.entries(raw)) {
     const quantity = readNumber(value);
-    if (quantity !== null && quantity > 0 && productById(id) !== null) {
+    if (quantity !== null && quantity > 0) {
       clean[id] = Math.floor(quantity);
     }
   }
@@ -89,5 +98,19 @@ export class CartStore {
 
   clear(): void {
     this.quantities$.set({});
+  }
+
+  /**
+   * Oublie les références que le catalogue ne connaît plus.
+   *
+   * Appelé quand le catalogue arrive, et pas avant : c'est ce qui remplace la
+   * vérification que la relecture faisait quand le catalogue était une constante
+   * compilée. Sans lui, le stockage garderait indéfiniment des références
+   * retirées de la vente.
+   */
+  keepOnly(known: ReadonlySet<string>): void {
+    this.quantities$.update((current) =>
+      Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
+    );
   }
 }

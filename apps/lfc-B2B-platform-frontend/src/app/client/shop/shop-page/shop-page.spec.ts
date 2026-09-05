@@ -1,6 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop-catalogue.store';
 import { ClientCart } from '../../cart/client-cart.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
@@ -34,7 +37,11 @@ describe('ShopPage', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({ imports: [ShopPage], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({
+      imports: [ShopPage],
+      providers: [provideRouter([]), provideHttpClient()],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(OrderContextStore).choice.set({
       mode: 'pickup',
       place: 'Le Labo',
@@ -50,8 +57,8 @@ describe('ShopPage', () => {
     fixture.detectChanges();
   });
 
-  it('montre les quatorze références, et le mode de service en permanence', () => {
-    expect(tiles().length).toBe(14);
+  it('montre toutes les références du catalogue, et le mode de service en permanence', () => {
+    expect(tiles().length).toBe(TEST_ITEMS.length);
     expect(el().querySelector('.where')?.textContent).toContain('Le Labo · 7 h – 8 h');
   });
 
@@ -60,8 +67,8 @@ describe('ShopPage', () => {
     chips()[2]?.click();
     fixture.detectChanges();
 
-    // « Pains » : baguette, campagne, céréales.
-    expect(tiles().length).toBe(3);
+    // « Pains » : la campagne et la tradition.
+    expect(tiles().length).toBe(2);
   });
 
   it('la recherche TRAVERSE les rayons — le client ne sait pas où c’est rangé', () => {
@@ -100,14 +107,14 @@ describe('ShopPage', () => {
     fixture.detectChanges();
 
     expect(field().value).toBe('');
-    // Et la grille suit : « Pains », les trois, pas l'éclair.
-    expect(tiles().length).toBe(3);
+    // Et la grille suit : « Pains », les deux, pas l'éclair.
+    expect(tiles().length).toBe(2);
   });
 
   /** Le compte que la boutique annonce est celui de ce qu'elle montre. */
   it('annonce autant de pièces qu’elle en affiche', () => {
     const count = (): string => el().querySelector('fold-search p')?.textContent?.trim() ?? '';
-    expect(count()).toBe(`14 ${FR.shop.piecesUnit}`);
+    expect(count()).toBe(`${String(TEST_ITEMS.length)} ${FR.shop.piecesUnit}`);
 
     type('pain');
 
@@ -130,7 +137,7 @@ describe('ShopPage', () => {
   it('la barre du panier n’apparaît qu’une fois quelque chose dedans', () => {
     expect(el().querySelector('app-cart-bar')).toBeNull();
 
-    cart.add('croissant');
+    cart.add('VIE-001');
     fixture.detectChanges();
 
     expect(el().querySelector('app-cart-bar')).not.toBeNull();

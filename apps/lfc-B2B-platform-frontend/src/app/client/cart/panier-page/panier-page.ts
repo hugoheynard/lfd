@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { formatEuro } from '../../format-money';
+import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientChrome } from '../../client-chrome.service';
 import { OrderContextStore } from '../../order-context.store';
@@ -45,7 +45,7 @@ export class PanierPage {
     if (this.choice() === null) {
       return this.t().shop.pickService;
     }
-    return fill(this.t().cart.pay, { total: formatEuro(this.cart.totals().total) });
+    return fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) });
   });
 
   constructor() {

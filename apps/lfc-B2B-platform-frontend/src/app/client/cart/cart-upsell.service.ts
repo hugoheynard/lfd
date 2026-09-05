@@ -1,10 +1,18 @@
 import { computed, inject, Injectable } from '@angular/core';
 
 import { CartStore } from './cart.store';
-import { SHOP_PRODUCTS } from '../shop/mock-shop';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
 
-/** Ce qu'on propose en relance : ce qui se rajoute par gourmandise, pas par besoin. */
-const TREATS: readonly string[] = ['choco', 'patis'];
+/**
+ * Ce qu'on propose en relance : ce qui se rajoute par gourmandise, pas par
+ * besoin — le chocolat et la pâtisserie.
+ *
+ * ⚠️ Les identifiants sont ceux du RÉFÉRENTIEL, et c'est une règle de vente
+ * écrite ici faute d'endroit où la poser là-bas. Le jour où une famille peut se
+ * déclarer « gourmandise », cette liste disparaît. Un rayon renommé ne la casse
+ * pas ; un rayon supprimé la rend simplement muette, ce qui est le bon défaut.
+ */
+const TREATS: readonly string[] = ['cat_choco', 'cat_patis'];
 
 /**
  * **La relance** — la gourmandise qu'on propose d'ajouter au panier.
@@ -21,6 +29,7 @@ const TREATS: readonly string[] = ['choco', 'patis'];
 @Injectable({ providedIn: 'root' })
 export class CartUpsell {
   private readonly store = inject(CartStore);
+  private readonly catalogue = inject(ShopCatalogue);
 
   /**
    * La première gourmandise ABSENTE du panier.
@@ -32,8 +41,9 @@ export class CartUpsell {
   readonly suggestion = computed(() => {
     const quantities = this.store.quantities();
     return (
-      SHOP_PRODUCTS.find((p) => TREATS.includes(p.category) && (quantities[p.id] ?? 0) === 0) ??
-      null
+      this.catalogue
+        .items()
+        .find((item) => TREATS.includes(item.shelfId) && (quantities[item.sku] ?? 0) === 0) ?? null
     );
   });
 }

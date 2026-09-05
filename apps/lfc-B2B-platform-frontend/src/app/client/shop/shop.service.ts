@@ -1,8 +1,9 @@
 import { computed, inject, Injectable } from '@angular/core';
 
 import { ClientCopyService, fill } from '../copy/client-copy.service';
+import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
-import { ALL_SHELVES, SHOP_CATEGORIES, SHOP_PRODUCTS } from './mock-shop';
+import { ALL_SHELVES } from './shelves';
 
 /**
  * Retire accents et casse : « éclair » et « eclair » cherchent la même chose.
@@ -37,6 +38,7 @@ function fold(text: string): string {
 @Injectable()
 export class Shop {
   private readonly store = inject(ShopStore);
+  private readonly catalogue = inject(ShopCatalogue);
   private readonly t = inject(ClientCopyService).t;
 
   /** Le terme cherché — écrit directement par le champ, qui en est la vue. */
@@ -55,16 +57,17 @@ export class Shop {
 
   /** Les pièces à montrer : celles du terme s'il y en a un, celles du rayon sinon. */
   readonly products = computed(() => {
+    const items = this.catalogue.items();
     const query = fold(this.term());
     if (query !== '') {
-      return SHOP_PRODUCTS.filter(
-        (p) => fold(p.name).includes(query) || fold(p.note).includes(query),
+      // La note peut être absente — le référentiel n'impose aucun éditorial — et
+      // chercher dedans ne doit pas devenir chercher dans « null ».
+      return items.filter(
+        (item) => fold(item.name).includes(query) || fold(item.note ?? '').includes(query),
       );
     }
     const shelf = this.store.shelf();
-    return shelf === ALL_SHELVES
-      ? SHOP_PRODUCTS
-      : SHOP_PRODUCTS.filter((p) => p.category === shelf);
+    return shelf === ALL_SHELVES ? items : items.filter((item) => item.shelfId === shelf);
   });
 
   /** Le titre de la grille : le rayon, ou ce qu'on vient de chercher. */
@@ -98,6 +101,6 @@ export class Shop {
   private shelfTitle(shelf: string, fallback: string): string {
     return shelf === ALL_SHELVES
       ? fallback
-      : (SHOP_CATEGORIES.find((s) => s.id === shelf)?.shelf ?? fallback);
+      : (this.catalogue.shelves().find((entry) => entry.id === shelf)?.name ?? fallback);
   }
 }

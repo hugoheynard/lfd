@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { storyOf } from '../mock-shelf-stories';
-import { packshotOf } from '../mock-shop';
+import { shelfArtOf } from '../shelf-display';
 
 /**
  * Ce qu'un rayon raconte de lui-même — la feuille « En savoir plus ».
@@ -41,6 +41,6 @@ export class ShelfSheet {
 
   protected readonly image = computed(() => {
     const shelf = this.shelf();
-    return shelf === null ? 'boule' : packshotOf(shelf);
+    return shelfArtOf(shelf ?? '');
   });
 }

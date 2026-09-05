@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ProductTile } from '../../product-tile/product-tile';
-import type { ShopProduct } from '../../mock-shop';
+import type { ShopItemView } from '@lfd/contracts';
 
 /**
  * **La vitrine** — les pièces d'un rayon, ou ce qu'il faut lire quand il n'y en
@@ -27,7 +27,7 @@ import type { ShopProduct } from '../../mock-shop';
   styleUrl: './shelf-grid.scss',
 })
 export class ShelfGrid {
-  readonly products = input.required<readonly ShopProduct[]>();
+  readonly products = input.required<readonly ShopItemView[]>();
 
   /** La pièce dont on veut la fiche. */
   readonly opened = output<string>();

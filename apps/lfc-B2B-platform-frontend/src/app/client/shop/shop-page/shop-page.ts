@@ -1,14 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FoldElementTitleComponent, FoldSearchComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+  FoldSearchComponent,
+} from 'fold-ng';
 
-import { formatEuro } from '../../../client/format-money';
+import { formatCents } from '../../../client/format-money';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { productById } from '../mock-shop';
+import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
 import { ShopStore } from '../shop.store';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
@@ -42,7 +48,10 @@ import { OrderContextBar } from './order-context-bar/order-context-bar';
   imports: [
     CartBar,
     CartSummary,
+    FoldButtonComponent,
     FoldElementTitleComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
     FoldSearchComponent,
     OrderContextBar,
     ProductSheet,
@@ -71,6 +80,7 @@ export class ShopPage {
   protected readonly cart = inject(ClientCart);
 
   protected readonly shop = inject(Shop);
+  private readonly catalogue = inject(ShopCatalogue);
 
   /** La pièce dont la fiche est ouverte. */
   protected readonly openPiece = signal<string | null>(null);
@@ -85,7 +95,7 @@ export class ShopPage {
   );
 
   protected readonly payLabel = computed(() =>
-    fill(this.t().cart.pay, { total: formatEuro(this.cart.totals().total) }),
+    fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) }),
   );
 
   /** Le rappel du service, sur une ligne — vide tant qu'aucun n'est pris. */
@@ -95,7 +105,7 @@ export class ShopPage {
   });
 
   /** La barre du bas ne porte que le montant : le verbe est dans son titre. */
-  protected readonly totalLabel = computed(() => formatEuro(this.cart.totals().total));
+  protected readonly totalLabel = computed(() => formatCents(this.cart.totals().totalCents));
 
   /**
    * On peut VISITER le rayon sans avoir dit où l'on est servi — c'est ce que
@@ -107,7 +117,7 @@ export class ShopPage {
 
   protected readonly piece = computed(() => {
     const id = this.openPiece();
-    return id === null ? null : productById(id);
+    return id === null ? null : this.catalogue.itemOf(id);
   });
 
   protected readonly pieceQuantity = computed(() => {
@@ -115,10 +125,21 @@ export class ShopPage {
     return id === null ? 0 : this.cart.quantityOf(id);
   });
 
+  /** L'état du chargement, tel que l'écran le rend. */
+  protected readonly status = this.catalogue.status;
+
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     this.chrome.back.set((): void => this.backToService());
+    // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
+    // depuis le panier ne redemande rien.
+    void this.catalogue.hydrate();
+  }
+
+  /** Réessayer après un échec — le seul geste qu'un écran vide doit offrir. */
+  protected retry(): void {
+    void this.catalogue.hydrate();
   }
 
   protected backToService(): void {

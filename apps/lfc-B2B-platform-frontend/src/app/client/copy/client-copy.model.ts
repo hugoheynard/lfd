@@ -215,6 +215,11 @@ export interface ClientCopy {
     /** Pour qui visite le rayon AVANT d'avoir dit où il est servi. */
     readonly pickService: string;
     readonly pickServiceHint: string;
+    /** Les trois états du chargement de la vitrine — cf. `ShopCatalogue`. */
+    readonly loading: string;
+    readonly loadFailedTitle: string;
+    readonly loadFailedHint: string;
+    readonly loadRetry: string;
     readonly searchPlaceholder: string;
     readonly clearSearch: string;
     readonly allShelves: string;

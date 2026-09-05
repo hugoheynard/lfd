@@ -2,16 +2,22 @@ import { TestBed } from '@angular/core/testing';
 
 import { CartUpsell } from './cart-upsell.service';
 import { ClientCart } from './client-cart.service';
-import { SHOP_PRODUCTS } from '../shop/mock-shop';
+import { provideHttpClient } from '@angular/common/http';
+
+import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
 
 /** Toutes les gourmandises proposables, dans l'ordre du rayon. */
-const TREATS = SHOP_PRODUCTS.filter((p) => p.category === 'choco' || p.category === 'patis');
+const TREATS = TEST_ITEMS.filter(
+  (item) => item.shelfId === 'cat_choco' || item.shelfId === 'cat_patis',
+);
 
 describe('La relance du panier', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
   it('propose une gourmandise sur un panier vide', () => {
@@ -25,16 +31,16 @@ describe('La relance du panier', () => {
     const first = upsell.suggestion();
     expect(first).not.toBeNull();
 
-    cart.add(first?.id ?? '');
+    cart.add(first?.sku ?? '');
 
-    expect(upsell.suggestion()?.id).not.toBe(first?.id);
+    expect(upsell.suggestion()?.sku).not.toBe(first?.sku);
   });
 
   /** Plus rien à proposer : la carte disparaît au lieu de tourner à vide. */
   it('rend null quand toutes les gourmandises sont au panier', () => {
     const cart = TestBed.inject(ClientCart);
     for (const treat of TREATS) {
-      cart.add(treat.id);
+      cart.add(treat.sku);
     }
 
     expect(TestBed.inject(CartUpsell).suggestion()).toBeNull();
@@ -45,13 +51,13 @@ describe('La relance du panier', () => {
     const upsell = TestBed.inject(CartUpsell);
     const cart = TestBed.inject(ClientCart);
     const first = upsell.suggestion();
-    cart.add(first?.id ?? '');
-    cart.remove(first?.id ?? '');
+    cart.add(first?.sku ?? '');
+    cart.remove(first?.sku ?? '');
 
-    expect(upsell.suggestion()?.id).toBe(first?.id);
+    expect(upsell.suggestion()?.sku).toBe(first?.sku);
   });
 
   it('ne propose pas un article salé, qui ne se rajoute pas par gourmandise', () => {
-    expect(TestBed.inject(CartUpsell).suggestion()?.category).not.toBe('sale');
+    expect(TestBed.inject(CartUpsell).suggestion()?.shelfId).not.toBe('cat_sale');
   });
 });

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
-import { formatEuro } from '../../format-money';
+import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 
@@ -30,7 +30,7 @@ export class ClientCartPill {
   protected readonly cart = inject(ClientCart);
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly total = computed(() => formatEuro(this.cart.totals().total));
+  protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
 
   /** Le compte fait partie du NOM : sans lui, la pastille est muette. */
   protected readonly label = computed(() => {
