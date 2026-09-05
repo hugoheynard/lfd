@@ -6,6 +6,8 @@ import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
 import { B2bMembershipService } from "../../src/pim/channels/b2b-platform/membership/membership.service.js";
+import { B2bCatalogPushService } from "../../src/pim/channels/b2b-platform/products/push.service.js";
+import { CatalogDeliveryRepository } from "../../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
 import { FakeDocumentStore } from "../seed-growth/fake-document-store.js";
@@ -43,6 +45,10 @@ export interface SeedHarness {
   readonly prisma: PrismaService;
   /** Le canal B2B n'a pas de commande — cf. `b2b-channel.ts`. */
   readonly membership: B2bMembershipService;
+  /** Le push non plus : le contrôleur appelle le service — cf. `push.ts`. */
+  readonly push: B2bCatalogPushService;
+  /** Pour retrouver l'arrivée que le push vient de déposer, et la valider. */
+  readonly deliveries: CatalogDeliveryRepository;
   /** Exécute dans un contexte de requête **daté** — le `Clock` lit ce `now`. */
   runAt<T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T>;
   close(): Promise<void>;
@@ -66,6 +72,8 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     commands: module.get(CommandBus, { strict: false }),
     prisma: module.get(PrismaService, { strict: false }),
     membership: module.get(B2bMembershipService, { strict: false }),
+    push: module.get(B2bCatalogPushService, { strict: false }),
+    deliveries: module.get(CatalogDeliveryRepository, { strict: false }),
     runAt: <T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T> =>
       runWithRequestContext({ now, traceId: newTraceId(), actor }, fn),
     close: () => module.close(),
