@@ -1,0 +1,15 @@
+@if (products().length === 0) {
+  <div class="none">
+    <p class="none-title">{{ t().shop.emptyTitle }}</p>
+    <p class="none-hint">{{ t().shop.emptyHint }}</p>
+  </div>
+}
+@for (piece of products(); track piece.id) {
+  <app-product-tile
+    [product]="piece"
+    [quantity]="cart.quantityOf(piece.id)"
+    (opened)="opened.emit(piece.id)"
+    (added)="cart.add(piece.id)"
+    (removed)="cart.remove(piece.id)"
+  />
+}

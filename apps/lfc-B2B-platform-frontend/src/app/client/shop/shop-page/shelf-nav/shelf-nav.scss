@@ -1,0 +1,83 @@
+:host {
+  min-width: 0;
+}
+
+.title {
+  display: none;
+  margin: 0 0 11px;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+/* En pile, le rail déborde volontairement la gouttière de la page pour partir du
+   bord de l'écran — d'où la marge négative, l'un des chevauchements que les
+   conventions admettent. Elle vise `--fold-space-lg` parce que c'est la
+   gouttière que la boutique pose ; les deux doivent bouger ensemble. */
+.chips {
+  display: flex;
+  gap: 7px;
+  margin-inline: calc(-1 * var(--fold-space-lg));
+  padding-inline: var(--fold-space-lg);
+  overflow-x: auto;
+  scroll-padding-inline: var(--fold-space-lg);
+
+  button {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--fold-radius-pill);
+    background: var(--fold-color-surface-card);
+    color: var(--fold-color-text-secondary);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xs);
+    font-weight: var(--fold-weight-extrabold);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  button.on {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+}
+
+/* Au-delà du pli, le rail devient une vraie liste dans une carte : il y a la
+   place, et une colonne se parcourt mieux qu'un ruban qui défile. */
+@media (min-width: 900px) {
+  :host {
+    display: block;
+    padding: 15px 16px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--lfc-radius-xl);
+    background: var(--fold-color-surface-card);
+  }
+
+  .title.wide-only {
+    display: block;
+  }
+
+  .chips {
+    flex-direction: column;
+    gap: 4px;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow-x: visible;
+
+    button {
+      justify-content: flex-start;
+      border-color: transparent;
+      background: none;
+      border-radius: 9px;
+    }
+  }
+}

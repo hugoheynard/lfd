@@ -11,21 +11,11 @@
     [resultLabel]="t().shop.piecesUnit"
   />
 
-  <nav class="shelves" [attr.aria-label]="t().shop.shelvesGroup">
-    <p class="shelves-title wide-only">{{ t().shop.shelvesGroup }}</p>
-    <div class="chips">
-      @for (item of shelves(); track item.id) {
-        <button
-          type="button"
-          [class.on]="query() === '' && shelf() === item.id"
-          [attr.aria-pressed]="query() === '' && shelf() === item.id"
-          (click)="pickShelf(item.id)"
-        >
-          {{ item.label }}
-        </button>
-      }
-    </div>
-  </nav>
+  <app-shelf-nav
+    class="shelves"
+    [active]="query() === '' ? shelf() : null"
+    (picked)="pickShelf($event)"
+  />
 
   <div class="head">
     <h1>{{ heading() }}</h1>
@@ -33,23 +23,7 @@
 
   <app-shelf-banner class="banner" [shelf]="shelf()" (opened)="openStory.set(shelf())" />
 
-  <div class="grid">
-    @if (products().length === 0) {
-      <div class="none">
-        <p class="none-title">{{ t().shop.emptyTitle }}</p>
-        <p class="none-hint">{{ t().shop.emptyHint }}</p>
-      </div>
-    }
-    @for (piece of products(); track piece.id) {
-      <app-product-tile
-        [product]="piece"
-        [quantity]="cart.quantityOf(piece.id)"
-        (opened)="openPiece.set(piece.id)"
-        (added)="cart.add(piece.id)"
-        (removed)="cart.remove(piece.id)"
-      />
-    }
-  </div>
+  <app-shelf-grid class="grid" [products]="products()" (opened)="openPiece.set($event)" />
 
   <!-- LE PANIER PERMANENT, au-delà du pli seulement. En pile, c'est la barre du
        bas qui en tient lieu : 320 px de colonne sur 390 px d'écran, il ne

@@ -19,6 +19,17 @@ app-order-context-bar {
 
 /* ── La grille de l'écran ─────────────────────────────────────────────────── */
 
+/* Le rail et la vitrine sont des composants : la page ne leur donne que leur
+   case. Leur mise en forme, y compris ce qui change au-delà du pli, leur
+   appartient. */
+.shelves {
+  grid-area: chips;
+}
+
+.grid {
+  grid-area: grid;
+}
+
 .shop {
   display: grid;
   /* `minmax(0, 1fr)` et pas `auto` : le rail des rayons ne se coupe PAS
@@ -38,57 +49,9 @@ app-order-context-bar {
   grid-area: search;
 }
 
-.shelves {
-  grid-area: chips;
-  min-width: 0;
-}
-
-.shelves-title {
-  margin: 0 0 11px;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
-}
-
 /* En pile, les rayons défilent à l'horizontale ; la marge négative les fait
    partir du bord de l'écran, et le `scroll-padding` rend son inset au premier
    d'entre eux. */
-.chips {
-  display: flex;
-  gap: 7px;
-  margin-inline: calc(-1 * var(--fold-space-lg));
-  padding-inline: var(--fold-space-lg);
-  overflow-x: auto;
-  scroll-padding-inline: var(--fold-space-lg);
-
-  button {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    height: 34px;
-    padding: 0 14px;
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--fold-radius-pill);
-    background: var(--fold-color-surface-card);
-    color: var(--fold-color-text-secondary);
-    font-family: var(--fold-font-label);
-    font-size: var(--fold-text-xs);
-    font-weight: var(--fold-weight-extrabold);
-    letter-spacing: var(--lfc-tracking-label);
-    text-transform: uppercase;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  button.on {
-    border-color: var(--fold-color-primary);
-    background: var(--fold-color-primary);
-    color: var(--fold-color-on-primary);
-  }
-}
 
 .head {
   grid-area: head;
@@ -115,37 +78,6 @@ app-order-context-bar {
 }
 
 /* ── La vitrine ───────────────────────────────────────────────────────────── */
-
-.grid {
-  grid-area: grid;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--fold-space-sm);
-  align-items: stretch;
-}
-
-.none {
-  grid-column: 1 / -1;
-  padding: 26px var(--fold-space-lg);
-  text-align: center;
-}
-
-.none-title {
-  margin: 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-heading);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-block);
-  text-transform: uppercase;
-  color: var(--fold-color-text);
-}
-
-.none-hint {
-  margin: 5px 0 0;
-  font-size: var(--lfc-text-note);
-  line-height: var(--lfc-leading-body);
-  color: var(--lfc-color-text-subtle);
-}
 
 /* ── Le pli ───────────────────────────────────────────────────────────────── */
 
@@ -182,32 +114,6 @@ app-order-context-bar {
     padding: 20px 26px 24px;
   }
 
-  .shelves {
-    padding: 15px 16px;
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--lfc-radius-xl);
-    background: var(--fold-color-surface-card);
-  }
-
-  .shelves-title.wide-only {
-    display: block;
-  }
-
-  .chips {
-    flex-direction: column;
-    gap: 4px;
-    margin-inline: 0;
-    padding-inline: 0;
-    overflow-x: visible;
-
-    button {
-      justify-content: flex-start;
-      border-color: transparent;
-      background: none;
-      border-radius: 9px;
-    }
-  }
-
   .banner {
     align-self: start;
   }
@@ -218,10 +124,6 @@ app-order-context-bar {
     font-weight: var(--lfc-weight-black);
     letter-spacing: -0.024em;
     color: var(--fold-color-text);
-  }
-
-  .grid {
-    gap: 11px;
   }
 
   .basket.wide-only {

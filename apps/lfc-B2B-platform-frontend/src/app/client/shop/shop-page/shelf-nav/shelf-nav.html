@@ -1,0 +1,15 @@
+<nav [attr.aria-label]="t().shop.shelvesGroup">
+  <p class="title wide-only">{{ t().shop.shelvesGroup }}</p>
+  <div class="chips">
+    @for (item of shelves(); track item.id) {
+      <button
+        type="button"
+        [class.on]="active() === item.id"
+        [attr.aria-pressed]="active() === item.id"
+        (click)="picked.emit(item.id)"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </div>
+</nav>

@@ -12,9 +12,10 @@ import { ALL_SHELVES, productById, SHOP_CATEGORIES, SHOP_PRODUCTS } from '../moc
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { CartSummary } from '../../cart/cart-summary/cart-summary';
 import { ProductSheet } from '../product-sheet/product-sheet';
-import { ProductTile } from '../product-tile/product-tile';
 import { ShelfSheet } from '../shelf-sheet/shelf-sheet';
 import { ShelfBanner } from '../shelf-banner/shelf-banner';
+import { ShelfGrid } from './shelf-grid/shelf-grid';
+import { ShelfNav } from './shelf-nav/shelf-nav';
 import { OrderContextBar } from './order-context-bar/order-context-bar';
 
 /** Retire accents et casse : « éclair » et « eclair » cherchent la même chose. */
@@ -50,9 +51,10 @@ function fold(text: string): string {
     FoldSearchComponent,
     OrderContextBar,
     ProductSheet,
-    ProductTile,
     ShelfSheet,
     ShelfBanner,
+    ShelfGrid,
+    ShelfNav,
   ],
   templateUrl: './shop-page.html',
   styleUrl: './shop-page.scss',
@@ -76,11 +78,6 @@ export class ShopPage {
   protected readonly openStory = signal<string | null>(null);
 
   protected readonly choice = this.order.choice;
-
-  protected readonly shelves = computed(() => [
-    { id: ALL_SHELVES, label: this.t().shop.allShelves },
-    ...SHOP_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
-  ]);
 
   protected readonly products = computed(() => {
     const query = fold(this.query().trim());

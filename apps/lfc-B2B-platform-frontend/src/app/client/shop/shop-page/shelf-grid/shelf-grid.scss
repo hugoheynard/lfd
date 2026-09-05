@@ -1,0 +1,37 @@
+:host {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--fold-space-sm);
+  align-items: stretch;
+}
+
+/* Le vide occupe la largeur entière : centré sur une colonne sur trois, il se
+   lirait comme une quatrième pièce mal cadrée. */
+.none {
+  grid-column: 1 / -1;
+  padding: 26px var(--fold-space-lg);
+  text-align: center;
+}
+
+.none-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+}
+
+.none-hint {
+  margin: 5px 0 0;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-color-text-subtle);
+}
+
+@media (min-width: 900px) {
+  :host {
+    gap: 11px;
+  }
+}
