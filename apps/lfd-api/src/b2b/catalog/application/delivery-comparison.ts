@@ -28,6 +28,11 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       categoryId: product.categoryId,
       allergens: variant.allergens,
       orderTimeLimit: limitOf(product, variant),
+      // Portées par le PRODUIT sur le fil, descendues sur l'article ici comme à
+      // l'ingestion — les deux côtés de la comparaison doivent parler de la
+      // même chose. `?? null` couvre une arrivée d'avant la v8.
+      note: product.note ?? null,
+      image: product.image ?? null,
     })),
   );
 }
@@ -49,5 +54,7 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     categoryId: item.categoryId,
     allergens: item.allergens,
     orderTimeLimit: item.orderTimeLimit,
+    note: item.note,
+    image: item.image,
   }));
 }

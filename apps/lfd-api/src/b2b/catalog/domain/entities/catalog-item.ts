@@ -95,7 +95,36 @@ export interface PimFacts {
    * cas, le commerce retombe sur sa propre règle.
    */
   readonly orderTimeLimit: OrderTimeLimitFacts | null;
+  /**
+   * **La ligne de vitrine**, telle que le référentiel l'écrit — `null` quand
+   * rien n'a été saisi.
+   *
+   * Portée par l'ARTICLE alors que le référentiel la range sur le produit, pour
+   * la raison qui a déjà fait descendre le taux de TVA ici : c'est l'article
+   * qu'on vend, c'est lui qui doit savoir se montrer. La lire sur le produit
+   * ferait dépendre une vitrine d'une jointure que le miroir n'a pas.
+   *
+   * ⚠️ `null` n'est pas `""`. Rien n'a été écrit n'est pas une ligne effacée, et
+   * l'écran de réception doit pouvoir dire lequel des deux vient d'arriver.
+   */
+  readonly note: string | null;
+  /** Le packshot, ou `null` — cf. {@link PimImage}. */
+  readonly image: PimImage | null;
   readonly receivedAt: Date;
+}
+
+/**
+ * Le visuel principal d'un article, reçu du référentiel.
+ *
+ * Les dimensions accompagnent l'URL parce qu'elles ne servent qu'ensemble : la
+ * grille réserve la place du visuel avec, et la vitrine saute au chargement
+ * sans. `null` = pas mesuré (visuel saisi par son URL), jamais zéro.
+ */
+export interface PimImage {
+  readonly url: string;
+  readonly alt: string;
+  readonly width: number | null;
+  readonly height: number | null;
 }
 
 /** Une mention d'étiquette reçue : la catégorie INCO et son libellé français. */
@@ -213,6 +242,15 @@ export class CatalogItem {
    */
   get orderTimeLimit(): OrderTimeLimitFacts | null {
     return this.facts.orderTimeLimit;
+  }
+
+  /** La ligne de vitrine reçue — `null` = rien de saisi, jamais « effacé ». */
+  get note(): string | null {
+    return this.facts.note;
+  }
+
+  get image(): PimImage | null {
+    return this.facts.image;
   }
 
   get vatRatePercent(): number | null {

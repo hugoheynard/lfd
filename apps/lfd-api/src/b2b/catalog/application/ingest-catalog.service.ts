@@ -136,6 +136,11 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       allergenLabels: variant.allergenLabels,
       // Résolue ICI depuis la v7 du fil (cf. `limitReader`).
       orderTimeLimit: limitOf(product, variant),
+      // Le référentiel les range sur le PRODUIT ; le miroir les descend sur
+      // l'article, qui est ce que la boutique montre. `?? null` couvre une
+      // arrivée d'avant la v8, qui n'en portait aucun.
+      note: product.note ?? null,
+      image: product.image ?? null,
       receivedAt,
     })),
   );

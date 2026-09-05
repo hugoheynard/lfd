@@ -53,6 +53,24 @@ export interface DeliveredItem {
     readonly time: string;
     readonly graceMinutes: number;
   } | null;
+  /**
+   * **La ligne de vitrine** et le **packshot**, comparés pour la même raison que
+   * la limite : sans eux ici, une description ou une photo passerait en vente
+   * SANS RELECTURE, pendant que l'écran de réception continuerait d'affirmer que
+   * rien ne passe sans être relu. Un diff qui ignore un champ ne dit pas « rien
+   * n'a bougé », il ne dit rien du tout — et c'est pire, parce qu'on le lit
+   * comme le premier.
+   *
+   * Ce n'est pas de la cosmétique : ce sont les deux choses qu'un client lit
+   * avant d'acheter, et la seule prose que la maison publie sous son nom.
+   */
+  readonly note: string | null;
+  readonly image: {
+    readonly url: string;
+    readonly alt: string;
+    readonly width: number | null;
+    readonly height: number | null;
+  } | null;
 }
 
 /** Ce qu'une arrivée fait à un SKU. */
@@ -60,7 +78,15 @@ export type SkuChangeKind = "added" | "removed" | "changed";
 
 /** Les champs comparés, nommés — jamais un booléen « a changé ». */
 export type ChangedField =
-  "name" | "price" | "vatRate" | "weight" | "category" | "allergens" | "orderLimit";
+  | "name"
+  | "price"
+  | "vatRate"
+  | "weight"
+  | "category"
+  | "allergens"
+  | "orderLimit"
+  | "note"
+  | "image";
 
 /** Ce qui arrive à UN sku. */
 export interface SkuChange {
@@ -116,6 +142,26 @@ function sameLimit(
   );
 }
 
+/**
+ * Deux packshots sont-ils le même ?
+ *
+ * Comparés **champ par champ** et pas par leur seule URL : une alternative
+ * réécrite ne change pas l'image mais change ce qu'un lecteur d'écran entend, et
+ * des dimensions corrigées changent la place que la grille réserve. Trois faits
+ * distincts, trois raisons de relire.
+ */
+function sameImage(left: DeliveredItem["image"], right: DeliveredItem["image"]): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  return (
+    left.url === right.url &&
+    left.alt === right.alt &&
+    left.width === right.width &&
+    left.height === right.height
+  );
+}
+
 /** Les champs qui diffèrent entre ce qui arrive et ce qu'on tient. */
 function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly ChangedField[] {
   const fields: ChangedField[] = [];
@@ -139,6 +185,15 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   }
   if (!sameLimit(incoming.orderTimeLimit, mirror.orderTimeLimit)) {
     fields.push("orderLimit");
+  }
+  // `null` et `""` ne sont pas la même chose, et le `!==` les distingue : une
+  // ligne EFFACÉE se relit, une ligne jamais écrite aussi, et ce ne sont pas
+  // les mêmes nouvelles.
+  if (incoming.note !== mirror.note) {
+    fields.push("note");
+  }
+  if (!sameImage(incoming.image, mirror.image)) {
+    fields.push("image");
   }
   return fields;
 }

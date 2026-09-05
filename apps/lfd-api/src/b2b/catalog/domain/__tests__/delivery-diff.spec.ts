@@ -15,6 +15,14 @@ import {
  * majoritaire.
  */
 
+const shot = (over: Partial<NonNullable<DeliveredItem["image"]>> = {}) => ({
+  url: "https://m.example/croissant.jpg",
+  alt: "Un croissant",
+  width: 800,
+  height: 800,
+  ...over,
+});
+
 const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => ({
   sku,
   name: `Article ${sku}`,
@@ -24,6 +32,8 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   categoryId: "c_vie",
   allergens: ["AU"],
   orderTimeLimit: null,
+  note: null,
+  image: null,
   ...over,
 });
 
@@ -198,5 +208,93 @@ describe("la limite de commande", () => {
         [item("VIE-001", { orderTimeLimit: { ...limite } })],
       ),
     ).toEqual([]);
+  });
+});
+
+/**
+ * 🔴 **La vitrine se relit comme le reste.**
+ *
+ * Sans ces comparaisons, une description ou une photo passerait en vente SANS
+ * RELECTURE, pendant que l'écran de réception continuerait d'affirmer que rien
+ * ne passe sans être relu. Ce sont les deux choses qu'un client lit avant
+ * d'acheter, et la seule prose que la maison publie sous son nom.
+ */
+describe("le diff d'une arrivée › la vitrine", () => {
+  it("voit une ligne de vitrine réécrite", () => {
+    const before = item("VIE-001", { note: "Tourage patient" });
+    const after = item("VIE-001", { note: "Tourage patient, beurre AOP" });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["note"] },
+    ]);
+  });
+
+  /** Une ligne EFFACÉE n'est pas une ligne jamais écrite : deux nouvelles. */
+  it("distingue une ligne effacée d'une ligne jamais écrite", () => {
+    const never = item("VIE-001", { note: null });
+    const erased = item("VIE-001", { note: "" });
+
+    expect(diffDelivery([erased], [never])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["note"] },
+    ]);
+  });
+
+  it("voit un packshot qui change d'image", () => {
+    const before = item("VIE-001", { image: shot() });
+    const after = item("VIE-001", { image: shot({ url: "https://m.example/autre.jpg" }) });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image"] },
+    ]);
+  });
+
+  /**
+   * L'alternative ne change pas l'image, mais elle change ce qu'un lecteur
+   * d'écran entend. C'est un fait distinct, donc une raison de relire.
+   */
+  it("voit une alternative réécrite, à image inchangée", () => {
+    const before = item("VIE-001", { image: shot({ alt: "Croissant" }) });
+    const after = item("VIE-001", { image: shot({ alt: "Croissant au beurre, doré" }) });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image"] },
+    ]);
+  });
+
+  /** Les dimensions décident de la place que la grille réserve. */
+  it("voit des dimensions corrigées", () => {
+    const before = item("VIE-001", { image: shot({ width: 800, height: 800 }) });
+    const after = item("VIE-001", { image: shot({ width: 1200, height: 800 }) });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image"] },
+    ]);
+  });
+
+  it("voit un visuel qui apparaît, et un qui disparaît", () => {
+    const none = item("VIE-001", { image: null });
+    const some = item("VIE-001", { image: shot() });
+
+    expect(diffDelivery([some], [none])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image"] },
+    ]);
+    expect(diffDelivery([none], [some])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image"] },
+    ]);
+  });
+
+  it("ne dit rien d'un visuel identique", () => {
+    expect(
+      diffDelivery([item("VIE-001", { image: shot() })], [item("VIE-001", { image: shot() })]),
+    ).toEqual([]);
+  });
+
+  it("nomme les deux quand les deux bougent", () => {
+    const before = item("VIE-001", { note: "Avant", image: null });
+    const after = item("VIE-001", { note: "Après", image: shot() });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["note", "image"] },
+    ]);
   });
 });

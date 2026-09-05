@@ -24,6 +24,11 @@ interface ItemRow {
   readonly vatRatePercent: { toNumber(): number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly note: string | null;
+  readonly imageUrl: string | null;
+  readonly imageAlt: string | null;
+  readonly imageWidth: number | null;
+  readonly imageHeight: number | null;
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
@@ -212,6 +217,25 @@ function orderTimeLimitOf(row: ItemRow) {
   };
 }
 
+/**
+ * Le packshot, ou `null`.
+ *
+ * L'URL commande : sans elle il n'y a rien à afficher, et les trois autres
+ * colonnes ne décrivent alors plus rien. Les dimensions, elles, restent
+ * légitimement nulles — « pas mesuré » est un état, pas un trou.
+ */
+function imageOf(row: ItemRow) {
+  if (row.imageUrl === null) {
+    return null;
+  }
+  return {
+    url: row.imageUrl,
+    alt: row.imageAlt ?? "",
+    width: row.imageWidth,
+    height: row.imageHeight,
+  };
+}
+
 /** Ligne ↔ agrégat. La décision absente devient « rien décidé », pas `undefined`. */
 function toDomain(row: ItemRow): CatalogItem {
   return CatalogItem.reconstitute({
@@ -231,6 +255,8 @@ function toDomain(row: ItemRow): CatalogItem {
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),
       orderTimeLimit: orderTimeLimitOf(row),
+      note: row.note,
+      image: imageOf(row),
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
@@ -267,6 +293,11 @@ function factsRow(state: CatalogItemState) {
     // Même repli, même raison : `undefined` laisserait la colonne inchangée sur
     // un upsert, et un article dont la fiche a été retirée dans le PIM garderait
     // des mentions d'étiquette que plus rien ne déclare.
+    note: facts.note,
+    imageUrl: facts.image?.url ?? null,
+    imageAlt: facts.image?.alt ?? null,
+    imageWidth: facts.image?.width ?? null,
+    imageHeight: facts.image?.height ?? null,
     orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,

@@ -2196,6 +2196,26 @@ model CatalogItem {
   /// `NULL` sur les lignes d'avant le fil v6, tant qu'un push complet n'a pas
   /// tourné : elles gardent donc le comportement d'hier, ce qui est exactement
   /// ce qu'on veut d'une bascule additive.
+  /// La **ligne de vitrine** reçue du référentiel — `NULL` = rien n'a été saisi.
+  ///
+  /// Portée par l'article alors que le référentiel la range sur le produit, pour
+  /// la raison qui a déjà fait descendre le taux de TVA ici : c'est l'article
+  /// qu'on vend, c'est lui qui doit savoir se montrer.
+  ///
+  /// `NULL` n'est pas la chaîne vide : rien d'écrit n'est pas une ligne effacée,
+  /// et l'écran de réception doit pouvoir dire lequel des deux vient d'arriver.
+  note String?
+
+  /// Le **packshot** — les quatre colonnes ne servent qu'ensemble.
+  ///
+  /// Les dimensions accompagnent l'URL parce que la grille réserve la place du
+  /// visuel avec, et que la vitrine saute au chargement sans. `NULL` sur une
+  /// dimension = pas mesuré (visuel saisi par son URL), jamais zéro.
+  imageUrl    String? @map("image_url")
+  imageAlt    String? @map("image_alt")
+  imageWidth  Int?    @map("image_width")
+  imageHeight Int?    @map("image_height")
+
   orderLimitDaysBefore   Int?    @map("order_limit_days_before")
   orderLimitTime         String? @map("order_limit_time")
   orderLimitGraceMinutes Int?    @map("order_limit_grace_minutes")

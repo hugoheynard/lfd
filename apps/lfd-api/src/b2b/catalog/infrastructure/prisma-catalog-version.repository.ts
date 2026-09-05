@@ -52,6 +52,25 @@ const archivedFactsSchema = z.object({
     })
     .nullish()
     .transform((value) => value ?? null),
+  /**
+   * `.nullish()` pour la même raison que la limite juste au-dessus : les
+   * versions archivées AVANT le fil v8 n'ont ni ligne ni visuel, et une version
+   * qu'on ne peut plus relire est une commande dont on ne sait plus d'où
+   * venaient les articles.
+   */
+  note: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+  image: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+      width: z.number().int().nullable(),
+      height: z.number().int().nullable(),
+    })
+    .nullish()
+    .transform((value) => value ?? null),
   // Écrit en ISO dans le `jsonb` : `Date` n'est pas une valeur JSON, et la
   // conversion doit être explicite plutôt que subie du sérialiseur.
   receivedAt: z.coerce.date(),
@@ -118,6 +137,11 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
             time: facts.orderTimeLimit.time,
             graceMinutes: facts.orderTimeLimit.graceMinutes,
           },
+    // Figées avec le reste : une version archivée doit dire ce que la boutique
+    // MONTRAIT ce jour-là, pas ce qu'elle montre aujourd'hui. Une relecture qui
+    // irait chercher l'éditorial courant raconterait une autre vitrine.
+    note: facts.note,
+    image: facts.image === null ? null : { ...facts.image },
     receivedAt: facts.receivedAt.toISOString(),
   };
 }

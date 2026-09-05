@@ -31,6 +31,8 @@ function facts(sku: string, over: Partial<PimFacts> = {}): PimFacts {
     allergens: null,
     allergenLabels: null,
     orderTimeLimit: null,
+    note: null,
+    image: null,
     receivedAt: RECU_LE,
     ...over,
   };
@@ -48,6 +50,8 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
       name: variant.sku,
       categoryId: "c_vie",
       kind: "daily" as const,
+      note: null,
+      image: null,
       variants: [
         {
           id: `var_${variant.sku}`,
