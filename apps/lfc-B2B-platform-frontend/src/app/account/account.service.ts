@@ -1,11 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import type { FulfillmentPreferenceView } from '@lfd/contracts';
+import type { CatalogueView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
-import type { CatalogueView } from '../legacy/catalogue/catalogue-view';
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';

@@ -126,14 +126,17 @@ export class App {
   /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
   private cartOpen = false;
 
-  /** Ouvre le panneau panier (le host est mono-panneau : il remplace l'existant).
-   * Déclenché **uniquement** par le clic sur l'icône panier — ajouter un produit ne
-   * l'ouvre plus (le badge du déclencheur suffit comme retour). */
   /** Ouvre le panneau **contact** (contact direct / prise de RDV). */
   protected openContact(): void {
     this.panelHost.open(ContactPanel);
   }
 
+  /**
+   * Ouvre le panneau panier — le host est mono-panneau, il remplace l'existant.
+   *
+   * Déclenché **uniquement** par le clic sur l'icône : ajouter un produit ne
+   * l'ouvre plus, le badge du déclencheur suffisant comme retour.
+   */
   protected openCart(): void {
     if (this.cartOpen) {
       return;
