@@ -117,10 +117,28 @@
   color: var(--fold-color-text);
 }
 
+/**
+ * 🔴 **Les règlements n'apparaissent qu'au-delà du pli.**
+ *
+ * En pile, le bandeau prenait 367 px sur 844 — 43 % du premier écran, la
+ * vitrine ne commençant qu'à 611 — et ces deux boutons en faisaient 99 à eux
+ * seuls. Or le téléphone a déjà deux chemins vers le règlement : la barre du
+ * bas, qui porte le total et suit le rayon, et le pied du tiroir qu'elle ouvre.
+ * Trois fois le même geste au-dessus de la marchandise qu'on vient choisir.
+ *
+ * Ce qui reste en pile est ce qui ne se répète nulle part : où l'on est servi,
+ * combien de pièces, combien ça fait.
+ */
 .actions {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 7px;
+}
+
+@media (min-width: 900px) {
+  .actions {
+    display: flex;
+  }
 }
 
 .pay,
