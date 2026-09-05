@@ -40,7 +40,20 @@
   background: none;
   cursor: pointer;
 
+  /**
+   * ⚠️ `display: block` n'est pas cosmétique : **sans lui, le ratio ne décide
+   * de rien.**
+   *
+   * Une image en ligne pose une boîte de ligne, qui réserve la place du
+   * jambage sous la ligne de base — trois pixels et demi ici. `.media` est un
+   * enfant de flex dont la taille minimale automatique est celle de son
+   * contenu : ce contenu devenait donc plus haut que l'`aspect-ratio`, et
+   * gagnait. Le cadrage mesurait 1,309 au lieu de 1,333, constant sur toutes
+   * les tuiles. Vérifié en basculant la seule nature de l'image : 192,31 px en
+   * ligne, 188,81 en bloc — le 4/3 exact d'une tuile de 251,75.
+   */
   img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
