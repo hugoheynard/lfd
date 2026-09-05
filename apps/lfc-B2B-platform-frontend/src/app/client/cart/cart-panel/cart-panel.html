@@ -1,0 +1,19 @@
+<app-client-dialog
+  placement="side"
+  [open]="open()"
+  [kicker]="t().cart.kicker"
+  [title]="t().shop.cartTitle"
+  (closed)="closed.emit()"
+>
+  <app-cart-summary />
+
+  <!-- Un tiroir qui montre un panier sans permettre de le régler obligerait à
+       le refermer pour agir. Le second geste, lui, reste au bandeau : deux
+       boutons de règlement dans deux surfaces se désynchronisent. -->
+  <div dialog-foot class="foot">
+    <button class="pay" type="button" [disabled]="cart.isEmpty()" (click)="paid.emit()">
+      {{ payLabel() }}
+    </button>
+    <p class="hint">{{ t().cart.payHint }}</p>
+  </div>
+</app-client-dialog>

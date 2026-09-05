@@ -295,6 +295,10 @@ export interface ClientCopy {
     readonly total: string;
     /** La sortie du panier : tout retirer d'un coup. */
     readonly clear: string;
+    /** Le second règlement : porter la commande au compte plutôt que payer. */
+    readonly payOnAccount: string;
+    /** ⚠️ Ce que l'écran répond tant que la condition de règlement ne l'atteint pas. */
+    readonly accountSoon: string;
     /** `{name}` est remplacé par la pièce. La corbeille retire la LIGNE. */
     readonly dropAria: string;
     /** `{total}` est remplacé par le montant dû. */

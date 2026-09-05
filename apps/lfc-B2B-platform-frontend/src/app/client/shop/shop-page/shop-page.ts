@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import {
   FoldButtonComponent,
-  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldSearchComponent,
@@ -17,14 +16,16 @@ import { ClientCopyService, fill } from '../../../client/copy/client-copy.servic
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
 import { ShopStore } from '../shop.store';
+import { CartBannerCard } from '../../cart/cart-banner-card/cart-banner-card';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
-import { CartSummary } from '../../cart/cart-summary/cart-summary';
+import { CartPanel } from '../../cart/cart-panel/cart-panel';
+import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
+import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { ShelfSheet } from '../shelf-sheet/shelf-sheet';
 import { ShelfBanner } from '../shelf-banner/shelf-banner';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
-import { OrderContextBar } from './order-context-bar/order-context-bar';
 
 /**
  * La boutique — une vitrine, pas une liste.
@@ -38,22 +39,28 @@ import { OrderContextBar } from './order-context-bar/order-context-bar';
  * ÉCRAN sait : quelle feuille est ouverte, où mènent ses boutons, et le chrome
  * qu'il pose en arrivant.
  *
- * Le mode de service n'est jamais une étape passée : `OrderContextBar` le
+ * Le mode de service n'est jamais une étape passée : la carte du bandeau le
  * rappelle en permanence, et sans lui l'écran renvoie à la question qu'on a
  * sautée.
+ *
+ * 🔴 **Le panier est un TIROIR**, plus une colonne. Ce qu'on regarde en
+ * parcourant un rayon tient en trois nombres — pièces, montant, lieu — et ils
+ * sont dans le bandeau ; le détail s'ouvre à la demande. La vitrine récupère
+ * les 360 px, et l'écran retrouve la forme des autres : un bandeau, une page.
  */
 @Component({
   selector: 'app-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CartBannerCard,
     CartBar,
-    CartSummary,
+    CartPanel,
+    ClientBannerBlock,
+    ClientBannerOutlet,
     FoldButtonComponent,
-    FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldSearchComponent,
-    OrderContextBar,
     ProductSheet,
     ShelfSheet,
     ShelfBanner,
@@ -71,7 +78,7 @@ import { OrderContextBar } from './order-context-bar/order-context-bar';
   providers: [ShopStore, Shop],
 })
 export class ShopPage {
-  private readonly chrome = inject(ClientChrome);
+  protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
@@ -87,6 +94,9 @@ export class ShopPage {
 
   /** Le rayon dont la feuille « En savoir plus » est ouverte. */
   protected readonly openStory = signal<string | null>(null);
+
+  /** Le tiroir du panier. Fermé en arrivant : on vient voir le rayon. */
+  protected readonly cartOpen = signal(false);
 
   protected readonly choice = this.order.choice;
 
@@ -146,13 +156,10 @@ export class ShopPage {
     void this.router.navigate(['/nouvelle-commande']);
   }
 
-  protected goToCart(): void {
-    void this.router.navigate(['/nouvelle-commande/panier']);
-  }
-
   /**
-   * Au-delà du pli, le panier est SOUS les yeux en permanence : régler depuis la
-   * colonne de droite n'est pas sauter une étape, c'est ne pas en inventer une.
+   * Le panier est SOUS les yeux en permanence — trois nombres dans le bandeau,
+   * le détail à un geste : régler d'ici n'est pas sauter une étape, c'est ne
+   * pas en inventer une.
    */
   protected pay(): void {
     if (this.needsService()) {

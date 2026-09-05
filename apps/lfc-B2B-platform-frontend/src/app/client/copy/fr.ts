@@ -236,6 +236,9 @@ export const FR: ClientCopy = {
     vat: 'TVA {rate}',
     total: 'Total TTC',
     clear: 'Vider le panier',
+    payOnAccount: 'Ajouter au compte',
+    accountSoon:
+      'Le règlement au compte arrive au prochain lot — il attend votre condition de règlement.',
     dropAria: 'Retirer {name} du panier',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',

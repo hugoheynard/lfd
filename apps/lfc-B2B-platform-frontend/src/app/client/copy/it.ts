@@ -243,6 +243,9 @@ export const IT: ClientCopy = {
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
     clear: 'Svuota il carrello',
+    payOnAccount: 'Addebita sul conto',
+    accountSoon:
+      'L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento.',
     dropAria: 'Rimuovi {name} dal carrello',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',

@@ -1,0 +1,37 @@
+<div class="card">
+  @if (choice(); as service) {
+    <div class="service">
+      <span class="badge">{{ mode() }}</span>
+      <span class="where">{{ where() }}</span>
+      <button class="change" type="button" (click)="serviceRequested.emit()">
+        {{ t().shop.changeService }}
+      </button>
+    </div>
+  } @else {
+    <!-- Visiter d'abord, choisir ensuite : la carte DEMANDE le mode au lieu de
+         le rappeler, et rien n'est bloqué avant le règlement. -->
+    <button class="ask" type="button" (click)="serviceRequested.emit()">
+      <span class="ask-title">{{ t().shop.pickService }}</span>
+      <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
+    </button>
+  }
+
+  <!-- Le corps mène au DÉTAIL : les lignes, les taux, la remise. C'est une
+       lecture, pas un règlement — d'où un bouton discret et non le CTA. -->
+  <button class="sum" type="button" [disabled]="cart.isEmpty()" (click)="opened.emit()">
+    <span class="pieces">{{ pieces() }}</span>
+    <span class="total">{{ total() }}</span>
+  </button>
+
+  @if (!cart.isEmpty()) {
+    <div class="actions">
+      <button class="pay" type="button" (click)="paid.emit()">{{ payLabel() }}</button>
+      <button class="account" type="button" (click)="chargeToAccount()">
+        {{ t().cart.payOnAccount }}
+      </button>
+      @if (accountPending()) {
+        <p class="soon">{{ t().cart.accountSoon }}</p>
+      }
+    </div>
+  }
+</div>

@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop-catalogue.store';
@@ -57,9 +57,42 @@ describe('ShopPage', () => {
     fixture.detectChanges();
   });
 
-  it('montre toutes les références du catalogue, et le mode de service en permanence', () => {
+  it('montre toutes les références du catalogue', () => {
     expect(tiles().length).toBe(TEST_ITEMS.length);
-    expect(el().querySelector('.where')?.textContent).toContain('Le Labo · 7 h – 8 h');
+  });
+
+  /**
+   * Le rappel du service et le panier sont montés dans le BANDEAU, qui vit
+   * dans le shell — un écran monté seul n'en a pas. Ce qui se vérifie ici,
+   * c'est donc que la page ne les dessine plus elle-même : c'est
+   * `CartBannerCard` qui les porte, et son propre spec les éprouve.
+   */
+  it('ne dessine plus le panier dans la page : il est au bandeau et en tiroir', () => {
+    expect(el().querySelector('.basket')).toBeNull();
+    expect(el().querySelector('app-order-context-bar')).toBeNull();
+  });
+
+  /**
+   * 🔴 La barre du bas OUVRE LE TIROIR, elle ne change plus d'écran : on n'a
+   * pas fini de choisir quand on vérifie ce qu'on a pris. Elle menait à
+   * `/nouvelle-commande/panier`, ce qui faisait perdre le rayon — et le
+   * défilement — pour relire trois lignes.
+   *
+   * ⚠️ L'ouverture elle-même ne s'observe pas ici : `client-dialog` appelle
+   * `showModal()`, que jsdom n'implémente pas et que le composant saute
+   * exprès (même garde qu'au rendu serveur). Ce qui se vérifie, c'est qu'on
+   * reste sur la boutique.
+   */
+  it('la barre du bas ne quitte plus la boutique', () => {
+    cart.add('VIE-001');
+    fixture.detectChanges();
+    const before = TestBed.inject(Router).url;
+
+    el().querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe(before);
+    expect(el().querySelector('app-cart-panel')).not.toBeNull();
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {

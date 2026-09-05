@@ -1,0 +1,38 @@
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+}
+
+.pay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pay:disabled {
+  background: var(--fold-color-surface-band);
+  color: var(--fold-color-text-faded);
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-text-subtle);
+}

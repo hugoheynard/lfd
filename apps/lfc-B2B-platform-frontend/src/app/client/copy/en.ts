@@ -240,6 +240,9 @@ export const EN: ClientCopy = {
     vat: 'VAT {rate}',
     total: 'Total incl. VAT',
     clear: 'Empty the basket',
+    payOnAccount: 'Charge to account',
+    accountSoon:
+      'Charging to account lands in the next batch — it is waiting on your payment term.',
     dropAria: 'Remove {name} from the basket',
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',

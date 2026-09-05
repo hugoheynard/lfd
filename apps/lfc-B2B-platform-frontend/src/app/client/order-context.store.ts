@@ -59,7 +59,7 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
  * — deux noms voisins pour deux choses sans rapport, et rien dans le premier ne
  * disait qu'il n'y avait là qu'un état.
  *
- * Le mode n'est jamais une étape passée : `OrderContextBar` le rappelle, le
+ * Le mode n'est jamais une étape passée : la carte du bandeau le rappelle, le
  * panier le récapitule, la confirmation le répète. Il vit donc plus longtemps
  * qu'un écran — et, depuis qu'il est relu du navigateur, plus longtemps qu'un
  * onglet : rafraîchir la boutique ne renvoie plus à la question.

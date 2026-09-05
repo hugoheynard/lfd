@@ -1,3 +1,17 @@
+<!-- LE BANDEAU — la boutique a le même en-tête que les autres écrans. Le titre
+     du rayon y monte : il l'écrivait une seconde fois sous la recherche, dans un
+     registre plus faible que celui de la page qu'il nomme. -->
+<ng-template clientBanner>
+  <app-client-banner-block [kicker]="chrome.kicker()" [title]="shop.heading()">
+    <app-cart-banner-card
+      banner-action
+      (opened)="cartOpen.set(true)"
+      (serviceRequested)="backToService()"
+      (paid)="pay()"
+    />
+  </app-client-banner-block>
+</ng-template>
+
 <div class="shop">
   <fold-search
     class="search"
@@ -10,8 +24,6 @@
   />
 
   <app-shelf-nav class="shelves" [active]="shop.activeShelf()" (picked)="shop.browse($event)" />
-
-  <fold-element-title class="head" variant="caps" [level]="1" [title]="shop.heading()" />
 
   <app-shelf-banner class="banner" [shelf]="shop.shelf()" (opened)="openStory.set(shop.shelf())" />
 
@@ -35,45 +47,23 @@
       <fold-loading class="grid" [message]="t().shop.loading" />
     }
   }
-
-  <!-- LA COLONNE DE DROITE : le rappel du service, puis le panier.
-       Le rappel est une carte AU-DESSUS du panier parce que c'est le cadre de
-       ce qu'il contient — où et quand ça sera servi. En pile, il redevient la
-       barre du haut, et il n'y a pas de panier permanent : 320 px de colonne
-       sur 390 px d'écran, il ne resterait rien pour le rayon. -->
-  <div class="side">
-    <app-order-context-bar (changeRequested)="backToService()" />
-
-    <aside class="basket wide-only">
-      <!-- Le compte SOUS le titre, pas à côté : à droite, il se lisait comme une
-         valeur du panier — un montant, une remise — alors qu'il qualifie le
-         titre. Dessous, il est ce qu'il est : la seconde ligne de « Votre
-         panier ». -->
-      <div class="basket-head">
-        <h2>{{ t().shop.cartTitle }}</h2>
-        <span>{{ cartLabel() }}</span>
-      </div>
-      <app-cart-summary />
-      <!-- Le règlement a sa propre zone, et elle ne défile jamais. -->
-      <div class="basket-foot">
-        <button class="pay" type="button" [disabled]="cart.isEmpty()" (click)="pay()">
-          {{ needsService() ? t().shop.pickService : payLabel() }}
-        </button>
-        <p class="pay-hint">{{ t().cart.payHint }}</p>
-      </div>
-    </aside>
-  </div>
 </div>
 
+<!-- La barre du bas suit le rayon à TOUTES les largeurs : le bandeau, lui,
+     défile avec la page, et le compte disparaîtrait au premier écran parcouru.
+     Elle ouvre le tiroir plutôt que de changer d'écran — on n'a pas fini de
+     choisir quand on vérifie ce qu'on a pris. -->
 @if (!cart.isEmpty()) {
   <app-cart-bar
-    class="cartbar narrow-only"
+    class="cartbar"
     [label]="cartLabel()"
     [where]="whereLabel()"
     [total]="totalLabel()"
-    (opened)="goToCart()"
+    (opened)="cartOpen.set(true)"
   />
 }
+
+<app-cart-panel [open]="cartOpen()" (closed)="cartOpen.set(false)" (paid)="pay()" />
 
 <app-product-sheet
   [product]="piece()"

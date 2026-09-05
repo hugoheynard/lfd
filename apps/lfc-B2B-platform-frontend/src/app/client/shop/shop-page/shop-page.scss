@@ -8,19 +8,6 @@
   background: var(--fold-color-bg-page);
 }
 
-/* ── La colonne de droite ─────────────────────────────────────────────────── */
-
-/* Elle porte le rappel du service PUIS le panier. En pile elle n'est qu'une
-   rangée de plus, en tête de grille, et le panier n'y est pas.
-   Seul le PLACEMENT est ici : la barre et le panier sont des composants, leur
-   mise en forme leur appartient. L'écart vient du `gap`, jamais d'une marge. */
-.side {
-  grid-area: side;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
 /* ── La grille de l'écran ─────────────────────────────────────────────────── */
 
 /* Le rail et la vitrine sont des composants : la page ne leur donne que leur
@@ -42,7 +29,7 @@
      hors du cadre par la droite. Le zéro autorise la colonne à être plus étroite
      que son contenu, et c'est le rail qui défile — lui seul. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'side' 'search' 'chips' 'head' 'banner' 'grid';
+  grid-template-areas: 'search' 'chips' 'banner' 'grid';
   gap: var(--fold-space-md);
   padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-2xl);
 }
@@ -53,156 +40,34 @@
   grid-area: search;
 }
 
-/* En pile, les rayons défilent à l'horizontale ; la marge négative les fait
-   partir du bord de l'écran, et le `scroll-padding` rend son inset au premier
-   d'entre eux. */
-
-/* Le titre du rayon est `fold-element-title` : son registre appartient à la
-   bibliothèque, pas à cet écran. Il ne reste ici que sa case. */
-.head {
-  grid-area: head;
-}
-
 /* La bannière et la barre du panier sont des composants : l'écran ne leur donne
    que leur PLACE dans la grille, jamais leur peinture. */
 .banner {
   grid-area: banner;
 }
 
-/* ── La vitrine ───────────────────────────────────────────────────────────── */
-
 /* ── Le pli ───────────────────────────────────────────────────────────────── */
 
-.wide-only {
-  display: none;
-}
-
 @media (min-width: 900px) {
-  .narrow-only {
-    display: none;
-  }
-
-  /* Deux colonnes, et le panier PERMANENT à droite : au bureau, ce qu'on a
-     déjà pris n'a pas à se mériter un écran.
-     Il y en avait TROIS — les rayons tenaient une colonne de gauche. Elle a
-     disparu avec le rail vertical : les pastilles reviennent au-dessus de la
-     vitrine, comme en pile, et l'écran cesse d'être le seul à réclamer toute la
-     largeur de la fenêtre.
-     🔴 **La boutique tient désormais dans la COLONNE DE PAGE** (`--lfc-column`),
-     comme les autres écrans. C'était la vraie gêne : trois colonnes pleine
-     fenêtre ne se lisaient pas comme une page du même produit. */
+  /**
+   * UNE seule colonne, et la boutique dans la colonne de page.
+   *
+   * Il y en a eu trois — les rayons à gauche, le panier à droite — puis deux.
+   * Les rayons sont redevenus des pastilles au-dessus de la vitrine, et le
+   * panier est parti en tiroir : ce qu'on en regarde vraiment tient dans la
+   * carte du bandeau, et le détail s'ouvre à la demande. La vitrine récupère
+   * toute la largeur, et l'écran a la même forme que les autres — un bandeau,
+   * une page, `--lfc-column`.
+   */
   .shop {
     width: 100%;
     max-width: var(--lfc-column);
     margin-inline: auto;
-    /* 360 et non 320 : à 320, le nom d'une ligne de panier n'avait que 191 px
-       et « Pain de mie brioché 500 g cuit » passait sur deux lignes, ce qui
-       montait la ligne à 99 px — cinq références remplissaient la colonne. La
-       vitrine y perd une colonne au-delà de 1400 px, et gagne des vignettes
-       plus larges : c'est le bon côté du marché. */
-    grid-template-columns: minmax(0, 1fr) 360px;
-    grid-template-areas:
-      'search side'
-      'chips side'
-      'banner side'
-      'head side'
-      'grid side';
-    align-items: start;
     gap: 20px;
     padding: 20px 26px 24px;
   }
 
   .banner {
     align-self: start;
-  }
-
-  /* 🔴 **La colonne ne dépasse jamais la fenêtre.** Sans plafond, un panier de
-     douze références poussait le bouton de règlement sous le pli : le panier
-     « permanent » restait visible, mais son seul geste ne l'était plus. La
-     hauteur est donc bornée à la fenêtre, la LISTE défile à l'intérieur, et le
-     rappel du service comme le règlement gardent leur place. */
-  .side {
-    position: sticky;
-    top: 20px;
-    /* ⚠️ Le plafond se compte sur la ZONE DÉFILANTE du shell, pas sur la
-       fenêtre : le contenu défile sous l'en-tête, qui n'est pas dans le calcul.
-       `100vh - 40px` laissait donc dépasser exactement la hauteur de l'en-tête,
-       et le bouton de règlement retombait sous le pli — le défaut qu'on venait
-       de corriger, déplacé de 64 pixels. */
-    max-height: calc(100dvh - var(--lfc-header-height, 64px) - 40px);
-  }
-
-  .basket.wide-only {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 17px;
-    border: 1px solid var(--fold-color-border);
-    border-radius: var(--lfc-radius-xl);
-    background: var(--fold-color-surface-card);
-  }
-
-  .basket-head {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    h2 {
-      margin: 0;
-      font-family: var(--fold-font-label);
-      font-size: var(--lfc-text-cta);
-      font-weight: var(--lfc-weight-black);
-      letter-spacing: var(--lfc-tracking-block);
-      text-transform: uppercase;
-    }
-
-    span {
-      font-size: var(--fold-text-xs);
-      color: var(--lfc-color-text-subtle);
-    }
-  }
-
-  /* Le trait détache le règlement du décompte : ce qui est au-dessus se lit,
-     ce qui est en dessous s'actionne. */
-  .basket-foot {
-    flex: none;
-    padding-top: 14px;
-    border-top: 1px solid var(--fold-color-border);
-  }
-
-  .pay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 52px;
-    border: 0;
-    border-radius: var(--fold-radius-lg);
-    background: var(--fold-color-primary);
-    color: var(--fold-color-on-primary);
-    font-family: var(--fold-font-label);
-    font-size: var(--fold-text-md);
-    font-weight: var(--lfc-weight-black);
-    letter-spacing: var(--lfc-tracking-cta);
-    text-transform: uppercase;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .pay:disabled {
-    background: var(--fold-color-surface-band);
-    color: var(--fold-color-text-faded);
-    cursor: not-allowed;
-  }
-
-  .pay-hint {
-    margin: 9px 0 0;
-    text-align: center;
-    font-size: var(--fold-text-xs);
-    line-height: var(--lfc-leading-note);
-    color: var(--lfc-color-text-subtle);
   }
 }
