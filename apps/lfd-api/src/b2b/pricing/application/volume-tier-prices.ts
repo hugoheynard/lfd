@@ -1,7 +1,8 @@
+import { decideFloor, type PriceFloorPolicy } from "../domain/floor-policy.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { ladderAsRule, tierFor } from "../domain/volume-ladder.js";
-import { winnerOf } from "../domain/specificity.js";
-import type { PriceFloor, PriceRule, PricingContext } from "../domain/price-rule.js";
+import { applies, winnerOf } from "../domain/specificity.js";
+import type { PriceRule, PricingContext } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import type { VolumeTierPriceView } from "@lfd/contracts";
 
@@ -17,28 +18,114 @@ import type { VolumeTierPriceView } from "@lfd/contracts";
  *
  * Chaque ligne est donc une **résolution complète** à la quantité du palier —
  * la même que si le client passait cette commande-là.
+ *
+ * ## 🔴 TOUS les seuils, pas seulement ceux d'un barème
+ *
+ * La grille n'énumérait que les paliers du `VolumeLadder` gagnant, et rendait
+ * `null` quand aucun ne visait l'article. Elle taisait donc la moitié des
+ * grilles qui existent : une **mercuriale à paliers** n'est pas un barème, c'est
+ * **une règle par palier** (`template-to-rules.ts`), avec des `minQuantity`
+ * différents. Un commercial qui demandait « à combien je lui fais les 100 ? »
+ * pour un client négocié sans barème public ne voyait rien.
+ *
+ * Tant que la grille n'est qu'un indicatif lu au téléphone, c'est une réponse
+ * incomplète. Le jour où un écran **sélectionne** dedans pour éviter un
+ * aller-retour, c'est un prix faux — et pour les clients qui ont négocié.
+ *
+ * ## Le plancher est re-décidé à CHAQUE palier
+ *
+ * Il ne l'était pas : la décision prise à la quantité de la commande était
+ * réutilisée telle quelle pour toute la grille. Un plancher **dynamique** dont
+ * la porte s'ouvre à 50 pièces annonçait donc, sur la ligne « 100 », un prix
+ * relevé par le mur dur — c'est-à-dire un prix que la commande n'aurait pas
+ * appliqué.
+ *
+ * Le corriger ne coûte **aucune lecture** : la mesure de volume observée ne
+ * dépend pas de la quantité du palier, seule la quantité change dans
+ * `decideFloor`, qui est pure.
+ *
+ * ## 🔴 Mais la porte se rejoue sur la COMMANDE, pas sur le seuil
+ *
+ * Les deux mesures ne sont pas la même, et la confusion serait invisible : un
+ * seuil de palier se lit sur le **cumul** dès qu'il y a engagement
+ * (cf. {@link atQuantity}), tandis que la porte d'un plancher dynamique se juge
+ * sur la **commande** — `UnlockEvidence.quantity` dit « la quantité de CE SKU
+ * dans CETTE commande ». Passer le seuil aux deux ouvrirait la porte d'un client
+ * engagé sur une quantité qu'il ne commande pas : la grille annoncerait un prix
+ * sous le mur dur, que la commande ne servirait jamais.
+ *
+ * Sans engagement les deux coïncident et rien ne change — c'est le cas courant.
+ * Sous engagement, on garde la quantité réelle de la commande : le défaut penche
+ * du côté de la maison, comme dans `decideFloor` lui-même.
  */
 export function volumeTierPrices(
   canonicalMillicents: number,
   ladders: readonly VolumeLadder[],
   rules: readonly PriceRule[],
   context: PricingContext,
-  floor: PriceFloor | null,
+  /**
+   * Le plancher qui vise l'article et de quoi rejouer sa porte — `null` s'il n'y
+   * en a pas.
+   *
+   * La **politique** et non sa valeur appliquée : c'est ce qui permet de
+   * redécider par palier. Passer la valeur, comme avant, revenait à figer la
+   * décision d'une seule quantité sur toute la grille.
+   */
+  floor: {
+    readonly policy: PriceFloorPolicy;
+    readonly observedVolumeRatioBp: number | null;
+  } | null,
 ): readonly VolumeTierPriceView[] | null {
   const ladder = winningLadder(ladders, context);
-  if (ladder === null) {
+  const thresholds = allThresholds(ladder, rules, context);
+  if (thresholds.length === 0) {
+    // Aucun seuil nulle part : le prix ne dépend pas de la quantité, et une
+    // grille à une ligne dirait le contraire.
     return null;
   }
 
-  return ladder.tiers.map((tier) => {
-    const at = atQuantity(context, tier.minQuantity);
-    const resolved = resolvePrice(canonicalMillicents, withLadder(rules, ladders, at), at, floor);
+  return thresholds.map((minQuantity) => {
+    const at = atQuantity(context, minQuantity);
+    const applied =
+      floor === null
+        ? null
+        : decideFloor(floor.policy, {
+            quantity: orderQuantityAt(context, minQuantity),
+            observedVolumeRatioBp: floor.observedVolumeRatioBp,
+          }).applied;
+    const resolved = resolvePrice(canonicalMillicents, withLadder(rules, ladders, at), at, applied);
     return {
-      minQuantity: tier.minQuantity,
+      minQuantity,
       unitPriceMillicents: resolved.finalMillicents,
       discountBp: discountBpOf(canonicalMillicents, resolved.finalMillicents),
     };
   });
+}
+
+/**
+ * **Les quantités auxquelles le prix change**, quelle qu'en soit la cause.
+ *
+ * Les paliers du barème gagnant, **et** les seuils des règles qui visent
+ * l'article. Une règle est retenue si elle s'applique **à son propre seuil** :
+ * l'évaluer à la quantité courante l'écarterait dès que le panier est en dessous,
+ * c'est-à-dire précisément quand la grille sert à répondre « et si j'en prends
+ * cent ? ».
+ *
+ * Triés et dédupliqués : deux mécanismes peuvent poser le même seuil, et la
+ * grille n'a qu'une ligne à en dire.
+ */
+function allThresholds(
+  ladder: VolumeLadder | null,
+  rules: readonly PriceRule[],
+  context: PricingContext,
+): number[] {
+  const fromLadder = ladder === null ? [] : ladder.tiers.map((tier) => tier.minQuantity);
+  const fromRules = rules.flatMap((rule) =>
+    rule.minQuantity === null || !applies(rule, atQuantity(context, rule.minQuantity))
+      ? []
+      : [rule.minQuantity],
+  );
+  return [...new Set([...fromLadder, ...fromRules])].sort((left, right) => left - right);
 }
 
 /**
@@ -77,6 +164,17 @@ function atQuantity(context: PricingContext, quantity: number): PricingContext {
     quantity,
     cumulativeQuantity: context.cumulativeQuantity === null ? null : quantity,
   };
+}
+
+/**
+ * La quantité **de commande** correspondant à un seuil de palier.
+ *
+ * Sans engagement, un seuil EST une quantité de commande. Sous engagement, il
+ * est un cumul de saison : la commande, elle, reste celle du panier, et c'est
+ * elle que la porte du plancher doit voir.
+ */
+function orderQuantityAt(context: PricingContext, threshold: number): number {
+  return context.cumulativeQuantity === null ? threshold : context.quantity;
 }
 
 /** Les règles du moment, plus le palier que les barèmes ouvrent à cette quantité. */

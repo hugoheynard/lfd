@@ -105,7 +105,9 @@ export function itemView(
       ladders,
       materials.rules,
       context,
-      applied,
+      // Le tableau n'a pas d'historique de volume à présenter : la porte
+      // dynamique reste fermée, comme pour le prix qu'il affiche à côté.
+      winner === null ? null : { policy: winner.policy, observedVolumeRatioBp: null },
     ),
     effectiveFloor: loaded.floors.find((entry) => entry.floor.id === winner?.id)?.view ?? null,
     rules: loaded.rules

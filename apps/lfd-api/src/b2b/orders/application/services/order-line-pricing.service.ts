@@ -208,13 +208,12 @@ export class OrderLinePricing {
     // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre : deux
     // questions distinctes, la seconde dépendant de la commande et de l'historique.
     const scoped = resolveScopedFloor(floors, context);
+    // La mesure de volume est lue UNE fois : elle ne dépend pas de la quantité,
+    // et la grille de paliers la rejoue pour redécider la porte à chaque seuil.
+    const observedVolumeRatioBp =
+      scoped === null ? null : await this.observedRatio(item.sku, scoped, at);
     const floorDecision =
-      scoped === null
-        ? null
-        : decideFloor(scoped.policy, {
-            quantity,
-            observedVolumeRatioBp: await this.observedRatio(item.sku, scoped, at),
-          });
+      scoped === null ? null : decideFloor(scoped.policy, { quantity, observedVolumeRatioBp });
     const applied = floorDecision?.applied ?? null;
     const resolved = resolvePrice(
       item.unitPriceMillicents,
@@ -273,7 +272,13 @@ export class OrderLinePricing {
       // dupliquait l'échelle, et deux règles de même identifiant à l'étage
       // volume rendaient la résolution ambiguë — 400 sur une commande de 20.
       volumeTiers: withTiers
-        ? volumeTierPrices(item.unitPriceMillicents, ladders, rules, context, applied)
+        ? volumeTierPrices(
+            item.unitPriceMillicents,
+            ladders,
+            rules,
+            context,
+            scoped === null ? null : { policy: scoped.policy, observedVolumeRatioBp },
+          )
         : null,
       floorMillicents:
         applied === null ? null : floorMillicentsFor(applied, item.unitPriceMillicents),

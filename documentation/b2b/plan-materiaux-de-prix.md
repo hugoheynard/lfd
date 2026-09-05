@@ -303,6 +303,27 @@ choisir, et l'écrire :
 Ne pas trancher, c'est laisser le front s'appuyer sur une valeur dont on sait
 déjà qu'elle peut mentir.
 
+### ✅ Livré le 2026-09-05 — option A, avec une distinction que le plan taisait
+
+Le plancher est **re-décidé à chaque palier**, et ça ne coûte aucune lecture :
+la mesure de volume observée ne dépend pas de la quantité, seule celle-ci change
+dans `decideFloor`, qui est pure. `volumeTierPrices` prend donc la **politique**
+et la mesure, au lieu de la valeur déjà appliquée.
+
+🔴 **Ce que ni le plan ni la première implémentation ne voyaient** : les deux
+seuils ne se mesurent pas pareil. Un seuil de palier se lit sur le **cumul** dès
+qu'il y a engagement — c'est ce que fait `atQuantity`, avec sa raison écrite —
+tandis que la porte d'un plancher dynamique se juge sur la **commande** :
+`UnlockEvidence.quantity` dit « la quantité de CE SKU dans CETTE commande ».
+Rejouer la porte au seuil du palier l'ouvrait donc, pour un client engagé, sur
+une quantité qu'il ne commande pas : la grille aurait annoncé un prix **sous le
+mur dur**, que la commande n'aurait jamais servi.
+
+`orderQuantityAt` sépare les deux. Sans engagement les deux mesures coïncident
+et rien ne change — c'est le cas courant, la plupart des mercuriales étant à prix
+fixe. Sous engagement, la porte voit la commande réelle : le défaut penche du
+côté de la maison, comme dans `decideFloor` lui-même.
+
 ### Ce que le front en fait
 
 Il **sélectionne** le palier correspondant à la quantité affichée. Conséquences
