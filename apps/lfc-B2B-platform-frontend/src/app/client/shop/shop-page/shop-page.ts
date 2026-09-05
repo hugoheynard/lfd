@@ -8,7 +8,9 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { ALL_SHELVES, productById, SHOP_CATEGORIES, SHOP_PRODUCTS } from '../mock-shop';
+import { productById } from '../mock-shop';
+import { Shop } from '../shop.service';
+import { ShopStore } from '../shop.store';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { CartSummary } from '../../cart/cart-summary/cart-summary';
 import { ProductSheet } from '../product-sheet/product-sheet';
@@ -18,14 +20,6 @@ import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
 import { OrderContextBar } from './order-context-bar/order-context-bar';
 
-/** Retire accents et casse : « éclair » et « eclair » cherchent la même chose. */
-function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
-
 /**
  * La boutique — une vitrine, pas une liste.
  *
@@ -33,10 +27,10 @@ function fold(text: string): string {
  * faisaient quatorze écrans de pouce. En grille, six pièces sont visibles sans
  * défiler, et une boulangerie se regarde comme une vitrine.
  *
- * La recherche TRAVERSE les rayons : « pain » sort le pain de campagne, la
- * baguette et le pain au chocolat, parce que le client ne sait pas dans quel
- * rayon on a rangé quoi. Chercher remet donc le filtre à zéro — les deux
- * répondent à la même question, et une seule peut gagner.
+ * Ce qu'elle montre — le filtrage, le titre, l'arbitrage entre chercher et
+ * choisir un rayon — appartient à {@link Shop}. Ce qui reste ici est ce qu'un
+ * ÉCRAN sait : quelle feuille est ouverte, où mènent ses boutons, et le chrome
+ * qu'il pose en arrivant.
  *
  * Le mode de service n'est jamais une étape passée : `OrderContextBar` le
  * rappelle en permanence, et sans lui l'écran renvoie à la question qu'on a
@@ -59,6 +53,13 @@ function fold(text: string): string {
   ],
   templateUrl: './shop-page.html',
   styleUrl: './shop-page.scss',
+  /**
+   * L'état de la boutique naît et meurt avec l'écran : revenir la rouvre sur
+   * « Tout ». Le fournir à la racine la rouvrirait sur le dernier rayon
+   * parcouru — défendable, mais c'est un choix de produit, pas une conséquence
+   * de la découpe. Cf. {@link ShopStore}.
+   */
+  providers: [ShopStore, Shop],
 })
 export class ShopPage {
   private readonly chrome = inject(ClientChrome);
@@ -69,8 +70,7 @@ export class ShopPage {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
 
-  protected readonly query = signal('');
-  protected readonly shelf = signal(ALL_SHELVES);
+  protected readonly shop = inject(Shop);
 
   /** La pièce dont la fiche est ouverte. */
   protected readonly openPiece = signal<string | null>(null);
@@ -79,32 +79,6 @@ export class ShopPage {
   protected readonly openStory = signal<string | null>(null);
 
   protected readonly choice = this.order.choice;
-
-  protected readonly products = computed(() => {
-    const query = fold(this.query().trim());
-    if (query !== '') {
-      return SHOP_PRODUCTS.filter(
-        (p) => fold(p.name).includes(query) || fold(p.note).includes(query),
-      );
-    }
-    const shelf = this.shelf();
-    return shelf === ALL_SHELVES
-      ? SHOP_PRODUCTS
-      : SHOP_PRODUCTS.filter((p) => p.category === shelf);
-  });
-
-  /** Le titre de la grille : le rayon, ou ce qu'on vient de chercher. */
-  protected readonly heading = computed(() => {
-    const c = this.t().shop;
-    const query = this.query().trim();
-    if (query !== '') {
-      return fill(c.resultsFor, { query });
-    }
-    const shelf = this.shelf();
-    return shelf === ALL_SHELVES
-      ? c.allShelvesTitle
-      : (SHOP_CATEGORIES.find((s) => s.id === shelf)?.shelf ?? c.allShelvesTitle);
-  });
 
   protected readonly cartLabel = computed(() =>
     fill(this.t().shop.cartBar, { count: String(this.cart.count()) }),
@@ -145,11 +119,6 @@ export class ShopPage {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     this.chrome.back.set((): void => this.backToService());
-  }
-
-  protected pickShelf(id: string): void {
-    this.shelf.set(id);
-    this.query.set('');
   }
 
   protected backToService(): void {

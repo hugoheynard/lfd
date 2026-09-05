@@ -3,25 +3,21 @@
 <div class="shop">
   <fold-search
     class="search"
-    [(value)]="query"
+    [(value)]="shop.query"
     [placeholder]="t().shop.searchPlaceholder"
     [ariaLabel]="t().shop.searchPlaceholder"
     [clearLabel]="t().shop.clearSearch"
-    [resultCount]="products().length"
+    [resultCount]="shop.products().length"
     [resultLabel]="t().shop.piecesUnit"
   />
 
-  <app-shelf-nav
-    class="shelves"
-    [active]="query() === '' ? shelf() : null"
-    (picked)="pickShelf($event)"
-  />
+  <app-shelf-nav class="shelves" [active]="shop.activeShelf()" (picked)="shop.browse($event)" />
 
-  <fold-element-title class="head" variant="caps" [level]="1" [title]="heading()" />
+  <fold-element-title class="head" variant="caps" [level]="1" [title]="shop.heading()" />
 
-  <app-shelf-banner class="banner" [shelf]="shelf()" (opened)="openStory.set(shelf())" />
+  <app-shelf-banner class="banner" [shelf]="shop.shelf()" (opened)="openStory.set(shop.shelf())" />
 
-  <app-shelf-grid class="grid" [products]="products()" (opened)="openPiece.set($event)" />
+  <app-shelf-grid class="grid" [products]="shop.products()" (opened)="openPiece.set($event)" />
 
   <!-- LE PANIER PERMANENT, au-delà du pli seulement. En pile, c'est la barre du
        bas qui en tient lieu : 320 px de colonne sur 390 px d'écran, il ne
