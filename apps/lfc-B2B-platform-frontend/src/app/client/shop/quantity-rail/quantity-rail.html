@@ -1,0 +1,14 @@
+<!-- Le retrait est DÉSACTIVÉ à zéro plutôt qu'absent : un bouton qui disparaît
+     déplace celui d'à côté, et on appuie alors sur l'autre. -->
+<button
+  type="button"
+  [disabled]="quantity() === 0"
+  [attr.aria-label]="removeLabel()"
+  (click)="removed.emit()"
+>
+  <fold-icon name="minus" />
+</button>
+<span class="qty">{{ quantity() }}</span>
+<button type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
+  <fold-icon name="plus" />
+</button>

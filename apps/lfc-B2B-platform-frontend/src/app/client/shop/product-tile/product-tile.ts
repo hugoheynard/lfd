@@ -7,6 +7,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 
 import { artOf } from '../shelf-display';
+import { QuantityRail } from '../quantity-rail/quantity-rail';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -26,7 +27,7 @@ import { artOf } from '../shelf-display';
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [FoldIconComponent, QuantityRail],
   templateUrl: './product-tile.html',
   styleUrl: './product-tile.scss',
 })

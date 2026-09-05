@@ -1,0 +1,63 @@
+/**
+ * Une seule peinture, trois densités. Ce sont des VARIABLES et non trois blocs
+ * dupliqués : ajouter une taille ne doit pas être l'occasion d'oublier une
+ * couleur.
+ */
+:host {
+  /* `sm` — la vignette, au-delà du pli : trois cibles dans 166 px de tuile. */
+  --rail-button: 26px;
+  --rail-icon: 14px;
+  --rail-gap: 1px;
+  --rail-pad: 3px;
+  --rail-inner-radius: 7px;
+  --rail-qty-min: 18px;
+  --rail-qty-size: var(--fold-text-md);
+
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rail-gap);
+  padding: var(--rail-pad);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-primary);
+}
+
+/* `lg` — la fiche : c'est ICI qu'on retire, et une cible de retrait doit être
+   aussi facile à viser qu'une cible d'ajout. */
+:host(.is-lg) {
+  --rail-button: 44px;
+  --rail-icon: 18px;
+  --rail-qty-min: 26px;
+  --rail-qty-size: var(--fold-text-lg);
+}
+
+button {
+  display: grid;
+  place-items: center;
+  width: var(--rail-button);
+  height: var(--rail-button);
+  border: 0;
+  border-radius: var(--rail-inner-radius);
+  background: none;
+  color: var(--fold-color-on-primary);
+  cursor: pointer;
+}
+
+button:disabled {
+  color: var(--lfc-color-on-primary-muted);
+  cursor: not-allowed;
+}
+
+fold-icon {
+  width: var(--rail-icon);
+  height: var(--rail-icon);
+}
+
+.qty {
+  min-width: var(--rail-qty-min);
+  text-align: center;
+  color: var(--fold-color-on-primary);
+  font-size: var(--rail-qty-size);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
@@ -10,6 +9,7 @@ import { lineTotalCents, unitPriceCents } from '@lfd/money';
 
 import { artOf, ovenHoursOf } from '../shelf-display';
 import { ShopCatalogue } from '../shop-catalogue.store';
+import { QuantityRail } from '../quantity-rail/quantity-rail';
 
 /**
  * La fiche d'une pièce — le geste LENT du rayon.
@@ -22,7 +22,7 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 @Component({
   selector: 'app-product-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientDialog, FoldIconComponent],
+  imports: [ClientDialog, QuantityRail],
   templateUrl: './product-sheet.html',
   styleUrl: './product-sheet.scss',
 })

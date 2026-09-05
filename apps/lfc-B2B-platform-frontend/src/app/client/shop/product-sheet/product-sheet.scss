@@ -74,49 +74,6 @@
   width: 100%;
 }
 
-/* 44 px par cible : c'est ICI qu'on retire, et une cible de retrait doit être
-   aussi facile à viser qu'une cible d'ajout. */
-.rail {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-primary);
-
-  button {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 0;
-    border-radius: var(--fold-radius-sm);
-    background: none;
-    color: var(--fold-color-on-primary);
-    cursor: pointer;
-  }
-
-  button:disabled {
-    color: var(--lfc-color-on-primary-muted);
-    cursor: not-allowed;
-  }
-
-  fold-icon {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-.qty {
-  min-width: 26px;
-  text-align: center;
-  color: var(--fold-color-on-primary);
-  font-size: var(--fold-text-lg);
-  font-weight: var(--fold-weight-bold);
-  font-variant-numeric: tabular-nums;
-}
-
 .cta {
   flex: 1;
   display: flex;

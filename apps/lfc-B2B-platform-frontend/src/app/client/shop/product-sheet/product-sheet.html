@@ -29,20 +29,14 @@
     </div>
 
     <div dialog-foot class="foot">
-      <span class="rail">
-        <button
-          type="button"
-          [disabled]="quantity() === 0"
-          [attr.aria-label]="removeLabel()"
-          (click)="removed.emit()"
-        >
-          <fold-icon name="minus" />
-        </button>
-        <span class="qty">{{ quantity() }}</span>
-        <button type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
-          <fold-icon name="plus" />
-        </button>
-      </span>
+      <app-quantity-rail
+        size="lg"
+        [quantity]="quantity()"
+        [addLabel]="addLabel()"
+        [removeLabel]="removeLabel()"
+        (added)="added.emit()"
+        (removed)="removed.emit()"
+      />
 
       <button class="cta" type="button" (click)="added.emit()">{{ cta() }}</button>
     </div>

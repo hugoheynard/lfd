@@ -42,15 +42,15 @@
     <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
          de porter trois cibles au lieu d'une. -->
     @if (quantity() > 0) {
-      <span class="rail wide-only">
-        <button type="button" [attr.aria-label]="removeLabel()" (click)="removed.emit()">
-          <fold-icon name="minus" />
-        </button>
-        <span class="qty">{{ quantity() }}</span>
-        <button type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
-          <fold-icon name="plus" />
-        </button>
-      </span>
+      <app-quantity-rail
+        class="wide-only"
+        size="sm"
+        [quantity]="quantity()"
+        [addLabel]="addLabel()"
+        [removeLabel]="removeLabel()"
+        (added)="added.emit()"
+        (removed)="removed.emit()"
+      />
     } @else {
       <button
         class="add wide-only"
