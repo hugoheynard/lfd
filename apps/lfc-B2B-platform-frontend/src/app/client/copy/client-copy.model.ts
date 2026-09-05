@@ -237,6 +237,12 @@ export interface ClientCopy {
     readonly emptyHint: string;
     readonly shelvesGroup: string;
     readonly add: string;
+    /**
+     * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
+     * et un prix alimentaire sans mention se lit TTC : la mention n'est pas une
+     * décoration, c'est ce qui empêche la vignette de mentir.
+     */
+    readonly priceHt: string;
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;
@@ -268,10 +274,11 @@ export interface ClientCopy {
     /** `{at}` porte le complément du lieu, `{pct}` la remise. */
     readonly discount: string;
     readonly fee: string;
-    /** `{rate}` est remplacé par le taux réel. */
+    /**
+     * `{rate}` est remplacé par le taux réel. Une ligne par taux **présent** :
+     * c'est ce qu'une facture porte, et la loi ne s'en contente pas d'un total.
+     */
     readonly vat: string;
-    readonly vatSweet: string;
-    readonly vatSale: string;
     readonly total: string;
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;

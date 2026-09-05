@@ -6,9 +6,8 @@ import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { lineTotalCents } from '@lfd/money';
+import { lineTotalCents, unitPriceCents } from '@lfd/money';
 
-import { ttcMillicentsOf } from '../../cart/cart-total';
 import { artOf, ovenHoursOf } from '../shelf-display';
 import { ShopCatalogue } from '../shop-catalogue.store';
 
@@ -75,7 +74,12 @@ export class ProductSheet {
             value: `${choice.place} · ${choice.slot}`,
           };
     return [
-      { key: c.unitPrice, value: formatCents(lineTotalCents(ttcMillicentsOf(product), 1)) },
+      {
+        key: c.unitPrice,
+        value: fill(this.t().shop.priceHt, {
+          price: formatCents(unitPriceCents(product.unitPriceMillicents)),
+        }),
+      },
       { key: c.oven, value: ovenHoursOf(product.shelfId) },
       where,
     ];
@@ -97,7 +101,9 @@ export class ProductSheet {
     }
     const pieces = Math.max(this.quantity(), 1);
     return fill(this.t().product.cta, {
-      price: formatCents(lineTotalCents(ttcMillicentsOf(product), pieces)),
+      price: fill(this.t().shop.priceHt, {
+        price: formatCents(lineTotalCents(product.unitPriceMillicents, pieces)),
+      }),
     });
   });
 }

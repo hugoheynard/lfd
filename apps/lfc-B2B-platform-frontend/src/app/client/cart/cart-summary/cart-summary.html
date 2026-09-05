@@ -30,7 +30,7 @@
 <dl class="count">
   <div class="row">
     <dt>{{ t().cart.subtotal }}</dt>
-    <dd>{{ money(totals().subtotalCents) }}</dd>
+    <dd>{{ money(totals().subtotalHtCents) }}</dd>
   </div>
 
   @if (discountLabel(); as label) {
@@ -48,12 +48,11 @@
   }
 
   <!-- Une ligne par taux RÉELLEMENT au panier. Pas de salé, pas de ligne à
-       10 % : une ligne à zéro fait douter du calcul. -->
+       10 % : une ligne à zéro fait douter du calcul. La TVA s'AJOUTE au
+       sous-total hors taxe — elle ne s'en extrait plus. -->
   @for (vat of vatLines(); track vat.label) {
     <div class="row vat">
-      <dt>
-        {{ vat.label }} <span class="scope">· {{ vat.scope }}</span>
-      </dt>
+      <dt>{{ vat.label }}</dt>
       <dd>{{ vat.amount }}</dd>
     </div>
   }

@@ -14,7 +14,6 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
-import { VAT_SALE } from '../../shop/vat-rates';
 
 /**
  * La commande passée.
@@ -71,7 +70,6 @@ export class ConfirmationPage {
     const c = this.t().cart;
     return (this.order()?.totals.vat ?? []).map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
-      scope: share.rate === VAT_SALE ? c.vatSale : c.vatSweet,
       amount: formatCents(share.amountCents),
     }));
   });

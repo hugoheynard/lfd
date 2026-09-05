@@ -103,9 +103,10 @@ describe('Les règles du panier', () => {
 
     expect(placed?.pieces).toBe(2);
     expect(placed?.lines.map((l) => l.name)).toEqual(['Croissant au beurre', 'Quiche du jour']);
-    // Le prix est FIGÉ dans la commande, en centimes TTC, pas relu du catalogue
-    // plus tard : 1,40 € HT à 5,5 % font 1,48 € payés.
-    expect(placed?.lines[0]?.unitPriceCents).toBe(148);
+    // Le prix est FIGÉ dans la commande, en centimes HORS TAXE, pas relu du
+    // catalogue plus tard. Il était figé en TTC : la commande portait donc une
+    // unité que ni la caisse ni la facture n'emploient.
+    expect(placed?.lines[0]?.unitPriceCents).toBe(140);
     expect(cart.isEmpty()).toBe(true);
   });
 

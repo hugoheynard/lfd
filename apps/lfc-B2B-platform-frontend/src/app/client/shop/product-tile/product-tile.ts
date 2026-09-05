@@ -4,9 +4,8 @@ import { FoldIconComponent } from 'fold-ng';
 import { formatCents } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { lineTotalCents } from '@lfd/money';
+import { unitPriceCents } from '@lfd/money';
 
-import { ttcMillicentsOf } from '../../cart/cart-total';
 import { artOf } from '../shelf-display';
 
 /**
@@ -43,8 +42,18 @@ export class ProductTile {
 
   protected readonly t = inject(ClientCopyService).t;
 
+  /**
+   * Le prix **hors taxe**, mention comprise.
+   *
+   * Un prix alimentaire affiché sans mention se lit TTC en France : `1,00 €` sur
+   * une vignette qui pense HT ment à son lecteur. La mention n'est donc pas une
+   * décoration mais la seule chose qui rend l'affichage exact — et la boutique
+   * s'adresse à des professionnels, qui raisonnent en HT.
+   */
   protected readonly price = computed(() =>
-    formatCents(lineTotalCents(ttcMillicentsOf(this.product()), 1)),
+    fill(this.t().shop.priceHt, {
+      price: formatCents(unitPriceCents(this.product().unitPriceMillicents)),
+    }),
   );
 
   /** Le visuel du référentiel, ou l'illustration de son rayon. */

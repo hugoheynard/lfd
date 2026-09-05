@@ -6,10 +6,9 @@ import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
-import { lineTotalCents } from '@lfd/money';
+import { unitPriceCents } from '@lfd/money';
 
-import { ttcMillicentsOf } from '../cart-total';
-import { VAT_SALE } from '../../shop/vat-rates';
+import { lineHtCents } from '../cart-total';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -21,7 +20,8 @@ import { VAT_SALE } from '../../shop/vat-rates';
  * Trois règles y sont visibles, et elles viennent du handoff :
  *
  * - la remise porte le complément du lieu (« au Labo »), jamais son nom brut ;
- * - une ligne de TVA n'existe que si son taux est au panier ;
+ * - une ligne de TVA n'existe que si son taux est au panier — et il en faut
+ *   une PAR TAUX : c'est ce qu'une facture porte, un total ne suffit pas ;
  * - il n'y a PAS de ligne « retrait · offert » — le retrait est toujours
  *   gratuit, la ligne ne dirait rien. Les frais n'apparaissent qu'en coursier.
  */
@@ -48,10 +48,15 @@ export class CartSummary {
       id: line.product.sku,
       quantity: line.quantity,
       name: line.product.name,
-      unit: formatCents(lineTotalCents(ttcMillicentsOf(line.product), 1)),
+      // Le prix unitaire porte la mention : c'est le seul montant de la liste
+      // qu'on lirait spontanément TTC. Les totaux, eux, sont couverts par le
+      // « Sous-total HT » qui les suit.
+      unit: fill(this.t().shop.priceHt, {
+        price: formatCents(unitPriceCents(line.product.unitPriceMillicents)),
+      }),
       // L'arrondi a lieu au TOTAL de ligne, jamais sur l'unité multipliée : deux
       // fois « 1,40 € » ne font pas forcément le total de deux pièces.
-      sum: formatCents(lineTotalCents(ttcMillicentsOf(line.product), line.quantity)),
+      sum: formatCents(lineHtCents(line)),
     })),
   );
 
@@ -73,7 +78,6 @@ export class CartSummary {
     const c = this.t().cart;
     return this.totals().vat.map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
-      scope: share.rate === VAT_SALE ? c.vatSale : c.vatSweet,
       amount: formatCents(share.amountCents),
     }));
   });
