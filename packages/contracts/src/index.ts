@@ -322,6 +322,12 @@ export { orderCutoffWaiverPayloadSchema, waiverDateSchema } from "./order-cutoff
 export { lateFeeAdjustmentSchema, orderLateFeePayloadSchema } from "./order-late-fee.js";
 export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from "./order-late-fee.js";
 export type {
+  ShopCatalogueView,
+  ShopImageView,
+  ShopItemView,
+  ShopShelfView,
+} from "./shop-catalogue.js";
+export type {
   CreatedOrderCutoffWaiverResponse,
   OrderCutoffWaiverPayload,
   OrderCutoffWaiverView,

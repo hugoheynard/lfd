@@ -16,6 +16,11 @@ interface ItemRow {
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly note: string | null;
+  readonly imageUrl: string | null;
+  readonly imageAlt: string | null;
+  readonly imageWidth: number | null;
+  readonly imageHeight: number | null;
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
@@ -166,6 +171,27 @@ function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
     isFeatured: row.override?.isFeatured ?? false,
     allergens: frozenAllergens(row),
     orderTimeLimit: orderTimeLimitOf(row),
+    note: row.note,
+    image: imageOf(row),
+  };
+}
+
+/**
+ * Le packshot, ou `null`.
+ *
+ * L'URL commande : sans elle il n'y a rien à afficher, et les trois autres
+ * colonnes ne décrivent plus rien. Les dimensions, elles, restent légitimement
+ * nulles — « pas mesuré » est un état, pas un trou.
+ */
+function imageOf(row: ItemRow): ResolvedCatalogItem["image"] {
+  if (row.imageUrl === null) {
+    return null;
+  }
+  return {
+    url: row.imageUrl,
+    alt: row.imageAlt ?? "",
+    width: row.imageWidth,
+    height: row.imageHeight,
   };
 }
 

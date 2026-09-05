@@ -37,6 +37,14 @@ export interface IngestedSku {
     labels: { category: string; label: string }[];
     incomplete: boolean;
   } | null;
+  /** La vitrine (v8) — absente par défaut, comme sur une fiche sans éditorial. */
+  readonly note?: string | null;
+  readonly image?: {
+    url: string;
+    alt: string;
+    width: number | null;
+    height: number | null;
+  } | null;
 }
 
 /**
@@ -61,12 +69,16 @@ export function snapshotOf(
         vatRatePercent = 5.5,
         allergens = ["AW"],
         allergenLabels = null,
+        note = null,
+        image = null,
       }) => ({
         id: `prd_${sku}`,
         sku,
         name: `Produit ${sku}`,
         categoryId: CATEGORY.id,
         kind: "daily" as const,
+        note,
+        image,
         variants: [
           {
             id: `var_${sku}`,

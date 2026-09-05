@@ -33,6 +33,8 @@ import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminCatalogDeliveryController } from "./http/admin-catalog-delivery.controller.js";
 import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
 import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
+import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
+import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
 import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
@@ -78,6 +80,8 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // La porte MACHINE du contrôle de santé : même requête, serrure partagée.
     // Le workflow d'ops ne pouvait pas passer par la surface staff.
     OpsCatalogHealthController,
+    // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
+    ShopCatalogueController,
   ],
   providers: [
     IngestCatalogService,
@@ -88,6 +92,7 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     CheckCatalogParityHandler,
     PreviewCatalogPushHandler,
     CheckCatalogHealthHandler,
+    ReadShopCatalogueHandler,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,
     SetCatalogVisibilityHandler,

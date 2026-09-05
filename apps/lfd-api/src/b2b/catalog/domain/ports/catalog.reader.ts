@@ -52,6 +52,19 @@ export interface ResolvedCatalogItem {
    * qu'aucun défaut ne doit transformer en « aucun allergène ».
    */
   readonly allergens: OrderLineAllergens | null;
+  /**
+   * **Ce que la vitrine montre** : la ligne sous le nom, et le packshot.
+   *
+   * Reçus du référentiel et rendus tels quels. `null` = rien n'a été saisi
+   * là-bas — jamais une chaîne vide, qui dirait « effacé ».
+   */
+  readonly note: string | null;
+  readonly image: {
+    readonly url: string;
+    readonly alt: string;
+    readonly width: number | null;
+    readonly height: number | null;
+  } | null;
 }
 
 /**
