@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
-import { storyOf } from '../../../client/mock-rayon-stories';
-import { packshotOf } from '../../../client/mock-shop';
+import { storyOf } from '../mock-shelf-stories';
+import { packshotOf } from '../mock-shop';
 
 /**
  * Ce qu'un rayon raconte de lui-même — la feuille « En savoir plus ».
@@ -17,13 +17,13 @@ import { packshotOf } from '../../../client/mock-shop';
  * contenu de maison, il suivra le catalogue vers le serveur.
  */
 @Component({
-  selector: 'app-rayon-sheet',
+  selector: 'app-shelf-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ClientDialog],
-  templateUrl: './rayon-sheet.html',
-  styleUrl: './rayon-sheet.scss',
+  templateUrl: './shelf-sheet.html',
+  styleUrl: './shelf-sheet.scss',
 })
-export class RayonSheet {
+export class ShelfSheet {
   /** Le rayon ouvert — `null` quand la feuille est fermée. */
   readonly shelf = input.required<string | null>();
 

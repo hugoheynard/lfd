@@ -5,7 +5,7 @@ import { formatEuro } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientOrder } from '../../../client/client-order.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { categoryOf, ovenHoursOf, type ShopProduct } from '../../../client/mock-shop';
+import { categoryOf, ovenHoursOf, type ShopProduct } from '../mock-shop';
 
 /**
  * La fiche d'une pièce — le geste LENT du rayon.

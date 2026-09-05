@@ -9,7 +9,7 @@
  * plutôt que dedans.
  */
 
-export interface RayonStory {
+export interface ShelfStory {
   readonly tag: string;
   /** La ligne courte sous le nom — celle que porte la bannière du rayon. */
   readonly sub: string;
@@ -22,7 +22,7 @@ export interface RayonStory {
 }
 
 /** Ce que dit la maison quand aucun rayon n'est filtré. */
-const HOUSE_STORY: RayonStory = {
+const HOUSE_STORY: ShelfStory = {
   tag: 'La maison',
   sub: 'Onze ans de fournil, à 1 850 m',
   title: 'Tout sort\nd’ici.',
@@ -37,7 +37,7 @@ const HOUSE_STORY: RayonStory = {
   cta: 'Voir tout le rayon',
 };
 
-const RAYON_STORIES: Readonly<Record<string, RayonStory>> = {
+const SHELF_STORIES: Readonly<Record<string, ShelfStory>> = {
   pains: {
     tag: 'Nos pains',
     sub: 'Farines, levain, temps de pousse',
@@ -111,6 +111,6 @@ const RAYON_STORIES: Readonly<Record<string, RayonStory>> = {
 };
 
 /** L'histoire d'un rayon — celle de la maison quand on les regarde tous. */
-export function storyOf(categoryId: string): RayonStory {
-  return RAYON_STORIES[categoryId] ?? HOUSE_STORY;
+export function storyOf(categoryId: string): ShelfStory {
+  return SHELF_STORIES[categoryId] ?? HOUSE_STORY;
 }

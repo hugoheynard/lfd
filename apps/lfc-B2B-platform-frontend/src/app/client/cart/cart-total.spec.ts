@@ -1,5 +1,5 @@
 import { type CartLine, priceCart } from './cart-total';
-import { productById } from '../mock-shop';
+import { productById } from '../shop/mock-shop';
 
 function line(id: string, quantity: number): CartLine {
   const product = productById(id);

@@ -1,7 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 
 import { CartStore } from './cart.store';
-import { SHOP_PRODUCTS } from '../mock-shop';
+import { SHOP_PRODUCTS } from '../shop/mock-shop';
 
 /** Ce qu'on propose en relance : ce qui se rajoute par gourmandise, pas par besoin. */
 const TREATS: readonly string[] = ['choco', 'patis'];

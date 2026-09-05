@@ -6,7 +6,7 @@ import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
 import { ClientOrder } from '../../client-order.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
-import { VAT_SALE } from '../../mock-shop';
+import { VAT_SALE } from '../../shop/mock-shop';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.

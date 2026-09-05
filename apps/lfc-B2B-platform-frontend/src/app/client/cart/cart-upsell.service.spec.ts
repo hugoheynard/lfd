@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { CartUpsell } from './cart-upsell.service';
 import { ClientCart } from './client-cart.service';
-import { SHOP_PRODUCTS } from '../mock-shop';
+import { SHOP_PRODUCTS } from '../shop/mock-shop';
 
 /** Toutes les gourmandises proposables, dans l'ordre du rayon. */
 const TREATS = SHOP_PRODUCTS.filter((p) => p.category === 'choco' || p.category === 'patis');

@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { ClientCart } from './client-cart.service';
 import { ClientOrder, type ServiceChoice } from '../client-order.service';
 import { ClientOrders } from '../client-orders.service';
-import { SHOP_PRODUCTS } from '../mock-shop';
+import { SHOP_PRODUCTS } from '../shop/mock-shop';
 
 /** Le rang d'une référence dans le rayon — l'ordre que le panier doit suivre. */
 const order = (id: string): number => SHOP_PRODUCTS.findIndex((p) => p.id === id);

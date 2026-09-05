@@ -14,7 +14,7 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
-import { VAT_SALE } from '../../../client/mock-shop';
+import { VAT_SALE } from '../../shop/mock-shop';
 
 /**
  * La commande passée.

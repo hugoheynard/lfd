@@ -8,17 +8,12 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrder } from '../../../client/client-order.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import {
-  ALL_SHELVES,
-  productById,
-  SHOP_CATEGORIES,
-  SHOP_PRODUCTS,
-} from '../../../client/mock-shop';
+import { ALL_SHELVES, productById, SHOP_CATEGORIES, SHOP_PRODUCTS } from '../mock-shop';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { CartSummary } from '../../cart/cart-summary/cart-summary';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { ProductTile } from '../product-tile/product-tile';
-import { RayonSheet } from '../rayon-sheet/rayon-sheet';
+import { ShelfSheet } from '../shelf-sheet/shelf-sheet';
 import { ShelfBanner } from '../shelf-banner/shelf-banner';
 
 /** Retire accents et casse : « éclair » et « eclair » cherchent la même chose. */
@@ -45,7 +40,7 @@ function fold(text: string): string {
  * permanence, et sans lui l'écran renvoie à la question qu'on a sautée.
  */
 @Component({
-  selector: 'app-rayon-page',
+  selector: 'app-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CartBar,
@@ -53,13 +48,13 @@ function fold(text: string): string {
     FoldIconComponent,
     ProductSheet,
     ProductTile,
-    RayonSheet,
+    ShelfSheet,
     ShelfBanner,
   ],
-  templateUrl: './rayon-page.html',
-  styleUrl: './rayon-page.scss',
+  templateUrl: './shop-page.html',
+  styleUrl: './shop-page.scss',
 })
-export class RayonPage {
+export class ShopPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly order = inject(ClientOrder);

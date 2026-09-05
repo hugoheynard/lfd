@@ -4,7 +4,7 @@ import { type CartTotals } from './cart/cart-total';
 import { ClientCart } from './cart/client-cart.service';
 import { ClientOrder, type ServiceChoice } from './client-order.service';
 import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
-import { MOCK_ORDER_REF } from './mock-shop';
+import { MOCK_ORDER_REF } from './shop/mock-shop';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {

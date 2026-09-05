@@ -1,7 +1,7 @@
 import { effect, Injectable, signal, type Signal } from '@angular/core';
 
 import { isRecord, readLocal, readNumber, writeLocal } from '../local-store';
-import { productById } from '../mock-shop';
+import { productById } from '../shop/mock-shop';
 
 const KEY = 'cart';
 

@@ -3,7 +3,7 @@ import { FoldIconComponent } from 'fold-ng';
 
 import { formatEuro } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import type { ShopProduct } from '../../../client/mock-shop';
+import type { ShopProduct } from '../mock-shop';
 
 /**
  * Une pièce du rayon — la vignette de la grille.

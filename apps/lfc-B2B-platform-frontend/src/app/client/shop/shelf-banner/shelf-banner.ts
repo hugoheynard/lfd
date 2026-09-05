@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
-import { storyOf } from '../../../client/mock-rayon-stories';
-import { packshotOf } from '../../../client/mock-shop';
+import { storyOf } from '../mock-shelf-stories';
+import { packshotOf } from '../mock-shop';
 
 /**
  * L'invitation à en savoir plus sur le rayon qu'on regarde.

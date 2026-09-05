@@ -1,4 +1,4 @@
-import { type ShopProduct, vatOf } from '../mock-shop';
+import { type ShopProduct, vatOf } from '../shop/mock-shop';
 
 /** Une ligne de panier : une référence et sa quantité. */
 export interface CartLine {

@@ -4,10 +4,10 @@ import { provideRouter } from '@angular/router';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientOrder } from '../../../client/client-order.service';
 import { FR } from '../../../client/copy/fr';
-import { RayonPage } from './rayon-page';
+import { ShopPage } from './shop-page';
 
-describe('RayonPage', () => {
-  let fixture: ComponentFixture<RayonPage>;
+describe('ShopPage', () => {
+  let fixture: ComponentFixture<ShopPage>;
   let cart: ClientCart;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -29,7 +29,7 @@ describe('RayonPage', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({ imports: [RayonPage], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({ imports: [ShopPage], providers: [provideRouter([])] });
     TestBed.inject(ClientOrder).choice.set({
       mode: 'pickup',
       place: 'Le Labo',
@@ -41,7 +41,7 @@ describe('RayonPage', () => {
     });
     cart = TestBed.inject(ClientCart);
     cart.clear();
-    fixture = TestBed.createComponent(RayonPage);
+    fixture = TestBed.createComponent(ShopPage);
     fixture.detectChanges();
   });
 

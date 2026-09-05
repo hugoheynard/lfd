@@ -192,14 +192,14 @@ export const routes: Routes = [
           ),
       },
       {
-        // LE RAYON. Il vit sous `commande/` et pas à la racine parce qu'il est la
-        // SUITE d'une commande en cours : sans mode de service, il n'a rien à
-        // montrer et renvoie à la question. `/boutique` reste la boutique PRO —
-        // deux produits, deux catalogues, deux adresses.
+        // LA BOUTIQUE CLIENTE et ses rayons. Elle vit sous `nouvelle-commande/`
+        // et pas à la racine parce qu'elle est la SUITE d'une commande en cours :
+        // sans mode de service, elle n'a rien à montrer et renvoie à la question.
+        // `/boutique` reste la boutique PRO — deux produits, deux catalogues,
+        // deux adresses.
         path: 'nouvelle-commande/boutique',
         title: 'Boutique — La Folie Coffee',
-        loadComponent: () =>
-          import('./client/rayon/rayon-page/rayon-page').then((m) => m.RayonPage),
+        loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },
       {
         path: 'nouvelle-commande/panier',
@@ -211,7 +211,7 @@ export const routes: Routes = [
         path: 'nouvelle-commande/confirmee',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>
-          import('./client/rayon/confirmation-page/confirmation-page').then(
+          import('./client/nouvelle-commande/confirmation-page/confirmation-page').then(
             (m) => m.ConfirmationPage,
           ),
       },

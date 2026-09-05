@@ -3,7 +3,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import { type CartLine, type CartTotals, priceCart } from './cart-total';
 import { CartStore } from './cart.store';
 import { ClientOrder } from '../client-order.service';
-import { productById, SHOP_PRODUCTS } from '../mock-shop';
+import { productById, SHOP_PRODUCTS } from '../shop/mock-shop';
 
 /**
  * **Le panier en cours** — un seul, partagé par le rayon, la fiche et le panier.
