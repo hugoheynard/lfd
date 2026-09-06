@@ -344,6 +344,25 @@ que `lint:money-units` existe pour attraper, et c'est pourquoi elle regarde
 désormais **les deux sens** : celui qui écrit était celui que sa première version
 excluait.
 
+🔴 **Et la migration du même jour prouve l'unité voulue.**
+`20260831190000_prix_unitaire_en_millicentimes` a converti les données
+existantes, JSON compris et correctement :
+
+```sql
+-- migration.sql:113-126
+UPDATE "public"."price_templates" SET "lines" = ( …
+  tier - 'unitPriceCents'
+  || jsonb_build_object('unitPriceMillicents', ((tier->>'unitPriceCents')::bigint) * 1000)
+… ) WHERE "lines"::text LIKE '%unitPriceCents%';
+```
+
+Elle a fait la même chose sur `price_rules.amount_cents` (`×1000`) et sur
+`floor_value` — mais **seulement quand `floor_mode = 'amount'`**, ce qui est
+exactement juste, puisque cette colonne porte des points de base dans l'autre
+mode. La base et le serveur ont été migrés avec soin ; **c'est l'écran de saisie
+qui n'a pas suivi.** Le désaccord n'est donc pas une ambiguïté sur l'unité : il
+est tranché, écrit en SQL, et un seul fichier l'ignore.
+
 Un second symptôme du même désaccord, sur le même écran : le bouton « + » de
 tarification préremplit le champ par `eurosField(row.catalogCents)`, où
 `catalogCents` porte des millicentimes — il propose donc **2 000,00 €** pour un
@@ -359,10 +378,37 @@ croissant à 2,00 €.
    un état mixte ; les migrer est une **opération de production**. Le geste, et
    le fait de le faire ou non, appartiennent à Hugo.
 
-Le contrôle qui tranche le 2 tient en une requête, et il ne détruit rien :
-compter les `price_template_line` créées après le 2026-08-31 dont le
-`unit_price_millicents` est **inférieur à 1 000** — c'est-à-dire sous le centime,
-ce qu'aucun prix de mercuriale réel n'est.
+#### Le contrôle — lancé le 2026-09-06, et ce qu'il dit
+
+⚠️ **Ce paragraphe annonçait de compter une table `price_template_line`. Elle
+n'existe pas.** Les paliers vivent en **JSON** dans `price_templates.lines`, et
+le schéma dit pourquoi : « une grille s'écrit ENTIÈRE ou pas du tout ». La faute
+est celle que ce dépôt paie le plus souvent — décrire l'existant de mémoire. La
+requête juste, en lecture seule :
+
+```sql
+SELECT count(*) FILTER (WHERE (tier ->> 'unitPriceMillicents')::int < 1000) AS sous_le_centime,
+       count(*)                                                            AS paliers_au_total
+FROM price_templates t,
+     LATERAL jsonb_array_elements(t.lines::jsonb)  AS line,
+     LATERAL jsonb_array_elements(line -> 'tiers') AS tier;
+```
+
+**Sur la base locale : 0 sur 3.** Les trois paliers valent 300 000, 200 000 et
+90 000 millicentimes — 3,00 €, 2,00 € et 0,90 €, donc exactement mille fois les
+centimes que la migration a convertis.
+
+**Ce que ce résultat ne dit PAS.** Le seul gabarit local date du 2026-08-18 et
+n'a pas été retouché depuis : la base ne contient donc **rien qui ait été écrit
+par le code fautif**. Elle ne peut ni confirmer ni infirmer — elle confirme
+seulement l'ordre de grandeur, et il est net : le plus petit prix réel est
+**quatre-vingt-dix fois** au-dessus du seuil de 1 000. Un faux positif est
+impossible.
+
+**La question reste ouverte, et elle est en production** : un gabarit y a-t-il
+été posé ou révisé depuis le 2026-08-31 ? La requête ci-dessus y répond sans
+rien modifier ; `apps/lfd-api/.env` pointe sur `localhost`, donc elle demande une
+connexion que ce poste n'a pas.
 
 ---
 
