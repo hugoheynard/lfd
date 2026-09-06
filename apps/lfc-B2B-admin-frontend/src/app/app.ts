@@ -28,6 +28,7 @@ import {
 import type { StaffRole } from '@lfd/contracts';
 
 import { PermissionsStore } from './auth/permissions.store';
+import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
@@ -173,6 +174,21 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
   protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
+
+  /**
+   * **L'outillage de développement** — une liste, pas un droit.
+   *
+   * 🔴 Elle est VIDE dans un build de production, et l'écran qu'elle annonce n'y
+   * est même pas émis (cf. `dev-tools.ts`). Un `can('...')` ici aurait suggéré
+   * qu'un administrateur en production pourrait le voir en s'accordant un droit
+   * — ce qui n'est pas le cas, et ce serait le pire des malentendus pour un
+   * bouton qui supprime des sociétés.
+   *
+   * Une liste plutôt qu'un booléen parce que le libellé voyage avec : écrit dans
+   * le gabarit derrière un `@if`, il restait dans le bundle de production, le
+   * compilateur ne retirant pas une branche morte.
+   */
+  protected readonly devTools = DEV_TOOLS;
 
   /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
   protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));

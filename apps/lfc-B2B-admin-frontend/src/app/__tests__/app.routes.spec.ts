@@ -138,6 +138,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
+  // 🔴 **L'outillage de développement**, et son absence de garde est le point.
+  //
+  // Le mur qui compte est côté SERVEUR : la route est murée par `b2b_settings`
+  // et refuse toute base qui n'est pas locale. Un `permissionGuard` ici
+  // donnerait l'illusion que c'est lui qui protège, et masquerait le vrai —
+  // celui qui rend le geste inexprimable en production.
+  //
+  // Et cet écran n'existe PAS dans un build de production : `dev-tools.ts` n'y
+  // déclare aucune route, donc il n'est pas émis. Il n'est ici que parce que la
+  // suite tourne, comme `ng serve`, en configuration de développement.
+  dev: OPEN,
   // AUCUN garde, et c'est voulu : de la prose sur le fonctionnement du
   // catalogue, pas une donnée. Elle n'a pas de parent dont hériter — d'où
   // `OPEN` plutôt que `null`.

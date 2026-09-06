@@ -1,7 +1,8 @@
+import type { DevSeedReport } from "@lfd/contracts";
 import { Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import { DevSeedService, type SeedReloadReport } from "../dev-seed.service.js";
+import { DevSeedService } from "../dev-seed.service.js";
 
 /**
  * **Recharger le jeu de données de développement**, depuis le back-office.
@@ -24,7 +25,7 @@ export class DevSeedController {
 
   @Post("reload")
   @HttpCode(HttpStatus.OK)
-  reload(): Promise<SeedReloadReport> {
+  reload(): Promise<DevSeedReport> {
     return this.seeding.reload();
   }
 }

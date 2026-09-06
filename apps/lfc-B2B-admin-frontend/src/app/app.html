@@ -160,6 +160,23 @@
         ></a>
       }
 
+      <!-- L'OUTILLAGE DE DÉVELOPPEMENT, et rien d'autre pour l'instant. La
+           liste est VIDE dans un build de production — libellé compris : écrite
+           en dur derrière un `@if`, l'entrée y laissait son texte, le
+           compilateur de gabarits ne retirant pas une branche morte. -->
+      @for (tool of devTools; track tool.route) {
+        <a
+          fold-menu-item
+          [icon]="tool.icon"
+          [label]="tool.label"
+          [routerLink]="tool.route"
+          routerLinkActive
+          #devRla="routerLinkActive"
+          [active]="devRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       <!-- L'APP MOBILE prend la place que tenait l'e-mail du staff. Celui-ci
            ne disait rien qu'on ne sache déjà — on connaît son propre compte —
            et il reste affiché en haut à droite quand cette app porte sa

@@ -1,18 +1,13 @@
+import type { DevSeedReport } from "@lfd/contracts";
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { seedClient } from "./seeding/client.seed.js";
-import { seedOrders, type OrdersReport } from "./seeding/orders.seed.js";
-import { resetToSeed, type ResetReport } from "./seeding/reset.seed.js";
+import { seedOrders } from "./seeding/orders.seed.js";
+import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
-
-/** Ce qu'un rechargement a fait, tel que l'écran le raconte. */
-export interface SeedReloadReport {
-  readonly reset: ResetReport;
-  readonly orders: OrdersReport;
-}
 
 /**
  * **Recharger le jeu de données de développement**, depuis l'application
@@ -50,7 +45,7 @@ export class DevSeedService {
    * commandes. **Dans cet ordre** : les commandes visent des adresses et des
    * points que les deux étapes précédentes posent.
    */
-  async reload(): Promise<SeedReloadReport> {
+  async reload(): Promise<DevSeedReport> {
     this.refuseUnlessLocalDevelopment();
     const context = { prisma: this.prisma, commands: this.commands };
     await seedStation(context);

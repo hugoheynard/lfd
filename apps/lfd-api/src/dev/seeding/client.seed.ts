@@ -109,15 +109,37 @@ export async function seedClient(
   context: ClientContext,
   identity: ClientIdentity = DEFAULT_IDENTITY,
 ): Promise<SeededClient> {
-  const userId = await seedPerson(context, identity);
   const existing = await context.prisma.company.findFirst({
     where: { raisonSociale: CLIENT_RAISON_SOCIALE },
-    select: { id: true, reference: true },
+    select: {
+      id: true,
+      reference: true,
+      memberships: { select: { userId: true }, take: 1 },
+    },
   });
   if (existing) {
+    // 🔴 **La société d'abord, et son propriétaire avec elle.**
+    //
+    // Ce chemin appelait `seedPerson` en premier, avec l'identité par défaut —
+    // celle d'un poste précis. Sur une machine où le client avait été semé avec
+    // un autre `auth0Sub` (l'option de la ligne de commande), le rechargement
+    // créait donc une SECONDE personne, orpheline, et rendait son identifiant à
+    // l'appelant. Les commandes seraient parties au nom de quelqu'un qui n'est
+    // membre de rien.
+    //
+    // La société existante porte déjà son propriétaire : c'est lui qui compte,
+    // pas celui qu'on aurait semé.
+    const owner = existing.memberships[0]?.userId;
+    if (owner === undefined) {
+      throw new Error(
+        `Société « ${CLIENT_RAISON_SOCIALE} » présente mais sans membre : état incohérent.`,
+      );
+    }
     console.log(`· Société « ${CLIENT_RAISON_SOCIALE} » déjà présente — inchangée.`);
-    return { userId, companyId: existing.id, reference: existing.reference };
+    return { userId: owner, companyId: existing.id, reference: existing.reference };
   }
+
+  const userId = await seedPerson(context, identity);
 
   const companyId = await asCustomer(userId, () =>
     context.commands.execute<CreateCompanyCommand, string>(

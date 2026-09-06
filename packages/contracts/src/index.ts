@@ -301,6 +301,7 @@ export {
   pickupWindows,
 } from "./pickup.js";
 export type { PickupAccess, PickupOpening, PickupSlot } from "./pickup.js";
+export type { DevSeedOrdersReport, DevSeedReport, DevSeedResetReport } from "./dev-seed.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";

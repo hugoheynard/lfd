@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from './auth/permission.guard';
+import { DEV_TOOLS_ROUTES } from './dev/dev-tools';
 import { adminRoutes } from './admin/admin.routes';
 import { commercialRoutes } from './commercial/commercial.routes';
 import { ficheClientRoutes, nouveauCompteRoutes } from './fiche-client/fiche-client.routes';
@@ -215,4 +216,9 @@ export const routes: Routes = [
     loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
   },
   ...commercialRoutes,
+  // 🔴 **VIDE dans un build de production.** `dev-tools.ts` n'y déclare aucune
+  // route, donc l'écran de rechargement du jeu de données n'est atteignable
+  // depuis aucun point d'entrée — il n'est pas émis dans le bundle. Ce n'est pas
+  // une route cachée derrière un drapeau : c'est une route qui n'existe pas.
+  ...DEV_TOOLS_ROUTES,
 ];

@@ -55,6 +55,10 @@
                 {
                   "replace": "src/app/api/api-config.ts",
                   "with": "src/app/api/api-config.dev.ts"
+                },
+                {
+                  "replace": "src/app/dev/dev-tools.ts",
+                  "with": "src/app/dev/dev-tools.dev.ts"
                 }
               ]
             },
@@ -88,6 +92,10 @@
                 {
                   "replace": "src/app/auth/auth.env.generated.ts",
                   "with": "src/app/auth/auth.env.e2e.ts"
+                },
+                {
+                  "replace": "src/app/dev/dev-tools.ts",
+                  "with": "src/app/dev/dev-tools.dev.ts"
                 }
               ]
             }

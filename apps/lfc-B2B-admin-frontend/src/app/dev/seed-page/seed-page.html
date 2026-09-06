@@ -1,0 +1,64 @@
+<fold-page-layout icon="wrench" title="Jeu de données">
+  <p description>
+    Remet la base de développement dans l’état que le semis déclare&nbsp;: un seul client — SAS Les
+    Tommeuses, enseigne La&nbsp;Folie&nbsp;Douce Val&nbsp;d’Isère —, sa station, et ses commandes
+    recalées sur aujourd’hui.
+  </p>
+
+  <fold-page-section title="Recharger">
+    <fold-callout variant="alert" title="Ce geste supprime">
+      <p>
+        Toute société et toute personne qui ne sont pas le client de référence, avec leurs commandes
+        et leurs adresses. Les points de retrait et les zones que le semis ne déclare pas partent
+        aussi&nbsp;: un point sans horaires ouvre le choix de créneau sur un écran vide.
+      </p>
+      <p>
+        Le catalogue, le référentiel, l’annuaire de l’équipe et les règles de prix ne bougent pas.
+        <code>pnpm seed:growth</code> regénère le corpus synthétique quand ses écrans en ont besoin.
+      </p>
+    </fold-callout>
+
+    <button
+      foldButton
+      emphasis="solid"
+      intent="primary"
+      size="lg"
+      type="button"
+      [disabled]="running()"
+      (click)="reload()"
+    >
+      @if (running()) {
+        <fold-spinner size="sm" />
+        Rechargement…
+      } @else {
+        Recharger le jeu de données
+      }
+    </button>
+  </fold-page-section>
+
+  @if (report(); as done) {
+    <fold-page-section title="Ce qui a été fait">
+      <fold-card>
+        <!-- ⚠️ La valeur d'un `fold-field` est du contenu PROJETÉ, pas une
+             entrée `[value]` : un attribut inconnu ne lève rien à la
+             compilation d'un template, mais l'AOT, lui, le refuse. -->
+        <fold-field-list>
+          <fold-field
+            label="Supprimé"
+            [empty]="removed() === null"
+            placeholder="Rien — la base était déjà propre."
+          >
+            {{ removed() }}
+          </fold-field>
+          <fold-field label="Commandes reposées">{{ done.orders.placed }}</fold-field>
+          <!-- Les deux journées qui font l'invariant : elles doivent TOUJOURS
+               exister, quel que soit le jour où l'on sème. -->
+          <fold-field label="Servie la veille">{{ done.orders.yesterday }}</fold-field>
+          <fold-field label="En attente pour demain">
+            {{ done.orders.tomorrow }} · livraison + retrait
+          </fold-field>
+        </fold-field-list>
+      </fold-card>
+    </fold-page-section>
+  }
+</fold-page-layout>
