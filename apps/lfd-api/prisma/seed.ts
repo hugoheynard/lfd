@@ -1,11 +1,9 @@
 import "dotenv/config";
 
-import { PrismaPg } from "@prisma/adapter-pg";
-
-import { PrismaClient } from "../src/platform/database/client/client.js";
+import { CLIENT_ENSEIGNE, DEFAULT_IDENTITY, seedClient } from "../src/dev/seeding/client.seed.js";
+import { seedStation } from "../src/dev/seeding/station.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
-import { CLIENT_ENSEIGNE, seedClient } from "./seed-client.js";
-import { seedStation } from "./seed-station.js";
+import { bootstrapHarness } from "./seed-growth/harness.js";
 
 /**
  * **Le seed de développement** — la station, puis le client de référence.
@@ -16,16 +14,19 @@ import { seedStation } from "./seed-station.js";
  * pnpm --filter lfd-api db:seed:reset   # ⚠️ supprime tous les AUTRES clients
  * ```
  *
- * ## Ce qu'il pose
+ * ## Une enveloppe, pas une logique
  *
- * - la **station** (`seed-station.ts`) : points de retrait avec leurs heures,
- *   zones de livraison, heure limite de commande ;
- * - le **client de référence** (`seed-client.ts`) : SAS Les Tommeuses, enseigne
- *   « La Folie Douce Val d'Isère », profil complet.
+ * Ce qu'il sème vit dans `src/dev/seeding/` — c'est le back-office qui l'a
+ * exigé : le bouton « recharger le jeu de données » exécute exactement les mêmes
+ * fonctions, et deux corpus de développement qui divergent seraient pires que
+ * pas de bouton du tout.
  *
- * Les **commandes** vivent à part (`seed-orders.ts`) parce qu'elles passent par
- * les vrais handlers, donc par l'injection Nest — ce que ce script, lancé par
- * `tsx`, ne peut pas porter.
+ * 🔴 **Il boote l'application** au lieu d'ouvrir un client Prisma. Tout ce que
+ * ce seed pose passe par les VRAIES commandes — déclarer une société, poser une
+ * adresse, accorder un terme, activer. Écrire ces lignes en direct enjambait les
+ * invariants (deux points de retrait « par défaut », constaté) et, surtout,
+ * n'éprouvait rien : un corpus posé à côté des handlers ne prépare pas le
+ * produit, il prépare une base qui lui ressemble.
  *
  * ## Additif, toujours
  *
@@ -33,30 +34,27 @@ import { seedStation } from "./seed-station.js";
  * touche à aucune saisie faite à la main. La suppression est un autre script,
  * qui porte son intention dans son nom.
  */
-const url = process.env["DATABASE_LFD_URL"] ?? "";
-refuseNonLocalTarget(url, "le seed écrit un client de développement et sa station.");
-
-/**
- * 🔴 **Adaptateur `pg`, et non `accelerateUrl`.** Ce script posait
- * `new PrismaClient({ accelerateUrl: url })`, qui exige une URL `prisma://` —
- * il ne pouvait donc PAS tourner contre la base locale, seule cible que le
- * garde ci-dessus accepte. Les deux se contredisaient, et `pnpm db:seed`
- * échouait à sa première requête.
- */
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+refuseNonLocalTarget(
+  process.env["DATABASE_LFD_URL"] ?? "",
+  "le seed écrit un client de développement et sa station.",
+);
 
 async function main(): Promise<void> {
-  await seedStation(prisma);
-  const client = await seedClient(prisma);
-  console.log(`\n✔ Base prête — ${CLIENT_ENSEIGNE} (société ${client.companyId}).`);
-  console.log("  Étape suivante : pnpm --filter lfd-api seed:orders");
+  const harness = await bootstrapHarness();
+  try {
+    const context = { prisma: harness.prisma, commands: harness.commands };
+    await seedStation(context);
+    // L'identité se lit ICI, pas dans le module : `src/` n'a pas le droit de
+    // toucher `process.env`, et c'est la ligne de commande qui connaît le poste.
+    const client = await seedClient(context, {
+      auth0Sub: process.env["SEED_AUTH0_SUB"] ?? DEFAULT_IDENTITY.auth0Sub,
+      email: process.env["SEED_EMAIL"] ?? DEFAULT_IDENTITY.email,
+    });
+    console.log(`\n✔ Base prête — ${CLIENT_ENSEIGNE} (${client.reference}).`);
+    console.log("  Étape suivante : pnpm --filter lfd-api seed:orders");
+  } finally {
+    await harness.close();
+  }
 }
 
-main()
-  .catch((error: unknown) => {
-    console.error("✗ Seed échoué :", error);
-    process.exitCode = 1;
-  })
-  .finally(() => {
-    void prisma.$disconnect();
-  });
+await main();

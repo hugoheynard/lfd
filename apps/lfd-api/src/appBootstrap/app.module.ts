@@ -10,6 +10,7 @@ import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
+import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
@@ -67,6 +68,10 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     SecurityModule,
     AuthModule,
     // Config globale (feature flags d'activation) — avant les contextes qui la lisent.
+    // L'outillage de développement (rechargement du jeu de données). Monté
+    // partout ; c'est le service qui refuse toute base non locale — cf.
+    // `dev.module.ts` sur pourquoi la serrure n'est pas ici.
+    DevModule,
     OrderCutoffsModule,
     OrderWaiversModule,
     PickupAddressesModule,

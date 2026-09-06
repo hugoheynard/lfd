@@ -21,9 +21,7 @@
   "include": [
     "src",
     "prisma/seed.ts",
-    "prisma/seed-client.ts",
     "prisma/seed-orders.ts",
-    "prisma/seed-station.ts",
     "prisma/reset-to-seed.ts",
     "prisma/seed-pim.ts",
     "prisma/seed-delivery.ts",

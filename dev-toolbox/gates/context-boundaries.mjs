@@ -52,6 +52,16 @@ const BLOCK_OF = {
   // ▸ TECHNIQUE PURE — zéro connaissance métier.
   platform: "platform",
 
+  // ▸ L'OUTILLAGE DE DÉVELOPPEMENT — il assemble, comme la racine, et pour la
+  //   même raison : semer un corpus demande de faire tourner les VRAIS handlers
+  //   de commande contre la VRAIE base. Un seed qui doublerait ce qu'il sème
+  //   cesserait d'éprouver ce qu'il prétend préparer.
+  //
+  //   Il a donc les droits de la racine, et la même contrainte : personne ne
+  //   l'importe en retour. Un contexte métier qui lirait `dev/` aurait fait de
+  //   son jeu de démonstration une dépendance de production.
+  dev: "root",
+
   // ▸ LA CARTE DE SANTÉ — il OBSERVE, il ne possède rien. N'ayant aucun métier,
   //   il n'a rien à lire chez les autres blocs : sa ligne est la plus stricte
   //   de la matrice, et personne ne l'importe en retour. C'est aussi ce qui
