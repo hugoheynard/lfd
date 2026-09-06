@@ -67,12 +67,14 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
  */
 const noPriceRules: PriceRuleReader = {
   listArchived: () => Promise.resolve([]),
+  inScopes: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
 
 /** Aucune limite posée : le prix sort du pipeline tel quel. */
 const noPriceFloors: PriceFloorReader = {
+  inScopes: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -86,6 +88,7 @@ const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Ma
 
 /** Aucun barème de volume : ces cas mesurent autre chose. */
 const noVolumeLadders: VolumeLadderReader = {
+  inScopes: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };

@@ -1,0 +1,120 @@
+import type { PriceRule, PricingContext, ScopedPriceFloor } from "./price-rule.js";
+import { candidatesIn, indexByScope, type ScopeIndex } from "./scope-index.js";
+import type { VolumeCommitment } from "./volume-commitment.js";
+import type { VolumeLadder } from "./volume-ladder.js";
+
+/**
+ * **Tout ce qu'il faut pour tarifer un panier**, chargé une fois et rangé.
+ *
+ * ## Ce que cette valeur change
+ *
+ * Les trois matériaux se lisaient **par article** : `resolveOne` posait trois
+ * requêtes par ligne, chacune avec le même `WHERE` à un identifiant près. Un
+ * panier de vingt lignes en faisait soixante, sur le chemin qui facture.
+ *
+ * Ils sont désormais lus **une fois pour le panier** et rangés par portée. Ce
+ * que chaque article en tire est exactement ce que sa requête lui rendait — ni
+ * plus, ni moins : `matchesScope` ne connaît que quatre formes, un article n'a
+ * donc que quatre clés, et piocher ces quatre seaux rend ce que le prédicat
+ * retenait. C'est cette équivalence, éprouvée contre `matchesScope` lui-même
+ * dans `scope-index.spec.ts`, qui autorise le hissage.
+ *
+ * ## 🔴 Ce n'est PAS une accélération
+ *
+ * Le travail par article reste proportionnel aux matériaux qui visent CET
+ * article. L'index ne fait pas gagner de temps de calcul : il **empêche** le
+ * hissage d'échanger des lectures contre un produit `articles × règles`, ce qui
+ * aurait été le remède pire que le mal. Ce qui est gagné, ce sont des lectures
+ * — donc des opérations facturées, cf. `optimisation-resolution-de-prix.md` §2.
+ *
+ * ## Une valeur, pas un service
+ *
+ * Elle est **passée** de la méthode qui charge à celle qui résout, jamais
+ * rangée dans un contexte ambiant : les matériaux vivent le temps d'un APPEL,
+ * la requête vit plus longtemps, et les deux ne coïncident aujourd'hui que par
+ * accident. Un CLS cacherait la dépendance en plus de rendre la résolution
+ * intestable sans contexte.
+ */
+export interface PricingMaterials {
+  readonly rules: ScopeIndex<PriceRule>;
+  readonly floors: ScopeIndex<ScopedPriceFloor>;
+  readonly ladders: ScopeIndex<VolumeLadder>;
+  /**
+   * Les engagements **vivants du client**, lus une fois.
+   *
+   * Ils ne se rangent pas par portée : un engagement vise une cible par ses
+   * trois champs à la fois (`categoryId`, `productSku`, `variantSku`), et
+   * `commitmentFor` arbitre déjà entre eux. Les indexer aurait dupliqué cette
+   * décision dans une clé.
+   */
+  readonly commitments: readonly VolumeCommitment[];
+}
+
+/** Range les matériaux d'un panier. Chacun sait où lire sa portée. */
+export function materialsOf(loaded: {
+  readonly rules: readonly PriceRule[];
+  readonly floors: readonly ScopedPriceFloor[];
+  readonly ladders: readonly VolumeLadder[];
+  readonly commitments: readonly VolumeCommitment[];
+}): PricingMaterials {
+  return {
+    rules: indexByScope(loaded.rules, (rule) => rule.scope),
+    floors: indexByScope(loaded.floors, (floor) => floor.scope),
+    ladders: indexByScope(loaded.ladders, (ladder) => ladder.scope),
+    commitments: loaded.commitments,
+  };
+}
+
+/** Les règles qui visent cet article — la concaténation de ses quatre seaux. */
+export function rulesFor(materials: PricingMaterials, context: PricingContext): PriceRule[] {
+  return candidatesIn(materials.rules, context);
+}
+
+/** Les planchers qui visent cet article. */
+export function floorsFor(
+  materials: PricingMaterials,
+  context: PricingContext,
+): ScopedPriceFloor[] {
+  return candidatesIn(materials.floors, context);
+}
+
+/** Les barèmes qui visent cet article. */
+export function laddersFor(materials: PricingMaterials, context: PricingContext): VolumeLadder[] {
+  return candidatesIn(materials.ladders, context);
+}
+
+/**
+ * **Ce qu'il a fallu mesurer** pour tarifer ce panier — lu en amont, par lot.
+ *
+ * Deux mesures, et toutes deux dépendent de l'historique plutôt que du panier :
+ * le cumul d'un engagement, et le ratio de volume observé d'un article.
+ *
+ * Elles étaient lues **dans** la boucle, chacune derrière un prédicat pur. La
+ * paresse était bonne — aucune requête si le plancher n'a pas de porte, aucune
+ * si aucun engagement ne couvre l'article — et elle est **conservée** : les
+ * mêmes prédicats décident, ils décident simplement avant, sur des matériaux
+ * déjà chargés. Ce qui change est qu'une mesure demandée pour dix articles
+ * coûte une lecture au lieu de dix.
+ */
+export interface PricingEvidence {
+  /**
+   * Le volume déjà commandé par le client sur la fenêtre de son engagement,
+   * par SKU. **Absent** = aucun engagement ne couvre ce SKU, ou rien commandé.
+   */
+  readonly orderedBySku: ReadonlyMap<string, number>;
+  /**
+   * Le ratio de volume observé, en points de base, par SKU. **Absent** = aucun
+   * plancher de cet article ne demande cette mesure ; `null` = elle a été
+   * demandée et il n'y a pas de référence.
+   *
+   * La distinction porte : « pas mesuré » et « mesuré sans référence » ouvrent
+   * la porte différemment — le second protège, le premier ne se pose pas.
+   */
+  readonly volumeRatioBySku: ReadonlyMap<string, number | null>;
+}
+
+/** Aucune mesure — un panier qu'aucun engagement ni plancher dynamique ne touche. */
+export const NO_EVIDENCE: PricingEvidence = {
+  orderedBySku: new Map(),
+  volumeRatioBySku: new Map(),
+};

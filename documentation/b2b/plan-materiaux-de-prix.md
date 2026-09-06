@@ -280,6 +280,39 @@ hisser sans indexer échange des lectures contre du balayage (§2).
   dans la boucle, donc après les lectures. Charger d'abord ferait payer des
   matériaux pour un panier qu'on va refuser.
 
+### ✅ Livré le 2026-09-06 — **en lot de conception, pas de coût**
+
+Le lot est fait, et il a été requalifié avant de l'être. La différence n'est pas
+rhétorique : présenté comme une optimisation, il se serait arrêté quand la
+facture aurait cessé de faire mal — c'est-à-dire à l'index du lot 2, livré et
+dont le seul appelant était son propre spec.
+
+Ce qu'il apporte vraiment est une **couture** : `priceLine` est pure, elle reçoit
+des matériaux et des preuves, et la recette qui fabrique un prix s'éprouve
+désormais **sans un seul doublé** (`price-line.spec.ts`, huit cas). Elle ne
+s'éprouvait qu'en montant sept ports.
+
+Trois choses ont été posées, dans cet ordre :
+
+1. **`inScopes` devient l'unique lecture** sur les trois ports, et
+   `candidatesFor` se réécrit par-dessus — la forme retenue ci-dessous. La clause
+   de portée, qui était recopiée dans les trois adaptateurs, vit dans
+   `scope-filter.ts` ;
+2. **les matériaux sont chargés une fois** et rangés par `indexByScope` — le lot
+   2 a enfin son consommateur ;
+3. **les preuves sont mesurées en amont, par lot.** La paresse est conservée : ce
+   sont les mêmes prédicats purs qui décident, sur des matériaux déjà chargés.
+
+Ce que la mise en œuvre a appris, et que le plan ne disait pas : **le hissage des
+preuves est possible parce que `resolveScopedFloor` ne filtre QUE par la
+portée** — ni quantité, ni temps, ni audience. Le plancher d'un article se
+connaît donc avant tout ce qui dépend de l'historique, et il n'a pas fallu de
+protocole en deux phases.
+
+Une seule mesure reste groupée plutôt que globale : le cumul d'un engagement,
+parce que chaque engagement porte SA fenêtre. Une lecture unique sur une fenêtre
+inventée compterait des commandes hors période.
+
 ### 🔴 L'arbitrage que ce lot doit prendre, et pas reporter
 
 `PriceProjectionQuery` appelle les mêmes `candidatesFor` — et **hisse déjà** pour

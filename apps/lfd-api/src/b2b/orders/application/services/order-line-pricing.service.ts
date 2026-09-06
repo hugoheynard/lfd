@@ -1,80 +1,80 @@
-import type { OrderLineAllergens } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
-import type {
-  CommitmentDecisionView,
-  OrderLineInput as OrderLineRequest,
-  VolumeTierPriceView,
-} from "@lfd/contracts";
+import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
-import { decideFloor } from "../../../pricing/domain/floor-policy.js";
-import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
 import {
   pricingContextFor,
   type PricingParties,
 } from "../../../pricing/application/pricing-context.js";
+import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
-import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
-import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
 import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
-import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
-import { floorMillicentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
-import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
-import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
 import { SkuVolumeReader } from "../../../pricing/domain/ports/sku-volume.reader.js";
+import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
 import { VolumeLadderReader } from "../../../pricing/domain/ports/volume-ladder.reader.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import type { PricingContext } from "../../../pricing/domain/price-rule.js";
+import {
+  floorsFor,
+  materialsOf,
+  NO_EVIDENCE,
+  type PricingEvidence,
+  type PricingMaterials,
+} from "../../../pricing/domain/pricing-materials.js";
+import { scopesOfAll } from "../../../pricing/domain/pricing-scopes.js";
+import { resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
+import { commitmentFor, type VolumeCommitment } from "../../../pricing/domain/volume-commitment.js";
 import { UnknownSkuError } from "../../domain/errors/order-errors.js";
-import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
-import type { VolumeCommitment } from "../../../pricing/domain/volume-commitment.js";
-import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import {
+  priceLine,
+  type LineToPrice,
+  type ResolvedOrderLine,
+} from "../../domain/services/price-line.js";
 import { Clock } from "../../../../platform/time/clock.js";
 
-/**
- * Une ligne résolue : **ce qui part sur la commande**, et ce qui n'y part pas.
- *
- * `line` est le seul morceau que la commande persiste — le reste explique le
- * prix sans en faire partie. La distinction est volontaire : un devis a besoin
- * de dire « et à 100 pièces, ce serait ça », une facture n'a pas à figer une
- * grille de paliers dont aucun n'a été retenu.
- */
-export interface ResolvedOrderLine {
-  readonly line: OrderLineInput;
-  /** Le tarif de liste d'entrée, avant le moindre étage. */
-  readonly canonicalMillicents: number;
-  /** La mercuriale qui a scellé la chaîne pour cette ligne, ou `null`. */
-  readonly sealedByRuleId: string | null;
-  /** Les règles écartées par ce scellement. */
-  readonly sealedRuleIds: readonly string[];
+export type { ResolvedOrderLine };
+
+/** Un article du panier, sa quantité fusionnée, et la portée qu'il vise. */
+interface LineEntry {
+  readonly item: LineToPrice;
+  readonly quantity: number;
   /**
-   * Le barème qui vise l'article, résolu **palier par palier**.
+   * Le contexte **sans le cumul d'engagement**.
    *
-   * C'est la réponse à « et si j'en prends 100 ? » — la question que le
-   * commercial pose au téléphone, et la seule façon d'éprouver le système sur
-   * des volumes sans passer dix commandes pour le savoir.
-   *
-   * `null` sur le chemin qui **facture** : la grille n'y sert à rien, elle
-   * coûte une résolution complète par palier, et un incident dedans ferait
-   * tomber une vente pour un tableau que personne ne regarde. Elle n'est
-   * calculée que par {@link OrderLinePricing.explain}.
+   * Il suffit à tout ce qui se décide avant la mesure : la portée d'un matériau
+   * et le plancher qui vise l'article ne dépendent ni de la quantité ni de
+   * l'historique — `resolveScopedFloor` ne filtre que par `matchesScope`. C'est
+   * cette indépendance qui permet de mesurer EN AMONT, et donc par lot.
    */
-  readonly volumeTiers: readonly VolumeTierPriceView[] | null;
-  /** Le plancher qui vise l'article, en centimes, ou `null` s'il n'y en a pas. */
-  readonly floorMillicents: number | null;
+  readonly scopeContext: PricingContext;
 }
 
 /**
- * **Le prix d'une ligne de panier**, et rien d'autre.
+ * **Le prix des lignes d'un panier**, et rien d'autre.
  *
  * Extrait de `OrderDrafting`, qui composait à la fois le prix ET l'acheminement
- * — deux raisons de changer dans un même fichier de bientôt quatre cents
- * lignes. Ici vivent le catalogue, les règles, les barèmes et les planchers ;
- * là-bas restent les points de retrait, les zones et les défauts de livraison.
+ * — deux raisons de changer dans un même fichier. Ici vivent le catalogue, les
+ * règles, les barèmes et les planchers ; là-bas restent les points de retrait,
+ * les zones et les défauts de livraison.
  *
- * Le découpage a aussi un effet sur les dépendances : le devis n'a plus besoin
- * de traverser un service qui sait résoudre une zone de livraison pour obtenir
- * un prix.
+ * ## 🔴 Ce service ne décide plus rien — il rassemble
+ *
+ * La recette qui fabrique un prix vivait ici, dans quatre-vingt-dix lignes
+ * `async` : six étapes pures prisonnières de deux lectures, et donc une recette
+ * qui ne s'éprouvait qu'avec sept doublés. Elle est passée dans `priceLine`,
+ * **pure**, qu'on énumère au lieu de la monter.
+ *
+ * Ce qui reste est le travail d'un orchestrateur, en trois temps :
+ *
+ * 1. **charger les matériaux, une fois pour le panier** — ils se lisaient par
+ *    article, soit trois requêtes par ligne avec le même `WHERE` à un
+ *    identifiant près ;
+ * 2. **mesurer ce qu'il faut mesurer, par lot** — la paresse est conservée, les
+ *    mêmes prédicats décident, ils décident simplement avant ;
+ * 3. **appeler la fonction pure**, une fois par ligne.
+ *
+ * Le compte de lectures ne dépend donc plus de la taille du panier.
  */
 @Injectable()
 export class OrderLinePricing {
@@ -93,17 +93,14 @@ export class OrderLinePricing {
    * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune —
    * c'est ici que le prix devient autoritaire, jamais celui du client.
    *
-   * ⚠️ **`PricingParties` et non `OrderParties`** : ce service ne lit que le
-   * `companyId`. Le port s'est resserré le 2026-09-06 pour que le devis PUBLIC
-   * de la boutique puisse l'appeler — il n'a pas de saisisseur à nommer, et lui
-   * en inventer un aurait mis une fausse identité sur le chemin qui tarife.
-   * `OrderParties` reste structurellement compatible : aucun appelant ne change.
+   * La fusion précède tout, et c'est ce qui rend le palier de volume juste :
+   * deux lignes de 60 croissants ouvrent le palier « 100+ », alors qu'aucune ne
+   * l'ouvrirait seule.
    *
-   * Trois étapes, dans cet ordre : le **catalogue** donne le prix canonique, les
-   * **règles tarifaires** l'altèrent, et le **plancher** arbitre le résultat. La
-   * fusion par SKU précède les trois, et c'est ce qui rend le palier de volume
-   * juste : deux lignes de 60 croissants ouvrent le palier « 100+ », alors
-   * qu'aucune ne l'ouvrirait seule.
+   * ⚠️ **`PricingParties` et non `OrderParties`** : ce service ne lit que le
+   * `companyId`. Le port s'est resserré pour que le devis PUBLIC de la boutique
+   * puisse l'appeler — il n'a pas de saisisseur à nommer, et lui en inventer un
+   * aurait mis une fausse identité sur le chemin qui tarife.
    *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    */
@@ -119,9 +116,9 @@ export class OrderLinePricing {
    * commande.
    *
    * La seule différence est la grille du barème, qui coûte une résolution
-   * complète par palier. La facturer à chaque commande ferait payer à toutes
-   * les ventes un tableau que seul le devis affiche — et lui donnerait un mode
-   * de défaillance qu'une vente n'a pas à connaître.
+   * complète par palier. La facturer à chaque commande ferait payer à toutes les
+   * ventes un tableau que seul le devis affiche — et lui donnerait un mode de
+   * défaillance qu'une vente n'a pas à connaître.
    */
   async explain(
     input: readonly OrderLineRequest[],
@@ -144,221 +141,165 @@ export class OrderLinePricing {
     // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
     // du basculement d'une promotion.
     //
-    // Et il vient de l'horloge de la REQUÊTE, pas du mur. Ce paragraphe prenait
-    // soin de ne lire l'instant qu'une fois, puis le lisait au mauvais endroit :
-    // le devis et la commande qu'il confirme sont deux requêtes, et rien ne les
-    // obligeait à voir la même fenêtre de promotion. C'est le chemin qui
+    // Et il vient de l'horloge de la REQUÊTE, pas du mur. C'est le chemin qui
     // FACTURE — un prix s'y défend devant le client, donc il doit être rejouable
     // à un instant nommé, pas dépendre de la milliseconde du serveur.
     const at = this.clock.now();
 
-    // Le catalogue est résolu EN UN LOT, avant la boucle : depuis qu'il vient de
-    // la base, le résoudre ligne à ligne ferait une requête par ligne de panier
-    // sur le chemin qui facture.
+    // Le catalogue est résolu EN UN LOT, avant tout le reste : depuis qu'il vient
+    // de la base, le résoudre ligne à ligne ferait une requête par ligne de
+    // panier sur le chemin qui facture.
     const catalogue = await this.catalog.resolveMany([...quantities.keys()]);
-
-    // Les engagements du client, lus UNE fois — pas une requête par ligne. Un
-    // client de passage n'en a pas, et le port le sait sans interroger la base.
-    const live = await this.commitments.liveFor(parties.companyId);
-
-    return Promise.all(
-      [...quantities].map(async ([sku, quantity]) => {
-        const item = catalogue.get(sku) ?? null;
-        if (item === null) {
-          throw new UnknownSkuError(sku);
-        }
-        return this.resolveOne(item, quantity, parties, at, withTiers, live);
-      }),
-    );
-  }
-
-  /** Une ligne, une fois son article connu et sa quantité fusionnée. */
-  private async resolveOne(
-    item: {
-      sku: string;
-      name: string;
-      unitPriceMillicents: number;
-      vatRate: number;
-      category: string;
-      allergens: OrderLineAllergens | null;
-    },
-    quantity: number,
-    parties: PricingParties,
-    at: Date,
-    withTiers: boolean,
-    live: readonly VolumeCommitment[],
-  ): Promise<ResolvedOrderLine> {
-    const decision = await this.commitmentDecision(item, quantity, at, live);
-    const context = pricingContextFor(
-      item.sku,
-      item.category,
-      quantity,
-      parties,
-      at,
-      // La mesure RETENUE, pas le cumul : sous engagement, c'est le volume
-      // annoncé qui ouvre le palier dès la première commande.
-      decision?.retainedQuantity ?? null,
-    );
-    const [rules, floors, ladders] = await Promise.all([
-      this.priceRules.candidatesFor(context),
-      this.priceFloors.candidatesFor(context),
-      this.volumeLadders.candidatesFor(context),
-    ]);
-
-    // Le barème de volume rejoint les règles sous la forme de la règle d'étage
-    // volume qu'il est à CETTE quantité. La spécificité arbitre ensuite comme
-    // d'habitude — un barème de produit l'emporte sur celui de sa famille, sans
-    // que la résolution apprenne un cas de plus.
-    const volumeRules = ladders
-      .map((ladder) => ladderAsRule(ladder, context))
-      .filter((rule): rule is PriceRule => rule !== null);
-
-    // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre : deux
-    // questions distinctes, la seconde dépendant de la commande et de l'historique.
-    const scoped = resolveScopedFloor(floors, context);
-    // La mesure de volume est lue UNE fois : elle ne dépend pas de la quantité,
-    // et la grille de paliers la rejoue pour redécider la porte à chaque seuil.
-    const observedVolumeRatioBp =
-      scoped === null ? null : await this.observedRatio(item.sku, scoped, at);
-    const floorDecision =
-      scoped === null ? null : decideFloor(scoped.policy, { quantity, observedVolumeRatioBp });
-    const applied = floorDecision?.applied ?? null;
-    const resolved = resolvePrice(
-      item.unitPriceMillicents,
-      [...rules, ...volumeRules],
-      context,
-      applied,
-    );
-
-    return {
-      line: {
+    // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
+    // d'abord ferait payer des lectures pour un panier qu'on va refuser.
+    const entries = [...quantities].map(([sku, quantity]): LineEntry => {
+      const item = catalogue.get(sku);
+      if (item === undefined) {
+        throw new UnknownSkuError(sku);
+      }
+      const line: LineToPrice = {
         sku: item.sku,
-        productName: item.name,
-        unitPriceMillicents: resolved.finalMillicents,
+        name: item.name,
+        unitPriceMillicents: item.unitPriceMillicents,
         vatRate: item.vatRate,
-        quantity,
-        // Figés avec le prix, et pour une raison du même ordre : dans six mois,
-        // la déclaration aura pu être corrigée, et plus rien ne dirait sous
-        // laquelle cette commande a été passée. La différence est que le prix se
-        // conteste, tandis qu'un allergène se réclame.
+        category: item.category,
         allergens: item.allergens,
-        // La trace part avec le prix, et pour la même raison : dans six mois, les
-        // règles qui l'ont produit peuvent avoir été retirées. Sans elle, la seule
-        // réponse à « pourquoi ce prix ? » serait « c'était le prix ».
-        pricing: {
-          basePriceMillicents: resolved.basePriceMillicents,
-          steps: resolved.steps,
-          floored: resolved.floored,
-          // La décision de plancher est figée AVEC le prix. C'est ce qui rend le
-          // plancher dynamique tenable : sans la mesure consignée, un prix qui
-          // dépend de l'historique cesse d'être explicable dès que l'historique
-          // bouge. Elle ne se relit jamais.
-          floorDecision:
-            floorDecision === null
-              ? null
-              : {
-                  tier: floorDecision.tier,
-                  floorMillicents: floorMillicentsFor(
-                    floorDecision.applied,
-                    item.unitPriceMillicents,
-                  ),
-                  observedVolumeRatioBp: floorDecision.unlock?.observedVolumeRatioBp ?? null,
-                  quantityMet: floorDecision.unlock?.quantityMet ?? true,
-                  volumeMet: floorDecision.unlock?.volumeMet ?? true,
-                },
-          // La MESURE figée avec le prix, exactement comme la décision de
-          // plancher : sans elle, « pourquoi ce palier-là ? » n'a plus de
-          // réponse dès que le client passe la commande suivante.
-          commitment: decision,
-        },
-      },
-      canonicalMillicents: item.unitPriceMillicents,
-      sealedByRuleId: resolved.sealedByRuleId,
-      sealedRuleIds: resolved.sealedRuleIds,
-      // `rules` SANS `volumeRules` : `volumeTierPrices` réinjecte lui-même le
-      // barème à la quantité de chaque palier. Lui passer la chaîne complète
-      // dupliquait l'échelle, et deux règles de même identifiant à l'étage
-      // volume rendaient la résolution ambiguë — 400 sur une commande de 20.
-      volumeTiers: withTiers
-        ? volumeTierPrices(
-            item.unitPriceMillicents,
-            ladders,
-            rules,
-            context,
-            scoped === null ? null : { policy: scoped.policy, observedVolumeRatioBp },
-          )
-        : null,
-      floorMillicents:
-        applied === null ? null : floorMillicentsFor(applied, item.unitPriceMillicents),
-    };
-  }
-
-  /**
-   * **Où en est le client sur son engagement**, cette commande comprise.
-   *
-   * `null` — et **aucune requête** — quand aucun engagement ne couvre l'article.
-   * C'est le cas de l'immense majorité des lignes ; leur faire payer une lecture
-   * de l'historique reviendrait à ralentir toute la boutique pour une minorité
-   * de comptes négociés.
-   *
-   * Le cumul **inclut la commande en cours**. Sans cela, la première commande
-   * d'une période partirait toujours d'un cumul nul et le palier arriverait avec
-   * une commande de retard — un client qui commande ses 6 000 pièces en une fois
-   * paierait le tarif d'entrée sur la totalité.
-   *
-   * Les trois nombres sont consignés, et pas seulement celui qui décide : une
-   * ligne facturée au palier de 10 000 alors que 1 200 ont été livrés n'est
-   * relisible que si la trace dit que c'est la PROMESSE qui a ouvert ce palier.
-   */
-  private async commitmentDecision(
-    item: { sku: string; category: string },
-    quantity: number,
-    at: Date,
-    live: readonly VolumeCommitment[],
-  ): Promise<CommitmentDecisionView | null> {
-    const commitment = commitmentFor(
-      live,
-      { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
-      at,
-    );
-    if (commitment === null) {
-      return null;
-    }
-    const ordered = await this.customerVolumes.volumesFor(commitment.companyId, [item.sku], {
-      from: commitment.validFrom,
-      to: commitment.validTo,
+      };
+      return {
+        item: line,
+        quantity,
+        scopeContext: pricingContextFor(line.sku, line.category, quantity, parties, at),
+      };
     });
-    const cumulativeQuantity = (ordered.get(item.sku) ?? 0) + quantity;
-    return {
-      commitmentId: commitment.id,
-      promisedQuantity: commitment.promisedQuantity,
-      cumulativeQuantity,
-      retainedQuantity: retainedQuantity(commitment, cumulativeQuantity),
-    };
+
+    const scopes = scopesOfAll(entries.map((entry) => entry.scopeContext));
+    if (scopes === null) {
+      return [];
+    }
+    // Quatre lectures pour tout le panier, en parallèle — contre trois PAR
+    // article auparavant, plus celle des engagements.
+    const [rules, floors, ladders, commitments] = await Promise.all([
+      this.priceRules.inScopes(scopes),
+      this.priceFloors.inScopes(scopes),
+      this.volumeLadders.inScopes(scopes),
+      // Un client de passage n'a pas d'engagement, et le port le sait sans
+      // interroger la base.
+      this.commitments.liveFor(parties.companyId),
+    ]);
+    const materials = materialsOf({ rules, floors, ladders, commitments });
+    const evidence = await this.measure(entries, materials, at);
+
+    return entries.map((entry) =>
+      priceLine(
+        { item: entry.item, quantity: entry.quantity, parties, at, withTiers },
+        materials,
+        evidence,
+      ),
+    );
   }
 
   /**
-   * Le ratio de volume observé sur cet article — **uniquement quand il décide
-   * de quelque chose**.
+   * **Ce qu'il faut mesurer**, et rien de plus — mais mesuré par lot.
    *
-   * Aucune requête si le plancher n'a pas de porte, ou si sa clé ne parle pas de
-   * volume : la très grande majorité des commandes ne paie donc rien pour cette
-   * mesure. C'est la seule façon d'admettre une lecture d'historique sur le
-   * chemin qui facture sans le ralentir pour tout le monde.
+   * Les deux mesures étaient lues DANS la boucle, chacune derrière un prédicat
+   * pur. La paresse était bonne, et elle est conservée : les mêmes prédicats
+   * décident, sur des matériaux déjà chargés. Ce qui change est qu'une mesure
+   * demandée pour dix articles coûte une lecture au lieu de dix.
+   *
+   * Un panier ordinaire — aucun engagement, aucun plancher à porte de volume —
+   * ne coûte **aucune** lecture ici, comme avant.
    */
-  private async observedRatio(
-    sku: string,
-    scoped: ScopedPriceFloor,
+  private async measure(
+    entries: readonly LineEntry[],
+    materials: PricingMaterials,
     at: Date,
-  ): Promise<number | null> {
-    if (scoped.policy.dynamic?.unlock.minVolumeRatioBp == null) {
-      return null;
+  ): Promise<PricingEvidence> {
+    const [ordered, ratios] = await Promise.all([
+      this.orderedVolumes(entries, materials, at),
+      this.volumeRatios(entries, materials, at),
+    ]);
+    return ordered.size === 0 && ratios.size === 0
+      ? NO_EVIDENCE
+      : { orderedBySku: ordered, volumeRatioBySku: ratios };
+  }
+
+  /**
+   * Le cumul déjà commandé, **par engagement**.
+   *
+   * Groupé par engagement et non par panier : chacun porte SA fenêtre, et une
+   * lecture unique sur une fenêtre inventée compterait des commandes hors
+   * période. Un panier a zéro ou un engagement dans l'immense majorité des cas,
+   * donc ce groupement ne fait pas revenir la boucle qu'on vient de retirer.
+   */
+  private async orderedVolumes(
+    entries: readonly LineEntry[],
+    materials: PricingMaterials,
+    at: Date,
+  ): Promise<ReadonlyMap<string, number>> {
+    const bySkus = new Map<string, { commitment: VolumeCommitment; skus: string[] }>();
+    for (const { item } of entries) {
+      const commitment = commitmentFor(
+        materials.commitments,
+        { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
+        at,
+      );
+      if (commitment === null) {
+        continue;
+      }
+      const group = bySkus.get(commitment.id);
+      if (group === undefined) {
+        bySkus.set(commitment.id, { commitment, skus: [item.sku] });
+      } else {
+        group.skus.push(item.sku);
+      }
+    }
+    if (bySkus.size === 0) {
+      return new Map();
+    }
+    const reads = await Promise.all(
+      [...bySkus.values()].map(({ commitment, skus }) =>
+        this.customerVolumes.volumesFor(commitment.companyId, skus, {
+          from: commitment.validFrom,
+          to: commitment.validTo,
+        }),
+      ),
+    );
+    return new Map(reads.flatMap((read) => [...read]));
+  }
+
+  /**
+   * Le ratio de volume observé, **uniquement pour les articles dont un plancher
+   * le réclame**.
+   *
+   * Aucune lecture si aucun plancher n'a de porte, ou si aucune de ces portes ne
+   * parle de volume : la très grande majorité des paniers ne paie donc rien pour
+   * cette mesure. C'est la seule façon d'admettre une lecture d'historique sur le
+   * chemin qui facture sans le ralentir pour tout le monde.
+   *
+   * Les fenêtres sont les MÊMES pour tous les articles — elles ne dépendent que
+   * de l'instant —, d'où deux lectures en tout plutôt que deux par article.
+   */
+  private async volumeRatios(
+    entries: readonly LineEntry[],
+    materials: PricingMaterials,
+    at: Date,
+  ): Promise<ReadonlyMap<string, number | null>> {
+    const gated = entries
+      .filter(({ scopeContext }) => {
+        const scoped = resolveScopedFloor(floorsFor(materials, scopeContext), scopeContext);
+        return scoped?.policy.dynamic?.unlock.minVolumeRatioBp != null;
+      })
+      .map(({ item }) => item.sku);
+    if (gated.length === 0) {
+      return new Map();
     }
     const windows = rollingWindows(at);
     const [baseline, observed] = await Promise.all([
-      this.skuVolumes.volumesFor([sku], windows.baseline),
-      this.skuVolumes.volumesFor([sku], windows.observed),
+      this.skuVolumes.volumesFor(gated, windows.baseline),
+      this.skuVolumes.volumesFor(gated, windows.observed),
     ]);
-    return observedRatioBp(baseline.get(sku) ?? 0, observed.get(sku) ?? 0);
+    return new Map(
+      gated.map((sku) => [sku, observedRatioBp(baseline.get(sku) ?? 0, observed.get(sku) ?? 0)]),
+    );
   }
 }

@@ -4,7 +4,9 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PriceFloorReader } from "../domain/ports/price-floor.reader.js";
 import { unarchivedAt } from "./archived-at.js";
 import { floorFromRow } from "./price-rows.js";
-import type { PricingContext, ScopedPriceFloor } from "../domain/price-rule.js";
+import { scopeFilter } from "./scope-filter.js";
+import type { PricingScopes } from "../domain/pricing-scopes.js";
+import type { ScopedPriceFloor } from "../domain/price-rule.js";
 
 @Injectable()
 export class PrismaPriceFloorReader extends PriceFloorReader {
@@ -13,18 +15,18 @@ export class PrismaPriceFloorReader extends PriceFloorReader {
   }
 
   /** Élague sur la portée — le seul axe qu'un plancher possède. */
-  async candidatesFor(context: PricingContext): Promise<ScopedPriceFloor[]> {
+  /**
+   * 🔴 **Ni fenêtre ni audience** — un plancher ne porte pas son cycle de vie,
+   * et c'est une décision, pas un oubli (cf. `ScopedPriceFloor`). Seule la
+   * portée le sélectionne, donc une lecture de panier n'a qu'un `IN` à faire.
+   */
+  async inScopes(scopes: PricingScopes): Promise<ScopedPriceFloor[]> {
     const rows = await this.prisma.priceFloor.findMany({
       where: {
         // Une limite archivée ne protège plus rien : elle ne doit pas ressortir
         // comme candidate, sinon elle continuerait d'arbitrer des prix.
         archivedAt: null,
-        OR: [
-          { scopeType: "global" },
-          { scopeType: "category", scopeId: context.categoryId },
-          { scopeType: "product", scopeId: context.productSku },
-          { scopeType: "variant", scopeId: context.variantSku },
-        ],
+        OR: scopeFilter(scopes),
       },
     });
     return rows.map(floorFromRow);

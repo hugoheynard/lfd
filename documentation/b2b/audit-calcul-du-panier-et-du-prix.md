@@ -638,7 +638,29 @@ priceLine(materials, evidence, context): ResolvedOrderLine   // pure
 que les prédicats purs réclament → appeler `priceLine`. La recette redevient
 énumérable en test, sans doublé.
 
-### 🔴 Le piège du plan en cours
+### ✅ Livré le 2026-09-06 — et une vérification a décidé du dessin
+
+`priceLine(input, materials, evidence)` est pure. `OrderLinePricing` ne décide
+plus rien : il charge les matériaux **une fois pour le panier**, mesure ce qu'il
+faut mesurer **par lot**, et appelle la fonction pure une fois par ligne.
+
+**Ce qui a rendu le dessin simple** : `resolveScopedFloor` ne filtre que par la
+**portée** — ni quantité, ni temps, ni audience. Le plancher d'un article se
+connaît donc avant tout ce qui dépend de l'historique, et les preuves peuvent
+être rassemblées en amont sans protocole en deux phases. C'est une vérification
+d'une ligne qui a économisé une machinerie.
+
+La paresse est conservée : les mêmes prédicats purs décident s'il faut mesurer,
+ils décident simplement avant, sur des matériaux déjà chargés. Un panier
+ordinaire — aucun engagement, aucun plancher à porte de volume — ne coûte
+toujours **aucune** lecture de mesure.
+
+Le lot ne change **aucun prix**, et c'est vérifié plutôt qu'affirmé : les 3 237
+tests existants passent sans qu'un seul ait été retouché. Les huit cas neufs de
+`price-line.spec.ts` éprouvent la recette entière **sans un doublé** — ce qui
+était tout l'objet.
+
+### ✅ Le piège du plan en cours — désamorcé
 
 Ce hissage est déjà écrit — mais dans `plan-materiaux-de-prix.md`, **comme un
 lot de coût, pas de conception**. La différence n'est pas rhétorique : un plan
@@ -652,6 +674,10 @@ optimisation livrée, c'est une couture ouverte.
 
 Requalifier le lot 3 en lot de **conception** lui donne ce qui lui manque : un
 consommateur, et une raison de finir.
+
+> C'est ce qui a été fait. `scope-index.ts` est appelé par `pricing-materials.ts`,
+> lui-même appelé par le seul chemin qui tarife. La pièce n'est plus une couture
+> ouverte.
 
 ---
 
@@ -756,7 +782,7 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                         | À faire quand on y touche, pas avant.                                                           |
 | **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                             | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
 | ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est au §3, `D10`. | Un prix négocié entrait en base au millième.                                                    |
-| **P10**    | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                        | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |
+| ✅ **P10** | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                        | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |
 
 **Deux lots demandent une conception, et les deux touchent à l'argent** : `P7`
 et `P10`. La convention du dépôt impose alors un contradicteur **avant** de les
