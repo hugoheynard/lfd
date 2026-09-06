@@ -29,6 +29,12 @@
 > et `D4` se referment ensemble, parce qu'ils n'étaient qu'un seul défaut vu de
 > trois côtés.
 >
+> **`P5` est livré** (2026-09-06) : `architecture-prix-boutique.md` porte un
+> bandeau daté, les deux lignes d'index sont corrigées, et le **§4 a été relu
+> ligne à ligne** plutôt que recopié — quatre de ses six écarts s'étaient
+> refermés en trois jours, et le danger qu'il annonçait s'était inversé. Un
+> relevé de péremption périme aussi.
+>
 > **`P4` est livré** (2026-09-06) : une seule définition du TTC —
 > `computeOrderTotals` rend `{ vatCents, totalCents }`, `Order.draft` prend les
 > deux. Et il a découvert un défaut que `D5` ne nommait pas : une remise en
@@ -745,14 +751,23 @@ consommateur, et une raison de finir.
 
 ## 4. Ce que la documentation promet et que le code ne fait pas
 
-| Le doc dit                                  | Le code fait                                           | Où                                 |
-| ------------------------------------------- | ------------------------------------------------------ | ---------------------------------- |
-| « le front **ne multiplie jamais** »        | `cart-total.ts` multiplie                              | `architecture-prix-boutique.md` §6 |
-| « il demande `POST /orders/quote` »         | aucun appel depuis `client/`                           | idem                               |
-| le canonique **barré** quand il diffère     | `ShopItemView` ne porte pas le canonique               | idem, §4                           |
-| « la validation vit dans le domaine »       | remise et frais de la boutique sont dans le navigateur | `CLAUDE.md` §3                     |
-| « argent en centimes, entiers »             | `legacy/data/cart.service.ts` en euros flottants       | `CLAUDE.md` §3                     |
-| le repli de TVA par famille est transitoire | toujours branché                                       | `prisma-catalog.reader.ts:138`     |
+> **Relue le 2026-09-06 (`P5`).** Quatre des six lignes se sont refermées en
+> trois jours, et deux tiennent toujours. Chacune a été rouverte dans le dépôt,
+> pas rappelée de mémoire.
+
+| Le doc dit                                  | Où en est le code                                                                                      | Où                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| ~~« le front **ne multiplie jamais** »~~    | ✅ **tenu** — `cart-total.ts` ne porte plus que `{ produit, quantité }` ; le décompte vient du serveur | `architecture-prix-boutique.md` §6 |
+| ~~« il demande `POST /orders/quote` »~~     | ✅ **tenu, par une autre route** — `POST /shop/quote`, publique. Celle du §6 est murée                 | idem                               |
+| ~~le canonique **barré** quand il diffère~~ | ⤳ **décision renversée** — la vitrine est publique, donc sans client : aucun écart à barrer            | idem, §4                           |
+| ~~« la validation vit dans le domaine »~~   | ✅ **tenu** — remise et frais viennent de `CartAdjustments`, partagé avec la caisse                    | `CLAUDE.md` §3                     |
+| « argent en centimes, entiers »             | 🟡 **toujours faux** — le panier hérité compte en `…Eur` flottants (`D7` → `P8`)                       | `CLAUDE.md` §3                     |
+| le repli de TVA par famille est transitoire | 🟡 **toujours branché** — `billableRate` retombe sur `row.category.vatRatePercent` (`D8` → `P6`)       | `prisma-catalog.reader.ts:142`     |
+
+⚠️ **Un renversement n'est pas une dette.** La troisième ligne n'est pas un
+retard à combler : c'est une décision qui en a annulé une autre. La traiter
+comme un écart ferait ajouter un prix barré à une vitrine qui n'a aucun client
+à qui le comparer.
 
 Aucun de ces écarts n'est un mensonge d'auteur : chacun est une phrase écrite
 **avant** que la tranche suivante ne parte dans une autre direction. C'est le
@@ -806,26 +821,36 @@ disponible tout de suite.
 
 ## 6. L'état réel des onze documents de prix
 
-| Doc                                        | État affiché | Ce que ce relevé constate                                                                                                         |
-| ------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `plan-decompte-du-panier-ht.md`            | 🟢 sauf B5   | **exact.** Les trois copies délèguent bien à `@lfd/money`.                                                                        |
-| `architecture-resolution-de-prix.md`       | 🟡           | **exact.** S1→S4 livrés, S5 (mercuriale) absente.                                                                                 |
-| `architecture-prix-boutique.md`            | 📐           | **périmé, et c'est le plus coûteux.** La boutique est bâtie — mais contre la règle centrale du document (`D2`). Il faut le dater. |
-| `plan-boutique-sur-api.md`                 | 🟢           | exact (daté le 2026-09-05).                                                                                                       |
-| `optimisation-resolution-de-prix.md`       | 📐           | exact — un constat de coût, rien à implémenter.                                                                                   |
-| `plan-materiaux-de-prix.md`                | 📐           | **sous-évalué** : lots 0, 1, 2 et 4 portent des encarts « ✅ Livré le 2026-09-05 ». L'index dit 📐.                               |
-| `decision-qui-pose-une-promotion.md`       | 📐           | exact — une décision, pas un chantier.                                                                                            |
-| `architecture-prix-vivant-prix-bloque.md`  | 🔵           | exact — zéro code, assumé.                                                                                                        |
-| `architecture-conditionnements-pricing.md` | 📐           | exact.                                                                                                                            |
-| `architecture-facturation.md`              | 📐           | exact — et c'est le plus gros trou du §5.                                                                                         |
-| `pim/architecture-prix-ancre-ttc.md`       | ✅           | exact — l'assiette unique est livrée.                                                                                             |
+| Doc                                        | État affiché | Ce que ce relevé constate                                                                                                                                                                              |
+| ------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `plan-decompte-du-panier-ht.md`            | 🟢 sauf B5   | **exact.** Les trois copies délèguent bien à `@lfd/money`.                                                                                                                                             |
+| `architecture-resolution-de-prix.md`       | 🟡           | **exact.** S1→S4 livrés, S5 (mercuriale) absente.                                                                                                                                                      |
+| `architecture-prix-boutique.md`            | 🟡           | ✅ **daté le 2026-09-06 (`P5`)** — et ce verdict était à moitié faux : la règle centrale (§6) est **tenue** depuis `P7b`. Ce qui est renversé, c'est son §2 (route murée) et son §4 (canonique barré). |
+| `plan-boutique-sur-api.md`                 | 🟢           | exact (daté le 2026-09-05).                                                                                                                                                                            |
+| `optimisation-resolution-de-prix.md`       | 📐           | exact — un constat de coût, rien à implémenter.                                                                                                                                                        |
+| `plan-materiaux-de-prix.md`                | ✅           | ✅ **corrigé le 2026-09-06 (`P5`)** — et il était plus avancé encore : le lot 3 est tombé avec `P10`, donc **les cinq lots sont livrés**, pas quatre.                                                  |
+| `decision-qui-pose-une-promotion.md`       | 📐           | exact — une décision, pas un chantier.                                                                                                                                                                 |
+| `architecture-prix-vivant-prix-bloque.md`  | 🔵           | exact — zéro code, assumé.                                                                                                                                                                             |
+| `architecture-conditionnements-pricing.md` | 📐           | exact.                                                                                                                                                                                                 |
+| `architecture-facturation.md`              | 📐           | exact — et c'est le plus gros trou du §5.                                                                                                                                                              |
+| `pim/architecture-prix-ancre-ttc.md`       | ✅           | exact — l'assiette unique est livrée.                                                                                                                                                                  |
 
-**Deux lignes d'index à corriger** : `architecture-prix-boutique.md`
-(📐 → 🟡, avec un bandeau disant que `D2` le contredit) et
-`plan-materiaux-de-prix.md` (📐 → 🟡).
+~~**Deux lignes d'index à corriger**~~ — **faites le 2026-09-06 (`P5`)** :
+`architecture-prix-boutique.md` passe 📐 → **🟡** avec un bandeau en tête, et
+`plan-materiaux-de-prix.md` 📐 → **✅** — et non 🟡, parce que le lot 3 est tombé
+avec `P10` entre l'écriture de ce relevé et sa correction.
 
-Le premier est le seul qui gèle vraiment quelque chose : quelqu'un qui l'ouvre
-aujourd'hui pour brancher les paliers croira que le front ne multiplie pas.
+🔴 **Le danger annoncé s'était inversé entre-temps.** Ce paragraphe disait :
+« quelqu'un qui l'ouvre aujourd'hui pour brancher les paliers croira que le
+front ne multiplie pas ». C'était vrai le 2026-09-05 ; `P7b` l'a refermé le
+lendemain. Le gel réel est ailleurs, et c'est ce que le bandeau dit : quelqu'un
+qui ouvre ce document pour servir un prix négocié à la boutique y trouve une
+route **murée** et un **canonique barré** — deux décisions qu'une vitrine
+publique a annulées.
+
+C'est la leçon du lot, et elle vaut plus que les deux lignes corrigées : **un
+relevé de péremption périme aussi**. Celui-ci avait un jour et se trompait déjà
+de danger.
 
 ---
 
@@ -839,7 +864,7 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                                                     | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                                     |
 | ✅ **P3**  | `D6` : renommer les `*Cents` de la famille `tarification`. **Dix-huit identifiants et trois fonctions**, pas trois sites — la porte a montré l'ampleur. Les deux JSDoc sont partis avec `P1`.                                                      | Ce sont les modèles qu'on recopie — et un nom honnête est ce qui rend la porte capable de voir. |
 | ✅ **P4**  | `D5` : `computeOrderTotals` rend `{ vatCents, totalCents }`, `Order.draft` prend les deux. **Plus une borne** : une remise en montant fixe ne dépasse plus le panier (`discountCentsOf`), là où la boutique et la caisse répondaient différemment. | Une définition du TTC, pas deux — et une remise qui ne contredit plus le devis.                 |
-| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                                                           | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
+| ✅ **P5**  | Bandeau daté sur `architecture-prix-boutique.md` (ce qui est renversé, ce qui tient), deux lignes d'index corrigées, et le §4 **relu ligne à ligne** : quatre écarts sur six s'étaient refermés en trois jours.                                    | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
 | **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                                   | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
 | ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                                      | Le serveur sait enfin répondre « combien » avant la commande.                                   |
 | ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                                      | Le client voyait un montant et en aurait payé un autre.                                         |

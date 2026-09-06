@@ -1,5 +1,44 @@
 # Le prix, tel que la boutique le montre
 
+> ## 🟡 Relu le 2026-09-06 — la boutique est bâtie, et pas par la route décrite ici
+>
+> **Le corps du document est conservé tel qu'il a été écrit.** C'est le
+> raisonnement qui vaut, et deux de ses décisions ont été _renversées_ par la
+> suite, pas oubliées. Les lire sans ce bandeau ferait construire contre
+> l'existant — c'est ce qui a motivé cette relecture.
+>
+> **Ce qui a été renversé, et où c'est décidé.**
+>
+> | Ce document tranche                                       | Ce qui est en service                               | Où la décision a été prise                                                  |
+> | --------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
+> | `GET /catalog`, **muré**, société prise du principal (§2) | `GET /shop/catalogue`, **`@Public()`**, sans client | [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md), livré le 2026-09-05 |
+> | `canonicalMillicents`, pour le barré (§4)                 | **absent** de `ShopItemView`                        | conséquence de la précédente : sans client, il n'y a aucun écart à barrer   |
+>
+> La boutique est **publique par décision** — on visite d'abord, on s'identifie
+> pour régler. Ce document supposait l'inverse, et tout son §2 en découle. Le
+> jour où la boutique servira le prix d'un client reconnu, ce sera un **second
+> chemin**, et le mur qu'il décrit redeviendra la bonne réponse pour celui-là.
+>
+> **Ce qui tient toujours, et qu'il faut continuer de lire :**
+>
+> - **§3, la quantité de résolution** — la liste résout à 1, et la raison
+>   (`minQuantity` existe à tous les étages, pas seulement au volume) n'a pas
+>   bougé ;
+> - **§4, « ce qui ne franchit PAS la frontière »** — appliqué à la lettre, et
+>   deux fois : `ShopItemView` et `ShopQuoteView` sont toutes deux étroites, et
+>   un test e2e énumère les clés de la seconde pour que ça le reste ;
+> - **§6, « le front ne multiplie jamais »** — 🔴 c'était l'écart le plus
+>   coûteux du document, et il est **refermé depuis le 2026-09-06** : le panier
+>   demande `POST /shop/quote`, qui résout chaque ligne à sa quantité réelle.
+>   La route n'est pas celle qu'annonce le §6 (`POST /orders/quote` est murée et
+>   sert le client reconnu), la règle est la même ;
+> - **§7, les paliers de volume reportés** — toujours reportés, et ce qu'il
+>   faudra rouvrir alors est écrit là.
+>
+> **Ce que ce bandeau ne prétend pas.** Aucune affirmation du corps n'a été
+> reprise ligne à ligne : seules celles des §2, §4 et §6 ont été rouvertes dans
+> le dépôt. Le §5 et le §8 se lisent à la date de leur écriture.
+
 **Doc-first, ouvert le 2026-09-03.** Rien de ce document n'est encore écrit en
 code. Il tranche ce qui doit l'être **avant** — parce que ce chantier touche le
 nombre auquel un client consent.
