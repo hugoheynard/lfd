@@ -15,8 +15,9 @@ import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-b
 import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import type { HistoryOrder } from '../../mock-orders';
-import { MOCK_HISTORY, MOCK_TRACKED } from '../../mock-orders';
+import { ClientCompany } from '../../client-company.service';
+import { ClientOrderHistory } from '../client-order-history.service';
+import { historyRowOf, isLive, trackedOf, type HistoryOrder, type RowCopy } from '../order-rows';
 import { HistoryTable } from '../history-table/history-table';
 import { ReportSheet } from '../report-sheet/report-sheet';
 import { TrackCard } from '../track-card/track-card';
@@ -33,9 +34,16 @@ import { TrackCard } from '../track-card/track-card';
  * débordement passait pour un accident de mise en page — c'est le constat du
  * dossier de design, et il vaut aux deux tailles.
  *
- * ⚠️ La matière vient de [[mock-orders]]. Trois choses manquent au modèle réel
- * pour que cet écran vive vraiment : les horodatages d'étape, le bon de commande
- * PDF et le canal de réclamation. Elles sont écrites dans `09-mes-commandes.md`.
+ * 🔴 **La matière vient de notre base** (`GET /companies/:id/orders` et
+ * `GET /orders/mine`). Elle venait d'un fichier de maquette : deux suivis et six
+ * lignes écrits en dur, montrés à côté d'un panier qui, lui, partait vraiment au
+ * serveur.
+ *
+ * ⚠️ Trois choses manquent encore au modèle pour que cet écran dise tout ce
+ * qu'il voudrait : les **horodatages d'étape** (seules la passation et la remise
+ * sont datées), le **bon de commande PDF** et le **canal de réclamation**. Elles
+ * sont écrites dans `09-mes-commandes.md`. Ce qui manque est absent de l'écran,
+ * pas remplacé.
  */
 @Component({
   selector: 'app-commandes-page',
@@ -60,8 +68,37 @@ export class CommandesPage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
 
-  protected readonly tracked = MOCK_TRACKED;
-  protected readonly history = MOCK_HISTORY;
+  private readonly history_ = inject(ClientOrderHistory);
+  private readonly client = inject(ClientCompany);
+
+  /** Les mots de l'écran, que les modèles de vue ne portent pas. */
+  private readonly rowCopy = computed<RowCopy>(() => {
+    const copy = this.t().orders;
+    return {
+      pickup: copy.modePickup,
+      delivery: copy.modeDelivery,
+      stepPlaced: copy.stepPlaced,
+      stepBakery: copy.stepBakery,
+      stepReady: copy.stepReady,
+      stepHandedPickup: copy.stepHandedPickup,
+      stepHandedDelivery: copy.stepHandedDelivery,
+      qrReady: copy.qrReady,
+      noWindow: copy.noWindow,
+    };
+  });
+
+  /** Ce qui VIT : ni remis, ni annulé. Le suivi ne montre que celles-là. */
+  protected readonly tracked = computed(() =>
+    this.history_
+      .orders()
+      .filter((order) => isLive(order))
+      .map((order) => trackedOf(order, this.rowCopy())),
+  );
+
+  protected readonly history = computed(() => {
+    const org = this.client.name();
+    return this.history_.orders().map((order) => historyRowOf(order, org, this.rowCopy()));
+  });
 
   /** La commande dont on signale un problème — `null` referme la feuille. */
   protected readonly reported = signal<HistoryOrder | null>(null);
@@ -74,11 +111,11 @@ export class CommandesPage {
    * a ouvert l'écran, et elle ne doit pas attendre le premier défilement.
    */
   protected readonly liveCount = computed(() =>
-    this.t().orders.liveCount.replace('{n}', String(this.tracked.length)),
+    this.t().orders.liveCount.replace('{n}', String(this.tracked().length)),
   );
 
   protected readonly wellHint = computed(() =>
-    this.t().orders.wellHint.replace('{n}', String(this.tracked.length)),
+    this.t().orders.wellHint.replace('{n}', String(this.tracked().length)),
   );
 
   constructor() {

@@ -21,15 +21,11 @@
     </span>
   </ng-template>
 
-  <!-- La cellule d'IDENTITÉ du système, et c'est la PERSONNE qu'elle nomme.
-       Le tableau est mono-compte — on change d'espace pour voir les commandes
-       d'une autre maison — donc l'enseigne est la même sur toutes les lignes :
-       la mettre en tête aurait fait une colonne qui ne distingue rien. Elle
-       passe dessous, où elle situe la personne. L'avatar est rond : c'est
-       quelqu'un, pas une organisation. -->
-  <ng-template foldCell="by" let-order>
-    <fold-avatar-detail size="sm" [primary]="order.who" [secondary]="order.org" />
-  </ng-template>
+  <!-- 🔴 La cellule d'IDENTITÉ est partie avec la colonne « Passée par ».
+       `OrderView` porte l'auteur STAFF d'une saisie, jamais l'ACHETEUR : le
+       tableau nommait donc une personne que la commande ne désigne pas. Et le
+       tableau étant mono-compte, l'enseigne qu'elle portait dessous était la
+       même sur toutes les lignes — une colonne qui ne distinguait rien. -->
 
   <ng-template foldCell="mode" let-order>
     <span class="stack">

@@ -3,7 +3,7 @@ import { FoldIconComponent } from 'fold-ng';
 
 import { formatEuro } from '../../format-money';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import type { TrackedOrder } from '../../mock-orders';
+import type { TrackedOrder } from '../order-rows';
 
 /**
  * Une commande VIVANTE, comme objet.
@@ -69,10 +69,16 @@ export class TrackCard {
     }));
   });
 
-  /** Ce que dit l'encart du coursier : son prénom, ou l'attente honnête. */
-  protected readonly courierLine = computed(() => {
-    const name = this.order().courier;
-    const copy = this.t().orders;
-    return name === null ? copy.courierPending : copy.courierOnWay.replace('{name}', name);
-  });
+  /**
+   * Ce que dit l'encart du coursier.
+   *
+   * 🔴 Il nommait le coursier — « Malik arrive dans 8 min », son vélo et son
+   * numéro —, écrits en dur. **Rien de tout cela n'existe** : la tournée de
+   * livraison n'est pas construite, et aucune commande ne porte de coursier.
+   *
+   * Reste l'attente, qui est vraie : la commande est en route, on ne sait pas
+   * encore avec qui. C'était déjà l'un des deux états prévus par la maquette —
+   * c'est simplement devenu le seul que le modèle sache soutenir.
+   */
+  protected readonly courierLine = computed(() => this.t().orders.courierPending);
 }

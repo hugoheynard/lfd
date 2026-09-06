@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FR } from '../../copy/fr';
-import { MOCK_HISTORY } from '../../mock-orders';
+import { ROWS } from '../order-rows.fixture';
 import { OrderDetail } from './order-detail';
 
 describe('OrderDetail', () => {
@@ -13,7 +13,7 @@ describe('OrderDetail', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [OrderDetail] });
     fixture = TestBed.createComponent(OrderDetail);
-    fixture.componentRef.setInput('order', MOCK_HISTORY[0]);
+    fixture.componentRef.setInput('order', ROWS[0]);
     fixture.detectChanges();
   });
 
@@ -25,7 +25,7 @@ describe('OrderDetail', () => {
   it('n’annonce l’origine que lorsqu’il y en a une', () => {
     expect(el().textContent).not.toContain(FR.orders.detailOrigin);
 
-    fixture.componentRef.setInput('order', MOCK_HISTORY[4]);
+    fixture.componentRef.setInput('order', ROWS[1]);
     fixture.detectChanges();
     expect(el().textContent).toContain(FR.orders.detailOrigin);
   });

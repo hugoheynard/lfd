@@ -56,18 +56,15 @@
         <span class="tile" aria-hidden="true"><fold-icon name="truck" /></span>
         <span class="panel-lines">
           <span class="panel-title">{{ courierLine() }}</span>
-          <span class="panel-note">{{ order().courierNote }}</span>
         </span>
         <!-- Le recours, en MINEUR : on suit sa livraison, on n'appelle qu'en
              cas de doute. Lui donner le même poids que l'action ferait douter
              par défaut. -->
         <button class="minor" type="button">{{ t().orders.courierCall }}</button>
       </div>
-      <!-- La pastille auréolée est le SIGNAL DE VIE : c'est elle qui distingue
-           « suivre en direct » de « voir le trajet ». -->
-      <button class="wide warm" type="button">
-        <span class="live" aria-hidden="true"></span>{{ t().orders.courierTrack }}
-      </button>
+      <!-- 🔴 « Suivre en direct » est parti avec le coursier : il n'y a rien à
+           suivre. Un bouton de suivi sans tournée promet une carte qui n'existe
+           pas, et c'est la promesse la plus coûteuse d'un écran de livraison. -->
     </div>
   } @else {
     <div class="panel pickup">

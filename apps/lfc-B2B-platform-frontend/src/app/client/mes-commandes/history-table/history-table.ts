@@ -8,7 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import {
-  FoldAvatarDetailComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDataTableRowDetailDirective,
@@ -17,7 +16,7 @@ import {
 
 import { formatEuro } from '../../format-money';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import type { HistoryOrder, OrderOrigin, OrderPayment, OrderStatus } from '../../mock-orders';
+import type { HistoryOrder, OrderOrigin, OrderPayment, OrderRowStatus } from '../order-rows';
 import { OrderDetail } from '../order-detail/order-detail';
 
 /**
@@ -44,7 +43,6 @@ import { OrderDetail } from '../order-detail/order-detail';
   selector: 'app-history-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldAvatarDetailComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldDataTableRowDetailDirective,
@@ -68,7 +66,9 @@ export class HistoryTable {
     const copy = this.t().orders;
     return [
       { key: 'reference', label: copy.colOrder },
-      { key: 'by', label: copy.colBy },
+      // 🔴 La colonne « Passée par » est partie : `OrderView` porte l'auteur
+      // STAFF d'une saisie, jamais l'acheteur. Elle répétait le nom du compte à
+      // chaque ligne, et c'était le seul endroit où on le lisait comme un fait.
       { key: 'mode', label: copy.colMode },
       { key: 'date', label: copy.colDate },
       { key: 'status', label: copy.colStatus },
@@ -117,13 +117,14 @@ export class HistoryTable {
     return origin === 'phone' ? copy.originPhone : copy.originRecurring;
   }
 
-  protected statusLabel(status: OrderStatus): string {
+  protected statusLabel(status: OrderRowStatus): string {
     const copy = this.t().orders;
-    const labels: Record<OrderStatus, string> = {
+    const labels: Record<OrderRowStatus, string> = {
       ready: copy.statusReady,
       route: copy.statusRoute,
       done: copy.statusDone,
       delivered: copy.statusDelivered,
+      cancelled: copy.statusCancelled,
     };
     return labels[status];
   }

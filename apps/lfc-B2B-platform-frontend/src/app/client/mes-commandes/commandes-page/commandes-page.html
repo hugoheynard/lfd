@@ -14,13 +14,13 @@
   <fold-well #rail class="well" scrollable [title]="t().orders.wellHead" [subtitle]="wellHint()">
     <span wellLead class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
 
-    @if (tracked.length === 0) {
+    @if (tracked().length === 0) {
       <div class="well-empty">
         <p class="well-empty-title">{{ t().orders.wellNone }}</p>
         <p class="well-empty-hint">{{ t().orders.wellNoneHint }}</p>
       </div>
     } @else {
-      @for (order of tracked; track order.reference) {
+      @for (order of tracked(); track order.reference) {
         <app-track-card class="rail-card" [order]="order" />
       }
     }
@@ -29,7 +29,7 @@
       wellFoot
       class="dots"
       variant="morse"
-      [count]="tracked.length"
+      [count]="tracked().length"
       [active]="rail.active()"
       [markerLabel]="t().orders.wellDot"
       (picked)="rail.goTo($event)"
@@ -48,7 +48,7 @@
       [subtitle]="t().orders.historyNote"
     />
 
-    <app-history-table [orders]="history" (problemRaised)="report($event)" />
+    <app-history-table [orders]="history()" (problemRaised)="report($event)" />
   </fold-page-section>
 </div>
 

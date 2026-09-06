@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
-import type { HistoryOrder } from '../../mock-orders';
+import type { HistoryOrder } from '../order-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
 const STARS = [1, 2, 3, 4, 5] as const;

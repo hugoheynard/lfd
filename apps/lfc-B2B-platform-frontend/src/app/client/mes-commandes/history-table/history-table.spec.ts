@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FR } from '../../copy/fr';
-import type { HistoryOrder } from '../../mock-orders';
-import { MOCK_HISTORY } from '../../mock-orders';
+import type { HistoryOrder } from '../order-rows';
+import { ROWS } from '../order-rows.fixture';
 import { HistoryTable } from './history-table';
 
 describe('HistoryTable', () => {
@@ -18,21 +18,22 @@ describe('HistoryTable', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [HistoryTable] });
     fixture = TestBed.createComponent(HistoryTable);
-    fixture.componentRef.setInput('orders', MOCK_HISTORY);
+    fixture.componentRef.setInput('orders', ROWS);
     fixture.detectChanges();
   });
 
   it('donne une ligne par commande, et n’en déplie aucune au départ', () => {
-    expect(toggles().length).toBe(MOCK_HISTORY.length);
+    expect(toggles().length).toBe(ROWS.length);
     expect(drawers().length).toBe(0);
   });
 
-  it('nomme la PERSONNE en tête, la maison dessous', () => {
-    // Le tableau est mono-compte : l'enseigne est la même sur toutes les
-    // lignes, la mettre en tête ferait une colonne qui ne distingue rien.
-    const identity = el().querySelector('fold-avatar-detail');
-    expect(identity?.querySelector('.primary')?.textContent).toContain('Pierre Marchand');
-    expect(identity?.textContent).toContain('Brasserie Marchand');
+  /**
+   * 🔴 La colonne « Passée par » nommait une personne que la commande ne désigne
+   * pas : `OrderView` porte l'auteur STAFF d'une saisie, jamais l'acheteur.
+   */
+  it('ne prétend plus dire QUI a commandé', () => {
+    expect(el().querySelector('fold-avatar-detail')).toBeNull();
+    expect(el().textContent).not.toContain(FR.orders.colMode + 'Passée par');
   });
 
   it('dit que la MAISON a pris la commande, pas qu’un téléphone a sonné', () => {
@@ -52,7 +53,8 @@ describe('HistoryTable', () => {
   it('n’annonce l’origine que lorsqu’elle n’est PAS l’app', () => {
     // L'écrire partout ferait disparaître les deux qui comptent.
     const origins = Array.from(el().querySelectorAll('.origin')).map((n) => n.textContent?.trim());
-    expect(origins).toEqual([FR.orders.originRecurring, FR.orders.originPhone]);
+    // Dans l'ordre des lignes : la saisie de l'équipe, puis le panier récurrent.
+    expect(origins).toEqual([FR.orders.originPhone, FR.orders.originRecurring]);
   });
 
   it('déplie DANS la liste, et une seule à la fois', () => {
@@ -65,7 +67,7 @@ describe('HistoryTable', () => {
     // La deuxième remplace la première : deux tiroirs ouverts chassent le reste
     // de la liste hors de l'écran, et on est venu comparer.
     expect(drawers().length).toBe(1);
-    expect(drawers()[0]?.textContent).toContain(MOCK_HISTORY[1]?.slot ?? '');
+    expect(drawers()[0]?.textContent).toContain(ROWS[1]?.slot ?? '');
   });
 
   it('le règlement dit aussi OÙ il tombe', () => {
@@ -98,7 +100,7 @@ describe('HistoryTable', () => {
     // Le bouton n'a plus de classe à nous : c'est un `foldButton`, et c'est son
     // INTENTION qu'on vise — la seule chose stable quand l'habillage change.
     el().querySelector<HTMLButtonElement>('button[intent="danger"]')?.click();
-    expect(raised.map((o) => o.reference)).toEqual([MOCK_HISTORY[0]?.reference]);
+    expect(raised.map((o) => o.reference)).toEqual([ROWS[0]?.reference]);
   });
 
   it('parle la langue de l’app jusque dans le châssis', () => {

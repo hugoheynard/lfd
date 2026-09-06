@@ -42,7 +42,6 @@ export interface OrdersCopy {
   readonly historyHead: string;
   readonly historyNote: string;
   readonly colOrder: string;
-  readonly colBy: string;
   readonly colMode: string;
   readonly colDate: string;
   readonly colStatus: string;
@@ -50,6 +49,21 @@ export interface OrdersCopy {
   readonly colTotal: string;
   /** `{n}` est remplacé par le nombre d'articles. */
   readonly pieces: string;
+  /** Les deux modes, en toutes lettres. La commande porte un mot ANGLAIS. */
+  readonly modePickup: string;
+  readonly modeDelivery: string;
+  /** Les quatre étapes du suivi. Seules la première et la dernière sont datées. */
+  readonly stepPlaced: string;
+  readonly stepBakery: string;
+  readonly stepReady: string;
+  readonly stepHandedPickup: string;
+  readonly stepHandedDelivery: string;
+  /** Affiché quand le jeton de remise EXISTE — jamais par principe. */
+  readonly qrReady: string;
+  /** Un client peut ne demander aucune tranche : c'est un choix, pas un trou. */
+  readonly noWindow: string;
+  readonly statusCancelled: string;
+  readonly emptyOrders: string;
   readonly statusReady: string;
   readonly statusRoute: string;
   readonly statusDone: string;
@@ -115,13 +129,23 @@ export const ORDERS_FR: OrdersCopy = {
   historyHead: 'Commandes passées',
   historyNote: 'Un tableau, parce qu’ici on compare.',
   colOrder: 'Commande',
-  colBy: 'Passée par',
   colMode: 'Mode',
   colDate: 'Date',
   colStatus: 'Statut',
   colPayment: 'Règlement',
   colTotal: 'Total',
   pieces: '{n} art.',
+  modePickup: 'Retrait',
+  modeDelivery: 'Coursier',
+  stepPlaced: 'Panier validé',
+  stepBakery: 'Au fournil',
+  stepReady: 'Prête',
+  stepHandedPickup: 'Retirée',
+  stepHandedDelivery: 'Livrée',
+  qrReady: 'Votre QR est prêt — présentez-le au comptoir',
+  noWindow: 'Aucune tranche demandée',
+  statusCancelled: 'Annulée',
+  emptyOrders: 'Aucune commande pour l’instant.',
   statusReady: 'Prête',
   statusRoute: 'En route',
   statusDone: 'Retirée',
@@ -187,13 +211,23 @@ export const ORDERS_EN: OrdersCopy = {
   historyHead: 'Past orders',
   historyNote: 'A table, because this is where you compare.',
   colOrder: 'Order',
-  colBy: 'Placed by',
   colMode: 'Mode',
   colDate: 'Date',
   colStatus: 'Status',
   colPayment: 'Settlement',
   colTotal: 'Total',
   pieces: '{n} items',
+  modePickup: 'Collection',
+  modeDelivery: 'Courier',
+  stepPlaced: 'Basket confirmed',
+  stepBakery: 'In the bakehouse',
+  stepReady: 'Ready',
+  stepHandedPickup: 'Collected',
+  stepHandedDelivery: 'Delivered',
+  qrReady: 'Your QR is ready — show it at the counter',
+  noWindow: 'No time slot requested',
+  statusCancelled: 'Cancelled',
+  emptyOrders: 'No orders yet.',
   statusReady: 'Ready',
   statusRoute: 'On the way',
   statusDone: 'Collected',
@@ -259,13 +293,23 @@ export const ORDERS_IT: OrdersCopy = {
   historyHead: 'Ordini passati',
   historyNote: 'Una tabella, perché qui si confronta.',
   colOrder: 'Ordine',
-  colBy: 'Effettuato da',
   colMode: 'Modalità',
   colDate: 'Data',
   colStatus: 'Stato',
   colPayment: 'Pagamento',
   colTotal: 'Totale',
   pieces: '{n} art.',
+  modePickup: 'Ritiro',
+  modeDelivery: 'Corriere',
+  stepPlaced: 'Carrello confermato',
+  stepBakery: 'In forno',
+  stepReady: 'Pronta',
+  stepHandedPickup: 'Ritirata',
+  stepHandedDelivery: 'Consegnata',
+  qrReady: 'Il suo QR è pronto — lo mostri al banco',
+  noWindow: 'Nessuna fascia richiesta',
+  statusCancelled: 'Annullata',
+  emptyOrders: 'Nessun ordine per ora.',
   statusReady: 'Pronto',
   statusRoute: 'In viaggio',
   statusDone: 'Ritirato',
