@@ -1,6 +1,6 @@
 import type { TemplateLinePayload, TemplateTierPayload } from '@lfd/contracts';
 
-import { centsOf, eurosField } from './price-field';
+import { millicentsField, millicentsOf } from './price-field';
 
 /** Les paliers saisis pour un article — en chaînes, cf. `price-field`. */
 export interface DraftTier {
@@ -74,10 +74,10 @@ export function setTierField(
   );
 }
 
-/** Le prix d'entrée saisi pour un article, en centimes. `null` si illisible. */
+/** Le prix d'entrée saisi pour un article, en **millicentimes**. `null` si illisible. */
 export function entryOf(grid: DraftGrid, sku: string): number | null {
   const first = tiersOf(grid, sku)[0];
-  return first === undefined ? null : centsOf(first.unitPrice);
+  return first === undefined ? null : millicentsOf(first.unitPrice);
 }
 
 /**
@@ -98,7 +98,7 @@ export function toLines(grid: DraftGrid, volumes: PlannedVolumes): readonly Temp
         return [];
       }
       const minQuantity = Number.parseInt(tier.minQuantity, 10);
-      const unitPriceMillicents = centsOf(tier.unitPrice);
+      const unitPriceMillicents = millicentsOf(tier.unitPrice);
       if (Number.isNaN(minQuantity) || minQuantity <= 0 || unitPriceMillicents === null) {
         return [null];
       }
@@ -132,7 +132,7 @@ export function draftFromLines(
       line.sku,
       line.tiers.map((tier) => ({
         minQuantity: String(tier.minQuantity),
-        unitPrice: eurosField(tier.unitPriceMillicents),
+        unitPrice: millicentsField(tier.unitPriceMillicents),
       })),
     ]),
   );

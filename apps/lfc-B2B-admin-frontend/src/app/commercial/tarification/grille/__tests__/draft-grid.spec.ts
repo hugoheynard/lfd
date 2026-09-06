@@ -38,9 +38,9 @@ describe('withTiers / without', () => {
 });
 
 describe('entryOf', () => {
-  it('rend le prix du premier palier, en centimes', () => {
+  it('rend le prix du premier palier, en millicentimes', () => {
     expect(entryOf(grid([['PAI-001', [{ minQuantity: '1', unitPrice: '0,80' }]]]), 'PAI-001')).toBe(
-      80,
+      80_000,
     );
   });
 
@@ -71,8 +71,8 @@ describe('toLines', () => {
         sku: 'PAI-001',
         plannedVolume: null,
         tiers: [
-          { minQuantity: 1, unitPriceMillicents: 85 },
-          { minQuantity: 10_000, unitPriceMillicents: 78 },
+          { minQuantity: 1, unitPriceMillicents: 85_000 },
+          { minQuantity: 10_000, unitPriceMillicents: 78_000 },
         ],
       },
     ]);
@@ -93,7 +93,11 @@ describe('toLines', () => {
         ]),
       ),
     ).toEqual([
-      { sku: 'PAI-001', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceMillicents: 85 }] },
+      {
+        sku: 'PAI-001',
+        plannedVolume: null,
+        tiers: [{ minQuantity: 1, unitPriceMillicents: 85_000 }],
+      },
     ]);
   });
 
@@ -111,7 +115,11 @@ describe('toLines', () => {
         ]),
       ),
     ).toEqual([
-      { sku: 'PAI-002', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceMillicents: 80 }] },
+      {
+        sku: 'PAI-002',
+        plannedVolume: null,
+        tiers: [{ minQuantity: 1, unitPriceMillicents: 80_000 }],
+      },
     ]);
   });
 

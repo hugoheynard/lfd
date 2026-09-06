@@ -19,7 +19,7 @@ import { nativeValue } from '../../../shared/native-input';
 import { TarificationService } from '../../../b2b/tarification/tarification.service';
 import { PriceTemplatesService } from '../templates.service';
 import { PoseBar, type PoseRequest } from '../pose-bar/pose-bar';
-import { eurosField } from './price-field';
+import { millicentsField } from './price-field';
 import {
   addTier,
   draftFromLines,
@@ -221,19 +221,9 @@ export class TemplateGridPage {
     return tiersOf(this.draft(), sku);
   }
 
-  /**
-   * ⚠️ **`eurosField` attend des CENTIMES et reçoit des millicentimes** : le
-   * champ se préremplit à mille fois le tarif catalogue. Ce n'est pas une
-   * étourderie du renommage du 2026-09-06 — c'est le désaccord qu'il a rendu
-   * visible, et le renommage s'arrête là volontairement.
-   *
-   * `price-field.ts` est le dernier fichier de cette famille qui parle
-   * centimes, et ses trois appelants lui passent des millicentimes. Le corriger
-   * change ce que l'écran ÉCRIT (cf. `D10`), donc c'est un lot à part : `P11` de
-   * `documentation/b2b/audit-calcul-du-panier-et-du-prix.md`.
-   */
+  /** Partir du tarif catalogue : le champ s'ouvre dessus, il ne s'y verrouille pas. */
   protected priceIt(sku: string, catalogMillicents: number): void {
-    this.draft.update((grid) => priceAt(grid, sku, eurosField(catalogMillicents)));
+    this.draft.update((grid) => priceAt(grid, sku, millicentsField(catalogMillicents)));
   }
 
   protected clear(sku: string): void {

@@ -6,7 +6,7 @@ import { Chart } from '../../../../shared/chart/chart';
 import { ChartNote } from '../../../../shared/chart-note/chart-note';
 import { nativeValue } from '../../../../shared/native-input';
 import { revenueCurvesOption, revenueGapOption, type RevenueSeries } from '../revenue-chart';
-import { centsOf, eurosField } from '../../grille/price-field';
+import { millicentsField, millicentsOf } from '../../grille/price-field';
 import { averageUnderRegime, revenueUnderRegime, type PricingRegime } from '../pricing-regime';
 import {
   fixedScenario,
@@ -137,17 +137,12 @@ export class ArticleSimulation {
     ),
   }));
 
-  /**
-   * Le prix fixe comparé : celui saisi, à défaut le prix moyen.
-   *
-   * ⚠️ **`centsOf` rend des centimes, les deux replis sont en millicentimes.**
-   * Un prix tapé à la main pèse donc mille fois moins que le prix moyen contre
-   * lequel la courbe le compare. Même cause et même lot que le préremplissage
-   * de la grille — `D10` / `P11`, cf. `priceIt` dans `gabarit-grille-page.ts`.
-   */
+  /** Le prix fixe comparé : celui saisi, à défaut le prix moyen. */
   protected readonly referenceMillicents = computed(() => {
     const anchors = this.anchors();
-    return centsOf(this.fixedField()) ?? anchors.averageMillicents ?? anchors.headlineMillicents;
+    return (
+      millicentsOf(this.fixedField()) ?? anchors.averageMillicents ?? anchors.headlineMillicents
+    );
   });
 
   // Le prix est DANS la légende : « prix fixe » sans son montant oblige à
@@ -228,17 +223,10 @@ export class ArticleSimulation {
     }),
   );
 
-  /**
-   * Reprendre un prix remarquable : il ATTERRIT dans le champ, il ne le
-   * verrouille pas.
-   *
-   * ⚠️ Le paramètre porte des **millicentimes** — tous ses appelants viennent
-   * des ancres — et `eurosField` attend des centimes. Troisième symptôme de
-   * `D10`, même lot `P11`.
-   */
+  /** Reprendre un prix remarquable : il ATTERRIT dans le champ, il ne le verrouille pas. */
   protected useAnchor(millicents: number | null): void {
     if (millicents !== null) {
-      this.fixedField.set(eurosField(millicents));
+      this.fixedField.set(millicentsField(millicents));
     }
   }
 
