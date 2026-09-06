@@ -358,10 +358,17 @@ La chaîne, vérifiée fichier par fichier :
 | application | le palier devient une règle `replace` : `amountMillicents: tier.unitPriceMillicents` | `template-to-rules.ts:44`       |
 | facturation | `resolvePrice` pose ce montant tel quel — **0,0021 € l'unité**                       | `resolve-price.ts`              |
 
-**Pourquoi personne ne l'a vu à l'écran.** La relecture est fausse du même
-facteur : `draftFromLines` affiche `eurosField(unitPriceMillicents)`, qui divise
-par cent. Enregistrer puis recharger réaffiche **2,10 €**. L'écran est
-parfaitement cohérent avec lui-même ; c'est la base qui est fausse.
+**Un prix FRAÎCHEMENT tapé se relit juste**, et c'est ce qui rend l'écriture
+silencieuse : `draftFromLines` réaffiche `eurosField(210)` = « 2,10 ». Le
+aller-retour est cohérent avec lui-même ; c'est la base qui porte un millième.
+
+⚠️ **Mais sur les données MIGRÉES, l'écran est visiblement cassé — et cette
+section disait le contraire.** Un gabarit antérieur au 2026-08-31 a été converti
+en millicentimes par la migration ; `eurosField(300000)` en fait **« 3000,00 »**.
+Ouvrir une mercuriale existante affiche donc des prix mille fois trop grands.
+
+Les deux comportements coexistent et se distinguent à l'œil : un gabarit ancien
+paraît absurde, un gabarit neuf paraît juste et ne l'est pas.
 
 **L'origine est datée.** Le commit `0e2e2dd2` (2026-08-31, « afficher les prix
 unitaires avec leurs décimales ») a renommé `unitPriceCents` en
@@ -390,14 +397,28 @@ mode. La base et le serveur ont été migrés avec soin ; **c'est l'écran de sa
 qui n'a pas suivi.** Le désaccord n'est donc pas une ambiguïté sur l'unité : il
 est tranché, écrit en SQL, et un seul fichier l'ignore.
 
-**Deux autres symptômes du même désaccord**, découverts avec lui ou par le
+**Trois autres symptômes du même désaccord**, découverts avec lui ou par le
 renommage de `P3` :
 
+- 🔴 **toute la colonne de comparaison de la grille est fausse dès la première
+  frappe.** `entryOf` rend des centimes et alimente
+  `mercurialeRow(item, mercurialeMillicents)`, qui les compare au canonique et au
+  plancher, en millicentimes. Conséquence : `floored` est **toujours vrai** dès
+  qu'un plancher existe — chaque ligne s'annonce « au plancher » —, le prix final
+  affiché est celui du plancher et non celui qu'on vient de taper, et l'écart au
+  catalogue vaut −99,9 % quand il n'y a pas de plancher ;
 - le bouton « + » de la grille préremplit le champ par
   `eurosField(row.catalogMillicents)` — il propose **2 000,00 €** pour un
   croissant à 2,00 € ;
 - le simulateur d'article compare un prix tapé (`centsOf`, en centimes) à des
   ancres en millicentimes (`referenceMillicents`).
+
+**Ce que ça change au diagnostic** : l'écran de mercuriale n'est pas
+subtilement faux, il est **inutilisable**. Les indicateurs qui servent à décider
+d'un prix — écart au catalogue, marge au plancher, position vs marché — sont
+absurdes dès qu'on tape un chiffre. C'est un argument sérieux, quoique indirect,
+pour penser que personne ne s'en est servi depuis le 2026-08-31 : la requête de
+production le dira.
 
 **La cause est unique et tient en une phrase** : `price-field.ts` est le dernier
 fichier de la famille `tarification` qui parle **centimes** — `centsOf` et
