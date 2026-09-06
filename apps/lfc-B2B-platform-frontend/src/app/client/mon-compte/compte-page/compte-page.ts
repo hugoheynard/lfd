@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import type { CartAdjustment } from '@lfd/contracts';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import { MOCK_ACCOUNT, MOCK_DELIVERIES } from '../../mock-account';
+import { ClientAddresses } from '../../client-addresses.service';
+import { formatCents, formatRate } from '../../format-money';
+import { MOCK_ACCOUNT } from '../../mock-account';
+import { ServicePoints } from '../../shop/pickup-points.store';
 import { AccountCard } from '../account-card/account-card';
 import { DataCard } from '../data-card/data-card';
 import { KbisCard } from '../kbis-card/kbis-card';
@@ -57,10 +61,46 @@ export class ComptePage {
   private readonly chrome = inject(ClientChrome);
 
   protected readonly account = MOCK_ACCOUNT;
-  protected readonly deliveries = MOCK_DELIVERIES;
+
+  private readonly addresses = inject(ClientAddresses);
+  private readonly service = inject(ServicePoints);
+
+  /**
+   * 🔴 **Les adresses viennent de notre base**, plus d'une maquette
+   * (`GET /companies/:id/addresses`). Ce sont les mêmes que celles du carnet du
+   * checkout, et c'est le point : deux listes d'adresses pour un même client
+   * finiraient par ne pas dire la même chose.
+   *
+   * La zone et son tarif sont **calculés** sur le code postal, par le même
+   * préfixe que le serveur — la maquette les écrivait à côté (« zone 1 · 20 € »)
+   * sans qu'aucun barème ne les soutienne.
+   */
+  protected readonly deliveries = computed(() =>
+    this.addresses.deliveries().map((address) => {
+      const zone = this.service.zoneFor(address.codePostal);
+      return {
+        id: address.id,
+        label: address.label,
+        primary: address.isDefault,
+        line: `${address.ligne1}, ${address.codePostal} ${address.ville}`,
+        // Pas de zone = pas de livraison à cette adresse. Un tiret le dit ;
+        // inventer « zone 1 » promettrait une tournée qui ne passe pas.
+        zone: zone?.label ?? this.t().account.addressNoZone,
+        fee: zone === null ? '—' : feeOf(zone.fee),
+      };
+    }),
+  );
+
+  /** L'adresse de facturation déclarée, ou la mention d'absence. */
+  protected readonly billing = computed(() => {
+    const billing = this.addresses.billing();
+    return billing === null
+      ? this.t().account.addressNone
+      : `${billing.ligne1}, ${billing.codePostal} ${billing.ville}`;
+  });
 
   protected readonly deliveryCount = computed(() =>
-    this.t().account.deliveryCount.replace('{n}', String(MOCK_DELIVERIES.length)),
+    this.t().account.deliveryCount.replace('{n}', String(this.deliveries().length)),
   );
 
   /** Le sommaire — numéroté, chaque entrée pointant l'ancre de sa carte. */
@@ -81,4 +121,9 @@ export class ComptePage {
     this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
   }
+}
+
+/** Un frais de zone tel qu'il se lit : « 8,00 € » ou « 3 % ». */
+function feeOf(fee: CartAdjustment): string {
+  return fee.mode === 'amount' ? formatCents(fee.cents) : formatRate(fee.bp / 100);
 }

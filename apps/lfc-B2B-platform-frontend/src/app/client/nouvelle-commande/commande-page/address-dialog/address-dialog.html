@@ -8,33 +8,38 @@
   (back)="back()"
 >
   <div class="pane">
-    <p class="eyebrow">{{ t().addressDialog.bookGroup }}</p>
-    <div class="book" role="radiogroup" [attr.aria-label]="t().addressDialog.bookGroup">
-      @for (address of book; track address.id) {
-        <button
-          class="entry"
-          type="button"
-          role="radio"
-          [class.on]="picked() === address.id"
-          [attr.aria-checked]="picked() === address.id"
-          (click)="picked.set(address.id)"
-        >
-          <span class="ring" aria-hidden="true"><span class="core"></span></span>
-          <span class="text">
-            <span class="line">
-              <span class="label">{{ address.label }}</span>
-              @if (address.isDefault) {
-                <span class="default-tag">{{ t().addressDialog.defaultTag }}</span>
-              }
+    <!-- Pas de carnet, pas d'en-tête : « Adresses enregistrées » au-dessus de
+         rien se lit comme un chargement en panne. Un visiteur anonyme n'a pas de
+         carnet, et il n'en a pas besoin pour saisir la sienne. -->
+    @if (book().length > 0) {
+      <p class="eyebrow">{{ t().addressDialog.bookGroup }}</p>
+      <div class="book" role="radiogroup" [attr.aria-label]="t().addressDialog.bookGroup">
+        @for (address of book(); track address.id) {
+          <button
+            class="entry"
+            type="button"
+            role="radio"
+            [class.on]="picked() === address.id"
+            [attr.aria-checked]="picked() === address.id"
+            (click)="picked.set(address.id)"
+          >
+            <span class="ring" aria-hidden="true"><span class="core"></span></span>
+            <span class="text">
+              <span class="line">
+                <span class="label">{{ address.label }}</span>
+                @if (address.isDefault) {
+                  <span class="default-tag">{{ t().addressDialog.defaultTag }}</span>
+                }
+              </span>
+              <span class="where">{{ address.ligne1 }}, {{ address.codePostal }}</span>
             </span>
-            <span class="where">{{ address.street }}, {{ address.postcode }}</span>
-          </span>
-          <span class="fee">{{ fee(address) }}</span>
-        </button>
-      }
-    </div>
+            <span class="fee">{{ fee(address) }}</span>
+          </button>
+        }
+      </div>
 
-    <p class="eyebrow rule">{{ t().addressDialog.otherGroup }}</p>
+      <p class="eyebrow rule">{{ t().addressDialog.otherGroup }}</p>
+    }
 
     <fold-input
       class="street"

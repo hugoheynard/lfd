@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryZoneView } from '@lfd/contracts';
+import type { CompanyAddressesView, DeliveryZoneView } from '@lfd/contracts';
 
+import { ClientAddresses } from '../../../../client/client-addresses.service';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 
 /**
@@ -15,6 +16,36 @@ const ZONES: readonly DeliveryZoneView[] = [
   { id: 'z1', postalPrefixes: ['73150'], label: 'Zone 1', fee: { mode: 'amount', cents: 2_000 } },
   { id: 'z2', postalPrefixes: ['73130'], label: 'Zone 2', fee: { mode: 'amount', cents: 5_000 } },
 ];
+
+/**
+ * Le carnet **de l'entreprise**, posé dans le vrai dépôt.
+ *
+ * Il était écrit en dur (« Le Chalet », « Bureau »). Une adresse d'exemple posée
+ * à côté d'une commande réelle est une livraison à la mauvaise porte : la suite
+ * pose donc de vraies `DeliveryAddressView`, avec leurs colonnes.
+ */
+const CARNET: CompanyAddressesView = {
+  billing: null,
+  deliveries: [
+    {
+      id: 'adr_chalet',
+      label: 'Le Chalet',
+      ligne1: '18 chemin des Barmettes',
+      ligne2: '',
+      codePostal: '73150',
+      ville: "Val d'Isère",
+      pays: 'France',
+      isDefault: true,
+      specs: {
+        note: '',
+        slots: { mode: 'everyday', slot: null },
+        deliveryContact: null,
+        gps: null,
+        signatureRequired: null,
+      },
+    },
+  ],
+};
 
 import { fill } from '../../../../client/copy/client-copy.service';
 import { FR } from '../../../../client/copy/fr';
@@ -53,6 +84,7 @@ describe('AddressDialog', () => {
     TestBed.inject(ServicePoints).receive([], ZONES, [
       { pickupAddressId: null, date: '2026-09-09' },
     ]);
+    TestBed.inject(ClientAddresses).receive(CARNET);
     fixture = TestBed.createComponent(AddressDialog);
     fixture.componentRef.setInput('open', true);
     fixture.detectChanges();
@@ -82,6 +114,23 @@ describe('AddressDialog', () => {
     type('.street', '12 rue du Coin Ferrand');
 
     expect(el().querySelector('.entry.on')).toBeNull();
+  });
+
+  /**
+   * 🔴 **Aucun carnet pour qui n'est pas reconnu.** Un visiteur anonyme n'a pas
+   * d'adresses enregistrées ; lui en proposer, ce serait lui montrer celles de
+   * quelqu'un d'autre. Il saisit, et le dialogue fonctionne entièrement.
+   */
+  it('n’affiche aucun carnet quand notre base n’en donne pas', () => {
+    TestBed.inject(ClientAddresses).receive(null);
+    fixture.detectChanges();
+
+    expect(el().querySelectorAll('.entry')).toHaveLength(0);
+    expect(text()).not.toContain(FR.addressDialog.bookGroup);
+
+    type('.street', '12 rue du Coin Ferrand');
+    type('.postcode', '73130');
+    expect(cta().disabled).toBe(false);
   });
 
   it('hors zone, le dialogue le DIT et ne laisse pas confirmer', () => {

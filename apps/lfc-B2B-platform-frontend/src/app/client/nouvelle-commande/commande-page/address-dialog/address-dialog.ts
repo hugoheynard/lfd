@@ -2,19 +2,20 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
-import type { PickupSlot } from '@lfd/contracts';
+import type { DeliveryAddressView, PickupSlot } from '@lfd/contracts';
 import { FoldButtonComponent, FoldIconComponent, FoldInputComponent } from 'fold-ng';
 
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../../client/client-identity.service';
-import { SAVED_ADDRESSES, type SavedAddress } from '../../../../client/mock-station';
+import { addressAt, ClientAddresses } from '../../../../client/client-addresses.service';
 import { SlotStep } from '../slot-step/slot-step';
 import { formatCents, formatRate } from '../../../../client/format-money';
 import { formatWindow } from '../../../../client/format-hour';
@@ -53,7 +54,14 @@ export class AddressDialog {
   /** Prérempli depuis le COMPTE : c'est là que vivent le nom et le numéro. */
   protected readonly client = inject(ClientIdentity);
   private readonly service = inject(ServicePoints);
-  protected readonly book = SAVED_ADDRESSES;
+
+  /**
+   * 🔴 **Le carnet vient de notre base**, plus d'une maquette. Une adresse
+   * d'exemple posée à côté d'une commande réelle est une livraison à la mauvaise
+   * porte — et un carton déposé chez quelqu'un d'autre ne se corrige pas au
+   * téléphone. Vide pour un visiteur anonyme : il saisit, et c'est vrai.
+   */
+  protected readonly book = inject(ClientAddresses).deliveries;
 
   /** 0 : où. 1 : quand. */
   protected readonly step = signal(0);
@@ -74,7 +82,28 @@ export class AddressDialog {
    */
   private readonly day = computed(() => this.service.nextDayFor(null));
 
-  protected readonly picked = signal<Picked>(SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? null);
+  protected readonly picked = signal<Picked>(null);
+
+  /**
+   * Quelqu'un a-t-il touché à la saisie ?
+   *
+   * Un champ vide ne suffit pas à répondre : effacer une rue après avoir tapé un
+   * code postal laisserait les deux champs muets alors que la personne est bien
+   * en train de saisir. C'est le GESTE qu'on retient, pas son résultat.
+   */
+  private touched = false;
+
+  constructor() {
+    // L'adresse par défaut se coche quand le carnet ARRIVE, pas avant : le
+    // dialogue peut s'ouvrir plus vite que `GET /me` ne répond. Et jamais
+    // par-dessus une saisie en cours — ce serait écraser ce qu'on écrit.
+    effect(() => {
+      const book = this.book();
+      if (!this.touched && this.picked() === null && book.length > 0) {
+        this.picked.set(book.find((address) => address.isDefault)?.id ?? null);
+      }
+    });
+  }
 
   protected readonly street = signal('');
   protected readonly postcode = signal('');
@@ -87,8 +116,8 @@ export class AddressDialog {
    * les frais peuvent être un pourcentage du panier, et cet écran ne le saurait
    * pas. Il affiche alors la forme, pas un montant qu'il aurait inventé.
    */
-  protected fee(address: SavedAddress): string {
-    const zone = this.service.zoneFor(address.postcode);
+  protected fee(address: DeliveryAddressView): string {
+    const zone = this.service.zoneFor(address.codePostal);
     if (zone === null) {
       return '—';
     }
@@ -113,7 +142,7 @@ export class AddressDialog {
     if (id === null) {
       return this.postcode();
     }
-    return SAVED_ADDRESSES.find((a) => a.id === id)?.postcode ?? '';
+    return this.book().find((a) => a.id === id)?.codePostal ?? '';
   });
 
   /**
@@ -159,7 +188,7 @@ export class AddressDialog {
   protected readonly streetLine = computed(() => {
     const id = this.picked();
     if (id !== null) {
-      return SAVED_ADDRESSES.find((a) => a.id === id)?.street ?? '';
+      return this.book().find((a) => a.id === id)?.ligne1 ?? '';
     }
     return this.street().trim();
   });
@@ -167,8 +196,8 @@ export class AddressDialog {
   protected readonly line = computed(() => {
     const id = this.picked();
     if (id !== null) {
-      const address = SAVED_ADDRESSES.find((a) => a.id === id);
-      return address ? `${address.street}, ${address.postcode}` : '';
+      const address = this.book().find((a) => a.id === id);
+      return address ? `${address.ligne1}, ${address.codePostal}` : '';
     }
     const street = this.street().trim();
     return street === '' ? '' : `${street}, ${this.postcode().trim()}`;
@@ -192,6 +221,7 @@ export class AddressDialog {
   }
 
   private leaveBook(value: string): void {
+    this.touched = true;
     if (value.trim() !== '') {
       this.picked.set(null);
     }
@@ -246,15 +276,18 @@ export class AddressDialog {
 
   /** Le nom de l'adresse : celui du carnet, ou la zone quand on vient de la saisir. */
   private placeName(): string {
-    const id = this.picked();
-    const address = id === null ? null : SAVED_ADDRESSES.find((a) => a.id === id);
-    return address?.label ?? this.zone()?.label ?? '';
+    return this.pickedAddress()?.label ?? this.zone()?.label ?? '';
   }
 
   private placeAt(): string {
+    const label = this.pickedAddress()?.label;
+    return label === undefined ? 'à cette adresse' : addressAt(label);
+  }
+
+  /** L'adresse cochée au carnet, ou `null` quand on saisit. */
+  private pickedAddress(): DeliveryAddressView | null {
     const id = this.picked();
-    const address = id === null ? null : SAVED_ADDRESSES.find((a) => a.id === id);
-    return address?.at ?? 'à cette adresse';
+    return id === null ? null : (this.book().find((address) => address.id === id) ?? null);
   }
 
   /** Revenir à l'adresse ne perd pas l'heure : on ne la redemande pas. */

@@ -12,15 +12,16 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
  * et `GET /delivery-zones`, toutes deux **publiques** — comme la vitrine, et
  * pour la même raison : on choisit son mode de service avant d'avoir un compte.
  *
- * 🔴 **Ils étaient écrits en dur dans `mock-station.ts`**, remise et frais
+ * 🔴 **Ils étaient écrits en dur dans une maquette de station**, remise et frais
  * compris. Deux conséquences que ce dépôt a payées : la remise ne pouvait être
  * qu'un pourcentage — un point qui remet un MONTANT s'affichait à zéro pendant
  * que la commande le déduisait —, et les frais voyageaient en euros flottants.
  *
- * Ce qui reste dans la maquette est ce que le serveur ne dit pas : la distance,
- * l'heure de première fournée. Ce ne sont pas des données de commerce, et les
- * inventer À CÔTÉ d'une adresse réelle en aurait fait des affirmations fausses
- * plutôt qu'un décor — d'où leur retrait plutôt que leur report.
+ * Cette maquette n'existe plus : son dernier morceau, le carnet d'adresses, est
+ * parti le 2026-09-06 vers `ClientAddresses`. Ce qu'elle portait et que le
+ * serveur ne dit pas — la distance, l'heure de première fournée — n'a pas été
+ * reporté : inventé À CÔTÉ d'une adresse réelle, ce n'était plus un décor mais
+ * une affirmation fausse.
  *
  * 🔴 **La JOURNÉE vient d'ici aussi** (`GET /fulfillment-days`). L'écran la
  * calculait — « demain », depuis `new Date()`, c'est-à-dire depuis l'horloge du

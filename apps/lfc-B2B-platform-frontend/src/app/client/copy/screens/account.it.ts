@@ -52,6 +52,8 @@ export const ACCOUNT_IT: AccountCopy = {
     'Un solo indirizzo di fatturazione: è quello che figura sulle fatture e sul mandato.',
   deliveryHead: 'Consegna',
   deliveryCount: '{n} indirizzi',
+  addressNoZone: 'fuori zona',
+  addressNone: 'Nessun indirizzo registrato.',
   addressDefault: 'Predefinito',
   addressAdd: 'Aggiungere un indirizzo',
   termMonthly: 'Pagamento a 30 giorni fine mese',

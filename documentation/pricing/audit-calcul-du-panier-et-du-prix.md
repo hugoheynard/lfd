@@ -638,8 +638,9 @@ l'avait prévu ; l'implémentation avait fait l'inverse.
 
 ### D3 ✅ La remise et les frais de la boutique étaient une maquette
 
-`client/mock-station.ts` : remise de retrait **10 %** en dur, frais de zone
-**20 €** et **50 €** en dur. `ClientCart.totals` les lit par `ServiceChoice`, qui
+La maquette de station du front (client/mock-station.ts, **supprimée le
+2026-09-06**) : remise de retrait **10 %** en dur, frais de zone **20 €** et
+**50 €** en dur. `ClientCart.totals` les lit par `ServiceChoice`, qui
 les porte depuis les dialogues de choix.
 
 Côté serveur, les deux sont de la **donnée** : `pickup_addresses.discount` et
@@ -724,7 +725,8 @@ client.
 
 **Il reste la moitié front.** Tant que la boutique n'appelle pas cette route,
 `D2` et `D3` restent ouverts : le navigateur continue de multiplier et de lire
-sa remise dans `mock-station.ts`.
+sa remise dans la maquette de station — celle-ci a depuis disparu (2026-09-06),
+remplacée par `GET /pickup-addresses` et `POST /shop/quote`.
 
 ### D5 ✅ Le total était calculé deux fois — refermé le 2026-09-06
 

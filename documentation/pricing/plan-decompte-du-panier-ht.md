@@ -348,7 +348,8 @@ Les affirmations sur l'existant viennent de ces fichiers, relus le 2026-09-05 :
   `cart-summary/cart-summary.{ts,html}`, `client-cart.service.ts`
 - .../client/shop/vat-rates.ts (supprimé), `product-tile/product-tile.{ts,html}`,
   `product-sheet/product-sheet.html`, `format-money.ts`
-- `.../client/order-context.store.ts`, `mock-station.ts`
+- `.../client/order-context.store.ts`, et la maquette de station
+  (client/mock-station.ts, **supprimée le 2026-09-06**)
 - `.../client/copy/fr.ts`
 
 **Ce qu'il n'affirme pas** : que les frais de zone en production valent 20 € et

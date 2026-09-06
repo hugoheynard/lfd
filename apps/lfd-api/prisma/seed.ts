@@ -1,5 +1,6 @@
 import "dotenv/config";
 import {
+  AddressKind,
   PrismaClient,
   CompanyStatus,
   CustomerRole,
@@ -43,6 +44,70 @@ async function main(): Promise<void> {
   // personne n'aurait jamais reçu ses points de retrait.
   await seedStation(prisma);
   await seedPerson();
+  await seedCompanyAddresses();
+}
+
+/**
+ * **Le carnet d'adresses de la société de test.**
+ *
+ * 🔴 Il n'existait pas, et c'est ce vide qui gardait `SAVED_ADDRESSES` en vie
+ * côté front : une maquette d'adresses, la plus dangereuse de toutes — une
+ * adresse d'exemple posée à côté d'une commande réelle est une livraison à la
+ * mauvaise porte.
+ *
+ * Hors de {@link seedPerson}, comme la station, pour la même raison : un poste
+ * qui a déjà sa personne n'aurait jamais reçu son carnet.
+ *
+ * Les codes postaux sont ceux des zones semées par `seed-station.ts` — sans quoi
+ * l'écran afficherait « hors zone » sur chaque ligne, ce qui est juste mais ne
+ * montre rien.
+ */
+async function seedCompanyAddresses(): Promise<void> {
+  const company = await prisma.company.findFirst({ where: { raisonSociale: COMPANY_NAME } });
+  if (company === null) {
+    console.log("· Aucune société de test — pas de carnet à semer.");
+    return;
+  }
+  const existing = await prisma.address.findFirst({ where: { companyId: company.id } });
+  if (existing) {
+    console.log("· Carnet d'adresses déjà présent — inchangé.");
+    return;
+  }
+  await prisma.address.createMany({
+    data: [
+      {
+        companyId: company.id,
+        kind: AddressKind.billing,
+        label: "Siège",
+        ligne1: "12 chemin des Barmettes",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+      },
+      {
+        companyId: company.id,
+        kind: AddressKind.delivery,
+        label: "Le Chalet",
+        ligne1: "18 chemin des Barmettes",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+        isDefault: true,
+      },
+      {
+        // Une seconde, dans une AUTRE zone : c'est le seul moyen de voir à
+        // l'écran que le tarif suit l'adresse et non le panier.
+        companyId: company.id,
+        kind: AddressKind.delivery,
+        label: "Bureau",
+        ligne1: "4 avenue Olympique",
+        codePostal: "73320",
+        ville: "Tignes",
+        pays: "France",
+      },
+    ],
+  });
+  console.log("✓ Carnet d'adresses semé (1 facturation, 2 livraisons).");
 }
 
 async function seedPerson(): Promise<void> {

@@ -52,6 +52,8 @@ export const ACCOUNT_EN: AccountCopy = {
     'One billing address only: it is the one on your invoices and on the direct-debit mandate.',
   deliveryHead: 'Delivery',
   deliveryCount: '{n} addresses',
+  addressNoZone: 'outside our zones',
+  addressNone: 'No address on file.',
   addressDefault: 'Default',
   addressAdd: 'Add an address',
   termMonthly: '30 days end of month',

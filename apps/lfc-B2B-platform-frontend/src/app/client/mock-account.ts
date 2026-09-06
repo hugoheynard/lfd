@@ -11,6 +11,13 @@
  * droit de lecture client sur son propre dossier (aujourd'hui staff-only),
  * l'invitation d'un interlocuteur par le détenteur, et la création d'un espace
  * pro par le client.
+ *
+ * 🔴 **Les ADRESSES en sont parties le 2026-09-06.** Facturation et livraisons
+ * viennent de `GET /companies/:id/addresses` (cf. `ClientAddresses`), et leur
+ * zone comme leur tarif se calculent sur le code postal — la maquette écrivait
+ * « zone 1 · 20 € » à côté, sans qu'aucun barème ne les soutienne. C'était la
+ * plus dangereuse des maquettes : une adresse d'exemple à côté d'une commande
+ * réelle est une livraison à la mauvaise porte.
  */
 
 /**
@@ -39,14 +46,6 @@ export interface AccountUser {
   readonly holder: boolean;
 }
 
-export interface DeliveryAddress {
-  readonly label: string;
-  readonly line: string;
-  readonly zone: string;
-  readonly fee: string;
-  readonly primary: boolean;
-}
-
 export const MOCK_ACCOUNT = {
   brand: 'Brasserie Marchand',
   company: 'Marchand & Fils',
@@ -58,7 +57,6 @@ export const MOCK_ACCOUNT = {
   discount: '−12 %',
   term: '30 j',
   cap: '2 000 €',
-  billing: '12 chemin des Barmettes, 73150 Val d’Isère',
   pickupHabit: 'Le Labo · 7 h – 8 h',
   language: 'Français',
   kbis: {
@@ -72,17 +70,6 @@ export const MOCK_ACCOUNT = {
   sepa: 'Mandat signé le 14/02/2024 · IBAN •••• 3041',
   card: 'Visa •••• 4242 · pour les commandes hors crédit',
 } as const;
-
-export const MOCK_DELIVERIES: readonly DeliveryAddress[] = [
-  {
-    label: 'Le chalet',
-    line: '18 chemin des Barmettes',
-    zone: 'zone 1',
-    fee: '20 €',
-    primary: true,
-  },
-  { label: 'Bureau', line: '4 avenue Olympique', zone: 'zone 1', fee: '20 €', primary: false },
-];
 
 export const MOCK_USERS: readonly AccountUser[] = [
   {

@@ -52,6 +52,8 @@ export const ACCOUNT_FR: AccountCopy = {
     'Une seule adresse de facturation : c’est elle qui figure sur les factures et sur le mandat.',
   deliveryHead: 'Livraison',
   deliveryCount: '{n} adresses',
+  addressNoZone: 'hors zone',
+  addressNone: 'Aucune adresse enregistrée.',
   addressDefault: 'Par défaut',
   addressAdd: 'Ajouter une adresse',
   termMonthly: 'Paiement à 30 jours fin de mois',

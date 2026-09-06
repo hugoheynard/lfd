@@ -63,6 +63,10 @@ export interface AccountCopy {
   readonly deliveryHead: string;
   /** `{n}` est remplacé par le nombre d'adresses de livraison. */
   readonly deliveryCount: string;
+  /** Ce qu'on écrit quand aucune zone ne dessert le code postal. */
+  readonly addressNoZone: string;
+  /** Ce qu'on écrit quand l'entreprise n'a déclaré aucune adresse. */
+  readonly addressNone: string;
   readonly addressDefault: string;
   readonly addressAdd: string;
   readonly termMonthly: string;

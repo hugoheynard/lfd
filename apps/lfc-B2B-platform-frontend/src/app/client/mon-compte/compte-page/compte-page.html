@@ -63,12 +63,15 @@
         <div class="address-row">
           <div class="sub-card billing">
             <p class="sub-head">{{ t().account.billingHead }}</p>
-            <p class="sub-line">{{ account.billing }}</p>
+            <p class="sub-line">{{ billing() }}</p>
             <p class="note">{{ t().account.billingNote }}</p>
           </div>
           <div class="sub-card">
             <p class="sub-head">{{ t().account.deliveryHead }} · {{ deliveryCount() }}</p>
-            @for (address of deliveries; track address.label) {
+            @if (deliveries().length === 0) {
+              <p class="note">{{ t().account.addressNone }}</p>
+            }
+            @for (address of deliveries(); track address.id) {
               <div class="delivery">
                 <span class="delivery-label">{{ address.label }}</span>
                 @if (address.primary) {
