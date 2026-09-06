@@ -6,7 +6,7 @@ import type { TrafficObservation } from "./traffic";
 /**
  * Passerelle de la suite LFC. **Zéro métier** — du routage, rien d'autre.
  * Délibérément trivial : elle prend tout le trafic, donc elle doit rester simple
- * (cf. documentation/architecture-suite-gateway-scaling.md, AD-1). Toutes les
+ * (cf. documentation/suite/architecture-suite-gateway-scaling.md, AD-1). Toutes les
  * décisions de routage vivent dans `routes.ts`, sous tests ; ici il ne reste que
  * l'exécution.
  *

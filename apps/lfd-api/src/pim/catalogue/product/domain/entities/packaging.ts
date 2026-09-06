@@ -37,7 +37,7 @@ export interface PackagingSnapshot {
  * Il se rattache à une déclinaison, jamais au produit : « carton de 20 » ne veut
  * rien dire tant qu'on ne sait pas de quoi — de parts individuelles, ou de
  * tartes 6 parts ? La relation EST l'information (cf.
- * `documentation/b2b/architecture-conditionnements-pricing.md`, révision du
+ * `documentation/pricing/architecture-conditionnements-pricing.md`, révision du
  * 2026-08-23, qui renverse la décision de le modéliser en déclinaison plate).
  *
  * Trois faits lui sont propres, et c'est ce qui en fait une entité :

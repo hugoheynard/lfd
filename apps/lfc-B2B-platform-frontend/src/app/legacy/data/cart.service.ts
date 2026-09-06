@@ -39,7 +39,7 @@ export interface CartVatLine {
  * vérité), jamais les dérivés.
  *
  * Brouillon **par appareil** — suffisant à ce stade. Trajectoire notée dans
- * `documentation/architecture-flux-commande-prod.md` : passage à un **cart
+ * `documentation/b2b/architecture-flux-commande-prod.md` : passage à un **cart
  * serveur (Redis/Upstash) multi-appareil + merge-on-login** avant le launch si
  * voulu. La surface du service ne changera pas — seule la couche persistance.
  */

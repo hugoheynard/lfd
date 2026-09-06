@@ -32,7 +32,7 @@ import { mergeIntervals, subtractIntervals, type MinuteInterval } from "./minute
  * Fonction **pure** et déterministe (le temps est injecté) : c'est elle que
  * lisent **à la fois** le client qui réserve et l'admin qui prévisualise — ils ne
  * peuvent donc pas afficher deux vérités. Doc :
- * `documentation/architecture-prise-de-rendez-vous.md`.
+ * `documentation/b2b/architecture-prise-de-rendez-vous.md`.
  */
 
 /** Un créneau déjà occupé — seules ses bornes comptent ici. */

@@ -4,7 +4,7 @@
  * Source de vérité UNIQUE : un port n'est écrit qu'ici. Tout le reste en dérive
  * — les CORS dev des backends
  * l'importent au lieu de recopier le nombre. C'est la Phase 1 du plan
- * `documentation/architecture-suite-gateway-scaling.md` : tuer le drift où le
+ * `documentation/suite/architecture-suite-gateway-scaling.md` : tuer le drift où le
  * même port vivait dans 2–3 fichiers.
  *
  * Périmètre = ports & topologie **dev** (le gros du fichier) **+** les origines

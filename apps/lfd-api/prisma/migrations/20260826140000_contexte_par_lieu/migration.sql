@@ -1,7 +1,7 @@
 -- C0-d, tranche d-0 : un contexte dit s'il a besoin d'un lieu, et un lieu
 -- déclare les contextes qu'il offre.
 --
--- Voir `documentation/pim/c0d-matrice-de-canaux.md`. Cette migration ÉTEND
+-- Voir `documentation/pim/contextes-et-points-de-vente.md`. Cette migration ÉTEND
 -- seulement : `channel_key`, `click_collect` et `sur_place` restent écrits et
 -- lus. La bascule des lectures est le déploiement suivant, la suppression des
 -- colonnes celui d'après (`documentation/ops/pipelines.md` : étendre,

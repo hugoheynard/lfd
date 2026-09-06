@@ -13,7 +13,7 @@
 -- Aucun prix ne change du fait de cette migration, et rien ne peut encore poser
 -- `ttc` : la bascule d'un article vient avec la tranche 4, après que la
 -- projection Shopify ait tranché ce qu'elle envoie.
--- Cf. `documentation/pim/architecture-prix-ancre-ttc.md`.
+-- Cf. `documentation/pricing/architecture-prix-ancre-ttc.md`.
 
 CREATE TYPE "pim"."price_basis" AS ENUM ('ht', 'ttc');
 

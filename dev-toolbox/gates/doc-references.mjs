@@ -24,6 +24,18 @@
  * Au premier passage : **1 086 références, 78 mortes.** Dont
  * `client/mock-shop.ts`, supprimé par `P7b`, encore cité par quatre documents.
  *
+ * ## Elle regarde dans les DEUX sens
+ *
+ * Un document qui nomme un fichier, et un fichier qui nomme un document. Le
+ * second sens a été ajouté après coup, et pour une raison qui ne se devine
+ * pas : en déplaçant douze documents dans `documentation/pricing/`, treize
+ * fichiers de code se sont mis à citer un chemin mort — un `schema.prisma`,
+ * quatre migrations, sept sources, et **un test que je venais d'écrire**. La
+ * porte n'a rien vu, parce qu'elle ne lisait que `documentation/`.
+ *
+ * Une porte qui ne vérifie qu'un sens rend l'autre plus dangereux : on croit le
+ * sujet couvert.
+ *
  * ## Ce qu'elle attrape, et ce qu'elle n'attrape PAS
  *
  * Elle attrape : un fichier renommé, déplacé, supprimé ; un lien relatif vers
@@ -322,6 +334,28 @@ function docsUnder(dir) {
   );
 }
 
+/**
+ * Les documents cités **depuis le code** — commentaires, migrations, schéma.
+ *
+ * Même prédicat que dans l'autre sens : un chemin nommé désigne un fichier qui
+ * existe. Pas de backticks à respecter ici, le chemin se reconnaît seul.
+ */
+const DOC_PATH = /documentation\/[A-Za-z0-9_./-]+\.md/gu;
+
+function deadDocPathsIn(file) {
+  const found = [];
+  readFileSync(join(ROOT, file), "utf8")
+    .split("\n")
+    .forEach((text, index) => {
+      for (const match of text.matchAll(DOC_PATH)) {
+        if (!byPath.has(match[0])) {
+          found.push([index + 1, match[0], whyMissing(match[0])]);
+        }
+      }
+    });
+  return found;
+}
+
 let failures = 0;
 let checked = 0;
 let documents = 0;
@@ -338,6 +372,28 @@ for (const dir of SCOPE) {
     }
   }
 }
+
+// L'autre sens : le code qui nomme un document.
+const SOURCES = everyFile.filter(
+  (file) =>
+    !file.startsWith("documentation/") &&
+    /\.(?:ts|tsx|mjs|cjs|js|prisma|sql|html|json)$/u.test(file),
+);
+for (const file of SOURCES) {
+  for (const [line, raw, why] of deadDocPathsIn(file)) {
+    if (failures === 0) {
+      console.error("\n✗ doc-references\n");
+    }
+    failures += 1;
+    checked += 1;
+    console.error(`  ${file}:${String(line)}  ${raw} — ${why}`);
+  }
+}
+const citedFromCode = SOURCES.reduce(
+  (sum, file) => sum + (readFileSync(join(ROOT, file), "utf8").match(DOC_PATH)?.length ?? 0),
+  0,
+);
+checked += citedFromCode;
 
 let remaining = 0;
 let counted = 0;
@@ -362,8 +418,8 @@ if (failures > 0) {
 
 console.log(
   counted === 0
-    ? `✓ doc-references : ${String(checked)} référence(s) vérifiée(s) sur ${String(documents)} document(s), 0 morte.\n` +
-        "  Toute la documentation est drainée — il n'y a plus de solde à compter."
+    ? `✓ doc-references : ${String(checked)} référence(s) vérifiée(s), 0 morte.\n` +
+        `  ${String(documents)} document(s) qui nomment des fichiers, et ${String(citedFromCode)} chemin(s) de doc cité(s) depuis le code.`
     : `✓ doc-references : ${String(SCOPE.length)} dossier(s) drainé(s), 0 référence morte.\n` +
         `  Hors scope : ${String(remaining)} morte(s) sur ${String(counted)} document(s) — compté, pas ignoré.`,
 );

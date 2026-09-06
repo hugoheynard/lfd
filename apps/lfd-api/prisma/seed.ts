@@ -9,7 +9,7 @@ import {
 /**
  * Seed de développement — **provisionne un customer de test**, exactement comme
  * le ferait un commercial (porte B du pipeline d'onboarding, cf.
- * `documentation/architecture-onboarding-provisioning-b2b.md`). Crée la
+ * `documentation/b2b/architecture-compte-client-cycle-de-vie.md`). Crée la
  * **personne** (son profil), sa **société**, et le **membership** qui les relie,
  * pour que `GET /me` réponde une identité réelle en dev.
  *

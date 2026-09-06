@@ -1,6 +1,6 @@
 -- Le point de vente, tranche p-0 : ÉTENDRE.
 --
--- Voir `documentation/pim/point-de-vente.md`. Elle crée l'entité dont
+-- Voir `documentation/pim/contextes-et-points-de-vente.md`. Elle crée l'entité dont
 -- `emplacement` n'était qu'un cas, reprend les boutiques existantes et fait
 -- exister la plateforme professionnelle — qui n'était jusqu'ici qu'un `NULL`
 -- dans une colonne, donc visible nulle part à l'écran.

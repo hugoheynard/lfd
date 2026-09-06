@@ -2,7 +2,7 @@
 --
 -- Les lectures sont basculées depuis p-2. Cette migration retire ce que plus
 -- personne ne lit — et fusionne `emplacement` dans `point_of_sale`, dont il
--- n'était qu'un cas. Voir `documentation/pim/point-de-vente.md`.
+-- n'était qu'un cas. Voir `documentation/pim/contextes-et-points-de-vente.md`.
 
 -- 1. Le dernier remplissage. Une ligne écrite par le binaire de p-0 PENDANT le
 -- déploiement de p-1 n'a pas de `point_of_sale_id` ; sans ce rattrapage, le

@@ -271,7 +271,7 @@ export class NouvelleCommandePage {
      * moment de valider. Le comptoir n'est pas la boutique — quelqu'un lit ce
      * prix au téléphone pendant la saisie. L'amortir est une économie ; le
      * différer serait un défaut. Cf.
-     * `documentation/b2b/plan-materiaux-de-prix.md` §3.
+     * `documentation/pricing/plan-materiaux-de-prix.md` §3.
      */
     toObservable(this.quoteKey)
       .pipe(

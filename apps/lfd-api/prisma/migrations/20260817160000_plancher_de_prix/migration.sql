@@ -1,5 +1,5 @@
 -- Le PLANCHER posé sur une portée : la limite que l'empilement des règles ne
--- franchit pas. Cf. documentation/b2b/architecture-resolution-de-prix.md.
+-- franchit pas. Cf. documentation/pricing/architecture-resolution-de-prix.md.
 
 CREATE TABLE "price_floors" (
     "id" TEXT NOT NULL,

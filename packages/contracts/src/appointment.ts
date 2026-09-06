@@ -3,7 +3,7 @@
  * commercial (règles hebdomadaires + exceptions + politique), les **créneaux**
  * qui en sont dérivés, et le **rendez-vous** lui-même.
  *
- * Doc d'architecture : `documentation/architecture-prise-de-rendez-vous.md`.
+ * Doc d'architecture : `documentation/b2b/architecture-prise-de-rendez-vous.md`.
  *
  * Deux invariants de contrat portés ici, à la frontière :
  * - les **heures de règle** sont exprimées en **heure locale d'Europe/Paris**

@@ -6,7 +6,7 @@ import { InvalidSkuError } from "../errors/sku-errors.js";
  * Le charset `A-Z 0-9 -` n'est pas esthétique : c'est l'intersection sûre de tout ce que
  * la référence traverse (champ Shopify, écran de caisse, export CSV, étiquette, URL).
  *
- * Invariants (cf. `documentation/lfc/data-model/06-identifiants-et-sku.md`) :
+ * Invariants (cf. `documentation/pim/data-model/06-identifiants-et-sku.md`) :
  * - `create()` est le **seul** constructeur → un SKU invalide ne peut pas exister en mémoire ;
  * - la valeur est **toujours normalisée** (majuscules) → un index unique ordinaire suffit
  *   à garantir l'unicité insensible à la casse ;

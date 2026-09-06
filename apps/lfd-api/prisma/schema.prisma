@@ -1,7 +1,7 @@
 // Schéma de la db B2B COMMERCE (la « B2B platform »).
 // Contexte : clients pros (customers) qui commandent à La Folie Coffee.
-// Doc d'archi : documentation/architecture-identite-auth-tenancy.md
-//              documentation/architecture-flux-commande-prod.md
+// Doc d'archi : documentation/b2b/architecture-identite-auth-tenancy.md
+//              documentation/b2b/architecture-flux-commande-prod.md
 //
 // Conventions (alignées sur le PIM) :
 // - `User` ICI = une PERSONNE côté client (customer), avec son profil : nom,
@@ -60,7 +60,7 @@ enum DeferredTerm {
 /// `pending` = société déclarée par le client depuis « Mes entreprises », pas
 /// encore validée commercialement (défaut à la création). L'activation reste
 /// **manuelle côté commercial** — décision verrouillée dans
-/// `documentation/architecture-onboarding-provisioning-b2b.md`.
+/// `documentation/b2b/architecture-compte-client-cycle-de-vie.md`.
 ///
 /// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
 /// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
@@ -127,7 +127,7 @@ enum AddressKind {
 
 /// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
 /// `pickup` = retrait au point de retrait (labo), fallback tant que la livraison
-/// n'existe pas. Cf. `documentation/architecture-activation-configuration-b2b.md`.
+/// n'existe pas. Cf. `documentation/b2b/architecture-activation-configuration-b2b.md`.
 enum FulfillmentMethod {
   delivery
   pickup
@@ -276,7 +276,7 @@ model Company {
 
   // Code NAF (activité principale) résolu depuis le SIRET via l'API entreprises —
   // vide tant qu'inconnu. Dimension d'analyse commerciale (segmenter l'acquisition
-  // par secteur) : cf. documentation/commercial-data-analytics.md.
+  // par secteur) : cf. documentation/b2b/commercial-data-analytics.md.
   nafCode String @default("") @map("naf_code")
 
   // Contact PRINCIPAL de l'entreprise (value object aplati). Semé du profil du
@@ -816,7 +816,7 @@ model Order {
   //
   // La définition vit dans `ventilateVat` (`@lfd/money`), et nulle part
   // ailleurs. Pour ajouter un terme à ce panier :
-  // `documentation/b2b/ajouter-un-terme-au-panier.md`.
+  // `documentation/pricing/ajouter-un-terme-au-panier.md`.
   subtotalCents      Int    @map("subtotal_cents")
   discountCents      Int    @default(0) @map("discount_cents")
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
@@ -896,7 +896,7 @@ model OrderLine {
   lineTotalCents Int @map("line_total_cents")
 
   /// **La trace de résolution**, figée à la passation — cf.
-  /// `documentation/b2b/architecture-resolution-de-prix.md`.
+  /// `documentation/pricing/architecture-resolution-de-prix.md`.
   ///
   /// Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles
   /// qui l'ont produit peuvent avoir été retirées. C'est un fait clos, comme le
@@ -1044,7 +1044,7 @@ model SubscriptionLine {
 /// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
 /// fallback d'acheminement tant que la livraison n'existe pas. Plusieurs points
 /// possibles, un seul `isDefault`. Une commande en retrait fige un snapshot de
-/// l'adresse choisie. Cf. `documentation/architecture-activation-configuration-b2b.md`.
+/// l'adresse choisie. Cf. `documentation/b2b/architecture-activation-configuration-b2b.md`.
 model PickupAddress {
   id String @id @default(cuid())
 
@@ -1628,7 +1628,7 @@ model CompanyTermination {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Prise de rendez-vous — disponibilité déclarée + rendez-vous, schéma `growth`
-// Doc : documentation/architecture-prise-de-rendez-vous.md
+// Doc : documentation/b2b/architecture-prise-de-rendez-vous.md
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Règle hebdomadaire** de disponibilité commerciale : « le mardi, 09:00–12:00 ».
@@ -2453,7 +2453,7 @@ model CatalogItemOverride {
 }
 
 // ---------------------------------------------------------------------------
-// Règles tarifaires — cf. documentation/b2b/architecture-resolution-de-prix.md
+// Règles tarifaires — cf. documentation/pricing/architecture-resolution-de-prix.md
 // ---------------------------------------------------------------------------
 
 /// Une **règle tarifaire** : un étage, une portée, une audience, une fenêtre.
@@ -3533,7 +3533,7 @@ model ProductVariant {
   /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
   /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
   /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
-  /// ici (cf. documentation/architecture-conditionnements-pricing.md).
+  /// ici (cf. documentation/pricing/architecture-conditionnements-pricing.md).
   priceCents  Int? @map("price_cents")
   /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
   /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
@@ -3571,7 +3571,7 @@ model ProductVariant {
   /// déclinaison. Rattachés ici et non au produit : « carton de 20 » ne veut
   /// rien dire tant qu'on ne sait pas de quoi (des parts, ou des tartes 6
   /// parts ?). La relation EST l'information — cf. la révision du 2026-08-23
-  /// de `documentation/b2b/architecture-conditionnements-pricing.md`, qui
+  /// de `documentation/pricing/architecture-conditionnements-pricing.md`, qui
   /// renverse le choix initial de les modéliser en déclinaisons plates.
   packagings ProductPackaging[]
 
@@ -3715,7 +3715,7 @@ model ShopifyProductBinding {
 
 /// Historique **append-only** des poussées réelles d'un `handle` — l'ancêtre commun
 /// (BASE) de la réconciliation à trois voies et la matière du rollback. Voir
-/// [`publication-reconciliation-3way.md`](../../../documentation/lfc/publication-reconciliation-3way.md).
+/// [`publication-reconciliation-3way.md`](../../../documentation/pim/publication-reconciliation-3way.md).
 ///
 /// Contrairement aux bindings (états de synchro re-dérivables), ceci est un **journal** :
 /// le perdre efface l'historique et le retour arrière. Jamais muté après écriture — un

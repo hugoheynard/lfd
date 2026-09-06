@@ -1,6 +1,6 @@
 -- C0-d, tranche d-1 : la matrice de canaux devient une TABLE.
 --
--- Voir `documentation/pim/c0d-matrice-de-canaux.md` § 4. Cette migration ÉTEND
+-- Voir `documentation/pim/contextes-et-points-de-vente.md` § 4. Cette migration ÉTEND
 -- seulement : `channel_preset` et `channel_override` restent écrits ET LUS.
 -- La bascule des lectures est le déploiement suivant, la suppression des
 -- colonnes celui d'après (`documentation/ops/pipelines.md` : étendre, basculer,

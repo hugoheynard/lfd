@@ -13,7 +13,7 @@
 --
 -- Rien à migrer : aucun conditionnement n'existait, ni en colonne ni en donnée.
 -- Le verrou était encore gratuit à ouvrir — voir
--- documentation/b2b/architecture-conditionnements-pricing.md, révision du
+-- documentation/pricing/architecture-conditionnements-pricing.md, révision du
 -- 2026-08-23.
 
 CREATE TYPE "pim"."PackagingType" AS ENUM ('carton', 'sac', 'plateau');

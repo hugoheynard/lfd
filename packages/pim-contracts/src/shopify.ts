@@ -64,7 +64,7 @@ export interface SnapshotView {
 /**
  * Statut d'un handle vu du trois-voies. `unknown` ≠ absent : la boutique est
  * illisible (dry-run/offline), pas « à jour ». Voir
- * `documentation/lfc/publication-reconciliation-3way.md`.
+ * `documentation/pim/publication-reconciliation-3way.md`.
  */
 export type ReconciliationStatus =
   | "never_published"

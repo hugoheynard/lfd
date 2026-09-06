@@ -2,7 +2,7 @@ import type { PriceFloorPolicy } from "./floor-policy.js";
 
 /**
  * Le vocabulaire de la **résolution de prix** — cf.
- * `documentation/b2b/architecture-resolution-de-prix.md`.
+ * `documentation/pricing/architecture-resolution-de-prix.md`.
  *
  * Ces types sont ceux du **domaine**, volontairement redéclarés ici plutôt
  * qu'importés de `@lfd/b2b-ui/pricing` : le domaine ne dépend pas d'un paquet de

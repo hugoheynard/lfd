@@ -10,7 +10,7 @@
 --
 -- Aucun prix ne change du fait de cette migration : rien ne LIT encore ce
 -- rapport. C'est la tranche 1 de
--- `documentation/pim/architecture-prix-ancre-ttc.md`.
+-- `documentation/pricing/architecture-prix-ancre-ttc.md`.
 
 CREATE TABLE "pim"."accounting_rules" (
     "id" TEXT NOT NULL,

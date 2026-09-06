@@ -7,7 +7,7 @@
 -- ignore ferait échouer toutes ses écritures.
 --
 -- p-2 bascule les lectures, p-3 supprime `location_id`
--- (`documentation/ops/pipelines.md`, `documentation/pim/point-de-vente.md`).
+-- (`documentation/ops/pipelines.md`, `documentation/pim/contextes-et-points-de-vente.md`).
 
 ALTER TABLE "pim"."category_channel" ADD COLUMN "point_of_sale_id" TEXT;
 ALTER TABLE "pim"."product_channel"  ADD COLUMN "point_of_sale_id" TEXT;

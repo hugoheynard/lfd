@@ -101,7 +101,7 @@ function frenchOf(text: { readonly fr: string }): string {
  * Et il est **hors taxe**, quelle que soit l'assiette de la déclinaison : la
  * plateforme professionnelle facture en HT de bout en bout, et la frontière du
  * TTC s'arrête à ce fichier. Cf.
- * `documentation/pim/architecture-prix-ancre-ttc.md` § 4.
+ * `documentation/pricing/architecture-prix-ancre-ttc.md` § 4.
  */
 function projectVariant(
   variant: VariantRecord,

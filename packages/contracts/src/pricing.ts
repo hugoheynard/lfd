@@ -19,12 +19,12 @@ import { z } from "zod";
  * restent en centimes : ce sont des sommes réellement échangées, et c'est en
  * les formant qu'on arrondit, **une seule fois**.
  *
- * Cf. `documentation/pim/architecture-prix-ancre-ttc.md`.
+ * Cf. `documentation/pricing/architecture-prix-ancre-ttc.md`.
  */
 
 /**
  * Le vocabulaire du **prix** — cf.
- * `documentation/b2b/architecture-resolution-de-prix.md`.
+ * `documentation/pricing/architecture-resolution-de-prix.md`.
  *
  * Il sert **deux publics**, et c'est pourquoi il ne s'appelle plus
  * « pricing-admin » : le staff qui saisit les règles, et le client qui lit la

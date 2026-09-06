@@ -14,7 +14,7 @@ import { MILLICENTS_PER_CENT } from '@lfd/money';
  * enregistrée avant la migration du 2026-08-31 se rouvrait à 3000,00 €. Le
  * défaut venait d'un renommage qui avait changé les noms sans convertir les
  * valeurs (`0e2e2dd2`) ; il est décrit sous `D10` dans
- * `documentation/b2b/audit-calcul-du-panier-et-du-prix.md`.
+ * `documentation/pricing/audit-calcul-du-panier-et-du-prix.md`.
  *
  * L'unité de ce fichier est désormais le **millicentime**, comme le reste de la
  * famille et comme la base.

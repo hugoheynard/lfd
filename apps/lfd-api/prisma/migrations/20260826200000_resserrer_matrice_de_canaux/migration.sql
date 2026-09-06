@@ -1,13 +1,13 @@
 -- C0-d, tranche d-3 : RESSERRER.
 --
--- Voir `documentation/pim/c0d-matrice-de-canaux.md`. Elle supprime ce que la
+-- Voir `documentation/pim/contextes-et-points-de-vente.md`. Elle supprime ce que la
 -- bascule d-2 a rendu mort, et que le binaire en ligne depuis n'a plus lu.
 -- Feu vert : `ops_channel_parity` vert en production — sans quoi supprimer les
 -- colonnes figerait la mauvaise vérité.
 --
 -- Elle ne touche PAS `click_collect` / `sur_place` : ces deux-là sont encore la
 -- source de ce qu'un lieu offre, et le modèle du point de vente les absorbera
--- (cf. `documentation/pim/point-de-vente.md`).
+-- (cf. `documentation/pim/contextes-et-points-de-vente.md`).
 
 -- ── 1. La traduction des clés ────────────────────────────────────────────────
 -- Le plan de langue classait ces valeurs en « travail jetable, C0-d les

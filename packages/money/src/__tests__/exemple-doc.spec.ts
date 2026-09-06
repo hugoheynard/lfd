@@ -1,7 +1,7 @@
 import { ventilateVat } from "../vat.js";
 
 /**
- * **L'exemple chiffré de `documentation/b2b/ajouter-un-terme-au-panier.md` §2.**
+ * **L'exemple chiffré de `documentation/pricing/ajouter-un-terme-au-panier.md` §2.**
  *
  * Il est ici pour une raison précise : un exemple arithmétique dans un document
  * est la forme de documentation qui pourrit le plus discrètement. Une phrase
