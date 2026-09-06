@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { ClientCart } from './client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ClientOrders } from '../client-orders.service';
+import { placeOrder, provideRecognised } from '../client-orders.fixture';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -19,12 +20,15 @@ const AT_THE_LABO: ServiceChoice = {
   address: 'Route de la Balme, Val d’Isère',
   pickupAddressId: 'pick_labo',
   slot: '7 h – 8 h',
+  date: '2026-09-07',
 };
 
 /** Une instance NEUVE, comme après un rechargement de page. */
 function reload(): { cart: ClientCart; order: OrderContextStore; orders: ClientOrders } {
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({});
+  TestBed.configureTestingModule({
+    providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+  });
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   return {
     cart: TestBed.inject(ClientCart),
@@ -65,7 +69,9 @@ describe('Les règles du panier', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
@@ -121,13 +127,13 @@ describe('Les règles du panier', () => {
     expect(cart.lines()).toEqual([]);
   });
 
-  it('régler fige la commande et vide le panier : ce qui est payé n’est plus en cours', () => {
+  it('régler fige la commande et vide le panier : ce qui est payé n’est plus en cours', async () => {
     const cart = TestBed.inject(ClientCart);
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     cart.add('VIE-001');
     cart.add('SAL-001');
 
-    const placed = TestBed.inject(ClientOrders).place();
+    const placed = await placeOrder();
 
     expect(placed?.pieces).toBe(2);
     expect(placed?.lines.map((l) => l.name)).toEqual(['Croissant au beurre', 'Quiche du jour']);
@@ -164,11 +170,18 @@ describe('Les règles du panier', () => {
     expect(cart.count()).toBe(1);
   });
 
-  it('ne fige rien sans mode de service ni sans panier', () => {
+  /**
+   * Aucun de ces deux cas ne doit ATTEINDRE le serveur : refuser au plus tôt
+   * évite une commande vide à laquelle il faudrait répondre 400. Le harnais
+   * HTTP le vérifie — une requête partie ferait échouer `verify()`.
+   */
+  it('ne fige rien sans mode de service ni sans panier', async () => {
     const orders = TestBed.inject(ClientOrders);
-    expect(orders.place()).toBeNull();
+    expect(await orders.place()).toBeNull();
 
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
-    expect(orders.place()).toBeNull();
+    expect(await orders.place()).toBeNull();
+
+    TestBed.inject(HttpTestingController).verify();
   });
 });

@@ -11,6 +11,7 @@ import { formatCents } from '../../../client/format-money';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { OrderContextStore } from '../../../client/order-context.store';
+import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import { ShopCatalogue } from '../shop-catalogue.store';
@@ -82,6 +83,7 @@ export class ShopPage {
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
+  private readonly auth = inject(AuthFacade);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
@@ -161,12 +163,20 @@ export class ShopPage {
    * le détail à un geste : régler d'ici n'est pas sauter une étape, c'est ne
    * pas en inventer une.
    */
-  protected pay(): void {
+  protected async pay(): Promise<void> {
     if (this.needsService()) {
       this.backToService();
       return;
     }
-    if (this.orders.place() !== null) {
+    // 🔴 Se connecter n'est PAS un échec, c'est l'étape suivante. La boutique se
+    // visite sans compte ; commander non, parce qu'une commande a un
+    // propriétaire. Le panier survit à l'aller-retour — il vit en base pour qui
+    // a déjà un compte, dans le navigateur pour les autres.
+    if (!this.auth.isAuthenticated()) {
+      this.auth.login('/nouvelle-commande/boutique');
+      return;
+    }
+    if ((await this.orders.place()) !== null) {
       void this.router.navigate(['/nouvelle-commande/confirmee']);
     }
   }

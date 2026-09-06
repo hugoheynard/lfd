@@ -1,11 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from '../cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
-import { ClientOrders } from '../client-orders.service';
+import { placeOrder, provideRecognised } from '../client-orders.fixture';
 import { ClientEspace } from './espace.service';
 
 const AT_THE_LABO: ServiceChoice = {
@@ -15,13 +16,16 @@ const AT_THE_LABO: ServiceChoice = {
   address: 'Route de la Balme, Val d’Isère',
   pickupAddressId: 'pick_labo',
   slot: '7 h – 8 h',
+  date: '2026-09-07',
 };
 
 describe('Ce qui attend une action', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
@@ -39,10 +43,10 @@ describe('Ce qui attend une action', () => {
     expect(espace.cards().map((c) => c.id)).toEqual(['cart', 'invoice']);
   });
 
-  it('met la commande prête EN TÊTE, et c’est elle qui porte la crème', () => {
+  it('met la commande prête EN TÊTE, et c’est elle qui porte la crème', async () => {
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('VIE-001');
-    TestBed.inject(ClientOrders).place();
+    await placeOrder();
 
     const cards = TestBed.inject(ClientEspace).cards();
     expect(cards[0]?.id).toBe('pickup');
@@ -65,10 +69,10 @@ describe('Ce qui attend une action', () => {
     expect(espace.todayLine()).toBe('Deux choses aujourd’hui.');
   });
 
-  it('nomme le lieu par sa forme PRÉPOSITIONNELLE — « au Labo », jamais « Le Labo »', () => {
+  it('nomme le lieu par sa forme PRÉPOSITIONNELLE — « au Labo », jamais « Le Labo »', async () => {
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('VIE-001');
-    TestBed.inject(ClientOrders).place();
+    await placeOrder();
 
     const pickup = TestBed.inject(ClientEspace)
       .cards()

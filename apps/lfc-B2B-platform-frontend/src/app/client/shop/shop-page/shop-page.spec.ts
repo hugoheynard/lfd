@@ -49,6 +49,7 @@ describe('ShopPage', () => {
       address: 'Route de la Balme, Val d’Isère',
       pickupAddressId: 'pick_labo',
       slot: '7 h – 8 h',
+      date: '2026-09-07',
     });
     cart = TestBed.inject(ClientCart);
     cart.clear();

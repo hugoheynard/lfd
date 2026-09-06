@@ -1,5 +1,7 @@
 import { effect, Injectable, signal } from '@angular/core';
 
+import type { BillingAddressPayload } from '@lfd/contracts';
+
 import { isRecord, readLocal, readString, writeLocal } from './local-store';
 
 /**
@@ -20,6 +22,14 @@ interface ServiceChoiceBase {
   readonly at: string;
   readonly address: string;
   readonly slot: string;
+  /**
+   * **La journée de retrait ou de livraison**, `AAAA-MM-JJ`.
+   *
+   * Elle était implicite — « les créneaux de demain » — et l'implicite ne
+   * traverse pas une API : `requestedDeliveryDate` est obligatoire à la
+   * passation, parce que c'est la journée de production. Cf. `slotDate`.
+   */
+  readonly date: string;
 }
 
 /**
@@ -45,6 +55,15 @@ export type ServiceChoice =
       readonly mode: 'delivery';
       /** Le code postal livré. La ZONE s'en déduit côté serveur, jamais ici. */
       readonly codePostal: string;
+      /**
+       * **L'adresse complète, telle que la commande l'exige.**
+       *
+       * Le code postal suffit à CHIFFRER — la zone s'en déduit — mais pas à
+       * livrer : `POST /orders` refuse une livraison sans adresse, et il a
+       * raison. Deux champs pour deux questions, et non un champ qui servirait
+       * mal aux deux.
+       */
+      readonly deliveryAddress: BillingAddressPayload;
     });
 
 const KEY = 'order.choice';
@@ -59,10 +78,11 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
   const at = readString(raw['at']);
   const address = readString(raw['address']);
   const slot = readString(raw['slot']);
-  if (place === null || at === null || address === null || slot === null) {
+  const date = readString(raw['date']);
+  if (place === null || at === null || address === null || slot === null || date === null) {
     return null;
   }
-  const base = { place, at, address, slot };
+  const base = { place, at, address, slot, date };
   if (mode === 'pickup') {
     // `undefined` et `null` ne se distinguent pas ici, et n'ont pas à l'être :
     // les deux veulent dire « le point par défaut », ce que le serveur sait
@@ -71,9 +91,39 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
   }
   if (mode === 'delivery') {
     const codePostal = readString(raw['codePostal']);
-    return codePostal === null ? null : { ...base, mode, codePostal };
+    const deliveryAddress = parseAddress(raw['deliveryAddress']);
+    if (codePostal === null || deliveryAddress === null) {
+      return null;
+    }
+    return { ...base, mode, codePostal, deliveryAddress };
   }
   return null;
+}
+
+/**
+ * L'adresse relue du navigateur — **validée**, parce que c'est elle qui partira
+ * au serveur. Un champ manquant ferait refuser la commande au moment du
+ * règlement, sur un panier composé.
+ */
+function parseAddress(raw: unknown): BillingAddressPayload | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const ligne1 = readString(raw['ligne1']);
+  const codePostal = readString(raw['codePostal']);
+  const ville = readString(raw['ville']);
+  const pays = readString(raw['pays']);
+  if (ligne1 === null || codePostal === null || ville === null || pays === null) {
+    return null;
+  }
+  return {
+    label: readString(raw['label']) ?? '',
+    ligne1,
+    ligne2: readString(raw['ligne2']) ?? '',
+    codePostal,
+    ville,
+    pays,
+  };
 }
 
 /**

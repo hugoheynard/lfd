@@ -75,6 +75,25 @@ export const ORDER_SLOTS: readonly OrderSlot[] = [
   { id: 'p4', label: '19 h – 20 h', part: 'pm', state: 'labo-only' },
 ];
 
+/**
+ * **La journée que ces créneaux visent** — demain, au format `AAAA-MM-JJ`.
+ *
+ * Elle était implicite : le titre disait « demain » et rien ne la portait. Elle
+ * ne pouvait pas le rester à partir du moment où la commande part au serveur —
+ * `requestedDeliveryDate` y est **obligatoire**, parce que c'est la journée de
+ * production.
+ *
+ * ⚠️ Calculée ici faute de source : les créneaux sont une maquette. Le jour où
+ * ils viennent de l'API, la date arrive avec eux et cette fonction disparaît —
+ * une journée de production se lit sur le calendrier de la maison, pas sur
+ * l'horloge du navigateur du client.
+ */
+export function slotDate(): string {
+  const day = new Date();
+  day.setDate(day.getDate() + 1);
+  return day.toISOString().slice(0, 10);
+}
+
 /** Complet : le créneau reste là, il ne se prend pas. */
 export function isSlotOpen(slot: OrderSlot): boolean {
   return slot.state !== 'full';

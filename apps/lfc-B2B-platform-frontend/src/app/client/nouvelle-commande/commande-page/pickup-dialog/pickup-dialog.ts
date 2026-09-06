@@ -16,7 +16,7 @@ import { ClientCopyService, fill } from '../../../../client/copy/client-copy.ser
 import type { CartAdjustment, PickupAddressView } from '@lfd/contracts';
 
 import { formatCents, formatRate } from '../../../../client/format-money';
-import { type OrderSlot } from '../../../../client/mock-station';
+import { slotDate, type OrderSlot } from '../../../../client/mock-station';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
 
@@ -146,6 +146,9 @@ export class PickupDialog {
         // serveur, qui est le seul à pouvoir la tenir devant la facture.
         pickupAddressId: point.id,
         slot: slot.label,
+        // La journée que ces créneaux visent, rendue explicite : la commande
+        // l'exige, et « demain » ne traverse pas une API. Cf. `slotDate`.
+        date: slotDate(),
       });
     }
   }

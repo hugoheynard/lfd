@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 
@@ -6,7 +7,7 @@ import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from '../cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
-import { ClientOrders } from '../client-orders.service';
+import { placeOrder, provideRecognised } from '../client-orders.fixture';
 import { ClientNav } from './client-nav.service';
 
 const AT_THE_LABO: ServiceChoice = {
@@ -16,6 +17,7 @@ const AT_THE_LABO: ServiceChoice = {
   address: 'Route de la Balme, Val d’Isère',
   pickupAddressId: 'pick_labo',
   slot: '7 h – 8 h',
+  date: '2026-09-07',
 };
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
@@ -32,7 +34,14 @@ describe('Les destinations du menu', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideRouter(ROUTES), provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+      ],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
@@ -52,10 +61,10 @@ describe('Les destinations du menu', () => {
     expect(nav.items().some((i) => i.id === 'cart')).toBe(false);
   });
 
-  it('compte les commandes réellement passées, pas une valeur tenue à part', () => {
+  it('compte les commandes réellement passées, pas une valeur tenue à part', async () => {
     TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
     TestBed.inject(ClientCart).add('VIE-001');
-    TestBed.inject(ClientOrders).place();
+    await placeOrder();
 
     const orders = TestBed.inject(ClientNav)
       .items()

@@ -17,6 +17,7 @@ import {
   type OrderSlot,
   SAVED_ADDRESSES,
   type SavedAddress,
+  slotDate,
 } from '../../../../client/mock-station';
 import { SlotStep } from '../slot-step/slot-step';
 import { formatCents, formatRate } from '../../../../client/format-money';
@@ -134,6 +135,22 @@ export class AddressDialog {
   );
 
   /** L'adresse retenue, que le second volet rappelle. */
+  /**
+   * La rue SEULE — ce que `ligne1` attend.
+   *
+   * Distincte de {@link line}, qui colle le code postal derrière pour
+   * l'affichage. Les envoyer ensemble mettrait « 5 rue du Four, 75002 » dans un
+   * champ qui a déjà sa colonne `codePostal`, et le bon de livraison le
+   * répéterait deux fois.
+   */
+  protected readonly streetLine = computed(() => {
+    const id = this.picked();
+    if (id !== null) {
+      return SAVED_ADDRESSES.find((a) => a.id === id)?.street ?? '';
+    }
+    return this.street().trim();
+  });
+
   protected readonly line = computed(() => {
     const id = this.picked();
     if (id !== null) {
@@ -191,6 +208,22 @@ export class AddressDialog {
       // pourcentage.
       codePostal: this.codePostal(),
       slot: slot.label,
+      date: slotDate(),
+      // 🔴 L'adresse COMPLÈTE, en plus du code postal. Le code postal chiffre
+      // (la zone s'en déduit) ; il ne livre pas. `POST /orders` refuse une
+      // livraison sans adresse, et il a raison.
+      //
+      // La ville vient du LIBELLÉ DE ZONE, faute de mieux : `DeliveryZoneView`
+      // n'en porte pas, et la maquette en portait une par zone. C'est la même
+      // approximation que l'écran affiche déjà — cf. `city` ci-dessus.
+      deliveryAddress: {
+        label: this.placeName(),
+        ligne1: this.streetLine(),
+        ligne2: '',
+        codePostal: this.codePostal(),
+        ville: this.city(),
+        pays: 'France',
+      },
     });
   }
 
