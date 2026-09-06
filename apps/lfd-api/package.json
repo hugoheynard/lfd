@@ -28,6 +28,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:reset": "tsx prisma/reset-to-seed.ts",
     "db:seed:fiche": "tsx prisma/seed-fiche.ts",
     "db:test:setup": "tsx test/setup-test-database.ts",
     "db:dev:setup": "tsx prisma/setup-dev-database.ts",
@@ -35,8 +36,8 @@
     "seed:growth": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-growth.ts",
     "seed:growth:reset": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/reset-growth.ts",
     "backfill:naf": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/backfill-naf.ts",
-    "seed:temoin": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-temoin-orders.ts",
     "seed:delivery": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed-delivery.js",
+    "seed:orders": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed-orders.js",
     "seed:pim": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed-pim.js"
   },
   "dependencies": {

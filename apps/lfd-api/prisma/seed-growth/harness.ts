@@ -4,7 +4,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { AppModule } from "../../src/appBootstrap/app.module.js";
 import { EstablishmentDirectory } from "../../src/b2b/account/domain/ports/establishment-directory.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
-import { CustomerUserResolver } from "../../src/platform/auth/customer-user.resolver.js";
+import { PrincipalResolver } from "../../src/platform/auth/principal.resolver.js";
 import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
@@ -26,7 +26,13 @@ export interface SeedHarness {
   readonly module: TestingModule;
   readonly commands: CommandBus;
   readonly queries: QueryBus;
-  readonly resolver: CustomerUserResolver;
+  /**
+   * 🔴 Ce champ était typé `CustomerUserResolver`, **une classe qui n'existe
+   * plus** : le port a été renommé `PrincipalResolver` en changeant de couche.
+   * Les seeds tournant en `TS_NODE_TRANSPILE_ONLY`, rien ne l'a rougi — c'est
+   * l'entrée de `prisma/` dans `tsconfig.seed.json` qui l'a rendu.
+   */
+  readonly resolver: PrincipalResolver;
   readonly prisma: PrismaService;
   runAt<T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T>;
   close(): Promise<void>;
@@ -47,7 +53,7 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     module,
     commands: module.get(CommandBus, { strict: false }),
     queries: module.get(QueryBus, { strict: false }),
-    resolver: module.get(CustomerUserResolver, { strict: false }),
+    resolver: module.get(PrincipalResolver, { strict: false }),
     prisma: module.get(PrismaService, { strict: false }),
     runAt: <T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T> =>
       runWithRequestContext({ now, traceId: newTraceId(), actor }, fn),

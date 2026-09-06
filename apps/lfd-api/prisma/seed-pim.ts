@@ -61,40 +61,18 @@ import "dotenv/config";
 
 import { openB2bChannel, type B2bChannelReport } from "./seed-pim/b2b-channel.js";
 import { CATALOGUE } from "./seed-pim/catalogue.js";
+import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness, SEED_STAFF } from "./seed-pim/harness.js";
 import { syntheticSheetsEnabled } from "./seed-pim/declarations.js";
 import { pushToPlatform, type PushReport } from "./seed-pim/push.js";
 import { seedRegistry, type RegistryCounts } from "./seed-pim/registry.js";
 import { replayProducts, type ReplayReport } from "./seed-pim/replay.js";
 
-/**
- * Les hôtes acceptés comme « ma machine ». Une liste, et non une négation de
- * l'hôte de production : ce qui n'est pas explicitement local doit être refusé,
- * y compris ce qu'on n'a pas pensé à interdire.
- */
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-
-function refuseNonLocalTarget(url: string): void {
-  if (url === "") {
-    throw new Error("DATABASE_LFD_URL manquant : aucune cible à seeder.");
-  }
-  if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) {
-    throw new Error(
-      "Cible refusée : le seed n'écrit QUE vers un Postgres direct local " +
-        "(postgresql://). Une URL Accelerate désigne une base distante.",
-    );
-  }
-  const host = new URL(url).hostname;
-  if (!LOCAL_HOSTS.has(host)) {
-    throw new Error(
-      `Cible refusée (hôte « ${host} ») : le seed n'écrit QUE vers une base locale. ` +
-        "Il rejoue un catalogue et peut poser des déclarations d'allergènes inventées.",
-    );
-  }
-}
-
 async function main(): Promise<void> {
-  refuseNonLocalTarget(process.env["DATABASE_LFD_URL"] ?? "");
+  refuseNonLocalTarget(
+    process.env["DATABASE_LFD_URL"] ?? "",
+    "le seed rejoue un catalogue et peut poser des déclarations d'allergènes inventées.",
+  );
 
   announce();
 

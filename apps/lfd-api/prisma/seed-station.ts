@@ -21,6 +21,14 @@ import { CartAdjustmentMode, type PrismaClient } from "../src/platform/database/
  * saisir des cas doit les garder.
  */
 
+/**
+ * **Les libellés que ce seed déclare** — sa clé d'idempotence, et la liste que
+ * `reset-to-seed.ts` épargne. Deux usages pour une seule liste : dériver l'une
+ * de l'autre est ce qui évite qu'un point semé se fasse retirer au reset suivant.
+ */
+export const SEEDED_POINT_LABELS: readonly string[] = ["Le Labo", "Le Village"];
+export const SEEDED_ZONE_LABELS: readonly string[] = ["Val d'Isère", "Tignes"];
+
 /** Les deux fenêtres du labo : les pros avant le four, le public après. */
 const LABO_OPENING: PickupOpening = {
   // Trois quarts d'heure AVANT l'ouverture au public, et il y a un trou entre
@@ -102,6 +110,12 @@ export async function seedStation(prisma: PrismaClient): Promise<void> {
 }
 
 async function seedPickupPoints(prisma: PrismaClient): Promise<void> {
+  // 🔴 **Le défaut ne se réclame que s'il est libre.** Ce seed posait
+  // `isDefault: true` en écriture directe, sans passer par le repository qui
+  // tient l'invariant « un seul défaut » — et une base qui en avait déjà un s'est
+  // retrouvée avec DEUX points par défaut, constaté. La même règle que
+  // `PickupAddressRepository.create` : on devient le défaut si personne ne l'est.
+  let defaultTaken = (await prisma.pickupAddress.count({ where: { isDefault: true } })) > 0;
   for (const point of POINTS) {
     const existing = await prisma.pickupAddress.findFirst({ where: { label: point.label } });
     if (existing) {
@@ -116,12 +130,13 @@ async function seedPickupPoints(prisma: PrismaClient): Promise<void> {
         codePostal: point.codePostal,
         ville: point.ville,
         pays: "France",
-        isDefault: point.isDefault,
+        isDefault: point.isDefault && !defaultTaken,
         discountMode: point.discount?.mode ?? null,
         discountValue: point.discount?.value ?? null,
         opening: point.opening,
       },
     });
+    defaultTaken = defaultTaken || point.isDefault;
     console.log(`✓ Point de retrait « ${point.label} » semé.`);
   }
 }

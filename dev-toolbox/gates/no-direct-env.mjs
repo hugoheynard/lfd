@@ -37,6 +37,13 @@ const SKIP_DIRS = new Set([
  * Chaque dérogation doit être justifiée ici, sinon elle devient une porte
  * ouverte silencieuse.
  */
+/**
+ * Les **répertoires** hors application. Tout ce qu'ils contiennent lit
+ * l'environnement librement : ce sont des CLI, pas le runtime — cf. la note sur
+ * `prisma/` dans {@link ALLOWED_SUFFIXES}.
+ */
+const ALLOWED_DIRECTORIES = ["apps/lfd-api/prisma/"];
+
 const ALLOWED_SUFFIXES = [
   // La passerelle elle-même, son test, et le harnais qui sème l'env des tests.
   "src/platform/config/app-config.ts",
@@ -58,30 +65,17 @@ const ALLOWED_SUFFIXES = [
   "src/platform/config/__tests__/env-readers-r2.spec.ts",
   // Les scripts `prisma/` : des CLI qui tournent HORS du runtime Nest — seeds,
   // provisionnement, clonage. `AppConfig` n'y existe pas, et lui en fabriquer
-  // une pour un script jetable serait un coût sans contrepartie. Le suffixe est
-  // volontairement large : c'est le RÉPERTOIRE qui porte la dérogation, parce
-  // que c'est lui qui dit « je suis hors application ».
-  "prisma/clone-dev.ts",
-  "prisma/dev-db-url.ts",
-  // La seed du référentiel : `prisma/pim-seed.ts` jusqu'au 2026-09-02, éclatée
-  // depuis en un point d'entrée et ses modules. La dérogation avait survécu au
-  // fichier qu'elle couvrait — exactement la dérive que ce commentaire est
-  // censé empêcher, et qui a rendu cette porte rouge sans que rien de neuf ne
-  // lise l'environnement.
-  "prisma/seed-pim.ts",
-  "prisma/seed-pim/declarations.ts",
-  "prisma/seed-pim/replay.ts",
-  "prisma/reset-growth.ts",
-  // Le push local du catalogue vers le B2B — il n'existait aucun moyen de
-  // fabriquer une livraison à relire sur un poste, la route étant murée par un
-  // jeton Auth0 réel. Son seul drapeau dit s'il SIMULE ou s'il envoie, et son
-  // défaut est de simuler.
-  "prisma/seed-delivery.ts",
-  "prisma/seed-fiche.ts",
-  "prisma/seed-growth.ts",
-  "prisma/seed-temoin-orders.ts",
-  "prisma/seed.ts",
-  "prisma/setup-dev-database.ts",
+  // une pour un script jetable serait un coût sans contrepartie.
+  //
+  // 🔴 **C'est le RÉPERTOIRE qui porte la dérogation, et il la porte enfin.**
+  // Ce commentaire l'affirmait déjà, mais la liste énumérait les fichiers un par
+  // un — quinze entrées, dont une survivante d'un fichier éclaté et une d'un
+  // fichier supprimé. Chaque nouveau script de seed rendait la porte rouge sans
+  // que rien de neuf ne lise l'environnement, et la réparation consistait à
+  // rallonger la liste : une porte qu'on apprend à contourner par l'ajout.
+  //
+  // La règle est la frontière, pas l'inventaire : ce dossier dit « je suis hors
+  // application », et c'est ce qui justifie la dérogation.
   // Configuration d'un lanceur de tests, pas de l'application.
   "playwright.config.ts",
 ];
@@ -119,7 +113,10 @@ function* walk(dir) {
 
 function isAllowed(relPath) {
   const posix = relPath.split(/[\\/]/).join("/");
-  return ALLOWED_SUFFIXES.some((suffix) => posix.endsWith(suffix));
+  return (
+    ALLOWED_DIRECTORIES.some((directory) => posix.includes(directory)) ||
+    ALLOWED_SUFFIXES.some((suffix) => posix.endsWith(suffix))
+  );
 }
 
 const violations = [];
