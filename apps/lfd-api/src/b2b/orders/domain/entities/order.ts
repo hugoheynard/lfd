@@ -1,5 +1,6 @@
 import {
   cartAdjustmentCents,
+  discountCentsOf,
   type BillingAddressPayload,
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
@@ -15,7 +16,7 @@ import {
   InvalidOrderFulfillmentError,
   InvalidOrderPaymentError,
 } from "../errors/order-errors.js";
-import { computeVatCents } from "../services/vat.js";
+import { computeOrderTotals } from "../services/vat.js";
 import {
   OrderLine,
   type OrderLineInput,
@@ -130,13 +131,21 @@ function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): vo
  * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
  * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
  *
+ * 🔴 Il compare du **borné** à du borné (`discountCentsOf`), là où il comparait
+ * du brut. Une remise en montant fixe supérieure au panier — 50 € sur 10 € —
+ * passait donc telle quelle et s'enregistrait à 50 € à côté d'un sous-total de
+ * 10 € : la ligne ne s'additionnait pas, et elle contredisait le devis, que
+ * `ventilateVat` bornait déjà de son côté. La borne est désormais posée à la
+ * source, dans `CartAdjustments` ; celle-ci est la barrière de l'agrégat, qui
+ * ne fait confiance à aucun appelant.
+ *
  * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
  */
 function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
   if (input.discountAdjustment === null) {
     return;
   }
-  if (cartAdjustmentCents(input.discountAdjustment, subtotalCents) !== input.discountCents) {
+  if (discountCentsOf(input.discountAdjustment, subtotalCents) !== input.discountCents) {
     throw new InvalidOrderPaymentError(
       "La remise retenue ne correspond pas à l'ajustement appliqué.",
     );
@@ -188,24 +197,29 @@ export class Order {
     const fulfillment = normalizeFulfillment(input.fulfillment);
     const lines = input.lines.map((line) => OrderLine.create(line));
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    const vatCents = computeVatCents({
+    ensureDiscountMatches(input, subtotalCents);
+    ensureLateFeeMatches(input, subtotalCents);
+    // 🔴 **Une seule définition du TTC**, et elle est dans la ventilation.
+    //
+    // Le total se recomposait ici — `max(0, sous-total − remise) + frais +
+    // surtaxe + TVA` — pendant que la TVA venait de `ventilateVat`. Les deux
+    // tombaient juste, et c'est ce qui rendait la chose dangereuse : un terme
+    // ajouté au panier n'entre dans la TVA et dans le total qu'en deux gestes,
+    // dont un seul est évident.
+    //
+    // La règle que ce commentaire portait — la surtaxe s'ajoute APRÈS la remise,
+    // comme les frais de zone, parce qu'on ne fait pas de geste commercial sur
+    // une pénalité de retard — n'est pas perdue : elle est APPLIQUÉE dans
+    // `ventilateVat`, où les extras sont proratisés sur le sous-total brut
+    // quand les lignes le sont sur le net. Elle est passée de commentaire à
+    // code exécuté.
+    const { vatCents, totalCents } = computeOrderTotals({
       lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
       discountCents: input.discountCents,
       deliveryFeeCents: input.deliveryFeeCents,
       lateFeeCents: input.lateFeeCents,
       lateFeeVatRate: input.lateFeeAdjustment?.vatRatePercent ?? null,
     });
-    ensureDiscountMatches(input, subtotalCents);
-    ensureLateFeeMatches(input, subtotalCents);
-    // La surtaxe s'ajoute APRÈS la remise, sur la même ligne que les frais de
-    // zone : c'est un terme de panier, pas une correction du sous-total. La
-    // placer avant la remise la ferait remiser — on ne fait pas de geste
-    // commercial sur une pénalité de retard.
-    const totalCents =
-      Math.max(0, subtotalCents - input.discountCents) +
-      input.deliveryFeeCents +
-      input.lateFeeCents +
-      vatCents;
     return new Order(
       input.companyId,
       input.placedByUserId,

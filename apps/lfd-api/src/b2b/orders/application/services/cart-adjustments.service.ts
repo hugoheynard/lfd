@@ -1,4 +1,4 @@
-import { cartAdjustmentCents, type CartAdjustment } from "@lfd/contracts";
+import { cartAdjustmentCents, discountCentsOf, type CartAdjustment } from "@lfd/contracts";
 import type { DeliveryZoneView, PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -70,7 +70,10 @@ export class CartAdjustments {
     }
     return {
       point,
-      discountCents: point.discount ? cartAdjustmentCents(point.discount, subtotalCents) : 0,
+      // `discountCentsOf` et non `cartAdjustmentCents` : une remise est bornée à
+      // ce qu'elle remise. Les frais de zone, juste en dessous, ne le sont pas —
+      // une course peut coûter plus cher qu'un petit panier.
+      discountCents: point.discount ? discountCentsOf(point.discount, subtotalCents) : 0,
       discountAdjustment: point.discount,
     };
   }

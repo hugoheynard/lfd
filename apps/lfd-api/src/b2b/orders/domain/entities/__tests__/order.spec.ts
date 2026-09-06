@@ -165,6 +165,49 @@ describe("Order.draft — calcul monétaire", () => {
 
     expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 150 });
   });
+
+  /**
+   * 🔴 **Régression : une remise fixe supérieure au panier s'enregistrait
+   * telle quelle.**
+   *
+   * 50 € de remise sur 4 € de marchandise donnaient une commande portant
+   * `subtotal = 400`, `discount = 5000` et `total = 0`. La ligne ne
+   * s'additionnait pas, et elle contredisait le devis de la boutique — que
+   * `ventilateVat` bornait déjà de son côté : le client voyait −4 €, la
+   * commande gardait −50 €.
+   *
+   * La borne est posée à la source (`CartAdjustments`) ; l'agrégat la
+   * REDEMANDE, parce qu'il ne fait confiance à aucun appelant.
+   */
+  it("BORNE une remise fixe plus grande que le panier", () => {
+    const state = deferred({
+      lines: [food(2, 200, 0)],
+      discountCents: 400,
+      discountAdjustment: { mode: "amount", cents: 5000 },
+    });
+
+    expect(state.subtotalCents).toBe(400);
+    expect(state.discountCents).toBe(400);
+    expect(state.totalCents).toBe(0);
+    // L'ajustement reste celui du point, non borné : c'est le RÉGLAGE qui a
+    // produit la remise, pas la remise. Ce que la facture additionne est
+    // `discountCents`, et lui tient dans le panier.
+    expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 5000 });
+  });
+
+  it("refuse une remise fixe annoncée AU-DELÀ de la borne", () => {
+    // L'appelant qui n'a pas borné se fait refuser, plutôt que d'écrire une
+    // ligne qui ne s'additionne pas.
+    expect(() =>
+      Order.draft(
+        draftInput({
+          lines: [food(2, 200, 0)],
+          discountCents: 5000,
+          discountAdjustment: { mode: "amount", cents: 5000 },
+        }),
+      ),
+    ).toThrow(InvalidOrderPaymentError);
+  });
 });
 
 describe("Order.draft — acheminement", () => {

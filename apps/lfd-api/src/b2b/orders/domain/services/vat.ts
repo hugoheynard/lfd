@@ -63,21 +63,50 @@ export interface VatInput {
    * toutes les commandes tardives.
    *
    * Il ne peut donc pas manquer quand `lateFeeCents` n'est pas nul, et
-   * {@link computeVatCents} le refuse plutôt que de retomber sur un défaut.
+   * {@link computeOrderTotals} le refuse plutôt que de retomber sur un défaut.
    */
   readonly lateFeeVatRate: number | null;
 }
 
+/** Les deux montants d'une commande qui se déduisent de sa ventilation. */
+export interface OrderTotals {
+  /**
+   * TVA totale, en centimes. Somme de la TVA des marchandises (par taux, remise
+   * déduite au prorata), de la livraison et de la surtaxe.
+   */
+  readonly vatCents: number;
+  /**
+   * Le **TTC** à encaisser : le net de marchandises, plus les termes que la
+   * remise ne touche pas, plus la TVA de l'ensemble.
+   */
+  readonly totalCents: number;
+}
+
 /**
- * TVA totale de la commande, en centimes. Somme de la TVA des marchandises (par
- * taux, remise déduite au prorata), de la livraison et de la surtaxe.
+ * Les montants de la commande, **pris à la ventilation** plutôt que recomposés.
+ *
+ * 🔴 Cette fonction ne rendait que la TVA, et `Order.draft` refaisait le total
+ * juste à côté : `max(0, sous-total − remise) + frais + surtaxe + TVA`. Les deux
+ * tombaient juste — même bornage de la remise, mêmes termes —, et c'est
+ * exactement ce qui rendait la chose dangereuse : **la définition du TTC vivait
+ * à deux endroits**, dont un seul apparaît quand on ajoute un terme au panier.
+ *
+ * Ajouté aux seuls `extras`, un terme neuf entrerait dans la TVA sans entrer
+ * dans le total — une commande dont l'assiette taxée dépasse ce qu'elle
+ * encaisse. Ajouté au seul total, il serait facturé sans taxe. Aucun test
+ * n'aurait rougi : aucun ne comparait les deux définitions entre elles.
+ *
+ * Le devis de la boutique prenait déjà `ventilateVat().totalCents`. Les deux
+ * surfaces tombaient donc d'accord sans employer la même méthode, ce qui n'est
+ * pas la même chose que s'accorder.
  */
-export function computeVatCents(input: VatInput): number {
-  return ventilateVat({
+export function computeOrderTotals(input: VatInput): OrderTotals {
+  const ventilated = ventilateVat({
     lines: input.lines,
     discountCents: input.discountCents,
     extras: extrasOf(input),
-  }).vatTotalCents;
+  });
+  return { vatCents: ventilated.vatTotalCents, totalCents: ventilated.totalCents };
 }
 
 /**

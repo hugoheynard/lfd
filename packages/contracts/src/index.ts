@@ -292,7 +292,7 @@ export type {
   AccountAlertOverrideMode,
   AccountAlertRuleView,
 } from "./account-alert-override.js";
-export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js";
+export { cartAdjustmentSchema, cartAdjustmentCents, discountCentsOf } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema, pickupOpeningSchema, pickupWindows } from "./pickup.js";
 export type { PickupOpening } from "./pickup.js";

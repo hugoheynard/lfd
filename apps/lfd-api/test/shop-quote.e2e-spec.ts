@@ -168,6 +168,37 @@ describe("le devis de la vitrine", () => {
     expect(view.discountAdjustment).toEqual({ mode: "amount", cents: 500 });
   });
 
+  /**
+   * 🔴 **Une remise en montant est BORNÉE au panier qu'elle remise.**
+   *
+   * Elle ne l'était qu'ici, dans la ventilation, et pas à la passation : le
+   * client voyait « −1,00 € » sur un panier à 1,00 €, et la commande
+   * enregistrait « −50,00 € » à côté d'un sous-total de 1,00 €. Le devis et la
+   * facture disaient deux choses différentes du même geste commercial. Ce test
+   * tient le devis ; `order.spec.ts` tient l'agrégat.
+   */
+  it("borne une remise en montant au panier — jamais un avoir déguisé", async () => {
+    await seedCatalogue();
+    // 50 € de remise sur un croissant à 1 € : le point est trop généreux pour
+    // ce panier-là, ce qui est un réglage plausible et non une anomalie.
+    const point = await seedPickup("amount", 5_000);
+
+    const view = jsonBody<ShopQuoteView>(
+      await quote({
+        lines: [{ sku: "VIE-001", quantity: 1 }],
+        fulfillment: { method: "pickup", pickupAddressId: point },
+      }).expect(200),
+    );
+
+    expect(view.subtotalHtCents).toBe(100);
+    expect(view.discountCents).toBe(100);
+    expect(view.totalCents).toBe(0);
+    // L'ajustement rendu reste celui du POINT : c'est le réglage, pas le
+    // montant appliqué. Le front met en forme « −50,00 € de remise » ; ce qui
+    // s'additionne est `discountCents`.
+    expect(view.discountAdjustment).toEqual({ mode: "amount", cents: 5_000 });
+  });
+
   it("taxe le coursier, HORS remise, au taux du transport", async () => {
     await seedCatalogue();
     await seedZone();
