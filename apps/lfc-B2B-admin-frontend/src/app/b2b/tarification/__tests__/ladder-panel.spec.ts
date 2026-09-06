@@ -55,6 +55,27 @@ function fill(panel: LadderPanel, tiers: readonly [number, number][]): void {
   });
 }
 
+/**
+ * 🔴 **`D9` — la mesure du seuil, dite à côté du seuil.**
+ *
+ * `minQuantity` se juge sur DEUX mesures selon l'étage : le cumul de
+ * l'engagement pour la mercuriale et le volume, la commande en cours pour une
+ * promotion ou un geste (`specificity.ts`, `CONTRACT_STAGES`). Le raisonnement
+ * est juste ; ce qui manquait, c'est qu'un même champ, sous un même mot,
+ * changeait de sens sans le dire — le prix en sortait juste et inexplicable.
+ *
+ * Ce test tient la phrase à l'écran. Sans lui, elle disparaît au premier
+ * remaniement de gabarit et le défaut revient sans qu'une ligne rougisse.
+ */
+describe('la mesure du seuil', () => {
+  it('nomme les deux mesures, l’engagement et la commande', () => {
+    const text = (mount([]).nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).toContain("cumul de l'engagement");
+    expect(text).toContain('commande en cours');
+  });
+});
+
 describe('la saisie du barème', () => {
   it('convertit les pourcents en points de base, et trie les paliers', async () => {
     const posted: SetVolumeLadderPayload[] = [];

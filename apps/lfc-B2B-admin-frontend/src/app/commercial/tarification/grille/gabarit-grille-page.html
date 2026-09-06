@@ -63,6 +63,25 @@
       final peut différer de ce que vous saisissez.
     </p>
 
+    <!-- 🔴 **LA MESURE DU SEUIL, dite à côté des seuils.**
+         `minQuantity` se juge sur deux mesures selon l'étage
+         (`specificity.ts`, `CONTRACT_STAGES`) : le cumul de l'engagement pour
+         la mercuriale et le volume, la commande en cours pour une promotion ou
+         un geste. Le raisonnement est juste — « à partir de 50 » sur une
+         promotion est une incitation au panier, et la lire sur la saison
+         l'accorderait dès la première livraison.
+         Ce qui manquait est ici : un même champ, sous un même mot, changeait de
+         sens sans le dire. Et le repli `?? quantity` de `volumeQuantityOf` est
+         la moitié qui surprend — une grille annuelle posée SANS engagement ne
+         s'ouvre qu'à qui commande tout d'un coup. Le prix est juste, et
+         inexplicable. -->
+    <p class="caveat">
+      Les paliers se comptent sur le <strong>cumul de l'engagement</strong> du client, cette
+      commande comprise. <strong>Sans engagement, ils se comptent sur la commande seule</strong> —
+      une grille « 10 000+ » ne s'ouvre alors qu'à qui commande 10 000 pièces d'un coup, jamais à
+      qui les étale sur la saison.
+    </p>
+
     <!-- L'exception au scellement, dite là où elle change la lecture. Une
          promotion cochée « par-dessus mercuriale » descend le prix SOUS ce que
          cette grille annonce : le taire ferait de cet écran un menteur, pour la
@@ -174,7 +193,11 @@
                           type="text"
                           inputmode="numeric"
                           placeholder="dès…"
-                          [attr.aria-label]="'Seuil du palier ' + ($index + 1)"
+                          [attr.aria-label]="
+                            'Seuil du palier ' +
+                            ($index + 1) +
+                            ', compté sur le cumul de l’engagement'
+                          "
                           [value]="tier.minQuantity"
                           (input)="setTier(row.sku, $index, 'minQuantity', nativeValue($event))"
                         />

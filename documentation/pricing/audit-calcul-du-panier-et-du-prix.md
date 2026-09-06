@@ -42,22 +42,27 @@ paiement, et le référentiel en amont du miroir.
 
 ## A.0 Le tableau, en un écran
 
-**Un défaut, et il ne fausse aucune facture.**
+**Aucun défaut ouvert.** Les dix sont refermés — les trois derniers le
+2026-09-06. Ce qui reste tient en deux choses : **un lot** (`P12`), et **trois
+requêtes de production** que personne n'a lancées.
+
+Les trois lignes ci-dessous sont conservées le temps que les requêtes du **A.1**
+soient passées : elles disent ce que le déploiement des correctifs va produire.
 
 | Défaut        | Ce que c'est                                                                                                                     | Le lot  |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | ~~**D7**~~ ✅ | **Refermé le 2026-09-06, par suppression.** L'espace pro hérité n'était plus routé depuis le 2026-08-27 ; 4 958 lignes en moins. | ✅ `P8` |
 | ~~**D8**~~ ✅ | **Refermé le 2026-09-06.** Le repli de TVA par famille est retiré des DEUX lecteurs — celui qui facture, et celui qui affiche.   | ✅ `P6` |
-| **D9** 🟡     | `minQuantity` veut dire **deux choses** selon l'étage, sous le même nom et le même champ. Le prix sera juste et inexplicable.    | `P9`    |
+| ~~**D9**~~ ✅ | **Refermé le 2026-09-06.** La mesure du seuil est nommée à côté du seuil, dans les deux écrans qui en saisissent un.             | ✅ `P9` |
 
-**Deux lots restent.**
+**Un lot reste** — les trois autres sont tombés le même jour.
 
-| Lot        | Ce qu'il fait                                                                                                                                                                                                                  | Ce qui le bloque                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| ✅ **P6**  | **Livré le 2026-09-06.** Retiré des deux lecteurs, et le semis e2e pose enfin le taux sur l'article. La mesure de production reste utile — non plus pour décider, mais pour savoir **combien d'articles quittent la vitrine**. | —                                               |
-| ✅ **P8**  | **Livré le 2026-09-06 — en supprimant, pas en convertissant.** Le panier, la boutique et le catalogue hérités, plus le tunnel de commande.                                                                                     | —                                               |
-| **P9**     | Nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil — `D9`.                                                                                                                                             | Rien. C'est un défaut de **nom**, pas de motif. |
-| **P12** 🟡 | Garder les règles de prix en mémoire, invalidées à l'écriture : 4 lectures par devis deviennent 1.                                                                                                                             | Rien. C'est le facteur restant le plus net.     |
+| Lot        | Ce qu'il fait                                                                                                                                                                                                                  | Ce qui le bloque                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| ✅ **P6**  | **Livré le 2026-09-06.** Retiré des deux lecteurs, et le semis e2e pose enfin le taux sur l'article. La mesure de production reste utile — non plus pour décider, mais pour savoir **combien d'articles quittent la vitrine**. | —                                           |
+| ✅ **P8**  | **Livré le 2026-09-06 — en supprimant, pas en convertissant.** Le panier, la boutique et le catalogue hérités, plus le tunnel de commande.                                                                                     | —                                           |
+| ✅ **P9**  | **Livré le 2026-09-06.** Le barème et la grille de gabarit disent sur quoi leurs paliers se comptent — et disent le repli, qui est la moitié qui surprend.                                                                     | —                                           |
+| **P12** 🟡 | Garder les règles de prix en mémoire, invalidées à l'écriture : 4 lectures par devis deviennent 1.                                                                                                                             | Rien. C'est le facteur restant le plus net. |
 
 ## A.1 🔴 Les trois requêtes qui ne peuvent pas être lancées d'ici
 
@@ -92,7 +97,7 @@ depuis le 2026-09-06 ; les lignes déjà écrites ne sont pas touchées.
 psql "$DATABASE_LFD_URL_PROD" -c "SELECT count(*) FROM orders WHERE discount_cents > subtotal_cents;"
 ```
 
-## A.2 Le défaut ouvert, et les deux refermés le 2026-09-06
+## A.2 Les trois défauts refermés le 2026-09-06
 
 ### D7 ✅ Le panier hérité comptait en euros flottants — refermé le 2026-09-06
 
@@ -162,7 +167,31 @@ La sortie est une mesure, pas un geste : compter en production les
 `catalog_items` à `vat_rate_percent IS NULL` dont la famille en a un. Zéro ⇒ le
 repli tombe. Autre chose ⇒ le repli tient, et on sait enfin ce qu'il tient.
 
-### D9 🟡 `minQuantity` veut dire deux choses selon l'étage
+### D9 ✅ `minQuantity` voulait dire deux choses — refermé le 2026-09-06
+
+> **Corrigé par `P9`, et le remède retenu n'est pas celui que cette section
+> proposait en premier.** Renommer les deux mesures (`minOrderQuantity` /
+> `minCommittedQuantity`) aurait été honnête et n'aurait rien réglé : c'est le
+> **même champ** à l'écran, et un nom ne change que dans le code.
+>
+> Ce qui est livré : **la mesure est dite à côté du seuil**, sur les deux écrans
+> qui en saisissent un — le barème de volume et la grille de gabarit.
+>
+> 🔴 **Et une ouverture du dossier a rétréci le défaut.** Depuis le passage du
+> volume en barème, le panneau de règle pose `minQuantity: null` en dur : aucun
+> écran ne saisit plus de seuil sur une **promotion** ou un **geste**. Les deux
+> seuls points de saisie sont donc `mercuriale` et `volume` — tous deux des
+> étages de contrat. Ce qu'un commercial tape veut donc toujours dire la même
+> chose, et la vraie surprise n'était pas l'ambiguïté entre étages : c'est le
+> repli `?? quantity` de `volumeQuantityOf`. **Sans engagement, une grille
+> annuelle se lit sur la commande** — « 10 000+ » ne s'ouvre qu'à qui commande
+> 10 000 pièces d'un coup. C'est cette phrase-là que les deux écrans portent.
+>
+> ⚠️ La phrase du barème est tenue par un test ; celle de la grille de gabarit
+> ne l'est pas — cette page n'a aucun spec, et en monter un pour un paragraphe
+> statique aurait coûté plus que ce qu'il garde.
+
+### D9 — l'état d'origine, pour mémoire
 
 `specificity.ts`, `CONTRACT_STAGES` : `mercuriale` et `volume` lisent le seuil
 sur `volumeQuantityOf(context)` — le cumul de l'engagement s'il y en a un —
@@ -957,7 +986,7 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                                      | Le serveur sait enfin répondre « combien » avant la commande.                                   |
 | ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                                      | Le client voyait un montant et en aurait payé un autre.                                         |
 | ✅ **P8**  | `D7` : supprimer le panier hérité plutôt que le convertir — il n'était plus routé.                                                                                                                                                                 | À faire quand on y touche, pas avant.                                                           |
-| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                                     | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
+| ✅ **P9**  | `D9` : afficher la mesure à côté du seuil, sur les deux écrans qui en saisissent un. Le renommage n'aurait pas aidé — c'est le même champ, et le nom ne change que dans le code.                                                                   | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
 | ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est en **C.1**, `D10`.    | Un prix négocié entrait en base au millième.                                                    |
 | ✅ **P10** | La **couture pure** du **B.3** : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                               | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |
 | ✅ **P7c** | Le devis de la boutique **amortit les salves** : `debounceTime` de 300 ms, `distinctUntilChanged` sur la clé, `switchMap` qui annule la requête en vol. Six clics sur « + » faisaient six appels.                                                  | Un facteur d'écran ne se rattrape pas en divisant une constante de serveur.                     |

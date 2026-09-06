@@ -33,12 +33,22 @@
     </div>
   </div>
 
+  <!-- 🔴 **La MESURE du seuil, dite à côté du seuil.** `minQuantity` se juge sur
+       deux mesures selon l'étage (`specificity.ts`, `CONTRACT_STAGES`) : le
+       cumul de l'engagement pour la mercuriale et le volume, la commande en
+       cours pour une promotion ou un geste. Le raisonnement est juste ; ce qui
+       manquait, c'est qu'un même champ, sous un même mot, changeait de sens
+       sans le dire. Le prix en sortait juste et inexplicable. -->
   <div class="tiers">
-    <div class="tiers-head" aria-hidden="true">
+    <div class="tiers-head">
       <span>À partir de</span>
       <span>Remise</span>
       <span></span>
     </div>
+    <p class="tiers-measure">
+      Les seuils se comptent sur le <strong>cumul de l'engagement</strong> quand le client en a un,
+      et sur la <strong>commande en cours</strong> sinon.
+    </p>
 
     @for (tier of tiers(); track $index) {
       <div class="tier">

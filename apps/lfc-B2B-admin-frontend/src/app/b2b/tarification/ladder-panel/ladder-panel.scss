@@ -21,6 +21,14 @@
   color: var(--fold-color-text);
 }
 
+/* La mesure du seuil — dite une fois, au-dessus des paliers qu'elle régit. */
+.tiers-measure {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.4;
+  color: var(--fold-color-text-muted);
+}
+
 .mode-choices {
   display: flex;
   gap: var(--fold-space-xs, 0.25rem);
