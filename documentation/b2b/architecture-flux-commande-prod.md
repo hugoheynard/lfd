@@ -114,6 +114,32 @@ fait les N réactions.
   prix/lignes/total sont dérivés et re-résolus. Survit reload / fermeture d'onglet
   / navigation. **Par appareil.** La `Order` (validée) est la seule chose en
   Postgres — jamais le brouillon.
+
+> **🔴 TRANCHÉ LE 2026-09-06, ET À CONTRE-COURANT DE LA NOTE CI-DESSOUS.** Le
+> panier multi-appareil est livré (`P13`), **en Postgres** — table `shop_carts`,
+> `GET`/`PUT /shop/cart` —, pas en Redis. Trois raisons, et la première suffit :
+>
+> 1. **le dépôt n'a pas de Redis.** Upstash serait un service externe de plus, un
+>    secret de plus, un mode de panne de plus, pour une table qui compte une
+>    ligne par client actif ;
+> 2. **« churny » suppose un volume que nous n'avons pas.** L'écriture est
+>    amortie à une par salve de trois cents millisecondes, et la clientèle est
+>    une liste de professionnels, pas une place de marché grand public.
+>    `order_drafts` fait exactement la même chose pour le back-office depuis le
+>    2026-08-15 sans que personne l'ait remarqué ;
+> 3. **un TTL serait un défaut, pas une économie.** Le réachat B2B est
+>    hebdomadaire ; un panier qui expire silencieusement au bout de quelques
+>    jours efface précisément ce qui fait la valeur du lot.
+>
+> Le **merge-on-login** de la note, lui, est bien là — sous une forme que la note
+> n'anticipait pas : ce n'est **pas** une union du panier appareil dans celui de
+> la personne, mais un dernier-écrit-gagne **daté**. Une union ne sait pas
+> représenter un retrait, et vider son panier sur son téléphone doit atteindre
+> son ordinateur. Cf. `audit-calcul-du-panier-et-du-prix.md` §7.
+>
+> La note d'origine est conservée telle quelle ci-dessous : elle dit ce qui était
+> pensé avant, et sa lecture reste utile le jour où le volume changera.
+
 - **📌 NOTE — avant launch, si voulu : « cart Redis » multi-appareil.** Le pattern
   des concurrents multi-plateformes = **cart serveur** (Redis actif → `Order` en
   DB au checkout) + **merge-on-login** du panier device dans le panier user.

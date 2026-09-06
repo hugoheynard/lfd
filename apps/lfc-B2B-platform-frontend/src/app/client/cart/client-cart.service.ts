@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable } from '@angular/core';
 
 import { type CartLine } from './cart-total';
 import { CartStore } from './cart.store';
+import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 
@@ -11,9 +12,10 @@ import { ShopCatalogue } from '../shop/shop-catalogue.store';
  * Ce service porte les RÈGLES ; l'état est dans {@link CartStore}, qu'il est
  * seul à faire bouger. Le partage a une raison précise : une règle de panier se
  * relit et se discute (« retirer la dernière pièce retire la ligne »), alors
- * qu'une persistance se remplace (le jour où le panier devient un agrégat
- * serveur, c'est le dépôt qui change, et rien ici). Mélangées, la première
- * disparaissait dans les plis de la seconde.
+ * qu'une persistance se remplace. C'est arrivé : le panier vit désormais en base
+ * pour qui est reconnu ({@link ShopCartSync}), et **aucune des trois règles
+ * ci-dessous n'a bougé** — le dépôt a gagné une date, rien d'autre n'a changé
+ * ici.
  *
  * Trois règles vivent ici, et nulle part ailleurs :
  *
@@ -33,6 +35,13 @@ export class ClientCart {
   private readonly catalogue = inject(ShopCatalogue);
 
   constructor() {
+    // Instanciée pour son EFFET, pas pour son API — le même parti que
+    // `ClientOnboarding` dans le shell. Elle reprend le panier gardé chez nous à
+    // la première reconnaissance, puis écrit ce que le client compose. Réveillée
+    // ici parce que c'est ici que le panier existe : partout où il est
+    // construit, elle doit tourner.
+    inject(ShopCartSync);
+
     /**
      * 🔴 **Le panier demande le catalogue lui-même.**
      *

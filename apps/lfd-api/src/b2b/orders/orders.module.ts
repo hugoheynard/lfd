@@ -13,15 +13,18 @@ import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
+import { SaveShopCartHandler } from "./application/commands/save-shop-cart.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
+import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
+import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
@@ -36,11 +39,13 @@ import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
+import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
+import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
@@ -88,6 +93,9 @@ import { OrdersController } from "./http/orders.controller.js";
     // qu'elle tarife un panier — c'est un sujet de commande, pas de catalogue —
     // et son absence de jeton est écrite dans son en-tête, pas dans sa place.
     ShopQuoteController,
+    // Murée, elle : un panier a un propriétaire. Rangée près de la vitrine
+    // parce qu'elle sert le même écran, pas parce qu'elle a le même public.
+    ShopCartController,
   ],
   providers: [
     OrderDrafting,
@@ -113,6 +121,8 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
+    GetShopCartHandler,
+    SaveShopCartHandler,
     // `useExisting` et non `useClass` : une SEULE instance lit la table des
     // règles. Le contexte `orders` n'en voit que `list()` — le port étroit —
     // pendant que les réglages gardent le repository complet. Deux instances
@@ -124,6 +134,7 @@ import { OrdersController } from "./http/orders.controller.js";
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
+    { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
   ],
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il

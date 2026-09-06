@@ -2,10 +2,14 @@
  * Le stockage local de la maquette cliente — panier, mode de service, commandes
  * passées.
  *
- * ⚠️ DÉLIBÉRÉMENT côté navigateur. La démo doit pouvoir se jouer sans écrire une
- * ligne en base : ce qui s'y stocke est de la matière de démonstration, pas de
- * la donnée d'entreprise. L'AUTHENTIFICATION, elle, reste vraie — c'est la seule
- * chose qu'on ne peut pas simuler sans mentir sur ce qui est protégé.
+ * ⚠️ DÉLIBÉRÉMENT côté navigateur — la boutique se visite **sans compte**, et
+ * ce qui est composé avant de s'identifier n'a nulle part ailleurs où vivre.
+ * L'AUTHENTIFICATION, elle, reste vraie : c'est la seule chose qu'on ne peut pas
+ * simuler sans mentir sur ce qui est protégé.
+ *
+ * Ce n'est plus « de la matière de démonstration » pour tout : le PANIER d'une
+ * personne reconnue est en base depuis `ShopCartSync`, et la clé locale n'en est
+ * que la mémoire immédiate. Le mode de service, lui, reste ici en entier.
  *
  * Trois précautions, et elles ne sont pas décoratives :
  *

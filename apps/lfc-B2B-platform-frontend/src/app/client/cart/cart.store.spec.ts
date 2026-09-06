@@ -89,3 +89,61 @@ describe('Le panier relu du navigateur', () => {
     expect(reload().quantities()).toEqual({});
   });
 });
+
+/**
+ * La date du dernier geste — l'arbitre de la fusion avec la copie du serveur.
+ *
+ * Elle ne sert qu'à ça, et ce qu'elle date décide de tout : un geste du client
+ * la fait avancer, une reprise et un élagage non. Se tromper d'un des trois, et
+ * la copie du navigateur gagne toujours — ou ne gagne jamais.
+ */
+describe('La date du dernier geste', () => {
+  const HIER = '2026-09-05T08:00:00.000Z';
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+  });
+
+  it('est absente d’un panier auquel personne n’a touché', () => {
+    expect(TestBed.inject(CartStore).savedAt()).toBeNull();
+  });
+
+  it('avance à chaque geste, et survit au rechargement', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('VIE-001', 1);
+    TestBed.flushEffects();
+
+    expect(store.savedAt()).not.toBeNull();
+    expect(reload().savedAt()).toBe(store.savedAt());
+  });
+
+  /**
+   * 🔴 Reprendre un panier n'est pas y toucher. Dater la reprise ferait de la
+   * copie relue la plus récente à chaque chargement de page, et le panier
+   * composé ailleurs entre-temps ne gagnerait plus jamais.
+   */
+  it('la reprise prend la date de la copie qu’elle installe, pas l’instant présent', () => {
+    const store = TestBed.inject(CartStore);
+    store.replaceAll({ 'PAT-001': 3 }, HIER);
+
+    expect(store.savedAt()).toBe(HIER);
+    expect(store.quantities()).toEqual({ 'PAT-001': 3 });
+  });
+
+  /**
+   * Élaguer n'est pas un geste du client : tous ses appareils reçoivent le même
+   * catalogue et élaguent pareil. Dater l'élagage ferait gagner celui qui a
+   * chargé en dernier.
+   */
+  it('l’élagage du catalogue ne la fait pas avancer', () => {
+    const store = TestBed.inject(CartStore);
+    store.replaceAll({ 'PAT-001': 3, 'DISPARU-001': 1 }, HIER);
+
+    store.keepOnly(new Set(['PAT-001']));
+
+    expect(store.savedAt()).toBe(HIER);
+    expect(store.quantities()).toEqual({ 'PAT-001': 3 });
+  });
+});

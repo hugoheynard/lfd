@@ -332,6 +332,8 @@ export {
   shopQuoteFulfillmentSchema,
   shopQuotePayloadSchema,
 } from "./shop-quote.js";
+export { shopCartPayloadSchema } from "./shop-cart.js";
+export type { ShopCartPayload, ShopCartResponse, ShopCartView } from "./shop-cart.js";
 export type {
   ShopQuoteFulfillment,
   ShopQuoteLinePayload,

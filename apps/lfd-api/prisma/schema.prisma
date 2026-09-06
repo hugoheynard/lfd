@@ -449,6 +449,7 @@ model User {
   ordersPlaced    Order[]
   subscriptions   Subscription[]
   supportRequests SupportRequest[]
+  shopCart        ShopCart?
 
   @@map("users")
   @@schema("public")
@@ -2035,6 +2036,39 @@ model OrderDraft {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("order_drafts")
+  @@schema("public")
+}
+
+/// Le **panier en cours** d'un client, gardé chez nous.
+///
+/// Frère de `OrderDraft`, et la différence est tout le sujet : le brouillon
+/// appartient à une SOCIÉTÉ et se partage dans l'équipe qui la sert ; ce
+/// panier-ci appartient à la PERSONNE qui le compose. D'où `user_id @unique` et
+/// non `company_id` — un client qui commande pour deux sociétés compose un
+/// panier à la fois, et c'est son écran, pas leur dossier.
+///
+/// `payload` en `jsonb` pour la même raison que le brouillon : un panier n'a
+/// aucun invariant à protéger en base, et une table de lignes ne rendrait ici
+/// que des jointures. La forme est tenue par `shopCartPayloadSchema`, validée à
+/// l'écriture ET à la relecture.
+///
+/// `updated_at` n'est pas de la tenue de registre : c'est lui qui rend un panier
+/// **abandonné** reconnaissable, ce qu'aucune clé de `localStorage` ne pouvait
+/// faire.
+model ShopCart {
+  id      String @id @default(uuid())
+  userId  String @unique @map("user_id")
+  payload Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // `Cascade` : un compte effacé n'a pas de panier en cours. Il n'y a rien à
+  // conserver ici — la commande PASSÉE, elle, vit dans `orders` et ne dépend pas
+  // de cette ligne.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shop_carts")
   @@schema("public")
 }
 
