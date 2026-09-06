@@ -30,7 +30,20 @@ const PIM_CATEGORY_BY_PREFIX: Readonly<Record<string, { id: string; name: string
   CHO: { id: "cat_choco", name: "Chocolat & confiserie" },
 };
 
-/** Alimentaire : le seul taux que le seed connaissait, et sa table de surcharges est vide. */
+/**
+ * Alimentaire : le seul taux que le seed connaissait, et sa table de surcharges
+ * est vide.
+ *
+ * 🔴 **Il est posé sur la FAMILLE et sur chaque ARTICLE**, et il ne l'était que
+ * sur la famille jusqu'au 2026-09-06. Cette fixture reposait donc sur le repli
+ * de `billableRate` — 140 e2e passaient grâce à lui, et aucun n'éprouvait la
+ * règle que le schéma affirme : « un article sans taux ne se vend pas ».
+ *
+ * Un repli porteur dans le harnais est le pire endroit où en trouver un : il
+ * rend vertes précisément les suites qui auraient dû le contredire. Le semis
+ * fait désormais ce qu'un vrai push fait — le PIM résout le taux par produit
+ * (`effectiveVat`) et le pose sur chaque déclinaison.
+ */
 const FOOD_VAT_RATE = 5.5;
 
 export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
@@ -73,6 +86,8 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
         // le prononce. La colonne, elle, est en millicentimes : la conversion
         // se fait ICI, à l'écriture, par une multiplication exacte.
         priceMillicents: millicentsFromCents(item.unitPriceCents),
+        // Sur l'ARTICLE, comme un push le fait : c'est lui qu'on facture.
+        vatRatePercent: FOOD_VAT_RATE,
         isDefault: true,
         position: index,
         receivedAt,

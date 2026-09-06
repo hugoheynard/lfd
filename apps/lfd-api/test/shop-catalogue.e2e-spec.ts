@@ -152,20 +152,25 @@ describe("la vitrine publique", () => {
   });
 
   /**
-   * Un article qu'on ne sait pas facturer ne se vend pas — mais « sans taux »
-   * ne veut pas dire « sans taux SUR L'ARTICLE » : le lecteur retombe sur celui
-   * de sa famille tant que tous les articles n'ont pas reçu le leur. Ce test dit
-   * la règle réelle, pas celle qu'on aurait pu croire.
+   * 🔴 **Ce test disait l'inverse jusqu'au 2026-09-06**, et il documentait un
+   * défaut comme une règle : « le lecteur retombe sur le taux de sa famille tant
+   * que tous les articles n'ont pas reçu le leur ». C'était le repli de
+   * transition de `billableRate`, dont la note annonçait elle-même le retrait.
    *
-   * L'exclusion demande donc que les DEUX manquent, ce qu'aucune vitrine ne
-   * verra tant qu'une famille est réglée.
+   * Un article sans taux PROPRE n'est pas vendable, quoi que porte sa famille.
+   * L'héritage a bien lieu — mais dans le PIM, à la projection, une fois par
+   * push et tracé. Le rejouer ici à chaque facturation, contre la copie miroir
+   * de la famille, faisait facturer un taux que personne n'avait posé sur cet
+   * article et que rien ne signalait.
+   *
+   * La famille de ce test EST réglée (`CATEGORY.vatRatePercent`) : c'est
+   * exactement le cas que l'ancien repli couvrait, et celui-ci le refuse.
    */
-  it("retombe sur le taux de la famille quand l'article n'en porte pas", async () => {
+  it("ne vend pas un article sans taux, même quand sa famille en a un", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000, vatRatePercent: null }]);
 
     const body = await catalogue();
-    expect(body.items).toHaveLength(1);
-    expect(body.items[0]?.vatRatePercent).toBe(CATEGORY.vatRatePercent);
+    expect(body.items).toEqual([]);
   });
 
   it("ne montre pas un article retiré du référentiel", async () => {

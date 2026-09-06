@@ -38,10 +38,17 @@
         <fold-callout variant="warning">
           <h3 class="callout-title">Des articles ne sont pas vendables</h3>
           <p>
-            <strong>{{ untaxedCount() }}</strong> article(s) sur {{ total() }} appartiennent à une
-            famille sans taux de TVA dans le PIM. Ils sont bien reçus et leur prix canonique est là,
-            mais la boutique ne peut pas les vendre : sans taux, rien ne saurait les facturer.
+            <strong>{{ untaxedCount() }}</strong> article(s) sur {{ total() }} n'ont pas de taux de
+            TVA. Ils sont bien reçus et leur prix canonique est là, mais la boutique ne peut pas les
+            vendre : sans taux, rien ne saurait les facturer.
           </p>
+          <!-- 🔴 « n'ont pas de taux » et non plus « appartiennent à une famille
+               sans taux » : depuis le retrait du repli (2026-09-06), ce compteur
+               voit DEUX causes. La famille non réglée dans le PIM, qui est le
+               cas courant et que le paragraphe suivant traite ; et une ligne de
+               miroir d'avant que le taux descende sur les articles, qui n'a
+               jamais été repoussée depuis. La seconde se règle par un push, la
+               première par un réglage PUIS un push. -->
           <!-- Le contexte PROFESSIONNEL, et pas un autre : la projection du canal
                lit `vatByContext["b2b"]`. Cet encart disait « à emporter » —
                régler ce taux-là n'aurait rien débloqué, et l'article serait
@@ -49,7 +56,8 @@
                pourquoi un article ne se vend pas envoyait au mauvais endroit. -->
           <p>
             Réglez le taux du contexte <strong>professionnel</strong> de ces familles dans le PIM —
-            celui de la plateforme B2B, pas celui du comptoir — puis relancez un push.
+            celui de la plateforme B2B, pas celui du comptoir — puis relancez un push. Si la famille
+            en porte déjà un, un push suffit : la ligne du miroir date d'avant.
           </p>
         </fold-callout>
       }

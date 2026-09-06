@@ -42,22 +42,22 @@ paiement, et le référentiel en amont du miroir.
 
 ## A.0 Le tableau, en un écran
 
-**Trois défauts, et aucun ne fausse une facture aujourd'hui.**
+**Deux défauts, et aucun ne fausse une facture aujourd'hui.**
 
-| Défaut    | Ce que c'est                                                                                                                                  | Le lot |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **D7** 🟡 | Le panier hérité compte en euros **flottants** — contredit `CLAUDE.md` à la lettre. Faible portée (`legacy/`), mais c'est du code qui tourne. | `P8`   |
-| **D8** 🟡 | Le repli de TVA **par famille** est encore branché : un article sans taux propre est facturé au taux de sa famille.                           | `P6`   |
-| **D9** 🟡 | `minQuantity` veut dire **deux choses** selon l'étage, sous le même nom et le même champ. Le prix sera juste et inexplicable.                 | `P9`   |
+| Défaut        | Ce que c'est                                                                                                                                  | Le lot  |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| **D7** 🟡     | Le panier hérité compte en euros **flottants** — contredit `CLAUDE.md` à la lettre. Faible portée (`legacy/`), mais c'est du code qui tourne. | `P8`    |
+| ~~**D8**~~ ✅ | **Refermé le 2026-09-06.** Le repli de TVA par famille est retiré des DEUX lecteurs — celui qui facture, et celui qui affiche.                | ✅ `P6` |
+| **D9** 🟡     | `minQuantity` veut dire **deux choses** selon l'étage, sous le même nom et le même champ. Le prix sera juste et inexplicable.                 | `P9`    |
 
-**Quatre lots restent.**
+**Trois lots restent.**
 
-| Lot        | Ce qu'il fait                                                                                      | Ce qui le bloque                                |
-| ---------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **P6**     | Retirer le repli de TVA par famille — `D8`.                                                        | Une **mesure en production**, ci-dessous.       |
-| **P8**     | Le panier hérité passe en centimes entiers — `D7`.                                                 | Rien. À faire quand on y touche, pas avant.     |
-| **P9**     | Nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil — `D9`.                 | Rien. C'est un défaut de **nom**, pas de motif. |
-| **P12** 🟡 | Garder les règles de prix en mémoire, invalidées à l'écriture : 4 lectures par devis deviennent 1. | Rien. C'est le facteur restant le plus net.     |
+| Lot        | Ce qu'il fait                                                                                                                                                                                                                  | Ce qui le bloque                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| ✅ **P6**  | **Livré le 2026-09-06.** Retiré des deux lecteurs, et le semis e2e pose enfin le taux sur l'article. La mesure de production reste utile — non plus pour décider, mais pour savoir **combien d'articles quittent la vitrine**. | —                                               |
+| **P8**     | Le panier hérité passe en centimes entiers — `D7`.                                                                                                                                                                             | Rien. À faire quand on y touche, pas avant.     |
+| **P9**     | Nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil — `D9`.                                                                                                                                             | Rien. C'est un défaut de **nom**, pas de motif. |
+| **P12** 🟡 | Garder les règles de prix en mémoire, invalidées à l'écriture : 4 lectures par devis deviennent 1.                                                                                                                             | Rien. C'est le facteur restant le plus net.     |
 
 ## A.1 🔴 Les trois requêtes qui ne peuvent pas être lancées d'ici
 
@@ -74,9 +74,12 @@ pas vérifiée.
 psql "$DATABASE_LFD_URL_PROD" -c "SELECT count(*) FILTER (WHERE (tier ->> 'unitPriceMillicents')::int < 1000) AS sous_le_centime, count(*) AS paliers_au_total FROM price_templates t, LATERAL jsonb_array_elements(t.lines::jsonb) AS line, LATERAL jsonb_array_elements(line -> 'tiers') AS tier;"
 ```
 
-**2. `D8` — ce que le repli de TVA tient encore.** Zéro ⇒ le repli tombe et `P6`
-est un geste de suppression. Autre chose ⇒ le repli tient, et on sait enfin ce
-qu'il tient.
+**2. `D8` — combien d'articles quittent la vitrine.** ⚠️ **Le repli est retiré
+depuis le 2026-09-06** : cette requête ne décide plus s'il faut le faire, elle
+dit **ce que le déploiement va coûter**. Zéro ⇒ rien ne change pour personne.
+Autre chose ⇒ ces articles sortent de la boutique, et ce sont ceux qu'on ne
+savait de toute façon pas facturer. Remplacer `count(*)` par `i.sku, i.name`
+pour les nommer.
 
 ```bash
 psql "$DATABASE_LFD_URL_PROD" -c "SELECT count(*) FROM catalog_items i JOIN catalog_categories c ON c.id = i.category_id WHERE i.vat_rate_percent IS NULL AND c.vat_rate_percent IS NOT NULL;"
@@ -89,7 +92,7 @@ depuis le 2026-09-06 ; les lignes déjà écrites ne sont pas touchées.
 psql "$DATABASE_LFD_URL_PROD" -c "SELECT count(*) FROM orders WHERE discount_cents > subtotal_cents;"
 ```
 
-## A.2 Les trois défauts, en détail
+## A.2 Les deux défauts, en détail
 
 ### D7 🟡 Le panier hérité compte en euros flottants
 
@@ -101,7 +104,25 @@ Contredit frontalement `CLAUDE.md` : « **Argent en centimes**, entiers. Jamais 
 flottant. » Dans `legacy/`, donc à faible portée — mais c'est du code qui tourne,
 pas un dossier mort.
 
-### D8 🟡 Le repli de TVA par famille est encore branché
+### D8 ✅ Le repli de TVA par famille — refermé le 2026-09-06
+
+> **Corrigé par `P6`, et il était plus profond que cette section ne le disait.**
+> Le repli vivait dans **deux** lecteurs — celui qui facture (`billableRate`) et
+> celui qui affiche. Les retirer séparément aurait rouvert la divergence que le
+> second commentait déjà : un écran qui montre un taux que la caisse ignore, ou
+> l'inverse.
+>
+> 🔴 **Et il était PORTEUR dans le harnais de test.** Le semis e2e posait le taux
+> sur la famille et jamais sur l'article : **140 tests passaient grâce au
+> repli**, et aucun n'éprouvait la règle que le schéma affirme. Un repli porteur
+> dans une fixture est le pire endroit où en trouver un — il rend vertes
+> précisément les suites qui auraient dû le contredire.
+>
+> Ce que le retrait rend au passage : le compteur « des articles ne sont pas
+> vendables » de l'écran catalogue cesse d'être aveugle. Il restait à zéro
+> pendant que la boutique facturait un taux emprunté.
+
+### D8 — l'état d'origine, pour mémoire
 
 `prisma-catalog.reader.ts:142`, `billableRate` — et son propre commentaire
 dit quoi en faire :
@@ -420,14 +441,14 @@ consommateur, et une raison de finir.
 > trois jours, et deux tiennent toujours. Chacune a été rouverte dans le dépôt,
 > pas rappelée de mémoire.
 
-| Le doc dit                                  | Où en est le code                                                                                      | Où                                 |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| ~~« le front **ne multiplie jamais** »~~    | ✅ **tenu** — `cart-total.ts` ne porte plus que `{ produit, quantité }` ; le décompte vient du serveur | `architecture-prix-boutique.md` §6 |
-| ~~« il demande `POST /orders/quote` »~~     | ✅ **tenu, par une autre route** — `POST /shop/quote`, publique. Celle du **B.5** est murée            | idem                               |
-| ~~le canonique **barré** quand il diffère~~ | ⤳ **décision renversée** — la vitrine est publique, donc sans client : aucun écart à barrer            | idem, §4                           |
-| ~~« la validation vit dans le domaine »~~   | ✅ **tenu** — remise et frais viennent de `CartAdjustments`, partagé avec la caisse                    | `CLAUDE.md` §3                     |
-| « argent en centimes, entiers »             | 🟡 **toujours faux** — le panier hérité compte en `…Eur` flottants (`D7` → `P8`)                       | `CLAUDE.md` §3                     |
-| le repli de TVA par famille est transitoire | 🟡 **toujours branché** — `billableRate` retombe sur `row.category.vatRatePercent` (`D8` → `P6`)       | `prisma-catalog.reader.ts:142`     |
+| Le doc dit                                      | Où en est le code                                                                                      | Où                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| ~~« le front **ne multiplie jamais** »~~        | ✅ **tenu** — `cart-total.ts` ne porte plus que `{ produit, quantité }` ; le décompte vient du serveur | `architecture-prix-boutique.md` §6 |
+| ~~« il demande `POST /orders/quote` »~~         | ✅ **tenu, par une autre route** — `POST /shop/quote`, publique. Celle du **B.5** est murée            | idem                               |
+| ~~le canonique **barré** quand il diffère~~     | ⤳ **décision renversée** — la vitrine est publique, donc sans client : aucun écart à barrer            | idem, §4                           |
+| ~~« la validation vit dans le domaine »~~       | ✅ **tenu** — remise et frais viennent de `CartAdjustments`, partagé avec la caisse                    | `CLAUDE.md` §3                     |
+| « argent en centimes, entiers »                 | 🟡 **toujours faux** — le panier hérité compte en `…Eur` flottants (`D7` → `P8`)                       | `CLAUDE.md` §3                     |
+| ~~le repli de TVA par famille est transitoire~~ | ✅ **retiré le 2026-09-06** — `billableRate` ne lit plus que le taux de l'article (`D8` → `P6`)        | `prisma-catalog.reader.ts`         |
 
 ⚠️ **Un renversement n'est pas une dette.** La troisième ligne n'est pas un
 retard à combler : c'est une décision qui en a annulé une autre. La traiter
@@ -910,7 +931,7 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | ✅ **P3**  | `D6` : renommer les `*Cents` de la famille `tarification`. **Dix-huit identifiants et trois fonctions**, pas trois sites — la porte a montré l'ampleur. Les deux JSDoc sont partis avec `P1`.                                                      | Ce sont les modèles qu'on recopie — et un nom honnête est ce qui rend la porte capable de voir. |
 | ✅ **P4**  | `D5` : `computeOrderTotals` rend `{ vatCents, totalCents }`, `Order.draft` prend les deux. **Plus une borne** : une remise en montant fixe ne dépasse plus le panier (`discountCentsOf`), là où la boutique et la caisse répondaient différemment. | Une définition du TTC, pas deux — et une remise qui ne contredit plus le devis.                 |
 | ✅ **P5**  | Bandeau daté sur `architecture-prix-boutique.md` (ce qui est renversé, ce qui tient), deux lignes d'index corrigées, et le **B.4** **relu ligne à ligne** : quatre écarts sur six s'étaient refermés en trois jours.                               | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
-| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                                   | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
+| ✅ **P6**  | `D8` : retirer le repli de TVA par famille des DEUX lecteurs — celui qui facture et celui qui affiche. Le semis e2e posait le taux sur la famille : 140 tests passaient grâce au repli.                                                            | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
 | ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                                      | Le serveur sait enfin répondre « combien » avant la commande.                                   |
 | ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                                      | Le client voyait un montant et en aurait payé un autre.                                         |
 | **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                                 | À faire quand on y touche, pas avant.                                                           |

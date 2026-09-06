@@ -24,11 +24,13 @@ interface ItemRow {
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
+  // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
+  // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
+  // là ».
   readonly category: {
     readonly id: string;
     readonly name: string;
     readonly position: number;
-    readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
     readonly priceMillicents: number | null;
@@ -107,14 +109,9 @@ export class PrismaCatalogReader extends CatalogReader {
           // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
           // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
           //
-          // Le taux de l'ARTICLE d'abord ; à défaut celui de sa famille, tant
-          // que tous les articles n'ont pas reçu le leur (cf. `billableRate`).
-          {
-            OR: [
-              { vatRatePercent: { not: null } },
-              { category: { vatRatePercent: { not: null } } },
-            ],
-          },
+          // 🔴 Le taux de l'ARTICLE, et lui seul. Cette clause acceptait aussi
+          // celui de la famille — cf. `billableRate`.
+          { vatRatePercent: { not: null } },
         ],
       },
       include: { category: true, override: true },
@@ -130,21 +127,27 @@ export class PrismaCatalogReader extends CatalogReader {
 /**
  * **Le taux qu'on facturera pour cet article**, ou `null` s'il n'y en a pas.
  *
- * L'article d'abord : c'est lui qu'on vend, et c'est le PIM qui a résolu son
- * taux à l'émission. La famille ensuite, en **repli de transition** — sans lui,
- * la boutique s'éteindrait entre le déploiement de cette version et le premier
- * push, puisque aucun article ne porterait encore le sien.
+ * L'article, et lui seul.
  *
- * ⚠️ Ce repli est à retirer une fois que tous les articles ont reçu leur taux
- * (un push suffit). Le garder indéfiniment ferait resurgir le défaut qu'on
- * corrige : une ligne facturée qui dépend d'une jointure de famille.
+ * 🔴 **Le repli sur la famille a été retiré le 2026-09-06**, et sa propre note
+ * annonçait ce retrait : « à retirer une fois que tous les articles ont reçu
+ * leur taux (un push suffit) ». Le push existe depuis le 2026-08-31 et le seed
+ * le rejoue.
+ *
+ * L'héritage n'est pas perdu pour autant, et c'est le point : **il a lieu dans
+ * le PIM**, à la projection (`effectiveVat(famille, produit)`), une fois par
+ * push, tracé, et corrigeable à l'écran. Ce repli-ci en était un SECOND, joué à
+ * chaque facturation, contre la copie miroir de la famille, sans trace et sans
+ * qu'aucun écran ne puisse le dire. Deux héritages pour une question, dont un
+ * muet.
+ *
+ * Ce qu'il facturait vraiment : un article dont la ligne du miroir date d'avant
+ * que le taux descende sur les articles. La projection l'écarte aujourd'hui
+ * (`variant_sans_taux`) — mais un article écarté n'est pas RETIRÉ du miroir, sa
+ * ligne d'avant reste en vente. C'est ce chemin-là qui est refermé.
  */
 function billableRate(row: ItemRow): number | null {
-  const own = row.vatRatePercent;
-  if (own !== null) {
-    return own.toNumber();
-  }
-  return row.category.vatRatePercent?.toNumber() ?? null;
+  return row.vatRatePercent?.toNumber() ?? null;
 }
 
 /**

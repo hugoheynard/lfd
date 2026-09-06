@@ -129,6 +129,40 @@ describe("GET /admin/catalog", () => {
     expect(item?.effectivePriceMillicents).toBe(200_000);
   });
 
+  /**
+   * 🔴 **L'écran voit ce que la caisse voit — y compris l'absence.**
+   *
+   * Cette vue repliait sur le taux de la FAMILLE quand l'article n'en portait
+   * pas, exactement comme le lecteur de vente. Les deux s'accordaient donc, sur
+   * un taux que personne n'avait posé sur cet article, et le compteur « des
+   * articles ne sont pas vendables » de l'écran de catalogue restait à zéro
+   * pendant que la boutique facturait ce taux emprunté.
+   *
+   * Les deux replis sont partis ensemble le 2026-09-06, et il fallait qu'ils
+   * partent ensemble : en retirer un seul aurait rouvert la divergence dans un
+   * sens ou dans l'autre. Ce test tient la moitié « écran » ;
+   * `shop-catalogue.e2e-spec.ts` tient la moitié « caisse ».
+   *
+   * La famille EST réglée à 5,5 % dans ce jeu d'essai : c'est le cas que le
+   * repli couvrait.
+   */
+  it("rend un taux NUL quand l'article n'en porte pas, même si sa famille en a un", async () => {
+    await ctx.app.get(B2bCatalogDriver).send(
+      {
+        ...snapshot(200_000, NO_SHEET),
+        products: snapshot(200_000, NO_SHEET).products.map((product) => ({
+          ...product,
+          variants: product.variants.map((variant) => ({ ...variant, vatRatePercent: null })),
+        })),
+      },
+      { revisionId: "rev_sans_taux", fingerprint: "empreinte-sans-taux" },
+    );
+
+    const item = await listOne();
+
+    expect(item?.vatRatePercent).toBeNull();
+  });
+
   it("refuse un appel sans jeton staff", async () => {
     const response = await ctx.http().get("/admin/catalog");
 

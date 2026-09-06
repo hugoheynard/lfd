@@ -16,10 +16,12 @@ interface AdminRow {
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly receivedAt: Date;
+  // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
+  // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
+  // là » — c'est exactement comme ça qu'il est revenu la première fois.
   readonly category: {
     readonly id: string;
     readonly name: string;
-    readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
     readonly priceMillicents: number | null;
@@ -68,12 +70,21 @@ function toView(row: AdminRow): CatalogAdminItemView {
     pimPriceMillicents: row.priceMillicents,
     b2bPriceMillicents,
     effectivePriceMillicents: b2bPriceMillicents ?? row.priceMillicents,
-    // Le taux de L'ARTICLE d'abord : c'est lui qu'on facture depuis que le fil
-    // le porte. L'écran lisait celui de la FAMILLE et pouvait donc afficher un
-    // taux que la boutique n'applique pas. Repli sur la famille tant que des
-    // lignes d'avant le fil v2 n'ont pas été repoussées.
-    vatRatePercent:
-      row.vatRatePercent?.toNumber() ?? row.category.vatRatePercent?.toNumber() ?? null,
+    // Le taux de L'ARTICLE, et lui seul — **exactement ce que la boutique
+    // facture**. C'est toute la raison d'être de cette ligne : l'écran lisait
+    // celui de la FAMILLE et affichait donc un taux que la caisse n'appliquait
+    // pas.
+    //
+    // 🔴 Le repli sur la famille est parti avec celui du lecteur de vente, le
+    // 2026-09-06, et il fallait qu'ils partent ENSEMBLE. En retirer un seul
+    // aurait rouvert la divergence que ce commentaire décrit, dans un sens ou
+    // dans l'autre : un écran qui montre un taux que la caisse ignore, ou une
+    // caisse qui facture un taux que l'écran ne montre pas.
+    //
+    // Ce qui en découle est le gain du lot : `null` remonte enfin jusqu'à
+    // l'écran, et son compteur « des articles ne sont pas vendables » cesse
+    // d'être aveugle aux lignes que le repli couvrait.
+    vatRatePercent: row.vatRatePercent?.toNumber() ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,

@@ -20,7 +20,7 @@ interface Shelf {
   readonly id: string;
   readonly name: string;
   readonly items: readonly CatalogAdminItemView[];
-  /** La famille n'a pas de taux de TVA : ses articles ne sont pas vendables. */
+  /** Aucun article du rayon n'a de taux de TVA : rien n'y est vendable. */
   readonly untaxed: boolean;
 }
 
@@ -35,9 +35,16 @@ interface Shelf {
  * Deux choses que l'écran doit dire, parce qu'elles décident de la suite :
  *
  * - **d'où vient chaque prix** — un tarif sans provenance ne se défend pas ;
- * - **quels articles ne sont pas vendables** — une famille sans taux de TVA
+ * - **quels articles ne sont pas vendables** — un article sans taux de TVA
  *   entre au catalogue mais reste hors boutique. Le taire donnerait une liste
  *   rassurante dont la moitié n'est achetable par personne.
+ *
+ * 🔴 **Ce compteur était aveugle jusqu'au 2026-09-06.** Le serveur repliait sur
+ * le taux de la FAMILLE quand l'article n'en portait pas : l'écran affichait
+ * donc un taux, et l'article n'était pas compté. La caisse repliait pareil, si
+ * bien que les deux s'accordaient — sur un taux que personne n'avait posé sur
+ * cet article. Les deux replis sont partis ensemble, et ce chiffre dit enfin
+ * quelque chose.
  */
 @Component({
   selector: 'app-catalogue-page',
