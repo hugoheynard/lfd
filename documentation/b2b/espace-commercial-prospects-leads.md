@@ -3,7 +3,7 @@
 > **Public** : commercial + produit + tech (cadrage). Vision d'un **moteur de
 > croissance** couvrant tout le cycle de vie, **event-sourced** et en **boucle
 > fermée**. Mise en œuvre phasée :
-> [`espace-commercial-prospects-leads-todo-tech.md`](../todos/todo-commercial-acquisition.md).
+> [`todos/todo-commercial-acquisition.md`](../todos/todo-commercial-acquisition.md).
 > Étage client (sociétés) :
 > [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md).
 >

@@ -17,8 +17,8 @@ Une seule ligne, en tête du `src/styles.scss` de chaque app :
 @import "fold-ng/tokens.css";
 ```
 
-`fold-ng/tokens.css` est un **sous-chemin d'export déclaré** par le paquet
-(`exports` de son `package.json`), qui pointe vers `tokens/index.css` — lequel
+fold-ng/tokens.css est un **sous-chemin d'export déclaré** par le paquet
+(`exports` de son `package.json`), qui pointe vers tokens/index.css — lequel
 agrège primitives, scales et semantic. Le builder l'inline dans le bundle de
 styles : minifié, empreinté, servi avec le reste.
 

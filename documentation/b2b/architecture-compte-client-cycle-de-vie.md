@@ -9,9 +9,11 @@
 > constate — elle ne se déclare pas.
 >
 > Consolidé le **2026-08-12**. Remplace et **supprime** quatre documents :
-> `architecture-onboarding-provisioning-b2b.md`, `admin-commercial-comptes-clients.md`,
-> `decision-discretion-recherche-personnes.md` et
-> `todos/post-release-detention-et-acces.md`.
+> architecture-onboarding-provisioning-b2b.md, admin-commercial-comptes-clients.md,
+> decision-discretion-recherche-personnes.md et
+> todos/post-release-detention-et-acces.md — **aucun de ces quatre documents
+> n'existe dans le dépôt** (constaté le 2026-09-06). Ils ont été annoncés et
+> jamais écrits ; la phrase est gardée parce qu'elle dit ce qui manque.
 >
 > Prérequis lus : [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md)
 > (Auth0 authentifie, notre base autorise ; le mur `company_id`) et
@@ -272,7 +274,7 @@ stateDiagram-v2
 ```
 
 **L'entrée se constate.** `invited → active` se fait tout seul, à la première
-requête authentifiée (`customer-user.resolver.ts`). Rien à instrumenter.
+requête authentifiée (`customer-principal.resolver.ts`). Rien à instrumenter.
 
 **L'invitation périme au bout de 14 jours** (`INVITATION_LIFETIME_DAYS`). Ce
 n'est pas une contrainte inventée : le lien de mot de passe du fournisseur a
@@ -426,7 +428,7 @@ Un écran Ops « état des canaux » (identité : configurée / e-mail : pas de 
 | --------------------- | ----------------------------------------------------------------------- |
 | Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                                         |
 | Verdict d'activation  | `.../account/domain/services/activation-gate.ts`                        |
-| Échéance d'invitation | `.../account/domain/services/invitation-expiry.ts`                      |
+| Échéance d'invitation | `.../platform/shared/invitation/invitation-expiry.ts`                   |
 | Ouverture d'accès     | `.../account/application/services/grant-account-access.service.ts`      |
 | Fiche staff           | `apps/lfc-B2B-admin-frontend/src/app/fiche-client/`                     |
 | Cartes partagées      | `packages/b2b-ui/src/company/`                                          |

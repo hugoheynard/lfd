@@ -5,7 +5,7 @@
 > prise de rendez-vous), indépendamment du reste de la plateforme B2B.
 >
 > Compagnons : [`espace-commercial-prospects-leads.md`](espace-commercial-prospects-leads.md)
-> (concept), [`espace-commercial-prospects-leads-todo-tech.md`](../todos/todo-commercial-acquisition.md)
+> (concept), [`todos/todo-commercial-acquisition.md`](../todos/todo-commercial-acquisition.md)
 > (décisions d'architecture gelées), [`audit-croissance-analytique.md`](audit-croissance-analytique.md)
 > (justesse des chiffres du dashboard).
 >
@@ -162,7 +162,7 @@ flux client → staff de toute l'acquisition est le seul sans test d'intégratio
 | **P0-1**    | `handled_at` jamais écrit → file jamais purgée, client verrouillé         | §3.3                                                                |
 | **P0-2**    | Créneau / canal / numéro / message non exposés au staff                   | `prisma-admin-company.reader.ts:34`                                 |
 | **P0-3** 🔴 | **Aucune notification** — pas une seule dépendance mailer dans le backend | `package.json` : 0 occurrence `nodemailer\|resend\|sendgrid\|brevo` |
-| **P0-4**    | Le calendrier ne mène nulle part (`openCompany` = no-op)                  | `acquisition-page.ts`                                               |
+| **P0-4**    | Le calendrier ne mène nulle part (`openCompany` = no-op)                  | `calendrier-page.ts` (nommé acquisition-page.ts à l'écriture)       |
 | **P0-5**    | Zéro e2e sur le flux support/RDV                                          | `test/`                                                             |
 
 Sur **P0-3** : le schéma Prisma le documente lui-même (« notification e-mail
@@ -307,16 +307,16 @@ explicite, pas par oubli.
 
 ## 8. Repères de code
 
-| Sujet                                   | Où                                                                                                         |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Demande de support (écriture client)    | `account/http/company-support.controller.ts`, `application/commands/request-activation-support.handler.ts` |
-| Modèle `SupportRequest`                 | `prisma/schema.prisma` (~l.322)                                                                            |
-| Contrat de la demande                   | `packages/contracts/src/support.ts`                                                                        |
-| Lecture admin des sociétés (le booléen) | `account/infrastructure/prisma-admin-company.reader.ts`                                                    |
-| Agrégat `Lead` + pipeline               | `growth/domain/entities/lead.ts`                                                                           |
-| Capture / transition de lead            | `growth/application/commands/`                                                                             |
-| Surfaces staff                          | `growth/http/admin-{leads,prospects,cockpit,activations,recompute}.controller.ts`                          |
-| Page Calendrier (ex-Acquisition)        | `commercial/calendrier/calendrier-page.ts`                                                                 |
-| Onglet Calendrier                       | `commercial/calendrier/calendrier-page.ts`                                                                 |
-| Seuils d'alerte (localStorage)          | `commercial/settings/acquisition-settings.service.ts`                                                      |
-| Panneau contact client (placeholders)   | `contact/contact-panel/contact-panel.ts`                                                                   |
+| Sujet                                   | Où                                                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Demande de support (écriture client)    | `account/http/support.controller.ts`, `application/commands/request-activation-support.handler.ts` |
+| Modèle `SupportRequest`                 | `prisma/schema.prisma` (~l.322)                                                                    |
+| Contrat de la demande                   | `packages/contracts/src/support.ts`                                                                |
+| Lecture admin des sociétés (le booléen) | `account/infrastructure/prisma-admin-company.reader.ts`                                            |
+| Agrégat `Lead` + pipeline               | `growth/domain/entities/lead.ts`                                                                   |
+| Capture / transition de lead            | `growth/application/commands/`                                                                     |
+| Surfaces staff                          | `growth/http/admin-{leads,prospects,cockpit,activations,recompute}.controller.ts`                  |
+| Page Calendrier (ex-Acquisition)        | `commercial/calendrier/calendrier-page.ts`                                                         |
+| Onglet Calendrier                       | `commercial/calendrier/calendrier-page.ts`                                                         |
+| Seuils d'alerte (localStorage)          | `commercial/settings/acquisition-settings.service.ts`                                              |
+| Panneau contact client (placeholders)   | `contact/contact-panel/contact-panel.ts`                                                           |

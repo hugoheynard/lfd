@@ -134,7 +134,7 @@ le build redit « exceeded ». L'alarme sonne encore.
 🟡 Le chiffre qui compte pour un client sur son téléphone n'est pas celui-là :
 c'est la **taille transférée**, 266 ko. Les budgets Angular mesurent le brut,
 pas le compressé. 266 ko est acceptable pour cette surface, sans être bon — si
-l'on veut descendre un jour, le levier est `main.js` (891 ko brut), qui porte le
+l'on veut descendre un jour, le levier est main.js (891 ko brut), qui porte le
 framework et tout ce qui est importé sans être différé.
 
 ### Une porte se branche le jour où elle est écrite

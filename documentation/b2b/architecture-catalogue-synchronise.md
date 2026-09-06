@@ -39,11 +39,11 @@ Voisins :
 
 Le catalogue B2B est **copié trois fois**, et les copies ont déjà divergé.
 
-| Copie            | Où                                              | Sert à                             |
-| ---------------- | ----------------------------------------------- | ---------------------------------- |
-| PIM              | `products.seed.ts` (importé du CSV Shopify)     | l'original                         |
-| Front client B2B | `app/data/catalogue-seed.ts` — **1 079 lignes** | tout l'affichage boutique          |
-| Backend B2B      | `orders/infrastructure/product-catalog.seed.ts` | **l'autorité de prix au checkout** |
+| Copie            | Où                                            | Sert à                             |
+| ---------------- | --------------------------------------------- | ---------------------------------- |
+| PIM              | products.seed.ts (importé du CSV Shopify)     | l'original                         |
+| Front client B2B | app/data/catalogue-seed.ts — **1 079 lignes** | tout l'affichage boutique          |
+| Backend B2B      | orders/infrastructure/product-catalog.seed.ts | **l'autorité de prix au checkout** |
 
 Le backend B2B **n'a aucune table produit**. Vingt-deux fichiers du front
 importent le seed. Le taux de TVA y est codé en dur à 5,5 % alors que le PIM

@@ -22,8 +22,8 @@ Front B2B (`apps/lfc-B2B-platform-frontend`) :
 - `src/shared/fold-product-card/` — la carte produit (`fold-product-card.{ts,html,scss}`) + son modèle `fold-product.model.ts` (`FoldProduct`). Écrite aux conventions fold → candidate à remonter dans `fold-ng`.
 - `src/app/catalogue/product-catalogue/` — le navigateur (filtres, recherche, favoris, pagination, grille).
 - `src/app/boutique/boutique-page/` — la page (hero bannières + « à la une » + catalogue).
-- `src/app/data/cart.service.ts` — le panier (localStorage `id→qty`, dérivés `computed`).
-- `src/app/data/catalogue-seed.ts` — le seed (92 produits copiés du PIM ; colonnes `[sku, nom, slug, prix€, poids(g), catégorie, description, flags]`).
+- `src/app/legacy/data/cart.service.ts` — le panier (localStorage `id→qty`, dérivés `computed`).
+- `src/app/legacy/data/catalogue-seed.ts` — le seed (92 produits copiés du PIM ; colonnes `[sku, nom, slug, prix€, poids(g), catégorie, description, flags]`).
 
 ## Verdict
 

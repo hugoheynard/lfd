@@ -179,7 +179,7 @@ par taux. Faire la ventilation ici, c'est la faire une fois pour trois lecteurs
 
 ### 4.3 La légende à deux valeurs ment dès qu'un taux à 20 % entre
 
-`vat-rates.ts` ne connaît que `VAT_SALE = 10`, et `cart-summary.ts` légende
+vat-rates.ts ne connaît que `VAT_SALE = 10`, et `cart-summary.ts` légende
 chaque ligne par `rate === VAT_SALE ? « salé, traiteur » : « pain, viennoiserie,
 pâtisserie »`. Un article à 20 % — ou la ligne du coursier — se verrait donc
 légendé **« pain, viennoiserie, pâtisserie »**.
@@ -192,7 +192,7 @@ d'une convention à deux valeurs.
 
 **Proposition : supprimer la légende.** `TVA 5,5 %` se suffit.
 
-> ✅ **Fait le 2026-09-05 (B3).** `vat-rates.ts` est supprimé, la légende avec.
+> ✅ **Fait le 2026-09-05 (B3).** vat-rates.ts est supprimé, la légende avec.
 > Le taux d'une ligne n'est plus qualifié par une famille de produits : chaque
 > article porte le sien (`ShopItemView.vatRatePercent`), résolu par le back — en
 > propre ou hérité de sa famille — et le décompte se contente de grouper. Une
@@ -346,7 +346,7 @@ Les affirmations sur l'existant viennent de ces fichiers, relus le 2026-09-05 :
 - `packages/money/src/millicents.ts`, `packages/money/package.json`
 - `apps/lfc-B2B-platform-frontend/src/app/client/cart/cart-total.ts`,
   `cart-summary/cart-summary.{ts,html}`, `client-cart.service.ts`
-- `.../client/shop/vat-rates.ts`, `product-tile/product-tile.{ts,html}`,
+- .../client/shop/vat-rates.ts (supprimé), `product-tile/product-tile.{ts,html}`,
   `product-sheet/product-sheet.html`, `format-money.ts`
 - `.../client/order-context.store.ts`, `mock-station.ts`
 - `.../client/copy/fr.ts`

@@ -13,7 +13,8 @@
 - Le PIM a **`ProductVariant`** = « la **déclinaison**, l'unité réellement vendue
   (R4) » : `sku` propre, `options` (JSON), `attributes` (JSON), `isDefault`,
   `position`. Tout produit naît **avec sa déclinaison par défaut** (invariant
-  transactionnel — `product-commands.service.ts`).
+  transactionnel — product-commands.service.ts, éclaté en un cas par fichier
+  par `55f2e613`).
 - **Le PIM ne porte AUJOURD'HUI ni prix ni `unitsPerPack`.** Le prix vit dans le
   **seed B2B** (`catalogue-seed.ts`, hardcodé du CSV). Le contrat de commande
   (`packages/contracts/src/order.ts`) dit déjà « le serveur ré-résout les prix

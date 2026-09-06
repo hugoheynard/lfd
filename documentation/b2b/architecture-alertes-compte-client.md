@@ -210,7 +210,7 @@ delivery: {
 }
 ```
 
-- **`staffEmail`** — un template de plus dans `infra/mailer/mail-templates.ts`.
+- **`staffEmail`** — un template de plus dans `apps/lfd-api/src/platform/mailer/mail-templates.ts`.
   Le socle existe (`staff.appointment-booked` et `staff.support-requested` le
   prouvent).
 - **`staffInApp`** — ⚠️ **ce socle n'existe pas.** Il n'y a pas de notion de

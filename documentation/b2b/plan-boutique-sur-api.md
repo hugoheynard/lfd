@@ -3,7 +3,7 @@
 **Ouvert le 2026-09-03. — 🟢 Livré le 2026-09-05.**
 
 > **Ce que ce plan décrit est fait.** La boutique s'hydrate de
-> `GET /shop/catalogue` en un point (`ShopCatalogue`), `mock-shop.ts` est
+> `GET /shop/catalogue` en un point (`ShopCatalogue`), mock-shop.ts est
 > supprimé, le panier compte en centimes et millicentimes entiers, et le seed du
 > référentiel pousse jusqu'au miroir — 35 des 38 articles servis portent leur
 > ligne de vitrine. Le corps du plan est conservé tel qu'il a été écrit : c'est
@@ -28,10 +28,10 @@
 **Le prix que le client voit et le prix qu'il paie sont calculés deux fois, dans
 deux unités, par deux codes qui ne se connaissent pas.**
 
-|                           | ce qui fait foi                                       | où                                                     |
-| ------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
-| Ce que le client **voit** | `price: 1.4`, `2.1`, `4.8` — flottants en euros       | `client/mock-shop.ts`, `legacy/data/catalogue-seed.ts` |
-| Ce qui est **facturé**    | `unitPriceMillicents`, entiers, résolus par le moteur | `order-line-pricing.service.ts`                        |
+|                           | ce qui fait foi                                       | où                                                                      |
+| ------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| Ce que le client **voit** | `price: 1.4`, `2.1`, `4.8` — flottants en euros       | client/mock-shop.ts (supprimé), `src/app/legacy/data/catalogue-seed.ts` |
+| Ce qui est **facturé**    | `unitPriceMillicents`, entiers, résolus par le moteur | `order-line-pricing.service.ts`                                         |
 
 Le front ne fait pas qu'afficher : il **calcule**. `cart-total.ts` compose le
 sous-total, applique la remise, extrait la TVA du TTC et rend un total — « tous

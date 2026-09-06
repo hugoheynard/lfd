@@ -568,7 +568,8 @@ Fait une fois, le **2026-08-16**, pour vider les données de test avant
 l'ouverture commerciale. Un script dédié avait été écrit puis **supprimé le jour
 même** : une commande qui vide la production en une ligne est un danger
 permanent pour un gain d'une fois par an. Son histoire reste dans git
-(`prisma/wipe-business-data.ts`, commits du 16/08) si le besoin revient.
+(prisma/wipe-business-data.ts, commits du 16/08, retiré par `c6de2e91`) si le
+besoin revient.
 
 Ce qu'il faut savoir si le cas se représente, et qui a coûté du temps :
 

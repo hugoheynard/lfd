@@ -423,11 +423,11 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 
 ## 9. Fichiers de référence
 
-| Fichier                                | Rôle                                         |
-| -------------------------------------- | -------------------------------------------- |
-| `apps/lfd-api/container/worker.ts`     | Worker : routage + relais `envVars`          |
-| `apps/lfd-api/wrangler.jsonc`          | Config Worker + container (image, instances) |
-| `apps/lfd-api/Dockerfile`              | Image NestJS (build contexte racine)         |
-| `apps/lfd-api/.env.example`            | Liste **autoritaire** des variables runtime  |
-| `.github/workflows/deploy_lfd_api.yml` | Pipeline CI (build → push → deploy → sync)   |
-| `documentation/CONTAINERIZE-NOTES.md`  | Points à valider au 1er build Docker         |
+| Fichier                                     | Rôle                                         |
+| ------------------------------------------- | -------------------------------------------- |
+| `apps/lfd-api/container/worker.ts`          | Worker : routage + relais `envVars`          |
+| `apps/lfd-api/wrangler.jsonc`               | Config Worker + container (image, instances) |
+| `apps/lfd-api/Dockerfile`                   | Image NestJS (build contexte racine)         |
+| `apps/lfd-api/.env.example`                 | Liste **autoritaire** des variables runtime  |
+| `.github/workflows/deploy_lfd_api.yml`      | Pipeline CI (build → push → deploy → sync)   |
+| `documentation/suite/CONTAINERIZE-NOTES.md` | Points à valider au 1er build Docker         |

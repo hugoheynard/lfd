@@ -60,7 +60,7 @@ travers le moteur — un canonique, ou un prix négocié, et rien à composer.
 ## 1. Ce qu'on répare
 
 La boutique affiche des prix venus d'un **seed local en euros flottants**
-(`client/mock-shop.ts`) pendant que le serveur facture depuis le miroir, en
+(client/mock-shop.ts, supprimé depuis) pendant que le serveur facture depuis le miroir, en
 centimes entiers, à travers le moteur de résolution. Un client au tarif négocié
 voit le prix public et paie le sien.
 

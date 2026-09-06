@@ -119,9 +119,9 @@ Dans l'ordre où elles sont tombées, chacune levée par un réglage précis :
 - **Front** ([`auth.config.ts`](../../apps/lfc-B2B-platform-frontend/src/app/auth/auth.config.ts)) :
   `domain` / `clientId` / `audience` + `apiBaseUrl` (`http://localhost:3200`).
   SDK `@auth0/auth0-angular` **isolé dans la config navigateur**
-  (`app.config.browser.ts` → `main.ts`) car non isomorphe (constructeur
+  (app.config.browser.ts → `main.ts`) car non isomorphe (constructeur
   `AuthService` → `checkSession()` → `window`) ; le pré-rendu SSR/statique passe
-  par `app.config.server.ts` sans Auth0. Façade `AuthFacade` = seule frontière
+  par app.config.server.ts sans Auth0. Façade `AuthFacade` = seule frontière
   SSR-safe. Commits `501f5bf`, `eb02bb0`.
 - **Backend** (`.env`, gitignoré) : `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` (= même
   audience), vérification RS256/JWKS via `jose`. Résolution **DB-autoritaire** :

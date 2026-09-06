@@ -95,6 +95,56 @@ Les numérateurs sont accumulés en `bigint` sur un dénominateur commun (le
 sous-total), et l'arrondi n'a lieu qu'à la fin. Aucune fraction ne se multiplie
 en chemin.
 
+### Un panier chiffré, de bout en bout
+
+Douze croissants à 1,00 € HT (**5,5 %**), quatre jus à 2,00 € HT (**10 %**), et
+10,00 € HT de course (**20 %**).
+
+**Sans remise.** Chaque taux fait un groupe, et chaque groupe est arrondi une
+fois :
+
+| Groupe            | Assiette HT |  Taux |        TVA |
+| ----------------- | ----------: | ----: | ---------: |
+| croissants        |     12,00 € | 5,5 % | **0,66 €** |
+| jus               |      8,00 € |  10 % | **0,80 €** |
+| course (`extras`) |     10,00 € |  20 % | **2,00 €** |
+|                   |             |       | **3,46 €** |
+
+`subtotalHtCents` = 20,00 € — **les marchandises seules**, la course n'y est
+pas. Elle vit dans `extrasHtCents`.
+
+**Total = 20,00 + 10,00 + 3,46 = 33,46 €.**
+
+**Avec 2,00 € de remise** — soit 10 % du sous-total. C'est ici que `lines` et
+`extras` cessent de se ressembler :
+
+| Groupe     |           Assiette HT |                            |  Taux |                 TVA |
+| ---------- | --------------------: | -------------------------- | ----: | ------------------: |
+| croissants | 12,00 € → **10,80 €** | proratisée sur le **net**  | 5,5 % | 0,66 € → **0,59 €** |
+| jus        |   8,00 € → **7,20 €** | proratisée sur le **net**  |  10 % | 0,80 € → **0,72 €** |
+| course     | 10,00 € → **10,00 €** | proratisée sur le **brut** |  20 % | 2,00 € → **2,00 €** |
+|            |                       |                            |       |          **3,31 €** |
+
+Les deux lignes de marchandise perdent chacune 10 % d'assiette — 12,00 × 18/20
+et 8,00 × 18/20, dont la somme fait exactement les 18,00 € de net. **La course
+ne bouge pas d'un centime.** C'est ça, « après la remise » : on ne fait pas de
+geste commercial sur une prestation de transport.
+
+**Total = 18,00 + 10,00 + 3,31 = 31,31 €.**
+
+> 🔴 **Ces nombres sont un TEST**, pas une illustration :
+> `packages/money/src/__tests__/exemple-doc.spec.ts`. Un exemple arithmétique
+> dans un document est la forme de documentation qui pourrit le plus
+> discrètement — une phrase fausse se remarque, un total faux se recopie. Ces
+> deux cas échouent le jour où la ventilation change, et ce paragraphe devient
+> alors une chose à corriger plutôt qu'un piège.
+
+> ⚠️ **Le second panier n'est pas représentable aujourd'hui** : une remise vient
+> d'un point de RETRAIT, et une course d'une LIVRAISON — un panier réel porte
+> l'une ou l'autre. Les deux sont montrés ensemble parce que `ventilateVat` les
+> traite ensemble, et que c'est le seul moyen de voir la différence de
+> traitement sur un même tableau.
+
 **Deux bornes, et elles ne sont pas symétriques :**
 
 - une **remise** est bornée au sous-total (`discountCentsOf`). Au-delà, elle
@@ -256,6 +306,7 @@ rougi — aucun ne comparait les deux définitions.
 | L'affichage saute un montant nul                              | `b2b-ui/src/order/order-pricing.ts:123`                 |
 | La réponse du devis est énumérée par un test                  | `apps/lfd-api/test/shop-quote.e2e-spec.ts`              |
 | Ajouter la surtaxe a touché 22 fichiers, puis 13              | `git show --stat 455b3cea` et `ea922223`                |
+| Les nombres du §2 sortent de la vraie fonction                | `packages/money/src/__tests__/exemple-doc.spec.ts`      |
 
 ⚠️ **Non soumis à un contradicteur.** Chaque affirmation de l'existant a été
 ouverte dans le dépôt — la table dit laquelle et où.

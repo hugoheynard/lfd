@@ -156,7 +156,7 @@ Réparé le 2026-08-09 ; la cause, elle, ne l'est pas.
 
 ### P1-1 · Le catalogue est semé **en dur, deux fois**
 
-`apps/lfc-B2B-platform-frontend/src/app/data/catalogue-seed.ts` (1 079 lignes) et
+`apps/lfc-B2B-platform-frontend/src/app/legacy/data/catalogue-seed.ts` (1 079 lignes) et
 `apps/lfd-api/test/catalog-seed.ts`
 décrivent le même catalogue, à la main, et doivent s'accorder **par SKU** —
 sinon le checkout refuse un produit que la boutique affiche.
@@ -233,7 +233,8 @@ rendez-vous qui disparaît de l'historique d'un client.
 - **13 fichiers dépassent la limite de 300 lignes** (règle CLAUDE.md §6). Les
   plus gros sont hors périmètre commercial (`catalogue-seed.ts` 1 079,
   `growth-charts.ts` 1 077, `croissance-page.html` 632) ; dans le périmètre :
-  `activation-support-panel.ts` (344), `fiche-client-page.ts` (305),
+  `activation-support-panel.ts` (344), fiche-client-page.ts (305, éclatée en
+  quatre vues par `a632db97`),
   `company.ts` (325), `appointment.ts` (352).
 - **Aucune redirection** depuis l'ancienne URL `/commercial/calendrier/:id` vers
   `/rendez-vous/:id` — un lien partagé avant le 09/08 tombe en 404.
