@@ -21,11 +21,11 @@ sa comparaison de parité, mais la bascule attend deux blocages hors code (voir
 
 Voisins :
 
-- [`architecture-conditionnements-pricing.md`](architecture-conditionnements-pricing.md)
+- [`architecture-conditionnements-pricing.md`](../pricing/architecture-conditionnements-pricing.md)
   — la frontière PIM / B2B, tranchée le 2026-08-04 : le PIM porte le prix
   canonique, le B2B porte les altérations. **Ce document l'implémente**, il ne la
   rediscute pas ;
-- [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) — les
+- [`architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md) — les
   étages datés. Sa slice S2 déclare explicitement dépendre de ce chantier ;
 - [`audit-catalogue-boutique-b2b.md`](audit-catalogue-boutique-b2b.md) — le
   constat qui a ouvert le sujet ;
@@ -114,7 +114,7 @@ place pour Shopify. La logique est acquise dans cette maison ; on l'applique.
 
 1. **Altérable côté plateforme : le prix et la visibilité. Rien d'autre.**
    - _Prix_ — le tarif de liste **du canal B2B**, pré-altération. C'est
-     l'entrée du pipeline de [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md),
+     l'entrée du pipeline de [`architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md),
      pas un de ses étages : la mercuriale, le dégressif et les promos viendront
      **par-dessus**, et n'ont rien à faire ici.
    - _Visibilité_ — masquer un produit du catalogue B2B sans le retirer du PIM,

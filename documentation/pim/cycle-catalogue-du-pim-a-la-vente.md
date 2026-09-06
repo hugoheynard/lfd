@@ -771,5 +771,5 @@ Docs liés : [`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnem
 [`audit-fiche-produit-2026-09-01.md`](audit-fiche-produit-2026-09-01.md),
 [`publication-reconciliation-3way.md`](publication-reconciliation-3way.md),
 [`projection-shopify.md`](projection-shopify.md),
-[`../b2b/architecture-resolution-de-prix.md`](../b2b/architecture-resolution-de-prix.md),
+[`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md),
 [`../ops/runbook.md`](../ops/runbook.md).

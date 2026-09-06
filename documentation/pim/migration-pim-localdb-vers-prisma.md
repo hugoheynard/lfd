@@ -6,7 +6,7 @@
 > refonte de la page produit (édition + conditionnements + prix canonique).
 >
 > Statut : **plan.** Date : 2026-08-04.
-> Voisins : [`architecture-conditionnements-pricing.md`](../b2b/architecture-conditionnements-pricing.md),
+> Voisins : [`architecture-conditionnements-pricing.md`](../pricing/architecture-conditionnements-pricing.md),
 > [`audit-catalogue-boutique-b2b.md`](../b2b/audit-catalogue-boutique-b2b.md).
 
 ## Le point de départ

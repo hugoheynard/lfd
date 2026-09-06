@@ -83,7 +83,7 @@
  * restée des mois sans tourner nulle part).
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 
 const ROOT = process.cwd();
@@ -226,6 +226,19 @@ function referencesIn(doc) {
 }
 
 /**
+ * Pourquoi la référence ne résout pas.
+ *
+ * Un fichier PRÉSENT sur le disque mais absent de `git ls-files` est le cas le
+ * plus fréquent en écrivant : on vient de le créer et on ne l'a pas encore
+ * ajouté. Le dire évite de chercher une faute de frappe qui n'existe pas.
+ */
+function whyMissing(path) {
+  return existsSync(join(ROOT, path))
+    ? "présent sur le disque mais pas suivi par git — `git add` ?"
+    : "fichier introuvable";
+}
+
+/**
  * La cible d'un lien existe-t-elle — fichier **ou dossier** ?
  *
  * Un lien markdown vers un DOSSIER est légitime : `[le modèle](./data-model/)`
@@ -271,7 +284,7 @@ function deadIn(doc) {
       }
       const resolved = resolveReference(path, doc);
       if (resolved === null) {
-        found.push([index + 1, raw, "fichier introuvable"]);
+        found.push([index + 1, raw, whyMissing(path)]);
         continue;
       }
       // Un numéro de ligne ne se vérifie que si l'on sait DE QUEL fichier on

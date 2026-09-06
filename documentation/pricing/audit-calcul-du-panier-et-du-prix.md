@@ -833,7 +833,7 @@ disponible tout de suite.
 | `architecture-prix-vivant-prix-bloque.md`  | 🔵           | exact — zéro code, assumé.                                                                                                                                                                             |
 | `architecture-conditionnements-pricing.md` | 📐           | exact.                                                                                                                                                                                                 |
 | `architecture-facturation.md`              | 📐           | exact — et c'est le plus gros trou du §5.                                                                                                                                                              |
-| `pim/architecture-prix-ancre-ttc.md`       | ✅           | exact — l'assiette unique est livrée.                                                                                                                                                                  |
+| `architecture-prix-ancre-ttc.md`           | ✅           | exact — l'assiette unique est livrée.                                                                                                                                                                  |
 
 ~~**Deux lignes d'index à corriger**~~ — **faites le 2026-09-06 (`P5`)** :
 `architecture-prix-boutique.md` passe 📐 → **🟡** avec un bandeau en tête, et

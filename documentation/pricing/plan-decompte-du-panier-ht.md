@@ -172,7 +172,7 @@ produit un résultat visible. C'est la configuration exacte qui a déjà coûté
 où deux modèles calculent le même nombre, ils finissent par ne plus le faire.
 
 Et ce n'est pas une dette de confort : **la facture aura besoin de la même
-ventilation**. [`architecture-facturation.md`](architecture-facturation.md)
+ventilation**. [`architecture-facturation.md`](../b2b/architecture-facturation.md)
 prévoit du Factur-X dès le départ, et le format impose une décomposition de TVA
 par taux. Faire la ventilation ici, c'est la faire une fois pour trois lecteurs
 — le panier, la commande, la facture.

@@ -6,7 +6,7 @@
 > options sont posées au § 6 avec une recommandation et une question ouverte.
 >
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
-> (où vit le taux) · [`architecture-prix-ancre-ttc.md`](architecture-prix-ancre-ttc.md)
+> (où vit le taux) · [`architecture-prix-ancre-ttc.md`](../pricing/architecture-prix-ancre-ttc.md)
 > (comment se fabrique un prix) · [`journalisation-et-tracabilite.md`](journalisation-et-tracabilite.md)
 > (l'anatomie d'une trace) · [`publication-reconciliation-3way.md`](publication-reconciliation-3way.md)
 > (la réconciliation Shopify, qui est déjà la moitié de la réponse).

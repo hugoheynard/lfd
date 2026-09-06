@@ -1,98 +1,195 @@
-# Le prix ancré au TTC — et le rapport prix public / prix pro
+# Le prix ancré au TTC
 
-> **État : terminé** (2026-08-31). Le rapport a une maison, une API et un écran ;
-> la fiche saisit un prix public TTC ; chaque canal en dérive son hors taxe.
+**État : ✅ terminé** (2026-08-31). **Relu et découpé le 2026-09-06.**
+
+> ## En trois phrases
 >
-> 🔴 **Le chantier ne s'est pas terminé comme il avait commencé.** Il visait un
-> SECOND ancrage à côté du premier ; une décision de réunion en a fait le SEUL.
-> `price_basis` a donc été livrée puis retirée le même jour — voir le § 8, qui
-> supersède ce que les § 1, 6 ter et 7 disent de la coexistence des deux
-> assiettes.
+> Un prix se **saisit une fois, en TTC public**, sur la déclinaison. Un
+> **rapport global** (« le pro paie 10 % de moins ») en dérive le TTC
+> professionnel. Chaque **taux de TVA** en dérive un hors taxe, un par contexte
+> de vente — et c'est ce hors taxe, et lui seul, qui part vers le B2B.
 >
-> Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
+> Le hors taxe n'est plus une saisie : c'est un **résultat**.
+
+> ## Comment lire ce document
+>
+> | Partie                         | Pour qui                                     | Ce qu'elle contient                                                       |
+> | ------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------- |
+> | **A · Comprendre**             | qui veut savoir comment un prix est fabriqué | le modèle **tel qu'il est aujourd'hui**, en un schéma. Rien d'historique. |
+> | **B · Implémenter**            | qui va toucher au code                       | où ça vit, les invariants, et ce qui casse en exploitation                |
+> | **C · L'histoire du chantier** | qui veut savoir **pourquoi**                 | les cinq tranches, les décisions renversées, ce qui a été retiré          |
+>
+> 🔴 **La partie C contient des affirmations qui ont été SUPERSÉDÉES en cours de
+> route** — c'est la nature d'un journal. Elles sont conservées et marquées.
+> **Ne jamais implémenter depuis la partie C** : A et B disent l'état.
+>
+> Voisins : [`../pim/contextes-et-points-de-vente.md`](../pim/contextes-et-points-de-vente.md)
 > — où vit le taux, et pourquoi une carte naît d'une règle fiscale ;
-> [`../b2b/architecture-resolution-de-prix.md`](../b2b/architecture-resolution-de-prix.md)
-> — la chaîne d'étages, qui reste **HT de bout en bout** et que ce chantier ne
-> touche pas.
+> [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) — la
+> chaîne d'étages, qui reste **HT de bout en bout** et que ce chantier ne touche
+> pas ; [`README.md`](README.md) — la chaîne complète, du référentiel à la facture.
 
 ---
 
-## 1. Le problème
+# A · Comprendre
 
-Toute la chaîne est ancrée **HT** : `product_variant.price_cents` est un prix
-canonique hors taxe, la TVA se résout par contexte, et le TTC se calcule.
+## A.1 Le problème que ça règle
 
-Ça décrit correctement une facture professionnelle. Ça décrit mal une vitrine.
-Le même croissant est à 1,20 € sur l'étiquette qu'on l'emporte (5,5 %) ou qu'on
-le mange en salle (10 %) : **le prix affiché est le même, et c'est le HT qui
-diffère**. Le prix de vitrine n'est pas une conséquence, c'est la décision.
+Toute la chaîne était ancrée **HT** : `product_variant.price_cents` portait un
+prix canonique hors taxe, la TVA se résolvait par contexte, et le TTC se
+calculait.
 
-Il faut donc un second **ancrage** — un prix qui se lit TTC et dont chaque taux
-dérive son propre HT — sans retirer le premier, dont le B2B dépend entièrement.
+Ça décrit correctement une facture professionnelle. **Ça décrit mal une
+vitrine.** Le même croissant est à 1,20 € sur l'étiquette qu'on l'emporte
+(5,5 %) ou qu'on le mange en salle (10 %) : le prix affiché est le même, et
+c'est le **hors taxe** qui diffère. Le prix de vitrine n'est pas une
+conséquence, c'est la décision.
 
-## 2. Ce que le modèle savait déjà faire
+Le point rassurant était structurel : le référentiel portait déjà **un prix, et
+N taux par contexte**. C'est exactement la forme qu'un ancrage TTC demande — il
+n'y avait pas de table « prix par contexte » à créer, seulement le même modèle
+lu à l'envers.
 
-Le point rassurant, et il est structurel : le référentiel porte **un prix, et N
-taux par contexte**. C'est exactement la forme qu'un ancrage TTC demande.
+## A.2 Le modèle, en un schéma
 
-Il n'y a donc **pas de table « prix par contexte » à créer**. Un prix unique
-ancré au TTC, traversé par trois taux, produit trois HT — le modèle actuel, lu à
-l'envers.
+```mermaid
+flowchart TD
+  Public["**Prix public TTC**<br/>saisi sur la déclinaison<br/>_la seule source de vérité_"]
 
-## 3. Le rapport prix public / prix pro
+  Public -->|"× rapport pro<br/>(global, ex. 90 %)"| Pro["Prix **pro TTC**<br/>_dérivé — arrondi au centime ICI_"]
+  Public -->|"÷ (1 + taux)"| HtEmporter["HT · emporter 5,5 %"]
+  Public -->|"÷ (1 + taux)"| HtSurPlace["HT · sur place 10 %"]
+  Pro -->|"÷ (1 + taux b2b)"| HtB2b["**HT · B2B**<br/>_en millicentimes_"]
 
-Sans lui, un modèle TTC obligerait à porter **deux prix** par déclinaison (un TTC
-de vitrine, un HT professionnel) et à les tenir d'accord à la main. Avec lui, un
-seul prix reste la source de vérité.
+  HtB2b -->|push| Frontiere{{"LA FRONTIÈRE<br/>passé ce point, tout est HT"}}
+  Frontiere --> Miroir[("catalog_items.price_cents")]
+  Miroir --> Etages["Étages de résolution<br/>mercuriale · volume · promotion · geste"]
+  Etages --> Facture["Facture professionnelle<br/>_HT, comme la loi le veut_"]
+
+  Public -.->|"tel quel"| Shopify["Shopify<br/>_nativement taxe comprise_"]
+```
+
+**Trois choses à retenir, et rien d'autre.**
+
+1. **Un seul prix est saisi.** Tout le reste est dérivé. Aucun couple de prix à
+   tenir d'accord à la main.
+2. **Le rapport est un RAPPORT, pas une remise.** On saisit « −10 % », on stocke
+   `9 000` points de base, et c'est ce nombre qui multiplie. La traduction vit à
+   un seul endroit.
+3. **Le B2B ne voit jamais un prix TTC.** La conversion a lieu **une fois**, au
+   push. Passé cette frontière — mercuriale, volume, promotion, planchers,
+   historique, ventilation de TVA — tout est hors taxe, parce qu'une facture
+   professionnelle est hors taxe.
+
+## A.3 Pourquoi le TTC fait foi, et pas l'inverse
+
+L'aller-retour `TTC → HT → TTC` peut perdre un centime. **Le sens de la perte
+est choisi** : l'étiquette est ce qu'un client lit et ce que la caisse encaisse,
+le hors taxe en est la conséquence. On ne recalcule donc **jamais** une
+étiquette depuis sa propre déduction, et un test le documente plutôt que de
+prétendre l'inverse.
+
+C'est la même raison qui a fait retirer l'assiette configurable : un prix a un
+sens, pas deux. Cf. **C.5**.
+
+---
+
+# B · Implémenter
+
+## B.1 Où ça vit
+
+| Quoi                           | Où                                                                                           |
+| ------------------------------ | -------------------------------------------------------------------------------------------- |
+| Le rapport pro                 | `pim.accounting_rules` — **singleton** (`id = "accounting"`), colonne `pro_price_ratio_bp`   |
+| Le VO et ses bornes            | `ProPriceRatio`, plus la contrainte `accounting_rules_pro_ratio_bounds` en base              |
+| La traduction remise ↔ rapport | `pro-discount.ts` — un seul endroit, et il refuse plutôt que de corriger en silence          |
+| Le calcul partagé              | `proPriceFromPublic`, `htFromTtc`, `htMillicentsOf` dans `packages/pim-contracts/src/tax.ts` |
+| La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                    |
+| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                       |
+
+## B.2 Les invariants, et ce que leur violation coûte
+
+**L'ordre des opérations n'est pas négociable :**
 
 ```
-Prix public TTC (saisi)
-  × rapport                → prix pro TTC (DÉRIVÉ)
-  ou prix pro TTC POSÉ     → qui gagne sur le dérivé
-  ÷ (1 + taux du contexte) → un HT par contexte
+prix public TTC (stocké)
+  × rapport             → prix pro TTC, ARRONDI AU CENTIME ICI
+  ÷ (1 + taux du canal) → hors taxe en millicentimes, poussé
 ```
 
-### Trois décisions, et pourquoi
+L'arrondi du prix pro **avant** la division n'est pas un détail : c'est un
+**prix**, pas un intermédiaire de calcul. Garder le rationnel exact jusqu'au
+bout ferait diverger d'un centime le hors taxe poussé et celui que la fiche
+montre sous le prix pro — deux nombres qu'un client peut recompter. Sur 1,99 € à
+−10 % et 5,5 % : **169 668** millicentimes par le prix pro arrondi, **169 763**
+par le rationnel. Un test tient l'écart.
 
-| Décision                                | Pourquoi                                                                                                                                                                          |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Global**, pas par famille             | « le pro paie 10 % de moins » est une décision de maison. Une dérogation par famille s'ajoutera SOUS ce réglage le jour où le besoin existera — elle ne le remplacera pas.        |
-| **Dérivé**, avec montant posé qui gagne | Le dérivé garantit qu'aucun prix ne dérive tout seul ; le montant posé garde la main sur les prix ronds. C'est la règle déjà appliquée par `CatalogItemOverride` côté plateforme. |
-| **TTC / TTC**                           | Donc il s'applique **avant** toute TVA. Un rapport HT/HT ne serait pas le même nombre dès que deux contextes ont deux taux, et rien à l'écran ne le dirait.                       |
+| Invariant                                                                       | Ce que sa violation coûte                                                                                                                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Le taux passe par des **points de base entiers** avant toute division           | `5.5 * 100` vaut `550.0000000000001` en binaire, et `4.85 * 100` vaut `484.99999999999994`. Le référentiel a déjà payé ce piège dans `VatPercent`.                       |
+| **Aucune ligne de réglage** ⇒ `read()` rend `null`, et l'écran dit « à régler » | Un défaut à 100 % affirmerait « le pro paie le prix public », que personne n'a décidé — le travers déjà retiré avec `DEFAULT_FOOD_VAT_RATE`.                             |
+| Le rapport est une **précondition** du push, sans repli ni branche `null`       | Une branche jamais prise n'est jamais éprouvée, et facturerait le plein tarif le jour où elle le serait.                                                                 |
+| Un article **sans taux** est ÉCARTÉ, jamais converti au jugé                    | Inventer un taux ferait facturer un montant que personne n'a décidé. Motif : `variant_sans_taux`.                                                                        |
+| Le refus porte sur le **push entier**, pas sur chaque article                   | Un snapshot dont tous les articles seraient écartés est un snapshot VALIDE : la plateforme le lirait en retirant de sa boutique tout ce qu'elle vendait (`removedSkus`). |
 
-### Où il n'est PAS rangé, et pourquoi
+## B.3 Les rangements refusés, et pourquoi
 
-- **Pas en colonne sur `Category`** — c'est exactement ce que la famille vient de
-  perdre avec `emporter_tva_id` / `sur_place_tva_id` / `b2b_tva_id`. Rouvrir
-  cette porte serait le seul contresens vraiment coûteux du chantier.
+Trois endroits où le rapport pro n'est **pas** rangé. Les rouvrir est le
+contresens le plus coûteux de ce modèle.
+
+- **Pas en colonne sur `Category`** — c'est exactement ce que la famille vient
+  de perdre avec `emporter_tva_id` / `sur_place_tva_id` / `b2b_tva_id`.
 - **Pas dans `PriceRule`** — la mécanique y est (`scopeType`, `mode: percent`,
-  `value` en points de base, fenêtres datées), mais c'est le mauvais contexte
-  borné. `PriceRule` **altère** un prix canonique reçu, côté B2B. Le rapport,
-  lui, **fabrique** le prix canonique, côté PIM. L'y ranger rendrait le push
+  points de base, fenêtres datées), mais c'est le mauvais contexte borné.
+  `PriceRule` **altère** un prix canonique reçu, côté B2B ; le rapport
+  **fabrique** le prix canonique, côté PIM. L'y ranger rendrait le push
   incapable de tarifer le professionnel.
-- **Pas sur `CategoryChannel`** — ça mélangerait « ce que cette famille vend » et
-  « à quel prix ».
+- **Pas sur `CategoryChannel`** — ça mélangerait « ce que cette famille vend »
+  et « à quel prix ».
 
-## 4. La frontière à ne pas franchir
+Un rapport par famille ou par client s'ajoutera **sous** ce réglage le jour où
+le besoin existera. Il ne le remplacera pas.
 
-**Le B2B ne voit jamais un prix TTC.** Mercuriale, volume, promotion, geste,
-planchers, `catalog_price_history`, `computeVatCents` : tout reste HT, parce
-qu'une facture professionnelle est HT.
+## B.4 Ce qui casse en exploitation
 
-La conversion se fait donc **au push**, une fois : le référentiel résout le taux
-`b2b` de l'article, dérive le HT, et envoie ce qu'il a toujours envoyé.
-`catalog_items.price_cents` garde son contrat à la lettre, et rien en aval ne
-bouge.
+⚠️ **Tant que « Règles comptables » est vide, le push B2B répond en erreur au
+lieu de partir.** C'est voulu, et c'est la première chose à régler sur un
+environnement neuf.
 
-~~⚠️ En revanche `catalog-parity.ts` et le contrat de push devront transporter
-l'ancrage.~~ **Faux, corrigé en tranche 3.** La conversion se fait dans la
-projection, donc le fil ne transporte que du HT et son contrat ne change pas.
-Et la parité n'a rien à apprendre non plus : `CheckCatalogParityService` rejoue
-**cette même projection** pour construire sa référence, si bien qu'elle compare
-déjà deux HT. L'annonce de la tranche 1 était une hypothèse écrite avant d'avoir
-lu ce service.
+⚠️ **Le contrôle de parité tombe avec.** `CheckCatalogParityService` consomme la
+même `preview()` pour construire sa référence : sans rapport réglé, l'écran de
+parité échoue lui aussi, sur un message qui parle de règles comptables. C'est
+cohérent — il ne peut pas comparer à une référence qu'il ne sait pas calculer —
+mais le lien n'est pas évident depuis cet écran-là.
 
-## 5. Les tranches
+⚠️ **Shopify est supposé paramétré taxe comprise.** Sa projection envoie
+`price_cents` tel quel, sans jamais voir de taux. Le prix stocké étant désormais
+un prix public TTC, elle envoie la bonne chose **sans avoir changé une ligne** —
+sous une hypothèse qui n'est **pas vérifiable depuis ce dépôt** : que la
+boutique soit bien réglée « prices include tax ». À confirmer dans son
+paramétrage avant le premier push réel.
+
+## B.5 Couverture
+
+Le garde du rapport est tenu par `feed-projection.service.spec.ts` (unitaire).
+**Aucun e2e ne le traverse** — `catalog-parity.e2e-spec.ts` double `FeedPreview`,
+donc la chaîne réelle n'est exercée nulle part au niveau e2e. C'est un trou
+connu, écrit ici plutôt que découvert.
+
+---
+
+# C · L'histoire du chantier
+
+> ⚠️ **Ce qui suit est un JOURNAL, pas une spécification.** Il est conservé
+> parce que le raisonnement vaut — et parce que le chantier ne s'est pas terminé
+> comme il avait commencé : il visait un SECOND ancrage à côté du premier, une
+> décision de réunion en a fait le **seul**. `price_basis` a donc été livrée puis
+> retirée le même jour.
+>
+> Les affirmations barrées ou marquées « faux » l'étaient déjà à l'écriture des
+> tranches suivantes. **L'état est en A et B.**
+
+## C.1 Les cinq tranches
 
 | #     | Tranche           | Contenu                                                                                                                                              | État |
 | ----- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
@@ -100,13 +197,13 @@ lu ce service.
 | **2** | Le rapport, écran | La case dans « Règles comptables ». On saisit, on voit ; ça ne décide encore rien.                                                                   | ⬜   |
 | **3** | L'ancrage         | `price_basis: ht \| ttc` (défaut `ht`), conversion TTC↔HT dans le contrat, conversion au push B2B. Parité : rien à faire, elle rejoue la projection. | ✅   |
 | **4** | Le raccordement   | Le prix pro se dérive, fiche qui affiche public TTC · HT par contexte · pro.                                                                         | ✅   |
-| **5** | L'assiette unique | Décision de réunion : le hors taxe ne se saisit plus. `price_basis` retirée, `ttcFromHt` / `htPriceOf` supprimées. Voir § 8.                         | ✅   |
+| **5** | L'assiette unique | Décision de réunion : le hors taxe ne se saisit plus. `price_basis` retirée, `ttcFromHt` / `htPriceOf` supprimées. Voir C.6.                         | ✅   |
 
 Les tranches 1 à 3 n'ont changé aucun prix facturé : le défaut `ht` conservait
 le comportement d'alors tant que personne ne basculait un article. La tranche 5,
-elle, en change le SENS — voir § 8.
+elle, en change le SENS — voir C.6.
 
-## 6. Ce que la tranche 1 a posé
+## C.2 Ce que la tranche 1 a posé
 
 - `pim.accounting_rules` — singleton (`id = "accounting"`), une colonne
   `pro_price_ratio_bp`. **L'absence de ligne est la donnée** : rien réglé ⇒
@@ -127,7 +224,7 @@ elle, en change le SENS — voir § 8.
   pas, et le jour du raccordement on voudra savoir depuis quand le rapport vaut
   ce qu'il vaut. Reposer la même valeur ne trace rien.
 
-## 6 bis. Ce que la tranche 2 a posé
+## C.3 Ce que la tranche 2 a posé
 
 - **Un écran à part**, `/pim/regles-comptables`, et pas un bloc de plus sur
   « Taux de TVA » : un taux est imposé de l'extérieur, une remise est décidée
@@ -140,7 +237,7 @@ elle, en change le SENS — voir § 8.
   en silence — 100 % de remise donnerait un prix nul, que la base rejette.
 - **Le calcul a déménagé dans le contrat.** L'écran montre ce que le réglage
   produit sur un article à 10,00 € TTC ; il appelle `proPriceFromPublic`, la
-  même fonction que le VO du serveur. C'était le risque nommé au § 7 de la
+  même fonction que le VO du serveur. C'était le risque nommé au C.5 de la
   tranche 1 : il se refermait au moment précis où on allait l'ouvrir.
 - **Trois blancs, trois phrases différentes.** « Jamais réglé » (à saisir),
   « réglage illisible » (à réessayer, et surtout : aucun formulaire, sinon on
@@ -150,7 +247,7 @@ elle, en change le SENS — voir § 8.
   enregistrée et tracée mais qu'aucun prix ne s'en sert encore. L'honnêteté
   coûte une phrase ; la découvrir soi-même coûte une facture.
 
-## 6 ter. Ce que la tranche 3 a posé
+## C.4 Ce que la tranche 3 a posé
 
 - **`product_variant.price_basis`**, `ht` par défaut. Le défaut est le point :
   la colonne portait un prix hors taxe depuis toujours, et tout autre défaut
@@ -193,7 +290,7 @@ Le domaine importe désormais l'union du contrat. C'est un **alias**, donc le
 compilateur tient les deux bouts : un motif ajouté ne compile pas tant qu'il
 n'est pas traduit à l'écran.
 
-## 7. Restant à trancher
+## C.5 Ce qui restait à trancher, et ce qui a été tranché
 
 - ~~**La conversion TTC → HT divisera.**~~ Réglé en tranche 3 : la division
   passe par les points de base entiers et n'arrondit qu'une fois. Pas besoin de
@@ -209,7 +306,7 @@ n'est pas traduit à l'écran.
   `proPriceFromPublic` vit dans `@lfd/pim-contracts`, et le VO du serveur y
   délègue. La conversion TTC → HT de la tranche 3 devra y entrer aussi.
 
-## 8. L'assiette unique — la décision qui a clos le chantier
+## C.6 L'assiette unique — la décision qui a clos le chantier
 
 **Décision de réunion, 2026-08-31 : le calcul par le HT n'a pas d'utilité.** Un
 seul système est valide — prix public TTC, rapport vers le TTC pro, taux vers le
@@ -259,7 +356,7 @@ avait pas de réponse mécanique.
 
 ### Ce que ça règle chez Shopify, et sous quelle hypothèse
 
-Le § 7 annonçait Shopify comme le bloquant : sa projection envoie `price_cents`
+Le C.5 annonçait Shopify comme le bloquant : sa projection envoie `price_cents`
 **tel quel**, sans jamais voir de taux. C'était vrai — et c'était déjà un défaut
 AVANT ce chantier : elle poussait un montant hors taxe dans un champ que Shopify
 lit comme taxe comprise (« prices include tax », le réglage français par défaut).
@@ -269,7 +366,7 @@ chose **sans avoir changé une ligne**. ⚠️ Sous une hypothèse qui n'est pas
 vérifiable depuis ce dépôt : que la boutique soit bien paramétrée taxe comprise.
 À confirmer dans son paramétrage avant le premier push réel.
 
-## 9. Le raccordement du rapport au push
+## C.7 Le raccordement du rapport au push
 
 La tranche 4 n'avait été livrée qu'à moitié, et la moitié manquante ne se voyait
 pas : **l'écran appliquait le rapport, le fil non.**

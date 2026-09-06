@@ -718,7 +718,7 @@ Puisque c'est un élément de la boutique B2B, il ne suffit pas de refuser :
 
 ⚠️ Aujourd'hui la boutique lit client/mock-shop.ts et ne parle à aucune route
 catalogue. Tant que le **lot 1** de
-[`plan-boutique-sur-api.md`](plan-boutique-sur-api.md) n'est pas fait, il n'y a
+[`plan-boutique-sur-api.md`](../pricing/plan-boutique-sur-api.md) n'est pas fait, il n'y a
 rien pour porter cet affichage — l'application côté serveur, elle, ne l'attend
 pas.
 

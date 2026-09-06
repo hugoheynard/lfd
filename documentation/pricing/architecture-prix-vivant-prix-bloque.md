@@ -11,7 +11,7 @@ Voisins :
   les étages, le plancher, l'élasticité. **Ce document ne les rediscute pas** :
   il ajoute une question que ce modèle ne posait pas, celle de savoir **qui
   subit** un changement de prix ;
-- [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)
+- [`architecture-commande-immuable-avenants.md`](../b2b/architecture-commande-immuable-avenants.md)
   — une commande est un fait clos. C'est de là que vient le gel du prix à la
   passation, et c'est ce gel que le prix bloqué étend à toute une saison.
 

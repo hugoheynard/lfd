@@ -6,7 +6,7 @@
 > conditionnements** (qui remplace le toggle unité/pack provisoire) + un prix résolu.
 >
 > Statut : **conception.** Date : 2026-08-04, **révisé le 2026-08-23**.
-> Voisin : [`audit-catalogue-boutique-b2b.md`](audit-catalogue-boutique-b2b.md).
+> Voisin : [`audit-catalogue-boutique-b2b.md`](../b2b/audit-catalogue-boutique-b2b.md).
 
 ## Point de départ (ce qui existe déjà)
 
