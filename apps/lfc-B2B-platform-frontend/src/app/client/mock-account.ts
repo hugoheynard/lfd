@@ -12,7 +12,17 @@
  * l'invitation d'un interlocuteur par le détenteur, et la création d'un espace
  * pro par le client.
  *
- * 🔴 **Les ADRESSES en sont parties le 2026-09-06.** Facturation et livraisons
+ * 🔴 **L'IDENTITÉ en est partie le 2026-09-06.** Enseigne, raison sociale,
+ * forme juridique, SIRET, n° de TVA et référence viennent de `GET /me` (cf.
+ * `ClientCompany`). L'écran affichait « Brasserie Marchand » à quelqu'un qui
+ * n'est pas elle — sur l'écran censé lui dire qui il est chez nous.
+ *
+ * Trois affirmations sont parties SANS remplaçant, faute de source : la remise
+ * (un prix négocié vit dans la mercuriale, article par article), le plafond de
+ * crédit (le modèle le nomme comme une perspective) et la date d'entrée (elle
+ * existe en base, pas sur le fil).
+ *
+ * 🔴 **Les ADRESSES en sont parties le même jour.** Facturation et livraisons
  * viennent de `GET /companies/:id/addresses` (cf. `ClientAddresses`), et leur
  * zone comme leur tarif se calculent sur le code postal — la maquette écrivait
  * « zone 1 · 20 € » à côté, sans qu'aucun barème ne les soutienne. C'était la
@@ -47,16 +57,6 @@ export interface AccountUser {
 }
 
 export const MOCK_ACCOUNT = {
-  brand: 'Brasserie Marchand',
-  company: 'Marchand & Fils',
-  legalForm: 'SAS',
-  siret: '812 456 789 00021',
-  vat: 'FR45 812456789',
-  reference: 'CLI‑2481',
-  since: 'février 2024',
-  discount: '−12 %',
-  term: '30 j',
-  cap: '2 000 €',
   pickupHabit: 'Le Labo · 7 h – 8 h',
   language: 'Français',
   kbis: {

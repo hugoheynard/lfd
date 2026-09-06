@@ -29,20 +29,28 @@
     <div class="cards">
       <section class="card identity" id="compte-identity">
         <h2 class="card-title">{{ t().account.sections.identity }}</h2>
-        <dl class="facts">
-          <dt>{{ t().account.identityBrand }}</dt>
-          <dd>
-            {{ account.brand }}<button class="inline" type="button">{{ t().account.edit }}</button>
-          </dd>
-          <dt>{{ t().account.identityCompany }}</dt>
-          <dd>{{ account.company }}</dd>
-          <dt>{{ t().account.identityForm }}</dt>
-          <dd>{{ account.legalForm }}</dd>
-          <dt>{{ t().account.identitySiret }}</dt>
-          <dd class="num">{{ account.siret }}</dd>
-          <dt>{{ t().account.identityVat }}</dt>
-          <dd class="num">{{ account.vat }}</dd>
-        </dl>
+        @if (company(); as identity) {
+          <dl class="facts">
+            <dt>{{ t().account.identityBrand }}</dt>
+            <dd>
+              {{ client.name()
+              }}<button class="inline" type="button">{{ t().account.edit }}</button>
+            </dd>
+            <dt>{{ t().account.identityCompany }}</dt>
+            <dd>{{ identity.raisonSociale }}</dd>
+            <dt>{{ t().account.identityForm }}</dt>
+            <dd>{{ identity.formeJuridique }}</dd>
+            <dt>{{ t().account.identitySiret }}</dt>
+            <!-- Vide tant qu'inconnu, et c'est un ÉTAT : une société peut ouvrir
+                 sans papiers. Un tiret le dit ; un SIRET d'exemple serait celui
+                 d'une autre maison. -->
+            <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
+            <dt>{{ t().account.identityVat }}</dt>
+            <dd class="num">{{ identity.vatNumber || t().account.identityUnknown }}</dd>
+          </dl>
+        } @else {
+          <p class="note">{{ t().account.cardUnknownNote }}</p>
+        }
         <!-- La règle est ÉCRITE, pas grisée. -->
         <p class="note">{{ t().account.identityNote }}</p>
       </section>

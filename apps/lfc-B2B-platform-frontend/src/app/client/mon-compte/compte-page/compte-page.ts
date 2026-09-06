@@ -7,6 +7,7 @@ import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-b
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientAddresses } from '../../client-addresses.service';
+import { ClientCompany } from '../../client-company.service';
 import { formatCents, formatRate } from '../../format-money';
 import { MOCK_ACCOUNT } from '../../mock-account';
 import { ServicePoints } from '../../shop/pickup-points.store';
@@ -61,6 +62,15 @@ export class ComptePage {
   private readonly chrome = inject(ClientChrome);
 
   protected readonly account = MOCK_ACCOUNT;
+
+  /**
+   * 🔴 **L'identité vient de notre base** (`GET /me`), plus d'une maquette. Cet
+   * écran affichait « Brasserie Marchand », son SIRET et son n° de TVA à
+   * quelqu'un qui n'est pas elle — sur l'écran censé lui dire qui il est chez
+   * nous.
+   */
+  protected readonly client = inject(ClientCompany);
+  protected readonly company = this.client.company;
 
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
