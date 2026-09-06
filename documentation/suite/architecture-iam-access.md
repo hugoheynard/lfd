@@ -40,7 +40,7 @@ un tableau de bord tiers dont rien ne reste dans le dépôt.
 
 Conséquence directe : **la claim `permissions` cesse d'être la source de vérité**.
 Le shell la lit aujourd'hui pour dessiner son launcher
-([`auth.facade.ts`](../../apps/lfc-suite-shell/src/app/auth/auth.facade.ts)) ;
+(son auth.facade.ts — `apps/lfc-suite-shell` n'a jamais été créée) ;
 il interrogera IAM à la place. Il faudra le migrer, pas le laisser lire deux
 sources — deux vérités divergent toujours, et celle qui perd est celle qu'on
 regarde.

@@ -65,7 +65,7 @@ qui se cumulent, du plus visible au plus grave.
 
 ### 3.1 Le lien de réservation client est un placeholder
 
-[`contact-panel.ts:38`](../../apps/lfc-B2B-platform-frontend/src/app/contact/contact-panel/contact-panel.ts) :
+[`contact-panel.ts:38`](../../apps/lfc-B2B-platform-frontend/src/app/legacy/contact/contact-panel/contact-panel.ts) :
 
 ```ts
 /** Lien de prise de rendez-vous — TODO : URL de réservation réelle. */

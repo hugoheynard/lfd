@@ -124,6 +124,18 @@ const EXT = "ts|tsx|js|mjs|cjs|html|scss|css|json|prisma|sql|md|yml|yaml";
 const REFERENCE = new RegExp(`^([A-Za-z0-9_./@-]+\\.(?:${EXT}))(?::(\\d+))?$`, "u");
 /** Une portion entre backticks SIMPLES — une affirmation, pas une citation. */
 const INLINE = /`([^`\n]+)`/gu;
+/**
+ * La CIBLE d'un lien markdown — `](chemin)`.
+ *
+ * Vérifiée comme une référence, et pour une raison plus forte : un lien mort ne
+ * se lit pas comme une phrase périmée, il se lit comme un clic qui ne mène nulle
+ * part. Il y en a 425 dans ce dossier ; les taire pendant qu'on vérifie les
+ * backticks aurait été un choix arbitraire.
+ *
+ * Une ancre (`#section`) et une URL sont laissées : la première ne désigne pas
+ * un fichier, la seconde ne désigne pas ce dépôt.
+ */
+const LINK = /\]\(([^)\s]+)\)/gu;
 
 /** Ce que le dépôt contient — `.gitignore` honoré, et le même partout. */
 const everyFile = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
@@ -204,8 +216,38 @@ function referencesIn(doc) {
         count += 1;
       }
     }
+    for (const match of line.matchAll(LINK)) {
+      if (linkTarget(match[1]) !== null) {
+        count += 1;
+      }
+    }
   }
   return count;
+}
+
+/**
+ * La cible d'un lien existe-t-elle — fichier **ou dossier** ?
+ *
+ * Un lien markdown vers un DOSSIER est légitime : `[le modèle](./data-model/)`
+ * s'ouvre. Le résolveur de références ne connaît que des fichiers, parce qu'une
+ * phrase qui nomme un fichier nomme un fichier ; un lien, lui, peut mener à un
+ * rayon.
+ */
+function targetExists(path, doc) {
+  if (resolveReference(path, doc) !== null) {
+    return true;
+  }
+  const asDirectory = relative(ROOT, resolve(join(ROOT, doc), "..", path)).replace(/\/$/u, "");
+  return everyFile.some((file) => file.startsWith(`${asDirectory}/`));
+}
+
+/** Le chemin qu'un lien vise, ou `null` s'il ne vise pas un fichier du dépôt. */
+function linkTarget(href) {
+  if (href.startsWith("#") || /^[a-z][a-z0-9+.-]*:/iu.test(href)) {
+    return null;
+  }
+  const withoutAnchor = href.split("#")[0];
+  return withoutAnchor === "" ? null : decodeURI(withoutAnchor);
 }
 
 /** Les références mortes d'un document, avec ce qui cloche. */
@@ -239,6 +281,16 @@ function deadIn(doc) {
         if (Number(lineNumber) > count) {
           found.push([index + 1, raw, `le fichier n'a que ${String(count)} lignes`]);
         }
+      }
+    }
+    for (const match of text.matchAll(LINK)) {
+      const target = linkTarget(match[1]);
+      if (target === null) {
+        continue;
+      }
+      const from = target.startsWith("./") || target.startsWith("../") ? target : `./${target}`;
+      if (!targetExists(from, doc)) {
+        found.push([index + 1, `](${match[1]})`, "lien mort"]);
       }
     }
   });

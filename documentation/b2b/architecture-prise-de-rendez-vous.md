@@ -478,7 +478,7 @@ de prévenance : c'est lui qui décide de son agenda.
 
 ### 6.1 Le panneau de prise de rendez-vous
 
-Le panneau existant ([`activation-support-panel`](../../apps/lfc-B2B-platform-frontend/src/app/entreprises/activation-support-panel/activation-support-panel.ts))
+Le panneau existant ([`activation-support-panel`](../../apps/lfc-B2B-platform-frontend/src/app/legacy/entreprises/activation-support-panel/activation-support-panel.ts))
 garde sa structure, mais le bloc « créneau » change de nature :
 
 | Aujourd'hui                                               | Demain                                                           |
@@ -530,7 +530,7 @@ Deux conséquences à ne pas manquer :
 - Un rendez-vous à venir est visible et **annulable/reprogrammable par le client**
   jusqu'au délai de prévenance — sinon il appelle. Sans ça, chaque changement
   devient un e-mail à traiter à la main.
-- Le panneau contact générique ([`contact-panel.ts:38`](../../apps/lfc-B2B-platform-frontend/src/app/contact/contact-panel/contact-panel.ts))
+- Le panneau contact générique ([`contact-panel.ts:38`](../../apps/lfc-B2B-platform-frontend/src/app/legacy/contact/contact-panel/contact-panel.ts))
   perd son `bookingUrl` Cal.com codé en dur et ouvre le même panneau.
 
 ### 6.3 Le flux complet
