@@ -660,6 +660,30 @@ tests existants passent sans qu'un seul ait été retouché. Les huit cas neufs 
 `price-line.spec.ts` éprouvent la recette entière **sans un doublé** — ce qui
 était tout l'objet.
 
+### La mesure — 2026-09-06, sonde jetable sur Postgres local
+
+Le compte des lectures **réellement émises** par `POST /shop/quote`, relevé en
+instrumentant les délégués Prisma, avant et après le hissage :
+
+| Références au panier | avant | après |
+| -------------------- | ----- | ----- |
+| 1                    | 4     | **4** |
+| 5                    | 16    | **4** |
+| 20                   | 61    | **4** |
+
+`61 = 1 + 3 × 20`, exactement l'arithmétique annoncée. **Le résultat n'est pas le
+facteur, c'est la platitude** : le coût d'un devis ne dépend plus de la taille du
+panier.
+
+Les quatre : catalogue, règles, planchers, barèmes. Un panier avec retrait en
+fait 5, un client sous engagement 6, un plancher à porte de volume 8 — tous
+plats en N.
+
+⚠️ **Ce que cette mesure n'est pas.** Les temps relevés (51 / 13 / 9 ms) ne
+disent rien : Postgres local, cache chaud, ordre d'exécution. Le coût qui compte
+ici est un **nombre d'opérations facturées**, pas une durée — les lectures
+partaient déjà en parallèle, et ce lot n'a jamais promis du temps mural.
+
 ### ✅ Le piège du plan en cours — désamorcé
 
 Ce hissage est déjà écrit — mais dans `plan-materiaux-de-prix.md`, **comme un
@@ -701,16 +725,18 @@ rouvrir périodiquement et les dater.
 
 ## 5. Les trous — ce qui n'existe pas encore
 
-| Trou                                            | Conséquence aujourd'hui                                                         | Doc                                           |
-| ----------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------- |
-| **Aucune facture n'est émise**                  | la chaîne s'arrête au total de la commande ; le mandat SEPA n'est jamais débité | `architecture-facturation.md` 📐              |
-| **La mercuriale par client (S5)**               | un compte négocié paie le tarif public sur la boutique                          | `architecture-resolution-de-prix.md` 🟡       |
-| **La surtaxe de retard au panier (B5)**         | facturée par `Order.draft`, jamais annoncée au client                           | `plan-decompte-du-panier-ht.md` §7.2          |
-| **La boutique ne passe aucune commande**        | numéro fabriqué dans le navigateur                                              | `client/shop/mock-order.ts`                   |
-| **Les paliers de volume à la boutique**         | reportés — et `D2` est ce que le report a laissé                                | `architecture-prix-boutique.md` §6            |
-| **Prix vivant / prix bloqué**                   | non tranché, zéro code                                                          | `architecture-prix-vivant-prix-bloque.md` 🔵  |
-| **Conditionnements**                            | le toggle unité/pack reste provisoire                                           | `architecture-conditionnements-pricing.md` 📐 |
-| ~~**Aucune porte CI sur les unités d'argent**~~ | **Comblé le 2026-09-06** — `lint:money-units`, 24ᵉ porte.                       | ✅                                            |
+| Trou                                              | Conséquence aujourd'hui                                                                                                                   | Doc                                           |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Aucune facture n'est émise**                    | la chaîne s'arrête au total de la commande ; le mandat SEPA n'est jamais débité                                                           | `architecture-facturation.md` 📐              |
+| **La mercuriale par client (S5)**                 | un compte négocié paie le tarif public sur la boutique                                                                                    | `architecture-resolution-de-prix.md` 🟡       |
+| **La surtaxe de retard au panier (B5)**           | facturée par `Order.draft`, jamais annoncée au client                                                                                     | `plan-decompte-du-panier-ht.md` §7.2          |
+| **La boutique ne passe aucune commande**          | numéro fabriqué dans le navigateur                                                                                                        | `client/shop/mock-order.ts`                   |
+| **Les paliers de volume à la boutique**           | reportés — et `D2` est ce que le report a laissé                                                                                          | `architecture-prix-boutique.md` §6            |
+| **Prix vivant / prix bloqué**                     | non tranché, zéro code                                                                                                                    | `architecture-prix-vivant-prix-bloque.md` 🔵  |
+| **Conditionnements**                              | le toggle unité/pack reste provisoire                                                                                                     | `architecture-conditionnements-pricing.md` 📐 |
+| ~~**Aucune porte CI sur les unités d'argent**~~   | **Comblé le 2026-09-06** — `lint:money-units`, 24ᵉ porte.                                                                                 | ✅                                            |
+| **Les règles de prix ne sont pas mises en cache** | Elles changent quelques fois par semaine et sont relues à **chaque** devis. Quatre lectures par appel qui pourraient être une.            | `P12`                                         |
+| **Le panier n'existe pas côté serveur**           | Il vit dans le `localStorage`. Ni reprise multi-appareil, ni relance de panier abandonné, ni mesure de ce qui est composé puis abandonné. | `P13`                                         |
 
 Le dernier mérite d'être dit en propre, parce qu'il a été comblé **et** parce
 que ce qu'il a rapporté dépasse ce que cette ligne annonçait.
@@ -769,20 +795,23 @@ aujourd'hui pour brancher les paliers croira que le front ne multiplie pas.
 
 Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 
-| Lot        | Ce qu'il fait                                                                                                                                                                                                                              | Pourquoi maintenant                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| ✅ **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                                           | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                              |
-| ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                                             | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                                     |
-| ✅ **P3**  | `D6` : renommer les `*Cents` de la famille `tarification`. **Dix-huit identifiants et trois fonctions**, pas trois sites — la porte a montré l'ampleur. Les deux JSDoc sont partis avec `P1`.                                              | Ce sont les modèles qu'on recopie — et un nom honnête est ce qui rend la porte capable de voir. |
-| **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                                        | Une définition du TTC, pas deux.                                                                |
-| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                                                   | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
-| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                           | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
-| ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                              | Le serveur sait enfin répondre « combien » avant la commande.                                   |
-| ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                              | Le client voyait un montant et en aurait payé un autre.                                         |
-| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                         | À faire quand on y touche, pas avant.                                                           |
-| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                             | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
-| ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est au §3, `D10`. | Un prix négocié entrait en base au millième.                                                    |
-| ✅ **P10** | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                        | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |
+| Lot        | Ce qu'il fait                                                                                                                                                                                                                              | Pourquoi maintenant                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| ✅ **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                                           | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                               |
+| ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                                             | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                                      |
+| ✅ **P3**  | `D6` : renommer les `*Cents` de la famille `tarification`. **Dix-huit identifiants et trois fonctions**, pas trois sites — la porte a montré l'ampleur. Les deux JSDoc sont partis avec `P1`.                                              | Ce sont les modèles qu'on recopie — et un nom honnête est ce qui rend la porte capable de voir.  |
+| **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                                        | Une définition du TTC, pas deux.                                                                 |
+| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                                                   | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                           |
+| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                           | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                               |
+| ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                              | Le serveur sait enfin répondre « combien » avant la commande.                                    |
+| ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                              | Le client voyait un montant et en aurait payé un autre.                                          |
+| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                         | À faire quand on y touche, pas avant.                                                            |
+| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                             | Un prix juste et inexplicable coûte un litige, pas un correctif.                                 |
+| ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est au §3, `D10`. | Un prix négocié entrait en base au millième.                                                     |
+| ✅ **P10** | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                        | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.               |
+| ✅ **P7c** | Le devis de la boutique **amortit les salves** : `debounceTime` de 300 ms, `distinctUntilChanged` sur la clé, `switchMap` qui annule la requête en vol. Six clics sur « + » faisaient six appels.                                          | Un facteur d'écran ne se rattrape pas en divisant une constante de serveur.                      |
+| 🟡 **P12** | **Garder les règles de prix en mémoire**, invalidées à l'écriture. Elles changent quelques fois par semaine et sont relues à chaque devis : 4 lectures par appel deviendraient 1.                                                          | C'est le facteur restant le plus net, une fois `P7c` posé.                                       |
+| 🔵 **P13** | **Le panier vit côté serveur.** Reprise multi-appareil, relance de panier abandonné, mesure de ce qui est composé puis abandonné.                                                                                                          | Ce n'est pas une question de performance : c'est du produit qu'on ne peut pas faire aujourd'hui. |
 
 **Deux lots demandent une conception, et les deux touchent à l'argent** : `P7`
 et `P10`. La convention du dépôt impose alors un contradicteur **avant** de les
