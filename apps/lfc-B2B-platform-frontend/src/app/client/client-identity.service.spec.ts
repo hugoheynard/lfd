@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 
 import type { UserProfile } from '../account/account.model';
 import { ClientIdentity } from './client-identity.service';
-import { MOCK_CLIENT } from './mock-client';
 
 const PROFILE: UserProfile = {
   userId: 'usr_1',
@@ -22,11 +21,15 @@ describe('ClientIdentity', () => {
     identity = TestBed.inject(ClientIdentity);
   });
 
-  it('répond avec la maquette tant que personne n’est reconnu', () => {
-    // La démo doit rester jouable déconnecté : un écran qui dit « Bonjour »
-    // sans nom serait pire qu'un nom d'exemple.
-    expect(identity.firstName()).toBe(MOCK_CLIENT.firstName);
-    expect(identity.phone()).toBe(MOCK_CLIENT.phone);
+  /**
+   * 🔴 Un nom d'exemple répondait ici — « Pierre » —, pour que la démo reste
+   * jouable déconnecté. C'est le nom de quelqu'un d'autre : on salue sans
+   * nommer, et c'est la seule chose vraie qu'on puisse faire.
+   */
+  it('ne prête AUCUN nom tant que le compte n’est pas connu', () => {
+    expect(identity.firstName()).toBeNull();
+    expect(identity.phone()).toBeNull();
+    expect(identity.email()).toBeNull();
   });
 
   it('prend le vrai nom dès que le compte est connu', () => {
@@ -44,25 +47,8 @@ describe('ClientIdentity', () => {
     // dirait « Bonjour  » pendant ce battement.
     identity.apply({ ...PROFILE, firstName: '', lastName: '', email: '', phone: '   ' });
 
-    expect(identity.firstName()).toBe(MOCK_CLIENT.firstName);
-    expect(identity.phone()).toBe(MOCK_CLIENT.phone);
-  });
-
-  it('reconnu SANS profil : aucun nom d’emprunt, on salue sans nommer', () => {
-    // « Bonjour Pierre » à quelqu'un de connecté n'est pas un repli : c'est le
-    // nom d'un autre, et ça masque un profil qui n'est jamais arrivé.
-    identity.setRecognised(true);
-
     expect(identity.firstName()).toBeNull();
     expect(identity.phone()).toBeNull();
-    expect(identity.email()).toBeNull();
-  });
-
-  it('reconnu AVEC profil : c’est le compte qui parle', () => {
-    identity.setRecognised(true);
-    identity.apply(PROFILE);
-
-    expect(identity.firstName()).toBe('Camille');
   });
 
   it('sans nom de famille, le nom complet ne traîne pas d’espace', () => {

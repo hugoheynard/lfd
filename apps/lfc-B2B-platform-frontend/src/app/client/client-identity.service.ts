@@ -1,7 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 
 import type { UserProfile } from '../account/account.model';
-import { MOCK_CLIENT } from './mock-client';
 
 /**
  * Qui est le client, pour les écrans qui le NOMMENT.
@@ -15,54 +14,40 @@ import { MOCK_CLIENT } from './mock-client';
  * `HttpClient` et Auth0, et un écran qui dit « Bonjour Pierre » n'a aucune
  * raison de les traîner. Ici il lit trois signaux, et rien d'autre.
  *
- * Tant que personne n'est reconnu, ce sont les valeurs de la maquette qui
- * répondent : la démo reste jouable déconnecté.
+ * 🔴 **Il n'y a plus de repli de maquette.** « Pierre », son téléphone et son
+ * e-mail répondaient tant que personne n'était reconnu — pour que la démo reste
+ * jouable déconnecté.
  *
- * ⚠️ Mais **jamais quand quelqu'un EST reconnu**. Afficher « Bonjour Pierre » à
- * une personne connectée, ce n'est pas un repli : c'est le nom de quelqu'un
- * d'autre, et ça masque au passage un profil qui n'est pas arrivé. Dans ce cas
- * {@link firstName} rend `null`, et l'écran salue sans nommer.
+ * La règle qui les condamnait était déjà écrite ici, elle ne s'appliquait qu'à
+ * moitié : afficher le nom de quelqu'un d'autre n'est pas un repli. Ça l'est
+ * autant pour un visiteur anonyme que pour une personne connectée dont le profil
+ * n'est pas arrivé — dans les deux cas, l'écran salue **sans nommer**, et c'est
+ * la seule chose vraie qu'il puisse faire.
+ *
+ * **`null` partout** dès que le champ n'est pas connu — prénom, téléphone,
+ * e-mail. Un seul mot pour « on ne sait pas », et les gabarits qui portaient
+ * déjà un repli continuent de le porter. Le nom de famille fait exception : il
+ * complète le prénom plutôt qu'il ne se lit seul, d'où la chaîne vide.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientIdentity {
   private readonly known = signal<UserProfile | null>(null);
 
-  /** Quelqu'un est-il reconnu ? Le shell le dit ; la maquette l'ignore. */
-  private readonly recognised = signal(false);
-
-  /** `null` quand on est reconnu sans nom connu : l'écran salue sans nommer. */
-  readonly firstName = computed(() => this.orMock(this.known()?.firstName, MOCK_CLIENT.firstName));
+  /** `null` tant que le prénom n'est pas connu : l'écran salue sans nommer. */
+  readonly firstName = computed(() => blank(this.known()?.firstName));
 
   readonly lastName = computed(() => blank(this.known()?.lastName) ?? '');
 
   /** Le nom complet, sans espace en trop quand le nom de famille manque. */
   readonly fullName = computed(() => `${this.firstName() ?? ''} ${this.lastName()}`.trim());
 
-  readonly phone = computed(() => this.orMock(this.known()?.phone, MOCK_CLIENT.phone));
+  readonly phone = computed(() => blank(this.known()?.phone));
 
-  readonly email = computed(() => this.orMock(this.known()?.email, MOCK_CLIENT.email));
+  readonly email = computed(() => blank(this.known()?.email));
 
   /** Le compte relu : le shell l'y verse dès que `GET /me` a répondu. */
   apply(profile: UserProfile | null): void {
     this.known.set(profile);
-  }
-
-  /** Le shell publie ici ce qu'Auth0 lui dit de la session. */
-  setRecognised(recognised: boolean): void {
-    this.recognised.set(recognised);
-  }
-
-  /**
-   * La valeur du compte, la maquette à défaut — et RIEN quand la personne est
-   * reconnue mais que son profil manque, parce qu'une valeur d'exemple serait
-   * alors un mensonge sur son identité.
-   */
-  private orMock(value: string | undefined, fallback: string): string | null {
-    const known = blank(value);
-    if (known !== null) {
-      return known;
-    }
-    return this.recognised() ? null : fallback;
   }
 }
 

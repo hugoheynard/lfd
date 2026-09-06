@@ -9,8 +9,25 @@ import { ClientLocale } from '../../../client/client-locale.service';
 import { fill } from '../../../client/copy/client-copy.service';
 import { FR } from '../../../client/copy/fr';
 import { IT } from '../../../client/copy/it';
-import { MOCK_CLIENT } from '../../../client/mock-client';
+import { ClientIdentity } from '../../../client/client-identity.service';
+
 import { CommandePage } from './commande-page';
+
+/**
+ * Le compte RECONNU de la suite.
+ *
+ * 🔴 Ces valeurs venaient d'une maquette partagée avec l'écran — « Pierre », son
+ * téléphone. Un test vert ne prouvait alors que la cohérence de la maquette avec
+ * elle-même ; ici la suite POSE le profil, comme le shell le fait.
+ */
+const PROFILE = {
+  userId: 'usr_1',
+  subject: 'auth0|1',
+  firstName: 'Camille',
+  lastName: 'Vallet',
+  email: 'camille@lestommeuses.fr',
+  phone: '06 11 22 33 44',
+};
 
 /**
  * Le shell fournit au bandeau l'endroit où atterrir. Sans lui, le gabarit que
@@ -61,6 +78,7 @@ describe('CommandePage', () => {
     banner = slot.nativeElement as HTMLElement;
     fixture = TestBed.createComponent(CommandePage);
     chrome = TestBed.inject(ClientChrome);
+    TestBed.inject(ClientIdentity).apply(PROFILE);
     fixture.detectChanges();
   });
 
@@ -69,7 +87,7 @@ describe('CommandePage', () => {
     // place au-dessus de la sous-barre. L'écran ne fait que l'y publier.
     fixture.detectChanges();
     expect(banner.textContent ?? '').toContain(
-      fill(FR.commande.title, { name: MOCK_CLIENT.firstName }),
+      fill(FR.commande.title, { name: PROFILE.firstName }),
     );
     expect(chrome.kicker()).toBe(FR.chrome.kickerCommande);
     expect(chrome.back()).toBeNull();
@@ -114,7 +132,9 @@ describe('CommandePage', () => {
     // à qui est reconnu, un menu et ses non-lues plutôt que la marque.
     expect(chrome.menu()).toBe(true);
     expect(chrome.bell()).not.toBeNull();
-    expect(chrome.bellCount()).toBe(MOCK_CLIENT.unread);
+    // 🔴 La cloche annonçait « 5 non lues », une constante : aucune notification
+    // client n'existe côté serveur. Elle est là, muette, et c'est exact.
+    expect(chrome.bellCount()).toBe(0);
   });
 
   it('une porte sans écran le DIT, au lieu de ne rien faire', () => {
@@ -144,7 +164,7 @@ describe('CommandePage', () => {
     expect(text()).toContain(FR.commande.urgenceTitle);
 
     const tel = el().querySelector('a[href^="tel:"]');
-    expect(tel?.getAttribute('href')).toBe(`tel:${MOCK_CLIENT.phone.replaceAll(' ', '')}`);
+    expect(tel?.getAttribute('href')).toBe(`tel:${PROFILE.phone.replaceAll(' ', '')}`);
   });
 
   it("un créneau confirmé remonte dans l'encart, et s'annule", () => {
@@ -155,7 +175,7 @@ describe('CommandePage', () => {
     click(FR.rappel.ctaReady);
 
     expect(text()).toContain(fill(FR.pro.booked, { slot: '14 h – 15 h' }));
-    expect(text()).toContain(MOCK_CLIENT.phone);
+    expect(text()).toContain(PROFILE.phone);
 
     click(FR.pro.cancel);
     expect(text()).toContain(FR.commande.urgenceTitle);

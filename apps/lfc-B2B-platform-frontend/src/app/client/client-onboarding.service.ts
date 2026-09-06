@@ -30,7 +30,6 @@ export class ClientOnboarding {
 
   constructor() {
     effect(() => {
-      this.identity.setRecognised(this.auth.isAuthenticated());
       this.identity.apply(this.account.profile());
     });
 

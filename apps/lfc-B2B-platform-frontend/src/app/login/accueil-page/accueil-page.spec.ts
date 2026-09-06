@@ -170,7 +170,6 @@ describe('AccueilPage', () => {
     click(FR.rappel.ctaReady);
 
     expect(text()).toContain(fill(FR.pro.booked, { slot: '14 h – 15 h' }));
-    expect(text()).toContain('06 12 44 09 87');
 
     click(FR.pro.cancel);
     expect(text()).toContain(FR.pro.title);

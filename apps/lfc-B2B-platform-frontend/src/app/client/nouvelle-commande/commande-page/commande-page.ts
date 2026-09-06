@@ -16,7 +16,6 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
 import { OrderContextStore, type ServiceChoice } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { MOCK_CLIENT } from '../../../client/mock-client';
 import { RappelPanel } from '../../../login/accueil-page/rappel-panel/rappel-panel';
 
 import { AddressDialog } from './address-dialog/address-dialog';
@@ -121,7 +120,10 @@ export class CommandePage {
     // à ses affaires. ⚠️ Maquette — le menu n'a pas encore d'écran.
     this.chrome.menu.set(true);
     this.chrome.bell.set((): void => this.notYet());
-    this.chrome.bellCount.set(MOCK_CLIENT.unread);
+    // 🔴 La cloche annonçait « 5 non lues », une constante. Aucune notification
+    // client n'existe côté serveur — pas de route, pas de modèle. Un compteur
+    // sur une cloche qui n'ouvre rien fait chercher ce qu'on n'a pas envoyé.
+    this.chrome.bellCount.set(0);
   }
 
   /** ⚠️ Maquette : la porte est branchée, son écran arrive au prochain lot. */

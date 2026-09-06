@@ -1,14 +1,10 @@
 import { computed, inject, Injectable } from '@angular/core';
 
-import { formatCents, formatEuro } from '../format-money';
+import { formatCents } from '../format-money';
 import { ClientCart } from '../cart/client-cart.service';
 import { ClientOrders } from '../client-orders.service';
 import { ClientCopyService } from '../copy/client-copy.service';
-import { MOCK_CLIENT } from '../mock-client';
 import { type WellCard } from './ready-well.model';
-
-/** Le montant de la facture en attente — il viendra de la facturation. */
-const INVOICE_AMOUNT = 248.6;
 
 /**
  * Ce qui attend une action, et rien d'autre.
@@ -64,18 +60,14 @@ export class ClientEspace {
       });
     }
 
-    if (MOCK_CLIENT.invoicesDue > 0) {
-      cards.push({
-        id: 'invoice',
-        title: copy.invoiceTitle,
-        icon: 'receipt',
-        lines: [formatEuro(INVOICE_AMOUNT), copy.invoiceDue],
-        action: copy.invoiceAction,
-        route: '/mes-factures',
-        badge: '',
-        primary: false,
-      });
-    }
+    // 🔴 **La carte « facture à régler » est partie.** Elle annonçait 248,60 €
+    // dus, un montant écrit en dur à côté d'une constante `invoicesDue: 1`.
+    // Aucune facture n'est émise dans ce système : la carte envoyait vers un
+    // écran vide, et un accueil qui réclame un règlement qui n'existe pas est
+    // pire qu'un accueil qui ne réclame rien.
+    //
+    // Elle revient le jour où la facturation existe — c'est ici, et l'écran
+    // saura alors ce qu'il annonce.
 
     return cards;
   });

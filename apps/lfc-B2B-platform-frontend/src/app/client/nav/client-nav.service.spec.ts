@@ -2,6 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import type { SubscriptionView } from '@lfd/contracts';
+
+import { ClientSubscriptions } from '../client-subscriptions.service';
 
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -72,15 +75,23 @@ describe('Les destinations du menu', () => {
     expect(orders?.countShort).toBe('1');
   });
 
-  it('marque la facture en attente — c’est ce qui APPELLE une action', () => {
+  /**
+   * 🔴 Les factures portaient « 1 à régler », une constante, devant une
+   * destination qui n'a aucun modèle : rien n'émet de facture. Une pastille
+   * d'alerte devant un écran vide est la pire des maquettes — elle fait ouvrir
+   * l'écran.
+   */
+  it('n’annonce AUCUNE facture, faute de facturation', () => {
     const invoices = TestBed.inject(ClientNav)
       .items()
       .find((i) => i.id === 'invoices');
-    expect(invoices?.warn).toBe(true);
-    expect(invoices?.count).toContain('1');
+    expect(invoices?.countShort).toBe('');
+    expect(invoices?.warn).toBe(false);
   });
 
   it('compte les gabarits récurrents SANS les marquer — ils n’appellent rien', () => {
+    TestBed.inject(ClientSubscriptions).receive([{}, {}] as SubscriptionView[]);
+
     const baskets = TestBed.inject(ClientNav)
       .items()
       .find((i) => i.id === 'baskets');

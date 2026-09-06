@@ -4,8 +4,8 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
 import { ClientOrders } from '../client-orders.service';
+import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
-import { MOCK_CLIENT } from '../mock-client';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -83,13 +83,18 @@ export interface NavItem {
  * réf exige que leur ORDRE ne varie jamais d'une surface à l'autre, ce qu'aucune
  * relecture ne garantit si chacune tient sa propre liste.
  *
- * Les compteurs viennent des mêmes sources que les écrans — le panier réel, les
- * commandes réellement passées. Seules les factures n'ont pas encore de modèle
- * et sortent de `MOCK_CLIENT`, comme le reste de ce qui viendra du compte.
+ * Les compteurs viennent des mêmes sources que les écrans — les commandes
+ * réellement passées, les gabarits récurrents réellement enregistrés.
+ *
+ * 🔴 **Les FACTURES n'en ont plus.** Elles annonçaient « 1 à régler », une
+ * constante, sur une destination qui n'a aucun modèle derrière elle : aucune
+ * facture n'est émise nulle part dans ce système. Une pastille d'alerte devant
+ * un écran vide est la pire des maquettes — elle fait ouvrir l'écran.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientNav {
   private readonly orders = inject(ClientOrders);
+  private readonly subscriptions = inject(ClientSubscriptions);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
 
@@ -131,21 +136,11 @@ export class ClientNav {
         ? EMPTY
         : { count: String(placed), countShort: String(placed), warn: false };
     }
-    if (id === 'invoices') {
-      // Annoté large à dessein : `MOCK_CLIENT` est figé `as const`, donc son
-      // littéral ferait passer le test à zéro pour une comparaison morte. Le
-      // jour où le compte porte vraiment ce nombre, le garde est déjà là.
-      const due: number = MOCK_CLIENT.invoicesDue;
-      return due === 0
-        ? EMPTY
-        : {
-            count: this.t().nav.invoicesDue.replace('{n}', String(due)),
-            countShort: String(due),
-            warn: true,
-          };
-    }
+    // ⚠️ `invoices` n'a AUCUN compteur, et c'est délibéré : rien n'émet de
+    // facture. Le jour où la facturation existe, c'est ici que son compte se
+    // branche — pas avant.
     if (id === 'baskets') {
-      const models: number = MOCK_CLIENT.recurringBaskets;
+      const models = this.subscriptions.all().length;
       return models === 0
         ? EMPTY
         : {

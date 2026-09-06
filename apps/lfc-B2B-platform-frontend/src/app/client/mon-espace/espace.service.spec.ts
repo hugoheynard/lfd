@@ -29,10 +29,15 @@ describe('Ce qui attend une action', () => {
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });
 
-  it('ne retient QUE des actions — la facture due en est une, à froid', () => {
+  /**
+   * 🔴 Une carte « facture à régler » ouvrait cet écran à froid, avec 248,60 €
+   * dus écrits en dur. Aucune facture n'est émise dans ce système : l'accueil
+   * réclamait un règlement qui n'existe pas.
+   */
+  it('n’a RIEN à proposer sur un compte au repos', () => {
     const espace = TestBed.inject(ClientEspace);
-    expect(espace.cards().map((c) => c.id)).toEqual(['invoice']);
-    expect(espace.count()).toBe(1);
+    expect(espace.cards()).toEqual([]);
+    expect(espace.count()).toBe(0);
   });
 
   it('ajoute le panier dès qu’il porte quelque chose, et pas avant', () => {
@@ -40,7 +45,7 @@ describe('Ce qui attend une action', () => {
     expect(espace.cards().some((c) => c.id === 'cart')).toBe(false);
 
     TestBed.inject(ClientCart).add('VIE-001');
-    expect(espace.cards().map((c) => c.id)).toEqual(['cart', 'invoice']);
+    expect(espace.cards().map((c) => c.id)).toEqual(['cart']);
   });
 
   it('met la commande prête EN TÊTE, et c’est elle qui porte la crème', async () => {
@@ -51,8 +56,8 @@ describe('Ce qui attend une action', () => {
     const cards = TestBed.inject(ClientEspace).cards();
     expect(cards[0]?.id).toBe('pickup');
     expect(cards[0]?.primary).toBe(true);
-    // Le panier a été vidé par la commande : il ne reste que retrait + facture.
-    expect(cards.map((c) => c.id)).toEqual(['pickup', 'invoice']);
+    // Le panier a été vidé par la commande : il ne reste que le retrait.
+    expect(cards.map((c) => c.id)).toEqual(['pickup']);
   });
 
   it('compte les cartes et le badge d’un SEUL calcul', () => {
@@ -63,10 +68,8 @@ describe('Ce qui attend une action', () => {
 
   it('écrit le titre en toutes lettres, comme la réf — pas en chiffre', () => {
     const espace = TestBed.inject(ClientEspace);
-    expect(espace.todayLine()).toBe('Une chose aujourd’hui.');
-
     TestBed.inject(ClientCart).add('VIE-001');
-    expect(espace.todayLine()).toBe('Deux choses aujourd’hui.');
+    expect(espace.todayLine()).toBe('Une chose aujourd’hui.');
   });
 
   it('nomme le lieu par sa forme PRÉPOSITIONNELLE — « au Labo », jamais « Le Labo »', async () => {
