@@ -1,6 +1,6 @@
 import type { PricingCategoryView } from '@lfd/contracts';
 
-import { floorCentsOf } from '../grille/mercuriale-row';
+import { floorMillicentsOf } from '../grille/mercuriale-row';
 
 /** Où le bloc de simulation s'insère, et avec quelles données d'article. */
 export interface SimulationSlot {
@@ -11,7 +11,7 @@ export interface SimulationSlot {
   readonly gridRow: number;
   readonly sku: string;
   readonly name: string;
-  readonly catalogCents: number;
+  readonly catalogMillicents: number;
   readonly floorMillicents: number | null;
 }
 
@@ -42,8 +42,8 @@ export function locateSimulation(
       gridRow: index + 2,
       sku,
       name: item.name,
-      catalogCents: item.canonicalMillicents,
-      floorMillicents: floorCentsOf(item.effectiveFloor, item.canonicalMillicents),
+      catalogMillicents: item.canonicalMillicents,
+      floorMillicents: floorMillicentsOf(item.effectiveFloor, item.canonicalMillicents),
     };
   }
   return null;

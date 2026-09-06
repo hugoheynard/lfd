@@ -43,7 +43,7 @@ export function gapToCatalogBp(
  * serait le plus flatteur, et c'est précisément pour ça qu'il ne convient pas :
  * un client qui commande peu paie l'entrée, et c'est ce qu'il faut voir.
  */
-export function entryPriceCents(tiers: readonly TemplateTierPayload[]): number {
+export function entryPriceMillicents(tiers: readonly TemplateTierPayload[]): number {
   return tiers[0]?.unitPriceMillicents ?? 0;
 }
 
@@ -56,7 +56,7 @@ export function entryPriceCents(tiers: readonly TemplateTierPayload[]): number {
  */
 export function averageGapBp(lines: readonly PriceTemplateLineView[]): number | null {
   const gaps = lines
-    .map((line) => gapToCatalogBp(line.catalogPriceMillicents, entryPriceCents(line.tiers)))
+    .map((line) => gapToCatalogBp(line.catalogPriceMillicents, entryPriceMillicents(line.tiers)))
     .filter((gap): gap is number => gap !== null);
   if (gaps.length === 0) {
     return null;

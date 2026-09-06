@@ -3,7 +3,7 @@ import type { PriceTemplateLineView } from '@lfd/contracts';
 
 import {
   averageGapBp,
-  entryPriceCents,
+  entryPriceMillicents,
   gapToCatalogBp,
   isFlatPrice,
   ruleCount,
@@ -51,11 +51,11 @@ describe('gapToCatalogBp', () => {
   });
 });
 
-describe('entryPriceCents', () => {
+describe('entryPriceMillicents', () => {
   /** Le prix d'ENTRÉE, pas le plus flatteur : c'est celui qu'un petit client paie. */
   it('prend le prix du plus petit palier', () => {
     expect(
-      entryPriceCents([
+      entryPriceMillicents([
         { minQuantity: 1, unitPriceMillicents: 85 },
         { minQuantity: 10_000, unitPriceMillicents: 78 },
       ]),

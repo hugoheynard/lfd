@@ -37,7 +37,7 @@ export interface Installment {
   /** Le cumul **après** cette échéance — la mesure sur laquelle le palier se juge. */
   readonly cumulativeQuantity: number;
   readonly unitPriceMillicents: number;
-  readonly lineTotalCents: number;
+  readonly lineTotalMillicents: number;
 }
 
 /** Un scénario complet : ses échéances, et ce qu'il coûte en tout. */
@@ -46,9 +46,9 @@ export interface Scenario {
   /** Le volume effectivement pris, en pourcentage de la promesse (points de base). */
   readonly bp: number;
   readonly totalQuantity: number;
-  readonly totalCents: number;
+  readonly totalMillicents: number;
   /** Le prix moyen réellement payé — le seul nombre comparable entre scénarios. */
-  readonly averageUnitCents: number;
+  readonly averageUnitMillicents: number;
   readonly installments: readonly Installment[];
 }
 
@@ -126,20 +126,20 @@ export function scenarioOf(
       quantity,
       cumulativeQuantity: cumulative,
       unitPriceMillicents: point.unitPriceMillicents,
-      lineTotalCents: point.unitPriceMillicents * quantity,
+      lineTotalMillicents: point.unitPriceMillicents * quantity,
     });
     previous = cumulative;
   }
 
-  const totalCents = built.reduce((sum, line) => sum + line.lineTotalCents, 0);
+  const totalMillicents = built.reduce((sum, line) => sum + line.lineTotalMillicents, 0);
   return {
     key: SCENARIOS.find((scenario) => scenario.bp === bp)?.key ?? 'scénario',
     bp,
     totalQuantity: volume,
-    totalCents,
+    totalMillicents,
     // Arrondi au centime : c'est un indicateur de comparaison, pas un prix
     // facturé. Le total, lui, est exact — il est la somme de prix résolus.
-    averageUnitCents: volume === 0 ? 0 : Math.round(totalCents / volume),
+    averageUnitMillicents: volume === 0 ? 0 : Math.round(totalMillicents / volume),
     installments: built,
   };
 }

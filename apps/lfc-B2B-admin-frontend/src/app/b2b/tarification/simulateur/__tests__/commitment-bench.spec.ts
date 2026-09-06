@@ -54,14 +54,14 @@ describe('scenarioOf', () => {
         quantity: 500,
         cumulativeQuantity: 500,
         unitPriceMillicents: 160,
-        lineTotalCents: 80_000,
+        lineTotalMillicents: 80_000,
       },
       {
         index: 2,
         quantity: 500,
         cumulativeQuantity: 1000,
         unitPriceMillicents: 160,
-        lineTotalCents: 80_000,
+        lineTotalMillicents: 80_000,
       },
     ]);
   });
@@ -72,7 +72,7 @@ describe('scenarioOf', () => {
     expect(scenario?.installments[0]?.unitPriceMillicents).toBe(200);
     expect(scenario?.installments[1]?.unitPriceMillicents).toBe(160);
     // 300 × 2,00 € + 300 × 1,60 € = 1 080 €.
-    expect(scenario?.totalCents).toBe(108_000);
+    expect(scenario?.totalMillicents).toBe(108_000);
   });
 
   /**
@@ -84,9 +84,9 @@ describe('scenarioOf', () => {
     const tenue = scenarioOf(1000, 10_000, 2, grid([500, 1000]));
     const manquee = scenarioOf(1000, 7000, 2, grid([350, 700]));
 
-    expect(tenue?.averageUnitCents).toBe(160);
+    expect(tenue?.averageUnitMillicents).toBe(160);
     // 350 × 2,00 € puis 350 × 1,60 € → moyenne 1,80 €.
-    expect(manquee?.averageUnitCents).toBe(180);
+    expect(manquee?.averageUnitMillicents).toBe(180);
   });
 
   it('le dernier cumul vaut EXACTEMENT le volume, sans reste d’arrondi', () => {

@@ -7,7 +7,7 @@ import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 import { PriceTemplatesService } from '../templates.service';
 import {
   averageGapBp,
-  entryPriceCents,
+  entryPriceMillicents,
   gapToCatalogBp,
   isFlatPrice,
   ruleCount,
@@ -58,7 +58,7 @@ export class GabaritsPage {
 
   protected readonly euros = formatEuros;
   protected readonly isFlatPrice = isFlatPrice;
-  protected readonly entryPriceCents = entryPriceCents;
+  protected readonly entryPriceMillicents = entryPriceMillicents;
   protected readonly ruleCount = ruleCount;
   protected readonly averageGapBp = averageGapBp;
 

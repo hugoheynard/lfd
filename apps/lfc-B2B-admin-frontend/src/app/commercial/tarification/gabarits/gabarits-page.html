@@ -115,7 +115,7 @@
                     </td>
                     <td class="num">
                       @if (
-                        gap(line.catalogPriceMillicents, entryPriceCents(line.tiers));
+                        gap(line.catalogPriceMillicents, entryPriceMillicents(line.tiers));
                         as delta
                       ) {
                         <span class="delta" [class]="'is-' + direction(delta)">

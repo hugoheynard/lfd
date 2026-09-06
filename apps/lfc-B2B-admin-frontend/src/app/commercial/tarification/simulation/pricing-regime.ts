@@ -1,6 +1,6 @@
 import {
-  revenueCentsAt,
-  unitPriceCentsAt,
+  revenueMillicentsAt,
+  unitPriceMillicentsAt,
   type ArticleBasis,
   type Scenario,
 } from './revenue-model';
@@ -37,7 +37,7 @@ export type PricingRegime =
  * **Le chiffre encaissé pour un volume, sous un régime donné.**
  *
  * Les trois se réduisent à deux briques : un prix constant × un volume, ou
- * l'intégrale progressive de {@link revenueCentsAt}. Le régime d'engagement est
+ * l'intégrale progressive de {@link revenueMillicentsAt}. Le régime d'engagement est
  * la composition des deux — plat jusqu'à la promesse, progressif au-delà — et
  * c'est exactement ce que fait le moteur : sous la promesse le palier ne bouge
  * pas, au-dessus c'est le cumul qui décide.
@@ -53,11 +53,11 @@ export function revenueUnderRegime(
   }
   switch (regime.kind) {
     case 'perOrder':
-      return volume * unitPriceCentsAt(scenario, basis, Math.max(1, regime.orderSize));
+      return volume * unitPriceMillicentsAt(scenario, basis, Math.max(1, regime.orderSize));
     case 'commitment':
       return commitmentRevenue(scenario, basis, volume, Math.max(1, regime.promised));
     case 'delivered':
-      return revenueCentsAt(scenario, basis, volume);
+      return revenueMillicentsAt(scenario, basis, volume);
   }
 }
 
@@ -75,12 +75,14 @@ function commitmentRevenue(
   volume: number,
   promised: number,
 ): number {
-  const atPromise = promised * unitPriceCentsAt(scenario, basis, promised);
+  const atPromise = promised * unitPriceMillicentsAt(scenario, basis, promised);
   if (volume <= promised) {
-    return volume * unitPriceCentsAt(scenario, basis, promised);
+    return volume * unitPriceMillicentsAt(scenario, basis, promised);
   }
   return (
-    atPromise + revenueCentsAt(scenario, basis, volume) - revenueCentsAt(scenario, basis, promised)
+    atPromise +
+    revenueMillicentsAt(scenario, basis, volume) -
+    revenueMillicentsAt(scenario, basis, promised)
   );
 }
 

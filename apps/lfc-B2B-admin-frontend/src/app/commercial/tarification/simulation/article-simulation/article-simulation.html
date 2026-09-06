@@ -12,7 +12,9 @@
       class="field-input"
       type="text"
       inputmode="decimal"
-      [placeholder]="anchors().averageCents !== null ? euros(anchors().averageCents!) : '0,00'"
+      [placeholder]="
+        anchors().averageMillicents !== null ? euros(anchors().averageMillicents!) : '0,00'
+      "
       [value]="fixedField()"
       [attr.aria-label]="'Prix fixe comparé pour ' + name()"
       (input)="fixedField.set(nativeValue($event))"
@@ -22,12 +24,12 @@
   <div class="anchors">
     <span class="field-label">Reprendre</span>
     <div class="anchor-choices">
-      <button type="button" class="choice" (click)="useAnchor(anchors().headlineCents)">
-        annoncé {{ euros(anchors().headlineCents) }}
+      <button type="button" class="choice" (click)="useAnchor(anchors().headlineMillicents)">
+        annoncé {{ euros(anchors().headlineMillicents) }}
       </button>
-      @if (anchors().averageCents !== null) {
-        <button type="button" class="choice" (click)="useAnchor(anchors().averageCents)">
-          moyen {{ euros(anchors().averageCents!) }}
+      @if (anchors().averageMillicents !== null) {
+        <button type="button" class="choice" (click)="useAnchor(anchors().averageMillicents)">
+          moyen {{ euros(anchors().averageMillicents!) }}
         </button>
       }
     </div>
@@ -112,12 +114,12 @@
      c'est exactement ce qu'un client découvre à la fin de la saison. -->
 <p class="prices">
   À <strong>{{ targetVolume().toLocaleString('fr-FR') }}</strong> unités, le barème annonce
-  <strong>{{ euros(anchors().headlineCents) }}</strong>
-  @if (anchors().averageCents !== null) {
-    et fait payer <strong>{{ euros(anchors().averageCents!) }}</strong> en moyenne
+  <strong>{{ euros(anchors().headlineMillicents) }}</strong>
+  @if (anchors().averageMillicents !== null) {
+    et fait payer <strong>{{ euros(anchors().averageMillicents!) }}</strong> en moyenne
   }
-  · comparé à un fixe à <strong>{{ euros(appliedFixedCents()) }}</strong>
-  @if (appliedFixedCents() !== referenceCents()) {
+  · comparé à un fixe à <strong>{{ euros(appliedFixedMillicents()) }}</strong>
+  @if (appliedFixedMillicents() !== referenceMillicents()) {
     <span class="floored">relevé par la limite</span>
   }
 </p>
@@ -166,9 +168,9 @@
     <li class="exit">
       <span class="exit-head">Sortie à {{ exit.share }} %</span>
       <span class="exit-volume">{{ exit.volume.toLocaleString('fr-FR') }} unités</span>
-      <span class="exit-delta" [class.is-positive]="exit.deltaCents >= 0">
-        {{ exit.deltaCents >= 0 ? '+' : '−'
-        }}{{ euros(exit.deltaCents < 0 ? -exit.deltaCents : exit.deltaCents) }}
+      <span class="exit-delta" [class.is-positive]="exit.deltaMillicents >= 0">
+        {{ exit.deltaMillicents >= 0 ? '+' : '−'
+        }}{{ euros(exit.deltaMillicents < 0 ? -exit.deltaMillicents : exit.deltaMillicents) }}
       </span>
     </li>
   }

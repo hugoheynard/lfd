@@ -14,7 +14,7 @@ import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.
 import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { AdminOrdersService } from '../../../commandes/orders.service';
 import { NotifyService } from '../../../notify.service';
-import { benchRow, probeQuantities, stepDownCents, type BenchRow } from './quote-bench';
+import { benchRow, probeQuantities, stepDownMillicents, type BenchRow } from './quote-bench';
 import { SCENARIOS, projectionLevels, scenarioOf, type Scenario } from './commitment-bench';
 import { TarificationService } from '../tarification.service';
 
@@ -218,7 +218,7 @@ export class SimulateurPage {
     if (reference === null || reference.key === scenario.key) {
       return null;
     }
-    return scenario.averageUnitCents - reference.averageUnitCents;
+    return scenario.averageUnitMillicents - reference.averageUnitMillicents;
   }
 
   protected percent(bp: number): string {
@@ -226,7 +226,7 @@ export class SimulateurPage {
   }
 
   protected marche(index: number): number | null {
-    return stepDownCents(this.rows(), index);
+    return stepDownMillicents(this.rows(), index);
   }
 
   /** Le signe se dit en toutes lettres : « −12 % » et « +4 % » ne se lisent pas pareil. */

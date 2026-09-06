@@ -22,9 +22,12 @@
 > **pas corrigé** : il pose une question de données de production, qui est celle
 > d'Hugo (`P11`).
 >
-> **`P1` et `P2` sont livrés** (2026-09-06) : le sous-total du panier staff passe
-> par `lineTotalCents`, et `lint:money-units` est la 24ᵉ porte du dépôt. C'est
-> elle qui a trouvé `D10`, au premier passage.
+> **`P1`, `P2` et `P3` sont livrés** (2026-09-06) : le sous-total du panier staff
+> passe par `lineTotalCents`, `lint:money-units` est la 24ᵉ porte du dépôt, et la
+> famille `tarification` ne porte plus un seul nom en `*Cents` sur une valeur en
+> millicentimes. C'est la porte qui a trouvé `D10`, au premier passage ; c'est le
+> renommage qui en a révélé le troisième symptôme. **La dette comptée est passée
+> de 14 sites à 2**, et les deux qui restent sont `D10`.
 >
 > Un audit porte sa date. Celui-ci ne se mettra pas à jour tout seul.
 
@@ -103,12 +106,20 @@ Le dépôt porte deux formateurs, et c'est là que ça se joue :
 | `formatMillicents` (idem)           | `/100_000` | des **millicentimes** |
 | `formatEuros` (`@lfd/catalog-ui`)   | `/100_000` | des **millicentimes** |
 
-**Trois sites écrivent `unitPriceMillicents × quantity` et nomment le résultat
-`*Cents`.** Deux tombent sur un formateur en millicentimes — la valeur est juste,
-le nom ment. Le troisième tombe sur `formatCents`, et c'est `D1`.
+**Trois sites écrivaient `unitPriceMillicents × quantity` et nommaient le
+résultat `*Cents`.** Deux tombaient sur un formateur en millicentimes — la
+valeur juste, le nom faux. Le troisième tombait sur `formatCents`, et c'est
+`D1`.
 
-C'est le mécanisme, pas la malchance : le même idiome fautif, écrit trois fois,
-n'attendait qu'un site pour atterrir du mauvais côté.
+C'était le mécanisme, pas la malchance : le même idiome fautif, écrit trois
+fois, n'attendait qu'un site pour atterrir du mauvais côté.
+
+> **Rouvert le 2026-09-06.** `lint:money-units` a montré que ces trois-là étaient
+> la partie émergée : **dix-huit** identifiants `*Cents` portaient des
+> millicentimes dans la famille `tarification`. Tous renommés (`P3`, cf. `D6`).
+> Le désaccord d'unité qui reste est d'une autre nature — il ne porte plus sur
+> des noms mais sur `price-field.ts`, le dernier fichier qui parle centimes
+> quand tous ses appelants parlent millicentimes (`D10`).
 
 ---
 
@@ -244,24 +255,40 @@ deux endroits, et un terme ajouté à l'un ne l'est pas à l'autre. C'est le
 synonyme d'arithmétique d'argent que `@lfd/money` existe pour supprimer,
 reconstitué juste au-dessus de lui.
 
-### D6 🟡 Des `*Cents` qui portent des millicentimes
+### D6 ✅ Des `*Cents` qui portaient des millicentimes — refermé le 2026-09-06
 
-Le mécanisme de `D1`, aux deux autres endroits où il n'a pas mordu :
+> **Corrigé par `P3`, et il était trois fois plus large que cette section ne le
+> disait.** Elle nommait trois sites du simulateur ; `lint:money-units` en a
+> montré **dix-huit identifiants** sur toute la famille `tarification`.
 
-| Site                                                  | Nom                | Contenu réel  | Affiché par                      |
-| ----------------------------------------------------- | ------------------ | ------------- | -------------------------------- |
-| `b2b/tarification/simulateur/quote-bench.ts:72`       | `totalCents`       | millicentimes | `formatEuros` → **valeur juste** |
-| `b2b/tarification/simulateur/commitment-bench.ts:129` | `lineTotalCents`   | millicentimes | idem                             |
-| `commitment-bench.ts:142`                             | `averageUnitCents` | millicentimes | idem                             |
+Le mécanisme de `D1`, partout où il n'a pas mordu : un nom en `*Cents` sur une
+valeur en millicentimes, affichée par `formatEuros` — qui attend des
+millicentimes. La valeur était juste, le nom mentait.
 
-Deux dommages, moindres mais réels : le nom ment à la relecture, et un **total**
-s'affiche avec jusqu'à cinq décimales, alors que le paquet de monnaie dit qu'un
-montant s'arrête au centime parce qu'il est encaissé.
+**Ce qui a tranché l'ampleur** : il n'y a **aucun `formatCents`** dans
+`commercial/tarification` ni dans `b2b/tarification/simulateur`. Tout y est
+affiché en millicentimes. Donc tout identifiant `*Cents` de cette famille
+mentait, sans exception à chercher — dix-huit noms, plus trois fonctions qui
+portaient le mensonge à la source (`floorCentsOf`, `unitPriceCentsAt`,
+`revenueCentsAt`). 214 occurrences, 25 fichiers, un seul geste.
 
-Deux JSDoc mentent au même endroit : `contracts/src/catalog.ts:50`
-(« Prix unitaire **HT** en centimes ») et `cart.store.ts:9` (idem), tous deux
-au-dessus d'un champ `…Millicents`. Ce sont des vestiges de la bascule d'unité,
-et ce sont eux qu'on lit quand on écrit la ligne fautive.
+Deux dommages, moindres mais réels, et tous deux fermés : le nom mentait à la
+relecture, et un **total** s'affichait avec jusqu'à cinq décimales quand le
+paquet de monnaie dit qu'un montant s'arrête au centime parce qu'il est encaissé.
+
+Les deux JSDoc menteurs — `contracts/src/catalog.ts` et `cart.store.ts`, tous
+deux « en centimes » au-dessus d'un champ `…Millicents` — sont partis avec `P1`.
+
+#### 🔴 Ce que le renommage a fait apparaître
+
+`referenceMillicents` (l'ancien `referenceCents` du simulateur d'article)
+compare un prix **tapé à la main** — rendu par `centsOf`, donc en centimes — à
+des ancres en millicentimes. Sous son ancien nom, la porte n'avait rien à
+redire ; nommé juste, il avoue.
+
+C'est un **troisième symptôme de `D10`**, et la leçon dépasse le lot : un nom
+honnête est ce qui rend une porte capable de voir. Les deux se tiennent, et
+aucun des deux ne suffit seul.
 
 ### D7 🟡 Le panier hérité compte en euros flottants
 
@@ -363,10 +390,20 @@ mode. La base et le serveur ont été migrés avec soin ; **c'est l'écran de sa
 qui n'a pas suivi.** Le désaccord n'est donc pas une ambiguïté sur l'unité : il
 est tranché, écrit en SQL, et un seul fichier l'ignore.
 
-Un second symptôme du même désaccord, sur le même écran : le bouton « + » de
-tarification préremplit le champ par `eurosField(row.catalogCents)`, où
-`catalogCents` porte des millicentimes — il propose donc **2 000,00 €** pour un
-croissant à 2,00 €.
+**Deux autres symptômes du même désaccord**, découverts avec lui ou par le
+renommage de `P3` :
+
+- le bouton « + » de la grille préremplit le champ par
+  `eurosField(row.catalogMillicents)` — il propose **2 000,00 €** pour un
+  croissant à 2,00 € ;
+- le simulateur d'article compare un prix tapé (`centsOf`, en centimes) à des
+  ancres en millicentimes (`referenceMillicents`).
+
+**La cause est unique et tient en une phrase** : `price-field.ts` est le dernier
+fichier de la famille `tarification` qui parle **centimes** — `centsOf` et
+`eurosField` — et ses trois appelants lui donnent ou lui reprennent des
+**millicentimes**. Le remède est donc unique aussi : faire parler ce fichier en
+millicentimes. C'est ce qui rend `P11` petit en code, et lourd en décision.
 
 #### Ce qui reste à décider, et pourquoi ce n'est pas à moi
 
@@ -592,19 +629,19 @@ aujourd'hui pour brancher les paliers croira que le front ne multiplie pas.
 
 Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 
-| Lot        | Ce qu'il fait                                                                                                                                                                                                       | Pourquoi maintenant                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| ✅ **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                    | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                 |
-| ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                      | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                        |
-| **P3**     | `D6` : renommer les trois `*Cents` du simulateur, corriger les deux JSDoc. La porte de P2 les tient ensuite.                                                                                                        | Ce sont les modèles qu'on recopie.                                                 |
-| **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                 | Une définition du TTC, pas deux.                                                   |
-| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                            | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.             |
-| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                    | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                 |
-| **P7**     | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                    | C'est la racine commune ; les trois autres en sont les symptômes.                  |
-| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                  | À faire quand on y touche, pas avant.                                              |
-| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                      | Un prix juste et inexplicable coûte un litige, pas un correctif.                   |
-| 🔴 **P11** | `D10` : trancher l'unité des six appelants de `centsOf` / `eurosField`, puis **compter** les gabarits déjà posés sous le centime. La migration éventuelle est une décision d'Hugo.                                  | Un prix négocié entre en base au millième, et l'écran se relit juste.              |
-| **P10**    | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend. | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles. |
+| Lot        | Ce qu'il fait                                                                                                                                                                                                       | Pourquoi maintenant                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| ✅ **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                    | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                              |
+| ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                      | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                                     |
+| ✅ **P3**  | `D6` : renommer les `*Cents` de la famille `tarification`. **Dix-huit identifiants et trois fonctions**, pas trois sites — la porte a montré l'ampleur. Les deux JSDoc sont partis avec `P1`.                       | Ce sont les modèles qu'on recopie — et un nom honnête est ce qui rend la porte capable de voir. |
+| **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                 | Une définition du TTC, pas deux.                                                                |
+| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                            | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
+| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                    | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
+| **P7**     | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                    | C'est la racine commune ; les trois autres en sont les symptômes.                               |
+| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                  | À faire quand on y touche, pas avant.                                                           |
+| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                      | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
+| 🔴 **P11** | `D10` : trancher l'unité des six appelants de `centsOf` / `eurosField`, puis **compter** les gabarits déjà posés sous le centime. La migration éventuelle est une décision d'Hugo.                                  | Un prix négocié entre en base au millième, et l'écran se relit juste.                           |
+| **P10**    | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend. | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |
 
 **Deux lots demandent une conception, et les deux touchent à l'argent** : `P7`
 et `P10`. La convention du dépôt impose alors un contradicteur **avant** de les

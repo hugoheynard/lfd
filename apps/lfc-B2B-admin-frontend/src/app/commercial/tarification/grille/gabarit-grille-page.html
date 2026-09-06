@@ -111,7 +111,7 @@
             <div class="cell col-article" [style.gridRow]="rowOf(category.id, index)">
               <div class="node node-article">
                 <span class="article-name">{{ row.name }}</span>
-                <span class="article-meta">{{ row.sku }} · {{ euros(row.catalogCents) }}</span>
+                <span class="article-meta">{{ row.sku }} · {{ euros(row.catalogMillicents) }}</span>
                 <!-- Le volume prévu appartient à l'article : c'est LUI qu'on
                      négocie « sur la saison ». Il alimente le partage du haut de
                      page et la simulation, sans être saisi deux fois. -->
@@ -130,7 +130,7 @@
                      deux manières d'arriver au prix) et un volume (sinon il n'y a
                      rien à projeter). Le bouton le dit plutôt que de s'ouvrir sur
                      un graphe vide. -->
-                @if (row.mercurialeCents !== null) {
+                @if (row.mercurialeMillicents !== null) {
                   <button
                     type="button"
                     class="link"
@@ -148,12 +148,12 @@
             <!-- Colonne 2 — le prix négocié, saisi ICI. Pas de panneau : la
                  comparaison au catalogue sert au moment où l'on tape. -->
             <div class="cell col-price" [style.gridRow]="rowOf(category.id, index)">
-              @if (row.mercurialeCents === null) {
+              @if (row.mercurialeMillicents === null) {
                 <button
                   type="button"
                   class="node node-add"
                   [attr.aria-label]="'Tarifer ' + row.name"
-                  (click)="priceIt(row.sku, row.catalogCents)"
+                  (click)="priceIt(row.sku, row.catalogMillicents)"
                 >
                   +
                   <!-- L'indicateur sert AVANT de tarifer : c'est là qu'on décide
@@ -241,11 +241,11 @@
 
             <!-- Colonne 4 — ce qu'un commercial peut encore lâcher. -->
             <div class="cell col-room" [style.gridRow]="rowOf(category.id, index)">
-              @if (row.roomCents === null) {
+              @if (row.roomMillicents === null) {
                 <span class="node node-empty muted">—</span>
               } @else {
                 <span class="node node-room">
-                  <span class="room-value">{{ euros(row.roomCents) }}</span>
+                  <span class="room-value">{{ euros(row.roomMillicents) }}</span>
                   <span class="guard-meta">accordable</span>
                 </span>
               }
@@ -288,7 +288,7 @@
               <div class="cell col-simulation" [style.gridRow]="slot.gridRow">
                 <app-article-simulation
                   [name]="slot.name"
-                  [catalogCents]="slot.catalogCents"
+                  [catalogMillicents]="slot.catalogMillicents"
                   [floorMillicents]="slot.floorMillicents"
                   [tiers]="simulatedTiers()"
                   [targetVolume]="plannedVolumeOf(slot.sku)"

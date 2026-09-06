@@ -124,7 +124,7 @@
                     <span class="muted">{{ percent(scenario.bp) }} du visé</span>
                   </th>
                   <td class="num">{{ scenario.totalQuantity }}</td>
-                  <td class="num strong">{{ euros(scenario.averageUnitCents) }}</td>
+                  <td class="num strong">{{ euros(scenario.averageUnitMillicents) }}</td>
                   <td class="num">
                     @if (gapToPromise(scenario); as gap) {
                       <span class="delta" [class]="'is-' + (gap > 0 ? 'up' : 'down')">
@@ -134,7 +134,7 @@
                       <span class="muted">référence</span>
                     }
                   </td>
-                  <td class="num">{{ euros(scenario.totalCents) }}</td>
+                  <td class="num">{{ euros(scenario.totalMillicents) }}</td>
                 </tr>
               }
             </tbody>
@@ -167,7 +167,7 @@
                     <td class="num">{{ line.quantity }}</td>
                     <td class="num strong">{{ line.cumulativeQuantity }}</td>
                     <td class="num strong">{{ euros(line.unitPriceMillicents) }}</td>
-                    <td class="num">{{ euros(line.lineTotalCents) }}</td>
+                    <td class="num">{{ euros(line.lineTotalMillicents) }}</td>
                   </tr>
                 }
               </tbody>
@@ -242,7 +242,7 @@
                       <span class="muted">—</span>
                     }
                   </td>
-                  <td class="num">{{ euros(row.totalCents) }}</td>
+                  <td class="num">{{ euros(row.totalMillicents) }}</td>
                   <td>
                     @if (row.line.steps.length === 0) {
                       <span class="muted">tarif de liste</span>

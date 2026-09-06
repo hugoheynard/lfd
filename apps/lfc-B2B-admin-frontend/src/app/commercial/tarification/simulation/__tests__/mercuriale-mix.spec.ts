@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { categoryMix, planRatios, shareAt, type MixArticle } from '../mercuriale-mix';
 
-const basis = { catalogCents: 100, floorMillicents: null };
+const basis = { catalogMillicents: 100, floorMillicents: null };
 
 function article(overrides: Partial<MixArticle>): MixArticle {
   return {
@@ -93,8 +93,8 @@ describe('categoryMix', () => {
   });
 
   it('donne le chiffre du plan tenu, et zéro si le plan n’est pas tracé', () => {
-    expect(categoryMix([article({})], [1]).plannedCents).toBe(90 * 1_000);
-    expect(categoryMix([article({})], [0.5]).plannedCents).toBe(0);
+    expect(categoryMix([article({})], [1]).plannedMillicents).toBe(90 * 1_000);
+    expect(categoryMix([article({})], [0.5]).plannedMillicents).toBe(0);
   });
 });
 
@@ -104,7 +104,7 @@ describe('categoryMix · ce qui est lâché', () => {
     const mix = categoryMix([article({})], [1]);
     expect(mix.categories[0]?.catalogueByRatio[0]).toBe(100 * 1_000);
     expect(mix.categories[0]?.concededByRatio[0]).toBe(10 * 1_000);
-    expect(mix.concededCents).toBe(10 * 1_000);
+    expect(mix.concededMillicents).toBe(10 * 1_000);
   });
 
   it('ne concède rien sur un article non tarifé', () => {
@@ -115,7 +115,7 @@ describe('categoryMix · ce qui est lâché', () => {
   it('rend une concession NÉGATIVE au-dessus du catalogue, sans la masquer', () => {
     const above = article({ tiers: [{ minQuantity: 1, unitPriceMillicents: 130 }] });
     // La nier ici la ferait disparaître du total ; c'est l'anneau qui l'écarte.
-    expect(categoryMix([above], [1]).concededCents).toBeLessThan(0);
+    expect(categoryMix([above], [1]).concededMillicents).toBeLessThan(0);
   });
 
   it('la part de la remise ne suit PAS la part du chiffre', () => {
@@ -129,8 +129,8 @@ describe('categoryMix · ce qui est lâché', () => {
       tiers: [{ minQuantity: 1, unitPriceMillicents: 40 }],
     });
     const mix = categoryMix([big, small], [1]);
-    const revenueShare = (mix.categories[1]?.revenueByRatio[0] ?? 0) / mix.plannedCents;
-    const concededShare = (mix.categories[1]?.concededByRatio[0] ?? 0) / mix.concededCents;
+    const revenueShare = (mix.categories[1]?.revenueByRatio[0] ?? 0) / mix.plannedMillicents;
+    const concededShare = (mix.categories[1]?.concededByRatio[0] ?? 0) / mix.concededMillicents;
     expect(concededShare).toBeGreaterThan(revenueShare);
   });
 });

@@ -100,62 +100,58 @@ const CONVERTERS = ["lineTotalCents", "centsFromMillicents", "unitPriceCents", "
 /**
  * La dette connue, site par site — `chemin relatif : nom lié`.
  *
- * **Quatorze au premier passage, et un seul est un défaut de valeur.** La clé
- * est le fichier et le nom, pas la ligne : elle survit à un déplacement, et un
- * lot qui nettoie un fichier retire ses entrées d'un bloc.
+ * **Quatorze au premier passage, deux aujourd'hui.** Les douze partis étaient
+ * des NOMS qui mentaient sur des valeurs justes : toute la famille
+ * `tarification` transportait des millicentimes dans des champs `*Cents`, en
+ * les affichant par `formatEuros`, qui attend des millicentimes. Renommés en
+ * bloc le 2026-09-06, avec les trois fonctions qui portaient le mensonge à la
+ * source (`floorCentsOf`, `unitPriceCentsAt`, `revenueCentsAt`).
  *
- * Le tri est fait, site par site, et écrit ci-dessous plutôt que promis :
- * `draft-grid.ts` écrit un prix faux en base, les treize autres rendent la
- * **bonne valeur** sous un nom qui ment. Confondre les deux ferait de cette
- * liste un tas, et un tas ne se vide pas.
+ * 🔴 **Et ce renommage a fait APPARAÎTRE un site.** `referenceMillicents`
+ * s'appelait `referenceCents` : sous ce nom, la porte n'avait rien à redire
+ * qu'il reçoive des centimes. Nommé juste, il avoue recevoir `centsOf(…)` à
+ * côté d'ancres en millicentimes. Un nom honnête est ce qui rend une porte
+ * capable de voir — les deux se tiennent, et ni l'un ni l'autre ne suffit.
+ *
+ * La clé est le fichier et le nom, pas la ligne : elle survit à un déplacement,
+ * et un lot qui nettoie un fichier retire ses entrées d'un bloc.
  */
 const ADMIN = "apps/lfc-B2B-admin-frontend/src/app";
 
 const KNOWN = new Set([
-  // ── 🔴 UN VRAI DÉFAUT DE VALEUR, et il ÉCRIT. ───────────────────────────────
+  // ── 🔴 LES DEUX FACES D'UN MÊME DÉFAUT DE VALEUR — `D10`. ───────────────────
   //
-  // `centsOf('2,10')` rend 210 CENTIMES, posés dans `unitPriceMillicents` du
-  // gabarit de mercuriale. Le serveur en fait une règle `replace`
-  // (`template-to-rules.ts:44`), donc un prix négocié de 0,0021 € au lieu de
-  // 2,10 €. La relecture (`draftFromLines`) divise par cent à son tour : l'écran
-  // se relit juste, et c'est la BASE qui porte un millième.
+  // `price-field.ts` est le dernier fichier de la famille `tarification` qui
+  // parle CENTIMES (`centsOf`, `eurosField`), et tous ses appelants lui donnent
+  // ou lui reprennent des MILLICENTIMES.
   //
-  // Origine : le renommage `unitPriceCents` → `unitPriceMillicents` du
-  // 2026-08-31 (`0e2e2dd2`), qui a changé le nom sans convertir la valeur.
+  // Le plus grave écrit en base : `centsOf('2,10')` rend 210 centimes, posés
+  // dans `unitPriceMillicents` du gabarit ; le serveur en fait une règle
+  // `replace` (`template-to-rules.ts:44`), donc un prix négocié de 0,0021 €. La
+  // relecture divise par cent à son tour, si bien que l'écran se relit juste et
+  // que c'est la BASE qui porte un millième. Origine : le renommage du
+  // 2026-08-31 (`0e2e2dd2`), qui a changé le nom sans convertir la valeur — la
+  // migration du même jour, elle, a bien multiplié par mille.
   //
-  // Il n'est PAS corrigé ici, et c'est délibéré : le corriger demande de
-  // trancher l'unité de chaque appelant de `centsOf` / `eurosField`, et pose la
-  // question des lignes DÉJÀ enregistrées — une décision de production, donc
-  // celle d'Hugo. Cf. `D10` de `audit-calcul-du-panier-et-du-prix.md`.
+  // Le second compare un prix tapé à la main à des ancres en millicentimes.
+  //
+  // Aucun n'est corrigé ici : le remède est de faire parler `price-field.ts` en
+  // millicentimes, ce qui change ce que l'écran ÉCRIT et pose la question des
+  // gabarits déjà enregistrés — une décision de production, donc celle d'Hugo.
+  // Lot `P11` de `documentation/b2b/audit-calcul-du-panier-et-du-prix.md`.
   `${ADMIN}/commercial/tarification/grille/draft-grid.ts:unitPriceMillicents`,
-
-  // ── Des NOMS qui mentent, sur des valeurs justes. ───────────────────────────
-  //
-  // Toute la famille `commercial/tarification` transporte des millicentimes dans
-  // des champs nommés `*Cents`, et les affiche par `formatEuros`, qui attend des
-  // millicentimes. Ce qui est faux est le nom — plus le fait qu'un TOTAL s'y
-  // montre avec cinq décimales, quand un montant s'arrête au centime.
-  //
-  // Deux fonctions portent le mensonge à la source : `floorCentsOf` rend des
-  // millicentimes, `unitPriceCentsAt` aussi. Les renommer referme la moitié de
-  // cette liste d'un coup. Lot `P3`.
-  `${ADMIN}/commercial/tarification/grille/mercuriale-row.ts:catalogCents`,
-  `${ADMIN}/commercial/tarification/grille/mercuriale-row.ts:roomCents`,
-  `${ADMIN}/commercial/tarification/grille/mercuriale-row.ts:floorMillicents`,
-  `${ADMIN}/commercial/tarification/grille/mercuriale-row.ts:finalMillicents`,
-  `${ADMIN}/commercial/tarification/simulation/locate-simulation.ts:catalogCents`,
-  `${ADMIN}/commercial/tarification/simulation/locate-simulation.ts:floorMillicents`,
-  `${ADMIN}/commercial/tarification/simulation/mercuriale-mix.ts:catalogCents`,
-  `${ADMIN}/commercial/tarification/simulation/mercuriale-mix.ts:floorMillicents`,
-  `${ADMIN}/commercial/tarification/simulation/revenue-model.ts:catalogCents`,
-  `${ADMIN}/commercial/tarification/simulation/article-simulation/article-simulation.ts:appliedFixedCents`,
-  `${ADMIN}/commercial/tarification/simulation/__tests__/pricing-regime.spec.ts:unitPriceMillicents`,
-
-  // Les trois du simulateur de tarification, relevés par l'audit (`D6`). Mêmes
-  // symptômes, même remède : un renommage, pas un calcul.
-  `${ADMIN}/b2b/tarification/simulateur/quote-bench.ts:totalCents`,
-  `${ADMIN}/b2b/tarification/simulateur/commitment-bench.ts:lineTotalCents`,
+  `${ADMIN}/commercial/tarification/simulation/article-simulation/article-simulation.ts:referenceMillicents`,
 ]);
+
+/**
+ * ⚠️ **Deux symptômes de `D10` ne sont PAS dans cette liste, et ne peuvent pas
+ * y être** : `priceIt` et `useAnchor` passent des millicentimes en ARGUMENT à
+ * `eurosField`. La porte surveille ce qu'un nom reçoit, pas ce qu'un appel
+ * transmet. Les deux portent leur avertissement en JSDoc, à leur site.
+ *
+ * C'est la limite qu'un type nominal fermerait, et elle est utile à connaître :
+ * cette liste dit la dette qu'on SAIT compter, pas toute la dette.
+ */
 
 /** Commentaires et chaînes deviennent du blanc : ce sont des mots, pas du code. */
 function codeOnly(source) {

@@ -58,13 +58,13 @@ export interface Scenario {
 
 /** Ce qui ne dépend pas du scénario : le tarif d'entrée, et ce qui borne en bas. */
 export interface ArticleBasis {
-  readonly catalogCents: number;
+  readonly catalogMillicents: number;
   readonly floorMillicents: number | null;
 }
 
 export interface CurvePoint {
   readonly volume: number;
-  readonly revenueCents: number;
+  readonly revenueMillicents: number;
 }
 
 /**
@@ -77,7 +77,7 @@ export interface CurvePoint {
  *
  * La limite s'applique en dernier, ici comme à la caisse.
  */
-export function unitPriceCentsAt(
+export function unitPriceMillicentsAt(
   scenario: Scenario,
   basis: ArticleBasis,
   quantity: number,
@@ -88,7 +88,7 @@ export function unitPriceCentsAt(
       winner = tier;
     }
   }
-  const raw = winner === null ? basis.catalogCents : winner.unitPriceMillicents;
+  const raw = winner === null ? basis.catalogMillicents : winner.unitPriceMillicents;
   return basis.floorMillicents === null ? raw : Math.max(raw, basis.floorMillicents);
 }
 
@@ -107,7 +107,11 @@ export function unitPriceCentsAt(
  * est de l'ordre d'une commande, pas d'une saison — mais il existe, et il joue
  * en notre faveur, jamais contre.
  */
-export function revenueCentsAt(scenario: Scenario, basis: ArticleBasis, volume: number): number {
+export function revenueMillicentsAt(
+  scenario: Scenario,
+  basis: ArticleBasis,
+  volume: number,
+): number {
   const marks = breakpoints(scenario);
   let total = 0;
   for (const [index, from] of marks.entries()) {
@@ -116,7 +120,7 @@ export function revenueCentsAt(scenario: Scenario, basis: ArticleBasis, volume: 
     }
     const next = marks[index + 1] ?? Number.POSITIVE_INFINITY;
     const upTo = Math.min(volume, next - 1);
-    total += (upTo - from + 1) * unitPriceCentsAt(scenario, basis, from);
+    total += (upTo - from + 1) * unitPriceMillicentsAt(scenario, basis, from);
   }
   return total;
 }
@@ -193,7 +197,7 @@ export function curveOf(
 ): readonly CurvePoint[] {
   return volumes.map((volume) => ({
     volume,
-    revenueCents: revenueCentsAt(scenario, basis, volume),
+    revenueMillicents: revenueMillicentsAt(scenario, basis, volume),
   }));
 }
 
@@ -208,18 +212,18 @@ export function curveOf(
  * il monte jusqu'au volume promis puis reste plat. Entre les deux, il se déforme
  * continûment — et c'est précisément ce qu'on vient regarder en le déplaçant.
  */
-export function gapCents(
+export function gapMillicents(
   ladder: readonly CurvePoint[],
   fixed: readonly CurvePoint[],
 ): readonly CurvePoint[] {
   return ladder.map((point, index) => ({
     volume: point.volume,
-    revenueCents: point.revenueCents - (fixed[index]?.revenueCents ?? 0),
+    revenueMillicents: point.revenueMillicents - (fixed[index]?.revenueMillicents ?? 0),
   }));
 }
 
 /** Le prix moyen réellement payé à ce volume — l'argument que le client opposera. */
-export function averageUnitCents(
+export function averageUnitMillicents(
   scenario: Scenario,
   basis: ArticleBasis,
   volume: number,
@@ -227,5 +231,5 @@ export function averageUnitCents(
   if (volume < 1) {
     return null;
   }
-  return Math.round(revenueCentsAt(scenario, basis, volume) / volume);
+  return Math.round(revenueMillicentsAt(scenario, basis, volume) / volume);
 }

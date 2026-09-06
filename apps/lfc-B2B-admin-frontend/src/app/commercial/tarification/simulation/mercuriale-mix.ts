@@ -1,7 +1,7 @@
 import type { PricingCategoryView, TemplateLinePayload } from '@lfd/contracts';
 
-import { floorCentsOf } from '../grille/mercuriale-row';
-import { revenueCentsAt, type ArticleBasis, type ScenarioTier } from './revenue-model';
+import { floorMillicentsOf } from '../grille/mercuriale-row';
+import { revenueMillicentsAt, type ArticleBasis, type ScenarioTier } from './revenue-model';
 
 /** Un article du plan : sa grille, sa limite, et le volume prévu dessus. */
 export interface MixArticle {
@@ -46,9 +46,9 @@ export interface CategoryMix {
    */
   readonly hasTier: boolean;
   /** Le chiffre du plan tenu, en centimes. */
-  readonly plannedCents: number;
+  readonly plannedMillicents: number;
   /** Ce que le plan tenu laisse au client, face au tarif catalogue. */
-  readonly concededCents: number;
+  readonly concededMillicents: number;
   readonly plannedArticles: number;
 }
 
@@ -104,11 +104,11 @@ export function categoryMix(
     ratios,
     categories,
     hasTier: planned.some((article) => article.tiers.length > 1),
-    plannedCents:
+    plannedMillicents:
       atPlan === -1
         ? 0
         : categories.reduce((sum, category) => sum + (category.revenueByRatio[atPlan] ?? 0), 0),
-    concededCents:
+    concededMillicents:
       atPlan === -1
         ? 0
         : categories.reduce((sum, category) => sum + (category.concededByRatio[atPlan] ?? 0), 0),
@@ -128,7 +128,7 @@ function revenueAtRatio(article: MixArticle, ratio: number): number {
   if (volume < 1) {
     return 0;
   }
-  return revenueCentsAt(
+  return revenueMillicentsAt(
     { id: article.sku, label: article.sku, tiers: article.tiers },
     article.basis,
     volume,
@@ -138,7 +138,7 @@ function revenueAtRatio(article: MixArticle, ratio: number): number {
 /** Ce que l'article aurait pesé au tarif catalogue, au même volume. */
 function catalogueAtRatio(article: MixArticle, ratio: number): number {
   const volume = Math.round(article.plannedVolume * ratio);
-  return volume < 1 ? 0 : volume * article.basis.catalogCents;
+  return volume < 1 ? 0 : volume * article.basis.catalogMillicents;
 }
 
 /** La part d'un rayon dans le total, en pourcent — pour le camembert comme pour l'aire. */
@@ -207,8 +207,8 @@ export function mixArticlesOf(
       categoryName: category.name,
       sku: item.sku,
       basis: {
-        catalogCents: item.canonicalMillicents,
-        floorMillicents: floorCentsOf(item.effectiveFloor, item.canonicalMillicents),
+        catalogMillicents: item.canonicalMillicents,
+        floorMillicents: floorMillicentsOf(item.effectiveFloor, item.canonicalMillicents),
       },
       tiers: tiersBySku.get(item.sku) ?? [],
       plannedVolume: volumes.get(item.sku) ?? 0,

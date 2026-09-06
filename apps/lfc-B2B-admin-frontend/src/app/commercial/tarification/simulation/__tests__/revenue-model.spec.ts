@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  averageUnitCents,
+  averageUnitMillicents,
   curveOf,
   fixedScenario,
-  gapCents,
-  revenueCentsAt,
-  unitPriceCentsAt,
+  gapMillicents,
+  revenueMillicentsAt,
+  unitPriceMillicentsAt,
   volumeSamples,
   type ArticleBasis,
   type Scenario,
 } from '../revenue-model';
 
-const basis: ArticleBasis = { catalogCents: 100, floorMillicents: null };
+const basis: ArticleBasis = { catalogMillicents: 100, floorMillicents: null };
 
 const ladder: Scenario = {
   id: 'paliers',
@@ -24,12 +24,12 @@ const ladder: Scenario = {
   ],
 };
 
-describe('unitPriceCentsAt', () => {
+describe('unitPriceMillicentsAt', () => {
   it('prend le plus haut palier atteint', () => {
-    expect(unitPriceCentsAt(ladder, basis, 1)).toBe(90);
-    expect(unitPriceCentsAt(ladder, basis, 99)).toBe(90);
-    expect(unitPriceCentsAt(ladder, basis, 100)).toBe(80);
-    expect(unitPriceCentsAt(ladder, basis, 10_000)).toBe(70);
+    expect(unitPriceMillicentsAt(ladder, basis, 1)).toBe(90);
+    expect(unitPriceMillicentsAt(ladder, basis, 99)).toBe(90);
+    expect(unitPriceMillicentsAt(ladder, basis, 100)).toBe(80);
+    expect(unitPriceMillicentsAt(ladder, basis, 10_000)).toBe(70);
   });
 
   it('facture le CATALOGUE sous le premier seuil, pas le premier palier', () => {
@@ -38,26 +38,26 @@ describe('unitPriceCentsAt', () => {
       label: 'Tardif',
       tiers: [{ minQuantity: 500, unitPriceMillicents: 70 }],
     };
-    expect(unitPriceCentsAt(late, basis, 499)).toBe(100);
-    expect(unitPriceCentsAt(late, basis, 500)).toBe(70);
+    expect(unitPriceMillicentsAt(late, basis, 499)).toBe(100);
+    expect(unitPriceMillicentsAt(late, basis, 500)).toBe(70);
   });
 
   it('la limite relève le palier, comme à la caisse', () => {
-    const floored: ArticleBasis = { catalogCents: 100, floorMillicents: 85 };
-    expect(unitPriceCentsAt(ladder, floored, 10_000)).toBe(85);
+    const floored: ArticleBasis = { catalogMillicents: 100, floorMillicents: 85 };
+    expect(unitPriceMillicentsAt(ladder, floored, 10_000)).toBe(85);
   });
 });
 
-describe('revenueCentsAt', () => {
+describe('revenueMillicentsAt', () => {
   it('somme unité par unité : le passé ne se refacture pas', () => {
     // 99 × 0,90 puis 1 × 0,80 — et NON 100 × 0,80.
-    expect(revenueCentsAt(ladder, basis, 100)).toBe(99 * 90 + 80);
+    expect(revenueMillicentsAt(ladder, basis, 100)).toBe(99 * 90 + 80);
   });
 
   it('croît toujours : commander plus ne peut pas rapporter moins', () => {
     let previous = 0;
     for (let volume = 1; volume <= 600; volume += 1) {
-      const revenue = revenueCentsAt(ladder, basis, volume);
+      const revenue = revenueMillicentsAt(ladder, basis, volume);
       expect(revenue).toBeGreaterThan(previous);
       previous = revenue;
     }
@@ -69,47 +69,52 @@ describe('revenueCentsAt', () => {
       label: 'Fixe',
       tiers: [{ minQuantity: 1, unitPriceMillicents: 75 }],
     };
-    expect(revenueCentsAt(fixed, basis, 1_000)).toBe(75_000);
+    expect(revenueMillicentsAt(fixed, basis, 1_000)).toBe(75_000);
   });
 });
 
 describe('fixedScenario', () => {
   const target = 500;
-  const headlineCents = unitPriceCentsAt(ladder, basis, target);
-  const averageCents = averageUnitCents(ladder, basis, target) ?? 0;
+  const headlineMillicents = unitPriceMillicentsAt(ladder, basis, target);
+  const averageMillicents = averageUnitMillicents(ladder, basis, target) ?? 0;
 
   it('au PRIX ANNONCÉ, le barème rapporte plus — partout, sans croisement', () => {
-    const fixed = fixedScenario(headlineCents, basis);
+    const fixed = fixedScenario(headlineMillicents, basis);
     for (const volume of [10, 200, target, 900]) {
-      expect(revenueCentsAt(ladder, basis, volume)).toBeGreaterThan(
-        revenueCentsAt(fixed, basis, volume),
+      expect(revenueMillicentsAt(ladder, basis, volume)).toBeGreaterThan(
+        revenueMillicentsAt(fixed, basis, volume),
       );
     }
   });
 
   it('au PRIX MOYEN, les deux pèsent le même total au volume promis', () => {
-    const fixed = fixedScenario(averageCents, basis);
-    const spread = revenueCentsAt(ladder, basis, target) - revenueCentsAt(fixed, basis, target);
+    const fixed = fixedScenario(averageMillicents, basis);
+    const spread =
+      revenueMillicentsAt(ladder, basis, target) - revenueMillicentsAt(fixed, basis, target);
     // À l'arrondi du centime près, et pas davantage.
     expect(Math.abs(spread)).toBeLessThanOrEqual(target);
   });
 
   it("et là seulement, l'écart change de signe de part et d'autre", () => {
-    const fixed = fixedScenario(averageCents, basis);
-    expect(revenueCentsAt(ladder, basis, 200)).toBeGreaterThan(revenueCentsAt(fixed, basis, 200));
-    expect(revenueCentsAt(ladder, basis, 900)).toBeLessThan(revenueCentsAt(fixed, basis, 900));
+    const fixed = fixedScenario(averageMillicents, basis);
+    expect(revenueMillicentsAt(ladder, basis, 200)).toBeGreaterThan(
+      revenueMillicentsAt(fixed, basis, 200),
+    );
+    expect(revenueMillicentsAt(ladder, basis, 900)).toBeLessThan(
+      revenueMillicentsAt(fixed, basis, 900),
+    );
   });
 
   it('un prix fixe librement choisi peut passer sous le barème partout', () => {
     // Le cas qui motive la saisie libre : « et si je lui avais fait 0,60 € ? ».
     const fixed = fixedScenario(60, basis);
-    expect(revenueCentsAt(fixed, basis, target)).toBeLessThan(
-      revenueCentsAt(ladder, basis, target),
+    expect(revenueMillicentsAt(fixed, basis, target)).toBeLessThan(
+      revenueMillicentsAt(ladder, basis, target),
     );
   });
 
   it('la limite relève un prix fixe trop bas, comme à la caisse', () => {
-    const floored = fixedScenario(60, { catalogCents: 100, floorMillicents: 85 });
+    const floored = fixedScenario(60, { catalogMillicents: 100, floorMillicents: 85 });
     expect(floored.tiers[0]?.unitPriceMillicents).toBe(85);
   });
 });
@@ -131,19 +136,19 @@ describe('volumeSamples', () => {
   });
 });
 
-describe('gapCents', () => {
+describe('gapMillicents', () => {
   it("s'annule au volume promis, et pas ailleurs", () => {
     const target = 500;
-    const fixed = fixedScenario(averageUnitCents(ladder, basis, target) ?? 0, basis);
+    const fixed = fixedScenario(averageUnitMillicents(ladder, basis, target) ?? 0, basis);
     const volumes = [200, target];
-    const gap = gapCents(curveOf(ladder, basis, volumes), curveOf(fixed, basis, volumes));
-    expect(Math.abs(gap[1]?.revenueCents ?? 0)).toBeLessThanOrEqual(target);
-    expect(gap[0]?.revenueCents).toBeGreaterThan(0);
+    const gap = gapMillicents(curveOf(ladder, basis, volumes), curveOf(fixed, basis, volumes));
+    expect(Math.abs(gap[1]?.revenueMillicents ?? 0)).toBeLessThanOrEqual(target);
+    expect(gap[0]?.revenueMillicents).toBeGreaterThan(0);
   });
 });
 
-describe('averageUnitCents', () => {
+describe('averageUnitMillicents', () => {
   it("dit ce que le client a payé en moyenne, pas le prix d'affiche", () => {
-    expect(averageUnitCents(ladder, basis, 100)).toBe(Math.round((99 * 90 + 80) / 100));
+    expect(averageUnitMillicents(ladder, basis, 100)).toBe(Math.round((99 * 90 + 80) / 100));
   });
 });

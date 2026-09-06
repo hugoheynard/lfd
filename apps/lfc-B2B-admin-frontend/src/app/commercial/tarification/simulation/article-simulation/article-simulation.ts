@@ -10,8 +10,8 @@ import { centsOf, eurosField } from '../../grille/price-field';
 import { averageUnderRegime, revenueUnderRegime, type PricingRegime } from '../pricing-regime';
 import {
   fixedScenario,
-  gapCents,
-  unitPriceCentsAt,
+  gapMillicents,
+  unitPriceMillicentsAt,
   volumeSamples,
   type ArticleBasis,
   type CurvePoint,
@@ -56,7 +56,7 @@ const MAX_PINNED = 2;
 })
 export class ArticleSimulation {
   readonly name = input.required<string>();
-  readonly catalogCents = input.required<number>();
+  readonly catalogMillicents = input.required<number>();
   readonly floorMillicents = input.required<number | null>();
   /** Les paliers lisibles de la grille en cours de saisie. */
   readonly tiers = input.required<readonly ScenarioTier[]>();
@@ -108,7 +108,7 @@ export class ArticleSimulation {
   });
 
   protected readonly basis = computed<ArticleBasis>(() => ({
-    catalogCents: this.catalogCents(),
+    catalogMillicents: this.catalogMillicents(),
     floorMillicents: this.floorMillicents(),
   }));
 
@@ -126,22 +126,34 @@ export class ArticleSimulation {
    * les deux — et au-delà — c'est au commercial de poser SON alternative.
    */
   protected readonly anchors = computed(() => ({
-    headlineCents: unitPriceCentsAt(this.live(), this.basis(), this.targetVolume()),
+    headlineMillicents: unitPriceMillicentsAt(this.live(), this.basis(), this.targetVolume()),
     // Le prix moyen dépend du RÉGIME, pas de la grille : c'est tout l'intérêt du
     // sélecteur. Sans engagement, l'écart avec le prix annoncé est le piège.
-    averageCents: averageUnderRegime(this.live(), this.basis(), this.targetVolume(), this.regime()),
+    averageMillicents: averageUnderRegime(
+      this.live(),
+      this.basis(),
+      this.targetVolume(),
+      this.regime(),
+    ),
   }));
 
-  /** Le prix fixe comparé : celui saisi, à défaut le prix moyen. */
-  protected readonly referenceCents = computed(() => {
+  /**
+   * Le prix fixe comparé : celui saisi, à défaut le prix moyen.
+   *
+   * ⚠️ **`centsOf` rend des centimes, les deux replis sont en millicentimes.**
+   * Un prix tapé à la main pèse donc mille fois moins que le prix moyen contre
+   * lequel la courbe le compare. Même cause et même lot que le préremplissage
+   * de la grille — `D10` / `P11`, cf. `priceIt` dans `gabarit-grille-page.ts`.
+   */
+  protected readonly referenceMillicents = computed(() => {
     const anchors = this.anchors();
-    return centsOf(this.fixedField()) ?? anchors.averageCents ?? anchors.headlineCents;
+    return centsOf(this.fixedField()) ?? anchors.averageMillicents ?? anchors.headlineMillicents;
   });
 
   // Le prix est DANS la légende : « prix fixe » sans son montant oblige à
   // remonter au champ pour savoir contre quoi la courbe se compare.
   protected readonly reference = computed(() => {
-    const scenario = fixedScenario(this.referenceCents(), this.basis());
+    const scenario = fixedScenario(this.referenceMillicents(), this.basis());
     return {
       ...scenario,
       label: `Fixe ${formatEuros(scenario.tiers[0]?.unitPriceMillicents ?? 0)}`,
@@ -173,7 +185,7 @@ export class ArticleSimulation {
   private curveOf(scenario: Scenario, volumes: readonly number[]): readonly CurvePoint[] {
     return volumes.map((volume) => ({
       volume,
-      revenueCents: revenueUnderRegime(scenario, this.basis(), volume, this.regime()),
+      revenueMillicents: revenueUnderRegime(scenario, this.basis(), volume, this.regime()),
     }));
   }
 
@@ -194,7 +206,7 @@ export class ArticleSimulation {
     if (reference === undefined || live === undefined) {
       return null;
     }
-    return revenueGapOption(gapCents(live.points, reference.points), this.targetVolume(), 1);
+    return revenueGapOption(gapMillicents(live.points, reference.points), this.targetVolume(), 1);
   });
 
   /**
@@ -209,22 +221,29 @@ export class ArticleSimulation {
   protected readonly exits = computed(() =>
     [0.25, 0.5, 0.75].map((share) => {
       const volume = Math.max(1, Math.round(this.targetVolume() * share));
-      const deltaCents =
+      const deltaMillicents =
         revenueUnderRegime(this.live(), this.basis(), volume, this.regime()) -
         revenueUnderRegime(this.reference(), this.basis(), volume, this.regime());
-      return { share: Math.round(share * 100), volume, deltaCents };
+      return { share: Math.round(share * 100), volume, deltaMillicents };
     }),
   );
 
-  /** Reprendre un prix remarquable : il ATTERRIT dans le champ, il ne le verrouille pas. */
-  protected useAnchor(cents: number | null): void {
-    if (cents !== null) {
-      this.fixedField.set(eurosField(cents));
+  /**
+   * Reprendre un prix remarquable : il ATTERRIT dans le champ, il ne le
+   * verrouille pas.
+   *
+   * ⚠️ Le paramètre porte des **millicentimes** — tous ses appelants viennent
+   * des ancres — et `eurosField` attend des centimes. Troisième symptôme de
+   * `D10`, même lot `P11`.
+   */
+  protected useAnchor(millicents: number | null): void {
+    if (millicents !== null) {
+      this.fixedField.set(eurosField(millicents));
     }
   }
 
   /** Le prix fixe réellement tracé — la limite peut l'avoir relevé. */
-  protected readonly appliedFixedCents = computed(
+  protected readonly appliedFixedMillicents = computed(
     () => this.reference().tiers[0]?.unitPriceMillicents ?? 0,
   );
 

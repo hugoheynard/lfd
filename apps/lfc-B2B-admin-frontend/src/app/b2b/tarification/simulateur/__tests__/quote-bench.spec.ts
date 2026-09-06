@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { OrderQuoteLineView } from '@lfd/contracts';
 
-import { benchRow, probeQuantities, stepDownCents, variationBp } from '../quote-bench';
+import { benchRow, probeQuantities, stepDownMillicents, variationBp } from '../quote-bench';
 
 const tier = (minQuantity: number, unitPriceMillicents: number) => ({
   minQuantity,
@@ -68,12 +68,12 @@ describe('benchRow', () => {
   it('multiplie le prix RÉSOLU, jamais le canonique', () => {
     const row = benchRow(line({ quantity: 10, unitPriceMillicents: 180 }));
 
-    expect(row.totalCents).toBe(1800);
+    expect(row.totalMillicents).toBe(1800);
     expect(row.discountBp).toBe(1000);
   });
 });
 
-describe('stepDownCents', () => {
+describe('stepDownMillicents', () => {
   const rows = [
     benchRow(line({ quantity: 1, unitPriceMillicents: 200 })),
     benchRow(line({ quantity: 10, unitPriceMillicents: 180 })),
@@ -81,14 +81,14 @@ describe('stepDownCents', () => {
   ];
 
   it('mesure la marche par rapport à la quantité précédente', () => {
-    expect(stepDownCents(rows, 1)).toBe(20);
+    expect(stepDownMillicents(rows, 1)).toBe(20);
   });
 
   it("ne rend rien sur la première ligne — il n'y a pas de marche", () => {
-    expect(stepDownCents(rows, 0)).toBeNull();
+    expect(stepDownMillicents(rows, 0)).toBeNull();
   });
 
   it("ne rend rien quand le prix n'a pas bougé", () => {
-    expect(stepDownCents(rows, 2)).toBeNull();
+    expect(stepDownMillicents(rows, 2)).toBeNull();
   });
 });

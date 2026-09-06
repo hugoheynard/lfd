@@ -221,8 +221,19 @@ export class TemplateGridPage {
     return tiersOf(this.draft(), sku);
   }
 
-  protected priceIt(sku: string, catalogCents: number): void {
-    this.draft.update((grid) => priceAt(grid, sku, eurosField(catalogCents)));
+  /**
+   * ⚠️ **`eurosField` attend des CENTIMES et reçoit des millicentimes** : le
+   * champ se préremplit à mille fois le tarif catalogue. Ce n'est pas une
+   * étourderie du renommage du 2026-09-06 — c'est le désaccord qu'il a rendu
+   * visible, et le renommage s'arrête là volontairement.
+   *
+   * `price-field.ts` est le dernier fichier de cette famille qui parle
+   * centimes, et ses trois appelants lui passent des millicentimes. Le corriger
+   * change ce que l'écran ÉCRIT (cf. `D10`), donc c'est un lot à part : `P11` de
+   * `documentation/b2b/audit-calcul-du-panier-et-du-prix.md`.
+   */
+  protected priceIt(sku: string, catalogMillicents: number): void {
+    this.draft.update((grid) => priceAt(grid, sku, eurosField(catalogMillicents)));
   }
 
   protected clear(sku: string): void {

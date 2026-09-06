@@ -22,9 +22,9 @@ export interface MercurialeRow {
   readonly sku: string;
   readonly name: string;
   /** Le tarif catalogue B2B — la colonne de référence. */
-  readonly catalogCents: number;
+  readonly catalogMillicents: number;
   /** Ce qui est saisi, en centimes. `null` = pas de prix sur cet article. */
-  readonly mercurialeCents: number | null;
+  readonly mercurialeMillicents: number | null;
   /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
   readonly floorMillicents: number | null;
   /** Le prix réellement facturé : la saisie, relevée par la limite. */
@@ -32,7 +32,7 @@ export interface MercurialeRow {
   /** La limite a-t-elle **relevé** le prix saisi ? */
   readonly floored: boolean;
   /** Ce qu'un commercial peut encore lâcher. `null` sans limite posée. */
-  readonly roomCents: number | null;
+  readonly roomMillicents: number | null;
   /** L'écart au tarif catalogue, en points de base. Positif = moins cher. */
   readonly impactBp: number | null;
   /** Ce que les autres clients paient déjà. `null` = aucune mercuriale en place. */
@@ -46,7 +46,7 @@ export interface MercurialeRow {
 }
 
 /** La limite d'un article, en centimes, quelle que soit sa forme. */
-export function floorCentsOf(
+export function floorMillicentsOf(
   floor: PriceFloorView | null,
   canonicalMillicents: number,
 ): number | null {
@@ -59,54 +59,56 @@ export function floorCentsOf(
 }
 
 /** L'écart au tarif catalogue, signé — positif = moins cher que le catalogue. */
-export function impactBp(catalogCents: number, finalMillicents: number): number | null {
-  if (catalogCents <= 0) {
+export function impactBp(catalogMillicents: number, finalMillicents: number): number | null {
+  if (catalogMillicents <= 0) {
     return null;
   }
-  return Math.round(((catalogCents - finalMillicents) / catalogCents) * 10_000);
+  return Math.round(((catalogMillicents - finalMillicents) / catalogMillicents) * 10_000);
 }
 
 /**
  * Une ligne complète, depuis l'article du tableau et le prix saisi.
  *
- * `mercurialeCents === null` — l'article que le gabarit ne tarife pas — laisse
+ * `mercurialeMillicents === null` — l'article que le gabarit ne tarife pas — laisse
  * **tout** à `null` plutôt que de retomber sur le catalogue : cette ligne ne
  * porte aucune décision, et afficher un prix final la ferait passer pour tarifée.
  */
 export function mercurialeRow(
   item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'effectiveFloor'>,
-  mercurialeCents: number | null,
+  mercurialeMillicents: number | null,
   benchmark: MercurialeBenchmarkView | null = null,
 ): MercurialeRow {
-  const floorMillicents = floorCentsOf(item.effectiveFloor, item.canonicalMillicents);
-  if (mercurialeCents === null) {
+  const floorMillicents = floorMillicentsOf(item.effectiveFloor, item.canonicalMillicents);
+  if (mercurialeMillicents === null) {
     return {
       sku: item.sku,
       name: item.name,
-      catalogCents: item.canonicalMillicents,
-      mercurialeCents: null,
+      catalogMillicents: item.canonicalMillicents,
+      mercurialeMillicents: null,
       floorMillicents,
       finalMillicents: null,
       floored: false,
-      roomCents: null,
+      roomMillicents: null,
       impactBp: null,
       benchmark,
       versusMarket: null,
     };
   }
-  const floored = floorMillicents !== null && mercurialeCents < floorMillicents;
-  const finalMillicents = floored && floorMillicents !== null ? floorMillicents : mercurialeCents;
+  const floored = floorMillicents !== null && mercurialeMillicents < floorMillicents;
+  const finalMillicents =
+    floored && floorMillicents !== null ? floorMillicents : mercurialeMillicents;
   return {
     sku: item.sku,
     name: item.name,
-    catalogCents: item.canonicalMillicents,
-    mercurialeCents,
+    catalogMillicents: item.canonicalMillicents,
+    mercurialeMillicents,
     floorMillicents,
     finalMillicents,
     floored,
     // Bornée à zéro : un prix déjà relevé au plancher n'a pas de marge négative,
     // il en a zéro — ce qui est une information, pas la même chose qu'une absence.
-    roomCents: floorMillicents === null ? null : Math.max(0, finalMillicents - floorMillicents),
+    roomMillicents:
+      floorMillicents === null ? null : Math.max(0, finalMillicents - floorMillicents),
     impactBp: impactBp(item.canonicalMillicents, finalMillicents),
     benchmark,
     versusMarket: benchmark === null ? null : versus(finalMillicents, benchmark.medianMillicents),
@@ -128,7 +130,7 @@ function versus(finalMillicents: number, medianMillicents: number): 'under' | 'o
  * serait le plus flatteur, et c'est exactement pour ça qu'il ne convient pas :
  * la limite et la marge se jugent sur ce qu'un petit client paie.
  */
-export function entryCents(tiers: readonly TemplateTierPayload[]): number | null {
+export function entryMillicents(tiers: readonly TemplateTierPayload[]): number | null {
   return tiers[0]?.unitPriceMillicents ?? null;
 }
 
@@ -138,7 +140,7 @@ export function tally(rows: readonly MercurialeRow[]): {
   floored: number;
   averageImpactBp: number | null;
 } {
-  const priced = rows.filter((row) => row.mercurialeCents !== null);
+  const priced = rows.filter((row) => row.mercurialeMillicents !== null);
   const impacts = priced
     .map((row) => row.impactBp)
     .filter((impact): impact is number => impact !== null);

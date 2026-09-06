@@ -17,7 +17,7 @@ export interface BenchRow {
   readonly quantity: number;
   readonly canonicalMillicents: number;
   readonly unitPriceMillicents: number;
-  readonly totalCents: number;
+  readonly totalMillicents: number;
   /** L'écart au tarif de liste, en points de base. Négatif = une hausse. */
   readonly discountBp: number;
   readonly line: OrderQuoteLineView;
@@ -69,7 +69,7 @@ export function benchRow(line: OrderQuoteLineView): BenchRow {
     quantity: line.quantity,
     canonicalMillicents: line.canonicalMillicents,
     unitPriceMillicents: line.unitPriceMillicents,
-    totalCents: line.unitPriceMillicents * line.quantity,
+    totalMillicents: line.unitPriceMillicents * line.quantity,
     discountBp: variationBp(line.canonicalMillicents, line.unitPriceMillicents),
     line,
   };
@@ -81,7 +81,7 @@ export function benchRow(line: OrderQuoteLineView): BenchRow {
  * `null` sur la première ligne : sans quantité précédente, il n'y a pas de
  * marche — et afficher « 0 » y ferait croire qu'on a mesuré quelque chose.
  */
-export function stepDownCents(rows: readonly BenchRow[], index: number): number | null {
+export function stepDownMillicents(rows: readonly BenchRow[], index: number): number | null {
   const previous = rows[index - 1];
   const current = rows[index];
   if (previous === undefined || current === undefined) {

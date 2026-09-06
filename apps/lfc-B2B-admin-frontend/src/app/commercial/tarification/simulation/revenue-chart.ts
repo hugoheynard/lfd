@@ -37,7 +37,7 @@ function themeColor(name: string, fallback: string): string {
 const euros = (cents: number): number => Math.round(cents / 100);
 
 const asPairs = (points: readonly CurvePoint[]): [number, number][] =>
-  points.map((point) => [point.volume, euros(point.revenueCents)]);
+  points.map((point) => [point.volume, euros(point.revenueMillicents)]);
 
 /** La teinte d'un scénario — bornée au jeu, jamais indéfinie. */
 function toneColor(tone: number): string {
