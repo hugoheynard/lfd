@@ -8,8 +8,8 @@ import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientAddresses } from '../../client-addresses.service';
 import { ClientCompany } from '../../client-company.service';
+import { ClientLocale, LOCALES } from '../../client-locale.service';
 import { formatCents, formatRate } from '../../format-money';
-import { MOCK_ACCOUNT } from '../../mock-account';
 import { ServicePoints } from '../../shop/pickup-points.store';
 import { AccountCard } from '../account-card/account-card';
 import { DataCard } from '../data-card/data-card';
@@ -61,8 +61,6 @@ export class ComptePage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
 
-  protected readonly account = MOCK_ACCOUNT;
-
   /**
    * 🔴 **L'identité vient de notre base** (`GET /me`), plus d'une maquette. Cet
    * écran affichait « Brasserie Marchand », son SIRET et son n° de TVA à
@@ -74,6 +72,7 @@ export class ComptePage {
 
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
+  private readonly locale = inject(ClientLocale);
 
   /**
    * 🔴 **Les adresses viennent de notre base**, plus d'une maquette
@@ -107,6 +106,41 @@ export class ComptePage {
     return billing === null
       ? this.t().account.addressNone
       : `${billing.ligne1}, ${billing.codePostal} ${billing.ville}`;
+  });
+
+  /**
+   * **Comment cette maison est servie d'habitude** — le point de départ de ses
+   * commandes, jamais une contrainte.
+   *
+   * 🔴 La maquette écrivait « Le Labo · 7 h – 8 h », un point ET un créneau, en
+   * dur. La préférence porte un MODE et une adresse, jamais une heure : un
+   * créneau se choisit à chaque commande, et l'annoncer comme une habitude
+   * laissait croire qu'il était réservé.
+   */
+  protected readonly habit = computed(() => {
+    const preference = this.client.company()?.fulfillmentPreference ?? null;
+    const copy = this.t().account;
+    if (preference === null || preference.method === null) {
+      return copy.prefNone;
+    }
+    if (preference.method === 'pickup') {
+      const point = this.service.pickups().find((p) => p.id === preference.pickupAddressId);
+      return point === undefined ? copy.prefPickupAny : `${copy.prefPickupAt} ${point.label}`;
+    }
+    const address = this.addresses.deliveries().find((a) => a.id === preference.deliveryAddressId);
+    return address === undefined ? copy.prefDeliveryAny : `${copy.prefDeliveryTo} ${address.label}`;
+  });
+
+  /**
+   * La langue de l'interface — celle qu'on est **en train de lire**.
+   *
+   * Elle était écrite « Français » en dur, ce qui restait juste jusqu'à ce que
+   * quelqu'un bascule en anglais : l'écran affirmait alors le contraire de ce
+   * qu'il montrait.
+   */
+  protected readonly language = computed(() => {
+    const code = this.locale.current();
+    return LOCALES.find((entry) => entry.code === code)?.name ?? code;
   });
 
   protected readonly deliveryCount = computed(() =>

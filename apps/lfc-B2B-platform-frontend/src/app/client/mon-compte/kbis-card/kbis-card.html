@@ -1,25 +1,31 @@
 <p class="sub">{{ t().account.kbisHead }}</p>
 
-<!-- L'ÉTAT D'ABORD : le KBIS est daté deux fois, et le second l'est PAR
-     QUELQU'UN. Une vérification anonyme n'engage personne. -->
-<div class="kbis-state">
-  <span class="kbis-check" aria-hidden="true"><fold-icon name="check" /></span>
-  <span class="kbis-verified">{{ kbisVerified() }}</span>
-  <span class="kbis-tag">{{ t().account.kbisUpToDate }}</span>
-</div>
+@if (kbis(); as extrait) {
+  <!-- L'ÉTAT D'ABORD : certifié ou en attente, c'est la question qu'on se pose
+       en ouvrant cette carte. -->
+  <div class="kbis-state">
+    @if (extrait.certified) {
+      <span class="kbis-check" aria-hidden="true"><fold-icon name="check" /></span>
+    }
+    <span class="kbis-verified">{{ state() }}</span>
+  </div>
 
-<div class="kbis-file">
-  <span class="kbis-thumb" aria-hidden="true">PDF</span>
-  <span class="kbis-lines">
-    <span class="kbis-name">{{ account.kbis.file }}</span>
-    <span class="kbis-meta">{{ kbisFiled() }}</span>
-  </span>
-  <span class="kbis-acts">
-    <button class="inline" type="button">{{ t().account.kbisOpen }}</button>
-    <button class="inline" type="button">{{ t().account.kbisReplace }}</button>
-  </span>
-</div>
+  <div class="kbis-file">
+    <span class="kbis-thumb" aria-hidden="true">PDF</span>
+    <span class="kbis-lines">
+      <span class="kbis-name">{{ extrait.fileName }}</span>
+      <span class="kbis-meta">{{ filed() }}</span>
+    </span>
+    <span class="kbis-acts">
+      <button class="inline" type="button">{{ t().account.kbisOpen }}</button>
+      <button class="inline" type="button">{{ t().account.kbisReplace }}</button>
+    </span>
+  </div>
+} @else {
+  <!-- Aucun extrait n'est un ÉTAT NORMAL : une société ouvre sans papiers, et
+       le KBIS n'est jamais bloquant pour l'activation. -->
+  <p class="kbis-verified">{{ t().account.kbisNone }}</p>
+  <button class="inline" type="button">{{ t().account.kbisUpload }}</button>
+}
 
-<p class="kbis-fresh">{{ t().account.kbisFreshness }} · {{ t().account.kbisGauge }}</p>
-<div class="gauge" aria-hidden="true"><span class="gauge-fill"></span></div>
 <p class="note">{{ t().account.kbisNote }}</p>

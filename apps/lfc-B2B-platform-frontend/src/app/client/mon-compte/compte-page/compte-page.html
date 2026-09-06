@@ -100,35 +100,30 @@
       <section class="card payment" id="compte-payment">
         <h2 class="card-title">{{ t().account.sections.payment }}</h2>
         <!-- DEUX RÉGIMES ET PAS PLUS, et ils se lisent côte à côte : l'absence
-             de crédit ne doit pas ressembler à un refus. -->
+             de crédit ne doit pas ressembler à un refus. La pastille dit lequel
+             est CONVENU — elle l'affirmait sans regarder.
+
+             🔴 Les deux tuiles SEPA et carte sont parties : « Mandat signé le
+             14/02/2024 · IBAN •••• 3041 » et « Visa •••• 4242 » étaient écrits
+             en dur. Les mandats existent en base (`PaymentMandate`) mais ne
+             traversent pas `/me` ; un moyen de paiement d'exemple est celui de
+             quelqu'un d'autre, et c'est la pire des maquettes à laisser. -->
         <div class="pay-grid">
           <div class="pay">
             <p class="pay-head">
               {{ t().account.termMonthly
-              }}<span class="pay-tag on">{{ t().account.stateActive }}</span>
+              }}<span class="pay-tag" [class.on]="client.hasDeferredTerm()">{{
+                client.hasDeferredTerm() ? t().account.stateActive : t().account.stateUnavailable
+              }}</span>
             </p>
             <p class="pay-note">{{ t().account.termMonthlySub }}</p>
           </div>
           <div class="pay">
             <p class="pay-head">
               {{ t().account.termOrder
-              }}<span class="pay-tag">{{ t().account.stateAvailable }}</span>
+              }}<span class="pay-tag on">{{ t().account.stateAvailable }}</span>
             </p>
             <p class="pay-note">{{ t().account.termOrderSub }}</p>
-          </div>
-          <div class="pay">
-            <p class="pay-head">
-              {{ t().account.sepaHead
-              }}<button class="inline" type="button">{{ t().account.change }}</button>
-            </p>
-            <p class="pay-note">{{ account.sepa }}</p>
-          </div>
-          <div class="pay">
-            <p class="pay-head">
-              {{ t().account.cardHead
-              }}<button class="inline" type="button">{{ t().account.change }}</button>
-            </p>
-            <p class="pay-note">{{ account.card }}</p>
           </div>
         </div>
         <p class="note">{{ t().account.paymentNote }}</p>
@@ -139,30 +134,17 @@
         <dl class="facts">
           <dt>{{ t().account.prefPickup }}</dt>
           <dd>
-            {{ account.pickupHabit
-            }}<button class="inline" type="button">{{ t().account.edit }}</button>
+            {{ habit() }}<button class="inline" type="button">{{ t().account.edit }}</button>
           </dd>
           <dt>{{ t().account.prefLang }}</dt>
           <dd>
-            {{ account.language
-            }}<button class="inline" type="button">{{ t().account.edit }}</button>
+            {{ language() }}<button class="inline" type="button">{{ t().account.edit }}</button>
           </dd>
         </dl>
-        <p class="sub-head">{{ t().account.prefNotify }}</p>
-        <ul class="switches">
-          <li>
-            <span>{{ t().account.prefDeliveries }}</span
-            ><span class="pill on" aria-hidden="true"></span>
-          </li>
-          <li>
-            <span>{{ t().account.prefInvoices }}</span
-            ><span class="pill on" aria-hidden="true"></span>
-          </li>
-          <li>
-            <span>{{ t().account.prefEvents }}</span
-            ><span class="pill" aria-hidden="true"></span>
-          </li>
-        </ul>
+        <!-- 🔴 Les trois interrupteurs de notification sont partis. Ils étaient
+             DESSINÉS, pas branchés : deux allumés, un éteint, en dur, et aucun
+             clic ne les bougeait. Un réglage qui ne se règle pas est pire qu'un
+             réglage absent — on croit l'avoir posé. -->
         <p class="note">{{ t().account.prefNote }}</p>
       </section>
 

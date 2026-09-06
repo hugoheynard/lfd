@@ -52,19 +52,21 @@ export interface AccountCopy {
   readonly usersAllRights: string;
   readonly usersAdd: string;
   readonly usersNote: string;
-  readonly tagActive: string;
-  readonly tagInvited: string;
+  /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
+  readonly roleUnset: string;
   readonly tagContact: string;
   readonly kbisHead: string;
   /** `{date}` la date de vérification, `{who}` la personne qui a certifié. */
-  readonly kbisVerified: string;
-  readonly kbisUpToDate: string;
+  /** Deux états, et pas un de plus : le staff a validé ce fichier, ou pas. */
+  readonly kbisCertified: string;
+  readonly kbisPending: string;
+  /** Aucun extrait est un ÉTAT NORMAL : une société ouvre sans papiers. */
+  readonly kbisNone: string;
+  readonly kbisUpload: string;
   /** `{date}` le dépôt, `{size}` le poids du fichier. */
   readonly kbisFiled: string;
   readonly kbisOpen: string;
   readonly kbisReplace: string;
-  readonly kbisFreshness: string;
-  readonly kbisGauge: string;
   readonly kbisNote: string;
   readonly billingHead: string;
   readonly billingNote: string;
@@ -83,16 +85,17 @@ export interface AccountCopy {
   readonly termOrderSub: string;
   readonly stateActive: string;
   readonly stateAvailable: string;
-  readonly sepaHead: string;
-  readonly cardHead: string;
-  readonly change: string;
   readonly paymentNote: string;
   readonly prefPickup: string;
+  /** Aucune habitude posée — ce n'est pas « retrait », c'est « rien n'a été dit ». */
+  readonly prefNone: string;
+  readonly prefPickupAt: string;
+  readonly prefPickupAny: string;
+  readonly prefDeliveryTo: string;
+  readonly prefDeliveryAny: string;
+  /** Un terme que le commercial n'a pas accordé — ce n'est pas un refus. */
+  readonly stateUnavailable: string;
   readonly prefLang: string;
-  readonly prefNotify: string;
-  readonly prefDeliveries: string;
-  readonly prefInvoices: string;
-  readonly prefEvents: string;
   readonly prefNote: string;
   readonly dataExportOrders: string;
   readonly dataExportOrdersSub: string;
@@ -111,24 +114,13 @@ export interface AccountCopy {
   readonly panelPhone: string;
   readonly panelRole: string;
   readonly panelCan: string;
-  readonly canOrder: string;
-  readonly canInvoices: string;
-  readonly canAdmin: string;
-  readonly yes: string;
-  readonly no: string;
   readonly noPhone: string;
   readonly spaceContactHead: string;
   readonly spaceContactBody: string;
   readonly spaceInvite: string;
   readonly spaceInviteNote: string;
-  readonly spaceInvitedHead: string;
   /** `{date}` est remplacé par la date d'envoi de l'invitation. */
-  readonly spaceInvitedBody: string;
-  readonly spaceResend: string;
-  readonly spaceCancel: string;
   readonly spaceActiveHead: string;
   /** `{date}` est remplacé par la date d'activation de l'espace. */
-  readonly spaceActiveBody: string;
-  readonly spaceRevoke: string;
   readonly spaceSelf: string;
 }
