@@ -1,6 +1,6 @@
 import { effect, Injectable, signal } from '@angular/core';
 
-import { isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
+import { isRecord, readLocal, readString, writeLocal } from './local-store';
 
 /**
  * Le mode de service retenu, avec tout ce qu'il entraîne.
@@ -9,8 +9,7 @@ import { isRecord, readLocal, readNumber, readString, writeLocal } from './local
  * point de retrait ou de la zone, pas des constantes d'écran. Le panier n'a
  * ainsi rien à savoir de la station pour afficher son décompte.
  */
-export interface ServiceChoice {
-  readonly mode: 'pickup' | 'delivery';
+interface ServiceChoiceBase {
   /** Le lieu, tel qu'on le nomme : « Le Labo », « Le Chalet ». */
   readonly place: string;
   /**
@@ -20,12 +19,33 @@ export interface ServiceChoice {
    */
   readonly at: string;
   readonly address: string;
-  /** La remise consentie, en pourcentage. Zéro en livraison. */
-  readonly discount: number;
-  /** Les frais de coursier, en euros. Zéro en retrait — toujours. */
-  readonly fee: number;
   readonly slot: string;
 }
+
+/**
+ * Le mode de service retenu — **une identité, jamais un montant**.
+ *
+ * 🔴 Ce type portait `discount` (en pourcent) et `fee` (en euros), lus d'une
+ * maquette. Trois choses s'y jouaient mal : la remise d'un point de retrait peut
+ * être un MONTANT, que ce champ ne savait pas dire ; les frais voyageaient en
+ * euros flottants ; et les deux étaient des nombres que le navigateur pouvait
+ * contredire au centime près.
+ *
+ * Ce qu'il porte désormais est ce que le SERVEUR a besoin de savoir pour
+ * chiffrer : quel point, ou quel code postal. Les montants reviennent de
+ * `POST /shop/quote`, et le front n'a plus de chiffre à se tromper.
+ */
+export type ServiceChoice =
+  | (ServiceChoiceBase & {
+      readonly mode: 'pickup';
+      /** Le point retenu, ou `null` pour celui par défaut — comme à la caisse. */
+      readonly pickupAddressId: string | null;
+    })
+  | (ServiceChoiceBase & {
+      readonly mode: 'delivery';
+      /** Le code postal livré. La ZONE s'en déduit côté serveur, jamais ici. */
+      readonly codePostal: string;
+    });
 
 const KEY = 'order.choice';
 
@@ -39,15 +59,21 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
   const at = readString(raw['at']);
   const address = readString(raw['address']);
   const slot = readString(raw['slot']);
-  const discount = readNumber(raw['discount']);
-  const fee = readNumber(raw['fee']);
-  if (mode === null || place === null || at === null || address === null || slot === null) {
+  if (place === null || at === null || address === null || slot === null) {
     return null;
   }
-  if (discount === null || fee === null || (mode !== 'pickup' && mode !== 'delivery')) {
-    return null;
+  const base = { place, at, address, slot };
+  if (mode === 'pickup') {
+    // `undefined` et `null` ne se distinguent pas ici, et n'ont pas à l'être :
+    // les deux veulent dire « le point par défaut », ce que le serveur sait
+    // résoudre.
+    return { ...base, mode, pickupAddressId: readString(raw['pickupAddressId']) };
   }
-  return { mode, place, at, address, discount, fee, slot };
+  if (mode === 'delivery') {
+    const codePostal = readString(raw['codePostal']);
+    return codePostal === null ? null : { ...base, mode, codePostal };
+  }
+  return null;
 }
 
 /**

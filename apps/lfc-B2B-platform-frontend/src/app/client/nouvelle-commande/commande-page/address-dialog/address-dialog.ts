@@ -14,13 +14,13 @@ import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../../client/client-identity.service';
 import {
-  type DeliveryZone,
   type OrderSlot,
   SAVED_ADDRESSES,
   type SavedAddress,
-  zoneOf,
 } from '../../../../client/mock-station';
 import { SlotStep } from '../slot-step/slot-step';
+import { formatCents, formatRate } from '../../../../client/format-money';
+import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 
 /** Le carnet d'abord, la saisie ensuite : `null` quand on saisit. */
 type Picked = string | null;
@@ -53,6 +53,7 @@ export class AddressDialog {
   protected readonly t = inject(ClientCopyService).t;
   /** Prérempli depuis le COMPTE : c'est là que vivent le nom et le numéro. */
   protected readonly client = inject(ClientIdentity);
+  private readonly service = inject(ServicePoints);
   protected readonly book = SAVED_ADDRESSES;
 
   /** 0 : où. 1 : quand. */
@@ -65,24 +66,50 @@ export class AddressDialog {
   protected readonly postcode = signal('');
   protected readonly saveToBook = signal(false);
 
-  /** Le tarif d'une adresse du carnet — il s'affiche à côté d'elle. */
+  /**
+   * Le tarif d'une adresse du carnet — il s'affiche à côté d'elle.
+   *
+   * Il vient de la zone **en base**, plus d'un nombre écrit dans une maquette :
+   * les frais peuvent être un pourcentage du panier, et cet écran ne le saurait
+   * pas. Il affiche alors la forme, pas un montant qu'il aurait inventé.
+   */
   protected fee(address: SavedAddress): string {
-    const zone = zoneOf(address.postcode);
-    return zone ? `${zone.fee} €` : '—';
+    const zone = this.service.zoneFor(address.postcode);
+    if (zone === null) {
+      return '—';
+    }
+    return zone.fee.mode === 'amount' ? formatCents(zone.fee.cents) : formatRate(zone.fee.bp / 100);
   }
 
   /** La zone en vigueur : celle du carnet quand on y pioche, celle du code saisi sinon. */
-  protected readonly zone = computed<DeliveryZone | null>(() => {
-    const id = this.picked();
-    if (id !== null) {
-      const address = SAVED_ADDRESSES.find((a) => a.id === id);
-      return address ? zoneOf(address.postcode) : null;
+  protected readonly zone = computed(() => this.service.zoneFor(this.codePostal()));
+
+  /** Le tarif de la zone retenue, dans sa forme — montant ou pourcentage. */
+  protected readonly zoneFee = computed(() => {
+    const fee = this.zone()?.fee ?? null;
+    if (fee === null) {
+      return '';
     }
-    return zoneOf(this.postcode());
+    return fee.mode === 'amount' ? formatCents(fee.cents) : formatRate(fee.bp / 100);
   });
 
-  /** La ville se DÉDUIT du code postal : personne ne la tape deux fois. */
-  protected readonly city = computed(() => this.zone()?.city ?? '');
+  /** Le code postal en vigueur : celui du carnet quand on y pioche, celui saisi sinon. */
+  private readonly codePostal = computed(() => {
+    const id = this.picked();
+    if (id === null) {
+      return this.postcode();
+    }
+    return SAVED_ADDRESSES.find((a) => a.id === id)?.postcode ?? '';
+  });
+
+  /**
+   * Le libellé de la zone tient lieu de ville.
+   *
+   * La maquette portait une ville par zone ; `DeliveryZoneView` n'en a pas — une
+   * zone est un ensemble de préfixes, pas une commune. Afficher son libellé dit
+   * la même chose sans rien inventer.
+   */
+  protected readonly city = computed(() => this.zone()?.label ?? '');
 
   protected readonly ctaLabel = computed(() => {
     if (this.step() === 1) {
@@ -91,7 +118,14 @@ export class AddressDialog {
     }
     const zone = this.zone();
     const c = this.t().addressDialog;
-    return zone ? fill(c.cta, { fee: String(zone.fee) }) : c.ctaBlocked;
+    return zone
+      ? fill(c.cta, {
+          fee:
+            zone.fee.mode === 'amount'
+              ? formatCents(zone.fee.cents)
+              : formatRate(zone.fee.bp / 100),
+        })
+      : c.ctaBlocked;
   });
 
   /** Sans zone, il n'y a rien à confirmer — et le bouton le dit. */
@@ -151,9 +185,11 @@ export class AddressDialog {
       place: this.placeName(),
       at: this.placeAt(),
       address: this.line(),
-      // Le coursier ne remise pas : la remise appartient au point de retrait.
-      discount: 0,
-      fee: zone.fee,
+      // 🔴 Le CODE POSTAL, jamais le tarif : la zone s'en déduit côté serveur,
+      // qui applique alors le même barème que la facture. Le front portait le
+      // montant, en euros flottants, et ne savait pas dire des frais au
+      // pourcentage.
+      codePostal: this.codePostal(),
       slot: slot.label,
     });
   }
@@ -162,7 +198,7 @@ export class AddressDialog {
   private placeName(): string {
     const id = this.picked();
     const address = id === null ? null : SAVED_ADDRESSES.find((a) => a.id === id);
-    return address?.label ?? this.zone()?.city ?? '';
+    return address?.label ?? this.zone()?.label ?? '';
   }
 
   private placeAt(): string {

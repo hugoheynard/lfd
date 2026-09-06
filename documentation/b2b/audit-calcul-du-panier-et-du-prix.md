@@ -22,6 +22,13 @@
 > hypothèse écrite** : que la production ne porte aucun gabarit posé depuis le
 > 2026-08-31. Une requête en lecture seule la tranche, et elle est au §3.
 >
+> **`P7` est livré** (2026-09-06), et c'est le plus gros : la boutique **ne
+> calcule plus rien**. `POST /shop/quote` rend le décompte complet, et
+> `ServiceChoice` porte une identité — quel point, quel code postal — là où il
+> portait une remise en pourcentage et des frais en euros flottants. `D2`, `D3`
+> et `D4` se referment ensemble, parce qu'ils n'étaient qu'un seul défaut vu de
+> trois côtés.
+>
 > **`P1`, `P2`, `P3` et `P11` sont livrés** (2026-09-06) : le sous-total du
 > panier staff passe par `lineTotalCents`, `lint:money-units` est la 24ᵉ porte du
 > dépôt, la famille `tarification` ne porte plus un seul nom en `*Cents` sur une
@@ -167,7 +174,7 @@ pas un montant encaissé.
 `lineTotalCents`. Même l'unité corrigée, `round(Σ)` n'est pas `Σ round()`, et la
 règle du dépôt est un arrondi **par ligne**.
 
-### D2 🟠 Le panier de la boutique multiplie — ce que son propre document interdit
+### D2 ✅ Le panier de la boutique multipliait — ce que son propre document interdisait
 
 `architecture-prix-boutique.md` §6, mot pour mot :
 
@@ -184,12 +191,18 @@ Le prix montré vient de `GET /shop/catalogue`, qui rend le prix **du catalogue*
 n'appelle pas `resolvePrice`. Donc, aujourd'hui, **aucun étage n'atteint la
 boutique** — ni mercuriale, ni promotion, ni palier.
 
-Ce n'est pas encore faux : sans palier posé, `unitaire × quantité` est exact. Ça
-devient faux **le jour même** où un barème existe, et faux **en silence**, parce
-que la multiplication continue de rendre un nombre plausible. Le document l'avait
-prévu ; l'implémentation a fait l'inverse.
+Ce n'était pas encore faux : sans palier posé, `unitaire × quantité` est exact.
+Ça devenait faux **le jour même** où un barème existe, et faux **en silence**,
+parce que la multiplication continue de rendre un nombre plausible. Le document
+l'avait prévu ; l'implémentation avait fait l'inverse.
 
-### D3 🟠 La remise et les frais de la boutique sont une maquette
+> ✅ **Refermé le 2026-09-06 (`P7b`).** Le panier appelle `POST /shop/quote` et
+> n'écrit plus une seule ligne d'arithmétique d'argent : `cart-total.ts` ne
+> contient plus que le type d'une ligne. Le total de CHAQUE ligne vient du
+> serveur, arrondi une fois — et vaut « — » tant qu'il n'est pas revenu, ce qui
+> est la contrepartie honnête de ne plus calculer : on ne sait pas encore.
+
+### D3 ✅ La remise et les frais de la boutique étaient une maquette
 
 `client/mock-station.ts` : remise de retrait **10 %** en dur, frais de zone
 **20 €** et **50 €** en dur. `ClientCart.totals` les lit par `ServiceChoice`, qui
@@ -210,6 +223,18 @@ Trois écarts, du plus grave au plus léger :
    au dernier moment (`client-cart.service.ts:86`). La règle du dépôt est
    « centimes, entiers », et la conversion tardive est précisément ce qui la
    contourne sans en avoir l'air.
+
+> ✅ **Refermé le 2026-09-06 (`P7b`), et par la suppression plutôt que par la
+> correction.** `ServiceChoice` ne porte plus ni `discount` ni `fee` : il porte
+> une **identité** — quel point de retrait, quel code postal. Le front n'a donc
+> plus de montant à se tromper, et les trois écarts disparaissent ensemble
+> plutôt que d'être corrigés un par un.
+>
+> Les points et les zones viennent de `GET /pickup-addresses` et
+> `GET /delivery-zones`, déjà publiques. Ce que la maquette portait et que le
+> serveur ne dit pas — la distance d'un point, l'heure de première fournée, la
+> phrase « coursier vélo, 20 min » — a été **retiré, pas reporté** : à côté d'une
+> adresse réelle, un décor devient une affirmation fausse.
 
 ### D4 🟡 Le devis ne rendait ni TVA ni total — une moitié fermée le 2026-09-06
 
@@ -726,8 +751,8 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                                        | Une définition du TTC, pas deux.                                                                |
 | **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                                                   | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
 | **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                           | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
-| 🟡 **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                              | Le serveur sait enfin répondre « combien » avant la commande.                                   |
-| 🔴 **P7b** | La **boutique appelle la route** et cesse de calculer. Ferme `D2` (le front multiplie) et `D3` (remise et frais de maquette). Touche aussi les dialogues de retrait et d'adresse, qui lisent `mock-station.ts`.                            | Tant qu'elle ne l'appelle pas, le client voit un montant et en paiera un autre.                 |
+| ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                              | Le serveur sait enfin répondre « combien » avant la commande.                                   |
+| ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                              | Le client voyait un montant et en aurait payé un autre.                                         |
 | **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                         | À faire quand on y touche, pas avant.                                                           |
 | **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                             | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
 | ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est au §3, `D10`. | Un prix négocié entrait en base au millième.                                                    |

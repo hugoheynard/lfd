@@ -4,7 +4,7 @@ import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { formatCents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
-import { type CartLine, lineHtCents } from '../cart-total';
+import { type CartLine } from '../cart-total';
 
 /**
  * **Une ligne du panier** : la quantité, ce que c'est, ce que ça fait.
@@ -71,7 +71,20 @@ export class CartProductLine {
    * multipliée : deux fois « 1,40 € » ne font pas forcément le total de deux
    * pièces, et c'est tout ce que le millicentime existe pour tenir.
    */
-  protected readonly sum = computed(() => formatCents(lineHtCents(this.line())));
+  /**
+   * Le total de la ligne, **tel que le serveur l'a arrondi**.
+   *
+   * Il se calculait ici (`prix × quantité`). C'est un MONTANT : l'arrondir à
+   * l'écran donnait une seconde règle d'arrondi, et une multiplication devient
+   * fausse en silence dès qu'un palier de volume existe. `null` tant que le
+   * décompte n'est pas revenu — un tiret vaut mieux qu'un nombre inventé.
+   */
+  readonly totalCents = input<number | null>(null);
+
+  protected readonly sum = computed(() => {
+    const cents = this.totalCents();
+    return cents === null ? '—' : formatCents(cents);
+  });
 
   protected readonly dropLabel = computed(() =>
     fill(this.t().cart.dropAria, { name: this.name() }),

@@ -15,11 +15,14 @@ describe('CartProductLine', () => {
   const text = (selector: string): string =>
     (fixture.nativeElement as HTMLElement).querySelector(selector)?.textContent?.trim() ?? '';
 
-  function render(quantity: number): void {
+  function render(quantity: number, totalCents: number | null = null): void {
     // 1,40 € HT à 5,5 % — le premier article de la vitrine de test.
     const line: CartLine = { product: TEST_ITEMS[0]!, quantity };
     fixture = TestBed.createComponent(CartProductLine);
     fixture.componentRef.setInput('line', line);
+    if (totalCents !== null) {
+      fixture.componentRef.setInput('totalCents', totalCents);
+    }
     fixture.detectChanges();
   }
 
@@ -37,15 +40,26 @@ describe('CartProductLine', () => {
   });
 
   /**
-   * 🔴 **L'arrondi a lieu au total de ligne, jamais à l'unité multipliée.**
-   * Trois pièces à 1,40 € HT font 4,20 € — ici la multiplication tombe juste,
-   * mais c'est la fonction qui décide, pas le gabarit.
+   * 🔴 **La ligne ne multiplie plus rien** : le total lui est DONNÉ, tel que le
+   * serveur l'a arrondi. Elle le calculait, ce qui donnait une seconde règle
+   * d'arrondi et une multiplication qui deviendrait fausse en silence le jour
+   * où un palier de volume existe (`D2`, fix 2026-09-06).
    */
-  it('multiplie par la quantité pour le total de ligne', () => {
-    render(3);
+  it('affiche le total de ligne que le serveur a rendu', () => {
+    render(3, 420);
 
     expect(text('.unit')).toBe('1,40 € HT');
     expect(text('.sum')).toBe('4,20 €');
+  });
+
+  /**
+   * Tant que le décompte n'est pas revenu, un tiret — jamais un nombre inventé.
+   * C'est la contrepartie de ne plus calculer : on ne sait pas encore.
+   */
+  it('avoue ne pas savoir tant que le décompte n’est pas arrivé', () => {
+    render(3);
+
+    expect(text('.sum')).toBe('—');
   });
 
   /**

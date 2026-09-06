@@ -1,4 +1,20 @@
+import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { DeliveryZoneView } from '@lfd/contracts';
+
+import { ServicePoints } from '../../../../client/shop/pickup-points.store';
+
+/**
+ * Les zones **de la plateforme**, posées dans le vrai dépôt.
+ *
+ * Elles portaient un tarif en euros flottants et une ville, écrits en dur. Une
+ * zone réelle est un ensemble de PRÉFIXES et un `CartAdjustment` : la suite pose
+ * donc cette forme-là, et traverse la résolution par préfixe qui sert en vente.
+ */
+const ZONES: readonly DeliveryZoneView[] = [
+  { id: 'z1', postalPrefixes: ['73150'], label: 'Zone 1', fee: { mode: 'amount', cents: 2_000 } },
+  { id: 'z2', postalPrefixes: ['73130'], label: 'Zone 2', fee: { mode: 'amount', cents: 5_000 } },
+];
 
 import { fill } from '../../../../client/copy/client-copy.service';
 import { FR } from '../../../../client/copy/fr';
@@ -33,7 +49,8 @@ describe('AddressDialog', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AddressDialog] });
+    TestBed.configureTestingModule({ imports: [AddressDialog], providers: [provideHttpClient()] });
+    TestBed.inject(ServicePoints).receive([], ZONES);
     fixture = TestBed.createComponent(AddressDialog);
     fixture.componentRef.setInput('open', true);
     fixture.detectChanges();
@@ -42,17 +59,19 @@ describe('AddressDialog', () => {
   it("ouvre sur l'adresse par défaut, et son tarif", () => {
     expect(text()).toContain(FR.addressDialog.defaultTag);
     expect(text()).toContain('Zone 1');
-    expect(cta().textContent).toContain(fill(FR.addressDialog.cta, { fee: '20' }));
+    expect(cta().textContent).toContain(fill(FR.addressDialog.cta, { fee: '20,00 €' }));
   });
 
   it('la ville se déduit du code postal, et la zone avec elle', () => {
     type('.postcode', '73130');
 
+    // Le libellé de la zone tient lieu de ville : une zone est un ensemble de
+    // préfixes, pas une commune, et le référentiel n'en nomme aucune.
     const city = el().querySelector('.city input');
-    expect(city instanceof HTMLInputElement && city.value).toBe('Bourg-Saint-Maurice');
+    expect(city instanceof HTMLInputElement && city.value).toBe('Zone 2');
     expect(text()).toContain('Zone 2');
     // Le tarif suit la zone, pas le panier — et le bouton le PORTE.
-    expect(cta().textContent).toContain(fill(FR.addressDialog.cta, { fee: '50' }));
+    expect(cta().textContent).toContain(fill(FR.addressDialog.cta, { fee: '50,00 €' }));
   });
 
   it('saisir une adresse quitte le carnet : une seule peut gagner', () => {

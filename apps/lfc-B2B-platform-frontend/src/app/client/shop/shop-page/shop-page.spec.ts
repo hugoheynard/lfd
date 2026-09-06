@@ -47,8 +47,7 @@ describe('ShopPage', () => {
       place: 'Le Labo',
       at: 'au Labo',
       address: 'Route de la Balme, Val d’Isère',
-      discount: 10,
-      fee: 0,
+      pickupAddressId: 'pick_labo',
       slot: '7 h – 8 h',
     });
     cart = TestBed.inject(ClientCart);

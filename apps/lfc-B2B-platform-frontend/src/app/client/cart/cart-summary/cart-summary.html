@@ -7,6 +7,7 @@
         <li
           app-cart-product-line
           [line]="line"
+          [totalCents]="totalOf(line.product.sku)"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
         ></li>
@@ -41,7 +42,7 @@
   @if (feeLabel(); as label) {
     <div class="row">
       <dt>{{ label }}</dt>
-      <dd>{{ money(totals().feeCents) }}</dd>
+      <dd>{{ money(totals().deliveryFeeCents) }}</dd>
     </div>
   }
 

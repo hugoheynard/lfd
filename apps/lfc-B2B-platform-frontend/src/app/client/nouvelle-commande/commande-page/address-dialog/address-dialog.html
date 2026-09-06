@@ -69,14 +69,17 @@
       />
     </div>
 
+    <!-- La zone dit son NOM et son tarif, et rien de plus. Le ton et la phrase
+         d'explication venaient d'une maquette : le référentiel des zones ne les
+         connaît pas, et les inventer à côté d'un tarif réel en aurait fait des
+         promesses (« coursier vélo, 20 min ») que personne ne tient. -->
     @if (zone(); as z) {
-      <div class="zone" [attr.data-tone]="z.tone">
+      <div class="zone" data-tone="ink">
         <span class="zone-tile" aria-hidden="true"><fold-icon name="truck" /></span>
         <span class="zone-text">
           <span class="zone-name">{{ z.label }}</span>
-          <span class="zone-note">{{ z.note }}</span>
         </span>
-        <span class="zone-fee">{{ z.fee }} €</span>
+        <span class="zone-fee">{{ zoneFee() }}</span>
       </div>
     } @else {
       <div class="zone" data-tone="none">

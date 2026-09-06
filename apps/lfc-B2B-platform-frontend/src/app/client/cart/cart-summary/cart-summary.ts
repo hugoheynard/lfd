@@ -50,17 +50,49 @@ export class CartSummary {
    */
   protected readonly lines = this.cart.lines;
 
-  /** La remise, telle qu'elle se lit : « Remise retrait au Labo −10 % ». */
+  /**
+   * Le total de chaque ligne, par SKU, **tel que le serveur l'a arrondi**.
+   *
+   * Une table plutôt qu'un calcul dans la ligne : c'est un montant, et deux
+   * arrondis pour un même nombre finissent par différer d'un centime devant le
+   * client. Vide tant que le décompte n'est pas revenu — la ligne montre alors
+   * un tiret, pas un nombre inventé.
+   */
+  protected readonly lineTotals = computed(
+    () => new Map(this.totals().lines.map((line) => [line.sku, line.lineTotalCents])),
+  );
+
+  protected totalOf(sku: string): number | null {
+    return this.lineTotals().get(sku) ?? null;
+  }
+
+  /**
+   * La remise, telle qu'elle se lit : « Remise retrait au Labo −10 % ».
+   *
+   * 🔴 **Le taux vient du SERVEUR**, plus du choix de service. Le front portait
+   * un pourcentage tiré d'une maquette : il ne savait pas dire une remise en
+   * MONTANT, et l'aurait affichée « −0 % » pendant que la commande la déduisait.
+   * L'ajustement arrive désormais avec le décompte ; le lieu reste au choix,
+   * puisque c'est de la présentation.
+   */
   protected readonly discountLabel = computed(() => {
     const choice = this.order.choice();
-    if (choice === null || choice.discount === 0) {
+    const adjustment = this.totals().discountAdjustment;
+    if (choice === null || adjustment === null || this.totals().discountCents === 0) {
       return null;
     }
-    return fill(this.t().cart.discount, { at: choice.at, pct: String(choice.discount) });
+    // Les deux formes se lisent différemment — « −10 % » et « −2,00 € » — et
+    // c'est pour ça que le libellé porte la VALEUR mise en forme plutôt qu'un
+    // nombre suivi d'un pourcent en dur dans la copie.
+    const value =
+      adjustment.mode === 'percent'
+        ? formatRate(adjustment.bp / 100)
+        : formatCents(adjustment.cents);
+    return fill(this.t().cart.discount, { at: choice.at, value });
   });
 
   protected readonly feeLabel = computed(() => {
-    const fee = this.totals().feeCents;
+    const fee = this.totals().deliveryFeeCents;
     return fee === 0 ? null : this.t().cart.fee;
   });
 

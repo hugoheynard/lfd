@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -12,7 +13,11 @@ import { FoldButtonComponent } from 'fold-ng';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import { type OrderSlot, PICKUP_POINTS } from '../../../../client/mock-station';
+import type { CartAdjustment, PickupAddressView } from '@lfd/contracts';
+
+import { formatCents, formatRate } from '../../../../client/format-money';
+import { type OrderSlot } from '../../../../client/mock-station';
+import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
 
 /**
@@ -47,37 +52,66 @@ export class PickupDialog {
 
   protected readonly t = inject(ClientCopyService).t;
 
+  constructor() {
+    void this.service.hydrate();
+    // Le défaut se choisit quand la liste arrive, pas avant : le dialogue peut
+    // s'ouvrir plus vite que le réseau.
+    effect(() => {
+      const points = this.available();
+      if (this.pickedId() === '' && points.length > 0) {
+        this.pickedId.set((points.find((p) => p.isDefault) ?? points[0])?.id ?? '');
+      }
+    });
+  }
+
   /** 0 : où. 1 : quand. */
   protected readonly step = signal(0);
   protected readonly slot = signal<OrderSlot | null>(null);
 
-  /** L'habitude est présélectionnée : c'est le choix qu'on refait le plus. */
-  protected readonly pickedId = signal(PICKUP_POINTS.find((p) => p.habitual)?.id ?? '');
+  private readonly service = inject(ServicePoints);
+
+  /**
+   * Les points **de la plateforme**, plus ceux d'une maquette.
+   *
+   * Ce qui a disparu avec elle : la distance et l'heure de première fournée. Le
+   * serveur ne les connaît pas, et les inventer À CÔTÉ d'une adresse réelle en
+   * aurait fait des affirmations fausses plutôt qu'un décor.
+   */
+  protected readonly available = this.service.pickups;
+
+  /**
+   * Le point par défaut est présélectionné — c'est le seul « habituel » qu'une
+   * plateforme sache désigner, et il vaut mieux que le premier de la liste.
+   */
+  protected readonly pickedId = signal<string>('');
 
   protected readonly points = computed(() => {
     const c = this.t().pickupDialog;
-    return PICKUP_POINTS.map((point) => ({
+    return this.available().map((point) => ({
       point,
-      tag: point.habitual ? c.habit : (point.distance ?? ''),
-      ready: fill(c.readyFrom, { time: point.readyFrom }),
+      tag: point.isDefault ? c.habit : '',
       offer:
-        point.discount > 0 ? fill(c.discountTag, { pct: String(point.discount) }) : c.shopPrice,
+        point.discount === null
+          ? c.shopPrice
+          : fill(c.discountTag, { value: valueOf(point.discount) }),
+      hasOffer: point.discount !== null,
     }));
   });
 
   /** La meilleure remise de la station : c'est elle que la phrase d'accueil vend. */
-  protected readonly lead = computed(() =>
-    fill(this.t().pickupDialog.lead, {
-      pct: String(Math.max(...PICKUP_POINTS.map((p) => p.discount))),
-    }),
-  );
+  protected readonly lead = computed(() => {
+    const best = bestDiscountOf(this.available());
+    return best === null
+      ? this.t().pickupDialog.title
+      : fill(this.t().pickupDialog.lead, { value: valueOf(best) });
+  });
 
   private readonly picked = computed(
-    () => PICKUP_POINTS.find((p) => p.id === this.pickedId()) ?? null,
+    () => this.available().find((p) => p.id === this.pickedId()) ?? null,
   );
 
   /** Le lieu retenu, que le second volet rappelle. */
-  protected readonly place = computed(() => this.picked()?.name ?? '');
+  protected readonly place = computed(() => this.picked()?.label ?? '');
 
   protected readonly ctaLabel = computed(() => {
     if (this.step() === 1) {
@@ -85,10 +119,8 @@ export class PickupDialog {
       return this.slot() ? c.cta : c.ctaIdle;
     }
     const c = this.t().pickupDialog;
-    const point = this.picked();
-    return point && point.discount > 0
-      ? fill(c.ctaDiscount, { pct: String(point.discount) })
-      : c.cta;
+    const discount = this.picked()?.discount ?? null;
+    return discount === null ? c.cta : fill(c.ctaDiscount, { value: valueOf(discount) });
   });
 
   /** À l'étape du créneau, rien à valider tant qu'aucun n'est pris. */
@@ -104,12 +136,15 @@ export class PickupDialog {
     if (point && slot) {
       this.done.emit({
         mode: 'pickup',
-        place: point.name,
-        at: point.at,
-        address: point.address,
-        discount: point.discount,
-        // Le retrait est TOUJOURS gratuit : pas de frais, donc pas de ligne.
-        fee: 0,
+        place: point.label,
+        // Le complément (« au Labo ») n'a **pas** de source serveur : il est
+        // dérivé du libellé. Un champ de fil le rendrait juste pour un lieu
+        // féminin — c'est une dette de contrat, pas une dette d'écran.
+        at: `au ${point.label}`,
+        address: `${point.ligne1}, ${point.ville}`,
+        // 🔴 L'IDENTITÉ, jamais le montant : la remise est calculée par le
+        // serveur, qui est le seul à pouvoir la tenir devant la facture.
+        pickupAddressId: point.id,
         slot: slot.label,
       });
     }
@@ -119,4 +154,30 @@ export class PickupDialog {
   protected back(): void {
     this.step.set(0);
   }
+}
+
+/** Un ajustement, tel qu'il se lit : « 10 % » ou « 2,00 € ». */
+function valueOf(adjustment: CartAdjustment): string {
+  return adjustment.mode === 'percent'
+    ? formatRate(adjustment.bp / 100)
+    : formatCents(adjustment.cents);
+}
+
+/**
+ * La meilleure remise proposée, ou `null`.
+ *
+ * Comparer un pourcentage à un montant n'a pas de sens sans panier : on retient
+ * donc la meilleure de chaque nature, en préférant le pourcentage — c'est ce que
+ * la phrase d'accueil vend, et la seule forme qui parle sans connaître le total.
+ */
+function bestDiscountOf(points: readonly PickupAddressView[]): CartAdjustment | null {
+  const offers = points.map((point) => point.discount).filter((d) => d !== null);
+  const percents = offers.filter((d) => d.mode === 'percent');
+  if (percents.length > 0) {
+    return percents.reduce((best, d) => (d.bp > best.bp ? d : best));
+  }
+  const amounts = offers.filter((d) => d.mode === 'amount');
+  return amounts.length === 0
+    ? null
+    : amounts.reduce((best, d) => (d.cents > best.cents ? d : best));
 }

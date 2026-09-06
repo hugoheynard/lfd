@@ -1,8 +1,8 @@
 import { computed, effect, inject, Injectable } from '@angular/core';
 
-import { type CartLine, type CartTotals, priceCart } from './cart-total';
+import { type CartLine } from './cart-total';
 import { CartStore } from './cart.store';
-import { OrderContextStore } from '../order-context.store';
+import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 
 /**
@@ -29,7 +29,7 @@ import { ShopCatalogue } from '../shop/shop-catalogue.store';
 @Injectable({ providedIn: 'root' })
 export class ClientCart {
   private readonly store = inject(CartStore);
-  private readonly order = inject(OrderContextStore);
+  private readonly quote = inject(ShopQuote);
   private readonly catalogue = inject(ShopCatalogue);
 
   constructor() {
@@ -79,12 +79,22 @@ export class ClientCart {
 
   readonly isEmpty = computed(() => this.count() === 0);
 
-  readonly totals = computed<CartTotals>(() => {
-    const choice = this.order.choice();
-    // Les frais du mode de service sont saisis en euros ; le décompte, lui,
-    // compte en centimes. La conversion se fait ici, à la frontière.
-    return priceCart(this.lines(), choice?.discount ?? 0, Math.round((choice?.fee ?? 0) * 100));
-  });
+  /**
+   * **Le décompte, tel que le serveur le rend** — plus une ligne d'arithmétique
+   * d'argent dans ce fichier.
+   *
+   * Il se calculait ici : `prix × quantité`, une remise en pourcentage venue
+   * d'une maquette, des frais en euros flottants, une TVA recalculée à côté de
+   * celle de la caisse. Quatre nombres, quatre occasions de contredire la
+   * facture. Cf. {@link ShopQuote}.
+   */
+  readonly totals = this.quote.totals;
+
+  /**
+   * Où en est ce décompte — le dernier connu reste affiché pendant qu'on en
+   * demande un autre, et l'écran doit pouvoir le dire.
+   */
+  readonly pricing = this.quote.status;
 
   quantityOf(productId: string): number {
     return this.store.quantityOf(productId);

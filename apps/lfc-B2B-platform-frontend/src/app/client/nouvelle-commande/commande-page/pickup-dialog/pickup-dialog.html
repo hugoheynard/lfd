@@ -23,12 +23,12 @@
           <span class="ring" aria-hidden="true"><span class="core"></span></span>
           <span class="text">
             <span class="line">
-              <span class="name">{{ row.point.name }}</span>
+              <span class="name">{{ row.point.label }}</span>
               <span class="tag">{{ row.tag }}</span>
             </span>
-            <span class="where">{{ row.point.address }} · {{ row.ready }}</span>
+            <span class="where">{{ row.point.ligne1 }} · {{ row.point.ville }}</span>
           </span>
-          <span class="offer" [class.deal]="row.point.discount > 0">{{ row.offer }}</span>
+          <span class="offer" [class.deal]="row.hasOffer">{{ row.offer }}</span>
         </button>
       }
     </div>

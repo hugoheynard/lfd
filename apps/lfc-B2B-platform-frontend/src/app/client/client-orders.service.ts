@@ -1,9 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 
-import { type CartTotals } from './cart/cart-total';
 import { ClientCart } from './cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
+import type { ShopQuoteView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 import { MOCK_ORDER_REF } from './shop/mock-order';
 
@@ -27,7 +27,7 @@ export interface PlacedOrder {
   readonly service: ServiceChoice;
   readonly lines: readonly PlacedLine[];
   readonly pieces: number;
-  readonly totals: CartTotals;
+  readonly totals: ShopQuoteView;
 }
 
 const KEY = 'orders';

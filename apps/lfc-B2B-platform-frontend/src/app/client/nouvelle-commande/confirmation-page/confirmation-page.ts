@@ -58,12 +58,24 @@ export class ConfirmationPage {
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),
   );
 
+  /**
+   * La remise **figée avec la commande**, telle que le serveur l'avait dite.
+   *
+   * Elle se lisait sur le choix de service, qui portait un pourcentage de
+   * maquette ; elle vient désormais du décompte gelé — donc du même ajustement
+   * que la facture, et sous la forme qu'il avait, taux ou montant.
+   */
   protected readonly discountLabel = computed(() => {
-    const service = this.order()?.service;
-    if (!service || service.discount === 0) {
+    const order = this.order();
+    const adjustment = order?.totals.discountAdjustment ?? null;
+    if (!order || adjustment === null || order.totals.discountCents === 0) {
       return null;
     }
-    return fill(this.t().cart.discount, { at: service.at, pct: String(service.discount) });
+    const value =
+      adjustment.mode === 'percent'
+        ? formatRate(adjustment.bp / 100)
+        : formatCents(adjustment.cents);
+    return fill(this.t().cart.discount, { at: order.service.at, value });
   });
 
   protected readonly vatLines = computed(() => {
