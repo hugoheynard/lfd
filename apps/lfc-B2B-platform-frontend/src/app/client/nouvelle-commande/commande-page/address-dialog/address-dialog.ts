@@ -7,21 +7,19 @@ import {
   output,
   signal,
 } from '@angular/core';
+import type { PickupSlot } from '@lfd/contracts';
 import { FoldButtonComponent, FoldIconComponent, FoldInputComponent } from 'fold-ng';
 
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../../../client/client-identity.service';
-import {
-  type OrderSlot,
-  SAVED_ADDRESSES,
-  type SavedAddress,
-  slotDate,
-} from '../../../../client/mock-station';
+import { SAVED_ADDRESSES, type SavedAddress } from '../../../../client/mock-station';
 import { SlotStep } from '../slot-step/slot-step';
 import { formatCents, formatRate } from '../../../../client/format-money';
+import { formatWindow } from '../../../../client/format-hour';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
+import { DELIVERY_SLOTS } from './delivery-slots';
 
 /** Le carnet d'abord, la saisie ensuite : `null` quand on saisit. */
 type Picked = string | null;
@@ -59,7 +57,22 @@ export class AddressDialog {
 
   /** 0 : où. 1 : quand. */
   protected readonly step = signal(0);
-  protected readonly slot = signal<OrderSlot | null>(null);
+  protected readonly slot = signal<PickupSlot | null>(null);
+
+  /**
+   * ⚠️ Les heures de livraison sont **déclarées en dur** : la fenêtre où le
+   * coursier passe appartient à la tournée, qui n'existe pas encore. Cf.
+   * `delivery-slots.ts`, qui dit ce qu'il est. Le retrait, lui, lit les heures
+   * du point.
+   */
+  protected readonly slots = DELIVERY_SLOTS;
+
+  /**
+   * La journée du serveur pour la LIVRAISON — elle ne vise aucun point, donc
+   * c'est la règle par défaut de la plateforme qui la décide, heure limite
+   * comprise. `null` = aucune journée demandable, et rien ne part.
+   */
+  private readonly day = computed(() => this.service.nextDayFor(null));
 
   protected readonly picked = signal<Picked>(SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? null);
 
@@ -194,7 +207,8 @@ export class AddressDialog {
     }
     const zone = this.zone();
     const slot = this.slot();
-    if (!zone || !slot) {
+    const date = this.day();
+    if (!zone || !slot || date === null) {
       return;
     }
     this.done.emit({
@@ -207,8 +221,11 @@ export class AddressDialog {
       // montant, en euros flottants, et ne savait pas dire des frais au
       // pourcentage.
       codePostal: this.codePostal(),
-      slot: slot.label,
-      date: slotDate(),
+      slot: formatWindow(slot.start, slot.end, this.t().slotStep.before),
+      // 🔴 La journée vient du SERVEUR. Elle était calculée ici — « demain »,
+      // depuis l'horloge du navigateur du client, sans regarder l'heure limite.
+      // Cf. `GET /fulfillment-days`.
+      date,
       // 🔴 L'adresse COMPLÈTE, en plus du code postal. Le code postal chiffre
       // (la zone s'en déduit) ; il ne livre pas. `POST /orders` refuse une
       // livraison sans adresse, et il a raison.

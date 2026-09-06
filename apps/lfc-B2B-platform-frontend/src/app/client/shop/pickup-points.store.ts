@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import type { DeliveryZoneView, PickupAddressView } from '@lfd/contracts';
+import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -21,6 +21,12 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
  * l'heure de première fournée. Ce ne sont pas des données de commerce, et les
  * inventer À CÔTÉ d'une adresse réelle en aurait fait des affirmations fausses
  * plutôt qu'un décor — d'où leur retrait plutôt que leur report.
+ *
+ * 🔴 **La JOURNÉE vient d'ici aussi** (`GET /fulfillment-days`). L'écran la
+ * calculait — « demain », depuis `new Date()`, c'est-à-dire depuis l'horloge du
+ * navigateur du client, et sans regarder l'heure limite. Trois requêtes en une
+ * seule attente : l'écran n'en subit pas le prix, et aucune des trois ne peut
+ * répondre pour une station différente des deux autres.
  */
 @Injectable({ providedIn: 'root' })
 export class ServicePoints {
@@ -28,6 +34,7 @@ export class ServicePoints {
 
   private readonly pickupList = signal<readonly PickupAddressView[]>([]);
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
+  private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
   private asked = false;
 
   readonly pickups = this.pickupList.asReadonly();
@@ -41,17 +48,22 @@ export class ServicePoints {
    * la même sélection du défaut, la même résolution de zone par préfixe. Un
    * doublé aurait pu dériver de ce qu'il prétend jouer sans que rien ne rougisse.
    */
-  receive(pickups: readonly PickupAddressView[], zones: readonly DeliveryZoneView[]): void {
+  receive(
+    pickups: readonly PickupAddressView[],
+    zones: readonly DeliveryZoneView[],
+    days: readonly FulfillmentDayView[] = [],
+  ): void {
     this.pickupList.set(pickups);
     this.zoneList.set(zones);
+    this.dayList.set(days);
     this.asked = true;
   }
 
   /**
-   * Va chercher les deux listes, une fois.
+   * Va chercher les trois listes, une fois.
    *
-   * Un échec laisse les listes vides : l'écran montre alors qu'il n'a rien à
-   * proposer, ce qui est vrai, plutôt qu'une station de démonstration.
+   * Un échec les laisse vides : l'écran montre alors qu'il n'a rien à proposer,
+   * ce qui est vrai, plutôt qu'une station de démonstration.
    */
   async hydrate(): Promise<void> {
     if (this.asked) {
@@ -60,15 +72,31 @@ export class ServicePoints {
     this.asked = true;
     const base = AUTH_CONFIG.apiBaseUrl;
     try {
-      const [pickups, zones] = await Promise.all([
+      const [pickups, zones, days] = await Promise.all([
         firstValueFrom(this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses`)),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
+        firstValueFrom(this.http.get<readonly FulfillmentDayView[]>(`${base}/fulfillment-days`)),
       ]);
       this.pickupList.set(pickups);
       this.zoneList.set(zones);
+      this.dayList.set(days);
     } catch {
       this.asked = false;
     }
+  }
+
+  /**
+   * **La prochaine journée demandable** ici, ou `null`.
+   *
+   * `pickupAddressId` à `null` = le chemin livraison, qui ne vise aucun point et
+   * suit la règle par défaut de la plateforme.
+   *
+   * ⚠️ Un `null` se MONTRE. Y substituer « demain » remettrait exactement ce
+   * qu'on vient de retirer : une journée que l'écran affirme et que la commande
+   * refuse.
+   */
+  nextDayFor(pickupAddressId: string | null): string | null {
+    return this.dayList().find((day) => day.pickupAddressId === pickupAddressId)?.date ?? null;
   }
 
   /** La zone qui dessert ce code postal, par le MÊME préfixe que le serveur. */

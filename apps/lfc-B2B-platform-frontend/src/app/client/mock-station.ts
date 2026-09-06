@@ -1,15 +1,22 @@
 /**
- * Ce qu'il reste de la station de maquette.
+ * Ce qu'il reste de la station de maquette : **le carnet d'adresses**.
  *
- * 🔴 **Les points de retrait et les zones en sont PARTIS le 2026-09-06.** Ils
+ * 🔴 **Les points de retrait et les zones en sont partis le 2026-09-06.** Ils
  * portaient une remise en pourcentage et des frais en euros flottants, écrits
- * en dur ; ils viennent désormais de `GET /pickup-addresses` et
- * `GET /delivery-zones` (cf. `ServicePoints`), et les montants du panier de
- * `POST /shop/quote`. Le front n'a plus de chiffre d'argent à se tromper.
+ * en dur ; ils viennent de `GET /pickup-addresses` et `GET /delivery-zones`
+ * (cf. `ServicePoints`), et les montants du panier de `POST /shop/quote`.
  *
- * Ce qui reste ici n'a pas de source serveur : le carnet d'adresses du client
- * et la grille de créneaux. Les deux attendent leur route — le carnet existe
- * côté API pour un client CONNECTÉ, ce que la boutique n'est pas encore.
+ * 🔴 **Les CRÉNEAUX en sont partis le même jour.** `ORDER_SLOTS` posait huit
+ * heures fixes, les mêmes pour tous les points, avec des états sans source —
+ * « complet » affirmait une capacité que rien ne mesure. Et `slotDate()` posait
+ * « demain » depuis l'horloge du navigateur du client. La grille se déduit
+ * désormais des heures déclarées du point (`pickupSlots`), et la journée vient
+ * de `GET /fulfillment-days` — donc de l'horloge du serveur, heure limite
+ * comprise.
+ *
+ * Ce qui reste ici n'a pas de source : le carnet d'adresses du client. Il
+ * existe côté API pour un client CONNECTÉ (`AddressesService`, par entreprise),
+ * ce que la boutique n'est pas encore.
  */
 
 /** Une adresse du carnet. */
@@ -41,60 +48,3 @@ export const SAVED_ADDRESSES: readonly SavedAddress[] = [
     isDefault: false,
   },
 ];
-
-/**
- * Ce qu'un créneau dit de lui-même. Ce ne sont pas cinq façons d'écrire
- * « libre » : la sortie du four et la seconde fournée expliquent POURQUOI cette
- * heure-là est bonne, et « Labo seulement » dit une restriction sans la punir.
- */
-export type OrderSlotState = 'first-batch' | 'free' | 'full' | 'second-batch' | 'labo-only';
-
-/** Le moment de la journée — le fournil travaille en deux temps. */
-export type DayPart = 'am' | 'pm';
-
-export interface OrderSlot {
-  readonly id: string;
-  readonly label: string;
-  readonly part: DayPart;
-  readonly state: OrderSlotState;
-}
-
-/**
- * Les créneaux de demain. Le complet reste AFFICHÉ et inerte, comme le créneau
- * « au four » du rappel : un trou dans une grille se lit comme un bug, un
- * « complet » se lit comme une boulangerie qui a du succès.
- */
-export const ORDER_SLOTS: readonly OrderSlot[] = [
-  { id: 'a1', label: '7 h – 8 h', part: 'am', state: 'first-batch' },
-  { id: 'a2', label: '8 h – 9 h', part: 'am', state: 'full' },
-  { id: 'a3', label: '9 h – 10 h', part: 'am', state: 'free' },
-  { id: 'a4', label: '10 h – 11 h', part: 'am', state: 'free' },
-  { id: 'p1', label: '16 h – 17 h', part: 'pm', state: 'second-batch' },
-  { id: 'p2', label: '17 h – 18 h', part: 'pm', state: 'free' },
-  { id: 'p3', label: '18 h – 19 h', part: 'pm', state: 'full' },
-  { id: 'p4', label: '19 h – 20 h', part: 'pm', state: 'labo-only' },
-];
-
-/**
- * **La journée que ces créneaux visent** — demain, au format `AAAA-MM-JJ`.
- *
- * Elle était implicite : le titre disait « demain » et rien ne la portait. Elle
- * ne pouvait pas le rester à partir du moment où la commande part au serveur —
- * `requestedDeliveryDate` y est **obligatoire**, parce que c'est la journée de
- * production.
- *
- * ⚠️ Calculée ici faute de source : les créneaux sont une maquette. Le jour où
- * ils viennent de l'API, la date arrive avec eux et cette fonction disparaît —
- * une journée de production se lit sur le calendrier de la maison, pas sur
- * l'horloge du navigateur du client.
- */
-export function slotDate(): string {
-  const day = new Date();
-  day.setDate(day.getDate() + 1);
-  return day.toISOString().slice(0, 10);
-}
-
-/** Complet : le créneau reste là, il ne se prend pas. */
-export function isSlotOpen(slot: OrderSlot): boolean {
-  return slot.state !== 'full';
-}

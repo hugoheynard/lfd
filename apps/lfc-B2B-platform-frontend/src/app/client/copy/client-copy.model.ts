@@ -379,11 +379,18 @@ export interface ClientCopy {
     readonly deliveryIntro: string;
     readonly amGroup: string;
     readonly pmGroup: string;
-    readonly firstBatch: string;
+    /** Sous-titre d'un créneau ouvert à tous. */
     readonly free: string;
-    readonly full: string;
-    readonly secondBatch: string;
-    readonly laboOnly: string;
+    /**
+     * Sous-titre d'un créneau que le PUBLIC n'a pas — la fenêtre réservée du
+     * point. C'est la seule restriction que le système sache lire ; « complet »
+     * et « sortie du four » ont disparu avec la grille en dur, faute de source.
+     */
+    readonly proOnly: string;
+    /** « avant 8 h » — la fenêtre d'un point qui n'a pas déclaré son ouverture. */
+    readonly before: string;
+    readonly noneTitle: string;
+    readonly noneSubtitle: string;
     readonly ctaIdle: string;
     /** Le créneau tenu, on va composer : le bouton nomme la SUITE. */
     readonly cta: string;

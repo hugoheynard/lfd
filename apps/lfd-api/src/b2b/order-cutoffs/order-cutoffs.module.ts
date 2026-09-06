@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
+import { ListFulfillmentDaysHandler } from "./application/list-fulfillment-days.handler.js";
 import {
   CreateOrderCutoffHandler,
   ListOrderCutoffsHandler,
@@ -8,6 +10,7 @@ import {
 } from "./application/order-cutoff.handlers.js";
 import { OrderCutoffRepository } from "./domain/order-cutoff.repository.js";
 import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controller.js";
+import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";
 import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutoff.repository.js";
 
 /**
@@ -20,9 +23,13 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
  * validation de la prod (cf. `architecture-commande-immuable-avenants.md`).
  */
 @Module({
-  controllers: [AdminOrderCutoffsController],
+  // Les points de retrait pour `GET /fulfillment-days` : la journée se calcule
+  // par point, et c'est ce module-ci qui possède les règles qui la décident.
+  imports: [PickupAddressesModule],
+  controllers: [AdminOrderCutoffsController, FulfillmentDaysController],
   providers: [
     { provide: OrderCutoffRepository, useClass: PrismaOrderCutoffRepository },
+    ListFulfillmentDaysHandler,
     ListOrderCutoffsHandler,
     CreateOrderCutoffHandler,
     UpdateOrderCutoffHandler,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { weekdaySchema, type Weekday } from "./address.js";
-import { addDays, localToInstant, weekdayOf } from "./paris-time.js";
+import { addDays, instantToLocal, localToInstant, weekdayOf } from "./paris-time.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on peut commander (ou déposer un
@@ -272,4 +272,60 @@ export function decideOrderLimit(
 /** L'instant limite d'une limite résolue. Même conversion que {@link orderCutoffInstant}. */
 export function orderLimitInstant(limit: OrderLimitSpec, fulfillmentDate: string): Date | null {
   return localToInstant(addDays(fulfillmentDate, -limit.daysBefore), limit.time);
+}
+
+/**
+ * **La prochaine journée de production encore demandable**, pour un point de
+ * retrait (ou pour le défaut de la plateforme, `pickupAddressId` à `null`).
+ *
+ * ## Pourquoi elle est calculée SERVEUR
+ *
+ * 🔴 L'écran de commande posait « demain » à partir de `new Date()` — l'horloge
+ * du **navigateur du client**. Un poste mal réglé, un fuseau de vacances, et la
+ * journée demandée n'était pas celle du fournil. Pire : « demain » ignorait
+ * l'heure limite, donc proposait une journée que la commande allait refuser
+ * après coup, sans que rien ne l'ait annoncé.
+ *
+ * `now` vient donc du `Clock`, comme partout où une limite se compare à
+ * l'horloge.
+ *
+ * ## Ce que cette date est, et ce qu'elle n'est PAS
+ *
+ * ⚠️ Une **proposition d'ouverture**, jamais une autorisation. Elle ne connaît
+ * que les règles du commerce ; un article peut porter **sa** limite, et c'est
+ * `ensureWithinOrderCutoff` — au moment de poser la commande, panier en main —
+ * qui tranche. Les deux ne peuvent pas se contredire en silence : celle-ci ne
+ * fait qu'ouvrir un écran, l'autre seule refuse.
+ *
+ * @returns `AAAA-MM-JJ`, ou `null` si aucune journée de l'horizon n'est ouverte.
+ * Un `null` se montre (« aucune journée disponible ») ; il ne se remplace pas
+ * par un défaut, sinon on retombe sur le « demain » qu'on vient de retirer.
+ */
+export function nextFulfillmentDay(
+  rules: readonly OrderCutoffView[],
+  pickupAddressId: string | null,
+  now: Date,
+  horizonDays = 14,
+): string | null {
+  const today = instantToLocal(now).day;
+  for (let ahead = 0; ahead <= horizonDays; ahead += 1) {
+    const day = addDays(today, ahead);
+    if (decideOrderCutoff(rules, pickupAddressId, day, now).status === "open") {
+      return day;
+    }
+  }
+  return null;
+}
+
+/**
+ * Ce que le fil rend : une journée par destination de service.
+ *
+ * L'entrée `pickupAddressId: null` est **toujours** présente — c'est la règle
+ * par défaut, donc la journée de la livraison, qui ne vise aucun point.
+ */
+export interface FulfillmentDayView {
+  /** Le point de retrait visé, ou `null` = le défaut (livraison comprise). */
+  readonly pickupAddressId: string | null;
+  /** La prochaine journée demandable, ou `null` — aucune dans l'horizon. */
+  readonly date: string | null;
 }

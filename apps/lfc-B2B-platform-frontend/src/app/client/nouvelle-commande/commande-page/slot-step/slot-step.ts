@@ -7,17 +7,20 @@ import {
   output,
   signal,
 } from '@angular/core';
+import type { PickupSlot } from '@lfd/contracts';
+import { FoldEmptyStateComponent } from 'fold-ng';
 
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import {
-  type DayPart,
-  isSlotOpen,
-  type OrderSlot,
-  ORDER_SLOTS,
-} from '../../../../client/mock-station';
+import { formatWindow } from '../../../../client/format-hour';
 
 /** Les deux chemins de service posent la même question d'heure, autrement. */
 export type SlotMode = 'pickup' | 'delivery';
+
+/** Le moment de la journée — le fournil travaille en deux temps. */
+type DayPart = 'am' | 'pm';
+
+/** Midi, en `HH:MM` : la frontière entre les deux groupes. */
+const NOON = '12:00';
 
 /**
  * Le choix du créneau — SECOND VOLET du dialogue de service, pas un écran à
@@ -29,10 +32,22 @@ export type SlotMode = 'pickup' | 'delivery';
  *
  * Le volet ne décide de rien : il remonte le créneau, et c'est le dialogue qui
  * porte le bouton — lui seul sait ce que valider veut dire à cette étape.
+ *
+ * ## 🔴 Il ne fabrique plus sa grille
+ *
+ * Il lisait `ORDER_SLOTS` : huit heures écrites en dur, identiques pour tous les
+ * points, avec des états inventés — « complet », « sortie du four ». Aucun
+ * n'avait de source ; le système ne connaît ni la capacité d'un créneau ni
+ * l'heure d'enfournement. Un client lisait « complet » sur une heure libre.
+ *
+ * Les créneaux **entrent** désormais, déduits des heures déclarées du point de
+ * retrait (`pickupSlots`). Une liste vide n'est pas un bug : c'est un point qui
+ * n'a pas déclaré ses heures, et l'écran le dit.
  */
 @Component({
   selector: 'app-slot-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldEmptyStateComponent],
   templateUrl: './slot-step.html',
   styleUrl: './slot-step.scss',
 })
@@ -42,7 +57,10 @@ export class SlotStep {
   /** Le point de retrait ou l'adresse — le volet le rappelle en tête. */
   readonly place = input.required<string>();
 
-  readonly pickedChange = output<OrderSlot | null>();
+  /** Les créneaux ouverts ici. Vide = aucune heure déclarée. */
+  readonly slots = input.required<readonly PickupSlot[]>();
+
+  readonly pickedChange = output<PickupSlot | null>();
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly pickedId = signal<string | null>(null);
@@ -55,29 +73,22 @@ export class SlotStep {
 
   protected readonly groups = computed(() => {
     const c = this.t().slotStep;
-    const label: Record<OrderSlot['state'], string> = {
-      'first-batch': c.firstBatch,
-      free: c.free,
-      full: c.full,
-      'second-batch': c.secondBatch,
-      'labo-only': c.laboOnly,
-    };
-    const of = (part: DayPart): readonly (OrderSlot & { sub: string; open: boolean })[] =>
-      ORDER_SLOTS.filter((slot) => slot.part === part).map((slot) => ({
-        ...slot,
-        sub: label[slot.state],
-        open: isSlotOpen(slot),
-      }));
+    // Le libellé et le groupe se lisent sur l'heure elle-même : un créneau sans
+    // borne basse (« avant 8 h ») tombe le matin, ce qu'il est.
+    const shown = this.slots().map((slot) => ({
+      ...slot,
+      label: formatWindow(slot.start, slot.end, c.before),
+      sub: slot.access === 'pro' ? c.proOnly : c.free,
+      part: ((slot.start ?? '00:00') < NOON ? 'am' : 'pm') as DayPart,
+    }));
     return [
-      { id: 'am', title: c.amGroup, slots: of('am') },
-      { id: 'pm', title: c.pmGroup, slots: of('pm') },
-    ];
+      { id: 'am', title: c.amGroup, slots: shown.filter((slot) => slot.part === 'am') },
+      { id: 'pm', title: c.pmGroup, slots: shown.filter((slot) => slot.part === 'pm') },
+    ].filter((group) => group.slots.length > 0);
   });
 
-  protected pick(slot: OrderSlot): void {
-    if (isSlotOpen(slot)) {
-      this.pickedId.set(slot.id);
-      this.pickedChange.emit(slot);
-    }
+  protected pick(slot: PickupSlot): void {
+    this.pickedId.set(slot.id);
+    this.pickedChange.emit(slot);
   }
 }

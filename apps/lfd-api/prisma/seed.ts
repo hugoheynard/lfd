@@ -5,6 +5,7 @@ import {
   CustomerRole,
   UserStatus,
 } from "../src/platform/database/client/client.js";
+import { seedStation } from "./seed-station.js";
 
 /**
  * Seed de développement — **provisionne un customer de test**, exactement comme
@@ -19,6 +20,11 @@ import {
  * `SEED_SKIP_COMPANY=1` sème la personne **sans aucune société** : c'est l'état
  * qui déclenche l'empty state « Mes entreprises » côté front, autrement pénible
  * à obtenir à la main.
+ *
+ * 🔴 **Sème aussi la STATION** — points de retrait, zones, heure limite (cf.
+ * `seed-station.ts`). Elle manquait, et son absence tenait en vie les maquettes
+ * du front : un écran ne peut renoncer à sa maquette que le jour où la base lui
+ * répond quelque chose.
  */
 const AUTH0_SUB = process.env["SEED_AUTH0_SUB"] ?? "auth0|6a6a2fb1a5c185cc18313e33";
 const EMAIL = process.env["SEED_EMAIL"] ?? "hheynard@gmail.com";
@@ -33,6 +39,13 @@ if (!url) {
 const prisma = new PrismaClient({ accelerateUrl: url });
 
 async function main(): Promise<void> {
+  // La station D'ABORD, et hors du raccourci ci-dessous : un poste qui a déjà sa
+  // personne n'aurait jamais reçu ses points de retrait.
+  await seedStation(prisma);
+  await seedPerson();
+}
+
+async function seedPerson(): Promise<void> {
   const existing = await prisma.user.findUnique({
     where: { auth0Sub: AUTH0_SUB },
     include: { memberships: true },
@@ -77,8 +90,15 @@ async function main(): Promise<void> {
   });
 
   // Le créateur d'une société en est le gestionnaire.
+  //
+  // 🔴 Cette ligne posait `CustomerRole.company_admin`, qui **n'existe pas** :
+  // l'énumération est `owner | admin | orders | billing`. `pnpm db:seed` cassait
+  // donc à la dernière écriture, en laissant derrière lui une personne et une
+  // société sans lien — l'état le plus pénible à diagnostiquer. Personne ne l'a
+  // vu parce que `prisma/` n'était pas type-checké ; il l'est depuis
+  // `tsconfig.seed.json`, et c'est cette porte qui a rendu la faute.
   await prisma.membership.create({
-    data: { userId: user.id, companyId: company.id, role: CustomerRole.company_admin },
+    data: { userId: user.id, companyId: company.id, role: CustomerRole.owner },
   });
 
   console.log("✓ Seed créé :");

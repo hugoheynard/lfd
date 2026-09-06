@@ -50,7 +50,9 @@ describe('AddressDialog', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [AddressDialog], providers: [provideHttpClient()] });
-    TestBed.inject(ServicePoints).receive([], ZONES);
+    TestBed.inject(ServicePoints).receive([], ZONES, [
+      { pickupAddressId: null, date: '2026-09-09' },
+    ]);
     fixture = TestBed.createComponent(AddressDialog);
     fixture.componentRef.setInput('open', true);
     fixture.detectChanges();

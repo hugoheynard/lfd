@@ -13,10 +13,15 @@ import { FoldButtonComponent } from 'fold-ng';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import type { CartAdjustment, PickupAddressView } from '@lfd/contracts';
+import {
+  type CartAdjustment,
+  type PickupAddressView,
+  type PickupSlot,
+  pickupSlots,
+} from '@lfd/contracts';
 
 import { formatCents, formatRate } from '../../../../client/format-money';
-import { slotDate, type OrderSlot } from '../../../../client/mock-station';
+import { formatWindow } from '../../../../client/format-hour';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
 
@@ -66,16 +71,16 @@ export class PickupDialog {
 
   /** 0 : où. 1 : quand. */
   protected readonly step = signal(0);
-  protected readonly slot = signal<OrderSlot | null>(null);
+  protected readonly slot = signal<PickupSlot | null>(null);
 
   private readonly service = inject(ServicePoints);
 
   /**
-   * Les points **de la plateforme**, plus ceux d'une maquette.
+   * Les points **de la plateforme**, et eux seuls.
    *
-   * Ce qui a disparu avec elle : la distance et l'heure de première fournée. Le
-   * serveur ne les connaît pas, et les inventer À CÔTÉ d'une adresse réelle en
-   * aurait fait des affirmations fausses plutôt qu'un décor.
+   * Ce qui a disparu avec la maquette : la distance et l'heure de première
+   * fournée. Le serveur ne les connaît pas, et les inventer À CÔTÉ d'une adresse
+   * réelle en aurait fait des affirmations fausses plutôt qu'un décor.
    */
   protected readonly available = this.service.pickups;
 
@@ -113,6 +118,27 @@ export class PickupDialog {
   /** Le lieu retenu, que le second volet rappelle. */
   protected readonly place = computed(() => this.picked()?.label ?? '');
 
+  /**
+   * Les créneaux du point retenu, **déduits de ses heures déclarées**.
+   *
+   * 🔴 Ils venaient d'une grille écrite en dur, la même pour tous les points, et
+   * avec des états sans source. Une liste vide n'est pas une panne : c'est un
+   * point qui n'a pas publié ses horaires, et le volet le dit.
+   */
+  protected readonly slots = computed(() => {
+    const point = this.picked();
+    return point === null ? [] : pickupSlots(point.opening);
+  });
+
+  /**
+   * La journée que ce point peut encore servir, du SERVEUR — heure limite
+   * comprise. `null` = aucune journée demandable, et rien ne part.
+   */
+  private readonly day = computed(() => {
+    const point = this.picked();
+    return point === null ? null : this.service.nextDayFor(point.id);
+  });
+
   protected readonly ctaLabel = computed(() => {
     if (this.step() === 1) {
       const c = this.t().slotStep;
@@ -123,8 +149,13 @@ export class PickupDialog {
     return discount === null ? c.cta : fill(c.ctaDiscount, { value: valueOf(discount) });
   });
 
-  /** À l'étape du créneau, rien à valider tant qu'aucun n'est pris. */
-  protected readonly ready = computed(() => this.step() === 0 || this.slot() !== null);
+  /**
+   * À l'étape du créneau, rien à valider tant qu'aucun n'est pris — ni tant que
+   * le serveur n'a pas donné de journée : commander sans date serait refusé.
+   */
+  protected readonly ready = computed(
+    () => this.step() === 0 || (this.slot() !== null && this.day() !== null),
+  );
 
   protected advance(): void {
     if (this.step() === 0) {
@@ -133,7 +164,8 @@ export class PickupDialog {
     }
     const point = this.picked();
     const slot = this.slot();
-    if (point && slot) {
+    const date = this.day();
+    if (point && slot && date !== null) {
       this.done.emit({
         mode: 'pickup',
         place: point.label,
@@ -145,10 +177,12 @@ export class PickupDialog {
         // 🔴 L'IDENTITÉ, jamais le montant : la remise est calculée par le
         // serveur, qui est le seul à pouvoir la tenir devant la facture.
         pickupAddressId: point.id,
-        slot: slot.label,
-        // La journée que ces créneaux visent, rendue explicite : la commande
-        // l'exige, et « demain » ne traverse pas une API. Cf. `slotDate`.
-        date: slotDate(),
+        slot: this.labelOf(slot),
+        // 🔴 La journée vient du SERVEUR. Elle était calculée ici — « demain »,
+        // depuis l'horloge du navigateur du client, sans regarder l'heure
+        // limite. Une journée de production se lit sur le calendrier de la
+        // maison. Cf. `GET /fulfillment-days`.
+        date,
       });
     }
   }
@@ -156,6 +190,11 @@ export class PickupDialog {
   /** Revenir au lieu ne perd pas l'heure déjà choisie : on ne la redemande pas. */
   protected back(): void {
     this.step.set(0);
+  }
+
+  /** L'heure telle qu'elle se lit — c'est ce libellé que le récapitulatif porte. */
+  private labelOf(slot: PickupSlot): string {
+    return formatWindow(slot.start, slot.end, this.t().slotStep.before);
   }
 }
 

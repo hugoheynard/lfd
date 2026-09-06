@@ -294,8 +294,13 @@ export type {
 } from "./account-alert-override.js";
 export { cartAdjustmentSchema, cartAdjustmentCents, discountCentsOf } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";
-export { pickupAddressPayloadSchema, pickupOpeningSchema, pickupWindows } from "./pickup.js";
-export type { PickupOpening } from "./pickup.js";
+export {
+  pickupAddressPayloadSchema,
+  pickupOpeningSchema,
+  pickupSlots,
+  pickupWindows,
+} from "./pickup.js";
+export type { PickupAccess, PickupOpening, PickupSlot } from "./pickup.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
@@ -304,6 +309,7 @@ export {
   orderCutoffPayloadSchema,
   decideOrderCutoff,
   decideOrderLimit,
+  nextFulfillmentDay,
   orderCutoffInstant,
   orderLimitInstant,
   resolveOrderCutoff,
@@ -311,6 +317,7 @@ export {
 } from "./order-cutoff.js";
 export type {
   CreatedOrderCutoffResponse,
+  FulfillmentDayView,
   OrderCutoffDecision,
   OrderLimitSpec,
   OrderCutoffPayload,

@@ -20,6 +20,8 @@
   },
   "include": [
     "src",
+    "prisma/seed.ts",
+    "prisma/seed-station.ts",
     "prisma/seed-pim.ts",
     "prisma/seed-delivery.ts",
     "prisma/seed-pim",

@@ -127,7 +127,12 @@
   </div>
 
   <div class="pane">
-    <app-slot-step mode="delivery" [place]="line()" (pickedChange)="slot.set($event)" />
+    <app-slot-step
+      mode="delivery"
+      [place]="line()"
+      [slots]="slots"
+      (pickedChange)="slot.set($event)"
+    />
   </div>
 
   <button
