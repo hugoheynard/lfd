@@ -1,12 +1,13 @@
 import { computed, signal, type Signal } from '@angular/core';
 
 import type { OrderLineInput, OrderQuoteView } from '@lfd/contracts';
+import { lineTotalCents } from '@lfd/money';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
   readonly sku: string;
   readonly name: string;
-  /** Prix unitaire **HT** en centimes, tel que le catalogue le donne. */
+  /** Prix unitaire **HT** en **millicentimes**, tel que le catalogue le donne. */
   readonly unitPriceMillicents: number;
   readonly quantity: number;
 }
@@ -19,11 +20,18 @@ export interface CartLine {
  * pas le partager. Un singleton `providedIn: 'root'` aurait fait exactement
  * l'inverse.
  *
- * **Le seul montant calculé ici est le sous-total HT** — une multiplication et
- * une somme, que rien ne peut interpréter de travers. Remise de retrait, frais
+ * **Le seul montant calculé ici est le sous-total HT.** Remise de retrait, frais
  * de zone, TVA par taux et total TTC restent au serveur : les recopier ici
  * donnerait deux implémentations d'une même règle d'arrondi, donc deux résultats
  * à un centime près, et un client qui compare son écran à sa facture.
+ *
+ * 🔴 **Et même celui-là passe par `lineTotalCents`, jamais par une
+ * multiplication écrite ici.** Ce paragraphe promettait « une multiplication et
+ * une somme, que rien ne peut interpréter de travers » : elle sommait des
+ * **millicentimes** sous un nom en centimes, et l'écran en affichait mille fois
+ * le prix (corrigé le 2026-09-06). Une arithmétique d'argent n'est jamais assez
+ * simple pour être écrite en clair — c'est précisément quand elle en a l'air
+ * qu'on cesse de la relire.
  */
 /** Une ligne du panier, au prix que le serveur facturera. */
 export interface PricedCartLine extends CartLine {
@@ -95,9 +103,17 @@ export class CartStore {
   /**
    * Sous-total **HT** en centimes, **au prix facturé**. Cf. l'avertissement de
    * la classe pour ce qu'il ne contient pas (remise de retrait, zone, TVA).
+   *
+   * L'arrondi a lieu **une fois par ligne**, par la fonction même dont le
+   * serveur se sert (`OrderLine.lineTotalCents`). Arrondir la somme à la place
+   * donnerait un centime d'écart sur certains paniers — c'est-à-dire l'écart
+   * qu'on ne découvre que devant le client.
    */
   readonly subtotalCents = computed(() =>
-    this.pricedLines().reduce((total, line) => total + line.unitPriceMillicents * line.quantity, 0),
+    this.pricedLines().reduce(
+      (total, line) => total + lineTotalCents(line.unitPriceMillicents, line.quantity),
+      0,
+    ),
   );
 
   /** Quantité déjà au panier pour ce SKU — ce que les sources affichent en pastille. */

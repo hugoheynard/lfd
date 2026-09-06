@@ -47,9 +47,15 @@ export const CATALOG_CATEGORY_ORDER: readonly CatalogCategory[] = [
 ];
 
 /**
- * Un article du catalogue. Prix unitaire **HT** en centimes et taux de TVA du
- * **produit** — les deux nombres dont une ligne de panier a besoin pour
+ * Un article du catalogue. Prix unitaire **HT** en **millicentimes** et taux de
+ * TVA du **produit** — les deux nombres dont une ligne de panier a besoin pour
  * s'afficher juste avant d'être envoyée.
+ *
+ * ⚠️ Ce commentaire disait « en centimes » jusqu'au 2026-09-06, vestige de la
+ * bascule d'unité. C'est celui qu'on lit en écrivant le consommateur, et un
+ * panier l'a cru : il sommait ce champ et affichait le total mille fois trop
+ * grand. Un montant se dérive de ce prix par `lineTotalCents`, jamais par une
+ * multiplication écrite à la main.
  */
 export interface CatalogItemView {
   readonly sku: string;
