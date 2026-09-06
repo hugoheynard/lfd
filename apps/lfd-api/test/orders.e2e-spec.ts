@@ -511,7 +511,10 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
           productNameSnapshot: existing.productNameSnapshot,
           unitPriceMillicents: existing.unitPriceMillicents,
           quantity: 1,
-          lineTotalCents: existing.unitPriceMillicents,
+          // Le total DÉRIVE du prix, il ne le recopie pas : ce sont deux unités.
+          // La ligne est de toute façon refusée par la contrainte — mais une
+          // donnée de test impossible en production ne prouve rien du schéma.
+          lineTotalCents: lineTotalCents(existing.unitPriceMillicents, 1),
         },
       }),
     ).rejects.toThrow();

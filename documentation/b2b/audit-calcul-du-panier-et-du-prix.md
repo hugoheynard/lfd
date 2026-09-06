@@ -1,9 +1,9 @@
 # Le calcul du panier et du prix — audit de l'existant
 
-> **État : 🔎 audit, arrêté au 2026-09-05.** Une photo, pas un plan : il dit ce
-> que le dépôt fait aujourd'hui, où l'argent se calcule, et ce qui y est faux.
-> Il ne décide rien — le §7 propose des lots, il ne les ordonne pas à la place
-> d'Hugo.
+> **État : 🔎 audit du 2026-09-05, rouvert le 2026-09-06.** Une photo, pas un
+> plan : il dit ce que le dépôt fait, où l'argent se calcule, et ce qui y est
+> faux. Il ne décide rien — le §7 propose des lots, il ne les ordonne pas à la
+> place d'Hugo.
 >
 > 🔴 **Un défaut de production est trouvé et daté ici : `D1`.** Le sous-total du
 > panier de saisie du back-office est affiché **mille fois trop grand**. Il ne
@@ -15,6 +15,16 @@
 > substituer. La seule faille de conception qu'il relève n'est pas dans le motif :
 > c'est une **couture manquante**, que le plan de performance en cours construit
 > à moitié sans le savoir.
+>
+> 🔴 **Et un second, plus grave, trouvé le 2026-09-06 : `D10`.** Un prix de
+> mercuriale tapé à 2,10 € est enregistré à **0,0021 €**, et l'écran le relit
+> juste parce que sa conversion inverse est fausse du même facteur. Il n'est
+> **pas corrigé** : il pose une question de données de production, qui est celle
+> d'Hugo (`P11`).
+>
+> **`P1` et `P2` sont livrés** (2026-09-06) : le sous-total du panier staff passe
+> par `lineTotalCents`, et `lint:money-units` est la 24ᵉ porte du dépôt. C'est
+> elle qui a trouvé `D10`, au premier passage.
 >
 > Un audit porte sa date. Celui-ci ne se mettra pas à jour tout seul.
 
@@ -302,6 +312,58 @@ inexplicable.
 Ce n'est pas un défaut de motif, c'est un défaut de **nom**. Deux concepts
 nommés, ou l'écran qui affiche la mesure à côté du seuil.
 
+### D10 🔴 Un prix de mercuriale est enregistré au **millième** de ce qui est tapé
+
+> Trouvé le 2026-09-06 par `lint:money-units`, au premier passage de la porte —
+> pas par la lecture qui l'avait commandée. **Non corrigé** : cf. « ce qui reste
+> à décider », plus bas, et le lot `P11`.
+
+Le commercial tape **2,10 €** dans la grille de mercuriale
+(`commercial/tarification/grille`). Ce qui arrive en base est **0,0021 €**.
+
+La chaîne, vérifiée fichier par fichier :
+
+| Étape       | Ce qui se passe                                                                      | Où                              |
+| ----------- | ------------------------------------------------------------------------------------ | ------------------------------- |
+| saisie      | `centsOf('2,10')` → `210`, en **centimes** (`Math.round(parsed * 100)`)              | `price-field.ts:11`             |
+| payload     | `210` est posé dans `unitPriceMillicents`                                            | `draft-grid.ts:101`             |
+| contrat     | `templateTierSchema.unitPriceMillicents`, entier ≥ 0 — rien à redire à `210`         | `contracts/src/pricing.ts:1156` |
+| application | le palier devient une règle `replace` : `amountMillicents: tier.unitPriceMillicents` | `template-to-rules.ts:44`       |
+| facturation | `resolvePrice` pose ce montant tel quel — **0,0021 € l'unité**                       | `resolve-price.ts`              |
+
+**Pourquoi personne ne l'a vu à l'écran.** La relecture est fausse du même
+facteur : `draftFromLines` affiche `eurosField(unitPriceMillicents)`, qui divise
+par cent. Enregistrer puis recharger réaffiche **2,10 €**. L'écran est
+parfaitement cohérent avec lui-même ; c'est la base qui est fausse.
+
+**L'origine est datée.** Le commit `0e2e2dd2` (2026-08-31, « afficher les prix
+unitaires avec leurs décimales ») a renommé `unitPriceCents` en
+`unitPriceMillicents` dans ce fichier — **sans convertir la valeur**. Le diff
+tient en quatre lignes et ne change que des noms. C'est le mode de panne exact
+que `lint:money-units` existe pour attraper, et c'est pourquoi elle regarde
+désormais **les deux sens** : celui qui écrit était celui que sa première version
+excluait.
+
+Un second symptôme du même désaccord, sur le même écran : le bouton « + » de
+tarification préremplit le champ par `eurosField(row.catalogCents)`, où
+`catalogCents` porte des millicentimes — il propose donc **2 000,00 €** pour un
+croissant à 2,00 €.
+
+#### Ce qui reste à décider, et pourquoi ce n'est pas à moi
+
+1. **L'unité de chaque appelant** de `centsOf` et `eurosField` — six sites, trois
+   fichiers, et chacun demande de savoir ce que son écran manipule. C'est une
+   décision de conception sur un écran d'argent.
+2. **Les lignes déjà enregistrées.** S'il existe des gabarits posés depuis le
+   2026-08-31, ils portent un millième. Corriger le code sans les migrer laisse
+   un état mixte ; les migrer est une **opération de production**. Le geste, et
+   le fait de le faire ou non, appartiennent à Hugo.
+
+Le contrôle qui tranche le 2 tient en une requête, et il ne détruit rien :
+compter les `price_template_line` créées après le 2026-08-31 dont le
+`unit_price_millicents` est **inférieur à 1 000** — c'est-à-dire sous le centime,
+ce qu'aucun prix de mercuriale réel n'est.
+
 ---
 
 ## 3 bis. Le moteur de résolution — le motif est bon, la couture manque
@@ -416,29 +478,42 @@ rouvrir périodiquement et les dater.
 
 ## 5. Les trous — ce qui n'existe pas encore
 
-| Trou                                        | Conséquence aujourd'hui                                                         | Doc                                           |
-| ------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------- |
-| **Aucune facture n'est émise**              | la chaîne s'arrête au total de la commande ; le mandat SEPA n'est jamais débité | `architecture-facturation.md` 📐              |
-| **La mercuriale par client (S5)**           | un compte négocié paie le tarif public sur la boutique                          | `architecture-resolution-de-prix.md` 🟡       |
-| **La surtaxe de retard au panier (B5)**     | facturée par `Order.draft`, jamais annoncée au client                           | `plan-decompte-du-panier-ht.md` §7.2          |
-| **La boutique ne passe aucune commande**    | numéro fabriqué dans le navigateur                                              | `client/shop/mock-order.ts`                   |
-| **Les paliers de volume à la boutique**     | reportés — et `D2` est ce que le report a laissé                                | `architecture-prix-boutique.md` §6            |
-| **Prix vivant / prix bloqué**               | non tranché, zéro code                                                          | `architecture-prix-vivant-prix-bloque.md` 🔵  |
-| **Conditionnements**                        | le toggle unité/pack reste provisoire                                           | `architecture-conditionnements-pricing.md` 📐 |
-| **Aucune porte CI sur les unités d'argent** | `D1` et `D6` étaient invisibles à `lint:gates`                                  | —                                             |
+| Trou                                            | Conséquence aujourd'hui                                                         | Doc                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Aucune facture n'est émise**                  | la chaîne s'arrête au total de la commande ; le mandat SEPA n'est jamais débité | `architecture-facturation.md` 📐              |
+| **La mercuriale par client (S5)**               | un compte négocié paie le tarif public sur la boutique                          | `architecture-resolution-de-prix.md` 🟡       |
+| **La surtaxe de retard au panier (B5)**         | facturée par `Order.draft`, jamais annoncée au client                           | `plan-decompte-du-panier-ht.md` §7.2          |
+| **La boutique ne passe aucune commande**        | numéro fabriqué dans le navigateur                                              | `client/shop/mock-order.ts`                   |
+| **Les paliers de volume à la boutique**         | reportés — et `D2` est ce que le report a laissé                                | `architecture-prix-boutique.md` §6            |
+| **Prix vivant / prix bloqué**                   | non tranché, zéro code                                                          | `architecture-prix-vivant-prix-bloque.md` 🔵  |
+| **Conditionnements**                            | le toggle unité/pack reste provisoire                                           | `architecture-conditionnements-pricing.md` 📐 |
+| ~~**Aucune porte CI sur les unités d'argent**~~ | **Comblé le 2026-09-06** — `lint:money-units`, 24ᵉ porte.                       | ✅                                            |
 
-Le dernier mérite d'être dit en propre. Le dépôt a **23 portes**, dont une qui
-lit les schémas Postgres dans le `datasource` plutôt que de les recopier, et une
-qui interdit `new Date()` hors de l'adaptateur d'horloge. Il n'en a **aucune** sur
-l'unité de l'argent — le seul endroit où se tromper coûte de l'argent. Une porte
-qui refuse un identifiant `*Cents` affecté depuis une expression contenant
-`Millicents` aurait attrapé `D1` **et** `D6` le jour où ils ont été écrits. Elle
-tient en trente lignes, comme les autres.
+Le dernier mérite d'être dit en propre, parce qu'il a été comblé **et** parce
+que ce qu'il a rapporté dépasse ce que cette ligne annonçait.
 
-C'est la hiérarchie déjà retenue ailleurs dans ce dépôt : rendre inexprimable
-plutôt que vérifier. Ici, l'inexprimable serait un type nominal
-(`Millicents`/`Cents` distincts) ; la porte CI est le cran d'en dessous, et elle
-est disponible tout de suite.
+Le dépôt avait 23 portes, dont une qui lit les schémas Postgres dans le
+`datasource` plutôt que de les recopier, et une qui interdit `new Date()` hors de
+l'adaptateur d'horloge. Il n'en avait **aucune** sur l'unité de l'argent — le
+seul endroit où se tromper coûte de l'argent.
+
+`lint:money-units` est la 24ᵉ. Elle refuse qu'un nom en `*Cents` reçoive une
+expression qui mentionne `Millicents` hors des conversions déclarées, **et
+l'inverse**. Elle suit chaque liaison jusqu'à la fin de son expression,
+parenthèses équilibrées : `D1` avait son nom et son `Millicents` fautif sur deux
+lignes différentes, donc une porte ligne à ligne n'aurait pas attrapé le défaut
+qui l'a fait écrire.
+
+**Elle a trouvé quatorze sites que cet audit n'avait pas vus, dont `D10`** — et
+`D10` est dans le sens que sa première version excluait, avec une raison écrite
+qui s'est révélée fausse au premier passage. C'est l'argument le plus net pour
+les portes de ce dépôt : elle a rapporté, dès son premier tour, plus que la
+lecture attentive qui l'avait commandée.
+
+C'est la hiérarchie déjà retenue ailleurs ici : rendre inexprimable plutôt que
+vérifier. L'inexprimable serait un type nominal (`Millicents` et `Cents`
+distincts au compilateur) ; la porte CI est le cran d'en dessous, et elle était
+disponible tout de suite.
 
 ---
 
@@ -471,18 +546,19 @@ aujourd'hui pour brancher les paliers croira que le front ne multiplie pas.
 
 Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 
-| Lot     | Ce qu'il fait                                                                                                                                                                                                       | Pourquoi maintenant                                                                |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                    | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                 |
-| **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                      | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                        |
-| **P3**  | `D6` : renommer les trois `*Cents` du simulateur, corriger les deux JSDoc. La porte de P2 les tient ensuite.                                                                                                        | Ce sont les modèles qu'on recopie.                                                 |
-| **P4**  | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                 | Une définition du TTC, pas deux.                                                   |
-| **P5**  | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                            | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.             |
-| **P6**  | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                    | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                 |
-| **P7**  | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                    | C'est la racine commune ; les trois autres en sont les symptômes.                  |
-| **P8**  | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                  | À faire quand on y touche, pas avant.                                              |
-| **P9**  | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                      | Un prix juste et inexplicable coûte un litige, pas un correctif.                   |
-| **P10** | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend. | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles. |
+| Lot        | Ce qu'il fait                                                                                                                                                                                                       | Pourquoi maintenant                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| ✅ **P1**  | `D1` : `subtotalCents` passe par `lineTotalCents`, la fixture prend de vrais millicentimes, un test de non-régression nommé d'après le symptôme.                                                                    | Un nombre faux est lu à voix haute par un commercial, aujourd'hui.                 |
+| ✅ **P2**  | La porte `lint:money-units` — refuse `*Cents` affecté depuis une expression `*Millicents`. Inventaire chiffré des sites existants, comme `lint:code-language`.                                                      | Sans elle, P1 et P3 se réécrivent tout seuls dans six mois.                        |
+| **P3**     | `D6` : renommer les trois `*Cents` du simulateur, corriger les deux JSDoc. La porte de P2 les tient ensuite.                                                                                                        | Ce sont les modèles qu'on recopie.                                                 |
+| **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                 | Une définition du TTC, pas deux.                                                   |
+| **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                            | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.             |
+| **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                    | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                 |
+| **P7**     | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                    | C'est la racine commune ; les trois autres en sont les symptômes.                  |
+| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                  | À faire quand on y touche, pas avant.                                              |
+| **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                      | Un prix juste et inexplicable coûte un litige, pas un correctif.                   |
+| 🔴 **P11** | `D10` : trancher l'unité des six appelants de `centsOf` / `eurosField`, puis **compter** les gabarits déjà posés sous le centime. La migration éventuelle est une décision d'Hugo.                                  | Un prix négocié entre en base au millième, et l'écran se relit juste.              |
+| **P10**    | La **couture pure** du §3 bis : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend. | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles. |
 
 **Deux lots demandent une conception, et les deux touchent à l'argent** : `P7`
 et `P10`. La convention du dépôt impose alors un contradicteur **avant** de les
