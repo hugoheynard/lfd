@@ -41,6 +41,7 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PointOfSaleReader } from "../src/pim/points-of-sale/domain/ports/point-of-sale.reader.js";
+import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
@@ -210,6 +211,15 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
       // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
       app.get(StaffAccessResolver).forgetAll();
+      // 🔴 Et les matériaux de prix, pour la MÊME raison — mais avec un piège en
+      // plus. En production, le cache est vidé par `PricingActWriter`, passage
+      // obligé de toute écriture tarifaire. Les suites, elles, sèment leurs
+      // règles **directement en base** (`ctx.prisma.priceRule.create`) : ce
+      // chemin-là ne le vide pas, et le `TRUNCATE` ci-dessus non plus.
+      //
+      // Sans cet oubli, une suite tarifierait avec les règles de la précédente
+      // — vertes ou rouges au hasard de l'ordre d'exécution.
+      app.get(PricingMaterialsCache).invalidate();
       await resetStorage();
     },
     // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et

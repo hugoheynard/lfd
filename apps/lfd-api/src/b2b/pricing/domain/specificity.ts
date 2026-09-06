@@ -98,7 +98,7 @@ export function matchesScope(scope: PriceScope, context: PricingContext): boolea
  * ni `company` ni `segment` : elle ne prend que les règles ouvertes à tous. Ce
  * n'est pas un cas limite, c'est le parcours par défaut de la boutique.
  */
-function matchesAudience(audience: PriceAudience, context: PricingContext): boolean {
+function matchesAudience(audience: PriceAudience, context: PricingAudienceOf): boolean {
   switch (audience.type) {
     case "all":
       return true;
@@ -148,6 +148,21 @@ function isSuspended(rule: { readonly suspendedFrom: Date | null }, at: Date): b
 }
 
 /**
+ * **Ce qu'il faut savoir pour juger fenêtre et audience** — l'instant et le
+ * client, rien de plus.
+ *
+ * Resserré sur les trois champs réellement lus, comme `inForceFor` l'a été sur
+ * ses items et pour la même raison : `PricingScopes` porte exactement ces
+ * trois-là sans être un contexte d'article, et le cache des matériaux doit
+ * pouvoir filtrer sans en inventer un.
+ */
+export interface PricingAudienceOf {
+  readonly at: Date;
+  readonly companyId: string | null;
+  readonly segmentId: string | null;
+}
+
+/**
  * Les étages dont le seuil parle du **contrat**, et non du panier.
  *
  * `mercuriale` et `volume` négocient une saison : « 10 000 baguettes sur
@@ -183,7 +198,7 @@ export function inForceFor<
     readonly validTo: Date | null;
     readonly suspendedFrom: Date | null;
   },
->(items: readonly T[], context: PricingContext): T[] {
+>(items: readonly T[], context: PricingAudienceOf): T[] {
   return items.filter(
     (item) =>
       isInForce(item, context.at) &&

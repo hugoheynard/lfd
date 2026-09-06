@@ -281,6 +281,77 @@ describe("la contrainte d'exclusion", () => {
   });
 });
 
+/**
+ * 🔴 **Le cache des matériaux ne doit pas mentir.**
+ *
+ * Les règles, planchers et barèmes sont gardés en mémoire entre deux écritures
+ * (`pricing-materials.cache.ts`) : quatre lectures par devis deviennent zéro. Le
+ * seul risque du lot est celui-ci — une règle posée qui ne s'applique pas, ou
+ * une règle retirée qui s'applique encore.
+ *
+ * Il tient à un fil : `PricingActWriter` vide le cache après le commit, et il
+ * doit voir **la même instance** que les lecteurs. Il vit dans
+ * `PricingAdminModule`, eux dans `PricingModule` : s'il en construisait une
+ * seconde, il viderait un cache que personne ne lit, et la boutique servirait le
+ * prix d'avant jusqu'au redémarrage de l'instance. Rien ne le dirait.
+ *
+ * Ces deux cas passent par la **vraie route staff**, jamais par un semis direct
+ * — c'est le chemin de l'invalidation qu'on éprouve, pas celui de la lecture.
+ */
+describe("une règle prise en compte sans redémarrer", () => {
+  /** Le staff, tel que cette suite l'appelle déjà pour le scellement. */
+  const staff = () => ctx.asSub(E2E_STAFF_SUB);
+
+  it("s'applique dès qu'elle est POSÉE, sur un prix déjà lu", async () => {
+    // La première commande peuple le cache : sans elle, le test passerait même
+    // si l'invalidation n'existait pas.
+    const avant = await placeOrder(1);
+    expect(await unitPriceOf(jsonBody<{ id: string }>(avant).id)).toBe(CANONICAL);
+
+    await staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        scope: { type: "global", id: null },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1000 },
+        label: "Promo à chaud",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+      })
+      .expect(201);
+
+    const apres = await placeOrder(1);
+    expect(await unitPriceOf(jsonBody<{ id: string }>(apres).id)).toBe(180);
+  });
+
+  it("cesse de s'appliquer dès qu'elle est RETIRÉE", async () => {
+    const created = await staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        scope: { type: "global", id: null },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1000 },
+        label: "Promo éphémère",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+      })
+      .expect(201);
+    const { id } = jsonBody<{ id: string }>(created);
+
+    const remisee = await placeOrder(1);
+    expect(await unitPriceOf(jsonBody<{ id: string }>(remisee).id)).toBe(180);
+
+    await staff().delete(`/admin/pricing/rules/${id}`).expect(204);
+
+    const pleinTarif = await placeOrder(1);
+    expect(await unitPriceOf(jsonBody<{ id: string }>(pleinTarif).id)).toBe(CANONICAL);
+  });
+});
+
 describe("une règle change le prix facturé", () => {
   it("sans règle, le prix reste celui du catalogue", async () => {
     const response = await placeOrder(1);

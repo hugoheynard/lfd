@@ -401,8 +401,11 @@ Trois choses ont été posées, dans cet ordre :
 
 1. **`inScopes` devient l'unique lecture** sur les trois ports, et
    `candidatesFor` se réécrit par-dessus — la forme retenue ci-dessous. La clause
-   de portée, qui était recopiée dans les trois adaptateurs, vit dans
-   `scope-filter.ts` ;
+   de portée, qui était recopiée dans les trois adaptateurs, a vécu dans
+   scope-filter.ts — **supprimé le 2026-09-06** : depuis que les matériaux sont
+   gardés en mémoire (`P12`), il n'y a plus de fil à ménager, et la portée est
+   rejugée par l'index. Élaguer une seconde fois aurait été la seconde vérité que
+   ce plan refuse ;
 2. **les matériaux sont chargés une fois** et rangés par `indexByScope` — le lot
    2 a enfin son consommateur ;
 3. **les preuves sont mesurées en amont, par lot.** La paresse est conservée : ce

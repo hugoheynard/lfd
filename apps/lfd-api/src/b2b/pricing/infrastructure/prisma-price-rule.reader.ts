@@ -1,16 +1,20 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { inForceFor } from "../domain/specificity.js";
+import { PRICING_CACHE_KEYS, PricingMaterialsCache } from "./pricing-materials.cache.js";
 import { PriceRuleReader } from "../domain/ports/price-rule.reader.js";
 import { unarchivedAt } from "./archived-at.js";
 import { ruleFromRow } from "./price-rows.js";
 import type { PriceRule } from "../domain/price-rule.js";
-import { scopeFilter } from "./scope-filter.js";
 import type { PricingScopes } from "../domain/pricing-scopes.js";
 
 @Injectable()
 export class PrismaPriceRuleReader extends PriceRuleReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: PricingMaterialsCache,
+  ) {
     super();
   }
 
@@ -28,17 +32,26 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
    * exactement ce qu'on veut d'un panier qui ne vise aucune famille.
    */
   async inScopes(scopes: PricingScopes): Promise<PriceRule[]> {
-    const rows = await this.prisma.priceRule.findMany({
-      where: {
-        // Élagage : une règle archivée ne peut plus rien facturer, et la
-        // fonction pure refiltre de toute façon sur `suspendedFrom`. Deux
-        // barrières pour la même chose, dont une seule est éprouvable sans base.
-        archivedAt: null,
-        validFrom: { lte: scopes.at },
-        OR: [{ validTo: null }, { validTo: { gt: scopes.at } }],
-        AND: [{ OR: scopeFilter(scopes) }, { OR: audienceFilter(scopes) }],
-      },
-    });
+    // 🔴 **La table entière, gardée en mémoire, puis triée ici.**
+    //
+    // Les règles changent quelques fois par semaine et se relisaient à chaque
+    // devis. Ce qui est gardé n'est pas la RÉPONSE — elle dépend de l'instant et
+    // du client, donc une clé neuve à presque chaque appel — mais la table. Le
+    // tri par fenêtre et par audience reste par requête, sur une liste déjà
+    // chargée : c'est une comparaison d'identifiants, pas une lecture.
+    //
+    // L'élagage par PORTÉE n'est plus fait : il servait à ne pas transporter
+    // des lignes depuis Postgres, et il n'y a plus de fil. La portée est de
+    // toute façon rejugée par l'index de `pricing-materials.ts`, dont
+    // l'équivalence à `matchesScope` est éprouvée. Le refaire ici serait la
+    // seconde vérité que `archived-at.ts` interdit.
+    const all = await this.cache.of(PRICING_CACHE_KEYS.rules, () => this.unarchived());
+    return inForceFor(all, scopes);
+  }
+
+  /** Toutes les règles vivantes — l'unique lecture que le cache retient. */
+  private async unarchived(): Promise<PriceRule[]> {
+    const rows = await this.prisma.priceRule.findMany({ where: { archivedAt: null } });
     return rows.map(ruleFromRow);
   }
 
@@ -65,21 +78,4 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
     });
     return rows.map(ruleFromRow);
   }
-}
-
-/**
- * Une commande **sans entreprise** (parcours zéro friction) ne prend que les
- * règles ouvertes à tous. Construire le filtre plutôt que d'écrire trois `OR`
- * inconditionnels évite de demander à Postgres `audience_id = NULL`, qui ne
- * correspond jamais et ferait passer la règle pour absente au lieu d'inapplicable.
- */
-function audienceFilter(scopes: PricingScopes): { audienceType: string; audienceId?: string }[] {
-  const clauses: { audienceType: string; audienceId?: string }[] = [{ audienceType: "all" }];
-  if (scopes.segmentId !== null) {
-    clauses.push({ audienceType: "segment", audienceId: scopes.segmentId });
-  }
-  if (scopes.companyId !== null) {
-    clauses.push({ audienceType: "company", audienceId: scopes.companyId });
-  }
-  return clauses;
 }
