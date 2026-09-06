@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b-ui/company';
@@ -40,7 +39,7 @@ interface Step {
 @Component({
   selector: 'app-activation-checklist',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CompanyActivationChecklist],
+  imports: [CompanyActivationChecklist],
   templateUrl: './activation-checklist.html',
   styleUrl: './activation-checklist.scss',
 })

@@ -1042,29 +1042,23 @@ function toProduct(row: Row): FoldProduct {
 /** Les 92 produits La Folie Coffee, copiés du PIM, en {@link FoldProduct}. */
 export const PRODUCTS: readonly FoldProduct[] = ROWS.map(toProduct);
 
-/** Prix **HT** numérique par SKU — pour les totaux du panier. */
-const PRICE_BY_SKU = new Map<string, number>(ROWS.map((r) => [r[0], r[3]]));
-
-/** Prix unitaire **HT** (€) d'un SKU ; 0 si inconnu. */
-export function priceEurOf(sku: string): number {
-  return PRICE_BY_SKU.get(sku) ?? 0;
-}
-
-/**
- * Taux de TVA du **produit** (en %) — piloté par la donnée. Catalogue alimentaire
- * (viennoiseries, pains, pâtisseries) → **5,5 %** par défaut ; un rare SKU
- * non-alimentaire se surcharge ci-dessous à 20 %. Miroir du catalogue serveur
- * (autorité au checkout) : le panier n'affiche qu'un **aperçu** de la TVA.
+/*
+ * 🔴 **`priceEurOf`, `PRICE_BY_SKU` et `vatRateOf` sont partis le 2026-09-06**,
+ * avec le panier hérité — leur seul appelant.
+ *
+ * C'était `D7` : le panier sommait des `number` en euros, contre la règle que
+ * `CLAUDE.md` écrit à la lettre (« argent en centimes, entiers ; jamais de
+ * flottant »). Il ne restait plus qu'à retirer la source une fois les
+ * consommateurs partis.
+ *
+ * Et `vatRateOf` inventait un taux : 5,5 % par défaut, pour tout SKU, depuis
+ * une table de surcharges vide. C'est exactement le repli que le serveur a
+ * refusé le même jour (`D8`) — sauf qu'ici il n'y avait même pas de famille
+ * derrière, juste une constante.
+ *
+ * Ce qui reste de ce fichier est ce que les COMMANDES lisent pour s'afficher :
+ * des noms, des libellés, une mise en forme. Aucun montant n'en sort.
  */
-const DEFAULT_FOOD_VAT_RATE = 5.5;
-const VAT_RATE_OVERRIDES: Readonly<Record<string, number>> = {
-  // Ex. : 'GOO-001': 20  (non-alimentaire → taux normal)
-};
-
-/** Taux de TVA (%) d'un SKU ; 5,5 % par défaut (alimentaire). */
-export function vatRateOf(sku: string): number {
-  return VAT_RATE_OVERRIDES[sku] ?? DEFAULT_FOOD_VAT_RATE;
-}
 
 /** Produit (modèle d'affichage) par id ; `undefined` si absent. */
 const PRODUCT_BY_ID = new Map<string, FoldProduct>(PRODUCTS.map((p) => [p.id, p]));

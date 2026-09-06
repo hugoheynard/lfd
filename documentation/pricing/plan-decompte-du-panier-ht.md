@@ -267,7 +267,7 @@ localement. **C'est la recommandation.**
 
 > ✅ **B est livré le 2026-09-05 (B1).** `ventilateVat` vit dans
 > `packages/money/src/vat.ts`. Il y avait **trois** copies, pas deux : le
-> domaine `orders`, le panier de la boutique, et `legacy/data/vat.ts`, dont
+> domaine `orders`, le panier de la boutique, et legacy/data/vat.ts, dont
 > l'en-tête assumait la duplication en toutes lettres. Les trois délèguent
 > désormais. Un changement de comportement à connaître : un extra rejoint le
 > **groupe de son taux** au lieu d'être arrondi à part, ce qui peut déplacer un
@@ -363,7 +363,8 @@ session. Ce qu'il aurait pu attraper reste donc à relire à la main.
 **Ce que la mise en œuvre a appris, et que le plan ne disait pas** :
 
 - il y avait **trois** implémentations de la ventilation, pas deux —
-  `legacy/data/vat.ts` en portait une, et son propre en-tête l'assumait ;
+  legacy/data/vat.ts en portait une, et son propre en-tête l'assumait
+  (fichier supprimé le 2026-09-06, avec le panier hérité) ;
 - la remise ne divergeait effectivement pas (§4.5), et la bascule s'est donc
   faite sans qu'aucun total de marchandise ne bouge : le seul nombre modifié est
   celui d'une livraison ;

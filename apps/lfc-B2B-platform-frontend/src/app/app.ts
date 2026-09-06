@@ -12,7 +12,6 @@ import { filter, map } from 'rxjs';
 import {
   FoldAppShellComponent,
   FoldButtonIconComponent,
-  FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
   FoldNavLauncherComponent,
@@ -27,9 +26,7 @@ import {
 import { AccountService } from './account/account.service';
 import { ClientShell } from './client/shell/client-shell';
 import { AuthFacade } from './auth/auth.facade';
-import { CartPanel } from './legacy/cart/cart-panel/cart-panel';
 import { ContactPanel } from './legacy/contact/contact-panel/contact-panel';
-import { CartService } from './legacy/data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
 import { SiteFooter } from './legacy/footer/site-footer';
 
@@ -56,7 +53,6 @@ export function servedByClientShell(route: ActivatedRouteSnapshot): boolean {
     RouterLinkActive,
     FoldAppShellComponent,
     FoldButtonIconComponent,
-    FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
     FoldNavLauncherComponent,
@@ -114,7 +110,6 @@ export class App {
   });
 
   private readonly panelHost = inject(FoldPanelHostService);
-  protected readonly cart = inject(CartService);
   protected readonly auth = inject(AuthFacade);
   /**
    * Injecté ici même si le template ne lit que `displayEmail` : c'est ce qui
@@ -123,30 +118,9 @@ export class App {
    */
   protected readonly account = inject(AccountService);
 
-  /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
-  private cartOpen = false;
-
   /** Ouvre le panneau **contact** (contact direct / prise de RDV). */
   protected openContact(): void {
     this.panelHost.open(ContactPanel);
-  }
-
-  /**
-   * Ouvre le panneau panier — le host est mono-panneau, il remplace l'existant.
-   *
-   * Déclenché **uniquement** par le clic sur l'icône : ajouter un produit ne
-   * l'ouvre plus, le badge du déclencheur suffisant comme retour.
-   */
-  protected openCart(): void {
-    if (this.cartOpen) {
-      return;
-    }
-    this.cartOpen = true;
-    // Panier = non-modal + surface solid, déclaré sur CartPanel.foldPanel.
-    const ref = this.panelHost.open(CartPanel);
-    void ref.closed.then(() => {
-      this.cartOpen = false;
-    });
   }
 
   /**

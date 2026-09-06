@@ -42,20 +42,20 @@ paiement, et le référentiel en amont du miroir.
 
 ## A.0 Le tableau, en un écran
 
-**Deux défauts, et aucun ne fausse une facture aujourd'hui.**
+**Un défaut, et il ne fausse aucune facture.**
 
-| Défaut        | Ce que c'est                                                                                                                                  | Le lot  |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| **D7** 🟡     | Le panier hérité compte en euros **flottants** — contredit `CLAUDE.md` à la lettre. Faible portée (`legacy/`), mais c'est du code qui tourne. | `P8`    |
-| ~~**D8**~~ ✅ | **Refermé le 2026-09-06.** Le repli de TVA par famille est retiré des DEUX lecteurs — celui qui facture, et celui qui affiche.                | ✅ `P6` |
-| **D9** 🟡     | `minQuantity` veut dire **deux choses** selon l'étage, sous le même nom et le même champ. Le prix sera juste et inexplicable.                 | `P9`    |
+| Défaut        | Ce que c'est                                                                                                                     | Le lot  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| ~~**D7**~~ ✅ | **Refermé le 2026-09-06, par suppression.** L'espace pro hérité n'était plus routé depuis le 2026-08-27 ; 4 958 lignes en moins. | ✅ `P8` |
+| ~~**D8**~~ ✅ | **Refermé le 2026-09-06.** Le repli de TVA par famille est retiré des DEUX lecteurs — celui qui facture, et celui qui affiche.   | ✅ `P6` |
+| **D9** 🟡     | `minQuantity` veut dire **deux choses** selon l'étage, sous le même nom et le même champ. Le prix sera juste et inexplicable.    | `P9`    |
 
-**Trois lots restent.**
+**Deux lots restent.**
 
 | Lot        | Ce qu'il fait                                                                                                                                                                                                                  | Ce qui le bloque                                |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | ✅ **P6**  | **Livré le 2026-09-06.** Retiré des deux lecteurs, et le semis e2e pose enfin le taux sur l'article. La mesure de production reste utile — non plus pour décider, mais pour savoir **combien d'articles quittent la vitrine**. | —                                               |
-| **P8**     | Le panier hérité passe en centimes entiers — `D7`.                                                                                                                                                                             | Rien. À faire quand on y touche, pas avant.     |
+| ✅ **P8**  | **Livré le 2026-09-06 — en supprimant, pas en convertissant.** Le panier, la boutique et le catalogue hérités, plus le tunnel de commande.                                                                                     | —                                               |
 | **P9**     | Nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil — `D9`.                                                                                                                                             | Rien. C'est un défaut de **nom**, pas de motif. |
 | **P12** 🟡 | Garder les règles de prix en mémoire, invalidées à l'écriture : 4 lectures par devis deviennent 1.                                                                                                                             | Rien. C'est le facteur restant le plus net.     |
 
@@ -92,17 +92,39 @@ depuis le 2026-09-06 ; les lignes déjà écrites ne sont pas touchées.
 psql "$DATABASE_LFD_URL_PROD" -c "SELECT count(*) FROM orders WHERE discount_cents > subtotal_cents;"
 ```
 
-## A.2 Les deux défauts, en détail
+## A.2 Le défaut ouvert, et les deux refermés le 2026-09-06
 
-### D7 🟡 Le panier hérité compte en euros flottants
+### D7 ✅ Le panier hérité comptait en euros flottants — refermé le 2026-09-06
 
-`legacy/data/cart.service.ts` : `lineTotalEur`, `subtotalHtEur`, `vatTotalEur`,
+> **Refermé par SUPPRESSION, pas par conversion**, et c'est la bonne réponse
+> pour une raison que cette section avait ratée : `FEATURE_PRO_SPACE = false`
+> depuis le 2026-08-27. Ce panier ne tournait pas — il compilait.
+>
+> Convertir aurait coûté huit fichiers, 93 rangées de semis et une décision sur
+> un modèle partagé (`FoldProduct.priceValue`), sur du code qu'aucune adresse
+> n'atteignait. Le supprimer a coûté **4 958 lignes en moins**.
+>
+> Sont partis avec : le panier, la boutique et le catalogue hérités, le tunnel
+> de commande, `priceEurOf` et `vatRateOf` — ce dernier inventait 5,5 % pour
+> tout SKU depuis une table de surcharges vide, le même repli que `D8` refusait
+> le même jour, sans même une famille derrière.
+>
+> ⚠️ **Une fonctionnalité disparaît du produit** : « Mes paniers », le panier
+> enregistré et réutilisable. Aucun équivalent dans l'app cliente.
+
+### D7 — l'état d'origine, pour mémoire
+
+legacy/data/cart.service.ts : `lineTotalEur`, `subtotalHtEur`, `vatTotalEur`,
 `totalTtcEur` — des sommes de flottants. La TVA, elle, a été rendue à
 `@lfd/money` le 2026-09-05 ; le sous-total et le total ne l'ont pas été.
 
 Contredit frontalement `CLAUDE.md` : « **Argent en centimes**, entiers. Jamais de
 flottant. » Dans `legacy/`, donc à faible portée — mais c'est du code qui tourne,
 pas un dossier mort.
+
+> ⚠️ **La dernière phrase était fausse à l'écriture** (2026-09-05) : le drapeau
+> était coupé depuis neuf jours. C'est la faute que `P5` a nommée — décrire
+> l'existant de mémoire.
 
 ### D8 ✅ Le repli de TVA par famille — refermé le 2026-09-06
 
@@ -447,7 +469,7 @@ consommateur, et une raison de finir.
 | ~~« il demande `POST /orders/quote` »~~         | ✅ **tenu, par une autre route** — `POST /shop/quote`, publique. Celle du **B.5** est murée            | idem                               |
 | ~~le canonique **barré** quand il diffère~~     | ⤳ **décision renversée** — la vitrine est publique, donc sans client : aucun écart à barrer            | idem, §4                           |
 | ~~« la validation vit dans le domaine »~~       | ✅ **tenu** — remise et frais viennent de `CartAdjustments`, partagé avec la caisse                    | `CLAUDE.md` §3                     |
-| « argent en centimes, entiers »                 | 🟡 **toujours faux** — le panier hérité compte en `…Eur` flottants (`D7` → `P8`)                       | `CLAUDE.md` §3                     |
+| ~~« argent en centimes, entiers »~~             | ✅ **tenu** — le panier hérité qui comptait en `…Eur` flottants est supprimé (`D7` → `P8`)             | `CLAUDE.md` §3                     |
 | ~~le repli de TVA par famille est transitoire~~ | ✅ **retiré le 2026-09-06** — `billableRate` ne lit plus que le taux de l'article (`D8` → `P6`)        | `prisma-catalog.reader.ts`         |
 
 ⚠️ **Un renversement n'est pas une dette.** La troisième ligne n'est pas un
@@ -934,7 +956,7 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | ✅ **P6**  | `D8` : retirer le repli de TVA par famille des DEUX lecteurs — celui qui facture et celui qui affiche. Le semis e2e posait le taux sur la famille : 140 tests passaient grâce au repli.                                                            | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
 | ✅ **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                                      | Le serveur sait enfin répondre « combien » avant la commande.                                   |
 | ✅ **P7b** | La boutique appelle la route et ne calcule plus rien. `ServiceChoice` porte une identité, plus un montant. Points et zones hydratés des routes publiques. Ferme `D2` et `D3`.                                                                      | Le client voyait un montant et en aurait payé un autre.                                         |
-| **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                                 | À faire quand on y touche, pas avant.                                                           |
+| ✅ **P8**  | `D7` : supprimer le panier hérité plutôt que le convertir — il n'était plus routé.                                                                                                                                                                 | À faire quand on y touche, pas avant.                                                           |
 | **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                                     | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
 | ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est en **C.1**, `D10`.    | Un prix négocié entrait en base au millième.                                                    |
 | ✅ **P10** | La **couture pure** du **B.3** : `priceLine(materials, evidence, context)`. Requalifier le lot 3 de `plan-materiaux-de-prix.md` en lot de **conception**, et lui donner le consommateur que `scope-index.ts` attend.                               | La recette qui fabrique un prix n'est aujourd'hui éprouvable qu'avec sept doubles.              |

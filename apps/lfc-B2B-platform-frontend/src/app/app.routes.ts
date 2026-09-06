@@ -30,38 +30,16 @@ const homeRoute: Route = FEATURE_DASHBOARD
  */
 const proRoutes: Routes = FEATURE_PRO_SPACE
   ? [
-      {
-        path: 'boutique',
-        title: 'Boutique — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () =>
-          import('./legacy/boutique/boutique-page/boutique-page').then((m) => m.ShopPage),
-      },
+      // 🔴 `boutique`, `panier`, `mes-paniers` et `mes-paniers/:id` sont parties
+      // avec le panier hérité, le 2026-09-06. L'app cliente porte sa boutique et
+      // son panier ; garder les deux, c'était garder deux vérités sur le même
+      // client. Ce qui reste ici — commandes, entreprises, réglages — ne dépend
+      // pas du panier et n'a pas encore d'équivalent client.
+      //
+      // ⚠️ **« Mes paniers » n'existe nulle part ailleurs.** Le panier
+      // enregistré, nommé, réutilisable, est la seule fonctionnalité que cette
+      // suppression retire du produit — cf. le commit.
       homeRoute,
-      {
-        path: 'panier',
-        title: 'Panier — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () => import('./legacy/cart/cart-page/cart-page').then((m) => m.CartPage),
-      },
-      {
-        path: 'mes-paniers',
-        title: 'Mes paniers — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () =>
-          import('./legacy/cart/saved-baskets-page/saved-baskets-page').then(
-            (m) => m.SavedBasketsPage,
-          ),
-      },
-      {
-        path: 'mes-paniers/:id',
-        title: 'Panier enregistré — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () =>
-          import('./legacy/cart/basket-detail-page/basket-detail-page').then(
-            (m) => m.BasketDetailPage,
-          ),
-      },
       {
         path: 'commandes',
         title: 'Mes commandes — La Folie Coffee B2B',
