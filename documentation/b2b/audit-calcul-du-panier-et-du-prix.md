@@ -211,7 +211,7 @@ Trois écarts, du plus grave au plus léger :
    « centimes, entiers », et la conversion tardive est précisément ce qui la
    contourne sans en avoir l'air.
 
-### D4 🟠 Le devis ne rend ni TVA ni total — et c'est assumé
+### D4 🟡 Le devis ne rendait ni TVA ni total — une moitié fermée le 2026-09-06
 
 `OrderQuoteView` porte `lines` et `subtotalCents`, point. `OrderDrafting.quote`
 l'explique, et l'argument tient :
@@ -234,6 +234,38 @@ valider.
 devis qui reçoit le mode, le point ou la zone, et rend le décompte complet en
 appelant `ventilateVat` — la même fonction que `Order.draft`. Le devis reste une
 lecture, il ne crée rien.
+
+#### ✅ Le serveur le fait depuis le 2026-09-06 — `POST /shop/quote`
+
+**Une route de plus, et pas un élargissement de `POST /orders/quote`.** Le devis
+client rend un prix **négocié** : il se mure comme la commande qui l'appliquerait.
+La boutique est publique **par décision** — un prospect sans compte doit voir sa
+vitrine et son total —, et l'ouvrir aux anonymes aurait mêlé deux publics sur une
+surface murée. C'est le « second chemin » que `shop-catalogue.controller.ts`
+annonçait, écrit un an avant d'être utile.
+
+Trois règles y vivent, et aucune n'est réécrite :
+
+1. le prix se résout **à la quantité**, par le service qui facture — donc le jour
+   où un barème de volume ouvert à tous existe, le décompte est déjà juste ;
+2. la remise et les frais viennent de **la base**, par un service désormais
+   partagé avec la caisse (`CartAdjustments`) — extrait du privé d'`OrderDrafting`
+   pour que le devis n'en écrive pas une seconde version ;
+3. la TVA se ventile par **`ventilateVat`**, la fonction même qu'`Order.draft`
+   appelle.
+
+Onze e2e la tiennent sur du vrai Postgres, dont un qui **énumère les clés** de la
+réponse : elle est servie sans jeton, et un champ ajouté par mégarde — un libellé
+de règle, un plancher, donc une marge — serait public le jour du déploiement.
+
+⚠️ **`companyId` y est `null`, et ce n'est pas une approximation** : seules les
+règles ouvertes à tous s'appliquent, ce qui EST ce qu'un visiteur paie. Un compte
+négocié paiera moins, et cette route ne peut pas le savoir — elle n'a pas de
+client.
+
+**Il reste la moitié front.** Tant que la boutique n'appelle pas cette route,
+`D2` et `D3` restent ouverts : le navigateur continue de multiplier et de lire
+sa remise dans `mock-station.ts`.
 
 ### D5 🟡 Le total est calculé deux fois, à deux endroits
 
@@ -694,7 +726,8 @@ Ordonnés par **ce que se tromper coûte**, pas par difficulté.
 | **P4**     | `D5` : `Order.draft` prend le `totalCents` de `ventilateVat` au lieu de le refaire.                                                                                                                                                        | Une définition du TTC, pas deux.                                                                |
 | **P5**     | Dater `architecture-prix-boutique.md`, corriger les deux lignes d'index.                                                                                                                                                                   | Une doc périmée gèle un chantier ; un bandeau daté coûte cinq minutes.                          |
 | **P6**     | `D8` : mesurer les articles sans taux propre en production, puis retirer le repli si c'est zéro.                                                                                                                                           | Une ligne facturée ne doit pas dépendre d'une jointure de famille.                              |
-| **P7**     | `D4` : le devis rend le décompte complet en recevant l'acheminement. **Ferme `D2` et `D3` en même temps** — la boutique cesse alors de calculer.                                                                                           | C'est la racine commune ; les trois autres en sont les symptômes.                               |
+| 🟡 **P7a** | ✅ `D4` : `POST /shop/quote`, public, rend le décompte complet — prix résolu à la quantité, remise et frais de la base par un service partagé avec la caisse, TVA par `ventilateVat`. 11 e2e.                                              | Le serveur sait enfin répondre « combien » avant la commande.                                   |
+| 🔴 **P7b** | La **boutique appelle la route** et cesse de calculer. Ferme `D2` (le front multiplie) et `D3` (remise et frais de maquette). Touche aussi les dialogues de retrait et d'adresse, qui lisent `mock-station.ts`.                            | Tant qu'elle ne l'appelle pas, le client voit un montant et en paiera un autre.                 |
 | **P8**     | `D7` : le panier hérité passe en centimes entiers.                                                                                                                                                                                         | À faire quand on y touche, pas avant.                                                           |
 | **P9**     | `D9` : nommer les deux mesures de quantité, ou afficher la mesure à côté du seuil sur l'écran de tarification.                                                                                                                             | Un prix juste et inexplicable coûte un litige, pas un correctif.                                |
 | ✅ **P11** | `D10` : `price-field.ts` parle millicentimes — `millicentsOf` / `millicentsField`, cinq décimales et conversion exacte. **Sous l'hypothèse que la production ne porte aucun gabarit récent** ; la requête qui la vérifie est au §3, `D10`. | Un prix négocié entrait en base au millième.                                                    |

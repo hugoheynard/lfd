@@ -8,7 +8,10 @@ import type {
 
 import { decideFloor } from "../../../pricing/domain/floor-policy.js";
 import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
-import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
+import {
+  pricingContextFor,
+  type PricingParties,
+} from "../../../pricing/application/pricing-context.js";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
 import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
@@ -26,7 +29,6 @@ import { UnknownSkuError } from "../../domain/errors/order-errors.js";
 import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
 import type { VolumeCommitment } from "../../../pricing/domain/volume-commitment.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
-import type { OrderParties } from "./order-parties.js";
 import { Clock } from "../../../../platform/time/clock.js";
 
 /**
@@ -91,6 +93,12 @@ export class OrderLinePricing {
    * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune —
    * c'est ici que le prix devient autoritaire, jamais celui du client.
    *
+   * ⚠️ **`PricingParties` et non `OrderParties`** : ce service ne lit que le
+   * `companyId`. Le port s'est resserré le 2026-09-06 pour que le devis PUBLIC
+   * de la boutique puisse l'appeler — il n'a pas de saisisseur à nommer, et lui
+   * en inventer un aurait mis une fausse identité sur le chemin qui tarife.
+   * `OrderParties` reste structurellement compatible : aucun appelant ne change.
+   *
    * Trois étapes, dans cet ordre : le **catalogue** donne le prix canonique, les
    * **règles tarifaires** l'altèrent, et le **plancher** arbitre le résultat. La
    * fusion par SKU précède les trois, et c'est ce qui rend le palier de volume
@@ -101,7 +109,7 @@ export class OrderLinePricing {
    */
   async resolve(
     input: readonly OrderLineRequest[],
-    parties: OrderParties,
+    parties: PricingParties,
   ): Promise<ResolvedOrderLine[]> {
     return this.priceAll(input, parties, false);
   }
@@ -117,14 +125,14 @@ export class OrderLinePricing {
    */
   async explain(
     input: readonly OrderLineRequest[],
-    parties: OrderParties,
+    parties: PricingParties,
   ): Promise<ResolvedOrderLine[]> {
     return this.priceAll(input, parties, true);
   }
 
   private async priceAll(
     input: readonly OrderLineRequest[],
-    parties: OrderParties,
+    parties: PricingParties,
     withTiers: boolean,
   ): Promise<ResolvedOrderLine[]> {
     const quantities = new Map<string, number>();
@@ -175,7 +183,7 @@ export class OrderLinePricing {
       allergens: OrderLineAllergens | null;
     },
     quantity: number,
-    parties: OrderParties,
+    parties: PricingParties,
     at: Date,
     withTiers: boolean,
     live: readonly VolumeCommitment[],

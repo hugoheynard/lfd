@@ -10,8 +10,7 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import { CatalogVersionReader } from "../../../catalog/domain/ports/catalog-version.reader.js";
-import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
-import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
+import { CartAdjustments } from "./cart-adjustments.service.js";
 import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
 import {
   DeliveryDefaultsReader,
@@ -25,9 +24,7 @@ import {
 import { Order } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
-  NoDeliveryZoneForPostalCodeError,
   PickupClosedAtRequestedTimeError,
-  PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -110,8 +107,7 @@ export class OrderDrafting {
   constructor(
     private readonly linePricing: OrderLinePricing,
     private readonly catalogVersions: CatalogVersionReader,
-    private readonly pickups: PickupAddressRepository,
-    private readonly zones: DeliveryZoneRepository,
+    private readonly adjustments: CartAdjustments,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
     private readonly cutoffs: OrderCutoffReader,
     private readonly clock: Clock,
@@ -320,23 +316,26 @@ export class OrderDrafting {
     subtotalCents: number,
   ): Promise<ResolvedFulfillment> {
     if (content.fulfillmentMethod === "pickup") {
-      const point = await this.pickups.resolve(content.pickupAddressId);
-      if (point === null) {
-        throw new PickupNotConfiguredError();
-      }
+      // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
+      // implémentations de « quelle remise s'applique » finiraient par annoncer
+      // un montant que la caisse contredit.
+      const retrait = await this.adjustments.forPickup(content.pickupAddressId, subtotalCents);
       // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
       // dans leur union : entre le créneau pro et l'ouverture publique il peut y
       // avoir porte close, et l'accepter serait promettre une remise impossible.
-      if (!windowFitsPickup(content.requestedWindow ?? null, point.opening)) {
+      //
+      // Ce contrôle-ci reste à la CAISSE : un devis n'a pas de tranche demandée,
+      // et le lui imposer refuserait un panier qu'on veut seulement chiffrer.
+      if (!windowFitsPickup(content.requestedWindow ?? null, retrait.point.opening)) {
         throw new PickupClosedAtRequestedTimeError();
       }
       return {
-        pickupAddressId: point.id,
+        pickupAddressId: retrait.point.id,
         deliveryZoneId: null,
         deliveryAddress: null,
-        pickupAddress: toSnapshot(point),
-        discountCents: point.discount ? cartAdjustmentCents(point.discount, subtotalCents) : 0,
-        discountAdjustment: point.discount,
+        pickupAddress: toSnapshot(retrait.point),
+        discountCents: retrait.discountCents,
+        discountAdjustment: retrait.discountAdjustment,
         deliveryFeeCents: 0,
       };
     }
@@ -347,20 +346,18 @@ export class OrderDrafting {
       throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
     }
     // La zone se DÉDUIT du code postal livré : c'est une propriété de l'adresse,
-    // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le sien.
-    const zone = await this.zones.resolveForPostalCode(address.codePostal);
-    if (zone === null) {
-      throw new NoDeliveryZoneForPostalCodeError(address.codePostal);
-    }
+    // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le
+    // sien — et le devis de la boutique le déduit par la même fonction.
+    const coursier = await this.adjustments.forDelivery(address.codePostal, subtotalCents);
     return {
       pickupAddressId: null,
-      deliveryZoneId: zone.id,
+      deliveryZoneId: coursier.zone.id,
       deliveryAddress: address,
       pickupAddress: null,
       discountCents: 0,
       // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
       discountAdjustment: null,
-      deliveryFeeCents: cartAdjustmentCents(zone.fee, subtotalCents),
+      deliveryFeeCents: coursier.feeCents,
     };
   }
 }

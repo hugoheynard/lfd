@@ -37,6 +37,7 @@ import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.r
 import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladder.reader.js";
 import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
+import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
@@ -263,8 +264,7 @@ function drafting(
       new FixedClock(PRICED_AT),
     ),
     versions,
-    pickupsDouble,
-    zonesDouble,
+    new CartAdjustments(pickupsDouble, zonesDouble),
     noDeliveryDefaults(),
     noOrderCutoffs,
     new FixedClock(PRICED_AT),

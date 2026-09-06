@@ -327,6 +327,19 @@ export type {
   ShopItemView,
   ShopShelfView,
 } from "./shop-catalogue.js";
+export {
+  shopQuoteLineSchema,
+  shopQuoteFulfillmentSchema,
+  shopQuotePayloadSchema,
+} from "./shop-quote.js";
+export type {
+  ShopQuoteFulfillment,
+  ShopQuoteLinePayload,
+  ShopQuoteLineView,
+  ShopQuotePayload,
+  ShopQuoteVatShare,
+  ShopQuoteView,
+} from "./shop-quote.js";
 export type {
   CreatedOrderCutoffWaiverResponse,
   OrderCutoffWaiverPayload,

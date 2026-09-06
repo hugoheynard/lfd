@@ -15,6 +15,9 @@ import { PlaceOrderForCustomerHandler } from "./application/commands/place-order
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
+import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
+import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
+import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
@@ -81,10 +84,15 @@ import { OrdersController } from "./http/orders.controller.js";
     AdminOrderDraftsController,
     AdminCatalogController,
     AdminHandoverController,
+    // La seule surface PUBLIQUE de ce contexte. Rangée avec les autres parce
+    // qu'elle tarife un panier — c'est un sujet de commande, pas de catalogue —
+    // et son absence de jeton est écrite dans son en-tête, pas dans sa place.
+    ShopQuoteController,
   ],
   providers: [
     OrderDrafting,
     OrderLinePricing,
+    CartAdjustments,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,
@@ -99,6 +107,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
+    QuoteShopCartHandler,
     GetHandoverHandler,
     ConfirmHandoverHandler,
     GetOrderDraftHandler,
