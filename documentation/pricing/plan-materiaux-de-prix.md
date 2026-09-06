@@ -1,20 +1,48 @@
 # Les matériaux de prix — charger une fois, sans que le CPU reprenne la facture
 
-**Ouvert le 2026-09-04. Contredit le jour même ; deux promesses retirées.**
+**État : ✅ les cinq lots sont livrés** (0 à 4 ; le dernier le 2026-09-06).
+**Relu et découpé le 2026-09-06.**
 
-> Ce plan touche **l'argent** : il change quand les règles qui fabriquent un prix
-> sont chargées. Il ne change **aucun prix**.
+> ## En trois phrases
 >
-> ⚠️ **Sa première version promettait « résoudre en O(1) »** et un lot 1 qui
-> donnait au plancher un `suspendedFrom`. Les deux étaient faux, et le sont dits
-> ici plutôt qu'effacés — §2 et §3.
+> Les règles, planchers et barèmes sont chargés **une fois par appel** à
+> `priceAll` au lieu d'une fois par article : de `3 × N` lectures à `3`.
+>
+> 🔴 **Ce plan n'accélère RIEN**, et c'est le contresens qu'il faut éviter en le
+> lisant. L'index qu'il pose n'est pas un gain de vitesse : il empêche le CPU de
+> reprendre en `articles × règles` ce que les lectures viennent de rendre. La
+> partie A l'explique, et c'est la seule chose de ce document qui ne périmera
+> pas.
+>
+> Le lot 3 s'est révélé être un lot de **conception**, pas de coût : ce qu'il
+> apporte vraiment est une couture — `priceLine` est pure, et la recette qui
+> fabrique un prix s'éprouve désormais sans un seul doublé.
+
+> ## Comment lire ce document
+>
+> | Partie                           | Ce qu'elle contient                                                                       |
+> | -------------------------------- | ----------------------------------------------------------------------------------------- |
+> | **A · Ce qu'il faut en retenir** | pourquoi l'index n'est pas une optimisation, et ce qui reste irréductiblement par article |
+> | **B · Ce qui reste ouvert**      | la porte jamais franchie sur un chiffre, et ce qu'on refuse toujours de partager          |
+> | **C · Le journal des cinq lots** | chacun avec ce qu'il a livré **et** ce qu'il a démenti                                    |
+>
+> ⚠️ **La partie C dément la partie C.** Chaque lot porte un encart « livré » qui
+> corrige ce que son propre plan annonçait — une cible fausse, deux filtres au
+> lieu d'un, un module sans appelant. C'est ce qui en fait un journal utile, et
+> ce qui interdit de l'implémenter tel quel.
+
+> Ce document touche **l'argent** : il change quand les règles qui fabriquent un
+> prix sont chargées. Il ne change **aucun prix**.
 >
 > Il suppose lu [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md),
 > qui établit que l'unité de coût est **l'opération facturée**, pas le temps.
+> Voir aussi [`README.md`](README.md) pour la chaîne complète.
 
 ---
 
-## 1. Ce que le plan fait, et ce qu'il ne fait pas
+# A · Ce qu'il faut en retenir
+
+## A.1 Ce que le plan fait, et ce qu'il ne fait pas
 
 **Il fait** : charger les règles, planchers et barèmes **une fois par appel** à
 `priceAll` au lieu d'une fois par article — de `3 × N` lectures à `3`.
@@ -28,10 +56,10 @@ document a d'abord été écrit sans lui, ce qui était incohérent : il affirma
 
 ⚠️ Et son gain s'est révélé **plus petit qu'annoncé** en le construisant : au
 comptoir, chaque appel correspond à une intention, et seuls les gestes redondants
-se retirent (§3). « Le front rend plus » reste vrai pour la **boutique**, qui peut
+se retirent (**C.1**). « Le front rend plus » reste vrai pour la **boutique**, qui peut
 hydrater ; pas pour la saisie assistée.
 
-## 2. 🔴 Ce que l'index N'EST PAS : un gain de vitesse
+## A.2 🔴 Ce que l'index N'EST PAS : un gain de vitesse
 
 La première version titrait « résoudre en O(1) », sur un plafond de « deux règles
 par clé de portée » tiré de la contrainte d'exclusion. **Les deux étaient faux.**
@@ -62,7 +90,84 @@ les lectures tombent.
 > **Le seul gain de ce plan est le compte d'opérations facturées.** Tout ce qui
 > ressemble à de la vitesse est du maintien.
 
-## 3. Lot 0 — le front cesse de demander à chaque frappe
+## A.3 Ce qui reste irréductiblement par article, et pourquoi
+
+- **la décision d'engagement** — elle dépend de la quantité et du cumul, que le
+  `WHERE` n'utilise pas. C'est ce qui rend le hissage possible ;
+- **la mesure de volume du plancher dynamique** — deux lectures conditionnelles.
+  « Rares » est une affirmation sur la **donnée configurée**, pas sur le code : un
+  plancher **global** à porte de volume les rendrait obligatoires sur chaque
+  ligne. Batchables (mêmes fenêtres pour tout le panier), **lot suivant**.
+
+---
+
+# B · Ce qui reste ouvert
+
+## B.1 🔴 Ce qu'on ne fait toujours PAS : partager `resolvePrice`
+
+La tentation est réelle — le moteur est une fonction **pure**, elle se partagerait
+techniquement. Trois raisons de ne pas le faire, et ce sont des faits :
+
+- **ses entrées sont le secret.** Résoudre localement demande toutes les règles,
+  avec leurs libellés commerciaux, et tous les planchers — or un plancher **est**
+  la marge. C'est ce que `CustomerOrderQuoteView` vient de retirer de la surface
+  client ; le remettre en entier dans un navigateur serait strictement pire ;
+- **il lui manque de la donnée serveur** : `observedRatio` lit l'historique de
+  volume par SKU, la décision d'engagement lit le cumul commandé du client ;
+- **il lui manque l'horloge.** `resolvePrice` prend un `at` ; côté front ce serait
+  celle du poste du client, et une promotion expirerait selon l'heure de son
+  téléphone. C'est exactement ce que le port `Clock` existe pour empêcher.
+
+> **La règle, et elle vaut au-delà du prix :** vers notre propre serveur, on peut
+> faire traverser les **règles** — c'est ce que fait la v7 du fil pour l'heure
+> limite. Vers un **navigateur**, seulement le **résolu**. Le snapshot de
+> catalogue tient depuis toujours par cette ligne.
+
+## B.2 La porte — jamais franchie sur un chiffre
+
+`optimisation-resolution-de-prix.md` §6 : si `priceAll` pèse **moins de 20 %** des
+opérations facturées, les lots 2 et 3 ne s'ouvrent pas. Le **lot 1 fait
+exception** — c'est un test qui manque, pas un coût.
+
+⚠️ **Et une dette que ce plan ne crée pas mais ne doit pas bénir** : `archivedAt`
+en SQL est une exclusion **absolue**, `isSuspended(rule, at)` une comparaison **à
+l'instant demandé**. Les deux coïncident tant que `at = now`. Le jour où une
+résolution datée existe, le hissage ferait revenir une règle archivée depuis.
+`unarchivedAt()` porte cette sémantique et n'est utilisé que par le tableau de
+bord.
+
+## B.3 Ce qui a été vérifié, et où
+
+| Affirmation                                                      | Vérifiée dans                                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `matchesScope` = `global` + trois égalités                       | `specificity.ts`                                                                   |
+| `matchesAudience` ne dépend que de `companyId` / `segmentId`     | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui |
+| `minQuantity` est le seul prédicat par ligne, hors portée        | `applies`                                                                          |
+| `resolvePrice` filtre par étage le tableau reçu                  | `resolve-price.ts`                                                                 |
+| `supersedes` a besoin des perdants                               | `resolve-price.ts`                                                                 |
+| La contrainte d'exclusion porte **aussi** sur `min_quantity`     | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                       |
+| Un gabarit pose **une règle par palier**                         | `template-to-rules.ts`                                                             |
+| `price_floors_one_per_scope` : une ligne par portée, sans temps  | migration `20260817160000_plancher_de_prix`                                        |
+| `ScopedPriceFloor` ne porte aucun cycle de vie                   | `price-rule.ts`                                                                    |
+| `price_floors` n'a ni `pausedAt` ni `pausedBy`                   | `schema.prisma`, modèle `PriceFloor`                                               |
+| Re-poser un plancher remet `archivedAt` à `null`                 | `prisma-pricing-floor.repository.ts`                                               |
+| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
+| `resolveScopedFloor` a trois appelants                           | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |
+| `PriceProjectionQuery` hisse déjà ses trois lecteurs             | `price-projection.query.ts`                                                        |
+| `mostSpecificFirst` est une `Map` **1:1**                        | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                             |
+
+**Non vérifié** : la mesure de **C.6**, les volumes réels, l'existence d'un plancher
+global à porte de volume, la taille de l'union des portées d'un panier.
+---
+
+# C · Le journal des cinq lots
+
+> ⚠️ **Journal, pas spécification.** Chaque lot est écrit tel qu'il a été pensé,
+> puis suivi d'un encart daté qui dit ce qu'il a livré — et ce que la
+> construction a démenti. Les deux sont conservés : c'est l'écart entre les deux
+> qui vaut, pas le plan seul.
+
+## C.1 Lot 0 — le front cesse de demander à chaque frappe
 
 **Le premier à faire, et le seul dont le gain ne dépend d'aucune mesure.**
 
@@ -142,7 +247,7 @@ peut hydrater ; ce n'est **pas** vrai pour le comptoir, où chaque appel
 correspond à une intention. Les lots 2 et 3, eux, gardent leur gain entier — ils
 divisent le coût de chaque appel, quel qu'en soit le nombre.
 
-## 4. Lot 1 — un test, pas un champ
+## C.2 Lot 1 — un test, pas un champ
 
 La première version faisait porter à `ScopedPriceFloor` un `suspendedFrom`, au
 motif que l'invariant « un plancher archivé n'arbitre plus » n'était pas
@@ -193,7 +298,7 @@ de rôle : **les deux mutations le font échouer**. Le premier essai, mutant le
 mauvais fichier, passait au vert et aurait fait croire à une couverture qui
 n'existait pas.
 
-## 5. Lot 2 — l'index, et sa clé
+## C.3 Lot 2 — l'index, et sa clé
 
 `matchesScope` ne connaît que quatre formes : `global` (vrai sans condition), et
 trois **égalités** — `category:<id>`, `product:<sku>`, `variant:<sku>`. Un article
@@ -206,7 +311,7 @@ type ScopeKey = "global" | `category:${string}` | `product:${string}` | `variant
 
 **Une multimap, pas une `Map` 1:1** — un seau rend une liste. Deux raisons, et la
 seconde a coûté la première version : `resolvePrice` a besoin des **perdants** de
-l'étage pour `supersedes`, et un gabarit met plusieurs règles dans un seau (§2).
+l'étage pour `supersedes`, et un gabarit met plusieurs règles dans un seau (**A.2**).
 
 ⚠️ Le précédent `mostSpecificFirst` (`@lfd/catalog-sync`) est une `Map` **1:1** :
 | `volumeTierPrices` rend `null` sans barème gagnant | `volume-tier-prices.ts`, `winningLadder` |
@@ -245,12 +350,12 @@ au lieu de `PriceRule` : un barème porte la même fenêtre sans être une règl
 un plancher n'en porte aucune. C'était nécessaire pour qu'`inForceFor` les
 traite ensemble, et c'est de l'ISP, pas une commodité.
 
-🔴 **Rien ne l'appelle encore, et c'est l'ordre voulu** (§2) : hisser sans
+🔴 **Rien ne l'appelle encore, et c'est l'ordre voulu** (**A.2**) : hisser sans
 indexer échangerait des lectures contre du produit `articles × règles`. Le lot 3
 lui donne son appelant. Un module sans appelant est une dette s'il reste seul —
 celui-ci est un préalable, et il se lit à la date de son commit.
 
-⚠️ **La porte du §10 n'a pas été franchie sur un chiffre.** Elle demande la part
+⚠️ **La porte du **B.2** n'a pas été franchie sur un chiffre.** Elle demande la part
 de `priceAll` dans les opérations facturées d'un mois réel, et cette donnée est
 en production. Le lot a été ouvert par décision, pas par mesure — c'est
 recevable, mais ça doit se lire ici plutôt que se deviner.
@@ -265,10 +370,10 @@ des deux côtés : le jour où `matchesScope` gagne une cinquième forme, elle
 resterait verte pendant que l'index perdrait des candidats — donc facturerait le
 prix d'à côté.
 
-## 6. Lot 3 — hisser
+## C.4 Lot 3 — hisser
 
 Les trois lectures sortent de la boucle. L'ordre n'est pas une préférence :
-hisser sans indexer échange des lectures contre du balayage (§2).
+hisser sans indexer échange des lectures contre du balayage (**A.2**).
 
 - **où** : dans `priceAll`, **après** `catalog.resolveMany` — pas à côté : la clé
   `category:<id>` en sort ;
@@ -329,10 +434,10 @@ une régression d'ISP. **La forme à retenir** : la méthode de lot devient l'un
 lecture, et `candidatesFor` se réécrit **par-dessus** — un appel de lot à une
 seule portée. Un `WHERE`, deux entrées.
 
-## 7. Lot 4 — la grille exhaustive, et le front qui sélectionne
+## C.5 Lot 4 — la grille exhaustive, et le front qui sélectionne
 
 **À faire juste après le lot 0, dont il est la suite.** Il n'attend pas la porte
-de §9 : il complète une réponse aujourd'hui incomplète, ce qui est une correction
+de **A.3** : il complète une réponse aujourd'hui incomplète, ce qui est une correction
 avant d'être une économie.
 
 ### Le fait
@@ -413,7 +518,7 @@ côté de la maison, comme dans `decideFloor` lui-même.
 ### Ce que le front en fait
 
 Il **sélectionne** le palier correspondant à la quantité affichée. Conséquences
-sur la saisie mesurée au §3 :
+sur la saisie mesurée en **C.1** :
 
 | geste                | appels aujourd'hui | avec la grille                        |
 | -------------------- | ------------------ | ------------------------------------- |
@@ -425,27 +530,7 @@ Sur les treize gestes de la session mesurée, les **quatre reprises de quantité
 tombent à zéro. C'est le gain que le lot 0 ne pouvait pas obtenir, et il ne
 demande rien de plus au navigateur qu'une comparaison de seuils.
 
-### 🔴 Ce qu'on ne fait toujours PAS : partager `resolvePrice`
-
-La tentation est réelle — le moteur est une fonction **pure**, elle se partagerait
-techniquement. Trois raisons de ne pas le faire, et ce sont des faits :
-
-- **ses entrées sont le secret.** Résoudre localement demande toutes les règles,
-  avec leurs libellés commerciaux, et tous les planchers — or un plancher **est**
-  la marge. C'est ce que `CustomerOrderQuoteView` vient de retirer de la surface
-  client ; le remettre en entier dans un navigateur serait strictement pire ;
-- **il lui manque de la donnée serveur** : `observedRatio` lit l'historique de
-  volume par SKU, la décision d'engagement lit le cumul commandé du client ;
-- **il lui manque l'horloge.** `resolvePrice` prend un `at` ; côté front ce serait
-  celle du poste du client, et une promotion expirerait selon l'heure de son
-  téléphone. C'est exactement ce que le port `Clock` existe pour empêcher.
-
-> **La règle, et elle vaut au-delà du prix :** vers notre propre serveur, on peut
-> faire traverser les **règles** — c'est ce que fait la v7 du fil pour l'heure
-> limite. Vers un **navigateur**, seulement le **résolu**. Le snapshot de
-> catalogue tient depuis toujours par cette ligne.
-
-## 8. Ce que ça touche, recompté
+## C.6 Ce que ça touche, recompté
 
 |                                     | quoi                                                                                                     |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -458,48 +543,3 @@ techniquement. Trois raisons de ne pas le faire, et ce sont des faits :
 
 ⚠️ Le lot 1 ne touche **plus** `ScopedPriceFloor`, `price-rows.ts`,
 `pricing-floor.ts` ni leurs specs : c'est un test, pas un changement de type.
-
-## 9. Ce qui reste par article, et pourquoi
-
-- **la décision d'engagement** — elle dépend de la quantité et du cumul, que le
-  `WHERE` n'utilise pas. C'est ce qui rend le hissage possible ;
-- **la mesure de volume du plancher dynamique** — deux lectures conditionnelles.
-  « Rares » est une affirmation sur la **donnée configurée**, pas sur le code : un
-  plancher **global** à porte de volume les rendrait obligatoires sur chaque
-  ligne. Batchables (mêmes fenêtres pour tout le panier), **lot suivant**.
-
-## 10. La porte
-
-`optimisation-resolution-de-prix.md` §6 : si `priceAll` pèse **moins de 20 %** des
-opérations facturées, les lots 2 et 3 ne s'ouvrent pas. Le **lot 1 fait
-exception** — c'est un test qui manque, pas un coût.
-
-⚠️ **Et une dette que ce plan ne crée pas mais ne doit pas bénir** : `archivedAt`
-en SQL est une exclusion **absolue**, `isSuspended(rule, at)` une comparaison **à
-l'instant demandé**. Les deux coïncident tant que `at = now`. Le jour où une
-résolution datée existe, le hissage ferait revenir une règle archivée depuis.
-`unarchivedAt()` porte cette sémantique et n'est utilisé que par le tableau de
-bord.
-
-## 11. Ce qui a été vérifié, et où
-
-| Affirmation                                                      | Vérifiée dans                                                                      |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `matchesScope` = `global` + trois égalités                       | `specificity.ts`                                                                   |
-| `matchesAudience` ne dépend que de `companyId` / `segmentId`     | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui |
-| `minQuantity` est le seul prédicat par ligne, hors portée        | `applies`                                                                          |
-| `resolvePrice` filtre par étage le tableau reçu                  | `resolve-price.ts`                                                                 |
-| `supersedes` a besoin des perdants                               | `resolve-price.ts`                                                                 |
-| La contrainte d'exclusion porte **aussi** sur `min_quantity`     | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                       |
-| Un gabarit pose **une règle par palier**                         | `template-to-rules.ts`                                                             |
-| `price_floors_one_per_scope` : une ligne par portée, sans temps  | migration `20260817160000_plancher_de_prix`                                        |
-| `ScopedPriceFloor` ne porte aucun cycle de vie                   | `price-rule.ts`                                                                    |
-| `price_floors` n'a ni `pausedAt` ni `pausedBy`                   | `schema.prisma`, modèle `PriceFloor`                                               |
-| Re-poser un plancher remet `archivedAt` à `null`                 | `prisma-pricing-floor.repository.ts`                                               |
-| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
-| `resolveScopedFloor` a trois appelants                           | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |
-| `PriceProjectionQuery` hisse déjà ses trois lecteurs             | `price-projection.query.ts`                                                        |
-| `mostSpecificFirst` est une `Map` **1:1**                        | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                             |
-
-**Non vérifié** : la mesure de §8, les volumes réels, l'existence d'un plancher
-global à porte de volume, la taille de l'union des portées d'un panier.
