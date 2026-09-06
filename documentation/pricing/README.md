@@ -83,17 +83,19 @@ Ces mots reviennent partout et ne veulent pas dire ce qu'on croit.
 | Comment quatre règles se composent en un seul prix ?      | [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) |
 | Pourquoi la TVA se calcule par taux et pas sur le total ? | [`ajouter-un-terme-au-panier.md`](ajouter-un-terme-au-panier.md) §2        |
 | Qu'est-ce que la boutique a le droit de montrer ?         | [`architecture-prix-boutique.md`](architecture-prix-boutique.md) §4        |
+| Qu'est-ce qu'un commercial voit quand il pose une règle ? | [`ecrans-de-tarification.md`](ecrans-de-tarification.md)                   |
 | Qui décide de poser une promotion, et où ?                | [`decision-qui-pose-une-promotion.md`](decision-qui-pose-une-promotion.md) |
 
 **Je veux IMPLÉMENTER.**
 
-| Ce que je m'apprête à faire                      | Le document                                                                                                                             |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Ajouter une remise, un frais, une taxe au panier | [`ajouter-un-terme-au-panier.md`](ajouter-un-terme-au-panier.md) — la liste à cocher est au §5                                          |
-| Toucher au chargement des règles de prix         | [`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md)                                                                                |
-| Optimiser la résolution                          | [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md) — **avant de mesurer, lire pourquoi le temps ne compte pas** |
-| Brancher les paliers de volume à la boutique     | [`architecture-prix-boutique.md`](architecture-prix-boutique.md) §7 — et son bandeau en tête                                            |
-| Afficher un montant quelque part                 | [`plan-decompte-du-panier-ht.md`](plan-decompte-du-panier-ht.md)                                                                        |
+| Ce que je m'apprête à faire                                | Le document                                                                                                                             |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Ajouter une remise, un frais, une taxe au panier           | [`ajouter-un-terme-au-panier.md`](ajouter-un-terme-au-panier.md) — la liste à cocher est au §5                                          |
+| Toucher au chargement des règles de prix                   | [`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md)                                                                                |
+| Optimiser la résolution                                    | [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md) — **avant de mesurer, lire pourquoi le temps ne compte pas** |
+| Brancher les paliers de volume à la boutique               | [`architecture-prix-boutique.md`](architecture-prix-boutique.md) §7 — et son bandeau en tête                                            |
+| Afficher un montant quelque part                           | [`plan-decompte-du-panier-ht.md`](plan-decompte-du-panier-ht.md)                                                                        |
+| Toucher à la grille, la frise, le simulateur, les gabarits | [`ecrans-de-tarification.md`](ecrans-de-tarification.md)                                                                                |
 
 **Je veux savoir CE QUI CLOCHE.**
 
