@@ -8,9 +8,10 @@
 > État : ✅ décrit le code qui tourne au 2026-08-26. Le seul point décidé mais
 > **non implémenté** est isolé en [§ 10](#10-décidé-mais-pas-encore-implémenté--le-choix-des-intégrations).
 >
-> Il remplace cinq notes de chantier (`c0d-matrice-de-canaux.md`,
-> `point-de-vente.md`, `ecrans-du-referentiel.md`, `projection-sales-context.md`,
-> `override-produit.md`) et le doc de TVA (`vat-resolution.md`).
+> Il remplace cinq notes de chantier (c0d-matrice-de-canaux.md,
+> point-de-vente.md, ecrans-du-referentiel.md, projection-sales-context.md,
+> override-produit.md) et le doc de TVA (vat-resolution.md) — **toutes
+> supprimées**, ce document est leur seule trace.
 
 ---
 

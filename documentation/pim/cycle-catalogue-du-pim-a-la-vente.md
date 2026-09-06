@@ -8,7 +8,8 @@ Code : `apps/lfd-api/src/pim/catalogue/revision/`,
 > aujourd'hui**, avec les raisons qui ont façonné chaque mécanisme — celles qui
 > se relisent, pas le récit des délibérations.
 >
-> Il a été un document de conception (`conception-stage-evaluer-pousser.md`),
+> Il a été un document de conception (conception-stage-evaluer-pousser.md,
+> supprimé),
 > tenu du 2026-09-01 au 2026-09-02 : un problème, treize questions, onze
 > tranches. Les tranches sont livrées ; le récit des décisions vit dans
 > l'historique git et dans les JSDoc, à l'endroit exact qu'elles gouvernent.

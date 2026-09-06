@@ -205,7 +205,8 @@ tout ce document serait faux.
 
 La matrice des frontières interdit à `pim` de voir `b2b`. Le référentiel déclare
 donc son propre port (`PimJournal`), et **la racine de composition** le branche
-sur le journal réel (`appBootstrap/pim-journal.module.ts`). Le PIM ne sait pas
+sur le journal réel (appBootstrap/pim-journal.module.ts — le module a été
+fondu depuis dans l'assemblage de l'app). Le PIM ne sait pas
 qui écrit sa trace.
 
 > ⚠️ Le port note qu'au **troisième bloc émetteur**, le journal doit être promu

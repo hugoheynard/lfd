@@ -250,12 +250,12 @@ c'est ce qui rend la vraie raison lisible.
 
 #### Ce que B4 touche, concrètement
 
-- les **seize modèles** de `prisma/pim/schema.prisma` rejoignent le schéma
+- les **seize modèles** de prisma/pim/schema.prisma rejoignent le schéma
   principal, marqués `@@schema("pim")` — Prisma multi-schéma n'admet qu'une
   source de données ;
 - **un client au lieu de deux** : `PimPrismaService` disparaît, et les dépôts du
   référentiel injectent `PrismaService` ;
-- `DATABASE_PIM_URL`, `prisma.pim.config.ts`, la clé du Worker, la ligne du
+- `DATABASE_PIM_URL`, prisma.pim.config.ts, la clé du Worker, la ligne du
   workflow et l'entrée de l'inventaire des capacités s'en vont ensemble ;
 - la table modèle → schéma de `schema-ops.counter.ts` gagne seize entrées, et le
   test de parité l'exige — donc ça ne peut pas être oublié ;
@@ -359,7 +359,7 @@ elle qui remplace le mur que le réseau tenait.
 > entière du mauvais côté** — le résolveur de principal, qui lit la table des
 > personnes et publie un événement d'`account/`, vivait dans `infra/auth`.
 >
-> **B2b** ajoute le second client Prisma : `prisma.pim.config.ts`, le schéma
+> **B2b** ajoute le second client Prisma : prisma.pim.config.ts, le schéma
 > copié sous `prisma/pim/`, `PimPrismaService` et son module **non global** —
 > seul `pim/` a le droit de lire cette base. Il n'est **pas** branché dans
 > `AppModule` : rien ne le consomme avant B2c, et faire échouer le boot de tous

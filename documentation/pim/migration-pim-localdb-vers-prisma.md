@@ -11,11 +11,11 @@
 
 ## Le point de départ
 
-- **Le front PIM tourne 100 % sur `LocalDb`** (`app/data/local-db.ts`) : un
-  `signal<DbShape>` seedé depuis `db.seed.ts`, recopié dans `localStorage`. Zéro
+- **Le front PIM tourne 100 % sur `LocalDb`** (app/data/local-db.ts) : un
+  `signal<DbShape>` seedé depuis db.seed.ts, recopié dans `localStorage`. Zéro
   HTTP. `provideHttpClient(withFetch())` est **déjà** fourni (`app.config.ts`) —
   l'infra HTTP existe, rien à installer.
-- Services front sur LocalDb : `catalogue-api.ts`, `publication-api.ts`,
+- Services front sur LocalDb : `catalogue-api.ts`, publication-api.ts,
   `shopify-api.ts`, `shopify-channel-api.ts`, `emplacement-list`,
   `collections-page`, `tva-rates/*`, `data/api.ts`.
 - **Le backend persiste bien via Prisma**, mais n'expose qu'un sous-ensemble :

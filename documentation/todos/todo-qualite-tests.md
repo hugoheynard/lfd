@@ -35,7 +35,8 @@
 de test n'est contrôlé par personne.
 
 Ce n'est pas théorique. `test/activations.e2e-spec.ts` importait
-`ActivationView` depuis `src/growth/domain/activation.js`, **qui ne l'exporte
+`ActivationView` depuis `apps/lfd-api/src/b2b/growth/domain/activation.js`,
+**qui ne l'exporte
 pas** — le type valait donc `any` et l'assertion ne garantissait rien. Trouvé en
 lançant ESLint (type-aware, lui, sur `tsconfig.test.json`), corrigé le
 2026-08-09.
@@ -153,7 +154,7 @@ pas la semaine pour ça.
 
 ## 3. Deux fichiers de test Shopify LIVE sont exclus du lint
 
-`test/shopify/live-context.ts` et `test/shopify/*.shopify-live.ts` (PIM) sont
+test/shopify/live-context.ts et `test/shopify/*.shopify-live.ts` (PIM) sont
 dans les `ignores` d'ESLint : ils frappent une vraie boutique, ne tournent jamais
 en CI, et le typage de `Test.createTestingModule` y résiste (10 erreurs
 `no-unsafe-*`). Exclus **explicitement, avec le motif en commentaire** plutôt que

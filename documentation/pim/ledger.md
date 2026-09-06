@@ -88,7 +88,7 @@ un seul contexte est actif (**emporter**) → la boutique reçoit toujours 1 pro
 juste ; activer sur-place ou B2B plus tard = de la config, pas une refonte. Sur-place en ligne est
 **gelé** côté métier pour l'instant.
 
-**Tech** — Nouveau doc `projection-sales-context.md` (absorbé depuis par [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)). Unité de
+**Tech** — Nouveau doc projection-sales-context.md (absorbé depuis par [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)). Unité de
 projection = **(article × contexte actif)** → 1 produit Shopify + appartenance à **une** collection
 `tva-*` (override, S1/S2). Registre de contextes (`emporter` seul actif). TVA résolue en composant
 catalogue (`Category.emporterTvaId`) + commerce (`TvaRegime.tag`) derrière un port (ADR-13).
@@ -325,11 +325,11 @@ au bon endroit, et testée.
 
 - `shared/errors/app-error.ts` — trois catégories (`domain` / `business` / `technical`), aucune ne
   connaît HTTP : la traduction en statut appartient au filtre d'exceptions, à la frontière.
-- `catalogue/domain/value-objects/sku.value-object.ts` — constructeur privé, `Sku.create()` unique
+- `pim/catalogue/product/domain/value-objects/sku.value-object.ts` — constructeur privé, `Sku.create()` unique
   point d'entrée : **un SKU invalide ou non normalisé ne peut pas exister en mémoire**. Conséquence
   vérifiée par un test dédié : `' ecl-01 '` et `'ECL_01'` sont structurellement égaux — c'est ce qui
   permet à un index unique **ordinaire** de garantir l'unicité insensible à la casse.
-- `catalogue/domain/services/sku-generator.ts` — génération signifiante
+- `pim/catalogue/product/domain/services/sku-generator.ts` — génération signifiante
   `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`, mots vides français retirés, troncature sans tiret
   orphelin, collision → suffixe numérique lisible, échec franc après 10 tentatives plutôt qu'une
   boucle. Dépend d'un **port** `SkuAvailability`, jamais d'un dépôt.
@@ -518,7 +518,7 @@ direct. **Deux filets** :
    ESLint seul se laisse bâillonner, le gate non.
 
 Dérogations **explicites et justifiées** : la passerelle + son test, le harnais de test,
-`prisma.config.ts` (CLI Prisma, hors runtime Nest) et `src/server.ts` (SSR Angular — le front n'a pas
+`prisma.config.ts` (CLI Prisma, hors runtime Nest) et src/server.ts (SSR Angular, retiré depuis — le front n'a pas
 encore de passerelle, dette notée au `todo.md`).
 
 ---

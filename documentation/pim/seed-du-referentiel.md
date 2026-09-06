@@ -31,7 +31,7 @@ ne les tarife pas. Le seed ne comble pas ce trou — il le **rapporte**.
 
 ## Pourquoi pas en SQL
 
-`prisma/pim-seed.ts`, son prédécesseur, écrivait par `upsert`. Les `upsert` ne
+prisma/pim-seed.ts, son prédécesseur, écrivait par `upsert`. Les `upsert` ne
 connaissent pas les invariants : c'est pour ça que la base de développement
 portait 95 déclinaisons actives dont **une seule** avec fiche réglementaire,
 c'est-à-dire un catalogue que `Product.publish()` refuse. Tout ce qu'on
@@ -99,7 +99,7 @@ l'`AppModule`, donc la DI Nest **par type**, donc `design:paramtypes` :
 
 ⚠️ C'est la seconde raison qui a cassé **`pnpm seed:growth`**, aujourd'hui
 inutilisable pour deux motifs indépendants : son runner, et un import de
-`platform/auth/customer-user.resolver.js`, supprimé depuis. Non traité ici.
+platform/auth/customer-user.resolver.js, supprimé depuis. Non traité ici.
 
 `tsconfig.seed.json` sert aussi de garde de types : `tsconfig.json` n'inclut que
 `src`, donc **rien dans `prisma/` n'était typé** jusqu'à ce chantier. ESLint ne

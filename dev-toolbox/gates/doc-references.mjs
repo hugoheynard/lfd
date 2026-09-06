@@ -44,18 +44,27 @@
  * Les traiter pareil ferait crier la porte sur des exemples, et une porte qui
  * crie à tort finit désactivée.
  *
- * ## Le motif du SCOPE qui grandit
+ * ## Le SCOPE a fini de grandir
  *
- * Le même que `code-language` et `fold-typography` : les dossiers **drainés**
- * échouent à la première référence morte, tout le reste est **compté et
- * affiché**. Taire la dette restante serait pire que de ne pas avoir de porte —
- * on croirait le travail fini. Ajouter un dossier au SCOPE, c'est déclarer
- * l'avoir drainé.
+ * Le motif est celui de `code-language` et `fold-typography` : les dossiers
+ * **drainés** échouent à la première référence morte, tout le reste est compté
+ * et affiché. Ici il n'a pas eu à durer — `documentation/b2b` et
+ * `documentation/ops` ont été drainés en écrivant la porte, le reste dans la
+ * foulée. **Le solde est nul, et la porte affiche la TAILLE de son vert** :
+ * « 0 morte » ne veut rien dire sans le nombre de choses regardées, puisqu'une
+ * porte qui ne vérifie rien rend le même message.
  *
- * ⚠️ Le solde hors scope est **affiché, pas asserté**. Le figer sur un nombre
- * en ferait un cliquet que personne ne pourrait bouger sans toucher à la porte,
- * et la réponse à une dérive n'est pas de négocier un nombre : c'est de drainer
- * un dossier de plus.
+ * ## Ce que les backticks veulent dire, et c'est ce qui rend la porte possible
+ *
+ * **Une portion entre backticks affirme que ce fichier existe MAINTENANT.** Ce
+ * qui est supprimé, produit par un build, ou seulement prévu se nomme en texte
+ * simple.
+ *
+ * Sans cette convention, la porte serait ingouvernable : un document qui dit
+ * « vat-rates.ts est supprimé » rougirait pour avoir dit vrai, et il faudrait
+ * une liste d'exceptions qui finirait par tout contenir. Avec elle, la règle
+ * tient en une phrase et le drainage devient un geste d'écriture plutôt qu'une
+ * négociation.
  *
  * ## 🔴 Ce qui EXISTE se demande à git, pas au disque
  *
@@ -84,8 +93,9 @@ const SCOPE = [
   // Drainés le 2026-09-06, en écrivant la porte. `b2b` d'abord parce que c'est
   // là que le travail se fait, et que ses références mortes pointaient toutes
   // vers des fichiers supprimés par des chantiers de la même semaine.
-  "documentation/b2b",
-  "documentation/ops",
+  // `b2b` et `ops` le 2026-09-06 en écrivant la porte, le reste dans la foulée.
+  // Le dossier entier : il n'y a plus de solde.
+  "documentation",
 ];
 
 /**
@@ -120,40 +130,82 @@ const everyFile = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8
   .split("\n")
   .filter((line) => line !== "");
 const byPath = new Set(everyFile);
+/** Par nom de fichier : le premier trouvé, et **combien** le portent. */
 const byName = new Map();
 for (const path of everyFile) {
   const name = basename(path);
-  if (!byName.has(name)) {
-    byName.set(name, path);
+  const seen = byName.get(name);
+  if (seen === undefined) {
+    byName.set(name, { first: path, count: 1 });
+  } else {
+    seen.count += 1;
   }
 }
 
 /**
- * Le chemin du dépôt que cette référence désigne, ou `null`.
+ * Le chemin du dépôt que cette référence désigne, et s'il est **certain**.
  *
  * Quatre formes, toutes employées dans la documentation :
  *
  * 1. `../ops/pipelines.md` — relatif au document qui le porte ;
- * 2. `.../account/domain/activation-gate.ts` — abrégé par la tête, donc un
- *    suffixe ;
+ * 2. `.../account/domain/activation-gate.ts` — abrégé par la tête, un suffixe ;
  * 3. `apps/lfd-api/src/…/order.ts` — complet depuis la racine ;
- * 4. `order.ts` — le seul nom, résolu s'il n'est pas ambigu au point d'être
- *    faux : on ne vérifie alors que l'EXISTENCE d'un fichier ainsi nommé.
+ * 4. `order.ts` — le seul nom.
+ *
+ * 🔴 **`unique` n'est pas de la coquetterie.** Vingt-neuf fichiers de ce dépôt
+ * s'appellent `index.ts` ; un `index.ts:213` se résout donc sur le premier venu,
+ * et la porte a **inventé une erreur** en annonçant qu'un fichier de trois
+ * lignes n'en avait pas 213. Une existence se prouve sur n'importe quelle
+ * correspondance ; un numéro de ligne ne se vérifie que sur une seule.
+ *
+ * ⚠️ **Un import ESM cite `.js` pour un fichier `.ts`** — c'est la résolution
+ * `NodeNext` de tout le dépôt, et la documentation recopie les imports tels
+ * qu'ils sont écrits. Une référence en `.js` qui ne trouve rien est donc
+ * réessayée en `.ts` avant d'être déclarée morte.
  */
 function resolveReference(path, doc) {
   if (path.startsWith("./") || path.startsWith("../")) {
     const target = relative(ROOT, resolve(join(ROOT, doc), "..", path));
-    return byPath.has(target) ? target : null;
+    return byPath.has(target) ? { file: target, unique: true } : null;
   }
   if (byPath.has(path)) {
-    return path;
+    return { file: path, unique: true };
   }
   const needle = path.startsWith(".../") ? path.slice(3) : `/${path}`;
-  const suffix = everyFile.find((file) => `/${file}`.endsWith(needle));
-  if (suffix !== undefined) {
-    return suffix;
+  const suffix = everyFile.filter((file) => `/${file}`.endsWith(needle));
+  if (suffix.length > 0) {
+    return { file: suffix[0], unique: suffix.length === 1 };
   }
-  return path.includes("/") ? null : (byName.get(basename(path)) ?? null);
+  if (!path.includes("/")) {
+    const named = byName.get(basename(path));
+    if (named !== undefined) {
+      return { file: named.first, unique: named.count === 1 };
+    }
+  }
+  // Le dernier recours : la résolution ESM du dépôt écrit `.js` là où le
+  // fichier est un `.ts`.
+  const asTypeScript = path.replace(/\.(?:js|mjs|cjs)$/u, ".ts");
+  return asTypeScript === path ? null : resolveReference(asTypeScript, doc);
+}
+
+/**
+ * Combien de références ce document affirme — mortes ou vives.
+ *
+ * Affiché pour que le vert de la porte ait une taille. « 0 morte » ne veut rien
+ * dire sans le nombre de choses regardées : une porte qui ne vérifie rien rend
+ * exactement le même message.
+ */
+function referencesIn(doc) {
+  let count = 0;
+  const text = readFileSync(join(ROOT, doc), "utf8");
+  for (const line of text.split("\n")) {
+    for (const match of line.matchAll(INLINE)) {
+      if (REFERENCE.test(match[1].trim())) {
+        count += 1;
+      }
+    }
+  }
+  return count;
 }
 
 /** Les références mortes d'un document, avec ce qui cloche. */
@@ -180,8 +232,10 @@ function deadIn(doc) {
         found.push([index + 1, raw, "fichier introuvable"]);
         continue;
       }
-      if (lineNumber !== undefined) {
-        const count = readFileSync(join(ROOT, resolved), "utf8").split("\n").length;
+      // Un numéro de ligne ne se vérifie que si l'on sait DE QUEL fichier on
+      // parle. Sur un nom porté par vingt-neuf fichiers, on ne le sait pas.
+      if (lineNumber !== undefined && resolved.unique) {
+        const count = readFileSync(join(ROOT, resolved.file), "utf8").split("\n").length;
         if (Number(lineNumber) > count) {
           found.push([index + 1, raw, `le fichier n'a que ${String(count)} lignes`]);
         }
@@ -204,8 +258,12 @@ function docsUnder(dir) {
 }
 
 let failures = 0;
+let checked = 0;
+let documents = 0;
 for (const dir of SCOPE) {
   for (const doc of docsUnder(dir)) {
+    documents += 1;
+    checked += referencesIn(doc);
     for (const [line, raw, why] of deadIn(doc)) {
       if (failures === 0) {
         console.error("\n✗ doc-references\n");
@@ -238,6 +296,9 @@ if (failures > 0) {
 }
 
 console.log(
-  `✓ doc-references : ${String(SCOPE.length)} dossier(s) drainé(s), 0 référence morte.\n` +
-    `  Hors scope : ${String(remaining)} morte(s) sur ${String(counted)} document(s) — compté, pas ignoré.`,
+  counted === 0
+    ? `✓ doc-references : ${String(checked)} référence(s) vérifiée(s) sur ${String(documents)} document(s), 0 morte.\n` +
+        "  Toute la documentation est drainée — il n'y a plus de solde à compter."
+    : `✓ doc-references : ${String(SCOPE.length)} dossier(s) drainé(s), 0 référence morte.\n` +
+        `  Hors scope : ${String(remaining)} morte(s) sur ${String(counted)} document(s) — compté, pas ignoré.`,
 );

@@ -211,7 +211,7 @@ concerné, et le chantier s'est réduit au backend et à la base.
 | ------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- |
 | 1 · Étendre   | `ADD VALUE 'billing'`, `'delivery'` — additif, zéro ligne touchée  | les lectures acceptent les deux, les écritures gardent l'ancien |
 | 2 · Basculer  | `UPDATE addresses SET kind = 'billing' WHERE kind = 'facturation'` | les écritures passent au nouveau                                |
-| 3 · Resserrer | le type est recréé sans les anciennes valeurs                      | `address-kind-transition.ts` disparaît                          |
+| 3 · Resserrer | le type est recréé sans les anciennes valeurs                      | address-kind-transition.ts disparaît                            |
 
 Le palier 1 est ce qui rend le 2 inoffensif : quand la migration réécrit les
 lignes, le container encore en place lit déjà les deux encodages.

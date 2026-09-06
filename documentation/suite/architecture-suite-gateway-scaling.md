@@ -12,7 +12,7 @@ Ce document fixe la **cible de topologie réseau** de la suite interne
 arriver, avec une **revue adversariale** en fin de doc (§9) : on écrit d'abord ce
 qui peut casser, ensuite on planifie.
 
-Complément de [`apps/lfc-suite-shell/ARCHITECTURE.md`](../../apps/lfc-suite-shell/ARCHITECTURE.md)
+Complément de apps/lfc-suite-shell/ARCHITECTURE.md (l'app n'a jamais été créée)
 (le _pourquoi_ de l'iframe). Ici : **comment tout parle**, et comment ça tient
 sous charge.
 
@@ -22,11 +22,11 @@ sous charge.
 
 Aujourd'hui, un port est écrit **en dur à plusieurs endroits** :
 
-| Numéro             | Où il apparaît                                                                                                             |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `7315` (PIM front) | `angular.json` (serve) · `suite-config.dev.ts` (URL iframe **+** allowlist bridge) · `packages/endpoints` (allowlist CORS) |
-| `7316` (B2B front) | `angular.json` (serve) · `lfd-api/main.ts` (CORS)                                                                          |
-| `3200` (B2B back)  | `.env` (`PORT`)                                                                                                            |
+| Numéro             | Où il apparaît                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `7315` (PIM front) | `angular.json` (serve) · suite-config.dev.ts (URL iframe **+** allowlist bridge) · `packages/endpoints` (allowlist CORS) |
+| `7316` (B2B front) | `angular.json` (serve) · `apps/lfd-api/src/main.ts` (CORS)                                                               |
+| `3200` (B2B back)  | `.env` (`PORT`)                                                                                                          |
 
 Chaque duplication = un **drift** possible : on change un port, une des copies
 lâche en silence (l'iframe charge mais le token est refusé, ou le CORS bloque).
@@ -177,7 +177,7 @@ service (Invariant A). **Sans ça, rien en aval** (on ne proxifie pas vers du vi
 
 **Phase 1 — Registre de ports/URLs (dev). ✅ FAIT.**
 Package workspace **`@lfd/endpoints`** = source de vérité unique (localhost).
-`suite-config.dev.ts` (→ `DEV_URLS`) et les CORS dev des backends PIM/B2B (→
+suite-config.dev.ts (→ `DEV_URLS`) et les CORS dev des backends PIM/B2B (→
 `DEV_CORS_ORIGINS`) **en dérivent** au lieu de recopier le port. Le package
 expose `browser`→source (bundler shell) et `import`→`dist` (Node backends). Les
 ports de serve dans `angular.json` (JSON non importable) restent mais alignés sur
@@ -246,7 +246,7 @@ dashboard.**
 Là où le dev a `@lfd/endpoints`, la prod a **deux fichiers versionnés**, déployés
 comme du code (revus en PR) :
 
-- `suite-config.ts` — URLs Pages des fronts (déjà là) ;
+- suite-config.ts — URLs Pages des fronts (déjà là) ;
 - le `wrangler.toml` du gateway — `[vars]` = carte des upstreams backend.
 
 > **Anti-drift (AD-5).** Dev (registre TS) et prod (ces fichiers) sont deux

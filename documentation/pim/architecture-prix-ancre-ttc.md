@@ -242,14 +242,14 @@ c'est un cas légitime ou une ligne oubliée.
 
 ### Ce qui a été retiré
 
-| Retiré                               | Remplacé par                                             |
-| ------------------------------------ | -------------------------------------------------------- |
-| `pim.price_basis` (enum + colonne)   | rien : `price_cents` EST un prix public TTC              |
-| `PRICE_BASES`, `priceBasisSchema`    | rien                                                     |
-| `ttcFromHt`, `htPriceOf`             | rien — le sens inverse n'existe plus                     |
-| `price-basis.ts`                     | `tax.ts` : `htFromTtc` + `htMillicentsOf`                |
-| `variant_ttc_sans_taux`              | `variant_sans_taux` — il n'y a plus d'ancrage à préciser |
-| le sélecteur d'assiette sur la fiche | l'étiquette fixe « Prix public TTC »                     |
+| Retiré                               | Remplacé par                                                         |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `pim.price_basis` (enum + colonne)   | rien : `price_cents` EST un prix public TTC                          |
+| `PRICE_BASES`, `priceBasisSchema`    | rien                                                                 |
+| `ttcFromHt`, `htPriceOf`             | rien — le sens inverse n'existe plus                                 |
+| price-basis.ts (supprimé)            | `packages/pim-contracts/src/tax.ts` : `htFromTtc` + `htMillicentsOf` |
+| `variant_ttc_sans_taux`              | `variant_sans_taux` — il n'y a plus d'ancrage à préciser             |
+| le sélecteur d'assiette sur la fiche | l'étiquette fixe « Prix public TTC »                                 |
 
 **Aucune conversion de données.** Les 92 déclinaisons `ht` étaient du seed, rien
 en production — la question a été posée avant d'écrire la migration, parce qu'une

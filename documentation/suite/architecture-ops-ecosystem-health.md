@@ -673,7 +673,7 @@ ce que ses mots tiennent. Le seul témoin honnête de « ça marche » viendrait
 public non authentifié et une décision de vie privée, et il n'est pas fait.
 
 En cas d'échec, le **constat** de la sonde remonte dans `lastError` et s'affiche
-sous « À regarder » : « injoignable » et « point d'entrée `main-A1B2.js` : 404 »
+sous « À regarder » : « injoignable » et « point d'entrée main-A1B2.js : 404 »
 appellent deux gestes différents, et un statut seul ne les distingue pas.
 
 ### La cible vient de `@lfd/endpoints`

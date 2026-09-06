@@ -152,7 +152,8 @@ Le backend fait pourtant exactement ce qu'il faut :
 - `ingredient.controller.ts:136-141` — `GET /products/:id/ingredient-allergens`.
 - `read-product-ingredient-allergens.ts` — le handler, avec son test dédié.
 - `packages/pim-contracts/src/ingredient.ts:212-224` — `ProductIngredientAllergensView`,
-  exporté depuis `index.ts:213`, avec un JSDoc de trente lignes qui prend soin de
+  exporté depuis `packages/pim-contracts/src/index.ts:213`, avec un JSDoc de
+  trente lignes qui prend soin de
   dire ce que le contrat **ne dit pas** (le silence ne vaut rien, la maille est
   le produit, le dérivé propose et la déclaration décide).
 - `VariantAllergenGapView.citedNotDeclared` — précisément « cité par la
