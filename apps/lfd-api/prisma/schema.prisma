@@ -151,6 +151,9 @@ enum OrderStatus {
   placed
   confirmed
   in_production
+  /// Fabrication finie, en attente de remise. Écrit par l'ATELIER, au scan du
+  /// QR de colisage de la fiche. Cf. documentation/order/architecture-cycle-de-vie-commande.md
+  ready
   fulfilled
   cancelled
 
@@ -844,9 +847,17 @@ model Order {
   fromSubscriptionId String? @map("from_subscription_id")
   recurringDeltas    Json?   @map("recurring_deltas")
 
+  // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
+  // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
+  // clair sur la même feuille. Le scanner est donc sans risque : il ne porte
+  // rien que le papier ne dise déjà, et la porte qu'il ouvre exige une session
+  // staff. C'est la différence avec le jeton ci-dessous.
+  readyAt DateTime? @map("ready_at")
+  readyBy String?   @map("ready_by")
+
   // Remise en main propre (retrait au labo). `handoverToken` est un secret
   // ALÉATOIRE, pas le numéro de commande : celui-ci est imprimé sur le bon de
-  // livraison, donc public, donc sans valeur de preuve. Émis à la passation pour
+  // commande, donc public, donc sans valeur de preuve. Émis à la passation pour
   // les seules commandes `pickup`. `@unique` = c'est la clé de lecture du scan.
   // Les deux autres colonnes SONT l'attestation : quand, et par qui (le claim
   // `sub` du jeton staff, figé — un annuaire réécrit ne doit pas réécrire une

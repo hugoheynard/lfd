@@ -78,6 +78,8 @@ describe('buildTimeline — acheminement', () => {
       'placed',
       'confirmed',
       'in_production',
+      // Le colisage précède la remise au coursier : on charge ce qui est prêt.
+      'ready',
       'handover',
       'transit',
       'fulfilled',

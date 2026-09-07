@@ -34,6 +34,15 @@ export const orderStatusSchema = z.enum([
   "placed",
   "confirmed",
   "in_production",
+  /**
+   * **La fabrication est finie**, la commande attend d'être remise.
+   *
+   * C'est l'atelier qui l'écrit, en scannant le QR de colisage de sa fiche —
+   * le geste qui existait déjà sur le papier (cocher les lignes) et qui n'avait
+   * aucune contrepartie en base. Sans cet état, personne au comptoir ne sait si
+   * un sac est prêt sans aller voir dans le fournil.
+   */
+  "ready",
   "fulfilled",
   "cancelled",
 ]);

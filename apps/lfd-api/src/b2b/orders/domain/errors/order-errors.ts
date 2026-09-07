@@ -177,6 +177,38 @@ export class HandoverRefusedError extends BusinessError {
 }
 
 /**
+ * Le **numéro de commande** scanné au fournil ne correspond à rien — **404**.
+ *
+ * Contrairement au jeton de remise, il n'y a ici aucun secret à protéger : un
+ * numéro de commande est imprimé sur le papier, il se devine et ça n'ouvre rien.
+ * Le 404 est donc une simple absence, pas une précaution — mais le message, lui,
+ * doit nommer la cause probable : au fournil, un scan qui ne trouve rien est
+ * presque toujours une feuille d'une autre journée.
+ */
+export class OrderReferenceNotFoundError extends ResourceNotFoundError {
+  constructor(readonly reference: string) {
+    super(
+      "orders.packing.not_found",
+      `Aucune commande ${reference} — cette feuille est peut-être d'un autre jour.`,
+    );
+  }
+}
+
+/**
+ * La commande existe mais son état interdit le colisage (annulée, déjà remise,
+ * déjà prête). Refus **métier** (409) : la demande est bien formée, c'est l'état
+ * du monde qui s'y oppose.
+ *
+ * Le message vient de `packingBlocker` — il sera lu tel quel entre deux
+ * fournées, d'où le refus d'un code générique.
+ */
+export class PackingRefusedError extends BusinessError {
+  constructor(readonly reason: string) {
+    super("orders.packing.refused", reason);
+  }
+}
+
+/**
  * **L'heure limite est passée, et la grâce aussi.** Refus métier (409) : le
  * panier est valide, c'est le calendrier qui s'y oppose, et le client peut
  * choisir une autre date.

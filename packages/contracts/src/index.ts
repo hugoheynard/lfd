@@ -779,3 +779,4 @@ export type {
   OrderSheet,
   PricedSheet,
 } from "./order-sheet.js";
+export type { OrderPackingView } from "./order-packing.js";

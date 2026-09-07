@@ -29,7 +29,12 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { OrderReader, type HandoverOrder, type OwnedOrder } from "../domain/ports/order.reader.js";
+import {
+  OrderReader,
+  type HandoverOrder,
+  type OwnedOrder,
+  type PackingOrder,
+} from "../domain/ports/order.reader.js";
 import { orderOriginOf } from "../domain/services/order-origin.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
@@ -202,6 +207,41 @@ export class PrismaOrderReader extends OrderReader {
       companyId: row.companyId,
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
+    };
+  }
+
+  async findForPacking(reference: string): Promise<PackingOrder | null> {
+    const row = await this.prisma.order.findUnique({
+      where: { orderNumber: reference },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        requestedDeliveryDate: true,
+        readyAt: true,
+        readyBy: true,
+        companyId: true,
+        company: { select: { raisonSociale: true } },
+        placedBy: { select: { email: true, firstName: true, lastName: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+      },
+    });
+    if (row === null) {
+      return null;
+    }
+    return {
+      orderId: row.id,
+      orderNumber: row.orderNumber,
+      customerLabel: customerLabelOf(row),
+      requestedDeliveryDate: row.requestedDeliveryDate,
+      status: row.status,
+      readyAt: row.readyAt,
+      readyBy: row.readyBy,
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productNameSnapshot,
+        quantity: line.quantity,
+      })),
     };
   }
 

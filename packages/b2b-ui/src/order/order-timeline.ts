@@ -81,12 +81,16 @@ const STATUS_RANK: Readonly<Record<OrderStatus, number>> = {
   placed: 1,
   confirmed: 2,
   in_production: 3,
-  fulfilled: 4,
+  ready: 4,
+  fulfilled: 5,
   cancelled: -1,
 };
 
 /** Le rang de la remise — celui auquel les jalons non suivis s'allument. */
-const FULFILLED_RANK = 4;
+const FULFILLED_RANK = 5;
+
+/** Le rang du colisage — l'atelier a fini, la remise reste à faire. */
+const READY_RANK = 4;
 
 /** D'où une étape tire sa date, quand elle en a une. */
 type WhenSource = 'placed' | 'fulfillment' | null;
@@ -138,7 +142,10 @@ const TAIL_STEPS: Readonly<Record<FulfillmentMethod, readonly StepSpec[]>> = {
       key: 'ready',
       label: 'Prête au retrait',
       icon: 'store',
-      rank: null,
+      // 🔴 Suivie depuis le 2026-09-07. Elle était affichée SANS rang — « on
+      // montre le chemin sans savoir où on en est dessus » — parce que rien
+      // n'écrivait cet état. Le scan du QR de colisage l'écrit désormais.
+      rank: READY_RANK,
       detail: 'conditionnée, en attente du client',
       when: 'fulfillment',
     },
@@ -152,6 +159,14 @@ const TAIL_STEPS: Readonly<Record<FulfillmentMethod, readonly StepSpec[]>> = {
     },
   ],
   delivery: [
+    {
+      key: 'ready',
+      label: 'Prête au départ',
+      icon: 'store',
+      rank: READY_RANK,
+      detail: 'conditionnée, en attente du coursier',
+      when: null,
+    },
     {
       key: 'handover',
       label: 'Confiée au coursier',

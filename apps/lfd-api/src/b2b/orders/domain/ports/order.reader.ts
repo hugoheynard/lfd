@@ -66,6 +66,17 @@ export abstract class OrderReader {
   abstract findByHandoverToken(token: string): Promise<HandoverOrder | null>;
 
   /**
+   * La commande derrière un **numéro** — ce que le QR de la fiche d'atelier
+   * encode.
+   *
+   * Lecture par la référence et non par un secret, et c'est délibéré : le
+   * colisage est un fait INTERNE, sans seconde partie à représenter. Ce qui le
+   * protège est la porte staff, pas l'ignorance du code — lequel est de toute
+   * façon imprimé en clair sur la même feuille.
+   */
+  abstract findForPacking(reference: string): Promise<PackingOrder | null>;
+
+  /**
    * Les **fiches de fonction** d'une journée de service : les commandes dont la
    * date de retrait/livraison est celle-là, avec leurs lignes, ordonnées par
    * référence.
@@ -89,6 +100,18 @@ export abstract class OrderReader {
  * un prix négocié devant la personne qui attend n'aide personne. Même raison que
  * sur le bon de livraison.
  */
+/** L'état d'une commande, réduit à ce que le fournil regarde en scannant. */
+export interface PackingOrder {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  readonly customerLabel: string;
+  readonly requestedDeliveryDate: Date | null;
+  readonly status: OrderStatus;
+  readonly readyAt: Date | null;
+  readonly readyBy: string | null;
+  readonly lines: readonly OrderHandoverLine[];
+}
+
 export interface HandoverOrder {
   readonly orderId: string;
   readonly orderNumber: string;

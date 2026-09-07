@@ -9,6 +9,7 @@ import { PaymentsModule } from "../payments/payments.module.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
+import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
@@ -28,6 +29,7 @@ import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
+import { GetPackingHandler } from "./application/queries/get-packing.handler.js";
 import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.handler.js";
@@ -115,6 +117,8 @@ import { OrdersController } from "./http/orders.controller.js";
     GetAdminOrderHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
     GetProductionBatchHandler,
+    GetPackingHandler,
+    MarkOrderReadyHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,
     ListCustomerSkusHandler,

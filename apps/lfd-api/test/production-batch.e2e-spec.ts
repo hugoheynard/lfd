@@ -179,3 +179,115 @@ describe("la fiche de production lit ce qui a été convenu", () => {
     expect(sheet?.fulfillment.signatureRequired).toBe(false);
   });
 });
+
+/**
+ * Le **colisage** : le scan qui déclare une commande prête.
+ *
+ * Deux choses ne se prouvent qu'ici. La **course** — deux postes qui scannent la
+ * même feuille au même moment ne doivent produire qu'un seul fait, et c'est la
+ * base qui arbitre. Et le fait que la lecture se fasse par le **numéro**, qui
+ * est imprimé en clair : rien à protéger, mais rien à deviner non plus.
+ */
+describe("le colisage", () => {
+  /** Passe une commande personnelle et rend son numéro. */
+  async function placeOne(): Promise<string> {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await ctx.prisma.deliveryZone.create({
+      data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
+    });
+    const response = await ctx
+      .asSub(MEMBER)
+      .post(`/orders`)
+      .send({
+        idempotencyKey: randomUUID(),
+        companyId: null,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "delivery",
+        deliveryAddress: SITE,
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(201);
+    return jsonBody<{ orderNumber: string }>(response).orderNumber;
+  }
+
+  it("déclare une commande prête, et grave QUI l'a fait", async () => {
+    const reference = await placeOne();
+
+    const view = jsonBody<{
+      readyAt: string | null;
+      readyBy: string | null;
+      blockedReason: string | null;
+    }>(
+      await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201),
+    );
+
+    expect(view.readyAt).not.toBeNull();
+    // L'auteur ne vient JAMAIS de la charge utile : il vient de la session.
+    expect(view.readyBy).toBe("staff-e2e");
+    // La réponse porte DÉJÀ le refus du scan suivant : l'accusé de réception est
+    // pris sur l'état d'après, pas sur celui d'avant. Le fournil apprend donc du
+    // même coup que c'est fait et qu'un second passage ne servira à rien.
+    expect(view.blockedReason).toBe("Cette commande est déjà déclarée prête.");
+  });
+
+  it("fait avancer le statut, ce que rien ne faisait entre `placed` et la remise", async () => {
+    const reference = await placeOne();
+    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { status: true, readyBy: true },
+    });
+    expect(row.status).toBe("ready");
+    expect(row.readyBy).toBe("staff-e2e");
+  });
+
+  it("REFUSE le second scan, et dit pourquoi", async () => {
+    // Deux mains sur la même commande est le cas normal au fournil, pas une
+    // anomalie : le refus doit nommer le cas, pas jeter une erreur technique.
+    const reference = await placeOne();
+    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    const refused = await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/packing/${reference}/ready`)
+      .expect(409);
+    expect(jsonBody<{ message: string }>(refused).message).toContain("déjà déclarée prête");
+  });
+
+  it("ne produit QU'UN colisage quand deux postes scannent en même temps", async () => {
+    // La course, la seule chose que le vrai SQL prouve : le `where readyAt: null`
+    // fait arbitrer la base, pas l'ordre d'arrivée des requêtes.
+    const reference = await placeOne();
+
+    const results = await Promise.all([
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+    ]);
+
+    expect(results.filter((response) => response.status === 201)).toHaveLength(1);
+    expect(results.filter((response) => response.status === 409)).toHaveLength(1);
+  });
+
+  it("lit la commande derrière le code AVANT de déclarer quoi que ce soit", async () => {
+    const reference = await placeOne();
+
+    const view = jsonBody<{ reference: string; totalUnits: number; blockedReason: null }>(
+      await ctx.asSub("staff-e2e").get(`/admin/production/packing/${reference}`).expect(200),
+    );
+
+    expect(view.reference).toBe(reference);
+    expect(view.totalUnits).toBe(2);
+    expect(view.blockedReason).toBeNull();
+  });
+
+  it("répond 404 sur une feuille d'un autre jour, en nommant la cause probable", async () => {
+    const refused = await ctx
+      .asSub("staff-e2e")
+      .get(`/admin/production/packing/ORD-INEXISTANTE`)
+      .expect(404);
+
+    expect(jsonBody<{ message: string }>(refused).message).toContain("autre jour");
+  });
+});

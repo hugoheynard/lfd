@@ -34,6 +34,11 @@ const STATUS: Readonly<Record<OrderStatus, Labelled>> = {
   placed: { label: 'Passée', variant: 'info' },
   confirmed: { label: 'Confirmée', variant: 'info' },
   in_production: { label: 'En production', variant: 'warning' },
+  // `success` et non `warning` : pour l'atelier, `ready` CLÔT la boucle — la
+  // fabrication est faite, ce qui reste est le déplacement du client ou du
+  // coursier, pas une action de la maison. Ce qui distingue « Prête » de
+  // « Livrée » est le libellé, pas la couleur.
+  ready: { label: 'Prête', variant: 'success' },
   fulfilled: { label: 'Livrée', variant: 'success' },
   cancelled: { label: 'Annulée', variant: 'alert' },
 };

@@ -137,6 +137,16 @@ export class PrismaOrderRepository extends OrderRepository {
     });
   }
 
+  async markReady(reference: string, at: Date, by: string): Promise<boolean> {
+    // `readyAt: null` dans le WHERE : c'est la base qui arbitre, donc deux scans
+    // simultanés de la même fiche produisent exactement un colisage.
+    const { count } = await this.prisma.order.updateMany({
+      where: { orderNumber: reference, readyAt: null },
+      data: { readyAt: at, readyBy: by, status: OrderStatus.ready },
+    });
+    return count === 1;
+  }
+
   async markHandedOver(token: string, at: Date, by: string): Promise<boolean> {
     // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre, donc deux
     // scans simultanés du même QR produisent exactement une remise. La règle

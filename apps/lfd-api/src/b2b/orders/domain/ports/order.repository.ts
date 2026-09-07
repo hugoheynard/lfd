@@ -57,4 +57,17 @@ export abstract class OrderRepository {
    * pas donner.
    */
   abstract markHandedOver(token: string, at: Date, by: string): Promise<boolean>;
+
+  /**
+   * Grave le **colisage** : la fabrication est finie.
+   *
+   * Écriture nue et **conditionnée en base** (`readyAt: null`), pour la même
+   * raison que `markHandedOver` : deux postes qui scannent la même feuille au
+   * même moment ne doivent produire qu'un seul fait. Une load→save y perdrait
+   * l'atomicité pour zéro invariant de plus — la règle a déjà été appliquée sur
+   * l'état lu, par `packingBlocker`.
+   *
+   * Rend `false` quand la course est perdue : la commande était déjà prête.
+   */
+  abstract markReady(reference: string, at: Date, by: string): Promise<boolean>;
 }
