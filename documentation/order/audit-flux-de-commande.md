@@ -239,7 +239,7 @@ passe les portes, entre en base, part au plan de production et compte au chiffre
 d'affaires. C'est le même trou que `P1` de
 [`../pricing/audit-fable.md`](../pricing/audit-fable.md), vu depuis la commande.
 
-### T12 — ⏸️ REPORTÉ · `POST /orders` n'est pas idempotent
+### T12 — ✅ FERMÉ · `POST /orders` n'était pas idempotent
 
 Pas d'`Idempotency-Key`, pas de clé naturelle, pas de déduplication. Un double
 clic, un rejeu réseau ou un retour arrière du navigateur crée **deux commandes
@@ -528,8 +528,10 @@ refermera avec elle, pas avant.
 
 `T3` (aucun accusé de réception), `T4` (six états, deux écrits), `T7` (ni
 modification ni annulation), `T8` (aucune facture, `mes-factures` en maquette),
-`T10` (l'abonnement ne produit rien), `T11` seconde moitié (aucun stock), `T12`
-(pas d'idempotence). Le chemin du §4 reste valable pour eux.
+`T10` (l'abonnement ne produit rien), `T11` seconde moitié (aucun stock). Le
+chemin du §4 reste valable pour eux.
+
+> `T12` a été fermé plus tard le même jour — cf. le §7.
 
 ### Ce qui a été vérifié, et comment
 
@@ -558,3 +560,52 @@ modification ni annulation), `T8` (aucune facture, `mes-factures` en maquette),
 - **`vitruve` n'a été appelé sur rien.** Aucun de ces lots n'était une
   conception ; le premier qui en sera une est l'idempotence (lot 2, reporté), et
   il y passera.
+
+---
+
+## 7. T12 fermé — l'idempotence de passation
+
+> Écrit le 2026-09-07, après le §6. Le plan et sa contradiction :
+> [`plan-idempotence-de-passation.md`](plan-idempotence-de-passation.md).
+
+**Ce qui existe.** `POST /orders` porte une clé d'idempotence **au contrat** —
+`placeOrderPayloadSchema.idempotencyKey`, un UUID. Une table
+`order_idempotency` avec un index unique `(user_id, key)` arbitre : la clé se
+réclame par `INSERT` avant tout travail, se résout **dans la transaction qui
+écrit la commande**, et se rend quand rien n'a été écrit. Une clé rejouée avec un
+panier différent est **refusée** (422/409 nommé), pas honorée. Une clé réclamée
+et abandonnée depuis plus de deux minutes est **reprise** par la tentative
+suivante.
+
+**Ce que la contradiction a changé, et c'est beaucoup.** `vitruve` a rendu cinq
+bloquants sur le premier plan. Trois ont changé le dessin :
+
+- la clé devait être un **en-tête facultatif** ; elle est devenue un champ du
+  contrat, donc un appel sans clé est **inexprimable** plutôt que toléré. Le coût
+  invoqué pour la garder facultative — « casserait tous les appelants » — s'est
+  révélé être 52 appels dans nos propres e2e ;
+- la résolution devait suivre l'écriture ; elle est **dans la même transaction**.
+  Sans ça, un crash entre les deux laissait une clé qu'on ne pouvait ni rendre
+  (la commande existe) ni reprendre (on en passerait une seconde), et le client
+  recevait « il est trop tard » pour une commande bien partie ;
+- rien ne gardait d'**empreinte du panier**. Une clé rejouée après correction
+  rendait l'ancienne commande, le front vidait le panier corrigé, et l'écran
+  affichait les lignes de l'un sur la commande de l'autre — sans qu'aucune erreur
+  ne se lève.
+
+**Ce qui est sorti du périmètre, et pourquoi.** `POST /admin/orders` garde son
+défaut. Sa réponse porte `settlement` (`account` | `link`), que **rien en base ne
+stocke** : un rejeu ne le re-dériverait pas seulement mal, il le dériverait
+**faux** — un règlement par lien sur un total nul tombe en `not_required`, et
+toute dérivation dirait « account ». Le champ qui décide de l'écran serait celui
+que le rejeu invente. C'est une décision de modèle, pas un branchement.
+
+**Vérifié.** 7 cas e2e sur un vrai Postgres, dont la **course** — deux appels
+simultanés, exactement une commande — qu'aucun double en mémoire n'aurait montré.
+Suite complète : 931 e2e, 2 347 unitaires, 23/23 tâches racine, 12/12 builds,
+25 portes.
+
+**Ce qui reste ouvert :** la purge des clés (les lignes n'ont pas de fin, et
+l'API n'a aucun planificateur), et le second onglet — deux onglets fabriquent
+deux clés, donc deux commandes, ce qui est correct au sens strict et
+probablement faux au sens du client.
