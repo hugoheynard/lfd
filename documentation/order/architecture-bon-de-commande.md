@@ -129,8 +129,7 @@ export interface OrderSheet {
   readonly note: string;
   /** ABSENT sur l'audience atelier — pas `null`, pas à zéro : absent. */
   readonly money?: SheetMoney;
-  /** Le jeton que le comptoir ou le coursier scanne. `null` : rien à présenter. */
-  readonly handoverToken: string | null;
+
   readonly issuedAt: string; // §5
   readonly revision: number; // §5
 }
@@ -185,11 +184,20 @@ quand on cherche son code. Le dossier de reprise le dit pour la pièce jointe
 (« un PDF à ouvrir sur un téléphone, la main sur la porte, ne se scanne pas ») ;
 l'argument vaut mot pour mot pour un bouton.
 
-Le jeton est donc un **champ de l'`OrderSheet`**, pas une donnée que le gabarit
-irait chercher.
+🔴 **Le jeton n'est PAS un champ de l'`OrderSheet`** — et ce paragraphe a dit le
+contraire jusqu'à ce que la règle de l'autoscan soit écrite. S'il était sur la
+feuille, tout rendu qui reçoit une feuille pourrait l'imprimer, et « un seul
+rendu le lit » redeviendrait une consigne qu'on applique à la main.
 
-🔴 **Et un seul rendu le lit : `mail-html`. Aucun autre, jamais.** Ce n'est pas
-une commodité de mise en page, c'est la règle qui empêche l'**autoscan**.
+Il est donc **passé à part**, au seul gabarit qui en a besoin :
+
+```ts
+renderConfirmationMail(sheet: ClientSheet, handoverToken: string | null): string;
+```
+
+Les rendus `text`, `paper-a4` et `pdf` ne prennent qu'une feuille. Imprimer le
+secret sur du papier n'est plus interdit : **c'est une erreur de compilation**.
+C'est la règle de l'autoscan rendue structurelle plutôt que rappelée.
 
 En livraison, le papier voyage **avec la marchandise** : il est dans le carton,
 dans la camionnette, entre les mains du coursier bien avant que le destinataire
