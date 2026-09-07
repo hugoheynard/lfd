@@ -105,7 +105,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
       return { bytes: archived, fileName };
     }
 
-    const bytes = renderOrderSheetPdf(sheet);
+    const bytes = await renderOrderSheetPdf(sheet);
     await this.archive(key, bytes);
     return { bytes, fileName };
   }
