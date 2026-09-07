@@ -84,8 +84,25 @@ describe('RetraitPage', () => {
    */
   it('montre le code d’une commande LIVRÉE — le coursier le scannera', async () => {
     const fixture = await boot(order({ fulfillmentMethod: 'delivery' }));
+    const svg = (fixture.nativeElement as HTMLElement).querySelector('lfd-qr-code');
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('lfd-qr-code')).not.toBeNull();
+    // 🔴 Le même embranchement que le cas au-dessus, et il manquait ici. Sans
+    // origine admin, l'écran n'affiche AUCUN code — c'est sa bonne conduite,
+    // pas une panne — et ce cas échouait alors sur `expected null not to be
+    // null`. Il passait en local, où le `.env` la fournit ; il tombait en CI,
+    // où rien ne la pose. Un test vert seulement sur le poste de son auteur ne
+    // prouve rien de ce qu'il prétend prouver.
+    //
+    // Ce que ce cas tient est l'ACHEMINEMENT — qu'une livraison ne soit plus
+    // privée de code — et il le tient dans les deux environnements : là où un
+    // code est possible il est présent, là où il ne l'est pas la livraison est
+    // traitée comme le retrait, sans exception qui lui serait propre.
+    if (AUTH_CONFIG.adminBaseUrl === '') {
+      expect(svg).toBeNull();
+      expect(text(fixture)).toContain(FR.qr.unavailable);
+      return;
+    }
+    expect(svg).not.toBeNull();
   });
 
   /**
