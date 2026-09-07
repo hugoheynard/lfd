@@ -146,8 +146,37 @@ export interface R2StorageState {
   readonly missing: readonly string[];
 }
 
-/** Les stockages de cette app. Un de plus ⇒ une entrée de plus ci-dessous. */
-export type R2StorageUsage = "kbis" | "media";
+/**
+ * Les stockages de cette app. Un de plus ⇒ une entrée de plus ci-dessous.
+ *
+ * - `kbis` — les pièces que le CLIENT nous remet : extrait de greffe, mandat
+ *   signé. Elles se remplacent (un nouveau dépôt écrase le précédent).
+ * - `media` — les images du catalogue, servies par un domaine **public**.
+ * - `customers` — les pièces **attachées à un client** : les papiers de ses
+ *   commandes, et bientôt les factures déposées par le comptable. Immuables —
+ *   un avenant ajoute une révision, il n'écrase rien — et **jamais publiques** :
+ *   elles passent par l'API, derrière le mur de la société.
+ *
+ * 🔴 **`customers` est rangé par COMMANDE, pas par audience.** La feuille
+ * d'atelier d'une commande y vit à côté du bon du client — sous le même préfixe
+ * `orders/{orderId}/`. Ce n'est pas pur, et c'est délibéré : séparer par
+ * audience éparpillerait les papiers d'une même commande dans deux buckets, et
+ * une règle de rétention devrait alors être posée deux fois, à deux endroits
+ * qui finiraient par diverger. Tout ce qui concerne la commande X est en X.
+ *
+ * Ce que ça coûte : les mêmes clés ouvrent la feuille d'atelier. Elle ne porte
+ * **aucun montant** — c'est une propriété de son TYPE, pas une consigne — donc
+ * le pire qu'un porteur de ces clés y trouve est ce qu'il pouvait déjà lire sur
+ * le bon. Ce qui protège un client d'un autre n'a jamais été le bucket : c'est
+ * le préfixe de clé et le mur de la société côté API.
+ *
+ * ⚠️ **Pourquoi le KBIS n'est pas dans `customers`**, alors qu'il appartient
+ * aussi à un client : il a son bucket depuis plus longtemps, avec des données
+ * dedans. L'y ranger serait une migration de fichiers, pas un renommage. La
+ * ligne de partage qui reste vraie est celle du SENS : `kbis` porte ce que le
+ * client nous donne, `customers` ce qu'on lui rend.
+ */
+export type R2StorageUsage = "kbis" | "media" | "customers";
 
 /**
  * Les variables d'environnement de chaque usage.
@@ -173,6 +202,12 @@ const R2_SETTINGS: Readonly<
     accessKeyId: "R2_MEDIA_ACCESS_KEY_ID",
     secretAccessKey: "R2_MEDIA_SECRET_ACCESS_KEY",
     endpoint: "R2_MEDIA_ENDPOINT",
+  },
+  customers: {
+    bucket: "R2_CUSTOMERS_BUCKET",
+    accessKeyId: "R2_CUSTOMERS_ACCESS_KEY_ID",
+    secretAccessKey: "R2_CUSTOMERS_SECRET_ACCESS_KEY",
+    endpoint: "R2_CUSTOMERS_ENDPOINT",
   },
 };
 

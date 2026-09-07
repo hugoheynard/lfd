@@ -78,6 +78,15 @@ const RUNTIME_KEYS = [
   "R2_MEDIA_ACCESS_KEY_ID",
   "R2_MEDIA_SECRET_ACCESS_KEY",
   "R2_MEDIA_PUBLIC_BASE_URL",
+  // Stockage des pièces attachées à un client (bons de commande, feuilles
+  // d'atelier, et bientôt les factures du comptable) — troisième usage R2, avec
+  // son propre bucket et son propre jeton. Aucune adresse publique ici, et c'est
+  // la différence qui compte avec les médias : ces pièces ne sont servies que
+  // par l'API, derrière le mur de la société.
+  "R2_CUSTOMERS_ENDPOINT",
+  "R2_CUSTOMERS_BUCKET",
+  "R2_CUSTOMERS_ACCESS_KEY_ID",
+  "R2_CUSTOMERS_SECRET_ACCESS_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",

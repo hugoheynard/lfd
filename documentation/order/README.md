@@ -89,6 +89,7 @@ flowchart TD
 | Comment la commande alimente le plan de production ?         | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète** |
 | Quels écrans le client traverse, et avec quels mots ?        | [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md)                                |
 | De quoi est faite la pièce qu'on imprime, envoie, affiche ?  | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                |
+| Où sont rangés les papiers d'un client, et sous quelle clé ? | [`architecture-pieces-en-r2.md`](architecture-pieces-en-r2.md)                                      |
 
 **Je veux IMPLÉMENTER.**
 

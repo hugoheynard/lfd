@@ -4,6 +4,8 @@ import { IdGenerator } from "../id/id-generator.js";
 import { UlidGenerator } from "../id/ulid-generator.js";
 import { RandomSecretGenerator } from "../secret/random-secret-generator.js";
 import { SecretGenerator } from "../secret/secret-generator.js";
+import { AppConfig } from "../config/app-config.js";
+import { CustomerDocumentStore } from "../storage/customer-document-store.js";
 import { DocumentStore } from "../storage/document-store.js";
 import { MediaStore } from "../storage/media-store.js";
 import { R2MediaStore } from "../storage/r2-media-store.js";
@@ -30,9 +32,22 @@ import { SystemClock } from "../time/system-clock.js";
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UlidGenerator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
-    { provide: DocumentStore, useClass: S3DocumentStore },
+    // Le MÊME adaptateur, deux buckets. L'usage se décide ici, à la racine de
+    // composition, et pas dans l'adaptateur : c'est un fait de déploiement, et
+    // un appelant ne choisit jamais le bucket dans lequel il écrit.
+    {
+      provide: DocumentStore,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): DocumentStore => new S3DocumentStore(config, "kbis"),
+    },
+    {
+      provide: CustomerDocumentStore,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): CustomerDocumentStore =>
+        new S3DocumentStore(config, "customers"),
+    },
     { provide: MediaStore, useClass: R2MediaStore },
   ],
-  exports: [Clock, IdGenerator, SecretGenerator, DocumentStore, MediaStore],
+  exports: [Clock, IdGenerator, SecretGenerator, DocumentStore, CustomerDocumentStore, MediaStore],
 })
 export class ContextModule {}

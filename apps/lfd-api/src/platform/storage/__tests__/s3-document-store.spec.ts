@@ -43,7 +43,7 @@ function s3Error(name: string): Error {
 
 describe("S3DocumentStore — le canal absent", () => {
   it("REFUSE clairement quand rien n'est configuré", async () => {
-    const store = new S3DocumentStore(configWith(null));
+    const store = new S3DocumentStore(configWith(null), "kbis");
 
     await expect(
       store.save("companies/1/kbis", { bytes: Buffer.from("x"), contentType: "application/pdf" }),
@@ -51,7 +51,7 @@ describe("S3DocumentStore — le canal absent", () => {
   });
 
   it("nomme les variables manquantes, pour qu'on sache quoi poser", async () => {
-    const store = new S3DocumentStore(configWith(null));
+    const store = new S3DocumentStore(configWith(null), "kbis");
 
     await expect(store.read("companies/1/kbis")).rejects.toThrow(/R2_KBIS_BUCKET/);
   });
@@ -65,7 +65,7 @@ describe("S3DocumentStore — le canal en ÉCHEC", () => {
    * une panne ordinaire du canal avec un nom précis (`NoSuchBucket`).
    */
   function storeThatFails(name: string): S3DocumentStore {
-    const store = new S3DocumentStore(configWith(CONFIGURED));
+    const store = new S3DocumentStore(configWith(CONFIGURED), "kbis");
     Reflect.set(store, "cached", {
       upload: () => Promise.reject(s3Error(name)),
       downloadToBuffer: () => Promise.reject(s3Error(name)),

@@ -16,6 +16,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasWebPushKeys: true,
   hasStorage: true,
   hasMediaStorage: true,
+  hasCustomerStorage: true,
   hasStripe: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,

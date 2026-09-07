@@ -3,6 +3,7 @@ import { S3StorageService } from "@lfd/storage";
 
 import { DocumentStorageUnavailableError } from "../shared/errors/storage-errors.js";
 import { AppConfig } from "../config/app-config.js";
+import type { R2StorageUsage } from "../config/env-readers.js";
 import { DocumentStore, type StoredDocument } from "./document-store.js";
 
 /**
@@ -12,13 +13,23 @@ import { DocumentStore, type StoredDocument } from "./document-store.js";
  * bucket est configuré ; sinon `service()` refuse **clairement** plutôt que
  * d'échouer sur une erreur AWS obscure. Le reste de l'app démarre sans stockage
  * — seules les pièces sont indisponibles (cf. `AppConfig.storageConfig`).
+ *
+ * 🔴 **L'usage est un paramètre, plus une constante.** Il valait `"kbis"` en
+ * dur, et tout ce qui passait par ce port atterrissait donc dans le bucket des
+ * pièces d'identité, avec ses clés. La configuration dit pourtant l'inverse en
+ * toutes lettres : « chaque usage porte son bucket ET ses clés : un jeton
+ * n'ouvre que le sien ». Une constante en dur défaisait l'isolation que la
+ * configuration établissait.
  */
 @Injectable()
 export class S3DocumentStore extends DocumentStore {
   private readonly logger = new Logger(S3DocumentStore.name);
   private cached: S3StorageService | null = null;
 
-  constructor(private readonly config: AppConfig) {
+  constructor(
+    private readonly config: AppConfig,
+    private readonly usage: R2StorageUsage,
+  ) {
     super();
   }
 
@@ -72,10 +83,11 @@ export class S3DocumentStore extends DocumentStore {
     if (this.cached !== null) {
       return this.cached;
     }
-    const config = this.config.r2Storage("kbis");
+    const config = this.config.r2Storage(this.usage);
     if (config === null) {
+      const prefix = `R2_${this.usage.toUpperCase()}`;
       throw new DocumentStorageUnavailableError(
-        "Le stockage des pièces n'est pas configuré (R2_KBIS_BUCKET / R2_KBIS_ACCESS_KEY_ID / R2_KBIS_SECRET_ACCESS_KEY).",
+        `Le stockage des pièces n'est pas configuré (${prefix}_BUCKET / ${prefix}_ACCESS_KEY_ID / ${prefix}_SECRET_ACCESS_KEY).`,
       );
     }
     this.cached = new S3StorageService(config);

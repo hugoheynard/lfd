@@ -1,6 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { DocumentStore } from "../../../../platform/storage/document-store.js";
+import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -42,6 +42,14 @@ export interface OrderSheetPdf {
  * mêmes octets, le second `save` écrase le premier par un objet identique, et
  * peu importe qui gagne. Pas de verrou, pas de réservation, rien à coordonner.
  *
+ * ## Dans quel bucket
+ *
+ * `CustomerDocumentStore`, et pas `DocumentStore` : le second sert les pièces
+ * que le CLIENT nous remet (KBIS, mandat), avec **ses propres clés**. Écrire un
+ * bon de commande là-dedans défaisait l'isolation que la configuration
+ * établit — « un jeton n'ouvre que le sien ». C'est ce que faisait la première
+ * version de ce handler, faute d'avoir vérifié quel bucket le port ouvrait.
+ *
  * ## Ce qu'un stockage indisponible ne doit pas coûter
  *
  * Le rangement est **best-effort**. Un R2 en panne ne doit pas empêcher un
@@ -58,7 +66,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
   constructor(
     private readonly guard: OrderGuardReader,
     private readonly orders: OrderReader,
-    private readonly documents: DocumentStore,
+    private readonly documents: CustomerDocumentStore,
   ) {}
 
   async execute(query: GetOrderSheetPdfQuery): Promise<OrderSheetPdf> {

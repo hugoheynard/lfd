@@ -69,6 +69,7 @@ export class StartupReport implements OnApplicationBootstrap {
     return [
       ...this.config.r2StorageState("kbis").missing,
       ...this.config.r2StorageState("media").missing,
+      ...this.config.r2StorageState("customers").missing,
     ];
   }
 
@@ -101,6 +102,7 @@ export class StartupReport implements OnApplicationBootstrap {
   private snapshot() {
     const kbis = this.config.r2StorageState("kbis");
     const media = this.config.r2StorageState("media");
+    const customers = this.config.r2StorageState("customers");
     return {
       hasManagementCredentials: this.config.auth0ManagementCredentials() !== null,
       hasAdminAudience: this.config.auth0AdminAudience() !== null,
@@ -109,6 +111,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasWebPushKeys: this.config.webPushConfig() !== null,
       hasStorage: kbis.config !== null,
       hasMediaStorage: media.config !== null && this.config.mediaPublicBaseUrl() !== null,
+      hasCustomerStorage: customers.config !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasShopifyCredentials: this.config.hasShopifyCredentials(),

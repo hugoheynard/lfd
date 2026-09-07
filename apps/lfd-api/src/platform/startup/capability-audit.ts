@@ -29,6 +29,8 @@ export interface CapabilitySnapshot {
   readonly hasStorage: boolean;
   /** Bucket média **et** domaine public : l'un sans l'autre ne sert à rien. */
   readonly hasMediaStorage: boolean;
+  /** Le stockage des pièces attachées aux commandes d'un client. */
+  readonly hasCustomerStorage: boolean;
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
@@ -136,6 +138,18 @@ const CHECKS: readonly Check[] = [
     consequence: "les KBIS ne peuvent être ni déposés ni téléchargés",
     severity: "degraded",
     present: (s) => s.hasStorage,
+  },
+  {
+    capability: "Stockage des pièces client",
+    setting: "R2_CUSTOMERS_BUCKET / R2_CUSTOMERS_ACCESS_KEY_ID / R2_CUSTOMERS_SECRET_ACCESS_KEY",
+    // Le bon de commande se REFABRIQUE à l'identique tant que la commande n'a
+    // pas bougé — le rendu est déterministe. Un stockage absent ne perd donc
+    // rien : il fait seulement refabriquer à chaque téléchargement. Ce qu'on
+    // perdrait, c'est l'archive d'une révision qu'un avenant a remplacée.
+    consequence:
+      "les bons de commande sont refabriqués à chaque téléchargement, et aucune révision n'est archivée",
+    severity: "degraded",
+    present: (s) => s.hasCustomerStorage,
   },
   {
     capability: "Stockage des visuels",
