@@ -2,6 +2,7 @@ import { createMailer, type MailerLogger } from "@lfd/mailer";
 import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { BackgroundWork } from "../events/background-work.js";
 import { Clock } from "../time/clock.js";
 import { AdminMailCheckController } from "./admin-mail-check.controller.js";
 import { JournalingMailer } from "./journal/journaling-mailer.js";
@@ -37,8 +38,13 @@ export type { B2bMailer };
     ResendWebhookChecker,
     {
       provide: MAILER,
-      inject: [AppConfig, MailJournal, Clock],
-      useFactory: (config: AppConfig, journal: MailJournal, clock: Clock): B2bMailer => {
+      inject: [AppConfig, MailJournal, Clock, BackgroundWork],
+      useFactory: (
+        config: AppConfig,
+        journal: MailJournal,
+        clock: Clock,
+        work: BackgroundWork,
+      ): B2bMailer => {
         const mailer = config.mailerConfig();
         // Le journal ENVELOPPE le mailer : `@lfd/mailer` est partagé et ne
         // connaît ni Nest, ni Prisma, ni l'idée qu'une app tienne un registre.
@@ -59,7 +65,7 @@ export type { B2bMailer };
           replyTo: mailer.replyTo,
           logger: nestLogger(),
         });
-        return new JournalingMailer(inner, journal, clock);
+        return new JournalingMailer(inner, journal, clock, work);
       },
     },
   ],
