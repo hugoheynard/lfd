@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import type { BillingAddressPayload, FulfillmentWindow } from "./address.js";
-import type { FulfillmentMethod, OrderOrigin } from "./order.js";
+import type { AtelierSheet } from "./order-sheet.js";
 
 /**
  * Les **fiches de fonction** d'un service : ce que le labo doit fabriquer pour
@@ -31,99 +30,21 @@ export const productionBatchQuerySchema = z.object({
 });
 export type ProductionBatchQuery = z.infer<typeof productionBatchQuerySchema>;
 
-/** Une ligne à fabriquer. Ni prix unitaire, ni TVA, ni total : on produit. */
-export interface ProductionSheetLine {
-  readonly sku: string;
-  /** Le nom **figé à la commande** — le catalogue a pu bouger depuis. */
-  readonly productName: string;
-  readonly quantity: number;
-}
-
-/**
- * **Qui appeler** en livrant. Le livreur sonne à une porte : il lui faut un nom
- * et un numéro, pas une raison sociale.
- *
- * Trois provenances, dans cet ordre :
- *
- * - `order` — le contact **convenu sur la commande**, figé à la passation. Le
- *   bon : c'est ce que le client a vu à l'écran en validant ;
- * - `holder` — à défaut, le **détenteur du compte** (le membre `owner`). Il n'a
- *   pas forcément été prévenu, mais c'est quelqu'un à qui parler. C'est la
- *   seule information de la fiche qui se cherche encore ailleurs que sur la
- *   commande — un compte n'a qu'un détenteur, et il ne change pas d'un jour à
- *   l'autre comme un réglage d'adresse ;
- * - `null` — rien de convenu et pas de détenteur. La fiche le **dit** alors :
- *   le livreur doit savoir qu'il part sans numéro, pas le découvrir devant la
- *   porte.
- */
-export interface ProductionContact {
-  readonly source: "order" | "holder";
-  readonly name: string;
-  /** Peut être vide : un détenteur sans téléphone reste un nom à demander. */
-  readonly phone: string;
-}
-
-/** Une fiche : une commande, telle qu'on la fabrique et telle qu'on la remet. */
-export interface ProductionSheet {
-  readonly orderId: string;
-  readonly orderNumber: string;
-  /**
-   * Le nom **commercial** — l'enseigne. C'est celui que le fournil connaît et
-   * celui qui est peint sur la devanture. Vide quand la société n'en a pas
-   * déclaré, ou quand la commande est personnelle.
-   */
-  readonly tradeName: string;
-  /**
-   * La **raison sociale** — le nom au greffe. Il lève l'ambiguïté entre deux
-   * enseignes voisines, et c'est lui qui figure sur les papiers.
-   *
-   * Sur une commande **sans entreprise** (zéro friction), c'est la personne :
-   * l'enseigne est vide et ce champ porte seul le nom. Une fiche a toujours
-   * quelqu'un à qui remettre, même quand ce n'est pas une société.
-   */
-  readonly legalName: string;
-  readonly fulfillmentMethod: FulfillmentMethod;
-  /** Le point de retrait nommé, quand c'est un retrait et qu'il en porte un. */
-  readonly pickupLabel: string | null;
-  /**
-   * L'adresse **postale** du point de retrait — celle qu'on lit au téléphone à
-   * un client qui demande où venir. Le libellé seul ne suffit pas.
-   */
-  readonly pickupAddress: BillingAddressPayload | null;
-  /** L'adresse servie, quand c'est un coursier. */
-  readonly deliveryAddress: BillingAddressPayload | null;
-  /** Qui appeler en livrant — cf. {@link ProductionContact}. `null` = personne. */
-  readonly deliveryContact: ProductionContact | null;
-  /**
-   * L'**heure convenue** — celle du retrait ou du passage du coursier, telle
-   * qu'elle a été arrêtée à la passation. `null` = aucune heure convenue, la
-   * commande se remet quand elle se remet.
-   *
-   * Elle vient du bloc figé sur la commande, pas des heures du point ni des
-   * créneaux du carnet : ceux-là peuvent changer demain, et une feuille déjà
-   * partie en tournée ne doit pas dire autre chose que le papier.
-   */
-  readonly window: FulfillmentWindow | null;
-  /**
-   * La remise exige-t-elle une **signature** ? Convenu sur la commande, donc
-   * opposable : le livreur ne repart pas sans, même si le réglage du site a
-   * changé depuis.
-   */
-  readonly signatureRequired: boolean;
-  /** La note du client — consigne de fabrication ou d'accès, elle se lit au labo. */
-  readonly note: string;
-  /** Par quelle porte la commande est entrée (récurrente, saisie, self-service). */
-  readonly origin: OrderOrigin;
-  readonly lines: readonly ProductionSheetLine[];
-}
-
 /**
  * Le lot d'un jour. `sheets` est ordonné de façon **stable** (par référence de
  * commande) pour qu'une réimpression rende exactement la même pile, dans le même
  * ordre, avec les mêmes rangs.
+ *
+ * 🔴 **Une fiche de production EST un bon de commande d'audience `atelier`**, et
+ * elle l'est depuis le 2026-09-07. Il y avait deux types pour un seul papier :
+ * `ProductionSheet` savait à QUI la commande appartient, `AtelierSheet` savait
+ * QUAND le tirage avait été arrêté — et aucun des deux ne savait les deux. Deux
+ * définitions d'un même document, c'est deux occasions de le faire diverger, et
+ * la première avait déjà eu lieu : la fiche du fournil n'a jamais porté son
+ * heure de génération, alors que deux tirages peuvent circuler après un avenant.
  */
 export interface ProductionBatchView {
   /** `AAAA-MM-JJ`, la journée servie. */
   readonly date: string;
-  readonly sheets: readonly ProductionSheet[];
+  readonly sheets: readonly AtelierSheet[];
 }

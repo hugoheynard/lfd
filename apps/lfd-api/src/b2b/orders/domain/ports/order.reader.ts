@@ -5,7 +5,7 @@ import type {
   OrderHandoverLine,
   OrderStatus,
   OrderView,
-  ProductionSheet,
+  AtelierSheet,
 } from "@lfd/contracts";
 
 /**
@@ -78,7 +78,7 @@ export abstract class OrderReader {
    * son lot : la retirer ferait maigrir la pile entre deux tirages, et c'est
    * précisément le compte qui sert de preuve qu'il ne manque rien.
    */
-  abstract listForProduction(date: string): Promise<readonly ProductionSheet[]>;
+  abstract listForProduction(date: string): Promise<readonly AtelierSheet[]>;
 }
 
 /**

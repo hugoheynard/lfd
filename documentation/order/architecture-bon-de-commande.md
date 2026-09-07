@@ -568,6 +568,41 @@ discriminée** est plus forte : `AtelierSheet` n'a pas la propriété du tout, d
 `switch` de `orderSheetOf` devient par la même occasion exhaustif sur l'union :
 une quatrième audience ne compile pas tant qu'elle n'a pas sa projection.
 
+### Ce que la fusion du lot 4 a appris
+
+Il y avait **deux types pour un seul papier**, et chacun savait ce que l'autre
+ignorait :
+
+|                                                 | `ProductionSheet`            | `AtelierSheet` (lot 1) |
+| ----------------------------------------------- | ---------------------------- | ---------------------- |
+| À qui la commande appartient                    | ✅ enseigne + raison sociale | ❌                     |
+| Le point de retrait **nommé**                   | ✅                           | ❌                     |
+| Le contact, avec son **repli** sur le détenteur | ✅                           | partiel                |
+| Par quelle porte la commande est entrée         | ✅                           | ❌                     |
+| **Quand le tirage a été arrêté**                | ❌                           | ✅                     |
+| L'absence de montants **par la forme**          | par convention               | ✅ par le type         |
+
+Aucun n'était un sous-ensemble de l'autre, et la divergence avait **déjà eu
+lieu** : la fiche du fournil n'a jamais porté son heure de génération, alors
+même que le dossier de reprise le signalait comme manquant.
+
+La fusion se fait dans le sens `AtelierSheet`, et les quatre champs manquants la
+rejoignent. Trois d'entre eux ne peuvent pas venir d'une `OrderView` — le nom du
+client, le point nommé, le détenteur du compte ne sont pas dedans. C'est donc le
+**lecteur de production** qui compose la feuille, avec ses jointures sous la
+main, et la projection pure sert le reste.
+
+🔴 **`customer` est sur les feuilles atelier et staff, pas sur celle du client.**
+Un bon de commande qu'on vous tend n'a pas à vous dire qui vous êtes : le client
+sert à retrouver la bonne pile au fournil et à décrocher le bon téléphone au
+bureau, deux besoins que le client lui-même n'a pas. C'est la logique d'audience
+appliquée dans l'autre sens que les montants.
+
+⚠️ **Et `orderSheetOf(order, audience)` a disparu.** L'aiguilleur du lot 2 était
+un passif : c'est exactement l'appel qu'on ajoute « pour factoriser » le jour où
+une route reçoit une audience en paramètre. Trois fonctions nommées, chacune
+avec les entrées que son audience exige, ne se détournent pas de la même façon.
+
 **L'ordre n'est pas négociable.** Les lots 3 à 5 sont des rendus : ils n'ont rien
 à consommer tant que 1 et 2 n'existent pas, et les écrire d'abord recrée
 exactement les six documents séparés que ce dossier vient défaire.

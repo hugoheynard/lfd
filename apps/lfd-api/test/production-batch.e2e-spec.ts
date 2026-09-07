@@ -136,14 +136,14 @@ describe("la fiche de production lit ce qui a été convenu", () => {
     });
 
     const sheet = (await batch()).sheets[0];
-    expect(sheet?.deliveryContact).toEqual({
+    expect(sheet?.fulfillment.contact).toEqual({
       source: "order",
       name: "Camille Rousseau",
       phone: "0142710844",
     });
     // La signature aussi est figée : elle vaut pour ce qui part, pas pour le
     // réglage d'aujourd'hui.
-    expect(sheet?.signatureRequired).toBe(true);
+    expect(sheet?.fulfillment.signatureRequired).toBe(true);
   });
 
   it("écrit « aucun contact » plutôt que d'aller en chercher un ailleurs", async () => {
@@ -171,7 +171,11 @@ describe("la fiche de production lit ce qui a été convenu", () => {
     const sheet = (await batch()).sheets[0];
     // Commande personnelle : pas de société, donc pas de détenteur à qui se
     // rabattre. La fiche le dit au lieu de laisser un blanc.
-    expect(sheet?.deliveryContact).toBeNull();
-    expect(sheet?.signatureRequired).toBe(false);
+    expect(sheet?.fulfillment.contact).toBeNull();
+    // Et elle porte son heure d'arrêt : sans elle, deux tirages du même jour
+    // circulent au fournil sans qu'on puisse les distinguer.
+    expect(sheet?.issuedAt).toBe(sheet?.placedAt);
+    expect(sheet?.revision).toBe(0);
+    expect(sheet?.fulfillment.signatureRequired).toBe(false);
   });
 });

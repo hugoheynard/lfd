@@ -19,10 +19,13 @@ import {
 const FULFILLMENT = {
   method: "pickup" as const,
   address: null,
+  pickupLabel: "Le Labo",
   window: null,
   contact: null,
   signatureRequired: false,
 };
+
+const CUSTOMER = { tradeName: "Trois Ponts", legalName: "SARL Trois Ponts" };
 
 const COMMON = {
   orderId: "order_1",
@@ -31,6 +34,7 @@ const COMMON = {
   requestedFor: null,
   fulfillment: FULFILLMENT,
   note: "",
+  origin: "self_service" as const,
   issuedAt: "2026-09-07T06:00:00.000Z",
   revision: 0,
 };
@@ -51,6 +55,7 @@ describe("la feuille d'atelier", () => {
     const parsed = atelierSheetSchema.parse({
       ...COMMON,
       audience: "atelier",
+      customer: CUSTOMER,
       lines: [{ sku: "PAIN-TRAD", productName: "Tradition", quantity: 12 }],
       // Une projection qui se tromperait d'audience : le schéma est la dernière
       // barrière avant le fournil, et il ne doit pas la laisser passer.
@@ -64,6 +69,7 @@ describe("la feuille d'atelier", () => {
     const parsed = atelierSheetSchema.parse({
       ...COMMON,
       audience: "atelier",
+      customer: CUSTOMER,
       lines: [{ sku: "PAIN-TRAD", productName: "Tradition", quantity: 12 }],
     });
 
@@ -122,6 +128,7 @@ describe("la feuille du staff", () => {
     const parsed = staffSheetSchema.parse({
       ...COMMON,
       audience: "staff",
+      customer: CUSTOMER,
       lines: [
         {
           sku: "PAT-ECLAIR",
@@ -150,6 +157,7 @@ describe("la feuille du staff", () => {
     const parsed = staffSheetSchema.parse({
       ...COMMON,
       audience: "staff",
+      customer: CUSTOMER,
       lines: [
         {
           sku: "PAIN-TRAD",
@@ -175,6 +183,7 @@ describe("l'union discriminée", () => {
     const atelier = orderSheetSchema.parse({
       ...COMMON,
       audience: "atelier",
+      customer: CUSTOMER,
       lines: [{ sku: "PAIN-TRAD", productName: "Tradition", quantity: 2 }],
     });
 
@@ -205,6 +214,7 @@ describe("le tirage", () => {
       ...COMMON,
       revision: -1,
       audience: "atelier",
+      customer: CUSTOMER,
       lines: [],
     });
 
@@ -212,7 +222,12 @@ describe("le tirage", () => {
   });
 
   it("accepte la révision zéro : la commande d'origine n'est pas une absence", () => {
-    const parsed = atelierSheetSchema.parse({ ...COMMON, audience: "atelier", lines: [] });
+    const parsed = atelierSheetSchema.parse({
+      ...COMMON,
+      audience: "atelier",
+      customer: CUSTOMER,
+      lines: [],
+    });
 
     expect(parsed.revision).toBe(0);
   });

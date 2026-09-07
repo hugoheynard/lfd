@@ -1,23 +1,28 @@
-import type { CatalogItemView, ProductionSheet } from '@lfd/contracts';
+import type { CatalogItemView, AtelierSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { productionRecap, totalPieces } from '../production-recap';
 
-function sheet(orderNumber: string, lines: [string, string, number][]): ProductionSheet {
+function sheet(reference: string, lines: [string, string, number][]): AtelierSheet {
   return {
-    orderId: `ord_${orderNumber}`,
-    orderNumber,
-    tradeName: 'Café des Halles',
-    legalName: 'Café des Halles SAS',
-    fulfillmentMethod: 'pickup',
-    pickupLabel: null,
-    pickupAddress: null,
-    deliveryAddress: null,
-    deliveryContact: null,
-    window: null,
-    signatureRequired: false,
+    orderId: `ord_${reference}`,
+    reference,
+    audience: 'atelier',
+    customer: { tradeName: 'Café des Halles', legalName: 'Café des Halles SAS' },
+    placedAt: '2026-09-07T04:00:00.000Z',
+    requestedFor: '2026-09-08',
+    fulfillment: {
+      method: 'pickup',
+      address: null,
+      pickupLabel: null,
+      window: null,
+      contact: null,
+      signatureRequired: false,
+    },
     note: '',
     origin: 'self_service',
+    issuedAt: '2026-09-07T04:00:00.000Z',
+    revision: 0,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };
 }

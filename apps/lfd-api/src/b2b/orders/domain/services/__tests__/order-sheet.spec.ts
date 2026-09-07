@@ -1,6 +1,9 @@
 import type { OrderLineView, OrderView } from "@lfd/contracts";
 
-import { atelierSheetOf, clientSheetOf, orderSheetOf, staffSheetOf } from "../order-sheet.js";
+import { atelierSheetOf, clientSheetOf, staffSheetOf } from "../order-sheet.js";
+
+/** Le client de la commande, tel que le lecteur de production le compose. */
+const CUSTOMER = { tradeName: "Trois Ponts", legalName: "SARL Trois Ponts" };
 
 /**
  * Ce que ces cas éprouvent est une **frontière de sécurité**, pas une mise en
@@ -82,7 +85,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
 
 describe("la feuille de l'atelier", () => {
   it("ne porte aucun montant — la propriété n'existe pas", () => {
-    const sheet = atelierSheetOf(order());
+    const sheet = atelierSheetOf(order(), CUSTOMER);
 
     // Une feuille oubliée sur un plan de travail ne raconte pas les prix
     // négociés à qui la ramasse, et celle d'une livraison voyage dans le carton.
@@ -91,11 +94,11 @@ describe("la feuille de l'atelier", () => {
   });
 
   it("garde le SKU : c'est par lui qu'on retrouve un article au four", () => {
-    expect(atelierSheetOf(order()).lines[0]?.sku).toBe("PAT-ECLAIR");
+    expect(atelierSheetOf(order(), CUSTOMER).lines[0]?.sku).toBe("PAT-ECLAIR");
   });
 
   it("ne porte aucune trace de prix, pas même un libellé d'étage", () => {
-    expect(JSON.stringify(atelierSheetOf(order()))).not.toContain("Promotion de rentrée");
+    expect(JSON.stringify(atelierSheetOf(order(), CUSTOMER))).not.toContain("Promotion de rentrée");
   });
 });
 
@@ -134,7 +137,7 @@ describe("la feuille du client", () => {
 describe("la feuille du staff", () => {
   it("ajoute le SKU et la trace, sans changer un seul montant", () => {
     const client = clientSheetOf(order());
-    const staff = staffSheetOf(order());
+    const staff = staffSheetOf(order(), CUSTOMER);
 
     expect(staff.lines[0]?.sku).toBe("PAT-ECLAIR");
     expect(staff.lines[0]?.entryPriceMillicents).toBe(250_000);
@@ -149,6 +152,7 @@ describe("la feuille du staff", () => {
     // identique ferait croire à une remise qui n'existe pas.
     const sheet = staffSheetOf(
       order({ lines: [line({ unitPriceMillicents: 250_000, lineTotalCents: 1_000 })] }),
+      CUSTOMER,
     );
 
     expect(sheet.lines[0]?.entryPriceMillicents).toBeNull();
@@ -158,7 +162,7 @@ describe("la feuille du staff", () => {
     // L'autre cas, indistinguable du premier à la lecture : le combler avec le
     // prix facturé affirmerait « aucune altération » sur les seules commandes
     // qu'on ne peut plus vérifier.
-    const sheet = staffSheetOf(order({ lines: [line({ pricing: null })] }));
+    const sheet = staffSheetOf(order({ lines: [line({ pricing: null })] }), CUSTOMER);
 
     expect(sheet.lines[0]?.entryPriceMillicents).toBeNull();
     expect(sheet.lines[0]?.floored).toBe(false);
@@ -167,7 +171,7 @@ describe("la feuille du staff", () => {
 
 describe("l'acheminement", () => {
   it("retient l'adresse de RETRAIT sur une commande retirée", () => {
-    expect(atelierSheetOf(order()).fulfillment.address?.ville).toBe("Val d'Isère");
+    expect(atelierSheetOf(order(), CUSTOMER).fulfillment.address?.ville).toBe("Val d'Isère");
   });
 
   it("retient l'adresse LIVRÉE sur une commande en coursier", () => {
@@ -181,6 +185,7 @@ describe("l'acheminement", () => {
           ville: "Tignes",
         },
       }),
+      CUSTOMER,
     );
 
     expect(sheet.fulfillment.address?.ville).toBe("Tignes");
@@ -188,15 +193,34 @@ describe("l'acheminement", () => {
 });
 
 describe("le jeton de remise", () => {
-  it.each(["atelier", "client", "staff"] as const)(
-    "ne figure sur AUCUNE feuille — audience %s",
-    (audience) => {
-      // La règle de l'autoscan, rendue structurelle : le jeton n'est pas un
-      // champ de la feuille, donc aucun rendu ne peut l'imprimer sur un papier
-      // qui voyage dans le carton.
-      expect(JSON.stringify(orderSheetOf(order(), audience))).not.toContain("tok_secret_42");
-    },
-  );
+  it("ne figure sur AUCUNE des trois feuilles", () => {
+    // La règle de l'autoscan, rendue structurelle : le jeton n'est pas un champ
+    // de la feuille, donc aucun rendu ne peut l'imprimer sur un papier qui
+    // voyage dans le carton.
+    const sheets = [
+      atelierSheetOf(order(), CUSTOMER),
+      clientSheetOf(order()),
+      staffSheetOf(order(), CUSTOMER),
+    ];
+
+    for (const sheet of sheets) {
+      expect(JSON.stringify(sheet)).not.toContain("tok_secret_42");
+    }
+  });
+});
+
+describe("le client sur la feuille", () => {
+  it("est porté par le fournil et le bureau, qui doivent trouver la bonne pile", () => {
+    expect(atelierSheetOf(order(), CUSTOMER).customer.legalName).toBe("SARL Trois Ponts");
+    expect(staffSheetOf(order(), CUSTOMER).customer.tradeName).toBe("Trois Ponts");
+  });
+
+  it("est ABSENT de la feuille du client — elle est déjà à lui", () => {
+    // Un bon de commande qu'on vous tend n'a pas à vous dire qui vous êtes. Le
+    // client sert à retrouver une pile et à décrocher le bon téléphone : deux
+    // besoins que le client lui-même n'a pas.
+    expect(clientSheetOf(order())).not.toHaveProperty("customer");
+  });
 });
 
 describe("le tirage", () => {
@@ -212,15 +236,5 @@ describe("le tirage", () => {
 
   it("compte zéro avenant, et c'est vrai — le mécanisme n'existe pas", () => {
     expect(clientSheetOf(order()).revision).toBe(0);
-  });
-});
-
-describe("le point d'entrée par audience", () => {
-  it.each([
-    ["atelier", false],
-    ["client", true],
-    ["staff", true],
-  ] as const)("l'audience %s porte des montants : %s", (audience, priced) => {
-    expect("money" in orderSheetOf(order(), audience)).toBe(priced);
   });
 });

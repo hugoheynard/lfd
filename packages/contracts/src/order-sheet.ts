@@ -3,13 +3,16 @@ import { z } from "zod";
 import {
   billingAddressPayloadSchema,
   type BillingAddressPayload,
-  deliveryContactSchema,
-  type DeliveryContact,
   type FulfillmentWindow,
   fulfillmentWindowSchema,
 } from "./address.js";
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
-import { type FulfillmentMethod, fulfillmentMethodSchema } from "./order.js";
+import {
+  type FulfillmentMethod,
+  fulfillmentMethodSchema,
+  type OrderOrigin,
+  orderOriginSchema,
+} from "./order.js";
 
 /**
  * **Le bon de commande** — une pièce, plusieurs formats.
@@ -54,6 +57,52 @@ export const sheetAudienceSchema = z.enum(["client", "staff", "atelier"]);
 export type SheetAudience = z.infer<typeof sheetAudienceSchema>;
 
 /**
+ * **Qui appeler** en remettant. Le livreur sonne à une porte : il lui faut un nom
+ * et un numéro, pas une raison sociale.
+ *
+ * `source` n'est pas décoratif. `order` = le contact **convenu sur la commande**,
+ * ce que le client a vu à l'écran en validant. `holder` = à défaut, le détenteur
+ * du compte : quelqu'un à qui parler, mais qui n'a pas forcément été prévenu — et
+ * ça change ce qu'on dit en décrochant.
+ *
+ * `null` (le champ entier) = rien de convenu et pas de détenteur. La feuille le
+ * **dit** alors : le livreur doit savoir qu'il part sans numéro, pas le
+ * découvrir devant la porte.
+ */
+export const sheetContactSchema = z.object({
+  source: z.enum(["order", "holder"]),
+  name: z.string().min(1),
+  /** Peut être vide : un détenteur sans téléphone reste un nom à demander. */
+  phone: z.string(),
+});
+export interface SheetContact {
+  readonly source: "order" | "holder";
+  readonly name: string;
+  readonly phone: string;
+}
+
+/**
+ * **À qui** cette commande appartient — ce que le fournil cherche en premier sur
+ * une pile de feuilles.
+ *
+ * Deux noms, et il en faut deux : l'**enseigne** est celle qui est peinte sur la
+ * devanture et que le fournil connaît ; la **raison sociale** lève l'ambiguïté
+ * entre deux enseignes voisines et c'est elle qui figure sur les papiers.
+ *
+ * Sur une commande **sans entreprise** (zéro friction), l'enseigne est vide et
+ * `legalName` porte seul le nom de la personne : une feuille a toujours
+ * quelqu'un à qui remettre, même quand ce n'est pas une société.
+ */
+export const sheetCustomerSchema = z.object({
+  tradeName: z.string(),
+  legalName: z.string().min(1),
+});
+export interface SheetCustomer {
+  readonly tradeName: string;
+  readonly legalName: string;
+}
+
+/**
  * L'acheminement **convenu**, aplati depuis la commande.
  *
  * La provenance de chaque valeur (`default` / `override`) n'est pas reprise :
@@ -64,15 +113,22 @@ export const sheetFulfillmentSchema = z.object({
   method: fulfillmentMethodSchema,
   /** L'adresse qui compte : livrée en coursier, le point de retrait sinon. */
   address: billingAddressPayloadSchema.nullable(),
+  /**
+   * Le point de retrait **nommé** (« Le Labo »), quand c'en est un et qu'il en
+   * porte un. Distinct de l'adresse : on dit le nom au téléphone, on lit
+   * l'adresse pour s'y rendre, et le libellé seul ne suffit à ni l'un ni l'autre.
+   */
+  pickupLabel: z.string().nullable(),
   window: fulfillmentWindowSchema.nullable(),
-  contact: deliveryContactSchema.nullable(),
+  contact: sheetContactSchema.nullable(),
   signatureRequired: z.boolean(),
 });
 export interface SheetFulfillment {
   readonly method: FulfillmentMethod;
   readonly address: BillingAddressPayload | null;
+  readonly pickupLabel: string | null;
   readonly window: FulfillmentWindow | null;
-  readonly contact: DeliveryContact | null;
+  readonly contact: SheetContact | null;
   readonly signatureRequired: boolean;
 }
 
@@ -195,6 +251,12 @@ const sheetCommonShape = {
   requestedFor: z.string().nullable(),
   fulfillment: sheetFulfillmentSchema,
   note: z.string(),
+  /**
+   * Par quelle porte la commande est entrée. Le client le voit aussi, et c'est
+   * voulu : « saisie par l'équipe » explique une commande qu'il ne se souvient
+   * pas d'avoir passée.
+   */
+  origin: orderOriginSchema,
   issuedAt: z.string().min(1),
   /** Nombre d'avenants appliqués depuis la passation. `0` = la commande d'origine. */
   revision: z.number().int().nonnegative(),
@@ -207,22 +269,41 @@ interface SheetCommon {
   readonly requestedFor: string | null;
   readonly fulfillment: SheetFulfillment;
   readonly note: string;
+  readonly origin: OrderOrigin;
   readonly issuedAt: string;
   readonly revision: number;
 }
 
-/** La feuille du fournil. **Aucune propriété monétaire** — pas même absente. */
+/**
+ * La feuille du fournil. **Aucune propriété monétaire** — pas même absente.
+ *
+ * Elle porte le **client**, et c'est ce qui la rend utilisable : « celui qui
+ * prépare cherche d'abord le client, celui qui charge cherche l'adresse ». Une
+ * feuille d'atelier anonyme est une feuille qu'on ne peut pas poser sur la
+ * bonne pile.
+ */
 export const atelierSheetSchema = z.object({
   ...sheetCommonShape,
   audience: z.literal("atelier"),
+  customer: sheetCustomerSchema,
   lines: z.array(atelierSheetLineSchema),
 });
 export interface AtelierSheet extends SheetCommon {
   readonly audience: "atelier";
+  readonly customer: SheetCustomer;
   readonly lines: readonly AtelierSheetLine[];
 }
 
-/** La feuille du client : son engagement, dans ses mots. */
+/**
+ * La feuille du client : son engagement, dans ses mots.
+ *
+ * ⚠️ **Elle ne porte pas `customer`, et ce n'est pas un oubli.** Un bon de
+ * commande qu'on vous tend n'a pas à vous dire qui vous êtes — tout le reste y
+ * est déjà à vous. Le client sert à retrouver la bonne pile au fournil et à
+ * décrocher le bon téléphone au bureau : deux besoins que le client lui-même
+ * n'a pas. C'est la même logique d'audience que les montants sur la feuille
+ * d'atelier, appliquée dans l'autre sens.
+ */
 export const clientSheetSchema = z.object({
   ...sheetCommonShape,
   audience: z.literal("client"),
@@ -239,11 +320,13 @@ export interface ClientSheet extends SheetCommon {
 export const staffSheetSchema = z.object({
   ...sheetCommonShape,
   audience: z.literal("staff"),
+  customer: sheetCustomerSchema,
   lines: z.array(staffSheetLineSchema),
   money: sheetMoneySchema,
 });
 export interface StaffSheet extends SheetCommon {
   readonly audience: "staff";
+  readonly customer: SheetCustomer;
   readonly lines: readonly StaffSheetLine[];
   readonly money: SheetMoney;
 }

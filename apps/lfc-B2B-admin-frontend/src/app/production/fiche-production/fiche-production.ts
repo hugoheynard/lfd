@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { ORDER_ORIGIN_LABELS, type ProductionSheet } from '@lfd/contracts';
+import { ORDER_ORIGIN_LABELS, type AtelierSheet } from '@lfd/contracts';
 
 /**
  * Une **fiche de fonction** : une commande, sur une feuille A4.
@@ -11,12 +11,19 @@ import { ORDER_ORIGIN_LABELS, type ProductionSheet } from '@lfd/contracts';
  *
  * **Rendu pur.** Tout ce qui se décide — l'enseigne contre la raison sociale,
  * la chaîne du contact de livraison, l'adresse du point de retrait — est résolu
- * au serveur dans `ProductionSheet`. Ce composant met en forme, il ne choisit
+ * au serveur dans `AtelierSheet`. Ce composant met en forme, il ne choisit
  * rien : une règle métier écrite ici ne serait ni testée avec le reste, ni
  * réutilisée par l'impression automatique.
  *
- * Ce qu'elle porte : qui, où, quoi. **Aucun montant** — on fabrique ici, et une
- * feuille oubliée sur un plan de travail n'a pas à raconter les prix.
+ * Ce qu'elle porte : qui, où, quoi. **Aucun montant** — et depuis le
+ * 2026-09-07 ce n'est plus une consigne mais une forme : `AtelierSheet` n'a pas
+ * de propriété monétaire, donc ce gabarit ne peut pas en imprimer une.
+ *
+ * C'est le **bon de commande** d'audience `atelier`, et non un second document.
+ * Il y avait deux types pour ce papier : l'un savait à qui la commande
+ * appartient, l'autre quand le tirage avait été arrêté. La fiche du fournil
+ * n'avait donc pas d'heure de génération, alors que deux tirages peuvent
+ * circuler après un avenant.
  */
 @Component({
   selector: 'app-fiche-production',
@@ -25,7 +32,7 @@ import { ORDER_ORIGIN_LABELS, type ProductionSheet } from '@lfd/contracts';
   styleUrl: './fiche-production.scss',
 })
 export class FicheProduction {
-  readonly sheet = input.required<ProductionSheet>();
+  readonly sheet = input.required<AtelierSheet>();
   /** Le rang dans la pile — « 3 » de « fiche 3/14 ». */
   readonly rank = input.required<number>();
   /** La taille de la pile. Sans elle, un rang seul ne prouve rien. */
@@ -35,18 +42,17 @@ export class FicheProduction {
 
   /** « RETRAIT » ou « LIVRAISON » — le premier mot que cherche celui qui prépare. */
   protected readonly methodLabel = computed(() =>
-    this.sheet().fulfillmentMethod === 'pickup' ? 'Retrait' : 'Livraison',
+    this.sheet().fulfillment.method === 'pickup' ? 'Retrait' : 'Livraison',
   );
 
   /**
    * L'adresse d'acheminement, en lignes prêtes à poser. Le point de retrait ou
-   * l'adresse servie selon le mode — la fiche n'a pas à savoir laquelle des deux
-   * le serveur a remplie, elle prend celle du mode.
+   * l'adresse servie selon le mode — et la fiche n'a plus à choisir : la feuille
+   * ne porte qu'UNE adresse, celle qui correspond au mode. Choisir était encore
+   * une décision d'écran sur une question déjà tranchée au serveur.
    */
   protected readonly addressLines = computed<readonly string[]>(() => {
-    const sheet = this.sheet();
-    const address =
-      sheet.fulfillmentMethod === 'pickup' ? sheet.pickupAddress : sheet.deliveryAddress;
+    const address = this.sheet().fulfillment.address;
     if (address === null) {
       return [];
     }
@@ -63,7 +69,7 @@ export class FicheProduction {
    * pas à partir de quand, et rendre `00:00 – X` inventerait une heure.
    */
   protected readonly windowLabel = computed<string | null>(() => {
-    const window = this.sheet().window;
+    const window = this.sheet().fulfillment.window;
     if (window === null) {
       return null;
     }
@@ -74,6 +80,26 @@ export class FicheProduction {
   protected readonly originLabel = computed<string | null>(() =>
     this.sheet().origin === 'recurring' ? ORDER_ORIGIN_LABELS.recurring : null,
   );
+
+  /**
+   * **Quand ce papier a été arrêté** — l'unique mention qui manquait à la fiche.
+   *
+   * Une feuille se réimprime à volonté, y compris après un avenant, et rien ne
+   * distinguait deux tirages : deux versions de la même commande pouvaient
+   * circuler au fournil sans qu'on sache laquelle est la bonne.
+   *
+   * « Arrêté » et non « tiré » : l'instant est celui où la révision est devenue
+   * vraie, pas celui de l'impression. Deux tirages de la même révision portent
+   * donc la même mention, et c'est exactement ce qu'on veut — ce qui distingue
+   * deux papiers, c'est la révision, pas l'heure où on a appuyé sur imprimer.
+   */
+  protected readonly issuedLabel = computed(() => {
+    const sheet = this.sheet();
+    const at = new Date(sheet.issuedAt);
+    const day = at.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    const time = at.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `Arrêté le ${day} à ${time} · révision ${String(sheet.revision)}`;
+  });
 
   /** Le nombre de pièces — de quoi recompter le colis sans additionner. */
   protected readonly pieces = computed(() =>

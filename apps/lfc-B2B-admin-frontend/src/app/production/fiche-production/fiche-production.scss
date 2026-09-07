@@ -30,10 +30,19 @@
 /* Le lot et le rang en tête : c'est ce qui permet de constater qu'il ne manque
    pas une feuille dans la pile. */
 .fp-batch {
-  margin: 0 0 2mm;
+  margin: 0 0 1mm;
   font-size: 10pt;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* La mention d'arrêt : discrète, mais toujours là. Elle ne se cherche que
+   lorsqu'on tient deux feuilles de la même commande — et ce jour-là il faut
+   qu'elle y soit, pas qu'elle soit lisible de loin. */
+.fp-issued {
+  margin: 0 0 2mm;
+  font-size: 8pt;
+  letter-spacing: 0.04em;
 }
 
 /* L'enseigne : le nom qu'on connaît, en gros. */

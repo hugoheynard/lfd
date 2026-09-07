@@ -368,13 +368,7 @@ export {
 } from "./paris-time.js";
 export type { LocalMoment } from "./paris-time.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
-export type {
-  ProductionBatchQuery,
-  ProductionBatchView,
-  ProductionContact,
-  ProductionSheet,
-  ProductionSheetLine,
-} from "./production-sheet.js";
+export type { ProductionBatchQuery, ProductionBatchView } from "./production-sheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
@@ -758,6 +752,8 @@ export {
 
 export {
   sheetAudienceSchema,
+  sheetContactSchema,
+  sheetCustomerSchema,
   sheetFulfillmentSchema,
   sheetMoneySchema,
   atelierSheetLineSchema,
@@ -770,6 +766,8 @@ export {
 } from "./order-sheet.js";
 export type {
   SheetAudience,
+  SheetContact,
+  SheetCustomer,
   SheetFulfillment,
   SheetMoney,
   AtelierSheetLine,

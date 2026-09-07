@@ -4,20 +4,23 @@
 <header class="fp-head">
   <div class="fp-who">
     <p class="fp-batch">Lot du {{ dayLabel() }} · fiche {{ rank() }}/{{ total() }}</p>
-    @if (sheet().tradeName !== '') {
-      <h2 class="fp-trade">{{ sheet().tradeName }}</h2>
+    <!-- Sans cette ligne, deux tirages de la même commande circulent au fournil
+         après un avenant sans qu'on puisse les distinguer. -->
+    <p class="fp-issued">{{ issuedLabel() }}</p>
+    @if (sheet().customer.tradeName !== '') {
+      <h2 class="fp-trade">{{ sheet().customer.tradeName }}</h2>
       <!-- La raison sociale sous l'enseigne : elle lève l'ambiguïté entre deux
            devantures voisines sans voler la vedette au nom qu'on connaît. -->
-      <p class="fp-legal">{{ sheet().legalName }}</p>
+      <p class="fp-legal">{{ sheet().customer.legalName }}</p>
     } @else {
-      <h2 class="fp-trade">{{ sheet().legalName }}</h2>
+      <h2 class="fp-trade">{{ sheet().customer.legalName }}</h2>
     }
-    <p class="fp-ref">{{ sheet().orderNumber }}</p>
+    <p class="fp-ref">{{ sheet().reference }}</p>
   </div>
 
   <div class="fp-where">
     <p class="fp-method">{{ methodLabel() }}</p>
-    @if (sheet().pickupLabel; as point) {
+    @if (sheet().fulfillment.pickupLabel; as point) {
       <p class="fp-point">{{ point }}</p>
     }
     @for (line of addressLines(); track line) {
@@ -30,8 +33,8 @@
       {{ windowLabel() ?? 'Sans heure convenue' }}
     </p>
 
-    @if (sheet().fulfillmentMethod === 'delivery') {
-      @if (sheet().deliveryContact; as contact) {
+    @if (sheet().fulfillment.method === 'delivery') {
+      @if (sheet().fulfillment.contact; as contact) {
         <p class="fp-contact">
           {{ contact.name }}
           @if (contact.phone !== '') {
@@ -51,7 +54,7 @@
 
       <!-- Opposable : convenu sur la commande, il ne bouge pas si le réglage
            du site change. Le livreur ne repart pas sans. -->
-      @if (sheet().signatureRequired) {
+      @if (sheet().fulfillment.signatureRequired) {
         <p class="fp-signature">Signature exigée à la remise</p>
       }
     }

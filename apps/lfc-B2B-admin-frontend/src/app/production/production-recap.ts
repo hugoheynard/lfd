@@ -3,7 +3,7 @@ import {
   CATALOG_CATEGORY_ORDER,
   type CatalogCategory,
   type CatalogItemView,
-  type ProductionSheet,
+  type AtelierSheet,
 } from '@lfd/contracts';
 
 /**
@@ -61,7 +61,7 @@ interface Tally {
  * pour que deux tirages rendent exactement la même feuille.
  */
 export function productionRecap(
-  sheets: readonly ProductionSheet[],
+  sheets: readonly AtelierSheet[],
   catalogue: readonly CatalogItemView[],
 ): readonly ProductionRecapGroup[] {
   const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));

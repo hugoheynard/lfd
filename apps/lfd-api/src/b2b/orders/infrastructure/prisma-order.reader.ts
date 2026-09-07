@@ -20,8 +20,8 @@ import {
   orderFulfillmentSchema,
   type OrderView,
   type PaymentStatus,
-  type ProductionContact,
-  type ProductionSheet,
+  type SheetContact,
+  type AtelierSheet,
   type RecurringDeltas,
   recurringDeltasSchema,
 } from "@lfd/contracts";
@@ -250,7 +250,7 @@ export class PrismaOrderReader extends OrderReader {
    * Le lot d'une journée. La colonne est `@db.Date` : **égalité stricte** sur le
    * jour, pas d'intervalle à composer, et l'index posé sur elle sert.
    */
-  async listForProduction(date: string): Promise<readonly ProductionSheet[]> {
+  async listForProduction(date: string): Promise<readonly AtelierSheet[]> {
     const rows = await this.prisma.order.findMany({
       where: {
         requestedDeliveryDate: new Date(`${date}T00:00:00.000Z`),
@@ -260,6 +260,9 @@ export class PrismaOrderReader extends OrderReader {
       select: {
         id: true,
         orderNumber: true,
+        // `created_at` EST la date de passation — le schéma le dit en commentaire
+        // sur la colonne. Il n'existe pas de `placed_at`.
+        createdAt: true,
         fulfillmentMethod: true,
         pickupAddress: true,
         deliveryAddressSnapshot: true,
@@ -287,26 +290,49 @@ export class PrismaOrderReader extends OrderReader {
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
       },
     });
-    return rows.map((row) => this.toSheet(row));
+    return rows.map((row) => this.toSheet(row, date));
   }
 
   /** Une ligne de commande → une fiche. Extrait pour tenir la limite de lignes. */
-  private toSheet(row: ProductionRow): ProductionSheet {
+  /**
+   * Une commande → **le bon de commande d'audience `atelier`**.
+   *
+   * C'est le seul endroit qui sait composer cette feuille en entier : la
+   * projection pure (`atelierSheetOf`) travaille sur une `OrderView`, qui ne
+   * porte ni le nom du client, ni le point de retrait nommé, ni le détenteur du
+   * compte sur lequel le contact se replie. Trois choses que le fournil lit en
+   * premier — d'où la composition ici, avec les jointures sous la main.
+   */
+  private toSheet(row: ProductionRow, date: string): AtelierSheet {
     const agreed = fulfillmentOf(row.fulfillment);
     return {
       orderId: row.id,
-      orderNumber: row.orderNumber,
-      tradeName: row.company?.enseigne ?? "",
-      legalName: customerLabelOf(row),
-      fulfillmentMethod: row.fulfillmentMethod,
-      pickupLabel: pickupLabelOf(row.pickupAddress),
-      pickupAddress: parseAddress(row.pickupAddress),
-      deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
-      deliveryContact: contactOf(agreed, row.company),
-      window: agreed.window.value,
-      signatureRequired: agreed.signatureRequired.value,
+      reference: row.orderNumber,
+      audience: "atelier",
+      customer: {
+        tradeName: row.company?.enseigne ?? "",
+        legalName: customerLabelOf(row),
+      },
+      placedAt: row.createdAt.toISOString(),
+      requestedFor: date,
+      fulfillment: {
+        method: row.fulfillmentMethod,
+        address:
+          row.fulfillmentMethod === "delivery"
+            ? parseAddress(row.deliveryAddressSnapshot)
+            : parseAddress(row.pickupAddress),
+        pickupLabel: pickupLabelOf(row.pickupAddress),
+        window: agreed.window.value,
+        contact: contactOf(agreed, row.company),
+        signatureRequired: agreed.signatureRequired.value,
+      },
       note: row.note,
       origin: orderOriginOf(row),
+      // L'instant de la RÉVISION, pas du tirage : deux impressions de la même
+      // journée doivent porter la même date, sinon deux piles du même jour
+      // paraissent dire deux choses.
+      issuedAt: row.createdAt.toISOString(),
+      revision: 0,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,
@@ -347,7 +373,7 @@ const NOTHING_AGREED: OrderFulfillment = {
  * Rendre `null` plutôt qu'un nom bricolé permet à la fiche d'écrire « aucun
  * contact », ce qui est une information et pas un blanc.
  */
-function contactOf(agreed: OrderFulfillment, company: HolderSide | null): ProductionContact | null {
+function contactOf(agreed: OrderFulfillment, company: HolderSide | null): SheetContact | null {
   const onOrder = agreed.contact.value;
   if (onOrder !== null) {
     return {
@@ -379,6 +405,7 @@ interface HolderSide {
 interface ProductionRow {
   readonly id: string;
   readonly orderNumber: string;
+  readonly createdAt: Date;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly pickupAddress: Prisma.JsonValue | null;
   readonly deliveryAddressSnapshot: Prisma.JsonValue | null;

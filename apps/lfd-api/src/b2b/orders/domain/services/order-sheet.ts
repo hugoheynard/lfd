@@ -4,9 +4,8 @@ import type {
   ClientSheet,
   ClientSheetLine,
   OrderLineView,
-  OrderSheet,
   OrderView,
-  SheetAudience,
+  SheetCustomer,
   SheetFulfillment,
   SheetMoney,
   StaffSheet,
@@ -65,11 +64,26 @@ const REVISION_WITHOUT_AMENDMENTS = 0;
  * sinon. `null` reste possible — une commande peut n'en avoir figé aucune.
  */
 function fulfillmentOf(order: OrderView): SheetFulfillment {
+  const agreed = order.fulfillment.contact.value;
   return {
     method: order.fulfillmentMethod,
     address: order.fulfillmentMethod === "delivery" ? order.deliveryAddress : order.pickupAddress,
+    // Le point NOMMÉ n'est pas dans `OrderView` : seule l'adresse figée y est.
+    // La feuille du fournil, elle, l'a — c'est le lecteur de production qui la
+    // compose, avec la table des points sous la main.
+    pickupLabel: null,
     window: order.fulfillment.window.value,
-    contact: order.fulfillment.contact.value,
+    // Depuis une `OrderView`, la seule provenance possible est la commande : le
+    // repli sur le détenteur du compte demande la société, que la vue ne porte
+    // pas. Le lecteur de production, lui, sait le faire.
+    contact:
+      agreed === null
+        ? null
+        : {
+            source: "order",
+            name: `${agreed.prenom} ${agreed.nom}`.trim(),
+            phone: agreed.telephone,
+          },
     signatureRequired: order.fulfillment.signatureRequired.value,
   };
 }
@@ -151,6 +165,7 @@ function commonOf(order: OrderView) {
     requestedFor: order.requestedDeliveryDate,
     fulfillment: fulfillmentOf(order),
     note: order.note,
+    origin: order.origin,
     issuedAt: issuedAtOf(order),
     revision: REVISION_WITHOUT_AMENDMENTS,
   };
@@ -163,8 +178,13 @@ function commonOf(order: OrderView) {
  * Une feuille oubliée sur un plan de travail ne doit pas raconter les prix
  * négociés à qui la ramasse, et celle d'une livraison voyage dans le carton.
  */
-export function atelierSheetOf(order: OrderView): AtelierSheet {
-  return { ...commonOf(order), audience: "atelier", lines: order.lines.map(atelierLineOf) };
+export function atelierSheetOf(order: OrderView, customer: SheetCustomer): AtelierSheet {
+  return {
+    ...commonOf(order),
+    audience: "atelier",
+    customer,
+    lines: order.lines.map(atelierLineOf),
+  };
 }
 
 /** La feuille du client : son engagement, dans ses mots. */
@@ -182,28 +202,24 @@ export function clientSheetOf(order: OrderView): ClientSheet {
  * client appelle en lisant sa feuille, le commercial lit la sienne et les deux
  * tombent juste — le vocabulaire diffère, jamais les montants.
  */
-export function staffSheetOf(order: OrderView): StaffSheet {
+export function staffSheetOf(order: OrderView, customer: SheetCustomer): StaffSheet {
   return {
     ...commonOf(order),
     audience: "staff",
+    customer,
     lines: order.lines.map(staffLineOf),
     money: moneyOf(order),
   };
 }
 
 /**
- * Le point d'entrée par audience. Le `switch` est **exhaustif sur l'union** :
- * une quatrième audience ajoutée au contrat ne compile pas tant qu'elle n'a pas
- * sa projection — c'est ce qui remplace la branche par défaut qu'on oublie
- * d'étendre, et qui aurait servi la feuille de quelqu'un d'autre.
+ * ⚠️ **Il n'y a volontairement PAS de `orderSheetOf(order, audience)`.**
+ *
+ * Un tel aiguilleur existait, et il était un passif : c'est exactement l'appel
+ * qu'on ajoute « pour factoriser » le jour où une route reçoit une audience en
+ * paramètre — et ce jour-là, le demandeur choisit ce qu'il lit. Trois fonctions
+ * nommées, chacune avec les entrées que son audience exige, ne se détournent
+ * pas de la même façon : la feuille du client ne prend pas de `customer` parce
+ * qu'elle n'en a pas, et celles du fournil et du bureau ne peuvent pas s'en
+ * passer.
  */
-export function orderSheetOf(order: OrderView, audience: SheetAudience): OrderSheet {
-  switch (audience) {
-    case "atelier":
-      return atelierSheetOf(order);
-    case "client":
-      return clientSheetOf(order);
-    case "staff":
-      return staffSheetOf(order);
-  }
-}
