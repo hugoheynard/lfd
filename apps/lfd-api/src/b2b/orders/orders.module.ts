@@ -10,6 +10,11 @@ import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
+import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
+import { AppConfig } from "../../platform/config/app-config.js";
+import { OrderMailOrigins } from "./domain/ports/order-mail-origins.js";
+import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
+import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
@@ -118,6 +123,19 @@ import { OrdersController } from "./http/orders.controller.js";
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
     GetProductionBatchHandler,
     GetPackingHandler,
+    SendOrderPlacedMail,
+    { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
+    {
+      // Les deux origines, extraites de la configuration à la racine de
+      // composition. L'abonné dépend du port étroit, pas des trente lectures
+      // d'`AppConfig` dont il n'appelle que deux.
+      provide: OrderMailOrigins,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): OrderMailOrigins => ({
+        clientBaseUrl: () => config.clientBaseUrl(),
+        adminBaseUrl: () => config.adminBaseUrl(),
+      }),
+    },
     MarkOrderReadyHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,

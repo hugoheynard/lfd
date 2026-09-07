@@ -276,7 +276,10 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
                 },
               }
             : {}),
-          cta: { label: copy.cta, url: data.orderUrl },
+          // Pas de bouton quand l'origine de l'app cliente n'est pas connue :
+          // un lien relatif est inerte dans une boîte mail, et un bouton qui ne
+          // mène nulle part coûte plus qu'une absence de bouton.
+          ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
           footer: `${copy.changeNote}\n${copy.footer}`,
         }),
         ...(showQr

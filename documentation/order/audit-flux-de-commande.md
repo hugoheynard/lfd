@@ -108,7 +108,7 @@ caisse, et le tableau de bord compte le chiffre d'affaires d'une commande non
 encaissée (`OrderPlacedEvent` porte `totalCents` et part **avant** tout
 règlement).
 
-### T3 — Rien n'accuse réception d'une commande
+### T3 — ✅ FERMÉ le 2026-09-07 · Rien n'accuse réception d'une commande
 
 `OrderPlacedEvent` a exactement deux abonnés — la croissance
 ([`growth/…/on-order-placed.handler.ts`](../../apps/lfd-api/src/b2b/growth/application/handlers/on-order-placed.handler.ts))
@@ -125,6 +125,22 @@ demande de support. **Aucun `customer.order-*`.**
 
 Le client ne reçoit donc rien, ni le fournil : personne chez LFC n'est prévenu
 qu'une commande vient d'entrer, sauf à regarder un écran.
+
+> ✅ **Fermé le 2026-09-07.** Un abonné d'`OrderPlacedEvent` envoie la
+> confirmation, **après persistance et hors de la requête** : un courriel ne doit
+> jamais faire échouer une commande, qui est écrite et peut-être payée. La clé
+> d'idempotence est déterministe par commande (`order.placed:<id>`), donc un
+> événement rejoué ne fait pas partir deux fois le même message.
+>
+> Le courriel emporte la feuille **projetée** — ni SKU, ni tarif d'entrée, ni nom
+> d'étage — et le QR de retrait **en pièce jointe en ligne**, référencé par
+> `cid:`. Ni `data:` URI (Gmail les supprime) ni URL distante (dont le proxy de
+> Google verrait passer le jeton). Le repli compte autant : `alt` et légende
+> portent le numéro en clair, pour un client qui bloque les images.
+>
+> Textes en **trois langues**, côté API, sous un `Record` exhaustif — mais **rien
+> ne choisit encore la langue d'un client** : `User` ne porte pas de préférence,
+> l'appelant passe `fr`.
 
 ### T4 — 🟡 EN PARTIE FERMÉ · Le cycle de vie déclare six états et n'en écrit que deux
 
