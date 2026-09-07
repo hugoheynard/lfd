@@ -218,8 +218,15 @@ incomplet qu'une revue voit, au lieu d'un oubli que personne ne voit. Et la
 question « ce papier est-il à jour ? » a une réponse lisible sur le papier :
 
 ```
-Tiré le 7 sept. à 4 h 05 · révision 2
+Arrêté le 7 sept. à 4 h 05 · révision 2
 ```
+
+🔴 **« Arrêté », pas « tiré », et le mot compte.** `issuedAt` est l'instant où
+**la révision est devenue vraie** — la passation pour `revision: 0`, l'avenant
+ensuite — et non l'instant où l'on a fabriqué le papier. Deux tirages de la même
+révision portent donc la même date, ce qui est exactement ce qu'on veut : ils
+disent la même commande. La sous-section « écrit au premier téléchargement »
+montre que sans ça, le rangement en R2 ne tient pas.
 
 `revision` compte les **avenants** appliqués depuis la passation. Le mécanisme
 n'existe pas encore ([`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)),
@@ -263,6 +270,35 @@ premier avenant, le PDF qui circule déjà — le seul document que le client pe
 opposer. Chaque révision garde le sien ; l'écran propose la dernière et
 l'historique reste lisible.
 
+### Écrit au PREMIER TÉLÉCHARGEMENT — et ce que ça exige
+
+**Décidé le 2026-09-07.** L'alternative était de fabriquer le PDF à la
+passation ; elle produit un document pour chaque commande, dont l'immense
+majorité ne sera jamais téléchargée. On écrit donc à la demande : le handler
+regarde si la clé existe, la rend si elle manque, et sert les octets.
+
+Ce que ça déplace, c'est la question de la **course**. Deux onglets qui
+téléchargent en même temps entrent tous les deux dans la branche « elle
+manque » et écrivent tous les deux — et le port dit qu'« une même clé écrase ».
+
+**La course est inoffensive à une condition : que le rendu soit déterministe.**
+Deux rendus de la même révision doivent produire les mêmes octets ; le second
+`save` écrase alors le premier par un objet identique, et peu importe qui gagne.
+C'est là que le §5 se referme sur lui-même :
+
+- `issuedAt` est l'instant de la **révision**, pas du rendu. S'il valait
+  `clock.now()` au moment de fabriquer, les deux PDF différeraient d'une seconde
+  et le client aurait pu recevoir celui que le stockage ne garde pas.
+- Le rendu ne lit donc **ni horloge, ni aléa** : il ne prend que l'`OrderSheet`.
+  C'est la même exigence de pureté que les quatre autres formats, et elle rend
+  la porte `lint:clock-port` opposable sur ce chemin.
+- Le `save` devient **idempotent par construction**, sans verrou, sans
+  transaction, sans réservation. C'est la version qui n'a rien à coordonner.
+
+⚠️ Un moteur PDF qui date le document lui-même (métadonnée `CreationDate`) casse
+cette propriété sans rien afficher de faux. C'est un critère de choix du moteur,
+pas un détail — cf. §8.
+
 Deux conséquences sur le modèle :
 
 - `issuedAt` et `revision` cessent d'être **déclaratifs**. Ils ne disent plus
@@ -296,15 +332,15 @@ C'est le chantier comptable, il est ailleurs :
 
 ## 7. Le découpage
 
-| Lot   | Ce qu'il fait                                                                                 | Ce qui devient impossible ensuite                        |
-| ----- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **1** | `OrderSheet` + schéma dans `contracts`, avec `money` optionnel et `SheetLine` par audience    | écrire un montant dans une projection atelier            |
-| **2** | La projection serveur, ses tests aux trois audiences, la route qui la sert                    | qu'un nom d'étage descende chez le client                |
-| **3** | Rendu `text` — remplace `renderDeliveryNote`, en-tête « BON DE COMMANDE », `issuedAt` au pied | qu'un bon de retrait s'annonce « de livraison »          |
-| **4** | Rendu `paper-a4` atelier — la fiche existante rebranchée sur la projection                    | qu'une fiche d'atelier soit tirée sans heure ni révision |
-| **5** | Rendu `mail-html` + gabarit `customer.order-placed`                                           | (rien — c'est un ajout ; voir T3 de l'audit)             |
-| **6** | Décommissionner `legacy/commandes/download-bon.ts`                                            | qu'il existe deux « bons » avec deux totaux différents   |
-| **7** | Rendu `pdf` + rangement R2 du tirage de remise, sous une clé qui porte la révision            | qu'un avenant écrase le papier que le client a en main   |
+| Lot   | Ce qu'il fait                                                                                                 | Ce qui devient impossible ensuite                        |
+| ----- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **1** | `OrderSheet` + schéma dans `contracts`, avec `money` optionnel et `SheetLine` par audience                    | écrire un montant dans une projection atelier            |
+| **2** | La projection serveur, ses tests aux trois audiences, la route qui la sert                                    | qu'un nom d'étage descende chez le client                |
+| **3** | Rendu `text` — remplace `renderDeliveryNote`, en-tête « BON DE COMMANDE », `issuedAt` au pied                 | qu'un bon de retrait s'annonce « de livraison »          |
+| **4** | Rendu `paper-a4` atelier — la fiche existante rebranchée sur la projection                                    | qu'une fiche d'atelier soit tirée sans heure ni révision |
+| **5** | Rendu `mail-html` + gabarit `customer.order-placed`                                                           | (rien — c'est un ajout ; voir T3 de l'audit)             |
+| **6** | Décommissionner `legacy/commandes/download-bon.ts`                                                            | qu'il existe deux « bons » avec deux totaux différents   |
+| **7** | Rendu `pdf` **déterministe**, écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision | qu'un avenant écrase le papier que le client a en main   |
 
 **L'ordre n'est pas négociable.** Les lots 3 à 5 sont des rendus : ils n'ont rien
 à consommer tant que 1 et 2 n'existent pas, et les écrire d'abord recrée
@@ -328,16 +364,20 @@ exactement les six documents séparés que ce dossier vient défaire.
   lot 7. Le rendu `paper-a4` (HTML d'impression, lot 4) est **le même
   document** : si le moteur retenu part d'un HTML, le PDF est un
   post-traitement et non un cinquième gabarit à tenir à jour.
-- **Qui déclenche l'écriture du PDF.** Deux moments défendables : à la
-  passation (le PDF existe avant qu'on le demande, mais on en fabrique pour des
-  commandes que personne ne téléchargera) ou au premier téléchargement (rien
-  d'inutile, mais le premier appelant paie l'attente et deux appels simultanés
-  doivent s'accorder). La révision dans la clé rend le second sûr — c'est un
-  `save` idempotent —, ce qui fait pencher de ce côté.
-- **La durée de conservation.** Un PDF rangé sous une clé qui porte la
-  révision ne s'écrase jamais : le stockage ne fait que croître. Rien n'est
-  décidé, et ce n'est pas urgent — mais l'écrire ici évite de le découvrir
-  dans une facture R2.
+  🔴 **Critère éliminatoire** : le moteur doit rendre les **mêmes octets** pour
+  la même entrée. Un moteur qui écrit sa propre `CreationDate` dans les
+  métadonnées, ou qui sème un identifiant de document, brise l'idempotence sur
+  laquelle repose l'écriture au premier téléchargement — sans que rien
+  n'apparaisse de faux à l'écran. À vérifier avant d'adopter, pas après.
+- **La durée de conservation — REPORTÉ, sciemment.** Un PDF rangé sous une clé
+  qui porte la révision ne s'écrase jamais : le stockage ne fait que croître.
+  Rien n'est décidé et rien ne presse — un bon de commande pèse quelques
+  dizaines de kilo-octets, et il en faudrait des centaines de milliers pour que
+  la question se pose. Elle est écrite ici pour être trouvée le jour où elle se
+  posera, pas pour être traitée dans ce chantier. La réponse, quand elle
+  viendra, sera **comptable avant d'être technique** : on ne purge pas une
+  pièce qu'un client peut opposer sans savoir combien de temps il a le droit de
+  l'opposer.
 - **`vitruve` n'a pas tourné sur ce document, et le `CLAUDE.md` l'exige** — ce
   plan touche l'argent (les montants sur le bon) **et** déplace une frontière de
   sécurité (la projection par audience) — et depuis le §5, il range une pièce
