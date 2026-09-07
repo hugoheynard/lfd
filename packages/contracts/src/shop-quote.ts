@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
+import { orderQuantitySchema } from "./order.js";
 
 /**
  * **Ce que le panier de la boutique coûte**, demandé au serveur avant de
@@ -34,10 +35,17 @@ import type { CartAdjustment } from "./cart-adjustment.js";
  * négociation — c'est la règle de tri de `ShopItemView`, et elle vaut ici.
  */
 
-/** Une ligne demandée : une référence du catalogue et sa quantité. */
+/**
+ * Une ligne demandée : une référence du catalogue et sa quantité.
+ *
+ * La quantité vient de `orderQuantitySchema`, **la même que la commande** : une
+ * borne qui n'existerait qu'à la caisse laisserait chiffrer un panier qu'on
+ * refuserait ensuite, et une borne qui n'existerait qu'au devis laisserait
+ * entrer par la caisse ce qu'on avait interdit d'estimer.
+ */
 export const shopQuoteLineSchema = z.object({
   sku: z.string().min(1),
-  quantity: z.number().int().positive(),
+  quantity: orderQuantitySchema,
 });
 
 /**

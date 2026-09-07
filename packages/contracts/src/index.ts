@@ -437,6 +437,9 @@ export {
   ORDER_ORIGIN_LABELS,
   recurringDeltasSchema,
   orderQuotePayloadSchema,
+  orderQuantitySchema,
+  MAX_LINE_QUANTITY,
+  MAX_ORDER_LINES,
   toCustomerQuote,
 } from "./order.js";
 export type {

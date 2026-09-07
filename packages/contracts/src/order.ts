@@ -62,10 +62,46 @@ export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 export const fulfillmentMethodSchema = z.enum(["delivery", "pickup"]);
 export type FulfillmentMethod = z.infer<typeof fulfillmentMethodSchema>;
 
-/** Une ligne demandée : un SKU et une quantité entière positive. */
+/**
+ * **La quantité d'une ligne**, et la seule définition qu'il en existe.
+ *
+ * 🔴 Elle n'avait **pas de borne haute** : `positive()` accepte 2 000 000. Une
+ * ligne pareille passait les portes, entrait en base, partait au plan de
+ * production et comptait au chiffre d'affaires. Une faute de frappe, un script,
+ * un zéro de trop sur un écran tactile — et personne ne le voyait avant le
+ * fournil.
+ *
+ * `10 000` est **large exprès**. Le plus gros client de la maison prend
+ * quelques centaines de pièces par ligne : la borne ne refusera jamais une
+ * commande réelle. Elle n'est pas là pour rationner, elle est là pour qu'une
+ * quantité absurde soit refusée à la frontière plutôt que constatée au four.
+ *
+ * Bornée **au contrat**, donc sur les quatre portes à la fois — commande
+ * client, commande staff, devis, panier de boutique. La poser dans un handler
+ * n'en aurait protégé qu'une.
+ */
+export const MAX_LINE_QUANTITY = 10_000;
+
+/**
+ * **Le nombre de lignes** qu'une commande peut porter.
+ *
+ * Même raisonnement, et la même valeur que celle que `POST /shop/quote` se
+ * donnait déjà de son côté : un panier plus long que le catalogue n'est pas une
+ * commande. La boutique était bornée, la commande ne l'était pas — c'est-à-dire
+ * que la porte protégée était l'estimation, et la porte ouverte l'écriture.
+ */
+export const MAX_ORDER_LINES = 100;
+
+export const orderQuantitySchema = z
+  .number()
+  .int()
+  .positive("quantité ≥ 1")
+  .max(MAX_LINE_QUANTITY, `quantité ≤ ${String(MAX_LINE_QUANTITY)}`);
+
+/** Une ligne demandée : un SKU et une quantité entière positive et bornée. */
 export const orderLineInputSchema = z.object({
   sku: z.string().trim().min(1, "sku requis"),
-  quantity: z.number().int().positive("quantité ≥ 1"),
+  quantity: orderQuantitySchema,
 });
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
 
@@ -145,7 +181,9 @@ export const orderContentShape = {
   deliveryContact: deliveryContactSchema.nullable().optional(),
   signatureRequired: z.boolean().optional(),
   note: z.string().default(""),
-  lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
+  // Bornée comme la boutique l'est déjà (100) : un panier plus long qu'un
+  // catalogue n'est pas une commande, c'est un accident ou une charge.
+  lines: z.array(orderLineInputSchema).min(1, "au moins une ligne").max(MAX_ORDER_LINES),
 } as const;
 
 /**
@@ -604,9 +642,7 @@ export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
 export const orderQuotePayloadSchema = z.object({
   /** `null` pour une commande sans entreprise : seules les règles ouvertes à tous jouent. */
   companyId: z.string().min(1).nullable(),
-  lines: z
-    .array(z.object({ sku: z.string().min(1), quantity: z.number().int().positive() }))
-    .min(1),
+  lines: z.array(orderLineInputSchema).min(1).max(MAX_ORDER_LINES),
 });
 export type OrderQuotePayload = z.infer<typeof orderQuotePayloadSchema>;
 
