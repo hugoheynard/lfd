@@ -291,3 +291,87 @@ describe("le colisage", () => {
     expect(jsonBody<{ message: string }>(refused).message).toContain("autre jour");
   });
 });
+
+/**
+ * **Les courriels partent-ils vraiment ?**
+ *
+ * Un abonné tourne hors de la requête : rien, dans la réponse HTTP, ne dit qu'un
+ * courriel a été rendu. Un gabarit débranché du bus, un abonné oublié dans le
+ * module, une dépendance qui ne se résout pas — trois pannes silencieuses que
+ * seul le journal d'envois révèle.
+ *
+ * En e2e, aucune clé Resend n'est configurée : le mailer tourne à blanc. C'est
+ * exactement ce qu'on veut ici — on éprouve que le message est **rendu et
+ * journalisé**, pas qu'un tiers l'accepte.
+ */
+describe("les courriels d'une commande", () => {
+  async function placeOne(): Promise<string> {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
+    await ctx.prisma.deliveryZone.create({
+      data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
+    });
+    const point = await ctx.prisma.pickupAddress.create({
+      data: { ...SITE, isDefault: true },
+      select: { id: true },
+    });
+    const response = await ctx
+      .asSub(MEMBER)
+      .post(`/orders`)
+      .send({
+        idempotencyKey: randomUUID(),
+        companyId: null,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: point.id,
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(201);
+    return jsonBody<{ orderNumber: string }>(response).orderNumber;
+  }
+
+  /**
+   * Les gabarits journalisés, dans l'ordre où ils sont partis.
+   *
+   * On **draine d'abord** : un abonné tourne hors de la requête, et lire le
+   * journal sans l'attendre le trouverait vide une fois sur deux — le pire genre
+   * de rouge, intermittent et qui accuse le mauvais coupable.
+   */
+  async function templatesSent(): Promise<readonly string[]> {
+    await ctx.drain();
+    const rows = await ctx.prisma.mailSend.findMany({
+      orderBy: { sentAt: "asc" },
+      select: { template: true },
+    });
+    return rows.map((row) => row.template);
+  }
+
+  it("écrit au client À LA PASSATION", async () => {
+    await placeOne();
+
+    expect(await templatesSent()).toContain("customer.order-placed");
+  });
+
+  it("écrit à nouveau QUAND LA COMMANDE EST PRÊTE", async () => {
+    // Le seul courriel qui parte à un moment où le client a quelque chose à
+    // faire. Avant le 2026-09-07, il n'y en avait qu'un, et c'était le premier.
+    const reference = await placeOne();
+    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    expect(await templatesSent()).toEqual(["customer.order-placed", "customer.order-ready"]);
+  });
+
+  it("n'écrit qu'UNE fois quand deux postes scannent en même temps", async () => {
+    // La garantie ne vient pas de la clé d'idempotence — elle vient de
+    // l'écriture conditionnée en base : un seul poste gagne, un seul publie.
+    const reference = await placeOne();
+
+    await Promise.all([
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+    ]);
+
+    const ready = (await templatesSent()).filter((name) => name === "customer.order-ready");
+    expect(ready).toHaveLength(1);
+  });
+});

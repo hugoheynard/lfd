@@ -143,3 +143,62 @@ describe("le courriel de confirmation", () => {
     expect(html).not.toContain("PAIN-TRAD");
   });
 });
+
+describe("le courriel « votre commande est prête »", () => {
+  const ready = REGISTRY["customer.order-ready"];
+
+  function renderReady(overrides: Partial<Parameters<typeof ready>[0]> = {}) {
+    return ready({
+      sheet: sheet(),
+      handoverToken: "tok_abc",
+      orderUrl: "https://app.lfc.test/mes-commandes",
+      handoverUrl: HANDOVER_URL,
+      locale: "fr",
+      ...overrides,
+    });
+  }
+
+  it("dit ce qu'il y a à FAIRE, pas ce qui a été payé", () => {
+    // Le décompte était le travail de la confirmation. Le répéter ferait relire
+    // des montants à quelqu'un qui met son manteau.
+    const html = renderReady().html;
+
+    expect(html).toContain("Votre commande vous attend au comptoir");
+    expect(html).not.toContain("Sous-total");
+    expect(html).not.toContain("Total TTC");
+  });
+
+  it("REPORTE le QR — c'est maintenant qu'on s'en sert", () => {
+    // Il était dans la confirmation, et personne ne remonte un fil de courriels
+    // le téléphone à la main devant un comptoir.
+    const rendered = renderReady();
+
+    expect(rendered.attachments).toHaveLength(1);
+    expect(rendered.html).toContain('src="cid:qr-retrait"');
+  });
+
+  it("parle autrement d'une LIVRAISON, et n'y met pas de code", () => {
+    const rendered = renderReady({
+      sheet: sheet({
+        fulfillment: { ...sheet().fulfillment, method: "delivery", pickupLabel: null },
+      }),
+      handoverToken: null,
+      handoverUrl: "",
+    });
+
+    expect(rendered.html).toContain("Votre commande part vers vous");
+    expect(rendered.attachments).toBeUndefined();
+  });
+
+  it("porte le numéro dans son objet, dans les trois langues", () => {
+    expect(renderReady({ locale: "fr" }).subject).toBe("Votre commande ORD-4812 est prête");
+    expect(renderReady({ locale: "en" }).subject).toBe("Your order ORD-4812 is ready");
+    expect(renderReady({ locale: "it" }).subject).toBe("Il suo ordine ORD-4812 è pronto");
+  });
+
+  it("nomme le POINT de retrait quand il en porte un", () => {
+    // « Le Labo » se dit au téléphone ; « Val d'Isère » ne suffit pas à savoir
+    // où pousser une porte.
+    expect(renderReady().html).toContain("Le Labo");
+  });
+});

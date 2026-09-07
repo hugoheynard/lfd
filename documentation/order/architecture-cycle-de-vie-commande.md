@@ -91,12 +91,11 @@ flowchart LR
 
   C -.-> Cf["🖨️ Fiche d'atelier A4<br/>QR de colisage, aucun montant"]
 
-  R -.-> Rm["📧 « votre commande est prête »<br/>⛔ n'existe pas"]
+  R -.-> Rm["📧 « votre commande est prête »<br/>+ QR reporté"]
 
   F -.-> Fa["🖊️ Attestation de remise<br/>qui, quand — sur la ligne"]
   F -.-> Fj["📓 order.handed_over<br/>⛔ n'existe pas"]
 
-  style Rm stroke-dasharray: 4 4
   style Fj stroke-dasharray: 4 4
 ```
 
@@ -120,11 +119,15 @@ flowchart LR
 
 ### Trois choses que ce tableau met en évidence
 
-**Un seul courriel part, et c'est le premier.** Le client est prévenu que sa
-commande est enregistrée, puis plus rien — pas même quand elle est prête, qui
-est pourtant le seul moment où il a quelque chose à faire. C'est le manque le
-plus visible du parcours, et il est bon marché : l'abonné de `ready` existe déjà
-en forme, il n'a pas de gabarit.
+**Deux courriels partent, et le second est celui qui sert.** Le premier dit que
+la commande est enregistrée ; le second, qu'elle est prête — le seul moment où le
+client a quelque chose à **faire**. Il ne reprend pas le décompte : répéter des
+montants à quelqu'un qui met son manteau ne l'aide pas.
+
+**Le QR y est REPORTÉ, et ce n'est pas une redite.** Il était déjà dans la
+confirmation, mais c'est maintenant qu'on s'en sert — et personne ne remonte un
+fil de courriels le téléphone à la main devant un comptoir. Le message le plus
+récent doit se suffire à lui-même.
 
 **Le QR voyage deux fois, et jamais sur le même papier.** Celui de **retrait**
 est un secret : il ne part que dans le courriel, jamais sur un document, parce

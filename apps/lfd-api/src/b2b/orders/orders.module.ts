@@ -11,6 +11,7 @@ import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.modu
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
+import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { AppConfig } from "../../platform/config/app-config.js";
 import { OrderMailOrigins } from "./domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
@@ -126,6 +127,7 @@ import { OrdersController } from "./http/orders.controller.js";
     GetProductionBatchHandler,
     GetPackingHandler,
     SendOrderPlacedMail,
+    SendOrderReadyMail,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
     {
       // Les deux origines, extraites de la configuration à la racine de

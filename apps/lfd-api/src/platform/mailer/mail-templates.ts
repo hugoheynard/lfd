@@ -36,6 +36,20 @@ export interface B2bMails {
    * les rendus papier pourraient l'imprimer — et le papier d'une livraison
    * voyage dans le carton, où un coursier scannerait son propre colis.
    */
+  /**
+   * **La commande est prête.** Destinataire : le client.
+   *
+   * Le seul courriel qui parte à un moment où le client a quelque chose à
+   * FAIRE — venir la chercher, ou être là. Il ne reprend pas le décompte : le
+   * répéter ferait relire des montants à quelqu'un qui met son manteau.
+   */
+  "customer.order-ready": {
+    readonly sheet: ClientSheet;
+    readonly handoverToken: string | null;
+    readonly orderUrl: string;
+    readonly handoverUrl: string;
+    readonly locale: ContentLocale;
+  };
   "customer.order-placed": {
     readonly sheet: ClientSheet;
     /** Le jeton de retrait, ou `null` — une livraison n'a pas de comptoir. */
@@ -251,6 +265,57 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     renderLayout({ ...input, brand: "La Folie Douce", supportEmail: brand.supportEmail });
 
   return {
+    "customer.order-ready": (data) => {
+      const copy = mailCopyOf(data.locale).orderReady;
+      const pickup = data.sheet.fulfillment.method === "pickup";
+      const showQr = data.handoverToken !== null && data.handoverUrl !== "";
+      const pieces = data.sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        html: person({
+          title: pickup ? copy.titlePickup : copy.titleDelivery,
+          body: `${pickup ? copy.introPickup : copy.introDelivery}\n\n${data.sheet.reference}`,
+          // Deux lignes et pas un décompte : où, et combien de pièces. Ce
+          // courriel répond à UNE question — venir la chercher.
+          rows: [
+            {
+              label: copy.whereLabel,
+              value:
+                data.sheet.fulfillment.pickupLabel ?? data.sheet.fulfillment.address?.ville ?? "—",
+            },
+            { label: copy.contentLabel, value: fill(copy.piecesLabel, { count: String(pieces) }) },
+          ],
+          // Le QR, à NOUVEAU. Il était dans la confirmation, et le répéter n'est
+          // pas une redite : c'est maintenant qu'on s'en sert, et personne ne
+          // remonte un fil de courriels le téléphone à la main devant un
+          // comptoir.
+          ...(showQr
+            ? {
+                image: {
+                  contentId: QR_CONTENT_ID,
+                  alt: `${copy.qrTitle} — ${data.sheet.reference}`,
+                  sizePx: 180,
+                  caption: `${copy.qrLine}\n${data.sheet.reference}`,
+                },
+              }
+            : {}),
+          ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
+          footer: copy.footer,
+        }),
+        ...(showQr
+          ? {
+              attachments: [
+                {
+                  filename: `retrait-${data.sheet.reference}.png`,
+                  contentBase64: qrPng(data.handoverUrl).toString("base64"),
+                  contentId: QR_CONTENT_ID,
+                  contentType: "image/png",
+                },
+              ],
+            }
+          : {}),
+      };
+    },
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementOf(data.sheet);

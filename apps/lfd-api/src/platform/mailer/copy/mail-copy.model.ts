@@ -74,9 +74,46 @@ export interface OrderPlacedCopy {
   readonly footer: string;
 }
 
+/**
+ * Ce que dit le courriel de **mise à disposition** — celui qui part quand
+ * l'atelier scanne le QR de colisage.
+ *
+ * Il répond à **une** question et pas deux : où et quand venir la chercher. Le
+ * récapitulatif des montants était le travail de la confirmation ; le répéter
+ * ici ferait relire un décompte à quelqu'un qui met son manteau.
+ *
+ * Deux titres et deux chapeaux, parce qu'un retrait et une livraison ne
+ * demandent pas la même chose au client : l'un doit se déplacer, l'autre doit
+ * être là.
+ */
+export interface OrderReadyCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly kicker: string;
+  readonly titlePickup: string;
+  readonly titleDelivery: string;
+  readonly introPickup: string;
+  readonly introDelivery: string;
+  /** Le point de retrait, ou l'adresse servie. */
+  readonly whereLabel: string;
+  readonly contentLabel: string;
+  /** `{count}` = le nombre de pièces. */
+  readonly piecesLabel: string;
+  /**
+   * Le QR, **à nouveau**. Il était déjà dans la confirmation, et le répéter
+   * n'est pas une redite : c'est MAINTENANT qu'on s'en sert, et personne ne
+   * remonte un fil de courriels le téléphone à la main devant un comptoir.
+   */
+  readonly qrTitle: string;
+  readonly qrLine: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
+  readonly orderReady: OrderReadyCopy;
 }
 
 /**

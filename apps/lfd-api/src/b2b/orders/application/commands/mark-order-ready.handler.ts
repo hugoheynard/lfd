@@ -1,11 +1,12 @@
 import type { OrderPackingView } from "@lfd/contracts";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   OrderReferenceNotFoundError,
   PackingRefusedError,
 } from "../../domain/errors/order-errors.js";
+import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { packingBlocker } from "../../domain/services/packing.js";
@@ -34,6 +35,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly clock: Clock,
+    private readonly events: EventBus,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -55,6 +57,11 @@ export class MarkOrderReadyHandler implements ICommandHandler<
       // au fournil, pas une anomalie.
       throw new PackingRefusedError("Cette commande vient d'être déclarée prête ailleurs.");
     }
+
+    // Publié APRÈS l'écriture, et seulement par le GAGNANT de la course : le
+    // perdant a levé plus haut. Un second poste qui scanne la même feuille ne
+    // fait donc pas partir un second courriel au client.
+    this.events.publish(new OrderReadyEvent(order.orderId, order.orderNumber));
 
     return toPackingView({ ...order, status: "ready", readyAt: at, readyBy: command.staffSubject });
   }
