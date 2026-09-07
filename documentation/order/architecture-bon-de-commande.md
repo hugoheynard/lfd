@@ -228,6 +228,51 @@ où l'avenant arrive, aucun document en circulation ne saurait dire s'il précè
 ou suit. Un `revision: 0` sur toutes les commandes actuelles est vrai — aucune
 n'a d'avenant.
 
+### Le tirage de remise est un ARTEFACT, pas un rendu
+
+Le bon de commande **papier remis au client** — celui qu'on lui tend au
+comptoir avec ses pièces, et qu'il doit pouvoir retélécharger — est d'une autre
+nature que les quatre formats du §3. Ceux-là sont des **fonctions pures** :
+on les recalcule à la demande, et c'est très bien tant que la commande n'a pas
+bougé.
+
+Celui-ci ne peut pas être recalculé. **Le papier qui est parti du comptoir est un
+fait**, au même titre que le prix figé sur une ligne. Un avenant appliqué le
+lendemain, un libellé corrigé, un taux de TVA rectifié : recalculer donnerait un
+PDF qui ne ressemble plus à celui que le client a dans la poche, et c'est
+exactement la situation où il appelle.
+
+Il est donc **écrit une fois et rangé**, en PDF, dans le stockage objet (R2) —
+et le retéléchargement rend **ces octets-là**, jamais un nouveau tirage.
+
+Le port existe déjà et dit la règle qu'il faut suivre :
+`platform/storage/document-store.ts` — « Aucun fichier ne vit en base : seules sa
+**clé** et ses métadonnées y sont gardées », et « **La clé ne vient jamais du
+client.** Chaque appelant la dérive d'identifiants qu'il a vérifiés ». C'est le
+même port que le KBIS et le mandat signé ; il n'y a rien à inventer, seulement
+une clé à composer :
+
+```
+orders/{orderId}/bon-de-commande-r{revision}.pdf
+```
+
+🔴 **La révision est DANS la clé, et ce n'est pas décoratif.** Le port écrit
+noir sur blanc qu'« une même clé écrase : c'est ce qui fait qu'un remplacement
+reste un remplacement ». Un chemin sans révision ferait donc disparaître, au
+premier avenant, le PDF qui circule déjà — le seul document que le client peut
+opposer. Chaque révision garde le sien ; l'écran propose la dernière et
+l'historique reste lisible.
+
+Deux conséquences sur le modèle :
+
+- `issuedAt` et `revision` cessent d'être **déclaratifs**. Ils ne disent plus
+  « ce tirage a été fait à telle heure », ils **identifient** l'objet rangé. Deux
+  PDF de la même commande ne peuvent plus être confondus, et la question « lequel
+  le client a-t-il ? » a une réponse.
+- Le PDF est le **seul** format qui produise un effet de bord. Les autres rendus
+  restent purs et testables sans stockage ; celui-ci s'écrit derrière un port,
+  et son handler est le seul à connaître `DocumentStore`.
+
 ---
 
 ## 6. La facture reste hors du dossier, et ça ne change pas
@@ -259,6 +304,7 @@ C'est le chantier comptable, il est ailleurs :
 | **4** | Rendu `paper-a4` atelier — la fiche existante rebranchée sur la projection                    | qu'une fiche d'atelier soit tirée sans heure ni révision |
 | **5** | Rendu `mail-html` + gabarit `customer.order-placed`                                           | (rien — c'est un ajout ; voir T3 de l'audit)             |
 | **6** | Décommissionner `legacy/commandes/download-bon.ts`                                            | qu'il existe deux « bons » avec deux totaux différents   |
+| **7** | Rendu `pdf` + rangement R2 du tirage de remise, sous une clé qui porte la révision            | qu'un avenant écrase le papier que le client a en main   |
 
 **L'ordre n'est pas négociable.** Les lots 3 à 5 sont des rendus : ils n'ont rien
 à consommer tant que 1 et 2 n'existent pas, et les écrire d'abord recrée
@@ -275,9 +321,27 @@ exactement les six documents séparés que ce dossier vient défaire.
   L'alternative est de garder `bonDeCommande` sous le précédent `mercuriale`
   (« le traduire par approximation ferait perdre ce que le mot dit »). Le choix
   se fait maintenant : après le lot 1, c'est un renommage de contrat.
+- **Comment fabriquer le PDF.** C'est le seul format qui ajoute une
+  dépendance : les quatre autres rendent une chaîne, celui-là veut un moteur —
+  navigateur sans tête, bibliothèque de composition, ou service tiers. Le
+  choix n'est pas neutre pour un container Cloudflare, et il conditionne le
+  lot 7. Le rendu `paper-a4` (HTML d'impression, lot 4) est **le même
+  document** : si le moteur retenu part d'un HTML, le PDF est un
+  post-traitement et non un cinquième gabarit à tenir à jour.
+- **Qui déclenche l'écriture du PDF.** Deux moments défendables : à la
+  passation (le PDF existe avant qu'on le demande, mais on en fabrique pour des
+  commandes que personne ne téléchargera) ou au premier téléchargement (rien
+  d'inutile, mais le premier appelant paie l'attente et deux appels simultanés
+  doivent s'accorder). La révision dans la clé rend le second sûr — c'est un
+  `save` idempotent —, ce qui fait pencher de ce côté.
+- **La durée de conservation.** Un PDF rangé sous une clé qui porte la
+  révision ne s'écrase jamais : le stockage ne fait que croître. Rien n'est
+  décidé, et ce n'est pas urgent — mais l'écrire ici évite de le découvrir
+  dans une facture R2.
 - **`vitruve` n'a pas tourné sur ce document, et le `CLAUDE.md` l'exige** — ce
   plan touche l'argent (les montants sur le bon) **et** déplace une frontière de
-  sécurité (la projection par audience). Deux des quatre critères. Toutes les
+  sécurité (la projection par audience) — et depuis le §5, il range une pièce
+  opposable dans un stockage objet. Deux des quatre critères, largement. Toutes les
   affirmations faites ici de l'existant ont été rouvertes dans le dépôt ; ça ne
   remplace pas un contradicteur sur ces deux critères-là.
 
