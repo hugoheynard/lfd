@@ -1,30 +1,58 @@
 # Les pièces d'un client dans R2 — ce qu'on range, et où
 
 **Ouvert le 2026-09-07.** Le bucket `customers` existe et sert déjà les bons de
-commande. Ce document dit **comment il est organisé**, et ce qui viendra s'y
-ajouter — l'écrire avant que le comptable dépose sa première facture coûte une
+commande ; **`production` est décidé et reste à créer**. Ce document dit comment
+les deux sont organisés, et ce qui viendra s'y ajouter — l'écrire avant que le comptable dépose sa première facture coûte une
 page ; l'écrire après coûte une migration de fichiers.
 
 ---
 
 ## 1. Trois buckets, et la ligne qui les sépare
 
-| Bucket      | Ce qu'il contient                              | Sens              | Public ?                |
-| ----------- | ---------------------------------------------- | ----------------- | ----------------------- |
-| `kbis`      | extrait de greffe, mandat signé                | il **nous donne** | non                     |
-| `customers` | bons de commande, feuilles d'atelier, factures | on **lui rend**   | **non**                 |
-| `media`     | visuels du catalogue                           | vitrine           | **oui**, par un domaine |
+| Bucket       | Ce qu'il contient                    | Ce qu'il est                       | Public ?                | État |
+| ------------ | ------------------------------------ | ---------------------------------- | ----------------------- | ---- |
+| `kbis`       | extrait de greffe, mandat signé      | ce que le client **nous donne**    | non                     | ✅   |
+| `customers`  | bon de commande, facture             | ce qu'il peut nous **opposer**     | **non**                 | ✅   |
+| `production` | compte à produire, feuille d'atelier | ce qui documente **notre travail** | **non**                 | ⛔   |
+| `media`      | visuels du catalogue                 | la vitrine                         | **oui**, par un domaine | ✅   |
 
 La séparation n'est pas du rangement. La configuration le dit en une phrase :
 
 > « Chaque usage porte son bucket **et ses clés** : un jeton n'ouvre que le
 > sien. »
 
-🔴 **Le KBIS reste dehors, bien qu'il appartienne aussi à un client.** Il a son
-bucket depuis plus longtemps, avec des données dedans : l'y ranger serait une
-migration de fichiers, pas un renommage. La ligne qui reste vraie est celle du
-**sens** — `kbis` porte ce que le client nous donne, `customers` ce qu'on lui
-rend.
+### La ligne de partage : **opposable** contre **opérationnel**
+
+C'est le critère, et il n'est pas « client contre production » :
+
+|                    | `customers`                         | `production`                         |
+| ------------------ | ----------------------------------- | ------------------------------------ |
+| Contenu            | bon de commande, facture            | compte à produire, feuille d'atelier |
+| Durée de vie       | des **années** — question comptable | des **semaines**                     |
+| Porte des montants | oui                                 | **jamais**, par construction         |
+| Qui doit lire      | le client, via l'API                | le fournil                           |
+
+Le troisième critère est le plus parlant. La feuille d'atelier n'a **aucun champ
+monétaire** — c'est une propriété de son type. Le jour où une borne au fournil ou
+un service d'impression doit lire des documents, lui donner le jeton `customers`
+lui donnerait aussi **toutes les factures**. La règle qu'on applique déjà — « un
+jeton n'ouvre que le sien » — dit qu'il faut couper là.
+
+⚠️ **Ce document a d'abord défendu un bucket unique, et l'argument était
+faux.** Il disait : « une règle de rétention devrait être posée deux fois, à deux
+endroits qui finiraient par diverger ». C'est à l'envers — ces pièces n'ont pas
+la même durée de vie, donc les deux règles **doivent** diverger. Le vrai risque
+d'un bucket unique est l'inverse : il **force** une règle unique sur des pièces
+qui n'en veulent pas la même.
+
+Le second argument — « tout ce qui concerne la commande X est en X » — ne servait
+personne : l'API résout des clés, personne ne parcourt un bucket à la main.
+
+🔴 **Le KBIS reste dehors**, bien qu'il appartienne aussi à un client. Il a son
+bucket depuis plus longtemps, **avec des données dedans** : l'y ranger serait une
+migration de fichiers, pas un renommage. C'est exactement pourquoi ce découpage
+se décide **maintenant** — rien n'est déployé, aucun octet n'existe, et le
+changement coûte trois variables d'environnement.
 
 ⚠️ **`customers` ne doit jamais être servi par un domaine.** C'est la différence
 avec `media`, et elle est structurante : une adresse publique rendrait la facture
@@ -36,36 +64,40 @@ derrière le mur de la société.
 ## 2. L'arborescence
 
 ```
-customers/
+customers/                                  ✅ existe
 ├── orders/{orderId}/
 │   ├── bon-de-commande-r{revision}.pdf     le client — montants, sans QR
-│   ├── fiche-atelier-r{revision}.pdf       le fournil — sans montants
 │   └── bon-staff-r{revision}.pdf           le bureau — SKU, trace du prix
-│
-├── production/{AAAA-MM-JJ}/
-│   └── compte-a-produire.pdf               le récapitulatif du jour
-│
 └── companies/{companyId}/invoices/{AAAA-MM}/
     └── facture-{numero}.pdf                déposée par le comptable
+
+production/                                 ⛔ à créer
+├── {AAAA-MM-JJ}/
+│   └── compte-a-produire.pdf               le récapitulatif du jour
+└── orders/{orderId}/
+    └── fiche-atelier-r{revision}.pdf       le fournil — sans montants
 ```
 
-### Pourquoi rangé par COMMANDE, et pas par audience
+### Le préfixe reste `orders/{orderId}/` des deux côtés
 
-C'est le choix qui surprend, alors il vaut d'être dit : **les trois audiences
-d'une même commande vivent côte à côte**, la feuille du fournil à côté du bon du
-client.
+Deux buckets, mais le **même préfixe** : les papiers d'une commande se retrouvent
+sous son identifiant, où qu'ils vivent. Ce qui protège un client d'un autre n'est
+pas le bucket — c'est ce **préfixe de clé**, dérivé d'identifiants déjà vérifiés,
+et le mur de la société côté API. Le bucket, lui, sépare des **durées de vie** et
+des **jetons**.
 
-Ce n'est pas pur, et c'est délibéré. Séparer par audience éparpillerait les
-papiers d'une même commande dans deux arborescences, et une règle de rétention
-devrait être posée deux fois, à deux endroits qui finiraient par diverger.
-**Tout ce qui concerne la commande X est en X.**
+### La question qui simplifierait tout : faut-il archiver la feuille d'atelier ?
 
-**Ce que ça coûte, et pourquoi c'est acceptable** : les mêmes clés ouvrent la
-feuille d'atelier. Elle ne porte **aucun montant** — c'est une propriété de son
-type, pas une consigne — donc le pire qu'un porteur de ces clés y trouve est ce
-qu'il pouvait déjà lire sur le bon. Ce qui protège un client d'un autre n'a
-jamais été le bucket : c'est le **préfixe de clé**, dérivé d'identifiants
-vérifiés, et le **mur de la société** côté API.
+Elle est **déterministe** : elle se refabrique à l'identique tant que la commande
+n'a pas bougé. Le seul besoin d'en garder une copie est de répondre à « quelle
+feuille est partie au fournil ce matin-là » **après un avenant** — et l'avenant
+n'existe pas.
+
+Si on ne l'archive pas, `production` ne contient plus qu'**une** pièce : le
+compte à produire. Et celle-là, il faut la garder — c'est un instantané arrêté à
+la clôture, et les commandes bougent après ; on ne la refabrique pas.
+
+À trancher avant d'écrire le bucket, pas après.
 
 ### Pourquoi la révision est dans le nom de fichier
 
@@ -81,13 +113,13 @@ lisible.
 
 ## 3. Ce qui s'y range, pièce par pièce
 
-| Pièce                      | Clé                                           | Qui l'écrit      | Quand                        | État |
-| -------------------------- | --------------------------------------------- | ---------------- | ---------------------------- | ---- |
-| **Bon de commande** client | `orders/{id}/bon-de-commande-r{n}.pdf`        | l'API            | au 1ᵉʳ téléchargement        | ✅   |
-| **Fiche d'atelier**        | `orders/{id}/fiche-atelier-r{n}.pdf`          | l'API            | au tirage du lot             | ⛔   |
-| **Bon staff**              | `orders/{id}/bon-staff-r{n}.pdf`              | l'API            | au 1ᵉʳ téléchargement        | ⛔   |
-| **Compte à produire**      | `production/{jour}/compte-a-produire.pdf`     | l'API            | à la clôture du plan du soir | ⛔   |
-| **Facture**                | `companies/{id}/invoices/{mois}/facture-…pdf` | **le comptable** | au dépôt                     | ⛔   |
+| Pièce                      | Bucket       | Clé                                           | Qui l'écrit      | Quand                                  | État |
+| -------------------------- | ------------ | --------------------------------------------- | ---------------- | -------------------------------------- | ---- |
+| **Bon de commande** client | `customers`  | `orders/{id}/bon-de-commande-r{n}.pdf`        | l'API            | au 1ᵉʳ téléchargement                  | ✅   |
+| **Bon staff**              | `customers`  | `orders/{id}/bon-staff-r{n}.pdf`              | l'API            | au 1ᵉʳ téléchargement                  | ⛔   |
+| **Facture**                | `customers`  | `companies/{id}/invoices/{mois}/facture-…pdf` | **le comptable** | au dépôt                               | ⛔   |
+| **Compte à produire**      | `production` | `{jour}/compte-a-produire.pdf`                | l'API            | à la clôture du plan du soir           | ⛔   |
+| **Fiche d'atelier**        | `production` | `orders/{id}/fiche-atelier-r{n}.pdf`          | l'API            | au tirage du lot — **si on l'archive** | ⛔   |
 
 ### Le bon de commande — le seul livré
 

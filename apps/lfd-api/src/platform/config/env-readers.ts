@@ -157,18 +157,21 @@ export interface R2StorageState {
  *   un avenant ajoute une révision, il n'écrase rien — et **jamais publiques** :
  *   elles passent par l'API, derrière le mur de la société.
  *
- * 🔴 **`customers` est rangé par COMMANDE, pas par audience.** La feuille
- * d'atelier d'une commande y vit à côté du bon du client — sous le même préfixe
- * `orders/{orderId}/`. Ce n'est pas pur, et c'est délibéré : séparer par
- * audience éparpillerait les papiers d'une même commande dans deux buckets, et
- * une règle de rétention devrait alors être posée deux fois, à deux endroits
- * qui finiraient par diverger. Tout ce qui concerne la commande X est en X.
+ * ⛔ **Un quatrième usage est DÉCIDÉ et reste à créer : `production`.** Il
+ * portera ce qui documente notre travail — le compte à produire du jour, et la
+ * feuille d'atelier si on choisit de l'archiver. La ligne de partage n'est pas
+ * « client contre production », c'est **opposable contre opérationnel** : ce
+ * qu'un client peut nous opposer se garde des années et porte des montants ; ce
+ * qui documente une journée de fournil se garde des semaines et n'en porte
+ * aucun. Deux durées de vie, deux jetons.
  *
- * Ce que ça coûte : les mêmes clés ouvrent la feuille d'atelier. Elle ne porte
- * **aucun montant** — c'est une propriété de son TYPE, pas une consigne — donc
- * le pire qu'un porteur de ces clés y trouve est ce qu'il pouvait déjà lire sur
- * le bon. Ce qui protège un client d'un autre n'a jamais été le bucket : c'est
- * le préfixe de clé et le mur de la société côté API.
+ * Tant qu'il n'existe pas, `customers` ne reçoit que le bon de commande — qui
+ * lui revient de toute façon. Rien à migrer le jour où le quatrième arrive.
+ *
+ * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
+ * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.
+ *
+ * Détail du rangement : `documentation/order/architecture-pieces-en-r2.md`.
  *
  * ⚠️ **Pourquoi le KBIS n'est pas dans `customers`**, alors qu'il appartient
  * aussi à un client : il a son bucket depuis plus longtemps, avec des données
