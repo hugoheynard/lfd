@@ -285,7 +285,27 @@ Les trois langues sont un **`Record` exhaustif** sur `ClientCopy` : ajouter une
 phrase casse la compilation tant que `fr`, `en` et `it` ne l'ont pas. C'est ce
 qui fait qu'aucun écran ne s'affiche à moitié traduit.
 
-🔴 **Ce garde-fou doit valoir pour le courriel aussi.** Un gabarit qui écrit ses
-propres phrases sort du `Record`, donc du filet : il partira en français à un
-client italien, et personne ne le saura avant qu'il le dise. Le gabarit prend
-ses textes du même dictionnaire — c'est la seule forme qui tienne.
+🔴 **Ce garde-fou vaut pour le courriel aussi, et il est posé depuis le
+2026-09-07.** Un gabarit qui écrit ses propres phrases sort du `Record`, donc du
+filet : il partirait en français à un client italien, et personne ne le saurait
+avant qu'il le dise.
+
+**Les textes des courriels vivent côté API**, dans
+`platform/mailer/copy/`, en trois langues, sous un `Record<ContentLocale, …>`
+exhaustif par construction. Ils n'ont pas pu être partagés avec ce dictionnaire :
+un courriel part du **backend**, qui n'accède pas au bundle de l'app cliente. Les
+recopier crée deux vérités sur les mêmes phrases — c'est le risque assumé, et
+c'est pourquoi les phrases du récap sont reprises **mot pour mot**.
+
+⚠️ **Deux choses que le type ne voit pas**, et que des cas couvrent : une phrase
+vide, et une traduction qui a laissé tomber un trou d'interpolation
+(« Votre commande est confirmée » au lieu de « Votre commande **{ref}** est
+confirmée »). Les deux compilent, les deux partent, et la seconde produit un
+objet d'e-mail sans numéro — dans une seule langue, donc chez les clients qu'on
+relit le moins.
+
+⚠️ **Rien ne choisit encore la langue d'un client.** `User` ne porte pas de
+préférence, et la déduire d'un `Accept-Language` donnerait la langue du
+NAVIGATEUR de celui qui commande, pas celle dans laquelle la personne veut être
+écrite. L'appelant passe `fr` en attendant ; le jour où la préférence existera,
+il n'y aura qu'un paramètre à remplir.
