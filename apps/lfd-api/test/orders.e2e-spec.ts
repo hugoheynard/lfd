@@ -665,3 +665,87 @@ describe("POST /orders/quote", () => {
     expect(body.lines[0]?.unitPriceMillicents).toBe(200_000);
   });
 });
+
+/**
+ * Le **bon de commande** servi au client, à travers la vraie pile HTTP.
+ *
+ * Ce que seul l'e2e prouve ici : que la projection tient sur la charge utile
+ * RÉELLE, pas sur celle d'un test unitaire. Un champ retenu par la projection
+ * mais réintroduit par un intercepteur, un sérialiseur ou une route jumelle
+ * serait invisible en unitaire — et parfaitement lisible dans l'onglet réseau.
+ */
+describe("le bon de commande", () => {
+  /** Passe une commande d'entreprise et rend son identifiant. */
+  async function place(companyId: string | null, sub: string): Promise<string> {
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(sub).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+    return placed.id;
+  }
+
+  it("sert la feuille CLIENT — montants oui, SKU et trace du prix non", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    const orderId = await place(companyId, MEMBER);
+
+    const response = await ctx.asSub(MEMBER).get(`/orders/${orderId}/bon`).expect(200);
+    const sheet = jsonBody<{ audience: string; money: { totalCents: number } }>(response);
+
+    expect(sheet.audience).toBe("client");
+    expect(sheet.money.totalCents).toBe(633);
+    // 🔴 L'assertion qui compte : le SKU du catalogue n'est nulle part dans ce
+    // que le réseau transporte. Le masquer au rendu l'y aurait laissé.
+    expect(JSON.stringify(sheet)).not.toContain("VIE-001");
+  });
+
+  it("ne porte pas le jeton de remise, que la commande possède pourtant", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    const orderId = await place(companyId, MEMBER);
+
+    const stored = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { handoverToken: true },
+    });
+    expect(stored.handoverToken).not.toBeNull();
+
+    const sheet = await ctx.asSub(MEMBER).get(`/orders/${orderId}/bon`).expect(200);
+    expect(JSON.stringify(jsonBody(sheet))).not.toContain(stored.handoverToken);
+  });
+
+  it("refuse la feuille d'une commande qu'on n'a pas le droit de voir", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    const orderId = await place(companyId, MEMBER);
+
+    // 404 et non 403 : on ne distingue pas l'inexistante de l'interdite.
+    await ctx.asSub(STRANGER).get(`/orders/${orderId}/bon`).expect(404);
+  });
+
+  it("sert la feuille d'une commande personnelle à son seul auteur", async () => {
+    const OWNER = "auth0|bon-perso";
+    await createUser(ctx.prisma, { auth0Sub: OWNER });
+    await createUser(ctx.prisma, { auth0Sub: STRANGER });
+    await seedPickup();
+    const orderId = await place(null, OWNER);
+
+    await ctx.asSub(OWNER).get(`/orders/${orderId}/bon`).expect(200);
+    await ctx.asSub(STRANGER).get(`/orders/${orderId}/bon`).expect(404);
+  });
+
+  it("date la feuille de la commande, et compte zéro avenant", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    const orderId = await place(companyId, MEMBER);
+
+    const sheet = jsonBody<{ issuedAt: string; revision: number; placedAt: string }>(
+      await ctx.asSub(MEMBER).get(`/orders/${orderId}/bon`).expect(200),
+    );
+
+    // `issuedAt` est l'instant de la RÉVISION, pas du rendu : deux lectures
+    // successives doivent le donner identique, sinon le tirage PDF ne serait
+    // pas idempotent.
+    expect(sheet.issuedAt).toBe(sheet.placedAt);
+    expect(sheet.revision).toBe(0);
+  });
+});

@@ -30,6 +30,7 @@ import { ListCustomerSkusHandler } from "./application/queries/list-customer-sku
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
+import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.handler.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
@@ -109,6 +110,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,
+    GetOrderSheetHandler,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },

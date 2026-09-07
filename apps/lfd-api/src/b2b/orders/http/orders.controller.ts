@@ -1,5 +1,6 @@
 import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
 import {
+  type ClientSheet,
   type OrderView,
   type PlaceOrderPayload,
   placeOrderPayloadSchema,
@@ -23,6 +24,7 @@ import {
 } from "../application/commands/place-order.command.js";
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
+import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 
 /**
@@ -116,6 +118,23 @@ export class OrdersController {
   @Get(":id")
   async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<OrderView> {
     return this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id));
+  }
+
+  /**
+   * Le **bon de commande**, tel que le client le lit : ses montants, les
+   * libellés des gestes tarifaires, l'acheminement convenu.
+   *
+   * 🔴 **La route ne prend pas d'audience.** Elle sert la feuille CLIENT et rien
+   * d'autre — un paramètre laisserait le demandeur choisir, et `audience=staff`
+   * lui rendrait les SKU et la trace du prix. La projection existe pour retenir
+   * ça ; lui en confier le choix la rendrait décorative.
+   *
+   */
+  @Get(":id/bon")
+  async bon(@CurrentUser() user: Principal, @Param("id") id: string): Promise<ClientSheet> {
+    return this.queries.execute<GetOrderSheetQuery, ClientSheet>(
+      new GetOrderSheetQuery(user.userId, id),
+    );
   }
 
   /**

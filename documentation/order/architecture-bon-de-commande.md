@@ -1,6 +1,8 @@
 # Le bon de commande — un objet, plusieurs formats
 
-**Ouvert le 2026-09-07. Doc-first : rien de ce qui suit n'est codé.**
+**Ouvert le 2026-09-07.** Les **lots 1 et 2 sont livrés** le jour même : le
+contrat `OrderSheet`, la projection serveur aux trois audiences, et la route
+`GET /orders/:id/bon`. Les lots 3 à 8 restent doc-first.
 
 Ce document décrit **une pièce et une seule** — le bon de commande — et la façon
 dont elle se rend en six endroits sans être réécrite six fois. Il remplace la
@@ -558,6 +560,13 @@ C'est le chantier comptable, il est ailleurs :
 | **6** | Jeton de remise émis **aussi en livraison**, `handoverBlocker` ouvert au coursier, journal d'événements       | qu'une livraison remise ne laisse aucune trace              |
 | **7** | Décommissionner `legacy/commandes/download-bon.ts`                                                            | qu'il existe deux « bons » avec deux totaux différents      |
 | **8** | Rendu `pdf` **déterministe**, écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision | qu'un avenant écrase le papier que le client a en main      |
+
+⚠️ **Le lot 1 a divergé du plan, en mieux.** Ce document proposait `money?:
+SheetMoney` — optionnel, tenu par `exactOptionalPropertyTypes`. Une **union
+discriminée** est plus forte : `AtelierSheet` n'a pas la propriété du tout, donc
+`sheet.money` n'y est pas `undefined`, c'est une erreur de compilation. Le
+`switch` de `orderSheetOf` devient par la même occasion exhaustif sur l'union :
+une quatrième audience ne compile pas tant qu'elle n'a pas sa projection.
 
 **L'ordre n'est pas négociable.** Les lots 3 à 5 sont des rendus : ils n'ont rien
 à consommer tant que 1 et 2 n'existent pas, et les écrire d'abord recrée

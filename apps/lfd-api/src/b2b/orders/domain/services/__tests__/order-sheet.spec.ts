@@ -1,0 +1,226 @@
+import type { OrderLineView, OrderView } from "@lfd/contracts";
+
+import { atelierSheetOf, clientSheetOf, orderSheetOf, staffSheetOf } from "../order-sheet.js";
+
+/**
+ * Ce que ces cas éprouvent est une **frontière de sécurité**, pas une mise en
+ * page : la projection est le seul endroit qui décide de ce qui quitte le
+ * serveur. Un champ qu'elle laisse passer est dans l'onglet réseau du client,
+ * qu'un écran l'affiche ou non.
+ */
+
+function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
+  return {
+    sku: "PAT-ECLAIR",
+    productName: "Éclair",
+    unitPriceMillicents: 210_000,
+    vatRate: 0.055,
+    quantity: 4,
+    lineTotalCents: 840,
+    pricing: {
+      basePriceMillicents: 250_000,
+      steps: [
+        {
+          stage: "mercuriale",
+          ruleId: "rule_42",
+          label: "Promotion de rentrée",
+          scope: null,
+          resultMillicents: 210_000,
+          supersedes: [],
+        },
+      ],
+      floored: false,
+      floorDecision: null,
+      commitment: null,
+    },
+    allergens: null,
+    ...overrides,
+  };
+}
+
+function order(overrides: Partial<OrderView> = {}): OrderView {
+  return {
+    id: "order_1",
+    orderNumber: "CMD-4812",
+    status: "placed",
+    paymentStatus: "paid",
+    requestedDeliveryDate: "2026-09-08",
+    fulfillmentMethod: "pickup",
+    deliveryAddressId: null,
+    deliveryAddress: null,
+    pickupAddress: {
+      ligne1: "route de la Balme",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+    },
+    fulfillment: {
+      window: { value: null, source: "default" },
+      contact: { value: null, source: "default" },
+      signatureRequired: { value: false, source: "default" },
+    },
+    note: "",
+    subtotalCents: 128_460,
+    discountCents: 12_846,
+    discountAdjustment: null,
+    deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    vatCents: 6_360,
+    totalCents: 121_974,
+    currency: "EUR",
+    fromSubscriptionId: null,
+    origin: "self_service",
+    placedByStaffId: null,
+    recurringDeltas: null,
+    placedAt: "2026-09-07T06:00:00.000Z",
+    lines: [line()],
+    handoverToken: "tok_secret_42",
+    handedOverAt: null,
+    ...overrides,
+  };
+}
+
+describe("la feuille de l'atelier", () => {
+  it("ne porte aucun montant — la propriété n'existe pas", () => {
+    const sheet = atelierSheetOf(order());
+
+    // Une feuille oubliée sur un plan de travail ne raconte pas les prix
+    // négociés à qui la ramasse, et celle d'une livraison voyage dans le carton.
+    expect(sheet).not.toHaveProperty("money");
+    expect(JSON.stringify(sheet)).not.toContain("210000");
+  });
+
+  it("garde le SKU : c'est par lui qu'on retrouve un article au four", () => {
+    expect(atelierSheetOf(order()).lines[0]?.sku).toBe("PAT-ECLAIR");
+  });
+
+  it("ne porte aucune trace de prix, pas même un libellé d'étage", () => {
+    expect(JSON.stringify(atelierSheetOf(order()))).not.toContain("Promotion de rentrée");
+  });
+});
+
+describe("la feuille du client", () => {
+  it("porte les montants figés, recopiés et non recalculés", () => {
+    const sheet = clientSheetOf(order());
+
+    expect(sheet.money.totalCents).toBe(121_974);
+    expect(sheet.money.subtotalCents).toBe(128_460);
+  });
+
+  it("ne laisse sortir NI le SKU, NI le tarif d'entrée, NI le nom de l'étage", () => {
+    // Le cœur de la projection. Masquer ces champs au rendu les laisserait dans
+    // la charge utile — et trois commandes empilées reconstituent la grille.
+    const payload = JSON.stringify(clientSheetOf(order()));
+
+    expect(payload).not.toContain("PAT-ECLAIR");
+    expect(payload).not.toContain("250000");
+    expect(payload).not.toContain("mercuriale");
+    expect(payload).not.toContain("rule_42");
+  });
+
+  it("garde le LIBELLÉ de l'étage, qui lui est destiné", () => {
+    expect(clientSheetOf(order()).lines[0]?.priceLabels).toEqual(["Promotion de rentrée"]);
+  });
+
+  it("rend une liste vide quand la ligne ne porte aucune trace", () => {
+    // Pas une phrase inventée : une commande antérieure au gel de la trace ne
+    // doit pas s'afficher comme une commande sans geste tarifaire.
+    const sheet = clientSheetOf(order({ lines: [line({ pricing: null })] }));
+
+    expect(sheet.lines[0]?.priceLabels).toEqual([]);
+  });
+});
+
+describe("la feuille du staff", () => {
+  it("ajoute le SKU et la trace, sans changer un seul montant", () => {
+    const client = clientSheetOf(order());
+    const staff = staffSheetOf(order());
+
+    expect(staff.lines[0]?.sku).toBe("PAT-ECLAIR");
+    expect(staff.lines[0]?.entryPriceMillicents).toBe(250_000);
+    // Le vocabulaire diffère, jamais les montants : c'est ce qui permet au
+    // commercial et au client de tomber juste au téléphone.
+    expect(staff.money).toEqual(client.money);
+    expect(staff.lines[0]?.lineTotalCents).toBe(client.lines[0]?.lineTotalCents);
+  });
+
+  it("tait le tarif d'entrée quand il est ÉGAL au prix facturé", () => {
+    // Aucune règle n'a joué : il n'y a rien à barrer, et afficher un prix barré
+    // identique ferait croire à une remise qui n'existe pas.
+    const sheet = staffSheetOf(
+      order({ lines: [line({ unitPriceMillicents: 250_000, lineTotalCents: 1_000 })] }),
+    );
+
+    expect(sheet.lines[0]?.entryPriceMillicents).toBeNull();
+  });
+
+  it("tait le tarif d'entrée quand la ligne ne porte AUCUNE trace", () => {
+    // L'autre cas, indistinguable du premier à la lecture : le combler avec le
+    // prix facturé affirmerait « aucune altération » sur les seules commandes
+    // qu'on ne peut plus vérifier.
+    const sheet = staffSheetOf(order({ lines: [line({ pricing: null })] }));
+
+    expect(sheet.lines[0]?.entryPriceMillicents).toBeNull();
+    expect(sheet.lines[0]?.floored).toBe(false);
+  });
+});
+
+describe("l'acheminement", () => {
+  it("retient l'adresse de RETRAIT sur une commande retirée", () => {
+    expect(atelierSheetOf(order()).fulfillment.address?.ville).toBe("Val d'Isère");
+  });
+
+  it("retient l'adresse LIVRÉE sur une commande en coursier", () => {
+    const sheet = atelierSheetOf(
+      order({
+        fulfillmentMethod: "delivery",
+        deliveryAddress: {
+          ligne1: "12 rue du Coin Ferrand",
+          ligne2: "",
+          codePostal: "73150",
+          ville: "Tignes",
+        },
+      }),
+    );
+
+    expect(sheet.fulfillment.address?.ville).toBe("Tignes");
+  });
+});
+
+describe("le jeton de remise", () => {
+  it.each(["atelier", "client", "staff"] as const)(
+    "ne figure sur AUCUNE feuille — audience %s",
+    (audience) => {
+      // La règle de l'autoscan, rendue structurelle : le jeton n'est pas un
+      // champ de la feuille, donc aucun rendu ne peut l'imprimer sur un papier
+      // qui voyage dans le carton.
+      expect(JSON.stringify(orderSheetOf(order(), audience))).not.toContain("tok_secret_42");
+    },
+  );
+});
+
+describe("le tirage", () => {
+  it("date la feuille de la RÉVISION, pas du rendu", () => {
+    // Deux projections successives doivent être identiques au champ près : c'est
+    // ce qui rendra l'écriture du PDF idempotente sans verrou.
+    const first = clientSheetOf(order());
+    const second = clientSheetOf(order());
+
+    expect(first.issuedAt).toBe("2026-09-07T06:00:00.000Z");
+    expect(first).toEqual(second);
+  });
+
+  it("compte zéro avenant, et c'est vrai — le mécanisme n'existe pas", () => {
+    expect(clientSheetOf(order()).revision).toBe(0);
+  });
+});
+
+describe("le point d'entrée par audience", () => {
+  it.each([
+    ["atelier", false],
+    ["client", true],
+    ["staff", true],
+  ] as const)("l'audience %s porte des montants : %s", (audience, priced) => {
+    expect("money" in orderSheetOf(order(), audience)).toBe(priced);
+  });
+});
