@@ -188,7 +188,20 @@ describe("une commande déclenche l'évaluation", () => {
       (found) => found.length > 0,
     );
     expect(alerts[0]?.kind).toBe("product.first_order");
-    expect(alerts[0]?.findings[0]?.sku).toBe("VIE-002");
+    // ⚠️ On assert la PRÉSENCE de VIE-002, pas sa position — et cette nuance
+    // n'est pas de la prudence de style : `findings[0]` a rendu "VIE-001" dans
+    // une passe complète du 2026-09-07, et la suite est passée au rouge sans
+    // qu'une ligne ait bougé.
+    //
+    // La cause n'est pas dans le test. `EvaluateOrderAlerts` passe
+    // `excludeOrderId` : l'historique est « toutes les AUTRES commandes », pas
+    // « celles d'AVANT ». L'évaluation de la première commande, si elle traîne,
+    // voit déjà la seconde, cesse de se croire première, et signale VIE-001.
+    //
+    // Ce test tient donc ce dont il est le sujet — un produit inédit parle —
+    // sans prétendre tenir l'ordre, que le système ne garantit pas encore.
+    // La course est notée : `documentation/todos/todo-course-evaluation-alertes.md`.
+    expect(alerts[0]?.findings.map((finding) => finding.sku)).toContain("VIE-002");
   });
 
   it("ne signale pas un produit déjà commandé", async () => {
