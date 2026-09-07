@@ -23,7 +23,7 @@ commandes/
 - `ViewEncapsulation.None` autorisé **uniquement** pour relocaliser du CSS global.
 - Le `.scss` n'est créé **que s'il y a du style** (pas de fichier vide pour la
   symétrie) ; un composant sans style n'a pas de `styleUrl`.
-- **Un spec par NOUVEAU composant** (`x.spec.ts` colocalisé). On ne backfille pas
+- **Un spec par NOUVEAU composant** (`*.spec.ts` colocalisé). On ne backfille pas
   en masse l'existant : on teste en priorité la **logique** (panels de formulaire,
   checkout, activation, tables), pas les vues purement présentationnelles.
 - **Services / helpers / modèles ne traînent pas à côté d'une page** : une page
@@ -193,7 +193,8 @@ porte des `memberships` 0..N, pas un `company_id` unique) :
   contact sur place + point GPS, tout édité par `adresse-panel` (natifs
   `<textarea>`/`<input type="time">`, lus via un helper `inputValue()` typé — pas de
   `$any`). Types = `@lfd/contracts` ; formateurs neutres dans
-  `entreprises/delivery-format.ts`.
+  `packages/b2b-ui/src/company/delivery-format.ts` — ils ont quitté l'app pour
+  le paquet partagé, les deux fronts s'en servent.
 
 ✅ Dans l'onglet d'une entreprise, **tout** est servi par l'API par entreprise :
 identité, contacts, KBIS, **adresses** (facturation + livraison via

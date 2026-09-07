@@ -56,6 +56,26 @@
  * Les traiter pareil ferait crier la porte sur des exemples, et une porte qui
  * crie à tort finit désactivée.
  *
+ * ## Les CONVENTIONS y sont entrées le 2026-09-07, et voilà pourquoi
+ *
+ * La porte ne lisait que `documentation/`. Le 2026-09-06, un commit portant sur
+ * une tout AUTRE porte a vidé `CLAUDE.md` de ses 888 lignes sans le mentionner
+ * dans son message — un dommage collatéral. Personne ne l'a vu pendant
+ * vingt-quatre heures : le seul document qui édicte les règles du dépôt était le
+ * seul qu'aucune porte ne lisait.
+ *
+ * ⚠️ **Cette porte-ci n'aurait PAS attrapé ce cas-là**, et il faut le dire pour
+ * que personne ne croie le sujet clos : un fichier vide n'a aucune référence
+ * morte, donc elle serait restée verte. Ce qu'elle apporte est plus modeste et
+ * bien réel — les trois `CLAUDE.md` nomment des dizaines de fichiers, et un
+ * renommage les périme comme il périme un document. Le VIDE demande une autre
+ * porte, et elle reste à écrire.
+ *
+ * Au premier passage sur eux : **trois références mortes**, toutes dans le front
+ * plateforme — un `delivery-format.ts` parti dans `@lfd/b2b-ui` sans que le
+ * texte suive, un `x.spec.ts` qui était un gabarit affirmé comme un fichier, et
+ * un typage de dépendance que la porte prenait pour un mort.
+ *
  * ## Le SCOPE a fini de grandir
  *
  * Le motif est celui de `code-language` et `fold-typography` : les dossiers
@@ -100,7 +120,10 @@ import { basename, join, relative, resolve } from "node:path";
 
 const ROOT = process.cwd();
 
-/** Les dossiers dont la dette est purgée. En ajouter un = l'avoir drainé. */
+/**
+ * Ce dont la dette est purgée : des **dossiers**, et des **documents isolés**.
+ * En ajouter un = l'avoir drainé.
+ */
 const SCOPE = [
   // Drainés le 2026-09-06, en écrivant la porte. `b2b` d'abord parce que c'est
   // là que le travail se fait, et que ses références mortes pointaient toutes
@@ -108,6 +131,24 @@ const SCOPE = [
   // `b2b` et `ops` le 2026-09-06 en écrivant la porte, le reste dans la foulée.
   // Le dossier entier : il n'y a plus de solde.
   "documentation",
+
+  // ── Les CONVENTIONS, ajoutées le 2026-09-07 ───────────────────────────────
+  //
+  // 🔴 Elles manquaient, et le trou a coûté. Le 2026-09-06, un commit sur une
+  // tout autre porte a VIDÉ `CLAUDE.md` de ses 888 lignes sans le mentionner
+  // dans son message. Personne ne l'a vu pendant vingt-quatre heures : le seul
+  // document qui édicte les règles du dépôt — la hiérarchie des garde-fous, le
+  // port du temps, la matrice des frontières — était le seul qu'aucune porte ne
+  // lisait.
+  //
+  // ⚠️ Cette porte-ci n'aurait PAS attrapé ce cas-là : un fichier vide n'a
+  // aucune référence morte, donc elle serait restée verte. Ce qu'elle apporte
+  // est plus modeste et bien réel — les conventions nomment des dizaines de
+  // fichiers, et un renommage les périme comme il périme un document. Le vide,
+  // lui, demande une autre porte, et elle reste à écrire.
+  "CLAUDE.md",
+  "apps/lfc-B2B-platform-frontend/CLAUDE.md",
+  "apps/lfc-B2B-admin-frontend/CLAUDE.md",
 ];
 
 /**
@@ -116,7 +157,12 @@ const SCOPE = [
  * Un dossier hors liste n'est pas « sans dette » : il est **sans mesure**, ce
  * qui se lit pareil et ne vaut rien.
  */
-const WATCHED = ["documentation"];
+const WATCHED = [
+  "documentation",
+  "CLAUDE.md",
+  "apps/lfc-B2B-platform-frontend/CLAUDE.md",
+  "apps/lfc-B2B-admin-frontend/CLAUDE.md",
+];
 
 /**
  * Les seuls documents dont les références ne sont pas comptées, **et pourquoi**.
@@ -287,6 +333,14 @@ function deadIn(doc) {
         continue;
       }
       const [, path, lineNumber] = hit;
+      // Un chemin sous `node_modules/` désigne une DÉPENDANCE — les typages
+      // d'une bibliothèque, par exemple. Il est réel, il est utile à nommer, et
+      // il ne sera JAMAIS dans `git ls-files`. Le déclarer mort dirait le
+      // contraire de la vérité ; le vérifier demanderait que la porte dépende
+      // d'un `install`, donc qu'elle soit verte ou rouge selon la machine.
+      if (path.startsWith("node_modules/") || path.includes("/node_modules/")) {
+        continue;
+      }
       // Un glob (`*.spec.ts`) et un motif de SUFFIXE (`.e2e-spec.ts`) décrivent
       // une famille de fichiers, pas un fichier. Il n'y a rien à vérifier.
       const isSuffixPattern =
@@ -323,12 +377,22 @@ function deadIn(doc) {
 }
 
 const excluded = EXCLUDED.map((dir) => `${dir}/`);
-const drained = SCOPE.map((dir) => `${dir}/`);
+const drained = SCOPE.map((entry) => (byPath.has(entry) ? entry : `${entry}/`));
 
-function docsUnder(dir) {
+/**
+ * Les documents d'une entrée de scope — un **dossier** ou un **document seul**.
+ *
+ * Les deux formes cohabitent depuis que les `CLAUDE.md` sont couverts : ce sont
+ * des documents isolés à la racine de ce qu'ils régissent, et exiger un dossier
+ * aurait obligé à en inventer un pour trois fichiers.
+ */
+function docsUnder(entry) {
+  if (byPath.has(entry)) {
+    return entry.endsWith(".md") ? [entry] : [];
+  }
   return everyFile.filter(
     (file) =>
-      file.startsWith(`${dir}/`) &&
+      file.startsWith(`${entry}/`) &&
       file.endsWith(".md") &&
       !excluded.some((skip) => file.startsWith(skip)),
   );
@@ -399,7 +463,7 @@ let remaining = 0;
 let counted = 0;
 for (const dir of WATCHED) {
   for (const doc of docsUnder(dir)) {
-    if (drained.some((path) => doc.startsWith(path))) {
+    if (drained.some((path) => doc === path || doc.startsWith(path))) {
       continue;
     }
     counted += 1;
