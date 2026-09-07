@@ -8,7 +8,6 @@ import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
-import { CloseProductionPlanHandler } from "./application/commands/close-production-plan.handler.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
@@ -44,6 +43,9 @@ import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.hand
 import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-order-sheet-pdf.handler.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
+import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
+import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
+import { PrismaPendingOrdersReader } from "./infrastructure/prisma-pending-orders.reader.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
@@ -130,6 +132,9 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
+    PrismaDayOrdersReader,
+    PrismaPendingOrdersReader,
+    OnProductionDayClosed,
     GetProductionBatchHandler,
     GetPackingHandler,
     SendOrderPlacedMail,
@@ -147,7 +152,6 @@ import { OrdersController } from "./http/orders.controller.js";
       }),
     },
     MarkOrderReadyHandler,
-    CloseProductionPlanHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,
     ListCustomerSkusHandler,
@@ -180,6 +184,13 @@ import { OrdersController } from "./http/orders.controller.js";
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
   // une seconde copie. Cf. `PricingAdminModule`.
-  exports: [ProductCatalogReader],
+  exports: [
+    // Les deux adaptateurs que la production consomme par ses ports. Ils
+    // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
+    // pour être importés par le fournil : le token qu'il connaît est le sien.
+    PrismaDayOrdersReader,
+    PrismaPendingOrdersReader,
+    ProductCatalogReader,
+  ],
 })
 export class OrdersModule {}

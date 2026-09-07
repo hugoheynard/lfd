@@ -16,6 +16,8 @@ import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
+import { ProductionModule } from "../production/production.module.js";
+import { ProductionFeedModule } from "./production-feed.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
@@ -99,6 +101,8 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
     OrdersModule,
+    ProductionModule,
+    ProductionFeedModule,
     PricingAdminModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
     SubscriptionsModule,

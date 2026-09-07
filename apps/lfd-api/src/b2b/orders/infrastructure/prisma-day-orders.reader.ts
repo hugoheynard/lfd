@@ -44,7 +44,15 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
         // déjà. C'est exactement la conversion que le schéma `production` a
         // supprimée de son côté en gardant le jour en texte.
         requestedDeliveryDate: new Date(`${day.value}T00:00:00.000Z`),
-        status: { notIn: ["cancelled", "draft"] },
+        // 🔴 `placed` et RIEN d'autre. La première version prenait « tout sauf
+        // annulé et brouillon », ce qui incluait `ready` : une commande déjà
+        // colisée avant la clôture serait entrée dans le compte à produire, et
+        // le fournil l'aurait fabriquée DEUX FOIS.
+        //
+        // Ce que la production inscrit est ce qui reste à faire. La règle vit
+        // ici parce qu'elle porte sur l'énuméré du commerce, que le fournil n'a
+        // pas à connaître.
+        status: "placed",
       },
       orderBy: { orderNumber: "asc" },
       select: {

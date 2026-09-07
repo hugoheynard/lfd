@@ -59,6 +59,9 @@ describe("UploadKbisHandler", () => {
         return Promise.resolve(key);
       },
       read: () => Promise.resolve(Buffer.alloc(0)),
+      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
+      // lecture doit dire « pas encore » plutôt que rendre une pièce.
+      readIfPresent: () => Promise.resolve(null),
     };
     const companies = {
       existsBySiret: () => Promise.resolve(false),
@@ -162,6 +165,9 @@ describe("DownloadKbisHandler", () => {
     const store: DocumentStore = {
       save: () => Promise.resolve("k"),
       read: () => Promise.resolve(bytes),
+      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
+      // lecture doit dire « pas encore » plutôt que rendre une pièce.
+      readIfPresent: () => Promise.resolve(null),
     };
     const companies = {
       existsBySiret: () => Promise.resolve(false),

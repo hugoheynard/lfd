@@ -3,7 +3,6 @@ import {
   productionBatchQuerySchema,
   type ProductionBatchView,
   type OrderPackingView,
-  type ProductionPlanClosure,
 } from "@lfd/contracts";
 import { Controller, Get, Param, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -11,7 +10,6 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { CloseProductionPlanCommand } from "../application/commands/close-production-plan.command.js";
 import { MarkOrderReadyCommand } from "../application/commands/mark-order-ready.command.js";
 import { GetPackingQuery } from "../application/queries/get-packing.query.js";
 import { GetProductionBatchQuery } from "../application/queries/get-production-batch.query.js";
@@ -58,24 +56,6 @@ export class AdminProductionController {
   @Get("packing/:reference")
   async packing(@Param("reference") reference: string): Promise<OrderPackingView> {
     return this.queries.execute<GetPackingQuery, OrderPackingView>(new GetPackingQuery(reference));
-  }
-
-  /**
-   * **Clôt le plan du soir** d'une journée : ses commandes entrent dans le
-   * compte à produire et passent `placed` → `confirmed`.
-   *
-   * Le geste que l'équipe fait déjà — arrêter de prendre pour demain — devient
-   * le moment que le système n'avait pas. Il ne demande à personne de juger
-   * quoi que ce soit : il acte une heure, pas un tri.
-   *
-   * Rejouable : une seconde clôture absorbe zéro et le dit, plutôt que de
-   * refuser. Une journée déjà basculée n'est pas une erreur.
-   */
-  @Post("batch/:date/close")
-  async close(@Param("date") date: string): Promise<ProductionPlanClosure> {
-    return this.commands.execute<CloseProductionPlanCommand, ProductionPlanClosure>(
-      new CloseProductionPlanCommand(productionBatchQuerySchema.parse({ date }).date),
-    );
   }
 
   /**

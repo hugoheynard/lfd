@@ -39,8 +39,10 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
     origin: "self_service",
     issuedAt: "2026-09-07T06:00:00.000Z",
     revision: 0,
+    customer: { tradeName: "Hôtel des Trois Ponts", legalName: "SAS des Trois Ponts" },
     lines: [
       {
+        sku: "PAI-001",
         productName: "Tradition",
         quantity: 12,
         unitPriceMillicents: 120_000,
@@ -56,6 +58,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       deliveryFeeCents: 0,
       lateFeeCents: 0,
       vatCents: 71,
+      vatShares: [{ rate: 5.5, amountCents: 71 }],
       totalCents: 1_367,
       currency: "EUR",
     },

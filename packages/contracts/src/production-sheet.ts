@@ -43,6 +43,33 @@ export type ProductionBatchQuery = z.infer<typeof productionBatchQuerySchema>;
  * la première avait déjà eu lieu : la fiche du fournil n'a jamais porté son
  * heure de génération, alors que deux tirages peuvent circuler après un avenant.
  */
+/**
+ * **Ce qu'une journée de fabrication dit d'elle-même**, vue du fournil.
+ *
+ * ⚠️ `pendingInCommerce` existe pour une raison précise, et il faut la lire :
+ * la production publie sa clôture, le commerce s'abonne, et le bus vit **en
+ * processus** — l'événement n'est ni persisté ni rejoué. Un container qui tombe
+ * entre les deux laisse des commandes `placed` sur une journée close.
+ *
+ * Sans cette lecture, la divergence n'existerait que dans la tête de celui qui
+ * la cherche. Avec elle, elle se voit — et le rattrapage est de reclore la
+ * journée, ce qui republie le fait sans rien recalculer.
+ */
+export interface ProductionDayStatus {
+  readonly date: string;
+  /** `null` = la journée n'est pas arrêtée. */
+  readonly closedAt: string | null;
+  /** Ce que la PRODUCTION a inscrit chez elle. */
+  readonly orders: number;
+  /** Les articles du compte à produire, tous clients confondus. */
+  readonly items: number;
+  /**
+   * Les commandes que le COMMERCE n'a pas encore basculées, sur une journée
+   * pourtant close. Zéro attendu ; autre chose = l'abonné a manqué le fait.
+   */
+  readonly pendingInCommerce: number;
+}
+
 export interface ProductionBatchView {
   /** `AAAA-MM-JJ`, la journée servie. */
   readonly date: string;
@@ -64,6 +91,27 @@ export interface ProductionBatchView {
 export interface ProductionPlanClosure {
   /** `AAAA-MM-JJ`, la journée close. */
   readonly date: string;
-  /** Nombre de commandes passées de `placed` à `confirmed`. */
+  /**
+   * Le nombre de commandes **inscrites côté production**.
+   *
+   * 🔴 C'était « le nombre passées de `placed` à `confirmed` », c'est-à-dire un
+   * fait du COMMERCE. Depuis que la production tient sa propre écriture, ce que
+   * la clôture constate est ce qu'elle a inscrit chez elle ; le commerce
+   * apprend la bascule par un événement, et son écriture n'est plus dans la
+   * réponse. Compter ce qu'un abonné fera plus tard aurait été promettre.
+   */
   readonly absorbed: number;
+  /**
+   * Vrai quand la journée était **déjà arrêtée** et qu'on l'a seulement
+   * réannoncée.
+   *
+   * La clôture reste rejouable — c'est le rattrapage prévu quand l'abonné du
+   * commerce a échoué — mais elle ne RECALCULE rien : le compte à produire est
+   * un instantané, et les commandes bougent après. La réponse dit donc laquelle
+   * des deux choses vient d'arriver, plutôt que de rendre deux fois le même
+   * nombre sans dire pourquoi.
+   */
+  readonly alreadyClosed: boolean;
+  /** L'instant de la clôture d'origine — celui du snapshot, jamais du rejeu. */
+  readonly closedAt: string;
 }

@@ -370,7 +370,11 @@ export {
 } from "./paris-time.js";
 export type { LocalMoment } from "./paris-time.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
-export type { ProductionBatchQuery, ProductionBatchView } from "./production-sheet.js";
+export type {
+  ProductionBatchQuery,
+  ProductionBatchView,
+  ProductionDayStatus,
+} from "./production-sheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,

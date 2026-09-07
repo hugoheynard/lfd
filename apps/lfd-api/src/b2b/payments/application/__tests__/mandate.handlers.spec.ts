@@ -201,6 +201,9 @@ describe("AttachMandateProofHandler", () => {
         return Promise.resolve(key);
       },
       read: () => Promise.resolve(Buffer.alloc(0)),
+      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
+      // lecture doit dire « pas encore » plutôt que rendre une pièce.
+      readIfPresent: () => Promise.resolve(null),
     };
     const handler = new AttachMandateProofHandler(repo, store);
 
@@ -220,6 +223,9 @@ describe("AttachMandateProofHandler", () => {
         return Promise.resolve(key);
       },
       read: () => Promise.resolve(Buffer.alloc(0)),
+      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
+      // lecture doit dire « pas encore » plutôt que rendre une pièce.
+      readIfPresent: () => Promise.resolve(null),
     };
     const handler = new AttachMandateProofHandler(repo, store);
 
@@ -234,6 +240,9 @@ describe("AttachMandateProofHandler", () => {
     const store: DocumentStore = {
       save: (key) => Promise.resolve(key),
       read: () => Promise.resolve(Buffer.alloc(0)),
+      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
+      // lecture doit dire « pas encore » plutôt que rendre une pièce.
+      readIfPresent: () => Promise.resolve(null),
     };
     const handler = new AttachMandateProofHandler(repo, store);
 

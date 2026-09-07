@@ -541,12 +541,49 @@ describe("le plan du soir", () => {
     return placed.orderNumber;
   }
 
-  async function closePlan(day: string): Promise<number> {
+  interface Closure {
+    readonly absorbed: number;
+    readonly alreadyClosed: boolean;
+    readonly closedAt: string;
+  }
+
+  async function closePlan(day: string): Promise<Closure> {
     const response = await ctx
       .asSub("staff-e2e")
       .post(`/admin/production/batch/${day}/close`)
       .expect(201);
-    return jsonBody<{ absorbed: number }>(response).absorbed;
+    return jsonBody<Closure>(response);
+  }
+
+  async function dayStatus(day: string): Promise<{
+    readonly closedAt: string | null;
+    readonly orders: number;
+    readonly items: number;
+    readonly pendingInCommerce: number;
+  }> {
+    return jsonBody(
+      await ctx.asSub("staff-e2e").get(`/admin/production/batch/${day}/status`).expect(200),
+    );
+  }
+
+  /**
+   * Attend que le COMMERCE ait appris.
+   *
+   * 🔴 Il l'apprend désormais par un **abonné**, pas par l'appel : la production
+   * publie `production.day_closed`, `b2b` s'abonne, et `BackgroundWork` porte la
+   * promesse. La requête répond donc avant que `confirmed` ne soit écrit —
+   * sonder est la seule façon honnête de tester ce chemin, et c'est le prix
+   * assumé du couplage minimal.
+   */
+  async function eventuallyStatus(reference: string, expected: string): Promise<string> {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const seen = await statusOf(reference);
+      if (seen === expected) {
+        return seen;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return statusOf(reference);
   }
 
   async function statusOf(reference: string): Promise<string> {
@@ -561,12 +598,54 @@ describe("le plan du soir", () => {
     await createUser(ctx.prisma, { auth0Sub: MEMBER });
   });
 
-  it("fait passer les commandes du jour de `placed` à `confirmed`", async () => {
+  it("inscrit la journée chez la PRODUCTION, et le commerce l'apprend", async () => {
+    // Les deux moitiés du couplage minimal, dans un seul cas : la production
+    // écrit chez elle et publie ; le commerce s'abonne et écrit chez lui.
     const reference = await place(SERVICE_DAY);
     expect(await statusOf(reference)).toBe("placed");
 
-    expect(await closePlan(SERVICE_DAY)).toBe(1);
-    expect(await statusOf(reference)).toBe("confirmed");
+    const closure = await closePlan(SERVICE_DAY);
+
+    expect(closure.absorbed).toBe(1);
+    expect(closure.alreadyClosed).toBe(false);
+    const status = await dayStatus(SERVICE_DAY);
+    expect(status.closedAt).toBe(closure.closedAt);
+    expect(status.orders).toBe(1);
+    expect(status.items).toBe(1);
+    expect(await eventuallyStatus(reference, "confirmed")).toBe("confirmed");
+  });
+
+  it("RÉANNONCE une journée close sans recalculer son instantané", async () => {
+    // Le rattrapage prévu : le bus vit en processus, donc un abonné qui échoue
+    // laisse des commandes `placed` sur une journée close. Rejouer la clôture
+    // republie le fait — mais le compte à produire, lui, ne bouge pas.
+    await place(SERVICE_DAY);
+    const first = await closePlan(SERVICE_DAY);
+
+    const again = await closePlan(SERVICE_DAY);
+
+    expect(again.alreadyClosed).toBe(true);
+    expect(again.closedAt).toBe(first.closedAt);
+    expect(again.absorbed).toBe(first.absorbed);
+  });
+
+  it("MONTRE la divergence quand le commerce a manqué le fait, et la referme", async () => {
+    // Sans cette lecture, l'écart n'existerait que dans la tête de celui qui le
+    // cherche. On simule l'abonné perdu en remettant la commande `placed`.
+    const reference = await place(SERVICE_DAY);
+    await closePlan(SERVICE_DAY);
+    await eventuallyStatus(reference, "confirmed");
+
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "placed", confirmedAt: null },
+    });
+    expect((await dayStatus(SERVICE_DAY)).pendingInCommerce).toBe(1);
+
+    await closePlan(SERVICE_DAY);
+
+    expect(await eventuallyStatus(reference, "confirmed")).toBe("confirmed");
+    expect((await dayStatus(SERVICE_DAY)).pendingInCommerce).toBe(0);
   });
 
   it("n'absorbe RIEN une seconde fois, et le dit plutôt que de refuser", async () => {
@@ -575,7 +654,13 @@ describe("le plan du soir", () => {
     await place(SERVICE_DAY);
     await closePlan(SERVICE_DAY);
 
-    expect(await closePlan(SERVICE_DAY)).toBe(0);
+    // 🔴 Ce cas attendait `0` : `absorbed` comptait ce que le COMMERCE venait de
+    // basculer, donc zéro la seconde fois. Il compte désormais ce que la
+    // PRODUCTION a inscrit — un instantané, qui ne change pas. Le « rien de
+    // plus » se lit sur `alreadyClosed`, qui le dit explicitement.
+    const again = await closePlan(SERVICE_DAY);
+    expect(again.absorbed).toBe(1);
+    expect(again.alreadyClosed).toBe(true);
   });
 
   it("ne touche pas les commandes d'une AUTRE journée", async () => {
@@ -585,7 +670,13 @@ describe("le plan du soir", () => {
     // Stripe — un rouge qui n'aurait rien à voir avec le plan du soir.
     const reference = await place(SERVICE_DAY);
 
-    expect(await closePlan(serviceDay(10))).toBe(0);
+    // Une journée sans commande est REFUSÉE, plutôt qu'arrêtée à vide : écrire
+    // « ce jour-là on a produit ceci » là où il n'y a rien eu ferait passer un
+    // zéro pour une mesure.
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/batch/${serviceDay(10)}/close`)
+      .expect(409);
     expect(await statusOf(reference)).toBe("placed");
   });
 
@@ -595,13 +686,17 @@ describe("le plan du soir", () => {
     const reference = await place(SERVICE_DAY);
     await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
 
-    expect(await closePlan(SERVICE_DAY)).toBe(0);
+    // La commande n'est plus `placed` : elle n'entre donc PAS dans ce que la
+    // production inscrit — le port `producibleFor` ne rend que les producibles —
+    // et l'abonné ne la ferait pas reculer de toute façon.
+    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(409);
     expect(await statusOf(reference)).toBe("ready");
   });
 
   it("date la bascule, pour qu'on sache quand la journée est partie", async () => {
     const reference = await place(SERVICE_DAY);
     await closePlan(SERVICE_DAY);
+    await eventuallyStatus(reference, "confirmed");
 
     const row = await ctx.prisma.order.findUniqueOrThrow({
       where: { orderNumber: reference },

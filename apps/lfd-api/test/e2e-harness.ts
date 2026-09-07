@@ -27,6 +27,10 @@
  * (base créée + migrée). Sans ça, `bootstrapE2e` échoue avec le message qui dit
  * quoi lancer.
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { legacyRoleSeeds } from "@lfd/contracts";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
@@ -496,6 +500,25 @@ async function purgeHouseAllergens(prisma: PrismaService): Promise<void> {
   await prisma.allergenCategory.deleteMany({ where: { official: false } });
 }
 
+/**
+ * Les schémas que `schema.prisma` DÉCLARE, lus dans le fichier.
+ *
+ * La source de vérité est le `datasource` : un schéma ajouté là est
+ * automatiquement nettoyé entre deux tests, sans que personne ait à penser à
+ * une seconde liste. C'est le même geste que la porte des jointures.
+ */
+function declaredSchemas(): string[] {
+  // Le chemin part de CE fichier, pas du répertoire courant : un test lancé
+  // depuis la racine du monorepo ou depuis l'app doit lire le même schéma.
+  const here = dirname(fileURLToPath(import.meta.url));
+  const schema = readFileSync(join(here, "..", "prisma", "schema.prisma"), "utf8");
+  const declared = /schemas\s*=\s*\[([^\]]*)\]/u.exec(schema);
+  if (declared === null) {
+    throw new Error("`schemas` introuvable dans schema.prisma : impossible de savoir quoi vider.");
+  }
+  return [...declared[1]!.matchAll(/"([a-z_]+)"/gu)].map((match) => match[1]!);
+}
+
 async function truncateAll(prisma: PrismaService): Promise<void> {
   // 🔴 DEUXIÈME VERROU, au point où le dégât se produit. Le premier est à
   // l'amorçage ; celui-ci garantit qu'aucun chemin futur — un harnais
@@ -504,9 +527,20 @@ async function truncateAll(prisma: PrismaService): Promise<void> {
   if (disposableDatabase === null) {
     throw new Error("REFUS : base non vérifiée comme jetable — `truncateAll` n'a rien tronqué.");
   }
+  // 🔴 Les schémas sont LUS dans le `datasource`, plus recopiés ici.
+  //
+  // Cette liste était en dur — `('public', 'growth', 'ops', 'pim')` — et le
+  // cinquième schéma est arrivé sans elle : les tables de `production`
+  // survivaient d'un test à l'autre, et une journée close par un cas rendait le
+  // suivant `alreadyClosed` dès sa première clôture. Un échec qui accuse le
+  // mauvais test.
+  //
+  // C'est exactement la dérive que `lint:cross-schema-join` avait déjà corrigée
+  // de la même façon : une liste recopiée diverge de sa source, et le jour où
+  // elle diverge, personne ne regarde là.
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
-    WHERE schemaname IN ('public', 'growth', 'ops', 'pim')
+    WHERE schemaname = ANY (${declaredSchemas()}::text[])
       AND tablename NOT IN (
         '_prisma_migrations', 'sales_context', 'allergen_category', 'allergen_entry'
       )
