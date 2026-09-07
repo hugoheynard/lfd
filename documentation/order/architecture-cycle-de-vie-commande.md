@@ -68,6 +68,77 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
+---
+
+## Ce que chaque étape PRODUIT
+
+Le schéma d'états dit ce qui bouge. Celui-ci dit **ce qui sort** — un courriel,
+un papier, un code, une ligne de journal. C'est la lecture qu'on cherche quand
+un client demande « je n'ai rien reçu » ou quand on se demande d'où vient un
+fichier.
+
+```mermaid
+flowchart LR
+  P["**placed**<br/>le client valide"] --> C["**confirmed**<br/>le plan du soir absorbe"]
+  C --> IP["**in_production**<br/>l'équipe lance"]
+  IP --> R["**ready**<br/>scan du QR de colisage"]
+  R --> F["**fulfilled**<br/>scan du QR de remise"]
+
+  P -.-> Pm["📧 **Confirmation** au client<br/>récap + QR de retrait en ligne"]
+  P -.-> Pj["📓 order.placed au journal"]
+  P -.-> Pt["🔑 Jeton de remise<br/>retrait seulement"]
+  P -.-> Pd["📄 Bon de commande<br/>au 1ᵉʳ téléchargement → R2"]
+
+  C -.-> Cf["🖨️ Fiche d'atelier A4<br/>QR de colisage, aucun montant"]
+
+  R -.-> Rm["📧 « votre commande est prête »<br/>⛔ n'existe pas"]
+
+  F -.-> Fa["🖊️ Attestation de remise<br/>qui, quand — sur la ligne"]
+  F -.-> Fj["📓 order.handed_over<br/>⛔ n'existe pas"]
+
+  style Rm stroke-dasharray: 4 4
+  style Fj stroke-dasharray: 4 4
+```
+
+### Le même, en tableau — avec ce qui existe et ce qui n'existe pas
+
+| Étape           | Ce qui sort                          | Pour qui   | État                                                  |
+| --------------- | ------------------------------------ | ---------- | ----------------------------------------------------- |
+| `placed`        | **📧 courriel de confirmation**      | le client  | ✅ livré le 2026-09-07                                |
+| `placed`        | QR de retrait, **dans le courriel**  | le client  | ✅ pièce jointe en ligne (`cid:`)                     |
+| `placed`        | jeton de remise                      | — (secret) | ✅ **retrait seulement** — la livraison n'en a pas    |
+| `placed`        | `order.placed` au journal            | l'analyse  | ✅                                                    |
+| `placed`        | **📄 bon de commande PDF**           | le client  | ✅ au 1ᵉʳ téléchargement, rangé en R2                 |
+| `confirmed`     | rien                                 | —          | ⛔ **aucune transition ne l'écrit**                   |
+| `in_production` | rien                                 | —          | ⛔ **aucune transition ne l'écrit**                   |
+| (à la clôture)  | **🖨️ fiche d'atelier A4**            | le fournil | ✅ tirée à la demande, avec son QR de colisage        |
+| `ready`         | attestation de colisage (qui, quand) | l'équipe   | ✅ livré le 2026-09-07                                |
+| `ready`         | **📧 « votre commande est prête »**  | le client  | ⛔ **n'existe pas** — c'est le manque le plus visible |
+| `fulfilled`     | attestation de remise (qui, quand)   | l'équipe   | ✅ retrait seulement                                  |
+| `fulfilled`     | `order.handed_over` au journal       | la preuve  | ⛔ **n'existe pas** — cf. l'audit, T4                 |
+| `cancelled`     | rien                                 | —          | ⛔ aucune transition, aucun courriel                  |
+
+### Trois choses que ce tableau met en évidence
+
+**Un seul courriel part, et c'est le premier.** Le client est prévenu que sa
+commande est enregistrée, puis plus rien — pas même quand elle est prête, qui
+est pourtant le seul moment où il a quelque chose à faire. C'est le manque le
+plus visible du parcours, et il est bon marché : l'abonné de `ready` existe déjà
+en forme, il n'a pas de gabarit.
+
+**Le QR voyage deux fois, et jamais sur le même papier.** Celui de **retrait**
+est un secret : il ne part que dans le courriel, jamais sur un document, parce
+qu'un bon de livraison voyage dans le carton — un coursier scannerait son propre
+colis. Celui de **colisage** n'encode que le numéro de commande, déjà imprimé en
+clair sur la même feuille : il s'imprime sans risque.
+
+**Deux attestations sur trois ne laissent pas de témoin.** Le colisage et la
+remise s'écrivent sur la **ligne de commande**, qui s'`UPDATE`. Le journal, lui,
+est append-only — et il ne reçoit que la naissance de la commande. Il peut donc
+dire « ce client a commandé » et jamais « ce client a reçu ».
+
+---
+
 **Trois changements par rapport à l'énuméré actuel.**
 
 `draft` **disparaît**. Une valeur qu'aucun chemin ne produit est un mensonge dans
