@@ -59,6 +59,21 @@ export abstract class OrderRepository {
   abstract markHandedOver(token: string, at: Date, by: string): Promise<boolean>;
 
   /**
+   * Grave une remise **saisie à la main**, par le NUMÉRO de commande.
+   *
+   * Le cas qu'elle couvre est celui qui ferait sinon enfreindre la règle de
+   * l'autoscan : le destinataire n'a pas son courriel — un magasinier, quelqu'un
+   * d'autre à l'accueil, un téléphone déchargé. Sans cette porte, quelqu'un
+   * proposerait d'imprimer le code sur le colis « pour les livraisons
+   * difficiles », et un coursier scannerait son propre carton.
+   *
+   * Elle grave `handedOverVia: "manual"` : une attestation faible et honnête
+   * vaut mieux qu'une attestation forte et fausse, **à condition** de pouvoir
+   * les distinguer.
+   */
+  abstract markHandedOverManually(reference: string, at: Date, by: string): Promise<boolean>;
+
+  /**
    * Grave le **colisage** : la fabrication est finie.
    *
    * Écriture nue et **conditionnée en base** (`readyAt: null`), pour la même

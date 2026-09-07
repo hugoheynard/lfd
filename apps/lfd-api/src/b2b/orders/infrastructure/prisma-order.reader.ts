@@ -248,8 +248,24 @@ export class PrismaOrderReader extends OrderReader {
   }
 
   async findByHandoverToken(token: string): Promise<HandoverOrder | null> {
+    return this.oneHandover({ handoverToken: token });
+  }
+
+  async findHandoverByReference(reference: string): Promise<HandoverOrder | null> {
+    return this.oneHandover({ orderNumber: reference });
+  }
+
+  /**
+   * La même lecture, deux clés. Le scan la trouve par un **secret**, la remise
+   * saisie par le **numéro** — mais ce qu'on lit ensuite est identique, et le
+   * dupliquer ferait diverger les deux écrans du comptoir au premier champ
+   * ajouté.
+   */
+  private async oneHandover(
+    where: { readonly handoverToken: string } | { readonly orderNumber: string },
+  ): Promise<HandoverOrder | null> {
     const row = await this.prisma.order.findUnique({
-      where: { handoverToken: token },
+      where,
       select: {
         id: true,
         orderNumber: true,
@@ -259,6 +275,7 @@ export class PrismaOrderReader extends OrderReader {
         pickupAddress: true,
         handedOverAt: true,
         handedOverBy: true,
+        handedOverVia: true,
         createdAt: true,
         companyId: true,
         placedByUserId: true,
@@ -282,6 +299,7 @@ export class PrismaOrderReader extends OrderReader {
       fulfillmentMethod: row.fulfillmentMethod,
       handedOverAt: row.handedOverAt,
       handedOverBy: row.handedOverBy,
+      handedOverVia: row.handedOverVia,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

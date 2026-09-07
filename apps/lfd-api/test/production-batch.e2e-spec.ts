@@ -578,3 +578,106 @@ describe("le plan du soir", () => {
     expect(row.confirmedAt).not.toBeNull();
   });
 });
+
+/**
+ * **La remise en LIVRAISON, et son chemin de secours.**
+ *
+ * Avant le 2026-09-07, une commande en coursier restait `placed` pour toujours,
+ * livrée ou non : le jeton n'était émis qu'en retrait, et `handoverBlocker` la
+ * refusait d'emblée. C'était le dernier trou du parcours.
+ */
+describe("la remise en livraison", () => {
+  async function placeDelivery(): Promise<string> {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
+    await ctx.prisma.deliveryZone.create({
+      data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
+    });
+    const placed = jsonBody<{ orderNumber: string }>(
+      await ctx
+        .asSub(MEMBER)
+        .post(`/orders`)
+        .send({
+          idempotencyKey: randomUUID(),
+          companyId: null,
+          requestedDeliveryDate: SERVICE_DAY,
+          fulfillmentMethod: "delivery",
+          deliveryAddress: SITE,
+          note: "",
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        })
+        .expect(201),
+    );
+    return placed.orderNumber;
+  }
+
+  it("ÉMET un jeton — une livraison en a un, désormais", async () => {
+    const reference = await placeDelivery();
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+    expect(row.handoverToken).not.toBeNull();
+  });
+
+  it("se remet par un SCAN — le destinataire montre, le coursier scanne", async () => {
+    const reference = await placeDelivery();
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+
+    const view = jsonBody<{ handedOverVia: string | null }>(
+      await ctx
+        .asSub("staff-e2e")
+        .post(`/admin/handover/${row.handoverToken ?? ""}`)
+        .expect(201),
+    );
+
+    expect(view.handedOverVia).toBe("scan");
+    const after = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { status: true },
+    });
+    expect(after.status).toBe("fulfilled");
+  });
+
+  it("se remet À LA MAIN quand le scan est impossible, et le DIT", async () => {
+    // Le cas qui ferait sinon enfreindre la règle de l'autoscan : le
+    // destinataire n'a pas son courriel. Sans cette porte, quelqu'un imprimerait
+    // le code sur le colis « pour les livraisons difficiles ».
+    const reference = await placeDelivery();
+
+    const view = jsonBody<{ handedOverVia: string | null; handedOverBy: string | null }>(
+      await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201),
+    );
+
+    expect(view.handedOverVia).toBe("manual");
+    expect(view.handedOverBy).toBe("staff-e2e");
+  });
+
+  it("ne confond PAS une remise saisie avec un scan", async () => {
+    // Une attestation faible et honnête vaut mieux qu'une attestation forte et
+    // fausse — encore faut-il pouvoir les distinguer, y compris au journal.
+    const reference = await placeDelivery();
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
+    await ctx.drain();
+
+    const [fact] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "order.handed_over" },
+      select: { payload: true },
+    });
+    expect(JSON.stringify(fact?.payload)).toContain('"via":"manual"');
+  });
+
+  it("REFUSE une seconde remise, quelle que soit la porte empruntée", async () => {
+    const reference = await placeDelivery();
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
+
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(409);
+  });
+
+  it("répond 404 sur un numéro inconnu, sans dire s'il a existé", async () => {
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/ORD-INCONNUE`).expect(404);
+  });
+});

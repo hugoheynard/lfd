@@ -29,10 +29,13 @@ describe("handoverBlocker", () => {
     },
   );
 
-  it("refuse une commande en livraison — il n'y a pas de comptoir", () => {
-    expect(handoverBlocker(subject({ fulfillmentMethod: "delivery" }))).toBe(
-      "Cette commande est en livraison — elle ne se remet pas au comptoir.",
-    );
+  it("laisse passer une LIVRAISON — le coursier scanne le code du destinataire", () => {
+    // 🔴 Ce cas affirmait le contraire jusqu'au 2026-09-07 : « refuse une
+    // commande en livraison — il n'y a pas de comptoir ». C'était cohérent tant
+    // qu'une livraison n'avait aucun chemin vers `fulfilled` — elle restait
+    // `placed` pour toujours, livrée ou non. La symétrie est désormais exacte :
+    // le destinataire montre le code de son courriel, le coursier scanne.
+    expect(handoverBlocker(subject({ fulfillmentMethod: "delivery" }))).toBeNull();
   });
 
   it("refuse une commande annulée", () => {
@@ -50,19 +53,23 @@ describe("handoverBlocker", () => {
     expect(blocker).toBe("Cette commande a déjà été remise.");
   });
 
-  it("annonce le mode avant la remise déjà faite — la cause la plus profonde d'abord", () => {
-    // Une livraison marquée remise n'est pas « déjà remise au comptoir » : c'est
-    // une commande qui n'aurait jamais dû passer par là. Le message doit le dire.
+  it("refuse une seconde remise, en LIVRAISON comme en retrait", () => {
+    // L'ancien cas attendait ici un message sur le mode d'acheminement — « une
+    // commande qui n'aurait jamais dû passer par là ». Elle a désormais le droit
+    // d'y passer ; ce qui reste refusé est de la remettre deux fois.
     const blocker = handoverBlocker(
       subject({ fulfillmentMethod: "delivery", handedOverAt: new Date() }),
     );
-    expect(blocker).toContain("livraison");
+    expect(blocker).toBe("Cette commande a déjà été remise.");
   });
 });
 
 describe("issuesHandoverToken", () => {
-  it("n'émet un jeton que pour un retrait", () => {
-    expect(issuesHandoverToken("pickup")).toBe(true);
-    expect(issuesHandoverToken("delivery")).toBe(false);
+  it("émet un jeton pour TOUTE commande, quel que soit l'acheminement", () => {
+    // La fonction a perdu son paramètre le 2026-09-07 : elle ne dépend plus de
+    // l'acheminement, et le lui passer laisserait croire qu'il pèse. Elle reste
+    // parce qu'elle NOMME la décision — un `secrets.next()` posé sans elle
+    // serait un choix qu'aucun lecteur ne pourrait retrouver.
+    expect(issuesHandoverToken()).toBe(true);
   });
 });

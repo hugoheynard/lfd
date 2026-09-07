@@ -325,8 +325,6 @@ export interface ClientCopy {
     readonly codeLabel: string;
     /** `{day}` est remplacé par la journée d'acheminement. */
     readonly when: string;
-    /** Une commande en coursier n'a pas de comptoir, donc pas de code. */
-    readonly delivery: string;
     /** Déjà remise, ou origine admin non configurée : aucun code à montrer. */
     readonly unavailable: string;
     /** Commande introuvable — ou celle d'un autre : on ne distingue pas. */

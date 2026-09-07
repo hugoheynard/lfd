@@ -44,6 +44,7 @@ export function toHandoverView(order: HandoverOrder): OrderHandoverView {
     lines: order.lines,
     handedOverAt: order.handedOverAt === null ? null : order.handedOverAt.toISOString(),
     handedOverBy: order.handedOverBy,
+    handedOverVia: order.handedOverVia,
     blockedReason: handoverBlocker(order),
   };
 }

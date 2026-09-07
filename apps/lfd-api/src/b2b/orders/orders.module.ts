@@ -10,6 +10,7 @@ import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { CloseProductionPlanHandler } from "./application/commands/close-production-plan.handler.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
+import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
@@ -150,6 +151,7 @@ import { OrdersController } from "./http/orders.controller.js";
     QuoteShopCartHandler,
     GetHandoverHandler,
     ConfirmHandoverHandler,
+    ConfirmManualHandoverHandler,
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,

@@ -872,6 +872,13 @@ model Order {
   handedOverAt  DateTime? @map("handed_over_at")
   handedOverBy  String?   @map("handed_over_by")
 
+  /// COMMENT la remise a été constatée : `scan` (les deux parties étaient là) ou
+  /// `manual` (le scan était impossible, l'équipe a saisi). Les deux ne se
+  /// confondent pas — sans cette distinction, quelqu'un finirait par imprimer le
+  /// code sur le colis « pour les livraisons difficiles », et un coursier
+  /// scannerait son propre carton.
+  handedOverVia String? @map("handed_over_via")
+
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 

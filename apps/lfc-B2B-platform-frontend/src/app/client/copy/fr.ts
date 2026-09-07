@@ -248,13 +248,12 @@ export const FR: ClientCopy = {
     back: 'Retour à la boutique',
   },
   qr: {
-    title: 'Votre QR de retrait',
-    lead: 'Présentez ce code au comptoir. C’est nous qui le scannons.',
+    title: 'Votre code de remise',
+    lead: 'Présentez ce code. C’est le scan de l’équipe qui atteste la remise.',
     loading: 'Chargement…',
-    codeLabel: 'QR code de retrait',
+    codeLabel: 'QR code de remise',
     when: 'Pour le {day}',
-    delivery: 'Cette commande vous est livrée : il n’y a pas de code à présenter.',
-    unavailable: 'Aucun code à présenter pour cette commande.',
+    unavailable: 'Cette commande n’a pas de code : elle est antérieure au code de remise.',
     unknown: 'Cette commande est introuvable.',
   },
   pay: {
@@ -287,7 +286,7 @@ export const FR: ClientCopy = {
     toSettle: 'Reste à régler',
     onAccount: 'Porté à votre compte',
     settleAction: 'Régler maintenant',
-    qr: 'Voir mon QR de retrait',
+    qr: 'Voir mon code de remise',
     changeNote: 'Un changement ? Appelez le fournil — une commande passée entre en fabrication.',
   },
   dialog: {

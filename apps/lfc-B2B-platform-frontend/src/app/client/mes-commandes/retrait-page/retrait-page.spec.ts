@@ -76,16 +76,24 @@ describe('RetraitPage', () => {
     expect(text(fixture)).toContain(FR.qr.lead);
   });
 
-  /** Un coursier n'a pas de comptoir : pas de jeton, donc pas de code. */
-  it('explique qu’une commande LIVRÉE n’a pas de code', async () => {
-    const fixture = await boot(order({ fulfillmentMethod: 'delivery', handoverToken: null }));
+  /**
+   * 🔴 Ce cas affirmait l'inverse jusqu'au 2026-09-07 : « un coursier n'a pas de
+   * comptoir, pas de jeton, donc pas de code ». Une livraison a désormais son
+   * code — le destinataire le montre, le coursier le scanne — et c'est ce qui
+   * lui donne enfin un chemin vers `fulfilled`.
+   */
+  it('montre le code d’une commande LIVRÉE — le coursier le scannera', async () => {
+    const fixture = await boot(order({ fulfillmentMethod: 'delivery' }));
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('lfd-qr-code')).toBeNull();
-    expect(text(fixture)).toContain(FR.qr.delivery);
+    expect((fixture.nativeElement as HTMLElement).querySelector('lfd-qr-code')).not.toBeNull();
   });
 
-  /** Déjà remise, ou jeton absent : on le dit, on n'affiche pas un carré mort. */
-  it('le dit quand il n’y a plus de code à présenter', async () => {
+  /**
+   * Une commande ANTÉRIEURE au jeton, ou déjà remise : on le dit, on n'affiche
+   * pas un carré mort. Le message ne parle plus d'acheminement — il n'a plus
+   * rien à y voir.
+   */
+  it('le dit quand il n’y a pas de code à présenter', async () => {
     const fixture = await boot(order({ handoverToken: null }));
 
     expect(text(fixture)).toContain(FR.qr.unavailable);

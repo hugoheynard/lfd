@@ -24,6 +24,7 @@ function handoverOrder(overrides: Partial<HandoverOrder> = {}): HandoverOrder {
     fulfillmentMethod: "pickup",
     handedOverAt: null,
     handedOverBy: null,
+    handedOverVia: null,
     lines: [
       { sku: "CRO-01", productName: "Croissant", quantity: 40 },
       { sku: "PAC-01", productName: "Pain au chocolat", quantity: 20 },
@@ -32,7 +33,15 @@ function handoverOrder(overrides: Partial<HandoverOrder> = {}): HandoverOrder {
   };
 }
 
-/** Reader doublé : rend une commande fixe pour tout jeton, ou `null`. */
+/**
+ * Reader doublé : rend une commande fixe pour tout jeton, ou `null`.
+ *
+ * ⚠️ Les `*.spec.ts` sont **hors du périmètre de `tsc --noEmit`**
+ * (`tsconfig.json` les exclut) : un doublé incomplet ne casse donc pas la
+ * compilation, et il faut le tenir à jour à la main. Les méthodes non utilisées
+ * rejettent plutôt que de rendre une valeur — un doublé muet ferait passer un
+ * test qui appelle ce qu'il ne devrait pas.
+ */
 function readerOf(order: HandoverOrder | null): OrderReader {
   return {
     listForProduction: () => Promise.resolve([]),
@@ -41,6 +50,8 @@ function readerOf(order: HandoverOrder | null): OrderReader {
     findById: () => Promise.reject(new Error("non utilisé")),
     listForAdmin: () => Promise.reject(new Error("non utilisé")),
     findByHandoverToken: () => Promise.resolve(order),
+    findHandoverByReference: () => Promise.resolve(order),
+    findForPacking: () => Promise.reject(new Error("non utilisé")),
   };
 }
 
@@ -54,6 +65,9 @@ function repoOf(won: boolean, sink: { calls: [string, Date, string][] }): OrderR
       sink.calls.push([token, at, by]);
       return Promise.resolve(won);
     },
+    markHandedOverManually: () => Promise.reject(new Error("non utilisé")),
+    markReady: () => Promise.reject(new Error("non utilisé")),
+    absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
   };
 }
 
@@ -136,7 +150,10 @@ describe("ConfirmHandoverHandler", () => {
     expect(writes.calls).toEqual([]);
   });
 
-  it("refuse une commande en livraison — le QR n'y ouvre pas de comptoir", async () => {
+  it("GRAVE une remise en livraison — le coursier scanne le code du destinataire", async () => {
+    // 🔴 Ce cas attendait un refus jusqu'au 2026-09-07 : « le QR n'y ouvre pas
+    // de comptoir ». C'était cohérent tant qu'une livraison n'avait aucun chemin
+    // vers `fulfilled` — elle restait `placed` pour toujours, livrée ou non.
     const writes = sink();
     const handler = new ConfirmHandoverHandler(
       readerOf(handoverOrder({ fulfillmentMethod: "delivery" })),
@@ -145,10 +162,10 @@ describe("ConfirmHandoverHandler", () => {
       new RecordingPublisher(),
     );
 
-    await expect(
-      handler.execute(new ConfirmHandoverCommand("TOK1", "auth0|karim")),
-    ).rejects.toThrow(HandoverRefusedError);
-    expect(writes.calls).toEqual([]);
+    const view = await handler.execute(new ConfirmHandoverCommand("TOK1", "auth0|karim"));
+
+    expect(writes.calls).toEqual([["TOK1", NOW, "auth0|karim"]]);
+    expect(view.handedOverVia).toBe("scan");
   });
 
   it("ne réécrit pas quand un autre poste a gagné la course", async () => {

@@ -1,0 +1,12 @@
+-- La remise en LIVRAISON, et la façon dont elle a été constatée.
+--
+-- Purement ADDITIVE : une colonne nullable sans défaut. `NULL` y dit « pas
+-- encore remise » — ou « remise avant que la distinction existe », ce qui est
+-- vrai de tout l'historique. Un défaut `'scan'` aurait affirmé que chaque remise
+-- passée avait été scannée, alors qu'aucune ne portait la question.
+--
+-- Rien n'est écrit ici sur les commandes en coursier existantes : elles n'ont
+-- pas de jeton, et leur en fabriquer un rétroactivement inventerait un secret
+-- que personne n'a jamais reçu. Elles resteront sans code — c'est la remise
+-- SAISIE qui les couvre.
+ALTER TABLE "public"."orders" ADD COLUMN "handed_over_via" TEXT;

@@ -255,13 +255,12 @@ export const IT: ClientCopy = {
     back: 'Torna alla bottega',
   },
   qr: {
-    title: 'Il suo QR di ritiro',
-    lead: 'Mostri questo codice al banco. Lo scansioniamo noi.',
+    title: 'Il suo codice di consegna',
+    lead: 'Mostri questo codice. È la scansione del team che attesta la consegna.',
     loading: 'Caricamento…',
-    codeLabel: 'QR code di ritiro',
+    codeLabel: 'Codice QR di consegna',
     when: 'Per il {day}',
-    delivery: 'Questo ordine le viene consegnato: non c’è nessun codice da mostrare.',
-    unavailable: 'Nessun codice da mostrare per questo ordine.',
+    unavailable: 'Questo ordine non ha codice: è anteriore al codice di consegna.',
     unknown: 'Ordine non trovato.',
   },
   pay: {
@@ -294,7 +293,7 @@ export const IT: ClientCopy = {
     toSettle: 'Resta da pagare',
     onAccount: 'Addebitato sul conto',
     settleAction: 'Paga adesso',
-    qr: 'Vedi il mio QR di ritiro',
+    qr: 'Vedere il mio codice di consegna',
     changeNote: 'Un cambiamento? Chiami il forno — un ordine inviato entra in produzione.',
   },
   dialog: {

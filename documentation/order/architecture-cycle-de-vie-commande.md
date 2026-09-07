@@ -98,27 +98,27 @@ flowchart LR
   R -.-> Rm["📧 « votre commande est prête »<br/>+ QR reporté"]
   R -.-> Rj["📓 order.ready<br/>témoin append-only"]
 
-  F -.-> Fa["🖊️ Attestation de remise<br/>qui, quand — sur la ligne"]
+  F -.-> Fa["🖊️ Attestation de remise<br/>qui, quand, comment"]
   F -.-> Fj["📓 order.handed_over<br/>témoin append-only"]
 ```
 
 ### Le même, en tableau — avec ce qui existe et ce qui n'existe pas
 
-| Étape           | Ce qui sort                          | Pour qui   | État                                                  |
-| --------------- | ------------------------------------ | ---------- | ----------------------------------------------------- |
-| `placed`        | **📧 courriel de confirmation**      | le client  | ✅ livré le 2026-09-07                                |
-| `placed`        | QR de retrait, **dans le courriel**  | le client  | ✅ pièce jointe en ligne (`cid:`)                     |
-| `placed`        | jeton de remise                      | — (secret) | ✅ **retrait seulement** — la livraison n'en a pas    |
-| `placed`        | `order.placed` au journal            | l'analyse  | ✅                                                    |
-| `placed`        | **📄 bon de commande PDF**           | le client  | ✅ au 1ᵉʳ téléchargement, rangé en R2                 |
-| `confirmed`     | la journée bascule en production     | le fournil | ✅ à la clôture du plan — `POST …/batch/:date/close`  |
-| `in_production` | rien                                 | —          | ⛔ **aucune transition ne l'écrit**                   |
-| (à la clôture)  | **🖨️ fiche d'atelier A4**            | le fournil | ✅ tirée à la demande, avec son QR de colisage        |
-| `ready`         | attestation de colisage (qui, quand) | l'équipe   | ✅ livré le 2026-09-07                                |
-| `ready`         | **📧 « votre commande est prête »**  | le client  | ⛔ **n'existe pas** — c'est le manque le plus visible |
-| `fulfilled`     | attestation de remise (qui, quand)   | l'équipe   | ✅ retrait seulement                                  |
-| `fulfilled`     | `order.handed_over` au journal       | la preuve  | ⛔ **n'existe pas** — cf. l'audit, T4                 |
-| `cancelled`     | rien                                 | —          | ⛔ aucune transition, aucun courriel                  |
+| Étape           | Ce qui sort                                     | Pour qui   | État                                                          |
+| --------------- | ----------------------------------------------- | ---------- | ------------------------------------------------------------- |
+| `placed`        | **📧 courriel de confirmation**                 | le client  | ✅ livré le 2026-09-07                                        |
+| `placed`        | QR de retrait, **dans le courriel**             | le client  | ✅ pièce jointe en ligne (`cid:`)                             |
+| `placed`        | jeton de remise                                 | — (secret) | ✅ **retrait seulement** — la livraison n'en a pas            |
+| `placed`        | `order.placed` au journal                       | l'analyse  | ✅                                                            |
+| `placed`        | **📄 bon de commande PDF**                      | le client  | ✅ au 1ᵉʳ téléchargement, rangé en R2                         |
+| `confirmed`     | la journée bascule en production                | le fournil | ✅ à la clôture du plan — `POST …/batch/:date/close`          |
+| `in_production` | rien                                            | —          | ⛔ **aucune transition ne l'écrit**                           |
+| (à la clôture)  | **🖨️ fiche d'atelier A4**                       | le fournil | ✅ tirée à la demande, avec son QR de colisage                |
+| `ready`         | attestation de colisage (qui, quand)            | l'équipe   | ✅ livré le 2026-09-07                                        |
+| `ready`         | **📧 « votre commande est prête »**             | le client  | ⛔ **n'existe pas** — c'est le manque le plus visible         |
+| `fulfilled`     | attestation de remise (qui, quand, **comment**) | l'équipe   | ✅ **les deux acheminements** — par scan, ou saisie à la main |
+| `fulfilled`     | `order.handed_over` au journal                  | la preuve  | ⛔ **n'existe pas** — cf. l'audit, T4                         |
+| `cancelled`     | rien                                            | —          | ⛔ aucune transition, aucun courriel                          |
 
 ### Trois choses que ce tableau met en évidence
 

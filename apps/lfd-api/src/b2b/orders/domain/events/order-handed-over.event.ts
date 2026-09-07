@@ -1,3 +1,5 @@
+import type { HandoverVia } from "../services/handover.js";
+
 /**
  * Fait de domaine : **une commande vient d'être remise**. Publié par le contexte
  * `orders` après persistance ; le contexte ne sait pas qui l'écoute.
@@ -17,5 +19,11 @@ export class OrderHandedOverEvent {
     readonly handedOverBy: string,
     /** L'instant de la remise, tel que l'horloge du serveur l'a donné. */
     readonly handedOverAt: Date,
+    /**
+     * **Comment** elle a été constatée. Porté par le fait, pas relu ensuite :
+     * une remise scannée et une remise saisie n'ont pas la même force, et le
+     * journal doit garder laquelle c'était — pas ce que la ligne dira demain.
+     */
+    readonly via: HandoverVia,
   ) {}
 }

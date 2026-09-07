@@ -1,9 +1,9 @@
 # Le bon de commande — un objet, plusieurs formats
 
-**Ouvert le 2026-09-07.** **Six lots sur huit sont livrés** le jour même — le
-contrat, la projection, les rendus texte, papier et courriel, et le PDF rangé en
-R2. Restent le **6** (le jeton de remise en livraison) et le **7** (le
-décommissionnement du legacy). Le tableau du §7 dit l'état de chacun.
+**Ouvert le 2026-09-07.** **Sept lots sur huit sont livrés** le jour même — le
+contrat, la projection, les rendus texte, papier, courriel et PDF, la remise en
+livraison et son chemin de secours. Reste le **7** (le décommissionnement du
+legacy `download-bon.ts`). Le tableau du §7 dit l'état de chacun.
 
 ⚠️ **Ce bandeau a dit « lots 1 et 2 » jusqu'au soir du 2026-09-07**, alors que
 quatre de plus étaient faits. La cause vaut d'être écrite : les mises à jour du
@@ -557,16 +557,16 @@ C'est le chantier comptable, il est ailleurs :
 
 ## 7. Le découpage
 
-| Lot      | Ce qu'il fait                                                                                                                                                                                       | Ce qui devient impossible ensuite                                                                                   |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **1** ✅ | `OrderSheet` dans `contracts` — **union discriminée** par audience, et non `money` optionnel : l'atelier n'a pas la propriété                                                                       | écrire un montant dans une projection atelier                                                                       |
-| **2** ✅ | `clientSheetOf` / `staffSheetOf` / `atelierSheetOf`, purs, 17 cas unitaires, `GET /orders/:id/bon` **sans paramètre d'audience**, 5 cas e2e                                                         | qu'un nom d'étage descende chez le client                                                                           |
-| **3** ✅ | `renderOrderSheetText(sheet)` remplace `renderDeliveryNote(order)` ; `ORDER_DOC_DELIVERY_NOTE` devient `ORDER_DOC_ORDER_SHEET` ; pied « Arrêté le … · révision n »                                  | qu'un bon de retrait s'annonce « de livraison », et qu'une option de rendu ramène les prix                          |
-| **4** ✅ | `ProductionSheet` **supprimé**, fusionné dans `AtelierSheet` ; la fiche porte son heure d'arrêt et un **QR de colisage** ; l'état `ready`, sa route et l'écran du fournil existent                  | qu'une fiche d'atelier soit tirée sans heure ni révision, et qu'un sac prêt ne se sache qu'en traversant le fournil |
-| **5** ✅ | Coquille de courriel (récap + image en ligne), textes **en trois langues côté API**, gabarits `customer.order-placed` **et** `customer.order-ready`, QR en pièce jointe `cid:`                      | qu'on demande une session à qui est déjà devant le comptoir                                                         |
-| **6** ⛔ | Jeton de remise émis **aussi en livraison**, `handoverBlocker` ouvert au coursier, **et une remise saisie à la main quand le scan est impossible**. Le journal, lui, est fait (`order.handed_over`) | qu'une livraison remise ne laisse aucune trace, et qu'un coursier scanne son propre colis                           |
-| **7** ⛔ | Décommissionner `legacy/commandes/download-bon.ts` — il produit toujours un « BON DE COMMANDE » de neuf lignes avec un Total TTC                                                                    | qu'il existe deux « bons » avec deux totaux différents                                                              |
-| **8** ✅ | Rendu `pdf` **déterministe** (généré à la main, sans `/CreationDate` ni `/ID`), écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision, **sans QR**                        | qu'un avenant écrase le papier que le client a en main                                                              |
+| Lot      | Ce qu'il fait                                                                                                                                                                      | Ce qui devient impossible ensuite                                                                                   |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **1** ✅ | `OrderSheet` dans `contracts` — **union discriminée** par audience, et non `money` optionnel : l'atelier n'a pas la propriété                                                      | écrire un montant dans une projection atelier                                                                       |
+| **2** ✅ | `clientSheetOf` / `staffSheetOf` / `atelierSheetOf`, purs, 17 cas unitaires, `GET /orders/:id/bon` **sans paramètre d'audience**, 5 cas e2e                                        | qu'un nom d'étage descende chez le client                                                                           |
+| **3** ✅ | `renderOrderSheetText(sheet)` remplace `renderDeliveryNote(order)` ; `ORDER_DOC_DELIVERY_NOTE` devient `ORDER_DOC_ORDER_SHEET` ; pied « Arrêté le … · révision n »                 | qu'un bon de retrait s'annonce « de livraison », et qu'une option de rendu ramène les prix                          |
+| **4** ✅ | `ProductionSheet` **supprimé**, fusionné dans `AtelierSheet` ; la fiche porte son heure d'arrêt et un **QR de colisage** ; l'état `ready`, sa route et l'écran du fournil existent | qu'une fiche d'atelier soit tirée sans heure ni révision, et qu'un sac prêt ne se sache qu'en traversant le fournil |
+| **5** ✅ | Coquille de courriel (récap + image en ligne), textes **en trois langues côté API**, gabarits `customer.order-placed` **et** `customer.order-ready`, QR en pièce jointe `cid:`     | qu'on demande une session à qui est déjà devant le comptoir                                                         |
+| **6** ✅ | Jeton de remise émis **aussi en livraison**, `handoverBlocker` ouvert au coursier, **remise saisie à la main** distinguée du scan (`handedOverVia`), fait journalisé avec son mode | qu'une livraison remise ne laisse aucune trace, et qu'un coursier scanne son propre colis                           |
+| **7** ⛔ | Décommissionner `legacy/commandes/download-bon.ts` — il produit toujours un « BON DE COMMANDE » de neuf lignes avec un Total TTC                                                   | qu'il existe deux « bons » avec deux totaux différents                                                              |
+| **8** ✅ | Rendu `pdf` **déterministe** (généré à la main, sans `/CreationDate` ni `/ID`), écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision, **sans QR**       | qu'un avenant écrase le papier que le client a en main                                                              |
 
 ⚠️ **Le lot 1 a divergé du plan, en mieux.** Ce document proposait `money?:
 SheetMoney` — optionnel, tenu par `exactOptionalPropertyTypes`. Une **union

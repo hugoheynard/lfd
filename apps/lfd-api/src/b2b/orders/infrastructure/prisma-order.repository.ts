@@ -46,7 +46,7 @@ export class PrismaOrderRepository extends OrderRepository {
         // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
         // aucun moyen de produire sans dépendre d'une source d'aléa. Seul le
         // retrait en reçoit un — cf. `issuesHandoverToken`.
-        handoverToken: issuesHandoverToken(state.fulfillmentMethod) ? this.secrets.next() : null,
+        handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
         companyId: state.companyId,
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
@@ -162,13 +162,34 @@ export class PrismaOrderRepository extends OrderRepository {
     return count === 1;
   }
 
+  async markHandedOverManually(reference: string, at: Date, by: string): Promise<boolean> {
+    // Même condition en base que le scan (`handedOverAt: null`) : une commande
+    // déjà remise ne se re-remet pas, quelle que soit la porte empruntée. Ce qui
+    // change est `handedOverVia` — et c'est la seule chose qui doit changer.
+    const { count } = await this.prisma.order.updateMany({
+      where: { orderNumber: reference, handedOverAt: null },
+      data: {
+        handedOverAt: at,
+        handedOverBy: by,
+        handedOverVia: "manual",
+        status: OrderStatus.fulfilled,
+      },
+    });
+    return count === 1;
+  }
+
   async markHandedOver(token: string, at: Date, by: string): Promise<boolean> {
     // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre, donc deux
     // scans simultanés du même QR produisent exactement une remise. La règle
     // métier, elle, a déjà été appliquée par l'appelant sur l'état lu.
     const { count } = await this.prisma.order.updateMany({
       where: { handoverToken: token, handedOverAt: null },
-      data: { handedOverAt: at, handedOverBy: by, status: OrderStatus.fulfilled },
+      data: {
+        handedOverAt: at,
+        handedOverBy: by,
+        handedOverVia: "scan",
+        status: OrderStatus.fulfilled,
+      },
     });
     return count === 1;
   }

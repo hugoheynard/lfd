@@ -184,10 +184,15 @@ l'historique client affiche indéfiniment « en cours ».
 > geste retenu est celui que l'équipe fait déjà — arrêter de prendre pour
 > demain — et il porte sur une JOURNÉE, pas sur une commande.
 >
-> **Ce qui reste du T4 :** `in_production` n'est toujours
-> écrit par personne, `draft` n'est produit par aucun chemin, et une commande
-> **en coursier** n'a toujours aucun chemin vers `fulfilled` — c'est le jeton de
-> remise en livraison, prévu au lot 6 du bon de commande.
+> 🟡 **Et la livraison a son chemin vers `fulfilled` depuis le même jour.** Le
+> jeton est émis pour les deux acheminements : le destinataire montre le code de
+> son courriel, le coursier scanne. Le cas où il ne l'a pas — un magasinier, un
+> téléphone déchargé — a sa porte : une remise **saisie à la main**, tracée comme
+> telle (`handedOverVia`). Sans elle, quelqu'un imprimerait le code sur le colis
+> « pour les livraisons difficiles », et un coursier scannerait son propre carton.
+>
+> **Ce qui reste du T4 :** `in_production` n'est toujours écrit par personne, et
+> `draft` n'est produit par aucun chemin.
 
 ### T5 — ⛔ OUVERT, ET REQUALIFIÉ · Un client qui a une entreprise commande **hors de sa société**
 

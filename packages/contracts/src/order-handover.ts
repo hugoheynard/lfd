@@ -49,6 +49,15 @@ export interface OrderHandoverView {
   readonly handedOverAt: string | null;
   /** Qui l'a remise — l'identité staff figée (claim `sub`) —, ou `null`. */
   readonly handedOverBy: string | null;
+  /**
+   * **Comment** elle a été constatée : `scan` (les deux parties étaient là) ou
+   * `manual` (le scan était impossible, l'équipe a saisi). `null` tant qu'elle
+   * n'a pas été remise — ou sur une remise antérieure à la distinction.
+   *
+   * L'écran l'affiche : une remise saisie est une attestation **plus faible**,
+   * et la présenter comme un scan la rendrait fausse plutôt que faible.
+   */
+  readonly handedOverVia: string | null;
   /** `null` = la remise est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
 }

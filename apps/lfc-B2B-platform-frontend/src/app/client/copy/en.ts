@@ -252,13 +252,12 @@ export const EN: ClientCopy = {
     back: 'Back to the shop',
   },
   qr: {
-    title: 'Your collection QR',
-    lead: 'Show this code at the counter. We do the scanning.',
+    title: 'Your handover code',
+    lead: 'Show this code. The team’s scan is what records the handover.',
     loading: 'Loading…',
-    codeLabel: 'Collection QR code',
+    codeLabel: 'Handover QR code',
     when: 'For {day}',
-    delivery: 'This order is being delivered to you: there is no code to show.',
-    unavailable: 'No code to show for this order.',
+    unavailable: 'This order has no code: it predates the handover code.',
     unknown: 'That order cannot be found.',
   },
   pay: {
@@ -291,7 +290,7 @@ export const EN: ClientCopy = {
     toSettle: 'Left to pay',
     onAccount: 'Charged to your account',
     settleAction: 'Pay now',
-    qr: 'Show my collection QR',
+    qr: 'View my handover code',
     changeNote: 'Need a change? Call the bakery — a placed order goes into production.',
   },
   dialog: {

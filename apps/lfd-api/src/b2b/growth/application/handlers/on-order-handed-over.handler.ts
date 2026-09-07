@@ -66,6 +66,9 @@ export class OnOrderHandedOver implements IEventHandler<OrderHandedOverEvent> {
         orderNumber: event.orderNumber,
         handedOverBy: event.handedOverBy,
         handedOverAt: event.handedOverAt.toISOString(),
+        // Scannée ou saisie : le témoin doit garder LAQUELLE, pas ce que la
+        // ligne dira demain. Les deux n'ont pas la même force.
+        via: event.via,
       },
     });
   }

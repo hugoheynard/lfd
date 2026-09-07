@@ -57,7 +57,7 @@
       @if (settlementDue()) {
         <button class="qr" type="button" (click)="settle()">{{ t().done.settleAction }}</button>
       }
-      @if (hasCounter()) {
+      @if (hasCode()) {
         <button class="qr" type="button" (click)="showQr()">{{ t().done.qr }}</button>
       }
       <!-- 🔴 « Modifier » et « Annuler » répondaient « cet écran arrive au

@@ -69,6 +69,7 @@ export class ConfirmHandoverHandler implements ICommandHandler<
         order.placedByUserId,
         command.staffSubject,
         at,
+        "scan",
       ),
     );
 
@@ -77,6 +78,7 @@ export class ConfirmHandoverHandler implements ICommandHandler<
       status: "fulfilled",
       handedOverAt: at,
       handedOverBy: command.staffSubject,
+      handedOverVia: "scan",
     });
   }
 }

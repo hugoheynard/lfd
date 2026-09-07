@@ -82,17 +82,21 @@ export class RetraitPage {
     return `${AUTH_CONFIG.adminBaseUrl}/retrait/${encodeURIComponent(token)}`;
   });
 
-  /** Ce qu'on dit quand il n'y a pas de code : la raison, pas un écran vide. */
-  protected readonly noCodeReason = computed(() => {
-    const order = this.order();
-    if (order === null) {
-      return this.t().qr.unknown;
-    }
-    if (order.fulfillmentMethod === 'delivery') {
-      return this.t().qr.delivery;
-    }
-    return this.t().qr.unavailable;
-  });
+  /**
+   * Ce qu'on dit quand il n'y a pas de code : la raison, pas un écran vide.
+   *
+   * 🔴 **Une livraison a un code depuis le 2026-09-07**, et cet écran disait le
+   * contraire : « il n'y a pas de code à présenter ». C'était vrai tant que le
+   * jeton n'était émis qu'en retrait ; ça ne l'est plus. Le destinataire montre
+   * le même code, et c'est le coursier qui scanne.
+   *
+   * Reste le cas d'une commande **antérieure** à ce changement : elle n'a pas de
+   * jeton et n'en aura jamais — en fabriquer un rétroactivement inventerait un
+   * secret que personne n'a reçu. `unavailable` le dit sans mentir sur la cause.
+   */
+  protected readonly noCodeReason = computed(() =>
+    this.order() === null ? this.t().qr.unknown : this.t().qr.unavailable,
+  );
 
   protected readonly whenLabel = computed(() => {
     const day = this.order()?.requestedDeliveryDate ?? null;

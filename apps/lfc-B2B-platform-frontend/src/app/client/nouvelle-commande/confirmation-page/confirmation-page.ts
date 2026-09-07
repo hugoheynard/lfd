@@ -77,8 +77,18 @@ export class ConfirmationPage {
   /** Une commande encore due porte un chemin de retour vers le règlement. */
   protected readonly settlementDue = computed(() => this.order()?.settlement === 'due');
 
-  /** Le comptoir n'existe qu'en retrait : c'est lui qui ouvre le droit au code. */
-  protected readonly hasCounter = computed(() => this.order()?.service.mode === 'pickup');
+  /**
+   * 🔴 **Le code existe pour les DEUX acheminements depuis le 2026-09-07.**
+   *
+   * Ce calcul disait « le comptoir n'existe qu'en retrait : c'est lui qui ouvre
+   * le droit au code ». C'était vrai tant que le jeton n'était émis qu'en
+   * retrait ; une livraison n'avait alors aucun chemin vers `fulfilled` et
+   * restait « en cours » pour toujours. Le destinataire montre désormais le même
+   * code, et c'est le coursier qui le scanne.
+   *
+   * Il ne reste donc plus de condition : toute commande passée a son code.
+   */
+  protected readonly hasCode = computed(() => this.order() !== null);
 
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),
@@ -129,12 +139,7 @@ export class ConfirmationPage {
     return formatCents(cents);
   }
 
-  /**
-   * Le QR de retrait — l'écran existe depuis le lot 4.
-   *
-   * Il n'est proposé qu'en RETRAIT : une commande livrée n'a pas de comptoir,
-   * donc pas de code, et l'y mener n'afficherait qu'une phrase d'excuse.
-   */
+  /** Le code de remise, pour les deux acheminements — cf. {@link hasCode}. */
   protected showQr(): void {
     const order = this.order();
     if (order !== null) {

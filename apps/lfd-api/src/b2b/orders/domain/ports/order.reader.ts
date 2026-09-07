@@ -66,6 +66,16 @@ export abstract class OrderReader {
   abstract findByHandoverToken(token: string): Promise<HandoverOrder | null>;
 
   /**
+   * La même commande, trouvée par son **numéro** — le chemin de la remise
+   * saisie, quand le code n'est pas présentable.
+   *
+   * Le numéro n'est pas un secret : il est imprimé sur le bon. Ce qui protège
+   * cette porte est la session staff, comme le colisage — et c'est suffisant,
+   * parce que saisir une remise est un acte dont l'auteur est enregistré.
+   */
+  abstract findHandoverByReference(reference: string): Promise<HandoverOrder | null>;
+
+  /**
    * La commande derrière un **numéro** — ce que le QR de la fiche d'atelier
    * encode.
    *
@@ -129,5 +139,7 @@ export interface HandoverOrder {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly handedOverAt: Date | null;
   readonly handedOverBy: string | null;
+  /** `scan` | `manual` | `null` si elle n'a pas encore été remise. */
+  readonly handedOverVia: string | null;
   readonly lines: readonly OrderHandoverLine[];
 }
