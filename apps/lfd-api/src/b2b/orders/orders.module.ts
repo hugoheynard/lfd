@@ -8,8 +8,7 @@ import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
-import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
-import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
+import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-fulfilled.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
@@ -35,7 +34,6 @@ import { GetOrderDraftHandler } from "./application/queries/get-order-draft.hand
 import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
-import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetPackingHandler } from "./application/queries/get-packing.handler.js";
 import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
@@ -44,8 +42,10 @@ import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-or
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
+import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnOrderPacked } from "./application/handlers/on-order-packed.handler.js";
 import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
+import { PrismaHandoverSubjectReader } from "./infrastructure/prisma-handover-subject.reader.js";
 import { PrismaPendingOrdersReader } from "./infrastructure/prisma-pending-orders.reader.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
@@ -69,7 +69,6 @@ import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idemp
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
-import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
@@ -107,7 +106,6 @@ import { OrdersController } from "./http/orders.controller.js";
     AdminProductionController,
     AdminOrderDraftsController,
     AdminCatalogController,
-    AdminHandoverController,
     // La seule surface PUBLIQUE de ce contexte. Rangée avec les autres parce
     // qu'elle tarife un panier — c'est un sujet de commande, pas de catalogue —
     // et son absence de jeton est écrite dans son en-tête, pas dans sa place.
@@ -134,9 +132,11 @@ import { OrdersController } from "./http/orders.controller.js";
     GetAdminOrderHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
     PrismaDayOrdersReader,
+    PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     OnProductionDayClosed,
     OnOrderPacked,
+    OnOrderHandedOver,
     GetProductionBatchHandler,
     GetPackingHandler,
     SendOrderPlacedMail,
@@ -154,14 +154,12 @@ import { OrdersController } from "./http/orders.controller.js";
       }),
     },
     MarkOrderReadyHandler,
+    MarkOrderFulfilledHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
     QuoteShopCartHandler,
-    GetHandoverHandler,
-    ConfirmHandoverHandler,
-    ConfirmManualHandoverHandler,
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
@@ -187,11 +185,16 @@ import { OrdersController } from "./http/orders.controller.js";
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
   // une seconde copie. Cf. `PricingAdminModule`.
   exports: [
-    // Les deux adaptateurs que la production consomme par ses ports. Ils
+    // Les trois adaptateurs que la production consomme par ses ports. Ils
     // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
     // pour être importés par le fournil : le token qu'il connaît est le sien.
     PrismaDayOrdersReader,
+    PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
+    // Et le port de lecture des commandes, dont le troisième dépend : il
+    // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
+    // et Nest doit pouvoir le lui donner là où il est instancié.
+    OrderReader,
     ProductCatalogReader,
   ],
 })

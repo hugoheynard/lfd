@@ -1,4 +1,5 @@
 import type { Order } from "../entities/order.js";
+import type { HandoverVia } from "../services/handover.js";
 
 /** Ce que la passation renvoie : l'id technique et le numéro humain. */
 export interface PlacedOrder {
@@ -46,32 +47,28 @@ export abstract class OrderRepository {
   abstract markPaymentFailed(paymentIntentId: string): Promise<void>;
 
   /**
-   * Grave la **remise en main propre** : horodatage, auteur, et passage à
-   * `fulfilled`. Rend `false` si la commande était **déjà remise**.
+   * Recopie la remise **annoncée par le fournil** et ferme la commande.
    *
-   * L'appelant a déjà appliqué la règle (`handoverBlocker`) sur un état lu juste
-   * avant ; ce booléen ne la rejoue pas, il ferme la **course** entre deux
-   * comptoirs qui scanneraient le même QR dans la même seconde. La condition
-   * `handedOverAt = null` est évaluée par la base, donc exactement une des deux
-   * écritures gagne — garantie qu'un `SELECT` puis `UPDATE` applicatif ne peut
-   * pas donner.
+   * 🔴 Ce n'est plus le commerce qui constate : `markHandedOver` et
+   * `markHandedOverManually` écrivaient le fait, sur un scan reçu par une route
+   * d'ici. Depuis le 2026-09-07 c'est la production qui l'observe et le grave
+   * chez elle ; cette méthode **recopie** ce qu'elle annonce, exactement comme
+   * une `OrderLine` porte le snapshot d'un SKU du référentiel.
+   *
+   * L'instant et l'auteur viennent donc du FAIT, pas d'une horloge d'ici : la
+   * remise a eu lieu au comptoir du fournil, et c'est cette heure-là qui compte.
+   *
+   * ⚠️ **Écriture conditionnée, donc idempotente** : `handedOverAt: null` dans
+   * le `where`. Le bus vit en processus et n'est pas rejoué, mais un abonné
+   * appelé deux fois ne doit pas réécrire une attestation — la première est la
+   * seule vraie. Rend `false` si elle était déjà là.
    */
-  abstract markHandedOver(token: string, at: Date, by: string): Promise<boolean>;
-
-  /**
-   * Grave une remise **saisie à la main**, par le NUMÉRO de commande.
-   *
-   * Le cas qu'elle couvre est celui qui ferait sinon enfreindre la règle de
-   * l'autoscan : le destinataire n'a pas son courriel — un magasinier, quelqu'un
-   * d'autre à l'accueil, un téléphone déchargé. Sans cette porte, quelqu'un
-   * proposerait d'imprimer le code sur le colis « pour les livraisons
-   * difficiles », et un coursier scannerait son propre carton.
-   *
-   * Elle grave `handedOverVia: "manual"` : une attestation faible et honnête
-   * vaut mieux qu'une attestation forte et fausse, **à condition** de pouvoir
-   * les distinguer.
-   */
-  abstract markHandedOverManually(reference: string, at: Date, by: string): Promise<boolean>;
+  abstract markFulfilled(
+    reference: string,
+    at: Date,
+    by: string,
+    via: HandoverVia,
+  ): Promise<boolean>;
 
   /**
    * Grave le **colisage** : la fabrication est finie.

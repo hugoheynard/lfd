@@ -249,7 +249,8 @@ existe ne pouvait pas poster de commande. Il a `orders: "write"` depuis le
 2026-08-15.
 
 **Élargissement assumé** : ce droit couvre aussi l'attestation de remise au
-comptoir (`POST /admin/handover/:token`). Celui qui prend la commande est
+comptoir (`POST /admin/production/handover/:token`). Celui qui prend la
+commande est
 souvent celui qui remet le sac. Il ne couvre toujours pas la modification d'une
 commande passée — aucune route ne l'expose.
 

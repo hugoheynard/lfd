@@ -153,7 +153,7 @@ une taxonomie d'intention :
 | Ressource      | Ce qu'elle couvre                                                                                                                                           |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `companies`    | `admin/companies` et ses sous-routes, `admin/activations`, `admin/companies/:id/alert-rules`, `admin/companies/:id/members`                                 |
-| `orders`       | `admin/orders`, `admin/handover`, les alertes de compte (`admin/alerts/*`)                                                                                  |
+| `orders`       | `admin/orders`, `admin/production/*` (journée, colisage, remise), les alertes de compte (`admin/alerts/*`)                                                  |
 | `catalog`      | Le PIM : produits, familles, collections, emplacements, canaux et publication (`products`, `categories`, `channels/*`, `collections/tva`, `admin/catalog*`) |
 | `tax`          | Le référentiel fiscal, et lui seul : `commerce/vat-rates`                                                                                                   |
 | `growth`       | `admin/cockpit`, `admin/growth`, `admin/leads`, `admin/prospects`, `admin/commercial/market`                                                                |

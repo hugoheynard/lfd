@@ -29,7 +29,7 @@ que dans les noms de dossiers.
 
 ## Comment les deux contextes se parlent, et QUAND
 
-Quatre échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
+Cinq échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
 fournil **demande** ce dont il a besoin et **annonce** ce qu'il a fait ; le
 commerce répond et écoute. Jamais l'inverse.
 
@@ -71,7 +71,21 @@ sequenceDiagram
         P-->>Staff: 404
     end
 
-    Note over P,B: ④ Le contrepoids — voir ce que l'événement a pu perdre
+    Note over P,B: ④ La remise — au comptoir du labo, ou au chargement
+    Staff->>P: GET · POST …/production/handover/{jeton}
+    P->>B: HandoverSubjectReader.byToken(jeton)
+    B-->>P: la commande (état, client, lignes) — AUCUN champ de remise
+    P->>P: OrderHandover.attest — refuse annulée / brouillon / déjà remise
+    alt l'attestation s'écrit (unicité en base)
+        P--)B: OrderHandedOverEvent
+        P-->>Staff: l'attestation — qui, quand, `scan` ou `manual`
+        Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
+        B->>B: MarkOrderFulfilled — recopie le snapshot, passe `fulfilled`
+    else un autre poste a scanné le même QR
+        P-->>Staff: 409 — l'attestation de l'autre est la seule vraie
+    end
+
+    Note over P,B: ⑤ Le contrepoids — voir ce que l'événement a pu perdre
     Staff->>P: GET …/batch/{jour}/status
     P->>B: PendingCommerceOrdersReader.pendingFor(jour, closedAt)
     B-->>P: nombre de `placed` antérieures à la clôture
@@ -94,7 +108,7 @@ Trois choses le rendent **rattrapable** plutôt que perdu :
 | -------------------------- | ------------------------------------------ |
 | L'écriture est idempotente | `status` contraint dans le `where`         |
 | La clôture est rejouable   | elle republie sans recalculer l'instantané |
-| L'écart **se voit**        | ④, `pendingInCommerce`                     |
+| L'écart **se voit**        | ⑤, `pendingInCommerce`                     |
 
 ⚠️ Ce qu'on n'a **pas** : une file, un outbox, un rejeu automatique. Ce serait la
 vraie réponse à « l'événement ne doit jamais se perdre », et c'est un chantier en
@@ -104,12 +118,26 @@ soi. L'écrire ici évite qu'on croie l'avoir.
 
 - **P → B** passe toujours par un **port que la production déclare**
   (`channels/commerce/`), implémenté par le commerce, relié dans `appBootstrap`.
-- **B → P** n'existe pas comme appel : le commerce **s'abonne** — aux deux faits,
-  la clôture et le colisage —, il n'est jamais appelé par le fournil pour écrire
-  chez lui. Le fournil ne sait donc pas qu'une commande devient `ready` ; il sait
+- **B → P** n'existe pas comme appel : le commerce **s'abonne** — aux trois
+  faits : la clôture, le colisage, la remise —, il n'est jamais appelé par le
+  fournil pour écrire chez lui. Le fournil ne sait donc pas qu'une commande devient `ready` ; il sait
   qu'un bac est fait, et c'est le commerce qui en tire un statut.
 - `lint:context-boundaries` tient les deux : `production → b2b` est interdit, et
   `b2b → production` n'est permis que par le canal.
+
+### Pourquoi la remise a sa propre table, et pas deux colonnes de plus
+
+La règle de remise laisse passer une commande encore `placed` — refuser
+renverrait un client physiquement présent, colis prêt, parce qu'un écran
+d'atelier n'a pas été cliqué. Une commande passée **après** la clôture de sa
+journée n'est donc dans aucun plan, et reste remettable.
+
+L'accrocher à `production_order` aurait obligé à créer sa ligne de plan à la
+volée, ce qui fausserait le compte à produire — un instantané qui ne se
+recalcule pas. `order_handover` est indépendante de la journée, et ses deux
+uniques (`order_id`, `reference`) rendent la seconde remise **inexprimable**
+plutôt que refusée par un `WHERE` : c'est le seul endroit du dossier où le
+déménagement a rendu une garantie plus forte qu'elle ne l'était.
 
 ⚠️ Un événement qu'un autre bloc consomme fait **partie de la surface publiée**,
 au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
@@ -125,6 +153,7 @@ au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
 | Le compte à produire     | n'existe pas                         | **possédé**, arrêté à la clôture  |
 | Le lien vers la commande | jointure SQL                         | **identifiant opaque + snapshot** |
 | Le colisage              | acté chez le commerce                | **acté au fournil**, puis annoncé |
+| La remise                | attestée sur la ligne de commande    | **table à elle**, unicité en base |
 
 Le dernier point est le cœur, et ce n'est pas une nouveauté : c'est **exactement
 la règle que le dépôt applique déjà entre `b2b` et `pim`**. Une `OrderLine`

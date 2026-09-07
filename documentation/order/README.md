@@ -43,7 +43,7 @@ flowchart TD
   subgraph Apres["Après"]
     Ecrite --> Prod["Plan de production<br/>GET /admin/production/batch"]
     Ecrite --> QR["Jeton de remise<br/>(retrait uniquement)"]
-    QR --> Scan["Scan au comptoir<br/>POST /admin/handover/:token"]
+    QR --> Scan["Scan au comptoir<br/>POST /admin/production/handover/:token"]
     Scan --> Fulfilled[("fulfilled")]
   end
 ```

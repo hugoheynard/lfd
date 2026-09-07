@@ -14,3 +14,10 @@ export { ServiceDay } from "../../domain/value-objects/service-day.value-object.
 export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { OrderPackedEvent } from "./order-packed.event.js";
+export {
+  HandoverSubjectReader,
+  type HandoverSubject,
+  type HandoverSubjectLine,
+} from "./handover-subject.reader.js";
+export { OrderHandedOverEvent } from "./order-handed-over.event.js";
+export type { HandoverVia } from "../../domain/services/handover.js";

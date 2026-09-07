@@ -529,7 +529,7 @@ describe("le journal d'une commande", () => {
     });
     await ctx
       .asSub("staff-e2e")
-      .post(`/admin/handover/${order.handoverToken ?? ""}`)
+      .post(`/admin/production/handover/${order.handoverToken ?? ""}`)
       .expect(201);
 
     expect(await journalTypes()).toContain("order.handed_over");
@@ -546,7 +546,7 @@ describe("le journal d'une commande", () => {
     });
     await ctx
       .asSub("staff-e2e")
-      .post(`/admin/handover/${order.handoverToken ?? ""}`)
+      .post(`/admin/production/handover/${order.handoverToken ?? ""}`)
       .expect(201);
     await ctx.drain();
 
@@ -830,11 +830,16 @@ describe("la remise en livraison", () => {
     const view = jsonBody<{ handedOverVia: string | null }>(
       await ctx
         .asSub("staff-e2e")
-        .post(`/admin/handover/${row.handoverToken ?? ""}`)
+        .post(`/admin/production/handover/${row.handoverToken ?? ""}`)
         .expect(201),
     );
 
     expect(view.handedOverVia).toBe("scan");
+
+    // Le statut du commerce est désormais TIRÉ du fait annoncé par le fournil,
+    // donc il arrive après la réponse. C'est le prix du couplage minimal, et
+    // c'est visible ici plutôt que caché derrière une écriture synchrone.
+    await ctx.drain();
     const after = await ctx.prisma.order.findUniqueOrThrow({
       where: { orderNumber: reference },
       select: { status: true },
@@ -849,7 +854,10 @@ describe("la remise en livraison", () => {
     const reference = await placeDelivery();
 
     const view = jsonBody<{ handedOverVia: string | null; handedOverBy: string | null }>(
-      await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201),
+      await ctx
+        .asSub("staff-e2e")
+        .post(`/admin/production/handover/manual/${reference}`)
+        .expect(201),
     );
 
     expect(view.handedOverVia).toBe("manual");
@@ -860,7 +868,7 @@ describe("la remise en livraison", () => {
     // Une attestation faible et honnête vaut mieux qu'une attestation forte et
     // fausse — encore faut-il pouvoir les distinguer, y compris au journal.
     const reference = await placeDelivery();
-    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(201);
     await ctx.drain();
 
     const [fact] = await ctx.prisma.activityEvent.findMany({
@@ -872,12 +880,12 @@ describe("la remise en livraison", () => {
 
   it("REFUSE une seconde remise, quelle que soit la porte empruntée", async () => {
     const reference = await placeDelivery();
-    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(201);
 
-    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(409);
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(409);
   });
 
   it("répond 404 sur un numéro inconnu, sans dire s'il a existé", async () => {
-    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/ORD-INCONNUE`).expect(404);
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/ORD-INCONNUE`).expect(404);
   });
 });

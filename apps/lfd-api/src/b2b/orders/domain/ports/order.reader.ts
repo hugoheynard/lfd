@@ -124,6 +124,13 @@ export interface PackingOrder {
   readonly lines: readonly OrderHandoverLine[];
 }
 
+/**
+ * ⚠️ **Aucun champ de remise ici depuis le 2026-09-07.** `handedOverAt`,
+ * `handedOverBy` et `handedOverVia` en faisaient partie tant que le commerce
+ * détenait ce fait ; c'est le fournil qui le détient maintenant, et les colonnes
+ * qui restent sur `orders` sont un **snapshot** qu'il lui annonce. Les rendre
+ * ici ferait de la copie la source.
+ */
 export interface HandoverOrder {
   readonly orderId: string;
   readonly orderNumber: string;
@@ -137,9 +144,5 @@ export interface HandoverOrder {
   readonly pickupLabel: string | null;
   readonly status: OrderStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
-  readonly handedOverAt: Date | null;
-  readonly handedOverBy: string | null;
-  /** `scan` | `manual` | `null` si elle n'a pas encore été remise. */
-  readonly handedOverVia: string | null;
   readonly lines: readonly OrderHandoverLine[];
 }

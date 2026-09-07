@@ -1,9 +1,9 @@
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { type OrderHandoverView } from "@lfd/contracts";
 import { Controller, Get, Param, Post, Req, UnauthorizedException } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
+import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
@@ -17,21 +17,34 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  * le sac et confirme. Aucun lecteur de code-barres, aucune app à installer —
  * un QR qui encode une URL est déjà scannable par tous les téléphones du monde.
  *
- * 🔴 **Depuis le 2026-09-07, les DEUX acheminements passent par ici.** Le
- * retrait comme la livraison : en coursier, le destinataire montre le code de
- * son courriel et c'est le coursier qui scanne, avec sa session staff. Même
- * jeton, même porte, même geste — ce qui reste ferme, c'est qu'il faut être
- * deux.
+ * 🔴 **Cette surface vivait sous `/admin/handover`, chez le commerce, jusqu'au
+ * 2026-09-07.** C'est au labo qu'on retire — le client s'y présente, le coursier
+ * y charge —, et le fournil enregistre maintenant la remise chez lui. Le
+ * commerce l'apprend par un fait et en tire `fulfilled`.
  *
- * **Porte staff**, comme les autres surfaces `/admin/*` : `@Public()` désarme le
- * guard client, `AdminAuthGuard` réarme la porte staff. C'est essentiel ici et
+ * ⚠️ **Le QR déjà parti dans les courriels continue de fonctionner.** Il encode
+ * `{admin}/retrait/{token}`, c'est-à-dire une route du **front**, qui ne bouge
+ * pas : seul le chemin d'API qu'elle appelle a changé. Déplacer la route front
+ * aurait cassé chaque code déjà envoyé à un client.
+ *
+ * **Les DEUX acheminements passent par ici**, retrait comme livraison : en
+ * coursier, le destinataire montre le code de son courriel et c'est le coursier
+ * qui scanne, avec sa session staff. Même jeton, même porte, même geste — ce qui
+ * reste ferme, c'est qu'il faut être deux.
+ *
+ * **Porte staff**, comme les autres surfaces `/admin/*`. C'est essentiel ici et
  * pas seulement conventionnel — c'est cette porte qui fait du scan une preuve.
  * Sans elle, quiconque a vu un QR par-dessus une épaule pourrait attester sa
  * propre remise.
+ *
+ * `b2b_orders` reste la ressource, inchangée : le fournil partage celle du
+ * contrôleur de journée. Déplacer le code ne doit retirer le geste à personne —
+ * le commercial qui prend la commande est souvent celui qui remet le sac, et
+ * c'est un droit qu'on lui a donné explicitement.
  */
-@Controller("admin/handover")
+@Controller("admin/production/handover")
 @AdminSurface("b2b_orders")
-export class AdminHandoverController {
+export class ProductionHandoverController {
   constructor(
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
@@ -40,17 +53,8 @@ export class AdminHandoverController {
   /**
    * **La remise SAISIE À LA MAIN**, par le numéro de commande.
    *
-   * Le chemin de secours, et la raison pour laquelle la règle de l'autoscan
-   * tient : le destinataire n'a pas toujours son courriel — un magasinier,
-   * quelqu'un d'autre à l'accueil, un téléphone déchargé. Sans cette porte,
-   * quelqu'un demanderait d'imprimer le code sur le colis « juste pour les
-   * livraisons difficiles », et un coursier scannerait son propre carton.
-   *
    * Déclarée **avant** `:token` : deux segments, donc `:token` ne l'avalerait
    * pas — mais l'ordre rend l'intention lisible sans avoir à y réfléchir.
-   *
-   * Elle grave `via: "manual"`. Une remise saisie n'a eu qu'UNE partie : la
-   * présenter comme un scan la rendrait fausse plutôt que faible.
    */
   @Post("manual/:reference")
   async confirmManually(

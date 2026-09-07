@@ -4502,6 +4502,40 @@ model ProductionOrder {
   @@schema("production")
 }
 
+/// La REMISE d'une commande, telle que le fournil la constate.
+///
+/// ## Pourquoi elle n'est pas sur `ProductionOrder`
+///
+/// Une `ProductionOrder` n'existe que si une clôture l'a inscrite ; une commande
+/// passée après la clôture de sa journée est pourtant remettable — la règle de
+/// remise laisse passer `placed` exprès, pour ne pas renvoyer un client qui est
+/// là avec son colis prêt. L'y accrocher obligerait à créer une ligne de plan à
+/// la volée, ce qui fausserait le compte à produire.
+///
+/// ## Ce que les deux uniques rendent impossible
+///
+/// Une seconde remise ne s'écrit pas. Ce n'est pas une condition dans un `WHERE`
+/// qu'on peut oublier de recopier : c'est la base qui refuse, par le chemin du
+/// scan (`orderId`) comme par celui de la saisie (`reference`).
+model OrderHandover {
+  id String @id @default(cuid())
+
+  /// L'identifiant de la commande côté COMMERCE. Opaque : on le garde pour
+  /// pouvoir en reparler, jamais pour aller lire à côté.
+  orderId   String @unique @map("order_id")
+  /// Le numéro lisible, `ORD-…` — celui qu'on saisit quand le code manque.
+  reference String @unique
+
+  handedOverAt DateTime @map("handed_over_at")
+  /// L'identité staff qui a constaté, figée. Une preuve sans auteur n'en est pas.
+  handedOverBy String @map("handed_over_by")
+  /// `scan` (les deux parties étaient là) ou `manual` (l'équipe a saisi).
+  handedOverVia String @map("handed_over_via")
+
+  @@map("order_handover")
+  @@schema("production")
+}
+
 /// Une ligne à fabriquer. **Aucun montant** — le fournil ne facture pas.
 model ProductionOrderLine {
   id String @id @default(cuid())

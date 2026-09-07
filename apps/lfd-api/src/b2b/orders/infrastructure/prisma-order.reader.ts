@@ -276,6 +276,10 @@ export class PrismaOrderReader extends OrderReader {
    * saisie par le **numéro** — mais ce qu'on lit ensuite est identique, et le
    * dupliquer ferait diverger les deux écrans du comptoir au premier champ
    * ajouté.
+   *
+   * ⚠️ Elle ne lit plus `handed_over_*` depuis le 2026-09-07 : ces colonnes sont
+   * devenues le **snapshot** de ce que le fournil annonce, et c'est lui qui les
+   * détient. Les relire pour les lui rendre ferait de la copie la source.
    */
   private async oneHandover(
     where: { readonly handoverToken: string } | { readonly orderNumber: string },
@@ -289,9 +293,6 @@ export class PrismaOrderReader extends OrderReader {
         fulfillmentMethod: true,
         requestedDeliveryDate: true,
         pickupAddress: true,
-        handedOverAt: true,
-        handedOverBy: true,
-        handedOverVia: true,
         createdAt: true,
         companyId: true,
         placedByUserId: true,
@@ -313,9 +314,6 @@ export class PrismaOrderReader extends OrderReader {
       pickupLabel: pickupLabelOf(row.pickupAddress),
       status: row.status,
       fulfillmentMethod: row.fulfillmentMethod,
-      handedOverAt: row.handedOverAt,
-      handedOverBy: row.handedOverBy,
-      handedOverVia: row.handedOverVia,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

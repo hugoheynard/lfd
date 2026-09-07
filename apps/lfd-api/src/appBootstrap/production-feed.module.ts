@@ -2,9 +2,11 @@ import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
+import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import {
   DayOrdersReader,
+  HandoverSubjectReader,
   PendingCommerceOrdersReader,
 } from "../production/channels/commerce/index.js";
 
@@ -36,7 +38,10 @@ import {
     // demande « qu'est-ce que le commerce n'a pas basculé ? », le commerce seul
     // sait y répondre.
     { provide: PendingCommerceOrdersReader, useClass: PrismaPendingOrdersReader },
+    // La remise est constatée au fournil, mais la commande derrière le jeton est
+    // un fait du commerce : troisième port, même sens que les deux autres.
+    { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
   ],
-  exports: [DayOrdersReader, PendingCommerceOrdersReader],
+  exports: [DayOrdersReader, PendingCommerceOrdersReader, HandoverSubjectReader],
 })
 export class ProductionFeedModule {}

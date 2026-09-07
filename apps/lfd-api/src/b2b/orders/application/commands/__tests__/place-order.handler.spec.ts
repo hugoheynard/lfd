@@ -362,7 +362,6 @@ const COURIER_ADDR: BillingAddressPayload = {
 /** Repo qui capture ce qu'on lui demande d'écrire, sans base. */
 function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
   return {
-    markHandedOver: () => Promise.resolve(false),
     // On capture l'état sérialisé de l'agrégat : les assertions portent sur ce que
     // la commande a réellement calculé (sous-total/TVA/total, lignes, règlement).
     place: (order) => {
@@ -371,7 +370,7 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
     },
     markPaid: () => Promise.resolve(),
     markPaymentFailed: () => Promise.resolve(),
-    markHandedOverManually: () => Promise.reject(new Error("non utilisé")),
+    markFulfilled: () => Promise.reject(new Error("non utilisé")),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
   };

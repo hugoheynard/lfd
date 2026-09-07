@@ -325,8 +325,13 @@ ne se cache pas derrière un QR.
 
 Le scan ne doit pas poser un drapeau : il doit produire une **attestation** — qui
 a remis, à quel instant, sur quelle commande — et une seule fois. Le mot est déjà
-celui du code (`confirm-handover.handler.ts` : « lire, juger, graver — et rendre
-l'attestation obtenue »), et le mécanisme y est presque en entier. Ce qui le rend
+celui du code (`handover-attestation.service.ts` : « atteste, publie, et rend
+l'attestation obtenue »), et le mécanisme y est presque en entier.
+
+⚠️ **Ce geste a déménagé au fournil le 2026-09-07**, avec la remise elle-même :
+c'est au labo qu'on retire, et celui qui voit le client partir avec son sac est
+le seul à pouvoir l'attester. Les quatre traits ci-dessous n'ont pas changé de
+nature ; le troisième s'est renforcé en changeant de table. Ce qui le rend
 infalsifiable tient en quatre traits, dont **aucun n'est cryptographique** :
 
 1. **L'auteur n'est jamais dans la charge utile.** `handedOverBy` vient du
@@ -334,11 +339,18 @@ infalsifiable tient en quatre traits, dont **aucun n'est cryptographique** :
    porteur du QR ne peut pas se désigner lui-même : il ne fournit qu'un jeton.
 2. **L'instant vient du `Clock` du serveur**, pas de l'appareil qui scanne. Une
    tablette à l'heure fausse ne datera pas une remise à hier.
-3. **Usage unique, refusé EN BASE.** L'écriture est conditionnée
-   (`where: { handoverToken, handedOverAt: null }`), et le handler dit déjà quoi
-   faire du perdant : « on ne réécrit rien — on renvoie l'attestation de l'autre,
-   seule vraie, plutôt que d'inventer la nôtre ». Deux comptoirs qui scannent le
-   même code ne produisent pas deux remises.
+3. **Usage unique, INEXPRIMABLE en base.** L'attestation vit dans sa propre
+   table (`production.order_handover`), dont `order_id` et `reference` sont
+   uniques : une seconde remise ne peut pas s'écrire. Ce n'est plus une
+   condition dans un `WHERE` qu'un jour quelqu'un oublie de recopier — c'est la
+   base qui refuse, et le perdant l'apprend par la violation. Deux comptoirs qui
+   scannent le même code ne produisent pas deux remises.
+
+   Jusqu'au 2026-09-07, c'était bien un `WHERE` — `{ handoverToken,
+handedOverAt: null }` sur la ligne de commande. Il tenait, mais il tenait par
+   vigilance : c'est le déménagement au fournil qui a permis de le remplacer par
+   une contrainte, la table étant neuve.
+
 4. **Le jeton est un secret aléatoire**, pas le numéro de commande : on ne
    fabrique pas le code d'une commande voisine en incrémentant.
 

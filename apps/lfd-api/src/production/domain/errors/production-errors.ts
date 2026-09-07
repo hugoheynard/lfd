@@ -98,3 +98,35 @@ export class InvalidServiceDayError extends DomainError {
     );
   }
 }
+
+/**
+ * **Ce code de retrait n'ouvre rien.**
+ *
+ * Un `ResourceNotFoundError` : la question « quelle commande derrière ce
+ * jeton ? » a une réponse vide. Le message ne dit PAS si le jeton n'a jamais
+ * existé ou s'il a expiré — un secret dont l'échec se raconte se devine.
+ */
+export class HandoverTokenNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super("production.handover.not_found", "Ce code de retrait ne correspond à aucune commande.");
+  }
+}
+
+/** Aucune commande sous ce **numéro** — le chemin de la remise saisie. */
+export class HandoverReferenceNotFoundError extends ResourceNotFoundError {
+  constructor(reference: string) {
+    super("production.handover.reference_not_found", `Aucune commande au numéro ${reference}.`);
+  }
+}
+
+/**
+ * **L'état interdit la remise**, et le refus porte la phrase à lire au comptoir.
+ *
+ * La raison est construite par `handoverBlocker` et traverse telle quelle :
+ * quelqu'un attend en face, et « conflit » ne lui dit pas quoi faire.
+ */
+export class HandoverRefusedError extends BusinessError {
+  constructor(reason: string) {
+    super("production.handover.refused", reason);
+  }
+}

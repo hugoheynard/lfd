@@ -8,7 +8,7 @@ import { SecretGenerator } from "../../../platform/secret/secret-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
 import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
-import { issuesHandoverToken } from "../domain/services/handover.js";
+import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 
 /** Adaptateur Prisma des commandes. */
 @Injectable()
@@ -185,32 +185,17 @@ export class PrismaOrderRepository extends OrderRepository {
     return count === 1;
   }
 
-  async markHandedOverManually(reference: string, at: Date, by: string): Promise<boolean> {
-    // Même condition en base que le scan (`handedOverAt: null`) : une commande
-    // déjà remise ne se re-remet pas, quelle que soit la porte empruntée. Ce qui
-    // change est `handedOverVia` — et c'est la seule chose qui doit changer.
+  async markFulfilled(reference: string, at: Date, by: string, via: HandoverVia): Promise<boolean> {
+    // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre. Le fait
+    // vient du fournil, qui a déjà tranché la course sur SA contrainte
+    // d'unicité — mais un abonné rappelé ne doit pas réécrire l'attestation, et
+    // une condition ici coûte moins qu'un raisonnement sur qui a rejoué quoi.
     const { count } = await this.prisma.order.updateMany({
       where: { orderNumber: reference, handedOverAt: null },
       data: {
         handedOverAt: at,
         handedOverBy: by,
-        handedOverVia: "manual",
-        status: OrderStatus.fulfilled,
-      },
-    });
-    return count === 1;
-  }
-
-  async markHandedOver(token: string, at: Date, by: string): Promise<boolean> {
-    // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre, donc deux
-    // scans simultanés du même QR produisent exactement une remise. La règle
-    // métier, elle, a déjà été appliquée par l'appelant sur l'état lu.
-    const { count } = await this.prisma.order.updateMany({
-      where: { handoverToken: token, handedOverAt: null },
-      data: {
-        handedOverAt: at,
-        handedOverBy: by,
-        handedOverVia: "scan",
+        handedOverVia: via,
         status: OrderStatus.fulfilled,
       },
     });
