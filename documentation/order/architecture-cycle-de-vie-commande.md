@@ -260,6 +260,20 @@ dans un `UPDATE` de contrôleur.
 
 ---
 
+## La production tient sa propre écriture — ⛔ décidé, non implémenté
+
+La production devient un **contexte à part entière**, avec ses propres tables
+(schéma `production`), et produit ses deux pièces : la feuille d'atelier d'une
+commande et le compte à produire d'une journée. Elle s'inscrit la commande **à la
+clôture du plan du soir** — la transition `confirmed` ci-dessus.
+
+Aujourd'hui elle n'a rien à elle : elle vit dans `b2b/orders` et lit les tables
+de commerce en direct. Ce que ça coûte, ce que la cible change, et les trois
+questions qu'un snapshot ouvre :
+[`../production/architecture-contexte-production.md`](../production/architecture-contexte-production.md).
+
+---
+
 ## Ce que ce document ne tranche pas
 
 - **La granularité par ligne.** Une commande partiellement prête (deux articles
