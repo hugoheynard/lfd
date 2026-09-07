@@ -9,6 +9,7 @@ import { seedClient } from "./seeding/client.seed.js";
 import { seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
+import { clearSeededBuckets } from "./seeding/storage.seed.js";
 
 /**
  * **Recharger le jeu de données de développement**, depuis l'application
@@ -28,6 +29,9 @@ import { seedStation } from "./seeding/station.seed.js";
  *    soit la base.
  * 3. **La surface.** La route vit derrière le mur staff, comme le reste de
  *    `/admin`.
+ * 4. **Le stockage.** `clearSeededBuckets` refuse tout point de terminaison qui
+ *    n'est pas en boucle locale — la serrure la plus basse, et la seule qui
+ *    rende le geste inexprimable contre R2 plutôt qu'interdit.
  *
  * Trois plutôt qu'une parce que celle qui compte — la première — est un
  * raisonnement sur une chaîne de connexion, et qu'un jour quelqu'un branchera un
@@ -57,8 +61,16 @@ export class DevSeedService {
     await seedStation(context);
     await seedClient(context);
     const reset = await resetToSeed(this.prisma);
+    // Les buckets APRÈS la coupe et AVANT le semis : les commandes qui
+    // possédaient ces documents n'existent plus, et celles qu'on va poser n'en
+    // ont pas encore. Vider avant la coupe laisserait une fenêtre où une
+    // commande vivante n'a plus son bon.
+    const storage = await clearSeededBuckets([
+      this.config.r2Storage("customers"),
+      this.config.r2Storage("production"),
+    ]);
     const orders = await seedOrders(context);
-    return { reset, orders };
+    return { reset, orders, storage };
   }
 
   /**

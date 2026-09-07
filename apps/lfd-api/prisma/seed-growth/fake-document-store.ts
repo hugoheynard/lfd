@@ -16,4 +16,13 @@ export class FakeDocumentStore extends DocumentStore {
   read(): Promise<Buffer> {
     return Promise.resolve(Buffer.from("%PDF-1.4\n%seed\n", "latin1"));
   }
+
+  /**
+   * Toujours ABSENT, et c'est le comportement juste pour un semis : rien n'a
+   * jamais été rangé, donc chaque lecture doit dire « pas encore » — pas rendre
+   * une pièce que personne n'a déposée.
+   */
+  readIfPresent(): Promise<Buffer | null> {
+    return Promise.resolve(null);
+  }
 }

@@ -28,8 +28,23 @@ export interface DevSeedOrdersReport {
   readonly tomorrow: string;
 }
 
+/**
+ * Ce qu'un bucket de développement a rendu.
+ *
+ * Le rechargement supprime les commandes ; sans lui, les bons déjà tirés
+ * restaient en magasin sous des identifiants qui n'existaient plus. Pire, un bon
+ * archivé est servi TEL QUEL au téléchargement suivant : un poste gardait le
+ * vieux dessin sur une commande neuve.
+ */
+export interface DevSeedStorageReport {
+  readonly bucket: string;
+  readonly objects: number;
+}
+
 /** La réponse de `POST /admin/dev/seed/reload`. */
 export interface DevSeedReport {
   readonly reset: DevSeedResetReport;
   readonly orders: DevSeedOrdersReport;
+  /** Vide si aucun bucket n'est configuré sur ce poste. */
+  readonly storage: readonly DevSeedStorageReport[];
 }
