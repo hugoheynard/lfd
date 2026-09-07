@@ -157,16 +157,26 @@ export interface R2StorageState {
  *   un avenant ajoute une révision, il n'écrase rien — et **jamais publiques** :
  *   elles passent par l'API, derrière le mur de la société.
  *
- * ⛔ **Un quatrième usage est DÉCIDÉ et reste à créer : `production`.** Il
- * portera ce qui documente notre travail — le compte à produire du jour, et la
- * feuille d'atelier si on choisit de l'archiver. La ligne de partage n'est pas
- * « client contre production », c'est **opposable contre opérationnel** : ce
- * qu'un client peut nous opposer se garde des années et porte des montants ; ce
- * qui documente une journée de fournil se garde des semaines et n'en porte
- * aucun. Deux durées de vie, deux jetons.
+ * - `production` — ce qui documente **notre travail** : le compte à produire du
+ *   jour, et la feuille d'atelier si on choisit de l'archiver. La ligne de
+ *   partage avec `customers` n'est pas « client contre production », c'est
+ *   **opposable contre opérationnel** : ce qu'un client peut nous opposer se
+ *   garde des années et porte des montants ; ce qui documente une journée de
+ *   fournil se garde des semaines et n'en porte aucun. Deux durées de vie, deux
+ *   jetons — et le jour où une borne au fournil doit lire des documents, lui
+ *   donner le jeton `customers` lui donnerait aussi toutes les factures.
  *
- * Tant qu'il n'existe pas, `customers` ne reçoit que le bon de commande — qui
- * lui revient de toute façon. Rien à migrer le jour où le quatrième arrive.
+ * ⚠️ **`production` n'a encore AUCUN écrivain.** Il est configuré, créé en dev
+ * et en test, et le harnais e2e sait le vider — mais rien dans `src/` n'y range
+ * quoi que ce soit, parce que la question « faut-il archiver la feuille
+ * d'atelier ? » n'est pas tranchée (elle est déterministe, donc refabricable ;
+ * le compte à produire, lui, est un instantané arrêté à la clôture, et celui-là
+ * ne se refabrique pas). Le tuyau est posé, pas le débit.
+ *
+ * C'est aussi pourquoi il ne figure PAS dans le bulletin de démarrage : ce
+ * bulletin nomme ce que le produit PERD quand un réglage manque, et aujourd'hui
+ * il ne perd rien. L'y inscrire ferait signaler une dégradation qui n'existe
+ * pas — et un bulletin qui crie pour rien cesse d'être lu.
  *
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.
@@ -179,7 +189,7 @@ export interface R2StorageState {
  * ligne de partage qui reste vraie est celle du SENS : `kbis` porte ce que le
  * client nous donne, `customers` ce qu'on lui rend.
  */
-export type R2StorageUsage = "kbis" | "media" | "customers";
+export type R2StorageUsage = "kbis" | "media" | "customers" | "production";
 
 /**
  * Les variables d'environnement de chaque usage.
@@ -211,6 +221,12 @@ const R2_SETTINGS: Readonly<
     accessKeyId: "R2_CUSTOMERS_ACCESS_KEY_ID",
     secretAccessKey: "R2_CUSTOMERS_SECRET_ACCESS_KEY",
     endpoint: "R2_CUSTOMERS_ENDPOINT",
+  },
+  production: {
+    bucket: "R2_PRODUCTION_BUCKET",
+    accessKeyId: "R2_PRODUCTION_ACCESS_KEY_ID",
+    secretAccessKey: "R2_PRODUCTION_SECRET_ACCESS_KEY",
+    endpoint: "R2_PRODUCTION_ENDPOINT",
   },
 };
 

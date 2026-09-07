@@ -96,22 +96,55 @@ process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
  * `.env` local pointe le bucket de DEV, donc un `??=` laisserait les e2e écrire
  * — et supprimer — dedans.
  */
+const slot = String(workerSlot());
+
+/**
+ * **Un bucket par USAGE**, et par worker.
+ *
+ * Par worker, pour la RAISON EXACTE de la base : `resetStorage()` vide les
+ * buckets entre deux tests, et deux workers qui les partageraient
+ * s'emporteraient leurs pièces — l'échec accuserait alors une suite qui n'a rien
+ * fait.
+ *
+ * Par usage, pour la raison qui vaut aussi en production : « chaque usage porte
+ * son bucket ET ses clés — un jeton n'ouvre que le sien ». Les faire cohabiter
+ * ici rendrait les e2e VERTS sur un montage que la production refuse, et c'est
+ * précisément la classe de bug que ce harnais existe pour attraper — le seul
+ * bout de chaîne jamais exécuté est celui qui casse en ligne.
+ *
+ * ⚠️ `customers` n'était pas posé du tout jusqu'au 2026-09-07. Le dépôt du bon
+ * de commande étant **best-effort** — un stockage muet ne doit pas priver un
+ * client de son document — son absence ne faisait rougir aucun test : le
+ * rangement échouait en silence, et personne ne traversait ce chemin.
+ */
+const TEST_BUCKETS = {
+  kbis: `lfc-b2b-test-w${slot}`,
+  customers: `lfc-customers-test-w${slot}`,
+  production: `lfc-production-test-w${slot}`,
+} as const;
+
 const TEST_STORAGE = {
-  // Un bucket par worker, pour la RAISON EXACTE de la base : `resetStorage()`
-  // vide le bucket entre deux tests. Partagé, un worker emporterait les pièces
-  // d'un autre — et l'échec accuserait une suite qui n'a rien fait.
-  bucket: `lfc-b2b-test-w${String(workerSlot())}`,
+  buckets: TEST_BUCKETS,
   endpoint: "http://localhost:9100",
   region: "auto",
   accessKeyId: "lfc",
   secretAccessKey: "lfclfclfc",
 } as const;
 
-process.env["R2_KBIS_BUCKET"] = TEST_STORAGE.bucket;
+/** Les usages de stockage qu'un e2e peut inspecter. */
+export type TestStorageUsage = keyof typeof TEST_BUCKETS;
+
 process.env["R2_ENDPOINT"] = TEST_STORAGE.endpoint;
 process.env["R2_REGION"] = TEST_STORAGE.region;
+process.env["R2_KBIS_BUCKET"] = TEST_BUCKETS.kbis;
 process.env["R2_KBIS_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
 process.env["R2_KBIS_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
+process.env["R2_CUSTOMERS_BUCKET"] = TEST_BUCKETS.customers;
+process.env["R2_CUSTOMERS_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
+process.env["R2_CUSTOMERS_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
+process.env["R2_PRODUCTION_BUCKET"] = TEST_BUCKETS.production;
+process.env["R2_PRODUCTION_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
+process.env["R2_PRODUCTION_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
 
 /** La configuration de stockage des tests — lue par `test/storage.ts`. */
 export function testStorageConfig(): typeof TEST_STORAGE {

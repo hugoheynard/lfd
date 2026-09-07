@@ -1,5 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
@@ -50,6 +51,23 @@ export interface OrderSheetPdf {
  * établit — « un jeton n'ouvre que le sien ». C'est ce que faisait la première
  * version de ce handler, faute d'avoir vérifié quel bucket le port ouvrait.
  *
+ * ## Une pièce absente n'est pas une panne
+ *
+ * 🔴 Ce handler enveloppait `read` dans un `catch` qui rendait `null` — « une
+ * pièce absente et un stockage muet se traitent pareil : on refabrique ». C'était
+ * faux deux fois. L'absence est le cas COURANT (rien n'est archivé avant le
+ * premier téléchargement), donc chaque premier passage journalisait une erreur
+ * pour un chemin sain. Et surtout ce `catch` avalait les VRAIES pannes : bucket
+ * mal nommé, clé refusée, signature invalide devenaient « pas encore archivé »,
+ * et l'API refabriquait en silence pour toujours — le symptôme d'un stockage
+ * cassé était l'absence de symptôme.
+ *
+ * `readIfPresent` rend l'absence comme une **réponse** (`null`, sans journal) et
+ * laisse la panne lever. Ce handler rattrape cette panne — un client ne doit pas
+ * payer un secret manquant — mais elle est journalisée en ERREUR par
+ * l'adaptateur avant d'arriver ici, donc elle se voit. C'est toute la différence
+ * avec l'ancien `catch` muet.
+ *
  * ## Ce qu'un stockage indisponible ne doit pas coûter
  *
  * Le rangement est **best-effort**. Un R2 en panne ne doit pas empêcher un
@@ -82,7 +100,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
     const key = orderSheetPdfKey(sheet);
     const fileName = orderSheetPdfFileName(sheet);
 
-    const archived = await this.readOrNull(key);
+    const archived = await this.readArchived(key);
     if (archived !== null) {
       return { bytes: archived, fileName };
     }
@@ -92,12 +110,26 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
     return { bytes, fileName };
   }
 
-  /** Une pièce absente et un stockage muet se traitent pareil : on refabrique. */
-  private async readOrNull(key: string): Promise<Buffer | null> {
+  /**
+   * L'archive si elle existe, `null` si elle n'existe pas **ou si le stockage
+   * est en panne** — et la différence entre les deux est désormais dans le
+   * journal, pas seulement dans le code.
+   *
+   * ⚠️ Le `catch` est INDISPENSABLE et ne doit pas être retiré au nom de la
+   * propreté : `R2_CUSTOMERS_*` peut être absent — c'est le cas en production à
+   * ce jour — et `readIfPresent` lève alors. Sans lui, chaque téléchargement de
+   * bon rendrait 500 pour un défaut de configuration qui ne regarde pas le
+   * client. Il est étroit — il ne rattrape QUE l'indisponibilité du stockage, et
+   * l'adaptateur l'a déjà journalisée en ERREUR avant de lever.
+   */
+  private async readArchived(key: string): Promise<Buffer | null> {
     try {
-      return await this.documents.read(key);
-    } catch {
-      return null;
+      return await this.documents.readIfPresent(key);
+    } catch (error) {
+      if (error instanceof DocumentStorageUnavailableError) {
+        return null;
+      }
+      throw error;
     }
   }
 

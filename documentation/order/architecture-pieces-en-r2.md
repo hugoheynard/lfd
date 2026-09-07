@@ -1,9 +1,19 @@
 # Les pièces d'un client dans R2 — ce qu'on range, et où
 
-**Ouvert le 2026-09-07.** Le bucket `customers` existe et sert déjà les bons de
-commande ; **`production` est décidé et reste à créer**. Ce document dit comment
-les deux sont organisés, et ce qui viendra s'y ajouter — l'écrire avant que le comptable dépose sa première facture coûte une
-page ; l'écrire après coûte une migration de fichiers.
+**Ouvert le 2026-09-07**, complété le jour même. Les deux buckets **existent en
+code, en dev et en test** ; ce qui les sépare est ci-dessous.
+
+⚠️ **`production` n'a encore aucun écrivain.** Il est configuré, créé par
+`docker-compose.dev.yml`, posé par le harnais e2e — et rien dans `src/` n'y range
+quoi que ce soit. Le tuyau est posé, pas le débit : la question « faut-il
+archiver la feuille d'atelier ? » (§2) n'est pas tranchée, et le compte à
+produire n'a pas encore de chemin qui l'écrive. C'est aussi pourquoi il ne
+figure pas au bulletin de démarrage — celui-ci nomme ce que le produit PERD, et
+aujourd'hui il ne perd rien.
+
+Ce document dit comment les deux sont organisés, et ce qui viendra s'y ajouter :
+l'écrire avant que le comptable dépose sa première facture coûte une page ;
+l'écrire après coûte une migration de fichiers.
 
 ---
 
@@ -13,7 +23,7 @@ page ; l'écrire après coûte une migration de fichiers.
 | ------------ | ------------------------------------ | ---------------------------------- | ----------------------- | ---- |
 | `kbis`       | extrait de greffe, mandat signé      | ce que le client **nous donne**    | non                     | ✅   |
 | `customers`  | bon de commande, facture             | ce qu'il peut nous **opposer**     | **non**                 | ✅   |
-| `production` | compte à produire, feuille d'atelier | ce qui documente **notre travail** | **non**                 | ⛔   |
+| `production` | compte à produire, feuille d'atelier | ce qui documente **notre travail** | **non**                 | ⚠️   |
 | `media`      | visuels du catalogue                 | la vitrine                         | **oui**, par un domaine | ✅   |
 
 La séparation n'est pas du rangement. La configuration le dit en une phrase :
@@ -71,7 +81,7 @@ customers/                                  ✅ existe
 └── companies/{companyId}/invoices/{AAAA-MM}/
     └── facture-{numero}.pdf                déposée par le comptable
 
-production/                                 ⛔ à créer
+production/                                 ⚠️ configuré, aucun écrivain
 ├── {AAAA-MM-JJ}/
 │   └── compte-a-produire.pdf               le récapitulatif du jour
 └── orders/{orderId}/
@@ -97,7 +107,8 @@ Si on ne l'archive pas, `production` ne contient plus qu'**une** pièce : le
 compte à produire. Et celle-là, il faut la garder — c'est un instantané arrêté à
 la clôture, et les commandes bougent après ; on ne la refabrique pas.
 
-À trancher avant d'écrire le bucket, pas après.
+À trancher avant d'y **écrire**, pas avant de le créer : le bucket coûte trois
+variables et zéro octet, la décision d'archiver coûte une rétention de plus.
 
 ### Pourquoi la révision est dans le nom de fichier
 

@@ -44,6 +44,21 @@ export class S3DocumentStore extends DocumentStore {
     return this.attempt("lecture", key, () => this.service().downloadToBuffer(key));
   }
 
+  async readIfPresent(key: string): Promise<Buffer | null> {
+    try {
+      return await this.attempt("lecture", key, () => this.service().downloadToBuffer(key));
+    } catch (error) {
+      // Seule l'ABSENCE devient `null`. Une clé refusée, un bucket inconnu, une
+      // signature invalide continuent de lever : ce sont des pannes, et les
+      // confondre avec « pas encore rangé » ferait refabriquer en silence pour
+      // toujours devant un stockage cassé.
+      if (isMissingObject(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   /**
    * Exécute une opération de stockage, et **catégorise ses pannes**.
    *
@@ -70,7 +85,15 @@ export class S3DocumentStore extends DocumentStore {
         throw error;
       }
       const cause = error instanceof Error ? error.name : String(error);
-      this.logger.error(`Stockage des pièces — ${what} de « ${key} » refusé : ${cause}`);
+      // Une pièce absente n'est pas un refus du canal : le canal a répondu, et sa
+      // réponse est « rien ici ». `read` la traite quand même en panne — c'est son
+      // contrat, cf. le port — mais la journaliser en ERREUR ferait crier le
+      // chemin courant de `readIfPresent`, qui passe par ici.
+      if (isMissingObject(error)) {
+        this.logger.debug(`Stockage des pièces — « ${key} » n'existe pas (${cause}).`);
+      } else {
+        this.logger.error(`Stockage des pièces — ${what} de « ${key} » refusé : ${cause}`);
+      }
       throw new DocumentStorageUnavailableError(
         `Le stockage des pièces a refusé le ${what}.`,
         error,
@@ -93,4 +116,42 @@ export class S3DocumentStore extends DocumentStore {
     this.cached = new S3StorageService(config);
     return this.cached;
   }
+}
+
+/**
+ * L'objet n'existe pas — par opposition à un canal en panne.
+ *
+ * S3 nomme ce cas `NoSuchKey`, et certains implémenteurs (MinIO compris, selon
+ * le verbe) rendent `NotFound` avec un 404. On lit **le nom ET le statut** :
+ * s'appuyer sur le seul nom rendrait la distinction dépendante du fournisseur,
+ * et c'est exactement le genre d'écart qui ne se voit qu'en production.
+ */
+function isMissingObject(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  if (error.name === "NoSuchKey" || error.name === "NotFound") {
+    return true;
+  }
+  return httpStatusOf(error) === 404;
+}
+
+/**
+ * Le statut HTTP porté par une erreur du SDK AWS, s'il y en a un.
+ *
+ * Écrit avec des gardes `in` plutôt qu'un `as` : le SDK ne publie pas de type
+ * pour cette forme, et un cast affirmerait une structure que rien ne vérifie —
+ * il rendrait `undefined` au premier changement de forme, sans que rien ne
+ * rougisse.
+ */
+function httpStatusOf(error: Error): number | undefined {
+  if (!("$metadata" in error)) {
+    return undefined;
+  }
+  const metadata: unknown = error.$metadata;
+  if (typeof metadata !== "object" || metadata === null || !("httpStatusCode" in metadata)) {
+    return undefined;
+  }
+  const status: unknown = metadata.httpStatusCode;
+  return typeof status === "number" ? status : undefined;
 }

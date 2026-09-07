@@ -27,7 +27,38 @@ export abstract class DocumentStore {
 
   /**
    * Relit la pièce par sa clé.
-   * @throws {DocumentStorageUnavailableError} stockage non configuré ou en échec.
+   *
+   * L'absence est une **panne** ici, et c'est voulu : cette méthode sert les
+   * appelants pour qui la base a déjà promis le fichier (un KBIS dont la ligne
+   * porte la `storageKey`). Une clé manquante y signale une incohérence entre la
+   * base et le bucket, et doit se voir.
+   *
+   * @throws {DocumentStorageUnavailableError} stockage non configuré, en échec,
+   *   **ou pièce absente**.
    */
   abstract read(key: string): Promise<Buffer>;
+
+  /**
+   * Relit la pièce, ou rend `null` si elle **n'a jamais été rangée**.
+   *
+   * 🔴 Ce n'est pas un `read` plus permissif : c'est la distinction entre une
+   * absence et une panne, et elle manquait. Le bon de commande est archivé au
+   * premier téléchargement, donc « la clé n'existe pas » est son cas COURANT —
+   * pas une anomalie. Son handler enveloppait donc `read` dans un `try/catch`
+   * qui rendait `null`, avec deux conséquences :
+   *
+   * 1. chaque premier téléchargement journalisait une ERREUR pour un chemin
+   *    parfaitement sain, et des erreurs qui sonnent sur le chemin heureux
+   *    finissent par n'être plus lues ;
+   * 2. surtout, ce `catch` **avalait aussi les vraies pannes**. Un bucket mal
+   *    nommé, une clé refusée, une signature invalide : tout devenait « pas
+   *    encore archivé », et l'API refabriquait en silence pour toujours. Le
+   *    symptôme d'un stockage cassé était l'absence de symptôme.
+   *
+   * Ici l'absence est une RÉPONSE — `null`, sans journal — et une panne reste une
+   * panne, qui lève et se voit.
+   *
+   * @throws {DocumentStorageUnavailableError} stockage non configuré ou en échec.
+   */
+  abstract readIfPresent(key: string): Promise<Buffer | null>;
 }
