@@ -104,6 +104,8 @@ export abstract class OrderReader {
 export interface PackingOrder {
   readonly orderId: string;
   readonly orderNumber: string;
+  /** Le client à qui elle appartient — le sujet de la trace de colisage. */
+  readonly placedByUserId: string;
   readonly customerLabel: string;
   readonly requestedDeliveryDate: Date | null;
   readonly status: OrderStatus;
@@ -115,6 +117,8 @@ export interface PackingOrder {
 export interface HandoverOrder {
   readonly orderId: string;
   readonly orderNumber: string;
+  /** Le client à qui elle appartient — le sujet de la trace de remise. */
+  readonly placedByUserId: string;
   /** La raison sociale, ou la personne quand la commande est sans entreprise. */
   readonly customerLabel: string;
   readonly placedAt: Date;

@@ -221,6 +221,7 @@ export class PrismaOrderReader extends OrderReader {
         readyAt: true,
         readyBy: true,
         companyId: true,
+        placedByUserId: true,
         company: { select: { raisonSociale: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
@@ -232,6 +233,7 @@ export class PrismaOrderReader extends OrderReader {
     return {
       orderId: row.id,
       orderNumber: row.orderNumber,
+      placedByUserId: row.placedByUserId,
       customerLabel: customerLabelOf(row),
       requestedDeliveryDate: row.requestedDeliveryDate,
       status: row.status,
@@ -259,6 +261,7 @@ export class PrismaOrderReader extends OrderReader {
         handedOverBy: true,
         createdAt: true,
         companyId: true,
+        placedByUserId: true,
         company: { select: { raisonSociale: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
@@ -270,6 +273,7 @@ export class PrismaOrderReader extends OrderReader {
     return {
       orderId: row.id,
       orderNumber: row.orderNumber,
+      placedByUserId: row.placedByUserId,
       customerLabel: customerLabelOf(row),
       placedAt: row.createdAt,
       requestedDeliveryDate: row.requestedDeliveryDate,

@@ -375,3 +375,107 @@ describe("les courriels d'une commande", () => {
     expect(ready).toHaveLength(1);
   });
 });
+
+/**
+ * **Le journal d'une commande** — le seul endroit append-only du système.
+ *
+ * L'attestation de colisage et celle de remise vivent sur la ligne de commande,
+ * qui s'`UPDATE` : un avenant, un correctif, un script de rattrapage peuvent les
+ * réécrire sans laisser de trace. Le journal les **double** — il ne les remplace
+ * pas — et c'est lui qui reste quand la ligne a bougé.
+ *
+ * Ce que seul le vrai SQL prouve ici : que les faits atterrissent vraiment, et
+ * qu'un second scan n'en fabrique pas un second.
+ */
+describe("le journal d'une commande", () => {
+  async function placeAndReady(): Promise<string> {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
+    const point = await ctx.prisma.pickupAddress.create({
+      data: { ...SITE, isDefault: true },
+      select: { id: true },
+    });
+    const placed = jsonBody<{ orderNumber: string }>(
+      await ctx
+        .asSub(MEMBER)
+        .post(`/orders`)
+        .send({
+          idempotencyKey: randomUUID(),
+          companyId: null,
+          requestedDeliveryDate: SERVICE_DAY,
+          fulfillmentMethod: "pickup",
+          pickupAddressId: point.id,
+          note: "",
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        })
+        .expect(201),
+    );
+    return placed.orderNumber;
+  }
+
+  /** Les types journalisés, drainés d'abord — les abonnés tournent hors requête. */
+  async function journalTypes(): Promise<readonly string[]> {
+    await ctx.drain();
+    const rows = await ctx.prisma.activityEvent.findMany({ select: { type: true } });
+    return rows.map((row) => row.type).sort();
+  }
+
+  it("garde une trace du COLISAGE, que la ligne de commande peut perdre", async () => {
+    const reference = await placeAndReady();
+    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    expect(await journalTypes()).toContain("order.ready");
+  });
+
+  it("garde une trace de la REMISE — la moitié qui manquait", async () => {
+    // Avant le 2026-09-07 : la naissance d'une commande entrait au journal, sa
+    // délivrance n'y entrait pas. On pouvait dire « ce client a commandé » et
+    // jamais « ce client a reçu ».
+    const reference = await placeAndReady();
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/handover/${order.handoverToken ?? ""}`)
+      .expect(201);
+
+    expect(await journalTypes()).toContain("order.handed_over");
+  });
+
+  it("FIGE qui a remis et quand, plutôt que de les rejoindre plus tard", async () => {
+    // Un journal doit dire ce qui était vrai ce jour-là. Aller les chercher
+    // ensuite donnerait ce qui est vrai aujourd'hui — exactement ce qu'on veut
+    // pouvoir contredire.
+    const reference = await placeAndReady();
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/handover/${order.handoverToken ?? ""}`)
+      .expect(201);
+    await ctx.drain();
+
+    const [fact] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "order.handed_over" },
+      select: { payload: true, subjectType: true },
+    });
+    expect(fact?.subjectType).toBe("user");
+    expect(JSON.stringify(fact?.payload)).toContain("staff-e2e");
+    expect(JSON.stringify(fact?.payload)).toContain(reference);
+  });
+
+  it("n'écrit QU'UN témoin quand deux postes scannent le même colisage", async () => {
+    const reference = await placeAndReady();
+
+    await Promise.all([
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+    ]);
+
+    const ready = (await journalTypes()).filter((type) => type === "order.ready");
+    expect(ready).toHaveLength(1);
+  });
+});

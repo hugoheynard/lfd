@@ -170,6 +170,14 @@ l'historique client affiche indéfiniment « en cours ».
 > le colisage se lit par le NUMÉRO de commande, pas par un jeton, et il n'était
 > donc pas bloqué par l'absence de jeton en livraison.
 >
+> 🟡 **Et depuis le même jour, les deux transitions laissent un TÉMOIN.**
+> `order.ready` et `order.handed_over` entrent au journal append-only. La
+> naissance d'une commande y entrait, sa délivrance non : on pouvait dire « ce
+> client a commandé » et jamais « ce client a reçu ». Les témoins sont
+> **best-effort par décision** — refuser une remise au comptoir parce qu'une
+> table analytique est tombée échangerait un service réel contre un
+> enregistrement.
+>
 > **Ce qui reste du T4 :** `confirmed` et `in_production` ne sont toujours
 > écrits par personne, `draft` n'est produit par aucun chemin, et une commande
 > **en coursier** n'a toujours aucun chemin vers `fulfilled` — c'est le jeton de

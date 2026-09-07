@@ -1,11 +1,13 @@
 import type { OrderHandoverView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   HandoverRefusedError,
   HandoverTokenNotFoundError,
 } from "../../domain/errors/order-errors.js";
+import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.event.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { handoverBlocker } from "../../domain/services/handover.js";
@@ -35,6 +37,7 @@ export class ConfirmHandoverHandler implements ICommandHandler<
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: ConfirmHandoverCommand): Promise<OrderHandoverView> {
@@ -55,6 +58,19 @@ export class ConfirmHandoverHandler implements ICommandHandler<
       // l'autre, seule vraie, plutôt que d'inventer la nôtre.
       throw new HandoverRefusedError("Cette commande vient d'être remise à un autre poste.");
     }
+
+    // Publié APRÈS l'écriture, et seulement par le GAGNANT de la course : le
+    // perdant a levé plus haut. Le journal reçoit donc exactement une trace par
+    // remise, comme la base en porte exactement une.
+    this.events.publish(
+      new OrderHandedOverEvent(
+        order.orderId,
+        order.orderNumber,
+        order.placedByUserId,
+        command.staffSubject,
+        at,
+      ),
+    );
 
     return toHandoverView({
       ...order,

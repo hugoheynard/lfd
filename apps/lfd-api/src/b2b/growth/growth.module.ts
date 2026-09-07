@@ -18,7 +18,9 @@ import { RemoveMarketNafHandler } from "./application/commands/remove-market-naf
 import { RemoveMarketZoneHandler } from "./application/commands/remove-market-zone.handler.js";
 import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
 import { OnCompanyStepReached } from "./application/handlers/on-company-step-reached.handler.js";
+import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
+import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
@@ -183,6 +185,8 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     ListProspectsHandler,
     ListActivationsHandler,
     OnOrderPlaced,
+    OnOrderReady,
+    OnOrderHandedOver,
     OnCompanyDeclared,
     OnCompanyStepReached,
     OnSubscriptionCreated,

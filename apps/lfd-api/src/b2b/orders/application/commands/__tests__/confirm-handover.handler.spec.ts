@@ -1,3 +1,4 @@
+import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   HandoverRefusedError,
@@ -13,6 +14,7 @@ const NOW = new Date("2026-08-12T09:14:00.000Z");
 function handoverOrder(overrides: Partial<HandoverOrder> = {}): HandoverOrder {
   return {
     orderId: "ord_1",
+    placedByUserId: "user_7",
     orderNumber: "ORD-XYZ-4242",
     customerLabel: "Boulangerie Martin",
     placedAt: new Date("2026-08-11T16:02:00.000Z"),
@@ -59,6 +61,25 @@ function sink(): { calls: [string, Date, string][] } {
   return { calls: [] };
 }
 
+/**
+ * Le publieur, réduit à ce que le handler en appelle.
+ *
+ * Il ÉTEND le port — c'est la raison d'être de `DomainEventPublisher`, qui le
+ * dit lui-même : « ça garde les tests sans cast ». Le jour où `publish` change
+ * de forme, ce doublé cesse de compiler au lieu d'avaler la différence.
+ */
+class RecordingPublisher extends DomainEventPublisher {
+  readonly published: object[] = [];
+
+  override publish(event: object): void {
+    this.published.push(event);
+  }
+
+  override publishTraced(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 describe("ConfirmHandoverHandler", () => {
   it("grave la remise et rend l'attestation obtenue", async () => {
     const writes = sink();
@@ -66,6 +87,7 @@ describe("ConfirmHandoverHandler", () => {
       readerOf(handoverOrder()),
       repoOf(true, writes),
       new FixedClock(NOW),
+      new RecordingPublisher(),
     );
 
     const view = await handler.execute(new ConfirmHandoverCommand("TOK1", "auth0|karim"));
@@ -87,6 +109,7 @@ describe("ConfirmHandoverHandler", () => {
       readerOf(null),
       repoOf(true, writes),
       new FixedClock(NOW),
+      new RecordingPublisher(),
     );
 
     await expect(
@@ -104,6 +127,7 @@ describe("ConfirmHandoverHandler", () => {
       readerOf(handoverOrder({ status: "cancelled" })),
       repoOf(true, writes),
       new FixedClock(NOW),
+      new RecordingPublisher(),
     );
 
     await expect(
@@ -118,6 +142,7 @@ describe("ConfirmHandoverHandler", () => {
       readerOf(handoverOrder({ fulfillmentMethod: "delivery" })),
       repoOf(true, writes),
       new FixedClock(NOW),
+      new RecordingPublisher(),
     );
 
     await expect(
@@ -135,6 +160,7 @@ describe("ConfirmHandoverHandler", () => {
       readerOf(handoverOrder()),
       repoOf(false, writes),
       new FixedClock(NOW),
+      new RecordingPublisher(),
     );
 
     await expect(handler.execute(new ConfirmHandoverCommand("TOK1", "auth0|lea"))).rejects.toThrow(

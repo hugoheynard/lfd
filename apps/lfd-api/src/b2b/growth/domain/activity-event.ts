@@ -47,6 +47,26 @@ export const ACTIVITY_TYPES = {
   userRegistered: "user.registered",
   orderPlaced: "order.placed",
   /**
+   * La commande est **prête** — l'atelier a scanné le QR de colisage.
+   *
+   * Ce n'est pas un signal de croissance, et c'est assumé : ce journal est le
+   * seul endroit **append-only** du système, et une attestation qui ne vit que
+   * sur une ligne qu'on peut `UPDATE` n'atteste pas grand-chose. Le précédent
+   * existe déjà — `appointment.honored` et `appointment.no_show` sont des faits
+   * de cycle de vie, pas des signaux.
+   */
+  orderReady: "order.ready",
+  /**
+   * La commande a **changé de mains**. Le fait le plus important du lot : c'est
+   * lui qu'on cherchera le jour où un client dit n'avoir rien reçu.
+   *
+   * Jusqu'au 2026-09-07, la naissance d'une commande entrait au journal et sa
+   * délivrance n'y entrait pas : on pouvait dire « ce client a commandé » et
+   * jamais « ce client a reçu » — exactement la moitié qu'on voudrait produire
+   * en cas de litige.
+   */
+  orderHandedOver: "order.handed_over",
+  /**
    * Les faits des **comptes clients** sont repris de chez leur émetteur
    * (`ACCOUNT_FACTS`), ils ne sont plus redéclarés ici. Ils y étaient nés du
    * temps où `growth` était le seul à les écrire ; depuis que les handlers des

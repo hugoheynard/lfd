@@ -1,6 +1,7 @@
 import type { OrderPackingView } from "@lfd/contracts";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   OrderReferenceNotFoundError,
@@ -35,7 +36,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly clock: Clock,
-    private readonly events: EventBus,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -61,7 +62,15 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     // Publié APRÈS l'écriture, et seulement par le GAGNANT de la course : le
     // perdant a levé plus haut. Un second poste qui scanne la même feuille ne
     // fait donc pas partir un second courriel au client.
-    this.events.publish(new OrderReadyEvent(order.orderId, order.orderNumber));
+    this.events.publish(
+      new OrderReadyEvent(
+        order.orderId,
+        order.orderNumber,
+        order.placedByUserId,
+        command.staffSubject,
+        at,
+      ),
+    );
 
     return toPackingView({ ...order, status: "ready", readyAt: at, readyBy: command.staffSubject });
   }

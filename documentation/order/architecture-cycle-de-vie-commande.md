@@ -92,11 +92,10 @@ flowchart LR
   C -.-> Cf["🖨️ Fiche d'atelier A4<br/>QR de colisage, aucun montant"]
 
   R -.-> Rm["📧 « votre commande est prête »<br/>+ QR reporté"]
+  R -.-> Rj["📓 order.ready<br/>témoin append-only"]
 
   F -.-> Fa["🖊️ Attestation de remise<br/>qui, quand — sur la ligne"]
-  F -.-> Fj["📓 order.handed_over<br/>⛔ n'existe pas"]
-
-  style Fj stroke-dasharray: 4 4
+  F -.-> Fj["📓 order.handed_over<br/>témoin append-only"]
 ```
 
 ### Le même, en tableau — avec ce qui existe et ce qui n'existe pas
@@ -135,10 +134,20 @@ qu'un bon de livraison voyage dans le carton — un coursier scannerait son prop
 colis. Celui de **colisage** n'encode que le numéro de commande, déjà imprimé en
 clair sur la même feuille : il s'imprime sans risque.
 
-**Deux attestations sur trois ne laissent pas de témoin.** Le colisage et la
-remise s'écrivent sur la **ligne de commande**, qui s'`UPDATE`. Le journal, lui,
-est append-only — et il ne reçoit que la naissance de la commande. Il peut donc
-dire « ce client a commandé » et jamais « ce client a reçu ».
+**Les attestations sont désormais doublées d'un témoin.** Le colisage et la
+remise s'écrivent sur la **ligne de commande**, qui s'`UPDATE` — un avenant, un
+correctif, un script de rattrapage peuvent les réécrire sans laisser de trace.
+Le journal, lui, est **append-only** : c'est son seul invariant, et c'est
+précisément celui qui manquait. Il ne recevait que la naissance d'une commande ;
+il reçoit maintenant sa mise à disposition et sa remise.
+
+⚠️ **Ces témoins sont best-effort, et c'est une décision.** Le port du journal
+offre aussi une écriture bloquante, qui annulerait la transaction en cas de
+panne. Ce n'est pas ce qu'il faut au comptoir : refuser une remise parce qu'une
+table analytique est indisponible échangerait un service réel contre un
+enregistrement. Une boulangerie ne cesse pas de servir parce qu'un journal est
+tombé. L'attestation transactionnelle reste donc sur la commande — le journal la
+**double**, il ne la remplace pas.
 
 ---
 
