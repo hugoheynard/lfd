@@ -211,6 +211,16 @@ commande passée entre en fabrication. »
 L'encart annonce ce qui est vrai — `keptTitle` « Gardée dans votre espace » /
 `keptLine` « Retrouvez-la, avec son QR de retrait, dans « Mes commandes ». »
 
+🔴 **Le courriel ne reprendra pas ce bouton, il portera le QR lui-même.** Un
+bouton demande d'ouvrir l'app, d'être encore connecté et de retrouver la
+commande — exactement ce qu'on n'a pas le temps de faire debout devant un
+comptoir. Le courriel est déjà ouvert. Et il vaut pour les **deux**
+acheminements : en livraison, le destinataire montre le même code et c'est le
+coursier qui scanne. Le mécanisme, ce qu'il atteste et ce qui le rend
+infalsifiable sont au §3 de
+[`architecture-bon-de-commande.md`](architecture-bon-de-commande.md) — avec
+l'avertissement que le jeton de livraison **n'existe pas encore**.
+
 ### `/mes-commandes/retrait/:id` — le code
 
 `client/mes-commandes/retrait-page/` · chrome `kickerQr` « Retrait »
@@ -250,12 +260,13 @@ parcours.
 
 ## 4. Ce que ce parcours dit encore de travers
 
-| #   | Où                                        | Le problème                                                                                                                                    |
-| --- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `cart.payHint`                            | « Paiement en ligne… rien à régler sur place » s'affiche **aussi** sur un compte à terme, où rien n'est payé en ligne. Il faut la variante.    |
-| 2   | Aucun courriel                            | `done.keptLine` ne promet plus de reçu — c'est honnête, mais **rien ne part**. Aucun gabarit `customer.order-placed` n'existe (T3 de l'audit). |
-| 3   | `done.title` « On s'y met à 4 h 15 »      | Une heure **en dur** dans le dictionnaire, quel que soit le créneau choisi.                                                                    |
-| 4   | `espace.invoiceTitle` « Facture de mars » | Une donnée de maquette dans le dictionnaire de production. Même famille que 3.                                                                 |
+| #   | Où                                        | Le problème                                                                                                                                                                                                       |
+| --- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `cart.payHint`                            | « Paiement en ligne… rien à régler sur place » s'affiche **aussi** sur un compte à terme, où rien n'est payé en ligne. Il faut la variante.                                                                       |
+| 2   | Aucun courriel                            | `done.keptLine` ne promet plus de reçu — c'est honnête, mais **rien ne part**. Aucun gabarit `customer.order-placed` n'existe (T3 de l'audit). Quand il partira, il portera le QR **dans le corps**, pas un lien. |
+| 2b  | Livraison, aucun code                     | `qr.delivery` dit « il n'y a pas de code à présenter » — vrai aujourd'hui, et c'est le défaut : rien n'atteste qu'une livraison a changé de mains. `issuesHandoverToken()` n'émet que pour le retrait.            |
+| 3   | `done.title` « On s'y met à 4 h 15 »      | Une heure **en dur** dans le dictionnaire, quel que soit le créneau choisi.                                                                                                                                       |
+| 4   | `espace.invoiceTitle` « Facture de mars » | Une donnée de maquette dans le dictionnaire de production. Même famille que 3.                                                                                                                                    |
 
 Le 1 et le 2 se corrigent dans le même geste que le bon de commande : le premier
 est une variante de texte, le second consomme le rendu `mail-html`.

@@ -129,6 +129,8 @@ export interface OrderSheet {
   readonly note: string;
   /** ABSENT sur l'audience atelier — pas `null`, pas à zéro : absent. */
   readonly money?: SheetMoney;
+  /** Le jeton que le comptoir ou le coursier scanne. `null` : rien à présenter. */
+  readonly handoverToken: string | null;
   readonly issuedAt: string; // §5
   readonly revision: number; // §5
 }
@@ -169,6 +171,99 @@ export type SheetRenderers = {
 Un format déclaré sans rendu **ne compile pas**. C'est ce qui remplace le `switch`
 exhaustif qu'on oublie d'étendre — même raison qu'écrite dans
 `packages/mailer/src/types.ts` pour `TemplateRegistry`.
+
+### Le QR est un champ du modèle, pas une décoration du courriel
+
+Le courriel de confirmation **affiche le QR dans son corps**, à la place du
+bouton « Voir mon QR de retrait » que porte l'écran. Ce n'est pas un choix de
+mise en page : c'est retirer un aller-retour authentifié **au pire moment**.
+
+Le bouton demande d'ouvrir l'app, d'être encore connecté, et de retrouver la
+commande — debout devant un comptoir, le téléphone déjà à la main, la file
+derrière. Le courriel, lui, est déjà ouvert : c'est ce qu'on a sous les yeux
+quand on cherche son code. Le dossier de reprise le dit pour la pièce jointe
+(« un PDF à ouvrir sur un téléphone, la main sur la porte, ne se scanne pas ») ;
+l'argument vaut mot pour mot pour un bouton.
+
+Le jeton est donc un **champ de l'`OrderSheet`**, pas une donnée que le gabarit
+irait chercher. Le rendu `mail-html` le dessine en image ; les rendus `text` et
+`paper-a4` ne le portent pas — un QR ne survit pas au texte brut, et le papier de
+l'atelier n'a personne à qui le présenter.
+
+🔴 **Faire voyager le jeton par courriel n'ouvre rien**, et la raison est déjà
+écrite sur le champ dans `contracts` : « le jeton n'ouvre qu'une porte **staff**,
+qui exige une session admin. Le connaître ne permet pas d'attester sa propre
+remise. » Un courriel transféré, une boîte partagée, une capture d'écran : le
+porteur du code ne peut toujours rien en faire seul. C'est la première question
+qu'on posera à ce paragraphe — elle a sa réponse, et elle est antérieure.
+
+### La livraison a besoin du même jeton, et ne l'a pas
+
+En retrait, le client montre son code et **l'équipe scanne**. En livraison, la
+symétrie est exacte : le destinataire montre le code de son courriel, et **le
+coursier scanne** avec sa session staff. Même jeton, même porte, même geste.
+
+Rien de tout ça n'existe. `handover.ts` en émet **pour le retrait seul** —
+`issuesHandoverToken()` rend `method === "pickup"` — et `handoverBlocker()`
+refuse d'emblée toute commande en coursier (« elle ne se remet pas au
+comptoir »).
+
+⚠️ **La raison écrite au-dessus de cette fonction va devenir fausse**, et il faut
+le dire plutôt que la contredire en silence :
+
+> « En émettre un pour une livraison créerait une porte inutilisable dont
+> personne ne saurait, au moment de l'auditer, si elle est morte ou oubliée. »
+
+Elle était vraie quand elle a été écrite : aucune remise en livraison n'existait,
+donc le jeton n'aurait ouvert sur rien. Le jour où le coursier scanne, la porte
+est utilisée — la raison tombe **avec son motif**, et c'est la façon propre de la
+retirer. La réécrire sans le dire laisserait croire qu'elle n'a jamais été vraie.
+
+**Scanner n'est pas signer.** Le scan atteste une remise ;
+`fulfillment.signatureRequired` dit si une signature est **en plus** exigée.
+Recueillir une signature manuscrite ou électronique est un autre chantier, et il
+ne se cache pas derrière un QR.
+
+### Ce qui rend l'attestation infalsifiable
+
+Le scan ne doit pas poser un drapeau : il doit produire une **attestation** — qui
+a remis, à quel instant, sur quelle commande — et une seule fois. Le mot est déjà
+celui du code (`confirm-handover.handler.ts` : « lire, juger, graver — et rendre
+l'attestation obtenue »), et le mécanisme y est presque en entier. Ce qui le rend
+infalsifiable tient en quatre traits, dont **aucun n'est cryptographique** :
+
+1. **L'auteur n'est jamais dans la charge utile.** `handedOverBy` vient du
+   `Principal` de la session staff, résolu **en base** à chaque requête. Le
+   porteur du QR ne peut pas se désigner lui-même : il ne fournit qu'un jeton.
+2. **L'instant vient du `Clock` du serveur**, pas de l'appareil qui scanne. Une
+   tablette à l'heure fausse ne datera pas une remise à hier.
+3. **Usage unique, refusé EN BASE.** L'écriture est conditionnée
+   (`where: { handoverToken, handedOverAt: null }`), et le handler dit déjà quoi
+   faire du perdant : « on ne réécrit rien — on renvoie l'attestation de l'autre,
+   seule vraie, plutôt que d'inventer la nôtre ». Deux comptoirs qui scannent le
+   même code ne produisent pas deux remises.
+4. **Le jeton est un secret aléatoire**, pas le numéro de commande : on ne
+   fabrique pas le code d'une commande voisine en incrémentant.
+
+**Ce que ça couvre, et ce que ça ne couvre pas.** Ces quatre traits rendent
+l'attestation infalsifiable **par un tiers** — client, porteur du courriel,
+appareil de scan. Ils ne la rendent pas opposable **contre nous** : c'est notre
+serveur qui l'écrit, et rien ne permet à un client de vérifier qu'elle n'a pas été
+retouchée après coup.
+
+Si c'est ce niveau qu'on veut — « signé par », au sens où le client peut vérifier
+la signature sans nous croire — il faut autre chose : un condensé de
+l'attestation signé par une clé du serveur, remis au client avec elle, et une
+clé publique qu'il puisse consulter. **C'est un chantier à part**, et il ne se
+justifie que si le litige attendu est _nous contre le client_, pas _le client
+contre un tiers_. Pour ce dernier, l'autorité de la base suffit et c'est ce que
+le code fait déjà.
+
+⚠️ **À vérifier avant de s'appuyer dessus** : l'attestation vit aujourd'hui sur
+la ligne de commande (`handedOverAt`, `handedOverBy`). Si elle n'est pas **aussi**
+écrite au journal d'événements, une correction ultérieure de la ligne ne laisse
+aucune trace — et une attestation qu'on peut réécrire sans témoin n'atteste plus
+grand-chose.
 
 ---
 
@@ -332,15 +427,16 @@ C'est le chantier comptable, il est ailleurs :
 
 ## 7. Le découpage
 
-| Lot   | Ce qu'il fait                                                                                                 | Ce qui devient impossible ensuite                        |
-| ----- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **1** | `OrderSheet` + schéma dans `contracts`, avec `money` optionnel et `SheetLine` par audience                    | écrire un montant dans une projection atelier            |
-| **2** | La projection serveur, ses tests aux trois audiences, la route qui la sert                                    | qu'un nom d'étage descende chez le client                |
-| **3** | Rendu `text` — remplace `renderDeliveryNote`, en-tête « BON DE COMMANDE », `issuedAt` au pied                 | qu'un bon de retrait s'annonce « de livraison »          |
-| **4** | Rendu `paper-a4` atelier — la fiche existante rebranchée sur la projection                                    | qu'une fiche d'atelier soit tirée sans heure ni révision |
-| **5** | Rendu `mail-html` + gabarit `customer.order-placed`                                                           | (rien — c'est un ajout ; voir T3 de l'audit)             |
-| **6** | Décommissionner `legacy/commandes/download-bon.ts`                                                            | qu'il existe deux « bons » avec deux totaux différents   |
-| **7** | Rendu `pdf` **déterministe**, écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision | qu'un avenant écrase le papier que le client a en main   |
+| Lot   | Ce qu'il fait                                                                                                 | Ce qui devient impossible ensuite                           |
+| ----- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **1** | `OrderSheet` + schéma dans `contracts`, avec `money` optionnel et `SheetLine` par audience                    | écrire un montant dans une projection atelier               |
+| **2** | La projection serveur, ses tests aux trois audiences, la route qui la sert                                    | qu'un nom d'étage descende chez le client                   |
+| **3** | Rendu `text` — remplace `renderDeliveryNote`, en-tête « BON DE COMMANDE », `issuedAt` au pied                 | qu'un bon de retrait s'annonce « de livraison »             |
+| **4** | Rendu `paper-a4` atelier — la fiche existante rebranchée sur la projection                                    | qu'une fiche d'atelier soit tirée sans heure ni révision    |
+| **5** | Rendu `mail-html` + gabarit `customer.order-placed`, **QR dans le corps** — pas un bouton                     | qu'on demande une session à qui est déjà devant le comptoir |
+| **6** | Jeton de remise émis **aussi en livraison**, `handoverBlocker` ouvert au coursier, journal d'événements       | qu'une livraison remise ne laisse aucune trace              |
+| **7** | Décommissionner `legacy/commandes/download-bon.ts`                                                            | qu'il existe deux « bons » avec deux totaux différents      |
+| **8** | Rendu `pdf` **déterministe**, écrit au premier téléchargement, rangé en R2 sous une clé qui porte la révision | qu'un avenant écrase le papier que le client a en main      |
 
 **L'ordre n'est pas négociable.** Les lots 3 à 5 sont des rendus : ils n'ont rien
 à consommer tant que 1 et 2 n'existent pas, et les écrire d'abord recrée
@@ -361,7 +457,7 @@ exactement les six documents séparés que ce dossier vient défaire.
   dépendance : les quatre autres rendent une chaîne, celui-là veut un moteur —
   navigateur sans tête, bibliothèque de composition, ou service tiers. Le
   choix n'est pas neutre pour un container Cloudflare, et il conditionne le
-  lot 7. Le rendu `paper-a4` (HTML d'impression, lot 4) est **le même
+  lot 8. Le rendu `paper-a4` (HTML d'impression, lot 4) est **le même
   document** : si le moteur retenu part d'un HTML, le PDF est un
   post-traitement et non un cinquième gabarit à tenir à jour.
   🔴 **Critère éliminatoire** : le moteur doit rendre les **mêmes octets** pour

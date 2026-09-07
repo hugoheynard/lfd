@@ -62,15 +62,15 @@ flowchart TD
 
 ## 2. Le vocabulaire, en sept lignes
 
-| Mot                 | Ce qu'il désigne ici                                                                                                  |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Zéro friction**   | commander sans société. `companyId = null` : le mur est l'auteur, le règlement est la carte.                          |
-| **Provenance**      | `placedByStaffId` + `fromSubscriptionId`. Un **attribut**, jamais un `kind` : self-service, back-office ou récurrent. |
-| **Acheminement**    | coursier (zone + adresse figée) **ou** retrait (point figé). Jamais les deux, jamais ni l'un ni l'autre.              |
-| **Convenu**         | la tranche, le contact, la signature — figés **avec leur provenance** (défaut du réglage, ou choix).                  |
-| **Dérogation**      | l'autorisation, à usage unique, de passer après l'heure limite. Se **consomme** après persistance.                    |
-| **Surtaxe**         | ce que le retard coûte. Terme de panier, jamais un prix d'article. Ne s'applique qu'avec une dérogation.              |
-| **Jeton de remise** | un secret aléatoire, pas le numéro de commande. Émis pour le **retrait seul**, c'est la clé du scan.                  |
+| Mot                 | Ce qu'il désigne ici                                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zéro friction**   | commander sans société. `companyId = null` : le mur est l'auteur, le règlement est la carte.                                              |
+| **Provenance**      | `placedByStaffId` + `fromSubscriptionId`. Un **attribut**, jamais un `kind` : self-service, back-office ou récurrent.                     |
+| **Acheminement**    | coursier (zone + adresse figée) **ou** retrait (point figé). Jamais les deux, jamais ni l'un ni l'autre.                                  |
+| **Convenu**         | la tranche, le contact, la signature — figés **avec leur provenance** (défaut du réglage, ou choix).                                      |
+| **Dérogation**      | l'autorisation, à usage unique, de passer après l'heure limite. Se **consomme** après persistance.                                        |
+| **Surtaxe**         | ce que le retard coûte. Terme de panier, jamais un prix d'article. Ne s'applique qu'avec une dérogation.                                  |
+| **Jeton de remise** | un secret aléatoire, pas le numéro de commande. Émis pour le **retrait seul** — la livraison devrait en avoir un, cf. le bon de commande. |
 
 ---
 
