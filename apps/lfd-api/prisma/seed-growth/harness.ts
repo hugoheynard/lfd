@@ -2,6 +2,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 
 import { AppModule } from "../../src/appBootstrap/app.module.js";
+import { BackgroundWork } from "../../src/platform/events/background-work.js";
 import { EstablishmentDirectory } from "../../src/b2b/account/domain/ports/establishment-directory.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
 import { PrincipalResolver } from "../../src/platform/auth/principal.resolver.js";
@@ -35,6 +36,17 @@ export interface SeedHarness {
   readonly resolver: PrincipalResolver;
   readonly prisma: PrismaService;
   runAt<T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T>;
+  /**
+   * Draine le travail de fond, **puis** ferme le module.
+   *
+   * 🔴 Il ne drainait pas jusqu'au 2026-09-07, et ça se voyait : un semis sur
+   * deux finissait par `Cannot use a pool after calling end on the pool`. Une
+   * commande passée par le bus publie des faits dont les abonnés écrivent en
+   * arrière-plan ; fermer le module leur retirait la base sous les pieds.
+   *
+   * Le semis avait donc l'air d'échouer alors qu'il avait tout posé — le pire
+   * des deux mondes, parce qu'on cherche l'erreur dans ce qu'on vient d'écrire.
+   */
   close(): Promise<void>;
 }
 
@@ -57,7 +69,10 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     prisma: module.get(PrismaService, { strict: false }),
     runAt: <T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T> =>
       runWithRequestContext({ now, traceId: newTraceId(), actor }, fn),
-    close: () => module.close(),
+    close: async () => {
+      await module.get(BackgroundWork, { strict: false }).whenIdle();
+      await module.close();
+    },
   };
 }
 

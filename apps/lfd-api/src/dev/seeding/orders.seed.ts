@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
+import { resetProduction, type ProductionResetReport } from "./production.seed.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
 
 /**
@@ -109,6 +110,8 @@ interface Target {
 /** Ce que le semis a posé — de quoi le raconter à qui l'a demandé. */
 export interface OrdersReport {
   readonly removed: number;
+  /** Ce que la coupe a emporté chez le fournil — plans et attestations. */
+  readonly production: ProductionResetReport;
   readonly placed: number;
   readonly yesterday: string;
   readonly tomorrow: string;
@@ -134,6 +137,11 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   const removed = await context.prisma.order.deleteMany({
     where: { companyId: target.companyId },
   });
+  // 🔴 Le fournil AUSSI, et dans le même geste. Ses tables portent des copies de
+  // ces commandes — un plan du soir, ses fiches, son compte à produire — que
+  // rien ne rattache par clé étrangère : la coupe ci-dessus les laisserait
+  // derrière, à parler de commandes qui n'existent plus. Cf. `production.seed`.
+  const production = await resetProduction(context.prisma);
 
   const today = atHour(context.now, ORDER_HOUR);
   let placed = 0;
@@ -179,6 +187,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
 
   return {
     removed: removed.count,
+    production,
     placed: placed + 3,
     yesterday: isoDay(shiftDays(today, -1)),
     tomorrow: isoDay(shiftDays(today, 1)),
