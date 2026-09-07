@@ -43,8 +43,14 @@ export const LIVE_PICKUP: OrderView = {
   lateFeeCents: 0,
   lateFeeAdjustment: null,
   vatCents: 63,
+  // La ventilation figée par la commande. Écrite ici plutôt que `null` pour
+  // que les écrans soient éprouvés sur le cas COURANT — une commande d'après
+  // le 2026-09-07 la porte ; `null` est le cas des anciennes.
+  vatShares: [{ rate: 5.5, amountCents: 63 }],
   totalCents: 1_200,
   currency: 'EUR',
+  customerLabel: 'Hôtel des Trois Ponts',
+  companyId: 'cmp_1',
   fromSubscriptionId: null,
   origin: 'self_service',
   placedByStaffId: null,

@@ -10,10 +10,16 @@ import {
  * le fait — mais **ce que la feuille refuse de laisser passer**.
  *
  * Le bon de commande porte une règle de sécurité : l'atelier ne voit aucun
- * montant, et le client ne voit ni SKU ni nom d'étage tarifaire. Tant que cette
- * règle vit dans un rendu, elle s'applique à la main autant de fois qu'il y a de
- * formats. Ici elle est dans la **forme**, et c'est le schéma qui la tient — y
- * compris contre une projection qui se tromperait d'audience.
+ * montant, et le client ne voit ni nom d'étage tarifaire, ni prix d'entrée, ni
+ * plancher. Tant qu'elle vit dans un rendu, elle s'applique à la main autant de
+ * fois qu'il y a de formats. Ici elle est dans la **forme**, et c'est le schéma
+ * qui la tient — y compris contre une projection qui se tromperait d'audience.
+ *
+ * ⚠️ **Le SKU a changé de camp le 2026-09-07.** Ce fichier affirmait que le
+ * client ne le voit pas ; le bon de commande dessiné lui donne une colonne, et
+ * c'est le dessin qui fait foi. Ce qui reste protégé — et c'est ce que la règle
+ * visait vraiment — est la **grille tarifaire** : l'étage, le prix d'entrée et
+ * le plancher, qui trois commandes empilées suffiraient à reconstituer.
  */
 
 const FULFILLMENT = {
@@ -46,6 +52,7 @@ const MONEY = {
   deliveryFeeCents: 0,
   lateFeeCents: 0,
   vatCents: 6_360,
+  vatShares: [{ rate: 5.5, amountCents: 6_360 }],
   totalCents: 121_974,
   currency: "EUR",
 };
@@ -79,6 +86,7 @@ describe("la feuille d'atelier", () => {
 
 describe("la feuille du client", () => {
   const line = {
+    sku: "PAT-ECLAIR",
     productName: "Éclair",
     quantity: 4,
     unitPriceMillicents: 210_000,
@@ -91,6 +99,7 @@ describe("la feuille du client", () => {
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
+      customer: CUSTOMER,
       lines: [line],
       money: MONEY,
     });
@@ -98,15 +107,21 @@ describe("la feuille du client", () => {
     expect(parsed.money.totalCents).toBe(121_974);
   });
 
-  it("laisse le SKU et la trace du prix à la porte", () => {
+  it("porte le SKU, et laisse la GRILLE à la porte", () => {
+    // 🔴 Ce cas exigeait l'absence du SKU jusqu'au 2026-09-07. Le bon dessiné
+    // lui donne une colonne, et l'exigence a suivi. Ce qui n'a PAS bougé est ce
+    // que la règle protégeait vraiment : `entryPriceMillicents` et `floored`
+    // disent comment un prix a été fabriqué, et trois commandes empilées
+    // reconstitueraient la grille.
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
-      lines: [{ ...line, sku: "PAT-ECLAIR", entryPriceMillicents: 250_000, floored: true }],
+      customer: CUSTOMER,
+      lines: [{ ...line, entryPriceMillicents: 250_000, floored: true }],
       money: MONEY,
     });
 
-    expect(parsed.lines[0]).not.toHaveProperty("sku");
+    expect(parsed.lines[0]?.sku).toBe("PAT-ECLAIR");
     expect(parsed.lines[0]).not.toHaveProperty("entryPriceMillicents");
     expect(parsed.lines[0]).not.toHaveProperty("floored");
   });
@@ -115,6 +130,7 @@ describe("la feuille du client", () => {
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
+      customer: CUSTOMER,
       lines: [line],
       money: MONEY,
     });

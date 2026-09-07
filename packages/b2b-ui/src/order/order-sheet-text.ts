@@ -93,7 +93,12 @@ function skuLine(line: AtelierSheetLine | StaffSheetLine): string {
  * chaque prix rond pour un prix calculé.
  */
 function pricedLine(line: ClientSheetLine | StaffSheetLine): string {
-  const label = 'sku' in line ? `${line.productName} (${line.sku})` : line.productName;
+  // 🔴 Le SKU s'affichait ici sous condition — `'sku' in line` distinguait la
+  // ligne staff de la ligne client, qui n'en portait pas. Il est passé côté
+  // client le 2026-09-07 (le bon dessiné lui donne une colonne), donc le test
+  // n'a plus de branche fausse : le compilateur l'a dit en rendant l'autre
+  // chemin `never`. Une condition qui ne peut plus être fausse se supprime.
+  const label = `${line.productName} (${line.sku})`;
   return `  ${pad(line.quantity)} × ${label.padEnd(34, ' ')}${amount(
     formatMillicents(line.unitPriceMillicents),
   )}${amount(formatCents(line.lineTotalCents))}`;

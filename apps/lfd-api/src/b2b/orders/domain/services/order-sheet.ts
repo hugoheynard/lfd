@@ -97,6 +97,7 @@ function moneyOf(order: OrderView): SheetMoney {
     deliveryFeeCents: order.deliveryFeeCents,
     lateFeeCents: order.lateFeeCents,
     vatCents: order.vatCents,
+    vatShares: order.vatShares,
     totalCents: order.totalCents,
     currency: order.currency,
   };
@@ -138,6 +139,7 @@ function atelierLineOf(line: OrderLineView): AtelierSheetLine {
 
 function clientLineOf(line: OrderLineView): ClientSheetLine {
   return {
+    sku: line.sku,
     productName: line.productName,
     quantity: line.quantity,
     unitPriceMillicents: line.unitPriceMillicents,
@@ -187,11 +189,25 @@ export function atelierSheetOf(order: OrderView, customer: SheetCustomer): Ateli
   };
 }
 
+/**
+ * Le client, tel que la commande le connaît.
+ *
+ * ⚠️ `customerLabel` est la **raison sociale** (ou la personne, sur une commande
+ * zéro friction). L'ENSEIGNE — « Hôtel des Trois Ponts » — vit sur la société et
+ * demande une jointure que `OrderView` ne fait pas ; le dessin de référence la
+ * met en tête, on n'a que l'autre. Les deux champs portent donc la même valeur
+ * plutôt qu'un nom commercial inventé, et le document n'affiche qu'une ligne.
+ */
+function clientCustomerOf(order: OrderView): SheetCustomer {
+  return { tradeName: order.customerLabel, legalName: order.customerLabel };
+}
+
 /** La feuille du client : son engagement, dans ses mots. */
 export function clientSheetOf(order: OrderView): ClientSheet {
   return {
     ...commonOf(order),
     audience: "client",
+    customer: clientCustomerOf(order),
     lines: order.lines.map(clientLineOf),
     money: moneyOf(order),
   };

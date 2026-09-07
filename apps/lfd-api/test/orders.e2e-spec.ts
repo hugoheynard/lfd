@@ -683,7 +683,7 @@ describe("le bon de commande", () => {
     return placed.id;
   }
 
-  it("sert la feuille CLIENT — montants oui, SKU et trace du prix non", async () => {
+  it("sert la feuille CLIENT — montants et SKU oui, trace du prix non", async () => {
     const companyId = await seedCompany("active");
     await seedPickup();
     const orderId = await place(companyId, MEMBER);
@@ -693,9 +693,16 @@ describe("le bon de commande", () => {
 
     expect(sheet.audience).toBe("client");
     expect(sheet.money.totalCents).toBe(633);
-    // 🔴 L'assertion qui compte : le SKU du catalogue n'est nulle part dans ce
-    // que le réseau transporte. Le masquer au rendu l'y aurait laissé.
-    expect(JSON.stringify(sheet)).not.toContain("VIE-001");
+    // 🔴 Ce cas exigeait l'ABSENCE du SKU jusqu'au 2026-09-07 : le bon de
+    // commande dessiné lui donne une colonne, et c'est le dessin qui fait foi.
+    //
+    // L'assertion qui compte n'a pas bougé de nature, seulement de cible : ce
+    // que le réseau ne doit pas transporter est la **grille**. Un prix d'entrée
+    // et un plancher disent comment un prix a été fabriqué ; les masquer au
+    // rendu les y aurait laissés, et trois commandes empilées la reconstituent.
+    expect(JSON.stringify(sheet)).toContain("VIE-001");
+    expect(JSON.stringify(sheet)).not.toContain("entryPriceMillicents");
+    expect(JSON.stringify(sheet)).not.toContain("floored");
   });
 
   it("ne porte pas le jeton de remise, que la commande possède pourtant", async () => {

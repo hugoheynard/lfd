@@ -229,13 +229,23 @@ describe("le courriel « votre commande est prête »", () => {
     expect(subject.mailer.sent?.template).toBe("customer.order-ready");
   });
 
-  it("emporte la feuille PROJETÉE, sans SKU", async () => {
+  it("emporte la feuille PROJETÉE, et le SKU y est désormais", async () => {
+    // 🔴 Ce cas exigeait l'INVERSE — « sans SKU » — jusqu'au 2026-09-07. Le bon
+    // de commande dessiné donne au SKU une colonne à lui, et le courriel emporte
+    // la même feuille que le PDF : les deux disent forcément la même chose.
+    //
+    // Ce que le cas tient vraiment, et qui n'a pas bougé : la feuille est celle
+    // du CLIENT, donc elle ne porte ni prix d'entrée, ni plancher, ni nom
+    // d'étage — la grille tarifaire, que trois commandes empilées suffiraient à
+    // reconstituer.
     const subject = handler({});
     await fire(subject);
 
     const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
     expect(data.sheet.audience).toBe("client");
-    expect(JSON.stringify(data.sheet)).not.toContain("PAIN-TRAD");
+    expect(JSON.stringify(data.sheet)).toContain("PAIN-TRAD");
+    expect(JSON.stringify(data.sheet)).not.toContain("entryPriceMillicents");
+    expect(JSON.stringify(data.sheet)).not.toContain("floored");
   });
 
   it("reporte le QR de retrait, sur l'origine du BACK-OFFICE", async () => {

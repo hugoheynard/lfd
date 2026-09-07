@@ -223,14 +223,21 @@ describe("l'accusé de réception d'une commande", () => {
     expect(data.handoverToken).toBe("tok_secret_42");
   });
 
-  it("ne fait PAS descendre le SKU dans le courriel", async () => {
-    // La vue en porte un ; la feuille du client, non. Passer l'une pour l'autre
-    // ferait fuiter la grille dans le canal qu'on relit le moins.
+  it("ne fait pas descendre la GRILLE dans le courriel", async () => {
+    // 🔴 Ce cas portait sur le SKU — « la vue en porte un ; la feuille du
+    // client, non ». Il est passé côté client le 2026-09-07, parce que le bon de
+    // commande dessiné lui donne une colonne.
+    //
+    // Ce qui reste, et qui était le vrai objet de la règle : la grille
+    // tarifaire. Un prix d'entrée et un plancher disent COMMENT un prix a été
+    // fabriqué, et le courriel est le canal qu'on relit le moins.
     const subject = handler({});
     await fire(subject);
 
     const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
-    expect(JSON.stringify(data.sheet)).not.toContain("PAIN-TRAD");
+    expect(JSON.stringify(data.sheet)).toContain("PAIN-TRAD");
+    expect(JSON.stringify(data.sheet)).not.toContain("entryPriceMillicents");
+    expect(JSON.stringify(data.sheet)).not.toContain("floored");
   });
 
   it("dédoublonne par commande — un rejeu n'écrit pas deux fois au client", async () => {

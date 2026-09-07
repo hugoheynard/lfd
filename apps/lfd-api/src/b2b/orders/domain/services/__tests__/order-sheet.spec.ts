@@ -72,8 +72,11 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     lateFeeAdjustment: null,
     lateFeeCents: 0,
     vatCents: 6_360,
+    vatShares: [{ rate: 5.5, amountCents: 6_360 }],
     totalCents: 121_974,
     currency: "EUR",
+    customerLabel: "Hôtel des Trois Ponts",
+    companyId: "cmp_1",
     fromSubscriptionId: null,
     origin: "self_service",
     placedByStaffId: null,
@@ -113,12 +116,18 @@ describe("la feuille du client", () => {
     expect(sheet.money.subtotalCents).toBe(128_460);
   });
 
-  it("ne laisse sortir NI le SKU, NI le tarif d'entrée, NI le nom de l'étage", () => {
-    // Le cœur de la projection. Masquer ces champs au rendu les laisserait dans
-    // la charge utile — et trois commandes empilées reconstituent la grille.
+  it("laisse sortir le SKU, mais NI le tarif d'entrée NI le nom de l'étage", () => {
+    // 🔴 Ce cas refusait AUSSI le SKU jusqu'au 2026-09-07. Le bon de commande
+    // dessiné lui donne une colonne, sur décision explicite.
+    //
+    // Le cœur de la projection n'a pas bougé pour autant, et il est ici : le
+    // tarif d'entrée et le nom de l'étage disent COMMENT un prix a été fabriqué.
+    // Les masquer au rendu les laisserait dans la charge utile — et trois
+    // commandes empilées reconstituent la grille. Un SKU, lui, ne dit rien d'un
+    // prix : c'est une référence d'article, que le client lit sur son bon.
     const payload = JSON.stringify(clientSheetOf(order()));
 
-    expect(payload).not.toContain("PAT-ECLAIR");
+    expect(payload).toContain("PAT-ECLAIR");
     expect(payload).not.toContain("250000");
     expect(payload).not.toContain("mercuriale");
     expect(payload).not.toContain("rule_42");
@@ -220,11 +229,20 @@ describe("le client sur la feuille", () => {
     expect(staffSheetOf(order(), CUSTOMER).customer.tradeName).toBe("Trois Ponts");
   });
 
-  it("est ABSENT de la feuille du client — elle est déjà à lui", () => {
-    // Un bon de commande qu'on vous tend n'a pas à vous dire qui vous êtes. Le
-    // client sert à retrouver une pile et à décrocher le bon téléphone : deux
-    // besoins que le client lui-même n'a pas.
-    expect(clientSheetOf(order())).not.toHaveProperty("customer");
+  it("est PRÉSENT sur la feuille du client — un document se classe", () => {
+    // 🔴 Ce cas exigeait son absence : « un bon de commande qu'on vous tend n'a
+    // pas à vous dire qui vous êtes ». L'argument tenait pour un papier qu'on
+    // tend au comptoir. Il ne tient plus pour un PDF, qui part par courriel, se
+    // range dans un dossier comptable et se transmet à un tiers — un document
+    // sans destinataire n'y est plus classable.
+    //
+    // ⚠️ Les deux champs portent la même valeur : `OrderView` ne connaît que la
+    // raison sociale, et l'enseigne demanderait une jointure de plus. Le rendu
+    // n'affiche alors qu'une ligne, plutôt qu'un nom commercial inventé.
+    const customer = clientSheetOf(order()).customer;
+
+    expect(customer.legalName).toBe("Hôtel des Trois Ponts");
+    expect(customer.tradeName).toBe(customer.legalName);
   });
 });
 

@@ -12,6 +12,8 @@ import {
   fulfillmentMethodSchema,
   type OrderOrigin,
   orderOriginSchema,
+  type VatShareView,
+  vatSharesSchema,
 } from "./order.js";
 
 /**
@@ -149,6 +151,7 @@ export const sheetMoneySchema = z.object({
   deliveryFeeCents: z.number().int(),
   lateFeeCents: z.number().int(),
   vatCents: z.number().int(),
+  vatShares: vatSharesSchema.nullable(),
   totalCents: z.number().int(),
   currency: z.string().min(1),
 });
@@ -159,6 +162,20 @@ export interface SheetMoney {
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
   readonly vatCents: number;
+  /**
+   * La TVA **par taux**, du plus bas au plus haut — « dont TVA 5,5 % ».
+   *
+   * **Recopiée de la commande, jamais dérivée.** Elle y est figée depuis le
+   * 2026-09-07, comme le prix de chaque ligne : un bon de commande est archivé,
+   * et un détail refabriqué après un changement de règle d'arrondi ne dirait
+   * plus ce qui a été facturé.
+   *
+   * `null` = commande antérieure. Le document n'affiche alors qu'une ligne
+   * « dont TVA », ce qui est vrai — plutôt qu'un détail reconstitué.
+   *
+   * Une part nulle n'y figure pas : « TVA 10 % — 0,00 € » fait douter du calcul.
+   */
+  readonly vatShares: readonly VatShareView[] | null;
   readonly totalCents: number;
   readonly currency: string;
 }
@@ -187,8 +204,8 @@ export interface AtelierSheetLine {
 /**
  * Le client : ce qu'il paie, et les **libellés** des gestes tarifaires.
  *
- * 🔴 **Pas de SKU, pas de nom d'étage.** Le SKU est un identifiant de maison ;
- * `priceLabels` ne porte que le `label` d'un étage, celui que le contrat déclare
+ * 🔴 **Pas de nom d'étage.** `priceLabels` ne porte que le `label` d'un étage,
+ * celui que le contrat déclare
  * **destiné au client** (« Promotion de rentrée »), jamais son `stage` ni son
  * `ruleId`. C'est une règle d'API avant d'être une règle d'écran : masquée au
  * rendu, la grille tarifaire resterait lisible dans l'onglet réseau, et trois
@@ -196,6 +213,7 @@ export interface AtelierSheetLine {
  */
 export const clientSheetLineSchema = z.object({
   ...lineCommonShape,
+  sku: z.string().min(1),
   unitPriceMillicents: z.number().int(),
   vatRate: z.number(),
   lineTotalCents: z.number().int(),
@@ -204,6 +222,17 @@ export const clientSheetLineSchema = z.object({
 export interface ClientSheetLine {
   readonly productName: string;
   readonly quantity: number;
+  /**
+   * ⚠️ **Le SKU est passé côté client le 2026-09-07**, sur décision explicite.
+   *
+   * Il en était volontairement absent — « un identifiant de maison ». Le bon de
+   * commande dessiné le porte, dans une colonne à lui, et c'est ce dessin qui
+   * fait foi. Ce qu'on accepte en le publiant : une référence d'article stable,
+   * lisible par qui reçoit le document. Ce qu'on n'a PAS publié pour autant :
+   * l'étage tarifaire, le prix d'entrée, le plancher — la grille reste hors
+   * d'atteinte, et c'est elle que l'ancienne règle protégeait vraiment.
+   */
+  readonly sku: string;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly lineTotalCents: number;
@@ -223,12 +252,10 @@ export interface ClientSheetLine {
  * pas produit son effet, et exactement ce qu'un client remarque avant nous.
  */
 export const staffSheetLineSchema = clientSheetLineSchema.extend({
-  sku: z.string().min(1),
   entryPriceMillicents: z.number().int().nullable(),
   floored: z.boolean(),
 });
 export interface StaffSheetLine extends ClientSheetLine {
-  readonly sku: string;
   readonly entryPriceMillicents: number | null;
   readonly floored: boolean;
 }
@@ -297,21 +324,29 @@ export interface AtelierSheet extends SheetCommon {
 /**
  * La feuille du client : son engagement, dans ses mots.
  *
- * ⚠️ **Elle ne porte pas `customer`, et ce n'est pas un oubli.** Un bon de
- * commande qu'on vous tend n'a pas à vous dire qui vous êtes — tout le reste y
- * est déjà à vous. Le client sert à retrouver la bonne pile au fournil et à
- * décrocher le bon téléphone au bureau : deux besoins que le client lui-même
- * n'a pas. C'est la même logique d'audience que les montants sur la feuille
- * d'atelier, appliquée dans l'autre sens.
+ * 🔴 **Elle porte `customer` depuis le 2026-09-07**, et ce paragraphe disait
+ * l'inverse : « un bon de commande qu'on vous tend n'a pas à vous dire qui vous
+ * êtes ». L'argument tenait pour un papier qu'on tend au comptoir, la main dans
+ * la main. Il ne tient plus pour un PDF : ce document part par courriel, se
+ * range dans un dossier comptable, se transmet à un tiers — et un document sans
+ * destinataire n'y est plus classable. Le dessin de référence le porte, et c'est
+ * lui qui fait foi.
+ *
+ * ⚠️ Ce que la référence montre et que NOUS n'avons pas : un numéro de compte
+ * client (« Compte C-0148 »). Aucune table n'en porte. La ligne est donc absente
+ * plutôt qu'inventée — un identifiant fabriqué pour remplir un dessin devient un
+ * identifiant que quelqu'un finit par citer au téléphone.
  */
 export const clientSheetSchema = z.object({
   ...sheetCommonShape,
   audience: z.literal("client"),
+  customer: sheetCustomerSchema,
   lines: z.array(clientSheetLineSchema),
   money: sheetMoneySchema,
 });
 export interface ClientSheet extends SheetCommon {
   readonly audience: "client";
+  readonly customer: SheetCustomer;
   readonly lines: readonly ClientSheetLine[];
   readonly money: SheetMoney;
 }
