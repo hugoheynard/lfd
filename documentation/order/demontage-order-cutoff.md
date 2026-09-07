@@ -1,7 +1,7 @@
 # Démonter `OrderCutoff` — lot 9 du dossier heure limite
 
 > **État : plan.** Écrit le 2026-09-04. Lot 9 de
-> [`../b2b/architecture-heure-limite-de-commande.md`](../b2b/architecture-heure-limite-de-commande.md).
+> [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md).
 >
 > ✅ **L'arbitrage est tranché** (Hugo, 2026-09-04) : **l'échelle est le bon
 > système.** Les dimensions que `OrderCutoff` avait en propre — le point de

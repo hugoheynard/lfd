@@ -241,7 +241,7 @@ function stateOf(spec: StepSpec, rank: number, blocked: boolean): StepState {
 /**
  * L'instant réel d'une étape, ou `null`. Une seule transition est horodatée en
  * base aujourd'hui — la création. Le reste attend que le cycle de vie s'écrive
- * (cf. `documentation/b2b/architecture-cycle-de-vie-commande.md`).
+ * (cf. `documentation/order/architecture-cycle-de-vie-commande.md`).
  */
 function instantOf(spec: StepSpec, order: OrderView): string | null {
   return spec.when === 'placed' ? formatOrderInstant(order.placedAt) : null;

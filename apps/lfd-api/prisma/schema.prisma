@@ -1,7 +1,7 @@
 // Schéma de la db B2B COMMERCE (la « B2B platform »).
 // Contexte : clients pros (customers) qui commandent à La Folie Coffee.
 // Doc d'archi : documentation/b2b/architecture-identite-auth-tenancy.md
-//              documentation/b2b/architecture-flux-commande-prod.md
+//              documentation/order/architecture-flux-commande-prod.md
 //
 // Conventions (alignées sur le PIM) :
 // - `User` ICI = une PERSONNE côté client (customer), avec son profil : nom,
@@ -1141,7 +1141,7 @@ model OrderLateFee {
   /// il suit le référentiel. Celui-ci est recopié une fois et rien ne le
   /// rafraîchit — un taux re-valué au PIM laisse la surtaxe derrière, en
   /// silence. Assumé, et décrit dans
-  /// `documentation/b2b/architecture-heure-limite-de-commande.md` §8.
+  /// `documentation/order/architecture-heure-limite-de-commande.md` §8.
   ///
   /// **Sans valeur par défaut.** Inventer 20 % ou 5,5 % facturerait un taux que
   /// personne n'a décidé, sur toutes les commandes tardives et rétroactivement.

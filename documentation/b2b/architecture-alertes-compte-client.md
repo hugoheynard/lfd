@@ -140,7 +140,7 @@ Une alerte se lit sur une fiche client, donc son sujet est une `Company`.
 **Une commande « zéro friction » (`companyId = null`) ne produit aucune alerte.**
 Elle n'appartient à aucun compte ; il n'y a ni historique auquel la comparer ni
 fiche où l'afficher. Le jour où le rapatriement d'une commande vers une société
-existe (cf. `architecture-flux-commande-zero-friction.md`), la question se
+existe (cf. `../order/architecture-flux-commande-zero-friction.md`), la question se
 reposera — rétro-évaluer ou non. Aujourd'hui : silence, explicitement.
 
 ---

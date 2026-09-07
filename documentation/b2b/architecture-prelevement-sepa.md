@@ -9,9 +9,9 @@
 > pièce qui compte n'est pas le RIB mais le **mandat signé**.
 >
 > Décidé le **2026-08-11**. Prérequis lus :
-> [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)
+> [`architecture-flux-commande-zero-friction.md`](../order/architecture-flux-commande-zero-friction.md)
 > (carte au checkout vs terme différé) et
-> [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md).
+> [`architecture-cycle-de-vie-commande.md`](../order/architecture-cycle-de-vie-commande.md).
 >
 > **Statut : 🚧 tranche 2 livrée (2026-08-11).** L'enregistrement d'un mandat
 > depuis le back-office fonctionne de bout en bout ; le **prélèvement** lui-même

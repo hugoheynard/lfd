@@ -434,8 +434,8 @@ principal`). Le responsable voit toute la flotte. Distinct de l'`AdminAuthGuard`
 
 ## 14. Liens
 
-- Déclencheur côté commande : [flux commande & PROD](architecture-flux-commande-prod.md),
-  [zéro friction](architecture-flux-commande-zero-friction.md).
+- Déclencheur côté commande : [flux commande & PROD](../order/architecture-flux-commande-prod.md),
+  [zéro friction](../order/architecture-flux-commande-zero-friction.md).
 - Intégration suite / iframe : [scaling gateway](../suite/architecture-suite-gateway-scaling.md).
 - Paniers récurrents (produisent des livraisons J+1) : contexte `subscriptions`
   (le planificateur alimentera aussi ROAD à terme).

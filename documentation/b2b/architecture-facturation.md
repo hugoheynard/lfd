@@ -84,7 +84,7 @@ un type discriminé avec deux comportements : c'est le même document, la même
 numérotation, les mêmes mentions et le même rendu — seule change la façon dont on
 rassemble ce qu'il facture. (Le raisonnement est celui d'`origin` sur les
 commandes, cf.
-[`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md).)
+[`architecture-commande-saisie-par-l-equipe.md`](../order/architecture-commande-saisie-par-l-equipe.md).)
 
 **La facture périodique est un droit, pas un raccourci.** Le regroupement de
 plusieurs livraisons d'un même mois pour un même client sur une facture

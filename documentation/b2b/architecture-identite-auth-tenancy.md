@@ -131,4 +131,4 @@ Le client ne s'auto-inscrit pas. Flux (option retenue : création via Management
 ## 8. Modèle d'exécution
 
 Aucune brique always-on ici non plus : l'admin et l'auth réveillent des Workers sur
-requête. Voir [`architecture-flux-commande-prod.md`](./architecture-flux-commande-prod.md).
+requête. Voir [`architecture-flux-commande-prod.md`](../order/architecture-flux-commande-prod.md).

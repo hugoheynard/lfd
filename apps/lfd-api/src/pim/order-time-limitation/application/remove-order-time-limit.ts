@@ -40,7 +40,7 @@ export class RemoveOrderTimeLimitCommand {
  * (`OrderCutoff`) s'efface derrière l'échelle, ce qui fait du rang global la
  * seule chose qui refuse une commande en retard pour un article dont personne
  * n'a parlé. Un `DELETE` sans garde suffisait à ouvrir toute la plateforme, en
- * silence. Cf. `documentation/todos/demontage-order-cutoff.md`.
+ * silence. Cf. `documentation/order/demontage-order-cutoff.md`.
  *
  * ⚠️ Ce que ce refus ne couvre pas, et qui reste voulu : retirer un rang global
  * **seul de son espèce** passe. Il n'y a alors rien à rendre muet, et « je
