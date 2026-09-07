@@ -90,6 +90,6 @@ for (const { name, strays } of offenders.sort((a, b) => a.name.localeCompare(b.n
 }
 console.error(
   "\nAjouter une entrée dans le `catalog:` de pnpm-workspace.yaml, puis remplacer" +
-    "\nchaque plage par \"catalog:\" dans les manifestes ci-dessus.",
+    '\nchaque plage par "catalog:" dans les manifestes ci-dessus.',
 );
 process.exit(1);

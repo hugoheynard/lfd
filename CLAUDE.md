@@ -193,19 +193,33 @@ src/
 │   └── notifications/  la cloche du back-office
 ├── pim/          ▸ LE RÉFÉRENTIEL — sa base, ses canaux, routes sous `/pim`
 ├── b2b/          ▸ LA PLATEFORME MARCHANDE — account, orders, pricing, catalog…
+├── production/   ▸ LE FOURNIL — schéma `production`, ses tables, son agrégat
+│                   channels/commerce/ = la porte que le commerce implémente
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
 │                   auth, config, database, mailer, bus, http, errors…
 ├── appBootstrap/ racine de composition : AppModule + les bindings de ports
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `platform` |
-| ------------------ | ---------------- | ------------------- | ----- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗     | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗     | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `production`        | `platform` |
+| ------------------ | ---------------- | ------------------- | ----- | ------------------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗     | ✗                   | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✗                   | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | **port uniquement** | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | **✗** | —                   | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗     | ✗                   | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓                   | ✓          |
+
+🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
+DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce
+l'implémente ; `appBootstrap` les relie. Un contexte qui publie un port ne doit
+pas connaître ceux qui le branchent — sans quoi la dépendance revient par
+l'autre bout, et on a deux blocs qui se tiennent l'un l'autre.
+
+La production ne connaît une commande que par un **identifiant opaque + un
+snapshot**, exactement comme `b2b` connaît un SKU du référentiel. Elle a son
+propre schéma Postgres, et aucune clé étrangère ne traverse : une commande
+annulée ne fait pas disparaître ce qu'on a fabriqué.
 
 `platform` ne connaît **aucun** contexte : une brique technique qui sait qu'un
 annuaire staff existe n'est plus une brique technique. Quand elle a besoin d'un

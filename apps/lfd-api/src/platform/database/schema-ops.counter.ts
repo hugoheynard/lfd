@@ -165,6 +165,15 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MediaAsset: "pim",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",
+
+  // Le fournil, qui tient sa propre écriture depuis le 2026-09-07. Il ne connaît
+  // une commande que par un identifiant opaque et un snapshot : aucune de ces
+  // tables n'a de clé étrangère vers `public`, et c'est ce qui rend le compteur
+  // par schéma lisible — un pic ici est un pic de production, pas de commerce.
+  ProductionDay: "production",
+  ProductionOrder: "production",
+  ProductionOrderLine: "production",
+  ProductionCount: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

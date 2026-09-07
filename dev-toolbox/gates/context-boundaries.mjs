@@ -43,6 +43,11 @@ const BLOCK_OF = {
   // ▸ LE RÉFÉRENTIEL — arrivé en B2c, avec sa base et ses canaux.
   pim: "pim",
 
+  // ▸ LE FOURNIL — ce qu'on fabrique, dans son schéma à lui. Il ne connaît une
+  //   commande que par un identifiant opaque et un snapshot ; le commerce le
+  //   sert par le canal que la production publie (`channels/commerce/`).
+  production: "production",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -94,10 +99,11 @@ const BLOCK_OF = {
 const ALLOWED = {
   staff: new Set(["platform"]),
   pim: new Set(["staff", "platform"]),
-  b2b: new Set(["staff", "pim", "platform"]),
+  b2b: new Set(["staff", "pim", "platform", "production"]),
+  production: new Set(["staff", "platform"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
-  root: new Set(["staff", "pim", "b2b", "platform", "ops"]),
+  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production"]),
 };
 
 /**
@@ -123,6 +129,15 @@ const ALLOWED = {
  */
 const PORT_SURFACE = {
   "b2b→pim": "pim/channels/b2b-platform/",
+  // Même motif, sens inverse : c'est le COMMERCE qui implémente ce que la
+  // production déclare. `production/channels/commerce/` ne porte que des classes
+  // abstraites et les faits qu'elles rendent ; l'intérieur du fournil — son
+  // agrégat, ses tables, ses règles de clôture — reste hors d'atteinte.
+  //
+  // ⚠️ La production, elle, n'atteint JAMAIS `b2b` : c'est ce que la ligne
+  // `production: new Set(["staff", "platform"])` interdit. Un contexte qui
+  // publie un port ne doit pas connaître ceux qui le branchent.
+  "b2b→production": "production/channels/commerce/",
 };
 
 /**
