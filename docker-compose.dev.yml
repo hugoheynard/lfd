@@ -71,10 +71,23 @@ services:
   # tomberait sur un `NoSuchBucket` — en prod les buckets R2 sont créés une fois à
   # la main, ici ils doivent renaître avec le volume (`dev:infra:nuke`).
   #
-  # DEUX buckets, et la différence n'est pas cosmétique :
+  # TROIS buckets, et les différences ne sont pas cosmétiques :
   #
-  #   lfc-b2b-dev    pièces PRIVÉES (KBIS, mandat SEPA). Reste fermé : elles se
-  #                  lisent par une URL signée expirante, à travers l'API.
+  #   lfc-b2b-dev    pièces PRIVÉES que le CLIENT NOUS DONNE (KBIS, mandat SEPA).
+  #                  Reste fermé : elles se lisent par une URL signée expirante,
+  #                  à travers l'API.
+  #   lfc-customers-dev
+  #                  pièces privées que NOUS LUI RENDONS : bon de commande, et
+  #                  demain les factures déposées par le comptable. Fermé lui
+  #                  aussi, et c'est structurant — une adresse publique rendrait
+  #                  la facture d'un client lisible par qui devine une clé.
+  #
+  #                  ⚠️ Bucket SÉPARÉ du précédent, alors que les deux sont
+  #                  privés et concernent le même client. La configuration le
+  #                  dit : « chaque usage porte son bucket ET ses clés — un
+  #                  jeton n'ouvre que le sien ». Les ranger ensemble ferait
+  #                  qu'un jeton donné pour lire un KBIS lirait aussi les
+  #                  factures. Cf. `documentation/order/architecture-pieces-en-r2.md`.
   #   lfc-media-dev  visuels PUBLICS du catalogue. Ouvert en LECTURE ANONYME,
   #                  parce que c'est la moitié du stockage qui ne passe pas par
   #                  nous : le navigateur va chercher l'image droit sur le
@@ -94,9 +107,10 @@ services:
     entrypoint: >
       sh -c "mc alias set lfd http://minio:9000 lfc lfclfclfc &&
              mc mb --ignore-existing lfd/lfc-b2b-dev &&
+             mc mb --ignore-existing lfd/lfc-customers-dev &&
              mc mb --ignore-existing lfd/lfc-media-dev &&
              mc anonymous set download lfd/lfc-media-dev &&
-             echo 'buckets lfc-b2b-dev (privé) et lfc-media-dev (lecture publique) prêts'"
+             echo 'buckets lfc-b2b-dev + lfc-customers-dev (privés) et lfc-media-dev (lecture publique) prêts'"
 
 volumes:
   postgres-data:
