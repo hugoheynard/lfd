@@ -41,6 +41,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             customerLabel: true,
             fulfillmentMethod: true,
             destination: true,
+            packedAt: true,
+            packedBy: true,
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
         },
@@ -54,6 +56,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       serviceDay: row.serviceDay,
       closedAt: row.closedAt,
       orders: row.orders.map((order) => ({
+        packedAt: order.packedAt,
+        packedBy: order.packedBy,
         orderId: order.orderId,
         reference: order.reference,
         customerLabel: order.customerLabel,
@@ -73,6 +77,22 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         quantity: count.quantity,
       })),
     });
+  }
+
+  /**
+   * Grave le colisage, **conditionné en base**.
+   *
+   * `packedAt: null` dans le `where` : c'est la base qui arbitre, donc deux
+   * postes qui scannent la même feuille au même moment produisent exactement un
+   * colisage. Une `save` de l'agrégat ne le pourrait pas — elle réécrit la
+   * journée entière, et le second écrasement effacerait le premier.
+   */
+  async markPacked(day: ServiceDay, reference: string, at: Date, by: string): Promise<boolean> {
+    const { count } = await this.prisma.productionOrder.updateMany({
+      where: { serviceDay: day.value, reference, packedAt: null },
+      data: { packedAt: at, packedBy: by },
+    });
+    return count === 1;
   }
 
   /**
@@ -104,6 +124,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             customerLabel: order.customerLabel,
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
+            packedAt: order.packedAt,
+            packedBy: order.packedBy,
             lines: { create: order.lines.map((line) => ({ ...line })) },
           },
         });

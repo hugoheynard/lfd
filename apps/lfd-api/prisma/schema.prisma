@@ -4483,8 +4483,18 @@ model ProductionOrder {
   fulfillmentMethod String @map("fulfillment_method")
   destination       String
 
+  /// Le COLISAGE, tel que le fournil le constate. `null` = pas encore fermé.
+  ///
+  /// C'est le fait de la PRODUCTION : le bac est fait. Le commerce en tire le
+  /// sien — `orders.status = ready`, « prête pour le client » — par un
+  /// événement. Deux faits distincts, chacun chez celui qui l'observe.
+  packedAt DateTime? @map("packed_at")
+  /// L'identité staff qui a scanné, figée. Elle ne vient jamais de la charge.
+  packedBy String? @map("packed_by")
+
   lines ProductionOrderLine[]
 
+  @@index([serviceDay, packedAt])
   /// Une commande n'entre qu'UNE fois dans une journée. Refusé en base plutôt
   /// que vérifié : une clôture rejouée ne doit pas doubler ce qu'on fabrique.
   @@unique([serviceDay, orderId])

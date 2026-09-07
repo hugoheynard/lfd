@@ -44,6 +44,7 @@ import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-or
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
+import { OnOrderPacked } from "./application/handlers/on-order-packed.handler.js";
 import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
 import { PrismaPendingOrdersReader } from "./infrastructure/prisma-pending-orders.reader.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
@@ -135,6 +136,7 @@ import { OrdersController } from "./http/orders.controller.js";
     PrismaDayOrdersReader,
     PrismaPendingOrdersReader,
     OnProductionDayClosed,
+    OnOrderPacked,
     GetProductionBatchHandler,
     GetPackingHandler,
     SendOrderPlacedMail,

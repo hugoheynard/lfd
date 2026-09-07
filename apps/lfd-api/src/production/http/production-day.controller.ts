@@ -3,13 +3,26 @@ import {
   type ProductionPlanClosure,
   productionBatchQuerySchema,
 } from "@lfd/contracts";
-import { Controller, Get, Param, Post, Res, StreamableFile } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  Res,
+  StreamableFile,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
+import { PackOrderCommand } from "../application/commands/pack-order.command.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import {
   GetAtelierSheetPdfQuery,
@@ -49,6 +62,39 @@ export class ProductionDayController {
    * sans cette lecture la divergence n'existerait que dans la tête de celui qui
    * la cherche. Zéro attendu ; autre chose se rattrape en reclosant.
    */
+  /**
+   * **Le bac est fait.** Le geste que la feuille d'atelier annonce, et le seul
+   * du fournil qui écrive un fait de fabrication.
+   *
+   * 🔴 Cette route vivait dans `b2b/orders/http/`, sous
+   * `admin/production/packing/:reference/ready` : le fournil déclarait son
+   * travail en écrivant dans les tables du commerce. Elle est ici, et écrit chez
+   * la production ; le commerce apprend par `OrderPackedEvent` et fait avancer
+   * SON statut vers `ready`.
+   *
+   * Le jour accompagne la référence : une feuille appartient à une journée, et
+   * c'est elle qui porte l'agrégat.
+   *
+   * Porte staff comme tout `/admin/*`. Elle ne fait pas office de preuve
+   * contradictoire — le colisage est un fait interne — mais elle décide **qui**
+   * l'a déclaré, et ça ne vient jamais de la charge utile.
+   */
+  @Post("batch/:date/sheets/:reference/packed")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async pack(
+    @Param("date") date: string,
+    @Param("reference") reference: string,
+    @Req() request: AuthenticatedStaffRequest,
+  ): Promise<void> {
+    await this.commands.execute<PackOrderCommand, void>(
+      new PackOrderCommand(
+        productionBatchQuerySchema.parse({ date }).date,
+        reference,
+        staffSubjectOf(request),
+      ),
+    );
+  }
+
   /**
    * **Le compte à produire du jour, en PDF** — ce qu'on affiche au mur.
    *
@@ -132,4 +178,17 @@ export class ProductionDayController {
       new CloseProductionDayCommand(productionBatchQuerySchema.parse({ date }).date),
     );
   }
+}
+
+/**
+ * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ; en
+ * pratique le guard a couru avant nous, mais on refuse plutôt que d'écrire un
+ * colisage anonyme — un fait daté sans auteur ne se conteste pas, il s'efface.
+ */
+function staffSubjectOf(request: AuthenticatedStaffRequest): string {
+  const subject = request.staff?.subject;
+  if (subject === undefined) {
+    throw new UnauthorizedException("Session staff requise.");
+  }
+  return subject;
 }

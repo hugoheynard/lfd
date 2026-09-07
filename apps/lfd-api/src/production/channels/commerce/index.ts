@@ -13,3 +13,4 @@ export { DayOrdersReader, type ProducibleLine, type ProducibleOrder } from "./da
 export { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
+export { OrderPackedEvent } from "./order-packed.event.js";

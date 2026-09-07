@@ -1,6 +1,9 @@
 import {
+  AtelierSheetNotFoundError,
+  OrderAlreadyPackedError,
   ProductionDayAlreadyClosedError,
   ProductionDayEmptyError,
+  ProductionDayNotClosedError,
 } from "../../errors/production-errors.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ServiceDay } from "../../value-objects/service-day.value-object.js";
@@ -12,6 +15,7 @@ import { ProductionDay } from "../production-day.js";
  */
 
 const AT = new Date("2026-09-07T18:00:00.000Z");
+const LATER = new Date("2026-09-08T05:30:00.000Z");
 
 function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
   return {
@@ -102,6 +106,57 @@ describe("arrêter une journée", () => {
     expect(() => {
       opened().close([], AT);
     }).toThrow(ProductionDayEmptyError);
+  });
+});
+
+describe("coliser une commande", () => {
+  function closed(): ProductionDay {
+    const day = opened();
+    day.close([order(), order({ orderId: "ord_2", reference: "CMD-0002" })], AT);
+    return day;
+  }
+
+  it("marque le bac fait, avec qui l'a déclaré", () => {
+    const day = closed();
+
+    const packed = day.pack("CMD-0001", LATER, "auth0|karim");
+
+    expect(packed.packedAt).toBe(LATER);
+    expect(packed.packedBy).toBe("auth0|karim");
+    // Les AUTRES commandes de la journée n'ont pas bougé : coliser l'une ne dit
+    // rien de l'autre, et le fournil ferme les bacs un par un.
+    expect(day.orders.find((o) => o.reference === "CMD-0002")?.packedAt).toBeNull();
+  });
+
+  it("REFUSE un bac déjà fait — le premier scan est le seul vrai", () => {
+    // Deux mains sur la même feuille est le cas NORMAL au fournil. Le second
+    // scan ne doit ni réécrire l'heure ni changer l'identité qui l'a déclaré.
+    const day = closed();
+    day.pack("CMD-0001", LATER, "auth0|karim");
+
+    expect(() => day.pack("CMD-0001", AT, "auth0|lea")).toThrow(OrderAlreadyPackedError);
+    const still = day.orders.find((o) => o.reference === "CMD-0001");
+    expect(still?.packedAt).toBe(LATER);
+    expect(still?.packedBy).toBe("auth0|karim");
+  });
+
+  it("REFUSE une référence qui n'est pas dans cette journée", () => {
+    expect(() => closed().pack("CMD-9999", LATER, "auth0|karim")).toThrow(
+      AtelierSheetNotFoundError,
+    );
+  });
+
+  it("REFUSE une journée qui n'est pas arrêtée", () => {
+    // Une commande qu'aucune clôture n'a inscrite n'est pas à fabriquer
+    // aujourd'hui : la déclarer colisée créerait un fait sur une journée vide.
+    expect(() => opened().pack("CMD-0001", LATER, "auth0|karim")).toThrow(
+      ProductionDayNotClosedError,
+    );
+  });
+
+  it("une journée fraîchement arrêtée n'a AUCUN bac fait", () => {
+    // Écrit plutôt que deviné : un champ absent passerait pour un bac fait.
+    expect(closed().orders.every((o) => o.packedAt === null)).toBe(true);
   });
 });
 

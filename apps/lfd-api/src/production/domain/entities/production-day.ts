@@ -1,7 +1,10 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import {
+  AtelierSheetNotFoundError,
+  OrderAlreadyPackedError,
   ProductionDayAlreadyClosedError,
   ProductionDayEmptyError,
+  ProductionDayNotClosedError,
 } from "../errors/production-errors.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 
@@ -14,6 +17,9 @@ export interface ProductionLineSnapshot {
 
 /** Une commande, figée du côté de la production. */
 export interface ProductionOrderSnapshot {
+  /** `null` = le bac n'est pas fait. C'est le fait du FOURNIL, pas du commerce. */
+  readonly packedAt: Date | null;
+  readonly packedBy: string | null;
   readonly orderId: string;
   readonly reference: string;
   readonly customerLabel: string;
@@ -119,6 +125,52 @@ export class ProductionDay {
    * @throws {ProductionDayAlreadyClosedError} elle l'est déjà — cf. l'en-tête.
    * @throws {ProductionDayEmptyError} rien à produire ce jour-là.
    */
+  /**
+   * **Le bac est fait** — le colisage d'une commande de cette journée.
+   *
+   * ## Pourquoi c'est un fait de la PRODUCTION
+   *
+   * C'est le fournil qui ferme le bac : personne d'autre ne peut le constater.
+   * Le commerce en tire le sien — `ready`, « prête pour le client » — par un
+   * événement. Deux faits distincts, chacun chez celui qui l'observe ; les
+   * confondre reviendrait à faire écrire au fournil dans les tables du commerce.
+   *
+   * ## Les trois refus, et ce que chacun évite
+   *
+   * - **journée non arrêtée** : une commande qu'aucune clôture n'a inscrite
+   *   n'est pas à fabriquer aujourd'hui ;
+   * - **référence inconnue** : elle n'est pas dans cette journée-là ;
+   * - **déjà colisée** : deux mains sur la même feuille est le cas NORMAL au
+   *   fournil, et le premier scan est le seul vrai. Le second ne doit pas
+   *   réécrire l'heure ni changer l'identité qui l'a déclaré.
+   *
+   * ⚠️ Aucun refus sur une commande ANNULÉE, et c'est un fait, pas un oubli :
+   * rien n'annule une commande dans ce système — `cancelled` est une valeur que
+   * l'énuméré accepte et que personne n'écrit. Le jour où l'annulation existera,
+   * elle devra se propager jusqu'ici, sinon le fournil colisera pour rien.
+   *
+   * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+   * @throws {AtelierSheetNotFoundError} aucune commande sous cette référence.
+   * @throws {OrderAlreadyPackedError} le bac est déjà fait.
+   */
+  pack(reference: string, at: Date, by: string): ProductionOrderSnapshot {
+    if (!this.isClosed) {
+      throw new ProductionDayNotClosedError(this.day.value);
+    }
+    const target = this.ordersValue.find((order) => order.reference === reference);
+    if (target === undefined) {
+      throw new AtelierSheetNotFoundError(reference, this.day.value);
+    }
+    if (target.packedAt !== null) {
+      throw new OrderAlreadyPackedError(reference);
+    }
+    const packed: ProductionOrderSnapshot = { ...target, packedAt: at, packedBy: by };
+    this.ordersValue = this.ordersValue.map((order) =>
+      order.reference === reference ? packed : order,
+    );
+    return packed;
+  }
+
   close(orders: readonly ProducibleOrder[], at: Date): void {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
@@ -145,6 +197,11 @@ export class ProductionDay {
 /** La commande, recopiée telle qu'elle était — jamais une référence vers elle. */
 function frozen(order: ProducibleOrder): ProductionOrderSnapshot {
   return {
+    // Une journée qu'on vient d'arrêter n'a rien de colisé : le fournil n'a pas
+    // encore commencé. L'écrire ici plutôt que de le laisser deviner évite qu'un
+    // champ absent passe pour un bac fait.
+    packedAt: null,
+    packedBy: null,
     orderId: order.orderId,
     reference: order.reference,
     customerLabel: order.customerLabel,

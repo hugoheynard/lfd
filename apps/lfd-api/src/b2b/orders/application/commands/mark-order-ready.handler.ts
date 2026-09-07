@@ -2,7 +2,6 @@ import type { OrderPackingView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import { Clock } from "../../../../platform/time/clock.js";
 import {
   OrderReferenceNotFoundError,
   PackingRefusedError,
@@ -35,7 +34,6 @@ export class MarkOrderReadyHandler implements ICommandHandler<
   constructor(
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
-    private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -49,7 +47,9 @@ export class MarkOrderReadyHandler implements ICommandHandler<
       throw new PackingRefusedError(blocker);
     }
 
-    const at = this.clock.now();
+    // L'instant vient de la COMMANDE — donc du fait constaté au fournil — et
+    // non de l'horloge d'ici. Cf. `MarkOrderReadyCommand.at`.
+    const at = command.at;
     const won = await this.repository.markReady(command.reference, at, command.staffSubject);
     if (!won) {
       // Perdu la course : un autre poste a scanné la même feuille entre notre

@@ -15,7 +15,6 @@ import type { ProductionBatchView } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -189,6 +188,28 @@ describe("la fiche de production lit ce qui a été convenu", () => {
  * base qui arbitre. Et le fait que la lecture se fasse par le **numéro**, qui
  * est imprimé en clair : rien à protéger, mais rien à deviner non plus.
  */
+/**
+ * Arrête la journée d'une commande, puis déclare son bac fait.
+ *
+ * 🔴 Le colisage est un fait de la PRODUCTION depuis le 2026-09-07 : il passe
+ * par sa route, dans sa journée, et une commande qu'aucune clôture n'a inscrite
+ * n'est pas colisable. Les blocs qui l'utilisaient comme un simple `POST` sur le
+ * commerce doivent donc clôturer d'abord — ce que l'ancienne route, hébergée
+ * chez le commerce, n'exigeait pas.
+ */
+async function closeAndPack(
+  context: E2eContext,
+  day: string,
+  reference: string,
+  expected = 204,
+): Promise<void> {
+  await context.asSub("staff-e2e").post(`/admin/production/batch/${day}/close`);
+  await context
+    .asSub("staff-e2e")
+    .post(`/admin/production/batch/${day}/sheets/${reference}/packed`)
+    .expect(expected);
+}
+
 describe("le colisage", () => {
   /** Passe une commande personnelle et rend son numéro. */
   async function placeOne(): Promise<string> {
@@ -212,94 +233,126 @@ describe("le colisage", () => {
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
-  it("déclare une commande prête, et grave QUI l'a fait", async () => {
+  /**
+   * Passe une commande ET arrête la journée.
+   *
+   * 🔴 Le colisage est désormais un fait de la PRODUCTION, et une commande
+   * qu'aucune clôture n'a inscrite n'est pas à fabriquer aujourd'hui. Le
+   * scénario du fournil commence donc à la clôture, ce que l'ancienne route —
+   * hébergée par le commerce — n'exigeait pas.
+   */
+  async function placeAndClose(): Promise<string> {
     const reference = await placeOne();
+    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
+    return reference;
+  }
 
-    const view = jsonBody<{
-      readyAt: string | null;
-      readyBy: string | null;
-      blockedReason: string | null;
-    }>(
-      await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201),
-    );
+  /** Déclare le bac fait, par la route du fournil. */
+  function packing(reference: string) {
+    return ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`);
+  }
 
-    expect(view.readyAt).not.toBeNull();
-    // L'auteur ne vient JAMAIS de la charge utile : il vient de la session.
-    expect(view.readyBy).toBe("staff-e2e");
-    // La réponse porte DÉJÀ le refus du scan suivant : l'accusé de réception est
-    // pris sur l'état d'après, pas sur celui d'avant. Le fournil apprend donc du
-    // même coup que c'est fait et qu'un second passage ne servira à rien.
-    expect(view.blockedReason).toBe("Cette commande est déjà déclarée prête.");
-  });
-
-  it("fait avancer le statut, ce que rien ne faisait entre `placed` et la remise", async () => {
-    const reference = await placeOne();
-    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
-
-    const row = await ctx.prisma.order.findUniqueOrThrow({
+  /** Attend que le COMMERCE ait appris — il l'apprend par un abonné. */
+  async function eventuallyReady(reference: string): Promise<string> {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const row = await ctx.prisma.order.findUniqueOrThrow({
+        where: { orderNumber: reference },
+        select: { status: true },
+      });
+      if (row.status === "ready") {
+        return row.status;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    const last = await ctx.prisma.order.findUniqueOrThrow({
       where: { orderNumber: reference },
-      select: { status: true, readyBy: true },
+      select: { status: true },
     });
-    expect(row.status).toBe("ready");
-    expect(row.readyBy).toBe("staff-e2e");
+    return last.status;
+  }
+
+  it("grave le colisage CHEZ LA PRODUCTION, et le commerce l'apprend", async () => {
+    // Les deux moitiés du couplage : le fournil ferme le bac et publie ; le
+    // commerce s'abonne et fait avancer SON statut. Deux faits, deux tables.
+    const reference = await placeAndClose();
+
+    await packing(reference).expect(204);
+
+    const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
+      where: { reference },
+      select: { packedAt: true, packedBy: true },
+    });
+    expect(packed.packedAt).not.toBeNull();
+    expect(packed.packedBy).toBe("staff-e2e");
+    expect(await eventuallyReady(reference)).toBe("ready");
   });
 
-  it("REFUSE le second scan, et dit pourquoi", async () => {
-    // Deux mains sur la même commande est le cas normal au fournil, pas une
+  it("date la transition du COLISAGE, pas de sa réception", async () => {
+    // L'abonné tourne un instant plus tard. Prendre l'heure à la réception
+    // daterait la transition du moment où on l'a apprise, pas de celui où elle a
+    // eu lieu — et c'est cette heure-là qu'on cherche quand une commande arrive
+    // en retard.
+    const reference = await placeAndClose();
+    await packing(reference).expect(204);
+    await eventuallyReady(reference);
+
+    const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
+      where: { reference },
+      select: { packedAt: true },
+    });
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { readyAt: true, readyBy: true },
+    });
+    expect(order.readyAt?.toISOString()).toBe(packed.packedAt?.toISOString());
+    expect(order.readyBy).toBe("staff-e2e");
+  });
+
+  it("REFUSE le second scan, et nomme le cas", async () => {
+    // Deux mains sur la même feuille est le cas normal au fournil, pas une
     // anomalie : le refus doit nommer le cas, pas jeter une erreur technique.
+    const reference = await placeAndClose();
+    await packing(reference).expect(204);
+
+    const refused = await packing(reference).expect(409);
+
+    expect(jsonBody<{ message: string }>(refused).message).toContain("déjà déclaré");
+  });
+
+  it("REFUSE de coliser sur une journée qui n'est pas arrêtée", async () => {
+    // Une commande qu'aucune clôture n'a inscrite n'est pas à fabriquer
+    // aujourd'hui. Le refus dit le geste de sortie : clôturer d'abord.
     const reference = await placeOne();
-    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    const refused = await packing(reference).expect(409);
+
+    expect(jsonBody<{ message: string }>(refused).message).toContain("Clôturez le plan du soir");
+  });
+
+  it("REFUSE une référence qui n'est pas dans cette journée", async () => {
+    await placeAndClose();
 
     const refused = await ctx
       .asSub("staff-e2e")
-      .post(`/admin/production/packing/${reference}/ready`)
-      .expect(409);
-    expect(jsonBody<{ message: string }>(refused).message).toContain("déjà déclarée prête");
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/ORD-INEXISTANTE/packed`)
+      .expect(404);
+
+    expect(jsonBody<{ message: string }>(refused).message).toContain("Aucune feuille d'atelier");
   });
 
   it("ne produit QU'UN colisage quand deux postes scannent en même temps", async () => {
-    // La course, la seule chose que le vrai SQL prouve : le `where readyAt: null`
-    // fait arbitrer la base, pas l'ordre d'arrivée des requêtes.
-    const reference = await placeOne();
+    // La course, la seule chose que le vrai SQL prouve : le `where packed_at IS
+    // NULL` fait arbitrer la BASE, pas l'ordre d'arrivée des requêtes. Une
+    // `load` → `save` de l'agrégat ne le pourrait pas — elle réécrit la journée
+    // entière, et le second écrasement effacerait le premier.
+    const reference = await placeAndClose();
 
-    const results = await Promise.all([
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
-    ]);
+    const results = await Promise.all([packing(reference), packing(reference)]);
 
-    expect(results.filter((response) => response.status === 201)).toHaveLength(1);
+    expect(results.filter((response) => response.status === 204)).toHaveLength(1);
     expect(results.filter((response) => response.status === 409)).toHaveLength(1);
-  });
-
-  it("refuse EN BASE de déclarer prête une commande annulée", async () => {
-    // 🔴 On appelle le PORT, pas la route : `packingBlocker` attrape déjà le cas
-    // dans le handler, et passer par HTTP ne prouverait donc que le handler.
-    //
-    // Ce que ce cas tient est le cran en dessous. `markReady` conditionnait son
-    // écriture sur `readyAt: null` et RIEN D'AUTRE, quand ses trois sœurs
-    // (`absorbIntoPlan`, `markHandedOver`, `markHandedOverManually`) posent leur
-    // règle dans le `where`. Deux conséquences réelles : un second appelant
-    // — reprise en masse, script d'exploitation — n'hériterait d'aucune garde,
-    // et une annulation qui tombe entre la lecture du handler et son écriture
-    // passait. C'est exactement la course que `handedOverAt: null` interdit
-    // ailleurs.
-    const reference = await placeOne();
-    await ctx.prisma.order.update({
-      where: { orderNumber: reference },
-      data: { status: "cancelled" },
-    });
-
-    const written = await ctx.app
-      .get(OrderRepository)
-      .markReady(reference, new Date(), "staff-e2e");
-
-    expect(written).toBe(false);
-    const row = await ctx.prisma.order.findUniqueOrThrow({
-      where: { orderNumber: reference },
-      select: { status: true, readyAt: true },
-    });
-    expect(row.status).toBe("cancelled");
-    expect(row.readyAt).toBeNull();
   });
 
   it("lit la commande derrière le code AVANT de déclarer quoi que ce soit", async () => {
@@ -388,7 +441,8 @@ describe("les courriels d'une commande", () => {
     // Le seul courriel qui parte à un moment où le client a quelque chose à
     // faire. Avant le 2026-09-07, il n'y en avait qu'un, et c'était le premier.
     const reference = await placeOne();
-    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+    await closeAndPack(ctx, SERVICE_DAY, reference);
+    await ctx.drain();
 
     expect(await templatesSent()).toEqual(["customer.order-placed", "customer.order-ready"]);
   });
@@ -398,10 +452,16 @@ describe("les courriels d'une commande", () => {
     // l'écriture conditionnée en base : un seul poste gagne, un seul publie.
     const reference = await placeOne();
 
+    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`);
     await Promise.all([
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+      ctx
+        .asSub("staff-e2e")
+        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
+      ctx
+        .asSub("staff-e2e")
+        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
     ]);
+    await ctx.drain();
 
     const ready = (await templatesSent()).filter((name) => name === "customer.order-ready");
     expect(ready).toHaveLength(1);
@@ -453,7 +513,7 @@ describe("le journal d'une commande", () => {
 
   it("garde une trace du COLISAGE, que la ligne de commande peut perdre", async () => {
     const reference = await placeAndReady();
-    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+    await closeAndPack(ctx, SERVICE_DAY, reference);
 
     expect(await journalTypes()).toContain("order.ready");
   });
@@ -501,10 +561,15 @@ describe("le journal d'une commande", () => {
 
   it("n'écrit QU'UN témoin quand deux postes scannent le même colisage", async () => {
     const reference = await placeAndReady();
+    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
 
     await Promise.all([
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
-      ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`),
+      ctx
+        .asSub("staff-e2e")
+        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
+      ctx
+        .asSub("staff-e2e")
+        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
     ]);
 
     const ready = (await journalTypes()).filter((type) => type === "order.ready");
@@ -684,12 +749,20 @@ describe("le plan du soir", () => {
     // Les états ne reculent jamais : une commande colisée avant la clôture reste
     // `ready`, et le compte ne l'inclut pas.
     const reference = await place(SERVICE_DAY);
-    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+    await closeAndPack(ctx, SERVICE_DAY, reference);
+    await ctx.drain();
 
-    // La commande n'est plus `placed` : elle n'entre donc PAS dans ce que la
-    // production inscrit — le port `producibleFor` ne rend que les producibles —
-    // et l'abonné ne la ferait pas reculer de toute façon.
-    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(409);
+    // Presser à nouveau le bouton de clôture est le RATTRAPAGE d'un abonné qui
+    // aurait échoué : la journée se réannonce à l'identique. C'est précisément
+    // le geste qui pourrait faire reculer une commande déjà colisée, puisque le
+    // plan la porte toujours — l'abonné du commerce ne repose donc `confirmed`
+    // que sur ce qui est encore `placed`.
+    const again = jsonBody<{ alreadyClosed: boolean; absorbed: number }>(
+      await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201),
+    );
+    expect(again.alreadyClosed).toBe(true);
+    await ctx.drain();
+
     expect(await statusOf(reference)).toBe("ready");
   });
 

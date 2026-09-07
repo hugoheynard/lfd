@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
+import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import {
   GetAtelierSheetPdfHandler,
@@ -24,6 +25,7 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
   controllers: [ProductionDayController],
   providers: [
     CloseProductionDayHandler,
+    PackOrderHandler,
     GetProductionDayStatusHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
