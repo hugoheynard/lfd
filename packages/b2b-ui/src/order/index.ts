@@ -1,13 +1,8 @@
 export { OrderDetail } from './order-detail/order-detail';
 export { OrderRow } from './order-row/order-row';
 export type { OrderDocument } from './order-detail/order-detail';
-export {
-  ORDER_DOC_DELIVERY_NOTE,
-  ORDER_DOC_INVOICE,
-  deliveryNoteFileName,
-  orderDocuments,
-  renderDeliveryNote,
-} from './order-documents';
+export { ORDER_DOC_ORDER_SHEET, ORDER_DOC_INVOICE, orderDocuments } from './order-documents';
+export { renderOrderSheetText, orderSheetFileName } from './order-sheet-text';
 export {
   orderStatusLabel,
   orderStatusVariant,

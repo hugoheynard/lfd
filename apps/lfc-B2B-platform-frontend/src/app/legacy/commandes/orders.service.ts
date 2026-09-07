@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { OrderPaymentIntent, OrderView } from '@lfd/contracts';
+import type { ClientSheet, OrderPaymentIntent, OrderView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -49,6 +49,24 @@ export class OrdersService {
     const token = await firstValueFrom(this.auth.accessToken$());
     return firstValueFrom(
       this.http.get<OrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    );
+  }
+
+  /**
+   * Le **bon de commande** du client (`GET /orders/:id/bon`).
+   *
+   * Il se demande au serveur au lieu de se dériver de l'`OrderView` déjà en
+   * main, et ce n'est pas un détour : c'est le serveur qui décide de ce que le
+   * client a le droit de lire. Le fabriquer ici supposerait que la charge utile
+   * porte déjà les SKU et la trace du prix — donc qu'ils soient dans l'onglet
+   * réseau, où trois commandes empilées reconstituent la grille tarifaire.
+   */
+  async sheetOf(id: string): Promise<ClientSheet> {
+    const token = await firstValueFrom(this.auth.accessToken$());
+    return firstValueFrom(
+      this.http.get<ClientSheet>(`${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}/bon`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
     );

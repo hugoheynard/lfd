@@ -5,11 +5,11 @@ import { map } from 'rxjs/operators';
 import type { OrderView } from '@lfd/contracts';
 import {
   canSettle,
-  deliveryNoteFileName,
-  ORDER_DOC_DELIVERY_NOTE,
+  ORDER_DOC_ORDER_SHEET,
   OrderDetail,
   orderDocuments,
-  renderDeliveryNote,
+  orderSheetFileName,
+  renderOrderSheetText,
   type OrderDocument,
 } from '@lfd/b2b-ui/order';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -130,16 +130,33 @@ export class CommandePage {
   }
 
   /**
-   * Un document demandé. Seul le bon de livraison est produit ici : il se
-   * fabrique depuis la commande. La facture n'atteint jamais ce point — la lib
-   * la rend indisponible tant qu'aucune numérotation n'existe côté serveur.
+   * Un document demandé. Seul le bon de commande est produit ici. La facture
+   * n'atteint jamais ce point — la lib la rend indisponible tant qu'aucune
+   * numérotation n'existe côté serveur.
+   *
+   * La feuille est **demandée au serveur** et non dérivée de la commande en
+   * main : c'est lui qui décide de ce que le client a le droit de lire. Un échec
+   * se dit, plutôt que de laisser un bouton sans effet.
    */
   protected onDocument(key: string): void {
     const order = this.order();
-    if (order === null || key !== ORDER_DOC_DELIVERY_NOTE) {
+    if (order === null || key !== ORDER_DOC_ORDER_SHEET) {
       return;
     }
-    downloadText(deliveryNoteFileName(order), renderDeliveryNote(order));
+    // Le gabarit appelle une méthode SYNCHRONE : une liaison Angular n'attend
+    // pas une promesse, et la lui rendre en laisserait une flotter sans que
+    // personne n'attrape son échec.
+    void this.download(order.id);
+  }
+
+  /** Va chercher la feuille, la rend, la propose. Un échec se dit. */
+  private async download(orderId: string): Promise<void> {
+    try {
+      const sheet = await this.orders.sheetOf(orderId);
+      downloadText(orderSheetFileName(sheet), renderOrderSheetText(sheet));
+    } catch (error: unknown) {
+      this.notify.error(httpErrorMessage(error));
+    }
   }
 
   protected async back(): Promise<void> {
