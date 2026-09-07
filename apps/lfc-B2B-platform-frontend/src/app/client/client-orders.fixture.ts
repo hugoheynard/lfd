@@ -1,5 +1,6 @@
 import { HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import type { OrderPaymentIntent, PlacedOrderResponse } from '@lfd/contracts';
 import { of } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
@@ -30,12 +31,31 @@ export const provideRecognised = () => ({ provide: AuthFacade, useValue: RECOGNI
  * tout l'objet du lot.
  */
 export async function placeOrder(orderNumber = 'CMD-0001'): Promise<PlacedOrder | null> {
+  return placeOrderResponse({ id: 'ord_1', orderNumber });
+}
+
+/**
+ * La même chose, mais c'est l'appelant qui dicte la RÉPONSE du serveur.
+ *
+ * Sert aux suites qui éprouvent le règlement : c'est la présence de `payment`
+ * dans la réponse — et elle seule — qui décide si la commande reste à payer.
+ */
+export async function placeOrderResponse(
+  response: PlacedOrderResponse,
+): Promise<PlacedOrder | null> {
   const placing = TestBed.inject(ClientOrders).place();
   // Laisse partir le jeton puis la requête : les deux sont des micro-tâches.
   await Promise.resolve();
   await Promise.resolve();
   TestBed.inject(HttpTestingController)
     .expectOne((request) => request.url.endsWith('/orders'))
-    .flush({ id: 'ord_1', orderNumber });
+    .flush(response);
   return placing;
 }
+
+/** Une intention de paiement plausible, pour la commande qui en réclame une. */
+export const CARD_DUE: OrderPaymentIntent = {
+  clientSecret: 'pi_1_secret_test',
+  publishableKey: 'pk_test_1',
+  amountCents: 1_200,
+};

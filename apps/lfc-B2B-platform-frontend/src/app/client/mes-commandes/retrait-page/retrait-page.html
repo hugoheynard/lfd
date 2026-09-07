@@ -1,0 +1,25 @@
+<div class="page">
+  @if (phase() === 'loading') {
+    <p class="waiting">{{ t().qr.loading }}</p>
+  } @else {
+    <h1 class="title">{{ t().qr.title }}</h1>
+
+    @if (handoverUrl(); as url) {
+      <p class="lead">{{ t().qr.lead }}</p>
+      <div class="code">
+        <lfd-qr-code [value]="url" [label]="t().qr.codeLabel" />
+      </div>
+      <p class="ref">{{ reference() }}</p>
+      @if (whenLabel(); as when) {
+        <p class="when">{{ when }}</p>
+      }
+    } @else {
+      <!-- Pas de code : on dit POURQUOI. Un carré absent sans raison se lit
+           comme une panne, et le client rappelle. -->
+      <p class="none">{{ noCodeReason() }}</p>
+      @if (reference(); as ref) {
+        <p class="ref">{{ ref }}</p>
+      }
+    }
+  }
+</div>

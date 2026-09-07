@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: 24px var(--fold-space-lg) var(--fold-space-2xl);
+}
+
+@media (min-width: 900px) {
+  .page {
+    width: min(640px, 100%);
+    margin-inline: auto;
+    padding-top: 40px;
+  }
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-display);
+  color: var(--fold-color-text);
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+/* Le montant est la seule information que personne ne doit avoir à chercher. */
+.amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--fold-space-md);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+}
+
+.amount-label {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.amount-value {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  color: var(--fold-color-text);
+}
+
+.waiting {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+/* L'iframe Stripe se dimensionne seule ; on lui réserve sa place. */
+.element {
+  min-height: 3rem;
+}
+
+.element.is-hidden {
+  display: none;
+}
+
+.error {
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-danger-soft, var(--fold-color-surface-card));
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-danger, var(--fold-color-text));
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin-top: auto;
+}
+
+.pay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pay:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.later {
+  width: 100%;
+  padding: var(--fold-space-sm);
+  border: 0;
+  background: none;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}

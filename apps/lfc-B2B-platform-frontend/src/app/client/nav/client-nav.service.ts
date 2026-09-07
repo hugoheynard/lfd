@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
-import { ClientOrders } from '../client-orders.service';
+import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 
@@ -93,7 +93,7 @@ export interface NavItem {
  */
 @Injectable({ providedIn: 'root' })
 export class ClientNav {
-  private readonly orders = inject(ClientOrders);
+  private readonly orders = inject(ClientOrderHistory);
   private readonly subscriptions = inject(ClientSubscriptions);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
@@ -131,7 +131,10 @@ export class ClientNav {
 
   private counts(id: Destination['id']): Pick<NavItem, 'count' | 'countShort' | 'warn'> {
     if (id === 'orders') {
-      const placed = this.orders.all().length;
+      // 🔴 Ce compteur lisait le `localStorage`, pendant que l'écran qu'il
+      // annonce lit le serveur : le badge pouvait dire « 0 » devant une liste
+      // pleine. Même source des deux côtés, désormais.
+      const placed = this.orders.orders().length;
       return placed === 0
         ? EMPTY
         : { count: String(placed), countShort: String(placed), warn: false };

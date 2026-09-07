@@ -37,6 +37,8 @@ export type TrackMode = 'pickup' | 'courier';
 
 /** Une commande VIVANTE, celle qu'on suit. */
 export interface TrackedOrder {
+  /** L'identifiant SERVEUR — ce que l'écran du QR ouvrira. */
+  readonly id: string;
   readonly reference: string;
   readonly mode: TrackMode;
   /** Le lieu ou l'adresse, tel qu'il s'écrit — « Retrait · Le Labo ». */
@@ -123,6 +125,7 @@ export function trackedOf(order: OrderView, copy: RowCopy): TrackedOrder {
   const at = STEP_OF_STATUS[order.status] ?? 0;
   const place = placeOf(order);
   return {
+    id: order.id,
     reference: order.orderNumber,
     mode: order.fulfillmentMethod === 'pickup' ? 'pickup' : 'courier',
     kind: `${modeLabel(order, copy)} · ${place}`,
@@ -200,7 +203,12 @@ function modeLabel(order: OrderView, copy: RowCopy): string {
 }
 
 /** Le lieu figé sur la commande — jamais le réglage d'aujourd'hui. */
-function placeOf(order: OrderView): string {
+/**
+ * Le lieu, tel que la commande l'a FIGÉ — le point de retrait, ou la ville
+ * livrée. Exporté pour la même raison que `windowOf` : l'accueil et le suivi
+ * nomment le même endroit, et deux dérivations finiraient par diverger.
+ */
+export function placeOf(order: OrderView): string {
   const snapshot =
     order.fulfillmentMethod === 'pickup' ? order.pickupAddress : order.deliveryAddress;
   if (snapshot === null) {
@@ -209,8 +217,14 @@ function placeOf(order: OrderView): string {
   return snapshot.label.trim() === '' ? snapshot.ville : snapshot.label;
 }
 
-/** La tranche demandée, ou vide — un client peut n'en vouloir aucune. */
-function windowOf(order: OrderView): string {
+/**
+ * La tranche demandée, ou vide — un client peut n'en vouloir aucune.
+ *
+ * Exportée : l'accueil connecté annonce la même tranche que le suivi, et deux
+ * façons de la mettre en forme finiraient par se contredire sur l'écran qui la
+ * lit le moins.
+ */
+export function windowOf(order: OrderView): string {
   const window: FulfillmentWindow | null = order.fulfillment.window.value;
   if (window === null) {
     return '';

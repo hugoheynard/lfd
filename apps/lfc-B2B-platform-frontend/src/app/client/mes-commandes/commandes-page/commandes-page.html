@@ -21,7 +21,7 @@
       </div>
     } @else {
       @for (order of tracked(); track order.reference) {
-        <app-track-card class="rail-card" [order]="order" />
+        <app-track-card class="rail-card" [order]="order" (qrAsked)="showQr(order.id)" />
       }
     }
 

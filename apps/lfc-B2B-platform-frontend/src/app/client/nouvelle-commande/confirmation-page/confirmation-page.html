@@ -10,13 +10,15 @@
     <p class="intro">{{ t().done.intro }}</p>
     <p class="ref">{{ t().done.kicker }} · {{ done.reference }}</p>
 
-    <!-- L'adresse est NOMMÉE : c'est la seule façon de s'apercevoir qu'elle est
-         fausse avant d'attendre un reçu qui n'arrivera pas. -->
+    <!-- 🔴 Ce bloc annonçait un reçu par e-mail contenant la facture et le QR.
+         Aucun des trois n'existe : pas de gabarit de courriel de commande, pas
+         de facture, et le QR vit désormais dans l'app. Il dit ce qui est vrai —
+         où la commande se retrouve. -->
     <section class="mail">
-      <span class="mail-icon" aria-hidden="true"><fold-icon name="mail" /></span>
+      <span class="mail-icon" aria-hidden="true"><fold-icon name="archive" /></span>
       <span class="mail-text">
-        <span class="mail-title">{{ t().done.mailTitle }}</span>
-        <span class="mail-line">{{ mailLine() }}</span>
+        <span class="mail-title">{{ t().done.keptTitle }}</span>
+        <span class="mail-line">{{ t().done.keptLine }}</span>
       </span>
     </section>
 
@@ -46,21 +48,23 @@
         </div>
       }
       <div class="row paid">
-        <dt>{{ t().done.paidOnline }}</dt>
+        <dt>{{ totalLabel() }}</dt>
         <dd>{{ money(done.totals.totalCents) }}</dd>
       </div>
     </dl>
 
     <div class="actions">
-      <button class="qr" type="button" (click)="notYet()">{{ t().done.qr }}</button>
-      <div class="pair">
-        <button class="edit" type="button" (click)="notYet()">{{ t().done.edit }}</button>
-        <button class="cancel" type="button" (click)="notYet()">{{ t().done.cancel }}</button>
-      </div>
-      <p class="deadline">{{ t().done.deadline }}</p>
-      @if (pending()) {
-        <p class="pending">{{ t().done.pending }}</p>
+      @if (settlementDue()) {
+        <button class="qr" type="button" (click)="settle()">{{ t().done.settleAction }}</button>
       }
+      @if (hasCounter()) {
+        <button class="qr" type="button" (click)="showQr()">{{ t().done.qr }}</button>
+      }
+      <!-- 🔴 « Modifier » et « Annuler » répondaient « cet écran arrive au
+           prochain lot », sous une phrase qui promettait un remboursement
+           immédiat. Aucune route ne modifie, n'annule ni ne rembourse : les
+           boutons sont partis, et la phrase dit par où passe un changement. -->
+      <p class="deadline">{{ t().done.changeNote }}</p>
       <button class="back" type="button" (click)="backToShop()">‹ {{ t().cart.back }}</button>
     </div>
   </div>

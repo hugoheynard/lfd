@@ -62,11 +62,18 @@ export class PanierPage {
   }
 
   /**
-   * ⚠️ Maquette : la commande est FIGÉE DANS LE NAVIGATEUR, aucun paiement n'est
-   * demandé et rien n'est écrit en base. C'est ici que le vrai règlement se
-   * branchera, et nulle part ailleurs.
+   * Passe la commande, puis mène là où elle en est.
+   *
+   * 🔴 **Le résultat de `place()` n'était pas attendu.** La méthode est
+   * asynchrone depuis qu'elle écrit au serveur ; `place() !== null` comparait
+   * une *promesse* à `null`, donc toujours vrai. Un refus du serveur — heure
+   * limite dépassée, zone non desservie, SKU disparu — menait quand même à
+   * l'écran « c'est réglé », pour une commande qui n'existait pas.
+   *
+   * La suite dépend de ce que le serveur a décidé du règlement : une carte à
+   * présenter mène au règlement, tout le reste à la confirmation.
    */
-  protected proceed(): void {
+  protected async proceed(): Promise<void> {
     if (this.cart.isEmpty()) {
       this.backToShop();
       return;
@@ -77,8 +84,16 @@ export class PanierPage {
       void this.router.navigate(['/nouvelle-commande']);
       return;
     }
-    if (this.orders.place() !== null) {
-      void this.router.navigate(['/nouvelle-commande/confirmee']);
+    const placed = await this.orders.place();
+    if (placed === null) {
+      // Le refus a déjà été dit, et le panier est intact : on ne bouge pas de
+      // l'écran où la correction est possible.
+      return;
     }
+    void this.router.navigate(
+      placed.settlement === 'due'
+        ? ['/nouvelle-commande/reglement', placed.id]
+        : ['/nouvelle-commande/confirmee'],
+    );
   }
 }

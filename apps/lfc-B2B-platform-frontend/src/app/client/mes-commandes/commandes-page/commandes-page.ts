@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { FoldElementTitleComponent, FoldIconComponent, FoldPageSectionComponent } from 'fold-ng';
 
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
@@ -13,6 +14,7 @@ import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../sha
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
+
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
@@ -67,6 +69,7 @@ import { TrackCard } from '../track-card/track-card';
 export class CommandesPage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
+  private readonly router = inject(Router);
 
   private readonly history_ = inject(ClientOrderHistory);
   private readonly client = inject(ClientCompany);
@@ -128,5 +131,16 @@ export class CommandesPage {
 
   protected report(order: HistoryOrder): void {
     this.reported.set(order);
+  }
+
+  /**
+   * Le QR de retrait de cette commande-là.
+   *
+   * 🔴 La carte de suivi émettait déjà `qrAsked`, et **rien ne l'écoutait** : le
+   * bouton « Voir mon QR » du suivi ne faisait rien du tout, sans même le dire.
+   * L'écran existe depuis le lot 4 ; il lui manquait son appelant.
+   */
+  protected showQr(orderId: string): void {
+    void this.router.navigate(['/mes-commandes/retrait', orderId]);
   }
 }

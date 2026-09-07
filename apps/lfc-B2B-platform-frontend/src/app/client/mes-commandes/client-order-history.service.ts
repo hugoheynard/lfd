@@ -68,6 +68,34 @@ export class ClientOrderHistory {
     this.loadedFor = 'posé-par-la-suite';
   }
 
+  /**
+   * **Une** commande, relue au serveur.
+   *
+   * Une lecture propre plutôt qu'une pioche dans la liste déjà chargée : un lien
+   * ouvert directement — un QR de retrait rouvert le lendemain — n'a aucune
+   * liste derrière lui, et faire dépendre l'écran d'un chargement préalable le
+   * casserait exactement dans le cas où il sert.
+   *
+   * `null` couvre les deux refus, et c'est voulu : le serveur rend **404** aussi
+   * bien pour une commande qui n'existe pas que pour celle d'un autre. L'écran
+   * n'a pas à distinguer — dans les deux cas il n'y a rien à montrer.
+   */
+  async byId(orderId: string): Promise<OrderView | null> {
+    if (!this.auth.isAuthenticated()) {
+      return null;
+    }
+    try {
+      const token = await firstValueFrom(this.auth.accessToken$());
+      return await firstValueFrom(
+        this.http.get<OrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${orderId}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      );
+    } catch {
+      return null;
+    }
+  }
+
   private async load(companyId: string | null): Promise<void> {
     const base = AUTH_CONFIG.apiBaseUrl;
     try {

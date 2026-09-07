@@ -25,6 +25,8 @@ export interface ClientCopy {
     readonly kickerCommande: string;
     readonly kickerShop: string;
     readonly kickerCart: string;
+    readonly kickerPay: string;
+    readonly kickerQr: string;
     readonly kickerDone: string;
     readonly deskKicker: string;
   };
@@ -79,7 +81,14 @@ export interface ClientCopy {
     readonly pickupTitle: string;
     /** `{ref}` est remplacé par le numéro de commande. */
     readonly pickupRef: string;
-    /** `{at}` le lieu prépositionnel, `{slot}` le créneau. */
+    /**
+     * `{at}` le LIEU tel que la commande l'a figé, `{slot}` la tranche.
+     *
+     * 🔴 `{at}` portait une forme prépositionnelle — « au Labo » — que seul le
+     * choix de service local savait fabriquer. La carte lit désormais la
+     * commande du SERVEUR, qui ne connaît que « Le Labo » : la préposition est
+     * passée dans la phrase, où elle est traduisible.
+     */
     readonly pickupWhen: string;
     readonly pickupAction: string;
     readonly cartTitle: string;
@@ -307,26 +316,89 @@ export interface ClientCopy {
     readonly browse: string;
     readonly back: string;
   };
+  /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
+  readonly qr: {
+    readonly title: string;
+    readonly lead: string;
+    readonly loading: string;
+    /** Ce que dit un lecteur d'écran devant le carré — on décrit l'objet. */
+    readonly codeLabel: string;
+    /** `{day}` est remplacé par la journée d'acheminement. */
+    readonly when: string;
+    /** Une commande en coursier n'a pas de comptoir, donc pas de code. */
+    readonly delivery: string;
+    /** Déjà remise, ou origine admin non configurée : aucun code à montrer. */
+    readonly unavailable: string;
+    /** Commande introuvable — ou celle d'un autre : on ne distingue pas. */
+    readonly unknown: string;
+  };
+
+  /** L'écran de RÈGLEMENT — une étape, entre le panier et la confirmation. */
+  readonly pay: {
+    readonly title: string;
+    /** `{ref}` est remplacé par le numéro de commande rendu par le serveur. */
+    readonly lead: string;
+    readonly amount: string;
+    readonly loading: string;
+    /** `{total}` est remplacé par le montant dû. */
+    readonly submit: string;
+    readonly submitting: string;
+    readonly later: string;
+    /** Le module de paiement ne s'est pas chargé — la commande, elle, existe. */
+    readonly unavailable: string;
+    /** Repli quand Stripe refuse sans message ; sinon c'est le SIEN qu'on montre. */
+    readonly refused: string;
+    /** Ni accepté ni refusé : l'intention n'a pas abouti. */
+    readonly failed: string;
+    readonly accepted: string;
+  };
   readonly done: {
     readonly kicker: string;
+    /** Le titre quand la commande est RÉGLÉE. Deux lignes, séparées par `\n`. */
     readonly title: string;
+    /** Quand elle reste à régler — l'écran ne dit pas « c'est réglé ». */
+    readonly titleDue: string;
+    /** Quand rien n'est à encaisser : elle part au compte de la société. */
+    readonly titleAccount: string;
     readonly intro: string;
-    readonly mailTitle: string;
-    /** `{email}` est remplacé par l'adresse du compte. */
-    readonly mailLine: string;
-    /** Quand l'adresse n'est pas connue de l'écran — on ne la devine pas. */
-    readonly mailLineNoAddress: string;
+    /**
+     * Où RETROUVER la commande.
+     *
+     * 🔴 Ces deux lignes annonçaient « Reçu envoyé par e-mail — la facture et le
+     * QR de retrait sont dedans ». Aucun e-mail de commande n'existe (le mailer
+     * n'a pas de gabarit `customer.order-*`, et rien n'écoute `OrderPlacedEvent`
+     * pour écrire), et aucune facture n'est émise. Elles disent maintenant ce
+     * qui est vrai : la commande est en ligne, et voilà où.
+     */
+    readonly keptTitle: string;
+    readonly keptLine: string;
     readonly recapPickup: string;
     readonly recapDelivery: string;
     readonly recapContent: string;
     /** `{count}` est remplacé par le nombre de pièces. */
     readonly recapPieces: string;
     readonly paidOnline: string;
+    /** La ligne de total quand le règlement reste dû. */
+    readonly toSettle: string;
+    /** La ligne de total quand la commande est portée au compte. */
+    readonly onAccount: string;
+    /** Le bouton qui ramène à l'étape de règlement. */
+    readonly settleAction: string;
     readonly qr: string;
-    readonly edit: string;
-    readonly cancel: string;
-    readonly deadline: string;
-    readonly pending: string;
+    /**
+     * Ce qu'il faut faire pour CHANGER quelque chose.
+     *
+     * 🔴 Il y avait ici deux boutons — « Modifier », « Annuler » — et la phrase
+     * « Modifiable jusqu'à 22 h — remboursement immédiat ». Aucune route ne
+     * modifie, n'annule ni ne rembourse une commande : `cancelled` et `refunded`
+     * ne sont écrits nulle part. Les boutons répondaient « cet écran arrive au
+     * prochain lot » ; la phrase, elle, ne répondait rien du tout.
+     *
+     * La commande est un fait clos, et ce qui bouge après passe par un avenant
+     * — qui n'existe pas encore. Tant qu'il n'existe pas, la seule chose vraie à
+     * dire est par où passe un changement.
+     */
+    readonly changeNote: string;
   };
   readonly dialog: {
     readonly close: string;

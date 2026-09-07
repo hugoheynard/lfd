@@ -1,0 +1,33 @@
+<div class="page">
+  <h1 class="title">{{ t().pay.title }}</h1>
+  <p class="lead">{{ lead() }}</p>
+
+  @if (amountCents() !== null) {
+    <p class="amount">
+      <span class="amount-label">{{ t().pay.amount }}</span>
+      <span class="amount-value">{{ amountLabel() }}</span>
+    </p>
+  }
+
+  @if (phase() === 'loading') {
+    <p class="waiting">{{ t().pay.loading }}</p>
+  }
+
+  <!-- Le nœud de montage du Payment Element. Il reste dans le DOM quel que soit
+       l'état : Stripe s'y accroche au chargement, et le retirer sous ses iframes
+       casserait le formulaire au lieu de le cacher. -->
+  <div #mount class="element" [class.is-hidden]="phase() === 'loading'"></div>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <div class="foot">
+    @if (phase() !== 'unavailable') {
+      <button class="pay" type="button" [disabled]="phase() !== 'ready'" (click)="pay()">
+        {{ submitLabel() }}
+      </button>
+    }
+    <button class="later" type="button" (click)="later()">{{ t().pay.later }}</button>
+  </div>
+</div>

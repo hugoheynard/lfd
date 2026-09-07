@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
@@ -13,16 +6,22 @@ import { formatCents, formatRate } from '../../../client/format-money';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { ClientIdentity } from '../../../client/client-identity.service';
 
 /**
  * La commande passée.
  *
- * Trois choses y sont dites que personne n'aime écrire, et c'est pour ça
- * qu'elles y sont : à quelle ADRESSE le reçu part (pour qu'on la corrige si elle
- * est fausse), ce qui a été RÉGLÉ (en ligne, rien à payer au comptoir), et
- * jusqu'à quand on peut ANNULER — avec la raison de la date limite. Une échéance
- * qui dit pourquoi elle existe se conteste moins qu'une échéance nue.
+ * 🔴 **Elle annonçait cinq choses que le système ne faisait pas** : « c'est
+ * réglé » sans qu'aucun paiement n'ait lieu, un reçu par e-mail qui n'existe
+ * pas, une facture qui n'existe pas, un QR derrière un bouton mort, et une
+ * modification jusqu'à 22 h qu'aucune route ne sait faire.
+ *
+ * Il en reste **zéro**. Le règlement est une étape réelle et l'écran en dit
+ * l'état exact ; le QR a son écran ; le reçu et la facture ont cédé la place à
+ * ce qui est vrai — la commande est gardée, et voilà où ; les deux boutons de
+ * modification sont partis avec la phrase qui promettait un remboursement.
+ *
+ * Un écran de confirmation est le seul que **tout le monde** lit. Une phrase
+ * fausse y coûte un appel au service client ; cinq en coûtaient cinq.
  */
 @Component({
   selector: 'app-confirmation-page',
@@ -35,24 +34,51 @@ export class ConfirmationPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly orders = inject(ClientOrders);
-  private readonly identity = inject(ClientIdentity);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly order = this.orders.latest;
 
-  /** ⚠️ Maquette : le QR et la modification n'ont pas encore leur écran. */
-  protected readonly pending = signal(false);
+  /**
+   * Le titre dépend de ce que la commande DOIT encore.
+   *
+   * 🔴 Il annonçait « c'est réglé » dans tous les cas, y compris pour une
+   * commande qui venait de partir en `pending` derrière une intention Stripe que
+   * personne n'avait présentée. Trois états, trois phrases : ce qui est payé le
+   * dit, ce qui reste dû le dit aussi, et ce qui part au compte ne réclame rien.
+   */
+  private readonly title = computed(() => {
+    const done = this.t().done;
+    switch (this.order()?.settlement) {
+      case 'paid':
+        return done.title;
+      case 'due':
+        return done.titleDue;
+      default:
+        return done.titleAccount;
+    }
+  });
 
   /** Le titre tient sur deux lignes dans le dictionnaire : elles sont voulues. */
-  protected readonly titleLines = computed(() => this.t().done.title.split('\n'));
+  protected readonly titleLines = computed(() => this.title().split('\n'));
 
-  /** L'adresse est NOMMÉE quand on la connaît, désignée quand on ne la sait pas. */
-  protected readonly mailLine = computed(() => {
-    const email = this.identity.email();
-    return email === null
-      ? this.t().done.mailLineNoAddress
-      : fill(this.t().done.mailLine, { email });
+  /** Le libellé de la ligne de total — il nomme l'état, il ne l'invente pas. */
+  protected readonly totalLabel = computed(() => {
+    const done = this.t().done;
+    switch (this.order()?.settlement) {
+      case 'paid':
+        return done.paidOnline;
+      case 'due':
+        return done.toSettle;
+      default:
+        return done.onAccount;
+    }
   });
+
+  /** Une commande encore due porte un chemin de retour vers le règlement. */
+  protected readonly settlementDue = computed(() => this.order()?.settlement === 'due');
+
+  /** Le comptoir n'existe qu'en retrait : c'est lui qui ouvre le droit au code. */
+  protected readonly hasCounter = computed(() => this.order()?.service.mode === 'pickup');
 
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),
@@ -103,8 +129,25 @@ export class ConfirmationPage {
     return formatCents(cents);
   }
 
-  protected notYet(): void {
-    this.pending.set(true);
+  /**
+   * Le QR de retrait — l'écran existe depuis le lot 4.
+   *
+   * Il n'est proposé qu'en RETRAIT : une commande livrée n'a pas de comptoir,
+   * donc pas de code, et l'y mener n'afficherait qu'une phrase d'excuse.
+   */
+  protected showQr(): void {
+    const order = this.order();
+    if (order !== null) {
+      void this.router.navigate(['/mes-commandes/retrait', order.id]);
+    }
+  }
+
+  /** Retour à l'étape de règlement, pour la commande qu'on est en train de lire. */
+  protected settle(): void {
+    const order = this.order();
+    if (order !== null) {
+      void this.router.navigate(['/nouvelle-commande/reglement', order.id]);
+    }
   }
 
   protected backToShop(): void {

@@ -9,19 +9,10 @@ import { ClientSubscriptions } from '../client-subscriptions.service';
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from '../cart/client-cart.service';
-import { OrderContextStore, type ServiceChoice } from '../order-context.store';
-import { placeOrder, provideRecognised } from '../client-orders.fixture';
+import { provideRecognised } from '../client-orders.fixture';
+import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
+import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ClientNav } from './client-nav.service';
-
-const AT_THE_LABO: ServiceChoice = {
-  mode: 'pickup',
-  place: 'Le Labo',
-  at: 'au Labo',
-  address: 'Route de la Balme, Val d’Isère',
-  pickupAddressId: 'pick_labo',
-  slot: '7 h – 8 h',
-  date: '2026-09-07',
-};
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
@@ -64,10 +55,13 @@ describe('Les destinations du menu', () => {
     expect(nav.items().some((i) => i.id === 'cart')).toBe(false);
   });
 
-  it('compte les commandes réellement passées, pas une valeur tenue à part', async () => {
-    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
-    TestBed.inject(ClientCart).add('VIE-001');
-    await placeOrder();
+  /**
+   * 🔴 Ce compteur lisait le `localStorage` pendant que l'écran qu'il annonce
+   * lit le serveur : le badge pouvait dire « 0 » devant une liste pleine. Il
+   * compte désormais ce que la MÊME source rend.
+   */
+  it('compte les commandes que le SERVEUR rend, pas celles du navigateur', () => {
+    TestBed.inject(ClientOrderHistory).receive([LIVE_PICKUP]);
 
     const orders = TestBed.inject(ClientNav)
       .items()

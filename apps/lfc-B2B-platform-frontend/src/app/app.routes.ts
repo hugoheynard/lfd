@@ -186,6 +186,28 @@ export const routes: Routes = [
           import('./client/cart/panier-page/panier-page').then((m) => m.PanierPage),
       },
       {
+        // LE RÈGLEMENT, et il porte l'identifiant de la commande. Elle EXISTE
+        // déjà quand on arrive ici : l'adresse doit donc survivre à un
+        // rechargement, et se rouvrir plus tard sur une commande restée à payer.
+        // Un panneau dans le panier n'aurait tenu ni l'un ni l'autre.
+        path: 'nouvelle-commande/reglement/:id',
+        title: 'Régler ma commande — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/nouvelle-commande/reglement-page/reglement-page').then(
+            (m) => m.ReglementPage,
+          ),
+      },
+      {
+        // LE QR DE RETRAIT, par son identifiant de commande. Il vit sous
+        // `mes-commandes/` et pas sous `nouvelle-commande/` : on le rouvre le
+        // lendemain matin, depuis l'historique ou un signet, longtemps après
+        // que la commande a cessé d'être « nouvelle ».
+        path: 'mes-commandes/retrait/:id',
+        title: 'Mon QR de retrait — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
+      },
+      {
         path: 'nouvelle-commande/confirmee',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>

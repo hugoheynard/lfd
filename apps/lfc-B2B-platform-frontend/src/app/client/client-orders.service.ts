@@ -1,6 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type { PlaceOrderPayload, PlacedOrderResponse, ShopQuoteView } from '@lfd/contracts';
+import type {
+  OrderPaymentIntent,
+  PlaceOrderPayload,
+  PlacedOrderResponse,
+  ShopQuoteView,
+} from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -21,18 +26,36 @@ export interface PlacedLine {
 }
 
 /**
+ * **Ce que la commande attend encore, côté règlement.**
+ *
+ * Trois états, et pas un booléen : « pas payé » recouvrait deux situations que
+ * l'écran de confirmation doit dire différemment. Une commande portée au compte
+ * n'attend RIEN du client ; une commande carte non réglée attend son geste.
+ * Les confondre, c'est soit réclamer de l'argent à qui n'en doit pas, soit
+ * laisser partir sans payer qui le devait.
+ */
+export type Settlement = 'not_required' | 'due' | 'paid';
+
+/**
  * Une commande passée.
  *
  * Tout y est FIGÉ, y compris les noms et les prix : une commande relue six mois
  * plus tard doit dire ce qu'on a payé ce jour-là, pas ce que le catalogue coûte
  * aujourd'hui. C'est la différence entre un reçu et une jointure.
+ *
+ * `settlement` est la seule chose qui BOUGE après coup — de `due` à `paid` —, et
+ * c'est normal : le règlement est un fait postérieur à la commande, pas une de
+ * ses lignes.
  */
 export interface PlacedOrder {
+  /** L'identifiant SERVEUR — la cible de `GET /orders/:id/payment`. */
+  readonly id: string;
   readonly reference: string;
   readonly service: ServiceChoice;
   readonly lines: readonly PlacedLine[];
   readonly pieces: number;
   readonly totals: ShopQuoteView;
+  readonly settlement: Settlement;
 }
 
 const KEY = 'orders';
@@ -41,13 +64,28 @@ function parseOrders(raw: unknown): readonly PlacedOrder[] | null {
   return Array.isArray(raw) ? raw.filter(isPlaced) : null;
 }
 
-/** Une commande relue n'est gardée que si elle porte encore de quoi la lire. */
+/** Les trois états de règlement, pour reconnaître une valeur relue du navigateur. */
+const SETTLEMENTS: readonly string[] = ['not_required', 'due', 'paid'];
+
+/**
+ * Une commande relue n'est gardée que si elle porte encore de quoi la lire.
+ *
+ * 🔴 **`id` et `settlement` sont exigés**, ce qui écarte les commandes écrites
+ * avant que le règlement existe. C'est délibéré : on ne sait pas si elles ont
+ * été payées, et leur poser un état par défaut ferait dire à l'écran de
+ * confirmation soit « réglé » soit « à régler » sur la foi de rien. Le serveur
+ * garde ces commandes ; « Mes commandes » les lit. Ce cache-ci perd une entrée,
+ * pas une commande.
+ */
 function isPlaced(value: unknown): value is PlacedOrder {
   if (!isRecord(value)) {
     return false;
   }
   return (
+    typeof value['id'] === 'string' &&
     typeof value['reference'] === 'string' &&
+    typeof value['settlement'] === 'string' &&
+    SETTLEMENTS.includes(value['settlement']) &&
     isRecord(value['service']) &&
     isRecord(value['totals']) &&
     Array.isArray(value['lines']) &&
@@ -78,6 +116,16 @@ function isPlaced(value: unknown): value is PlacedOrder {
  * **ne fige rien** : le panier reste plein, un message le dit, et le client peut
  * corriger. Vider le panier sur un échec serait lui faire perdre sa saisie pour
  * une raison qu'il n'a pas choisie.
+ *
+ * ## Le règlement n'est pas la passation
+ *
+ * 🔴 **La réponse portait une intention de paiement que personne ne lisait.**
+ * Le serveur crée l'intention Stripe AVANT d'écrire la commande et la rend dans
+ * `payment` ; `place()` n'en prenait que le numéro. Chaque commande client
+ * partait donc en `pending` derrière une intention que rien ne présentait, et
+ * l'écran suivant annonçait « c'est réglé ». Le règlement est désormais une
+ * ÉTAPE — `/nouvelle-commande/reglement/:id` — et la commande dit lequel des
+ * trois états elle porte.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientOrders {
@@ -89,15 +137,30 @@ export class ClientOrders {
 
   private readonly placed = signal<readonly PlacedOrder[]>(readLocal(KEY, parseOrders) ?? []);
 
+  /**
+   * L'intention rendue à la passation, gardée le temps d'un écran.
+   *
+   * Elle évite à la page de règlement un aller-retour, et surtout un second
+   * appel à Stripe pour un secret qu'on vient de recevoir. Elle n'est pas
+   * persistée : un secret de paiement n'a rien à faire dans le stockage du
+   * navigateur, et la page sait le redemander (`GET /orders/:id/payment`) quand
+   * elle ne l'a plus — un rechargement, un lien rouvert plus tard.
+   */
+  private readonly intent = signal<{ orderId: string; payment: OrderPaymentIntent } | null>(null);
+
   /** La dernière passée — celle que la confirmation montre. */
   readonly latest = computed<PlacedOrder | null>(() => this.placed()[0] ?? null);
 
   readonly all = this.placed.asReadonly();
 
   /**
-   * Fige le panier en commande, puis le VIDE : ce qui est payé n'est plus en
-   * cours. Rend `null` quand il n'y a rien à figer — un panier vide ou un mode
-   * de service perdu ne font pas une commande.
+   * Fige le panier en commande, puis le VIDE : la commande EXISTE au serveur,
+   * même si elle reste à régler. Rend `null` quand il n'y a rien à figer — un
+   * panier vide ou un mode de service perdu ne font pas une commande.
+   *
+   * Le panier est vidé avant le paiement, et c'est le bon ordre : ce qui a été
+   * commandé n'est plus « en cours d'achat ». Un paiement abandonné laisse une
+   * commande à régler, pas un panier fantôme qu'on repasserait en double.
    */
   async place(): Promise<PlacedOrder | null> {
     const service = this.order.choice();
@@ -109,7 +172,9 @@ export class ClientOrders {
     if (placed === null) {
       return null;
     }
+    const payment = placed.payment ?? null;
     const order: PlacedOrder = {
+      id: placed.id,
       // Le numéro du SERVEUR, jamais un compteur local. C'est celui qu'un
       // client lira au téléphone et celui que la production imprimera.
       reference: placed.orderNumber,
@@ -125,11 +190,69 @@ export class ClientOrders {
       })),
       pieces: this.cart.count(),
       totals: this.cart.totals(),
+      // Pas d'intention = rien à encaisser au checkout : la commande part au
+      // compte de la société, ou son total est nul. C'est le serveur qui en
+      // décide, jamais l'écran.
+      settlement: payment === null ? 'not_required' : 'due',
     };
+    this.intent.set(payment === null ? null : { orderId: placed.id, payment });
     this.placed.update((all) => [order, ...all]);
     writeLocal(KEY, this.placed());
     this.cart.clear();
     return order;
+  }
+
+  /**
+   * De quoi régler cette commande-ci : l'intention gardée si c'est la bonne,
+   * sinon celle que le serveur veut bien redonner.
+   *
+   * `null` = elle n'attend aucun règlement en ligne — déjà réglée, portée au
+   * compte, ou introuvable. La page appelante n'a pas à distinguer : dans les
+   * trois cas il n'y a pas de carte à demander.
+   */
+  async paymentFor(orderId: string): Promise<OrderPaymentIntent | null> {
+    const held = this.intent();
+    if (held !== null && held.orderId === orderId) {
+      return held.payment;
+    }
+    if (!this.auth.isAuthenticated()) {
+      return null;
+    }
+    try {
+      return await firstValueFrom(
+        this.auth
+          .accessToken$()
+          .pipe(
+            switchMap((token) =>
+              this.http.get<OrderPaymentIntent>(
+                `${AUTH_CONFIG.apiBaseUrl}/orders/${orderId}/payment`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              ),
+            ),
+          ),
+      );
+    } catch {
+      // Un refus n'est pas une panne : le serveur dit « cette commande n'attend
+      // aucun règlement en ligne » exactement comme il dirait « je ne la
+      // connais pas ». Aucun toast — la page mène à la confirmation, qui porte
+      // déjà l'état réel de la commande.
+      return null;
+    }
+  }
+
+  /**
+   * Le règlement a abouti — Stripe a rendu `succeeded`.
+   *
+   * ⚠️ **C'est un écho, pas l'autorité.** Le passage en `paid` de NOTRE base est
+   * écrit par le webhook Stripe, seul témoin qui ne dépend pas du navigateur du
+   * client. Ce que cette méthode change est ce que CET écran a le droit de dire.
+   */
+  markPaid(orderId: string): void {
+    this.intent.set(null);
+    this.placed.update((all) =>
+      all.map((order) => (order.id === orderId ? { ...order, settlement: 'paid' } : order)),
+    );
+    writeLocal(KEY, this.placed());
   }
 
   /**

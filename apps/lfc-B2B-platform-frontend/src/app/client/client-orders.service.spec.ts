@@ -7,7 +7,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientCart } from './cart/client-cart.service';
 import { ClientOrders } from './client-orders.service';
-import { placeOrder, provideRecognised, RECOGNISED } from './client-orders.fixture';
+import {
+  CARD_DUE,
+  placeOrder,
+  placeOrderResponse,
+  provideRecognised,
+  RECOGNISED,
+} from './client-orders.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { hydrateWith, TEST_CATALOGUE } from './shop/shop-catalogue.fixture';
 import { ShopCatalogue } from './shop/shop-catalogue.store';
@@ -160,5 +166,123 @@ describe('passer commande', () => {
 
     http.verify();
     expect(TestBed.inject(ClientCart).isEmpty()).toBe(false);
+  });
+});
+
+/**
+ * 🔴 **L'intention de paiement n'était lue par personne.**
+ *
+ * `POST /orders` rend `payment` quand une carte est requise — et c'est le cas de
+ * TOUTE commande du parcours client, qui part sans société. `place()` n'en
+ * gardait que le numéro : la commande tombait en `pending` derrière une
+ * intention Stripe jamais présentée, et l'écran suivant annonçait « c'est
+ * réglé ». Ces cas tiennent la décision qui manquait.
+ */
+describe('le règlement de la commande', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  /** Une intention dans la réponse = il reste à payer, et l'écran doit le savoir. */
+  it('marque À RÉGLER la commande dont le serveur rend une intention', async () => {
+    boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const order = await placeOrderResponse({
+      id: 'ord_9',
+      orderNumber: 'CMD-0009',
+      payment: CARD_DUE,
+    });
+
+    expect(order?.settlement).toBe('due');
+    expect(order?.id).toBe('ord_9');
+  });
+
+  /** Pas d'intention = rien à encaisser : la société règle au terme convenu. */
+  it('ne réclame rien quand le serveur ne rend aucune intention', async () => {
+    boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const order = await placeOrder('CMD-0010');
+
+    expect(order?.settlement).toBe('not_required');
+  });
+
+  /**
+   * L'intention reçue à la passation sert l'écran suivant SANS aller-retour —
+   * et surtout sans redemander à Stripe un secret qu'on vient de recevoir.
+   */
+  it('resert l’intention de la passation, sans rappeler le serveur', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    await placeOrderResponse({ id: 'ord_9', orderNumber: 'CMD-0009', payment: CARD_DUE });
+
+    expect(await TestBed.inject(ClientOrders).paymentFor('ord_9')).toEqual(CARD_DUE);
+    http.verify();
+  });
+
+  /** Une autre commande — un lien rouvert plus tard — se redemande au serveur. */
+  it('redemande au serveur l’intention d’une commande qu’il ne tient plus', async () => {
+    const http = boot();
+    const asking = TestBed.inject(ClientOrders).paymentFor('ord_ancienne');
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders/ord_ancienne/payment'))
+      .flush({ ...CARD_DUE, amountCents: 4_200 });
+
+    expect((await asking)?.amountCents).toBe(4_200);
+  });
+
+  /**
+   * Un refus n'est pas une panne : « cette commande n'attend aucun règlement en
+   * ligne » se dit exactement comme « je ne la connais pas ». Dans les deux cas
+   * il n'y a pas de carte à demander, et l'écran doit filer à la confirmation.
+   */
+  it('rend null quand la commande n’attend aucun règlement', async () => {
+    const http = boot();
+    const asking = TestBed.inject(ClientOrders).paymentFor('ord_reglee');
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders/ord_reglee/payment'))
+      .flush({ message: 'Cette commande est déjà réglée.' }, { status: 409, statusText: 'C' });
+
+    expect(await asking).toBeNull();
+  });
+
+  /** Le paiement abouti change l'état de CETTE commande, et d'aucune autre. */
+  it('passe à RÉGLÉ la commande payée, et elle seule', async () => {
+    boot();
+    const orders = TestBed.inject(ClientOrders);
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    await placeOrderResponse({ id: 'ord_a', orderNumber: 'CMD-A', payment: CARD_DUE });
+    TestBed.inject(ClientCart).add('VIE-001');
+    await placeOrderResponse({ id: 'ord_b', orderNumber: 'CMD-B', payment: CARD_DUE });
+
+    orders.markPaid('ord_b');
+
+    const bySku = new Map(orders.all().map((row) => [row.id, row.settlement]));
+    expect(bySku.get('ord_b')).toBe('paid');
+    expect(bySku.get('ord_a')).toBe('due');
+  });
+
+  /**
+   * 🔴 Une commande écrite AVANT que le règlement existe ne porte ni `id` ni
+   * état : lui en poser un ferait dire « réglé » — ou « à régler » — sur la foi
+   * de rien. On la laisse tomber du cache ; le serveur, lui, la garde.
+   */
+  it('écarte du cache une commande relue sans état de règlement', () => {
+    localStorage.setItem(
+      'orders',
+      JSON.stringify([{ reference: 'CMD-VIEILLE', service: {}, totals: {}, lines: [], pieces: 2 }]),
+    );
+    boot();
+
+    expect(TestBed.inject(ClientOrders).all()).toEqual([]);
   });
 });

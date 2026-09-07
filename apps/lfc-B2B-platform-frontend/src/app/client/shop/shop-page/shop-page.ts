@@ -176,8 +176,16 @@ export class ShopPage {
       this.auth.login('/nouvelle-commande/boutique');
       return;
     }
-    if ((await this.orders.place()) !== null) {
-      void this.router.navigate(['/nouvelle-commande/confirmee']);
+    const placed = await this.orders.place();
+    if (placed === null) {
+      return;
     }
+    // Une carte à présenter mène au règlement ; tout le reste — compte, total
+    // nul — à la confirmation. La décision vient du serveur, pas de l'écran.
+    void this.router.navigate(
+      placed.settlement === 'due'
+        ? ['/nouvelle-commande/reglement', placed.id]
+        : ['/nouvelle-commande/confirmee'],
+    );
   }
 }
