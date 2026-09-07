@@ -8,12 +8,26 @@ import type { FulfillmentWindow, OrderView } from '@lfd/contracts';
  * d'historique écrits en dur, avec leurs références, leurs montants et leurs
  * horaires. L'écran montrait donc les commandes de personne.
  *
- * ## Ce qui n'a PAS de source, et qui a disparu
+ * ## Les horodatages d'étape, depuis le 2026-09-07
  *
- * - **Les horodatages d'étape.** Le modèle porte des statuts, pas l'heure de
- *   chacun : rien ne dit à quelle heure une commande est entrée au fournil. Deux
- *   moments font exception et sont donc les seuls datés — la passation
- *   (`placedAt`) et la remise (`handedOverAt`).
+ * ⚠️ **Ce paragraphe disait le contraire jusqu'à cette date**, et il faut le
+ * citer plutôt que le faire disparaître :
+ *
+ * > « Le modèle porte des statuts, pas l'heure de chacun : rien ne dit à quelle
+ * > heure une commande est entrée au fournil. »
+ *
+ * C'était **vrai** quand ça a été écrit : seules la passation et la remise
+ * étaient datées, et l'écran affichait donc deux étapes sur quatre sans heure
+ * — honnêtement, parce qu'une heure plausible aurait été une heure fausse.
+ *
+ * Le contexte `production` a produit les deux qui manquaient, et ce sont de
+ * vrais instants constatés, pas des dérivations : `confirmedAt` est l'heure de
+ * la **clôture du plan du soir**, `readyAt` celle du **colisage** au fournil.
+ * Les deux arrivent au commerce par événement. Les quatre étapes sont donc
+ * datées, et aucune ne l'est par supposition.
+ *
+ * ## Ce qui n'a toujours PAS de source
+ *
  * - **Le coursier.** Ni son prénom ni son téléphone n'existent : la tournée de
  *   livraison n'est pas construite.
  * - **QUI a commandé.** `OrderView` porte l'auteur STAFF d'une saisie, jamais
@@ -28,7 +42,12 @@ import type { FulfillmentWindow, OrderView } from '@lfd/contracts';
 export interface TrackStep {
   /** Le MÉTIER, jamais le logiciel : « au fournil », pas « PROCESSING ». */
   readonly label: string;
-  /** L'heure réelle, ou **vide** — le modèle ne date que deux étapes sur quatre. */
+  /**
+   * L'heure réelle, ou **vide** tant que l'étape n'a pas été franchie.
+   *
+   * Les quatre sont datables depuis le 2026-09-07. Une étape à venir reste sans
+   * heure — c'est le seul cas de vide qui subsiste, et il dit quelque chose.
+   */
   readonly at: string;
 }
 
@@ -60,11 +79,23 @@ export interface TrackedOrder {
 /**
  * L'état d'une commande, réduit à ce que l'écran distingue.
  *
- * Quatre mots pour six statuts : `draft` n'atteint jamais cet écran, et
- * `cancelled` a le sien. Le client ne suit pas une machine à états, il suit un
- * pain.
+ * 🔴 **Il en manquait deux, et le repli mentait.** `statusOf` rendait `ready`
+ * pour tout ce qui n'était ni annulé, ni remis, ni en route : une commande
+ * passée il y a dix minutes s'affichait donc « Prête » dans le tableau. Le
+ * client lisait que son pain l'attendait alors que la nuit de fabrication
+ * n'avait pas commencé.
+ *
+ * Ce n'était pas faux quand ça a été écrit — rien ne faisait avancer une
+ * commande au-delà de `placed`, donc « prête » et « passée » se confondaient en
+ * pratique. Le fournil a séparé les deux : la clôture du plan pose `confirmed`,
+ * le colisage pose `ready`, et ces deux mots-là veulent maintenant dire quelque
+ * chose de différent au client.
+ *
+ * Le client ne suit toujours pas une machine à états : `draft` n'atteint jamais
+ * cet écran, et `in_production` garde son « en route » d'origine.
  */
-export type OrderRowStatus = 'ready' | 'route' | 'done' | 'delivered' | 'cancelled';
+export type OrderRowStatus =
+  'received' | 'bakery' | 'ready' | 'route' | 'done' | 'delivered' | 'cancelled';
 
 /** D'où la commande est entrée, quand ce n'est PAS l'app. */
 export type OrderOrigin = '' | 'recurring' | 'phone';
@@ -114,11 +145,24 @@ export interface RowCopy {
   readonly noWindow: string;
 }
 
-/** Les quatre étapes, dans l'ordre où le pain les franchit. */
+/**
+ * Les quatre étapes, dans l'ordre où le pain les franchit.
+ *
+ * 🔴 **`ready` y manquait**, et le défaut se voyait à l'écran : une commande
+ * dont le bac était fait retombait sur le `?? 0` de l'appelant, donc s'affichait
+ * à « commande passée ». Le client voyait sa commande reculer de deux crans au
+ * moment précis où elle avançait le plus.
+ *
+ * La table est désormais **exhaustive sur les statuts que cet écran voit** :
+ * `draft` ne l'atteint jamais et `cancelled` a son propre traitement. Le repli
+ * de l'appelant ne couvre donc plus rien de réel — il reste comme filet pour un
+ * statut ajouté demain, pas comme mécanisme.
+ */
 const STEP_OF_STATUS: Readonly<Record<string, number>> = {
   placed: 0,
   confirmed: 1,
   in_production: 1,
+  ready: 2,
   fulfilled: 3,
 };
 
@@ -170,20 +214,35 @@ export function historyRowOf(order: OrderView, org: string, copy: RowCopy): Hist
   };
 }
 
-/** Les quatre étapes, datées **là où le modèle date**. */
+/**
+ * Les quatre étapes, **toutes datées par un fait constaté**.
+ *
+ * Chacune tire son heure de l'instant que le contexte responsable a gravé, et
+ * d'aucune autre source : la passation du commerce, la clôture du plan et le
+ * colisage du fournil, la remise au comptoir. Aucune n'est déduite d'une autre,
+ * donc aucune ne peut mentir sur l'ordre — si le fournil n'a rien constaté,
+ * l'étape reste vide plutôt que d'emprunter l'heure de sa voisine.
+ */
 function stepsOf(order: OrderView, copy: RowCopy): readonly TrackStep[] {
   const handed =
     order.fulfillmentMethod === 'pickup' ? copy.stepHandedPickup : copy.stepHandedDelivery;
   return [
     { label: copy.stepPlaced, at: hour(order.placedAt) },
-    // ⚠️ Sans heure, et c'est exact : rien ne dit quand une commande entre au
-    // fournil. Une heure plausible serait une heure fausse.
-    { label: copy.stepBakery, at: '' },
-    { label: copy.stepReady, at: '' },
-    { label: handed, at: order.handedOverAt === null ? '' : hour(order.handedOverAt) },
+    { label: copy.stepBakery, at: hourOrNothing(order.confirmedAt) },
+    { label: copy.stepReady, at: hourOrNothing(order.readyAt) },
+    { label: handed, at: hourOrNothing(order.handedOverAt) },
   ];
 }
 
+/**
+ * Le statut du domaine, traduit en ce que le client comprend.
+ *
+ * ⚠️ **Aucun repli implicite.** Chaque statut que cet écran peut voir a sa
+ * branche ; ce qui reste — `draft`, qui n'arrive jamais jusqu'ici — retombe sur
+ * « reçue », l'affirmation la plus faible. Un repli sur « prête » était le
+ * défaut d'origine : le mot le plus engageant était celui qu'on disait quand on
+ * ne savait pas.
+ */
 function statusOf(order: OrderView): OrderRowStatus {
   if (order.status === 'cancelled') {
     return 'cancelled';
@@ -191,7 +250,13 @@ function statusOf(order: OrderView): OrderRowStatus {
   if (order.status === 'fulfilled') {
     return order.fulfillmentMethod === 'pickup' ? 'done' : 'delivered';
   }
-  return order.status === 'in_production' ? 'route' : 'ready';
+  if (order.status === 'in_production') {
+    return 'route';
+  }
+  if (order.status === 'ready') {
+    return 'ready';
+  }
+  return order.status === 'confirmed' ? 'bakery' : 'received';
 }
 
 function originOf(order: OrderView): OrderOrigin {
@@ -238,6 +303,11 @@ export function windowOf(order: OrderView): string {
     return '';
   }
   return window.start === null ? window.end : `${window.start} – ${window.end}`;
+}
+
+/** L'heure d'un instant qui peut ne pas exister — l'étape est alors à venir. */
+function hourOrNothing(iso: string | null): string {
+  return iso === null ? '' : hour(iso);
 }
 
 /** `HH:MM` d'un instant ISO, dans le fuseau du lecteur. */

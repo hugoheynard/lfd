@@ -69,5 +69,7 @@ export const LIVE_PICKUP: OrderView = {
     },
   ],
   handoverToken: 'tok_secret_26',
+  confirmedAt: null,
+  readyAt: null,
   handedOverAt: null,
 };

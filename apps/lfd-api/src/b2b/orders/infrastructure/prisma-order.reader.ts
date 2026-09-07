@@ -89,6 +89,8 @@ interface OrderRow {
   readonly placedByStaffId: string | null;
   readonly recurringDeltas: Prisma.JsonValue | null;
   readonly handoverToken: string | null;
+  readonly confirmedAt: Date | null;
+  readonly readyAt: Date | null;
   readonly handedOverAt: Date | null;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
@@ -126,6 +128,8 @@ const ORDER_SELECT = {
   placedByStaffId: true,
   recurringDeltas: true,
   handoverToken: true,
+  confirmedAt: true,
+  readyAt: true,
   handedOverAt: true,
   createdAt: true,
   lines: {
@@ -633,6 +637,8 @@ function toOrderView(row: OrderRow): OrderView {
     placedAt: row.createdAt.toISOString(),
     lines: row.lines.map(toLineView),
     handoverToken: row.handoverToken,
+    confirmedAt: row.confirmedAt === null ? null : row.confirmedAt.toISOString(),
+    readyAt: row.readyAt === null ? null : row.readyAt.toISOString(),
     handedOverAt: row.handedOverAt === null ? null : row.handedOverAt.toISOString(),
   };
 }

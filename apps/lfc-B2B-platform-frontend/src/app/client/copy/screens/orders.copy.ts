@@ -64,6 +64,16 @@ export interface OrdersCopy {
   readonly noWindow: string;
   readonly statusCancelled: string;
   readonly emptyOrders: string;
+  /**
+   * **Reçue** — passée, mais le plan du soir ne l'a pas encore prise.
+   *
+   * 🔴 Ce libellé manquait, et le tableau annonçait « Prête » à sa place : le
+   * repli couvrait TOUT ce qui n'était ni annulé, ni remis, ni en route. Un
+   * client lisait donc « prête » sur une commande passée dix minutes plus tôt.
+   */
+  readonly statusReceived: string;
+  /** **Au fournil** — le plan du soir l'a inscrite, la fabrication est lancée. */
+  readonly statusBakery: string;
   readonly statusReady: string;
   readonly statusRoute: string;
   readonly statusDone: string;
@@ -154,6 +164,8 @@ export const ORDERS_FR: OrdersCopy = {
   noWindow: 'Aucune tranche demandée',
   statusCancelled: 'Annulée',
   emptyOrders: 'Aucune commande pour l’instant.',
+  statusReceived: 'Reçue',
+  statusBakery: 'Au fournil',
   statusReady: 'Prête',
   statusRoute: 'En route',
   statusDone: 'Retirée',
@@ -237,6 +249,8 @@ export const ORDERS_EN: OrdersCopy = {
   noWindow: 'No time slot requested',
   statusCancelled: 'Cancelled',
   emptyOrders: 'No orders yet.',
+  statusReceived: 'Received',
+  statusBakery: 'In the bakehouse',
   statusReady: 'Ready',
   statusRoute: 'On the way',
   statusDone: 'Collected',
@@ -320,6 +334,8 @@ export const ORDERS_IT: OrdersCopy = {
   noWindow: 'Nessuna fascia richiesta',
   statusCancelled: 'Annullata',
   emptyOrders: 'Nessun ordine per ora.',
+  statusReceived: 'Ricevuto',
+  statusBakery: 'In forno',
   statusReady: 'Pronto',
   statusRoute: 'In viaggio',
   statusDone: 'Ritirato',

@@ -86,6 +86,18 @@
   white-space: nowrap;
 }
 
+/* Les deux premiers états n'ont PAS de teinte sémantique, et c'est le propos :
+   « reçue » et « au fournil » ne sont ni une bonne ni une mauvaise nouvelle, ce
+   sont des étapes. Leur donner l'info bleue les ferait lire comme « prête »,
+   qui est justement ce que le tableau annonçait à tort avant le 2026-09-07.
+   `cancelled` partage ce fond neutre depuis toujours, sans le déclarer. */
+.tag[data-status='received'],
+.tag[data-status='bakery'],
+.tag[data-status='cancelled'] {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-secondary);
+}
+
 .tag[data-status='ready'],
 .tag[data-payment='account'] {
   background: var(--fold-color-info-surface);

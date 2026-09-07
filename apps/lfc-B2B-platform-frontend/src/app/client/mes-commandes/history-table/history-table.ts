@@ -123,6 +123,8 @@ export class HistoryTable {
   protected statusLabel(status: OrderRowStatus): string {
     const copy = this.t().orders;
     const labels: Record<OrderRowStatus, string> = {
+      received: copy.statusReceived,
+      bakery: copy.statusBakery,
       ready: copy.statusReady,
       route: copy.statusRoute,
       done: copy.statusDone,

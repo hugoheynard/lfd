@@ -608,6 +608,23 @@ export interface OrderView {
    * session admin. Le connaître ne permet pas d'attester sa propre remise.
    */
   readonly handoverToken: string | null;
+  /**
+   * ISO de l'entrée **au fournil**, ou `null` — le plan du soir n'est pas encore
+   * arrêté pour cette journée.
+   *
+   * C'est l'instant de la clôture qui l'a inscrite, propagé au commerce par
+   * `ProductionDayClosedEvent`. Il date une étape du suivi client que rien ne
+   * datait : jusqu'au 2026-09-07, l'écran affichait « au fournil » sans heure
+   * faute de source, et le disait.
+   */
+  readonly confirmedAt: string | null;
+  /**
+   * ISO du **colisage** — le bac fermé, constaté au fournil —, ou `null`.
+   *
+   * Propagé par `OrderPackedEvent`. Ce n'est pas l'heure où le client peut
+   * venir : c'est celle où son sac a été fait.
+   */
+  readonly readyAt: string | null;
   /** ISO de la remise en main propre, ou `null` — la commande attend encore. */
   readonly handedOverAt: string | null;
 }
