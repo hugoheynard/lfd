@@ -1,4 +1,8 @@
-import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+} from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus propres à la **production**.
@@ -29,6 +33,38 @@ export class ProductionDayAlreadyClosedError extends BusinessError {
 export class ProductionDayEmptyError extends BusinessError {
   constructor(serviceDay: string) {
     super("production.day.empty", `Aucune commande à produire le ${serviceDay} : rien à arrêter.`);
+  }
+}
+
+/**
+ * La journée n'est **pas encore arrêtée** : son compte à produire n'existe pas.
+ *
+ * Un compte tiré d'une journée ouverte serait arrêté sur un état qui bouge
+ * encore — donc faux à la seconde où on le lit, et pire : archivé sous une clé
+ * qui le rendrait ensuite tel quel.
+ */
+export class ProductionDayNotClosedError extends BusinessError {
+  constructor(serviceDay: string) {
+    super(
+      "production.day.not_closed",
+      `La journée du ${serviceDay} n'est pas arrêtée : son compte à produire n'existe pas encore.`,
+    );
+  }
+}
+
+/**
+ * Aucune feuille pour cette référence dans cette journée.
+ *
+ * Un `ResourceNotFoundError` et pas un refus métier : la question « où est la
+ * feuille de CMD-0009 du 8 septembre ? » a une réponse vide, ce qui est
+ * différent d'un état qui interdit le geste.
+ */
+export class AtelierSheetNotFoundError extends ResourceNotFoundError {
+  constructor(reference: string, serviceDay: string) {
+    super(
+      "production.sheet.not_found",
+      `Aucune feuille d'atelier pour ${reference} le ${serviceDay}.`,
+    );
   }
 }
 

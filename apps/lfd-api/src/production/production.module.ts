@@ -2,6 +2,11 @@ import { Module } from "@nestjs/common";
 
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
+import {
+  GetAtelierSheetPdfHandler,
+  GetProductionCountPdfHandler,
+} from "./application/queries/get-production-paper.handler.js";
+import { ProductionPapers } from "./application/services/production-paper.service.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
@@ -20,6 +25,9 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
   providers: [
     CloseProductionDayHandler,
     GetProductionDayStatusHandler,
+    GetProductionCountPdfHandler,
+    GetAtelierSheetPdfHandler,
+    ProductionPapers,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
   ],
 })

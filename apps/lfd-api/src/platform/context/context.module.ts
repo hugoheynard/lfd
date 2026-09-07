@@ -6,6 +6,7 @@ import { RandomSecretGenerator } from "../secret/random-secret-generator.js";
 import { SecretGenerator } from "../secret/secret-generator.js";
 import { AppConfig } from "../config/app-config.js";
 import { CustomerDocumentStore } from "../storage/customer-document-store.js";
+import { ProductionDocumentStore } from "../storage/production-document-store.js";
 import { DocumentStore } from "../storage/document-store.js";
 import { MediaStore } from "../storage/media-store.js";
 import { R2MediaStore } from "../storage/r2-media-store.js";
@@ -32,7 +33,7 @@ import { SystemClock } from "../time/system-clock.js";
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UlidGenerator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
-    // Le MÊME adaptateur, deux buckets. L'usage se décide ici, à la racine de
+    // Le MÊME adaptateur, TROIS buckets. L'usage se décide ici, à la racine de
     // composition, et pas dans l'adaptateur : c'est un fait de déploiement, et
     // un appelant ne choisit jamais le bucket dans lequel il écrit.
     {
@@ -46,8 +47,24 @@ import { SystemClock } from "../time/system-clock.js";
       useFactory: (config: AppConfig): CustomerDocumentStore =>
         new S3DocumentStore(config, "customers"),
     },
+    {
+      // Le fournil. Le bucket était configuré depuis le 2026-09-07 et n'avait
+      // AUCUN écrivain — « le tuyau est posé, pas le débit ». C'est son premier.
+      provide: ProductionDocumentStore,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): ProductionDocumentStore =>
+        new S3DocumentStore(config, "production"),
+    },
     { provide: MediaStore, useClass: R2MediaStore },
   ],
-  exports: [Clock, IdGenerator, SecretGenerator, DocumentStore, CustomerDocumentStore, MediaStore],
+  exports: [
+    Clock,
+    IdGenerator,
+    SecretGenerator,
+    DocumentStore,
+    CustomerDocumentStore,
+    ProductionDocumentStore,
+    MediaStore,
+  ],
 })
 export class ContextModule {}

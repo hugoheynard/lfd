@@ -20,10 +20,19 @@ import { DocumentStore } from "./document-store.js";
  *
  * ## Ce qu'il contient, et comment c'est rangé
  *
- * Rangé par **commande**, pas par audience : la feuille d'atelier d'une commande
- * y vit à côté du bon du client, sous le même préfixe `orders/{orderId}/`. Tout
- * ce qui concerne la commande X est en X — et une règle de rétention se pose une
- * fois, à un endroit.
+ * Rangé par **commande**, sous le préfixe `orders/{orderId}/` : le bon du client
+ * et l'exemplaire du bureau y vivent côte à côte.
+ *
+ * 🔴 **La feuille d'atelier n'y est PAS**, et ce paragraphe disait le contraire.
+ * Elle vit dans le bucket `production`, avec le compte à produire — décidé le
+ * 2026-09-07. La ligne de partage n'est pas « client contre production », c'est
+ * **opposable contre opérationnel** : ce qu'un client peut nous opposer se garde
+ * des années et porte des montants ; ce qui documente une journée de fournil se
+ * garde des semaines et n'en porte aucun. Deux durées de vie, deux jetons — et
+ * le jour où une borne au fournil lit des documents, le jeton `customers` lui
+ * donnerait aussi toutes les factures.
+ *
+ * Cf. `documentation/order/architecture-pieces-en-r2.md`.
  *
  * Ce qui protège un client d'un autre n'est pas le bucket : c'est le préfixe de
  * clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.

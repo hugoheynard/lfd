@@ -27,6 +27,78 @@ forme des tables du commerce**. Un renommage côté commande casse un écran
 d'atelier, et rien ne le dit avant l'exécution — c'est une frontière qui n'existe
 que dans les noms de dossiers.
 
+## Comment les deux contextes se parlent, et QUAND
+
+Trois échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
+fournil **demande** ce dont il a besoin et **annonce** ce qu'il a fait ; le
+commerce répond et écoute. Jamais l'inverse.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as Staff (fournil)
+    participant P as production
+    participant B as b2b (commerce)
+
+    Note over P,B: ① La clôture du plan du soir — le seul aller-retour synchrone
+    Staff->>P: POST /admin/production/batch/{jour}/close
+    P->>P: load(jour) — refuse si déjà arrêtée
+    P->>B: DayOrdersReader.producibleFor(jour)
+    B-->>P: commandes `placed` (snapshot, sans montant)
+    P->>P: close() — fige les commandes, arrête le compte
+    P->>P: save() — schéma `production`
+    P--)B: ProductionDayClosedEvent
+    P-->>Staff: { absorbed, alreadyClosed, closedAt }
+    Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
+    B->>B: absorbIntoPlan — placed → confirmed
+
+    Note over P,B: ② Le papier — la production ne demande plus rien
+    Staff->>P: GET …/compte-a-produire.pdf · …/sheets/{réf}.pdf
+    P->>P: lit SES tables, archive au 1ᵉʳ tirage (bucket production)
+    P-->>Staff: PDF
+
+    Note over P,B: ③ Le contrepoids — voir ce que l'événement a pu perdre
+    Staff->>P: GET …/batch/{jour}/status
+    P->>B: PendingCommerceOrdersReader.pendingFor(jour, closedAt)
+    B-->>P: nombre de `placed` antérieures à la clôture
+    P-->>Staff: { …, pendingInCommerce }
+```
+
+### Ce que le trait pointillé veut dire, et ce qu'il coûte
+
+`P--)B` est **asynchrone** : le bus vit en processus, l'événement n'est ni
+persisté ni rejoué. La réponse part **avant** que le commerce ait écrit.
+
+C'est le couplage minimal, choisi en connaissance de cause : chaque contexte
+n'écrit que ses tables, et la production ne saurait pas dire si l'abonné a
+réussi. Ce que ça coûte est réel — un container qui tombe entre ① et l'écriture
+laisse des commandes `placed` sur une journée close.
+
+Trois choses le rendent **rattrapable** plutôt que perdu :
+
+|                            |                                            |
+| -------------------------- | ------------------------------------------ |
+| L'écriture est idempotente | `status: placed` dans le `where`           |
+| La clôture est rejouable   | elle republie sans recalculer l'instantané |
+| L'écart **se voit**        | ③, `pendingInCommerce`                     |
+
+⚠️ Ce qu'on n'a **pas** : une file, un outbox, un rejeu automatique. Ce serait la
+vraie réponse à « l'événement ne doit jamais se perdre », et c'est un chantier en
+soi. L'écrire ici évite qu'on croie l'avoir.
+
+### Le sens de chaque flèche, et pourquoi il ne s'inverse pas
+
+- **P → B** passe toujours par un **port que la production déclare**
+  (`channels/commerce/`), implémenté par le commerce, relié dans `appBootstrap`.
+- **B → P** n'existe pas comme appel : le commerce **s'abonne**, il n'est jamais
+  appelé par le fournil pour écrire chez lui.
+- `lint:context-boundaries` tient les deux : `production → b2b` est interdit, et
+  `b2b → production` n'est permis que par le canal.
+
+⚠️ Un événement qu'un autre bloc consomme fait **partie de la surface publiée**,
+au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
+`domain/events/`. La porte l'a refusé avant qu'on n'y pense.
+
 ## Ce que la cible change
 
 |                          | Aujourd'hui                          | Cible                             |

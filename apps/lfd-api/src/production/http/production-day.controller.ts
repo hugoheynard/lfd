@@ -3,12 +3,19 @@ import {
   type ProductionPlanClosure,
   productionBatchQuerySchema,
 } from "@lfd/contracts";
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, Param, Post, Res, StreamableFile } from "@nestjs/common";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
+import {
+  GetAtelierSheetPdfQuery,
+  GetProductionCountPdfQuery,
+} from "../application/queries/get-production-paper.query.js";
+import type { ProductionPaper } from "../application/services/production-paper.service.js";
 
 /**
  * **La journée de fabrication, côté fournil.**
@@ -42,6 +49,63 @@ export class ProductionDayController {
    * sans cette lecture la divergence n'existerait que dans la tête de celui qui
    * la cherche. Zéro attendu ; autre chose se rattrape en reclosant.
    */
+  /**
+   * **Le compte à produire du jour, en PDF** — ce qu'on affiche au mur.
+   *
+   * Il est ARCHIVÉ au premier tirage : c'est un instantané arrêté à la clôture,
+   * et les commandes bougent après. Le refaire plus tard donnerait un autre
+   * nombre que celui sur lequel les fournées sont parties.
+   *
+   * Refusé tant que la journée n'est pas arrêtée : un compte tiré d'une journée
+   * ouverte serait faux à la seconde où on le lit.
+   */
+  @Get("batch/:date/compte-a-produire.pdf")
+  async count(
+    @Param("date") date: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return this.paper(
+      response,
+      await this.queries.execute<GetProductionCountPdfQuery, ProductionPaper>(
+        new GetProductionCountPdfQuery(productionBatchQuerySchema.parse({ date }).date),
+      ),
+    );
+  }
+
+  /**
+   * **La feuille d'atelier d'une commande, en PDF** — celle qui part au fournil.
+   *
+   * Elle se lit dans la JOURNÉE, jamais dans le commerce : c'est ce que la
+   * production a inscrit à la clôture, et c'est ce papier-là qui est parti.
+   *
+   * ⚠️ Elle porte son **QR de colisage**, et c'est l'inverse du bon de commande :
+   * ce code encode un NOM (`/colisage/{référence}`), pas un secret. La référence
+   * est déjà écrite en toutes lettres au-dessus.
+   */
+  @Get("batch/:date/sheets/:reference.pdf")
+  async sheet(
+    @Param("date") date: string,
+    @Param("reference") reference: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return this.paper(
+      response,
+      await this.queries.execute<GetAtelierSheetPdfQuery, ProductionPaper>(
+        new GetAtelierSheetPdfQuery(productionBatchQuerySchema.parse({ date }).date, reference),
+      ),
+    );
+  }
+
+  /** Les en-têtes d'un PDF servi, écrits une fois. */
+  private paper(response: Response, paper: ProductionPaper): StreamableFile {
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(paper.fileName, "document.pdf")),
+    );
+    return new StreamableFile(paper.bytes);
+  }
+
   @Get("batch/:date/status")
   async status(@Param("date") date: string): Promise<ProductionDayStatus> {
     return this.queries.execute<GetProductionDayStatusQuery, ProductionDayStatus>(
