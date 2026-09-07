@@ -204,12 +204,58 @@ Le courriel, lui, part vers la boîte du destinataire : c'est un canal **qu'il
 contrôle**, et que le porteur du colis n'a pas. C'est ce qui fait de lui le seul
 véhicule légitime du jeton.
 
-D'où **une règle sans branche** : le QR ne s'imprime jamais — ni sur le bon
-texte, ni sur la feuille d'atelier, ni sur le PDF rangé en R2, et **pas
-davantage en retrait qu'en livraison**. Un cas particulier « sauf au retrait,
-où c'est inoffensif » serait vrai, et serait précisément la porte par laquelle
-la version livraison reviendrait un jour, « pour faire pareil ». Une règle sans
-exception ne se négocie pas à 6 h du matin devant une imprimante.
+D'où **une règle sans branche** : le **jeton de remise** ne s'imprime jamais —
+ni sur le bon texte, ni sur la feuille d'atelier, ni sur le PDF rangé en R2, et
+**pas davantage en retrait qu'en livraison**. Un cas particulier « sauf au
+retrait, où c'est inoffensif » serait vrai, et serait précisément la porte par
+laquelle la version livraison reviendrait un jour, « pour faire pareil ». Une
+règle sans exception ne se négocie pas à 6 h du matin devant une imprimante.
+
+### Deux codes, deux natures — et surtout pas le même
+
+⚠️ **Correction.** Ce paragraphe a d'abord dit « le QR ne s'imprime jamais ».
+C'était trop large, et la formulation cachait la seule distinction qui compte :
+ce qui ne s'imprime pas, c'est **un secret**, pas **un code**.
+
+L'atelier a besoin de scanner — préparation, colisage, « un scan et c'est
+fait ». Le lui refuser au nom de l'autoscan reviendrait à lui faire ressaisir
+une référence au clavier, les mains dans la farine, pour protéger quelque chose
+qu'il ne porte pas.
+
+|                        | **Code d'atelier**                | **Jeton de remise**                      |
+| ---------------------- | --------------------------------- | ---------------------------------------- |
+| Ce qu'il fait          | **nomme** une commande            | **atteste** un changement de mains       |
+| Ce qu'il contient      | la référence, `CMD-4812`          | un secret aléatoire                      |
+| Parties nécessaires    | une — le staff, chez lui          | **deux** — l'un présente, l'autre scanne |
+| S'imprime ?            | **oui**, sur la feuille d'atelier | **jamais**                               |
+| Voyage avec le colis ? | oui, sans conséquence             | ce serait le trou                        |
+
+🔴 **Le code d'atelier n'encode RIEN que la feuille n'imprime déjà en clair.**
+C'est ce qui rend son impression gratuite en exposition : `reference` est déjà
+sur le papier, lisible à l'œil, et le QR n'est que sa version lisible à la
+machine. Aucun champ nouveau sur l'`OrderSheet`, donc rien de nouveau à fuiter —
+la meilleure façon de ne pas exposer une donnée reste de ne pas en ajouter.
+
+**Et « c'est juste pour les remises ou non ? » — le GESTE est général, le
+SECRET ne l'est pas.** Un seul scanner dans l'app staff, qui résout un code et
+propose ce que l'état de la commande permet : au fournil, « marquer préparée » ;
+au comptoir, « confirmer la remise ». Ce qui diffère n'est pas le geste, c'est ce
+qu'il grave — un fait interne d'un côté, une attestation à deux parties de
+l'autre. L'autoscan n'a d'ailleurs aucun sens à l'atelier : il n'y a personne
+d'autre à représenter, donc rien à s'attribuer indûment.
+
+🔴 **L'invariant qui tient tout, et qui doit rester structurel** : la porte de
+remise ne résout **que** le jeton. `findByHandoverToken(token)` cherche dans la
+colonne du secret, et une référence de commande n'y correspond pas — scanner
+une feuille d'atelier ne peut donc pas attester une remise, aujourd'hui, par
+construction.
+
+Ce qui le casserait tient en une ligne de confort : faire accepter le **numéro de
+commande** à cette route, « pour dépanner quand le QR ne passe pas ». Ce jour-là,
+le code imprimé sur le colis attesterait la remise, et on aurait rouvert le trou
+par la porte de service. La sortie prévue au lot 6 — une remise **saisie à la
+main**, tracée comme telle — existe précisément pour que ce confort ait déjà sa
+réponse le jour où quelqu'un le demande.
 
 ⚠️ **Le cas qui poussera à enfreindre la règle, et il faut le traiter avant qu'il
 se présente** : le destinataire n'a pas toujours le courriel sous les yeux — un
