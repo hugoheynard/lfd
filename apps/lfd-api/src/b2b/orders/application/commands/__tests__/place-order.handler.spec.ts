@@ -266,8 +266,23 @@ const freeKeys: OrderIdempotencyStore = {
   resolve: () => Promise.resolve(),
 };
 
-/** Aucune commande à relire : ces cas ne passent jamais par le rejeu. */
-const noReader = { findById: () => Promise.resolve(null) } as unknown as OrderReader;
+/**
+ * Aucune commande à relire : ces cas ne passent jamais par le rejeu.
+ *
+ * 🔴 Écrit **en entier** plutôt que casté depuis `{ findById }`. Un
+ * `as unknown as` aurait laissé ce doublé DÉRIVER du port qu'il joue : une
+ * méthode ajoutée demain à `OrderReader`, et le cast l'avale — la suite reste
+ * verte en jouant un contrat qui n'existe plus. C'est ce que la porte
+ * `no-type-escapes` refuse, et elle a raison.
+ */
+const noReader: OrderReader = {
+  listByCompany: () => Promise.resolve([]),
+  listPersonal: () => Promise.resolve([]),
+  findById: () => Promise.resolve(null),
+  listForAdmin: () => Promise.resolve([]),
+  findByHandoverToken: () => Promise.resolve(null),
+  listForProduction: () => Promise.resolve([]),
+};
 
 /** L'unité de travail, réduite à ce qu'elle promet ici : exécuter. */
 const directWork: UnitOfWork = { run: <T>(work: () => Promise<T>): Promise<T> => work() };

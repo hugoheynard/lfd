@@ -78,14 +78,19 @@
   display: none;
 }
 
+/* Les jetons d'alerte de fold, et pas un repli inventé : `--fold-color-danger`
+   n'existe pas dans la palette installée. Un `var(--inexistant, repli)` compile,
+   se rend avec le repli, et ne se voit donc jamais — c'est ce que la porte
+   `fold-tokens` refuse. */
 .error {
   margin: 0;
   padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-alert-border);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-danger-soft, var(--fold-color-surface-card));
+  background: var(--fold-color-alert-surface);
   font-size: var(--fold-text-sm);
   line-height: var(--lfc-leading-body);
-  color: var(--fold-color-danger, var(--fold-color-text));
+  color: var(--fold-color-alert-text);
 }
 
 .foot {

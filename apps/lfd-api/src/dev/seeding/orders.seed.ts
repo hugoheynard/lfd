@@ -1,6 +1,7 @@
 import type { BillingAddressPayload, PlaceOrderPayload } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
+import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -243,7 +244,10 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
     NEWCOMER.sku,
   ];
   const known = await context.prisma.catalogItem.findMany({
-    where: { productSku: { in: wanted }, isDefault: true, withdrawnAt: null },
+    // `STILL_SOLD` et pas un `withdrawnAt: null` recopié : la condition du
+    // retrait est NOMMÉE une fois, et la porte `withdrawn-filter` refuse une
+    // lecture qui la réécrit à la main — c'est ainsi qu'elle finit par dériver.
+    where: { productSku: { in: wanted }, isDefault: true, ...STILL_SOLD },
     select: { productSku: true },
   });
   const found = new Set(known.map((item) => item.productSku));

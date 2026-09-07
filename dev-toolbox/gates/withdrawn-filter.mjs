@@ -48,6 +48,13 @@ const ALLOWED = new Set([
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog.reader.ts",
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts",
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-item.repository.ts",
+  // Le semis de développement, et il PORTE le filtre : sa lecture demande
+  // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
+  // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour
+  // qu'un semis qui va échouer échoue avant d'avoir posé trois commandes.
+  // La faire passer par un port du catalogue lui ferait traverser le bus pour
+  // une question qu'elle pose à la base d'à côté.
+  "apps/lfd-api/src/dev/seeding/orders.seed.ts",
 ]);
 
 /** Les opérations qui LISENT. Les autres écrivent, et doivent voir toute la table. */
