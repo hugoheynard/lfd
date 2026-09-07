@@ -1,6 +1,6 @@
 # Le prix — de l'étiquette à la facture
 
-**Ouvert le 2026-09-06.** L'entrée du dossier. Douze documents décrivent la
+**Ouvert le 2026-09-06.** L'entrée du dossier. Treize documents décrivent la
 chaîne du prix ; celui-ci dit **de quoi elle est faite** et **par quelle porte
 entrer**. Il ne remplace aucun d'eux et n'en résume aucun en détail.
 
@@ -102,6 +102,7 @@ Ces mots reviennent partout et ne veulent pas dire ce qu'on croit.
 |                                               |                                                                                                                                                                              |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | L'état des défauts connus et des lots ouverts | [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)                                                                                               |
+| Le second regard, et la note                  | [`audit-fable.md`](audit-fable.md) — 7/10, le chemin vers 9, et **un défaut rouvert** (B1)                                                                                   |
 | Ce qui n'est pas encore tranché               | [`architecture-prix-vivant-prix-bloque.md`](architecture-prix-vivant-prix-bloque.md), [`architecture-conditionnements-pricing.md`](architecture-conditionnements-pricing.md) |
 
 ---
