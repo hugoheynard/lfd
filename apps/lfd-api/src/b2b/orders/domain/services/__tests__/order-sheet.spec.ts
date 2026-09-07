@@ -52,6 +52,8 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     deliveryAddressId: null,
     deliveryAddress: null,
     pickupAddress: {
+      label: "Labo — Pantin",
+      pays: "France",
       ligne1: "route de la Balme",
       ligne2: "",
       codePostal: "73150",
@@ -67,6 +69,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     discountCents: 12_846,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    lateFeeAdjustment: null,
     lateFeeCents: 0,
     vatCents: 6_360,
     totalCents: 121_974,
@@ -179,6 +182,8 @@ describe("l'acheminement", () => {
       order({
         fulfillmentMethod: "delivery",
         deliveryAddress: {
+          label: "Boutique",
+          pays: "France",
           ligne1: "12 rue du Coin Ferrand",
           ligne2: "",
           codePostal: "73150",

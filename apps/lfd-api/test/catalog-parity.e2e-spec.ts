@@ -66,6 +66,8 @@ class StubFeed extends B2bCatalogFeedPreview {
             allergenLabels: null,
           },
         ],
+        note: null,
+        image: null,
       })),
       orderTimeLimits: [],
     };

@@ -85,6 +85,8 @@ function snapshot(
           allergenLabels: null,
         },
       ],
+      note: null,
+      image: null,
     })),
     orderTimeLimits: [],
   } satisfies CatalogSnapshot;

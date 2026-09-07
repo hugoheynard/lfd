@@ -83,6 +83,8 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             vatRatePercent: 5.5,
           },
         ],
+        note: null,
+        image: null,
       },
     ],
     orderTimeLimits: [],
@@ -116,6 +118,7 @@ async function listOne() {
     isHidden: boolean;
     isFeatured: boolean;
     decidedBy: string | null;
+    vatRatePercent: number | null;
   }[];
   return item;
 }

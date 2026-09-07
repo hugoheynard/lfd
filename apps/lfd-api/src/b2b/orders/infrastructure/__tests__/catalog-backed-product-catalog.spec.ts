@@ -28,6 +28,8 @@ const CROISSANT: ResolvedCatalogItem = {
   isFeatured: false,
   allergens: null,
   orderTimeLimit: null,
+  note: null,
+  image: null,
 };
 
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {

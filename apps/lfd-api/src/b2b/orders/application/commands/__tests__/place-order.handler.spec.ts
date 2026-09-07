@@ -281,6 +281,8 @@ const noReader: OrderReader = {
   findById: () => Promise.resolve(null),
   listForAdmin: () => Promise.resolve([]),
   findByHandoverToken: () => Promise.resolve(null),
+  findHandoverByReference: () => Promise.resolve(null),
+  findForPacking: () => Promise.reject(new Error("non utilisé")),
   listForProduction: () => Promise.resolve([]),
 };
 
@@ -369,6 +371,9 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
     },
     markPaid: () => Promise.resolve(),
     markPaymentFailed: () => Promise.resolve(),
+    markHandedOverManually: () => Promise.reject(new Error("non utilisé")),
+    markReady: () => Promise.reject(new Error("non utilisé")),
+    absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
   };
 }
 

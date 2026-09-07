@@ -8,7 +8,10 @@ import { b2bMailTemplates } from "../mail-templates.js";
  * bloque les images, et qu'il ne transporte rien que la feuille ne portait.
  */
 
-const REGISTRY = b2bMailTemplates({ supportEmail: "admin@lfc.test" });
+const REGISTRY = b2bMailTemplates({
+  supportEmail: "admin@lfc.test",
+  backOfficeUrl: "https://bo.lfc.test",
+});
 
 function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
   return {
@@ -20,6 +23,8 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
     fulfillment: {
       method: "pickup",
       address: {
+        label: "Le Labo",
+        pays: "France",
         ligne1: "route de la Balme",
         ligne2: "",
         codePostal: "73150",

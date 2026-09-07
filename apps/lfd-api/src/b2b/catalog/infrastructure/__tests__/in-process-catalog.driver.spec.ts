@@ -43,6 +43,8 @@ const snapshot: CatalogSnapshot = {
           allergenLabels: null,
         },
       ],
+      note: null,
+      image: null,
     },
   ],
   orderTimeLimits: [],

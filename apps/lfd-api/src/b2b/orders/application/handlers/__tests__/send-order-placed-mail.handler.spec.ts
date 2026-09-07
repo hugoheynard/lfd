@@ -32,7 +32,14 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,
     deliveryAddress: null,
-    pickupAddress: { ligne1: "route de la Balme", ligne2: "", codePostal: "73150", ville: "Val" },
+    pickupAddress: {
+      label: "Labo — Pantin",
+      ligne1: "route de la Balme",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val",
+      pays: "France",
+    },
     fulfillment: {
       window: { value: null, source: "default" },
       contact: { value: null, source: "default" },
@@ -43,6 +50,7 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     discountCents: 0,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    lateFeeAdjustment: null,
     lateFeeCents: 0,
     vatCents: 71,
     totalCents: 1_367,
@@ -121,6 +129,34 @@ class OneOrderReader extends OrderReader {
 
   override findById(): Promise<OwnedOrder | null> {
     return Promise.resolve(this.owned);
+  }
+
+  override listByCompany() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override listPersonal() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override listForAdmin() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override findByHandoverToken() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override findHandoverByReference() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override findForPacking() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  override listForProduction() {
+    return Promise.reject(new Error("non utilisé"));
   }
 }
 

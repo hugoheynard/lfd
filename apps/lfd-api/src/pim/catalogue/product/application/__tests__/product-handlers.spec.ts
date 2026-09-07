@@ -212,6 +212,9 @@ class EmptyEditorialReader extends EditorialReader {
   mediaOf(): Promise<readonly ProductMediaRecord[]> {
     return Promise.resolve([]);
   }
+  mediaOfProducts(): Promise<ReadonlyMap<string, readonly ProductMediaRecord[]>> {
+    return Promise.resolve(new Map());
+  }
 }
 
 describe("l’historique d’une fiche", () => {

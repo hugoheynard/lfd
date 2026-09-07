@@ -44,7 +44,7 @@ function input(over: Partial<LinePricingInput> = {}): LinePricingInput {
 }
 
 /** Une promotion globale de −10 %, ouverte à tous. */
-function promotion(over: Partial<PriceRule> = {}): PriceRule {
+function promotion(over: Partial<Extract<PriceRule, { nature: "alter" }>> = {}): PriceRule {
   return {
     id: "rule_promo",
     stage: "promotion",
