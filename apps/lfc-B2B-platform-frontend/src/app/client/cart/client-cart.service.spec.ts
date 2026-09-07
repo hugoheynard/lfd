@@ -20,6 +20,7 @@ const AT_THE_LABO: ServiceChoice = {
   address: 'Route de la Balme, Val d’Isère',
   pickupAddressId: 'pick_labo',
   slot: '7 h – 8 h',
+  window: { start: '07:00', end: '08:00' },
   date: '2026-09-07',
 };
 

@@ -1,24 +1,12 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
-import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
-import {
-  orderSheetPdfFileName,
-  orderSheetPdfKey,
-  renderOrderSheetPdf,
-} from "../../domain/services/order-sheet-pdf.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
+import { OrderSheetArchive, type OrderSheetPdf } from "../services/order-sheet-archive.service.js";
 import { GetOrderSheetPdfQuery } from "./get-order-sheet-pdf.query.js";
-
-/** Le fichier servi : ses octets et le nom qu'on proposera au téléchargement. */
-export interface OrderSheetPdf {
-  readonly bytes: Buffer;
-  readonly fileName: string;
-}
 
 /**
  * Sert le bon de commande en PDF — **et le range au premier téléchargement**.
@@ -76,6 +64,17 @@ export interface OrderSheetPdf {
  * refuser le document parce qu'on n'a pas su l'archiver — ferait payer au client
  * une panne qui ne le regarde pas.
  */
+/**
+ * Sert le bon de commande **au client**, derrière le mur de sa société.
+ *
+ * Ce handler ne fait plus qu'une chose : vérifier qui demande. Le reste — la
+ * projection, l'archive, le rendu — vit dans `OrderSheetArchive`, partagé avec
+ * la surface staff : c'est le **même document sous la même clé**, et deux
+ * chemins qui l'écriraient séparément finiraient par diverger.
+ *
+ * ⚠️ **Aucun QR.** Le jeton de remise n'est pas sur la feuille, donc ce chemin
+ * ne peut pas l'imprimer — c'est une erreur de compilation, pas une consigne.
+ */
 @QueryHandler(GetOrderSheetPdfQuery)
 export class GetOrderSheetPdfHandler implements IQueryHandler<
   GetOrderSheetPdfQuery,
@@ -84,7 +83,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
   constructor(
     private readonly guard: OrderGuardReader,
     private readonly orders: OrderReader,
-    private readonly documents: CustomerDocumentStore,
+    private readonly archive: OrderSheetArchive,
   ) {}
 
   async execute(query: GetOrderSheetPdfQuery): Promise<OrderSheetPdf> {
@@ -96,50 +95,6 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
       owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
-    const sheet = clientSheetOf(owned.view);
-    const key = orderSheetPdfKey(sheet);
-    const fileName = orderSheetPdfFileName(sheet);
-
-    const archived = await this.readArchived(key);
-    if (archived !== null) {
-      return { bytes: archived, fileName };
-    }
-
-    const bytes = await renderOrderSheetPdf(sheet);
-    await this.archive(key, bytes);
-    return { bytes, fileName };
-  }
-
-  /**
-   * L'archive si elle existe, `null` si elle n'existe pas **ou si le stockage
-   * est en panne** — et la différence entre les deux est désormais dans le
-   * journal, pas seulement dans le code.
-   *
-   * ⚠️ Le `catch` est INDISPENSABLE et ne doit pas être retiré au nom de la
-   * propreté : `R2_CUSTOMERS_*` peut être absent — c'est le cas en production à
-   * ce jour — et `readIfPresent` lève alors. Sans lui, chaque téléchargement de
-   * bon rendrait 500 pour un défaut de configuration qui ne regarde pas le
-   * client. Il est étroit — il ne rattrape QUE l'indisponibilité du stockage, et
-   * l'adaptateur l'a déjà journalisée en ERREUR avant de lever.
-   */
-  private async readArchived(key: string): Promise<Buffer | null> {
-    try {
-      return await this.documents.readIfPresent(key);
-    } catch (error) {
-      if (error instanceof DocumentStorageUnavailableError) {
-        return null;
-      }
-      throw error;
-    }
-  }
-
-  /** Le rangement ne fait pas échouer le téléchargement — cf. l'en-tête. */
-  private async archive(key: string, bytes: Buffer): Promise<void> {
-    try {
-      await this.documents.save(key, { bytes, contentType: "application/pdf" });
-    } catch {
-      // Silence volontaire : le prochain téléchargement retentera, et le client
-      // a déjà son document.
-    }
+    return this.archive.pdfOf(clientSheetOf(owned.view));
   }
 }

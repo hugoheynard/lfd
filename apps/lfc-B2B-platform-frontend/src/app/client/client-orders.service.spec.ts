@@ -25,6 +25,7 @@ const AU_LABO: ServiceChoice = {
   address: 'Route de la Balme, Val d’Isère',
   pickupAddressId: 'pick_labo',
   slot: '7 h – 8 h',
+  window: { start: '07:00', end: '08:00' },
   date: '2026-09-07',
 };
 
@@ -35,6 +36,8 @@ const LIVRE: ServiceChoice = {
   address: '12 rue du Four, 73150',
   codePostal: '73150',
   slot: '9 h – 10 h',
+  // Le dialogue d'adresse n'en envoie AUCUNE — cf. le cas qui l'éprouve.
+  window: null,
   date: '2026-09-07',
   deliveryAddress: {
     label: "Val d'Isère",
@@ -101,6 +104,12 @@ describe('passer commande', () => {
     // pas des faits que le serveur puisse recouper.
     expect(JSON.stringify(body)).not.toContain('au Labo');
     expect(JSON.stringify(body)).not.toContain('7 h');
+    // 🔴 La FENÊTRE part, elle : `{ start, end }`, pas « 7 h – 8 h ». Elle ne
+    // partait pas du tout — le dialogue avait un vrai `PickupSlot` sous la main
+    // et l'aplatissait en libellé à la frontière du store. La commande arrivait
+    // donc sans tranche demandée, et le bon de commande n'avait aucune heure à
+    // imprimer alors qu'il sait l'afficher.
+    expect(body.requestedWindow).toEqual({ start: '07:00', end: '08:00' });
   });
 
   it('envoie l’adresse COMPLÈTE en livraison — le code postal ne livre pas', async () => {
@@ -118,6 +127,18 @@ describe('passer commande', () => {
     expect(body.pickupAddressId).toBeNull();
     expect(body.deliveryAddress?.ligne1).toBe('12 rue du Four');
     expect(body.deliveryAddress?.ville).toBe("Val d'Isère");
+    // ⚠️ **Aucune fenêtre en livraison, et c'est le sujet du cas.** Les créneaux
+    // de livraison viennent de `DELIVERY_SLOTS`, qui dit lui-même n'affirmer
+    // rien de vrai. L'envoyer inscrirait une promesse sur la commande, et le bon
+    // de commande l'imprimerait sur un document opposable.
+    //
+    // 🔴 **ABSENTE, et surtout pas `null`.** Le serveur lit l'absence comme
+    // « prends le défaut » — celui du CARNET, que le client a déclaré sur son
+    // adresse — et un `null` explicite comme « le client n'en veut aucune ». Ce
+    // cas exigeait `toBeNull()` : il aurait laissé passer un `null` qui EFFACE
+    // la fenêtre du carnet, ce que la première version faisait vraiment.
+    expect(body.requestedWindow).toBeUndefined();
+    expect('requestedWindow' in body).toBe(false);
   });
 
   /** Le numéro vient du SERVEUR : c'est celui qu'on lira au téléphone. */

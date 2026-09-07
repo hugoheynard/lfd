@@ -243,6 +243,21 @@ export class AddressDialog {
     }
     this.done.emit({
       mode: 'delivery',
+      // 🔴 **Aucune fenêtre n'est envoyée en livraison, et c'est délibéré.**
+      //
+      // Le retrait en envoie une : elle vient des heures d'ouverture du point,
+      // donc d'une source. Ici les créneaux viennent de `DELIVERY_SLOTS`, qui
+      // dit lui-même n'affirmer rien de vrai — les heures de livraison n'ont
+      // aucune source tant qu'une tournée n'existe pas.
+      //
+      // Envoyer ce libellé structuré inscrirait une PROMESSE sur la commande, et
+      // le bon de commande l'imprimerait sur un document que le client peut nous
+      // opposer. Une heure inventée sur un papier opposable ne se rattrape pas.
+      //
+      // La fenêtre légitime d'une livraison existe pourtant : c'est celle du
+      // CARNET (`deliverySpecs.slots`), que le serveur lit déjà à partir de
+      // `deliveryAddressId`. Elle arrivera par là, pas par ici.
+      window: null,
       place: this.placeName(),
       at: this.placeAt(),
       address: this.line(),

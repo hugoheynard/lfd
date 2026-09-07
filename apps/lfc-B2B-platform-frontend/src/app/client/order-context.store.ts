@@ -1,6 +1,6 @@
 import { effect, Injectable, signal } from '@angular/core';
 
-import type { BillingAddressPayload } from '@lfd/contracts';
+import type { BillingAddressPayload, FulfillmentWindow } from '@lfd/contracts';
 
 import { isRecord, readLocal, readString, writeLocal } from './local-store';
 
@@ -22,6 +22,19 @@ interface ServiceChoiceBase {
   readonly at: string;
   readonly address: string;
   readonly slot: string;
+  /**
+   * La **fenêtre structurée** derrière le libellé — `{ start, end }` en `HH:mm`.
+   *
+   * 🔴 Seul le LIBELLÉ voyageait (« 7 h – 8 h »), et il ne dit rien à un
+   * serveur : la commande partait donc sans tranche demandée, et le bon de
+   * commande n'avait aucune heure à imprimer. Le dialogue de retrait avait
+   * pourtant un vrai `PickupSlot` sous la main — il l'aplatissait à la frontière
+   * du store.
+   *
+   * `null` = aucune tranche demandée, ce qui reste un cas légitime : un client
+   * peut n'en vouloir aucune, et c'est différent d'une heure inventée.
+   */
+  readonly window: FulfillmentWindow | null;
   /**
    * **La journée de retrait ou de livraison**, `AAAA-MM-JJ`.
    *
@@ -66,6 +79,24 @@ export type ServiceChoice =
       readonly deliveryAddress: BillingAddressPayload;
     });
 
+/**
+ * La fenêtre relue du stockage local, ou `null`.
+ *
+ * Validée champ par champ plutôt que castée : ce qui vient de `localStorage` a
+ * pu être écrit par une version précédente de l'app, ou à la main. Une forme
+ * inattendue vaut « aucune tranche », jamais une heure approximative.
+ */
+function parseWindow(raw: unknown): FulfillmentWindow | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const end = readString(raw['end']);
+  if (end === null) {
+    return null;
+  }
+  return { start: readString(raw['start']), end };
+}
+
 const KEY = 'order.choice';
 
 /** Ce qui est relu du navigateur est du texte : on VALIDE avant de le croire. */
@@ -82,7 +113,10 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
   if (place === null || at === null || address === null || slot === null || date === null) {
     return null;
   }
-  const base = { place, at, address, slot, date };
+  // La fenêtre relue du stockage local : absente sur un choix posé avant
+  // qu'elle n'existe, ce qui vaut « aucune tranche demandée ». On ne la
+  // reconstitue pas depuis le LIBELLÉ — « 7 h – 8 h » n'est pas une heure.
+  const base = { place, at, address, slot, date, window: parseWindow(raw['window']) };
   if (mode === 'pickup') {
     // `undefined` et `null` ne se distinguent pas ici, et n'ont pas à l'être :
     // les deux veulent dire « le point par défaut », ce que le serveur sait

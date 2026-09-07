@@ -349,10 +349,20 @@ export class ClientOrders {
  * front n'envoie pas un montant, il envoie une identité. Ici il n'envoie pas
  * « au Labo, 7 h – 8 h », il envoie le point et la date.
  *
- * `requestedWindow` n'est pas envoyée : les créneaux sont une maquette et leur
- * libellé (« 7 h – 8 h ») n'est pas une fenêtre structurée. Absente veut dire
- * « aucune tranche demandée », ce qui est exact — mieux qu'une heure inventée
- * que le serveur opposerait aux horaires du point.
+ * 🔴 **`requestedWindow` part désormais — en RETRAIT seulement.**
+ *
+ * Ce commentaire disait « les créneaux sont une maquette ». C'était vrai des
+ * deux acheminements quand il a été écrit ; ça ne l'est plus que d'un. Le
+ * retrait lit les heures d'ouverture du point (`pickupSlots`), donc la fenêtre
+ * qu'un client y choisit est une VRAIE fenêtre — le dialogue avait déjà le
+ * `PickupSlot` sous la main et l'aplatissait en libellé à la frontière du store.
+ *
+ * La livraison, elle, n'envoie toujours rien : `DELIVERY_SLOTS` dit lui-même
+ * n'affirmer rien de vrai, et le bon de commande imprimerait cette heure sur un
+ * document opposable. Sa fenêtre légitime est celle du CARNET, que le serveur
+ * lit à partir de `deliveryAddressId`.
+ *
+ * Absente veut dire « aucune tranche demandée », ce qui reste exact.
  */
 function payloadOf(
   service: ServiceChoice,
@@ -371,6 +381,12 @@ function payloadOf(
     note: '',
     lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),
     deliveryAddressId: null,
+    // 🔴 **La clé est OMISE quand il n'y a pas de tranche choisie**, jamais mise
+    // à `null` : le serveur lit l'absence comme « prends le défaut » (celui du
+    // carnet, en livraison) et un `null` explicite comme « le client n'en veut
+    // aucune ». Un `null` posé par commodité effacerait donc une fenêtre que le
+    // client a lui-même déclarée sur son adresse.
+    ...(service.window === null ? {} : { requestedWindow: service.window }),
   };
   if (service.mode === 'pickup') {
     return {

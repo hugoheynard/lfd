@@ -37,7 +37,7 @@ import {
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";
-import type { OrderSheetPdf } from "../application/queries/get-order-sheet-pdf.handler.js";
+import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetOrderSheetPdfQuery } from "../application/queries/get-order-sheet-pdf.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 

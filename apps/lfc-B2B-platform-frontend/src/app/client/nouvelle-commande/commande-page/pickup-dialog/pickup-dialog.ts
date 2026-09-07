@@ -178,6 +178,9 @@ export class PickupDialog {
         // serveur, qui est le seul à pouvoir la tenir devant la facture.
         pickupAddressId: point.id,
         slot: this.labelOf(slot),
+        // Le libellé ET la fenêtre : l'un se lit à l'écran, l'autre part au
+        // serveur. N'envoyer que le premier laissait la commande sans tranche.
+        window: { start: slot.start, end: slot.end }, // `start` peut être nul : « avant 8 h ».
         // 🔴 La journée vient du SERVEUR. Elle était calculée ici — « demain »,
         // depuis l'horloge du navigateur du client, sans regarder l'heure
         // limite. Une journée de production se lit sur le calendrier de la

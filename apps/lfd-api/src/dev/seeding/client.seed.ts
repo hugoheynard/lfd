@@ -261,7 +261,13 @@ const DELIVERIES = [
     isDefault: true,
     specs: {
       note: "Livraison par la piste de service, avant l'ouverture des remontées.",
-      slots: { mode: "everyday" as const, slot: null },
+      // 🔴 Le créneau était `null` sur les DEUX adresses semées, donc aucune
+      // commande de développement n'en portait — et le bon de commande, qui
+      // affiche la fenêtre convenue, n'avait rien à montrer. Le chemin serveur
+      // fonctionnait (`defaultsFor` lit le carnet) ; c'est la donnée qui manquait.
+      //
+      // Celui-ci s'accorde avec la note : avant l'ouverture des remontées.
+      slots: { mode: "everyday" as const, slot: { start: "06:00", end: "07:30" } },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,
@@ -277,7 +283,10 @@ const DELIVERIES = [
     isDefault: false,
     specs: {
       note: "",
-      slots: { mode: "everyday" as const, slot: null },
+      // Une fenêtre DIFFÉRENTE de l'autre adresse, et plus tardive : deux sites
+      // d'une même maison n'ont pas les mêmes contraintes, et un jeu de données
+      // qui les alignerait ne montrerait jamais que la fenêtre suit l'adresse.
+      slots: { mode: "everyday" as const, slot: { start: "07:00", end: "09:00" } },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,

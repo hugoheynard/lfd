@@ -260,6 +260,16 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
   }
 }
 
+/**
+ * La tranche demandée sur une commande de RETRAIT du semis.
+ *
+ * Elle tient dans le créneau **professionnel** du Labo (05:00–06:30), pas dans
+ * son ouverture publique : c'est le cas qu'un jeu de données doit montrer, parce
+ * que c'est celui qu'un client pro emprunte. Une fenêtre à cheval sur les deux
+ * serait refusée — il y a porte close entre les deux.
+ */
+const PICKUP_WINDOW = { start: "05:30", end: "06:30" } as const;
+
 /** Pose une commande par le vrai handler, puis recale sa date de création. */
 async function place(
   context: SeedContext,
@@ -282,6 +292,23 @@ async function place(
     deliveryAddress: order.method === "delivery" ? DELIVERY : null,
     deliveryAddressId: order.method === "delivery" ? target.deliveryAddressId : null,
     pickupAddressId: order.method === "pickup" ? target.pickupAddressId : null,
+    // 🔴 Aucune commande semée ne demandait de tranche horaire, donc le bon de
+    // commande — qui affiche la fenêtre convenue — n'avait rien à montrer sur un
+    // poste. En RETRAIT elle se demande explicitement ; en LIVRAISON elle vient
+    // du carnet, que `defaultsFor` lit à partir de `deliveryAddressId`. Deux
+    // provenances différentes, et c'est le sujet : la commande dit laquelle.
+    //
+    // ⚠️ La tranche doit tenir dans UNE fenêtre d'ouverture du point, jamais
+    // dans leur union — le serveur refuse sinon, et il a raison : entre le
+    // créneau pro et l'ouverture publique du Labo, il y a porte close.
+    //
+    // 🔴 **`undefined` et `null` ne disent PAS la même chose**, et les confondre
+    // a coûté un aller-retour : `agreeFulfillment` lit l'absence comme « prends
+    // le défaut » et un `null` explicite comme « le client n'en veut aucune ».
+    // Envoyer `null` en livraison ÉCRASAIT donc la fenêtre du carnet, et la
+    // commande sortait avec `source: "override"` et `value: null`. La clé est
+    // omise, pas mise à `null`.
+    ...(order.method === "pickup" ? { requestedWindow: PICKUP_WINDOW } : {}),
     requestedDeliveryDate: order.forDay,
     note: "",
     lines: [...order.lines],

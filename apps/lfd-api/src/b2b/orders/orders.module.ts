@@ -41,7 +41,9 @@ import { GetPackingHandler } from "./application/queries/get-packing.handler.js"
 import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.handler.js";
+import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-order-sheet-pdf.handler.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
+import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
@@ -123,6 +125,8 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderHandler,
     GetOrderSheetHandler,
     GetOrderSheetPdfHandler,
+    GetAdminOrderSheetPdfHandler,
+    OrderSheetArchive,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },

@@ -22,9 +22,13 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UnauthorizedException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import type { Response } from "express";
 
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -32,6 +36,8 @@ import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "../application/commands/place-order-for-customer.command.js";
+import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
+import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";
 import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.query.js";
 
@@ -130,6 +136,36 @@ export class AdminOrdersController {
   @Get(":id")
   async one(@Param("id") id: string): Promise<OrderView> {
     return this.queries.execute<GetAdminOrderQuery, OrderView>(new GetAdminOrderQuery(id));
+  }
+
+  /**
+   * Le **bon de commande en PDF** — celui du client, pas un exemplaire de bureau.
+   *
+   * 🔴 Il n'y a **pas de version staff**, sur décision explicite. Une feuille
+   * enrichie côté bureau ferait parler de deux papiers : celui que le client
+   * lit au téléphone et celui qu'on a sous les yeux. Le seul document qui
+   * compte est celui qu'il peut nous opposer.
+   *
+   * Même clé d'archive que la surface cliente, donc **les mêmes octets** : si le
+   * client l'a déjà téléchargé, c'est sa copie qu'on ouvre — et si c'est le
+   * bureau qui le tire en premier, c'est celle-là que le client recevra.
+   *
+   * Le mur est celui de `@AdminSurface` : le staff voit toutes les commandes.
+   */
+  @Get(":id/bon.pdf")
+  async bonPdf(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetAdminOrderSheetPdfQuery, OrderSheetPdf>(
+      new GetAdminOrderSheetPdfQuery(id),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "bon-de-commande.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
   }
 }
 
