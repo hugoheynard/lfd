@@ -70,4 +70,19 @@ export abstract class OrderRepository {
    * Rend `false` quand la course est perdue : la commande était déjà prête.
    */
   abstract markReady(reference: string, at: Date, by: string): Promise<boolean>;
+
+  /**
+   * **Le plan du soir absorbe une journée** : toutes ses commandes `placed`
+   * passent `confirmed`, d'un coup.
+   *
+   * Une seule écriture d'ensemble et non une boucle de `load`/`save` : il n'y a
+   * pas d'invariant par commande à protéger — la règle porte sur l'ÉTAT, elle
+   * est la même pour toutes, et elle a déjà été nommée (`absorbedByPlan`). Une
+   * boucle transformerait une bascule de journée en cinquante décisions
+   * individuelles, ce que ce mécanisme existe précisément pour éviter.
+   *
+   * Rend le **nombre** de commandes absorbées. Zéro sur une seconde clôture :
+   * la condition d'état rend l'opération idempotente sans garde ajouté.
+   */
+  abstract absorbIntoPlan(serviceDay: string, at: Date): Promise<number>;
 }

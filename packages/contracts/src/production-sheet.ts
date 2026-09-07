@@ -48,3 +48,22 @@ export interface ProductionBatchView {
   readonly date: string;
   readonly sheets: readonly AtelierSheet[];
 }
+
+/**
+ * Ce que rend la **clôture du plan du soir** : combien de commandes la journée
+ * vient d'absorber.
+ *
+ * Un **compte** et pas une liste : au moment où l'on clôt, la question est
+ * « combien part en production ce soir », pas « lesquelles ». La liste, elle,
+ * est le lot lui-même, qu'on vient d'imprimer.
+ *
+ * `absorbed` vaut **zéro** sur une seconde clôture, et c'est une information et
+ * non une erreur : la journée était déjà basculée, rien n'a bougé, et l'écran le
+ * dit plutôt que de refuser.
+ */
+export interface ProductionPlanClosure {
+  /** `AAAA-MM-JJ`, la journée close. */
+  readonly date: string;
+  /** Nombre de commandes passées de `placed` à `confirmed`. */
+  readonly absorbed: number;
+}

@@ -847,6 +847,12 @@ model Order {
   fromSubscriptionId String? @map("from_subscription_id")
   recurringDeltas    Json?   @map("recurring_deltas")
 
+  // Le PLAN DU SOIR a absorbé la commande : elle est entrée dans le compte à
+  // produire. Écrit d'un coup pour toute une journée de service, à la clôture —
+  // personne ne confirme commande par commande, et la colonne ne porte donc
+  // aucun auteur : ce n'est pas un acte constaté, c'est une journée qui bascule.
+  confirmedAt DateTime? @map("confirmed_at")
+
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
   // clair sur la même feuille. Le scanner est donc sans risque : il ne porte

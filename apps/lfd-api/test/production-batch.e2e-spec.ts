@@ -479,3 +479,102 @@ describe("le journal d'une commande", () => {
     expect(ready).toHaveLength(1);
   });
 });
+
+/**
+ * **La clôture du plan du soir.** Ce que seul le vrai SQL prouve : que la
+ * bascule porte sur la bonne JOURNÉE et sur les seules commandes qui n'ont pas
+ * dépassé le stade — et qu'une seconde clôture ne défait rien.
+ */
+describe("le plan du soir", () => {
+  async function place(day: string): Promise<string> {
+    const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
+    const id =
+      point?.id ??
+      (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+    const placed = jsonBody<{ orderNumber: string }>(
+      await ctx
+        .asSub(MEMBER)
+        .post(`/orders`)
+        .send({
+          idempotencyKey: randomUUID(),
+          companyId: null,
+          requestedDeliveryDate: day,
+          fulfillmentMethod: "pickup",
+          pickupAddressId: id,
+          note: "",
+          lines: [{ sku: "VIE-001", quantity: 1 }],
+        })
+        .expect(201),
+    );
+    return placed.orderNumber;
+  }
+
+  async function closePlan(day: string): Promise<number> {
+    const response = await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/batch/${day}/close`)
+      .expect(201);
+    return jsonBody<{ absorbed: number }>(response).absorbed;
+  }
+
+  async function statusOf(reference: string): Promise<string> {
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { status: true },
+    });
+    return row.status;
+  }
+
+  beforeEach(async () => {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER });
+  });
+
+  it("fait passer les commandes du jour de `placed` à `confirmed`", async () => {
+    const reference = await place(SERVICE_DAY);
+    expect(await statusOf(reference)).toBe("placed");
+
+    expect(await closePlan(SERVICE_DAY)).toBe(1);
+    expect(await statusOf(reference)).toBe("confirmed");
+  });
+
+  it("n'absorbe RIEN une seconde fois, et le dit plutôt que de refuser", async () => {
+    // Une journée déjà basculée n'est pas une erreur : la règle d'état rend la
+    // clôture idempotente sans qu'aucun garde ait été posé.
+    await place(SERVICE_DAY);
+    await closePlan(SERVICE_DAY);
+
+    expect(await closePlan(SERVICE_DAY)).toBe(0);
+  });
+
+  it("ne touche pas les commandes d'une AUTRE journée", async () => {
+    // Une seule commande suffit à le prouver, et c'est mieux ainsi : la
+    // passerelle doublée rend une intention CONSTANTE, et deux commandes par
+    // carte dans un même test se heurteraient sur l'unicité de l'intention
+    // Stripe — un rouge qui n'aurait rien à voir avec le plan du soir.
+    const reference = await place(SERVICE_DAY);
+
+    expect(await closePlan(serviceDay(10))).toBe(0);
+    expect(await statusOf(reference)).toBe("placed");
+  });
+
+  it("ne fait pas RECULER une commande déjà prête", async () => {
+    // Les états ne reculent jamais : une commande colisée avant la clôture reste
+    // `ready`, et le compte ne l'inclut pas.
+    const reference = await place(SERVICE_DAY);
+    await ctx.asSub("staff-e2e").post(`/admin/production/packing/${reference}/ready`).expect(201);
+
+    expect(await closePlan(SERVICE_DAY)).toBe(0);
+    expect(await statusOf(reference)).toBe("ready");
+  });
+
+  it("date la bascule, pour qu'on sache quand la journée est partie", async () => {
+    const reference = await place(SERVICE_DAY);
+    await closePlan(SERVICE_DAY);
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { confirmedAt: true },
+    });
+    expect(row.confirmedAt).not.toBeNull();
+  });
+});

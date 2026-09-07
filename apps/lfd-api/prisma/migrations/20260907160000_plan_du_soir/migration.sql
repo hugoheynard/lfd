@@ -1,0 +1,13 @@
+-- Le PLAN DU SOIR : la journée bascule, et les commandes qu'elle contient
+-- passent de `placed` à `confirmed`.
+--
+-- Purement ADDITIVE. La colonne est NULLABLE sans défaut, et `NULL` y dit « pas
+-- encore absorbée » — ce qui est vrai de toutes les lignes du jour de la
+-- migration, aucune journée n'ayant jamais été close. Un défaut aurait affirmé
+-- le contraire sur tout l'historique.
+--
+-- Pas de `confirmed_by`, et c'est délibéré : personne ne confirme commande par
+-- commande. Ce n'est pas un acte constaté sur une commande, c'est une journée
+-- qui bascule — l'auteur appartient à la clôture, pas à chacune des lignes
+-- qu'elle emporte.
+ALTER TABLE "public"."orders" ADD COLUMN "confirmed_at" TIMESTAMP(3);

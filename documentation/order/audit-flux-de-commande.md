@@ -178,8 +178,14 @@ l'historique client affiche indéfiniment « en cours ».
 > table analytique est tombée échangerait un service réel contre un
 > enregistrement.
 >
-> **Ce qui reste du T4 :** `confirmed` et `in_production` ne sont toujours
-> écrits par personne, `draft` n'est produit par aucun chemin, et une commande
+> 🟡 **`confirmed` s'écrit depuis le 2026-09-07**, à la clôture du plan du soir.
+> Le dossier voulait une bascule sans geste humain ; les deux façons d'y arriver
+> étaient fermées (aucun planificateur, et une lecture ne peut pas écrire). Le
+> geste retenu est celui que l'équipe fait déjà — arrêter de prendre pour
+> demain — et il porte sur une JOURNÉE, pas sur une commande.
+>
+> **Ce qui reste du T4 :** `in_production` n'est toujours
+> écrit par personne, `draft` n'est produit par aucun chemin, et une commande
 > **en coursier** n'a toujours aucun chemin vers `fulfilled` — c'est le jeton de
 > remise en livraison, prévu au lot 6 du bon de commande.
 

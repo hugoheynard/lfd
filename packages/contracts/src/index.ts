@@ -780,3 +780,4 @@ export type {
   PricedSheet,
 } from "./order-sheet.js";
 export type { OrderPackingView } from "./order-packing.js";
+export type { ProductionPlanClosure } from "./production-sheet.js";

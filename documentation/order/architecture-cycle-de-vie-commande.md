@@ -14,9 +14,13 @@ les droits d'écriture.
   affichée SANS rang — « on montre le chemin sans savoir où on en est dessus » —
   et elle est suivie ; la livraison a gagné sa jumelle « Prête au départ ».
 
-**Ce qui reste doc-first** : `confirmed` (automatique, quand le plan du soir
-absorbe la commande), `in_delivery`, la chute de `draft`, et la notification
-« votre commande est prête ».
+- **`confirmed` s'écrit**, à la clôture du plan du soir — voir l'inflexion de
+  conception plus bas, section « `confirmed` est automatique ».
+- **Les transitions laissent un témoin.** `order.ready` et `order.handed_over`
+  entrent au journal append-only ; la naissance d'une commande y entrait déjà, sa
+  délivrance non.
+
+**Ce qui reste doc-first** : `in_delivery`, la chute de `draft`.
 
 ---
 
@@ -79,7 +83,7 @@ fichier.
 
 ```mermaid
 flowchart LR
-  P["**placed**<br/>le client valide"] --> C["**confirmed**<br/>le plan du soir absorbe"]
+  P["**placed**<br/>le client valide"] --> C["**confirmed**<br/>clôture du plan du soir"]
   C --> IP["**in_production**<br/>l'équipe lance"]
   IP --> R["**ready**<br/>scan du QR de colisage"]
   R --> F["**fulfilled**<br/>scan du QR de remise"]
@@ -107,7 +111,7 @@ flowchart LR
 | `placed`        | jeton de remise                      | — (secret) | ✅ **retrait seulement** — la livraison n'en a pas    |
 | `placed`        | `order.placed` au journal            | l'analyse  | ✅                                                    |
 | `placed`        | **📄 bon de commande PDF**           | le client  | ✅ au 1ᵉʳ téléchargement, rangé en R2                 |
-| `confirmed`     | rien                                 | —          | ⛔ **aucune transition ne l'écrit**                   |
+| `confirmed`     | la journée bascule en production     | le fournil | ✅ à la clôture du plan — `POST …/batch/:date/close`  |
 | `in_production` | rien                                 | —          | ⛔ **aucune transition ne l'écrit**                   |
 | (à la clôture)  | **🖨️ fiche d'atelier A4**            | le fournil | ✅ tirée à la demande, avec son QR de colisage        |
 | `ready`         | attestation de colisage (qui, quand) | l'équipe   | ✅ livré le 2026-09-07                                |
@@ -202,6 +206,23 @@ limite est confirmée quand le plan du soir l'absorbe : personne n'a rien décid
 donc personne ne doit cliquer. Une commande passée **après** l'heure limite est
 le seul cas qui demande un humain — et c'est exactement le mécanisme décrit pour
 les avenants ([`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
+
+> ⚠️ **Inflexion assumée, livrée le 2026-09-07.** La bascule existe, et elle
+> passe par un geste : `POST /admin/production/batch/:date/close`. Les deux
+> façons d'y arriver sans main humaine sont fermées — l'API n'a **aucun
+> planificateur**, et faire écrire la lecture du lot est interdit (« une requête
+> de lecture n'écrit rien, pas même un compteur »).
+>
+> Reste le geste que l'équipe fait **déjà** : arrêter de prendre pour demain et
+> lancer la nuit. Ce que ce paragraphe refuse est une décision **par commande** ;
+> une bascule **par journée** ne demande à personne de juger quoi que ce soit,
+> elle acte une heure. C'est cette lecture qui est retenue, et la colonne le dit
+> : `confirmed_at` existe, `confirmed_by` **non** — l'auteur appartient à la
+> clôture, pas à chacune des lignes qu'elle emporte.
+>
+> La clôture est **idempotente par sa règle** : seules les `placed` sont
+> absorbées, donc une seconde clôture en trouve zéro et le dit, au lieu de
+> refuser. Une journée déjà basculée n'est pas une erreur.
 
 **`cancelled` est staff, pas atelier.** Annuler, c'est rembourser, prévenir, et
 parfois offrir : une décision commerciale que l'atelier n'a pas à porter.

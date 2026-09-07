@@ -137,6 +137,21 @@ export class PrismaOrderRepository extends OrderRepository {
     });
   }
 
+  async absorbIntoPlan(serviceDay: string, at: Date): Promise<number> {
+    // `status: placed` dans le WHERE : c'est la base qui applique la règle
+    // nommée par `absorbedByPlan`. Une commande déjà plus avancée n'est pas
+    // touchée — les états ne reculent jamais — et une seconde clôture n'en
+    // trouve aucune, donc n'en change aucune.
+    const { count } = await this.prisma.order.updateMany({
+      where: {
+        requestedDeliveryDate: new Date(`${serviceDay}T00:00:00.000Z`),
+        status: OrderStatus.placed,
+      },
+      data: { status: OrderStatus.confirmed, confirmedAt: at },
+    });
+    return count;
+  }
+
   async markReady(reference: string, at: Date, by: string): Promise<boolean> {
     // `readyAt: null` dans le WHERE : c'est la base qui arbitre, donc deux scans
     // simultanés de la même fiche produisent exactement un colisage.
