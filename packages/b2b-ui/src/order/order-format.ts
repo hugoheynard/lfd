@@ -125,11 +125,21 @@ export function formatVatRate(rate: number): string {
  * Le même taux, mais donné en **pourcentage** : `5.5` → « 5,5 % ».
  *
  * Deux fonctions pour une seule mise en forme, parce que les deux unités
- * existent vraiment dans les données : une ligne de commande fige `vatRate` en
- * fraction, la surtaxe de retard fige `vatRatePercent` en pourcentage. Le
- * facteur 100 vit ici, une fois, nommé — laissé au site d'appel, il finit un
- * jour du mauvais côté de la division, et « 20 % » devient « 0,2 % » sur une
- * facture.
+ * existent vraiment dans les données. Le facteur 100 vit ici, une fois, nommé —
+ * laissé au site d'appel, il finit un jour du mauvais côté de la division.
+ *
+ * 🔴 **Ce paragraphe disait qu'une ligne de commande fige `vatRate` en fraction.
+ * C'est faux**, et ça a coûté un « 550 % » sur l'écran d'une commande au
+ * back-office : la colonne est un `Decimal(5,2)` documenté « %, ex. 5.50 ». Une
+ * justification fausse est pire qu'une absence de justification — on s'en sert
+ * pour choisir, et ici elle envoyait vers `formatVatRate`.
+ *
+ * Qui prend quoi, vérifié dans le schéma plutôt que supposé :
+ *
+ * - `OrderLineView.vatRate` — **pourcentage** (`5.5`) ⇒ `formatVatPercent` ;
+ * - `LateFeeAdjustment.vatRatePercent` — pourcentage ⇒ `formatVatPercent` ;
+ * - un taux en **fraction** (`0.055`) ⇒ `formatVatRate`. Le panier du client en
+ *   manipule, d'où la fonction ; une commande passée, non.
  */
 export function formatVatPercent(percent: number): string {
   return formatVatRate(percent / 100);

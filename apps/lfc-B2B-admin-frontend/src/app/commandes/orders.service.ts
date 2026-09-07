@@ -54,6 +54,26 @@ export class AdminOrdersService {
   }
 
   /**
+   * Le **bon de commande en PDF** — celui du client, pas un exemplaire de bureau.
+   *
+   * Il n'y a pas de version staff, sur décision explicite : le document qu'on
+   * discute au téléphone doit être celui que le client a sous les yeux. Le
+   * serveur sert d'ailleurs les MÊMES octets aux deux surfaces, sous la même clé
+   * d'archive — si le client l'a déjà téléchargé, c'est sa copie qu'on ouvre.
+   *
+   * Le PDF vient du serveur et n'est jamais fabriqué ici : c'est lui qui
+   * l'archive, donc lui seul peut garantir qu'un avenant ne réécrit pas le
+   * papier déjà parti.
+   */
+  async sheetPdf(id: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/bon.pdf`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
+  /**
    * Passe une commande **au nom d'un client**. Aucun prix n'est envoyé : le
    * serveur les ré-résout, et c'est lui qui rend le total et l'éventuel lien de
    * règlement.

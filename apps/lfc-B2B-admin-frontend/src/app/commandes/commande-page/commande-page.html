@@ -30,7 +30,7 @@
           audience="staff"
           [order]="o"
           [documents]="documents()"
-          (documentAsked)="onDocument()"
+          (documentAsked)="onDocument($event)"
         >
           <!-- Le rail d'actions reste vide, et se dit : un écran sans bouton
                laisse croire à un oubli, une phrase dit que c'est une décision. -->

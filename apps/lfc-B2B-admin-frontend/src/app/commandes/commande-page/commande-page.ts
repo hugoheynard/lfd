@@ -19,6 +19,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { isOrderSheet } from './order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -82,12 +83,52 @@ export class AdminCommandePage {
   }
 
   /**
-   * Le bon de livraison est généré côté client ; la facture n'existe pas encore
-   * et la lib la rend indisponible. Le staff n'a donc rien de plus à télécharger
-   * que le client — et surtout rien qu'il croirait avoir.
+   * Ce que le bureau peut emporter d'une commande.
+   *
+   * 🔴 Cette méthode répondait « le téléchargement arrive avec la facturation »
+   * — vrai de la facture, faux du bon de commande depuis qu'il existe en PDF.
+   * Le staff n'a effectivement RIEN de plus que le client, et c'est délibéré :
+   * ce qu'il télécharge est le **même document**, sous la même clé d'archive.
+   * Si le client l'a déjà tiré, c'est sa copie qui s'ouvre — et c'est ce qui
+   * permet de discuter le même papier au téléphone.
+   *
+   * La facture, elle, garde son message : elle n'existe toujours pas, et la lib
+   * la rend indisponible pour cette raison.
    */
-  protected onDocument(): void {
-    this.notify.info('Le téléchargement des documents arrive avec la facturation.');
+  protected onDocument(key: string): void {
+    if (!isOrderSheet(key)) {
+      this.notify.info('La facture arrive avec la facturation.');
+      return;
+    }
+    // Le gabarit appelle une méthode SYNCHRONE : une liaison Angular n'attend
+    // pas une promesse, et la lui rendre en laisserait une flotter sans que
+    // personne n'attrape son échec.
+    void this.downloadSheet();
+  }
+
+  /** Va chercher le bon, le propose, et **dit** quand il ne vient pas. */
+  private async downloadSheet(): Promise<void> {
+    const order = this.order();
+    if (order === null) {
+      return;
+    }
+    try {
+      const pdf = await this.api.sheetPdf(order.id);
+      const url = URL.createObjectURL(pdf);
+      const link = document.createElement('a');
+      link.href = url;
+      // Le nom se compose sur la RÉFÉRENCE — celle qu'on lit au téléphone, et
+      // qu'on cherchera dans un dossier de téléchargements.
+      link.download = `bon-de-commande-${order.orderNumber}.pdf`;
+      link.click();
+      // Révoqué après coup : sans ça chaque téléchargement fuiterait son blob
+      // jusqu'au rechargement de la page.
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 60_000);
+    } catch {
+      this.notify.error("Le bon de commande n'a pas pu être téléchargé.");
+    }
   }
 
   protected async back(): Promise<void> {

@@ -106,9 +106,9 @@
                     <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
                          lisible. `<s>` et non une classe — la rature doit exister
                          pour un lecteur d'écran aussi. -->
-                    <s class="od-was">{{ fmtCents(entry) }}</s>
+                    <s class="od-was">{{ fmtMillicents(entry) }}</s>
                   }
-                  {{ fmtCents(line.unitPriceMillicents) }}
+                  {{ fmtMillicents(line.unitPriceMillicents) }}
                 </td>
                 <td class="od-col-num od-muted">{{ fmtVat(line.vatRate) }}</td>
                 <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>

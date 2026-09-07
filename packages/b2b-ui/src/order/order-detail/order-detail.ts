@@ -21,7 +21,8 @@ import {
   formatCents,
   formatOrderDate,
   formatOrderInstant,
-  formatVatRate,
+  formatMillicents,
+  formatVatPercent,
   fulfillmentLabel,
   orderStatusLabel,
   orderStatusVariant,
@@ -224,8 +225,28 @@ export class OrderDetail {
     return formatCents(cents);
   }
 
-  protected fmtVat(rate: number): string {
-    return formatVatRate(rate);
+  /**
+   * Un prix **unitaire**, qui vit en millicentimes.
+   *
+   * 🔴 Le gabarit passait `unitPriceMillicents` à `fmtCents`, qui divise par
+   * CENT : un croissant à 1,38445 € s'affichait « 1 384,45 € » sur l'écran d'une
+   * commande, et le prix barré d'un étage tarifaire avec lui. Mille fois trop,
+   * sur la page que le bureau lit au téléphone.
+   */
+  protected fmtMillicents(millicents: number): string {
+    return formatMillicents(millicents);
+  }
+
+  /**
+   * Le taux de TVA d'une ligne — **en pourcentage**, pas en fraction.
+   *
+   * 🔴 Le gabarit passait `line.vatRate` à `formatVatRate`, qui MULTIPLIE par
+   * cent : « 5,5 » devenait « 550 % ». La colonne `vat_rate` est un pourcentage
+   * (`Decimal(5,2)`, « %, ex. 5.50 »), et `formatVatPercent` existait déjà pour
+   * ce cas — c'est le commentaire de `formatVatRate` qui affirmait le contraire.
+   */
+  protected fmtVat(percent: number): string {
+    return formatVatPercent(percent);
   }
 
   protected fmtDate(iso: string): string {
