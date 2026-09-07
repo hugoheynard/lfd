@@ -29,7 +29,7 @@ que dans les noms de dossiers.
 
 ## Comment les deux contextes se parlent, et QUAND
 
-Trois échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
+Quatre échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
 fournil **demande** ce dont il a besoin et **annonce** ce qu'il a fait ; le
 commerce répond et écoute. Jamais l'inverse.
 
@@ -57,7 +57,21 @@ sequenceDiagram
     P->>P: lit SES tables, archive au 1ᵉʳ tirage (bucket production)
     P-->>Staff: PDF
 
-    Note over P,B: ③ Le contrepoids — voir ce que l'événement a pu perdre
+    Note over P,B: ③ Le colisage — un geste du labo, devant la fiche
+    Staff->>P: POST …/batch/{jour}/sheets/{réf}/packed
+    P->>P: markPacked — écriture CONDITIONNELLE, ferme la course
+    alt le bac n'était pas encore fait
+        P--)B: OrderPackedEvent
+        P-->>Staff: 204
+        Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
+        B->>B: MarkOrderReady — confirmed → ready, courriel au client
+    else déjà colisé, ou journée pas encore arrêtée
+        P-->>Staff: 409 — le refus NOMME le cas et le geste de sortie
+    else la fiche n'est pas au plan du jour
+        P-->>Staff: 404
+    end
+
+    Note over P,B: ④ Le contrepoids — voir ce que l'événement a pu perdre
     Staff->>P: GET …/batch/{jour}/status
     P->>B: PendingCommerceOrdersReader.pendingFor(jour, closedAt)
     B-->>P: nombre de `placed` antérieures à la clôture
@@ -78,9 +92,9 @@ Trois choses le rendent **rattrapable** plutôt que perdu :
 
 |                            |                                            |
 | -------------------------- | ------------------------------------------ |
-| L'écriture est idempotente | `status: placed` dans le `where`           |
+| L'écriture est idempotente | `status` contraint dans le `where`         |
 | La clôture est rejouable   | elle republie sans recalculer l'instantané |
-| L'écart **se voit**        | ③, `pendingInCommerce`                     |
+| L'écart **se voit**        | ④, `pendingInCommerce`                     |
 
 ⚠️ Ce qu'on n'a **pas** : une file, un outbox, un rejeu automatique. Ce serait la
 vraie réponse à « l'événement ne doit jamais se perdre », et c'est un chantier en
@@ -90,8 +104,10 @@ soi. L'écrire ici évite qu'on croie l'avoir.
 
 - **P → B** passe toujours par un **port que la production déclare**
   (`channels/commerce/`), implémenté par le commerce, relié dans `appBootstrap`.
-- **B → P** n'existe pas comme appel : le commerce **s'abonne**, il n'est jamais
-  appelé par le fournil pour écrire chez lui.
+- **B → P** n'existe pas comme appel : le commerce **s'abonne** — aux deux faits,
+  la clôture et le colisage —, il n'est jamais appelé par le fournil pour écrire
+  chez lui. Le fournil ne sait donc pas qu'une commande devient `ready` ; il sait
+  qu'un bac est fait, et c'est le commerce qui en tire un statut.
 - `lint:context-boundaries` tient les deux : `production → b2b` est interdit, et
   `b2b → production` n'est permis que par le canal.
 
@@ -108,6 +124,7 @@ au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
 | La feuille d'atelier     | composée à la volée depuis `orders`  | **possédée**, produite par elle   |
 | Le compte à produire     | n'existe pas                         | **possédé**, arrêté à la clôture  |
 | Le lien vers la commande | jointure SQL                         | **identifiant opaque + snapshot** |
+| Le colisage              | acté chez le commerce                | **acté au fournil**, puis annoncé |
 
 Le dernier point est le cœur, et ce n'est pas une nouveauté : c'est **exactement
 la règle que le dépôt applique déjà entre `b2b` et `pim`**. Une `OrderLine`
