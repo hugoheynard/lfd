@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { QrCode } from '@lfd/b2b-ui/order';
 import { ORDER_ORIGIN_LABELS, type AtelierSheet } from '@lfd/contracts';
 
 /**
@@ -28,6 +29,7 @@ import { ORDER_ORIGIN_LABELS, type AtelierSheet } from '@lfd/contracts';
 @Component({
   selector: 'app-fiche-production',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [QrCode],
   templateUrl: './fiche-production.html',
   styleUrl: './fiche-production.scss',
 })
@@ -100,6 +102,24 @@ export class FicheProduction {
     const time = at.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     return `Arrêté le ${day} à ${time} · révision ${String(sheet.revision)}`;
   });
+
+  /**
+   * **Le QR de colisage** — ce que l'atelier scanne pour déclarer la commande
+   * prête.
+   *
+   * Il encode une **URL** et non le numéro nu : c'est ce qui le rend lisible par
+   * l'appareil photo natif de n'importe quel téléphone, sans lecteur ni app à
+   * installer. L'origine est celle du back-office, d'où la feuille est imprimée.
+   *
+   * 🔴 **Il n'encode rien que la feuille n'imprime déjà en clair.** Le numéro de
+   * commande est trois lignes plus haut, lisible à l'œil. C'est ce qui rend son
+   * impression gratuite en exposition — et c'est exactement ce qui interdit d'y
+   * mettre le jeton de remise, qui est un secret et dont le papier voyage dans
+   * le carton.
+   */
+  protected readonly packingUrl = computed(
+    () => `${globalThis.location.origin}/colisage/${encodeURIComponent(this.sheet().reference)}`,
+  );
 
   /** Le nombre de pièces — de quoi recompter le colis sans additionner. */
   protected readonly pieces = computed(() =>

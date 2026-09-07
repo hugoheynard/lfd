@@ -568,6 +568,26 @@ discriminée** est plus forte : `AtelierSheet` n'a pas la propriété du tout, d
 `switch` de `orderSheetOf` devient par la même occasion exhaustif sur l'union :
 une quatrième audience ne compile pas tant qu'elle n'a pas sa projection.
 
+### Le QR de colisage — pourquoi celui-là s'imprime
+
+La fiche porte un QR, et la règle de l'autoscan n'en souffre pas : **ce qui ne
+s'imprime pas, c'est un secret, pas un code.**
+
+Il encode une **URL** vers `colisage/<référence>` — donc l'appareil photo natif
+de n'importe quel téléphone l'ouvre, sans lecteur ni app à installer. Et il
+n'encode **rien que la feuille n'imprime déjà en clair** : le numéro de commande
+est trois lignes plus haut. Son impression est donc gratuite en exposition.
+
+Sa légende dit le **geste**, pas l'objet : « Scanner — commande prête ». Un code
+muet sur une feuille se scanne « pour voir », et personne ne sait ce qui a été
+déclaré.
+
+Et le geste **écrit** quelque chose, depuis le même jour : l'état `ready`
+existe, sa route aussi, et l'écran du fournil est le jumeau de l'écran de
+comptoir. Imprimer la légende sans la transition aurait mis sur du papier une
+promesse que rien n'écoute — exactement le défaut que ce dossier corrige
+ailleurs.
+
 ### Ce que la fusion du lot 4 a appris
 
 Il y avait **deux types pour un seul papier**, et chacun savait ce que l'autre

@@ -1,0 +1,77 @@
+<!-- Pas de `fold-page-layout` ici, volontairement : cet écran s'ouvre depuis un
+     appareil photo, pas depuis la navigation. Il n'a ni fil d'Ariane à porter ni
+     retour à proposer — juste un bac à fermer. -->
+<section class="cl">
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la fiche…" />
+    }
+    @case ('error') {
+      <div class="cl-empty">
+        <p class="cl-empty-title">Fiche illisible</p>
+        <p class="cl-empty-why">{{ error() }}</p>
+        <button foldButton emphasis="outline" icon="reload" (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (packing(); as p) {
+        <header class="cl-head">
+          <p class="cl-customer">{{ p.customerLabel }}</p>
+          <h1 class="cl-number">{{ p.reference }}</h1>
+          @if (p.requestedFor) {
+            <p class="cl-when">Pour le {{ fmtDate(p.requestedFor) }}</p>
+          }
+        </header>
+
+        <!-- Le total en tête : c'est le chiffre qu'on recompte en fermant le bac.
+             Aucun montant sur cet écran — on prépare, on ne facture pas. -->
+        <section class="cl-lines" aria-label="Contenu de la commande">
+          <p class="cl-count">{{ p.totalUnits }} pièces</p>
+          <ul class="cl-list">
+            @for (line of p.lines; track line.sku) {
+              <li class="cl-line">
+                <span class="cl-qty">{{ line.quantity }}</span>
+                <span class="cl-name">{{ line.productName }}</span>
+                <span class="cl-sku">{{ line.sku }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (justMarked()) {
+          <fold-callout variant="success" class="cl-verdict">
+            Commande prête{{ readyAt() ? ' — ' + readyAt() : '' }}.
+          </fold-callout>
+        } @else if (p.blockedReason; as reason) {
+          <!-- Le refus vient du serveur, en clair, et s'affiche tel quel : c'est
+               la phrase qu'on va relire entre deux fournées. -->
+          <fold-callout variant="warning" class="cl-verdict">
+            {{ reason }}
+            @if (readyAt(); as at) {
+              <br />Prête le {{ at }}.
+            }
+          </fold-callout>
+        }
+
+        @if (canMark()) {
+          <!-- Un seul bouton, pleine largeur, en bas : le pouce y arrive sans
+               regarder. Il se désarme pendant l'appel — deux mains sur la même
+               fiche est le cas normal au fournil. -->
+          <button
+            foldButton
+            class="cl-confirm"
+            intent="primary"
+            size="lg"
+            icon="check"
+            [disabled]="marking()"
+            (click)="markReady()"
+          >
+            {{ marking() ? 'Enregistrement…' : 'Commande prête' }}
+          </button>
+        }
+
+        <a class="cl-more" [routerLink]="['/commandes', p.orderId]">Ouvrir la fiche complète</a>
+      }
+    }
+  }
+</section>

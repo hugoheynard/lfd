@@ -40,6 +40,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:id': 'b2b_orders:read',
   'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
+  // Cible du QR de colisage imprimé sur la fiche d'atelier. Même droit que la
+  // remise : les deux écrivent un fait sur une commande.
+  'colisage/:reference': 'b2b_orders:write',
   'retrait/:token': 'b2b_orders:write',
 
   'comptes-clients/:id': 'b2b_companies:read',

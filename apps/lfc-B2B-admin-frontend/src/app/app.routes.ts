@@ -63,6 +63,22 @@ export const routes: Routes = [
     loadComponent: () => import('./ops/sante-page/sante-page').then((m) => m.SantePage),
   },
   {
+    // La cible d'un QR de COLISAGE, imprimé sur la fiche d'atelier. Même forme
+    // que `retrait/:token` en dessous, et pour la même raison : le segment est
+    // encodé dans un code-barres, donc chaque caractère de plus densifie les
+    // modules et fragilise le scan.
+    //
+    // Ce qu'il porte n'est PAS un secret : le numéro de commande est imprimé en
+    // clair sur la même feuille. C'est la porte staff qui protège, pas
+    // l'ignorance du code — et ça suffit, parce que le colisage est un fait
+    // interne, sans seconde partie à représenter.
+    path: 'colisage/:reference',
+    canActivate: [permissionGuard('b2b_orders:write')],
+    title: 'Colisage — LFC B2B admin',
+    loadComponent: () =>
+      import('./colisage/colisage-page/colisage-page').then((m) => m.ColisagePage),
+  },
+  {
     // La cible d'un QR de retrait. Route de premier niveau et courte : elle est
     // encodée dans un code-barres, et parfois dictée au téléphone le jour où une
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc

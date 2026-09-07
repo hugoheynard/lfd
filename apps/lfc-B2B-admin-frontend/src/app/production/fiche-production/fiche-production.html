@@ -16,6 +16,16 @@
       <h2 class="fp-trade">{{ sheet().customer.legalName }}</h2>
     }
     <p class="fp-ref">{{ sheet().reference }}</p>
+
+    <!-- Le QR de colisage. Il n'encode que le numéro ci-dessus, déjà lisible à
+         l'œil : le scanner ne révèle rien, il évite de le retaper d'une main
+         farineuse. La légende dit ce que le geste FAIT — un code muet sur une
+         feuille se scanne « pour voir », et personne ne sait ce qui a été
+         déclaré. -->
+    <figure class="fp-scan">
+      <lfd-qr-code [value]="packingUrl()" label="QR de colisage" />
+      <figcaption class="fp-scan-cap">Scanner — commande prête</figcaption>
+    </figure>
   </div>
 
   <div class="fp-where">

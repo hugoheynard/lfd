@@ -236,3 +236,28 @@
     break-inside: avoid;
   }
 }
+
+/* Le QR de colisage : 22 mm de côté, la plus petite taille qu'un téléphone lit
+   sans hésiter sur du papier ordinaire. Plus grand, il volerait la place de ce
+   qu'on lit ; plus petit, il ferait recommencer le scan. */
+.fp-scan {
+  margin: 4mm 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  align-items: flex-start;
+}
+
+.fp-scan lfd-qr-code {
+  display: block;
+  width: 22mm;
+  height: 22mm;
+}
+
+/* La légende dit le GESTE, pas l'objet : « QR de colisage » n'apprend rien à
+   qui tient la feuille, « commande prête » dit ce qui va être écrit. */
+.fp-scan-cap {
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
