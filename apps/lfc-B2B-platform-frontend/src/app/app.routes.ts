@@ -40,13 +40,13 @@ const proRoutes: Routes = FEATURE_PRO_SPACE
       // enregistré, nommé, réutilisable, est la seule fonctionnalité que cette
       // suppression retire du produit — cf. le commit.
       homeRoute,
-      {
-        path: 'commandes',
-        title: 'Mes commandes — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () =>
-          import('./legacy/commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
-      },
+      // 🔴 `commandes` est partie le 2026-09-07 avec ses données de
+      // DÉMONSTRATION. Elle listait des commandes fabriquées par
+      // `buildDemoOrders`, des relevés mensuels dont le règlement ne changeait
+      // qu'une couleur, et des changements de régime inventés — sous un en-tête
+      // La Folie Coffee. La liste réelle est `/mes-commandes`, servie par
+      // l'API. Le DÉTAIL et le RÈGLEMENT ci-dessous restent : eux lisent le
+      // serveur.
       {
         // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
         // suite d'un identifiant, et le lien de règlement ouvrirait le détail.

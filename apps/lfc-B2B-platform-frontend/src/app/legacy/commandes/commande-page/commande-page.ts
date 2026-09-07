@@ -160,6 +160,8 @@ export class CommandePage {
   }
 
   protected async back(): Promise<void> {
-    await this.router.navigate(['/commandes']);
+    // La liste héritée est partie avec ses données de démonstration : le retour
+    // mène désormais à la vraie, servie par l'API.
+    await this.router.navigate(['/mes-commandes']);
   }
 }

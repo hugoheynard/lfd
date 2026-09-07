@@ -44,16 +44,6 @@
         ></a>
       }
       <a
-        fold-menu-item
-        icon="receipt"
-        label="Mes commandes"
-        routerLink="/commandes"
-        routerLinkActive
-        #commandesRla="routerLinkActive"
-        [active]="commandesRla.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
-      <a
         footer
         fold-menu-item
         icon="company"
@@ -131,17 +121,6 @@
     <!-- Navigation mobile — grille de tuiles plein écran (remplace le tiroir
        latéral, `mobileNav="none"`). Liée au même `mobileNavOpen` que le burger. -->
     <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à">
-      <a
-        fold-nav-tile
-        variant="filled"
-        icon="receipt"
-        label="Mes commandes"
-        routerLink="/commandes"
-        routerLinkActive
-        #commandesTile="routerLinkActive"
-        [active]="commandesTile.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
       <a
         fold-nav-tile
         variant="filled"
