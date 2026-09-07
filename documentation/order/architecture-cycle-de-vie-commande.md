@@ -1,12 +1,31 @@
 # Le cycle de vie d'une commande — états, transitions, et qui les écrit
 
-**État : 📐 doc-first.** Rien n'est codé. Ce document tranche l'énuméré et les
-droits d'écriture, prérequis de trois choses bloquées : la frise de suivi côté
-client, l'écran d'atelier, et la notification « votre commande est prête ».
+**État : 🟡 partiellement livré (2026-09-07).** Ce document tranche l'énuméré et
+les droits d'écriture.
+
+**Ce qui existe désormais**, et qui périme le constat ci-dessous :
+
+- **`ready` est dans l'énuméré et s'écrit.** L'atelier le pose en scannant le QR
+  de colisage de sa fiche — le geste qu'il faisait déjà au stylo, sans
+  contrepartie en base. Route `POST /admin/production/packing/:reference/ready`,
+  règle pure dans `packing.ts`, écriture conditionnée en base.
+- **`fulfilled` s'écrivait déjà**, au scan du QR de remise du client.
+- **La frise n'est plus muette sur ces deux-là.** « Prête au retrait » y était
+  affichée SANS rang — « on montre le chemin sans savoir où on en est dessus » —
+  et elle est suivie ; la livraison a gagné sa jumelle « Prête au départ ».
+
+**Ce qui reste doc-first** : `confirmed` (automatique, quand le plan du soir
+absorbe la commande), `in_delivery`, la chute de `draft`, et la notification
+« votre commande est prête ».
 
 ---
 
-## Le constat, vérifié dans le code
+## Le constat d'origine, vérifié dans le code — ⚠️ périmé sur deux lignes
+
+**Photo du jour où ce document a été écrit.** Elle n'est pas réécrite : ce qu'on
+croyait avoir et ce qui manquait explique le reste du document, et l'effacer
+rendrait les décisions qui suivent incompréhensibles. Le bandeau ci-dessus dit ce
+qui a changé.
 
 | Ce qu'on croit avoir    | Ce qui existe                                                                    |
 | ----------------------- | -------------------------------------------------------------------------------- |
@@ -15,7 +34,8 @@ client, l'écran d'atelier, et la notification « votre commande est prête ».
 | Un agrégat qui pilote   | `Order` n'expose **aucune** transition : seulement `payByCard` et `deferPayment` |
 | `draft`                 | **Jamais produit par aucun chemin**                                              |
 
-Une commande naît `placed` et meurt `placed`. `confirmed`, `in_production`,
+~~Une commande naît `placed` et meurt `placed`.~~ Elle passe désormais par
+`ready` puis `fulfilled`, tous deux écrits par un scan. `confirmed`, `in_production`,
 `fulfilled` sont des valeurs que la base accepte et que personne n'écrit.
 
 Côté client, la frise affiche pourtant cinq étapes. Quatre ne s'allumeront

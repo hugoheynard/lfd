@@ -126,7 +126,7 @@ demande de support. **Aucun `customer.order-*`.**
 Le client ne reçoit donc rien, ni le fournil : personne chez LFC n'est prévenu
 qu'une commande vient d'entrer, sauf à regarder un écran.
 
-### T4 — Le cycle de vie déclare six états et n'en écrit que deux
+### T4 — 🟡 EN PARTIE FERMÉ · Le cycle de vie déclare six états et n'en écrit que deux
 
 [`schema.prisma:149`](../../apps/lfd-api/prisma/schema.prisma) déclare
 `draft · placed · confirmed · in_production · fulfilled · cancelled`.
@@ -146,6 +146,18 @@ Le code le sait et le dit lui-même, dans
 `fulfilled` : elle reste `placed` pour toujours, livrée ou non. La liste de
 production ne peut pas distinguer ce qui est fait de ce qui reste, et
 l'historique client affiche indéfiniment « en cours ».
+
+> 🟡 **Le 2026-09-07, une troisième écriture est arrivée : `ready`.** L'atelier
+> la pose en scannant le QR de colisage de sa fiche — le geste qu'il faisait
+> déjà au stylo, sans contrepartie en base. La liste de production distingue
+> donc désormais ce qui est prêt de ce qui reste, **y compris en coursier** :
+> le colisage se lit par le NUMÉRO de commande, pas par un jeton, et il n'était
+> donc pas bloqué par l'absence de jeton en livraison.
+>
+> **Ce qui reste du T4 :** `confirmed` et `in_production` ne sont toujours
+> écrits par personne, `draft` n'est produit par aucun chemin, et une commande
+> **en coursier** n'a toujours aucun chemin vers `fulfilled` — c'est le jeton de
+> remise en livraison, prévu au lot 6 du bon de commande.
 
 ### T5 — ⛔ OUVERT, ET REQUALIFIÉ · Un client qui a une entreprise commande **hors de sa société**
 
