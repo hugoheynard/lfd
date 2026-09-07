@@ -37,6 +37,16 @@ export class OrderDetail {
   readonly rated = output<number>();
   readonly problemRaised = output<void>();
 
+  /**
+   * Le bon de commande est DEMANDÉ, pas fabriqué ici.
+   *
+   * 🔴 Ce bouton n'avait aucun `(click)` : il portait l'icône du
+   * téléchargement et ne téléchargeait rien. Le document vient du serveur,
+   * qui l'archive — un tiroir n'a ni le jeton ni le droit d'aller le
+   * chercher, et ce n'est pas à lui de choisir quelle surface l'accueille.
+   */
+  readonly purchaseOrderRequested = output<void>();
+
   protected readonly t = inject(ClientCopyService).t;
   protected readonly stars = STARS;
 

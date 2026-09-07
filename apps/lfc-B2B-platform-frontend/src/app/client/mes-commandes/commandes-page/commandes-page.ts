@@ -19,8 +19,11 @@ import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
 import { ClientOrderHistory } from '../client-order-history.service';
+import { OrderSheetService } from '../order-sheet.service';
+import { downloadBlob } from '../download-blob';
 import { historyRowOf, isLive, trackedOf, type HistoryOrder, type RowCopy } from '../order-rows';
 import { HistoryTable } from '../history-table/history-table';
+import { NotifyService } from '../../../notify.service';
 import { ReportSheet } from '../report-sheet/report-sheet';
 import { TrackCard } from '../track-card/track-card';
 
@@ -70,6 +73,8 @@ export class CommandesPage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
+  private readonly sheets = inject(OrderSheetService);
+  private readonly notify = inject(NotifyService);
 
   private readonly history_ = inject(ClientOrderHistory);
   private readonly client = inject(ClientCompany);
@@ -131,6 +136,36 @@ export class CommandesPage {
 
   protected report(order: HistoryOrder): void {
     this.reported.set(order);
+  }
+
+  /**
+   * Le bon de commande, **demandé au serveur** puis proposé au téléchargement.
+   *
+   * 🔴 Le bouton du tiroir portait l'icône du téléchargement et n'avait aucun
+   * `(click)` : il ne faisait rien, sans même le dire. Il rejoint `showQr`
+   * ci-dessous dans la même famille de trou — un geste dessiné, jamais branché.
+   *
+   * Le fichier vient de l'API et non du navigateur, et ce n'est pas un détour :
+   * le serveur ARCHIVE ce qu'il a servi la première fois, de sorte qu'un avenant
+   * appliqué le lendemain ne réécrit pas le papier que le client a déjà. Un
+   * rendu local refabriquerait à partir de ce que la commande dit aujourd'hui.
+   */
+  protected downloadSheet(order: HistoryOrder): void {
+    // Le gabarit appelle une méthode SYNCHRONE : une liaison Angular n'attend
+    // pas une promesse, et la lui rendre en laisserait une flotter sans que
+    // personne n'attrape son échec.
+    void this.fetchSheet(order);
+  }
+
+  private async fetchSheet(order: HistoryOrder): Promise<void> {
+    try {
+      const pdf = await this.sheets.pdfOf(order.id);
+      // Le nom se compose sur la RÉFÉRENCE, celle que le client lit sur son
+      // écran : c'est ce qu'il cherchera dans son dossier de téléchargements.
+      downloadBlob(`bon-de-commande-${order.reference}.pdf`, pdf);
+    } catch {
+      this.notify.error(this.t().orders.purchaseOrderFailed);
+    }
   }
 
   /**

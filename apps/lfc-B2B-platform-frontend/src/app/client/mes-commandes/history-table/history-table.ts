@@ -57,6 +57,9 @@ export class HistoryTable {
   /** Le signalement — l'écran décide de la surface qui l'accueille. */
   readonly problemRaised = output<HistoryOrder>();
 
+  /** Relayé comme le signalement : la table ne va pas chercher de fichier. */
+  readonly purchaseOrderRequested = output<HistoryOrder>();
+
   protected readonly t = inject(ClientCopyService).t;
 
   /** La note donnée, par commande — la maquette la garde le temps de la visite. */

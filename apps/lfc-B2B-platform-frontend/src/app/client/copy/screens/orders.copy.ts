@@ -86,6 +86,14 @@ export interface OrdersCopy {
   readonly originPhone: string;
   readonly detailMode: string;
   readonly purchaseOrder: string;
+  /**
+   * Quand le document ne vient pas.
+   *
+   * Il **se dit**, plutôt que de laisser un bouton sans effet : un
+   * téléchargement qui ne produit aucun fichier et aucun message ressemble à
+   * un clic manqué, et on reclique.
+   */
+  readonly purchaseOrderFailed: string;
   readonly reorder: string;
   readonly problem: string;
   readonly expand: string;
@@ -162,6 +170,7 @@ export const ORDERS_FR: OrdersCopy = {
   originPhone: 'Prise par La Folie Coffee',
   detailMode: 'Mode',
   purchaseOrder: 'Bon de commande',
+  purchaseOrderFailed: 'Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant.',
   reorder: 'Recommander à l’identique',
   problem: 'Un problème sur cette commande',
   expand: 'Déplier la commande',
@@ -244,6 +253,7 @@ export const ORDERS_EN: OrdersCopy = {
   originPhone: 'Taken by La Folie Coffee',
   detailMode: 'Mode',
   purchaseOrder: 'Order form',
+  purchaseOrderFailed: 'The order form could not be downloaded. Please try again in a moment.',
   reorder: 'Order the same again',
   problem: 'A problem with this order',
   expand: 'Expand the order',
@@ -326,6 +336,7 @@ export const ORDERS_IT: OrdersCopy = {
   originPhone: 'Presa da La Folie Coffee',
   detailMode: 'Modalità',
   purchaseOrder: 'Buono d’ordine',
+  purchaseOrderFailed: 'Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante.',
   reorder: 'Riordinare identico',
   problem: 'Un problema su questo ordine',
   expand: 'Aprire l’ordine',

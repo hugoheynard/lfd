@@ -11,6 +11,7 @@ import type { HistoryOrder } from './order-rows';
  */
 export const ROWS: readonly HistoryOrder[] = [
   {
+    id: 'ord_0007',
     reference: 'CMD-0007',
     date: '2026-09-05',
     mode: 'Retrait',
@@ -24,6 +25,7 @@ export const ROWS: readonly HistoryOrder[] = [
     org: "La Folie Douce Val d'Isère",
   },
   {
+    id: 'ord_0008',
     reference: 'CMD-0008',
     date: '2026-09-03',
     mode: 'Coursier',
@@ -37,6 +39,7 @@ export const ROWS: readonly HistoryOrder[] = [
     org: "La Folie Douce Val d'Isère",
   },
   {
+    id: 'ord_0009',
     reference: 'CMD-0009',
     date: '2026-08-28',
     mode: 'Retrait',

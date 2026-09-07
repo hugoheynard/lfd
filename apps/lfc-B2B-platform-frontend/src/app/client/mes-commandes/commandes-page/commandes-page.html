@@ -48,7 +48,11 @@
       [subtitle]="t().orders.historyNote"
     />
 
-    <app-history-table [orders]="history()" (problemRaised)="report($event)" />
+    <app-history-table
+      [orders]="history()"
+      (problemRaised)="report($event)"
+      (purchaseOrderRequested)="downloadSheet($event)"
+    />
   </fold-page-section>
 </div>
 

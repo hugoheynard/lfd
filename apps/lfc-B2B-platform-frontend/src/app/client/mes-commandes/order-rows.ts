@@ -81,6 +81,13 @@ export type OrderPayment = 'account' | 'card';
 
 /** Une commande PASSÉE, telle que le tableau la compare. */
 export interface HistoryOrder {
+  /**
+   * L'identifiant SERVEUR — celui que les routes attendent.
+   *
+   * La `reference` est ce qu'on MONTRE ; elle ne nomme rien pour l'API. Sans
+   * lui, le bouton du bon de commande n'avait rien à demander.
+   */
+  readonly id: string;
   readonly reference: string;
   readonly date: string;
   readonly mode: string;
@@ -147,6 +154,7 @@ export function trackedOf(order: OrderView, copy: RowCopy): TrackedOrder {
 /** Une ligne d'historique. */
 export function historyRowOf(order: OrderView, org: string, copy: RowCopy): HistoryOrder {
   return {
+    id: order.id,
     reference: order.orderNumber,
     date: order.requestedDeliveryDate ?? order.placedAt.slice(0, 10),
     mode: modeLabel(order, copy),

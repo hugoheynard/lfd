@@ -56,6 +56,7 @@
       [rate]="rating(order.reference)"
       (rated)="rate(order.reference, $event)"
       (problemRaised)="problemRaised.emit(order)"
+      (purchaseOrderRequested)="purchaseOrderRequested.emit(order)"
     />
   </ng-template>
 </fold-data-table>

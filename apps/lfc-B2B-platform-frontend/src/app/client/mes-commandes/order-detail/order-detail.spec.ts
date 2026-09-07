@@ -52,6 +52,19 @@ describe('OrderDetail', () => {
     expect(el().querySelector('.rate-label')?.textContent).toContain(FR.orders.rateHigh);
   });
 
+  it('remonte la demande de bon de commande — le bouton ne faisait RIEN', () => {
+    // 🔴 Régression du 2026-09-07 : ce bouton portait `icon="download"` et aucun
+    // `(click)`. Un attribut manquant sur un bouton ne lève rien, ne casse aucun
+    // typecheck et ne rougit dans aucun test — il ne se voit qu'en cliquant.
+    // C'est la même famille de trou que `qrAsked`, émis et écouté par personne.
+    let asked = 0;
+    fixture.componentInstance.purchaseOrderRequested.subscribe(() => (asked += 1));
+
+    el().querySelector<HTMLButtonElement>('button[icon="download"]')?.click();
+
+    expect(asked).toBe(1);
+  });
+
   it('remonte le signalement sans choisir la surface qui l’accueille', () => {
     let raised = 0;
     fixture.componentInstance.problemRaised.subscribe(() => (raised += 1));

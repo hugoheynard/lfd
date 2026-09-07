@@ -30,7 +30,14 @@
      problème est OFFERT sans être encouragé (bordé — un aplat rouge invite au
      clic). -->
 <div class="acts">
-  <button foldButton block size="sm" icon="download" type="button">
+  <button
+    foldButton
+    block
+    size="sm"
+    icon="download"
+    type="button"
+    (click)="purchaseOrderRequested.emit()"
+  >
     {{ t().orders.purchaseOrder }}
   </button>
   <button foldButton block size="sm" emphasis="soft" type="button">
