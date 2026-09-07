@@ -259,11 +259,47 @@ justifie que si le litige attendu est _nous contre le client_, pas _le client
 contre un tiers_. Pour ce dernier, l'autorité de la base suffit et c'est ce que
 le code fait déjà.
 
-⚠️ **À vérifier avant de s'appuyer dessus** : l'attestation vit aujourd'hui sur
-la ligne de commande (`handedOverAt`, `handedOverBy`). Si elle n'est pas **aussi**
-écrite au journal d'événements, une correction ultérieure de la ligne ne laisse
-aucune trace — et une attestation qu'on peut réécrire sans témoin n'atteste plus
-grand-chose.
+🔴 **Vérifié le 2026-09-07 : la remise n'est PAS journalisée.** L'attestation
+vit sur **une ligne mutable, et nulle part ailleurs**. Quatre constats, chacun
+lisible en ouvrant un fichier :
+
+| Ce qu'on cherche                      | Ce qu'on trouve                                                                                       |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| un type d'événement de remise         | `ACTIVITY_TYPES` en compte dix-neuf — `order.placed` y est, **rien** sur la remise ni sur `fulfilled` |
+| un fait de domaine côté `orders`      | `orders/domain/events/` ne contient **qu'un** fichier : `order-placed.event.ts`                       |
+| une publication dans le handler       | `ConfirmHandoverHandler` injecte `OrderReader`, `OrderRepository`, `Clock`. **Pas d'`EventBus`.**     |
+| une écriture annexe dans l'adaptateur | `markHandedOver` fait **un** `updateMany` sur `order` — `handedOverAt`, `handedOverBy`, `status`      |
+
+**L'asymétrie est le vrai problème.** La _naissance_ d'une commande entre au
+journal (`OnOrderPlaced` écrit `order.placed`), sa _délivrance_ n'y entre pas. Le
+journal peut donc dire « ce client a commandé » et **jamais** « ce client a
+reçu » — exactement la moitié qu'on voudrait produire en cas de litige.
+
+Et c'est aussi vrai de la seule transition de statut du système : le handler
+écrit lui-même que c'est « la première transition de statut du système », et elle
+passe sans témoin.
+
+Or le journal a précisément la propriété qui manque. Son propre commentaire de
+schéma la nomme : « Journal **append-only** […] un seul invariant :
+l'immuabilité (jamais d'UPDATE/DELETE) ». La ligne de commande, elle, s'`UPDATE`
+— et rien n'enregistre qu'elle l'a été. Un futur avenant, un correctif, un script
+de rattrapage : `handedOverBy` se réécrit sans laisser de trace.
+
+**Ce que le lot 6 doit donc ajouter** : un fait `order.handed_over` publié après
+persistance, journalisé comme `order.placed` l'est déjà — même mécanisme, même
+abonné de fond, rien à inventer. Le témoin immuable se pose **à côté** de la
+ligne ; il ne la remplace pas, et le schéma est clair là-dessus : « la vérité
+métier reste transactionnelle […] on ne reconstruit JAMAIS l'état depuis ce
+journal ».
+
+⚠️ **Une réserve, à trancher au lot 6.** Le journal est celui du module
+**croissance** : ses sujets sont `user | company | lead`, et il est décrit comme
+une projection analytique. Une attestation de remise n'est pas un signal de
+croissance. Le cycle de vie des rendez-vous y vit déjà (`appointment.honored`,
+`appointment.no_show`), donc le précédent existe — mais y ranger une pièce
+destinée à faire foi étire sa raison d'être. Soit on l'assume et on l'écrit dans
+son en-tête, soit l'attestation demande son propre journal. Ne pas glisser l'un
+pour l'autre sans le dire.
 
 ---
 
