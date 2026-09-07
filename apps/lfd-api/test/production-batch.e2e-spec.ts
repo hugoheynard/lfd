@@ -15,6 +15,7 @@ import type { ProductionBatchView } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -268,6 +269,37 @@ describe("le colisage", () => {
 
     expect(results.filter((response) => response.status === 201)).toHaveLength(1);
     expect(results.filter((response) => response.status === 409)).toHaveLength(1);
+  });
+
+  it("refuse EN BASE de déclarer prête une commande annulée", async () => {
+    // 🔴 On appelle le PORT, pas la route : `packingBlocker` attrape déjà le cas
+    // dans le handler, et passer par HTTP ne prouverait donc que le handler.
+    //
+    // Ce que ce cas tient est le cran en dessous. `markReady` conditionnait son
+    // écriture sur `readyAt: null` et RIEN D'AUTRE, quand ses trois sœurs
+    // (`absorbIntoPlan`, `markHandedOver`, `markHandedOverManually`) posent leur
+    // règle dans le `where`. Deux conséquences réelles : un second appelant
+    // — reprise en masse, script d'exploitation — n'hériterait d'aucune garde,
+    // et une annulation qui tombe entre la lecture du handler et son écriture
+    // passait. C'est exactement la course que `handedOverAt: null` interdit
+    // ailleurs.
+    const reference = await placeOne();
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "cancelled" },
+    });
+
+    const written = await ctx.app
+      .get(OrderRepository)
+      .markReady(reference, new Date(), "staff-e2e");
+
+    expect(written).toBe(false);
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { status: true, readyAt: true },
+    });
+    expect(row.status).toBe("cancelled");
+    expect(row.readyAt).toBeNull();
   });
 
   it("lit la commande derrière le code AVANT de déclarer quoi que ce soit", async () => {

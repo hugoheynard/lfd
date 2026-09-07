@@ -164,8 +164,22 @@ export class PrismaOrderRepository extends OrderRepository {
   async markReady(reference: string, at: Date, by: string): Promise<boolean> {
     // `readyAt: null` dans le WHERE : c'est la base qui arbitre, donc deux scans
     // simultanés de la même fiche produisent exactement un colisage.
+    //
+    // 🔴 Et le STATUT, ajouté le 2026-09-07. Cette condition était la seule des
+    // quatre écritures d'état à ne pas poser sa règle en base : une commande
+    // annulée pouvait devenir `ready` pourvu que `readyAt` fût nul. Elle ne le
+    // devenait pas, parce que `packingBlocker` l'attrape dans le handler — mais
+    // c'était une règle APPLIQUÉE, pas refusée, avec les deux faiblesses que ça
+    // implique : un second appelant (reprise en masse, script d'exploitation)
+    // n'en hériterait pas, et une annulation qui tombe entre la lecture du
+    // handler et son écriture passait. C'est exactement la course que
+    // `handedOverAt: null` interdit chez les trois autres.
     const { count } = await this.prisma.order.updateMany({
-      where: { orderNumber: reference, readyAt: null },
+      where: {
+        orderNumber: reference,
+        readyAt: null,
+        status: { notIn: [OrderStatus.cancelled, OrderStatus.draft, OrderStatus.fulfilled] },
+      },
       data: { readyAt: at, readyBy: by, status: OrderStatus.ready },
     });
     return count === 1;

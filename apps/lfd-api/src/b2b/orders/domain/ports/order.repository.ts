@@ -76,13 +76,19 @@ export abstract class OrderRepository {
   /**
    * Grave le **colisage** : la fabrication est finie.
    *
-   * Écriture nue et **conditionnée en base** (`readyAt: null`), pour la même
-   * raison que `markHandedOver` : deux postes qui scannent la même feuille au
-   * même moment ne doivent produire qu'un seul fait. Une load→save y perdrait
-   * l'atomicité pour zéro invariant de plus — la règle a déjà été appliquée sur
-   * l'état lu, par `packingBlocker`.
+   * Écriture nue et **conditionnée en base**, pour la même raison que
+   * `markHandedOver` : deux postes qui scannent la même feuille au même moment
+   * ne doivent produire qu'un seul fait. Une load→save y perdrait l'atomicité
+   * pour zéro invariant de plus.
    *
-   * Rend `false` quand la course est perdue : la commande était déjà prête.
+   * 🔴 La condition portait sur `readyAt: null` **et rien d'autre** — c'était la
+   * seule des quatre écritures d'état à laisser sa règle métier au handler. Une
+   * commande annulée, en brouillon ou déjà remise ne peut plus devenir `ready` :
+   * la base refuse, `packingBlocker` ne fait plus que le DIRE joliment.
+   *
+   * Rend `false` quand l'écriture n'a pas eu lieu : course perdue, ou état qui
+   * ne permet pas le colisage. L'appelant qui veut distinguer les deux lit
+   * l'état — c'est ce que fait le handler pour nommer la cause.
    */
   abstract markReady(reference: string, at: Date, by: string): Promise<boolean>;
 
