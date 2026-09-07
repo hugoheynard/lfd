@@ -12,8 +12,20 @@ import {
   type OrderQuoteView,
   toCustomerQuote,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import type { Response } from "express";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
@@ -25,6 +37,8 @@ import {
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";
+import type { OrderSheetPdf } from "../application/queries/get-order-sheet-pdf.handler.js";
+import { GetOrderSheetPdfQuery } from "../application/queries/get-order-sheet-pdf.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 
 /**
@@ -135,6 +149,33 @@ export class OrdersController {
     return this.queries.execute<GetOrderSheetQuery, ClientSheet>(
       new GetOrderSheetQuery(user.userId, id),
     );
+  }
+
+  /**
+   * Le bon de commande **en PDF** — l'exemplaire qu'on garde et qu'on imprime.
+   *
+   * Il est **rangé au premier téléchargement** et rendu tel quel ensuite : le
+   * papier parti du comptoir est un fait, et un avenant ne doit pas réécrire ce
+   * que le client a dans la poche.
+   *
+   * Même mur que la lecture. Et aucun QR dessus — le jeton n'est pas sur la
+   * feuille, donc ce chemin ne peut pas l'imprimer.
+   */
+  @Get(":id/bon.pdf")
+  async bonPdf(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetOrderSheetPdfQuery, OrderSheetPdf>(
+      new GetOrderSheetPdfQuery(user.userId, id),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "bon-de-commande.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
   }
 
   /**
