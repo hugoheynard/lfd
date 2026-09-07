@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * E2E de la **lecture staff des commandes** (`GET /admin/orders`, `/:id`).
  *
@@ -37,6 +38,7 @@ let pickupId = "pickup_absent";
  * ils n'en ont plus.
  */
 const pickupContent = (): Record<string, unknown> => ({
+  idempotencyKey: randomUUID(),
   fulfillmentMethod: "pickup",
   pickupAddressId: pickupId,
   requestedDeliveryDate: SERVICE_DAY,

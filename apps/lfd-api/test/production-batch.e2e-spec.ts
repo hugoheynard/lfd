@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * E2E du **lot de production** — ce que le labo imprime pour une journée.
  *
@@ -109,6 +110,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -156,6 +158,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",

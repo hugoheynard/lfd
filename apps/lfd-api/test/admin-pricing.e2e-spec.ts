@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage tarifaire** — sur un vrai Postgres.
@@ -929,6 +930,7 @@ describe("le rapport prix / volume", () => {
       .asSub("auth0|solo")
       .post("/orders")
       .send({
+        idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
@@ -1245,6 +1247,7 @@ describe("l’écran daté et la comparaison", () => {
       .asSub("auth0|solo")
       .post("/orders")
       .send({
+        idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
@@ -1613,6 +1616,7 @@ describe("POST /admin/pricing/projection", () => {
       .asSub("auth0|solo")
       .post("/orders")
       .send({
+        idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,

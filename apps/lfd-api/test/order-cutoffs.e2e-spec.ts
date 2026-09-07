@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * E2E de l'**heure limite de commande** — la règle enfin opposée.
  *
@@ -131,6 +132,7 @@ async function seedCutoffPassedBy(minutesAgo: number, graceMinutes: number): Pro
 function order(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     companyId,
+    idempotencyKey: randomUUID(),
     pickupAddressId: pickupId,
     fulfillmentMethod: "pickup",
     note: "",

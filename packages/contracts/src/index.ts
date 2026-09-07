@@ -438,6 +438,7 @@ export {
   recurringDeltasSchema,
   orderQuotePayloadSchema,
   orderQuantitySchema,
+  idempotencyKeySchema,
   MAX_LINE_QUANTITY,
   MAX_ORDER_LINES,
   toCustomerQuote,

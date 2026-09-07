@@ -445,11 +445,12 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships     Membership[]
-  ordersPlaced    Order[]
-  subscriptions   Subscription[]
-  supportRequests SupportRequest[]
-  shopCart        ShopCart?
+  memberships      Membership[]
+  ordersPlaced     Order[]
+  subscriptions    Subscription[]
+  supportRequests  SupportRequest[]
+  shopCart         ShopCart?
+  orderIdempotency OrderIdempotency[]
 
   @@map("users")
   @@schema("public")
@@ -1152,6 +1153,62 @@ model OrderLateFee {
   updatedBy String?  @map("updated_by")
 
   @@map("order_late_fee")
+  @@schema("public")
+}
+
+/// **Une clé de passation déjà servie** — pour qu'un double clic ne fasse pas
+/// deux commandes.
+///
+/// `POST /orders` n'avait ni clé d'idempotence, ni clé naturelle, ni
+/// déduplication : un double clic, un rejeu réseau ou un retour arrière du
+/// navigateur créait deux commandes ET deux intentions Stripe. La fenêtre était
+/// la durée de l'appel — long, puisqu'il ré-résout les prix, lit l'heure limite
+/// et attend le prestataire.
+///
+/// Le plan : `documentation/order/plan-idempotence-de-passation.md`.
+model OrderIdempotency {
+  id String @id @default(cuid())
+
+  /// AU NOM DE QUI la clé est posée, avec sa clé étrangère.
+  ///
+  /// Le mur de l'idempotence : une clé n'est jamais partagée entre deux
+  /// personnes, sinon deviner celle d'un autre suffirait à lire sa commande.
+  ///
+  /// La contrainte est possible ici parce que cette table ne sert QUE la porte
+  /// client. La porte staff est hors périmètre — y mêler des `StaffUser.id`,
+  /// qui viennent d'un annuaire délibérément sans clé étrangère, aurait donné
+  /// une colonne à deux populations qu'aucun `SELECT` ne sait plus distinguer.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// La clé, un UUID que le contrat impose (`placeOrderPayloadSchema`). Bornée
+  /// par son type : un index btree refuse une entrée au-delà de 2704 octets, et
+  /// un en-tête HTTP libre en accepte seize mille.
+  key String
+
+  /// **L'empreinte du panier demandé.**
+  ///
+  /// Sans elle, une clé rejouée avec un panier CORRIGÉ rendrait l'ancienne
+  /// commande, et le front viderait la correction en silence. Une empreinte qui
+  /// diffère est un refus (422), pas une répétition.
+  requestFingerprint String @map("request_fingerprint")
+
+  /// La commande qui en est sortie, ou `NULL` — la clé est réclamée, l'appel est
+  /// en vol. Écrite **dans la même transaction** que la commande : il n'existe
+  /// pas d'état « la commande existe, la clé n'est pas résolue ».
+  ///
+  /// Pas de clé étrangère : la ligne naît avant la commande, et une contrainte
+  /// qu'on ne peut pas honorer au moment où l'on écrit n'en est pas une.
+  orderId String? @map("order_id")
+
+  /// Quand la clé a été réclamée. C'est le **bail** : une clé réclamée et non
+  /// résolue depuis plus de deux minutes est réputée abandonnée — un crash, un
+  /// déploiement — et la tentative suivante la reprend. Sûr précisément parce
+  /// que rien n'a pu être écrit sous une clé non résolue.
+  claimedAt DateTime @default(now()) @map("claimed_at")
+
+  @@unique([userId, key])
+  @@map("order_idempotency")
   @@schema("public")
 }
 

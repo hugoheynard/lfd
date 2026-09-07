@@ -6,6 +6,7 @@ import type {
   PlacedOrderResponse,
   ShopQuoteView,
 } from '@lfd/contracts';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { unitPriceCents } from '@lfd/money';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -15,7 +16,7 @@ import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
-import { isRecord, readLocal, readNumber, writeLocal } from './local-store';
+import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {
@@ -59,6 +60,22 @@ export interface PlacedOrder {
 }
 
 const KEY = 'orders';
+
+/**
+ * Où vit la **clé d'idempotence** de la tentative en cours.
+ *
+ * Dans le stockage, et pas dans un signal : la promesse est de couvrir le retour
+ * arrière du navigateur et le rechargement, et une clé tenue en mémoire est
+ * perdue par les deux — donc la deuxième tentative passerait une deuxième
+ * commande, ce qui est exactement le défaut qu'on ferme.
+ *
+ * Elle survit à l'échec (le rejeu doit porter la MÊME clé) et meurt au succès :
+ * la commande suivante est une commande suivante.
+ */
+const ATTEMPT_KEY = 'order-attempt';
+
+/** Le refus que le serveur oppose à un appel identique encore en vol. */
+const IN_FLIGHT = 'orders.idempotency.in_flight';
 
 function parseOrders(raw: unknown): readonly PlacedOrder[] | null {
   return Array.isArray(raw) ? raw.filter(isPlaced) : null;
@@ -154,6 +171,24 @@ export class ClientOrders {
   readonly all = this.placed.asReadonly();
 
   /**
+   * **La clé de la tentative en cours**, fabriquée une fois puis relue.
+   *
+   * Elle ne se régénère PAS à chaque appel : c'est ce qui fait qu'un double
+   * clic, un rejeu réseau ou un retour arrière sont reconnus comme la même
+   * tentative — et qu'un panier corrigé, lui, part sous la même clé mais avec
+   * une empreinte différente, que le serveur refuse plutôt que d'honorer.
+   */
+  private attemptKey(): string {
+    const held = readLocal(ATTEMPT_KEY, readString);
+    if (held !== null) {
+      return held;
+    }
+    const fresh = crypto.randomUUID();
+    writeLocal(ATTEMPT_KEY, fresh);
+    return fresh;
+  }
+
+  /**
    * Fige le panier en commande, puis le VIDE : la commande EXISTE au serveur,
    * même si elle reste à régler. Rend `null` quand il n'y a rien à figer — un
    * panier vide ou un mode de service perdu ne font pas une commande.
@@ -196,6 +231,9 @@ export class ClientOrders {
       settlement: payment === null ? 'not_required' : 'due',
     };
     this.intent.set(payment === null ? null : { orderId: placed.id, payment });
+    // La tentative est close : la commande suivante en ouvrira une autre. Gardée
+    // au-delà, elle ferait rendre CETTE commande au prochain panier.
+    clearLocal(ATTEMPT_KEY);
     this.placed.update((all) => [order, ...all]);
     writeLocal(KEY, this.placed());
     this.cart.clear();
@@ -271,7 +309,7 @@ export class ClientOrders {
       // survit — il vit en base pour qui a déjà un compte.
       return null;
     }
-    const payload = payloadOf(service, lines);
+    const payload = payloadOf(service, lines, this.attemptKey());
     try {
       return await firstValueFrom(
         this.auth.accessToken$().pipe(
@@ -283,6 +321,15 @@ export class ClientOrders {
         ),
       );
     } catch (error) {
+      // 🔴 **Une commande déjà en vol n'est pas une panne.** Le serveur refuse
+      // un second appel portant la même clé, et c'est le dispositif qui marche :
+      // afficher « la commande n'a pas pu être passée » au client dont la
+      // commande est précisément en train de partir serait le pire moment pour
+      // l'inquiéter. Le CODE se branche, le message s'affiche.
+      if (httpErrorCode(error) === IN_FLIGHT) {
+        this.notify.info(httpErrorMessage(error, ''));
+        return null;
+      }
       // `NotifyService.error` filtre déjà l'enveloppe : le message du serveur
       // quand il est sûr, ce repli sinon. Jamais un détail interne.
       this.notify.error(error, "La commande n'a pas pu être passée.");
@@ -310,10 +357,16 @@ export class ClientOrders {
 function payloadOf(
   service: ServiceChoice,
   lines: readonly { product: { sku: string }; quantity: number }[],
+  idempotencyKey: string,
 ): PlaceOrderPayload {
   const content = {
     // Zéro friction : la commande appartient au client, pas à une société.
     companyId: null,
+    // La clé voyage dans le CORPS et non dans un en-tête : au contrat, un appel
+    // sans clé est inexprimable — ni le compilateur ni Zod ne le laissent
+    // passer. Un en-tête facultatif n'aurait protégé que les appelants qui y
+    // pensent, et c'est le navigateur qu'il fallait protéger.
+    idempotencyKey,
     requestedDeliveryDate: service.date,
     note: '',
     lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),

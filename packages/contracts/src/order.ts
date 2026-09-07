@@ -264,10 +264,31 @@ export function deliveryAddressIssue(): { message: string; path: PropertyKey[] }
  * **optionnel** : `null` = commande personnelle (le client connecté). La surface
  * staff, elle, exige une société — cf. `admin-order.ts`.
  */
+/**
+ * **La clé qui fait qu'un double clic ne passe qu'une commande.**
+ *
+ * 🔴 `POST /orders` n'avait ni clé d'idempotence, ni clé naturelle, ni
+ * déduplication : un double clic, un rejeu réseau ou un retour arrière du
+ * navigateur créait deux commandes ET deux intentions Stripe.
+ *
+ * Elle vit dans le CORPS et non dans un en-tête, et le choix est le cœur du
+ * dispositif : au contrat, un appel sans clé est **inexprimable** — le
+ * compilateur refuse le front, Zod refuse la frontière. Un en-tête facultatif
+ * n'aurait protégé que les appelants qui y pensent, et un en-tête vide aurait
+ * posé une clé `""` bloquant à jamais la deuxième commande de ce client.
+ *
+ * `uuid()` la borne par son type. Un index btree refuse une entrée au-delà de
+ * 2704 octets ; un en-tête HTTP libre en accepte seize mille.
+ *
+ * Cf. `documentation/order/plan-idempotence-de-passation.md`.
+ */
+export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue (UUID)");
+
 export const placeOrderPayloadSchema = z
   .object({
     /** Entreprise cliente, ou `null` = commande personnelle (client connecté). */
     companyId: z.string().trim().min(1).nullable().default(null),
+    idempotencyKey: idempotencyKeySchema,
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * E2E des **alertes de compte client**, sur un vrai Postgres.
  *
@@ -107,6 +108,7 @@ async function orderSku(companyId: string, sku: string, quantity: number): Promi
     .asSub(CLIENT)
     .post("/orders")
     .send({
+      idempotencyKey: randomUUID(),
       companyId,
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,
@@ -123,6 +125,7 @@ async function order(companyId: string, quantity: number): Promise<void> {
     .asSub(CLIENT)
     .post("/orders")
     .send({
+      idempotencyKey: randomUUID(),
       companyId,
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,

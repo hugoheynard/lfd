@@ -7,9 +7,16 @@ import {
 } from "../index.js";
 import { shopQuoteLineSchema } from "../shop-quote.js";
 
-/** Un panier valide, dont ces cas ne font varier que les lignes. */
+/**
+ * Un panier valide, dont ces cas ne font varier que les lignes.
+ *
+ * La clé d'idempotence en fait partie depuis qu'elle est au CONTRAT : un panier
+ * sans elle n'est plus un panier valide, et ce fixture doit rester valide pour
+ * que ces cas éprouvent bien la BORNE et non l'absence de clé.
+ */
 const PANIER = {
   companyId: null,
+  idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
   fulfillmentMethod: "pickup" as const,
   pickupAddressId: "pick_labo",
   deliveryAddress: null,

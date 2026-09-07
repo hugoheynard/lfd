@@ -226,3 +226,39 @@ export class OrderCutoffGraceError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Une commande identique est en train de passer.**
+ *
+ * Levée quand la clé d'idempotence est réclamée, non résolue, et son bail encore
+ * valide : un autre appel porte exactement le même panier, en ce moment. Ce
+ * n'est pas une panne, et le front ne doit pas l'afficher comme telle — le
+ * client dont la commande est en train de partir n'a pas à lire « la commande
+ * n'a pas pu être passée ».
+ */
+export class OrderAlreadyInFlightError extends BusinessError {
+  constructor() {
+    super(
+      "orders.idempotency.in_flight",
+      "Cette commande est déjà en train d'être passée. Regardez « Mes commandes » dans un instant.",
+    );
+  }
+}
+
+/**
+ * **La clé a déjà servi, pour autre chose.**
+ *
+ * Une clé d'idempotence désigne UNE tentative. La rejouer avec un panier
+ * différent n'est pas une répétition : c'est une nouvelle commande sous une
+ * vieille étiquette. L'honorer rendrait l'ancienne commande, et le front
+ * viderait le panier corrigé — la correction perdue en silence, l'écran
+ * affichant les lignes de l'un sur la commande de l'autre.
+ */
+export class IdempotencyKeyReusedError extends BusinessError {
+  constructor() {
+    super(
+      "orders.idempotency.reused",
+      "Cette clé de passation a déjà servi pour une autre commande.",
+    );
+  }
+}

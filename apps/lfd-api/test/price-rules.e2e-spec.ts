@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { centsFromMillicents, millicentsFromCents } from "@lfd/money";
 /**
  * E2E des **règles tarifaires** — sur un vrai Postgres.
@@ -83,6 +84,7 @@ beforeEach(async () => {
 
 /** L'acheminement minimal d'une commande valide : un jour de service et un point. */
 const pickupContent = (): Record<string, unknown> => ({
+  idempotencyKey: randomUUID(),
   fulfillmentMethod: "pickup",
   pickupAddressId: pickupId,
   requestedDeliveryDate: SERVICE_DAY,

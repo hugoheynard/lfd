@@ -41,6 +41,9 @@ import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
+import { OrderIdempotencyStore } from "../../../domain/ports/order-idempotency.store.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
@@ -250,6 +253,25 @@ const noWaivers: OrderCutoffWaiverGate = {
   consume: () => Promise.resolve(),
 };
 
+/**
+ * Le registre des clés, **toujours libre**.
+ *
+ * Ce que ces cas éprouvent est la passation, pas l'idempotence — celle-ci a sa
+ * propre suite, en e2e, parce que c'est l'index unique de Postgres qui
+ * l'arbitre et qu'un double avec une `Map` ne l'aurait jamais montré.
+ */
+const freeKeys: OrderIdempotencyStore = {
+  claim: () => Promise.resolve({ kind: "claimed" as const }),
+  release: () => Promise.resolve(),
+  resolve: () => Promise.resolve(),
+};
+
+/** Aucune commande à relire : ces cas ne passent jamais par le rejeu. */
+const noReader = { findById: () => Promise.resolve(null) } as unknown as OrderReader;
+
+/** L'unité de travail, réduite à ce qu'elle promet ici : exécuter. */
+const directWork: UnitOfWork = { run: <T>(work: () => Promise<T>): Promise<T> => work() };
+
 function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
@@ -339,6 +361,7 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
 function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
     companyId: null,
+    idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
     deliveryAddressId: null,
@@ -367,6 +390,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -389,6 +415,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -407,6 +436,9 @@ describe("PlaceOrderHandler", () => {
       published,
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -431,6 +463,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await expect(
@@ -450,6 +485,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -471,6 +509,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(
@@ -519,6 +560,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(
@@ -552,6 +596,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await expect(
@@ -575,6 +622,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -595,6 +645,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await expect(
@@ -614,6 +667,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -635,6 +691,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -671,6 +730,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await expect(
@@ -699,6 +761,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -724,6 +789,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -745,6 +813,9 @@ describe("PlaceOrderHandler", () => {
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));

@@ -20,7 +20,16 @@ export interface PlacedOrder {
  * de plus. Le seul point du système où l'écriture nue est le bon outil.
  */
 export abstract class OrderRepository {
-  /** Crée la commande et ses lignes en une transaction. */
+  /**
+   * Crée la commande et ses lignes en une transaction.
+   *
+   * ⚠️ **Elle rejoint l'unité de travail ambiante** quand il y en a une
+   * (`transactionalPrisma`), et c'est ce que le handler client exploite : la
+   * commande et la résolution de sa clé d'idempotence partent ensemble, ou
+   * aucune des deux. L'intervalle entre les deux serait le seul état que le
+   * dispositif ne survit pas — la commande existe, la clé n'est pas résolue :
+   * ni rendable, ni reprenable.
+   */
   abstract place(order: Order): Promise<PlacedOrder>;
 
   /**

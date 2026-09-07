@@ -40,6 +40,7 @@ import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
 import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
+import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
@@ -47,6 +48,7 @@ import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.read
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
 import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
+import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idempotency.store.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
@@ -133,6 +135,8 @@ import { OrdersController } from "./http/orders.controller.js";
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
+    // Le registre des clés de passation : un double clic ne fait qu'une commande.
+    { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },

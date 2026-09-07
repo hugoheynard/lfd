@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * E2E des **commandes** — checkout **zéro friction**, sur un vrai Postgres.
  *
@@ -127,6 +128,7 @@ async function seedZone(): Promise<string> {
 function pickupOrder(companyId: string | null): Record<string, unknown> {
   return {
     companyId,
+    idempotencyKey: randomUUID(),
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
@@ -332,6 +334,7 @@ describe("checkout → Order", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -366,6 +369,7 @@ describe("checkout → Order", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -388,6 +392,7 @@ describe("retrait", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId,
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
@@ -413,6 +418,7 @@ describe("retrait", () => {
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
+        idempotencyKey: randomUUID(),
         companyId,
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,

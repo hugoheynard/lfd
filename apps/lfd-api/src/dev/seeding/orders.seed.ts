@@ -4,6 +4,8 @@ import type { CommandBus } from "@nestjs/cqrs";
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { randomUUID } from "node:crypto";
+
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
@@ -267,6 +269,10 @@ async function place(
   },
 ): Promise<void> {
   const payload: PlaceOrderPayload = {
+    // Chaque commande du semis est une tentative DISTINCTE : une clé par
+    // commande, sinon la seconde serait rendue comme un rejeu de la première et
+    // le semis poserait une seule ligne au lieu de son historique.
+    idempotencyKey: randomUUID(),
     companyId: target.companyId,
     fulfillmentMethod: order.method,
     deliveryAddress: order.method === "delivery" ? DELIVERY : null,
