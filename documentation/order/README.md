@@ -1,6 +1,6 @@
 # La commande — du rayon à la remise
 
-**Ouvert le 2026-09-07.** L'entrée du dossier. Huit documents décrivent la vie
+**Ouvert le 2026-09-07.** L'entrée du dossier. Onze documents décrivent la vie
 d'une commande ; celui-ci dit **de quoi elle est faite** et **par quelle porte
 entrer**. Il ne remplace aucun d'eux.
 
@@ -86,15 +86,19 @@ flowchart TD
 | Que se passe-t-il quand un client veut changer sa commande ? | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)          |
 | Quels états une commande traverse, et qui les écrit ?        | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                    |
 | Comment la commande alimente le plan de production ?         | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète** |
+| Quels écrans le client traverse, et avec quels mots ?        | [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md)                                |
+| De quoi est faite la pièce qu'on imprime, envoie, affiche ?  | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                |
 
 **Je veux IMPLÉMENTER.**
 
-| Ce que je m'apprête à faire                      | Le document                                                                            |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Ajouter une remise, un frais, une taxe au panier | [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md) |
-| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                         |
-| Retirer `OrderCutoff`                            | [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               |
-| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first |
+| Ce que je m'apprête à faire                      | Le document                                                                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ajouter une remise, un frais, une taxe au panier | [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md)                                                            |
+| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                                                                                    |
+| Retirer `OrderCutoff`                            | [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                                                                                          |
+| Rendre le bon de commande dans un format de plus | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                                                              |
+| Écrire le gabarit du courriel de confirmation    | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md) §4 + [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md) §2 |
+| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first                                                            |
 
 **Je veux savoir CE QUI CLOCHE.**
 
