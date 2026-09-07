@@ -71,6 +71,15 @@ export class PrismaOrderRepository extends OrderRepository {
         // réglage aura changé.
         lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
         vatCents: state.vatCents,
+        // La ventilation part AVEC le total, pas à côté : c'est ce qui
+        // permettra au bon de détailler « dont TVA 5,5 % » sans rien refaire.
+        // Recopiées en objets nus : Prisma refuse une interface dans un champ
+        // JSON (il lui manque la signature d'index), et un cast masquerait
+        // qu'on écrit une FORME, pas un type du domaine.
+        vatShares: state.vatShares.map((share) => ({
+          rate: share.rate,
+          amountCents: share.amountCents,
+        })),
         totalCents: state.totalCents,
         paymentStatus: state.paymentStatus,
         stripePaymentIntentId: state.stripePaymentIntentId,

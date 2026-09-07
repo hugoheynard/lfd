@@ -1,4 +1,4 @@
-import { DELIVERY_VAT_RATE, ventilateVat, type VatLine } from "@lfd/money";
+import { DELIVERY_VAT_RATE, ventilateVat, type VatLine, type VatShare } from "@lfd/money";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
@@ -76,6 +76,19 @@ export interface OrderTotals {
    */
   readonly vatCents: number;
   /**
+   * La TVA **par taux**, du plus bas au plus haut — « dont TVA 5,5 % ».
+   *
+   * 🔴 Elle était CALCULÉE ici puis jetée : `computeOrderTotals` ne rendait que
+   * le total, et la ventilation qui l'avait produite mourait dans la fonction.
+   * Un bon de commande qui veut le détail devait donc le refaire à la lecture —
+   * et un document archivé refabriqué après un changement de règle d'arrondi
+   * afficherait une ventilation différente de celle qui a été facturée.
+   *
+   * Elle sort désormais, se fige sur la commande, et se relit. Rien à
+   * recalculer : une commande passée a tout enregistré.
+   */
+  readonly vatShares: readonly VatShare[];
+  /**
    * Le **TTC** à encaisser : le net de marchandises, plus les termes que la
    * remise ne touche pas, plus la TVA de l'ensemble.
    */
@@ -106,7 +119,11 @@ export function computeOrderTotals(input: VatInput): OrderTotals {
     discountCents: input.discountCents,
     extras: extrasOf(input),
   });
-  return { vatCents: ventilated.vatTotalCents, totalCents: ventilated.totalCents };
+  return {
+    vatCents: ventilated.vatTotalCents,
+    vatShares: ventilated.vat,
+    totalCents: ventilated.totalCents,
+  };
 }
 
 /**

@@ -35,6 +35,8 @@ import {
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
+import { vatSharesSchema, type VatShareView } from "@lfd/contracts";
+
 import { orderOriginOf } from "../domain/services/order-origin.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
@@ -73,8 +75,16 @@ interface OrderRow {
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: Prisma.JsonValue | null;
   readonly vatCents: number;
+  readonly vatShares: Prisma.JsonValue | null;
   readonly totalCents: number;
   readonly currency: string;
+  readonly companyId: string | null;
+  readonly company: { readonly raisonSociale: string } | null;
+  readonly placedBy: {
+    readonly firstName: string;
+    readonly lastName: string;
+    readonly email: string;
+  };
   readonly fromSubscriptionId: string | null;
   readonly placedByStaffId: string | null;
   readonly recurringDeltas: Prisma.JsonValue | null;
@@ -104,8 +114,14 @@ const ORDER_SELECT = {
   lateFeeCents: true,
   lateFeeAdjustment: true,
   vatCents: true,
+  vatShares: true,
   totalCents: true,
   currency: true,
+  // De quoi NOMMER le client : le bon de commande le porte depuis le
+  // 2026-09-07, et une feuille sans destinataire ne se classe pas.
+  company: { select: { raisonSociale: true } },
+  placedBy: { select: { firstName: true, lastName: true, email: true } },
+  companyId: true,
   fromSubscriptionId: true,
   placedByStaffId: true,
   recurringDeltas: true,
@@ -564,6 +580,19 @@ function customerLabelOf(row: NameableRow): string {
   return fullName === "" ? row.placedBy.email : fullName;
 }
 
+/**
+ * Le JSON figé → la ventilation de TVA, ou `null`.
+ *
+ * Validé et non casté, pour la raison qui vaut déjà pour la remise : les
+ * commandes antérieures à la colonne n'en portent pas, et un JSON d'une autre
+ * forme ne doit pas remonter en vue. `null` se rend alors par une seule ligne
+ * « dont TVA » — ce qui est vrai — plutôt que par un détail refabriqué.
+ */
+function parseVatShares(value: Prisma.JsonValue | null): readonly VatShareView[] | null {
+  const parsed = vatSharesSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 /** Une date `@db.Date` → `YYYY-MM-DD`, ou `null`. */
 function toIsoDate(date: Date | null): string | null {
   return date === null ? null : date.toISOString().slice(0, 10);
@@ -594,8 +623,11 @@ function toOrderView(row: OrderRow): OrderView {
     lateFeeCents: row.lateFeeCents,
     lateFeeAdjustment: parseLateFee(row.lateFeeAdjustment),
     vatCents: row.vatCents,
+    vatShares: parseVatShares(row.vatShares),
     totalCents: row.totalCents,
     currency: row.currency,
+    customerLabel: customerLabelOf(row),
+    companyId: row.companyId,
     fromSubscriptionId: row.fromSubscriptionId,
     origin: orderOriginOf(row),
     placedByStaffId: row.placedByStaffId,

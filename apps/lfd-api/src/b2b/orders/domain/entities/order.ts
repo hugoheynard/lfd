@@ -16,6 +16,8 @@ import {
   InvalidOrderFulfillmentError,
   InvalidOrderPaymentError,
 } from "../errors/order-errors.js";
+import type { VatShare } from "@lfd/money";
+
 import { computeOrderTotals } from "../services/vat.js";
 import {
   OrderLine,
@@ -99,6 +101,11 @@ export interface OrderToPlace {
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   readonly vatCents: number;
+  /**
+   * La TVA par taux, **figée comme le reste**. C'est ce qui permet au bon de
+   * commande de détailler « dont TVA 5,5 % » sans rien recalculer.
+   */
+  readonly vatShares: readonly VatShare[];
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
   readonly stripePaymentIntentId: string | null;
@@ -183,6 +190,7 @@ export class Order {
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
     private readonly subtotalCentsValue: number,
     private readonly vatCentsValue: number,
+    private readonly vatSharesValue: readonly VatShare[],
     private readonly totalCentsValue: number,
   ) {}
 
@@ -213,7 +221,7 @@ export class Order {
     // `ventilateVat`, où les extras sont proratisés sur le sous-total brut
     // quand les lignes le sont sur le net. Elle est passée de commentaire à
     // code exécuté.
-    const { vatCents, totalCents } = computeOrderTotals({
+    const { vatCents, vatShares, totalCents } = computeOrderTotals({
       lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
       discountCents: input.discountCents,
       deliveryFeeCents: input.deliveryFeeCents,
@@ -237,6 +245,7 @@ export class Order {
       input.lateFeeAdjustment,
       subtotalCents,
       vatCents,
+      vatShares,
       totalCents,
     );
   }
@@ -283,6 +292,7 @@ export class Order {
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
       vatCents: this.vatCentsValue,
+      vatShares: this.vatSharesValue,
       totalCents: this.totalCentsValue,
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,

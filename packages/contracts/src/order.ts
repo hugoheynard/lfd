@@ -474,6 +474,21 @@ export const orderFulfillmentSchema = z.object({
 });
 
 /** Une commande, telle que la liste/le détail l'affichent. */
+/**
+ * La TVA d'un taux, telle que la commande l'a **figée**.
+ *
+ * Jumelle volontaire de `VatShare` (`@lfd/money`) : ce paquet-là la CALCULE, ce
+ * contrat-ci la TRANSPORTE — et un contrat ne dépend pas d'un moteur de calcul.
+ * Les deux formes doivent rester identiques ; si l'une bouge, l'autre aussi.
+ */
+export const vatShareSchema = z.object({
+  /** En pourcentage : `5.5`, jamais `0.055`. */
+  rate: z.number(),
+  amountCents: z.number().int(),
+});
+export const vatSharesSchema = z.array(vatShareSchema);
+export type VatShareView = z.infer<typeof vatShareSchema>;
+
 export interface OrderView {
   readonly id: string;
   readonly orderNumber: string;
@@ -533,6 +548,19 @@ export interface OrderView {
   /** TVA totale (marchandises par taux + livraison + surtaxe), en centimes. */
   readonly vatCents: number;
   /**
+   * La TVA **par taux**, figée à la passation — « dont TVA 5,5 % ».
+   *
+   * 🔴 Elle était calculée puis JETÉE : `computeOrderTotals` ne rendait que le
+   * total. Un document qui veut le détail devait le refaire à la lecture — et le
+   * bon de commande est **archivé**, donc un détail refabriqué après un
+   * changement de règle d'arrondi ne dirait plus ce qui a été facturé.
+   *
+   * `null` = commande antérieure au 2026-09-07. Non rétro-remplie
+   * volontairement : le document n'affiche alors qu'une ligne « dont TVA », ce
+   * qui est vrai et vérifiable.
+   */
+  readonly vatShares: readonly VatShareView[] | null;
+  /**
    * Total **TTC** = `max(0, subtotal − discount) + deliveryFee + lateFee + vat`.
    *
    * L'ordre des termes n'est pas cosmétique : la surtaxe s'ajoute **après** la
@@ -540,6 +568,17 @@ export interface OrderView {
    */
   readonly totalCents: number;
   readonly currency: string;
+  /**
+   * Qui a commandé, en clair : la raison sociale, ou la personne quand la
+   * commande est **zéro friction**. Résolu au serveur — c'est une jointure.
+   *
+   * ⚠️ Ajouté le 2026-09-07 pour le bon de commande, qui nomme désormais son
+   * destinataire. Ce n'est pas une fuite : la vue est servie au client, et ce
+   * nom est le sien.
+   */
+  readonly customerLabel: string;
+  /** L'entreprise cliente, ou `null` sur une commande personnelle. */
+  readonly companyId: string | null;
   /** Panier récurrent d'origine (« récurrent »), ou `null` (commande ponctuelle). */
   readonly fromSubscriptionId: string | null;
   /**

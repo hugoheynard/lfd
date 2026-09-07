@@ -1,0 +1,25 @@
+-- La TVA **par taux**, figée sur la commande.
+--
+-- `vat_cents` ne portait qu'un TOTAL. Le détail — « dont TVA 5,5 %, dont TVA
+-- 10 % » — était calculé à la passation par `ventilateVat`, puis JETÉ :
+-- `computeOrderTotals` ne rendait que la somme. Le bon de commande qui veut ce
+-- détail devait donc le refaire à la lecture.
+--
+-- Pourquoi ça ne convient pas : le bon est **archivé**. Un document refabriqué
+-- après un changement de règle d'arrondi ou de répartition de remise afficherait
+-- une ventilation différente de celle qui a été facturée, pendant que le PDF
+-- déjà rangé garderait l'ancienne. Deux documents contradictoires pour la même
+-- commande — et c'est la comptabilité qui les compare. C'est exactement le
+-- raisonnement qui a fait figer le prix sur la ligne ; la TVA par taux avait été
+-- oubliée.
+--
+-- **Additive et réversible** : colonne NULLABLE, aucune donnée lue ni réécrite.
+-- Retour arrière : `DROP COLUMN`, et le code d'avant ne l'a jamais lue.
+--
+-- ⚠️ **Aucun rétro-remplissage, et c'est une décision.** Les commandes déjà
+-- passées restent à `NULL`. On aurait pu les remplir en rejouant `ventilateVat`
+-- sur leurs lignes — c'est précisément le recalcul qu'on refuse ici, et l'écrire
+-- dans des commandes closes serait pire que de le faire à la lecture. Le bon
+-- d'une commande sans ventilation affiche une seule ligne « dont TVA », ce qui
+-- est vrai et vérifiable ; le stock d'anciennes commandes s'épuise tout seul.
+ALTER TABLE "public"."orders" ADD COLUMN "vat_shares" JSONB;

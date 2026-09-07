@@ -828,6 +828,16 @@ model Order {
   discountAdjustment Json?  @map("discount_adjustment")
   deliveryFeeCents   Int    @default(0) @map("delivery_fee_cents")
   vatCents           Int    @default(0) @map("vat_cents")
+  /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
+  ///
+  /// `vatCents` est le total ; celle-ci en est le DÉTAIL, et elle est figée pour
+  /// la même raison que le prix de la ligne : le bon de commande est archivé, et
+  /// un détail recalculé plus tard pourrait ne plus correspondre à ce qui a été
+  /// facturé. Produite par `ventilateVat`, qui la calculait déjà et la jetait.
+  ///
+  /// `null` = commande antérieure au 2026-09-07. Non rétro-remplie volontairement :
+  /// le bon n'affiche alors qu'une ligne « dont TVA », ce qui est vrai.
+  vatShares          Json?  @map("vat_shares")
   totalCents         Int    @map("total_cents")
   currency           String @default("EUR")
 
