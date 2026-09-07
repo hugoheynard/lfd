@@ -57,6 +57,40 @@ export interface MailCta {
   readonly url: string;
 }
 
+/**
+ * Une ligne de récapitulatif : un libellé à gauche, une valeur à droite.
+ *
+ * Structurée plutôt que passée en HTML : c'est la coquille qui échappe, et
+ * l'appelant n'a donc **aucune** façon d'injecter une balise, pas même par
+ * inadvertance. Un `body` en HTML brut aurait été plus souple et aurait rouvert
+ * exactement le trou que `htmlEscape` existe pour fermer.
+ */
+export interface LayoutRow {
+  readonly label: string;
+  readonly value: string;
+  /** La ligne de total : filet au-dessus, valeur en gras. Une seule par bloc. */
+  readonly strong?: boolean;
+}
+
+/**
+ * Une **image en ligne**, référencée par son `cid:` — la pièce jointe que le
+ * message transporte.
+ *
+ * Ni `data:` URI (Gmail les supprime) ni URL distante (bloquée par défaut, et
+ * récupérée par le proxy de Google, qui verrait passer ce que l'URL contient).
+ *
+ * `alt` n'est pas une politesse : c'est ce qui reste quand un client bloque les
+ * images, et il doit donc dire ce que l'image dit — pas « QR code ».
+ */
+export interface LayoutImage {
+  readonly contentId: string;
+  readonly alt: string;
+  /** Côté en pixels. Les clients mail ignorent le CSS de dimension, pas l'attribut. */
+  readonly sizePx: number;
+  /** La ligne sous l'image — souvent le repli lisible quand elle ne s'affiche pas. */
+  readonly caption?: string;
+}
+
 export interface LayoutInput {
   readonly title: string;
   /** Le corps, en texte brut. Les retours à la ligne sont préservés. */
@@ -78,6 +112,10 @@ export interface LayoutInput {
    * utile pour les messages purement techniques, qui n'ont personne à rassurer.
    */
   readonly brand?: string;
+  /** Le récapitulatif, sous le corps. Vide ou absent ⇒ aucun bloc rendu. */
+  readonly rows?: readonly LayoutRow[];
+  /** L'image en ligne, sous le récapitulatif. */
+  readonly image?: LayoutImage;
 }
 
 /**
@@ -112,6 +150,35 @@ export function renderLayout(input: LayoutInput): string {
     input.cta !== undefined && isRenderableUrl(input.cta.url)
       ? `<p style="margin:28px 0 4px;"><a href="${htmlEscape(input.cta.url)}" style="display:inline-block;padding:13px 22px;background:${BRAND.navy};color:#ffffff;text-decoration:none;border-radius:${BRAND.radius};font-weight:600;font-size:15px;">${htmlEscape(input.cta.label)}</a></p>`
       : "";
+  // Le récapitulatif : un tableau de présentation, pas une grille. Outlook
+  // ignore flex et grid, et un récapitulatif qui s'effondre en une colonne
+  // rend les montants illisibles au moment précis où on les cherche.
+  const rows =
+    input.rows === undefined || input.rows.length === 0
+      ? ""
+      : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;font-size:14px;">
+          ${input.rows
+            .map(
+              (row) =>
+                `<tr>
+                  <td style="padding:7px 0;${row.strong === true ? `border-top:1px solid ${BRAND.border};font-weight:700;` : `color:${BRAND.muted};`}">${htmlEscape(row.label)}</td>
+                  <td align="right" style="padding:7px 0;${row.strong === true ? `border-top:1px solid ${BRAND.border};font-weight:700;` : ""}">${htmlEscape(row.value)}</td>
+                </tr>`,
+            )
+            .join("")}
+        </table>`;
+
+  // L'image en ligne. `width`/`height` en ATTRIBUTS et non en CSS : plusieurs
+  // clients ignorent le style de dimension et afficheraient l'image à sa taille
+  // native, c'est-à-dire de travers.
+  const image =
+    input.image === undefined
+      ? ""
+      : `<p style="margin:24px 0 0;text-align:center;">
+          <img src="cid:${htmlEscape(input.image.contentId)}" alt="${htmlEscape(input.image.alt)}" width="${String(input.image.sizePx)}" height="${String(input.image.sizePx)}" style="display:block;margin:0 auto;background:#ffffff;" />
+          ${input.image.caption === undefined ? "" : `<span style="display:block;margin:10px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">${htmlEscape(input.image.caption)}</span>`}
+        </p>`;
+
   const footer =
     input.footer === undefined
       ? ""
@@ -146,6 +213,8 @@ export function renderLayout(input: LayoutInput): string {
       <tr><td style="padding:32px 32px 8px;">
         <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:${BRAND.ink};">${htmlEscape(input.title)}</h1>
         <p style="margin:0;line-height:1.6;white-space:pre-line;">${htmlEscape(input.body)}</p>
+        ${rows}
+        ${image}
         ${cta}
         ${footer}
       </td></tr>

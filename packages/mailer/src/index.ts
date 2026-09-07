@@ -22,12 +22,13 @@ export { DryRunMailer } from "./dry-run-mailer.js";
 export { MailerCircuitOpenError, MailerError, MailerSendError } from "./errors.js";
 export type { MailerErrorCategory } from "./errors.js";
 export { htmlEscape, renderLayout, sanitiseSubject } from "./html.js";
-export type { LayoutInput, MailCta } from "./html.js";
+export type { LayoutImage, LayoutInput, LayoutRow, MailCta } from "./html.js";
 export { createResendMailer, ResendMailer } from "./resend-mailer.js";
 export type { ResendLike, ResendMailerDeps } from "./resend-mailer.js";
 export { silentLogger } from "./types.js";
 export type {
   Mailer,
+  MailAttachment,
   MailerLogger,
   MailReceipt,
   RenderedMail,

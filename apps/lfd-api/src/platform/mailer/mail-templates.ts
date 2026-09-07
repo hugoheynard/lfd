@@ -1,9 +1,14 @@
+import type { ClientSheet, ContentLocale } from "@lfd/contracts";
 import {
   renderLayout,
   sanitiseSubject,
   type LayoutInput,
+  type LayoutRow,
   type TemplateRegistry,
 } from "@lfd/mailer";
+
+import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import { qrPng } from "./qr-image.js";
 
 /**
  * Les **e-mails de la plateforme B2B** — la carte et le registre que
@@ -20,6 +25,28 @@ import {
  * ils supposent une adresse d'expédition vérifiée chez le fournisseur.
  */
 export interface B2bMails {
+  /**
+   * **La commande est passée.** Destinataire : le client.
+   *
+   * Il reçoit la feuille **déjà projetée** — donc sans SKU, sans tarif d'entrée
+   * et sans nom d'étage tarifaire. Le gabarit n'a rien à masquer parce qu'il n'a
+   * rien reçu de plus.
+   *
+   * Le **jeton de remise** arrive à part, et pas dans la feuille : s'il y était,
+   * les rendus papier pourraient l'imprimer — et le papier d'une livraison
+   * voyage dans le carton, où un coursier scannerait son propre colis.
+   */
+  "customer.order-placed": {
+    readonly sheet: ClientSheet;
+    /** Le jeton de retrait, ou `null` — une livraison n'a pas de comptoir. */
+    readonly handoverToken: string | null;
+    /** L'app cliente, pour le lien « voir ma commande ». */
+    readonly orderUrl: string;
+    /** L'URL que le QR encode — vide quand il n'y a pas de jeton. */
+    readonly handoverUrl: string;
+    /** ⚠️ Rien ne choisit encore : l'appelant passe `fr`. Cf. `mail-copy.ts`. */
+    readonly locale: ContentLocale;
+  };
   /** Un client a réservé un créneau. Destinataire : la boîte de l'équipe. */
   "staff.appointment-booked": {
     readonly contactName: string;
@@ -156,12 +183,116 @@ export interface MailBranding {
  * un e-mail sans recours ne produit aucune erreur, juste quelqu'un qui reste
  * bloqué. Ici, `person()` les pose pour tout le monde.
  */
+/**
+ * Un montant en centimes, dans la langue du destinataire.
+ *
+ * `Intl` et non un formateur français : « 1 234,56 € » et « €1,234.56 » ne
+ * s'écrivent pas de la même façon, et un e-mail italien qui affiche des
+ * séparateurs français a l'air d'un e-mail mal traduit — c'est-à-dire d'un
+ * e-mail dont on se méfie.
+ */
+function money(cents: number, locale: ContentLocale): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(cents / 100);
+}
+
+/**
+ * Le récapitulatif, **dans l'ordre exact de l'écran de confirmation**.
+ *
+ * Un courriel qui recompose l'information fait douter qu'il parle de la même
+ * commande — c'est pour ça que l'ordre est copié et non repensé.
+ */
+function recapRows(
+  sheet: ClientSheet,
+  locale: ContentLocale,
+  settlement: "paid" | "due" | "account",
+): readonly LayoutRow[] {
+  const copy = mailCopyOf(locale).orderPlaced;
+  const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+  return [
+    {
+      label: sheet.fulfillment.method === "pickup" ? copy.recapPickup : copy.recapDelivery,
+      value: sheet.fulfillment.address?.ville ?? "—",
+    },
+    { label: copy.recapContent, value: fill(copy.recapPieces, { count: String(pieces) }) },
+    ...(sheet.money.discountCents === 0
+      ? []
+      : [{ label: copy.recapDiscount, value: `−${money(sheet.money.discountCents, locale)}` }]),
+    { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
+    {
+      label: copy.totalLabel[settlement],
+      value: money(sheet.money.totalCents, locale),
+      strong: true,
+    },
+  ];
+}
+
+/**
+ * Le régime de règlement, **déduit de la feuille** et non passé en paramètre.
+ *
+ * ⚠️ Déduction volontairement grossière tant que la feuille ne porte pas le
+ * `paymentStatus` : un total nul ou une commande à terme se lisent pareil. Le
+ * jour où la feuille le portera, cette fonction disparaîtra — elle est ici pour
+ * qu'on la trouve, pas pour durer.
+ */
+function settlementOf(sheet: ClientSheet): "paid" | "due" | "account" {
+  return sheet.money.totalCents === 0 ? "account" : "paid";
+}
+
+/**
+ * L'identifiant que le corps référence par `cid:`. Constant : il n'y a qu'une
+ * image par message, et un identifiant tiré au sort rendrait le rendu
+ * non-déterministe pour rien.
+ */
+const QR_CONTENT_ID = "qr-retrait";
+
 export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails> {
   /** La coquille des e-mails adressés à une PERSONNE : marque + recours. */
   const person = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
     renderLayout({ ...input, brand: "La Folie Douce", supportEmail: brand.supportEmail });
 
   return {
+    "customer.order-placed": (data) => {
+      const copy = mailCopyOf(data.locale).orderPlaced;
+      const settlement = settlementOf(data.sheet);
+      const showQr = data.handoverToken !== null && data.handoverUrl !== "";
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        html: person({
+          title: copy.title[settlement],
+          body: `${copy.intro}\n\n${data.sheet.reference}`,
+          rows: recapRows(data.sheet, data.locale, settlement),
+          // Le QR est DANS le corps, jamais en pièce jointe à ouvrir : c'est la
+          // seule chose qu'on vient chercher debout devant un comptoir, et un
+          // fichier à ouvrir sur un téléphone, la main sur la porte, ne se
+          // scanne pas. La légende porte le NUMÉRO en clair — c'est le repli
+          // quand un client bloque les images.
+          ...(showQr
+            ? {
+                image: {
+                  contentId: QR_CONTENT_ID,
+                  alt: `${copy.qrTitle} — ${data.sheet.reference}`,
+                  sizePx: 180,
+                  caption: `${copy.qrLine}\n${data.sheet.reference}`,
+                },
+              }
+            : {}),
+          cta: { label: copy.cta, url: data.orderUrl },
+          footer: `${copy.changeNote}\n${copy.footer}`,
+        }),
+        ...(showQr
+          ? {
+              attachments: [
+                {
+                  filename: `retrait-${data.sheet.reference}.png`,
+                  contentBase64: qrPng(data.handoverUrl).toString("base64"),
+                  contentId: QR_CONTENT_ID,
+                  contentType: "image/png",
+                },
+              ],
+            }
+          : {}),
+      };
+    },
     "ops.deploy-check": (data) => ({
       subject: sanitiseSubject(`[LFC] Courrier opérationnel — ${data.revision}`),
       html: renderLayout({

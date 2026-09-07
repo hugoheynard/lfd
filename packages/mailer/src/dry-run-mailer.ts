@@ -31,11 +31,15 @@ export class DryRunMailer<M extends TemplateMap> implements Mailer<M> {
   }
 
   send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
-    const { subject } = this.registry[args.template](args.data);
+    const { subject, attachments } = this.registry[args.template](args.data);
     this.log.info("E-mail à blanc", {
       template: String(args.template),
       to: args.to,
       subject,
+      // Le NOMBRE, pas le contenu : une image en base64 dans un journal le rend
+      // illisible, et c'est sa présence qu'on veut pouvoir vérifier — un
+      // gabarit qui cesse de joindre son QR ne lève aucune erreur.
+      attachments: attachments?.length ?? 0,
     });
     // Aucun identifiant : rien n'est parti. En inventer un donnerait une clé
     // qui ne correspondra jamais à un événement de webhook.

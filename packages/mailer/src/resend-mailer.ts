@@ -28,6 +28,18 @@ export interface ResendLike {
         html: string;
         replyTo?: string;
         headers?: Record<string, string>;
+        /**
+         * Pièces jointes, dans la forme du SDK Resend : `contentId` posé ⇒ la
+         * pièce est **en ligne**, et le HTML la référence par `cid:<id>`. Le SDK
+         * traduit en `content_id` sur le fil ; on parle sa langue à lui, pas
+         * celle du protocole.
+         */
+        attachments?: {
+          filename: string;
+          content: string;
+          contentType?: string;
+          contentId?: string;
+        }[];
       },
       options?: { idempotencyKey?: string },
     ) => Promise<{
@@ -63,7 +75,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
   }
 
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
-    const { subject, html } = this.deps.registry[args.template](args.data);
+    const { subject, html, attachments } = this.deps.registry[args.template](args.data);
     const context = { template: String(args.template), to: args.to };
     const replyTo = this.deps.replyTo ?? null;
 
@@ -75,6 +87,16 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
         html,
         ...(replyTo !== null ? { replyTo } : {}),
         ...(args.headers !== undefined ? { headers: { ...args.headers } } : {}),
+        ...(attachments === undefined || attachments.length === 0
+          ? {}
+          : {
+              attachments: attachments.map((file) => ({
+                filename: file.filename,
+                content: file.contentBase64,
+                ...(file.contentType === undefined ? {} : { contentType: file.contentType }),
+                ...(file.contentId === undefined ? {} : { contentId: file.contentId }),
+              })),
+            }),
       },
       args.idempotencyKey,
       context,
