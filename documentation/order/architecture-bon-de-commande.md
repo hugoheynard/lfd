@@ -186,9 +186,40 @@ quand on cherche son code. Le dossier de reprise le dit pour la pièce jointe
 l'argument vaut mot pour mot pour un bouton.
 
 Le jeton est donc un **champ de l'`OrderSheet`**, pas une donnée que le gabarit
-irait chercher. Le rendu `mail-html` le dessine en image ; les rendus `text` et
-`paper-a4` ne le portent pas — un QR ne survit pas au texte brut, et le papier de
-l'atelier n'a personne à qui le présenter.
+irait chercher.
+
+🔴 **Et un seul rendu le lit : `mail-html`. Aucun autre, jamais.** Ce n'est pas
+une commodité de mise en page, c'est la règle qui empêche l'**autoscan**.
+
+En livraison, le papier voyage **avec la marchandise** : il est dans le carton,
+dans la camionnette, entre les mains du coursier bien avant que le destinataire
+ne le voie. Un QR imprimé dessus, c'est un coursier qui scanne son propre colis
+et une attestation qui dit « remis » sans que personne n'ait reçu.
+
+**Tout l'intérêt du scan est qu'il exige DEUX parties** : l'un présente, l'autre
+scanne. Imprimer le code sur le colis fait s'effondrer les deux en une seule, et
+ce qui reste n'atteste plus rien — c'est une signature qu'on se donne à soi-même.
+
+Le courriel, lui, part vers la boîte du destinataire : c'est un canal **qu'il
+contrôle**, et que le porteur du colis n'a pas. C'est ce qui fait de lui le seul
+véhicule légitime du jeton.
+
+D'où **une règle sans branche** : le QR ne s'imprime jamais — ni sur le bon
+texte, ni sur la feuille d'atelier, ni sur le PDF rangé en R2, et **pas
+davantage en retrait qu'en livraison**. Un cas particulier « sauf au retrait,
+où c'est inoffensif » serait vrai, et serait précisément la porte par laquelle
+la version livraison reviendrait un jour, « pour faire pareil ». Une règle sans
+exception ne se négocie pas à 6 h du matin devant une imprimante.
+
+⚠️ **Le cas qui poussera à enfreindre la règle, et il faut le traiter avant qu'il
+se présente** : le destinataire n'a pas toujours le courriel sous les yeux — un
+magasinier, quelqu'un d'autre à l'accueil, un téléphone déchargé. Ce jour-là, la
+livraison ne peut pas être attestée par scan, et quelqu'un proposera d'imprimer
+le code « juste pour les livraisons difficiles ». La sortie est de prévoir dès le
+lot 6 **ce qui se passe quand le scan est impossible** — une remise saisie à la
+main par le coursier, tracée comme telle et distinguable d'un scan, plutôt qu'un
+scan que le coursier se fait à lui-même en croyant bien faire. Une attestation
+faible et honnête vaut mieux qu'une attestation forte et fausse.
 
 🔴 **Faire voyager le jeton par courriel n'ouvre rien**, et la raison est déjà
 écrite sur le champ dans `contracts` : « le jeton n'ouvre qu'une porte **staff**,

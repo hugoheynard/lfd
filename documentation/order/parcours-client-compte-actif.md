@@ -216,7 +216,8 @@ bouton demande d'ouvrir l'app, d'être encore connecté et de retrouver la
 commande — exactement ce qu'on n'a pas le temps de faire debout devant un
 comptoir. Le courriel est déjà ouvert. Et il vaut pour les **deux**
 acheminements : en livraison, le destinataire montre le même code et c'est le
-coursier qui scanne. Le mécanisme, ce qu'il atteste et ce qui le rend
+coursier qui scanne — **et le code ne s'imprime sur aucun bon**, sans quoi le
+coursier scannerait son propre colis. Le mécanisme, ce qu'il atteste et ce qui le rend
 infalsifiable sont au §3 de
 [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md) — avec
 l'avertissement que le jeton de livraison **n'existe pas encore**.
