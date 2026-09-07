@@ -19,7 +19,13 @@ async function main(): Promise<void> {
 
   const harness = await bootstrapHarness();
   try {
-    const report = await seedOrders({ prisma: harness.prisma, commands: harness.commands });
+    // Le mur se lit ICI, une fois : une ligne de commande EST l'adaptateur de
+    // son propre instant, et `src/` n'a pas le droit d'y toucher (`clock-port`).
+    const report = await seedOrders({
+      prisma: harness.prisma,
+      commands: harness.commands,
+      now: new Date(),
+    });
     console.log(
       `· ${report.removed} commande(s) effacée(s) — reposées.\n` +
         `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}) ` +

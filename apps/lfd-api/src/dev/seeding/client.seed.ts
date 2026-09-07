@@ -96,6 +96,16 @@ const SEED_STAFF_SUB = "seed|dev";
 export interface ClientContext {
   readonly prisma: PrismaClient;
   readonly commands: CommandBus;
+  /**
+   * **L'instant du semis**, posé par l'appelant.
+   *
+   * 🔴 Il était lu au mur, ici, au fond de deux fonctions — et la porte
+   * `clock-port` le refusait. Le remède n'est pas de déroger : c'est de le
+   * faire DESCENDRE. Le service de rechargement le tient de son `Clock`, la
+   * ligne de commande de son propre démarrage — et un seul instant date alors
+   * tout le semis, au lieu d'un par appel.
+   */
+  readonly now: Date;
 }
 
 /** Ce que le seed a fait, pour que l'appelant puisse enchaîner. */
@@ -141,7 +151,7 @@ export async function seedClient(
 
   const userId = await seedPerson(context, identity);
 
-  const companyId = await asCustomer(userId, () =>
+  const companyId = await asCustomer(context.now, userId, () =>
     context.commands.execute<CreateCompanyCommand, string>(
       new CreateCompanyCommand(
         userId,
@@ -178,7 +188,7 @@ export async function seedClient(
  * PROFIL, lui, passe par sa commande : c'est là que vivent les règles.
  */
 async function seedPerson(
-  { prisma, commands }: ClientContext,
+  { prisma, commands, now }: ClientContext,
   identity: ClientIdentity,
 ): Promise<string> {
   const existing = await prisma.user.findUnique({ where: { auth0Sub: identity.auth0Sub } });
@@ -190,7 +200,7 @@ async function seedPerson(
         select: { id: true },
       })
     ).id;
-  await asCustomer(userId, () =>
+  await asCustomer(now, userId, () =>
     commands.execute<UpdateMyProfileCommand, void>(
       new UpdateMyProfileCommand(
         userId,
@@ -215,11 +225,11 @@ async function seedPerson(
  * l'écran que le tarif suit l'adresse et non le panier.
  */
 async function seedAddresses(
-  { commands }: ClientContext,
+  { commands, now }: ClientContext,
   userId: string,
   companyId: string,
 ): Promise<void> {
-  await asCustomer(userId, async () => {
+  await asCustomer(now, userId, async () => {
     await commands.execute<SaveBillingAddressCommand, void>(
       new SaveBillingAddressCommand(userId, companyId, {
         label: "Siège",
@@ -283,11 +293,11 @@ const DELIVERIES = [
  * factures sans jamais ouvrir l'application.
  */
 async function seedContact(
-  { commands }: ClientContext,
+  { commands, now }: ClientContext,
   userId: string,
   companyId: string,
 ): Promise<void> {
-  await asCustomer(userId, () =>
+  await asCustomer(now, userId, () =>
     commands.execute<AddCompanyContactCommand, string>(
       new AddCompanyContactCommand(
         userId,
@@ -312,8 +322,8 @@ async function seedContact(
  * C'est ce qui distingue une facture de fin de mois d'un paiement par carte, et
  * les deux écrans diffèrent. Acte staff : le client ne s'accorde pas un délai.
  */
-async function seedTerms({ commands }: ClientContext, companyId: string): Promise<void> {
-  await asStaff(() =>
+async function seedTerms({ commands, now }: ClientContext, companyId: string): Promise<void> {
+  await asStaff(now, () =>
     commands.execute<GrantTermsCommand, void>(
       new GrantTermsCommand(companyId, [DeferredTerm.monthly]),
     ),
@@ -328,7 +338,7 @@ async function seedTerms({ commands }: ClientContext, companyId: string): Promis
  * Posé après les adresses parce qu'il les DÉSIGNE.
  */
 async function seedHabit(
-  { prisma, commands }: ClientContext,
+  { prisma, commands, now }: ClientContext,
   userId: string,
   companyId: string,
 ): Promise<void> {
@@ -343,7 +353,7 @@ async function seedHabit(
   if (delivery === null) {
     return;
   }
-  await asCustomer(userId, () =>
+  await asCustomer(now, userId, () =>
     commands.execute<PreferFulfillmentCommand, void>(
       new PreferFulfillmentCommand(userId, companyId, {
         method: "delivery",
@@ -366,8 +376,8 @@ async function seedHabit(
  * un, il échouerait, et le message dirait lequel. Un `status: "active"` écrit à
  * la main n'aurait rien vérifié.
  */
-async function activate({ commands }: ClientContext, companyId: string): Promise<void> {
-  await asStaff(() =>
+async function activate({ commands, now }: ClientContext, companyId: string): Promise<void> {
+  await asStaff(now, () =>
     commands.execute<ActivateCompanyByStaffCommand, void>(
       new ActivateCompanyByStaffCommand(companyId, SEED_STAFF_SUB),
     ),
@@ -376,17 +386,17 @@ async function activate({ commands }: ClientContext, companyId: string): Promise
 }
 
 /** Le contexte de requête d'un client : sans lui, aucun handler ne sait qui agit. */
-function asCustomer<T>(userId: string, run: () => Promise<T>): Promise<T> {
+function asCustomer<T>(now: Date, userId: string, run: () => Promise<T>): Promise<T> {
   return runWithRequestContext(
-    { now: new Date(), traceId: newTraceId(), actor: { type: "customer", id: userId } },
+    { now, traceId: newTraceId(), actor: { type: "customer", id: userId } },
     run,
   );
 }
 
 /** Le contexte d'un geste staff — activation, terme convenu. */
-function asStaff<T>(run: () => Promise<T>): Promise<T> {
+function asStaff<T>(now: Date, run: () => Promise<T>): Promise<T> {
   return runWithRequestContext(
-    { now: new Date(), traceId: newTraceId(), actor: { type: "staff", id: SEED_STAFF_SUB } },
+    { now, traceId: newTraceId(), actor: { type: "staff", id: SEED_STAFF_SUB } },
     run,
   );
 }

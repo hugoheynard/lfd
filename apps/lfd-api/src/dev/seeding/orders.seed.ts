@@ -115,6 +115,14 @@ export interface OrdersReport {
 export interface SeedContext {
   readonly prisma: PrismaClient;
   readonly commands: CommandBus;
+  /**
+   * **L'instant du semis**, posé par l'appelant — et non lu au mur ici.
+   *
+   * C'est l'ancre de TOUT l'historique posé : chaque commande est datée par
+   * décalage depuis lui. Le lire au fond de cette fonction rendait le semis
+   * ni gelable ni rejouable, et la porte `clock-port` le refusait.
+   */
+  readonly now: Date;
 }
 
 export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
@@ -124,7 +132,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
     where: { companyId: target.companyId },
   });
 
-  const today = atHour(new Date(), ORDER_HOUR);
+  const today = atHour(context.now, ORDER_HOUR);
   let placed = 0;
 
   // L'historique, du plus ancien au plus récent.

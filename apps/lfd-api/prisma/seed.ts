@@ -42,7 +42,9 @@ refuseNonLocalTarget(
 async function main(): Promise<void> {
   const harness = await bootstrapHarness();
   try {
-    const context = { prisma: harness.prisma, commands: harness.commands };
+    // Le mur se lit ICI, une fois : une ligne de commande EST l'adaptateur de
+    // son propre instant, et `src/` n'a pas le droit d'y toucher (`clock-port`).
+    const context = { prisma: harness.prisma, commands: harness.commands, now: new Date() };
     await seedStation(context);
     // L'identité se lit ICI, pas dans le module : `src/` n'a pas le droit de
     // toucher `process.env`, et c'est la ligne de commande qui connaît le poste.

@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
+import { Clock } from "../platform/time/clock.js";
 import { seedClient } from "./seeding/client.seed.js";
 import { seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
@@ -38,6 +39,7 @@ export class DevSeedService {
     private readonly prisma: PrismaService,
     private readonly commands: CommandBus,
     private readonly config: AppConfig,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -47,7 +49,11 @@ export class DevSeedService {
    */
   async reload(): Promise<DevSeedReport> {
     this.refuseUnlessLocalDevelopment();
-    const context = { prisma: this.prisma, commands: this.commands };
+    // UN seul instant pour tout le semis, pris au port. Chaque module le lisait
+    // au mur, au fond de ses propres fonctions : le jeu de données n'était donc
+    // ni gelable ni rejouable, et deux modules d'un même rechargement pouvaient
+    // voir deux instants — sur un semis qui date des commandes par décalage.
+    const context = { prisma: this.prisma, commands: this.commands, now: this.clock.now() };
     await seedStation(context);
     await seedClient(context);
     const reset = await resetToSeed(this.prisma);
