@@ -36,9 +36,9 @@
 > nomme le fichier où il se constate.
 >
 > Le moteur qui résout un prix est à côté :
-> [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md).
+> [`architecture-resolution-de-prix.md`](../architecture-resolution-de-prix.md).
 > Les écrans de la tarification **générale** — grille, frise, banc d'essai —
-> sont dans [`ecrans-de-tarification.md`](ecrans-de-tarification.md). Ce
+> sont dans [`ecrans-de-tarification.md`](../ecrans-de-tarification.md). Ce
 > document-ci ne parle que du chemin qui va d'une grille à **un client nommé**.
 
 ---

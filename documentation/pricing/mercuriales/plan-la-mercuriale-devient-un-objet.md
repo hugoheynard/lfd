@@ -4,7 +4,7 @@
 **Les inconnues du §9 ont été levées le 2026-09-08** — plus rien n'y est supposé.
 
 > Ferme **T2** de
-> [`etat-des-lieux-mercuriale-client.md`](etat-des-lieux-mercuriale-client.md).
+> [`etat-des-lieux-mercuriale-client.md`](./etat-des-lieux-mercuriale-client.md).
 >
 > **Décision de Hugo, 2026-09-08 :** une mercuriale se prend **en bloc**. On la
 > pose entière, on la clôt entière ; si un prix est faux, on assume et on
@@ -381,7 +381,7 @@ audience_type='company'` de la reprise devient exhaustif **par construction**
 **Volontairement hors lot.**
 
 - **Le TODO des barèmes**
-  ([`todo-ecran-tarification-ignore-les-baremes.md`](../todos/todo-ecran-tarification-ignore-les-baremes.md)).
+  ([`todo-ecran-tarification-ignore-les-baremes.md`](../../todos/todo-ecran-tarification-ignore-les-baremes.md)).
   La v1 le couplait à ce chantier. Vérification faite, **trois** appelants sur
   cinq injectent déjà les barèmes ; il ne manque qu'à `board-item.ts:92`, qui
   reçoit `ladders` en paramètre et ne les passe pas. C'est un correctif d'une

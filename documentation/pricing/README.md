@@ -77,15 +77,16 @@ Ces mots reviennent partout et ne veulent pas dire ce qu'on croit.
 
 **Je veux COMPRENDRE.**
 
-| La question                                                       | Le document                                                                  |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Pourquoi un prix se saisit en TTC alors que tout est HT ?         | [`architecture-prix-ancre-ttc.md`](architecture-prix-ancre-ttc.md) §A        |
-| Comment quatre règles se composent en un seul prix ?              | [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md)   |
-| Pourquoi la TVA se calcule par taux et pas sur le total ?         | [`ajouter-un-terme-au-panier.md`](ajouter-un-terme-au-panier.md) §2          |
-| Qu'est-ce que la boutique a le droit de montrer ?                 | [`architecture-prix-boutique.md`](architecture-prix-boutique.md) §4          |
-| Qu'est-ce qu'un commercial voit quand il pose une règle ?         | [`ecrans-de-tarification.md`](ecrans-de-tarification.md)                     |
-| Comment un client reçoit-il un tarif négocié, et où ça s'arrête ? | [`etat-des-lieux-mercuriale-client.md`](etat-des-lieux-mercuriale-client.md) |
-| Qui décide de poser une promotion, et où ?                        | [`decision-qui-pose-une-promotion.md`](decision-qui-pose-une-promotion.md)   |
+| La question                                                       | Le document                                                                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Pourquoi un prix se saisit en TTC alors que tout est HT ?         | [`architecture-prix-ancre-ttc.md`](architecture-prix-ancre-ttc.md) §A                                  |
+| Comment quatre règles se composent en un seul prix ?              | [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md)                             |
+| Pourquoi la TVA se calcule par taux et pas sur le total ?         | [`ajouter-un-terme-au-panier.md`](ajouter-un-terme-au-panier.md) §2                                    |
+| Qu'est-ce que la boutique a le droit de montrer ?                 | [`architecture-prix-boutique.md`](architecture-prix-boutique.md) §4                                    |
+| Qu'est-ce qu'un commercial voit quand il pose une règle ?         | [`ecrans-de-tarification.md`](ecrans-de-tarification.md)                                               |
+| **Qu'est-ce qu'une mercuriale, exactement ?**                     | [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md) — la définition |
+| Comment un client reçoit-il un tarif négocié, et où ça s'arrête ? | [`mercuriales/etat-des-lieux-mercuriale-client.md`](mercuriales/etat-des-lieux-mercuriale-client.md)   |
+| Qui décide de poser une promotion, et où ?                        | [`decision-qui-pose-une-promotion.md`](decision-qui-pose-une-promotion.md)                             |
 
 **Je veux IMPLÉMENTER.**
 

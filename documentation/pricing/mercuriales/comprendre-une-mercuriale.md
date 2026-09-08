@@ -7,9 +7,9 @@
 >
 > Pour le geste (poser, clore, renommer), voir l'onglet Tarifs d'une fiche
 > client. Pour l'état du chantier, voir
-> [`../etat-des-lieux-mercuriale-client.md`](../etat-des-lieux-mercuriale-client.md).
+> [`./etat-des-lieux-mercuriale-client.md`](./etat-des-lieux-mercuriale-client.md).
 > Pour ce qui va changer, voir
-> [`../plan-la-mercuriale-devient-un-objet.md`](../plan-la-mercuriale-devient-un-objet.md).
+> [`./plan-la-mercuriale-devient-un-objet.md`](./plan-la-mercuriale-devient-un-objet.md).
 
 ---
 
@@ -190,7 +190,7 @@ Ce que la déduction ne sait pas faire, et qu'il faut lire en le sachant :
   d'homonymie au renommage, qui n'existe que pour compenser cette absence.
 
 C'est le trou **T2**, et le
-[plan](../plan-la-mercuriale-devient-un-objet.md) le referme.
+[plan](./plan-la-mercuriale-devient-un-objet.md) le referme.
 
 ### Deux mercuriales disjointes peuvent coexister
 
