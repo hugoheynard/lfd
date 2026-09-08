@@ -1,0 +1,293 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des tarifs du compte…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de charger les tarifs"
+      subtitle="La lecture a échoué — les prix accordés, eux, sont intacts."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <!--
+      **Ce qui est posé, avant ce qu'on prépare.** La première question en
+      ouvrant l'onglet n'est pas « que vais-je lui accorder » mais « qu'est-ce
+      qu'il a déjà », et sur quelle période.
+    -->
+    <section class="tf-posed" aria-label="Mercuriales de ce compte">
+      @if (mercuriales().length === 0) {
+        <fold-empty-state
+          title="Aucune mercuriale"
+          subtitle="Ce compte paie le tarif catalogue pro. La grille ci-dessous est vide : remplissez les articles à négocier, puis posez."
+        />
+      } @else {
+        @for (mercuriale of mercuriales(); track mercuriale.label + mercuriale.validFrom) {
+          <article class="tf-posed-row">
+            <div class="tf-posed-identity">
+              <strong class="tf-posed-label">{{ mercuriale.label }}</strong>
+              <fold-badge
+                [content]="statusLabel[mercuriale.status]"
+                [variant]="statusTone[mercuriale.status]"
+              />
+            </div>
+            <span class="tf-posed-window">
+              du {{ day(mercuriale.validFrom) }} au {{ day(mercuriale.validTo) }}
+            </span>
+            <span class="tf-posed-size">{{ mercuriale.skuCount }} article(s)</span>
+            <!-- Clore ARCHIVE ses règles : c'est ce qui rend sa place dans la
+                 contrainte d'exclusion, donc la condition pour reposer sur la
+                 même période. Rien n'est effacé. -->
+            @if (mercuriale.status !== 'expired') {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="busy()"
+                (click)="close(mercuriale)"
+              >
+                Clore
+              </button>
+            }
+          </article>
+        }
+      }
+    </section>
+
+    <!--
+      La règle du jeu, dite avant le geste et non après le refus. Le serveur
+      refuse un chevauchement en NOMMANT la mercuriale en cours ; l'annoncer ici
+      évite de découvrir la contrainte en la heurtant.
+    -->
+    @if (blocking().length > 0) {
+      <!-- Le titre ne dit PAS « occupe la période » : une mercuriale à venir en
+           2027 n'empêche pas d'en poser une pour 2026. Ce qui est vrai, et
+           suffit à prévenir, c'est qu'il y en a une qui tient encore une place —
+           le refus, lui, se joue article par article sur la fenêtre demandée. -->
+      <fold-callout tone="warning" title="Ce compte a déjà une mercuriale">
+        Poser sur une période qui <strong>chevauche</strong> la sienne sera refusé : il faut d'abord
+        clore celle qui tourne. Ses règles seront <strong>archivées</strong>, jamais supprimées — ce
+        qu'elle a facturé reste, et une lecture datée d'avant la clôture la retrouve.
+      </fold-callout>
+    }
+
+    <!--
+      **La fenêtre, puis la grille.** Une mercuriale est une tarification datée :
+      un début et une fin. La fin est obligatoire — un tarif négocié sans terme
+      est un tarif que personne ne rouvre, et il finit par vivre plus longtemps
+      que la raison qui l'a justifié.
+    -->
+    <section class="tf-pose" aria-label="Poser une mercuriale">
+      <fold-input
+        class="tf-pose-name"
+        label="Nom de la mercuriale"
+        hint="Ce que le client lira dans la trace de son prix."
+        placeholder="Mercuriale 2027"
+        [value]="label()"
+        (valueChange)="label.set($event)"
+      />
+
+      <div class="tf-pose-field">
+        <label class="tf-pose-label" for="tf-from">À partir du</label>
+        <input
+          id="tf-from"
+          type="date"
+          [value]="validFrom()"
+          (change)="validFrom.set(nativeValue($event))"
+        />
+      </div>
+
+      <div class="tf-pose-field">
+        <label class="tf-pose-label" for="tf-to">Jusqu'au</label>
+        <input
+          id="tf-to"
+          type="date"
+          [value]="validTo()"
+          (change)="validTo.set(nativeValue($event))"
+        />
+      </div>
+
+      <div class="tf-pose-actions">
+        <button foldButton [disabled]="!canPose()" (click)="pose()">
+          {{ busy() ? 'Pose…' : 'Poser la mercuriale' }}
+        </button>
+        <button foldButton emphasis="outline" [disabled]="busy()" (click)="saveAsTemplate()">
+          Garder comme gabarit
+        </button>
+      </div>
+
+      <p class="tf-tally">
+        <strong>{{ summary().priced }}</strong> article(s) tarifé(s)
+        @if (summary().averageImpactBp !== null) {
+          ·
+          <span class="tf-impact" [class]="'is-' + direction(summary().averageImpactBp!)">{{
+            percent(summary().averageImpactBp!)
+          }}</span>
+          au catalogue en moyenne
+        }
+        @if (summary().floored > 0) {
+          · <strong>{{ summary().floored }}</strong> relevé(s) par une limite
+        }
+      </p>
+    </section>
+
+    <!-- Une mercuriale SCELLE les étages suivants — mais la limite, elle,
+         s'applique après tout et relève un prix négocié trop bas. Sans cette
+         phrase, la case saisie passerait pour le prix facturé. -->
+    <p class="tf-caveat">
+      Une mercuriale <strong>scelle</strong> : ni palier de volume ni promotion ne s'ajoutent
+      par-dessus. La <strong>limite</strong>, elle, s'applique quand même — un prix saisi en dessous
+      est relevé, et c'est le prix relevé qui sera facturé.
+    </p>
+
+    @for (shelf of shelves(); track shelf.id) {
+      <!--
+          **Une `fold-data-table`, comme la tarification générale.** Les cinq
+          colonnes se lisent de gauche à droite comme la négociation se mène :
+          d'où l'on part, où l'on ne descend pas, ce qu'on décide, ce qu'on peut
+          encore lâcher, et ce que ça oblige ce client à commander.
+
+          La grille maison qui la précédait dessinait chaque cellule en carte :
+          sur quatre-vingt-douze articles, ça faisait quatre cent soixante
+          cartes, et l'alignement des colonnes — le motif même du dessin —
+          reposait sur des gouttières à recalculer. La table le porte par
+          construction, et apporte l'en-tête collant, le survol de ligne, le
+          premier `<th scope="row">` et la bascule en cartes sur petit écran.
+        -->
+      <fold-data-table
+        [caption]="'Tarifs négociés — ' + shelf.name"
+        hover
+        stickyFirst
+        density="compact"
+        toolbarSurface="accent"
+        [columns]="columns"
+        [rows]="shelf.rows"
+        [rowKey]="rowKey"
+        [rowTone]="rowTone"
+        [empty]="empty"
+      >
+        <!-- **Le rayon nomme sa propre table**, dans son filet d'en-tête plutôt
+             que dans un titre de section au-dessus. Sur cinq rayons qui se
+             suivent, un titre détaché du tableau laisse douter de ce qu'il
+             coiffe dès qu'on a fait défiler ; le filet, lui, ne peut pas se
+             séparer de ses lignes.
+
+             En `accent` : c'est ce qui sépare visuellement cinq tables
+             consécutives sans ajouter de trait. La teinte vient des jetons
+             fold — le contenu projeté bascule seul sur la palette « sur
+             accent », dans les deux thèmes. -->
+        <fold-element-title
+          foldToolbar
+          variant="bar"
+          [level]="3"
+          [title]="shelf.name"
+          [subtitle]="shelf.rows.length + ' articles'"
+        />
+        <ng-template foldCell="article" let-row>
+          <span class="tf-article-name">{{ row.name }}</span>
+          <span class="tf-article-meta">{{ row.sku }} · {{ euros(row.catalogMillicents) }}</span>
+        </ng-template>
+
+        <!-- La limite n'est pas un étage : elle s'applique en fin de chaîne.
+               Elle reste donc discrète tant qu'elle n'a pas mordu. -->
+        <ng-template foldCell="limit" let-row>
+          @if (row.floorMillicents !== null) {
+            <span class="tf-guard" [class.is-active]="row.floored">
+              {{ euros(row.floorMillicents) }}
+            </span>
+          } @else {
+            <span class="tf-note">aucune</span>
+          }
+        </ng-template>
+
+        <!-- Ce qu'on décide. Un prix, pas des paliers. -->
+        <ng-template foldCell="price" let-row>
+          <!-- Empilé dans un bloc à lui : la cellule d'une `fold-data-table`
+                 est en `white-space: nowrap` — juste pour du chiffre, faux pour
+                 une cellule qui empile un champ, un lien et un avertissement.
+                 L'exception est locale, elle ne défait pas la règle de la table.
+
+                 **Pas d'étiquette par ligne** : la table donne déjà le contexte
+                 par ses en-têtes — « Prix mercuriale » en colonne, le nom de
+                 l'article en `<th scope="row">`. Une étiquette de plus ne
+                 ferait que répéter ce que la structure porte. -->
+          <span class="tf-stack">
+            <!-- Le pas est de 0,10 € parce que c'est l'unité d'une
+                   négociation : on lâche dix centimes, pas un millicentime. La
+                   saisie libre reste ouverte à cinq décimales — un prix
+                   négocié en vaut souvent quatre — donc pas de `snapToStep`,
+                   qui recollerait « 2,13456 » sur la grille du dixième. -->
+            <fold-number-input
+              size="sm"
+              align="center"
+              spinner="plusminus"
+              controls="inside"
+              placeholder="—"
+              [min]="0"
+              [step]="0.1"
+              [decimals]="5"
+              [value]="row.priceEuros"
+              (valueChange)="setEuros(row.sku, $event)"
+            />
+            <!-- Un HINT, mais cliquable : il est à la place d'une aide de
+                   champ et il en a le poids, sauf qu'il fait quelque chose —
+                   il pose le tarif catalogue dans le champ, d'où l'on part
+                   pour négocier. `fold-number-input` ne projette pas de
+                   contenu dans son `hint`, qui n'accepte qu'une chaîne : le
+                   lien vit donc à côté, sous le champ. -->
+            @if (row.priceEuros === null) {
+              <button
+                class="tf-hint-link"
+                type="button"
+                (click)="priceIt(row.sku, row.catalogMillicents)"
+              >
+                partir du catalogue
+              </button>
+            } @else {
+              <button class="tf-hint-link" type="button" (click)="clear(row.sku)">
+                retirer ce prix
+              </button>
+            }
+            <!-- Le prix relevé se dit SOUS la saisie : ce qui compte est que
+                   le chiffre tapé n'est pas celui qui sera facturé, et ça se lit
+                   là où on tape. Le ton de ligne le répète, il ne le porte pas
+                   seul. -->
+            @if (row.floored && row.finalMillicents !== null) {
+              <span class="tf-floored">relevé à {{ euros(row.finalMillicents) }}</span>
+            }
+          </span>
+        </ng-template>
+
+        <ng-template foldCell="room" let-row>
+          @if (row.roomMillicents !== null) {
+            <span class="tf-room" [class.is-spent]="row.roomMillicents === 0">
+              {{ euros(row.roomMillicents) }}
+            </span>
+            <span class="tf-note">
+              @if (row.roomMillicents === 0) {
+                déjà au plancher
+              } @else {
+                jusqu'à {{ euros(row.floorMillicents!) }}
+              }
+            </span>
+          } @else if (row.openRoomMillicents !== null) {
+            <!-- Rien n'est encore décidé : ce qu'on montre est la latitude
+                   DISPONIBLE — du tarif catalogue jusqu'à la limite. C'est la
+                   question qu'on se pose en ouvrant la fiche d'un client qu'on
+                   n'a pas tarifé, et la note dit d'où part le chiffre. -->
+            <span class="tf-room is-open">{{ euros(row.openRoomMillicents) }}</span>
+            <span class="tf-note">depuis le catalogue</span>
+          } @else {
+            <span class="tf-note">aucune limite</span>
+          }
+        </ng-template>
+
+        <ng-template foldCell="effort" let-row>
+          <app-volume-effort [elasticity]="row.elasticity" />
+        </ng-template>
+      </fold-data-table>
+    }
+  }
+}

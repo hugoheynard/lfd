@@ -11,6 +11,9 @@ import {
   type FoldViewNavItem,
 } from 'fold-ng';
 
+import type { StaffPermission } from '@lfd/contracts';
+
+import { PermissionsStore } from '../auth/permissions.store';
 import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
 import {
   companyStatusLabel,
@@ -53,6 +56,57 @@ import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
  * Le nom de la société est chargé **ici**, une fois : chaque vue le réclamerait
  * sinon, et l'en-tête clignoterait à chaque changement d'onglet.
  */
+/** Un onglet, et le droit qui l'ouvre. `null` = celui de la fiche suffit. */
+interface GuardedTab extends FoldViewNavItem {
+  readonly permission: StaffPermission | null;
+}
+
+const ALL_TABS: readonly GuardedTab[] = [
+  {
+    key: 'dashboard',
+    label: 'Tableau de bord',
+    link: 'dashboard',
+    icon: 'dashboard',
+    permission: null,
+  },
+  {
+    key: 'informations',
+    label: 'Informations',
+    link: 'informations',
+    icon: 'company',
+    permission: null,
+  },
+  {
+    key: 'commandes',
+    label: 'Commandes',
+    link: 'commandes',
+    icon: 'shopping-cart',
+    permission: null,
+  },
+  // Juste après les commandes : ce qu'il paie se lit à côté de ce qu'il achète.
+  { key: 'tarifs', label: 'Tarifs', link: 'tarifs', icon: 'tag', permission: 'b2b_pricing:read' },
+  {
+    key: 'paniers-recurrents',
+    label: 'Paniers récurrents',
+    link: 'paniers-recurrents',
+    icon: 'repeat',
+    permission: null,
+  },
+  {
+    key: 'facturation',
+    label: 'Facturation',
+    link: 'facturation',
+    icon: 'receipt',
+    permission: null,
+  },
+  { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell', permission: null },
+  { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats', permission: null },
+  // `timeline` et non `stats` : cet onglet montre l'identité technique et le
+  // JOURNAL du compte. Il portait le même glyphe que « Stats » juste à côté,
+  // et deux onglets voisins au même dessin ne se distinguent que par le mot.
+  { key: 'data', label: 'Données', link: 'data', icon: 'timeline', permission: null },
+];
+
 @Component({
   selector: 'app-fiche-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,30 +147,28 @@ export class FicheClientShell {
    * la page où l'on est — reste lisible.
    */
 
+  private readonly permissions = inject(PermissionsStore);
+
   /** La fiche, lue une fois pour la coquille ET ses vues. */
   protected readonly sheet = this.store.sheet;
 
   protected readonly statusLabel = computed(() => companyStatusLabel(this.sheet()?.status ?? ''));
   protected readonly statusTone = computed(() => companyStatusTone(this.sheet()?.status ?? ''));
 
-  protected readonly tabs: FoldViewNavItem[] = [
-    { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'dashboard' },
-    { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
-    { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'shopping-cart' },
-    {
-      key: 'paniers-recurrents',
-      label: 'Paniers récurrents',
-      link: 'paniers-recurrents',
-      icon: 'repeat',
-    },
-    { key: 'facturation', label: 'Facturation', link: 'facturation', icon: 'receipt' },
-    { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell' },
-    { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats' },
-    // `timeline` et non `stats` : cet onglet montre l'identité technique et le
-    // JOURNAL du compte. Il portait le même glyphe que « Stats » juste à côté,
-    // et deux onglets voisins au même dessin ne se distinguent que par le mot.
-    { key: 'data', label: 'Données', link: 'data', icon: 'timeline' },
-  ];
+  /**
+   * 🔴 **Un `computed`, parce qu'un onglet dépend d'un droit.**
+   *
+   * « Tarifs » lit les prix négociés du compte, derrière `b2b_pricing:read` —
+   * que la fiche, ouverte à `b2b_companies:read`, ne garantit pas. Le garde de
+   * route referme l'URL tapée ; ce filtre évite de proposer une destination qui
+   * redirigerait ailleurs sans rien dire.
+   *
+   * Le front CACHE, le serveur REFUSE : la surface `b2b_pricing` du backend est
+   * le vrai mur.
+   */
+  protected readonly tabs = computed<FoldViewNavItem[]>(() =>
+    ALL_TABS.filter((tab) => tab.permission === null || this.permissions.can(tab.permission)),
+  );
 
   protected readonly title = computed<string>(() => {
     const name = this.store.displayName();

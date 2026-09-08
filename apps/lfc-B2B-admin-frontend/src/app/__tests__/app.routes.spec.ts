@@ -49,6 +49,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
   'comptes-clients/:id/commandes': null,
+  // Le seul onglet de la fiche qui ne suit PAS le droit du parent : voir ce
+  // qu'un client a négocié n'est pas voir sa fiche.
+  'comptes-clients/:id/tarifs': 'b2b_pricing:read',
   'comptes-clients/:id/facturation': null,
   'comptes-clients/:id/stats': null,
   'comptes-clients/:id/paniers-recurrents': null,

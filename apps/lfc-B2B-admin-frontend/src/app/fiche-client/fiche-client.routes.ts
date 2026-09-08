@@ -51,6 +51,16 @@ export const ficheClientRoutes: Routes = [
           import('./commandes/commandes-page').then((m) => m.ClientCommandesPage),
       },
       {
+        // 🔴 `b2b_pricing:read` et non le droit du parent. La fiche s'ouvre avec
+        // `b2b_companies:read`, que portent aussi la comptabilité et le support ;
+        // hériter ici leur DONNERAIT la lecture des prix négociés, qui
+        // n'appartient aujourd'hui qu'à la tarification. Élargir est une décision
+        // à prendre à part, pas un effet de bord de l'endroit où on range un écran.
+        path: 'tarifs',
+        canActivate: [permissionGuard('b2b_pricing:read')],
+        loadComponent: () => import('./tarifs/tarifs-page').then((m) => m.ClientTarifsPage),
+      },
+      {
         path: 'facturation',
         loadComponent: () =>
           import('./facturation/facturation-page').then((m) => m.ClientFacturationPage),
