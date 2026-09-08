@@ -103,8 +103,12 @@
     color: var(--fold-color-success, currentcolor);
   }
 
+  // `alert` et non « danger » : fold ne porte pas ce second nom, et un `var()`
+  // qui vise un jeton inexistant tombe sur son repli SANS que rien ne rougisse
+  // — la hausse se serait affichée dans la couleur du texte courant, donc à
+  // l'identique d'une baisse. C'est la porte `fold-tokens` qui l'a vu.
   &.is-up {
-    color: var(--fold-color-danger, currentcolor);
+    color: var(--fold-color-alert-text, currentcolor);
   }
 }
 
