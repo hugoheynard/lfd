@@ -39,4 +39,28 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
     });
     return row === null ? null : mercurialeFromRow(row);
   }
+
+  async listFor(companyId: string): Promise<readonly CompanyMercuriale[]> {
+    const rows = await this.prisma.companyMercuriale.findMany({
+      // Closes exclues : ranger sert précisément à ne plus les voir. Ce qu'elles
+      // ont facturé reste, lui, figé sur les commandes.
+      where: { companyId, archivedAt: null },
+      orderBy: { validFrom: "desc" },
+    });
+    return rows.map((row) => mercurialeFromRow(row));
+  }
+
+  async liveEverywhere(at: Date): Promise<readonly CompanyMercuriale[]> {
+    const rows = await this.prisma.companyMercuriale.findMany({
+      where: {
+        archivedAt: null,
+        // En pause : écartée. On mesure ce qui se FACTURE, pas ce qui a été
+        // décidé — cf. le port.
+        pausedAt: null,
+        validFrom: { lte: at },
+        OR: [{ validTo: null }, { validTo: { gt: at } }],
+      },
+    });
+    return rows.map((row) => mercurialeFromRow(row));
+  }
 }

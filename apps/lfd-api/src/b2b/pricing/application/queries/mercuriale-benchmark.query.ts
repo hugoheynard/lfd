@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import type { MercurialeBenchmarkView } from "@lfd/contracts";
 
-import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { benchmarkByProduct } from "../../domain/services/mercuriale-benchmark.js";
 import type { NegotiatedPrice } from "../../domain/services/mercuriale-benchmark.js";
 import { resolvePrice } from "../../domain/resolve-price.js";
-import { ruleFromRow } from "../../infrastructure/price-rows.js";
+import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 
 /**
  * **Ce que le marché paie déjà, article par article.**
@@ -38,74 +38,80 @@ import { ruleFromRow } from "../../infrastructure/price-rows.js";
 @Injectable()
 export class MercurialeBenchmarkQuery {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly mercuriales: CompanyMercurialeReader,
     private readonly catalog: ProductCatalogReader,
     private readonly clock: Clock,
   ) {}
 
   async byProduct(): Promise<readonly MercurialeBenchmarkView[]> {
     const at = this.clock.now();
-    const rows = await this.prisma.priceRule.findMany({
-      where: {
-        stage: "mercuriale",
-        // En place : ni archivée, ni suspendue, et dans sa fenêtre. Une décision
-        // qui a cessé d'agir n'est plus ce que le client paie.
-        archivedAt: null,
-        pausedAt: null,
-        validFrom: { lte: at },
-        OR: [{ validTo: null }, { validTo: { gt: at } }],
-        // Nommément un article, et chez un client nommé : une règle de famille ou
-        // de catalogue n'est pas un prix négocié, c'est le tarif de tout le monde.
-        scopeType: { in: ["product", "variant"] },
-        audienceType: "company",
-      },
-    });
+    const mercuriales = await this.mercuriales.liveEverywhere(at);
 
-    const skus = [...new Set(rows.map((row) => row.scopeId).filter((sku) => sku !== null))];
+    const skus = [
+      ...new Set(mercuriales.flatMap((mercuriale) => mercuriale.lines.map((line) => line.sku))),
+    ];
     const catalogue = await this.catalog.resolveMany(skus);
 
-    return benchmarkByProduct(rows.flatMap((row) => this.observationOf(row, catalogue, at) ?? []));
+    return benchmarkByProduct(
+      mercuriales.flatMap((mercuriale) => this.observationsOf(mercuriale, catalogue, at)),
+    );
   }
 
   /**
-   * Une règle → une observation, ou rien.
+   * Une mercuriale → une observation **par palier**.
+   *
+   * Un palier est un prix accordé à part entière : « 1,73 € l'unité, 1,60 € à
+   * partir de 500 » sont deux points du marché, pas un. C'est exactement ce que
+   * la lecture d'avant le 2026-09-08 rendait — une règle par palier, donc une
+   * observation par palier —, et le comparatif ne doit pas changer de sens en
+   * changeant de source.
    *
    * Rien quand le catalogue ne connaît plus l'article : `resolvePrice` exige un
-   * prix canonique d'entrée, et la faire disparaître est plus honnête que de lui
-   * en inventer un.
-   *
-   * (La version d'avant le 2026-09-08 justifiait ça par la forme `alter`, qui
-   * n'existe pas à cet étage — cf. le JSDoc de la classe.)
+   * prix canonique d'entrée, et faire disparaître la ligne est plus honnête que
+   * de lui en inventer un.
    */
-  private observationOf(
-    row: Parameters<typeof ruleFromRow>[0] & { scopeId: string | null; audienceId: string | null },
+  private observationsOf(
+    mercuriale: CompanyMercuriale,
     catalogue: Awaited<ReturnType<ProductCatalogReader["resolveMany"]>>,
     at: Date,
-  ): NegotiatedPrice | null {
-    const sku = row.scopeId;
-    const companyId = row.audienceId;
-    const canonicalMillicents = sku === null ? undefined : catalogue.get(sku)?.unitPriceMillicents;
-    if (sku === null || companyId === null || canonicalMillicents === undefined) {
-      return null;
-    }
-    const rule = ruleFromRow(row);
-    const resolved = resolvePrice(
-      canonicalMillicents,
-      [rule],
-      {
-        at,
-        quantity: rule.minQuantity ?? 1,
-        cumulativeQuantity: null,
-        // La portée vise cet article nommément : les deux clés pointent dessus,
-        // et la catégorie ne sert pas — aucune règle de famille n'est lue ici.
-        variantSku: sku,
-        productSku: sku,
-        categoryId: "",
-        companyId,
-        segmentId: null,
-      },
-      null,
-    );
-    return { sku, companyId, unitPriceMillicents: resolved.finalMillicents };
+  ): NegotiatedPrice[] {
+    const { companyId } = mercuriale.toPersistence();
+    return mercuriale.lines.flatMap((line) => {
+      const canonicalMillicents = catalogue.get(line.sku)?.unitPriceMillicents;
+      if (canonicalMillicents === undefined) {
+        return [];
+      }
+      return line.tiers.flatMap((tier) => {
+        // Chaque palier est mesuré **à sa propre quantité** : l'évaluer à 1
+        // l'écarterait dès qu'il s'ouvre plus haut, et le marché perdrait ses
+        // prix de volume négociés.
+        const rule = mercuriale.asRuleFor({
+          at,
+          quantity: tier.minQuantity,
+          cumulativeQuantity: tier.minQuantity,
+          variantSku: line.sku,
+          productSku: line.sku,
+          // Aucune règle de famille n'est lue ici : la mercuriale vise
+          // l'article nommément.
+          categoryId: "",
+          companyId,
+          segmentId: null,
+        });
+        if (rule === null) {
+          return [];
+        }
+        const resolved = resolvePrice(canonicalMillicents, [rule], {
+          at,
+          quantity: tier.minQuantity,
+          cumulativeQuantity: tier.minQuantity,
+          variantSku: line.sku,
+          productSku: line.sku,
+          categoryId: "",
+          companyId,
+          segmentId: null,
+        });
+        return [{ sku: line.sku, companyId, unitPriceMillicents: resolved.finalMillicents }];
+      });
+    });
   }
 }

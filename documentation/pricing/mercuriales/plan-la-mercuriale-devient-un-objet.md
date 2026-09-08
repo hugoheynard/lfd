@@ -31,7 +31,7 @@ aucune ne sait qu'elle appartient à une mercuriale. N vaut le nombre d'articles
 (`company-mercuriale.handlers.ts`, JSDoc de `execute`), la pose par gabarit non
 — _« un gabarit de trente lignes à deux paliers en pose soixante »_.
 
-Ce que l'écran appelle « 2027 » n'existe pas : `posed-mercuriales.ts:52` le
+Ce que l'écran appelait « 2027 » n'existait pas : le regroupement le
 **reconstitue** en regroupant les règles qui partagent `(validFrom, validTo,
 label)`.
 

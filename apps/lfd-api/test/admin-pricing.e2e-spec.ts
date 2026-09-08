@@ -1709,16 +1709,31 @@ describe("les gabarits tarifaires", () => {
 
     const applied = jsonBody<{ posedRules: number }>(await apply(id, company.id).expect(201));
 
-    expect(applied.posedRules).toBe(2);
-    const posed = await ctx.prisma.priceRule.findMany({
-      where: { audienceId: company.id },
-      orderBy: { minQuantity: "asc" },
-      select: { stage: true, nature: true, minQuantity: true, amountMillicents: true },
+    // **Test RETOURNÉ le 2026-09-08.** Il attendait DEUX règles ; il attend
+    // maintenant UNE mercuriale portant deux paliers. Ce qu'il prouve n'a pas
+    // changé — les deux paliers arrivent chez le client, au bon seuil et au bon
+    // prix — mais ils y arrivent en une écriture, donc atomiquement : c'est ce
+    // qui ferme T3 pour la pose par gabarit.
+    expect(applied.posedRules).toBe(1);
+    const posed = await ctx.prisma.companyMercuriale.findMany({
+      where: { companyId: company.id },
+      select: { lines: true },
     });
     expect(posed).toEqual([
-      { stage: "mercuriale", nature: "replace", minQuantity: 1, amountMillicents: 170_000 },
-      { stage: "mercuriale", nature: "replace", minQuantity: 10_000, amountMillicents: 150_000 },
+      {
+        lines: [
+          {
+            sku: SKU,
+            tiers: [
+              { minQuantity: 1, unitPriceMillicents: 170_000 },
+              { minQuantity: 10_000, unitPriceMillicents: 150_000 },
+            ],
+          },
+        ],
+      },
     ]);
+    // Et plus AUCUNE règle : le gabarit n'en écrit plus.
+    expect(await ctx.prisma.priceRule.count({ where: { audienceId: company.id } })).toBe(0);
   });
 
   /**
@@ -1771,10 +1786,11 @@ describe("les gabarits tarifaires", () => {
       await apply(id, company.id).expect(201);
       const before = await marketFor(SKU);
 
-      // Écrit directement : ce test vise la LECTURE, et le geste d'archivage a
-      // ses propres tests plus haut.
-      await ctx.prisma.priceRule.updateMany({
-        where: { audienceId: company.id },
+      // Écrit directement : ce test vise la LECTURE, et le geste de clôture a
+      // ses propres tests. La table a changé le 2026-09-08 ; ce qui est éprouvé
+      // — une décision qui a cessé d'agir sort du marché — n'a pas changé.
+      await ctx.prisma.companyMercuriale.updateMany({
+        where: { companyId: company.id },
         data: { archivedAt: new Date() },
       });
 

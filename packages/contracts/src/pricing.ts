@@ -1364,12 +1364,29 @@ export interface PosedMercurialeLineView {
 }
 
 export interface PosedMercurialeView {
+  /**
+   * **Son identifiant.** Existe depuis le 2026-09-08, date à laquelle une
+   * mercuriale a cessé d'être N règles que l'écran recollait par
+   * `(libellé, fenêtre)`.
+   *
+   * C'est lui qui désigne la mercuriale pour la clore ou la renommer. Le
+   * triplet reste accepté un déploiement — un onglet ouvert sur l'ancien bundle
+   * ne peut pas envoyer un identifiant qu'il n'a jamais reçu.
+   */
+  readonly id: string;
   readonly label: string;
   readonly validFrom: string;
   /** `null` = sans terme. Une mercuriale ouverte est le cas courant. */
   readonly validTo: string | null;
   readonly status: PosedMercurialeStatus;
-  /** Combien de règles la composent — un palier, une règle. */
+  /**
+   * Combien de paliers la composent — un article à prix fixe en pèse un.
+   *
+   * @deprecated depuis le 2026-09-08. Le nom disait vrai quand une mercuriale
+   * ÉTAIT N règles ; elle est un objet désormais, et ce nombre ne compte plus
+   * que ses paliers. Conservé le temps qu'un onglet ouvert sur l'ancien bundle
+   * cesse de le lire. Ce qu'un écran veut afficher est `skuCount`.
+   */
   readonly ruleCount: number;
   /** Sur combien d'articles distincts elle porte. */
   readonly skuCount: number;
@@ -1472,9 +1489,22 @@ export type PoseCompanyMercurialePayload = z.infer<typeof poseCompanyMercurialeP
  * retrouve, et ce qu'elles ont facturé est figé sur les commandes.
  */
 export const closeCompanyMercurialePayloadSchema = z.object({
-  label: z.string().min(1).max(120),
-  validFrom: z.string().datetime(),
-  validTo: z.string().datetime().nullable(),
+  /**
+   * **L'identifiant, quand l'écran le connaît.** C'est la désignation juste
+   * depuis que la mercuriale existe en base.
+   */
+  id: z.string().min(1).optional(),
+  /**
+   * L'ancienne désignation — libellé et fenêtre —, acceptée **le temps d'un
+   * déploiement**. Un onglet ouvert sur le bundle d'avant le 2026-09-08 ne peut
+   * pas envoyer un identifiant qu'il n'a jamais reçu ; le refuser fermerait
+   * l'écran de quelqu'un qui n'a rien fait de mal.
+   *
+   * @deprecated Se retire quand plus aucun front en ligne ne l'envoie.
+   */
+  label: z.string().min(1).max(120).optional(),
+  validFrom: z.string().datetime().optional(),
+  validTo: z.string().datetime().nullable().optional(),
   /** Pourquoi on la ferme. Facultatif — cf. `pricingReasonPayloadSchema`. */
   reason: z.string().max(500).nullable().default(null),
 });
@@ -1499,10 +1529,13 @@ export type CloseCompanyMercurialePayload = z.infer<typeof closeCompanyMercurial
  * redistinguer. C'est la seule perte irréversible du geste, d'où le refus.
  */
 export const renameCompanyMercurialePayloadSchema = z.object({
-  label: z.string().min(1).max(120),
-  validFrom: z.string().datetime(),
-  validTo: z.string().datetime().nullable(),
-  /** Le nouveau libellé. Vide interdit : il servirait de clé. */
+  /** L'identifiant, quand l'écran le connaît. Cf. `closeCompanyMercurialePayloadSchema`. */
+  id: z.string().min(1).optional(),
+  /** @deprecated l'ancienne désignation, acceptée le temps d'un déploiement. */
+  label: z.string().min(1).max(120).optional(),
+  validFrom: z.string().datetime().optional(),
+  validTo: z.string().datetime().nullable().optional(),
+  /** Le nouveau libellé. Vide interdit. */
   newLabel: z.string().min(1).max(120),
 });
 export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercurialePayloadSchema>;

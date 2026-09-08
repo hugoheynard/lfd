@@ -831,13 +831,13 @@ Le commercial tape **2,10 €** dans la grille de mercuriale
 
 La chaîne, vérifiée fichier par fichier :
 
-| Étape       | Ce qui se passe                                                                      | Où                              |
-| ----------- | ------------------------------------------------------------------------------------ | ------------------------------- |
-| saisie      | `centsOf('2,10')` → `210`, en **centimes** (`Math.round(parsed * 100)`)              | `price-field.ts:11`             |
-| payload     | `210` est posé dans `unitPriceMillicents`                                            | `draft-grid.ts:101`             |
-| contrat     | `templateTierSchema.unitPriceMillicents`, entier ≥ 0 — rien à redire à `210`         | `contracts/src/pricing.ts:1156` |
-| application | le palier devient une règle `replace` : `amountMillicents: tier.unitPriceMillicents` | `template-to-rules.ts:44`       |
-| facturation | `resolvePrice` pose ce montant tel quel — **0,0021 € l'unité**                       | `resolve-price.ts`              |
+| Étape       | Ce qui se passe                                                                      | Où                                                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| saisie      | `centsOf('2,10')` → `210`, en **centimes** (`Math.round(parsed * 100)`)              | `price-field.ts:11`                                                                                                                                                                                                                                                       |
+| payload     | `210` est posé dans `unitPriceMillicents`                                            | `draft-grid.ts:101`                                                                                                                                                                                                                                                       |
+| contrat     | `templateTierSchema.unitPriceMillicents`, entier ≥ 0 — rien à redire à `210`         | `contracts/src/pricing.ts:1156`                                                                                                                                                                                                                                           |
+| application | le palier devient une règle `replace` : `amountMillicents: tier.unitPriceMillicents` | ⚠️ **plus vrai depuis le 2026-09-08** — un gabarit posé chez un client écrit **une** `CompanyMercuriale` portant ses paliers, et la fonction qui dépliait les paliers en règles a été supprimée. Cet audit est une photo datée : la ligne reste pour ce qu'elle décrivait |
+| facturation | `resolvePrice` pose ce montant tel quel — **0,0021 € l'unité**                       | `resolve-price.ts`                                                                                                                                                                                                                                                        |
 
 **Un prix FRAÎCHEMENT tapé se relit juste**, et c'est ce qui rend l'écriture
 silencieuse : `draftFromLines` réaffiche `eurosField(210)` = « 2,10 ». Le

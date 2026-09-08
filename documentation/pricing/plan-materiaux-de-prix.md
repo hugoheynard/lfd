@@ -67,7 +67,7 @@ par clé de portée » tiré de la contrainte d'exclusion. **Les deux étaient f
 **Le plafond n'existe pas.** La contrainte porte aussi sur
 `coalesce("min_quantity", 0)`. Deux règles de même étage, même portée, même
 audience et même fenêtre coexistent donc légalement dès que leurs seuils
-diffèrent — et c'est le **mécanisme normal des gabarits** : `template-to-rules.ts`
+diffèrent — et c'était le **mécanisme normal des gabarits** (⚠️ jusqu'au 2026-09-08 : un gabarit posé écrit désormais une `CompanyMercuriale`)
 pose **une règle par palier**, toutes en `mercuriale`, `product:<sku>`,
 `company:<id>`. Un gabarit à six paliers met six règles dans un seul seau.
 
@@ -138,23 +138,23 @@ bord.
 
 ## B.3 Ce qui a été vérifié, et où
 
-| Affirmation                                                      | Vérifiée dans                                                                      |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `matchesScope` = `global` + trois égalités                       | `specificity.ts`                                                                   |
-| `matchesAudience` ne dépend que de `companyId` / `segmentId`     | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui |
-| `minQuantity` est le seul prédicat par ligne, hors portée        | `applies`                                                                          |
-| `resolvePrice` filtre par étage le tableau reçu                  | `resolve-price.ts`                                                                 |
-| `supersedes` a besoin des perdants                               | `resolve-price.ts`                                                                 |
-| La contrainte d'exclusion porte **aussi** sur `min_quantity`     | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                       |
-| Un gabarit pose **une règle par palier**                         | `template-to-rules.ts`                                                             |
-| `price_floors_one_per_scope` : une ligne par portée, sans temps  | migration `20260817160000_plancher_de_prix`                                        |
-| `ScopedPriceFloor` ne porte aucun cycle de vie                   | `price-rule.ts`                                                                    |
-| `price_floors` n'a ni `pausedAt` ni `pausedBy`                   | `schema.prisma`, modèle `PriceFloor`                                               |
-| Re-poser un plancher remet `archivedAt` à `null`                 | `prisma-pricing-floor.repository.ts`                                               |
-| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
-| `resolveScopedFloor` a trois appelants                           | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |
-| `PriceProjectionQuery` hisse déjà ses trois lecteurs             | `price-projection.query.ts`                                                        |
-| `mostSpecificFirst` est une `Map` **1:1**                        | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                             |
+| Affirmation                                                         | Vérifiée dans                                                                      |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `matchesScope` = `global` + trois égalités                          | `specificity.ts`                                                                   |
+| `matchesAudience` ne dépend que de `companyId` / `segmentId`        | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui |
+| `minQuantity` est le seul prédicat par ligne, hors portée           | `applies`                                                                          |
+| `resolvePrice` filtre par étage le tableau reçu                     | `resolve-price.ts`                                                                 |
+| `supersedes` a besoin des perdants                                  | `resolve-price.ts`                                                                 |
+| La contrainte d'exclusion porte **aussi** sur `min_quantity`        | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                       |
+| Un gabarit posait **une règle par palier** (⚠️ jusqu'au 2026-09-08) | `price-template.handlers.ts` — il écrit désormais **une** `CompanyMercuriale`      |
+| `price_floors_one_per_scope` : une ligne par portée, sans temps     | migration `20260817160000_plancher_de_prix`                                        |
+| `ScopedPriceFloor` ne porte aucun cycle de vie                      | `price-rule.ts`                                                                    |
+| `price_floors` n'a ni `pausedAt` ni `pausedBy`                      | `schema.prisma`, modèle `PriceFloor`                                               |
+| Re-poser un plancher remet `archivedAt` à `null`                    | `prisma-pricing-floor.repository.ts`                                               |
+| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie    | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
+| `resolveScopedFloor` a trois appelants                              | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |
+| `PriceProjectionQuery` hisse déjà ses trois lecteurs                | `price-projection.query.ts`                                                        |
+| `mostSpecificFirst` est une `Map` **1:1**                           | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                             |
 
 **Non vérifié** : la mesure de **C.6**, les volumes réels, l'existence d'un plancher
 global à porte de volume, la taille de l'union des portées d'un panier.
@@ -316,7 +316,7 @@ l'étage pour `supersedes`, et un gabarit met plusieurs règles dans un seau (**
 ⚠️ Le précédent `mostSpecificFirst` (`@lfd/catalog-sync`) est une `Map` **1:1** :
 | `volumeTierPrices` rend `null` sans barème gagnant | `volume-tier-prices.ts`, `winningLadder` |
 | Elle n'énumère que les paliers du barème | `volume-tier-prices.ts`, `ladder.tiers.map` |
-| Une mercuriale à paliers est **une règle par palier** | `template-to-rules.ts` |
+| Une mercuriale à paliers **était** une règle par palier (⚠️ jusqu'au 2026-09-08) | `entities/company-mercuriale.ts` — c'est une grille, et `asRuleFor` n'en rend qu'une règle à la fois |
 | La grille réutilise le plancher résolu à la quantité d'origine | `volume-tier-prices.ts`, l'argument `floor` |
 il ne le peut que parce que `order_time_limit_one_per_scope` garantit une ligne
 par portée. Il vaut donc pour les **planchers** — `price_floors_one_per_scope`
@@ -448,7 +448,7 @@ avant d'être une économie.
 `volumeTierPrices` rend **`null`** dès qu'aucun `VolumeLadder` ne gagne, et
 n'énumère que **les paliers de ce barème**.
 
-Or une mercuriale à paliers **n'est pas un barème** : `template-to-rules.ts` la
+Or une mercuriale à paliers **n'est pas un barème** : la pose la
 pose en **une règle par palier**, avec des `minQuantity` différents. Ces seuils-là
 ne sont donc pas dans la grille.
 

@@ -343,9 +343,15 @@ export class ClientTarifsPage {
     });
   }
 
-  /** La clé d'une mercuriale : la même que celle qui la fait exister. */
+  /**
+   * La clé d'une mercuriale : **son identifiant**.
+   *
+   * C'était `libellé + fenêtre` jusqu'au 2026-09-08 — la seule clé disponible
+   * tant qu'une mercuriale n'existait pas en base. Deux poses homonymes sur la
+   * même fenêtre partageaient donc la même clé, et l'écran les confondait.
+   */
   protected keyOf(mercuriale: PosedMercurialeView): string {
-    return `${mercuriale.label} ${mercuriale.validFrom}`;
+    return mercuriale.id;
   }
 
   protected toggle(mercuriale: PosedMercurialeView): void {
@@ -455,9 +461,7 @@ export class ClientTarifsPage {
     this.busy.set(true);
     try {
       const { affectedRules } = await this.pricing.close(this.id(), {
-        label: mercuriale.label,
-        validFrom: mercuriale.validFrom,
-        validTo: mercuriale.validTo,
+        id: mercuriale.id,
         reason: null,
       });
       this.notify.success(`Mercuriale close — ${String(affectedRules)} règle(s) archivée(s).`);
@@ -495,12 +499,13 @@ export class ClientTarifsPage {
    * **Renommer.** Le prix ne bouge pas — le libellé n'entre dans aucune
    * résolution.
    *
-   * ⚠️ Ce n'est pourtant pas une étiquette posée à côté de l'objet : faute
-   * d'identité en base, une mercuriale est recollée par **(libellé, fenêtre)**,
-   * et le nom en est la moitié. Le serveur renomme donc toutes ses règles d'un
-   * coup, et refuse un nom déjà pris sur la même fenêtre. C'est aussi pour ça
-   * que la vue est **relue** après coup plutôt que corrigée sur place : la clé
-   * de tout ce qui est à l'écran vient de changer.
+   * Depuis le 2026-09-08 c'est vraiment une étiquette : la mercuriale a une
+   * identité en base, le serveur n'écrit qu'une colonne, et deux mercuriales
+   * peuvent porter le même nom sans se confondre. Le refus d'homonymie a
+   * disparu avec la clé qu'il protégeait.
+   *
+   * La vue reste **relue** après coup : c'est la lecture qui fait foi, et une
+   * correction locale masquerait un refus qu'on n'aurait pas vu.
    */
   protected async rename(mercuriale: PosedMercurialeView, typed?: string): Promise<void> {
     // ⚠️ `typed` vient de la touche Entrée, et il est là pour une raison
@@ -519,12 +524,7 @@ export class ClientTarifsPage {
     }
     this.busy.set(true);
     try {
-      await this.pricing.rename(this.id(), {
-        label: mercuriale.label,
-        validFrom: mercuriale.validFrom,
-        validTo: mercuriale.validTo,
-        newLabel: label,
-      });
+      await this.pricing.rename(this.id(), { id: mercuriale.id, newLabel: label });
       this.renaming.set(null);
       this.notify.success('Mercuriale renommée — les prix sont inchangés.');
       // La saisie en cours SURVIT, pour la même raison qu'après une clôture : on

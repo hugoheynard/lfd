@@ -8,13 +8,13 @@
 > (`comptes-clients/:id/tarifs`), et il ne fait pas que lire : c'est là qu'on
 > **établit** la mercuriale du client. Ce que ça change au §4 :
 >
-> | Trou   | État                                                                                                                                                                                                      |
-> | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-> | **T1** | ✅ fermé. `GET /admin/pricing/companies/:id` lit le tableau **à l'audience du client**, filtre posé dans la requête. Une règle d'un tiers ne peut ni gagner un étage, ni apparaître.                      |
-> | **T3** | 🟡 fermé **sur ce chemin**. Poser depuis la fiche pré-contrôle le chevauchement puis écrit en **une transaction** : rien, ou tout. La pose d'un **gabarit** écrit toujours une par une, hors transaction. |
-> | **T2** | ✗ inchangé, et c'est délibéré. La mercuriale reste **reconstituée** à la lecture par `(libellé, fenêtre)` — `posed-mercuriales.ts` porte la limite, et un test l'éprouve.                                 |
-> | **T6** | ✅ sans objet ici : la fiche EST le client, il n'y a plus de liste à présélectionner.                                                                                                                     |
-> | **T7** | ✗ inchangé — cet écran fabrique lui aussi ses bornes en minuit **UTC**.                                                                                                                                   |
+> | Trou   | État                                                                                                                                                                                                                      |
+> | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **T1** | ✅ fermé. `GET /admin/pricing/companies/:id` lit le tableau **à l'audience du client**, filtre posé dans la requête. Une règle d'un tiers ne peut ni gagner un étage, ni apparaître.                                      |
+> | **T3** | 🟡 fermé **sur ce chemin**. Poser depuis la fiche pré-contrôle le chevauchement puis écrit en **une transaction** : rien, ou tout. La pose d'un **gabarit** écrit toujours une par une, hors transaction.                 |
+> | **T2** | ✅ **fermé le 2026-09-08.** La mercuriale est un objet — `CompanyMercuriale`, table `company_mercuriales`. Elle n'est plus reconstituée par `(libellé, fenêtre)` : `posed-mercuriale-view.ts` n'en est qu'une projection. |
+> | **T6** | ✅ sans objet ici : la fiche EST le client, il n'y a plus de liste à présélectionner.                                                                                                                                     |
+> | **T7** | ✗ inchangé — cet écran fabrique lui aussi ses bornes en minuit **UTC**.                                                                                                                                                   |
 >
 > Deux décisions prises avec Hugo, qui expliquent la forme :
 >
@@ -101,7 +101,7 @@ vient de la **route**, jamais d'un état interne. Seul `mercuriale` se pose.
 | Élément                                             | Ce qu'il garantit                                                                                                                                                    |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `domain/entities/price-template.ts`                 | l'agrégat. Il refuse **une grille qui monte**, **deux lignes sur un même SKU**, **une grille vide**. Il trie les paliers plutôt que de refuser un désordre de saisie |
-| `domain/services/template-to-rules.ts`              | pure : `lines × companyId × fenêtre → PricingRuleDraft[]`. Elle n'écrit rien, et n'apprend rien au moteur                                                            |
+| ~~la fonction qui dépliait les paliers en règles~~  | **supprimée le 2026-09-08** : poser un gabarit écrit désormais **une** `CompanyMercuriale` portant ses paliers, pas N règles                                         |
 | `application/commands/price-template.handlers.ts`   | composer/réviser, et **poser**. Chaque règle traverse `PricingRule.create` et le dépôt, une par une                                                                  |
 | `application/queries/price-templates.query.ts`      | la grille **avec le tarif catalogue en regard**, lu à l'affichage et jamais figé, résolu en un lot                                                                   |
 | `application/queries/mercuriale-benchmark.query.ts` | **ce que le marché paie déjà** : médiane, bornes, nombre de clients. La médiane et non la moyenne                                                                    |

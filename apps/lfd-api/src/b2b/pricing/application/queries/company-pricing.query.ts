@@ -24,8 +24,9 @@ import { BoardElasticityService } from "../board-elasticity.service.js";
 import { boardMaterials, itemView, type LoadedFloor, type LoadedRule } from "../board-item.js";
 import { groupByCategory } from "../board-category.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
-import { posedMercuriales } from "../posed-mercuriales.js";
+import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { pricingContextFor } from "../pricing-context.js";
+import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 
 /**
  * **Ce que paie UN client**, article par article — la lecture de l'onglet
@@ -67,6 +68,7 @@ export class CompanyPricingQuery {
     private readonly prisma: PrismaService,
     private readonly catalog: ProductCatalogReader,
     private readonly ladders: VolumeLadderReader,
+    private readonly mercuriales: CompanyMercurialeReader,
     private readonly elasticity: BoardElasticityService,
     private readonly customerVolumes: CustomerVolumeReader,
     private readonly clock: Clock,
@@ -79,7 +81,7 @@ export class CompanyPricingQuery {
     const at = this.clock.now();
     await this.assertCompanyExists(companyId);
 
-    const [ruleRows, floorRows, ladders, articles] = await Promise.all([
+    const [ruleRows, floorRows, ladders, articles, mercuriales, live] = await Promise.all([
       this.prisma.priceRule.findMany({
         // 🔴 Le filtre d'audience est ici, dans la REQUÊTE, et non plus loin :
         // une règle d'un tiers qui entrerait dans le matériau pourrait gagner
@@ -90,6 +92,11 @@ export class CompanyPricingQuery {
       this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
       this.ladders.listAll(at),
       this.catalog.all(),
+      // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.
+      this.mercuriales.listFor(companyId),
+      // Ce qui AGIT maintenant : c'est elle, et elle seule, qui entre dans le
+      // prix. Deux questions, deux lectures — cf. le port.
+      this.mercuriales.liveFor(companyId, at),
     ]);
 
     const rules: LoadedRule[] = ruleRows.map((row) => ({
@@ -105,7 +112,7 @@ export class CompanyPricingQuery {
     });
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
-    const materials = boardMaterials(rules, floors);
+    const materials = boardMaterials(rules, floors, live);
     const byCategory = groupByCategory(articles);
     const categories: CompanyPricingCategoryView[] = CATALOG_CATEGORY_ORDER.map((category) => ({
       id: category,
@@ -155,17 +162,17 @@ export class CompanyPricingQuery {
       companyId,
       at: at.toISOString(),
       categories: measured,
-      mercuriales: posedMercuriales(
-        rules
-          .filter(
-            (entry) => entry.rule.stage === "mercuriale" && entry.rule.audience.type === "company",
-          )
-          .map((entry) => ({ rule: entry.rule, createdBy: entry.view.createdBy })),
-        at,
-        // Le nom du catalogue, ou le SKU nu : une mercuriale garde ses lignes
-        // quand un article cesse d'être publié, et l'écran doit pouvoir dire
-        // qu'elle ne vise plus rien.
-        (sku) => names.get(sku) ?? sku,
+      // Une PROJECTION, plus une reconstitution : la mercuriale est un objet
+      // depuis le 2026-09-08, il n'y a plus de règles à recoller par libellé.
+      mercuriales: mercuriales.map((mercuriale) =>
+        posedMercurialeView(
+          mercuriale,
+          at,
+          // Le nom du catalogue, ou le SKU nu : une mercuriale garde ses lignes
+          // quand un article cesse d'être publié, et l'écran doit pouvoir dire
+          // qu'elle ne vise plus rien.
+          (sku) => names.get(sku) ?? sku,
+        ),
       ),
       negotiatedSkuCount: sealed.length,
       averageGapBp: averageGapBp(sealed),

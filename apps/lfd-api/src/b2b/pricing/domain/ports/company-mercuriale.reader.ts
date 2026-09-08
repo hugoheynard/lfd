@@ -30,4 +30,33 @@ export abstract class CompanyMercurialeReader {
    * tarif négocié, et le port le sait sans interroger la base.
    */
   abstract liveFor(companyId: string | null, at: Date): Promise<CompanyMercuriale | null>;
+
+  /**
+   * **Ce qu'on a décidé chez ce client** — de la plus récemment ouverte à la
+   * plus ancienne, closes exclues.
+   *
+   * Distincte de {@link liveFor} parce qu'elle répond à une AUTRE question. La
+   * première dit « que facture-t-on maintenant » et n'en rend qu'une ; celle-ci
+   * dit « qu'a-t-on accordé », et en rend plusieurs : celle qui court, celle
+   * qu'on a préparée pour janvier, celles dont la fenêtre est passée. La
+   * contrainte n'interdit que le **recouvrement**, pas la succession.
+   *
+   * Mêler les deux alourdirait le chemin qui facture pour un besoin d'écran.
+   */
+  abstract listFor(companyId: string): Promise<readonly CompanyMercuriale[]>;
+
+  /**
+   * **Toutes les mercuriales qui agissent, tous clients confondus** — ce que le
+   * marché paie déjà.
+   *
+   * Une troisième question, et non un `listFor` élargi : celle-ci ne vise
+   * personne. Elle sert le comparatif qui situe un prix qu'on s'apprête à
+   * accorder par rapport aux tarifs en place ailleurs, et elle est la seule
+   * lecture de ce contexte qui traverse les clients.
+   *
+   * Les suspendues sont **exclues** ici, à la différence de {@link liveFor} :
+   * on mesure ce qui se facture, pas ce qui a été décidé. Une mercuriale en
+   * pause ne fait pas partie du marché.
+   */
+  abstract liveEverywhere(at: Date): Promise<readonly CompanyMercuriale[]>;
 }

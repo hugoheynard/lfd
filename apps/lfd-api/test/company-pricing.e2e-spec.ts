@@ -279,6 +279,44 @@ describe("poser", () => {
   });
 });
 
+/**
+ * **Une seule mercuriale en cours par client** — le comportement qui a changé
+ * le 2026-09-08, et le seul point du chantier qu'on ne peut plus défaire.
+ */
+describe("le recouvrement", () => {
+  it("🔴 refuse une SECONDE mercuriale sur la même fenêtre, même sur d'autres articles", async () => {
+    // Avant : le recouvrement se jugeait par article ET par seuil, donc deux
+    // mercuriales pouvaient courir chez un client si elles portaient sur des
+    // articles disjoints. Une mercuriale est le tarif d'un CLIENT, pas un tarif
+    // par rayon — et c'est ce que l'écran raconte déjà.
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+
+    await pose(company.id, {
+      label: "Une autre",
+      lines: [{ sku: OTHER_SKU, unitPriceMillicents: 120_000 }],
+    }).expect(409);
+  });
+
+  it("laisse poser sur une fenêtre qui SUIT, sans rien clore", async () => {
+    // Borne basse incluse, haute exclue : deux fenêtres qui se succèdent à la
+    // même date ne se recouvrent pas. C'est ce qui permet de préparer janvier
+    // pendant que l'actuelle tourne, sans laisser le client au tarif catalogue
+    // entre les deux.
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+
+    await pose(company.id, {
+      label: "Suivante",
+      validFrom: TO,
+      validTo: "2027-12-31T00:00:00.000Z",
+      lines: [{ sku: SKU, unitPriceMillicents: 140_000 }],
+    }).expect(201);
+
+    expect((await read(company.id)).mercuriales).toHaveLength(2);
+  });
+});
+
 describe("clore", () => {
   const close = (companyId: string, body: Record<string, unknown> = {}) =>
     staff()
@@ -295,8 +333,13 @@ describe("clore", () => {
 
     expect(closed.affectedRules).toBe(1);
     // Archivée, jamais effacée : la ligne reste, avec son motif.
-    const rows = await ctx.prisma.priceRule.findMany({
-      where: { audienceId: company.id },
+    //
+    // Elle se lit dans `company_mercuriales` depuis le 2026-09-08 — une
+    // mercuriale n'est plus N règles. Ce test regardait `price_rules` : il a
+    // été RETOURNÉ, pas supprimé, parce que ce qu'il prouve — « clore archive
+    // et laisse le motif » — n'a pas changé.
+    const rows = await ctx.prisma.companyMercuriale.findMany({
+      where: { companyId: company.id },
       select: { archivedAt: true, archiveReason: true },
     });
     expect(rows).toHaveLength(1);
@@ -385,23 +428,31 @@ describe("renommer", () => {
     expect(view.mercuriales[0]?.lines).toHaveLength(2);
   });
 
-  it("🔴 refuse un nom déjà pris sur la même fenêtre", async () => {
-    // Sans ce refus, les deux mercuriales fusionneraient à la lecture suivante
-    // en une seule ligne, et rien ne permettrait de les redistinguer : ce qui
-    // les distinguait était précisément le nom.
+  it("🔴 accepte un nom déjà porté : deux mercuriales ne se confondent plus", async () => {
+    // **Test RETOURNÉ le 2026-09-08.** Il exigeait un 409 : deux mercuriales de
+    // même nom et de même fenêtre se seraient confondues à la lecture, le
+    // libellé servant de clé faute d'identité en base.
+    //
+    // Elles ont une identité maintenant. Le refus n'avait pas d'autre raison
+    // d'être, et rien — métier — n'interdit à un client d'avoir deux grilles du
+    // même nom sur deux périodes.
     const company = await createCompany(ctx.prisma);
-    await pose(company.id, { lines: [{ sku: SKU, unitPriceMillicents: 150_000 }] }).expect(201);
+    await poseOn(company.id);
+    // Sur une AUTRE fenêtre : la contrainte refuse désormais le recouvrement
+    // par client, quels que soient les articles (cf. le cas ci-dessous).
     await pose(company.id, {
       label: "Mercuriale 2026",
+      validFrom: "2027-01-01T00:00:00.000Z",
+      validTo: "2027-12-31T00:00:00.000Z",
       lines: [{ sku: OTHER_SKU, unitPriceMillicents: 120_000 }],
     }).expect(201);
 
-    await rename(company.id).expect(409);
+    await rename(company.id).expect(200);
 
     const view = await read(company.id);
     expect(view.mercuriales.map((entry) => entry.label).sort()).toEqual([
       "Mercuriale 2026",
-      "Mercuriale Club Med",
+      "Mercuriale 2026",
     ]);
   });
 

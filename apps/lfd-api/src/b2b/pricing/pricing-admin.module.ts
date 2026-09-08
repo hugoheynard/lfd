@@ -63,6 +63,8 @@ import {
 } from "./application/commands/volume-commitment.handlers.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
 import { PricingModule } from "./pricing.module.js";
+import { CompanyMercurialeRepository } from "./domain/ports/company-mercuriale.repository.js";
+import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-company-mercuriale.repository.js";
 
 /**
  * **Le paramétrage tarifaire du back-office**, séparé de `PricingModule`.
@@ -112,6 +114,7 @@ import { PricingModule } from "./pricing.module.js";
     MercurialeBenchmarkQuery,
     CompanyPricingQuery,
     MercurialeDrafts,
+    { provide: CompanyMercurialeRepository, useClass: PrismaCompanyMercurialeRepository },
     PoseCompanyMercurialeHandler,
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,

@@ -42,6 +42,7 @@ const CATEGORIES: readonly CompanyPricingCategoryView[] = [
 
 function mercuriale(lines: PosedMercurialeView['lines']): PosedMercurialeView {
   return {
+    id: 'merc_1',
     label: 'Mercuriale Club Med',
     validFrom: '2026-01-01T00:00:00.000Z',
     validTo: '2026-12-31T00:00:00.000Z',
