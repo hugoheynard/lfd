@@ -1067,7 +1067,7 @@ services/order-line-pricing.service.ts, queries/quote-order.handler.ts,
 queries/list-catalog.handler.ts}`
 - `apps/lfd-api/src/b2b/pricing/domain/{resolve-price.ts,price-rule.ts,
 specificity.ts, floor-policy.ts, volume-ladder.ts, scope-index.ts}`,
-  `pricing/application/pricing-context.ts`
+  `pricing/domain/pricing-context.ts`
 - `apps/lfd-api/src/b2b/catalog/{application/queries/read-shop-catalogue.ts,
 infrastructure/prisma-catalog.reader.ts, domain/ports/catalog.reader.ts}`
 - `apps/lfd-api/prisma/schema.prisma` (colonnes `price_millicents`)

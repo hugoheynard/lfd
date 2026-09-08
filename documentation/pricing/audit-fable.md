@@ -84,8 +84,14 @@ Le mécanisme, en trois lignes :
 | Étape       | Ce qui se passe                                                                                       | Où                                                                                          |
 | ----------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | résolution  | `clampedToZero: true`, `finalMillicents: 0`, mais le dernier étage garde `resultMillicents: −300 000` | `resolve-price.ts:124-135`                                                                  |
-| trace figée | `clampedToZero` **n'est pas recopié** dans `OrderLinePricingTrace`                                    | [`price-line.ts:160`](../../apps/lfd-api/src/b2b/orders/domain/services/price-line.ts)      |
+| trace figée | `clampedToZero` **n'est pas recopié** dans `OrderLinePricingTrace`                                    | [`price-line.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/price-line.ts)          |
 | ligne       | `assertConsistent` compare le dernier étage au prix : `−300 000 ≠ 0`, et `floored` est faux           | [`order-line.ts:133`](../../apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts) |
+
+⚠️ **Le numéro de ligne a été retiré le 2026-09-09**, la recette ayant quitté ce
+fichier pour `pricing/domain/loaded-pricer.ts` — `priceLine` ne fait plus que du
+façonnage. **Le constat, lui, tient** : `PricedArticle.clampedToZero` existe
+désormais et traverse la façade, mais `OrderLinePricingTrace` — la trace figée
+sur la commande — ne le porte toujours pas.
 
 **Le scénario** : un commercial pose « −5 € sur la famille pains » ; une baguette
 à 1,20 €. Le devis de la boutique affiche **0,00 €** — `POST /shop/quote` ne
