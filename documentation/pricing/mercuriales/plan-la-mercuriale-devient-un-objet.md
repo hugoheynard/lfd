@@ -1,107 +1,222 @@
 # La mercuriale devient un objet
 
-**Plan v2, réécrit le 2026-09-08.** 📐 Doc-first : décidé, rien n'est bâti.
-**Les inconnues du §9 ont été levées le 2026-09-08** — plus rien n'y est supposé.
+**Plan v3, réécrit le 2026-09-08.** 📐 Doc-first : décidé, rien n'est bâti — sauf
+le lot 1 domaine, déjà posé (`cb088368`).
 
-> Ferme **T2** de
-> [`etat-des-lieux-mercuriale-client.md`](./etat-des-lieux-mercuriale-client.md).
->
 > **Décision de Hugo, 2026-09-08 :** une mercuriale se prend **en bloc**. On la
 > pose entière, on la clôt entière ; si un prix est faux, on assume et on
-> repose. Une ligne n'a donc pas de cycle de vie propre.
+> repose. Une ligne n'a pas de cycle de vie propre.
 >
-> **La v1 ne tenait pas.** Contredite le même jour : cinq objections bloquantes,
-> dont quatre venaient de moi. Ce qui a changé, et qu'il faut lire avant le
-> reste :
+> **Deux versions ont été contredites avant celle-ci.** Ce qui est mort, et
+> pourquoi, parce que c'est la seule façon que ça ne revienne pas :
 >
-> - une ligne de mercuriale **porte des paliers** ; la v1 la modélisait comme un
->   prix unique, ce qui supprimait un champ d'un contrat déjà servi (§2) ;
-> - il y a **deux chemins de pose**, pas un — la v1 en ignorait un, et l'aurait
->   tué en silence (§4) ;
-> - la « fonction d'assemblage unique » de la v1 **est impossible** : deux
->   appelants ont besoin de la liste non assemblée, et l'un d'eux porte un bug
->   déjà corrigé qui reviendrait. La couture est ailleurs — dans les
->   **lecteurs** (§3) ;
-> - la migration du barème de volume, citée comme précédent, est un
->   **contre-exemple** : un seul déploiement, et une autre clé de regroupement
->   (§6).
+> - **v1** — modélisait une ligne comme UN PRIX. C'est une liste de paliers, et
+>   le contrat sert déjà `minQuantity`. Promettait aussi « une fonction
+>   d'assemblage unique » que deux appelants ne peuvent pas prendre.
+> - **v2** — plaçait la conversion dans les **lecteurs**. Impossible : un
+>   lecteur ne connaît pas la quantité, donc ne peut pas choisir un palier
+>   (§3). Le précédent qu'elle invoquait — `ladderAsRule` — dit **l'inverse** de
+>   sa thèse : il n'est jamais appelé par un lecteur.
+>
+> La v3 ne cherche plus de couture unique. Elle copie ce que le barème fait
+> déjà, et traite les quatre chemins que les deux premières ignoraient.
 
 ---
 
 ## 1. Le fait
 
 Poser une mercuriale écrit **N lignes indépendantes** dans `price_rules`, et
-aucune ne sait qu'elle appartient à une mercuriale.
-
-N vaut le nombre d'articles **fois le nombre de paliers** : la pose depuis la
-fiche d'un compte force un palier unique
-(`company-mercuriale.handlers.ts:118-121`), donc 92 articles → 92 règles ; la
-pose depuis un gabarit, non — `price-template.handlers.ts:89-91` le dit :
-_« un gabarit de trente lignes à deux paliers en pose soixante »_.
+aucune ne sait qu'elle appartient à une mercuriale. N vaut le nombre d'articles
+**fois le nombre de paliers** : la pose depuis la fiche force un palier unique
+(`company-mercuriale.handlers.ts`, JSDoc de `execute`), la pose par gabarit non
+— _« un gabarit de trente lignes à deux paliers en pose soixante »_.
 
 Ce que l'écran appelle « 2027 » n'existe pas : `posed-mercuriales.ts:52` le
 **reconstitue** en regroupant les règles qui partagent `(validFrom, validTo,
-label)`. C'est la seule chose que `templateToRules` leur donne en commun, donc
-la seule clé disponible.
+label)`.
 
-|                 | aujourd'hui                                                    |
-| --------------- | -------------------------------------------------------------- |
-| poser (fiche)   | N sauvegardes + N actes, dans **une** transaction              |
-| poser (gabarit) | N sauvegardes + N actes, **sans transaction** — c'est T3       |
-| clore           | archiver N lignes                                              |
-| renommer        | réécrire N lignes, sous transaction, avec un refus d'homonymie |
-| lire            | déduire, avec deux cas que la déduction ne sait pas distinguer |
+|                   | aujourd'hui                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| poser (fiche)     | N sauvegardes + N actes, dans **une** transaction              |
+| poser (gabarit)   | N sauvegardes + N actes, **sans transaction** — c'est T3       |
+| poser (à la main) | une règle isolée, cf. §2                                       |
+| clore             | archiver N lignes                                              |
+| renommer          | réécrire N lignes, sous transaction, + un refus d'homonymie    |
+| lire              | déduire, avec deux cas que la déduction ne sait pas distinguer |
 
-Le refus d'homonymie du renommage (`00181ce0`) n'existe que pour compenser
-l'absence d'identité ; il disparaît. La transaction, elle, reste utile pour
-d'autres raisons — ne pas la compter dans le gain.
+## 2. Statique et dynamique — la distinction qui commande tout le reste
 
-## 2. Le modèle
+**Décision de Hugo, 2026-09-08 : le statique est la première feature.** Le
+dynamique est décrit ici pour que le modèle l'accueille sans migration, pas
+pour être bâti maintenant.
+
+```mermaid
+flowchart TB
+  subgraph STA["STATIQUE — la premiere feature"]
+    direction TB
+    A1["Article VIE-012"] --> A2["Un prix : 1,73 EUR"]
+    A2 --> A3["Prix scelle,<br/>quelle que soit la quantite"]
+  end
+
+  subgraph DYN["DYNAMIQUE — plus tard, memes tables"]
+    direction TB
+    B1["Article VIE-012"] --> B2{"Volume cumule de CET article<br/>sur la periode de la mercuriale"}
+    B2 -- "moins de 500" --> B3["1,73 EUR"]
+    B2 -- "500 et plus" --> B4["1,60 EUR"]
+    B3 --> B5["Prix scelle"]
+    B4 --> B5
+  end
+
+  STA -.->|"une grille a un seul palier,<br/>a partir de 1"| DYN
+```
+
+### Ce que la distinction change, et c'est tout le §4
+
+|                                | statique     | dynamique                             |
+| ------------------------------ | ------------ | ------------------------------------- |
+| la ligne                       | un prix      | des paliers                           |
+| il faut connaître…             | rien d'autre | **une mesure de volume**              |
+| un lecteur peut-il convertir ? | **oui**      | **non** — il ne connaît pas la mesure |
+
+C'est la seule raison pour laquelle la v2 est morte. En statique, sa couture par
+les lecteurs **fonctionnait**.
+
+🔴 **Et c'est pourquoi on ne la reprend pas quand même.** Le jour où le
+dynamique arrive, une conversion faite dans le lecteur ne casse pas : elle
+**ment**. Elle rend le palier de la quantité 1 pour toute la courbe, et une
+courbe plate se lit comme une réponse. Payer la conversion chez les appelants
+maintenant coûte quelques lignes ; la payer plus tard coûte un prix faux chez
+les clients qui ont négocié — et personne ne le verrait.
+
+### Le statique n'est pas un sous-ensemble bricolé
+
+Une mercuriale statique **est** la grille à un seul palier, à partir de 1. Rien
+dans l'agrégat ne l'en distingue, et c'est ce qu'on veut : deux chemins de
+saisie, une seule chose stockée. C'est déjà le choix de `PriceTemplate`, et
+c'est déjà ce que la pose depuis une fiche fait aujourd'hui.
+
+**Le statique est donc une décision d'ÉCRAN et de CONTRAT, pas de modèle.**
+L'onglet Tarifs d'une fiche pose un prix par article, point ; le gabarit, lui,
+continue de porter ses paliers. Le dynamique n'arrivera pas par une migration,
+il arrivera par une forme de plus dans le contrat.
+
+### La mesure du dynamique, quand il viendra
+
+Le palier ne se lit **pas** sur la quantité de la commande, mais sur le
+**volume cumulé de l'article sur la période de la mercuriale** — sans quoi un
+client qui commande 500 pièces en dix fois n'atteindrait jamais son propre
+palier.
+
+La machinerie existe : `applies` mesure les `CONTRACT_STAGES` — `mercuriale` et
+`volume` — sur `volumeQuantityOf(context)`, c'est-à-dire
+`cumulativeQuantity ?? quantity`. Et `price-rule.ts` porte déjà l'avertissement
+qui va avec : _« sans engagement, les paliers d'une mercuriale se lisent sur la
+commande »_. C'est exactement le trou que cette mesure comble.
+
+🔴 **Le piège du premier palier, trouvé par Hugo avant d'être bâti.**
+
+Le premier palier d'une mercuriale est à **1**, jamais à 0 — et ce n'est pas un
+choix esthétique : `minQuantity` est un seuil sur une mesure, et un seuil à 0 ne
+dit rien, tout étant supérieur ou égal à 0. Le contrat l'interdit d'ailleurs
+(`z.number().int().positive()`), comme `VolumeTier`.
+
+**En statique, ça marche partout, et c'est vérifié** : les quatre chemins qui
+affichent un prix résolvent à la quantité **1** — le tableau général
+(`board-category.ts:77`), la projection, l'onglet Tarifs
+(`company-pricing.query.ts:120`) et la vitrine au prix du client
+(`read-my-shop-catalogue.ts:83`). `applies` teste `measured >= minQuantity`, donc
+`1 >= 1` passe.
+
+**En dynamique, la même construction se retourne.** Si la mesure devient le
+volume cumulé sur la période, un client **qui n'a encore rien commandé** est à
+**0** — et `0 >= 1` est faux. Il perdrait son tarif négocié **sur sa première
+commande**, c'est-à-dire exactement au moment où on vient de le lui accorder.
+
+Aujourd'hui le cas ne peut pas se produire : sans engagement, la mesure vaut
+`null` et `volumeQuantityOf` retombe sur la quantité de la commande. Le piège
+naît le jour où l'on remplace ce `null` par un vrai zéro.
+
+**La règle à tenir quand le dynamique arrivera :** la mesure d'un cumul absent
+est `null`, jamais `0`. Un client sans historique se lit alors sur sa commande,
+et son premier palier s'applique. Écrit ici parce que c'est le genre de
+décision qu'on prend par défaut en écrivant un `?? 0` — et qu'on ne retrouve
+plus ensuite.
+
+⚠️ Ce qui reste à établir le jour venu, et qui n'est pas acquis : la fenêtre du
+cumul. Aujourd'hui elle vient d'un `VolumeCommitment`, qui a **sa propre**
+période. Le dynamique demande qu'elle soit celle de la mercuriale. Les deux
+peuvent coïncider ; rien ne le garantit.
+
+## 3. 🔴 Lot 0 — fermer le troisième chemin de pose, AVANT tout le reste
+
+`authoredPriceStageSchema` (`packages/contracts/src/pricing.ts:58`) inclut
+`mercuriale` : `POST /admin/pricing/rules` accepte donc une mercuriale saisie à
+la main, et `admin-pricing.e2e-spec.ts` l'exerce.
+
+**Après la bascule, ce chemin fabrique un 400 sur une commande.** Une règle
+mercuriale saisie à la main vivrait dans `price_rules` pendant que la grille du
+même client vivrait dans `company_mercuriales` — et **aucune contrainte ne voit
+les deux**. À portée, audience et seuil égaux, `winnerOf` lève
+`AmbiguousPriceRulesError` (`specificity.ts`), c'est-à-dire un refus au
+paiement.
+
+C'est le mode de panne exact que le **barème** a fermé, et son geste est écrit
+dans `pricing-rule.ts` : l'étage `volume` n'est pas refusé, il est
+**inexprimable** — le brouillon ne l'accepte pas dans son type, et le fil est
+fermé par le schéma. La v2 invoquait ce précédent sans en reprendre le geste.
+
+**Donc : retirer `mercuriale` de la saisie de règle à la main.**
+
+⚠️ Nuance à ne pas rater : `AuthoredPriceStage` sert **deux** choses — le
+schéma de fil ET le type du brouillon (`PricingRuleDraft.stage`), que
+`templateToRules` remplit avec `"mercuriale"`. Rétrécir l'enum casserait la
+pose par gabarit. Il faut donc un enum **plus étroit pour la route HTTP** que
+pour le brouillon, tant que le gabarit écrit encore des règles.
+
+Ce lot est **indépendant et immédiat** : il ferme un 400 futur, il rétrécit le
+chantier, et il ne dépend d'aucune décision de modèle. Un e2e existant devra
+passer de 201 à 400 — c'est la preuve, pas un dommage.
+
+## 4. Le modèle
 
 ```prisma
 model CompanyMercuriale {
-  id String @id                          // ULID — deux mercuriales successives coexistent
-
-  companyId String @map("company_id")    // identifiant OPAQUE, aucune clé étrangère :
-                                         // même frontière que partout, le tarif
-                                         // survit à la fiche
+  id String @id                       // ULID — deux mercuriales successives coexistent
+  companyId String @map("company_id") // identifiant OPAQUE, aucune clé étrangère
 
   label String
 
   /// La grille : `[{ sku, tiers: [{ minQuantity, unitPriceMillicents }] }]`.
-  ///
-  /// 🔴 **Des paliers, pas un prix.** Une ligne de gabarit EST une liste de
-  /// paliers (`price-template.ts`, `TemplateTier`), et le contrat les sert déjà
-  /// (`PosedMercurialeLineView.minQuantity`), jusque dans l'export CSV. Un
-  /// modèle à prix unique supprimerait un champ d'un contrat en ligne.
-  ///
-  /// En JSON et non dans une table fille, pour la raison écrite sur
-  /// `VolumeLadder.tiers` : une grille s'écrit **entière** ou pas du tout. Une
-  /// table fille permettrait d'insérer une ligne sans les autres — exactement
-  /// ce que cet agrégat existe pour empêcher.
+  /// Des PALIERS, pas un prix : une ligne de gabarit en est une liste, et le
+  /// contrat sert déjà `PosedMercurialeLineView.minQuantity`, jusqu'au CSV.
+  /// En JSON pour la raison écrite sur `VolumeLadder.tiers` : une grille
+  /// s'écrit entière ou pas du tout.
   lines Json
 
   validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
   validTo   DateTime? @map("valid_to")   @db.Timestamptz(3)
 
   createdBy String   @map("created_by")
-  // + suspendedFrom, archivedAt/By/Reason — copiés sur la TABLE `volume_ladders`.
-  //   ⚠️ Le DOMAINE `VolumeLadder` ne porte que `suspendedFrom` ; ne pas
-  //   confondre les deux quand on copie l'analogie.
+
+  /// Le cycle de vie, copié sur la TABLE `volume_ladders` — et il porte bien
+  /// `archived_at`, dont la contrainte ci-dessous dépend.
+  pausedAt      DateTime? @map("paused_at")   @db.Timestamptz(3)
+  pausedBy      String?   @map("paused_by")
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
 }
 ```
 
-Les invariants que l'agrégat doit refuser, tous repris de `PriceTemplate` parce
-que la grille est la même : **un SKU une seule fois** (`DuplicateTemplateSkuError`),
-**des paliers cohérents** (`NonDecreasingTemplateTiersError`), **grille non
-vide** (`EmptyPriceTemplateError`). Sans eux, la reprise de deux règles
-`(même sku, minQuantity 1 et 5000)` produirait un objet que rien ne rattrape.
+L'agrégat correspondant est **déjà bâti** (`cb088368`) : `CompanyMercuriale`,
+ses trois refus de grille, `pose` / `rename` / `close`. Il survit à la
+réécriture de la §4 — la forme de la grille est fixée par le contrat, pas par
+la couture.
 
-`Timestamptz` obligatoire : sans fuseau, `tstzrange()` dépend du réglage de
-session, donc n'est pas `IMMUTABLE`, donc ne peut pas entrer dans une contrainte
-d'exclusion. La leçon est déjà payée deux fois dans ce dépôt.
+`Timestamptz` obligatoire : sans fuseau, `tstzrange()` n'est pas `IMMUTABLE`,
+donc ne peut pas entrer dans une contrainte d'exclusion.
 
-### La contrainte, et le seul engagement irréversible du plan
+### La contrainte, et le seul engagement irréversible
 
 ```sql
 ALTER TABLE "company_mercuriales"
@@ -113,287 +228,263 @@ ALTER TABLE "company_mercuriales"
   WHERE ("archived_at" IS NULL);
 ```
 
-🔴 **Changement de comportement, pas traduction.** Aujourd'hui le chevauchement
-est refusé **par article et par seuil** (`price_rules_no_overlap`, qui porte
-`coalesce("min_quantity", 0)`), et le pré-contrôle de la pose ne regarde que les
-SKU de la nouvelle grille (`company-mercuriale.handlers.ts:201-212`). Deux
-mercuriales peuvent donc coexister sur la même fenêtre chez le même client si
-elles portent sur des articles disjoints — l'e2e `company-pricing.e2e-spec.ts`
-(« refuse un nom déjà pris ») construit exactement cet état, et les deux poses
-réussissent.
+🔴 Aujourd'hui le chevauchement est refusé **par article et par seuil**, et le
+pré-contrôle de la pose ne regarde que les SKU de la nouvelle grille. Deux
+mercuriales peuvent donc coexister sur la même fenêtre chez un client si elles
+portent sur des articles disjoints — un e2e le construit et attend deux `201`.
 
-Sous le nouveau modèle : **une mercuriale en cours par client, point.**
+Sous ce modèle : **une mercuriale en cours par client, point.** Validé par Hugo.
 
-⚠️ **C'est le seul point du plan qu'on ne peut plus défaire.** Tout le reste se
-reprend par un `ALTER TABLE` ou un refactor ; revenir à « deux mercuriales
-disjointes chez le même client » après avoir fondu la grille en un objet serait
-une re-découpe du modèle **et** du contrat. Validé par Hugo le 2026-09-08, en
-connaissance de ça.
+⚠️ **Le pré-contrôle applicatif RESTE.** La contrainte ne produit qu'un `23P01`,
+et aucun mapping de ce code n'existe dans le dépôt. Le refus qui nomme la
+mercuriale en cours (`RunningMercurialeError`) est ce qui rend praticable « on
+clôt d'abord » ; le remplacer par une erreur technique violerait le §0 du
+`CLAUDE.md` — un refus doit nommer le cas réel et le geste de sortie. La
+contrainte couvre la **course** entre deux commerciaux, pas le message.
 
-## 3. Le branchement — la couture est le LECTEUR, pas la résolution
+## 5. Le branchement — la conversion vit chez les APPELANTS
 
-La v1 proposait « une fonction unique qui assemble règles + barèmes +
-mercuriale, prise par les cinq appelants de `resolvePrice` ». **C'est
-impossible**, et pour des raisons écrites dans le dépôt :
+### Pourquoi pas dans le lecteur (l'erreur de la v2)
 
-- `price-line.ts:186-190` passe volontairement à `volumeTierPrices` les règles
-  **sans** les barèmes, parce que celui-ci les réinjecte lui-même : _« deux
-  règles de même identifiant à l'étage volume rendaient la résolution ambiguë —
-  400 sur une commande de 20 »_. Un assembleur lui rendrait la liste qu'il ne
-  doit pas recevoir ;
-- `mercuriale-benchmark.query.ts` n'a pas _un_ contexte : il en fabrique un par
-  `(sku, company)`, résout **une seule règle**, **sans plancher**, et c'est
-  documenté comme délibéré.
+**Un prix dépend de la quantité, et le lecteur ne la connaît pas.**
 
-La bonne couture existe déjà, et elle est plus basse : **`PriceRuleReader`**,
-dont le contrat dit _« les règles potentiellement applicables à cet article, ce
-client et cet instant »_ — ce qu'une ligne de mercuriale **est**. Le port
-autorise même explicitement une lecture large, la fonction pure refiltrant.
+`PriceRuleReader` n'a qu'une méthode abstraite, `inScopes(scopes:
+PricingScopes)`, et `PricingScopes` ne porte **ni `quantity` ni
+`cumulativeQuantity`** — délibérément : _« ce que le WHERE sélectionne ne dépend
+que de la fenêtre et de l'audience »_, une requête pour tout le panier au lieu
+d'une par article. Un adaptateur ne peut donc pas choisir un palier.
 
-Il y a **deux** lecteurs, parce qu'il y a deux questions :
+Et même en lui donnant un contexte, la conversion à la lecture **figerait** le
+palier pour trois appelants qui font varier la quantité sur les **mêmes**
+candidats :
 
-| couture                                                          | qui la prend                                                        | ce qu'elle sert                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **`PriceRuleReader`** (`inScopes` / `candidatesFor`)             | `order-line-pricing.service.ts:182`, `price-projection.query.ts:67` | la caisse, la vitrine au prix du client, le devis, la projection   |
-| **`PricingBoardReader`** (`prisma-pricing-board.reader.ts:load`) | `board-item.ts`                                                     | l'écran de tarification général **et** l'onglet Tarifs d'une fiche |
+- `price-projection.query.ts:64-69` charge une fois à la quantité 1, puis résout
+  à N quantités en reconvertissant les barèmes à chaque point. Une mercuriale
+  figée rendrait la courbe d'un client à paliers **plate** ;
+- `volume-tier-prices.ts` sonde chaque palier avec `atQuantity` ;
+- `board-item.ts` résout à une quantité de référence.
 
-`volumeTierPrices` n'est **pas** un troisième point d'injection : il reçoit ses
-règles de `price-line`, donc la mercuriale y arrive déjà — et sans dupliquer
-quoi que ce soit, une mercuriale n'étant pas un barème. Le bug des 400 ne
-revient pas par là.
+**Le barème a tranché ça dans l'autre sens**, et c'est vérifiable : `ladderAsRule`
+n'est appelé par **aucun** lecteur. Le port rend l'objet `VolumeLadder` ; les
+quatre appelants convertissent chacun, au moment où ils connaissent la quantité.
 
-### `mercurialeAsRule`
+### Ce qu'on copie
+
+**Les matériaux portent l'objet.** `PricingMaterials` gagne la mercuriale, à
+côté des règles, planchers, barèmes et engagements :
+
+```ts
+export interface PricingMaterials {
+  readonly rules: ScopeIndex<PriceRule>;
+  readonly floors: ScopeIndex<ScopedPriceFloor>;
+  readonly ladders: ScopeIndex<VolumeLadder>;
+  readonly commitments: readonly VolumeCommitment[];
+  /** La mercuriale en cours de ce client, ou `null`. Au plus une — cf. §3. */
+  readonly mercuriale: CompanyMercuriale | null;
+}
+```
+
+**Et un convertisseur, à côté de `rulesFor` / `laddersFor` :**
 
 ```ts
 /**
- * La mercuriale, vue comme la règle de l'étage mercuriale qu'elle est POUR CET
- * ARTICLE À CETTE QUANTITÉ. `null` quand elle ne porte pas l'article, ou quand
- * la quantité n'atteint aucun palier — l'étage est alors transparent.
+ * La mercuriale vue comme la règle de son étage POUR CET ARTICLE À CETTE
+ * MESURE. `null` si elle ne porte pas l'article, ou si la mesure n'atteint
+ * aucun palier — l'étage est alors transparent.
  */
-export function mercurialeAsRule(
-  mercuriale: CompanyMercuriale,
+export function mercurialeFor(
+  materials: PricingMaterials,
   context: PricingContext,
 ): PriceRule | null;
 ```
 
-Elle prend le **contexte**, comme `ladderAsRule`, et pour la même raison
-mécanique : elle doit rendre **au plus une** règle. Toutes les règles issues
-d'une mercuriale portent `id = mercuriale.id` ; en rendre deux (deux paliers du
-même article) recréerait l'ambiguïté qui a produit le 400.
+**Ce que ça rend impossible, et ce que ça ne rend pas impossible** — la
+distinction compte, la v2 mentait dessus :
 
-La fenêtre, la suspension et l'audience restent filtrées par `applies` /
-`inForceFor`, qui ne demandent qu'une forme `{audience, validFrom, validTo,
-suspendedFrom}`.
+- **oublier de CHARGER** la mercuriale devient une erreur de compilation :
+  `materialsOf` prend un champ de plus, donc tous ses sites de construction
+  doivent le fournir ;
+- **oublier de CONVERTIR** reste possible. Aucune couture ne l'empêche — c'est
+  vrai du barème aussi, et c'est exactement le défaut ouvert de `board-item.ts`.
+  Ce qui le referme n'est pas une astuce de structure, c'est le **lot 0** : plus
+  aucun autre chemin ne produit de mercuriale, donc il n'y a plus qu'un endroit
+  où l'oubli est possible, et un test par appelant.
 
-**Le silence reste une information.** Une mercuriale ne dit que ce qui a été
-négocié ; les articles absents retombent sur le tarif catalogue et **suivent ses
-évolutions**. Y recopier le prix catalogue le **gèlerait** pour ce client — une
-remise que personne n'a accordée et que rien n'affiche. C'est le symétrique
-exact du refus déjà en place (`MercurialeMustPoseAPriceError`) : une mercuriale
-se pose en euros et jamais en pourcentage, pour ne pas suivre le catalogue ; elle
-ne recopie pas le catalogue, pour ne pas cesser de le suivre.
+🔴 **`rulesFor` n'injecte PAS la mercuriale automatiquement**, et c'est
+délibéré : `price-line.ts` passe à `volumeTierPrices` les règles **sans** les
+barèmes, précisément parce que celui-ci reconvertit à chaque palier — _« deux
+règles de même identifiant rendaient la résolution ambiguë, 400 sur une commande
+de 20 »_. Une mercuriale pré-convertie y reproduirait le même défaut.
 
-### Ce que chaque couture demande en plus
+### Sur quelle mesure le palier se choisit
 
-**`PricingBoardReader`** ne peut pas se contenter de la forme règle.
-`board-item.ts` consomme aussi `materials.byStage` (pour `supersededRuleIds`) et
-des `PriceRuleView` issus d'une ligne `price_rules`. Il faut donc que le lecteur
-rende la mercuriale **sous les deux formes** — la règle pour résoudre, une vue
-pour afficher.
+**`volumeQuantityOf(context)` = `cumulativeQuantity ?? quantity`**, pas
+`quantity`. C'est ce que `applies` mesure pour les `CONTRACT_STAGES`, dont
+`mercuriale` fait partie. Écrire « à cette quantité » ferait perdre à un client
+**sous engagement** le palier qu'il a négocié — il l'obtient dès la première
+commande, c'est tout l'objet de l'engagement.
 
-🔴 **Ce que ça casse si on l'oublie est invisible.**
-`shelf-table.ts:146` croise `item.supersededRuleIds` contre la liste des règles
-du tableau : un identifiant absent ne lève rien, **le badge disparaît**. Même
-famille que la frise des recouvrements, qu'il a fallu rebrancher à la main quand
-le barème a quitté `price_rules` — _« elle disait donc moins que la vérité »_.
-À rebrancher explicitement : `shelf-table`, `overlap-timeline`,
-`lineage-overlaps`.
+### Les cinq appelants, et ce que chacun demande
 
-**`volumeTierPrices`** doit recevoir la mercuriale **en objet**, comme il reçoit
-déjà `ladders`. Ses seuils viennent aujourd'hui de `rule.minQuantity`
-(`allThresholds`, l. 117-129) ; une fois les mercuriales sorties de
-`price_rules`, la colonne des paliers reperdrait les seuils négociés — et ce
-serait annuler un correctif marqué 🔴 dont le commentaire annonce le coût :
-_« c'est un prix faux, et pour les clients qui ont négocié »_.
+| appelant                        | ce qu'il faut y faire                                                                                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `price-line.ts`                 | convertir et joindre aux règles ; **ne pas** le passer à `volumeTierPrices`                                                                                |
+| `volume-tier-prices.ts`         | recevoir **l'objet**, et reconvertir à chaque palier sondé — sinon la colonne des paliers reperd les seuils négociés, ce qui annule un correctif marqué 🔴 |
+| `price-projection.query.ts`     | reconvertir à chaque point de la courbe                                                                                                                    |
+| `board-item.ts`                 | convertir, **et** produire une forme « vue » (cf. ci-dessous)                                                                                              |
+| `mercuriale-benchmark.query.ts` | **réécriture** : il interroge `price_rules` en direct pour comparer les clients entre eux                                                                  |
 
-**`mercuriale-benchmark.query.ts`** est une **réécriture**, pas une injection :
-il interroge `priceRule.findMany({ stage: 'mercuriale', audienceType: 'company' })`
-pour comparer un client aux autres. Il doit lire `company_mercuriales`.
+### Trois sites de CHARGEMENT, pas deux
 
-## 4. Les deux chemins de pose convergent
+La v2 en comptait deux et se trompait :
 
-`ApplyPriceTemplateHandler` (`price-template.handlers.ts:101-133`) est le
-**second** chemin : poser un gabarit chez un client. Il écrit des règles
-`stage='mercuriale'`, audience société, `validTo` **nullable**.
+1. `order-line-pricing.service.ts` — la caisse, la vitrine au prix du client, le devis ;
+2. `prisma-pricing-board.reader.ts` — le tableau de tarification général ;
+3. 🔴 `company-pricing.query.ts` — **l'onglet Tarifs d'une fiche**, qui fait son
+   **propre** `priceRule.findMany` avec son filtre d'audience. C'est le seul
+   écran qui affiche réellement une mercuriale posée, et les deux versions
+   précédentes l'ignoraient.
 
-Si on ne le traite pas, la bascule le tue en silence : la route continue de
-répondre `201` avec un nombre de règles posées, et **plus rien ne les lit** — le
-client est facturé au tarif catalogue.
+⚠️ Corollaire à noter, parce que la v2 s'en vantait à tort : le tableau général
+résout à `companyId: null`, donc `matchesAudience` écarte déjà toute mercuriale.
+Ce n'est **pas** un effet de bord du plan que « l'écran cesse d'afficher les prix
+négociés en vrac » — c'est déjà le cas pour les PRIX. Ça ne l'est pas pour la
+**liste des règles** affichée, qui vient de `loaded.rules` sans filtre d'étage.
 
-Il écrit donc, lui aussi, **une** `CompanyMercuriale`. Deux bénéfices que ce
-plan n'allait pas chercher :
+### Quel identifiant porte la vue
 
-- les deux poses convergent sur un seul écrivain, donc sur un seul jeu
-  d'invariants ;
-- **T3 se ferme pour ce chemin** : la boucle sans transaction de
-  `ApplyPriceTemplateHandler` — qui laisse aujourd'hui un client à moitié tarifé
-  quand elle échoue à mi-parcours — devient une écriture unique. Ce n'est plus
-  « transactionnel », c'est **atomique par construction**.
+Toutes les règles issues d'une mercuriale portent `id = mercuriale.id`. Ça
+n'ambiguïse pas la résolution — au plus une par article et par mesure — mais
+plusieurs **lignes affichées** partageraient la clé. Les gabarits tracent par
+identifiant (`shelf-table.html`, `tarification-page.html`, `archives-panel.html`,
+et `pricing-format.ts` en fabrique une pour un step).
 
-`templateToRules` perd son unique appelant utile et se supprime… **sauf** si la
-reprise en a besoin (§6). Vérifier avant de la retirer.
+**À trancher dans le lot correspondant :** la vue porte une clé
+`${mercuriale.id}:${sku}` et la règle garde `mercuriale.id`. Deux besoins, deux
+identifiants — les confondre est ce qui fait disparaître un badge sans erreur.
 
-## 5. Le brouillon
+## 6. Les deux chemins de pose convergent
 
-`mercuriale_drafts` (une ligne par société, grille en JSONB) **ne change pas de
-forme** : il porte déjà des lignes libres et ne tarife rien. Seule sa
-transformation à la pose change de destination. Il gagne les paliers en même
-temps que le reste, pour rester la même grille que ce qu'il produit.
+`ApplyPriceTemplateHandler` est le second chemin : poser un gabarit chez un
+client. Sans traitement, la bascule le tue **en silence** — la route répond
+`201` avec un nombre de règles posées, et plus rien ne les lit.
 
-## 6. La migration
+Il écrit donc, lui aussi, **une** `CompanyMercuriale`. Deux bénéfices non
+cherchés : les deux poses convergent sur un seul écrivain donc un seul jeu
+d'invariants, et **T3 se ferme pour le gabarit** — sa boucle sans transaction
+devient une écriture unique, atomique par construction.
 
-**Il n'y a aucune mercuriale en production** (Hugo, 2026-09-08). Ça retire le
-risque principal — rien à convertir, donc pas de compromis de forme imposé par
-les données existantes.
+## 7. Les contrats qui changent de clé
 
-Ça ne dispense pas d'écrire la reprise, pour deux raisons :
+Aujourd'hui, clore et renommer désignent la mercuriale par `(label, validFrom,
+validTo)`, faute d'identité. Demain, par son `id`.
 
-1. **« zéro » est un fait daté**, pas une propriété du plan. Les deux routes de
-   pose sont en service d'ici au déploiement. Faire dépendre la justesse d'une
-   migration d'un fait qui n'est pas dans le fichier est précisément ce qu'on
-   reproche ailleurs.
-2. La base de **dev** n'est pas vide, et un poste qui migre sans reprise perd
-   ses mercuriales sans le dire.
+⚠️ **Un onglet ouvert sur l'ancien bundle ne peut pas envoyer un `id` qu'il n'a
+jamais reçu.** Les deux payloads acceptent donc les **deux** formes pendant un
+déploiement — l'`id` s'il est là, la clé sinon — avant que l'ancienne se
+déprécie. Idem pour `ruleCount`, que la v2 était seule à traiter.
 
-### Ce que la reprise fait, et ce qu'elle refuse
+## 8. Le brouillon
+
+`mercuriale_drafts` porte aujourd'hui `[{ sku, unitPriceMillicents }]` — sans
+paliers, le front les fabriquant à la pose. Il doit gagner les paliers pour
+rester la même grille que ce qu'il produit.
+
+⚠️ **C'est une migration du JSONB existant**, pas un simple changement de type,
+et la table est **en service depuis le 2026-09-08**. La v2 écrivait « ne change
+pas de forme » puis « gagne les paliers » dans le même paragraphe.
+
+## 9. La migration
+
+**Aucune mercuriale en production** (Hugo, 2026-09-08). Rien à convertir, donc
+aucun compromis de forme imposé par les données. La reprise s'écrit quand même :
+« zéro » est un fait daté et non une propriété du plan, et la base de **dev**,
+elle, n'est pas vide.
+
+### Ce que la reprise fait
 
 `INSERT … SELECT` depuis `price_rules` où `stage='mercuriale' AND
 audience_type='company' AND archived_at IS NULL`, groupé par
 `(audience_id, label, valid_from, valid_to)`, les règles d'un même SKU devenant
-les paliers d'une ligne.
+les paliers d'une ligne — **puis `UPDATE price_rules SET archived_at = now()`
+sur ce qu'elle vient de reprendre.**
 
-🔴 **Elle doit refuser bruyamment**, et deux cas l'exigent :
+🔴 **Cet archivage n'est pas un détail de rangement.** Sans lui, chaque client
+repris porte sa grille **deux fois** dès que la lecture bascule — une fois en
+règles, une fois en objet — et on retombe sur l'ambiguïté du §2, c'est-à-dire un
+400 au paiement. C'est ce que la migration du barème de volume fait, et que la
+v2 avait omis en la citant.
 
-- **chevauchement** — deux libellés différents sur la même fenêtre chez le même
-  client produisent deux lignes que la nouvelle contrainte rejette. La migration
-  échoue, le déploiement s'arrête, on nettoie à la main. C'est le bon
-  comportement ; ce qui ne l'est pas, c'est de ne rien en dire ;
-- **grille invalide** — un SKU en double, des paliers incohérents. Un `HAVING`
-  explicite, comme la migration du barème de volume en porte un
-  (`count(DISTINCT "mode") = 1`).
+### Ce qu'elle refuse bruyamment
+
+- **chevauchement** — deux libellés sur la même fenêtre chez un client donnent
+  deux lignes que la contrainte rejette : la migration échoue, le déploiement
+  s'arrête, on nettoie à la main ;
+- **grille invalide** — SKU en double, paliers incohérents : un `HAVING`
+  explicite, comme la migration du barème en porte un.
 
 ### Le nombre de déploiements
 
-⚠️ **La v1 citait `20260817220000_bareme_de_volume` comme précédent de trois
-déploiements. C'est faux, et le fichier dit le contraire :** il crée la table,
-insère la reprise **et** archive les règles reprises dans **un seul** fichier,
-donc un seul déploiement — et il groupe par **cible**, pas par `(label,
-fenêtre)`. À citer comme contre-exemple.
+⚠️ La v2 citait `20260817220000_bareme_de_volume` comme précédent de **trois**
+déploiements. Faux : elle crée la table, insère la reprise **et** archive les
+règles dans **un seul** fichier, et groupe par **cible**, pas par `(label,
+fenêtre)`.
 
-Côté **données**, un seul déploiement suffit donc : la table est neuve, la
-reprise est un no-op, il n'y a pas d'état intermédiaire à tenir.
+Côté **données**, un déploiement suffit. Côté **contrat**, non — cf. §6.
 
-Côté **contrat**, non. Un onglet d'admin ouvert sur l'ancien bundle continue
-d'appeler `POST …/mercuriale` et de lire `PosedMercurialeView`. `ruleCount` se
-**déprécie**, il ne disparaît pas dans le même déploiement (§0 du `CLAUDE.md`).
-`minQuantity`, lui, survit — c'est tout l'objet du §2.
+⚠️ **La migration joue avant que le nouveau code tourne.** Entre l'archivage et
+le démarrage du nouveau processus, l'ancien lit des `price_rules` vidées de
+leurs mercuriales : les clients y seraient facturés au tarif catalogue. Sans
+conséquence sur une prod vide — mais c'est un fait daté, et le plan ne doit pas
+faire porter sa justesse à un fait qui n'est pas dans le fichier. **Sur une prod
+non vide, la séquence redevient étendre / basculer / resserrer.**
 
-## 7. Ce qu'on perd, et que Hugo a tranché
+## 10. Les lots, réordonnés
 
-`prisma-pricing-board.reader.ts:113-115` charge **toutes** les règles non
-archivées, sans filtre d'étage ni d'audience. Les règles de mercuriale de chaque
-client sont donc dans l'écran de tarification général, et chacune y est
-**suspendable et archivable à l'unité** — `pauseRule` / `resumeRule` /
-`archiveRule` de `tarification.service.ts:104-121` sont branchés. C'est
-joignable en trois clics aujourd'hui.
+La v2 mettait la contrainte irréversible dans le premier lot. C'est l'ordre
+inverse de celui que le risque commande : **on ne pose pas l'indéfaisable avant
+d'avoir prouvé la couture.**
 
-Après ce plan, une ligne n'a plus de cycle de vie propre : elle vit et meurt avec
-sa mercuriale. **C'est la décision de Hugo**, et c'est le principe d'une
-mercuriale.
+| lot   | contenu                                                                                                               | réversible ? |
+| ----- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **0** | fermer la saisie à la main d'une mercuriale (§2)                                                                      | oui          |
+| **1** | l'agrégat, ses refus, ses tests — **fait** (`cb088368`)                                                               | oui          |
+| **2** | `mercurialeFor`, `PricingMaterials`, les cinq appelants, la forme « vue », **contre des matériaux fabriqués en test** | oui          |
+| **3** | le modèle Prisma, la migration, **la contrainte**                                                                     | 🔴 **non**   |
+| **4** | les trois chargements, les deux poses, clore/renommer, le brouillon                                                   | oui          |
+| **5** | benchmark réécrit, contrats dépréciés, frise et badges, code mort                                                     | oui          |
 
-⚠️ Le **renommage** d'une règle à l'unité (`PATCH /admin/pricing/rules/:id/label`)
-existe côté serveur et **n'a aucun appelant front** — vérifié. Ne pas le compter
-dans ce qu'on retire.
+Le lot 2 se bâtit et s'éprouve **sans base** : la conversion est une fonction
+pure, et c'est précisément ce qui permet de prouver la couture avant d'écrire le
+SQL.
 
-Effet de bord favorable : l'écran général cesse d'afficher les prix négociés de
-tous les clients comme des règles en vrac.
+Les lots 3 à 5 partent **ensemble** en un déploiement : si la reprise archive
+sans que la lecture soit là, il n'y a plus de prix négocié.
 
-## 8. Ce que ça rapporte
+## 11. Le harnais e2e, qui n'est pas du « code mort »
 
-|                 | avant                                        | après                                |
-| --------------- | -------------------------------------------- | ------------------------------------ |
-| poser (fiche)   | N écritures + N actes, transaction longue    | 1 insert + 1 acte                    |
-| poser (gabarit) | N écritures **sans transaction** (T3)        | 1 insert — atomique par construction |
-| clore           | N archivages                                 | 1                                    |
-| renommer        | N réécritures + refus d'homonymie            | 1, sans refus                        |
-| lire            | reconstitution par `(libellé, fenêtre)`      | lecture                              |
-| chevauchement   | refusé par la base, par article et par seuil | refusé par la base, par client       |
+Trois suites décrivent des comportements que ce plan **supprime**, et aucun lot
+de la v2 ne les prenait en charge :
 
-## 9. Ce qui reste ouvert
+- `company-pricing.e2e-spec.ts` — deux mercuriales chevauchantes sur articles
+  disjoints attendant deux `201` : impossible sous la nouvelle contrainte ;
+- les cas de renommage à N règles, dont le refus d'homonymie ;
+- `admin-pricing.e2e-spec.ts` — « accepte une mercuriale qui pose un prix »,
+  qui doit passer à un refus (lot 0).
 
-**Les quatre inconnues de la v2 sont levées** (2026-09-08, vérifié en base de
-dev `lfc_b2b_dev` et dans le code — pas déduit).
+Ces tests ne sont pas à supprimer : ils sont à **retourner**. Chacun devient la
+preuve du nouveau comportement, et le diff dit alors ce qui a changé.
 
-- **Audience.** Une règle porte deux axes : la **portée** (ce qu'elle vise —
-  catalogue, famille, article) et l'**audience** (à qui elle s'applique —
-  `all`, `segment`, `company`). Une mercuriale est normalement
-  `stage=mercuriale` + `audience=company` : c'est l'audience qui en fait _le
-  prix de ce client-là_.
+## 12. Ce qui reste hors lot, volontairement
 
-  Or `createPriceRulePayloadSchema` accepte n'importe quelle audience à
-  n'importe quel étage saisissable, et `PricingRule.create` ne le refuse pas
-  non plus. Une mercuriale d'audience `all` est donc **exprimable** — et elle
-  n'a aucun sens : « un prix négocié pour tout le monde » est un tarif
-  catalogue. Pire, elle **scellerait** la chaîne pour tout le monde (une
-  mercuriale rend les étages suivants transparents), donc éteindrait toutes les
-  promotions sur cet article sans que rien ne le dise.
+- **Le TODO des barèmes** — trois appelants sur cinq les injectent déjà ; il ne
+  manque qu'à `board-item.ts`. Correctif d'une ligne, qui n'attend pas ce
+  chantier.
+- **T7** — fenêtres à minuit UTC alors que `contracts/src/paris-time.ts`
+  existe. Le toucher ici déplacerait les bornes de tarifs posés.
 
-  🔵 **Il n'en existe aucune** — la seule règle de mercuriale en base est
-  `company` / `replace`. Le plan **n'a donc rien à reprendre**, et la
-  recommandation est de fermer la porte plutôt que de la surveiller : refuser
-  dans `PricingRule.create` une audience autre que `company` à l'étage
-  mercuriale. Zéro ligne concernée, donc aucun risque, et le `WHERE
-audience_type='company'` de la reprise devient exhaustif **par construction**
-  au lieu de l'être par chance. C'est un durcissement indépendant, qui peut
-  partir avant ce chantier.
-
-- **`alter` : il n'y a pas de problème, et il n'y en a jamais eu.** Une
-  mercuriale pose un prix à la place du canonique, point —
-  `MercurialeMustPoseAPriceError` refuse `alter` à cet étage **depuis le premier
-  commit qui a permis d'écrire une règle** (`23d65bf8`, 2026-08-17 11 h 18).
-  Vérifié en base : zéro ligne `alter`.
-
-  Ce qui existait était un **JSDoc faux** dans `mercuriale-benchmark.query.ts`,
-  à deux endroits, affirmant qu'une mercuriale « peut être posée en `alter` » —
-  et s'en servant pour justifier son passage par `resolvePrice`. Corrigé le
-  2026-09-08. La reprise n'a donc aucun cas `alter` à traiter.
-
-- **La borne de taille est donnée par le catalogue :** 94 articles au canal B2B.
-  Une grille ne peut pas être plus large que ce qu'on vend. Les « 10 000
-  lignes » de la v2 étaient une inquiétude inventée ; le JSON tient, et
-  `mercurialeAsRule` n'a pas besoin d'index pré-calculé. À réexaminer si le
-  catalogue B2B change d'ordre de grandeur.
-
-- **Le seed ne pose aucune règle de prix** — vérifié, `src/dev/seeding/` n'en
-  crée pas une seule ; `reset.seed.ts` ne fait qu'en supprimer. La reprise
-  s'exécutera donc sur les seules mercuriales posées à la main sur un poste.
-
-**Volontairement hors lot.**
-
-- **Le TODO des barèmes**
-  ([`todo-ecran-tarification-ignore-les-baremes.md`](../../todos/todo-ecran-tarification-ignore-les-baremes.md)).
-  La v1 le couplait à ce chantier. Vérification faite, **trois** appelants sur
-  cinq injectent déjà les barèmes ; il ne manque qu'à `board-item.ts:92`, qui
-  reçoit `ladders` en paramètre et ne les passe pas. C'est un correctif d'une
-  ligne dans un fichier — il ne justifie pas de grossir ce lot, et il n'attend
-  pas après lui.
-- **T7** — les fenêtres construites à minuit UTC alors que
-  `contracts/src/paris-time.ts` existe et n'est pas utilisé. Le toucher ici
-  déplacerait les bornes de tarifs posés. Autre chantier, autre commit.
-
-**Conséquence acceptée, pas un trou.** `resolve-price.ts:95-97` remplit
-`steps[].supersedes` avec les perdants de l'étage. Aujourd'hui, à l'étage
-mercuriale, les perdants sont les autres paliers de la même grille ; demain
-l'étage ne présente plus qu'une règle, donc `supersedes` y devient vide. La
-trace des commandes passées et celle des futures ne diront plus la même chose
-pour la même grille — sans qu'aucun prix ne change.
+**Conséquence acceptée, pas un trou.** `steps[].supersedes` porte les perdants
+de l'étage. Aujourd'hui, à l'étage mercuriale, ce sont les autres paliers de la
+même grille ; demain l'étage ne présente plus qu'une règle, donc `supersedes` y
+devient vide. Les traces d'avant et d'après ne diront plus la même chose pour la
+même grille, sans qu'aucun prix ne change.
