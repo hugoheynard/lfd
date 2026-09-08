@@ -9,7 +9,6 @@ import { decideFloor } from "../../domain/floor-policy.js";
 import { pricingContextFor } from "../pricing-context.js";
 import { resolveScopedFloor } from "../../domain/resolve-floor.js";
 import { resolvePrice } from "../../domain/resolve-price.js";
-import { ladderAsRule } from "../../domain/volume-ladder.js";
 import { PriceFloorReader } from "../../domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../domain/ports/price-rule.reader.js";
 import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
@@ -17,12 +16,16 @@ import { ProductCatalogReader } from "../../../orders/domain/ports/product-catal
 import { UnknownSkuError } from "../../../orders/domain/errors/order-errors.js";
 import type { PriceRule, PricingContext, ScopedPriceFloor } from "../../domain/price-rule.js";
 import type { VolumeLadder } from "../../domain/volume-ladder.js";
+import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 
 /** Ce qui vise l'article, lu une seule fois : rien de tout cela ne dépend du cumul. */
 interface Candidates {
   readonly rules: readonly PriceRule[];
   readonly floors: readonly ScopedPriceFloor[];
   readonly ladders: readonly VolumeLadder[];
+  /** La mercuriale du client, en objet : son palier dépend de la quantité. */
+  readonly mercuriale: CompanyMercuriale | null;
 }
 
 /**
@@ -48,6 +51,7 @@ export class PriceProjectionQuery {
   constructor(
     private readonly catalog: ProductCatalogReader,
     private readonly priceRules: PriceRuleReader,
+    private readonly mercuriales: CompanyMercurialeReader,
     private readonly priceFloors: PriceFloorReader,
     private readonly volumeLadders: VolumeLadderReader,
   ) {}
@@ -63,16 +67,19 @@ export class PriceProjectionQuery {
     // Un contexte de référence, à la plus petite quantité : il sert à CHARGER
     // les candidats, qui ne dépendent ni de la quantité ni du cumul.
     const base = pricingContextFor(item.sku, item.category, 1, parties, at, 1);
-    const [rules, floors, ladders] = await Promise.all([
+    const [rules, floors, ladders, mercuriale] = await Promise.all([
       this.priceRules.candidatesFor(base),
       this.priceFloors.candidatesFor(base),
       this.volumeLadders.candidatesFor(base),
+      // Chargée en OBJET, comme les barèmes : le palier dépend de la quantité,
+      // et cette requête en projette plusieurs sur les mêmes candidats.
+      this.mercuriales.liveFor(payload.companyId, at),
     ]);
 
     return {
       productName: item.name,
       points: payload.cumulativeQuantities.map((cumulative) =>
-        this.pointAt(item, { rules, floors, ladders }, base, cumulative),
+        this.pointAt(item, { rules, floors, ladders, mercuriale }, base, cumulative),
       ),
     };
   }
@@ -96,10 +103,6 @@ export class PriceProjectionQuery {
       quantity: cumulative,
       cumulativeQuantity: cumulative,
     };
-    const volumeRules = candidates.ladders
-      .map((ladder) => ladderAsRule(ladder, context))
-      .filter((rule): rule is PriceRule => rule !== null);
-
     const scoped = resolveScopedFloor(candidates.floors, context);
     // Aucune mesure d'historique : la porte du plancher dynamique reste FERMÉE,
     // ce qui est la lecture prudente — une projection ne peut pas prouver un
@@ -110,9 +113,14 @@ export class PriceProjectionQuery {
         ? null
         : decideFloor(scoped.policy, { quantity: cumulative, observedVolumeRatioBp: null }).applied;
 
+    // 🔴 **La mercuriale entre dans la projection.** Elle n'y entrait PAS
+    // jusqu'au 2026-09-08 : un client au tarif négocié voyait sa courbe au prix
+    // catalogue — un chiffre parfaitement plausible sur l'écran qui sert
+    // précisément à décider d'un prix. C'est l'oubli que l'assemblage interne
+    // rend désormais inexprimable.
     const resolved = resolvePrice(
       item.unitPriceMillicents,
-      [...candidates.rules, ...volumeRules],
+      { rules: candidates.rules, ladders: candidates.ladders, mercuriale: candidates.mercuriale },
       context,
       applied,
     );

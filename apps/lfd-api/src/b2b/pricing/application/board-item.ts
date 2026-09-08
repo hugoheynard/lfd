@@ -97,13 +97,18 @@ export function itemView(
       : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null })
           .applied;
 
-  // La règle de la mercuriale se dérive ICI : elle dépend de l'article et de la
-  // mesure, que les matériaux — chargés une fois pour tout le tableau — ne
-  // connaissent pas.
+  // 🔴 **Les barèmes entrent enfin dans le prix de cet écran.** Il les recevait
+  // en paramètre et ne les passait pas : sur un article dont un barème s'ouvre
+  // dès la première pièce, il annonçait 1,83924 € quand la caisse facturait
+  // 1,65532 €. C'était le défaut ouvert du 2026-09-08, et il se lisait sur le
+  // seul écran qu'un commercial regarde avant d'accorder un prix.
+  const resolved = resolvePrice(
+    article.canonicalMillicents,
+    { rules: materials.rules, ladders, mercuriale: materials.mercuriale },
+    context,
+    applied,
+  );
   const mercuriale = materials.mercuriale?.asRuleFor(context) ?? null;
-  const rules = mercuriale === null ? materials.rules : [...materials.rules, mercuriale];
-
-  const resolved = resolvePrice(article.canonicalMillicents, rules, context, applied);
 
   return {
     sku: article.sku,

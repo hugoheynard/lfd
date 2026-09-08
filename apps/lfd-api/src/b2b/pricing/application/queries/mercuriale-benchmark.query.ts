@@ -100,16 +100,24 @@ export class MercurialeBenchmarkQuery {
         if (rule === null) {
           return [];
         }
-        const resolved = resolvePrice(canonicalMillicents, [rule], {
-          at,
-          quantity: tier.minQuantity,
-          cumulativeQuantity: tier.minQuantity,
-          variantSku: line.sku,
-          productSku: line.sku,
-          categoryId: "",
-          companyId,
-          segmentId: null,
-        });
+        // `ladders: []` et `mercuriale: null` sont DÉCLARÉS, pas omis : ce
+        // comparatif mesure un prix de marché, c'est-à-dire ce qu'une
+        // mercuriale accorde SEULE. Un barème y ajouterait une remise que le
+        // client d'en face n'a pas négociée.
+        const resolved = resolvePrice(
+          canonicalMillicents,
+          { rules: [rule], ladders: [], mercuriale: null },
+          {
+            at,
+            quantity: tier.minQuantity,
+            cumulativeQuantity: tier.minQuantity,
+            variantSku: line.sku,
+            productSku: line.sku,
+            categoryId: "",
+            companyId,
+            segmentId: null,
+          },
+        );
         return [{ sku: line.sku, companyId, unitPriceMillicents: resolved.finalMillicents }];
       });
     });

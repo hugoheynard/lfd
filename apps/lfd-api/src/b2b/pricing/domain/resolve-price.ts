@@ -11,6 +11,9 @@ import { PRICE_STAGES, type PriceFloor, type PriceRule, type PriceStep } from ".
 import type { PricingContext, ResolvedPrice } from "./price-rule.js";
 import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";
 import { applies, winnerOf } from "./specificity.js";
+import { ladderAsRule } from "./volume-ladder.js";
+import type { VolumeLadder } from "./volume-ladder.js";
+import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 
 /**
  * **La résolution de prix** — la fonction que tout le reste emballe.
@@ -42,10 +45,23 @@ import { applies, winnerOf } from "./specificity.js";
  */
 export function resolvePrice(
   canonicalMillicents: number,
-  rules: readonly PriceRule[],
+  inputs: PriceInputs,
   context: PricingContext,
   floor: PriceFloor | null = null,
 ): ResolvedPrice {
+  // 🔴 **L'assemblage est ICI, et c'est tout l'objet du changement.**
+  //
+  // Il vivait chez les appelants : chacun convertissait ses barèmes et sa
+  // mercuriale en règles avant d'appeler. Le patron évitait de toucher le
+  // pipeline, mais il déplaçait la charge — et un appelant qui oubliait un
+  // étage ne recevait aucune erreur, il recevait un prix parfaitement
+  // plausible. Deux l'ont oublié : le tableau de tarification, qui annonçait
+  // 1,83924 € quand la caisse facturait 1,65532 €, et la projection, qui
+  // rendait la courbe d'un client au tarif catalogue (vérifié le 2026-09-08).
+  //
+  // Dedans, l'oubli n'est plus exprimable : on ne peut pas ne pas passer ce
+  // qu'on n'a pas le droit de ne pas passer.
+  const rules = assembled(inputs, context);
   // Zéro est **accepté** : un article offert (échantillon, geste commercial
   // catalogué) est un cas réel, et le contrat de fil le permet déjà
   // (`nonnegative`). Seul le négatif est refusé — il n'a aucune lecture. La
@@ -133,6 +149,51 @@ export function resolvePrice(
     sealedRuleIds,
     finalMillicents: clampedToZero ? 0 : rounded,
   };
+}
+
+/**
+ * **Tout ce qui peut agir sur ce prix**, sous la forme où c'est stocké.
+ *
+ * Les règles sont déjà filtrées par portée par l'appelant — lui seul sait quel
+ * article il résout. Les barèmes et la mercuriale, en revanche, arrivent en
+ * OBJET : ils dépendent d'une **mesure** que seul le contexte porte, et
+ * `resolvePrice` la connaît. C'est cette asymétrie qui a coûté deux versions
+ * d'un plan avant d'être vue.
+ */
+export interface PriceInputs {
+  /** Les règles candidates pour cet article, tous étages confondus. */
+  readonly rules: readonly PriceRule[];
+  /**
+   * Les barèmes qui visent cet article. Présentés à la quantité du contexte.
+   *
+   * 🔴 **Obligatoire, et un tableau vide est une DÉCLARATION.** Le champ a été
+   * optionnel pendant une heure, le 2026-09-08, pour arranger l'appelant qui
+   * n'en a pas — et c'était rouvrir la porte que ce type existe pour fermer :
+   * un appelant peut oublier ce qu'il a le droit de ne pas écrire. Obligatoire,
+   * il ne peut plus omettre, seulement dire `[]` — et ce `[]` se lit en
+   * relecture, là où une absence ne se lit pas.
+   */
+  readonly ladders: readonly VolumeLadder[];
+  /** La mercuriale du client, ou `null`. Présentée au palier de la mesure. */
+  readonly mercuriale: CompanyMercuriale | null;
+}
+
+/**
+ * Les règles, plus ce que les barèmes et la mercuriale valent **à cette
+ * mesure**.
+ *
+ * Chacun rend **au plus une** règle : le palier est choisi ici, jamais laissé à
+ * la résolution. Deux règles de même identifiant à un étage rendraient
+ * l'arbitrage ambigu — c'était un 400 sur une commande de vingt.
+ */
+function assembled(inputs: PriceInputs, context: PricingContext): readonly PriceRule[] {
+  const fromLadders = inputs.ladders
+    .map((ladder) => ladderAsRule(ladder, context))
+    .filter((rule): rule is PriceRule => rule !== null);
+  const fromMercuriale = inputs.mercuriale?.asRuleFor(context) ?? null;
+  return fromMercuriale === null
+    ? [...inputs.rules, ...fromLadders]
+    : [...inputs.rules, ...fromLadders, fromMercuriale];
 }
 
 /** `replace` pose un prix ; `alter` modifie celui qui entre. */

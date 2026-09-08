@@ -7,17 +7,14 @@ import { decideFloor } from "../../../pricing/domain/floor-policy.js";
 import {
   floorsFor,
   laddersFor,
-  mercurialeFor,
   rulesFor,
   type PricingEvidence,
   type PricingMaterials,
 } from "../../../pricing/domain/pricing-materials.js";
-import type { PriceRule } from "../../../pricing/domain/price-rule.js";
 import { floorMillicentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
 import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
-import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
 import type { OrderLineInput } from "../value-objects/order-line.js";
@@ -117,17 +114,6 @@ export function priceLine(
 
   const rules = rulesFor(materials, context);
   const ladders = laddersFor(materials, context);
-  // La mercuriale du client, vue comme la règle de son étage à CETTE mesure.
-  // Dérivée ici et pas au chargement : le lecteur ne connaît pas la quantité.
-  const mercuriale = mercurialeFor(materials, context);
-
-  // Le barème de volume rejoint les règles sous la forme de la règle d'étage
-  // volume qu'il est à CETTE quantité. La spécificité arbitre ensuite comme
-  // d'habitude — un barème de produit l'emporte sur celui de sa famille, sans
-  // que la résolution apprenne un cas de plus.
-  const volumeRules = ladders
-    .map((ladder) => ladderAsRule(ladder, context))
-    .filter((rule): rule is PriceRule => rule !== null);
 
   // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre : deux
   // questions distinctes, la seconde dépendant de la commande et de l'historique.
@@ -139,9 +125,12 @@ export function priceLine(
   const floorDecision =
     scoped === null ? null : decideFloor(scoped.policy, { quantity, observedVolumeRatioBp });
   const applied = floorDecision?.applied ?? null;
+  // Les barèmes et la mercuriale partent en OBJET : `resolvePrice` les présente
+  // elle-même, à la mesure de ce contexte. C'est ce qui rend impossible d'en
+  // oublier un — deux écrans l'avaient fait.
   const resolved = resolvePrice(
     item.unitPriceMillicents,
-    mercuriale === null ? [...rules, ...volumeRules] : [...rules, ...volumeRules, mercuriale],
+    { rules, ladders, mercuriale: materials.mercuriale },
     context,
     applied,
   );

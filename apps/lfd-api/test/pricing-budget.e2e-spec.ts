@@ -31,7 +31,7 @@ import { millicentsFromCents } from "@lfd/money";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 /**
@@ -333,5 +333,58 @@ describe("ce que le budget ne dit pas", () => {
     await staff().get("/admin/pricing").expect(200);
 
     expect(Date.now() - startedAt).toBeLessThan(3_000);
+  });
+});
+
+/**
+ * 🔴 **L'écran et la caisse annoncent le MÊME prix.**
+ *
+ * C'était faux jusqu'au 2026-09-08 : sur un article dont un barème s'ouvre dès
+ * la première pièce, `GET /admin/pricing` annonçait 1,83924 € pendant que
+ * `POST /shop/quote` facturait 1,65532 €. Dix pour cent d'écart, sur le seul
+ * écran qu'un commercial regarde avant d'accorder un prix.
+ *
+ * La cause n'était pas une erreur de calcul : c'était un ÉTAGE OUBLIÉ. L'écran
+ * recevait les barèmes en paramètre et ne les passait pas à `resolvePrice`.
+ * Rien ne rougissait — un prix sans son barème reste un prix plausible.
+ *
+ * Ce cas est la preuve que l'assemblage a changé de côté. Il ne teste aucune
+ * valeur en particulier : il exige que les deux chemins **tombent d'accord**,
+ * ce qui reste vrai quels que soient les tarifs du catalogue.
+ */
+describe("l'écran et la caisse", () => {
+  it("🔴 annoncent le même prix quand un barème s'ouvre dès la première pièce", async () => {
+    await ctx.prisma.volumeLadder.create({
+      data: {
+        id: "ladder_accord",
+        scopeType: "product",
+        scopeId: "VIE-001",
+        audienceType: "all",
+        audienceId: null,
+        unit: "percent",
+        tiers: [{ minQuantity: 1, value: 1_000 }],
+        label: "Barème dès la première pièce",
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: null,
+        createdBy: "e2e",
+      },
+    });
+
+    const board = jsonBody<{
+      categories: readonly { items: readonly { sku: string; finalMillicents: number }[] }[];
+    }>(await staff().get("/admin/pricing").expect(200));
+    const shown = board.categories
+      .flatMap((category) => category.items)
+      .find((item) => item.sku === "VIE-001")?.finalMillicents;
+
+    const quoted = jsonBody<{ lines: readonly { unitPriceMillicents: number }[] }>(
+      await ctx
+        .http()
+        .post("/shop/quote")
+        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .expect(200),
+    ).lines[0]?.unitPriceMillicents;
+
+    expect(shown).toBe(quoted);
   });
 });

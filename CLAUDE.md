@@ -16,7 +16,7 @@
 > **Ce qu'il ne sait pas**, faute d'avoir vécu ces trois jours :
 >
 > - le §10 annonçait **23 portes** ; il y en avait **26** au 2026-09-07, et
->   **27** depuis le 2026-09-08 (`lint:business-day`). C'est la **seule**
+>   **28** depuis le 2026-09-08 (`lint:business-day`, `lint:price-pipeline`). C'est la **seule**
 >   correction faite dans le corps, parce qu'un chiffre faux se vérifie en une
 >   commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -955,7 +955,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 27 portes du dépôt, d'un coup
+pnpm lint:gates         # les 28 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

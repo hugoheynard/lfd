@@ -1,7 +1,7 @@
 import { discountBp } from "@lfd/money";
 import { decideFloor, type PriceFloorPolicy } from "../domain/floor-policy.js";
 import { resolvePrice } from "../domain/resolve-price.js";
-import { ladderAsRule, tierFor } from "../domain/volume-ladder.js";
+import { ladderAsRule } from "../domain/volume-ladder.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import type { PriceRule, PricingContext } from "../domain/price-rule.js";
@@ -104,12 +104,11 @@ export function volumeTierPrices(
             quantity: orderQuantityAt(context, minQuantity),
             observedVolumeRatioBp: floor.observedVolumeRatioBp,
           }).applied;
-    const resolved = resolvePrice(
-      canonicalMillicents,
-      withLadder(rules, ladders, mercuriale, at),
-      at,
-      applied,
-    );
+    // Les barèmes et la mercuriale partent en OBJET, à CETTE quantité sondée :
+    // c'est `resolvePrice` qui les présente, et elle le refait à chaque palier.
+    // L'assemblage manuel qui vivait ici — et l'ambiguïté qu'il pouvait créer —
+    // n'existe plus.
+    const resolved = resolvePrice(canonicalMillicents, { rules, ladders, mercuriale }, at, applied);
     return {
       minQuantity,
       unitPriceMillicents: resolved.finalMillicents,
@@ -203,28 +202,4 @@ function atQuantity(context: PricingContext, quantity: number): PricingContext {
  */
 function orderQuantityAt(context: PricingContext, threshold: number): number {
   return context.cumulativeQuantity === null ? threshold : context.quantity;
-}
-
-/**
- * Les règles du moment, plus le palier que les barèmes ouvrent à cette quantité,
- * plus celui de la mercuriale.
- *
- * Les trois se dérivent **à cette quantité-ci**, jamais avant : c'est ce que la
- * grille sonde, palier par palier.
- */
-function withLadder(
-  rules: readonly PriceRule[],
-  ladders: readonly VolumeLadder[],
-  mercuriale: CompanyMercuriale | null,
-  context: PricingContext,
-): PriceRule[] {
-  const fromLadders = ladders
-    .map((ladder) =>
-      tierFor(ladder, context.quantity) === null ? null : ladderAsRule(ladder, context),
-    )
-    .filter((rule): rule is PriceRule => rule !== null);
-  const fromMercuriale = mercuriale?.asRuleFor(context) ?? null;
-  return fromMercuriale === null
-    ? [...rules, ...fromLadders]
-    : [...rules, ...fromLadders, fromMercuriale];
 }
