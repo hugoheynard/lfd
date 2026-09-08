@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   OrderPaymentIntent,
+  OrderSettlement,
   PlaceOrderPayload,
   PlacedOrderResponse,
   ShopQuoteView,
@@ -197,13 +198,19 @@ export class ClientOrders {
    * commandé n'est plus « en cours d'achat ». Un paiement abandonné laisse une
    * commande à régler, pas un panier fantôme qu'on repasserait en double.
    */
-  async place(): Promise<PlacedOrder | null> {
+  /**
+   * @param settlement comment le client veut régler, ou `null` = le serveur
+   *   décide (au compte si des termes lui ont été accordés, par carte sinon).
+   *   Payer comptant reste toujours possible, y compris pour un compte au
+   *   mensuel : c'est une facilité, pas une obligation.
+   */
+  async place(settlement: OrderSettlement | null = null): Promise<PlacedOrder | null> {
     const service = this.order.choice();
     const lines = this.cart.lines();
     if (service === null || lines.length === 0) {
       return null;
     }
-    const placed = await this.send(service, lines);
+    const placed = await this.send(service, lines, settlement);
     if (placed === null) {
       return null;
     }
@@ -303,13 +310,14 @@ export class ClientOrders {
   private async send(
     service: ServiceChoice,
     lines: readonly { product: { sku: string }; quantity: number }[],
+    settlement: OrderSettlement | null,
   ): Promise<PlacedOrderResponse | null> {
     if (!this.auth.isAuthenticated()) {
       // Pas un échec : une étape. L'écran envoie se connecter, et le panier
       // survit — il vit en base pour qui a déjà un compte.
       return null;
     }
-    const payload = payloadOf(service, lines, this.attemptKey());
+    const payload = payloadOf(service, lines, this.attemptKey(), settlement);
     try {
       return await firstValueFrom(
         this.auth.accessToken$().pipe(
@@ -368,10 +376,20 @@ function payloadOf(
   service: ServiceChoice,
   lines: readonly { product: { sku: string }; quantity: number }[],
   idempotencyKey: string,
+  settlement: OrderSettlement | null,
 ): PlaceOrderPayload {
   const content = {
-    // Zéro friction : la commande appartient au client, pas à une société.
-    companyId: null,
+    // 🔴 **Plus de `companyId` ici, et ce n'est plus au navigateur d'en parler.**
+    //
+    // Il envoyait `null` — « zéro friction : la commande appartient au client,
+    // pas à une société » —, si bien qu'un compte sous mercuriale payait le
+    // tarif public jusque sur sa facture. Le champ a quitté le contrat le
+    // 2026-09-08 : la société est résolue au SERVEUR, depuis les rattachements
+    // du demandeur. Le front n'a plus à choisir, et ne peut plus se tromper.
+    //
+    // Le règlement, lui, se déclare : `null` = le serveur décide comme avant
+    // (au compte si les termes sont accordés, par carte sinon).
+    settlement,
     // La clé voyage dans le CORPS et non dans un en-tête : au contrat, un appel
     // sans clé est inexprimable — ni le compilateur ni Zod ne le laissent
     // passer. Un en-tête facultatif n'aurait protégé que les appelants qui y

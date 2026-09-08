@@ -2,8 +2,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { ShopQuoteView } from '@lfd/contracts';
+import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AuthFacade } from '../../auth/auth.facade';
 import { CartStore } from './cart.store';
 import { ShopQuote } from './shop-quote.service';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
@@ -34,8 +36,17 @@ function boot(): { quote: ShopQuote; cart: CartStore; http: HttpTestingControlle
   };
 }
 
-/** La route, quelle que soit la racine d'API configurée. */
-const QUOTE = (request: { url: string }): boolean => request.url.endsWith('/shop/quote');
+/**
+ * La route du devis, **publique ou reconnue**.
+ *
+ * Les deux, parce que ces cas éprouvent l'anti-rebond et la reprise après
+ * échec — pas le choix de la route. Y coder `/mine` reviendrait à figer ici un
+ * artefact du bypass d'authentification de développement, qui rend le client
+ * reconnu en test. La bascule elle-même est éprouvée plus bas, en fournissant
+ * les deux états.
+ */
+const QUOTE = (request: { url: string }): boolean =>
+  request.url.endsWith('/shop/quote') || request.url.endsWith('/shop/quote/mine');
 
 /** Le devis part au bout de l'accalmie ; avant, rien n'a bougé sur le réseau. */
 const QUIET_MS = 400;
@@ -162,5 +173,78 @@ describe('ShopQuote', () => {
 
     expect(quote.status()).toBe('ready');
     http.verify();
+  });
+});
+
+/**
+ * **Le devis part à la route qui correspond au lecteur.**
+ *
+ * 🔴 Tant que le panier chiffrait au tarif public, un compte sous mercuriale
+ * voyait un total qui n'était pas le sien. L'écart était en sa faveur et
+ * silencieux — donc personne ne réclamait, et rien de ce qu'on lui avait
+ * négocié ne lui était montré avant la confirmation.
+ */
+describe('la route du devis', () => {
+  // `quiet()` avance des horloges simulées : sans ce couple, la salve
+  // d'anti-rebond n'arrive jamais et l'appel ne part pas.
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function bootAs(recognised: boolean): { cart: CartStore; http: HttpTestingController } {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => recognised, accessToken$: () => of('jeton-de-test') },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ShopQuote);
+    return { cart: TestBed.inject(CartStore), http: TestBed.inject(HttpTestingController) };
+  }
+
+  it('demande la route PUBLIQUE à un visiteur', () => {
+    const { cart, http } = bootAs(false);
+    cart.setQuantity(SKU, 1);
+    quiet();
+
+    const asked = http.expectOne(QUOTE);
+    expect(asked.request.url).toMatch(/\/shop\/quote$/u);
+    // Sans jeton : la vitrine se visite sans compte, c'est le parcours par défaut.
+    expect(asked.request.headers.has('Authorization')).toBe(false);
+    asked.flush(ANSWER);
+  });
+
+  it('demande la route RECONNUE, jeton en tête, à un client identifié', () => {
+    const { cart, http } = bootAs(true);
+    cart.setQuantity(SKU, 1);
+    quiet();
+
+    const asked = http.expectOne(QUOTE);
+    expect(asked.request.url).toMatch(/\/shop\/quote\/mine$/u);
+    expect(asked.request.headers.get('Authorization')).toBe('Bearer jeton-de-test');
+    asked.flush(ANSWER);
+  });
+
+  it('ne nomme AUCUNE société : le serveur la résout depuis les rattachements', () => {
+    // Le corps ne porte que le panier et l'acheminement. Un identifiant de
+    // société envoyé d'ici devrait être vérifié à l'arrivée ; n'en envoyer aucun
+    // rend le sondage d'un tarif concurrent inexprimable.
+    const { cart, http } = bootAs(true);
+    cart.setQuantity(SKU, 1);
+    quiet();
+
+    const asked = http.expectOne(QUOTE);
+    expect(JSON.stringify(asked.request.body)).not.toContain('companyId');
+    asked.flush(ANSWER);
   });
 });

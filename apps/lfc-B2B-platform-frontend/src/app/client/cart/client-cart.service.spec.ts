@@ -58,8 +58,13 @@ describe('Le panier au premier écran venu', () => {
 
     TestBed.inject(ClientCart);
 
-    const asked = TestBed.inject(HttpTestingController).expectOne((request) =>
-      request.url.endsWith('/shop/catalogue'),
+    // Publique ou reconnue : ce cas éprouve que le PANIER hydrate le catalogue
+    // lui-même, sans attendre le rayon — pas laquelle des deux routes il prend.
+    // Le bypass d'authentification de développement rend le client reconnu en
+    // test ; y coder une route figerait cet artefact.
+    const asked = TestBed.inject(HttpTestingController).expectOne(
+      (request) =>
+        request.url.endsWith('/shop/catalogue') || request.url.endsWith('/shop/catalogue/mine'),
     );
     expect(asked.request.method).toBe('GET');
     expect(catalogue.status()).toBe('loading');

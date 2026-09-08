@@ -98,8 +98,14 @@ describe('passer commande', () => {
     expect(body.fulfillmentMethod).toBe('pickup');
     expect(body.pickupAddressId).toBe('pick_labo');
     expect(body.requestedDeliveryDate).toBe('2026-09-07');
-    expect(body.companyId).toBeNull();
     expect(body.lines).toEqual([{ sku: 'VIE-001', quantity: 1 }]);
+    // 🔴 **Aucune société au corps**, et c'est le sujet depuis le 2026-09-08.
+    // Le champ a quitté le contrat : la société est résolue au SERVEUR depuis
+    // les rattachements du demandeur. Le navigateur ne peut donc plus en nommer
+    // une — ni la sienne, ni celle d'un autre.
+    expect(JSON.stringify(body)).not.toContain('companyId');
+    // Le règlement, lui, se déclare. `null` = le serveur décide comme avant.
+    expect(body.settlement).toBeNull();
     // Les mots d'écran ne traversent pas : « au Labo » et « 7 h – 8 h » ne sont
     // pas des faits que le serveur puisse recouper.
     expect(JSON.stringify(body)).not.toContain('au Labo');

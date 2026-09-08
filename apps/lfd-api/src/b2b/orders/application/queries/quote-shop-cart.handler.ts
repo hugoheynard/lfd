@@ -18,7 +18,17 @@ import { OrderLinePricing } from "../services/order-line-pricing.service.js";
  * deux et qu'aucun des deux ne se calcule dans un navigateur.
  */
 export class QuoteShopCartQuery {
-  constructor(readonly payload: ShopQuotePayload) {}
+  constructor(
+    readonly payload: ShopQuotePayload,
+    /**
+     * La société pour laquelle on chiffre, ou `null` = visiteur.
+     *
+     * Résolue au serveur et transmise par le contrôleur — jamais reçue du
+     * client. La route publique passe `null` ; la route reconnue passe ce que
+     * le guard a résolu depuis les rattachements.
+     */
+    readonly companyId: string | null = null,
+  ) {}
 }
 
 /** Ce que l'acheminement retire et ajoute, hors taxe. */
@@ -58,19 +68,22 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
    *    `Order.draft` se sert. Un devis qui ne prédit pas la facture ne sert à
    *    rien, et deux implémentations finissent toujours par diverger.
    *
-   * ⚠️ **Sans client, donc sans mercuriale.** `companyId` est `null` : seules
-   * les règles ouvertes à TOUS s'appliquent — une promotion publique, un barème
-   * de volume global. C'est exactement ce qu'un visiteur paierait. Un compte
-   * négocié paiera moins, et cette route ne peut pas le savoir : elle n'a pas de
-   * client. C'est le second chemin annoncé par `shop-catalogue.controller.ts`,
-   * pas une approximation de celui-là.
+   * ⚠️ **Sans société, sans mercuriale** — et c'est le cas du visiteur : seules
+   * les règles ouvertes à TOUS s'appliquent, une promotion publique, un barème
+   * de volume global. C'est exactement ce qu'un visiteur paiera.
+   *
+   * ✅ _(2026-09-08)_ Avec une société, ce même décompte porte le tarif négocié.
+   * Le second chemin annoncé par `shop-catalogue.controller.ts` existe : la
+   * route publique passe `null`, la route reconnue passe ce que le guard a
+   * résolu. Un seul handler, parce que le décompte est le même — c'est le PRIX
+   * qui change, pas la façon de compter.
    */
   async execute(query: QuoteShopCartQuery): Promise<ShopQuoteView> {
     const resolved = await this.pricing.resolve(
       query.payload.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
-      // Un visiteur n'a pas d'entreprise. Ce n'est pas un trou à combler : c'est
-      // le parcours par défaut de la boutique, et `applies` le sait déjà.
-      { companyId: null },
+      // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
+      // parcours par défaut de la boutique, et `applies` le sait déjà.
+      { companyId: query.companyId },
     );
 
     const lines = resolved.map(toQuoteLine);

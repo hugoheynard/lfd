@@ -2,9 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import type { ShopQuoteFulfillment, ShopQuotePayload, ShopQuoteView } from '@lfd/contracts';
-import { catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  of,
+  switchMap,
+  tap,
+  type Observable,
+} from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
+import { AuthFacade } from '../../auth/auth.facade';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -71,6 +80,7 @@ const EMPTY: ShopQuoteView = {
 @Injectable({ providedIn: 'root' })
 export class ShopQuote {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthFacade);
   private readonly store = inject(CartStore);
   private readonly order = inject(OrderContextStore);
   private readonly catalogue = inject(ShopCatalogue);
@@ -148,21 +158,46 @@ export class ShopQuote {
       this.state.set('idle');
       return of(null);
     }
-    return this.http
-      .post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote`, {
-        lines,
-        fulfillment: fulfillmentIn(key),
-      })
-      .pipe(
-        tap((view) => {
-          this.view.set(view);
-          this.state.set('ready');
+    const body = { lines, fulfillment: fulfillmentIn(key) };
+    return this.quoted(body).pipe(
+      tap((view) => {
+        this.view.set(view);
+        this.state.set('ready');
+      }),
+      catchError(() => {
+        this.state.set('failed');
+        return of(null);
+      }),
+    );
+  }
+
+  /**
+   * **Le décompte, à la route qui correspond au lecteur.**
+   *
+   * Reconnu, on demande `POST /shop/quote/mine` : le serveur y résout la société
+   * depuis les rattachements et applique le tarif négocié. Anonyme, la route
+   * publique — c'est le parcours par défaut de la boutique, on visite d'abord.
+   *
+   * 🔴 Le panier doit annoncer ce qui sera FACTURÉ. Tant qu'il chiffrait au
+   * tarif public, un compte sous mercuriale voyait un total qui n'était pas le
+   * sien — l'écart était en sa faveur et silencieux, donc personne ne
+   * réclamait, et rien de ce qu'on lui avait négocié ne lui était montré avant
+   * la confirmation.
+   */
+  private quoted(body: {
+    lines: readonly { sku: string; quantity: number }[];
+    fulfillment: ReturnType<typeof fulfillmentIn>;
+  }): Observable<ShopQuoteView> {
+    if (!this.auth.isAuthenticated()) {
+      return this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote`, body);
+    }
+    return this.auth.accessToken$().pipe(
+      switchMap((token) =>
+        this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote/mine`, body, {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        catchError(() => {
-          this.state.set('failed');
-          return of(null);
-        }),
-      );
+      ),
+    );
   }
 
   /**

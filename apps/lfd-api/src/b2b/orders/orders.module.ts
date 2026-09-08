@@ -77,6 +77,7 @@ import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 import { MyShopCatalogueController } from "./http/my-shop-catalogue.controller.js";
+import { MyShopQuoteController } from "./http/my-shop-quote.controller.js";
 import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
 
 /**
@@ -104,6 +105,7 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
   controllers: [
     OrdersController,
     MyShopCatalogueController,
+    MyShopQuoteController,
     CompanyOrdersController,
     AdminOrdersController,
     AdminProductionController,
