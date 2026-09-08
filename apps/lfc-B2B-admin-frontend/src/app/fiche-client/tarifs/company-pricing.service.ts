@@ -5,7 +5,10 @@ import type {
   AffectedRulesResponse,
   CloseCompanyMercurialePayload,
   CompanyPricingView,
+  MercurialeDraftResponse,
+  MercurialeDraftView,
   PoseCompanyMercurialePayload,
+  SaveMercurialeDraftPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -54,5 +57,28 @@ export class CompanyPricingService {
     return firstValueFrom(
       this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale/close'), payload),
     );
+  }
+
+  /**
+   * **Le brouillon en cours**, ou `null`.
+   *
+   * La réponse est enveloppée : un `null` nu part en corps vide, et « pas de
+   * brouillon » cesserait de se distinguer de « pas de corps ».
+   */
+  async draft(companyId: string): Promise<MercurialeDraftView | null> {
+    const body = await firstValueFrom(
+      this.http.get<MercurialeDraftResponse>(this.path(companyId, '/mercuriale/draft')),
+    );
+    return body.draft;
+  }
+
+  /** Enregistre — un brouillon par compte, et il se remplace entier. */
+  async saveDraft(companyId: string, payload: SaveMercurialeDraftPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(this.path(companyId, '/mercuriale/draft'), payload));
+  }
+
+  /** Jette le brouillon. Silencieux s'il n'y en a pas : l'état visé est atteint. */
+  async discardDraft(companyId: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(this.path(companyId, '/mercuriale/draft')));
   }
 }

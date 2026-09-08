@@ -14,7 +14,6 @@ import {
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
@@ -49,8 +48,11 @@ import {
 } from '../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from './company-pricing.service';
 import { liveEffort } from './live-effort';
+import { mercurialeCsv, mercurialeFileName } from './mercuriale-csv';
+import { mercurialeRows, type MercurialeRowView } from './mercuriale-rows';
 import { openRoomMillicents } from './negotiation-room';
 import {
+  draftFromLines,
   draftFromView,
   eurosIn,
   millicentsIn,
@@ -135,7 +137,6 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldEmptyStateComponent,
-    FoldIconComponent,
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
@@ -160,6 +161,16 @@ export class ClientTarifsPage {
   protected readonly statusLabel = POSED_MERCURIALE_STATUS_LABELS;
   protected readonly statusTone = STATUS_TONE;
 
+  /**
+   * **Vrai quand on COMPOSE**, c'est-à-dire quand la grille de saisie est à
+   * l'écran.
+   *
+   * Un drapeau plutôt qu'un état dérivé de la présence d'un brouillon : on
+   * ouvre la composition en cliquant, avant qu'aucun brouillon n'existe, et on
+   * la quitte sans forcément en avoir enregistré un.
+   */
+  protected readonly composing = signal(false);
+
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<CompanyPricingView | null>(null);
   protected readonly draft = signal<DraftPrices>(new Map());
@@ -176,6 +187,26 @@ export class ClientTarifsPage {
   protected readonly label = signal('');
   protected readonly validFrom = signal('');
   protected readonly validTo = signal('');
+
+  /**
+   * **Ce que l'écran montre**, et il ne montre qu'une chose à la fois.
+   *
+   * - `composing` — la grille de saisie, parce qu'on est en train de négocier ;
+   * - `posed` — l'entête et la table, en LECTURE. Modifier passe par « clore »
+   *   puis reposer : c'est déjà la règle du serveur, et c'est ce qui garde
+   *   l'histoire de ce qui a été facturé ;
+   * - `empty` — ni l'un ni l'autre, donc une invitation à commencer.
+   *
+   * Les trois ne cohabitent pas : une grille éditable sous une mercuriale posée
+   * ferait croire qu'on la retouche, alors qu'enregistrer en poserait une
+   * seconde.
+   */
+  protected readonly mode = computed<'empty' | 'composing' | 'posed'>(() => {
+    if (this.composing()) {
+      return 'composing';
+    }
+    return this.mercuriales().length > 0 ? 'posed' : 'empty';
+  });
 
   protected readonly categories = computed(() => this.view()?.categories ?? []);
   protected readonly mercuriales = computed(() => this.view()?.mercuriales ?? []);
@@ -221,6 +252,32 @@ export class ClientTarifsPage {
   });
 
   /** Ce que la grille pèse — les mêmes chiffres que sur la grille d'un gabarit. */
+  /** Les lignes d'une mercuriale posée, tarif catalogue en regard. */
+  protected rowsOf(mercuriale: PosedMercurialeView): readonly MercurialeRowView[] {
+    return mercurialeRows(mercuriale, this.categories());
+  }
+
+  /**
+   * Les colonnes de la table de LECTURE — celles que tu lis pour juger un tarif
+   * accordé : d'où l'on part, ce qu'on a donné, et l'écart entre les deux.
+   */
+  protected readonly readColumns: readonly FoldTableColumn<MercurialeRowView>[] = [
+    { key: 'sku', label: 'SKU', width: '8rem' },
+    { key: 'productName', label: 'Article' },
+    { key: 'catalog', label: 'Tarif catalogue pro', width: '11rem' },
+    { key: 'negotiated', label: 'Prix mercuriale', width: '10rem' },
+    { key: 'gap', label: 'Écart', width: '8rem' },
+  ];
+
+  protected readonly readRowKey = (row: MercurialeRowView): string =>
+    `${row.sku}-${String(row.minQuantity)}`;
+
+  protected readonly readEmpty: FoldTableEmpty = {
+    title: 'Cette mercuriale ne porte aucune ligne',
+    subtitle:
+      "Elle n'accorde donc rien — ce qui ne devrait pas arriver : la pose refuse une grille vide.",
+  };
+
   protected readonly summary = computed(() => tally(this.shelves().flatMap((shelf) => shelf.rows)));
 
   /**
@@ -301,8 +358,24 @@ export class ClientTarifsPage {
   private async reload(companyId: string, reseedDraft: boolean): Promise<void> {
     this.state.set('loading');
     try {
-      const view = await this.pricing.read(companyId);
+      const [view, saved] = await Promise.all([
+        this.pricing.read(companyId),
+        this.pricing.draft(companyId),
+      ]);
       this.view.set(view);
+      // 🔴 **Un brouillon rouvre la composition.** Une négociation laissée en
+      // plan doit se retrouver là où on l'a quittée : la ranger derrière un
+      // bouton reviendrait à la cacher, et le prochain à ouvrir la fiche
+      // recommencerait la sienne par-dessus.
+      if (saved !== null) {
+        this.composing.set(true);
+        this.label.set(saved.label);
+        this.validFrom.set(dayOf(saved.validFrom));
+        this.validTo.set(dayOf(saved.validTo));
+        this.draft.set(draftFromLines(saved.lines));
+        this.state.set('ready');
+        return;
+      }
       if (reseedDraft) {
         // La grille s'ouvre sur ce qui est POSÉ : on négocie à partir de ce
         // qu'on a déjà accordé, jamais d'une page blanche qui ferait retaper
@@ -428,8 +501,95 @@ export class ClientTarifsPage {
     }
   }
 
+  /**
+   * **Commencer une négociation.** On part de ce qui est posé, s'il y a quelque
+   * chose : renégocier sur une page blanche ferait retaper une grille entière
+   * pour changer trois prix.
+   */
+  protected compose(): void {
+    this.composing.set(true);
+  }
+
+  /** Quitter la composition sans rien poser. Le brouillon, lui, reste. */
+  protected abandon(): void {
+    this.composing.set(false);
+  }
+
+  /**
+   * **Enregistrer le brouillon.** Il a le droit d'être incomplet — sans nom,
+   * sans dates, sans une seule ligne : c'est sa raison d'être. Le serveur ne le
+   * refuse que si l'écriture échoue, jamais parce qu'il manque quelque chose.
+   */
+  protected async saveDraft(): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.pricing.saveDraft(this.id(), {
+        label: this.label().trim(),
+        validFrom: isoDay(this.validFrom()),
+        validTo: isoDay(this.validTo()),
+        lines: [...this.lines()],
+      });
+      this.notify.success('Brouillon enregistré.');
+    } catch (error) {
+      this.notify.error(error, "Le brouillon n'a pas pu être enregistré.");
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Jeter le brouillon et refermer la composition. */
+  protected async discardDraft(): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.pricing.discardDraft(this.id());
+      this.composing.set(false);
+      await this.reload(this.id(), true);
+      this.notify.success('Brouillon jeté.');
+    } catch (error) {
+      this.notify.error(error, "Le brouillon n'a pas pu être jeté.");
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
+   * **Exporter la mercuriale.** Un fichier local, fabriqué dans le navigateur :
+   * tout ce qu'il contient est déjà à l'écran, et une route de plus ferait
+   * payer un aller-retour pour recomposer ce qu'on a sous les yeux.
+   */
+  protected exportCsv(mercuriale: PosedMercurialeView): void {
+    const blob = new Blob([mercurialeCsv(mercuriale, this.rowsOf(mercuriale))], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = mercurialeFileName(mercuriale);
+    link.click();
+    // Libéré tout de suite : le clic a déjà lancé le téléchargement, et un objet
+    // d'URL qui survit garde le fichier en mémoire pour toute la session.
+    URL.revokeObjectURL(url);
+  }
+
   /** Une date ISO rendue au jour, pour l'afficher sans heure. */
   protected day(iso: string | null): string {
     return iso === null ? 'sans terme' : new Date(iso).toLocaleDateString('fr-FR');
   }
+}
+
+/** `2026-01-01T…` → `2026-01-01`, ce qu'un `<input type="date">` attend. */
+function dayOf(iso: string | null): string {
+  return iso === null ? '' : iso.slice(0, 10);
+}
+
+/**
+ * `2026-01-01` → l'instant ISO, ou `null` quand le champ est vide.
+ *
+ * ⚠️ Minuit **UTC**, comme la barre de pose des gabarits : à Paris, « à partir
+ * du 1er janvier » ouvre donc à 01 h 00 ou 02 h 00 selon la saison. Le dépôt a
+ * un contrat pour ça (`contracts/src/paris-time.ts`) qu'aucun de ces deux
+ * écrans n'utilise — c'est le trou T7 de l'état des lieux, et il est entier.
+ */
+function isoDay(day: string): string | null {
+  return day === '' ? null : new Date(`${day}T00:00:00.000Z`).toISOString();
 }

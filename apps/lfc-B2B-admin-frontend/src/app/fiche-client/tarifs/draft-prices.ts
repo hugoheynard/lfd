@@ -101,3 +101,15 @@ export function eurosIn(draft: DraftPrices, sku: string): number | null {
 export function withEuros(draft: DraftPrices, sku: string, euros: number | null): DraftPrices {
   return euros === null ? withoutPrice(draft, sku) : withPrice(draft, sku, euros.toFixed(5));
 }
+
+/**
+ * La grille reprise depuis un **brouillon** enregistré.
+ *
+ * Distincte de {@link draftFromView}, qui part de ce qui est POSÉ : l'une reprend
+ * une négociation en cours, l'autre ouvre une renégociation sur ce qui a été
+ * accordé. Les confondre ferait écraser un brouillon par les prix en vigueur au
+ * premier rechargement de la page.
+ */
+export function draftFromLines(lines: readonly CompanyMercurialeLinePayload[]): DraftPrices {
+  return new Map(lines.map((line) => [line.sku, millicentsField(line.unitPriceMillicents)]));
+}
