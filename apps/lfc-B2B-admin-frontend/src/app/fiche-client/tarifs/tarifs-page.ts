@@ -366,8 +366,20 @@ export class ClientTarifsPage {
    */
   protected async saveAsTemplate(): Promise<void> {
     const label = this.label().trim();
-    if (label === '' || this.lines().length === 0) {
-      this.notify.error(null, 'Nommez la grille avant de la garder comme gabarit.');
+    // 🔴 Le refus nomme CE QUI MANQUE, et les deux causes sont dites
+    // séparément. Une seule phrase couvrant les deux — « Nommez la grille » —
+    // accusait le nom alors que la grille était vide neuf fois sur dix : on
+    // nomme sa mercuriale d'abord, puis on la garde, avant d'avoir tapé un
+    // prix. Le message envoyait donc corriger le seul champ qui était rempli.
+    if (label === '') {
+      this.notify.refused(null, 'Nommez la grille avant de la garder comme gabarit.');
+      return;
+    }
+    if (this.lines().length === 0) {
+      this.notify.refused(
+        null,
+        'Aucun prix saisi : un gabarit vide ne se repose nulle part. Renseignez au moins un article.',
+      );
       return;
     }
     this.busy.set(true);
