@@ -1,3 +1,4 @@
+import { averageGapBp as averageBp, gapBp } from "@lfd/money";
 import {
   CATALOG_CATEGORY_LABELS,
   CATALOG_CATEGORY_ORDER,
@@ -215,15 +216,7 @@ function audienceOf(companyId: string): {
  * par une quantité inventée donnerait un chiffre qui ressemble à une mesure.
  */
 function averageGapBp(items: readonly PricingItemView[]): number | null {
-  const gaps = items
-    .filter((item) => item.canonicalMillicents > 0)
-    .map((item) =>
-      Math.round(
-        ((item.canonicalMillicents - item.finalMillicents) / item.canonicalMillicents) * 10_000,
-      ),
-    );
-  if (gaps.length === 0) {
-    return null;
-  }
-  return Math.round(gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length);
+  // La formule et le tri des inconnus vivent dans `@lfd/money` : la même
+  // moyenne existait côté front, et les deux écrans pouvaient diverger.
+  return averageBp(items.map((item) => gapBp(item.canonicalMillicents, item.finalMillicents)));
 }

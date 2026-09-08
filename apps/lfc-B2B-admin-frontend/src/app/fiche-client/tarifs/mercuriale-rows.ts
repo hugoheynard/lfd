@@ -1,3 +1,4 @@
+import { gapBp } from '@lfd/money';
 import type { CompanyPricingCategoryView, PosedMercurialeView } from '@lfd/contracts';
 
 /**
@@ -34,16 +35,15 @@ export interface MercurialeRowView {
   readonly minQuantity: number;
 }
 
-/** L'écart au tarif catalogue, signé. Positif = le client paie moins cher. */
-export function gapBp(
-  catalogMillicents: number | null,
-  negotiatedMillicents: number,
-): number | null {
-  if (catalogMillicents === null || catalogMillicents <= 0) {
-    return null;
-  }
-  return Math.round(((catalogMillicents - negotiatedMillicents) / catalogMillicents) * 10_000);
-}
+/**
+ * L'écart au tarif catalogue, signé. Positif = le client paie moins cher.
+ *
+ * Réexporté de `@lfd/money` : cette fonction existait **à l'identique** dans
+ * `template-grid.ts` — JSDoc compris — et en trois variantes ailleurs, dont deux
+ * qui répondaient autre chose quand le tarif catalogue vaut zéro. Le réexport
+ * garde le nom que ce dossier emploie sans garder la copie.
+ */
+export { gapBp };
 
 /**
  * Les lignes d'une mercuriale, jointes au catalogue.

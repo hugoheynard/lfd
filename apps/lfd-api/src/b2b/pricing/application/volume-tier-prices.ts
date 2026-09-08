@@ -1,3 +1,4 @@
+import { discountBp } from "@lfd/money";
 import { decideFloor, type PriceFloorPolicy } from "../domain/floor-policy.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { ladderAsRule, tierFor } from "../domain/volume-ladder.js";
@@ -112,7 +113,7 @@ export function volumeTierPrices(
     return {
       minQuantity,
       unitPriceMillicents: resolved.finalMillicents,
-      discountBp: discountBpOf(canonicalMillicents, resolved.finalMillicents),
+      discountBp: discountBp(canonicalMillicents, resolved.finalMillicents),
     };
   });
 }
@@ -226,15 +227,4 @@ function withLadder(
   return fromMercuriale === null
     ? [...rules, ...fromLadders]
     : [...rules, ...fromLadders, fromMercuriale];
-}
-
-/** L'écart au tarif d'entrée, en points de base d'une baisse. Jamais négatif. */
-function discountBpOf(canonicalMillicents: number, finalMillicents: number): number {
-  if (canonicalMillicents <= 0) {
-    return 0;
-  }
-  return Math.max(
-    0,
-    Math.round(((canonicalMillicents - finalMillicents) / canonicalMillicents) * 10_000),
-  );
 }

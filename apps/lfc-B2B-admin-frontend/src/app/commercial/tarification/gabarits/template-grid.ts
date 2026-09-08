@@ -1,3 +1,4 @@
+import { averageGapBp as averageBp, gapBp } from '@lfd/money';
 import type { PriceTemplateLineView, TemplateTierPayload } from '@lfd/contracts';
 
 /**
@@ -21,20 +22,12 @@ export function isFlatPrice(tiers: readonly TemplateTierPayload[]): boolean {
  * L'écart au tarif catalogue, en points de base. **Signé** : positif = moins
  * cher que le catalogue.
  *
- * `null` sans tarif catalogue — un article que le PIM ne pousse plus. Afficher
- * « −100 % » serait pire que rien : ce n'est pas une remise, c'est une absence.
+ * Un alias de `gapBp` (`@lfd/money`) : le corps était identique à celui de
+ * `mercuriale-rows.ts`, JSDoc compris. Le nom local reste parce que c'est celui
+ * que ce dossier emploie — le catalogue y est LA référence, et le dire dans le
+ * nom vaut mieux que de le supposer.
  */
-export function gapToCatalogBp(
-  catalogPriceMillicents: number | null,
-  unitPriceMillicents: number,
-): number | null {
-  if (catalogPriceMillicents === null || catalogPriceMillicents <= 0) {
-    return null;
-  }
-  return Math.round(
-    ((catalogPriceMillicents - unitPriceMillicents) / catalogPriceMillicents) * 10_000,
-  );
-}
+export const gapToCatalogBp = gapBp;
 
 /**
  * Le prix **d'entrée** d'une ligne : celui du plus petit palier.
@@ -55,13 +48,13 @@ export function entryPriceMillicents(tiers: readonly TemplateTierPayload[]): num
  * ressemble à une mesure. `null` quand aucune ligne n'a de tarif catalogue.
  */
 export function averageGapBp(lines: readonly PriceTemplateLineView[]): number | null {
-  const gaps = lines
-    .map((line) => gapToCatalogBp(line.catalogPriceMillicents, entryPriceMillicents(line.tiers)))
-    .filter((gap): gap is number => gap !== null);
-  if (gaps.length === 0) {
-    return null;
-  }
-  return Math.round(gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length);
+  // La moyenne et l'écart viennent de `@lfd/money` : la même paire existait
+  // côté serveur, et deux écrans côte à côte pouvaient annoncer deux chiffres.
+  return averageBp(
+    lines.map((line) =>
+      gapToCatalogBp(line.catalogPriceMillicents, entryPriceMillicents(line.tiers)),
+    ),
+  );
 }
 
 /** Combien de règles ce gabarit posera : un palier = une règle. */

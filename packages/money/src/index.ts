@@ -25,5 +25,7 @@ export {
   attainmentBp,
   observedRatioBp,
 } from "./elasticity.js";
+
+export { gapBp, discountBp, averageGapBp } from "./gap.js";
 export { DELIVERY_VAT_RATE, ventilateVat } from "./vat.js";
 export type { VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";

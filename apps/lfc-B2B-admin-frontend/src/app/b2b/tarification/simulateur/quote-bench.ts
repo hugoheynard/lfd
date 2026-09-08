@@ -1,3 +1,4 @@
+import { gapBp } from '@lfd/money';
 import type { OrderQuoteLineView, VolumeTierPriceView } from '@lfd/contracts';
 
 /**
@@ -57,10 +58,10 @@ export function probeQuantities(
  * cas à zéro cacherait exactement ce qu'on est venu chercher.
  */
 export function variationBp(canonicalMillicents: number, unitPriceMillicents: number): number {
-  if (canonicalMillicents <= 0) {
-    return 0;
-  }
-  return Math.round(((canonicalMillicents - unitPriceMillicents) / canonicalMillicents) * 10_000);
+  // `?? 0` : ce banc compare des prix qui ONT tous un canonique — il vient de la
+  // même réponse. Sans référence, « pas de variation » est la lecture juste, là
+  // où un tableau de tarifs préfère dire « inconnu ».
+  return gapBp(canonicalMillicents, unitPriceMillicents) ?? 0;
 }
 
 /** La réponse du serveur pour une quantité → une ligne du banc. */
