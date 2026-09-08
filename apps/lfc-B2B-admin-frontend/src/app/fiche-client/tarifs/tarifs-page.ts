@@ -54,6 +54,7 @@ import { liveEffort } from './live-effort';
 import { mercurialeCsv, mercurialeFileName } from './mercuriale-csv';
 import { mercurialeRows, type MercurialeRowView } from './mercuriale-rows';
 import { openRoomMillicents } from './negotiation-room';
+import { businessDayStart } from '../../shared/business-day';
 import {
   draftFromLines,
   draftFromView,
@@ -439,8 +440,11 @@ export class ClientTarifsPage {
     try {
       const { affectedRules } = await this.pricing.pose(this.id(), {
         label: this.label().trim(),
-        validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
-        validTo: new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),
+        // Minuit **à Paris**. Cf. `business-day.ts` : minuit UTC ouvrait la
+        // mercuriale à 01 h ou 02 h du matin selon la saison, et le client
+        // payait le tarif d'avant pendant ce temps-là.
+        validFrom: businessDayStart(this.validFrom()) ?? '',
+        validTo: businessDayStart(this.validTo()) ?? '',
         lines: [...this.lines()],
       });
       this.notify.success(`Mercuriale posée — ${String(affectedRules)} article(s).`);
@@ -664,13 +668,13 @@ function dayOf(iso: string | null): string {
 }
 
 /**
- * `2026-01-01` → l'instant ISO, ou `null` quand le champ est vide.
+ * `2026-01-01` → l'instant ISO de minuit **à Paris**, ou `null` si le champ est
+ * vide.
  *
- * ⚠️ Minuit **UTC**, comme la barre de pose des gabarits : à Paris, « à partir
- * du 1er janvier » ouvre donc à 01 h 00 ou 02 h 00 selon la saison. Le dépôt a
- * un contrat pour ça (`contracts/src/paris-time.ts`) qu'aucun de ces deux
- * écrans n'utilise — c'est le trou T7 de l'état des lieux, et il est entier.
+ * C'était minuit UTC jusqu'au 2026-09-08 — le trou T7 de l'état des lieux. La
+ * brique existait déjà et servait les créneaux et les heures limites ; elle ne
+ * servait simplement pas la tarification.
  */
 function isoDay(day: string): string | null {
-  return day === '' ? null : new Date(`${day}T00:00:00.000Z`).toISOString();
+  return day === '' ? null : businessDayStart(day);
 }

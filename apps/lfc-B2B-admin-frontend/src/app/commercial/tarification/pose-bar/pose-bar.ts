@@ -12,6 +12,7 @@ import { FoldButtonComponent } from 'fold-ng';
 import type { AdminCompany } from '../../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { nativeValue } from '../../../shared/native-input';
+import { businessDayStart } from '../../../shared/business-day';
 
 /** Chez qui, et sur quelle fenêtre. */
 export interface PoseRequest {
@@ -76,9 +77,10 @@ export class PoseBar {
     }
     this.posed.emit({
       companyId: this.companyId(),
-      validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
-      validTo:
-        this.validTo() === '' ? null : new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),
+      // Minuit **à Paris**, pas UTC : le commercial qui écrit « à partir du 1er
+      // janvier » veut dire minuit chez lui. Cf. `business-day.ts`.
+      validFrom: businessDayStart(this.validFrom()) ?? new Date().toISOString(),
+      validTo: this.validTo() === '' ? null : businessDayStart(this.validTo()),
     });
   }
 }

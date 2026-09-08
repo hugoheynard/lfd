@@ -76,8 +76,22 @@ describe('la conversion instant ↔ position', () => {
 
   /** Le pointeur donne des millisecondes ; la donnée, elle, est datée au jour. */
   it('arrondit au jour, et rend un instant ISO exploitable', () => {
-    expect(snapToDay(Date.parse('2026-08-16T23:59:00.000Z'))).toBe('2026-08-16');
-    expect(dayStart('2026-08-16')).toBe('2026-08-16T00:00:00.000Z');
+    // 🔴 **Test retourné le 2026-09-08.** `dayStart` rendait minuit UTC ; il
+    // rend minuit À PARIS, comme partout où une fenêtre se pose.
+    //
+    // 23 h 59 UTC un 16 août, c'est déjà le 17 à Paris — et c'est le jour que
+    // le commercial voit sur son écran.
+    expect(snapToDay(Date.parse('2026-08-16T23:59:00.000Z'))).toBe('2026-08-17');
+    expect(dayStart('2026-08-16')).toBe('2026-08-15T22:00:00.000Z');
+  });
+
+  it('🔴 fait l’aller-retour : glisser un repère puis le relire ne le déplace pas', () => {
+    // La régression que le test précédent a attrapée en corrigeant `dayStart`
+    // seul : `snapToDay` rendait encore le jour UTC, donc la veille de minuit à
+    // Paris. Un repère glissé puis relu reculait d'un jour, une nuit sur deux.
+    for (const day of ['2026-01-15', '2026-07-15', '2026-03-29', '2026-10-25']) {
+      expect(snapToDay(Date.parse(dayStart(day)))).toBe(day);
+    }
   });
 });
 

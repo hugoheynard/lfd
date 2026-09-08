@@ -9,6 +9,10 @@
  * vient du serveur, résolu par la fonction qui facture.
  */
 
+import { instantToLocal } from '@lfd/contracts';
+
+import { businessDayStart } from '../../../shared/business-day';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** L'étendue couverte par l'axe. */
@@ -70,12 +74,24 @@ export function instantAt(span: AxisSpan, percent: number): number {
  * même catalogue en donnant l'illusion d'avoir mesuré quelque chose.
  */
 export function snapToDay(at: number): string {
-  return new Date(at).toISOString().slice(0, 10);
+  // Le jour **à Paris**, pas le jour UTC — sans quoi l'aller-retour de la frise
+  // se casse : `dayStart` rend minuit à Paris, c'est-à-dire 22 h ou 23 h la
+  // veille en UTC, et `snapToDay` renverrait cette veille-là. Glisser un repère
+  // puis le relire l'aurait décalé d'un jour, une nuit sur deux.
+  return instantToLocal(new Date(at)).day;
 }
 
-/** L'instant ISO du début de ce jour — la forme que l'API attend. */
+/**
+ * L'instant ISO du début de ce jour — la forme que l'API attend.
+ *
+ * Minuit **à Paris**, comme partout où une fenêtre se pose. C'était minuit UTC
+ * jusqu'au 2026-09-08, et la frise s'en serait aperçue la dernière : elle
+ * compare cet instant à `band.validFrom`, donc un décalage d'une heure sur un
+ * axe de plusieurs mois ne déplace rien de visible. Il déplaçait quand même la
+ * fenêtre envoyée.
+ */
 export function dayStart(day: string): string {
-  return new Date(`${day}T00:00:00.000Z`).toISOString();
+  return businessDayStart(day) ?? new Date(day).toISOString();
 }
 
 /**

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 
 import {
   axisSpan,
+  dayStart,
   instantAt,
   monthTicks,
   packLanes,
@@ -235,10 +236,10 @@ export class TimelineAxis {
     }
     const span = this.span();
     return selection.kind === 'instant'
-      ? [percentOf(span, Date.parse(`${selection.day}T00:00:00.000Z`))]
+      ? [percentOf(span, Date.parse(dayStart(selection.day)))]
       : [
-          percentOf(span, Date.parse(`${selection.from}T00:00:00.000Z`)),
-          percentOf(span, Date.parse(`${selection.to}T00:00:00.000Z`)),
+          percentOf(span, Date.parse(dayStart(selection.from))),
+          percentOf(span, Date.parse(dayStart(selection.to))),
         ];
   }
 

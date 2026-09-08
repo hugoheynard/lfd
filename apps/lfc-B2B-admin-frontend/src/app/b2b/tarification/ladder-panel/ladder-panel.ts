@@ -11,6 +11,7 @@ import { nativeValue } from '../../../shared/native-input';
 import { NotifyService } from '../../../notify.service';
 import { magnitudeToWire } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
+import { businessDayStart } from '../../../shared/business-day';
 
 /** Charge d'ouverture : sur quoi le barème porte, et ce qui y est déjà posé. */
 export interface LadderPanelData {
@@ -149,9 +150,10 @@ export class LadderPanel {
         unit: this.unit(),
         tiers: [...this.filled()].sort((left, right) => left.minQuantity - right.minQuantity),
         label: this.label().trim(),
-        validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
-        validTo:
-          this.validTo() === '' ? null : new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),
+        // Minuit **à Paris**, pas UTC : le commercial qui écrit « à partir du 1er
+        // janvier » veut dire minuit chez lui. Cf. `business-day.ts`.
+        validFrom: businessDayStart(this.validFrom()) ?? new Date().toISOString(),
+        validTo: this.validTo() === '' ? null : businessDayStart(this.validTo()),
       });
       this.notify.success('Barème de volume posé.');
       this.ref.close(true);
