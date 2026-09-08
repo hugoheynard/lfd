@@ -296,9 +296,8 @@ async function place(
     // commande, sinon la seconde serait rendue comme un rejeu de la première et
     // le semis poserait une seule ligne au lieu de son historique.
     idempotencyKey: randomUUID(),
-    companyId: target.companyId,
-    // Le semis ne choisit pas : il laisse le serveur décider comme il l'a
-    // toujours fait — au compte si les termes sont accordés, par carte sinon.
+    // Le semis ne choisit pas son règlement : il laisse le serveur décider comme
+    // il l'a toujours fait — au compte si les termes sont accordés, carte sinon.
     settlement: null,
     fulfillmentMethod: order.method,
     deliveryAddress: order.method === "delivery" ? DELIVERY : null,
@@ -331,7 +330,11 @@ async function place(
     { now: order.at, traceId: newTraceId(), actor: { type: "customer", id: target.buyerUserId } },
     () =>
       context.commands.execute<PlaceOrderCommand, { id: string }>(
-        new PlaceOrderCommand(target.buyerUserId, payload),
+        // Le semis passe la société EXPLICITEMENT : il n'y a pas de requête HTTP
+        // derrière lui, donc pas de guard pour la résoudre. C'est précisément
+        // pour ça qu'elle est un paramètre de la commande et pas une lecture du
+        // contexte au fond du handler.
+        new PlaceOrderCommand(target.buyerUserId, payload, target.companyId),
       ),
   );
   await context.prisma.order.update({

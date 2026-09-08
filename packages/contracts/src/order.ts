@@ -311,10 +311,20 @@ export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue
 export const orderSettlementSchema = z.enum(["card", "account"]);
 export type OrderSettlement = z.infer<typeof orderSettlementSchema>;
 
+/**
+ * 🔴 **Aucun `companyId` ici, et c'est le point.**
+ *
+ * La société pour laquelle la commande est passée est **résolue au serveur**, à
+ * partir des rattachements du demandeur (cf. `resolve-company.ts`). Un client ne
+ * peut donc pas en nommer une autre : ce n'est pas refusé, c'est
+ * **inexprimable** — le cran au-dessus dans la hiérarchie des garde-fous.
+ *
+ * Le staff, lui, commande POUR un client : il a sa propre surface et son propre
+ * contrat (`adminPlaceOrderPayloadSchema`), où la société et l'acheteur sont
+ * explicites parce qu'ils sont le sujet du geste.
+ */
 export const placeOrderPayloadSchema = z
   .object({
-    /** Entreprise cliente, ou `null` = commande personnelle (client connecté). */
-    companyId: z.string().trim().min(1).nullable().default(null),
     /** Le règlement choisi, ou `null` = le serveur décide. Cf. {@link orderSettlementSchema}. */
     settlement: orderSettlementSchema.nullable().default(null),
     idempotencyKey: idempotencyKeySchema,

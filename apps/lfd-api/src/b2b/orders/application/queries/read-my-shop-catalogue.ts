@@ -3,8 +3,6 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CatalogReader } from "../../../catalog/domain/ports/catalog.reader.js";
 import { shopCatalogueOf } from "../../../catalog/application/queries/read-shop-catalogue.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
-import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { OrderLinePricing } from "../services/order-line-pricing.service.js";
 
 /**
@@ -32,16 +30,17 @@ import { OrderLinePricing } from "../services/order-line-pricing.service.js";
  * fonction que sert la route publique. Deux définitions de « ce que la vitrine
  * montre » auraient divergé au premier article retiré.
  *
- * ## Le mur, et la raison qui le rend non négociable
+ * ## Le mur, et pourquoi il n'y en a pas besoin ici
  *
- * La société est **dans l'URL** et vérifiée contre les rattachements du
- * demandeur — jamais déduite du `Principal`, qui n'a délibérément pas de
- * `companyId` unique (une personne peut n'être rattachée à aucune société, ou à
- * plusieurs).
+ * La société n'est **pas un paramètre** : elle vient du contexte de la requête,
+ * résolu par le guard depuis les rattachements du demandeur. Il n'y a donc rien
+ * à vérifier — et surtout rien à deviner. Sonder la mercuriale d'un concurrent
+ * demanderait un identifiant à passer, et il n'y en a pas.
  *
- * C'est le mot pour mot du devis : sans ce mur, **n'importe qui sonderait la
- * mercuriale d'un concurrent en devinant son identifiant**. Cette route rend un
- * prix négocié ; elle se mure exactement comme la commande qui l'appliquerait.
+ * C'est la hiérarchie du dépôt appliquée : inexprimable avant refusé. La
+ * première version de cette route prenait la société dans l'URL et la
+ * confrontait aux rattachements ; ça marchait, et ça laissait exister la
+ * question.
  *
  * ## Le coût
  *
@@ -57,10 +56,8 @@ import { OrderLinePricing } from "../services/order-line-pricing.service.js";
  * [`documentation/pricing/architecture-prix-boutique.md`](../../../../../../documentation/pricing/architecture-prix-boutique.md).
  */
 export class ReadMyShopCatalogueQuery {
-  constructor(
-    readonly actorUserId: string,
-    readonly companyId: string,
-  ) {}
+  /** `null` = aucune société résolue : la lecture rend alors le tarif catalogue. */
+  constructor(readonly companyId: string | null) {}
 }
 
 @QueryHandler(ReadMyShopCatalogueQuery)
@@ -71,14 +68,14 @@ export class ReadMyShopCatalogueHandler implements IQueryHandler<
   constructor(
     private readonly catalog: CatalogReader,
     private readonly pricing: OrderLinePricing,
-    private readonly guard: OrderGuardReader,
   ) {}
 
   async execute(query: ReadMyShopCatalogueQuery): Promise<ShopCatalogueView> {
-    ensureOrderMember(await this.guard.roleOf(query.actorUserId, query.companyId), query.companyId);
-
     const catalogue = shopCatalogueOf(await this.catalog.listSellable());
-    if (catalogue.items.length === 0) {
+    // Sans société résolue, il n'y a rien à négocier : c'est le tarif catalogue,
+    // le même que la vitrine publique. Résoudre à `companyId: null` rendrait la
+    // même chose en payant quatre requêtes pour rien.
+    if (query.companyId === null || catalogue.items.length === 0) {
       return catalogue;
     }
 

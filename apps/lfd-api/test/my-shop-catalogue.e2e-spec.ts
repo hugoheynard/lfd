@@ -103,25 +103,46 @@ async function poseMercuriale(): Promise<void> {
 }
 
 const mine = async (): Promise<ShopCatalogueView> =>
-  jsonBody<ShopCatalogueView>(
-    await ctx.asSub(MEMBER).get(`/companies/${companyId}/shop-catalogue`).expect(200),
-  );
+  jsonBody<ShopCatalogueView>(await ctx.asSub(MEMBER).get("/shop/catalogue/mine").expect(200));
 
 function itemOf(view: ShopCatalogueView, sku: string): ShopItemView | undefined {
   return view.items.find((item) => item.sku === sku);
 }
 
 describe("le mur", () => {
-  it("🔴 refuse un curieux qui devine l'identifiant de la société", async () => {
-    // La raison qui rend ce mur non négociable : cette route rend un PRIX
-    // NÉGOCIÉ. Sans lui, n'importe qui sonderait la mercuriale d'un concurrent.
+  it("🔴 ne donne RIEN à sonder : un curieux n'a aucun identifiant à passer", async () => {
+    // Le mur est inexprimable, pas vérifié. L'URL ne porte pas de société — elle
+    // vient du contexte, résolu depuis les rattachements du demandeur. Un
+    // étranger rattaché à rien lit donc le tarif catalogue, quoi qu'il tente.
     await poseMercuriale();
 
-    await ctx.asSub(STRANGER).get(`/companies/${companyId}/shop-catalogue`).expect(404);
+    const seen = jsonBody<ShopCatalogueView>(
+      await ctx.asSub(STRANGER).get("/shop/catalogue/mine").expect(200),
+    );
+
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(itemOf(seen, SKU)?.catalogPriceMillicents).toBeUndefined();
+  });
+
+  it("🔴 ignore un en-tête d'espace de travail qui ment", async () => {
+    // L'en-tête vient du réseau : il sert à DÉPARTAGER plusieurs rattachements,
+    // jamais à en désigner un qu'on n'a pas. Sans cette confrontation, il
+    // suffirait de le réécrire pour lire la mercuriale d'un concurrent.
+    await poseMercuriale();
+
+    const seen = jsonBody<ShopCatalogueView>(
+      await ctx
+        .asSub(STRANGER)
+        .get("/shop/catalogue/mine")
+        .set("x-lfc-company", companyId)
+        .expect(200),
+    );
+
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
   });
 
   it("refuse un visiteur sans jeton — la vitrine PUBLIQUE est ailleurs", async () => {
-    await ctx.http().get(`/companies/${companyId}/shop-catalogue`).expect(401);
+    await ctx.http().get("/shop/catalogue/mine").expect(401);
   });
 });
 
@@ -208,7 +229,6 @@ describe("le règlement choisi", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
-        companyId,
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         deliveryAddress: null,

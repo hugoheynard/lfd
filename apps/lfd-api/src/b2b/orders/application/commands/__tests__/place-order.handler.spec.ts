@@ -379,7 +379,6 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
 /** Payload par défaut : **retrait**, **sans entreprise** (le chemin zéro friction). */
 function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
-    companyId: null,
     idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
@@ -414,7 +413,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    await handler.execute(new PlaceOrderCommand("u1", payload()));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
     expect(sink.placed?.catalogVersionId).toBe(CURRENT_VERSION);
   });
@@ -439,7 +438,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    await handler.execute(new PlaceOrderCommand("u1", payload()));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
     expect(sink.placed?.catalogVersionId).toBeNull();
   });
@@ -460,7 +459,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    await handler.execute(new PlaceOrderCommand("u1", payload()));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
     expect(published.published).toHaveLength(1);
     const [event] = published.published;
@@ -488,7 +487,7 @@ describe("PlaceOrderHandler", () => {
     );
 
     await expect(
-      handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" }))),
+      handler.execute(new PlaceOrderCommand("u1", payload(), "c1")),
     ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
     expect(sink.placed).toBeNull();
   });
@@ -509,7 +508,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    const result = await handler.execute(new PlaceOrderCommand("u1", payload()));
+    const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
     // 2 × 200 = 400, aucun terme d'entreprise → carte, intent sans companyId.
     expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: null });
@@ -534,10 +533,7 @@ describe("PlaceOrderHandler", () => {
     );
 
     await handler.execute(
-      new PlaceOrderCommand(
-        "u1",
-        payload({ companyId: "c1", lines: [{ sku: "VIE-001", quantity: 3 }] }),
-      ),
+      new PlaceOrderCommand("u1", payload({ lines: [{ sku: "VIE-001", quantity: 3 }] }), "c1"),
     );
 
     expect(sink.placed?.lines).toEqual([
@@ -588,13 +584,13 @@ describe("PlaceOrderHandler", () => {
       new PlaceOrderCommand(
         "u1",
         payload({
-          companyId: "c1",
           lines: [
             { sku: "VIE-001", quantity: 2 },
             { sku: "VIE-002", quantity: 1 },
             { sku: "VIE-001", quantity: 3 },
           ],
         }),
+        "c1",
       ),
     );
 
@@ -622,10 +618,7 @@ describe("PlaceOrderHandler", () => {
 
     await expect(
       handler.execute(
-        new PlaceOrderCommand(
-          "u1",
-          payload({ companyId: "c1", lines: [{ sku: "NOPE-999", quantity: 1 }] }),
-        ),
+        new PlaceOrderCommand("u1", payload({ lines: [{ sku: "NOPE-999", quantity: 1 }] }), "c1"),
       ),
     ).rejects.toBeInstanceOf(UnknownSkuError);
     expect(sink.placed).toBeNull();
@@ -646,7 +639,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
     expect(sink.placed?.fulfillmentMethod).toBe("pickup");
     expect(sink.placed?.deliveryZoneId).toBeNull();
@@ -670,7 +663,7 @@ describe("PlaceOrderHandler", () => {
     );
 
     await expect(
-      handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" }))),
+      handler.execute(new PlaceOrderCommand("u1", payload(), "c1")),
     ).rejects.toBeInstanceOf(PickupNotConfiguredError);
     expect(sink.placed).toBeNull();
   });
@@ -692,7 +685,7 @@ describe("PlaceOrderHandler", () => {
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
-    await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
     expect(sink.placed?.subtotalCents).toBe(400);
     expect(sink.placed?.discountCents).toBe(80);
@@ -785,7 +778,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
+    const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
     expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: "c1" });
     expect(sink.placed?.paymentStatus).toBe("pending");
@@ -813,7 +806,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
+    const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
     expect(intentSink.intent).toBeNull();
     expect(sink.placed?.paymentStatus).toBe("not_required");
@@ -837,7 +830,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
     );
 
-    await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
     expect(intentSink.intent?.amountCents).toBe(400);
     expect(sink.placed?.paymentStatus).toBe("pending");

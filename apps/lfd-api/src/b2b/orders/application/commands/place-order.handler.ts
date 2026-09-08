@@ -74,7 +74,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     const claim = await this.keys.claim(
       command.actorUserId,
       key,
-      orderFingerprint(payload),
+      orderFingerprint(payload, command.companyId),
       this.clock.now(),
     );
     if (claim.kind === "mismatch") {
@@ -99,8 +99,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
 
   /** La passation elle-même. Tout ce qui échoue ici l'a fait AVANT l'écriture. */
   private async placeOnce(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
-    const { payload } = command;
-    const { companyId } = payload;
+    const { payload, companyId } = command;
 
     // Mur : rattachée à une entreprise ⇒ il faut en être membre. Personnelle ⇒
     // seul le client connecté la possède, rien à vérifier.

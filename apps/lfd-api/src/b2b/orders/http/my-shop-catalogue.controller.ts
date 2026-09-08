@@ -1,9 +1,8 @@
 import type { ShopCatalogueView } from "@lfd/contracts";
-import { Controller, Get, Param } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
-import type { Principal } from "../../../platform/auth/principal.js";
+import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { ReadMyShopCatalogueQuery } from "../application/queries/read-my-shop-catalogue.js";
 
 /**
@@ -15,27 +14,27 @@ import { ReadMyShopCatalogueQuery } from "../application/queries/read-my-shop-ca
  * documents annonçaient — « ce sera un second chemin, pas une modification de
  * celui-ci ».
  *
- * La société est **dans l'URL**, jamais déduite du `Principal` : une personne
- * peut n'être rattachée à aucune société ou à plusieurs, et en choisir une
- * d'office serait le raccourci qui fuit. Le handler la vérifie contre les
- * rattachements — sans quoi n'importe qui sonderait la mercuriale d'un
- * concurrent en devinant son identifiant.
+ * 🔴 **Aucun identifiant de société dans l'URL.** Il vient du contexte de la
+ * requête, résolu par le guard depuis les rattachements du demandeur
+ * (`resolve-company.ts`). Le sondage est donc **inexprimable** : il n'y a pas de
+ * paramètre à deviner. C'est un cran au-dessus du mur qui vérifie — et la
+ * première version de cette route le vérifiait, ce qui marchait, mais laissait
+ * exister la question.
  *
- * Sous `companies/:companyId/…`, comme les adresses et les pièces : c'est la
- * forme que prend une lecture murée par tenant dans ce dépôt.
+ * Sans société résolue — visiteur rattaché à rien, ou personne rattachée à
+ * plusieurs sans avoir déclaré laquelle — la route rend le **tarif catalogue**,
+ * comme la vitrine publique. C'est la réponse honnête à « je ne sais pas encore
+ * pour qui » : ni refus, ni prix de quelqu'un d'autre.
  */
-@Controller("companies")
+@Controller("shop/catalogue")
 export class MyShopCatalogueController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Le catalogue vendable, résolu à la mercuriale de cette société. */
-  @Get(":companyId/shop-catalogue")
-  read(
-    @CurrentUser() user: Principal,
-    @Param("companyId") companyId: string,
-  ): Promise<ShopCatalogueView> {
+  /** Le catalogue vendable, résolu à la mercuriale de la société courante. */
+  @Get("mine")
+  read(@ActingCompany() companyId: string | null): Promise<ShopCatalogueView> {
     return this.queries.execute<ReadMyShopCatalogueQuery, ShopCatalogueView>(
-      new ReadMyShopCatalogueQuery(user.userId, companyId),
+      new ReadMyShopCatalogueQuery(companyId),
     );
   }
 }

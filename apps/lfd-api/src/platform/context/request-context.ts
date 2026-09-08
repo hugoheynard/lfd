@@ -31,4 +31,19 @@ export interface RequestContext {
   readonly traceId: string;
   /** Acteur résolu — `system` tant que le guard n'a pas renseigné le principal. */
   readonly actor: Actor;
+  /**
+   * **La société pour laquelle la requête agit**, ou `null` — commande
+   * personnelle, visiteur, ou choix pas encore fait.
+   *
+   * 🔴 **Résolue au serveur, jamais reçue d'un client.** Un identifiant de
+   * société envoyé dans un corps de requête doit être vérifié à chaque endroit
+   * qui le lit ; ici il n'existe qu'après vérification, et l'appelant n'a aucun
+   * moyen d'en nommer un autre. Le mur devient inexprimable plutôt que
+   * surveillé.
+   *
+   * ⚠️ Elle ne se déduit **jamais d'office** quand il y a plusieurs
+   * rattachements — c'est le raccourci que `principal.ts` interdit, et il fuit.
+   * Cf. `resolveCompany` pour les trois branches.
+   */
+  readonly companyId: string | null;
 }

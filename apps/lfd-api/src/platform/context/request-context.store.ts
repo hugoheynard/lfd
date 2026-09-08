@@ -16,6 +16,7 @@ interface ContextHolder {
   readonly now: Instant;
   readonly traceId: string;
   actor: Actor;
+  companyId: string | null;
 }
 
 const storage = new AsyncLocalStorage<ContextHolder>();
@@ -39,6 +40,9 @@ export function runWithRequestContext<T>(seed: RequestContextSeed, fn: () => T):
     now: seed.now,
     traceId: seed.traceId,
     actor: seed.actor ?? SYSTEM_ACTOR,
+    // Personne tant qu'un guard n'a pas résolu les rattachements : hors requête
+    // (cron, semis, tests) il n'y a pas de société, et c'est la bonne réponse.
+    companyId: null,
   };
   return storage.run(holder, fn);
 }
@@ -56,5 +60,17 @@ export function attachActor(actor: Actor): void {
   const holder = storage.getStore();
   if (holder !== undefined) {
     holder.actor = actor;
+  }
+}
+
+/**
+ * Renseigne la société pour laquelle la requête agit, une fois les
+ * rattachements connus. Même moment et même prudence qu'{@link attachActor} :
+ * après l'ingress, appelé par le guard, **no-op** hors requête.
+ */
+export function attachCompany(companyId: string | null): void {
+  const holder = storage.getStore();
+  if (holder !== undefined) {
+    holder.companyId = companyId;
   }
 }

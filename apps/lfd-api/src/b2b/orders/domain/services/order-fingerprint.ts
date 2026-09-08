@@ -29,12 +29,16 @@ import type { PlaceOrderPayload } from "@lfd/contracts";
  * table une seconde copie des commandes — avec ses adresses et ses quantités —
  * pour un besoin qui tient en 64 caractères.
  */
-export function orderFingerprint(payload: PlaceOrderPayload): string {
+export function orderFingerprint(payload: PlaceOrderPayload, companyId: string | null): string {
   const lines = [...payload.lines]
     .map((line) => `${line.sku}:${String(line.quantity)}`)
     .sort((a, b) => a.localeCompare(b));
   const material = JSON.stringify({
-    companyId: payload.companyId,
+    // La société entre dans l'empreinte bien qu'elle ne soit plus dans le
+    // payload : deux commandes identiques passées pour deux maisons différentes
+    // sont deux commandes, et les confondre ferait rendre la seconde comme un
+    // rejeu de la première.
+    companyId,
     method: payload.fulfillmentMethod,
     pickupAddressId: payload.pickupAddressId,
     deliveryAddressId: payload.deliveryAddressId,

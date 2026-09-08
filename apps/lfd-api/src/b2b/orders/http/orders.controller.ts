@@ -27,6 +27,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
+import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -63,9 +64,12 @@ export class OrdersController {
   async place(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(placeOrderPayloadSchema)) payload: PlaceOrderPayload,
+    // 🔴 La société vient du CONTEXTE, jamais du corps : le client ne peut pas
+    // en nommer une autre, et il n'a donc pas à être cru sur parole.
+    @ActingCompany() companyId: string | null,
   ): Promise<PlacedOrderResponse> {
     const placed = await this.commands.execute<PlaceOrderCommand, PlaceOrderResult>(
-      new PlaceOrderCommand(user.userId, payload),
+      new PlaceOrderCommand(user.userId, payload, companyId),
     );
     // `payment` n'est présent que si une carte est requise (pas d'entreprise, ou
     // entreprise non active / per_order) ; on ne l'ajoute que dans ce cas

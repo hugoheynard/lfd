@@ -5,7 +5,8 @@ import {
   type ExecutionContext,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { attachActor } from "../context/request-context.store.js";
+import { attachActor, attachCompany } from "../context/request-context.store.js";
+import { COMPANY_HEADER, resolveCompany } from "./resolve-company.js";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { PrincipalResolver } from "./principal.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
@@ -51,7 +52,7 @@ export class AuthGuard implements CanActivate {
       request.principal = await this.resolver.resolve(
         await this.impersonation.verifiedToken(request),
       );
-      attachActor({ type: "customer", id: request.principal.userId });
+      this.attachIdentity(request);
       return true;
     }
 
@@ -63,8 +64,26 @@ export class AuthGuard implements CanActivate {
     request.principal = await this.authenticate(token);
     // Renseigne l'acteur du RequestContext (le principal est résolu) → le journal
     // d'événements attribuera les écritures au bon `customer`.
-    attachActor({ type: "customer", id: request.principal.userId });
+    this.attachIdentity(request);
     return true;
+  }
+
+  /**
+   * Pose au contexte **qui agit** et **pour quelle société**, une fois le
+   * principal résolu.
+   *
+   * Les deux ensemble, au même endroit : ce sont les deux faits que toute la
+   * requête lira sans les redemander, et les séparer laisserait un chemin où
+   * l'acteur est connu et le tenant non — c'est-à-dire un chemin où quelqu'un
+   * serait tenté de le déduire.
+   */
+  private attachIdentity(request: AuthenticatedRequest): void {
+    const principal = request.principal;
+    if (principal === undefined) {
+      return;
+    }
+    attachActor({ type: "customer", id: principal.userId });
+    attachCompany(resolveCompany(principal.memberships, declaredCompany(request)));
   }
 
   /** Vérifie la signature puis résout le client local. */
@@ -101,4 +120,17 @@ function bearerToken(header: string | undefined): string | undefined {
     return undefined;
   }
   return value === undefined || value === "" ? undefined : value;
+}
+
+/**
+ * L'espace de travail déclaré par l'appelant, ou `null`.
+ *
+ * Lu ici et nulle part ailleurs : c'est une chaîne venue du réseau, elle n'a
+ * aucune autorité, et `resolveCompany` la confronte aux rattachements avant
+ * qu'elle ne serve à quoi que ce soit. Un tableau d'en-têtes (le cas d'un
+ * doublon) est refusé plutôt que réduit au premier — on ne devine pas.
+ */
+function declaredCompany(request: AuthenticatedRequest): string | null {
+  const raw = request.headers[COMPANY_HEADER];
+  return typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
 }

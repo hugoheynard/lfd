@@ -138,12 +138,38 @@ function pickupOrder(companyId: string | null): Record<string, unknown> {
 }
 
 describe("le mur des commandes", () => {
-  it("un non-membre reçoit 404 (lecture entreprise et passation pour cette entreprise)", async () => {
+  it("un non-membre ne LIT pas les commandes d'une société", async () => {
     const companyId = await seedCompany("active");
     await seedPickup();
+
     await ctx.asSub(STRANGER).get(`/companies/${companyId}/orders`).expect(404);
-    await ctx.asSub(STRANGER).post(`/orders`).send(pickupOrder(companyId)).expect(404);
-    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  /**
+   * 🔴 **Ce cas a changé de nature le 2026-09-08, et c'est le progrès.**
+   *
+   * Il attendait un 404 : l'étranger NOMMAIT la société dans le corps, et le
+   * handler le refusait. Le corps ne porte plus de société — elle est résolue au
+   * serveur depuis les rattachements — donc il n'y a plus rien à refuser. Ce
+   * qu'il obtient est une commande PERSONNELLE, la sienne.
+   *
+   * Le mur est passé de « vérifié à chaque lecture » à **inexprimable**. Le test
+   * qui suit n'éprouve donc plus un refus mais l'absence de prise : quoi qu'il
+   * envoie, sa commande ne peut pas appartenir à une maison dont il n'est pas.
+   */
+  it("un non-membre qui NOMME une société obtient une commande personnelle, pas la sienne", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+
+    const placed = jsonBody<{ id: string }>(
+      await ctx.asSub(STRANGER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+
+    const order = await ctx.prisma.order.findUnique({
+      where: { id: placed.id },
+      select: { companyId: true },
+    });
+    expect(order?.companyId).toBeNull();
   });
 });
 
