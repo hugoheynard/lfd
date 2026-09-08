@@ -7,6 +7,7 @@ import { CompanyMercurialeReader } from "./domain/ports/company-mercuriale.reade
 import { VolumeLadderReader } from "./domain/ports/volume-ladder.reader.js";
 import { VolumeCommitmentReader } from "./domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "./domain/ports/customer-volume.reader.js";
+import { PricingMaterialsLoader } from "./application/pricing-materials.loader.js";
 import { PricingMaterialsCache } from "./infrastructure/pricing-materials.cache.js";
 import { PrismaPriceFloorReader } from "./infrastructure/prisma-price-floor.reader.js";
 import { PrismaSkuVolumeReader } from "./infrastructure/prisma-sku-volume.reader.js";
@@ -27,6 +28,10 @@ import { PrismaCustomerVolumeReader } from "./infrastructure/prisma-customer-vol
  */
 @Module({
   providers: [
+    // 🔴 **La seule séquence de chargement du dépôt.** Elle vivait dans
+    // `OrderLinePricing`, et quatre autres appelants en avaient écrit chacun
+    // une variante — c'est ainsi que deux d'entre eux ont oublié un étage.
+    PricingMaterialsLoader,
     // Un SINGLETON, et c'est tout le lot : les trois lectures des matériaux le
     // partagent, et `PricingActWriter` le vide. Deux instances rendraient le
     // cache invisible à l'invalidation de l'autre.
@@ -40,6 +45,7 @@ import { PrismaCustomerVolumeReader } from "./infrastructure/prisma-customer-vol
     { provide: CustomerVolumeReader, useClass: PrismaCustomerVolumeReader },
   ],
   exports: [
+    PricingMaterialsLoader,
     // 🔴 EXPORTÉ, et c'est ce qui rend le lot correct. `PricingActWriter` vit
     // dans `PricingAdminModule` — s'il construisait sa propre instance, il
     // viderait un cache que personne ne lit, et la boutique servirait le prix

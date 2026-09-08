@@ -1,9 +1,14 @@
-import type { PricingContext } from "../domain/price-rule.js";
+import type { PricingContext } from "./price-rule.js";
+import type { PricingParties } from "./loaded-pricer.js";
 
-/** Ce que l'appelant sait du client au moment de résoudre. */
-export interface PricingParties {
-  readonly companyId: string | null;
-}
+/**
+ * Ce que l'appelant sait du client au moment de résoudre.
+ *
+ * Défini dans le **domaine**, avec le tarificateur qui le lit, et réexporté ici
+ * pour les appelants historiques. Deux déclarations de la même notion auraient
+ * fini par diverger d'un champ.
+ */
+export type { PricingParties } from "./loaded-pricer.js";
 
 /**
  * Construit le contexte de résolution à partir de ce que le **catalogue en

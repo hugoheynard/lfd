@@ -26,7 +26,7 @@ import { boardMaterials, itemView, type LoadedFloor, type LoadedRule } from "../
 import { groupByCategory } from "../board-category.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
-import { pricingContextFor } from "../pricing-context.js";
+import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 
 /**
@@ -113,7 +113,7 @@ export class CompanyPricingQuery {
     });
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
-    const materials = boardMaterials(rules, floors, live);
+    const materials = boardMaterials(rules, floors, at, live, ladders, companyId);
     const byCategory = groupByCategory(articles);
     const categories: CompanyPricingCategoryView[] = CATALOG_CATEGORY_ORDER.map((category) => ({
       id: category,
@@ -123,12 +123,12 @@ export class CompanyPricingQuery {
           {
             sku: article.sku,
             name: article.name,
+            category: article.category,
             canonicalMillicents: article.unitPriceMillicents,
           },
           pricingContextFor(article.sku, article.category, 1, { companyId }, at),
           materials,
           { rules, floors },
-          ladders,
         ),
       ),
     })).filter((category) => category.items.length > 0);

@@ -1,7 +1,38 @@
-import type { PriceFloorPolicy } from "../../domain/floor-policy.js";
-import type { PriceRule, PricingContext } from "../../domain/price-rule.js";
-import type { VolumeLadder } from "../../domain/volume-ladder.js";
+import type { PriceFloorPolicy } from "../floor-policy.js";
+import type { PriceRule, PricingContext } from "../price-rule.js";
+import type { VolumeLadder } from "../volume-ladder.js";
+import { resolvePrice } from "../resolve-price.js";
 import { volumeTierPrices } from "../volume-tier-prices.js";
+import type { CompanyMercuriale } from "../entities/company-mercuriale.js";
+import type { PriceFloor } from "../price-rule.js";
+
+/**
+ * La grille, avec sa résolution **fournie** — comme le tarificateur la fournit.
+ *
+ * `volumeTierPrices` n'importe plus `resolvePrice` : c'est ce qui garde une
+ * seule porte sur la fonction qui facture. Le doublé qu'on lui passe ici est la
+ * vraie résolution, pas un simulacre — un simulacre ferait passer la grille
+ * sans rien prouver de ce qu'elle affiche.
+ */
+function grid(
+  canonicalMillicents: number,
+  ladders: readonly VolumeLadder[],
+  rules: readonly PriceRule[],
+  ctx: PricingContext,
+  floor: { policy: PriceFloorPolicy; observedVolumeRatioBp: number | null } | null,
+  mercuriale: CompanyMercuriale | null = null,
+) {
+  return volumeTierPrices(
+    canonicalMillicents,
+    ladders,
+    rules,
+    ctx,
+    floor,
+    mercuriale,
+    (probe: PricingContext, applied: PriceFloor | null) =>
+      resolvePrice(canonicalMillicents, { rules, ladders, mercuriale }, probe, applied),
+  );
+}
 
 /**
  * **La grille que le commercial lit au téléphone** — « à combien je lui fais les
@@ -75,9 +106,9 @@ describe("volumeTierPrices", () => {
   it("rend la grille d'une mercuriale à paliers, sans aucun barème", () => {
     const rules = [mercurialeTier(1, 190_000), mercurialeTier(50, 170_000)];
 
-    const grid = volumeTierPrices(CANONICAL, [], rules, context(), null);
+    const built = grid(CANONICAL, [], rules, context(), null);
 
-    expect(grid).toEqual([
+    expect(built).toEqual([
       { minQuantity: 1, unitPriceMillicents: 190_000, discountBp: 500 },
       { minQuantity: 50, unitPriceMillicents: 170_000, discountBp: 1500 },
     ]);
@@ -92,9 +123,7 @@ describe("volumeTierPrices", () => {
       ]),
     ];
 
-    expect(thresholds(volumeTierPrices(CANONICAL, ladders, rules, context(), null))).toEqual([
-      10, 50,
-    ]);
+    expect(thresholds(grid(CANONICAL, ladders, rules, context(), null))).toEqual([10, 50]);
   });
 
   /**
@@ -107,9 +136,7 @@ describe("volumeTierPrices", () => {
   it("retient un palier que la quantité courante n'atteint pas", () => {
     const rules = [mercurialeTier(100, 150_000)];
 
-    expect(
-      thresholds(volumeTierPrices(CANONICAL, [], rules, context({ quantity: 1 }), null)),
-    ).toEqual([100]);
+    expect(thresholds(grid(CANONICAL, [], rules, context({ quantity: 1 }), null))).toEqual([100]);
   });
 
   it("ne retient pas une règle qui vise un autre article", () => {
@@ -118,7 +145,7 @@ describe("volumeTierPrices", () => {
       scope: { type: "product", id: "PAI-001" },
     };
 
-    expect(volumeTierPrices(CANONICAL, [], [other], context(), null)).toBeNull();
+    expect(grid(CANONICAL, [], [other], context(), null)).toBeNull();
   });
 
   /**
@@ -139,15 +166,15 @@ describe("volumeTierPrices", () => {
     };
     const rules = [mercurialeTier(1, 150_000), mercurialeTier(100, 150_000)];
 
-    const grid = volumeTierPrices(CANONICAL, [], rules, context({ quantity: 1 }), {
+    const built = grid(CANONICAL, [], rules, context({ quantity: 1 }), {
       policy,
       observedVolumeRatioBp: null,
     });
 
     // À 1, la porte est fermée : le mur dur relève à 180 000.
-    expect(grid?.[0]).toMatchObject({ minQuantity: 1, unitPriceMillicents: 180_000 });
+    expect(built?.[0]).toMatchObject({ minQuantity: 1, unitPriceMillicents: 180_000 });
     // À 100, elle s'ouvre : le prix négocié passe.
-    expect(grid?.[1]).toMatchObject({ minQuantity: 100, unitPriceMillicents: 150_000 });
+    expect(built?.[1]).toMatchObject({ minQuantity: 100, unitPriceMillicents: 150_000 });
   });
 
   /**
@@ -170,7 +197,7 @@ describe("volumeTierPrices", () => {
     };
     const rules = [mercurialeTier(100, 150_000)];
 
-    const grid = volumeTierPrices(
+    const withCommitment = grid(
       CANONICAL,
       [],
       rules,
@@ -182,7 +209,9 @@ describe("volumeTierPrices", () => {
 
     // Le palier est atteignable — le cumul en décide — mais la porte reste
     // fermée : la commande fait une pièce.
-    expect(grid).toEqual([{ minQuantity: 100, unitPriceMillicents: 180_000, discountBp: 1000 }]);
+    expect(withCommitment).toEqual([
+      { minQuantity: 100, unitPriceMillicents: 180_000, discountBp: 1000 },
+    ]);
   });
 
   it("rend `null` quand aucun seuil n'existe nulle part", () => {
@@ -190,6 +219,6 @@ describe("volumeTierPrices", () => {
     // contraire.
     const flat: PriceRule = { ...mercurialeTier(1, 190_000), minQuantity: null };
 
-    expect(volumeTierPrices(CANONICAL, [], [flat], context(), null)).toBeNull();
+    expect(grid(CANONICAL, [], [flat], context(), null)).toBeNull();
   });
 });

@@ -38,6 +38,7 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
+import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
 import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-version.reader.js";
@@ -262,13 +263,19 @@ function handler(
     new OrderDrafting(
       new OrderLinePricing(
         catalog,
-        noPriceRules,
-        noMercuriales,
-        noPriceFloors,
-        noSkuVolumes,
-        noVolumeLadders,
-        noCommitments,
-        noCustomerVolumes,
+        // Le chargement des matériaux vit désormais dans UN service — c'est la
+        // seule séquence de lecture du dépôt. Le monter ici plutôt que d'aligner
+        // sept ports dans le constructeur de la caisse est exactement ce que
+        // l'extraction a rendu possible.
+        new PricingMaterialsLoader(
+          noPriceRules,
+          noMercuriales,
+          noPriceFloors,
+          noSkuVolumes,
+          noVolumeLadders,
+          noCommitments,
+          noCustomerVolumes,
+        ),
         new FixedClock(PRICED_AT),
       ),
       currentCatalogVersion,
@@ -452,13 +459,19 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       new OrderDrafting(
         new OrderLinePricing(
           gratuit,
-          noPriceRules,
-          noMercuriales,
-          noPriceFloors,
-          noSkuVolumes,
-          noVolumeLadders,
-          noCommitments,
-          noCustomerVolumes,
+          // Le chargement des matériaux vit désormais dans UN service — c'est la
+          // seule séquence de lecture du dépôt. Le monter ici plutôt que d'aligner
+          // sept ports dans le constructeur de la caisse est exactement ce que
+          // l'extraction a rendu possible.
+          new PricingMaterialsLoader(
+            noPriceRules,
+            noMercuriales,
+            noPriceFloors,
+            noSkuVolumes,
+            noVolumeLadders,
+            noCommitments,
+            noCustomerVolumes,
+          ),
           new FixedClock(PRICED_AT),
         ),
         currentCatalogVersion,

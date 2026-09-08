@@ -21,9 +21,10 @@
  * un étage différent — 1,83924 € contre 1,65532 € sur le premier, une courbe au
  * tarif catalogue sur le second (tous deux corrigés le 2026-09-08).
  *
- * D'où l'inventaire ci-dessous. Ouvrir une entrée de plus reste possible : ça
- * demande d'écrire pourquoi aucune des cinq ne convenait. C'est le prix qu'on
- * met à la question « et si j'appelais directement ? ».
+ * D'où l'inventaire ci-dessous — **une seule ligne depuis le 2026-09-09**. Les
+ * cinq portes ont été refermées le jour où les six gestes qu'un prix demande
+ * sont passés dans un objet nommé : un appelant demande désormais un prix, il
+ * n'en compose plus un.
  *
  * ## Ce que cette porte NE tient pas
  *
@@ -46,34 +47,35 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo
 const CALL = /\bresolvePrice\s*\(/u;
 
 /**
- * **Les cinq entrées du pipeline, et ce que chacune sert.**
+ * **L'unique entrée du pipeline.**
  *
- * Une entrée sans raison écrite est une divergence en attente. Le critère pour
- * en ajouter une : *aucune des cinq ne peut-elle répondre à ma question ?* La
- * réponse est presque toujours non.
+ * Il y en a eu cinq. Chacune chargeait ses matériaux, construisait son contexte,
+ * décidait son plancher et appelait `resolvePrice` — cinq recettes pour une
+ * seule question, et **deux se sont trompées** : le tableau de tarification
+ * annonçait 1,83924 € quand la caisse facturait 1,65532 € (barèmes non passés),
+ * et la projection rendait la courbe d'un client négocié au tarif catalogue
+ * (mercuriale non lue). Aucune des deux ne rougissait : un prix auquel il manque
+ * un étage reste un prix plausible.
+ *
+ * Depuis le 2026-09-09, ces gestes vivent dans **le tarificateur**, une fois.
+ * Les cinq appelants lui demandent un prix au lieu d'en composer un — ils ne
+ * construisent plus de contexte, ne décident plus de plancher, n'assemblent plus
+ * d'étage. La liste ci-dessous ne peut donc plus décroître : elle est à un.
+ *
+ * Ouvrir une entrée de plus reste possible : ça demande d'écrire ici pourquoi le
+ * tarificateur ne convenait pas. C'est le prix qu'on met à la question « et si
+ * j'appelais directement ? ».
  */
 const ENTRIES = [
-  // ── Ce qui facture ────────────────────────────────────────────────────
-  // La caisse. Le prix de référence : tous les autres doivent tomber d'accord
-  // avec celui-ci, et un e2e l'exige pour l'écran de tarification.
-  "src/b2b/orders/domain/services/price-line.ts",
-
-  // ── Ce qui affiche ────────────────────────────────────────────────────
-  // Le tableau de tarification ET l'onglet Tarifs d'une fiche : même fonction,
-  // deux chargements. C'est celui qui divergeait de la caisse.
-  "src/b2b/pricing/application/board-item.ts",
-  // La grille des paliers : elle RÉSOUT à chaque seuil sondé, ce qu'aucune
-  // autre entrée ne fait — un prix par palier, pas un prix.
-  "src/b2b/pricing/application/volume-tier-prices.ts",
-  // La projection : mêmes candidats, N quantités. Elle ne peut pas passer par
-  // la caisse, qui résout une commande réelle.
-  "src/b2b/pricing/application/queries/price-projection.query.ts",
-
-  // ── Ce qui compare ────────────────────────────────────────────────────
-  // Le comparatif de marché. La seule entrée qui résout DÉLIBÉRÉMENT sans
-  // barème ni plancher : elle mesure ce qu'une mercuriale accorde seule, chez
-  // les autres clients. Y ajouter un étage mesurerait autre chose.
-  "src/b2b/pricing/application/queries/mercuriale-benchmark.query.ts",
+  // LE tarificateur. Il porte les six gestes qu'un prix demande — contexte,
+  // engagement, mesure retenue, plancher, porte dynamique, assemblage — et il
+  // est pur : ses matériaux lui sont donnés, il ne lit rien.
+  //
+  // Les questions qui ne sont pas « le prix de cet article » sont des MÉTHODES
+  // de cet objet, pas des entrées de plus : `tiers` pour la grille des paliers,
+  // `priceAtCumulative` pour la projection, `mercurialeAlone` pour le
+  // comparatif de marché — chacune avec sa raison, écrite au-dessus d'elle.
+  "src/b2b/pricing/domain/loaded-pricer.ts",
 ];
 
 function isEntry(relPath) {
@@ -138,10 +140,12 @@ if (undeclared.length > 0 || missing.length > 0) {
   }
   console.error(
     "\n  Une entrée de plus, c'est une réponse de plus à « combien coûte cet\n" +
-      "  article ». Les deux divergences connues sont nées comme ça. Si aucune\n" +
-      "  des cinq ne convient, ajouter la sienne à `ENTRIES` AVEC sa raison.\n",
+      "  article ». Les deux divergences connues sont nées comme ça. La question\n" +
+      "  à se poser : le tarificateur ne peut-il vraiment pas répondre ? Si c'est\n" +
+      "  une VARIANTE de la question, c'est une méthode de plus sur `LoadedPricer`,\n" +
+      "  pas un appel de plus à `resolvePrice`.\n",
   );
   process.exit(1);
 }
 
-console.log(`✓ price-pipeline : ${String(ENTRIES.length)} entrée(s) déclarée(s), aucune de plus.`);
+console.log(`✓ price-pipeline : ${String(ENTRIES.length)} entrée déclarée, aucune de plus.`);

@@ -159,7 +159,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
   }
 
   private assemble(loaded: LoadedBoard, at: Date): PricingBoardView {
-    const materials = boardMaterials(loaded.rules, loaded.floors);
+    const materials = boardMaterials(loaded.rules, loaded.floors, at, null, loaded.ladders, null);
     // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
     // proportionnel au produit familles × articles, pour un découpage qui ne
     // change jamais d'une famille à l'autre.

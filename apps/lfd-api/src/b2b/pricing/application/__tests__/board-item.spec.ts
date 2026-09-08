@@ -1,5 +1,5 @@
 import { boardMaterials, itemView, targetsArticle } from "../board-item.js";
-import { pricingContextFor } from "../pricing-context.js";
+import { pricingContextFor } from "../../domain/pricing-context.js";
 import {
   floorFromRow,
   floorViewFromRow,
@@ -26,7 +26,12 @@ import type { PriceScope, PriceStage } from "../../domain/price-rule.js";
 
 const AT = new Date("2026-08-17T00:00:00.000Z");
 const CONTEXT = pricingContextFor("VIE-001", "viennoiserie", 1, { companyId: null }, AT);
-const ARTICLE = { sku: "VIE-001", name: "Croissant", canonicalMillicents: 200_000 };
+const ARTICLE = {
+  sku: "VIE-001",
+  name: "Croissant",
+  category: "viennoiserie",
+  canonicalMillicents: 200_000,
+};
 
 function ruleRow(
   id: string,
@@ -89,7 +94,7 @@ describe("un nœud du tableau", () => {
       ruleRow("b", { stage: "geste", bp: 1_000 }),
     ]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, []), { rules, floors: [] }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
 
     // −20 % puis −10 % font −28 %, pas −30 % : 200 → 160 → 144.
     expect(view.finalMillicents).toBe(144_000);
@@ -107,7 +112,7 @@ describe("un nœud du tableau", () => {
       ruleRow("produit", { bp: 500, scope: { type: "product", id: "VIE-001" } }),
     ]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, []), { rules, floors: [] }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
 
     expect(view.supersededRuleIds).toEqual(["catalogue"]);
     expect(view.steps).toHaveLength(1);
@@ -117,7 +122,7 @@ describe("un nœud du tableau", () => {
   it("n'annonce aucune marge de négociation quand aucune limite n'est posée", () => {
     const rules = loadedRules([ruleRow("a")]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, []), { rules, floors: [] }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
 
     expect(view.negotiationRoom).toBeNull();
   });
@@ -131,7 +136,7 @@ describe("un nœud du tableau", () => {
     const rules = loadedRules([ruleRow("a", { bp: 5_000 })]);
     const floors = [loadedFloor("plancher", { type: "global", id: null }, 9_000)];
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors), { rules, floors }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors, AT), { rules, floors });
 
     expect(view.floored).toBe(true);
     expect(view.finalMillicents).toBe(180_000);
@@ -150,7 +155,7 @@ describe("un nœud du tableau", () => {
     ];
     const rules = loadedRules([ruleRow("a", { bp: 4_000 })]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors), { rules, floors }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors, AT), { rules, floors });
 
     expect(view.effectiveFloor?.id).toBe("article");
     expect(view.floored).toBe(false);
@@ -160,7 +165,7 @@ describe("un nœud du tableau", () => {
   it("laisse la mesure des ventes à la passe qui la fait", () => {
     const rules = loadedRules([ruleRow("a")]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, []), { rules, floors: [] }, []);
+    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
 
     expect(view.elasticity).toBeNull();
   });
@@ -170,7 +175,7 @@ describe("les matériaux d'une lecture", () => {
   it("range les règles par étage, une seule fois pour tout le tableau", () => {
     const rules = loadedRules([ruleRow("a"), ruleRow("b", { stage: "geste" }), ruleRow("c")]);
 
-    const materials = boardMaterials(rules, []);
+    const materials = boardMaterials(rules, [], AT);
 
     expect(materials.rules).toHaveLength(3);
     expect(materials.byStage.get("promotion")?.map((entry) => entry.id)).toEqual(["a", "c"]);

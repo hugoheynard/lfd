@@ -845,3 +845,25 @@ export class CorruptedMercurialeError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Le même article demandé deux fois** dans un seul appel au `Pricer`.
+ *
+ * Refusé, et non fusionné. La question est réellement ambiguë : deux lignes de
+ * 5 sont-elles un panier de 10 — ce que la caisse en fait, parce qu'un palier
+ * de volume se juge sur le total commandé — ou deux demandes indépendantes ?
+ * Les deux lectures sont défendables, elles donnent des prix différents dès
+ * qu'un barème est posé, et la façade n'a aucun moyen de trancher.
+ *
+ * Fusionner en silence aurait rendu le tableau de sortie plus court que celui
+ * demandé, ce que §4 du document d'architecture refuse pour une raison plus
+ * simple encore : personne ne compte les lignes d'un écran.
+ */
+export class DuplicateArticleError extends DomainError {
+  constructor(readonly sku: string) {
+    super(
+      "pricing.request.duplicate-article",
+      `L'article « ${sku} » est demandé deux fois : fusionner les quantités ou poser deux appels, mais la demande telle quelle n'a pas de prix unique.`,
+    );
+  }
+}

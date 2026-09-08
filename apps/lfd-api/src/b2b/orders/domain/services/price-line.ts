@@ -1,25 +1,11 @@
-import type { CommitmentDecisionView, VolumeTierPriceView } from "@lfd/contracts";
-import {
-  pricingContextFor,
-  type PricingParties,
-} from "../../../pricing/application/pricing-context.js";
-import { decideFloor } from "../../../pricing/domain/floor-policy.js";
-import {
-  floorsFor,
-  laddersFor,
-  rulesFor,
-  type PricingEvidence,
-  type PricingMaterials,
-} from "../../../pricing/domain/pricing-materials.js";
-import { floorMillicentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
-import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
-import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
-import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
+import type { VolumeTierPriceView } from "@lfd/contracts";
 import type { OrderLineAllergens } from "@lfd/contracts";
+
+import type { LoadedPricer, PricedArticle } from "../../../pricing/domain/loaded-pricer.js";
 
 import type { OrderLineInput } from "../value-objects/order-line.js";
 
-/** L'article à tarifer, réduit à ce que la résolution lit. */
+/** L'article à tarifer, réduit à ce que la ligne de commande porte. */
 export interface LineToPrice {
   readonly sku: string;
   readonly name: string;
@@ -44,6 +30,17 @@ export interface ResolvedOrderLine {
   /** Les règles écartées par ce scellement. */
   readonly sealedRuleIds: readonly string[];
   /**
+   * **Le prix et sa trace, sous la forme du DOMAINE.**
+   *
+   * La même information se trouve dans `line.pricing`, mais sous la forme du
+   * **contrat** : là, `pricing` est optionnel et la portée d'une étape peut
+   * valoir `null`, parce que ce type décrit une ligne de commande qui a pu être
+   * écrite avant que la trace n'existe. Un lecteur qui veut la trace d'un prix
+   * qu'on vient de résoudre n'a pas à traverser cette optionalité-là : elle
+   * appartient aux commandes anciennes, pas à ce calcul.
+   */
+  readonly priced: PricedArticle;
+  /**
    * Le barème qui vise l'article, résolu **palier par palier**.
    *
    * `null` sur le chemin qui FACTURE : la grille n'y sert à rien, elle coûte
@@ -60,86 +57,41 @@ export interface LinePricingInput {
   readonly item: LineToPrice;
   /** La quantité, **lignes déjà fusionnées par SKU**. */
   readonly quantity: number;
-  readonly parties: PricingParties;
-  /** L'instant de résolution — le même pour tout le panier, par décision. */
-  readonly at: Date;
   /** La grille des paliers : pour un devis, jamais pour une vente. */
   readonly withTiers: boolean;
 }
 
 /**
- * **Le prix d'une ligne — et la fonction est PURE.**
+ * **La ligne de commande, à partir d'un prix déjà résolu.**
  *
- * ## Ce qu'elle répare
+ * ## Ce que cette fonction ne fait plus
  *
- * `resolvePrice` était pure, mais trop petite. Les décisions qui comptent —
- * quel engagement couvre l'article, quelle mesure est retenue, quel plancher le
- * vise, quel étage s'ouvre, comment un barème devient une règle — vivaient dans
- * quatre-vingt-dix lignes `async` d'un orchestrateur. Six étapes pures sur huit,
- * prisonnières des deux autres : la recette n'existait qu'à cet endroit, et ne
- * s'éprouvait qu'avec sept doublés.
+ * Elle composait le prix : contexte, engagement, mesure retenue, plancher,
+ * porte dynamique, assemblage des étages — huit gestes dans un ordre qui
+ * compte. C'était la **deuxième** des cinq recettes du dépôt, et deux des cinq
+ * s'étaient trompées d'un étage.
  *
- * Elle est ici, et elle ne lit rien. Ce qu'elle sait de la base lui est **donné**
- * : les matériaux, chargés une fois pour le panier, et les preuves, mesurées en
- * amont par lot. On l'éprouve donc en énumérant des cas, pas en fabriquant un
- * environnement — ce qui était déjà le motif de `resolvePrice`, et qui vaut
- * maintenant pour la recette entière.
+ * Ces gestes vivent désormais dans le tarificateur, une fois. Ce qui reste ici
+ * est du **façonnage** : mettre un prix, une TVA, des allergènes et une trace
+ * dans la forme qu'une commande porte. Aucune arithmétique.
  *
- * ## Ce qui n'a PAS changé
+ * ## Ce qui n'a pas changé
  *
- * L'ordre des décisions, à la ligne près. Ce lot ne change aucun prix : c'est sa
- * promesse, et c'est ce que les suites existantes vérifient — elles n'ont pas
- * été retouchées.
+ * Le prix. À la ligne près : c'est la promesse de ce lot, et ce que les suites
+ * existantes vérifient — elles n'ont pas été retouchées.
  *
  * @throws {AmbiguousPriceRulesError} deux règles également spécifiques.
  * @throws {AmbiguousPriceFloorsError} deux planchers également spécifiques.
  */
-export function priceLine(
-  input: LinePricingInput,
-  materials: PricingMaterials,
-  evidence: PricingEvidence,
-): ResolvedOrderLine {
-  const { item, quantity, parties, at, withTiers } = input;
-  const decision = commitmentDecisionOf(input, materials, evidence);
-  const context = pricingContextFor(
-    item.sku,
-    item.category,
-    quantity,
-    parties,
-    at,
-    // La mesure RETENUE, pas le cumul : sous engagement, c'est le volume
-    // annoncé qui ouvre le palier dès la première commande.
-    decision?.retainedQuantity ?? null,
-  );
-
-  const rules = rulesFor(materials, context);
-  const ladders = laddersFor(materials, context);
-
-  // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre : deux
-  // questions distinctes, la seconde dépendant de la commande et de l'historique.
-  const scoped = resolveScopedFloor(floorsFor(materials, context), context);
-  // La mesure n'a été prise que si un plancher la réclamait : absente du relevé,
-  // elle vaut `null`, ce qui est exactement ce que la lecture paresseuse rendait.
-  const observedVolumeRatioBp =
-    scoped === null ? null : (evidence.volumeRatioBySku.get(item.sku) ?? null);
-  const floorDecision =
-    scoped === null ? null : decideFloor(scoped.policy, { quantity, observedVolumeRatioBp });
-  const applied = floorDecision?.applied ?? null;
-  // Les barèmes et la mercuriale partent en OBJET : `resolvePrice` les présente
-  // elle-même, à la mesure de ce contexte. C'est ce qui rend impossible d'en
-  // oublier un — deux écrans l'avaient fait.
-  const resolved = resolvePrice(
-    item.unitPriceMillicents,
-    { rules, ladders, mercuriale: materials.mercuriale },
-    context,
-    applied,
-  );
+export function priceLine(input: LinePricingInput, pricer: LoadedPricer): ResolvedOrderLine {
+  const { item, quantity, withTiers } = input;
+  const priced = pricer.price(articleOf(item), quantity);
 
   return {
     line: {
       sku: item.sku,
       productName: item.name,
-      unitPriceMillicents: resolved.finalMillicents,
+      unitPriceMillicents: priced.finalMillicents,
       vatRate: item.vatRate,
       quantity,
       // Figés avec le prix, et pour une raison du même ordre : dans six mois,
@@ -151,91 +103,35 @@ export function priceLine(
       // règles qui l'ont produit peuvent avoir été retirées. Sans elle, la seule
       // réponse à « pourquoi ce prix ? » serait « c'était le prix ».
       pricing: {
-        basePriceMillicents: resolved.basePriceMillicents,
-        steps: resolved.steps,
-        floored: resolved.floored,
+        basePriceMillicents: priced.canonicalMillicents,
+        steps: priced.steps,
+        floored: priced.floored,
         // La décision de plancher est figée AVEC le prix. C'est ce qui rend le
         // plancher dynamique tenable : sans la mesure consignée, un prix qui
         // dépend de l'historique cesse d'être explicable dès que l'historique
         // bouge. Elle ne se relit jamais.
-        floorDecision:
-          floorDecision === null
-            ? null
-            : {
-                tier: floorDecision.tier,
-                floorMillicents: floorMillicentsFor(
-                  floorDecision.applied,
-                  item.unitPriceMillicents,
-                ),
-                observedVolumeRatioBp: floorDecision.unlock?.observedVolumeRatioBp ?? null,
-                quantityMet: floorDecision.unlock?.quantityMet ?? true,
-                volumeMet: floorDecision.unlock?.volumeMet ?? true,
-              },
+        floorDecision: priced.floorDecision,
         // La MESURE figée avec le prix, exactement comme la décision de
         // plancher : sans elle, « pourquoi ce palier-là ? » n'a plus de réponse
         // dès que le client passe la commande suivante.
-        commitment: decision,
+        commitment: priced.commitment,
       },
     },
     canonicalMillicents: item.unitPriceMillicents,
-    sealedByRuleId: resolved.sealedByRuleId,
-    sealedRuleIds: resolved.sealedRuleIds,
-    // `rules` SANS `volumeRules` : `volumeTierPrices` réinjecte lui-même le
-    // barème à la quantité de chaque palier. Lui passer la chaîne complète
-    // dupliquait l'échelle, et deux règles de même identifiant à l'étage volume
-    // rendaient la résolution ambiguë — 400 sur une commande de 20.
-    volumeTiers: withTiers
-      ? volumeTierPrices(
-          item.unitPriceMillicents,
-          ladders,
-          rules,
-          context,
-          scoped === null ? null : { policy: scoped.policy, observedVolumeRatioBp },
-          // L'OBJET, pas la règle dérivée : la grille reconvertit à chaque
-          // palier qu'elle sonde. Même raison que pour les barèmes, deux lignes
-          // plus haut.
-          materials.mercuriale,
-        )
-      : null,
-    floorMillicents:
-      applied === null ? null : floorMillicentsFor(applied, item.unitPriceMillicents),
+    sealedByRuleId: priced.sealedByRuleId,
+    sealedRuleIds: priced.sealedRuleIds,
+    priced,
+    volumeTiers: withTiers ? pricer.tiers(articleOf(item), quantity) : null,
+    floorMillicents: priced.floorMillicents,
   };
 }
 
-/**
- * **Où en est le client sur son engagement**, cette commande comprise.
- *
- * `null` — et aucune mesure — quand aucun engagement ne couvre l'article. C'est
- * le cas de l'immense majorité des lignes.
- *
- * Le cumul **inclut la commande en cours**. Sans cela, la première commande
- * d'une période partirait toujours d'un cumul nul et le palier arriverait avec
- * une commande de retard — un client qui commande ses 6 000 pièces en une fois
- * paierait le tarif d'entrée sur la totalité.
- *
- * Les trois nombres sont consignés, et pas seulement celui qui décide : une
- * ligne facturée au palier de 10 000 alors que 1 200 ont été livrés n'est
- * relisible que si la trace dit que c'est la PROMESSE qui a ouvert ce palier.
- */
-function commitmentDecisionOf(
-  input: LinePricingInput,
-  materials: PricingMaterials,
-  evidence: PricingEvidence,
-): CommitmentDecisionView | null {
-  const { item, quantity, at } = input;
-  const commitment = commitmentFor(
-    materials.commitments,
-    { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
-    at,
-  );
-  if (commitment === null) {
-    return null;
-  }
-  const cumulativeQuantity = (evidence.orderedBySku.get(item.sku) ?? 0) + quantity;
+/** L'article de commande, réduit à ce que le tarificateur lit. */
+function articleOf(item: LineToPrice) {
   return {
-    commitmentId: commitment.id,
-    promisedQuantity: commitment.promisedQuantity,
-    cumulativeQuantity,
-    retainedQuantity: retainedQuantity(commitment, cumulativeQuantity),
+    sku: item.sku,
+    name: item.name,
+    category: item.category,
+    canonicalMillicents: item.unitPriceMillicents,
   };
 }

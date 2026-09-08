@@ -5,11 +5,10 @@ import type {
   PricingItemView,
 } from "@lfd/contracts";
 
-import { decideFloor } from "../domain/floor-policy.js";
-import { floorMillicentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
-import { resolvePrice } from "../domain/resolve-price.js";
+import { LoadedPricer } from "../domain/loaded-pricer.js";
+import { resolveScopedFloor } from "../domain/resolve-floor.js";
+import { materialsOf, NO_EVIDENCE } from "../domain/pricing-materials.js";
 import { applies, winnerOf } from "../domain/specificity.js";
-import { volumeTierPrices } from "./volume-tier-prices.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import {
   PRICE_STAGES,
@@ -56,18 +55,58 @@ export interface BoardMaterials {
    * dans `itemView`. Cf. `CompanyMercuriale.asRuleFor`.
    */
   readonly mercuriale: CompanyMercuriale | null;
+  /**
+   * 🔴 **Le tarificateur du tableau** — construit une fois pour tout l'écran.
+   *
+   * L'écran calculait son prix lui-même : contexte, plancher, porte, assemblage.
+   * C'est comme ça qu'il a annoncé 1,83924 € quand la caisse facturait
+   * 1,65532 € — il recevait les barèmes en paramètre et ne les passait pas.
+   *
+   * Il ne calcule plus : il demande. La seule différence assumée avec la caisse
+   * est le jeu de preuves — `NO_EVIDENCE`, donc la porte d'un plancher dynamique
+   * reste FERMÉE, ce qui est la lecture juste : la vitrine ne remplit pas les
+   * conditions qu'une commande remplit.
+   */
+  readonly pricer: LoadedPricer;
 }
 
 export function boardMaterials(
   loadedRules: readonly LoadedRule[],
   loadedFloors: readonly LoadedFloor[],
+  /**
+   * L'instant de lecture. **Obligatoire, et sans valeur par défaut** : une
+   * fenêtre de règle se juge contre lui, et un défaut ferait rendre un tableau
+   * plausible à l'appelant qui l'oublie. C'est le mode de défaillance que
+   * `floorViewFromRow(now = new Date())` a déjà coûté au dépôt.
+   */
+  at: Date,
   mercuriale: CompanyMercuriale | null = null,
+  ladders: readonly VolumeLadder[] = [],
+  /**
+   * Le client dont on lit le tableau. `null` = le tableau général, qui montre
+   * ce que voit un compte sans tarif négocié.
+   */
+  companyId: string | null = null,
 ): BoardMaterials {
   const rules = loadedRules.map((entry) => entry.rule);
+  const floors = loadedFloors.map((entry) => entry.floor);
   const byStage = new Map<PriceStage, readonly PriceRule[]>(
     PRICE_STAGES.map((stage) => [stage, rules.filter((rule) => rule.stage === stage)]),
   );
-  return { rules, floors: loadedFloors.map((entry) => entry.floor), byStage, mercuriale };
+  return {
+    rules,
+    floors,
+    byStage,
+    mercuriale,
+    pricer: LoadedPricer.over(
+      // Aucun engagement : le tableau montre un prix de vitrine, et un
+      // engagement ouvrirait un palier que la vitrine ne promet pas.
+      materialsOf({ rules, floors, ladders, commitments: [], mercuriale }),
+      NO_EVIDENCE,
+      { companyId },
+      at,
+    ),
+  };
 }
 
 /**
@@ -79,35 +118,21 @@ export function boardMaterials(
  * client conteste.
  */
 export function itemView(
-  article: { sku: string; name: string; canonicalMillicents: number },
+  article: { sku: string; name: string; canonicalMillicents: number; category: string },
   context: PricingContext,
   materials: BoardMaterials,
   loaded: { rules: readonly LoadedRule[]; floors: readonly LoadedFloor[] },
-  ladders: readonly VolumeLadder[],
 ): PricingItemView {
-  const winner = resolveScopedFloor(materials.floors, context);
-
-  // La même fonction que la caisse, avec les preuves de la simulation :
-  // quantité 1, aucune mesure d'historique. La porte reste donc FERMÉE, ce qui
-  // est la lecture juste — l'écran montre le prix de vitrine, et le plancher
-  // dynamique s'ouvre sur des conditions que la vitrine ne remplit pas.
-  const applied =
-    winner === null
-      ? null
-      : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null })
-          .applied;
-
-  // 🔴 **Les barèmes entrent enfin dans le prix de cet écran.** Il les recevait
-  // en paramètre et ne les passait pas : sur un article dont un barème s'ouvre
-  // dès la première pièce, il annonçait 1,83924 € quand la caisse facturait
-  // 1,65532 €. C'était le défaut ouvert du 2026-09-08, et il se lisait sur le
-  // seul écran qu'un commercial regarde avant d'accorder un prix.
-  const resolved = resolvePrice(
-    article.canonicalMillicents,
-    { rules: materials.rules, ladders, mercuriale: materials.mercuriale },
-    context,
-    applied,
-  );
+  const item = {
+    sku: article.sku,
+    name: article.name,
+    category: article.category,
+    canonicalMillicents: article.canonicalMillicents,
+  };
+  // 🔴 **L'écran ne calcule plus son prix : il le demande.** La même méthode que
+  // la caisse, sur les mêmes matériaux — barèmes et mercuriale compris. C'est ce
+  // qui rend l'oubli d'un étage inexprimable plutôt qu'improbable.
+  const priced = materials.pricer.price(item, context.quantity);
   const mercuriale = materials.mercuriale?.asRuleFor(context) ?? null;
 
   return {
@@ -119,37 +144,29 @@ export function itemView(
     // La grille du barème : chaque ligne est une RÉSOLUTION COMPLÈTE à la
     // quantité du palier — un prix « canonique × (1 − remise) » mentirait dès
     // qu'une promotion compose avec le palier, ou qu'un plancher le relève.
-    volumeTiers: volumeTierPrices(
-      article.canonicalMillicents,
-      ladders,
-      // Les règles SANS la mercuriale : la grille la reconvertit elle-même à
-      // chaque palier sondé, et la recevoir toute faite la figerait.
-      materials.rules,
-      context,
-      // Le tableau n'a pas d'historique de volume à présenter : la porte
-      // dynamique reste fermée, comme pour le prix qu'il affiche à côté.
-      winner === null ? null : { policy: winner.policy, observedVolumeRatioBp: null },
-      materials.mercuriale,
-    ),
-    effectiveFloor: loaded.floors.find((entry) => entry.floor.id === winner?.id)?.view ?? null,
+    volumeTiers: materials.pricer.tiers(item, context.quantity),
+    effectiveFloor:
+      loaded.floors.find((entry) => entry.floor.id === floorIdOf(materials, context))?.view ?? null,
     rules: loaded.rules
       .filter((entry) => targetsArticle(entry.rule.scope, article.sku))
       .map((entry) => entry.view),
     supersededRuleIds: supersededIn(materials.byStage, context, mercuriale),
-    sealedByRuleId: resolved.sealedByRuleId,
-    sealedRuleIds: resolved.sealedRuleIds,
-    steps: resolved.steps.map((step) => ({ ...step })),
-    floored: resolved.floored,
-    clampedToZero: resolved.clampedToZero,
-    finalMillicents: resolved.finalMillicents,
-    negotiationRoom: negotiationRoom(
-      resolved.finalMillicents,
-      applied === null ? null : floorMillicentsFor(applied, article.canonicalMillicents),
-    ),
+    sealedByRuleId: priced.sealedByRuleId,
+    sealedRuleIds: priced.sealedRuleIds,
+    steps: priced.steps.map((step) => ({ ...step })),
+    floored: priced.floored,
+    clampedToZero: priced.clampedToZero,
+    finalMillicents: priced.finalMillicents,
+    negotiationRoom: negotiationRoom(priced.finalMillicents, priced.floorMillicents),
     // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
     // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.
     elasticity: null,
   };
+}
+
+/** Le plancher qui **vise** l'article, pour retrouver sa vue. */
+function floorIdOf(materials: BoardMaterials, context: PricingContext): string | null {
+  return resolveScopedFloor(materials.floors, context)?.id ?? null;
 }
 
 /** La portée vise-t-elle **cet article nommément** (et pas sa famille, ni tout le catalogue) ? */

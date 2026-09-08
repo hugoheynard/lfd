@@ -5,7 +5,7 @@ import { ProductCatalogReader } from "../../../orders/domain/ports/product-catal
 import { Clock } from "../../../../platform/time/clock.js";
 import { benchmarkByProduct } from "../../domain/services/mercuriale-benchmark.js";
 import type { NegotiatedPrice } from "../../domain/services/mercuriale-benchmark.js";
-import { resolvePrice } from "../../domain/resolve-price.js";
+import { LoadedPricer } from "../../domain/loaded-pricer.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 
@@ -85,40 +85,17 @@ export class MercurialeBenchmarkQuery {
         // Chaque palier est mesuré **à sa propre quantité** : l'évaluer à 1
         // l'écarterait dès qu'il s'ouvre plus haut, et le marché perdrait ses
         // prix de volume négociés.
-        const rule = mercuriale.asRuleFor({
-          at,
-          quantity: tier.minQuantity,
-          cumulativeQuantity: tier.minQuantity,
-          variantSku: line.sku,
-          productSku: line.sku,
-          // Aucune règle de famille n'est lue ici : la mercuriale vise
-          // l'article nommément.
-          categoryId: "",
+        const unitPriceMillicents = LoadedPricer.mercurialeAlone(
+          mercuriale,
           companyId,
-          segmentId: null,
-        });
-        if (rule === null) {
+          { sku: line.sku, canonicalMillicents },
+          tier.minQuantity,
+          at,
+        );
+        if (unitPriceMillicents === null) {
           return [];
         }
-        // `ladders: []` et `mercuriale: null` sont DÉCLARÉS, pas omis : ce
-        // comparatif mesure un prix de marché, c'est-à-dire ce qu'une
-        // mercuriale accorde SEULE. Un barème y ajouterait une remise que le
-        // client d'en face n'a pas négociée.
-        const resolved = resolvePrice(
-          canonicalMillicents,
-          { rules: [rule], ladders: [], mercuriale: null },
-          {
-            at,
-            quantity: tier.minQuantity,
-            cumulativeQuantity: tier.minQuantity,
-            variantSku: line.sku,
-            productSku: line.sku,
-            categoryId: "",
-            companyId,
-            segmentId: null,
-          },
-        );
-        return [{ sku: line.sku, companyId, unitPriceMillicents: resolved.finalMillicents }];
+        return [{ sku: line.sku, companyId, unitPriceMillicents }];
       });
     });
   }

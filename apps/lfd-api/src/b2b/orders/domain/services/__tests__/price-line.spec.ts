@@ -1,3 +1,8 @@
+import { LoadedPricer } from "../../../../pricing/domain/loaded-pricer.js";
+import type {
+  PricingEvidence,
+  PricingMaterials,
+} from "../../../../pricing/domain/pricing-materials.js";
 import { materialsOf, NO_EVIDENCE } from "../../../../pricing/domain/pricing-materials.js";
 import type { PriceRule, ScopedPriceFloor } from "../../../../pricing/domain/price-rule.js";
 import type { VolumeCommitment } from "../../../../pricing/domain/volume-commitment.js";
@@ -36,11 +41,26 @@ function input(over: Partial<LinePricingInput> = {}): LinePricingInput {
   return {
     item: CROISSANT,
     quantity: 10,
-    parties: { companyId: null },
-    at: AT,
     withTiers: false,
     ...over,
   };
+}
+
+/**
+ * La ligne, tarificateur monté à la volée.
+ *
+ * `priceLine` ne compose plus le prix : elle le demande au tarificateur, qui
+ * porte désormais la recette (contexte, engagement, mesure, plancher,
+ * assemblage). Les cas ci-dessous n'ont pas changé d'un mot — c'est la preuve
+ * que la bascule n'a déplacé aucune décision.
+ */
+function line(
+  over: Partial<LinePricingInput>,
+  materials: PricingMaterials,
+  evidence: PricingEvidence,
+  companyId: string | null = null,
+) {
+  return priceLine(input(over), LoadedPricer.over(materials, evidence, { companyId }, AT));
 }
 
 /** Une promotion globale de −10 %, ouverte à tous. */
@@ -89,7 +109,7 @@ const NOTHING = materialsOf({ rules: [], floors: [], ladders: [], commitments: [
 
 describe("priceLine — la recette, sans base ni doublé", () => {
   it("rend le tarif de liste quand rien ne le touche", () => {
-    const resolved = priceLine(input(), NOTHING, NO_EVIDENCE);
+    const resolved = line({}, NOTHING, NO_EVIDENCE);
 
     expect(resolved.line.unitPriceMillicents).toBe(200_000);
     expect(resolved.canonicalMillicents).toBe(200_000);
@@ -105,7 +125,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    const resolved = priceLine(input(), materials, NO_EVIDENCE);
+    const resolved = line({}, materials, NO_EVIDENCE);
 
     expect(resolved.line.unitPriceMillicents).toBe(180_000);
     expect(resolved.line.pricing?.steps).toHaveLength(1);
@@ -125,7 +145,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    const resolved = priceLine(input(), materials, NO_EVIDENCE);
+    const resolved = line({}, materials, NO_EVIDENCE);
 
     expect(resolved.line.unitPriceMillicents).toBe(150_000);
     expect(resolved.sealedByRuleId).toBe("rule_merc");
@@ -140,7 +160,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    const resolved = priceLine(input(), materials, NO_EVIDENCE);
+    const resolved = line({}, materials, NO_EVIDENCE);
 
     // −50 % ferait 100 000 ; le mur à 90 % du canonique remonte à 180 000.
     expect(resolved.line.unitPriceMillicents).toBe(180_000);
@@ -169,11 +189,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [commitment],
     });
 
-    const resolved = priceLine(
-      input({ parties: { companyId: "co_1" }, quantity: 10 }),
-      materials,
-      NO_EVIDENCE,
-    );
+    const resolved = line({ quantity: 10 }, materials, NO_EVIDENCE, "co_1");
 
     // Dix pièces commandées, mais dix mille promises : le palier « 5 000+ » joue.
     expect(resolved.line.unitPriceMillicents).toBe(180_000);
@@ -209,7 +225,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    const resolved = priceLine(input(), materials, NO_EVIDENCE);
+    const resolved = line({}, materials, NO_EVIDENCE);
 
     expect(resolved.line.pricing?.floorDecision?.tier).toBe("hard");
     expect(resolved.line.pricing?.floorDecision?.volumeMet).toBe(false);
@@ -235,7 +251,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    const resolved = priceLine(input(), materials, {
+    const resolved = line({}, materials, {
       orderedBySku: new Map(),
       volumeRatioBySku: new Map([["VIE-001", 13_000]]),
     });
@@ -272,9 +288,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
     });
 
-    expect(priceLine(input(), materials, NO_EVIDENCE).volumeTiers).toBeNull();
-    expect(priceLine(input({ withTiers: true }), materials, NO_EVIDENCE).volumeTiers).toHaveLength(
-      2,
-    );
+    expect(line({}, materials, NO_EVIDENCE).volumeTiers).toBeNull();
+    expect(line({ withTiers: true }, materials, NO_EVIDENCE).volumeTiers).toHaveLength(2);
   });
 });

@@ -1,11 +1,10 @@
 import { discountBp } from "@lfd/money";
-import { decideFloor, type PriceFloorPolicy } from "../domain/floor-policy.js";
-import { resolvePrice } from "../domain/resolve-price.js";
-import { ladderAsRule } from "../domain/volume-ladder.js";
-import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
-import { applies, winnerOf } from "../domain/specificity.js";
-import type { PriceRule, PricingContext } from "../domain/price-rule.js";
-import type { VolumeLadder } from "../domain/volume-ladder.js";
+import { decideFloor, type PriceFloorPolicy } from "./floor-policy.js";
+import { ladderAsRule } from "./volume-ladder.js";
+import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
+import { applies, winnerOf } from "./specificity.js";
+import type { PriceFloor, PriceRule, PricingContext, ResolvedPrice } from "./price-rule.js";
+import type { VolumeLadder } from "./volume-ladder.js";
 import type { VolumeTierPriceView } from "@lfd/contracts";
 
 /**
@@ -86,6 +85,17 @@ export function volumeTierPrices(
    * qui est exactement le défaut que le 🔴 du haut de ce fichier décrit.
    */
   mercuriale: CompanyMercuriale | null = null,
+  /**
+   * **La résolution, passée plutôt qu'importée.**
+   *
+   * C'est ce qui garde une seule porte sur `resolvePrice` : cette grille sonde
+   * des quantités, elle n'a pas à savoir comment un prix se fabrique. Elle en
+   * appelait la fonction directement, et devenait de ce fait la deuxième des
+   * cinq entrées du pipeline — celles dont deux ont divergé.
+   *
+   * Le tarificateur la lui donne, déjà liée à l'article et aux matériaux.
+   */
+  resolveAt: (context: PricingContext, applied: PriceFloor | null) => ResolvedPrice,
 ): readonly VolumeTierPriceView[] | null {
   const ladder = winningLadder(ladders, context);
   const thresholds = allThresholds(ladder, rules, context, mercuriale);
@@ -105,10 +115,10 @@ export function volumeTierPrices(
             observedVolumeRatioBp: floor.observedVolumeRatioBp,
           }).applied;
     // Les barèmes et la mercuriale partent en OBJET, à CETTE quantité sondée :
-    // c'est `resolvePrice` qui les présente, et elle le refait à chaque palier.
+    // c'est le tarificateur qui les présente, et il le refait à chaque palier.
     // L'assemblage manuel qui vivait ici — et l'ambiguïté qu'il pouvait créer —
     // n'existe plus.
-    const resolved = resolvePrice(canonicalMillicents, { rules, ladders, mercuriale }, at, applied);
+    const resolved = resolveAt(at, applied);
     return {
       minQuantity,
       unitPriceMillicents: resolved.finalMillicents,

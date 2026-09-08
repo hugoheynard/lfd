@@ -5,28 +5,10 @@ import type {
   PriceProjectionView,
 } from "@lfd/contracts";
 
-import { decideFloor } from "../../domain/floor-policy.js";
-import { pricingContextFor } from "../pricing-context.js";
-import { resolveScopedFloor } from "../../domain/resolve-floor.js";
-import { resolvePrice } from "../../domain/resolve-price.js";
-import { PriceFloorReader } from "../../domain/ports/price-floor.reader.js";
-import { PriceRuleReader } from "../../domain/ports/price-rule.reader.js";
-import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
 import { UnknownSkuError } from "../../../orders/domain/errors/order-errors.js";
-import type { PriceRule, PricingContext, ScopedPriceFloor } from "../../domain/price-rule.js";
-import type { VolumeLadder } from "../../domain/volume-ladder.js";
-import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
-import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
-
-/** Ce qui vise l'article, lu une seule fois : rien de tout cela ne dépend du cumul. */
-interface Candidates {
-  readonly rules: readonly PriceRule[];
-  readonly floors: readonly ScopedPriceFloor[];
-  readonly ladders: readonly VolumeLadder[];
-  /** La mercuriale du client, en objet : son palier dépend de la quantité. */
-  readonly mercuriale: CompanyMercuriale | null;
-}
+import type { PricedItem } from "../../domain/loaded-pricer.js";
+import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 
 /**
  * **Ce que l'article coûterait à des niveaux de cumul qui n'existent pas encore.**
@@ -35,101 +17,73 @@ interface Candidates {
  * « le plus haut palier atteint gagne » aurait marché — c'est une ligne — et
  * aurait créé exactement la divergence que tout ce contexte évite : un écran qui
  * désigne un palier, une caisse qui en applique un autre, et l'écart découvert
- * devant le client. Ici chaque point est une **résolution complète**, par la
- * fonction qui facture.
+ * devant le client. Ici chaque point est une **résolution complète**, par le
+ * tarificateur qui facture.
  *
- * Les règles, barèmes et planchers sont lus **une seule fois** : ils ne dépendent
- * pas du niveau de cumul, seule la résolution en dépend. Vingt-quatre points ne
- * coûtent donc pas vingt-quatre lectures de base.
+ * Les matériaux sont lus **une seule fois** : ils ne dépendent pas du niveau de
+ * cumul, seule la résolution en dépend. Vingt-quatre points ne coûtent donc pas
+ * vingt-quatre lectures de base.
+ *
+ * ## 🔴 Ce que la bascule au tarificateur a réparé
+ *
+ * Cette requête chargeait ses candidats elle-même — c'était la quatrième des
+ * cinq recettes du dépôt — et elle avait oublié la mercuriale jusqu'au
+ * 2026-09-08 : un client au tarif négocié voyait sa courbe au prix catalogue, un
+ * chiffre parfaitement plausible sur l'écran qui sert précisément à décider d'un
+ * prix. Elle ne charge plus et ne compose plus : elle demande.
  *
  * La projection ne consulte **aucun** historique et n'écrit rien : elle répond à
  * « si le cumul valait N », pas à « où en est ce client ». Les deux questions se
- * ressemblent et n'ont pas la même réponse — le suivi d'un engagement est ailleurs.
+ * ressemblent et n'ont pas la même réponse — le suivi d'un engagement est
+ * ailleurs, et `priceAtCumulative` écarte délibérément les preuves.
  */
 @Injectable()
 export class PriceProjectionQuery {
   constructor(
     private readonly catalog: ProductCatalogReader,
-    private readonly priceRules: PriceRuleReader,
-    private readonly mercuriales: CompanyMercurialeReader,
-    private readonly priceFloors: PriceFloorReader,
-    private readonly volumeLadders: VolumeLadderReader,
+    private readonly materials: PricingMaterialsLoader,
   ) {}
 
   /** @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas. */
   async project(payload: PriceProjectionPayload, at: Date): Promise<PriceProjectionView> {
-    const item = await this.catalog.resolve(payload.sku);
-    if (item === null) {
+    const found = await this.catalog.resolve(payload.sku);
+    if (found === null) {
+      throw new UnknownSkuError(payload.sku);
+    }
+    const item: PricedItem = {
+      sku: found.sku,
+      name: found.name,
+      category: found.category,
+      canonicalMillicents: found.unitPriceMillicents,
+    };
+
+    // Un seul chargement, à la plus petite quantité : les matériaux qui visent
+    // l'article ne dépendent ni de la quantité ni du cumul.
+    const pricer = await this.materials.pricerFor(
+      [{ item, quantity: 1 }],
+      { companyId: payload.companyId },
+      at,
+    );
+    if (pricer === null) {
       throw new UnknownSkuError(payload.sku);
     }
 
-    const parties = { companyId: payload.companyId };
-    // Un contexte de référence, à la plus petite quantité : il sert à CHARGER
-    // les candidats, qui ne dépendent ni de la quantité ni du cumul.
-    const base = pricingContextFor(item.sku, item.category, 1, parties, at, 1);
-    const [rules, floors, ladders, mercuriale] = await Promise.all([
-      this.priceRules.candidatesFor(base),
-      this.priceFloors.candidatesFor(base),
-      this.volumeLadders.candidatesFor(base),
-      // Chargée en OBJET, comme les barèmes : le palier dépend de la quantité,
-      // et cette requête en projette plusieurs sur les mêmes candidats.
-      this.mercuriales.liveFor(payload.companyId, at),
-    ]);
-
     return {
       productName: item.name,
-      points: payload.cumulativeQuantities.map((cumulative) =>
-        this.pointAt(item, { rules, floors, ladders, mercuriale }, base, cumulative),
-      ),
-    };
-  }
-
-  /**
-   * Un point de la projection.
-   *
-   * La quantité de la commande ET le cumul valent le même nombre : la projection
-   * répond à « si ce niveau était atteint », et distinguer les deux supposerait
-   * un rythme de livraison que l'écran, lui, connaît — et applique en choisissant
-   * les niveaux qu'il demande.
-   */
-  private pointAt(
-    item: { sku: string; unitPriceMillicents: number },
-    candidates: Candidates,
-    base: PricingContext,
-    cumulative: number,
-  ): PriceProjectionPointView {
-    const context: PricingContext = {
-      ...base,
-      quantity: cumulative,
-      cumulativeQuantity: cumulative,
-    };
-    const scoped = resolveScopedFloor(candidates.floors, context);
-    // Aucune mesure d'historique : la porte du plancher dynamique reste FERMÉE,
-    // ce qui est la lecture prudente — une projection ne peut pas prouver un
-    // volume observé, et l'ouvrir sur une hypothèse accorderait une remise que
-    // rien n'a établie.
-    const applied =
-      scoped === null
-        ? null
-        : decideFloor(scoped.policy, { quantity: cumulative, observedVolumeRatioBp: null }).applied;
-
-    // 🔴 **La mercuriale entre dans la projection.** Elle n'y entrait PAS
-    // jusqu'au 2026-09-08 : un client au tarif négocié voyait sa courbe au prix
-    // catalogue — un chiffre parfaitement plausible sur l'écran qui sert
-    // précisément à décider d'un prix. C'est l'oubli que l'assemblage interne
-    // rend désormais inexprimable.
-    const resolved = resolvePrice(
-      item.unitPriceMillicents,
-      { rules: candidates.rules, ladders: candidates.ladders, mercuriale: candidates.mercuriale },
-      context,
-      applied,
-    );
-    return {
-      cumulativeQuantity: cumulative,
-      canonicalMillicents: item.unitPriceMillicents,
-      unitPriceMillicents: resolved.finalMillicents,
-      steps: resolved.steps.map((step) => ({ ...step })),
-      floored: resolved.floored,
+      points: payload.cumulativeQuantities.map((cumulative): PriceProjectionPointView => {
+        // La quantité de la commande ET le cumul valent le même nombre : la
+        // projection répond à « si ce niveau était atteint », et distinguer les
+        // deux supposerait un rythme de livraison que l'écran, lui, connaît — et
+        // applique en choisissant les niveaux qu'il demande.
+        const priced = pricer.priceAtCumulative(item, cumulative);
+        return {
+          cumulativeQuantity: cumulative,
+          canonicalMillicents: priced.canonicalMillicents,
+          unitPriceMillicents: priced.finalMillicents,
+          steps: priced.steps.map((step) => ({ ...step })),
+          floored: priced.floored,
+        };
+      }),
     };
   }
 }

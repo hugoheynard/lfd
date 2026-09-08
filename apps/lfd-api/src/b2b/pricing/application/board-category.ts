@@ -7,7 +7,7 @@ import {
 } from "@lfd/contracts";
 
 import { lineageSegments } from "../domain/lineage-overlaps.js";
-import { pricingContextFor } from "./pricing-context.js";
+import { pricingContextFor } from "../domain/pricing-context.js";
 import { itemView, type BoardMaterials, type LoadedFloor, type LoadedRule } from "./board-item.js";
 import type { CatalogItem } from "../../orders/domain/ports/product-catalog.reader.js";
 import type { OverlapSegment } from "../domain/rule-overlaps.js";
@@ -73,11 +73,15 @@ export function categoryView(
     ladders: lineageLadders.filter((ladder) => ladder.suspendedFrom === null).map(ladderBandView),
     items: articles.map((item) =>
       itemView(
-        { sku: item.sku, name: item.name, canonicalMillicents: item.unitPriceMillicents },
+        {
+          sku: item.sku,
+          name: item.name,
+          category: item.category,
+          canonicalMillicents: item.unitPriceMillicents,
+        },
         pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
         materials,
         loaded,
-        loaded.ladders,
       ),
     ),
   };

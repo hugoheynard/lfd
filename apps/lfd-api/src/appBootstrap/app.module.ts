@@ -8,6 +8,7 @@ import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { PricerModule } from "../b2b/pricing/pricer.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
 import { DevModule } from "../dev/dev.module.js";
@@ -104,6 +105,8 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     ProductionModule,
     ProductionFeedModule,
     PricingAdminModule,
+    // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.
+    PricerModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
     SubscriptionsModule,
     // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.
