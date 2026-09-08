@@ -146,13 +146,13 @@ point, écrit dans son bandeau.
 
 ### Les registres — ce qui a été trouvé, et où en est le travail
 
-| Document                                                                                             | État | Ce qu'il porte                                                                  |
-| ---------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------- |
-| [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md)                                                 | 🔴   | **Le registre unique.** Quatorze entrées, toutes vérifiées.                     |
-| [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)                       | ✅   | Registre **clos** : dix défauts, treize lots, tous refermés.                    |
-| [`audit-fable.md`](audit-fable.md)                                                                   | 🟡   | Le second regard. Sa note est périmée ; trois de ses constats sont refermés.    |
-| [`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)                                       | 🟡   | Quatre chantiers sur cinq bâtis. Sa note par axe est conservée comme **photo**. |
-| [`mercuriales/etat-des-lieux-mercuriale-client.md`](mercuriales/etat-des-lieux-mercuriale-client.md) | 🟡   | Le chantier mercuriale. T7 fermé ; T4/T5/T8 suivis au registre.                 |
+| Document                                                                                             | État | Ce qu'il porte                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md)                                                 | 🔴   | **Le registre unique.** Quatorze entrées, toutes vérifiées.                                                                                                                                         |
+| [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)                       | ✅   | Registre **clos** : dix défauts, treize lots, tous refermés.                                                                                                                                        |
+| [`audit-fable.md`](audit-fable.md)                                                                   | 🟡   | Le second regard. Sa note est périmée ; trois de ses constats sont refermés.                                                                                                                        |
+| [`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)                                       | 🟡   | Quatre chantiers sur cinq bâtis. Sa note par axe est conservée comme **photo**.                                                                                                                     |
+| [`mercuriales/etat-des-lieux-mercuriale-client.md`](mercuriales/etat-des-lieux-mercuriale-client.md) | ✅   | **Comment un client reçoit un tarif négocié.** Les deux gestes qui convergent sur le même agrégat, les quatre couches, et ce que les cinq fermetures ont établi — en affirmations, plus en manques. |
 
 ### Ce qui n'est pas tranché
 
