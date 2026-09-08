@@ -49,6 +49,12 @@ import {
 import { PriceTemplateRepository } from "./domain/ports/price-template.repository.js";
 import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-template.repository.js";
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
+import { AdminCompanyPricingController } from "./http/admin-company-pricing.controller.js";
+import { CompanyPricingQuery } from "./application/queries/company-pricing.query.js";
+import {
+  CloseCompanyMercurialeHandler,
+  PoseCompanyMercurialeHandler,
+} from "./application/commands/company-mercuriale.handlers.js";
 import {
   CloseVolumeCommitmentHandler,
   SignVolumeCommitmentHandler,
@@ -79,6 +85,7 @@ import { PricingModule } from "./pricing.module.js";
     AdminPricingJournalController,
     AdminVolumeCommitmentsController,
     AdminPriceTemplatesController,
+    AdminCompanyPricingController,
   ],
   providers: [
     BoardElasticityService,
@@ -101,6 +108,9 @@ import { PricingModule } from "./pricing.module.js";
     PriceProjectionQuery,
     PriceTemplatesQuery,
     MercurialeBenchmarkQuery,
+    CompanyPricingQuery,
+    PoseCompanyMercurialeHandler,
+    CloseCompanyMercurialeHandler,
     SavePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     // Possède « écrire un acte » : l'état, le journal du domaine et son miroir

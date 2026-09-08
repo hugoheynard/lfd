@@ -1,10 +1,33 @@
 import { Injectable } from "@nestjs/common";
-import type { PricingBoardView, PricingCategoryView, PricingItemView } from "@lfd/contracts";
+import type { PricingBoardView, PricingItemView } from "@lfd/contracts";
 
 import { rollingWindows, windowsAroundChange } from "../domain/elasticity-windows.js";
 import { SkuVolumeReader, type VolumeWindow } from "../domain/ports/sku-volume.reader.js";
 import type { WindowPair } from "../domain/elasticity-windows.js";
 import { itemElasticity, type MeasuredPair } from "./elasticity-report.js";
+
+/**
+ * **D'où viennent les volumes** — passé par l'appelant, pas lu ici.
+ *
+ * Deux écrans mesurent l'effort de vente, et ils ne mesurent pas la même chose :
+ * le tableau général regarde le MARCHÉ (`SkuVolumeReader`), le dossier d'un
+ * client regarde CE client (`CustomerVolumeReader`). La mécanique — fenêtres,
+ * groupement par date de changement, ratio — est identique ; seule la source
+ * change.
+ *
+ * La rendre paramétrable plutôt que de dupliquer le service : deux copies
+ * auraient divergé sur les fenêtres, et l'écart ne se serait vu que le jour où
+ * un commercial compare les deux chiffres devant un client.
+ */
+export type VolumeSource = (
+  skus: readonly string[],
+  window: VolumeWindow,
+) => Promise<ReadonlyMap<string, number>>;
+
+/** Ce qu'un écran a besoin de porter pour être enrichi : des articles, rangés. */
+export interface ElasticityCategory {
+  readonly items: readonly PricingItemView[];
+}
 
 /** Les volumes d'une paire de fenêtres, pour tous les SKU d'un coup. */
 interface MeasuredWindows {
@@ -40,36 +63,58 @@ export class BoardElasticityService {
     ruleDates: ReadonlyMap<string, Date>,
     now: Date,
   ): Promise<PricingBoardView> {
-    const altered = board.categories.flatMap((category) =>
-      category.items.filter(hasAlteration).map((item) => ({ item, category })),
-    );
-    if (altered.length === 0) {
-      return board;
-    }
-
-    const skus = altered.map((entry) => entry.item.sku);
-    const changeDates = new Map(
-      altered.map((entry) => [entry.item.sku, changedAt(entry.item, ruleDates, now)] as const),
-    );
-
-    const [rolling, sinceChange] = await Promise.all([
-      this.measure(rollingWindows(now), skus),
-      this.measureByChangeDate(changeDates, now),
-    ]);
-
     return {
       ...board,
-      categories: board.categories.map((category) =>
-        withElasticity(category, rolling, sinceChange, changeDates),
+      categories: await this.enrichCategories(board.categories, ruleDates, now, (skus, window) =>
+        this.volumes.volumesFor(skus, window),
       ),
     };
   }
 
+  /**
+   * Le même enrichissement sur **n'importe quel groupement d'articles**, et avec
+   * la source de volumes qu'on lui donne.
+   *
+   * Générique sur la catégorie plutôt que typé `PricingCategoryView` : le
+   * dossier d'un client range ses articles sans porter ni frise ni barèmes, et
+   * lui imposer la forme du tableau général l'obligerait à inventer des champs
+   * vides pour être mesuré.
+   */
+  async enrichCategories<C extends ElasticityCategory>(
+    categories: readonly C[],
+    ruleDates: ReadonlyMap<string, Date>,
+    now: Date,
+    volumes: VolumeSource,
+  ): Promise<readonly C[]> {
+    const altered = categories.flatMap((category) => category.items.filter(hasAlteration));
+    if (altered.length === 0) {
+      return categories;
+    }
+
+    const skus = altered.map((item) => item.sku);
+    const changeDates = new Map(
+      altered.map((item) => [item.sku, changedAt(item, ruleDates, now)] as const),
+    );
+
+    const [rolling, sinceChange] = await Promise.all([
+      this.measure(rollingWindows(now), skus, volumes),
+      this.measureByChangeDate(changeDates, now, volumes),
+    ]);
+
+    return categories.map((category) =>
+      withElasticity(category, rolling, sinceChange, changeDates),
+    );
+  }
+
   /** Une paire de fenêtres, deux requêtes, tous les SKU. */
-  private async measure(windows: WindowPair, skus: readonly string[]): Promise<MeasuredWindows> {
+  private async measure(
+    windows: WindowPair,
+    skus: readonly string[],
+    volumes: VolumeSource,
+  ): Promise<MeasuredWindows> {
     const [baseline, observed] = await Promise.all([
-      this.volumes.volumesFor(skus, windows.baseline),
-      this.volumes.volumesFor(skus, windows.observed),
+      volumes(skus, windows.baseline),
+      volumes(skus, windows.observed),
     ]);
     return { windows, baseline, observed };
   }
@@ -81,6 +126,7 @@ export class BoardElasticityService {
   private async measureByChangeDate(
     changeDates: ReadonlyMap<string, Date | null>,
     now: Date,
+    volumes: VolumeSource,
   ): Promise<ReadonlyMap<string, MeasuredWindows>> {
     const bySkuGroup = new Map<string, string[]>();
     for (const [sku, date] of changeDates) {
@@ -94,7 +140,9 @@ export class BoardElasticityService {
     const measured = await Promise.all(
       [...bySkuGroup].map(async ([key, skus]) => {
         const windows = windowsAroundChange(new Date(key), now);
-        return windows === null ? null : ([key, await this.measure(windows, skus)] as const);
+        return windows === null
+          ? null
+          : ([key, await this.measure(windows, skus, volumes)] as const);
       }),
     );
     return new Map(measured.filter((entry) => entry !== null));
@@ -129,12 +177,12 @@ function changedAt(
   return dates.reduce((latest, date) => (date.getTime() > latest.getTime() ? date : latest));
 }
 
-function withElasticity(
-  category: PricingCategoryView,
+function withElasticity<C extends ElasticityCategory>(
+  category: C,
   rolling: MeasuredWindows,
   sinceChange: ReadonlyMap<string, MeasuredWindows>,
   changeDates: ReadonlyMap<string, Date | null>,
-): PricingCategoryView {
+): C {
   return {
     ...category,
     items: category.items.map((item) => {

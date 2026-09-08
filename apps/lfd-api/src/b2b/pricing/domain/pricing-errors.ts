@@ -659,3 +659,53 @@ export class CorruptedPriceTemplateError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **La société visée n'existe pas.**
+ *
+ * Un 404 et non un tableau vide, et c'est ce qui compte : la tarification d'un
+ * client est une lecture FILTRÉE par audience, et un identifiant inconnu ne
+ * filtre rien — il rend le catalogue entier au tarif de liste, c'est-à-dire un
+ * écran parfaitement plausible qui affirme « ce client paie le tarif public ».
+ * Il n'y a aucun moyen de distinguer ce mensonge d'une vérité, sauf ici.
+ */
+export class PricedCompanyNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super("pricing.company.not_found", `Aucune société « ${companyId} ».`);
+  }
+}
+
+/**
+ * **Une mercuriale couvre déjà cette période chez ce client.**
+ *
+ * Un **409** : ce n'est pas une saisie mal formée, c'est un état du monde qui
+ * s'oppose au geste. Le refus NOMME la mercuriale en cours et sa fenêtre, parce
+ * que la sortie demande de la clore d'abord — et qu'on ne clôt pas ce qu'on ne
+ * sait pas désigner.
+ *
+ * Écraser en silence était l'autre option, et c'est la pire : un tarif négocié
+ * qu'on remplace sans le dire est un tarif dont personne ne saura, au litige,
+ * ce qu'il valait la semaine dernière.
+ */
+export class RunningMercurialeError extends BusinessError {
+  constructor(
+    readonly label: string,
+    readonly validFrom: Date,
+    readonly validTo: Date | null,
+  ) {
+    super(
+      "pricing.mercuriale.running",
+      `Une mercuriale « ${label} » couvre déjà cette période (du ` +
+        `${validFrom.toISOString().slice(0, 10)} ${
+          validTo === null ? "sans terme" : `au ${validTo.toISOString().slice(0, 10)}`
+        }). Il faut la clore avant d'en poser une autre.`,
+    );
+  }
+}
+
+/** Aucune mercuriale en cours ne porte ce libellé et cette fenêtre chez ce client. */
+export class PosedMercurialeNotFoundError extends ResourceNotFoundError {
+  constructor(readonly label: string) {
+    super("pricing.mercuriale.not_found", `Aucune mercuriale « ${label} » à clore sur ce compte.`);
+  }
+}

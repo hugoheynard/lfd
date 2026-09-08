@@ -1262,3 +1262,163 @@ export interface MercurialeBenchmarkView {
   /** Sur combien de clients la médiane est calculée — un chiffre sur deux se dit. */
   readonly companyCount: number;
 }
+
+/**
+ * **Ce que paie UN client** — la tarification lue à son audience.
+ *
+ * ## Pourquoi une vue à part, et pas `PricingBoardView` avec un `companyId`
+ *
+ * Le tableau général répond à « qu'est-ce qui joue sur ce prix », toutes
+ * audiences confondues : il liste, article par article, **toutes** les règles
+ * qui le visent — y compris les mercuriales des autres clients. C'est ce qu'on
+ * veut quand on règle les prix publics ; c'est faux dès qu'on ouvre la fiche
+ * d'un compte, où chaque ligne affirmerait « voici ce qui s'applique à lui ».
+ *
+ * La lecture par client est donc **filtrée à la source** : seules les règles
+ * ouvertes à tous et celles qui visent nommément cette société entrent dans la
+ * résolution. Aucune règle d'un tiers ne peut ni gagner un étage, ni apparaître.
+ *
+ * Elle laisse aussi tomber ce que le tableau général porte pour la frise —
+ * recouvrements, bandes de barèmes, élasticité. Ce sont des questions posées sur
+ * le catalogue entier, pas sur un dossier client.
+ */
+export interface CompanyPricingCategoryView {
+  readonly id: string;
+  readonly name: string;
+  readonly items: readonly PricingItemView[];
+}
+
+/**
+ * L'état d'une mercuriale posée, **à l'instant lu** — et non le cycle de vie de
+ * ses règles ({@link RuleStatus}), qui ne dit rien de sa fenêtre.
+ *
+ * Les deux sont nécessaires et différents : une règle « en vigueur » dont la
+ * fenêtre commence en janvier n'agit pas aujourd'hui, et l'écran qui la donnerait
+ * pour active ferait chercher un prix que la caisse n'applique pas.
+ */
+export type PosedMercurialeStatus = "active" | "scheduled" | "expired" | "suspended";
+
+export const POSED_MERCURIALE_STATUS_LABELS: Readonly<Record<PosedMercurialeStatus, string>> = {
+  active: "En vigueur",
+  scheduled: "À venir",
+  expired: "Terminée",
+  suspended: "Suspendue",
+};
+
+/**
+ * **Une mercuriale posée chez ce client**, reconstituée à la lecture.
+ *
+ * ⚠️ Elle n'existe pas en base. Poser un gabarit produit N règles indépendantes
+ * — une par palier —, et `price_rules` ne porte aucune colonne qui les relie.
+ * Ce regroupement les recolle par **(libellé, fenêtre)**, qui est ce que
+ * `templateToRules` leur donne en commun.
+ *
+ * Ce que ça ne sait donc pas faire, et qu'il faut lire en le sachant : deux
+ * gabarits **de même libellé posés sur la même fenêtre** chez le même client se
+ * confondent en une seule ligne. C'est la limite de la reconstitution, pas un
+ * défaut du regroupement — et c'est ce qui plaide pour donner une identité à la
+ * pose plutôt que de la déduire.
+ */
+export interface PosedMercurialeView {
+  readonly label: string;
+  readonly validFrom: string;
+  /** `null` = sans terme. Une mercuriale ouverte est le cas courant. */
+  readonly validTo: string | null;
+  readonly status: PosedMercurialeStatus;
+  /** Combien de règles la composent — un palier, une règle. */
+  readonly ruleCount: number;
+  /** Sur combien d'articles distincts elle porte. */
+  readonly skuCount: number;
+}
+
+export interface CompanyPricingView {
+  readonly companyId: string;
+  /** L'instant de lecture, en ISO : tout ce que la vue affirme y est daté. */
+  readonly at: string;
+  readonly categories: readonly CompanyPricingCategoryView[];
+  /** Ses mercuriales, de la plus récemment ouverte à la plus ancienne. */
+  readonly mercuriales: readonly PosedMercurialeView[];
+  /**
+   * Sur combien d'articles une mercuriale **scelle** le prix aujourd'hui.
+   *
+   * Compté sur le scellement et non sur « une règle le vise » : une mercuriale
+   * dont la fenêtre est passée vise encore l'article et n'y change plus rien.
+   */
+  readonly negotiatedSkuCount: number;
+  /**
+   * L'écart moyen au tarif catalogue, en points de base, sur les seuls articles
+   * scellés. **Signé** : positif = le client paie moins cher que le catalogue.
+   *
+   * `null` quand aucun article n'est scellé — une moyenne sur rien vaudrait
+   * « 0 % », ce qui se lirait « il paie le tarif », alors qu'il n'a pas de tarif
+   * négocié du tout.
+   */
+  readonly averageGapBp: number | null;
+}
+
+/**
+ * **Une ligne de la mercuriale d'un client : un article, un prix.**
+ *
+ * ⚠️ **Pas de palier, et c'est délibéré.** Un gabarit porte une grille de
+ * paliers ; la mercuriale qu'on établit depuis la fiche d'un compte porte un
+ * prix fixe par article, point. Les deux formes sont séparées **à la racine** —
+ * contrat, écran, commande — plutôt que la seconde ne soit la première avec un
+ * seul palier : une case unique se lit et se remplit sur quatre-vingt-douze
+ * lignes, une grille dépliable non.
+ *
+ * Les mercuriales à paliers viendront ; elles arriveront comme une forme de
+ * plus, pas comme un mode caché de celle-ci.
+ */
+export const companyMercurialeLineSchema = z.object({
+  sku: z.string().min(1),
+  /** Le prix négocié, HT en millicentimes. Zéro passe — un article offert est réel. */
+  unitPriceMillicents: z.number().int().nonnegative(),
+});
+export type CompanyMercurialeLinePayload = z.infer<typeof companyMercurialeLineSchema>;
+
+/**
+ * **Poser une mercuriale chez ce client.**
+ *
+ * 🔴 **La fin est OBLIGATOIRE ici**, alors qu'un gabarit posé peut rester ouvert.
+ * Ce n'est pas une incohérence : un tarif négocié sans terme est un tarif que
+ * personne ne rouvre, et il finit par vivre plus longtemps que la raison qui l'a
+ * justifié. L'écran qui l'établit demande donc les deux bornes — c'est une
+ * tarification datée, un début et une fin.
+ */
+export const poseCompanyMercurialePayloadSchema = z.object({
+  /** Ce que le client lira dans la trace de son prix. */
+  label: z.string().min(1).max(120),
+  validFrom: z.string().datetime(),
+  /** Borne haute **exclue**, comme partout dans ce contexte. */
+  validTo: z.string().datetime(),
+  /** Bornées à trois cents : le catalogue B2B en compte moins d'une centaine. */
+  lines: z.array(companyMercurialeLineSchema).min(1).max(300),
+});
+export type PoseCompanyMercurialePayload = z.infer<typeof poseCompanyMercurialePayloadSchema>;
+
+/**
+ * **Clore une mercuriale en cours**, pour pouvoir en poser une autre.
+ *
+ * La mercuriale se désigne par ce que la lecture lui a donné — son libellé et sa
+ * fenêtre —, faute d'identité en base (cf. {@link PosedMercurialeView}). C'est
+ * la même clé des deux côtés, donc l'écran ne peut pas viser autre chose que ce
+ * qu'il affiche.
+ *
+ * Clore **archive** ses règles : elles cessent d'agir et rendent leur place dans
+ * la contrainte d'exclusion, ce qui est exactement la condition pour reposer sur
+ * la même période. Rien n'est effacé — une lecture datée d'avant la clôture les
+ * retrouve, et ce qu'elles ont facturé est figé sur les commandes.
+ */
+export const closeCompanyMercurialePayloadSchema = z.object({
+  label: z.string().min(1).max(120),
+  validFrom: z.string().datetime(),
+  validTo: z.string().datetime().nullable(),
+  /** Pourquoi on la ferme. Facultatif — cf. `pricingReasonPayloadSchema`. */
+  reason: z.string().max(500).nullable().default(null),
+});
+export type CloseCompanyMercurialePayload = z.infer<typeof closeCompanyMercurialePayloadSchema>;
+
+/** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
+export interface AffectedRulesResponse {
+  readonly affectedRules: number;
+}
