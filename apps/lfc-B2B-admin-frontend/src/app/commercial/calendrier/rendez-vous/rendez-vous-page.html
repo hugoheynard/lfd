@@ -112,7 +112,15 @@
            Deux @if séparés : chaque bloc ne porte qu'un nœud, sinon la
            projection dans le rail ne s'applique pas. -->
       @if (sheet(); as sheet) {
-        <app-customer-sheet [sheet]="sheet" (changed)="reloadSheet()" />
+        <div class="rdv-sheet">
+          <!-- Les quatre chiffres, au-dessus de la fiche : ils vivaient DANS la
+               carte « Le compte en chiffres » de `customer-sheet`, qui les a
+               cédés à l'en-tête du compte le 2026-09-08. Ici il n'y a pas
+               d'en-tête de compte — c'est une page rendez-vous —, donc la page
+               les rend elle-même, au même endroit qu'avant. -->
+          <app-compte-chiffres [stats]="sheet.stats" />
+          <app-customer-sheet [sheet]="sheet" (changed)="reloadSheet()" />
+        </div>
       }
       @if (sheet(); as sheet) {
         <app-customer-timeline asideRight [entries]="sheet.timeline" />

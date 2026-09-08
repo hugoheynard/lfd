@@ -19,31 +19,22 @@ import type { CompanyStatusAction, CustomerSheetView } from '@lfd/contracts';
 
 import { NotifyService } from '../../../notify.service';
 import { CustomerSheetService } from './customer-sheet.service';
-import { euros, membershipAge, trendLabel, trendTone } from './customer-format';
+import { companyStatusLabel, companyStatusTone, euros, membershipAge } from './customer-format';
 
 /** Les libellés d'état, tels que le commercial les lit. */
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'En attente',
-  active: 'Actif',
-  suspended: 'Suspendu',
-  terminated: 'Résilié',
-};
-
-const STATUS_TONE: Record<string, 'neutral' | 'success' | 'warning' | 'alert'> = {
-  pending: 'neutral',
-  active: 'success',
-  suspended: 'warning',
-  terminated: 'alert',
-};
-
 /**
  * **Fiche client, version commerciale** — ce qu'on a sous les yeux en décrochant.
  *
- * Trois cartes, dans l'ordre où on s'en sert : **qui** est en face (établissement,
- * catégorie, ancienneté, contact), **combien** il pèse (quatre chiffres, dont
- * l'évolution des 30 derniers jours), et **quoi** il a commandé. Les actions qui
+ * Deux cartes, dans l'ordre où on s'en sert : **qui** est en face (établissement,
+ * catégorie, ancienneté, contact), et **quoi** il a commandé. Les actions qui
  * engagent — suspendre, résilier — sont en bas, derrière une confirmation en
  * ligne : ce ne sont pas des gestes qu'on fait en passant.
+ *
+ * 🔴 Elle en portait **trois** : « combien il pèse » — quatre chiffres — est
+ * parti dans `app-compte-chiffres` le 2026-09-08. Sur la fiche d'un compte, ces
+ * chiffres sont remontés dans l'en-tête, où ils valent pour les huit onglets ;
+ * les laisser aussi ici les aurait affichés deux fois sur le même écran. La page
+ * rendez-vous, qui n'a pas d'en-tête de compte, appelle le composant elle-même.
  *
  * Il ne **charge rien** : la page lui descend la fiche déjà lue, parce que le
  * rail d'historique s'en sert aussi — deux composants qui appelleraient la même
@@ -77,8 +68,8 @@ export class CustomerSheet {
   /** Posé une fois : une fiche ne doit pas changer d'ancienneté pendant qu'on la lit. */
   private readonly now = new Date();
 
-  protected readonly statusLabel = computed(() => STATUS_LABEL[this.sheet().status] ?? '—');
-  protected readonly statusTone = computed(() => STATUS_TONE[this.sheet().status] ?? 'neutral');
+  protected readonly statusLabel = computed(() => companyStatusLabel(this.sheet().status));
+  protected readonly statusTone = computed(() => companyStatusTone(this.sheet().status));
 
   /** L'établissement : l'enseigne si elle existe, la raison sociale sinon. */
   protected readonly displayName = computed(() => {
@@ -87,11 +78,6 @@ export class CustomerSheet {
   });
 
   protected readonly age = computed(() => membershipAge(this.sheet().createdAt, this.now));
-
-  protected readonly trend = computed(() => {
-    const trend = this.sheet().stats.trend;
-    return { label: trendLabel(trend), tone: trendTone(trend) };
-  });
 
   /** Un compte actif se suspend ; un suspendu se réactive ; un résilié ne bouge plus. */
   protected readonly canSuspend = computed(() => this.sheet().status === 'active');

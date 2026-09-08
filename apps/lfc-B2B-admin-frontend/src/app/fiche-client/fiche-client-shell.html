@@ -1,28 +1,62 @@
-<!-- `customer-account` et non `company` : l'en-tête nomme LE DOSSIER du client,
-     pas la société. Le bâtiment revient à l'onglet « Informations », qui montre
-     l'identité légale et le détenteur — les deux portaient le même glyphe, et
-     ils ne se distinguaient que par le mot.
+<!-- Pas de `title` sur le layout : la page porte son `<h1>` dans le bandeau, et
+     deux titres de premier niveau sur un écran n'en font aucun. Même partition
+     que la tarification, dont ce bandeau reprend le support et le rythme. -->
+<fold-page-layout>
+  <!--
+    **Le bandeau de tête du compte.** Posé sur le CHROME, pleine largeur : le
+    verdict sur le chrome, l'établi sur le papier — c'est la partition du
+    back-office, et un compte client n'avait pas de raison d'y échapper.
 
-     C'est aussi le glyphe de la liste dont on vient : passer de « Comptes
-     clients » à la fiche garde la même image, ce qui dit qu'on est descendu
-     dans un élément, pas arrivé ailleurs. -->
-<fold-page-layout icon="customer-account" [title]="title()">
-  <button pageActions foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="back()">
-    Retour
-  </button>
+    Il porte ce qui vaut pour le compte ENTIER et non pour une de ses vues : d'où
+    l'on vient, qui c'est, dans quel état, et ce qu'il pèse. Les huit onglets en
+    dessous changent ; ceci ne change pas.
+  -->
+  <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+    <!-- Le retour NOMME sa destination. « Retour » seul oblige à se souvenir
+         d'où l'on vient — et on arrive ici depuis la liste, depuis le cockpit,
+         depuis une recherche. Un lien, pas un bouton : c'est une navigation, et
+         elle doit s'ouvrir dans un onglet si quelqu'un le demande. -->
+    <a class="masthead-back" routerLink="/commercial/comptes-clients">
+      <fold-icon name="chevron-left" size="sm" />
+      Comptes clients
+    </a>
 
-  <!-- L'épingle vit dans l'en-tête du compte, pas dans une vue : on décide de
-       suivre un client, pas une de ses pages. -->
-  <button
-    pageActions
-    foldButton
-    size="sm"
-    icon="star"
-    [emphasis]="isPinned() ? 'solid' : 'outline'"
-    (click)="togglePin()"
-  >
-    {{ isPinned() ? 'Épinglé' : 'Épingler' }}
-  </button>
+    <div class="masthead-head">
+      <div class="masthead-identity">
+        <h1 class="masthead-title">{{ title() }}</h1>
+        @if (sheet(); as view) {
+          <fold-badge [content]="statusLabel()" [variant]="statusTone()" />
+          <!-- La référence est ce qu'on se dicte au téléphone : elle vit à côté
+               du nom, pas dans un onglet qu'il faudrait aller ouvrir. -->
+          <span class="masthead-reference">{{ view.reference }}</span>
+        }
+      </div>
+
+      <!-- L'épingle vit dans l'en-tête du compte, pas dans une vue : on décide
+           de suivre un client, pas une de ses pages. -->
+      <div class="masthead-actions">
+        <button
+          foldButton
+          size="sm"
+          icon="star"
+          [emphasis]="isPinned() ? 'solid' : 'outline'"
+          (click)="togglePin()"
+        >
+          {{ isPinned() ? 'Épinglé' : 'Épingler' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Les chiffres du compte, visibles depuis les HUIT onglets. Ils vivaient
+         au milieu du tableau de bord : il fallait y revenir pour savoir ce que
+         pesait le client dont on lisait les commandes.
+
+         Rien quand la lecture a échoué : quatre cartes vides diraient « ce
+         compte n'a rien acheté », ce qui est une autre affirmation. -->
+    @if (sheet(); as view) {
+      <app-compte-chiffres [stats]="view.stats" [onChrome]="true" />
+    }
+  </fold-page-section>
 
   <!-- `fold-nav-layout`, et non un div à nous : c'est LUI qui tient l'écart
        nav↔contenu et qui neutralise la gouttière de page sous la barre, pour
@@ -34,10 +68,8 @@
        défilants — donc des onglets qu'on ne voit qu'en balayant, sans savoir
        qu'ils sont là. Verticalement, ils tiennent tous à l'écran.
 
-       Il vit DANS le `fold-page-layout` : l'en-tête porte le nom du client et
-       ses actions (retour, épingle), qui valent pour le compte entier et non
-       pour une de ses pages. `nav.stacked()` mesure la largeur du LAYOUT et
-       replie seul en barre — plus besoin d'écouter le viewport. -->
+       `nav.stacked()` mesure la largeur du LAYOUT et replie seul en barre —
+       plus besoin d'écouter le viewport. -->
   <fold-nav-layout #nav placement="side" [foldAt]="896">
     <fold-view-nav
       tabNav

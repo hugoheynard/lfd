@@ -1,3 +1,85 @@
+/*
+  **Le bandeau de tête du compte.** Même support et même rythme que celui de la
+  tarification, et pour la même raison : le verdict sur le chrome, l'établi sur
+  le papier.
+
+  `bleed` avale la gouttière du layout — c'est ce qui colle la bande au chrome de
+  l'app. Il avale du même coup l'espace SOUS elle, d'où la marge : sans elle, la
+  barre d'onglets touche la bande et les deux supports se lisent comme un seul.
+
+  Pas collant, contrairement à la tarification : là-bas on descend une grille de
+  cent lignes en gardant la synthèse sous les yeux ; ici la barre d'onglets est
+  déjà collante, et empiler deux zones fixes mangerait le tiers d'un portable.
+*/
+.masthead {
+  --fold-page-section-gap: var(--fold-space-md, 0.75rem);
+  /* PAS de marge basse, contrairement à la tarification : `.fc-tabs` porte déjà
+     `padding-block: var(--fold-page-gap)`, et les deux additionnées faisaient
+     48 px de vide entre la bande et les onglets — un trou où l'écran semble
+     s'être cassé en deux. */
+  padding: var(--fold-space-md, 0.75rem) var(--fold-page-gutter, 1.25rem) var(--fold-space-lg, 1rem);
+  /* Le fond le PLUS SOMBRE que le chrome déclare, et non son fond de carte :
+     les cartes de chiffres posées dessus doivent rester des cartes. */
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+/* Le retour NOMME d'où l'on vient. En mineur : c'est une sortie, pas une action
+   sur le compte — et il précède le nom, comme le fil qu'on remonte. */
+.masthead-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--fold-color-text);
+    text-decoration: underline;
+  }
+}
+
+.masthead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 0.75rem) var(--fold-space-lg, 1rem);
+}
+
+.masthead-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  min-width: 0;
+}
+
+.masthead-title {
+  margin: 0;
+  color: var(--fold-color-text);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+/* La référence est ce qu'on DICTE au téléphone : chasse fixe, pour qu'un 8 et
+   un B ne se lisent pas pareil, et en mineur — c'est une clé, pas un nom. */
+.masthead-reference {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono, monospace);
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.masthead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
 /* Accrochée en haut : une fiche client est longue (informations, journal), et
    changer d'onglet ne doit pas demander de remonter. L'opacité vient de la
    barre elle-même (`background="surface"`, opaque depuis fold-ng 0.10.1) : on

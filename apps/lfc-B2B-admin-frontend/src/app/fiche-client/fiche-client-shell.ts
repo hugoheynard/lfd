@@ -1,26 +1,27 @@
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
-import {
+  FoldBadgeComponent,
   FoldButtonComponent,
+  FoldIconComponent,
   FoldNavLayoutComponent,
   FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldSurfaceDirective,
   FoldViewNavComponent,
   type FoldViewNavItem,
 } from 'fold-ng';
 
-import { companyDisplayName } from '@lfd/contracts';
-
 import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
+import {
+  companyStatusLabel,
+  companyStatusTone,
+} from '../commercial/calendrier/customer-sheet/customer-format';
 import { NotifyService } from '../notify.service';
-import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
+import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
+import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
+import { ClientSheetStore } from './client-sheet.store';
+import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
 
 /**
  * La **coquille d'un compte client** : un en-tête qui porte le nom de la société
@@ -57,12 +58,22 @@ import { AdminCompaniesService } from '../comptes-clients/admin-companies.servic
   selector: 'app-fiche-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     RouterOutlet,
+    CompteChiffres,
+    FoldBadgeComponent,
     FoldButtonComponent,
+    FoldIconComponent,
     FoldNavLayoutComponent,
     FoldPageLayoutComponent,
+    FoldPageSectionComponent,
+    FoldSurfaceDirective,
     FoldViewNavComponent,
   ],
+  // Fourni ICI, et pas à la racine : le magasin naît avec la coquille et meurt
+  // avec elle, donc le compte suivant ne s'ouvre jamais sur les chiffres du
+  // précédent. Les vues enfants l'injectent — c'est la MÊME instance.
+  providers: [ClientSheetStore],
   templateUrl: './fiche-client-shell.html',
   styleUrl: './fiche-client-shell.scss',
 })
@@ -70,10 +81,9 @@ export class FicheClientShell {
   /** L'identifiant de la société, lié depuis le segment de route. */
   readonly id = input.required<string>();
 
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly store = inject(ClientSheetStore);
   private readonly pins = inject(PinnedAccountsStore);
   private readonly notify = inject(NotifyService);
-  private readonly router = inject(Router);
 
   /**
    * Barre repliée en accordéon d'icônes sur un écran étroit : chaque onglet
@@ -85,8 +95,11 @@ export class FicheClientShell {
    * la page où l'on est — reste lisible.
    */
 
-  /** Le nom d'usage de la société — enseigne, à défaut raison sociale. */
-  protected readonly name = signal<string>('');
+  /** La fiche, lue une fois pour la coquille ET ses vues. */
+  protected readonly sheet = this.store.sheet;
+
+  protected readonly statusLabel = computed(() => companyStatusLabel(this.sheet()?.status ?? ''));
+  protected readonly statusTone = computed(() => companyStatusTone(this.sheet()?.status ?? ''));
 
   protected readonly tabs: FoldViewNavItem[] = [
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'dashboard' },
@@ -108,17 +121,24 @@ export class FicheClientShell {
   ];
 
   protected readonly title = computed<string>(() => {
-    const name = this.name();
+    const name = this.store.displayName();
     return name === '' ? 'Compte client' : name;
   });
 
   constructor() {
+    // 🔴 **Le rail du Commercial reste ouvert.** Il disparaissait en entrant
+    // ici : la fiche est une route de premier niveau (`comptes-clients/:id`),
+    // hors de `/commercial`, donc quitter la liste détruisait la page qui
+    // publiait le rail et personne ne le republiait. Descendre dans un compte
+    // n'est pas quitter le poste commercial — c'est y ouvrir un dossier.
+    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('commercial'));
+
     // Un `input` de route n'est **pas encore lié** dans le constructeur : le lire
-    // ici lève NG0950, que le `catch` de `loadName` avalait — l'en-tête restait
+    // ici lève NG0950, que le `catch` du chargement avalait — l'en-tête restait
     // sur « Compte client » sans que rien ne le signale. L'effet attend la
     // liaison, et rejoue si on passe d'un compte à un autre.
     effect(() => {
-      void this.loadName(this.id());
+      void this.store.load(this.id());
     });
   }
 
@@ -139,19 +159,5 @@ export class FicheClientShell {
     this.notify.success(
       wasPinned ? 'Compte retiré du suivi.' : 'Compte épinglé au tableau de bord.',
     );
-  }
-
-  protected async back(): Promise<void> {
-    await this.router.navigate(['/commercial/comptes-clients']);
-  }
-
-  /** Le nom seul : l'en-tête n'a besoin de rien d'autre, les vues chargent le reste. */
-  private async loadName(id: string): Promise<void> {
-    try {
-      const company = await this.companies.getById(id);
-      this.name.set(company === undefined ? '' : companyDisplayName(company));
-    } catch {
-      this.name.set('');
-    }
   }
 }

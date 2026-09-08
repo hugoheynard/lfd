@@ -23,6 +23,7 @@ import { purposeShort } from '@lfd/b2b-ui/appointment';
 
 import { NotifyService } from '../../../notify.service';
 import { AvailabilityService } from '../../availability/availability.service';
+import { CompteChiffres } from '../../../shared/compte-chiffres/compte-chiffres';
 import { CustomerSheet } from '../customer-sheet/customer-sheet';
 import { CustomerSheetService } from '../customer-sheet/customer-sheet.service';
 import { CustomerTimeline } from '../customer-timeline/customer-timeline';
@@ -79,6 +80,7 @@ const CHANNEL_LABEL: Record<string, string> = {
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
+    CompteChiffres,
     CustomerSheet,
     CustomerTimeline,
   ],

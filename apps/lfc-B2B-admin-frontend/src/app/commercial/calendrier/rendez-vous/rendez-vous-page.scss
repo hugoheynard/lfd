@@ -74,3 +74,13 @@
   justify-content: flex-end;
   gap: var(--fold-space-sm);
 }
+
+/* Les chiffres au-dessus de la fiche, à l'écart qu'avaient les cartes entre
+   elles. Ils vivaient DANS `customer-sheet` — ils l'ont quittée pour l'en-tête
+   d'un compte, que cette page n'a pas ; elle les rend donc elle-même, au même
+   endroit qu'avant, plutôt que de garder une seconde écriture des libellés. */
+.rdv-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 0.75rem);
+}

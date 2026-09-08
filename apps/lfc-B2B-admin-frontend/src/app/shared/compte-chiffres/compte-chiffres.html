@@ -1,0 +1,29 @@
+<!--
+  Quatre mesures, quatre cartes. L'ordre n'est pas indifférent : ce que le compte
+  a pesé, combien de fois, ce qui tombera sans qu'on le demande, et le ticket
+  moyen — du cumul vers le détail, comme on le raconte au téléphone.
+-->
+<div class="chiffres" [class.on-chrome]="onChrome()">
+  <fold-card class="chiffre" radius="sm" padding="sm">
+    <span class="chiffre-label">Total dépensé</span>
+    <span class="chiffre-value">{{ total() }}</span>
+    <!-- La direction sous le cumul : « 12 480 € » ne dit pas si le compte monte
+         ou s'éteint, et c'est la seule chose qui décide d'un appel. -->
+    <span class="chiffre-trend" [attr.data-tone]="trend().tone">{{ trend().label }}</span>
+  </fold-card>
+
+  <fold-card class="chiffre" radius="sm" padding="sm">
+    <span class="chiffre-label">Commandes</span>
+    <span class="chiffre-value">{{ stats().ordersCount }}</span>
+  </fold-card>
+
+  <fold-card class="chiffre" radius="sm" padding="sm">
+    <span class="chiffre-label">Paniers récurrents</span>
+    <span class="chiffre-value">{{ stats().recurringBasketsCount }}</span>
+  </fold-card>
+
+  <fold-card class="chiffre" radius="sm" padding="sm">
+    <span class="chiffre-label">Panier moyen</span>
+    <span class="chiffre-value">{{ average() }}</span>
+  </fold-card>
+</div>

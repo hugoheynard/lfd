@@ -67,3 +67,40 @@ export function trendTone(trend: CustomerSpendTrend): 'success' | 'alert' | 'neu
   }
   return trend.direction === 'down' ? 'alert' : 'neutral';
 }
+
+/**
+ * L'**état d'un compte**, mis en mots et en teinte.
+ *
+ * Ici plutôt que dans un composant : trois écrans le disent — la fiche
+ * commerciale, l'en-tête du compte, la liste du parc — et une table recopiée
+ * finit toujours par diverger sur le mot le plus rare. `pending` est le cas
+ * fréquent qu'on lit mal : « En attente » de quoi, ce sont les pièces, et c'est
+ * l'onglet Informations qui le dit.
+ */
+const STATUS_LABEL: Readonly<Record<string, string>> = {
+  pending: 'En attente',
+  active: 'Actif',
+  suspended: 'Suspendu',
+  terminated: 'Résilié',
+};
+
+/** La teinte fold correspondante — `neutral` pour un état inconnu, jamais une couleur. */
+const STATUS_TONE: Readonly<Record<string, CompanyStatusTone>> = {
+  pending: 'neutral',
+  active: 'success',
+  suspended: 'warning',
+  terminated: 'alert',
+};
+
+/** Les quatre tons que fold sait rendre pour un état de compte. */
+export type CompanyStatusTone = 'neutral' | 'success' | 'warning' | 'alert';
+
+/** Le mot, ou un tiret : un état qu'on ne sait pas nommer ne s'invente pas. */
+export function companyStatusLabel(status: string): string {
+  return STATUS_LABEL[status] ?? '—';
+}
+
+/** La teinte, `neutral` par défaut : une couleur affirmerait ce qu'on ignore. */
+export function companyStatusTone(status: string): CompanyStatusTone {
+  return STATUS_TONE[status] ?? 'neutral';
+}
