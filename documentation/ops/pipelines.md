@@ -226,6 +226,18 @@ Mesuré : **55 s · 55 s · 55 s · 57 s**, contre 33/39/54/39 auparavant. L'éc
 passe de 1,6× à 1,04×. Les shards n'ont plus le même nombre de suites
 (11/13/13/14) — c'est le but.
 
+> **⚠️ La mesure tient tout en UN processus, et elle a touché son plafond.**
+> _(2026-09-08)_ `e2e:rebalance` force `E2E_WORKERS=1` — c'est ce qui rend les
+> durées comparables entre elles — donc le tas de Node porte les soixante-dix
+> suites à la suite. À la soixante-dixième, il a dépassé les 6 Go du drapeau et
+> la mesure est morte d'un `heap out of memory` **après** avoir tout fait passer :
+> soixante-neuf `PASS`, zéro `FAIL`, et aucun fichier écrit.
+>
+> Le plafond est passé à **10 Go** pour cette commande seule. `test:e2e`, qui
+> shard, reste à 2 Go et n'est pas concerné. Le symptôme à reconnaître si ça
+> revient : la commande échoue en `SIGABRT` (code 134) alors que rien n'a
+> échoué — ce n'est pas un test rouge, c'est la mesure qui n'a pas tenu.
+
 **Les durées sont VERSIONNÉES** (`apps/lfd-api/test/e2e-durations.json`),
 régénérées à la main par `pnpm --filter lfd-api e2e:rebalance`, et non tirées
 d'un cache réécrit à chaque run. Un cache enregistrerait surtout le **bruit** :
