@@ -22,8 +22,10 @@ import { localToInstant } from '@lfd/contracts';
  *
  * Parce que le décalage change deux fois par an. Une constante `+1h` serait
  * juste six mois sur douze, et personne ne saurait laquelle des deux moitiés on
- * regarde. `localToInstant` connaît {@link BUSINESS_TIME_ZONE} et le passage à
- * l'heure d'été ; il sert déjà les créneaux et les heures limites de commande.
+ * regarde. `localToInstant` connaît le fuseau du métier (`BUSINESS_TIME_ZONE`)
+ * et le passage à l'heure d'été. Il n'était pas inutilisé : il sert déjà les
+ * créneaux de rendez-vous et les heures limites de commande (vérifié le
+ * 2026-09-08). Il ne servait simplement pas la tarification.
  *
  * @returns `null` si le jour est vide ou mal formé — l'appelant décide, parce
  *   qu'une fenêtre absente et une fenêtre invalide ne se traitent pas pareil.

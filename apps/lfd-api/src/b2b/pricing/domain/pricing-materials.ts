@@ -58,8 +58,9 @@ export interface PricingMaterials {
    *
    * 🔴 **Elle est ici en OBJET, jamais convertie.** Trois appelants font varier
    * la quantité sur les mêmes matériaux — la projection, la colonne des paliers,
-   * la caisse quand elle sonde — et une règle dérivée trop tôt y serait figée
-   * au premier palier. Cf. `CompanyMercuriale.asRuleFor`.
+   * la caisse quand elle sonde (vérifié le 2026-09-08) — et une règle dérivée
+   * trop tôt y serait figée au premier palier. Cf.
+   * `CompanyMercuriale.asRuleFor`.
    */
   readonly mercuriale: CompanyMercuriale | null;
 }

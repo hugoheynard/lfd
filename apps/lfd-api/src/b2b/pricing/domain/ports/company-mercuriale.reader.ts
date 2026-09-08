@@ -15,7 +15,8 @@ import type { CompanyMercuriale } from "../entities/company-mercuriale.js";
  * plate.
  *
  * C'est exactement la décision de `VolumeLadderReader`, qui rend des échelles
- * et jamais des règles : `ladderAsRule` n'est appelé par aucun lecteur.
+ * et jamais des règles : `ladderAsRule` n'est appelé par aucun lecteur (vérifié
+ * le 2026-09-08).
  */
 export abstract class CompanyMercurialeReader {
   /**

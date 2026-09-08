@@ -750,6 +750,38 @@ port, value object, type exporté, endpoint, migration non triviale.
 Le JSDoc explique **pourquoi**, jamais **quoi** — si le commentaire paraphrase la
 signature, il ne sert à rien et on l'enlève.
 
+#### 🔴 Une justification qui parle d'AILLEURS porte sa date
+
+Un commentaire qui affirme un fait sur **du code voisin** — « la fonction X
+refuse Y », « aucun appelant ne fait Z », « il y en a trois » — est une
+justification, pas une description. Il porte donc la date à laquelle ce fait a
+été **ouvert et vérifié** :
+
+```ts
+// `ladderAsRule` n'est appelé par AUCUN lecteur : les quatre appelants
+// convertissent chacun (vérifié le 2026-09-08).
+```
+
+**Ce n'est pas de la coquetterie, c'est le seul commentaire dangereux.** Une
+phrase fausse qui _décrit_ la fonction qu'elle surplombe se démasque en la
+lisant. Une phrase fausse qui _justifie_ un mécanisme par l'état d'un autre
+fichier ne se démasque jamais : elle fait **garder ce mécanisme pour une raison
+qui n'existe pas**, et défendre l'inverse le jour où quelqu'un propose de le
+simplifier.
+
+Le 2026-09-08, un JSDoc affirmait qu'une mercuriale « peut être posée en
+`alter` » et s'en servait pour justifier un détour par `resolvePrice`. C'était
+faux **depuis le premier commit** qui a permis d'écrire une règle. Personne
+n'aurait pu le voir sans ouvrir un second fichier — c'est-à-dire sans faire
+exactement ce que la date invite à refaire.
+
+La date ne rend pas la phrase vraie. Elle dit **jusqu'où on a regardé**, et
+donne au lecteur suivant le droit de ne pas la croire.
+
+⚠️ Réservé aux affirmations **porteuses** — celles qui justifient de garder,
+d'écarter ou de dupliquer quelque chose. Dater une description rendrait le
+signal illisible, ce qui est la façon habituelle de tuer une convention.
+
 ```ts
 /**
  * Résout le client local à partir du `sub` Auth0 et construit son `Principal`.

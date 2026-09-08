@@ -7,8 +7,9 @@
  * distingue tient à ce qu'elles font, pas à ce qu'elles contiennent.
  *
  * D'où ce module : les trois refus qui rendent une grille cohérente s'écrivent
- * **une fois**. Les dupliquer aurait donné deux définitions de « grille valide »
- * qui divergent au premier ajout — et c'est un prix qu'on n'explique plus.
+ * **une fois**. Ils étaient écrits deux fois — `price-template.ts` et rien
+ * d'autre, jusqu'à ce que la mercuriale en ait besoin (vérifié le 2026-09-08) —
+ * et deux définitions de « grille valide » divergent au premier ajout.
  *
  * ## Pourquoi les refus sont injectés
  *

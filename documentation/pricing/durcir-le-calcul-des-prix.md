@@ -189,12 +189,26 @@ une règle. Une justification fausse ne vieillit pas comme une phrase fausse :
 elle fait **garder un mécanisme pour une raison qui n'existe pas**, et défendre
 l'inverse le jour où quelqu'un propose de le simplifier.
 
-**Ce qui aiderait**, et qui ne coûte presque rien : un JSDoc qui affirme un fait
-sur **du code voisin** porte la date à laquelle ce fait a été vérifié. Le dépôt
-le fait déjà pour ses corrections (« ⚠️ ce paragraphe disait le contraire
-jusqu'au… ») ; il ne le fait pas pour ses affirmations.
+**✅ Fait le 2026-09-08.** La convention est écrite au §8 de `CLAUDE.md`, dans
+la section qui fait autorité sur le JSDoc : _une justification qui parle
+d'ailleurs porte sa date_. Elle est réservée aux affirmations **porteuses** —
+celles qui justifient de garder, d'écarter ou de dupliquer quelque chose. Dater
+une description rendrait le signal illisible, ce qui est la façon habituelle de
+tuer une convention.
 
-`auditeur-de-justifications` existe pour ça et ne tourne qu'à la demande.
+Appliquée aux six affirmations de la chaîne des prix qui décident d'un
+mécanisme : « `ladderAsRule` n'est appelé par aucun lecteur » (deux fois, aux
+deux endroits qu'elle justifie), « trois appelants font varier la quantité »,
+« les trois refus étaient écrits deux fois », « `paris-time` sert déjà les
+créneaux », et le tableau des cinq écarts divergents.
+
+**Ce qui n'est pas fait, et ne le sera pas par une porte.** Aucun garde-fou
+mécanique ne peut vérifier qu'une phrase est vraie. Ce que la date change est
+plus modeste et suffit : elle dit **jusqu'où on a regardé**, et donne au lecteur
+suivant le droit de ne pas croire.
+
+`auditeur-de-justifications` reste l'outil qui les rouvre, et il ne tourne qu'à
+la demande.
 
 ## 9. Ce que je ne ferais pas
 

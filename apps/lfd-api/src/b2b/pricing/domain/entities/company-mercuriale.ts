@@ -201,9 +201,9 @@ export class CompanyMercuriale {
    *
    * Parce qu'il faut la **mesure**, et qu'un lecteur ne l'a pas : il charge une
    * fois pour tout un panier, dont chaque ligne a sa propre quantité. C'est la
-   * décision qu'a prise le barème de volume avant nous — `ladderAsRule` n'est
-   * appelé par aucun lecteur, chaque appelant convertit au moment où il connaît
-   * la quantité.
+   * décision qu'a prise le barème de volume avant nous : `ladderAsRule` n'est
+   * appelé par **aucun** lecteur, ses quatre appelants convertissent chacun au
+   * moment où ils connaissent la quantité (vérifié le 2026-09-08).
    *
    * Et ce n'est pas une préférence : convertir trop tôt ne casse pas, ça
    * **ment**. La projection charge ses candidats une fois puis résout à N
