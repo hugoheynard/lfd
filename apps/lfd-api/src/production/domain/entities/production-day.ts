@@ -15,11 +15,24 @@ export interface ProductionLineSnapshot {
   readonly quantity: number;
 }
 
+/**
+ * **Le colisage constaté** : l'instant ET son auteur, ensemble.
+ *
+ * 🔴 C'étaient deux champs nullables jusqu'au 2026-09-08, et ils pouvaient donc
+ * se contredire — un instant sans auteur, un auteur sans instant. Aucun des deux
+ * n'a de sens, et le jour où il a fallu **republier** le fait, il fallait un
+ * `?? ""` sur l'auteur : une identité vide dans un événement, pour un état que
+ * le modèle laissait exister sans jamais le produire. On corrige le modèle.
+ */
+export interface PackedMark {
+  readonly at: Date;
+  readonly by: string;
+}
+
 /** Une commande, figée du côté de la production. */
 export interface ProductionOrderSnapshot {
   /** `null` = le bac n'est pas fait. C'est le fait du FOURNIL, pas du commerce. */
-  readonly packedAt: Date | null;
-  readonly packedBy: string | null;
+  readonly packed: PackedMark | null;
   readonly orderId: string;
   readonly reference: string;
   readonly customerLabel: string;
@@ -154,6 +167,33 @@ export class ProductionDay {
    * @throws {OrderAlreadyPackedError} le bac est déjà fait.
    */
   pack(reference: string, at: Date, by: string): ProductionOrderSnapshot {
+    const target = this.sheetToPack(reference);
+    if (target.packed !== null) {
+      throw new OrderAlreadyPackedError(reference);
+    }
+    const packed: ProductionOrderSnapshot = { ...target, packed: { at, by } };
+    this.ordersValue = this.ordersValue.map((order) =>
+      order.reference === reference ? packed : order,
+    );
+    return packed;
+  }
+
+  /**
+   * La fiche qu'on s'apprête à coliser — **sans rien muter**.
+   *
+   * Elle porte les deux refus STRUCTURELS, ceux qui disent que le geste n'a pas
+   * de sens ici : la journée n'est pas arrêtée, ou cette référence n'est pas au
+   * plan. Elle ne dit rien du bac lui-même — c'est l'appelant qui lit `packed`,
+   * parce que « déjà fait » n'est pas une erreur pour tout le monde : le
+   * handler y voit une REANNONCE à faire, `pack` y voit un refus.
+   *
+   * Les deux refus vivent ici, en un seul endroit, plutôt que recopiés chez
+   * l'appelant — c'est la raison d'être de cette méthode.
+   *
+   * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+   * @throws {AtelierSheetNotFoundError} aucune commande sous cette référence.
+   */
+  sheetToPack(reference: string): ProductionOrderSnapshot {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
@@ -161,14 +201,7 @@ export class ProductionDay {
     if (target === undefined) {
       throw new AtelierSheetNotFoundError(reference, this.day.value);
     }
-    if (target.packedAt !== null) {
-      throw new OrderAlreadyPackedError(reference);
-    }
-    const packed: ProductionOrderSnapshot = { ...target, packedAt: at, packedBy: by };
-    this.ordersValue = this.ordersValue.map((order) =>
-      order.reference === reference ? packed : order,
-    );
-    return packed;
+    return target;
   }
 
   close(orders: readonly ProducibleOrder[], at: Date): void {
@@ -200,8 +233,7 @@ function frozen(order: ProducibleOrder): ProductionOrderSnapshot {
     // Une journée qu'on vient d'arrêter n'a rien de colisé : le fournil n'a pas
     // encore commencé. L'écrire ici plutôt que de le laisser deviner évite qu'un
     // champ absent passe pour un bac fait.
-    packedAt: null,
-    packedBy: null,
+    packed: null,
     orderId: order.orderId,
     reference: order.reference,
     customerLabel: order.customerLabel,

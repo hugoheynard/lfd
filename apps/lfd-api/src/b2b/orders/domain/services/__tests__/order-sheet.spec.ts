@@ -84,6 +84,8 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     placedAt: "2026-09-07T06:00:00.000Z",
     lines: [line()],
     handoverToken: "tok_secret_42",
+    confirmedAt: null,
+    readyAt: null,
     handedOverAt: null,
     ...overrides,
   };

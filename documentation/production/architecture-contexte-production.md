@@ -59,16 +59,17 @@ sequenceDiagram
 
     Note over P,B: ③ Le colisage — un geste du labo, devant la fiche
     Staff->>P: POST …/batch/{jour}/sheets/{réf}/packed
-    P->>P: markPacked — écriture CONDITIONNELLE, ferme la course
-    alt le bac n'était pas encore fait
+    alt la journée n'est pas arrêtée, ou la fiche n'est pas au plan
+        P-->>Staff: 409 / 404 — le geste n'a pas de sens ici
+    else le bac n'était pas encore fait
+        P->>P: markPacked — écriture CONDITIONNELLE, ferme la course
         P--)B: OrderPackedEvent
-        P-->>Staff: 204
+        P-->>Staff: { packedAt, packedBy, alreadyPacked: false }
         Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
         B->>B: MarkOrderReady — confirmed → ready, courriel au client
-    else déjà colisé, ou journée pas encore arrêtée
-        P-->>Staff: 409 — le refus NOMME le cas et le geste de sortie
-    else la fiche n'est pas au plan du jour
-        P-->>Staff: 404
+    else le bac est DÉJÀ fait — rescan
+        P--)B: OrderPackedEvent (réannonce, valeurs du 1ᵉʳ scan)
+        P-->>Staff: { …, alreadyPacked: true }
     end
 
     Note over P,B: ④ La remise — au comptoir du labo, ou au chargement
@@ -81,15 +82,16 @@ sequenceDiagram
         P-->>Staff: l'attestation — qui, quand, `scan` ou `manual`
         Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
         B->>B: MarkOrderFulfilled — recopie le snapshot, passe `fulfilled`
-    else un autre poste a scanné le même QR
-        P-->>Staff: 409 — l'attestation de l'autre est la seule vraie
+    else déjà remise — le sac est parti
+        P--)B: OrderHandedOverEvent (réannonce, valeurs de la vraie remise)
+        P-->>Staff: 409 — le GESTE est refusé, la PROPAGATION est réparée
     end
 
-    Note over P,B: ⑤ Le contrepoids — voir ce que l'événement a pu perdre
+    Note over P,B: ⑤ Le contrepoids — voir ce que chaque fait a pu perdre
     Staff->>P: GET …/batch/{jour}/status
-    P->>B: PendingCommerceOrdersReader.pendingFor(jour, closedAt)
-    B-->>P: nombre de `placed` antérieures à la clôture
-    P-->>Staff: { …, pendingInCommerce }
+    P->>B: pendingFor · behindOnPacking · behindOnHandover
+    B-->>P: trois comptes — un par fait annoncé
+    P-->>Staff: { pendingInCommerce, packedBehind, handedOverBehind }
 ```
 
 ### Ce que le trait pointillé veut dire, et ce qu'il coûte
@@ -104,11 +106,27 @@ laisse des commandes `placed` sur une journée close.
 
 Trois choses le rendent **rattrapable** plutôt que perdu :
 
-|                            |                                            |
-| -------------------------- | ------------------------------------------ |
-| L'écriture est idempotente | `status` contraint dans le `where`         |
-| La clôture est rejouable   | elle republie sans recalculer l'instantané |
-| L'écart **se voit**        | ⑤, `pendingInCommerce`                     |
+|                                |                                                |
+| ------------------------------ | ---------------------------------------------- |
+| L'écriture est idempotente     | `status` contraint dans le `where`             |
+| **Les trois sont rejouables**  | reclore, rescanner la feuille, rescanner le QR |
+| **Les trois écarts se voient** | ⑤, un compteur par fait                        |
+
+⚠️ **Deux des trois ne l'étaient pas jusqu'au 2026-09-08**, et c'est le défaut le
+plus sérieux qu'a porté ce chantier. Le colisage et la remise refusaient le
+second scan (`409`) : le refus fermait le seul geste qui répare, et aucun
+compteur ne montrait l'écart. Une commande pouvait rester `confirmed` **pour
+toujours**, sans que personne puisse l'apprendre autrement qu'en comparant deux
+tables à la main.
+
+Le motif de la clôture — « presser à nouveau le bouton est le rattrapage » —
+existait pourtant depuis le premier jour du contexte. Il a été copié sans son
+rattrapage, ce qui est la façon la plus discrète de perdre une garantie.
+
+**La remise garde son refus**, et c'est délibéré : le sac est parti, la personne
+en face doit le savoir. Ce qui a changé est qu'elle republie **avant** de
+refuser. Le geste et la propagation sont deux questions ; une seule réponse les
+confondait.
 
 ⚠️ Ce qu'on n'a **pas** : une file, un outbox, un rejeu automatique. Ce serait la
 vraie réponse à « l'événement ne doit jamais se perdre », et c'est un chantier en

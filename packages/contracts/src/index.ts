@@ -374,6 +374,7 @@ export type {
   ProductionBatchQuery,
   ProductionBatchView,
   ProductionDayStatus,
+  ProductionPackingAck,
 } from "./production-sheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {

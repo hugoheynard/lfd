@@ -68,6 +68,55 @@ export interface ProductionDayStatus {
    * pourtant close. Zéro attendu ; autre chose = l'abonné a manqué le fait.
    */
   readonly pendingInCommerce: number;
+  /**
+   * Les bacs **faits** que le commerce n'a pas encore passés à `ready`.
+   *
+   * 🔴 Cette divergence-là ne se voyait nulle part avant le 2026-09-08 :
+   * `pendingInCommerce` ne détecte qu'une clôture perdue. Un `OrderPackedEvent`
+   * perdu laissait le client bloqué à « au fournil », sans écran ni compteur
+   * pour le dire. Le rattrapage est de **rescanner la feuille**, ce qui
+   * réannonce le fait sans toucher à l'attestation.
+   */
+  readonly packedBehind: number;
+  /**
+   * Les remises **attestées** que le commerce n'a pas encore closes.
+   *
+   * Comptées depuis la clôture de cette journée, et **pas** sur son plan : une
+   * commande passée après la clôture est remettable sans y figurer, et c'est
+   * précisément celle qu'un compteur adossé au plan ne verrait jamais. Le
+   * rattrapage est de rescanner le QR — le refus part quand même, mais le fait
+   * est republié.
+   */
+  readonly handedOverBehind: number;
+}
+
+/**
+ * Ce que rend le **colisage** d'une fiche — et surtout s'il vient d'avoir lieu.
+ *
+ * ## Pourquoi ce n'est plus un 204
+ *
+ * La route répondait `204`, et un second scan levait `409`. C'était défendable
+ * — sauf que ça fermait le seul rattrapage possible : le bus vit en processus,
+ * n'est ni persisté ni rejoué, et un abonné qui échoue laissait la commande en
+ * arrière **sans aucun moyen de la faire avancer**. Le refus interdisait
+ * précisément le geste qui répare.
+ *
+ * Deux mains sur la même feuille est d'ailleurs le cas NORMAL au fournil, pas
+ * une anomalie. Rescanner **réannonce** donc le fait déjà gravé, sans toucher à
+ * l'attestation : l'heure et l'auteur restent ceux du premier scan.
+ *
+ * `alreadyPacked` dit laquelle des deux choses vient d'arriver, plutôt que de
+ * rendre deux fois la même réponse sans dire pourquoi. Même figure que
+ * `alreadyClosed` sur la clôture.
+ */
+export interface ProductionPackingAck {
+  readonly reference: string;
+  /** ISO du colisage — celui du PREMIER scan, si c'en est un second. */
+  readonly packedAt: string;
+  /** L'identité staff qui a fait le bac, figée au premier scan. */
+  readonly packedBy: string;
+  /** `true` = le bac était déjà fait, et le fait vient d'être réannoncé. */
+  readonly alreadyPacked: boolean;
 }
 
 export interface ProductionBatchView {

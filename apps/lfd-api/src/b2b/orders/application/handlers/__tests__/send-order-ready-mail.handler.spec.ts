@@ -82,6 +82,8 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
       },
     ],
     handoverToken: "tok_secret_42",
+    confirmedAt: null,
+    readyAt: null,
     handedOverAt: null,
     ...overrides,
   };

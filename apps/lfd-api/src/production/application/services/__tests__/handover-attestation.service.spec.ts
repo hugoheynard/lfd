@@ -42,6 +42,7 @@ function repositoryOf(existing: OrderHandover | null, won: boolean) {
       written.push(handover);
       return Promise.resolve(won);
     },
+    referencesAttestedSince: () => Promise.resolve([]),
   };
   return { repository, written };
 }
@@ -124,10 +125,49 @@ describe("HandoverAttestation", () => {
       "staff-0",
       "scan",
     );
-    const { service, written, events } = attestationOf(earlier, true);
+    const { service, written } = attestationOf(earlier, true);
 
     await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été remise/u);
     expect(written).toEqual([]);
+  });
+
+  it("REPUBLIE l'attestation existante en refusant — le geste, pas la propagation", async () => {
+    // 🔴 Le refus fermait le seul rattrapage possible. Le sac est parti (rien à
+    // refaire), mais le commerce ne l'a peut-être pas appris (tout à refaire) :
+    // ce sont deux questions, et une seule réponse les confondait.
+    //
+    // On republie l'attestation EXISTANTE, jamais celle qu'on vient de refuser :
+    // l'heure et l'auteur sont ceux de la vraie remise.
+    const earlier = OrderHandover.rehydrate(
+      "ord_1",
+      "ORD-ABCD-1234",
+      new Date("2026-09-07T15:00:00.000Z"),
+      "staff-0",
+      "manual",
+    );
+    const { service, events } = attestationOf(earlier, true);
+
+    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été remise/u);
+
+    expect(events.published).toEqual([
+      new OrderHandedOverEvent(
+        "ORD-ABCD-1234",
+        new Date("2026-09-07T15:00:00.000Z"),
+        "staff-0",
+        "manual",
+      ),
+    ]);
+  });
+
+  it("ne republie RIEN quand le refus ne vient pas d'une remise déjà faite", async () => {
+    // Une commande annulée n'a aucune attestation : il n'y a rien à réannoncer,
+    // et publier un fait qui n'a pas eu lieu serait pire que le silence.
+    const { service, events } = attestationOf(null, true);
+
+    await expect(
+      service.attest({ ...subject(), status: "cancelled" }, "staff-1", "scan"),
+    ).rejects.toThrow(/annulée/u);
+
     expect(events.published).toEqual([]);
   });
 });

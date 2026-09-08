@@ -121,11 +121,11 @@ describe("coliser une commande", () => {
 
     const packed = day.pack("CMD-0001", LATER, "auth0|karim");
 
-    expect(packed.packedAt).toBe(LATER);
-    expect(packed.packedBy).toBe("auth0|karim");
+    expect(packed.packed?.at).toBe(LATER);
+    expect(packed.packed?.by).toBe("auth0|karim");
     // Les AUTRES commandes de la journée n'ont pas bougé : coliser l'une ne dit
     // rien de l'autre, et le fournil ferme les bacs un par un.
-    expect(day.orders.find((o) => o.reference === "CMD-0002")?.packedAt).toBeNull();
+    expect(day.orders.find((o) => o.reference === "CMD-0002")?.packed).toBeNull();
   });
 
   it("REFUSE un bac déjà fait — le premier scan est le seul vrai", () => {
@@ -136,8 +136,8 @@ describe("coliser une commande", () => {
 
     expect(() => day.pack("CMD-0001", AT, "auth0|lea")).toThrow(OrderAlreadyPackedError);
     const still = day.orders.find((o) => o.reference === "CMD-0001");
-    expect(still?.packedAt).toBe(LATER);
-    expect(still?.packedBy).toBe("auth0|karim");
+    expect(still?.packed?.at).toBe(LATER);
+    expect(still?.packed?.by).toBe("auth0|karim");
   });
 
   it("REFUSE une référence qui n'est pas dans cette journée", () => {
@@ -156,7 +156,9 @@ describe("coliser une commande", () => {
 
   it("une journée fraîchement arrêtée n'a AUCUN bac fait", () => {
     // Écrit plutôt que deviné : un champ absent passerait pour un bac fait.
-    expect(closed().orders.every((o) => o.packedAt === null)).toBe(true);
+    // Le couple entier est `null`, pas un instant sans auteur — c'est ce que le
+    // modèle rend inexprimable depuis le 2026-09-08.
+    expect(closed().orders.every((o) => o.packed === null)).toBe(true);
   });
 });
 

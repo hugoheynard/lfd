@@ -21,4 +21,15 @@ export abstract class OrderHandoverRepository {
    * ici. Une lecture-puis-écriture aurait laissé passer les deux.
    */
   abstract attest(handover: OrderHandover): Promise<boolean>;
+
+  /**
+   * Les références attestées **depuis** cet instant — la matière du contrepoids.
+   *
+   * Bornée dans le temps plutôt que globale : la table ne se purge jamais, et
+   * compter la divergence sur toute l'histoire ferait grossir une lecture
+   * d'écran sans rien apprendre. L'instant fourni est la clôture de la journée
+   * regardée, ce qui donne une fenêtre qui a un sens métier plutôt qu'un nombre
+   * de jours choisi au hasard.
+   */
+  abstract referencesAttestedSince(since: Date): Promise<readonly string[]>;
 }

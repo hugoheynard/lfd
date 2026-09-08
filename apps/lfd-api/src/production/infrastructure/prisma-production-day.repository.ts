@@ -56,8 +56,14 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       serviceDay: row.serviceDay,
       closedAt: row.closedAt,
       orders: row.orders.map((order) => ({
-        packedAt: order.packedAt,
-        packedBy: order.packedBy,
+        // Les deux colonnes restent nullables en base — c'est la même ligne
+        // avant et après le colisage. Le mapper les recolle en un couple, ou en
+        // `null` : l'agrégat n'a pas à connaître l'état où l'une existe sans
+        // l'autre, parce que rien ne le produit.
+        packed:
+          order.packedAt === null || order.packedBy === null
+            ? null
+            : { at: order.packedAt, by: order.packedBy },
         orderId: order.orderId,
         reference: order.reference,
         customerLabel: order.customerLabel,
@@ -124,8 +130,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             customerLabel: order.customerLabel,
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
-            packedAt: order.packedAt,
-            packedBy: order.packedBy,
+            packedAt: order.packed === null ? null : order.packed.at,
+            packedBy: order.packed === null ? null : order.packed.by,
             lines: { create: order.lines.map((line) => ({ ...line })) },
           },
         });

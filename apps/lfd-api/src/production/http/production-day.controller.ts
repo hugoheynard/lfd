@@ -1,13 +1,12 @@
 import {
   type ProductionDayStatus,
+  type ProductionPackingAck,
   type ProductionPlanClosure,
   productionBatchQuerySchema,
 } from "@lfd/contracts";
 import {
   Controller,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   Req,
@@ -78,15 +77,20 @@ export class ProductionDayController {
    * Porte staff comme tout `/admin/*`. Elle ne fait pas office de preuve
    * contradictoire — le colisage est un fait interne — mais elle décide **qui**
    * l'a déclaré, et ça ne vient jamais de la charge utile.
+   *
+   * ⚠️ **Elle répondait `204`, et un second scan levait `409`.** Elle rend
+   * désormais l'accusé du colisage, `alreadyPacked` compris : rescanner
+   * **réannonce** le fait déjà gravé au lieu de refuser, parce que c'était le
+   * seul rattrapage possible d'un abonné qui a échoué. Cf.
+   * `ProductionPackingAck`.
    */
   @Post("batch/:date/sheets/:reference/packed")
-  @HttpCode(HttpStatus.NO_CONTENT)
   async pack(
     @Param("date") date: string,
     @Param("reference") reference: string,
     @Req() request: AuthenticatedStaffRequest,
-  ): Promise<void> {
-    await this.commands.execute<PackOrderCommand, void>(
+  ): Promise<ProductionPackingAck> {
+    return this.commands.execute<PackOrderCommand, ProductionPackingAck>(
       new PackOrderCommand(
         productionBatchQuerySchema.parse({ date }).date,
         reference,

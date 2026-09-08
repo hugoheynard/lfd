@@ -50,20 +50,39 @@ export class HandoverAttestation {
     const existing = await this.handovers.findByOrderId(subject.orderId);
     const at = this.clock.now();
 
-    // L'agrégat refuse ici — commande annulée, pas encore passée, déjà remise.
-    const handover = OrderHandover.attest(
-      subject,
-      existing === null ? null : existing.handedOverAt,
-      at,
-      by,
-      via,
-    );
+    let handover: OrderHandover;
+    try {
+      // L'agrégat refuse ici — commande annulée, pas encore passée, déjà remise.
+      handover = OrderHandover.attest(
+        subject,
+        existing === null ? null : existing.handedOverAt,
+        at,
+        by,
+        via,
+      );
+    } catch (error) {
+      // 🔴 **Le geste est refusé, la propagation est réparée.** Les deux ne sont
+      // pas la même question : le sac est peut-être parti (rien à refaire), sans
+      // que le commerce l'ait appris (tout à refaire). Le bus vit en processus
+      // et n'est pas rejoué ; sans ceci, un abonné qui a échoué laissait la
+      // commande en arrière **pour toujours**, et rescanner ne faisait que
+      // répéter le refus.
+      //
+      // On republie donc l'attestation EXISTANTE, jamais la nôtre — l'heure et
+      // l'auteur sont ceux de la vraie remise —, puis on laisse le refus partir
+      // tel quel : c'est l'agrégat qui choisit le mot, et « annulée » explique
+      // la situation mieux que « déjà remise » quand les deux sont vraies.
+      this.republish(existing);
+      throw error;
+    }
 
     const won = await this.handovers.attest(handover);
     if (!won) {
       // Perdu la course : un autre poste a scanné, ou saisi, entre notre lecture
       // et notre écriture. On ne réécrit rien — l'attestation de l'autre est la
-      // seule vraie, et elle est peut-être la FORTE.
+      // seule vraie, et elle est peut-être la FORTE —, mais on la RELIT pour la
+      // réannoncer : le perdant est justement celui qui peut réparer.
+      this.republish(await this.handovers.findByOrderId(subject.orderId));
       throw new HandoverRefusedError("Cette commande vient d'être remise à un autre poste.");
     }
 
@@ -73,5 +92,27 @@ export class HandoverAttestation {
     this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
 
     return toHandoverView(subject, handover);
+  }
+
+  /**
+   * Réannonce une attestation déjà gravée, ou ne fait rien s'il n'y en a pas.
+   *
+   * Sans danger, et c'est ce qui permet de l'appeler sur tous les chemins de
+   * refus sans y réfléchir : `markFulfilled` est conditionné par
+   * `handedOverAt: null` côté commerce, donc un fait rejoué qui a déjà été
+   * traité n'écrit rien, ne journalise rien et ne fait partir aucun courriel.
+   */
+  private republish(handover: OrderHandover | null): void {
+    if (handover === null) {
+      return;
+    }
+    this.events.publish(
+      new OrderHandedOverEvent(
+        handover.reference,
+        handover.handedOverAt,
+        handover.handedOverBy,
+        handover.via,
+      ),
+    );
   }
 }

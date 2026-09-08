@@ -201,7 +201,7 @@ async function closeAndPack(
   context: E2eContext,
   day: string,
   reference: string,
-  expected = 204,
+  expected = 201,
 ): Promise<void> {
   await context.asSub("staff-e2e").post(`/admin/production/batch/${day}/close`);
   await context
@@ -278,7 +278,7 @@ describe("le colisage", () => {
     // commerce s'abonne et fait avancer SON statut. Deux faits, deux tables.
     const reference = await placeAndClose();
 
-    await packing(reference).expect(204);
+    await packing(reference).expect(201);
 
     const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
       where: { reference },
@@ -295,7 +295,7 @@ describe("le colisage", () => {
     // eu lieu — et c'est cette heure-là qu'on cherche quand une commande arrive
     // en retard.
     const reference = await placeAndClose();
-    await packing(reference).expect(204);
+    await packing(reference).expect(201);
     await eventuallyReady(reference);
 
     const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
@@ -310,15 +310,45 @@ describe("le colisage", () => {
     expect(order.readyBy).toBe("staff-e2e");
   });
 
-  it("REFUSE le second scan, et nomme le cas", async () => {
-    // Deux mains sur la même feuille est le cas normal au fournil, pas une
-    // anomalie : le refus doit nommer le cas, pas jeter une erreur technique.
+  it("RÉANNONCE au second scan, sans toucher à l'attestation", async () => {
+    // 🔴 Ce cas attendait un 409 jusqu'au 2026-09-08, et c'était le piège : le
+    // bus vit en processus et n'est pas rejoué, donc un abonné qui échoue
+    // laissait la commande en arrière POUR TOUJOURS — le refus fermait le seul
+    // geste qui répare. Deux mains sur la même feuille est d'ailleurs le cas
+    // normal au fournil.
     const reference = await placeAndClose();
-    await packing(reference).expect(204);
+    const first = jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(
+      await packing(reference).expect(201),
+    );
+    expect(first.alreadyPacked).toBe(false);
 
-    const refused = await packing(reference).expect(409);
+    const again = jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(
+      await packing(reference).expect(201),
+    );
 
-    expect(jsonBody<{ message: string }>(refused).message).toContain("déjà déclaré");
+    expect(again.alreadyPacked).toBe(true);
+    // L'heure et l'auteur restent ceux du PREMIER scan : c'est à ce moment-là
+    // que le bac a été fermé, et une réannonce n'est pas un second colisage.
+    expect(again.packedAt).toBe(first.packedAt);
+    expect(again.packedBy).toBe(first.packedBy);
+  });
+
+  it("RATTRAPE un commerce resté en arrière, en rescannant la feuille", async () => {
+    // Le scénario entier, joué : on colise, on remet la commande en arrière à la
+    // main — ce que ferait un abonné mort en vol —, et on rescanne. Sans la
+    // réannonce, il n'existait aucun moyen de la faire avancer.
+    const reference = await placeAndClose();
+    await packing(reference).expect(201);
+    await eventuallyReady(reference);
+
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "confirmed", readyAt: null, readyBy: null },
+    });
+
+    await packing(reference).expect(201);
+
+    expect(await eventuallyReady(reference)).toBe("ready");
   });
 
   it("REFUSE de coliser sur une journée qui n'est pas arrêtée", async () => {
@@ -351,8 +381,25 @@ describe("le colisage", () => {
 
     const results = await Promise.all([packing(reference), packing(reference)]);
 
-    expect(results.filter((response) => response.status === 204)).toHaveLength(1);
-    expect(results.filter((response) => response.status === 409)).toHaveLength(1);
+    // Les deux répondent `201` depuis que le second scan réannonce ; ce qui les
+    // distingue est `alreadyPacked`, et un seul peut le porter à `false`.
+    const acks = results.map((response) =>
+      jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(response),
+    );
+    expect(acks.filter((ack) => !ack.alreadyPacked)).toHaveLength(1);
+
+    // 🔴 Et surtout : les DEUX annoncent le même instant. Le perdant relit
+    // l'attestation du gagnant plutôt que de publier la sienne — publier son
+    // propre `now` daterait le bac d'un moment qui n'a rien fermé, et le
+    // commerce recopierait cette heure-là.
+    expect(acks[0]?.packedAt).toBe(acks[1]?.packedAt);
+    expect(acks[0]?.packedBy).toBe(acks[1]?.packedBy);
+
+    const row = await ctx.prisma.productionOrder.findFirstOrThrow({
+      where: { reference },
+      select: { packedAt: true },
+    });
+    expect(row.packedAt?.toISOString()).toBe(acks[0]?.packedAt);
   });
 
   it("lit la commande derrière le code AVANT de déclarer quoi que ce soit", async () => {
@@ -625,6 +672,8 @@ describe("le plan du soir", () => {
     readonly orders: number;
     readonly items: number;
     readonly pendingInCommerce: number;
+    readonly packedBehind: number;
+    readonly handedOverBehind: number;
   }> {
     return jsonBody(
       await ctx.asSub("staff-e2e").get(`/admin/production/batch/${day}/status`).expect(200),
@@ -711,6 +760,72 @@ describe("le plan du soir", () => {
 
     expect(await eventuallyStatus(reference, "confirmed")).toBe("confirmed");
     expect((await dayStatus(SERVICE_DAY)).pendingInCommerce).toBe(0);
+  });
+
+  it("MONTRE un colisage que le commerce n'a pas appris, et le rescan le répare", async () => {
+    // 🔴 Cette divergence-là ne se voyait NULLE PART avant le 2026-09-08 :
+    // `pendingInCommerce` ne détecte qu'une clôture perdue. Le client restait
+    // bloqué à « au fournil » et personne ne pouvait l'apprendre.
+    const reference = await place(SERVICE_DAY);
+    await closePlan(SERVICE_DAY);
+    await eventuallyStatus(reference, "confirmed");
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
+      .expect(201);
+    await eventuallyStatus(reference, "ready");
+    expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(0);
+
+    // L'abonné mort en vol, simulé : le fournil a son bac, le commerce non.
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "confirmed", readyAt: null, readyBy: null },
+    });
+    expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(1);
+
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
+      .expect(201);
+
+    expect(await eventuallyStatus(reference, "ready")).toBe("ready");
+    expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(0);
+  });
+
+  it("MONTRE une remise que le commerce n'a pas apprise, et le rescan la répare", async () => {
+    // Le rescan d'une remise REFUSE — le sac est parti, il faut le dire — mais
+    // republie quand même : le geste et la propagation sont deux questions.
+    const reference = await place(SERVICE_DAY);
+    await closePlan(SERVICE_DAY);
+    await eventuallyStatus(reference, "confirmed");
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+    const token = order.handoverToken ?? "";
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/${token}`).expect(201);
+    await eventuallyStatus(reference, "fulfilled");
+    expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(0);
+
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "ready", handedOverAt: null, handedOverBy: null, handedOverVia: null },
+    });
+    expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(1);
+
+    // Le refus part — et le fait est republié dans le même mouvement.
+    await ctx.asSub("staff-e2e").post(`/admin/production/handover/${token}`).expect(409);
+
+    expect(await eventuallyStatus(reference, "fulfilled")).toBe("fulfilled");
+    expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(0);
+  });
+
+  it("ne compte AUCUN retard sur une journée qui n'est pas arrêtée", async () => {
+    // Sur une journée ouverte, tout est normal : compter ferait passer la
+    // normalité pour une anomalie, et la fenêtre des remises n'a pas de borne.
+    const status = await dayStatus(serviceDay(9));
+
+    expect(status).toMatchObject({ pendingInCommerce: 0, packedBehind: 0, handedOverBehind: 0 });
   });
 
   it("n'absorbe RIEN une seconde fois, et le dit plutôt que de refuser", async () => {

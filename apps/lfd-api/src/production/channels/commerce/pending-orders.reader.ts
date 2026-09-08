@@ -30,4 +30,31 @@ export abstract class PendingCommerceOrdersReader {
    * l'alerte deviendrait du bruit qu'on cesse de lire.
    */
   abstract pendingFor(day: ServiceDay, closedAt: Date): Promise<number>;
+
+  /**
+   * Parmi ces commandes **dont le fournil a fait le bac**, combien le commerce
+   * n'a-t-il pas encore avancées ?
+   *
+   * 🔴 Cette question n'avait pas de réponse jusqu'au 2026-09-08, et c'était le
+   * trou du dispositif : `pendingFor` ne voit qu'une clôture perdue. Un
+   * `OrderPackedEvent` perdu, lui, ne se voyait **nulle part** — ni écran, ni
+   * compteur —, et le client restait bloqué à « au fournil » sans que personne
+   * puisse le savoir autrement qu'en regardant deux tables à la main.
+   *
+   * ⚠️ C'est le COMMERCE qui décide ce que « pas encore avancée » veut dire : la
+   * production n'a pas à connaître l'énuméré de ses statuts. Même raison que la
+   * règle « producible », et même conséquence — le jour où un statut s'ajoute,
+   * un seul fichier bouge.
+   */
+  abstract behindOnPacking(references: readonly string[]): Promise<number>;
+
+  /**
+   * La même question pour la **remise** : parmi ces commandes attestées remises
+   * au comptoir du fournil, combien le commerce n'a-t-il pas encore closes ?
+   *
+   * Les références viennent de la table des attestations, pas du plan : une
+   * commande passée après la clôture est remettable sans y figurer, et c'est
+   * exactement celle qu'un compteur adossé au plan ne verrait jamais.
+   */
+  abstract behindOnHandover(references: readonly string[]): Promise<number>;
 }

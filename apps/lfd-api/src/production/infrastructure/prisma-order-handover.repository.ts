@@ -53,6 +53,14 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
       throw error;
     }
   }
+
+  async referencesAttestedSince(since: Date): Promise<readonly string[]> {
+    const rows = await this.prisma.orderHandover.findMany({
+      where: { handedOverAt: { gte: since } },
+      select: { reference: true },
+    });
+    return rows.map((row) => row.reference);
+  }
 }
 
 /** Une ligne du schéma `production`, telle que Prisma la rend. */
