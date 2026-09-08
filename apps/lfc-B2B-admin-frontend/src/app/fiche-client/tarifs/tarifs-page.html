@@ -51,11 +51,40 @@
             -->
             <header class="tf-head">
               <div class="tf-head-title">
-                <h3 class="tf-name">{{ mercuriale.label }}</h3>
-                <fold-badge
-                  [content]="statusLabel[mercuriale.status]"
-                  [variant]="statusTone[mercuriale.status]"
-                />
+                <!--
+                  **Le nom se corrige sur place.** Il n'entre dans aucun calcul :
+                  renommer ne touche ni un prix, ni une facture. Ce qu'il touche,
+                  faute d'identité en base, c'est la CLÉ qui recolle ses règles —
+                  d'où le passage par le serveur, qui les renomme toutes d'un
+                  coup et refuse un nom déjà pris sur la même fenêtre.
+                -->
+                @if (isRenaming(mercuriale)) {
+                  <fold-input
+                    class="tf-rename"
+                    ariaLabel="Nom de la mercuriale"
+                    size="sm"
+                    [value]="newLabel()"
+                    [disabled]="busy()"
+                    (valueChange)="newLabel.set($event)"
+                    (keyup.enter)="rename(mercuriale, nativeValue($event))"
+                    (keyup.escape)="cancelRename()"
+                  />
+                  <button foldButton size="sm" [disabled]="busy()" (click)="rename(mercuriale)">
+                    Renommer
+                  </button>
+                  <button foldButton size="sm" emphasis="outline" (click)="cancelRename()">
+                    Annuler
+                  </button>
+                } @else {
+                  <h3 class="tf-name">{{ mercuriale.label }}</h3>
+                  <fold-badge
+                    [content]="statusLabel[mercuriale.status]"
+                    [variant]="statusTone[mercuriale.status]"
+                  />
+                  <button foldButton size="sm" emphasis="outline" (click)="startRename(mercuriale)">
+                    Renommer
+                  </button>
+                }
               </div>
               <p class="tf-meta">
                 Du <strong>{{ day(mercuriale.validFrom) }}</strong> au
@@ -71,15 +100,42 @@
                      la contrainte d'exclusion, donc la condition pour reposer sur
                      la même période. Rien n'est effacé. -->
                 @if (mercuriale.status !== 'expired') {
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="outline"
-                    [disabled]="busy()"
-                    (click)="close(mercuriale)"
-                  >
-                    Clore
-                  </button>
+                  <!--
+                    **Derrière un popover, et une zone de danger dedans.** Clore
+                    n'efface rien — les règles sont archivées, une lecture datée
+                    d'avant les retrouve — mais le client repasse au tarif
+                    catalogue à l'instant du clic, et personne ne l'en avertit.
+                    C'est ça qu'il faut lire AVANT, pas après : le bouton nu ne
+                    disait ni ce qu'il fait, ni ce qu'il ne fait pas.
+                  -->
+                  <fold-popover placement="bottom-end" [arrow]="true">
+                    <button foldButton foldPopoverTrigger size="sm" emphasis="outline">
+                      Clore
+                    </button>
+                    <div foldPopoverPanel class="tf-close-panel">
+                      <fold-danger-zone
+                        appearance="section"
+                        title="Clore cette mercuriale"
+                        actionLabel="Clore la mercuriale"
+                        message="Le client repassera au tarif catalogue pro dès maintenant."
+                        (confirmed)="close(mercuriale)"
+                      >
+                        <p>
+                          Ses {{ mercuriale.ruleCount }} règle(s) sont
+                          <strong>archivées, jamais effacées</strong> : ce qu'elles ont facturé
+                          reste figé sur les commandes, et une lecture datée d'avant la clôture les
+                          retrouve.
+                        </p>
+                        <p>
+                          La période
+                          <strong
+                            >{{ day(mercuriale.validFrom) }} — {{ day(mercuriale.validTo) }}</strong
+                          >
+                          redevient libre : c'est ce qui permet d'en reposer une autre dessus.
+                        </p>
+                      </fold-danger-zone>
+                    </div>
+                  </fold-popover>
                 }
               </div>
             </header>

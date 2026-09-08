@@ -195,6 +195,29 @@
   gap: var(--fold-space-sm, 0.5rem);
 }
 
+// Le champ de renommage prend la place du titre, sans faire sauter la ligne :
+// une entête qui change de hauteur en cliquant « Renommer » ferait bouger la
+// table sous les yeux.
+.tf-rename {
+  min-width: 18rem;
+}
+
+// Le panneau du popover de clôture. Une largeur bornée : les deux phrases qu'il
+// porte sont là pour être LUES avant de cliquer, et un paragraphe pleine largeur
+// dans une couche flottante ne se lit pas.
+.tf-close-panel {
+  max-width: 26rem;
+
+  p {
+    margin: 0 0 var(--fold-space-sm, 0.5rem);
+    font-size: var(--fold-text-base, 0.875rem);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
 .tf-name {
   margin: 0;
   font-size: 1.0625rem;

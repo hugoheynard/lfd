@@ -11,12 +11,15 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDangerZoneComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
+  FoldPopoverComponent,
+  FoldPopoverTriggerDirective,
   FoldElementTitleComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
@@ -134,12 +137,15 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldDangerZoneComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldEmptyStateComponent,
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
+    FoldPopoverComponent,
+    FoldPopoverTriggerDirective,
     FoldElementTitleComponent,
     VolumeEffort,
   ],
@@ -182,6 +188,15 @@ export class ClientTarifsPage {
    * qu'on a accordé — pas pour comparer.
    */
   protected readonly opened = signal<string | null>(null);
+
+  /**
+   * **La mercuriale en cours de renommage**, par sa clé — et une seule à la
+   * fois : deux champs de nom ouverts côte à côte se confondent.
+   */
+  protected readonly renaming = signal<string | null>(null);
+
+  /** Le nom qu'on est en train de taper. Vidé à chaque ouverture. */
+  protected readonly newLabel = signal('');
 
   /** Le libellé et la fenêtre de ce qu'on s'apprête à poser. */
   protected readonly label = signal('');
@@ -451,6 +466,72 @@ export class ClientTarifsPage {
       await this.reload(this.id(), false);
     } catch (error) {
       this.notify.error(error, "La mercuriale n'a pas pu être close.");
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
+   * **Ouvrir le renommage** d'une mercuriale, sur son nom actuel.
+   *
+   * Pré-rempli et non vide : on renomme presque toujours pour corriger — une
+   * faute de frappe, un millésime — et repartir d'un champ vide ferait retaper
+   * ce qu'on voulait garder.
+   */
+  protected startRename(mercuriale: PosedMercurialeView): void {
+    this.renaming.set(this.keyOf(mercuriale));
+    this.newLabel.set(mercuriale.label);
+  }
+
+  protected cancelRename(): void {
+    this.renaming.set(null);
+  }
+
+  protected isRenaming(mercuriale: PosedMercurialeView): boolean {
+    return this.renaming() === this.keyOf(mercuriale);
+  }
+
+  /**
+   * **Renommer.** Le prix ne bouge pas — le libellé n'entre dans aucune
+   * résolution.
+   *
+   * ⚠️ Ce n'est pourtant pas une étiquette posée à côté de l'objet : faute
+   * d'identité en base, une mercuriale est recollée par **(libellé, fenêtre)**,
+   * et le nom en est la moitié. Le serveur renomme donc toutes ses règles d'un
+   * coup, et refuse un nom déjà pris sur la même fenêtre. C'est aussi pour ça
+   * que la vue est **relue** après coup plutôt que corrigée sur place : la clé
+   * de tout ce qui est à l'écran vient de changer.
+   */
+  protected async rename(mercuriale: PosedMercurialeView, typed?: string): Promise<void> {
+    // ⚠️ `typed` vient de la touche Entrée, et il est là pour une raison
+    // mesurée : `fold-input` ne reflète pas sa frappe dans le signal AVANT que
+    // le champ perde le focus. Valider au clavier sans lire le champ natif
+    // renommait donc avec la valeur d'avant la saisie — c'est-à-dire ne
+    // renommait rien, en fermant l'édition comme si c'était fait.
+    const label = (typed ?? this.newLabel()).trim();
+    if (label === '') {
+      this.notify.refused(null, 'Une mercuriale ne peut pas être sans nom : il la désigne.');
+      return;
+    }
+    if (label === mercuriale.label) {
+      this.renaming.set(null);
+      return;
+    }
+    this.busy.set(true);
+    try {
+      await this.pricing.rename(this.id(), {
+        label: mercuriale.label,
+        validFrom: mercuriale.validFrom,
+        validTo: mercuriale.validTo,
+        newLabel: label,
+      });
+      this.renaming.set(null);
+      this.notify.success('Mercuriale renommée — les prix sont inchangés.');
+      // La saisie en cours SURVIT, pour la même raison qu'après une clôture : on
+      // peut renommer en pleine négociation, et réaligner effacerait la grille.
+      await this.reload(this.id(), false);
+    } catch (error) {
+      this.notify.error(error, "La mercuriale n'a pas pu être renommée.");
     } finally {
       this.busy.set(false);
     }

@@ -8,6 +8,7 @@ import type {
   MercurialeDraftResponse,
   MercurialeDraftView,
   PoseCompanyMercurialePayload,
+  RenameCompanyMercurialePayload,
   SaveMercurialeDraftPayload,
 } from '@lfd/contracts';
 
@@ -56,6 +57,23 @@ export class CompanyPricingService {
   ): Promise<AffectedRulesResponse> {
     return firstValueFrom(
       this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale/close'), payload),
+    );
+  }
+
+  /**
+   * **Renommer une mercuriale.**
+   *
+   * Le geste a l'air anodin et ne l'est pas : faute d'identité en base, le
+   * libellé est la moitié de la clé qui recolle ses règles. Le serveur les
+   * renomme toutes d'un coup, et refuse un nom déjà pris sur la même fenêtre —
+   * les deux mercuriales se confondraient à la lecture suivante.
+   */
+  async rename(
+    companyId: string,
+    payload: RenameCompanyMercurialePayload,
+  ): Promise<AffectedRulesResponse> {
+    return firstValueFrom(
+      this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale/rename'), payload),
     );
   }
 
