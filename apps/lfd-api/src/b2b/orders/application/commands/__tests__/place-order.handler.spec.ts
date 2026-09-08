@@ -471,7 +471,20 @@ describe("PlaceOrderHandler", () => {
     expect(placed.totalCents).toBe(400);
   });
 
-  it("refuse un non-membre par un 404 non-divulguant quand une entreprise est visée", async () => {
+  /**
+   * 🔴 **Ce cas garde le chemin HORS requête**, depuis le 2026-09-08.
+   *
+   * Sur le chemin HTTP, la société vient du contexte, résolu par le guard depuis
+   * les rattachements : l'appartenance y est acquise avant d'entrer ici, et ce
+   * refus est devenu inatteignable. Il reste vrai — et nécessaire — partout où
+   * la société est passée à la main : le semis, un futur travail de fond, ce
+   * test. Sans lui, une commande pourrait être écrite sous une maison dont
+   * l'acheteur n'est pas.
+   *
+   * Un 404 et non un 403 : dire « vous n'êtes pas membre » confirmerait que la
+   * société existe.
+   */
+  it("refuse un non-membre quand la société n'est PAS venue des rattachements", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard(null, "active"),

@@ -101,8 +101,23 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   private async placeOnce(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
     const { payload, companyId } = command;
 
-    // Mur : rattachée à une entreprise ⇒ il faut en être membre. Personnelle ⇒
-    // seul le client connecté la possède, rien à vérifier.
+    // 🔴 **Ce contrôle a changé de rôle le 2026-09-08, et son ancien commentaire
+    // mentait sur sa raison d'être.**
+    //
+    // Il disait « mur : rattachée à une entreprise ⇒ il faut en être membre ».
+    // C'était vrai quand la société arrivait du CORPS de la requête : n'importe
+    // qui pouvait en nommer une, et ce contrôle était le seul à s'y opposer.
+    //
+    // Elle vient maintenant du contexte, résolu par le guard **depuis les
+    // rattachements** (`resolve-company.ts`). Sur le chemin HTTP, l'appartenance
+    // est donc acquise avant d'arriver ici : ce contrôle ne peut plus refuser
+    // quoi que ce soit, et le mur qu'il gardait est devenu inexprimable.
+    //
+    // Il RESTE, et pas par prudence vague : la commande s'exécute aussi hors
+    // requête — le semis passe la société explicitement, et rien ne l'a
+    // confrontée aux rattachements. C'est ce chemin-là qu'il protège désormais,
+    // et lui seul. Le retirer rendrait possible une commande semée sous une
+    // maison dont l'acheteur n'est pas.
     if (companyId !== null) {
       const role = await this.guard.roleOf(command.actorUserId, companyId);
       ensureOrderMember(role, companyId);
