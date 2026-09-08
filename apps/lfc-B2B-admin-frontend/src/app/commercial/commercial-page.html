@@ -1,13 +1,53 @@
-<fold-page-layout [icon]="current().icon" [title]="current().label">
-  <p description>{{ current().description }}</p>
+<!-- Pas de `title` sur le layout : la page porte son `<h1>` dans la bande, et
+     deux titres de premier niveau sur un écran n'en font aucun. Même partition
+     que la fiche d'un compte et que la tarification — le verdict sur le chrome,
+     l'établi sur le papier. -->
+<fold-page-layout>
+  <!--
+    **Le bandeau de tête du poste commercial**, commun aux cinq vues.
+
+    🔴 Il vivait dans l'en-tête du layout — `[title]` + `<p description>` — donc
+    sur le papier, et chaque vue redessinait ensuite son propre sommet. Le nom de
+    l'écran s'affichait alors deux fois sur le parc, une fois par la coquille et
+    une fois par la vue.
+
+    Le titre suit la VUE, pas l'espace : le nom de l'espace est en tête du rail
+    secondaire, la page porte celui de la vue — sans quoi les deux diraient
+    « Commercial » et aucun ne dirait où l'on est.
+  -->
+  <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+    <div class="masthead-head">
+      <div class="masthead-identity">
+        <h1 class="masthead-title">
+          <fold-icon [name]="current().icon" size="sm" />
+          {{ current().label }}
+        </h1>
+        <p class="masthead-subtitle">{{ current().description }}</p>
+      </div>
+
+      <!-- Ce que la VUE ajoute — ses files d'attente, son action principale.
+           Elle le publie par `providePageActions` : sa projection de contenu ne
+           traverserait pas le `<router-outlet />`, et la faire remonter en
+           `@Input` obligerait cette coquille à connaître ses vues. -->
+      @if (actions(); as tpl) {
+        <div class="masthead-actions">
+          <ng-container [ngTemplateOutlet]="tpl" />
+        </div>
+      }
+    </div>
+
+    <!-- Les chiffres de la vue, DANS la bande. Sur le papier, ils se lisaient
+         comme un bloc de contenu de plus ; ici ils sont le verdict qu'on vient
+         chercher, au même endroit et sur le même support que les chiffres d'un
+         compte sur sa fiche. -->
+    @if (figures(); as tpl) {
+      <ng-container [ngTemplateOutlet]="tpl" />
+    }
+  </fold-page-section>
 
   <!-- Les vues du Commercial vivent dans le RAIL SECONDAIRE de la coquille,
        publié par le composant — et, sous 768px où la coquille retire ses rails,
        dans le LANCEUR, qui rend l'espace comme un groupe à deux niveaux. Rien
-       ici : la page n'a plus de navigation du tout.
-
-       Le titre de page suit la vue affichée : le nom de l'ESPACE est en tête du
-       rail, la page porte celui de la VUE — sans quoi les deux diraient
-       « Commercial » et aucun ne dirait où l'on est. -->
+       ici : la page n'a plus de navigation du tout. -->
   <router-outlet />
 </fold-page-layout>

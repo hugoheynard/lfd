@@ -196,3 +196,17 @@
     display: none;
   }
 }
+
+/* Sur le bandeau de chrome, le filet de 5 % disparaît et l'ombre portée n'a plus
+   de sens — une carte claire projette une ombre, un support sombre n'en projette
+   pas. Le bord passe donc au filet de 10 %, celui que le chrome rend visible,
+   et l'ombre tombe. Un cran, pas deux : les tuiles doivent rester des tuiles,
+   pas devenir des trous dans la bande. */
+.pb.on-chrome {
+  border-color: var(--fold-color-border);
+  box-shadow: none;
+}
+
+.pb.on-chrome .pb-tile + .pb-tile::before {
+  background: var(--fold-color-border);
+}

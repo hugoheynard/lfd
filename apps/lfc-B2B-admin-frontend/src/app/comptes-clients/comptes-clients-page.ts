@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
@@ -18,6 +26,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { providePageHeader } from '../commercial/page-header.store';
 import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { PortfolioBar } from './portfolio-bar/portfolio-bar';
 import { WarningsGallery } from './warnings-gallery/warnings-gallery';
@@ -98,6 +107,24 @@ function isFilterValue(value: string): value is FilterValue {
   styleUrl: './comptes-clients-page.scss',
 })
 export class ComptesClientsPage {
+  /**
+   * Les files et l'action principale, écrites dans CE gabarit et posées dans
+   * l'en-tête de la coquille commerciale.
+   *
+   * Un `TemplateRef` plutôt que des données : les deux pastilles dépendent de
+   * signaux d'ici, et les décrire en objets aurait obligé la coquille à savoir
+   * ce qu'est une file d'activation.
+   */
+  private readonly actionsTemplate = viewChild<TemplateRef<unknown>>('actions');
+  private readonly figuresTemplate = viewChild<TemplateRef<unknown>>('figures');
+  /** `undefined` avant résolution du `viewChild` ; le magasin, lui, parle en `null`. */
+  private readonly headerActions = computed<TemplateRef<unknown> | null>(
+    () => this.actionsTemplate() ?? null,
+  );
+  private readonly headerFigures = computed<TemplateRef<unknown> | null>(
+    () => this.figuresTemplate() ?? null,
+  );
+
   private readonly service = inject(AdminCompaniesService);
   private readonly alerts = inject(PendingAlertsService);
   private readonly portfolio = inject(PortfolioMetricsService);
@@ -253,6 +280,7 @@ export class ComptesClientsPage {
   protected readonly rowKey = (company: AdminCompany): string => company.id;
 
   constructor() {
+    providePageHeader({ actions: this.headerActions, figures: this.headerFigures });
     void this.load();
   }
 

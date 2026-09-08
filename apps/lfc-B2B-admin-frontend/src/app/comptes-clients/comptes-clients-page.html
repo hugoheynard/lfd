@@ -1,37 +1,38 @@
-<section class="page">
-  <header class="page-head">
-    <div>
-      <h1>Comptes clients</h1>
-      <p class="subtitle">Les sociétés B2B — activation, suivi commercial.</p>
-    </div>
-    <div class="head-right">
-      @if (state() === 'ready') {
-        <div class="queues">
-          @if (awaitingActivationCount() > 0) {
-            <fold-badge variant="warning" [content]="awaitingActivationCount() + ' à vérifier'" />
-          }
-          @if (assistanceCount() > 0) {
-            <fold-badge variant="info" [content]="assistanceCount() + ' assistance'" />
-          }
-        </div>
-      }
-      <!-- Une PAGE, pas un tiroir : on ouvre un compte pendant un appel, on y
-           revient, on le garde à l'écran — un tiroir se ferme au premier clic à
-           côté et emporte la saisie. -->
-      <a
-        foldButton
-        intent="primary"
-        emphasis="solid"
-        icon="plus"
-        routerLink="/comptes-clients/nouveau"
-      >
-        Créer un compte
-      </a>
-    </div>
-  </header>
-
+<!-- Les files et l'action principale REMONTENT dans l'en-tête de la coquille,
+     par `providePageActions` : c'est elle qui porte le bandeau, et une vue qui
+     redessinerait son propre sommet afficherait le nom de l'écran deux fois —
+     ce qu'elle faisait jusqu'au 2026-09-08. -->
+<ng-template #actions>
   @if (state() === 'ready') {
-    <app-portfolio-bar [metrics]="metrics()" />
+    <!-- Les files avant l'action : elles disent ce qui attend, l'action dit ce
+         qu'on ajoute. Les mettre après ferait lire « créer » comme la réponse à
+         « à vérifier ». -->
+    @if (awaitingActivationCount() > 0) {
+      <fold-badge variant="warning" [content]="awaitingActivationCount() + ' à vérifier'" />
+    }
+    @if (assistanceCount() > 0) {
+      <fold-badge variant="info" [content]="assistanceCount() + ' assistance'" />
+    }
+  }
+  <!-- Une PAGE, pas un tiroir : on ouvre un compte pendant un appel, on y
+       revient, on le garde à l'écran — un tiroir se ferme au premier clic à
+       côté et emporte la saisie. -->
+  <a foldButton intent="primary" emphasis="solid" icon="plus" routerLink="/comptes-clients/nouveau">
+    Créer un compte
+  </a>
+</ng-template>
+
+<!-- L'état du portefeuille, DANS la bande : c'est le verdict qu'on vient
+     chercher en ouvrant l'écran, au même endroit et sur le même support que les
+     chiffres d'un compte sur sa fiche. -->
+<ng-template #figures>
+  @if (state() === 'ready') {
+    <app-portfolio-bar [metrics]="metrics()" onChrome />
+  }
+</ng-template>
+
+<section class="page">
+  @if (state() === 'ready') {
     <!-- Ce qui appelle un geste, avant la liste : on ouvre cet écran pour
          travailler, pas pour contempler 250 lignes. -->
     <app-warnings-gallery [companies]="companies()" [now]="loadedAt()" />

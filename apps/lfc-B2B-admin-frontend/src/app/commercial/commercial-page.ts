@@ -1,9 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { FoldPageLayoutComponent } from 'fold-ng';
+import {
+  FoldIconComponent,
+  FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldSurfaceDirective,
+} from 'fold-ng';
 
+import { PageHeaderStore } from './page-header.store';
 import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
 import {
   COMMERCIAL_COCKPIT,
@@ -34,16 +41,34 @@ import {
  *
  * Désormais le titre EST le nom de la vue, l'onglet actif le confirme, et les
  * vues ne portent plus que leurs actions.
+ *
+ * 🔴 **Depuis le 2026-09-08, cet en-tête est un bandeau de CHROME** et non plus
+ * l'en-tête du layout : même support que la fiche d'un compte et que la
+ * tarification. Les actions de la vue y arrivent par `PageActionsStore` — une
+ * projection ne traverse pas un `<router-outlet />`.
  */
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent],
+  imports: [
+    NgTemplateOutlet,
+    RouterOutlet,
+    FoldIconComponent,
+    FoldPageLayoutComponent,
+    FoldPageSectionComponent,
+    FoldSurfaceDirective,
+  ],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })
 export class CommercialPage {
   private readonly router = inject(Router);
+
+  private readonly header = inject(PageHeaderStore);
+  /** Ce que la vue courante ajoute à l'en-tête — ses files, son action. */
+  protected readonly actions = this.header.actions;
+  /** Et ses chiffres, posés DANS la bande plutôt que sur le papier. */
+  protected readonly figures = this.header.figures;
 
   constructor() {
     provideWorkspaceRail(inject(WorkspaceCatalogue).rail('commercial'));

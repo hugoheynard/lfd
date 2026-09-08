@@ -1,5 +1,5 @@
 @if (metrics(); as m) {
-  <section class="pb" aria-label="État du portefeuille">
+  <section class="pb" [class.on-chrome]="onChrome()" aria-label="État du portefeuille">
     <article class="pb-tile">
       <p class="pb-label">
         <!-- Le libellé se raccourcit sous 640px, il ne s'abrège jamais tout seul :

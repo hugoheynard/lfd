@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  booleanAttribute,
+  computed,
+  input,
+} from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
 import type { PortfolioMetricsView } from '@lfd/contracts';
@@ -25,6 +31,16 @@ import type { PortfolioMetricsView } from '@lfd/contracts';
 })
 export class PortfolioBar {
   readonly metrics = input.required<PortfolioMetricsView | null>();
+
+  /**
+   * Posée sur le bandeau SOMBRE de la coquille, et non sur le papier.
+   *
+   * Le drapeau ne change que la teinte — jamais le contenu, jamais l'ordre. Il
+   * existe parce que `--fold-color-border-subtle` (5 %) passe sous le seuil de
+   * l'œil sur un fond de chrome : le filet qui sépare les trois tuiles y
+   * disparaît, et les trois mesures se lisent alors comme une seule phrase.
+   */
+  readonly onChrome = input(false, { transform: booleanAttribute });
 
   /** Combien de comptes le pouls a réellement classés — le reste n'a rien vendu. */
   protected readonly measured = computed(() => {
