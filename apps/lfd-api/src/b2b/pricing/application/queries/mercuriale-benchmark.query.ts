@@ -16,9 +16,20 @@ import { ruleFromRow } from "../../infrastructure/price-rows.js";
  * situe par rapport aux mercuriales **en place chez les autres clients**.
  *
  * Le prix de chaque observation passe par `resolvePrice`, **la fonction qui
- * facture**. Une mercuriale peut être posée en `replace` (un prix) comme en
- * `alter` (une remise sur le canonique) : lire `amountMillicents` ignorerait la
- * seconde forme, et l'écran comparerait des prix négociés à des remises.
+ * facture**, plutôt que par une lecture directe d'`amountMillicents` : c'est ce
+ * qui empêche l'indicateur de dériver de ce qui est réellement encaissé. Deux
+ * façons de dériver un prix négocié finiraient par ne plus dire la même chose,
+ * et c'est ici que ça se verrait le plus tard.
+ *
+ * ⚠️ Ce JSDoc a donné une AUTRE raison jusqu'au 2026-09-08 : « une mercuriale
+ * peut être posée en `replace` comme en `alter` ». C'est faux, et ça l'a
+ * toujours été — `PricingRule.create` refuse `alter` à cet étage
+ * (`MercurialeMustPoseAPriceError`) depuis le premier commit qui a permis
+ * d'écrire une règle. Vérifié en base le 2026-09-08 : aucune ligne `alter` à
+ * l'étage mercuriale, et aucune n'a jamais pu y être écrite. Une justification
+ * fausse est pire qu'une absence de justification : elle fait garder un
+ * mécanisme pour une raison qui n'existe pas, et défendre l'inverse le jour où
+ * quelqu'un propose de le simplifier.
  *
  * Le **plancher n'est pas appliqué**, et c'est délibéré : il est propre à un
  * client, alors qu'on mesure ici un prix de marché. Un prix relevé chez un seul
@@ -59,9 +70,12 @@ export class MercurialeBenchmarkQuery {
   /**
    * Une règle → une observation, ou rien.
    *
-   * Rien quand le catalogue ne connaît plus l'article : sans tarif d'entrée, une
-   * mercuriale en `alter` n'a pas de prix calculable, et la faire disparaître est
-   * plus honnête que de lui en inventer un.
+   * Rien quand le catalogue ne connaît plus l'article : `resolvePrice` exige un
+   * prix canonique d'entrée, et la faire disparaître est plus honnête que de lui
+   * en inventer un.
+   *
+   * (La version d'avant le 2026-09-08 justifiait ça par la forme `alter`, qui
+   * n'existe pas à cet étage — cf. le JSDoc de la classe.)
    */
   private observationOf(
     row: Parameters<typeof ruleFromRow>[0] & { scopeId: string | null; audienceId: string | null },

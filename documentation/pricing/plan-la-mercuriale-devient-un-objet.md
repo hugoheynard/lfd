@@ -1,6 +1,7 @@
 # La mercuriale devient un objet
 
 **Plan v2, réécrit le 2026-09-08.** 📐 Doc-first : décidé, rien n'est bâti.
+**Les inconnues du §9 ont été levées le 2026-09-08** — plus rien n'y est supposé.
 
 > Ferme **T2** de
 > [`etat-des-lieux-mercuriale-client.md`](etat-des-lieux-mercuriale-client.md).
@@ -330,27 +331,52 @@ tous les clients comme des règles en vrac.
 
 ## 9. Ce qui reste ouvert
 
-**À trancher avant d'écrire.**
+**Les quatre inconnues de la v2 sont levées** (2026-09-08, vérifié en base de
+dev `lfc_b2b_dev` et dans le code — pas déduit).
 
-- **Les mercuriales d'audience `all`.** `templateToRules` ne produit que des
-  audiences `company`, mais `POST /admin/pricing/rules` permet peut-être une
-  règle `stage='mercuriale'` d'audience `all` saisie à la main. Si oui, ces
-  règles **restent des règles** après la bascule, et la reprise ne doit pas les
-  archiver — sinon elle supprime un tarif. **Non vérifié : lire le schéma Zod de
-  cette route.**
-- **Les mercuriales en `alter`.** `mercuriale-benchmark.query.ts:19-21` affirme
-  qu'une mercuriale peut être posée en `alter` ; `pricing-rule.ts:114` le refuse
-  (`MercurialeMustPoseAPriceError`). L'un des deux est périmé. Si des lignes
-  `alter` subsistent, la reprise doit les traiter ; sinon, c'est le JSDoc du
-  benchmark qu'il faut corriger. **Non vérifié.**
-- **La borne de taille.** Une grille de 10 000 lignes en JSON serait
-  désérialisée et parcourue **par article** dans `board-item` (92 × 10 000).
-  `boardMaterials` existe précisément pour éviter ce produit sur les règles. Ou
-  bien le plan se donne une borne, ou bien `mercurialeAsRule` reçoit un index
-  pré-calculé. **À trancher, pas à découvrir.**
-- **Les seeds de dev** posent-ils des mercuriales ? `reset.seed.ts` parle de
-  « mercuriales d'essai ». **Non vérifié**, et ça décide si la reprise s'exécute
-  sur des lignes en dev.
+- **Audience.** Une règle porte deux axes : la **portée** (ce qu'elle vise —
+  catalogue, famille, article) et l'**audience** (à qui elle s'applique —
+  `all`, `segment`, `company`). Une mercuriale est normalement
+  `stage=mercuriale` + `audience=company` : c'est l'audience qui en fait _le
+  prix de ce client-là_.
+
+  Or `createPriceRulePayloadSchema` accepte n'importe quelle audience à
+  n'importe quel étage saisissable, et `PricingRule.create` ne le refuse pas
+  non plus. Une mercuriale d'audience `all` est donc **exprimable** — et elle
+  n'a aucun sens : « un prix négocié pour tout le monde » est un tarif
+  catalogue. Pire, elle **scellerait** la chaîne pour tout le monde (une
+  mercuriale rend les étages suivants transparents), donc éteindrait toutes les
+  promotions sur cet article sans que rien ne le dise.
+
+  🔵 **Il n'en existe aucune** — la seule règle de mercuriale en base est
+  `company` / `replace`. Le plan **n'a donc rien à reprendre**, et la
+  recommandation est de fermer la porte plutôt que de la surveiller : refuser
+  dans `PricingRule.create` une audience autre que `company` à l'étage
+  mercuriale. Zéro ligne concernée, donc aucun risque, et le `WHERE
+audience_type='company'` de la reprise devient exhaustif **par construction**
+  au lieu de l'être par chance. C'est un durcissement indépendant, qui peut
+  partir avant ce chantier.
+
+- **`alter` : il n'y a pas de problème, et il n'y en a jamais eu.** Une
+  mercuriale pose un prix à la place du canonique, point —
+  `MercurialeMustPoseAPriceError` refuse `alter` à cet étage **depuis le premier
+  commit qui a permis d'écrire une règle** (`23d65bf8`, 2026-08-17 11 h 18).
+  Vérifié en base : zéro ligne `alter`.
+
+  Ce qui existait était un **JSDoc faux** dans `mercuriale-benchmark.query.ts`,
+  à deux endroits, affirmant qu'une mercuriale « peut être posée en `alter` » —
+  et s'en servant pour justifier son passage par `resolvePrice`. Corrigé le
+  2026-09-08. La reprise n'a donc aucun cas `alter` à traiter.
+
+- **La borne de taille est donnée par le catalogue :** 94 articles au canal B2B.
+  Une grille ne peut pas être plus large que ce qu'on vend. Les « 10 000
+  lignes » de la v2 étaient une inquiétude inventée ; le JSON tient, et
+  `mercurialeAsRule` n'a pas besoin d'index pré-calculé. À réexaminer si le
+  catalogue B2B change d'ordre de grandeur.
+
+- **Le seed ne pose aucune règle de prix** — vérifié, `src/dev/seeding/` n'en
+  crée pas une seule ; `reset.seed.ts` ne fait qu'en supprimer. La reprise
+  s'exécutera donc sur les seules mercuriales posées à la main sur un poste.
 
 **Volontairement hors lot.**
 
