@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import { PrismaService } from "../../../platform/database/prisma.service.js";
+
 /**
  * **Les matériaux de prix, gardés en mémoire entre deux écritures.**
  *
@@ -43,24 +45,53 @@ import { Injectable } from "@nestjs/common";
  * lecture concurrente recharger l'état d'AVANT le commit, et le garder. Le
  * cache serait alors périmé sans que rien ne le rappelle.
  *
- * ## 🔴 Ce que ce cache suppose, et qui n'est pas éternel
+ * ## 🔴 L'estampille — ce qui le rend sûr à PLUSIEURS instances
  *
- * **Une seule instance de l'API.** C'est le cas aujourd'hui, par décision de
- * routage et non par plafond de capacité — cf.
- * `documentation/ops/architecture-deploiement.md` §4 : « Instances max : 1 »,
- * parce que Cloudflare n'offre pas de routage sensible à la charge et que deux
- * instances tirées au sort valent moins qu'une chaude.
+ * Ce cache a supposé **une seule instance de l'API** jusqu'au 2026-09-09.
+ * C'était le cas par décision de routage — `documentation/ops/architecture-deploiement.md`
+ * §4, « Instances max : 1 » — et non par plafond de capacité. Le jour du passage
+ * à deux, il serait devenu **faux** : une règle posée sur l'instance A
+ * n'invalide pas l'instance B, qui aurait continué de facturer l'ancien prix
+ * jusqu'à son propre redémarrage. Pas une lenteur : un prix faux.
  *
- * Le jour où l'on passe à deux, ce cache devient **faux** : une règle posée sur
- * l'instance A n'invalide pas l'instance B, qui continue de facturer l'ancien
- * prix jusqu'à son propre redémarrage. Ce n'est pas une dégradation, c'est un
- * prix faux — et le même document nomme le passage à plusieurs instances comme
- * un levier futur. À ce moment-là, il faut soit une invalidation partagée, soit
- * retirer ce cache.
+ * Il porte désormais une **estampille** — le dernier identifiant du journal
+ * tarifaire, qui est un ULID donc croissant. Toute écriture tarifaire passe par
+ * `PricingActWriter`, qui écrit son acte dans la même transaction que l'état :
+ * l'estampille bouge donc si et seulement si quelque chose a changé, **quelle
+ * que soit l'instance qui l'a écrit**.
+ *
+ * ### Ce que ça coûte, dit franchement
+ *
+ * **Une lecture par rafale** au lieu de zéro. C'est un vrai prix, payé sur le
+ * chemin qui facture, et il faut le mettre en face de ce qu'il achète : sans
+ * cache, ces trois tables coûtent **trois** lectures ; avec estampille, une. Le
+ * cache reste donc gagnant de deux lectures, et il devient *correct* au lieu
+ * d'être correct-par-hypothèse-de-déploiement.
+ *
+ * La lecture en vol est **partagée** : les trois lecteurs sont appelés dans un
+ * même `Promise.all` par `PricingMaterialsLoader`, et ne paient donc qu'une
+ * estampille à eux trois. Elle est oubliée une fois résolue — la garder ferait
+ * revenir exactement le problème qu'elle résout, à une fenêtre près.
+ *
+ * ### `invalidate()` n'est pas devenu inutile
+ *
+ * Il reste le chemin **court** : après sa propre écriture, une instance n'a pas
+ * à attendre de relire une estampille pour savoir qu'elle est périmée. Il évite
+ * une lecture, il ne porte plus la correction.
  */
 @Injectable()
 export class PricingMaterialsCache {
-  private readonly held = new Map<string, Promise<unknown>>();
+  private readonly held = new Map<string, { stamp: string; loading: Promise<unknown> }>();
+  /**
+   * La lecture d'estampille **en vol**, partagée puis oubliée.
+   *
+   * Partagée : trois lecteurs dans un même `Promise.all` ne paient qu'une
+   * lecture. Oubliée : la garder au-delà de sa résolution rouvrirait la fenêtre
+   * de péremption que cette estampille existe pour fermer.
+   */
+  private pending: Promise<string> | null = null;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * La table demandée, chargée au plus une fois entre deux écritures.
@@ -71,12 +102,16 @@ export class PricingMaterialsCache {
    * cron de chauffe et un vrai client se croisent.
    */
   async of<T>(key: string, load: () => Promise<readonly T[]>): Promise<readonly T[]> {
+    const stamp = await this.stamp();
     const held = this.held.get(key);
-    if (held !== undefined) {
-      return (await held) as readonly T[];
+    // L'estampille d'abord, la promesse ensuite : une table gardée sous une
+    // estampille périmée a peut-être été réécrite par une AUTRE instance, et
+    // c'est le seul cas que ce cache ne savait pas voir.
+    if (held !== undefined && held.stamp === stamp) {
+      return (await held.loading) as readonly T[];
     }
     const loading = load();
-    this.held.set(key, loading);
+    this.held.set(key, { stamp, loading });
     try {
       return await loading;
     } catch (error) {
@@ -87,7 +122,47 @@ export class PricingMaterialsCache {
     }
   }
 
-  /** Vide tout. Appelé par `PricingActWriter`, après le commit. */
+  /**
+   * **L'état du monde tarifaire, en un identifiant.**
+   *
+   * Le dernier `pricing_events.id` — un ULID, donc croissant. `""` quand le
+   * journal est vide : c'est un état comme un autre, et il ne se confond avec
+   * aucun identifiant réel.
+   *
+   * ⚠️ Une lecture qui ÉCHOUE ne fait pas tomber la tarification : on retombe
+   * sur l'estampille de la dernière lecture réussie, c'est-à-dire sur le
+   * comportement d'avant le 2026-09-09. Servir un prix peut-être périmé vaut
+   * mieux que ne pas servir de prix — et c'est le seul endroit de cette chaîne
+   * où ce compromis est le bon, parce que l'alternative est un refus de vente.
+   */
+  private async stamp(): Promise<string> {
+    if (this.pending !== null) {
+      return this.pending;
+    }
+    const reading = this.prisma.pricingEvent
+      .findFirst({ orderBy: { id: "desc" }, select: { id: true } })
+      .then((row) => row?.id ?? "")
+      .catch(() => this.lastKnown)
+      .finally(() => {
+        this.pending = null;
+      });
+    this.pending = reading;
+    const stamp = await reading;
+    this.lastKnown = stamp;
+    return stamp;
+  }
+
+  /** La dernière estampille lue avec succès — le repli quand la lecture échoue. */
+  private lastKnown = "";
+
+  /**
+   * Vide tout. Appelé par `PricingActWriter`, après le commit.
+   *
+   * Le chemin **court** : après sa propre écriture, une instance sait qu'elle
+   * est périmée sans avoir à relire l'estampille. Depuis le 2026-09-09, ce
+   * n'est plus ce qui porte la correction — l'estampille s'en charge, y compris
+   * pour les écritures venues d'ailleurs.
+   */
   invalidate(): void {
     this.held.clear();
   }

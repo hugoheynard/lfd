@@ -109,14 +109,31 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
 }
 
 /**
- * **Le budget d'un devis, à froid.** Catalogue, règles, planchers, barèmes :
- * quatre lectures en lot, quelle que soit la taille du panier.
+ * **Le budget d'un devis, à froid.** Catalogue, règles, planchers, barèmes,
+ * plus l'estampille du cache : **cinq** lectures en lot, quelle que soit la
+ * taille du panier.
  *
  * Ce nombre est la **thèse** du fichier, pas un réglage. S'il change, ce n'est
  * pas la constante qu'il faut mettre à jour : c'est une lecture qui vient
  * d'apparaître ou de disparaître, et il faut savoir laquelle.
+ *
+ * 🔴 **Il est passé de 4 à 5 le 2026-09-09, et voici laquelle.** Le cache des
+ * matériaux lit désormais une **estampille** — le dernier `pricing_events.id` —
+ * avant de servir ce qu'il garde. Sans elle, il supposait **une seule instance
+ * de l'API** : une règle posée sur l'instance A n'invalidait pas l'instance B,
+ * qui aurait facturé l'ancien prix jusqu'à son redémarrage. Pas une lenteur, un
+ * prix faux (défaut R7).
+ *
+ * La lecture achète donc la **correction** du cache, et le cache reste gagnant :
+ * sans lui ces trois tables coûteraient trois lectures, avec estampille elles en
+ * coûtent une. Les trois lecteurs partagent la même, étant appelés dans un seul
+ * `Promise.all`.
+ *
+ * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4 ou 5,
+ * c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité qui
+ * attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 4;
+const COLD_QUOTE_OPS = 5;
 
 /**
  * Sème `count` règles de promotion **distinctes**.
@@ -386,5 +403,81 @@ describe("l'écran et la caisse", () => {
     ).lines[0]?.unitPriceMillicents;
 
     expect(shown).toBe(quoted);
+  });
+});
+
+/**
+ * 🔴 **Le cache survit à une DEUXIÈME instance** (défaut R7, corrigé le
+ * 2026-09-09).
+ *
+ * ## Ce que ce cas simule, et pourquoi il ne peut pas faire mieux
+ *
+ * Un e2e ne peut pas booter deux applications sur la même base pour de vrai —
+ * ce serait deux processus, deux ports, un harnais entier. Ce qu'il PEUT faire
+ * est exactement ce qui compte : produire l'état qu'une seconde instance
+ * produirait, c'est-à-dire une écriture tarifaire **que cette instance-ci n'a
+ * pas faite** et dont elle n'a donc jamais reçu l'invalidation.
+ *
+ * D'où le semis direct en base, `invalidate()` volontairement **non appelé**.
+ * Sans estampille, ce cas rendrait l'ancien prix jusqu'au redémarrage — pas une
+ * lenteur, un prix faux.
+ */
+describe("le cache des matériaux, vu d'une autre instance", () => {
+  it("🔴 sert le nouveau prix après une écriture qu'il n'a pas faite", async () => {
+    // Un premier devis chauffe le cache : les trois tables sont en mémoire.
+    const avant = jsonBody<{ lines: readonly { unitPriceMillicents: number }[] }>(
+      await ctx
+        .http()
+        .post("/shop/quote")
+        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .expect(200),
+    ).lines[0]?.unitPriceMillicents;
+
+    // « L'autre instance » pose une promotion : la règle ET son acte au journal,
+    // comme `PricingActWriter` le ferait — mais SANS toucher au cache d'ici.
+    await ctx.prisma.priceRule.create({
+      data: {
+        id: "rule_autre_instance",
+        stage: "promotion",
+        nature: "alter",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        minQuantity: null,
+        direction: "decrease",
+        mode: "percent",
+        value: 5_000,
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: null,
+        label: "Posée ailleurs",
+        stacksOverMercuriale: false,
+        createdBy: "autre-instance",
+      },
+    });
+    await ctx.prisma.pricingEvent.create({
+      data: {
+        // Un ULID plus grand que tout ce qui existe : c'est ce que l'estampille
+        // compare, et c'est ce qu'un vrai acte produirait.
+        id: "01ZZZZZZZZZZZZZZZZZZZZZZZZ",
+        subjectType: "rule",
+        subjectId: "rule_autre_instance",
+        act: "posed",
+        actor: "autre-instance",
+        summary: "Promotion posée par une autre instance",
+      },
+    });
+
+    const apres = jsonBody<{ lines: readonly { unitPriceMillicents: number }[] }>(
+      await ctx
+        .http()
+        .post("/shop/quote")
+        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .expect(200),
+    ).lines[0]?.unitPriceMillicents;
+
+    expect(avant).toBeDefined();
+    // −50 % : le cache a vu l'estampille bouger et rechargé.
+    expect(apres).toBe(Math.round((avant ?? 0) / 2));
   });
 });
