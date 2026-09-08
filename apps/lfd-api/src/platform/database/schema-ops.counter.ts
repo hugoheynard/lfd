@@ -36,6 +36,30 @@ export class SchemaOpsCounter {
   }
 
   /**
+   * **Le cumul brut, par schéma** — sans division ni fenêtre.
+   *
+   * Distinct de {@link perMinute}, qui rend un TAUX et se tait sous une seconde
+   * d'observation. Ici on rend ce qui a été compté, tout de suite : c'est ce
+   * qu'il faut pour répondre à « combien d'opérations cette requête a-t-elle
+   * coûté », qui n'est pas la même question que « à quel rythme tourne ce
+   * processus ».
+   *
+   * Sert le budget d'opérations éprouvé en e2e — un nombre de requêtes qui
+   * grandit avec la taille du panier est la définition d'un N+1, et c'est un
+   * défaut qui ne se voit jamais sur un jeu de données de test.
+   */
+  snapshot(): readonly SchemaOpsCount[] {
+    return [...this.counts.entries()]
+      .map(([schema, operations]) => ({ schema, operations }))
+      .sort((left, right) => right.operations - left.operations);
+  }
+
+  /** Le total, tous schémas confondus. */
+  total(): number {
+    return [...this.counts.values()].reduce((sum, count) => sum + count, 0);
+  }
+
+  /**
    * Le taux observé, par schéma, en opérations par minute.
    *
    * Un taux et non un cumul : un cumul depuis le démarrage n'est comparable ni
@@ -68,6 +92,12 @@ export class SchemaOpsCounter {
 
 /** Sous une seconde d'observation, on ne rend pas de taux. */
 const MIN_ELAPSED_MS = 1_000;
+
+/** Ce qui a été compté sous un schéma, sans mise en forme. */
+export interface SchemaOpsCount {
+  readonly schema: string;
+  readonly operations: number;
+}
 
 export interface SchemaOpsRate {
   /** Le schéma Postgres, ou `RAW_BUCKET` pour ce qui ne passe par aucun modèle. */
