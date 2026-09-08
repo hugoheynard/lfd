@@ -22,6 +22,9 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
     lineTotalCents: 840,
     pricing: {
       basePriceMillicents: 250_000,
+      // Consigné depuis le 2026-09-09 : `false` dit « la chaîne n'est pas
+      // passée sous zéro », `null` dirait « on ne sait pas ».
+      clampedToZero: false,
       steps: [
         {
           stage: "mercuriale",
@@ -69,6 +72,8 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     discountCents: 12_846,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    // Retrait : aucun frais de zone, donc aucun barème à figer.
+    deliveryFeeAdjustment: null,
     lateFeeAdjustment: null,
     lateFeeCents: 0,
     vatCents: 6_360,

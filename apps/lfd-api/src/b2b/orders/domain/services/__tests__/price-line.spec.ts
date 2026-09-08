@@ -105,7 +105,14 @@ function hardFloor(bp: number): ScopedPriceFloor {
   };
 }
 
-const NOTHING = materialsOf({ rules: [], floors: [], ladders: [], commitments: [] });
+const NOTHING = materialsOf({
+  rules: [],
+  floors: [],
+  ladders: [],
+  commitments: [],
+  // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
+  mercuriale: null,
+});
 
 describe("priceLine — la recette, sans base ni doublé", () => {
   it("rend le tarif de liste quand rien ne le touche", () => {
@@ -123,6 +130,8 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [],
       ladders: [],
       commitments: [],
+      // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
+      mercuriale: null,
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -143,6 +152,8 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [],
       ladders: [],
       commitments: [],
+      // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
+      mercuriale: null,
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -158,6 +169,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [hardFloor(9_000)],
       ladders: [],
       commitments: [],
+      mercuriale: null,
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -187,6 +199,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [],
       ladders: [],
       commitments: [commitment],
+      mercuriale: null,
     });
 
     const resolved = line({ quantity: 10 }, materials, NO_EVIDENCE, "co_1");
@@ -223,6 +236,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [gated],
       ladders: [],
       commitments: [],
+      mercuriale: null,
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -249,6 +263,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       floors: [gated],
       ladders: [],
       commitments: [],
+      mercuriale: null,
     });
 
     const resolved = line({}, materials, {
@@ -286,6 +301,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
         },
       ],
       commitments: [],
+      mercuriale: null,
     });
 
     expect(line({}, materials, NO_EVIDENCE).volumeTiers).toBeNull();

@@ -50,6 +50,8 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     discountCents: 0,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    // Retrait : aucun frais de zone, donc aucun barème à figer.
+    deliveryFeeAdjustment: null,
     lateFeeAdjustment: null,
     lateFeeCents: 0,
     vatCents: 71,

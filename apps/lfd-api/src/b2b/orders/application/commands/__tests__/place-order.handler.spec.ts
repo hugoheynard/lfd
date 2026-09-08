@@ -79,6 +79,11 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
 /** Aucun tarif négocié : le client paie le catalogue, comme un visiteur. */
 const noMercuriales: CompanyMercurialeReader = {
   liveFor: () => Promise.resolve(null),
+  // Les deux autres questions du port. Ces suites ne les posent pas, mais un
+  // doublé partiel n'est pas le port : c'est ce que `tsconfig.test.json`
+  // attrape et que ts-jest laisse passer.
+  listFor: () => Promise.resolve([]),
+  liveEverywhere: () => Promise.resolve([]),
 };
 
 const noPriceRules: PriceRuleReader = {
@@ -400,6 +405,11 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
     pickupAddressId: null,
     requestedDeliveryDate: "2026-09-01",
     note: "",
+    // Le règlement n'est pas choisi ici : `null` est la valeur que le schéma
+    // pose par défaut, et `z.infer` la rend REQUISE à la sortie. L'omettre
+    // compilait sous ts-jest et pas sous `tsconfig.test.json` — le payload de
+    // ces suites n'était donc pas tout à fait celui que le contrôleur reçoit.
+    settlement: null,
     lines: [{ sku: "VIE-001", quantity: 2 }],
     ...over,
   };
@@ -742,13 +752,15 @@ describe("PlaceOrderHandler", () => {
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
     // + TVA livraison 20 % = 400 ; total TTC = 400 + 2000 + 400 = 2800.
     await handler.execute(
+      // La société est le TROISIÈME argument depuis qu'elle a quitté le
+      // payload : le client ne la choisit plus, le handler la reçoit du mur.
+      // Ces deux appels ne l'avaient pas suivi — sans conséquence à
+      // l'exécution, `companyId` en trop étant ignoré, mais le cas ne testait
+      // plus une commande d'entreprise. `tsconfig.test.json` l'a dit.
       new PlaceOrderCommand(
         "u1",
-        payload({
-          companyId: "c1",
-          fulfillmentMethod: "delivery",
-          deliveryAddress: COURIER_ADDR,
-        }),
+        payload({ fulfillmentMethod: "delivery", deliveryAddress: COURIER_ADDR }),
+        "c1",
       ),
     );
 
@@ -783,10 +795,10 @@ describe("PlaceOrderHandler", () => {
         new PlaceOrderCommand(
           "u1",
           payload({
-            companyId: "c1",
             fulfillmentMethod: "delivery",
             deliveryAddress: { ...COURIER_ADDR, codePostal: "75002", ville: "Paris" },
           }),
+          "c1",
         ),
       ),
     ).rejects.toBeInstanceOf(NoDeliveryZoneForPostalCodeError);

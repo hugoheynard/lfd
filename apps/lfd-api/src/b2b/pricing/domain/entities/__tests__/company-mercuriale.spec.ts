@@ -1,5 +1,5 @@
 import { CompanyMercuriale, type CompanyMercurialeDraft } from "../company-mercuriale.js";
-import type { PricingContext } from "../../price-rule.js";
+import type { PriceRule, PricingContext } from "../../price-rule.js";
 import {
   ArchivedMercurialeIsSealedError,
   DuplicateMercurialeSkuError,
@@ -32,6 +32,25 @@ function draft(overrides: Partial<CompanyMercurialeDraft> = {}): CompanyMercuria
 
 const pose = (overrides: Partial<CompanyMercurialeDraft> = {}): CompanyMercuriale =>
   CompanyMercuriale.pose("merc_1", draft(overrides), "staff|marie");
+
+/**
+ * **Le prix POSÉ par la règle dérivée.**
+ *
+ * `PriceRule` est une union discriminée par `nature` : `amountMillicents` n'y
+ * vit que dans la branche `replace`. Une mercuriale POSE toujours un prix — elle
+ * n'altère jamais, `PricingRule.create` le refuse à cet étage — mais le type ne
+ * le sait pas, et lire le champ sans affiner ne compile pas sous
+ * `tsconfig.test.json`.
+ *
+ * Affiné plutôt que casté : un `as` ici ferait passer une règle `alter` pour un
+ * prix ferme le jour où quelqu'un en dérive une, sans que rien ne rougisse.
+ */
+function posedPrice(rule: PriceRule | null): number | null {
+  if (rule === null || rule.nature !== "replace") {
+    return null;
+  }
+  return rule.amountMillicents;
+}
 
 describe("poser", () => {
   it("retient qui l'a posée, et pour qui", () => {
@@ -202,12 +221,12 @@ describe("vue comme une règle", () => {
     const rule = ladder().asRuleFor({ ...CONTEXT, quantity: 800 });
 
     expect(rule?.minQuantity).toBe(500);
-    expect(rule?.amountMillicents).toBe(160_000);
+    expect(posedPrice(rule)).toBe(160_000);
   });
 
   it("prend le PLUS HAUT palier atteint", () => {
-    expect(ladder().asRuleFor({ ...CONTEXT, quantity: 499 })?.amountMillicents).toBe(173_270);
-    expect(ladder().asRuleFor({ ...CONTEXT, quantity: 500 })?.amountMillicents).toBe(160_000);
+    expect(posedPrice(ladder().asRuleFor({ ...CONTEXT, quantity: 499 }))).toBe(173_270);
+    expect(posedPrice(ladder().asRuleFor({ ...CONTEXT, quantity: 500 }))).toBe(160_000);
   });
 
   it("🔴 mesure le CUMUL quand il existe, pas la commande", () => {
@@ -215,7 +234,7 @@ describe("vue comme une règle", () => {
     // PREMIÈRE commande — c'est tout l'objet de l'engagement.
     const rule = ladder().asRuleFor({ ...CONTEXT, quantity: 10, cumulativeQuantity: 800 });
 
-    expect(rule?.amountMillicents).toBe(160_000);
+    expect(posedPrice(rule)).toBe(160_000);
   });
 
   it("est transparente sous le premier palier", () => {

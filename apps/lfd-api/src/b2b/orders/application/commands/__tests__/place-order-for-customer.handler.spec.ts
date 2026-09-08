@@ -70,6 +70,11 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
 /** Aucun tarif négocié : le client paie le catalogue, comme un visiteur. */
 const noMercuriales: CompanyMercurialeReader = {
   liveFor: () => Promise.resolve(null),
+  // Les deux autres questions du port. Ces suites ne les posent pas, mais un
+  // doublé partiel n'est pas le port : c'est ce que `tsconfig.test.json`
+  // attrape et que ts-jest laisse passer.
+  listFor: () => Promise.resolve([]),
+  liveEverywhere: () => Promise.resolve([]),
 };
 
 const noPriceRules: PriceRuleReader = {
