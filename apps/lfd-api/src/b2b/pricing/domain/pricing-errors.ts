@@ -150,6 +150,42 @@ export class MercurialeCannotStackOverItselfError extends DomainError {
 }
 
 /**
+ * **Une mercuriale qui ne vise pas une société nommée.**
+ *
+ * Un tarif négocié se négocie avec **quelqu'un**. C'est l'audience qui en fait
+ * le prix de ce client-là ; l'étage, lui, ne dit que le scellement.
+ *
+ * Ce que refuse cet invariant n'est pas une bizarrerie théorique, c'est le
+ * croisement de deux mécanismes justes. `AUDIENCE_RANK` place `all` au plus
+ * large, et `resolvePrice` scelle sur **l'étage**, jamais sur l'audience : une
+ * mercuriale d'audience `all` s'appliquerait donc à tout le monde ET rendrait
+ * transparentes toutes les promotions sur l'article — pour tout le monde, sans
+ * qu'aucun écran ne le signale. Le prix qui change se voit ; la promotion
+ * éteinte, non.
+ *
+ * `segment` est refusé pour la même raison : le scellement ne dépend pas de la
+ * largeur de l'audience.
+ *
+ * La règle existait déjà — écrite dans un commentaire du panneau Angular qui
+ * n'offre que `promotion` et `geste`, et câble l'audience à `all`. Elle était
+ * donc tenue par le fait que personne n'avait ajouté une entrée à une liste de
+ * deux. Elle vit ici depuis le 2026-09-08 : une consigne devient une
+ * impossibilité, et le filtre `audience_type = 'company'` des lectures de
+ * mercuriales devient exhaustif par construction plutôt que par convention
+ * d'interface.
+ */
+export class MercurialeTargetsOneCompanyError extends DomainError {
+  constructor(readonly audienceType: string) {
+    super(
+      "pricing.mercuriale.targets_one_company",
+      `Une mercuriale se pose sur une société nommée, jamais sur « ${audienceType} » : ` +
+        "un prix négocié avec tout le monde est un tarif catalogue, et il éteindrait " +
+        "au passage toutes les promotions sur cet article.",
+    );
+  }
+}
+
+/**
  * Deux marqueurs de comparaison dans le désordre, ou confondus.
  *
  * Une fenêtre qui se ferme avant de s'ouvrir n'a pas de volume à mesurer, et sa

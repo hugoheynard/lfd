@@ -4,6 +4,7 @@ import {
   InvalidAlterationError,
   MercurialeCannotStackOverItselfError,
   MercurialeMustPoseAPriceError,
+  MercurialeTargetsOneCompanyError,
   PriceRuleAlreadyPausedError,
   PriceRuleNotPausedError,
   ScopeIdMismatchError,
@@ -95,6 +96,8 @@ export class PricingRule {
    *   pourcentage — le piège central du modèle.
    * @throws {MercurialeCannotStackOverItselfError} une mercuriale qui prétend
    *   franchir le scellement qu'elle pose elle-même.
+   * @throws {MercurialeTargetsOneCompanyError} une mercuriale qui ne vise pas
+   *   une société nommée — elle scellerait pour tout le monde.
    * @throws {ScopeIdMismatchError} portée ou audience dont l'identifiant
    *   contredit le type.
    * @throws {ReversedValidityWindowError} fenêtre qui se ferme avant de s'ouvrir.
@@ -120,6 +123,13 @@ export class PricingRule {
     // sans effet finit par être coché en croyant obtenir quelque chose.
     if (draft.stage === "mercuriale" && draft.stacksOverMercuriale) {
       throw new MercurialeCannotStackOverItselfError();
+    }
+
+    // Une mercuriale se négocie avec QUELQU'UN. Refusé ici et non à la frontière
+    // HTTP : `templateToRules` et la pose depuis une fiche passent tous deux par
+    // cette factory, et une règle saisie à la main aussi.
+    if (draft.stage === "mercuriale" && draft.audience.type !== "company") {
+      throw new MercurialeTargetsOneCompanyError(draft.audience.type);
     }
 
     assertScopedId("portée", draft.scope.type === "global", draft.scope.id);

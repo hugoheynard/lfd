@@ -3,6 +3,7 @@ import {
   InvalidAlterationError,
   MercurialeCannotStackOverItselfError,
   MercurialeMustPoseAPriceError,
+  MercurialeTargetsOneCompanyError,
   ReversedValidityWindowError,
   ScopeIdMismatchError,
 } from "../../pricing-errors.js";
@@ -29,6 +30,21 @@ function draft(overrides: Partial<PricingRuleDraft> = {}): PricingRuleDraft {
 
 const create = (overrides: Partial<PricingRuleDraft> = {}): PricingRule =>
   PricingRule.create("rule_1", draft(overrides), "auth0|cecile");
+
+/**
+ * Le brouillon d'une mercuriale **bien formée** : audience société, prix ferme.
+ *
+ * L'audience n'est pas un détail de fixture — c'est ce qui fait d'un prix un
+ * prix NÉGOCIÉ. Le défaut `all` de `draft()` décrit une promotion publique, et
+ * une mercuriale posée dessus est désormais refusée.
+ */
+const mercuriale = (overrides: Partial<PricingRuleDraft> = {}): PricingRuleDraft =>
+  draft({
+    stage: "mercuriale",
+    audience: { type: "company", id: "co_1" },
+    effect: { nature: "replace", amountMillicents: 210_000 },
+    ...overrides,
+  });
 
 describe("PricingRule.create", () => {
   it("accepte une règle bien formée et retient qui l'a posée", () => {
@@ -60,6 +76,39 @@ describe("PricingRule.create", () => {
     ).toThrow(MercurialeCannotStackOverItselfError);
   });
 
+  /**
+   * 🔴 **Une mercuriale se négocie avec QUELQU'UN.**
+   *
+   * Ce n'est pas une bizarrerie théorique, c'est le croisement de deux
+   * mécanismes justes : `AUDIENCE_RANK` place `all` au plus large, et
+   * `resolvePrice` scelle sur l'ÉTAGE, jamais sur l'audience. Une mercuriale
+   * d'audience `all` s'appliquerait donc à tout le monde ET éteindrait toutes
+   * les promotions de l'article — pour tout le monde, sans qu'aucun écran ne le
+   * dise. Le prix qui change se voit ; la promotion neutralisée, non.
+   *
+   * Régression : c'était possible jusqu'au 2026-09-08. La règle existait, mais
+   * dans un commentaire du panneau Angular, tenue par le fait que sa liste
+   * d'étages n'offrait que « promotion » et « geste ».
+   */
+  it("🔴 refuse une mercuriale qui vise tout le monde", () => {
+    expect(() =>
+      PricingRule.create("r", mercuriale({ audience: { type: "all", id: null } }), "s"),
+    ).toThrow(MercurialeTargetsOneCompanyError);
+  });
+
+  it("refuse aussi une mercuriale qui vise un SEGMENT", () => {
+    // Le scellement ne dépend pas de la largeur de l'audience : un tarif
+    // négocié avec un segment éteindrait les promotions pour tout le segment.
+    expect(() =>
+      PricingRule.create("r", mercuriale({ audience: { type: "segment", id: "seg_labo" } }), "s"),
+    ).toThrow(MercurialeTargetsOneCompanyError);
+  });
+
+  it("laisse les autres étages viser tout le monde", () => {
+    // La contrepartie, et elle compte : une promotion publique est la norme.
+    expect(() => create({ stage: "promotion" })).not.toThrow();
+  });
+
   it("porte le drapeau de cumul jusqu'à la forme que lit la résolution", () => {
     const rule = create({ stacksOverMercuriale: true });
 
@@ -67,10 +116,7 @@ describe("PricingRule.create", () => {
   });
 
   it("accepte une mercuriale qui pose un prix en euros", () => {
-    const rule = create({
-      stage: "mercuriale",
-      effect: { nature: "replace", amountMillicents: 210_000 },
-    });
+    const rule = PricingRule.create("rule_1", mercuriale(), "auth0|cecile");
 
     expect(rule.asPriceRule).toMatchObject({ nature: "replace", amountMillicents: 210_000 });
   });
