@@ -8,16 +8,20 @@
   barre d'onglets touche la bande et les deux supports se lisent comme un seul.
 
   Pas collant, contrairement à la tarification : là-bas on descend une grille de
-  cent lignes en gardant la synthèse sous les yeux ; ici la barre d'onglets est
-  déjà collante, et empiler deux zones fixes mangerait le tiers d'un portable.
+  cent lignes en gardant la synthèse sous les yeux ; ici la bande porte déjà
+  quatre cartes et la rangée d'onglets, et la figer mangerait le tiers d'un
+  portable.
 */
 .masthead {
   --fold-page-section-gap: var(--fold-space-md, 0.75rem);
-  /* PAS de marge basse, contrairement à la tarification : `.fc-tabs` porte déjà
-     `padding-block: var(--fold-page-gap)`, et les deux additionnées faisaient
-     48 px de vide entre la bande et les onglets — un trou où l'écran semble
-     s'être cassé en deux. */
-  padding: var(--fold-space-md, 0.75rem) var(--fold-page-gutter, 1.25rem) var(--fold-space-lg, 1rem);
+  /* PAS de marge basse : la bande se termine sur la barre d'onglets, et une
+     marge la ferait flotter au-dessus du contenu au lieu de le coiffer.
+
+     Et AUCUN rembourrage bas : la barre est la dernière ligne de la bande, elle
+     doit toucher son bord. C'est ici qu'on l'enlève, pas par une marge négative
+     sur la barre — fold déclare `margin-block-end` sur son propre hôte, et une
+     marge logique posée là gagne sur la nôtre quelle que soit la spécificité. */
+  padding: var(--fold-space-md, 0.75rem) var(--fold-page-gutter, 1.25rem) 0;
   /* Le fond le PLUS SOMBRE que le chrome déclare, et non son fond de carte :
      les cartes de chiffres posées dessus doivent rester des cartes. */
   background: var(--fold-color-bg-rail-secondary);
@@ -80,16 +84,52 @@
   gap: var(--fold-space-sm, 0.5rem);
 }
 
-/* Accrochée en haut : une fiche client est longue (informations, journal), et
-   changer d'onglet ne doit pas demander de remonter. L'opacité vient de la
-   barre elle-même (`background="surface"`, opaque depuis fold-ng 0.10.1) : on
-   ne repeint pas un fond ici, sous peine d'en inventer un que le thème ignore
-   — c'est ce qui s'était passé, avec un token qui n'existait pas. */
+/*
+  **La rangée d'onglets, dernière ligne du bandeau.**
+
+  Elle SAIGNE : marges négatives de la gouttière, pour que le fond aille d'un
+  bord à l'autre comme la barre de la boutique — une rangée qui s'arrête avant
+  les bords se lit comme un bloc posé sur le bandeau, pas comme sa fin.
+
+  Le rembourrage intérieur ramène ensuite le PREMIER LIBELLÉ sous le titre. On
+  retranche le rembourrage propre de l'onglet (fold pose `--fold-space-md` de
+  chaque côté) : ce qui doit s'aligner sur le nom du compte, c'est le mot, pas
+  le bord de la zone cliquable. Exactement le calcul de la boutique.
+*/
 .fc-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: block;
-  min-width: 0;
-  padding-block: var(--fold-page-gap) var(--fold-space-xs);
+  /* Pas de `display` ici : fold pose `flex` sur l'hôte et son alignement en
+     dépend. Le passer en `block` marchait, ce qui est le pire des cas — ça
+     marche jusqu'au jour où le composant s'appuie dessus.
+
+     ⚠️ **`width` ET `max-width`**, et c'est ce qui manquait : fold pose les deux
+     à `100%`, si bien que les marges négatives DÉPLAÇAIENT la barre sans
+     l'élargir — `max-width` la replafonnait à la largeur du contenu. Elle
+     commençait au bord gauche de la bande et s'arrêtait 48 px avant le droit,
+     asymétrie qu'on lit comme un défaut de rendu, pas comme une intention. */
+  /* La largeur EXACTE de la bande : le contenu plus les deux gouttières qu'on
+     vient d'annuler. `auto` ne convient pas — l'hôte est en `flex`, il se
+     réduirait alors à son contenu et déborderait de 79 px à droite dès que les
+     huit onglets sont plus larges que la page. */
+  width: calc(100% + 2 * var(--fold-page-gutter, 1.25rem));
+  max-width: none;
+  /* ⚠️ **Et `--fold-nav-layout-gap: 0`**, pour la même raison de cascade :
+     depuis fold 0.15, une barre horizontale AUTONOME se sépare seule de ce
+     qu'elle coiffe par un `margin-block-end`. Ici elle ne coiffe rien — elle
+     termine le bandeau —, et ce gap l'en décollait de 16 px que notre marge
+     négative ne pouvait pas reprendre : une logique (`margin-block-end`) et une
+     physique (`margin`) ne s'annulent pas, la dernière déclarée gagne. */
+  --fold-nav-layout-gap: 0px;
+  margin-block-start: var(--fold-space-sm, 0.5rem);
+  margin-inline: calc(-1 * var(--fold-page-gutter, 1.25rem));
+  /* Le rembourrage ramène le PREMIER LIBELLÉ sous le titre. On retranche le
+     rembourrage propre de l'onglet : ce qui doit s'aligner sur le nom du compte,
+     c'est le mot, pas le bord de la zone cliquable. Le calcul de la boutique. */
+  padding-inline: max(0px, calc(var(--fold-page-gutter, 1.25rem) - var(--fold-space-md, 0.75rem)));
+  /* Un cran plus sombre que la bande, comme le « well » de la boutique : c'est
+     ce qui fait lire barre → descente → menu → page, et non trois blocs. */
+  background: var(--fold-color-bg-rail-primary);
+  /* ⚠️ **Pas d'`overflow-x` ici.** fold le porte déjà : depuis 0.15, une barre
+     horizontale qui ne tient pas défile au lieu de rogner sa queue, avec la
+     barre de défilement maison et `overscroll-behavior-x: contain`. En reposer
+     une masquerait la sienne et rendrait le geste moins bon, pas meilleur. */
 }

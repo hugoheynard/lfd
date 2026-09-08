@@ -56,31 +56,34 @@
     @if (sheet(); as view) {
       <app-compte-chiffres [stats]="view.stats" [onChrome]="true" />
     }
-  </fold-page-section>
 
-  <!-- `fold-nav-layout`, et non un div à nous : c'est LUI qui tient l'écart
-       nav↔contenu et qui neutralise la gouttière de page sous la barre, pour
-       que les cartes s'alignent sur le menu qui les nomme. Refaire cette
-       composition à la main, c'était réécrire ces règles — et les rater.
+    <!--
+      **La barre d'onglets, DANS le bandeau.** Pas en dessous : posée dans la
+      section, elle ne peut pas s'en détacher — ni au défilement, ni quand une
+      marge bouge. C'est le motif de la boutique, où la rangée de destinations
+      termine la descente du bandeau au lieu de flotter sur le papier.
 
-       Rail LATÉRAL, comme le PIM et le poste commercial. Une fiche client a
-       huit onglets : en barre horizontale ils débordaient et devenaient
-       défilants — donc des onglets qu'on ne voit qu'en balayant, sans savoir
-       qu'ils sont là. Verticalement, ils tiennent tous à l'écran.
+      🔴 Elle était un rail LATÉRAL jusqu'au 2026-09-08, et sa raison écrite
+      tenait : « huit onglets débordaient et devenaient défilants — donc des
+      onglets qu'on ne voit qu'en balayant ». Le débordement est RÉEL et mesuré :
+      en `comfortable`, les huit font 1112 px pour 985 px utiles à 1440 px de
+      fenêtre, donc le dernier onglet est hors champ. (`compact` les ferait
+      tenir à 985 px pile.)
 
-       `nav.stacked()` mesure la largeur du LAYOUT et replie seul en barre —
-       plus besoin d'écouter le viewport. -->
-  <fold-nav-layout #nav placement="side" [foldAt]="896">
+      Le confort l'emporte quand même, et c'est un arbitrage assumé : fold fait
+      défiler seul depuis 0.15, et un onglet hors champ reste atteignable là où
+      un onglet replié à son icône ne se lit plus. C'est le compromis que la
+      boutique a déjà tranché pour ses six destinations.
+    -->
     <fold-view-nav
-      tabNav
       class="fc-tabs"
       [items]="tabs"
-      [collapsed]="nav.stacked()"
+      direction="horizontal"
       size="comfortable"
-      activeStyle="underline"
+      activeStyle="fill"
       background="transparent"
     />
+  </fold-page-section>
 
-    <router-outlet />
-  </fold-nav-layout>
+  <router-outlet />
 </fold-page-layout>
