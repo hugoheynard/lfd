@@ -5,12 +5,26 @@ import {
   DuplicateTemplateSkuError,
 } from "../pricing-errors.js";
 import type { PriceTemplateKind } from "@lfd/contracts";
+import { normalizeGrid, type GridRefusals, type PricingTier } from "../pricing-grid.js";
 
-/** Un palier : à partir de cette quantité, ce prix en centimes. */
-export interface TemplateTier {
-  readonly minQuantity: number;
-  readonly unitPriceMillicents: number;
-}
+/**
+ * Les trois refus d'une grille, **dits en gabarit**. Le contrôle est partagé
+ * (`pricing-grid.ts`) ; les phrases ne le sont pas — cf. son JSDoc.
+ */
+const REFUSALS: GridRefusals = {
+  empty: () => new EmptyPriceTemplateError(),
+  duplicateSku: (sku) => new DuplicateTemplateSkuError(sku),
+  nonDecreasing: (sku, minQuantity) => new NonDecreasingTemplateTiersError(sku, minQuantity),
+};
+
+/**
+ * Un palier : à partir de cette quantité, ce prix unitaire en millicentimes.
+ *
+ * Alias de `PricingTier` : le gabarit et la mercuriale portent le MÊME palier,
+ * et le nom local reste parce que c'est celui que le contexte du gabarit
+ * emploie partout.
+ */
+export type TemplateTier = PricingTier;
 
 export interface TemplateLine {
   readonly sku: string;
@@ -65,13 +79,9 @@ export class PriceTemplate {
    *   coûte plus cher — ou deux paliers au même seuil.
    */
   static compose(id: string, draft: PriceTemplateDraft, createdBy: string): PriceTemplate {
-    if (draft.lines.length === 0) {
-      throw new EmptyPriceTemplateError();
-    }
-    assertNoDuplicateSku(draft.lines);
     return new PriceTemplate({
       ...draft,
-      lines: draft.lines.map(normalizeLine),
+      lines: normalizeGrid(draft.lines, REFUSALS),
       id,
       createdBy,
       archivedAt: null,
@@ -109,15 +119,11 @@ export class PriceTemplate {
     if (this.state.archivedAt !== null) {
       throw new ArchivedPriceTemplateIsSealedError(this.state.id);
     }
-    if (draft.lines.length === 0) {
-      throw new EmptyPriceTemplateError();
-    }
-    assertNoDuplicateSku(draft.lines);
     return new PriceTemplate({
       ...this.state,
       kind: draft.kind,
       label: draft.label,
-      lines: draft.lines.map(normalizeLine),
+      lines: normalizeGrid(draft.lines, REFUSALS),
     });
   }
 
@@ -130,45 +136,5 @@ export class PriceTemplate {
 
   toPersistence(): PriceTemplateState {
     return this.state;
-  }
-}
-
-/**
- * Les paliers d'une ligne, triés et vérifiés.
- *
- * Le tri est fait **ici** plutôt que refusé : l'ordre de saisie n'est pas une
- * décision, et renvoyer une erreur pour un tableau dans le désordre ferait
- * perdre une grille entière pour une question de présentation. Ce qui est refusé
- * est ce qui reste incohérent une fois trié.
- */
-function normalizeLine(line: TemplateLine): TemplateLine {
-  if (line.tiers.length === 0) {
-    throw new EmptyPriceTemplateError();
-  }
-  const tiers = [...line.tiers].sort((left, right) => left.minQuantity - right.minQuantity);
-  for (const [index, tier] of tiers.entries()) {
-    const previous = tiers[index - 1];
-    if (previous === undefined) {
-      continue;
-    }
-    // Seuil identique : deux paliers au même endroit ne se départagent pas.
-    // Prix qui remonte : commander plus coûterait plus cher.
-    if (
-      previous.minQuantity === tier.minQuantity ||
-      previous.unitPriceMillicents <= tier.unitPriceMillicents
-    ) {
-      throw new NonDecreasingTemplateTiersError(line.sku, tier.minQuantity);
-    }
-  }
-  return { sku: line.sku, tiers, plannedVolume: line.plannedVolume };
-}
-
-function assertNoDuplicateSku(lines: readonly TemplateLine[]): void {
-  const seen = new Set<string>();
-  for (const line of lines) {
-    if (seen.has(line.sku)) {
-      throw new DuplicateTemplateSkuError(line.sku);
-    }
-    seen.add(line.sku);
   }
 }

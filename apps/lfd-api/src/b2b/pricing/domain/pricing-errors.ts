@@ -768,3 +768,57 @@ export class MercurialeNameTakenError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Une mercuriale sans rien à accorder.**
+ *
+ * Une grille vide se lirait chez le client comme un tarif sans contenu, et
+ * personne ne saurait si c'est une saisie ratée ou une décision.
+ */
+export class EmptyMercurialeError extends DomainError {
+  constructor() {
+    super(
+      "pricing.mercuriale.empty",
+      "Une mercuriale accorde au moins un prix sur au moins un article : sans ligne, elle ne dit rien.",
+    );
+  }
+}
+
+/** **Deux fois le même article** — deux prix concurrents pour le même SKU. */
+export class DuplicateMercurialeSkuError extends DomainError {
+  constructor(readonly sku: string) {
+    super(
+      "pricing.mercuriale.duplicate_sku",
+      `L'article « ${sku} » figure deux fois dans cette mercuriale : le prix appliqué dépendrait de l'ordre de lecture.`,
+    );
+  }
+}
+
+/**
+ * **Une grille où commander plus coûte plus cher**, ou deux paliers au même seuil.
+ *
+ * Chaque palier pris isolément est valide ; l'incohérence n'apparaît qu'une fois
+ * la grille réunie en une décision. C'est le refus qui justifie que la
+ * mercuriale soit un agrégat plutôt qu'un tas de prix.
+ */
+export class NonDecreasingMercurialeTiersError extends DomainError {
+  constructor(
+    readonly sku: string,
+    readonly minQuantity: number,
+  ) {
+    super(
+      "pricing.mercuriale.non_decreasing_tiers",
+      `Sur « ${sku} », le palier à partir de ${String(minQuantity)} ne descend pas le prix : commander plus coûterait plus cher, ou deux paliers se disputent le même seuil.`,
+    );
+  }
+}
+
+/** **Une mercuriale close ne se retouche plus** — c'est une décision terminée. */
+export class ArchivedMercurialeIsSealedError extends BusinessError {
+  constructor(readonly id: string) {
+    super(
+      "pricing.mercuriale.archived_is_sealed",
+      "Cette mercuriale est close : ce qu'elle a facturé est figé, et elle ne se modifie plus. Posez-en une nouvelle.",
+    );
+  }
+}
