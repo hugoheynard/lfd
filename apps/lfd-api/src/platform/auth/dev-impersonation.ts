@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { AppConfig } from "../config/app-config.js";
-import { PrismaService } from "../database/prisma.service.js";
+import { ImpersonationSubjects } from "./impersonation-subjects.resolver.js";
 import type { AuthenticatedRequest, VerifiedToken } from "./principal.js";
 
 /** En-tête HTTP (minuscule, comme le normalise Express) qui surcharge le sujet. */
@@ -26,7 +26,12 @@ export class DevImpersonation {
 
   constructor(
     config: AppConfig,
-    private readonly prisma: PrismaService,
+    /**
+     * Le port, jamais la table. Cette classe lisait `prisma.user` directement —
+     * une couche technique qui connaît l'annuaire des clients n'est plus une
+     * couche technique, et rien ne le signalait (cf. le port).
+     */
+    private readonly subjects: ImpersonationSubjects,
   ) {
     const settings = config.devImpersonation();
     this.enabled = settings !== null;
@@ -58,12 +63,10 @@ export class DevImpersonation {
 
   /** Résout un identifiant (e-mail ou `auth0_sub`) en `auth0_sub` réel. */
   private async resolveSubject(identifier: string): Promise<string> {
-    const user = identifier.includes("@")
-      ? await this.prisma.user.findFirst({ where: { email: identifier } })
-      : await this.prisma.user.findUnique({ where: { auth0Sub: identifier } });
-    if (user === null) {
+    const subject = await this.subjects.resolve(identifier);
+    if (subject === null) {
       throw new UnauthorizedException(`Impersonation : utilisateur introuvable (${identifier}).`);
     }
-    return user.auth0Sub;
+    return subject;
   }
 }

@@ -40,6 +40,7 @@ import { DatabaseModule } from "../platform/database/database.module.js";
 import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
+import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
 import { PublicationEnabledGuard } from "../pim/publication/publication-switch.js";
 
 @Module({
@@ -131,6 +132,10 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // La racine de composition est le seul endroit qui a le droit de connaître
     // tout le monde. L'API reste protégée par défaut : c'est le LIEU de la
     // déclaration qui change, pas la règle.
+    // Le bypass d'impersonation, déclaré ICI comme le guard qui l'utilise :
+    // il dépend d'un port dont l'adaptateur vit dans `account/`, et seule la
+    // racine a le droit de connaître les deux.
+    DevImpersonation,
     { provide: APP_GUARD, useClass: AuthGuard },
     // APRÈS l'authentification : refuser un geste de publication à qui n'est
     // même pas identifié dirait au passage que ce déploiement en a un.

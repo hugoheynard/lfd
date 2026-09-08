@@ -3,7 +3,6 @@ import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { AdminAuthGuard } from "./admin-auth.guard.js";
 import { AdminTokenVerifier } from "./admin-token.verifier.js";
 import { AuthConfig } from "./auth.config.js";
-import { DevImpersonation } from "./dev-impersonation.js";
 import { StaffAccessGuard } from "./staff-access.guard.js";
 
 /**
@@ -19,9 +18,12 @@ import { StaffAccessGuard } from "./staff-access.guard.js";
  * On expose le vérificateur et le bypass de développement, réutilisables hors
  * du guard.
  *
- * `DevImpersonation` est le bypass de développement du guard : inerte en prod
- * (garde-fou dans `AppConfig`), il n'est là que pour travailler en local sans
- * jeton Auth0.
+ * `DevImpersonation` n'est PAS enregistré ici non plus, et pour la même raison
+ * que le guard : depuis le 2026-09-09, il dépend du port
+ * {@link ImpersonationSubjects} — il lisait `prisma.user` en direct, ce qui
+ * faisait de cette couche technique une couche qui connaît l'annuaire des
+ * clients. Son implémentation vit dans `account/`, donc sa déclaration vit à la
+ * racine de composition.
  *
  * Surface **staff** (Invariant C) : `AdminTokenVerifier` + `AdminAuthGuard`
  * portent une audience distincte du client, et `StaffAccessGuard` dit ce que la
@@ -39,17 +41,10 @@ import { StaffAccessGuard } from "./staff-access.guard.js";
   providers: [
     AuthConfig,
     AccessTokenVerifier,
-    DevImpersonation,
     AdminTokenVerifier,
     AdminAuthGuard,
     StaffAccessGuard,
   ],
-  exports: [
-    AccessTokenVerifier,
-    DevImpersonation,
-    AdminTokenVerifier,
-    AdminAuthGuard,
-    StaffAccessGuard,
-  ],
+  exports: [AccessTokenVerifier, AdminTokenVerifier, AdminAuthGuard, StaffAccessGuard],
 })
 export class AuthModule {}

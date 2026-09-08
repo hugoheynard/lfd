@@ -43,14 +43,15 @@
     "lint:deployed-app-files": "node dev-toolbox/gates/deployed-app-files.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "lint:gates": "pnpm lint:api-types && pnpm lint:no-direct-env && pnpm lint:no-type-escapes && pnpm lint:money-units && pnpm lint:price-pipeline && pnpm lint:business-day && pnpm lint:clock-port && pnpm lint:catalog-shared-deps && pnpm lint:code-language && pnpm lint:context-boundaries && pnpm lint:controller-buses && pnpm lint:cross-schema-join && pnpm lint:deployed-app-files && pnpm lint:doc-references && pnpm lint:doc-substance && pnpm lint:e2e-durations && pnpm lint:events-tracked && pnpm lint:fold-tokens && pnpm lint:fold-typography && pnpm lint:import-cycles && pnpm lint:mermaid && pnpm lint:journal-tracked && pnpm lint:pim-data-neutral && pnpm lint:router-links && pnpm lint:sku-never-recycled && pnpm lint:test-dates && pnpm lint:tests-colocated && pnpm lint:withdrawn-filter",
+    "lint:gates": "pnpm lint:api-types && pnpm lint:no-direct-env && pnpm lint:no-type-escapes && pnpm lint:money-units && pnpm lint:price-pipeline && pnpm lint:prisma-model-ownership && pnpm lint:business-day && pnpm lint:clock-port && pnpm lint:catalog-shared-deps && pnpm lint:code-language && pnpm lint:context-boundaries && pnpm lint:controller-buses && pnpm lint:cross-schema-join && pnpm lint:deployed-app-files && pnpm lint:doc-references && pnpm lint:doc-substance && pnpm lint:e2e-durations && pnpm lint:events-tracked && pnpm lint:fold-tokens && pnpm lint:fold-typography && pnpm lint:import-cycles && pnpm lint:mermaid && pnpm lint:journal-tracked && pnpm lint:pim-data-neutral && pnpm lint:router-links && pnpm lint:sku-never-recycled && pnpm lint:test-dates && pnpm lint:tests-colocated && pnpm lint:withdrawn-filter",
     "lint:e2e-durations": "node dev-toolbox/gates/e2e-durations.mjs",
     "lint:withdrawn-filter": "node dev-toolbox/gates/withdrawn-filter.mjs",
     "lint:test-dates": "node dev-toolbox/gates/test-dates.mjs",
     "lint:fold-typography": "node dev-toolbox/gates/fold-typography.mjs",
     "lint:mermaid": "node dev-toolbox/gates/mermaid.mjs",
     "lint:business-day": "node dev-toolbox/gates/business-day.mjs",
-    "lint:price-pipeline": "node dev-toolbox/gates/price-pipeline.mjs"
+    "lint:price-pipeline": "node dev-toolbox/gates/price-pipeline.mjs",
+    "lint:prisma-model-ownership": "node dev-toolbox/gates/prisma-model-ownership.mjs"
   },
   "devDependencies": {
     "@lfd/endpoints": "workspace:*",

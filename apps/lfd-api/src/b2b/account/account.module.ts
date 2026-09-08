@@ -115,6 +115,8 @@ import { CompanyAddressesController } from "./http/company-addresses.controller.
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
 import { MeController } from "./http/me.controller.js";
+import { ImpersonationSubjects } from "../../platform/auth/impersonation-subjects.resolver.js";
+import { PrismaImpersonationSubjects } from "./infrastructure/prisma-impersonation-subjects.js";
 import { PrincipalResolver } from "../../platform/auth/principal.resolver.js";
 import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.resolver.js";
 
@@ -236,7 +238,10 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     // prouver le `sub`, et le guard global — déclaré à la racine de composition
     // — les met bout à bout.
     { provide: PrincipalResolver, useClass: CustomerPrincipalResolver },
+    // Le bypass d'impersonation de développement demandait `prisma.user` depuis
+    // `platform/auth`. La table est ici, l'adaptateur aussi.
+    { provide: ImpersonationSubjects, useClass: PrismaImpersonationSubjects },
   ],
-  exports: [PrincipalResolver],
+  exports: [ImpersonationSubjects, PrincipalResolver],
 })
 export class AccountModule {}
