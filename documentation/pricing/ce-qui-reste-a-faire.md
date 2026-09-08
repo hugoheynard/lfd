@@ -24,24 +24,28 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 
 ## 1. Le tableau, en un écran
 
-| #       | Ce que c'est                                               | Gravité | Coût            |
-| ------- | ---------------------------------------------------------- | ------- | --------------- |
-| **R1**  | Un prix ramené à zéro **tue la commande**                  | 🔴      | un commit       |
-| **R2**  | La simulation rejoue les paliers **dans le navigateur**    | 🔴      | conception      |
-| **R3**  | Rien ne prouve que le devis **boutique** prédit la facture | 🟠      | un commit       |
-| **R4**  | Le client peut payer autre chose que ce qu'il a vu         | 🟠      | conception      |
-| **R5**  | L'ajustement de zone n'est pas figé sur la commande        | 🟠      | migration       |
-| **R6**  | L'engagement de volume n'a **aucun écran**                 | 🟠      | un lot front    |
-| **R7**  | Le cache suppose **une seule instance** de l'API           | 🟡      | conception      |
-| **R8**  | Aucune porte sur `prisma.<modèle>` hors contexte           | 🟡      | une porte       |
-| **R9**  | 19 conversions de jour en minuit UTC, hors tarification    | 🟡      | inventaire fait |
-| **R10** | `PriceTemplate.archive()` est du code mort                 | 🟡      | trivial         |
-| **R11** | Le volume prévu appartient au gabarit, pas au client       | 🟡      | conception      |
-| **R12** | Trois requêtes de production jamais lancées                | 🟡      | trois `psql`    |
-| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**         | 🔵      | décision        |
-| **R14** | Les conditionnements — conception **périmée**              | 🔵      | à réécrire      |
+| #       | Ce que c'est                                               | Gravité | Coût                   |
+| ------- | ---------------------------------------------------------- | ------- | ---------------------- |
+| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                  | ✅      | **clos le 2026-09-09** |
+| **R2**  | La simulation rejoue les paliers **dans le navigateur**    | 🔴      | conception             |
+| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~ | ✅      | **clos le 2026-09-09** |
+| **R4**  | Le client peut payer autre chose que ce qu'il a vu         | 🟠      | conception             |
+| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~    | ✅      | **clos le 2026-09-09** |
+| **R6**  | L'engagement de volume n'a **aucun écran**                 | 🟠      | un lot front           |
+| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~           | ✅      | **clos le 2026-09-09** |
+| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~       | ✅      | **clos le 2026-09-09** |
+| **R9**  | 19 conversions de jour en minuit UTC, hors tarification    | 🟡      | inventaire fait        |
+| **R10** | `PriceTemplate.archive()` est du code mort                 | 🟡      | trivial                |
+| **R11** | Le volume prévu appartient au gabarit, pas au client       | 🟡      | conception             |
+| **R12** | Trois requêtes de production jamais lancées                | 🟡      | trois `psql`           |
+| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**         | 🔵      | décision               |
+| **R14** | Les conditionnements — conception **périmée**              | 🔵      | à réécrire             |
 
-**Rien de tout cela ne fausse un prix résolu.** Le moteur est propre : une seule
+**Cinq entrées sont closes le jour même de ce registre** — R1, R3, R5, R7 et R8.
+Il reste **neuf** entrées, dont deux décisions et deux documents à réécrire. Elles restent listées avec leur preuve plutôt que retirées :
+une entrée effacée est une entrée que quelqu'un rouvrira.
+
+**Rien de ce qui reste ne fausse un prix résolu.** Le moteur est propre : une seule
 porte sur `resolvePrice`, quatre étages composés en rationnel exact, un arrondi,
 une trace figée. Ce qui reste est **autour** — à la frontière moteur → commande,
 dans ce qu'aucun test ne tient, et dans ce qu'une facture ne pourra pas relire.
@@ -50,29 +54,39 @@ dans ce qu'aucun test ne tient, et dans ce qu'une facture ne pourra pas relire.
 
 ## 2. Les défauts — ce qui casse aujourd'hui
 
-### R1 🔴 Un prix ramené à zéro tue la commande
+### ~~R1~~ ✅ Un prix ramené à zéro tue la commande — **clos le 2026-09-09**
 
-**Le fait, vérifié le 2026-09-09.** `resolvePrice` ramène à zéro un prix passé
-sous zéro et le consigne (`clampedToZero`). Mais
-[`order-line.ts:126`](../../apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts)
-ne lit que `floored` :
+**Ce que c'était.** `resolvePrice` ramenait bien à zéro un prix passé sous zéro
+et le consignait (`clampedToZero`), mais la trace **figée sur la ligne** ne
+portait pas ce champ. `assertConsistent` ne lisait que `floored` : une remise
+« −5 € » sur une baguette à 2,00 € produisait un dernier étage à −300 000 en
+face d'un prix facturé à 0, écart que rien n'expliquait, et la ligne **refusait
+d'exister**. Un **500** sur `POST /orders`, pour une remise qu'un commercial a
+le droit de saisir — et que rien à la saisie ne peut refuser, puisque le prix
+canonique varie d'un article à l'autre.
 
-```ts
-if (!trace.floored && expected !== input.unitPriceMillicents) {
-  throw new InvalidOrderLineError(...);
-}
-```
+**Ce qui a été fait.** Le champ traverse désormais toute la chaîne : le contrat
+(`OrderLinePricingTrace.clampedToZero`), la colonne
+(`order_lines.pricing_clamped_to_zero`, migration **additive**, `NULL` = ligne
+antérieure), l'écriture, la lecture, et `priceLine` qui le remplit depuis le
+tarificateur.
 
-Une règle « −5 € » sur un article à 2,00 € donne `final: 0`, `floored: false`,
-dernier étage à `−300 000` — et la ligne **refuse d'être créée**. Un 500 sur le
-chemin qui encaisse, pour une remise qu'un commercial a le droit de saisir.
+🔴 **Et le contrôle est devenu plus STRICT, pas plus permissif.** Un
+ramené-à-zéro n'éteint pas `assertConsistent` : il déplace ce qu'elle exige — la
+chaîne doit réellement finir **sous zéro** et la ligne facturer **zéro**. Le
+rendre permissif aurait fait de ce champ la façon d'écrire n'importe quel prix
+sans que la trace ait à s'accorder.
 
-**Ce qui a changé et rend le remède plus court.** `PricedArticle.clampedToZero`
-existe depuis le 2026-09-09 et traverse le tarificateur. Il ne reste qu'à le
-faire entrer dans `OrderLinePricingTrace` et à l'apprendre à `assertConsistent`.
+**Ce qui le tient.** Trois cas unitaires sur `OrderLine.create` — celui qui
+échouait avant le correctif, celui qui refuse un ramené-à-zéro incohérent, et
+celui qui laisse passer une trace antérieure — plus **deux e2e** sur la vraie
+base : la commande à zéro passe, et le plancher garde le dernier mot quand il
+est posé. Vérifié par mutation le 2026-09-09.
 
-**Le remède.** Un commit : le champ dans le contrat, la condition qui l'ajoute,
-un test de non-régression nommé d'après le symptôme.
+⚠️ **`null` n'est pas `false`.** Une ligne ramenée à zéro _puis_ relevée par un
+plancher pouvait s'écrire avant cette date sans que rien ne le consigne : un
+`DEFAULT false` aurait transformé cette ignorance en affirmation sur les seules
+lignes qu'on ne peut plus vérifier.
 
 ### R2 🔴 La simulation rejoue les paliers dans le navigateur
 
@@ -102,20 +116,41 @@ une régression d'usage —, soit son moteur descend dans un paquet pur que les
 deux côtés importent. C'est ce qui a déjà marché deux fois (`@lfd/money`).
 **Touche l'argent : `vitruve` avant de bâtir.**
 
-### R3 🟠 Rien ne prouve que le devis boutique prédit la facture
+### ~~R3~~ ✅ Rien ne prouve que le devis boutique prédit la facture — **clos le 2026-09-09**
 
-**Le fait, vérifié le 2026-09-09.** Le côté **admin** est couvert :
-`admin-place-order.e2e-spec.ts` compare le devis à la commande réelle. Le côté
-**boutique** — la surface publique — ne l'est pas : `shop-quote.e2e-spec.ts` ne
-passe aucune commande, et aucun e2e ne compare `POST /shop/quote`.`totalCents` à
-`orders.total_cents` sur le même panier.
+**Ce que c'était.** « Un devis qui ne prédit pas la facture ne sert à rien » est
+_l_'invariant de toute la chaîne, et il n'était tenu **que par construction** :
+même `ventilateVat`, même `CartAdjustments`, même `OrderLinePricing`. Le côté
+admin était couvert ; le côté **boutique** — la surface publique — ne l'était
+pas. `shop-quote.e2e-spec.ts` vérifiait des nombres, `orders.e2e-spec.ts` en
+vérifiait d'autres, **aucun ne faisait les deux sur le même panier**. Rien
+n'aurait rougi si quelqu'un ajoutait un terme d'un seul côté.
 
-L'invariant est tenu **par construction** — même `ventilateVat`, même
-`CartAdjustments`, même `OrderLinePricing`. Une construction partagée le rend
-_probable_ ; un test le rend _tenu_.
+**Ce qui a été fait.** `test/quote-order-parity.e2e-spec.ts`, quatre cas.
 
-**Le remède.** Un e2e, et un seul : un panier, le devis, la commande, les deux
-totaux comparés au centime — en retrait avec remise, et en coursier avec frais.
+🔴 **Il compare la BASE, pas deux réponses HTTP.** Le devis est une vue ; la
+facture est ce qui est **écrit**. Confronter deux vues laisserait passer un total
+juste rendu et mal enregistré — or ce sont les colonnes qu'un document comptable
+relira.
+
+Et il compare **chaque** montant, pas seulement le total : une remise trop forte
+annulée par des frais trop élevés donne le bon total et deux lignes fausses sur
+le document que le client reçoit. Le quatrième cas descend jusqu'à la
+**ventilation par taux**, parce que deux taux qui se compensent d'un centime
+donnent la même somme et deux lignes fausses.
+
+**Le panier est choisi pour casser** : deux taux — sans quoi la remise au prorata
+et l'arrondi par groupe ne s'exercent pas — et deux quantités différentes, pour
+l'arrondi de ligne. Un troisième cas ouvre un **barème** sur le panier : sans
+lui, les deux chemins passeraient même si l'un ignorait toute la tarification —
+exactement le défaut qui a produit 1,83924 € contre 1,65532 €.
+
+**Vérifié par mutation le 2026-09-09** : faire oublier la remise de retrait au
+devis fait rougir les trois cas de retrait ; lui faire oublier les frais de zone
+fait rougir le cas coursier, et lui seul.
+
+⚠️ **Ce qu'il ne couvre pas** : la surtaxe de retard, qui dépend de l'heure
+limite. L'opposer ici mélangerait deux sujets ; elle a ses propres suites.
 
 ---
 
@@ -138,23 +173,40 @@ est dans
 [`architecture-prix-vivant-prix-bloque.md`](architecture-prix-vivant-prix-bloque.md),
 et elle n'est **pas prise** (cf. R13).
 
-### R5 🟠 L'ajustement de zone n'est pas figé sur la commande
+### ~~R5~~ ✅ L'ajustement de zone n'est pas figé — **clos le 2026-09-09**
 
-**Le fait, vérifié le 2026-09-09** dans `schema.prisma` :
+**Ce que c'était.** La remise de retrait et la surtaxe de retard figeaient déjà
+l'ajustement qui les a produites ; les frais de zone étaient **le dernier terme
+du panier à n'avoir que son montant**. Or `delivery_zones.fee_value` est
+**mutable** : une facture émise dans six mois aurait chiffré « Livraison
+24,00 € » sans jamais pouvoir dire « Val d'Isère, 20 € forfaitaires », ni prouver
+que ce forfait était celui du jour.
 
-| Ce qui est figé                                       | État          |
-| ----------------------------------------------------- | ------------- |
-| `vatShares` — la TVA **par taux**                     | ✅ 2026-09-07 |
-| `discountAdjustment` — ce qui a produit la remise     | ✅            |
-| `lateFeeAdjustment` — ce qui a produit la surtaxe     | ✅            |
-| l'ajustement de zone qui a produit `deliveryFeeCents` | ❌            |
+**Ce qui a été fait.** `orders.delivery_fee_adjustment` (migration **additive**,
+`NULL` = retrait ou commande antérieure — les deux se distinguent par
+`delivery_fee_cents`), le champ dans `OrderView`, `CartAdjustments` qui rend le
+barème à côté du montant, et `OrderDrafting` qui le fige.
 
-`deliveryFeeCents` est un nombre nu, et `zone.fee` est **mutable** : une facture
-émise dans six mois ne pourra pas nommer les frais qu'elle chiffre.
+**Et une troisième garde dans l'agrégat.** `ensureDeliveryFeeMatches` rejoint
+ses deux jumelles : un montant qui ne découle pas de son barème est refusé,
+parce qu'une trace figée mensongère est pire qu'une trace absente.
 
-**Le remède.** Une migration **additive** — `deliveryFeeAdjustment Json?`, comme
-ses deux voisins. La poser maintenant, tant que les commandes sont peu
-nombreuses, coûte une colonne ; la poser après coûte une reprise.
+⚠️ Elle compare par `cartAdjustmentCents` et **non** `discountCentsOf` : des
+frais ne sont pas bornés par le panier — une course peut coûter plus cher qu'un
+petit panier. Un cas dédié le tient, et il échouerait si quelqu'un recopiait la
+borne de la remise par symétrie.
+
+**Aucune reprise sur l'historique, et c'est délibéré** : recopier le barème
+_actuel_ d'une zone sur des commandes passées écrirait un fait qui n'a
+peut-être jamais eu lieu — exactement ce que cette colonne existe pour empêcher.
+
+🔴 **Le premier test ne prouvait rien, et une mutation l'a montré.** Il posait
+une zone à **forfait** ; or un forfait se reconstruit à l'identique depuis son
+montant, si bien que remplacer le barème figé par
+`{ mode: "amount", cents: feeCents }` laissait la suite verte. Le cas a été
+refait sur une zone en **pourcentage**, où « 10 % » et « 2,40 € » sont deux
+phrases différentes — et seule la première s'écrit sur une facture. La même
+mutation rougit désormais.
 
 ### R6 🟠 L'engagement de volume n'a aucun écran
 
@@ -166,32 +218,86 @@ Un engagement se signe donc en base, à la main. C'est le mécanisme qui fait
 qu'un client paie le palier de sa **promesse** dès sa première commande — la
 partie du moteur qui décide le plus, et celle que personne ne peut manipuler.
 
-### R7 🟡 Le cache suppose une seule instance de l'API
+### ~~R7~~ ✅ Le cache supposait une seule instance — **clos le 2026-09-09**
 
-**Le fait, vérifié le 2026-09-09.** `pricing-materials.cache.ts` n'a que
-`invalidate()` / `clear()` : aucune estampille, aucune coordination. `ops` dit
-« max 1 » aujourd'hui, par décision de routage.
+**Ce que c'était.** `pricing-materials.cache.ts` n'avait que `invalidate()` :
+aucune estampille, aucune coordination. `ops` dit « max 1 » aujourd'hui, par
+décision de routage. Le jour du passage à deux, une règle posée sur l'instance A
+n'invalidait pas l'instance B, qui aurait facturé l'ancien prix jusqu'à son
+redémarrage. **Pas une lenteur : un prix faux.**
 
-Le jour du passage à deux instances, ce n'est pas une lenteur : c'est un **prix
-faux** servi jusqu'au redémarrage.
+**Ce qui a été fait.** Le cache lit une **estampille** — le dernier
+`pricing_events.id`, un ULID donc croissant — avant de servir ce qu'il garde.
+Toute écriture tarifaire passe par `PricingActWriter`, qui écrit son acte dans
+la même transaction que l'état : l'estampille bouge si et seulement si quelque
+chose a changé, **quelle que soit l'instance qui l'a écrit**.
 
-**Le remède.** Une estampille — le dernier `pricing_events.id`, lu par requête —
-garderait le cache sûr pour **une** lecture au lieu de trois.
+**Ce que ça coûte, dit franchement.** Le devis à froid passe de **quatre à cinq**
+lectures. La constante du budget e2e a été mise à jour **avec sa raison**, comme
+son propre JSDoc l'exige — « ce n'est pas la constante qu'il faut mettre à jour,
+c'est une lecture qui vient d'apparaître, et il faut savoir laquelle ».
+
+Le cache reste largement gagnant : sans lui, ces trois tables coûteraient trois
+lectures ; avec estampille, une seule — et les trois lecteurs la partagent,
+étant appelés dans un même `Promise.all`. Il devient **correct** au lieu d'être
+correct-par-hypothèse-de-déploiement.
+
+⚠️ **La thèse du budget n'a pas bougé** : ce qui compte n'est pas 4 ou 5, c'est
+que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité qui attrape
+un N+1, pas la valeur absolue.
+
+**Ce qui le tient.** Un e2e qui simule la seconde instance : une règle et son
+acte semés **directement en base**, `invalidate()` volontairement non appelé —
+exactement l'état qu'une écriture venue d'ailleurs produirait. Vérifié par
+mutation : ignorer l'estampille fait rougir ce cas, et lui seul.
+
+⚠️ **Une lecture d'estampille qui ÉCHOUE ne fait pas tomber la tarification** :
+on retombe sur la dernière estampille connue, c'est-à-dire le comportement
+d'avant. Servir un prix peut-être périmé vaut mieux qu'un refus de vente — et
+c'est le seul endroit de cette chaîne où ce compromis est le bon.
 
 ---
 
 ## 4. Les garde-fous qui manquent
 
-### R8 🟡 Aucune porte sur `prisma.<modèle>` hors du contexte propriétaire
+### ~~R8~~ ✅ Aucune porte sur `prisma.<modèle>` — **close le 2026-09-09**
 
-`lint:cross-schema-join` lit le SQL **écrit à la main**.
-`lint:context-boundaries` lit le **graphe d'imports**. Ni l'un ni l'autre ne voit
-une classe qui interroge en Prisma direct les tables d'un domaine qui n'est pas
-le sien — et `CLAUDE.md` écrit que **c'est arrivé deux fois**.
+**Ce que c'était.** `lint:cross-schema-join` lit le SQL **écrit à la main**.
+`lint:context-boundaries` lit le **graphe d'imports**. Ni l'un ni l'autre ne
+voyait une classe interrogeant en Prisma direct les tables d'un bloc qui n'est
+pas le sien — `PrismaService` est technique, donc l'importer ne trahit rien, et
+`prisma.user.findUnique()` n'est pas du SQL. `CLAUDE.md` écrit que **c'est
+arrivé deux fois**.
 
-**Ce que ça ne fermerait pas**, et qu'il faut dire : la frontière reste une
-discipline de **découpe**. Une seule base, une seule URL, un seul client — une
-jointure `b2b → pim` marcherait. La porte la rend visible, pas impossible.
+**`lint:prisma-model-ownership` est la porte qui manquait.** 29ᵉ du dépôt.
+
+🔴 **La propriété est DÉRIVÉE, jamais écrite à la main** : le propriétaire d'un
+modèle est le bloc qui l'**écrit**. Une table se lit de plusieurs endroits sans
+dommage ; elle n'a qu'un auteur, et cet auteur porte ses invariants. Rien à
+maintenir : un modèle ajouté au schéma est classé le jour où quelqu'un l'écrit.
+C'est le chemin inverse de celui qu'a dû faire `lint:cross-schema-join`, qui
+recopiait la liste des schémas jusqu'à ce qu'elle devienne fausse.
+
+**Le verdict sur 93 modèles : deux anomalies, une corrigée.**
+
+- 🔴 **`platform` lisait `prisma.user`** — la violation absolue de la matrice
+  (`platform` ne connaît aucun contexte). Corrigée : `DevImpersonation` dépend
+  désormais du port `ImpersonationSubjects`, dont l'adaptateur vit dans
+  `account/` et que `appBootstrap` relie. Le bypass a suivi le guard à la racine
+  de composition, pour la raison qui vaut déjà pour `PrincipalResolver`.
+- 🟡 **`b2b` lit `staffUser` en direct**, dans deux fichiers. La matrice
+  **autorise** `b2b → staff` ; ce qui est en cause est le moyen, pas la
+  direction. Déclarée en dérogation datée, à fermer quand `staff/directory`
+  exposera un port de lecture d'annuaire — pas avant, sous peine d'un port
+  taillé pour un seul appelant.
+
+**Ce que cette porte NE tient pas**, et qui est écrit dedans : elle ne rend pas
+la frontière **impossible**. Une seule base, une seule URL, un seul client — une
+jointure `b2b → pim` marcherait toujours. Elle la rend **visible**, ce qui est
+le cran au-dessus de la relecture et celui en dessous de l'interdiction.
+
+**Vérifié par mutation** : réintroduire la lecture de `user` dans `platform` fait
+échouer la porte, en nommant le fichier.
 
 ### R9 🟡 Dix-neuf jours convertis en minuit UTC, hors tarification
 
@@ -220,14 +326,18 @@ soit complet, pas parce qu'il y a du travail immédiat.
 Six entrées portées comme ouvertes par les documents d'origine **ne le sont
 plus**. Elles sont ici avec leur preuve, pour que personne ne reparte les faire.
 
-| Portée comme ouverte par                              | En fait                                                                                                            |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `audit-fable.md` §1 — « `lint:gates` échoue »         | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                       |
-| `audit-fable.md` B3 — « un gabarit se pose à moitié » | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.       |
-| `audit-fable.md` P1 — « rien ne borne la quantité »   | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                            |
-| `durcir-le-calcul-des-prix.md` chantier 1             | ✅ Livré le 2026-09-09. Cinq appelants de `resolvePrice` → **un**, et `lint:price-pipeline` est à **1 entrée**.    |
-| `durcir-le-calcul-des-prix.md` chantiers 2 et 5       | ✅ `lint:business-day` sur les fenêtres tarifaires, et `pricing-budget.e2e-spec.ts` qui compte les opérations ORM. |
-| `etat-des-lieux-mercuriale-client.md` T7              | ✅ Les bornes de fenêtre passent par `businessDayStart` ; la porte le tient.                                       |
+| Portée comme ouverte par                              | En fait                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit-fable.md` §1 — « `lint:gates` échoue »         | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                                                         |
+| `audit-fable.md` B3 — « un gabarit se pose à moitié » | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.                                         |
+| `audit-fable.md` P1 — « rien ne borne la quantité »   | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                                                              |
+| `durcir-le-calcul-des-prix.md` chantier 1             | ✅ Livré le 2026-09-09. Cinq appelants de `resolvePrice` → **un**, et `lint:price-pipeline` est à **1 entrée**.                                      |
+| `durcir-le-calcul-des-prix.md` chantiers 2 et 5       | ✅ `lint:business-day` sur les fenêtres tarifaires, et `pricing-budget.e2e-spec.ts` qui compte les opérations ORM.                                   |
+| `etat-des-lieux-mercuriale-client.md` T7              | ✅ Les bornes de fenêtre passent par `businessDayStart` ; la porte le tient.                                                                         |
+| **R1 de ce registre** — le prix ramené à zéro         | ✅ Clos le **2026-09-09**, cf. §2 : le champ traverse la chaîne, la colonne est posée, et `assertConsistent` exige désormais **davantage** qu'avant. |
+| **R3 de ce registre** — la parité devis ↔ facture     | ✅ Clos le **2026-09-09**, cf. §2 : quatre cas comparent le devis public aux colonnes de la commande, montant par montant.                           |
+| **R5 de ce registre** — le barème de zone figé        | ✅ Clos le **2026-09-09**, cf. §3 : colonne additive, garde dans l'agrégat, et un cas qui survit à la modification de la zone.                       |
+| **R7 et R8 de ce registre**                           | ✅ Clos le **2026-09-09** : l'estampille du cache, et la 29ᵉ porte qui dérive la propriété d'un modèle de qui l'écrit.                               |
 
 ⚠️ **Le chantier 4 de `durcir` n'est fermé qu'à MOITIÉ**, et je l'avais annoncé
 fermé. Ce qui l'est : l'écart au tarif, descendu dans `@lfd/money` (`gapBp`,
@@ -239,17 +349,14 @@ clôture — _« aucun `Math.round` sur un prix dans un composant Angular »_ �
 
 ## 7. L'ordre, et pourquoi
 
-1. **R1** — c'est le seul qui produit un **500** sur le chemin qui encaisse, et
-   il coûte un commit maintenant que `clampedToZero` traverse le tarificateur.
-2. **R3** — un commit, et il tient l'invariant de tout le dossier sur la seule
-   surface publique.
-3. **R5** — une migration additive. Elle coûte une colonne aujourd'hui et une
-   reprise dans six mois ; c'est le seul item dont le prix augmente avec le
-   temps.
+1. ~~**R1**~~ — ✅ fait le 2026-09-09.
+2. ~~**R3**~~ — ✅ fait le 2026-09-09.
+3. ~~**R5**~~ — ✅ fait le 2026-09-09.
 4. **R13 puis R4** — la décision d'abord, le mécanisme ensuite. Les prendre dans
    l'autre sens coderait une réponse à une question qu'on n'a pas posée.
-5. **R2** — conception, `vitruve`, puis un lot front. Le plus gros du reste.
-6. **R6**, **R7**, **R8** — ils protègent l'avenir plutôt que le présent.
+5. **R2** — conception, `vitruve`, puis un lot front. **Le plus gros du reste.**
+6. **R6** — le seul mécanisme du moteur que personne ne peut manipuler.
+7. ~~**R7**, **R8**~~ — ✅ faits le 2026-09-09.
 
 **Ce que je ne ferais pas.** Toucher au moteur. Il a une seule porte, une trace
 figée, des contraintes d'exclusion qui rendent le chevauchement impossible, et
