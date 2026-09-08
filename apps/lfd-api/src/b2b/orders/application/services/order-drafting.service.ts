@@ -84,6 +84,8 @@ interface ResolvedFulfillment {
   readonly discountCents: number;
   /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
   readonly discountAdjustment: CartAdjustment | null;
+  /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
+  readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
 }
 
@@ -180,6 +182,7 @@ export class OrderDrafting {
       lines,
       discountCents: acheminement.discountCents,
       discountAdjustment: acheminement.discountAdjustment,
+      deliveryFeeAdjustment: acheminement.deliveryFeeAdjustment,
       deliveryFeeCents: acheminement.deliveryFeeCents,
       // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
       // elle qui atteste le retard, et une commande à l'heure n'a rien à
@@ -336,6 +339,8 @@ export class OrderDrafting {
         pickupAddress: toSnapshot(retrait.point),
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
+        // Un retrait n'a pas de frais de zone : pas de barème à figer.
+        deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
       };
     }
@@ -358,6 +363,10 @@ export class OrderDrafting {
       // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
       discountAdjustment: null,
       deliveryFeeCents: coursier.feeCents,
+      // Le barème de la zone, figé avec son montant : `zone.fee` est mutable, et
+      // une facture doit pouvoir dire « Val d'Isère, 20 € forfaitaires » plutôt
+      // que le seul chiffre.
+      deliveryFeeAdjustment: coursier.feeAdjustment,
     };
   }
 }

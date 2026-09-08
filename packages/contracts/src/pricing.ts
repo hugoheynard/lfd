@@ -620,6 +620,27 @@ export interface OrderLinePricingTrace {
   /** Le plancher a-t-il **relevé** le prix ? */
   readonly floored: boolean;
   /**
+   * La chaîne est-elle **passée sous zéro**, et le prix ramené à zéro ?
+   *
+   * Consigné pour la même raison que {@link floored} : c'est un prix qu'aucune
+   * règle n'a produit tel quel. Une baisse en euros plus grande que le prix de
+   * l'article — « −5 € » sur une baguette à 2 € — est la façon la plus banale
+   * d'y arriver, et elle ne se refuse pas à la saisie puisque le canonique
+   * varie d'un article à l'autre.
+   *
+   * 🔴 **Il manquait ici jusqu'au 2026-09-09, et son absence tuait la
+   * commande.** `resolvePrice` le calculait depuis toujours ; la trace figée ne
+   * le portait pas, si bien que la ligne voyait un dernier étage à −300 000 et
+   * un prix facturé à 0 sans rien pour expliquer l'écart — elle refusait
+   * d'exister. Un 500 sur le chemin qui encaisse.
+   *
+   * `null` = commande **antérieure au 2026-09-09** : on ne sait pas. Ce n'est
+   * pas `false` — la distinction porte, parce qu'une ligne clampée ET relevée
+   * par un plancher pouvait s'écrire avant cette date sans que rien ne le
+   * consigne.
+   */
+  readonly clampedToZero: boolean | null;
+  /**
    * Quel étage de plancher s'appliquait, et sur quelles preuves. `null` quand
    * aucune limite n'était posée — ou sur une commande antérieure au plancher à
    * deux étages.

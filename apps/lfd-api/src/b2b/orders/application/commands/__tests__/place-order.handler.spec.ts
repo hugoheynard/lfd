@@ -577,6 +577,10 @@ describe("PlaceOrderHandler", () => {
           basePriceMillicents: 200_000,
           steps: [],
           floored: false,
+          // Consigné depuis le 2026-09-09. `false` et non `null` : cette ligne
+          // vient d'être résolue, on SAIT que la chaîne n'est pas passée sous
+          // zéro. `null` est réservé aux commandes antérieures à la colonne.
+          clampedToZero: false,
           // Aucun plancher posé : il n'y a pas d'étage à commenter.
           floorDecision: null,
           // Aucun engagement : le palier s'est joué sur la quantité du panier.

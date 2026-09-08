@@ -827,6 +827,14 @@ model Order {
   // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
   discountAdjustment Json?  @map("discount_adjustment")
   deliveryFeeCents   Int    @default(0) @map("delivery_fee_cents")
+  /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
+  /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
+  /// n'avoir que son montant : `delivery_zones.fee_value` est mutable, donc une
+  /// facture ne pouvait pas prouver quel forfait avait été appliqué ce jour-là.
+  ///
+  /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
+  /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
+  deliveryFeeAdjustment Json? @map("delivery_fee_adjustment")
   vatCents           Int    @default(0) @map("vat_cents")
   /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
   ///
@@ -952,6 +960,15 @@ model OrderLine {
   /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
   /// relevé est un prix dont une règle n'a pas produit son effet.
   pricingFloored      Boolean? @map("pricing_floored")
+  /// La chaîne est-elle passée SOUS ZÉRO, et le prix ramené à zéro ? Même
+  /// raison que `pricingFloored` : un prix qu'aucune règle n'a produit tel quel.
+  ///
+  /// `NULL` = ligne écrite **avant le 2026-09-09**, quand la colonne n'existait
+  /// pas. Ce n'est pas `false` : une ligne ramenée à zéro PUIS relevée par un
+  /// plancher pouvait s'écrire sans que rien ne le consigne. La distinction est
+  /// la même que celle de `base_price_millicents` — « on ne sait pas » n'est pas
+  /// « ça n'est pas arrivé ».
+  pricingClampedToZero Boolean? @map("pricing_clamped_to_zero")
 
   /// L'engagement de volume qui a décidé du palier, et le CUMUL mesuré à cet
   /// instant : `{ id, promisedQuantity, cumulativeQuantity }`.

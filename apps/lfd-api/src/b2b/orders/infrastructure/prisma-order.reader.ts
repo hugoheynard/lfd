@@ -50,6 +50,7 @@ interface OrderLineRow {
   readonly basePriceMillicents: number | null;
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
+  readonly pricingClampedToZero: boolean | null;
   readonly pricingFloor: Prisma.JsonValue | null;
   readonly allergens: Prisma.JsonValue | null;
   readonly pricingCommitment: Prisma.JsonValue | null;
@@ -71,6 +72,7 @@ interface OrderRow {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
+  readonly deliveryFeeAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: Prisma.JsonValue | null;
@@ -113,6 +115,7 @@ const ORDER_SELECT = {
   discountCents: true,
   discountAdjustment: true,
   deliveryFeeCents: true,
+  deliveryFeeAdjustment: true,
   lateFeeCents: true,
   lateFeeAdjustment: true,
   vatCents: true,
@@ -143,6 +146,7 @@ const ORDER_SELECT = {
       basePriceMillicents: true,
       pricingSteps: true,
       pricingFloored: true,
+      pricingClampedToZero: true,
       pricingFloor: true,
       pricingCommitment: true,
       allergens: true,
@@ -621,6 +625,9 @@ function toOrderView(row: OrderRow): OrderView {
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
+    // Même indulgence, même barrière : un barème illisible rend `null` — la
+    // facture perd le libellé de ses frais, pas son montant.
+    deliveryFeeAdjustment: parseAdjustment(row.deliveryFeeAdjustment),
     deliveryFeeCents: row.deliveryFeeCents,
     lateFeeCents: row.lateFeeCents,
     lateFeeAdjustment: parseLateFee(row.lateFeeAdjustment),
@@ -722,6 +729,10 @@ function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     basePriceMillicents: line.basePriceMillicents,
     steps: steps.data,
     floored: line.pricingFloored,
+    // `null` traverse tel quel : « on ne sait pas » n'est pas « ça n'est pas
+    // arrivé », et le réduire à `false` affirmerait quelque chose sur les
+    // seules commandes qu'on ne peut plus vérifier.
+    clampedToZero: line.pricingClampedToZero,
     // Une décision illisible rend `null` sans emporter le reste de la trace : le
     // détail des étages reste consultable, on perd seulement le commentaire du
     // plancher.

@@ -77,4 +77,103 @@ describe("OrderLine", () => {
     expect(declared.toSnapshot().allergens?.codes).toEqual([]);
     expect(OrderLine.create({ ...base, quantity: 1 }).toSnapshot().allergens).toBeNull();
   });
+
+  /**
+   * 🔴 **Régression : une remise EN EUROS plus grande que le prix tuait la
+   * commande** (défaut R1, ouvert le 2026-09-06, corrigé le 2026-09-09).
+   *
+   * `resolvePrice` ramène à zéro un prix passé sous zéro et le CONSIGNE
+   * (`clampedToZero`) — mais la trace figée ne portait pas ce champ, et
+   * `assertConsistent` ne lisait que `floored`. Le dernier étage sortait donc à
+   * −300 000 quand la ligne en facturait 0, et la ligne **refusait d'exister** :
+   * un 500 sur le chemin qui encaisse, pour une remise qu'un commercial a le
+   * droit de saisir.
+   *
+   * Le scénario est celui du dépôt : « −5 € sur la famille pains », une
+   * baguette à 2,00 €.
+   */
+  it("🔴 accepte un prix ramené à zéro par une remise en euros", () => {
+    const line = OrderLine.create({
+      ...base,
+      unitPriceMillicents: 0,
+      quantity: 1,
+      pricing: {
+        basePriceMillicents: 200_000,
+        steps: [
+          {
+            stage: "promotion",
+            ruleId: "rule_cadeau",
+            label: "−5 € sur les pains",
+            scope: null,
+            resultMillicents: -300_000,
+            supersedes: [],
+          },
+        ],
+        floored: false,
+        clampedToZero: true,
+        floorDecision: null,
+        commitment: null,
+      },
+    });
+
+    expect(line.unitPriceMillicents).toBe(0);
+    expect(line.lineTotalCents).toBe(0);
+    expect(line.pricing?.clampedToZero).toBe(true);
+  });
+
+  /**
+   * Le ramené-à-zéro n'est pas un laissez-passer : il autorise **un** écart
+   * précis — la chaîne finit sous zéro, la ligne facture zéro. Une trace qui
+   * annoncerait autre chose reste refusée, sans quoi le champ deviendrait la
+   * façon d'éteindre le contrôle.
+   */
+  it("refuse un ramené-à-zéro qui ne facture pas zéro", () => {
+    expect(() =>
+      OrderLine.create({
+        ...base,
+        unitPriceMillicents: 150_000,
+        quantity: 1,
+        pricing: {
+          basePriceMillicents: 200_000,
+          steps: [
+            {
+              stage: "promotion",
+              ruleId: "rule_cadeau",
+              label: "−5 €",
+              scope: null,
+              resultMillicents: -300_000,
+              supersedes: [],
+            },
+          ],
+          floored: false,
+          clampedToZero: true,
+          floorDecision: null,
+          commitment: null,
+        },
+      }),
+    ).toThrow(InvalidOrderLineError);
+  });
+
+  /**
+   * `null` = trace **antérieure au 2026-09-09**, quand la colonne n'existait
+   * pas. On ne sait alors pas si la chaîne a été ramenée à zéro, et le contrôle
+   * reste celui d'avant : c'est ce qui empêche une commande déjà passée de
+   * devenir illisible.
+   */
+  it("laisse passer une trace antérieure, qui ne sait pas", () => {
+    const line = OrderLine.create({
+      ...base,
+      quantity: 1,
+      pricing: {
+        basePriceMillicents: 200_000,
+        steps: [],
+        floored: false,
+        clampedToZero: null,
+        floorDecision: null,
+        commitment: null,
+      },
+    });
+
+    expect(line.pricing?.clampedToZero).toBeNull();
+  });
 });

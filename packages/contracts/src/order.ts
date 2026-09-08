@@ -561,6 +561,22 @@ export interface OrderView {
   /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
   readonly deliveryFeeCents: number;
   /**
+   * **Ce qui a produit** `deliveryFeeCents`, figé à la commande : le taux ou le
+   * montant de la zone livrée.
+   *
+   * 🔴 **Il manquait, et c'était le dernier terme du panier à ne pas figer son
+   * origine** (défaut R5, corrigé le 2026-09-09). La remise et la surtaxe
+   * figeaient déjà le leur ; les frais de zone étaient un nombre nu — et
+   * `zone.fee` est **mutable**. Une facture émise dans six mois n'aurait pas pu
+   * nommer les frais qu'elle chiffre : « Livraison 24,00 € » sans jamais
+   * pouvoir dire « Val d'Isère, 20 € forfaitaires » ni prouver que ce forfait
+   * était celui du jour.
+   *
+   * `null` = retrait (aucun frais), ou **commande antérieure au 2026-09-09**.
+   * Les deux se distinguent par `deliveryFeeCents` : nul dans le premier cas.
+   */
+  readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /**
    * Surtaxe de commande tardive, HT, en centimes. `0` si aucune — c'est-à-dire
    * dans l'immense majorité des cas : elle n'existe que si un commercial a
    * accordé une dérogation à la limite de commande.

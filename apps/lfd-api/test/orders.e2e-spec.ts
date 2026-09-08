@@ -270,6 +270,10 @@ describe("checkout → Order", () => {
           basePriceMillicents: 200_000,
           steps: [],
           floored: false,
+          // Consigné depuis le 2026-09-09. `false` et non `null` : cette ligne
+          // vient d'être résolue, on SAIT que la chaîne n'est pas passée sous
+          // zéro — `null` est réservé aux commandes antérieures à la colonne.
+          clampedToZero: false,
           floorDecision: null,
           commitment: null,
         },

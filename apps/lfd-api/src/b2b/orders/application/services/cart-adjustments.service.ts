@@ -20,6 +20,14 @@ export interface ResolvedPickup {
 export interface ResolvedDelivery {
   readonly zone: DeliveryZoneView;
   readonly feeCents: number;
+  /**
+   * **Ce qui a produit** `feeCents` — le barème de la zone, tel qu'il était.
+   *
+   * Rendu à côté du montant pour que la commande le FIGE, exactement comme elle
+   * fige déjà celui de la remise : `zone.fee` est mutable, et un montant nu ne
+   * se relit pas. Cf. `OrderView.deliveryFeeAdjustment`.
+   */
+  readonly feeAdjustment: CartAdjustment;
 }
 
 /**
@@ -92,6 +100,10 @@ export class CartAdjustments {
     if (zone === null) {
       throw new NoDeliveryZoneForPostalCodeError(codePostal);
     }
-    return { zone, feeCents: cartAdjustmentCents(zone.fee, subtotalCents) };
+    return {
+      zone,
+      feeCents: cartAdjustmentCents(zone.fee, subtotalCents),
+      feeAdjustment: zone.fee,
+    };
   }
 }

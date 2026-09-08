@@ -57,6 +57,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     discountCents: 0,
     discountAdjustment: null,
     deliveryFeeCents: 0,
+    deliveryFeeAdjustment: null,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
     ...over,
@@ -104,6 +105,9 @@ describe("Order.draft — calcul monétaire", () => {
     // 400 HT (taux 0) + frais 2000 → TVA livraison = 400 ; total = 400 + 2000 + 400 = 2800.
     const state = deferred({
       lines: [food(2, 200, 0)],
+      // Le barème qui les produit, exigé depuis le 2026-09-09 : des frais sans
+      // origine ne se relisent pas sur une facture.
+      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
       fulfillment: {
         method: "delivery",
         deliveryZoneId: "z1",
@@ -154,6 +158,64 @@ describe("Order.draft — calcul monétaire", () => {
         }),
       ),
     ).toThrow(InvalidOrderPaymentError);
+  });
+
+  /**
+   * 🔴 **Le barème de zone est figé avec ses frais** (défaut R5, corrigé le
+   * 2026-09-09).
+   *
+   * C'était le dernier terme du panier à n'avoir que son montant, alors que
+   * `delivery_zones.fee_value` est **mutable** : une facture émise dans six mois
+   * aurait chiffré « Livraison 20,00 € » sans jamais pouvoir dire « Val d'Isère,
+   * 20 € forfaitaires », ni prouver que ce forfait était celui du jour.
+   */
+  it("🔴 fige le barème de zone qui a produit les frais", () => {
+    const state = deferred({
+      lines: [food(2, 200, 0)],
+      deliveryFeeCents: 2_000,
+      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
+    });
+
+    expect(state.deliveryFeeAdjustment).toEqual({ mode: "amount", cents: 2_000 });
+  });
+
+  it("refuse des frais de zone que leur barème ne reproduit pas", () => {
+    expect(() =>
+      Order.draft(
+        draftInput({
+          lines: [food(2, 200, 0)],
+          deliveryFeeCents: 2_000,
+          deliveryFeeAdjustment: { mode: "amount", cents: 1_500 },
+        }),
+      ),
+    ).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("refuse des frais de zone sans barème qui les justifie", () => {
+    expect(() =>
+      Order.draft(draftInput({ lines: [food(2, 200, 0)], deliveryFeeCents: 2_000 })),
+    ).toThrow(InvalidOrderPaymentError);
+  });
+
+  /**
+   * ⚠️ **Des frais ne sont PAS bornés par le panier**, à la différence d'une
+   * remise : une course peut coûter plus cher qu'un petit panier. La garde
+   * compare donc par `cartAdjustmentCents`, et ce cas le tient — il échouerait
+   * si quelqu'un recopiait `discountCentsOf` par symétrie.
+   */
+  it("accepte des frais plus élevés que le panier", () => {
+    const state = deferred({
+      lines: [food(1, 200, 0)],
+      deliveryFeeCents: 2_000,
+      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
+    });
+
+    expect(state.deliveryFeeCents).toBe(2_000);
+  });
+
+  /** Un RETRAIT n'a pas de frais : lui exiger un barème serait exiger la trace d'un geste absent. */
+  it("laisse un retrait sans barème de zone", () => {
+    expect(deferred({ lines: [food(2, 200, 0)] }).deliveryFeeAdjustment).toBeNull();
   });
 
   it("accepte une remise en euros fixes, elle aussi vérifiée", () => {

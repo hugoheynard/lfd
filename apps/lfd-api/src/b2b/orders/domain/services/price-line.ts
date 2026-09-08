@@ -106,6 +106,10 @@ export function priceLine(input: LinePricingInput, pricer: LoadedPricer): Resolv
         basePriceMillicents: priced.canonicalMillicents,
         steps: priced.steps,
         floored: priced.floored,
+        // Consigné avec le prix, et pas seulement calculé : sans lui, la ligne
+        // voyait un dernier étage négatif et un prix à zéro sans rien pour
+        // expliquer l'écart — elle refusait d'exister (défaut R1).
+        clampedToZero: priced.clampedToZero,
         // La décision de plancher est figée AVEC le prix. C'est ce qui rend le
         // plancher dynamique tenable : sans la mesure consignée, un prix qui
         // dépend de l'historique cesse d'être explicable dès que l'historique

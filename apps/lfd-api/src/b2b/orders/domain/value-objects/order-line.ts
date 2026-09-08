@@ -118,10 +118,30 @@ export class OrderLine {
 /**
  * La trace doit **s'accorder** avec le prix qu'elle explique.
  *
- * Le dernier étage sort sur le prix unitaire — sauf si le plancher l'a relevé,
- * auquel cas c'est lui qui a le dernier mot. Une trace qui aboutirait ailleurs
- * serait pire que pas de trace : elle donnerait au service client une
- * explication fausse, avec l'assurance d'un chiffre écrit.
+ * Le dernier étage sort sur le prix unitaire, sauf deux fois — et ces deux
+ * exceptions sont exactement les deux décisions que le moteur consigne au lieu
+ * de les avaler :
+ *
+ * 1. **le plancher a relevé** le prix, et c'est lui qui a le dernier mot ;
+ * 2. **la chaîne est passée sous zéro**, et le prix a été ramené à zéro.
+ *
+ * Une trace qui aboutirait ailleurs serait pire que pas de trace : elle
+ * donnerait au service client une explication fausse, avec l'assurance d'un
+ * chiffre écrit.
+ *
+ * ## 🔴 Le second cas manquait, et il tuait la commande
+ *
+ * `resolvePrice` ramène à zéro depuis toujours ; la trace figée ne portait pas
+ * `clampedToZero`, si bien qu'une remise « −5 € » sur une baguette à 2,00 €
+ * produisait un dernier étage à −300 000 et un prix facturé à 0 — écart que
+ * rien n'expliquait, donc ligne refusée. Un **500** sur le chemin qui encaisse,
+ * pour une remise qu'un commercial a le droit de saisir (défaut R1, corrigé le
+ * 2026-09-09).
+ *
+ * ⚠️ **Le ramené-à-zéro n'éteint pas le contrôle, il le DÉPLACE.** Il autorise
+ * un écart précis — la chaîne finit sous zéro, la ligne facture zéro — et rien
+ * d'autre. Le rendre permissif aurait fait de ce champ la façon d'écrire
+ * n'importe quel prix sans que la trace ait à s'accorder.
  */
 function assertConsistent(input: OrderLineInput): OrderLinePricingTrace | null {
   const trace = input.pricing ?? null;
@@ -130,6 +150,22 @@ function assertConsistent(input: OrderLineInput): OrderLinePricingTrace | null {
   }
   const last = trace.steps.at(-1);
   const expected = last?.resultMillicents ?? trace.basePriceMillicents;
+
+  if (trace.clampedToZero === true) {
+    // Le contrôle est plus STRICT ici, pas plus lâche : on exige que la chaîne
+    // soit réellement passée sous zéro et que la ligne facture bien zéro.
+    if (expected >= 0 || input.unitPriceMillicents !== 0) {
+      throw new InvalidOrderLineError(
+        input.sku,
+        `la trace dit un prix ramené à zéro, mais elle aboutit à ${String(expected)} et la ligne facture ${String(input.unitPriceMillicents)}`,
+      );
+    }
+    return trace;
+  }
+
+  // `clampedToZero: null` — trace antérieure au 2026-09-09 — retombe ici, donc
+  // sur le contrôle d'avant : une commande déjà passée ne devient pas illisible
+  // parce qu'on a appris à consigner quelque chose de neuf.
   if (!trace.floored && expected !== input.unitPriceMillicents) {
     throw new InvalidOrderLineError(
       input.sku,

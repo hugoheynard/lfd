@@ -64,6 +64,7 @@ export class PrismaOrderRepository extends OrderRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
         deliveryFeeCents: state.deliveryFeeCents,
         lateFeeCents: state.lateFeeCents,
         // L'ajustement ET son taux, figés ensemble : un montant sans son taux ne
@@ -99,6 +100,7 @@ export class PrismaOrderRepository extends OrderRepository {
             // distinction qu'on veut tenir ici — absence = commande antérieure.
             pricingSteps: line.pricing === null ? Prisma.DbNull : jsonSteps(line.pricing.steps),
             pricingFloored: line.pricing?.floored ?? null,
+            pricingClampedToZero: line.pricing?.clampedToZero ?? null,
             pricingFloor:
               line.pricing?.floorDecision == null
                 ? Prisma.DbNull

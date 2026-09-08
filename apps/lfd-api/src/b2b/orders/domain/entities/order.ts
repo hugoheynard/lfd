@@ -67,6 +67,8 @@ export interface DraftOrderInput {
   readonly discountAdjustment: CartAdjustment | null;
   /** Frais de livraison (zone) déjà résolu, HT, en centimes. */
   readonly deliveryFeeCents: number;
+  /** Le barème de zone qui l'a produit, ou `null` en retrait. */
+  readonly deliveryFeeAdjustment: CartAdjustment | null;
   /**
    * **La surtaxe de commande tardive**, quand une dérogation a laissé passer.
    *
@@ -98,6 +100,7 @@ export interface OrderToPlace {
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
+  readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   readonly vatCents: number;
@@ -130,6 +133,35 @@ function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): vo
   }
   if (cartAdjustmentCents(frozen.adjustment, subtotalCents) !== input.lateFeeCents) {
     throw new InvalidOrderPaymentError("La surtaxe ne correspond pas à son ajustement.");
+  }
+}
+
+/**
+ * Les frais de zone correspondent-ils au barème qui les prétend ?
+ *
+ * Troisième garde du même modèle, et la dernière à être posée : les deux
+ * nombres arrivent séparément de l'appelant, et rien d'autre ne les relie. Un
+ * montant qui ne découle pas de son barème rendrait la trace figée mensongère —
+ * c'est-à-dire pire qu'absente.
+ *
+ * ⚠️ `cartAdjustmentCents` et **non** `discountCentsOf` : des frais ne sont pas
+ * bornés par le panier. Une course peut coûter plus cher qu'un petit panier, et
+ * c'est déjà la règle qui les calcule.
+ *
+ * L'absence d'ajustement n'est refusée que si des frais existent : une commande
+ * en RETRAIT n'en a aucun, et lui en exiger un serait exiger la trace d'un
+ * geste qui n'a pas eu lieu.
+ */
+function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
+  const frozen = input.deliveryFeeAdjustment;
+  if (frozen === null) {
+    if (input.deliveryFeeCents !== 0) {
+      throw new InvalidOrderPaymentError("Frais de livraison sans barème qui les justifie.");
+    }
+    return;
+  }
+  if (cartAdjustmentCents(frozen, subtotalCents) !== input.deliveryFeeCents) {
+    throw new InvalidOrderPaymentError("Les frais de livraison ne correspondent pas à leur zone.");
   }
 }
 
@@ -186,6 +218,7 @@ export class Order {
     private readonly discountCents: number,
     private readonly discountAdjustment: CartAdjustment | null,
     private readonly deliveryFeeCents: number,
+    private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
     private readonly subtotalCentsValue: number,
@@ -207,6 +240,7 @@ export class Order {
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     ensureDiscountMatches(input, subtotalCents);
     ensureLateFeeMatches(input, subtotalCents);
+    ensureDeliveryFeeMatches(input, subtotalCents);
     // 🔴 **Une seule définition du TTC**, et elle est dans la ventilation.
     //
     // Le total se recomposait ici — `max(0, sous-total − remise) + frais +
@@ -241,6 +275,7 @@ export class Order {
       input.discountCents,
       input.discountAdjustment,
       input.deliveryFeeCents,
+      input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
       subtotalCents,
@@ -289,6 +324,7 @@ export class Order {
       discountCents: this.discountCents,
       discountAdjustment: this.discountAdjustment,
       deliveryFeeCents: this.deliveryFeeCents,
+      deliveryFeeAdjustment: this.deliveryFeeAdjustment,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
       vatCents: this.vatCentsValue,

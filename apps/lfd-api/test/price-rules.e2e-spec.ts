@@ -844,3 +844,102 @@ describe("l'engagement de volume", () => {
     expect(after.unitPriceMillicents).toBe(millicentsFromCents(CANONICAL));
   });
 });
+
+/**
+ * 🔴 **Une remise en euros plus grande que le prix ne tue plus la commande.**
+ *
+ * Régression du défaut R1 (ouvert le 2026-09-06, corrigé le 2026-09-09). La
+ * chaîne ramenait bien le prix à zéro et le consignait — mais la trace FIGÉE ne
+ * portait pas `clampedToZero`, si bien que la ligne voyait un dernier étage à
+ * −300 000 et un prix facturé à 0, écart que rien n'expliquait. Elle refusait
+ * d'exister : un **500** sur `POST /orders`, pour une remise qu'un commercial a
+ * le droit de saisir et que rien à la saisie ne refuse — le canonique varie d'un
+ * article à l'autre, « −5 € » est légitime sur une brioche et absurde sur une
+ * baguette.
+ *
+ * Éprouvé en E2E et pas seulement en unitaire, parce que le défaut traversait la
+ * colonne : sans la migration, la trace se relit sans le champ et le contrôle
+ * retombe sur celui d'avant.
+ */
+describe("une remise en euros plus grande que le prix", () => {
+  it("🔴 passe la commande à zéro, au lieu de la refuser", async () => {
+    // −5,00 € sur un article à 2,00 €. La chaîne finit à −3,00 €.
+    await ctx.prisma.priceRule.create({
+      data: {
+        id: "rule_cadeau",
+        stage: "promotion",
+        nature: "alter",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        minQuantity: null,
+        direction: "decrease",
+        mode: "amount",
+        value: millicentsFromCents(500),
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: null,
+        label: "Geste commercial de 5 €",
+        stacksOverMercuriale: false,
+        createdBy: "e2e",
+      },
+    });
+
+    const response = await placeOrder(1).expect(201);
+    const orderId = jsonBody<{ id: string }>(response).id;
+
+    // Zéro, et pas un prix négatif : la ligne facture ce que la chaîne a produit
+    // après le ramené-à-zéro.
+    expect(await unitPriceOf(orderId)).toBe(0);
+
+    // Et la trace le DIT. Sans ce champ, un lecteur verrait un dernier étage à
+    // −300 000 en face d'un prix nul, sans rien pour expliquer l'écart.
+    const line = await ctx.prisma.orderLine.findFirstOrThrow({
+      where: { orderId },
+      select: { pricingClampedToZero: true, pricingFloored: true, lineTotalCents: true },
+    });
+    expect(line.pricingClampedToZero).toBe(true);
+    expect(line.pricingFloored).toBe(false);
+    expect(line.lineTotalCents).toBe(0);
+  });
+
+  /**
+   * Le plancher garde le dernier mot : posé, il relève le prix AVANT que la
+   * question du zéro ne se pose. Le cas existe parce que les deux mécanismes se
+   * ressemblent — l'un plafonne par le bas, l'autre borne à zéro — et qu'un
+   * lecteur pourrait croire qu'ils se remplacent.
+   */
+  it("laisse le plancher relever le prix plutôt que de le ramener à zéro", async () => {
+    await ctx.prisma.priceRule.create({
+      data: {
+        id: "rule_cadeau_2",
+        stage: "promotion",
+        nature: "alter",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        minQuantity: null,
+        direction: "decrease",
+        mode: "amount",
+        value: millicentsFromCents(500),
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: null,
+        label: "Geste commercial de 5 €",
+        stacksOverMercuriale: false,
+        createdBy: "e2e",
+      },
+    });
+    // Un mur à 1,80 € sur tout le catalogue.
+    await seedFloor("global", null, 180);
+
+    const orderId = jsonBody<{ id: string }>(await placeOrder(1).expect(201)).id;
+
+    expect(await unitPriceOf(orderId)).toBe(180);
+    const line = await ctx.prisma.orderLine.findFirstOrThrow({
+      where: { orderId },
+      select: { pricingFloored: true },
+    });
+    expect(line.pricingFloored).toBe(true);
+  });
+});
