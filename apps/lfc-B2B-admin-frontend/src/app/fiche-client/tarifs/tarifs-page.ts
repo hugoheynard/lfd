@@ -14,6 +14,7 @@ import {
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
@@ -134,6 +135,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
@@ -162,6 +164,13 @@ export class ClientTarifsPage {
   protected readonly view = signal<CompanyPricingView | null>(null);
   protected readonly draft = signal<DraftPrices>(new Map());
   protected readonly busy = signal(false);
+
+  /**
+   * La mercuriale dépliée. **Une seule à la fois** : deux listes de prix
+   * ouvertes côte à côte se confondent, et on ouvre celle-ci pour vérifier ce
+   * qu'on a accordé — pas pour comparer.
+   */
+  protected readonly opened = signal<string | null>(null);
 
   /** Le libellé et la fenêtre de ce qu'on s'apprête à poser. */
   protected readonly label = signal('');
@@ -260,6 +269,20 @@ export class ClientTarifsPage {
       const companyId = this.id();
       void this.load(companyId);
     });
+  }
+
+  /** La clé d'une mercuriale : la même que celle qui la fait exister. */
+  protected keyOf(mercuriale: PosedMercurialeView): string {
+    return `${mercuriale.label} ${mercuriale.validFrom}`;
+  }
+
+  protected toggle(mercuriale: PosedMercurialeView): void {
+    const key = this.keyOf(mercuriale);
+    this.opened.update((current) => (current === key ? null : key));
+  }
+
+  protected isOpen(mercuriale: PosedMercurialeView): boolean {
+    return this.opened() === this.keyOf(mercuriale);
   }
 
   protected async load(companyId = this.id()): Promise<void> {

@@ -1319,6 +1319,24 @@ export const POSED_MERCURIALE_STATUS_LABELS: Readonly<Record<PosedMercurialeStat
  * défaut du regroupement — et c'est ce qui plaide pour donner une identité à la
  * pose plutôt que de la déduire.
  */
+/**
+ * **Une ligne d'une mercuriale posée** — ce qu'on a réellement accordé.
+ *
+ * Une par RÈGLE et non par article : une mercuriale à paliers en porte
+ * plusieurs sur le même SKU, et les fondre en une ligne obligerait à choisir
+ * laquelle montrer. `minQuantity` dit à partir de quelle quantité celle-ci
+ * s'applique ; il vaut `1` sur une mercuriale à prix fixe, et c'est alors
+ * l'écran qui décide de ne pas l'afficher.
+ */
+export interface PosedMercurialeLineView {
+  readonly sku: string;
+  /** Le nom du catalogue, ou le SKU nu s'il ne le connaît plus. */
+  readonly productName: string;
+  /** Le prix accordé, HT en millicentimes. */
+  readonly unitPriceMillicents: number;
+  readonly minQuantity: number;
+}
+
 export interface PosedMercurialeView {
   readonly label: string;
   readonly validFrom: string;
@@ -1329,6 +1347,16 @@ export interface PosedMercurialeView {
   readonly ruleCount: number;
   /** Sur combien d'articles distincts elle porte. */
   readonly skuCount: number;
+  /**
+   * **Ce qu'elle accorde**, article par article, du moins cher au plus cher.
+   *
+   * Porté par la lecture et non demandé à la demande : une mercuriale fait au
+   * plus quelques dizaines de lignes, et une seconde route pour les obtenir
+   * ferait payer un aller-retour à un écran ouvert pour lire. C'est aussi la
+   * seule façon de consulter une mercuriale **à venir** ou **terminée** — la
+   * grille de saisie, elle, ne montre que ce qui est scellé aujourd'hui.
+   */
+  readonly lines: readonly PosedMercurialeLineView[];
 }
 
 export interface CompanyPricingView {

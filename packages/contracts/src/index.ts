@@ -720,6 +720,7 @@ export type {
   CompanyPricingView,
   PosedMercurialeStatus,
   PosedMercurialeView,
+  PosedMercurialeLineView,
   CompanyMercurialeLinePayload,
   PoseCompanyMercurialePayload,
   CloseCompanyMercurialePayload,

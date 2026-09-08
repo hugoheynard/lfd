@@ -104,6 +104,7 @@ export class CompanyPricingQuery {
       };
     });
 
+    const names = new Map(articles.map((article) => [article.sku, article.name]));
     const materials = boardMaterials(rules, floors);
     const byCategory = groupByCategory(articles);
     const categories: CompanyPricingCategoryView[] = CATALOG_CATEGORY_ORDER.map((category) => ({
@@ -159,6 +160,10 @@ export class CompanyPricingQuery {
           .map((entry) => entry.rule)
           .filter((rule) => rule.stage === "mercuriale" && rule.audience.type === "company"),
         at,
+        // Le nom du catalogue, ou le SKU nu : une mercuriale garde ses lignes
+        // quand un article cesse d'être publié, et l'écran doit pouvoir dire
+        // qu'elle ne vise plus rien.
+        (sku) => names.get(sku) ?? sku,
       ),
       negotiatedSkuCount: sealed.length,
       averageGapBp: averageGapBp(sealed),

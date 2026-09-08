@@ -24,19 +24,33 @@
           subtitle="Ce compte paie le tarif catalogue pro. La grille ci-dessous est vide : remplissez les articles à négocier, puis posez."
         />
       } @else {
-        @for (mercuriale of mercuriales(); track mercuriale.label + mercuriale.validFrom) {
-          <article class="tf-posed-row">
-            <div class="tf-posed-identity">
-              <strong class="tf-posed-label">{{ mercuriale.label }}</strong>
+        @for (mercuriale of mercuriales(); track keyOf(mercuriale)) {
+          <article class="tf-posed-row" [class.is-open]="isOpen(mercuriale)">
+            <!--
+              **Consulter une mercuriale posée**, et pas seulement savoir
+              qu'elle existe. La grille de saisie ne montre que ce qui est
+              SCELLÉ aujourd'hui : une mercuriale à venir ou terminée n'y
+              apparaît nulle part, et ce qu'on a signé pour janvier devenait
+              invisible dès qu'on rechargeait la page.
+            -->
+            <button
+              class="tf-posed-head"
+              type="button"
+              [attr.aria-expanded]="isOpen(mercuriale)"
+              (click)="toggle(mercuriale)"
+            >
+              <fold-icon [name]="isOpen(mercuriale) ? 'chevron-down' : 'chevron-right'" size="sm" />
+              <span class="tf-posed-label">{{ mercuriale.label }}</span>
               <fold-badge
                 [content]="statusLabel[mercuriale.status]"
                 [variant]="statusTone[mercuriale.status]"
               />
-            </div>
-            <span class="tf-posed-window">
-              du {{ day(mercuriale.validFrom) }} au {{ day(mercuriale.validTo) }}
-            </span>
-            <span class="tf-posed-size">{{ mercuriale.skuCount }} article(s)</span>
+              <span class="tf-posed-window">
+                du {{ day(mercuriale.validFrom) }} au {{ day(mercuriale.validTo) }}
+              </span>
+              <span class="tf-posed-size">{{ mercuriale.skuCount }} article(s)</span>
+            </button>
+
             <!-- Clore ARCHIVE ses règles : c'est ce qui rend sa place dans la
                  contrainte d'exclusion, donc la condition pour reposer sur la
                  même période. Rien n'est effacé. -->
@@ -50,6 +64,36 @@
               >
                 Clore
               </button>
+            }
+
+            @if (isOpen(mercuriale)) {
+              <!-- Du moins cher au plus cher : ce qu'on cherche en ouvrant une
+                   mercuriale est ce qu'on a le plus lâché, pas la place d'un
+                   article dans l'alphabet. -->
+              <!-- 🔴 Ce sont les prix ACCORDÉS, pas forcément ceux facturés :
+                   la limite s'applique après tout et relève un prix négocié
+                   trop bas. La grille de saisie le dit ligne par ligne ; ici on
+                   ne peut pas, parce qu'une mercuriale à venir ou terminée ne se
+                   résout pas avec les limites d'aujourd'hui. La phrase remplace
+                   donc un chiffre qu'on ne saurait pas calculer honnêtement. -->
+              <p class="tf-posed-caption">
+                Prix accordés. Une <strong>limite</strong> peut en relever un à la facturation.
+              </p>
+              <ul class="tf-posed-lines">
+                @for (line of mercuriale.lines; track line.sku + line.minQuantity) {
+                  <li class="tf-posed-line">
+                    <span class="tf-posed-article">{{ line.productName }}</span>
+                    <span class="tf-posed-sku">{{ line.sku }}</span>
+                    @if (line.minQuantity > 1) {
+                      <!-- Un palier : la mercuriale vient d'un gabarit, celles
+                           posées ici sont à prix fixe. Le taire ferait lire le
+                           prix du gros volume comme le prix de tous. -->
+                      <span class="tf-posed-tier">à partir de {{ line.minQuantity }}</span>
+                    }
+                    <strong class="tf-posed-price">{{ euros(line.unitPriceMillicents) }}</strong>
+                  </li>
+                }
+              </ul>
             }
           </article>
         }

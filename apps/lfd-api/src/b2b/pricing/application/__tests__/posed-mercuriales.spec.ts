@@ -38,6 +38,9 @@ interface RuleFixture {
   readonly suspendedFrom?: Date | null;
 }
 
+/** Le catalogue, réduit à ce que le regroupement lui demande : un nom. */
+const nameOf = (sku: string): string => `Article ${sku}`;
+
 function rule(fixture: RuleFixture): PriceRule {
   seq += 1;
   return {
@@ -63,6 +66,7 @@ describe("le regroupement", () => {
     const posed = posedMercuriales(
       [rule({ sku: "CRO" }), rule({ sku: "PAC" }), rule({ sku: "BAG" })],
       NOW,
+      nameOf,
     );
 
     expect(posed).toHaveLength(1);
@@ -75,6 +79,7 @@ describe("le regroupement", () => {
     const posed = posedMercuriales(
       [rule({ sku: "CRO" }), rule({ sku: "CRO", validFrom: days(90), validTo: days(180) })],
       NOW,
+      nameOf,
     );
 
     expect(posed).toHaveLength(2);
@@ -91,6 +96,7 @@ describe("le regroupement", () => {
         rule({ sku: "CRO", minQuantity: 5000 }),
       ],
       NOW,
+      nameOf,
     );
 
     expect(posed[0]).toMatchObject({ ruleCount: 3, skuCount: 1 });
@@ -103,6 +109,7 @@ describe("le regroupement", () => {
         rule({ sku: "CRO", label: "Courante" }),
       ],
       NOW,
+      nameOf,
     );
 
     expect(posed.map((entry) => entry.label)).toEqual(["Courante", "Ancienne"]);
@@ -111,7 +118,7 @@ describe("le regroupement", () => {
 
 describe("l'état à l'instant lu", () => {
   it("dit « en vigueur » quand la fenêtre couvre l'instant", () => {
-    expect(posedMercuriales([rule({ sku: "CRO" })], NOW)[0]?.status).toBe("active");
+    expect(posedMercuriales([rule({ sku: "CRO" })], NOW, nameOf)[0]?.status).toBe("active");
   });
 
   it("dit « à venir » pour une fenêtre qui n'a pas commencé", () => {
@@ -120,6 +127,7 @@ describe("l'état à l'instant lu", () => {
     const posed = posedMercuriales(
       [rule({ sku: "CRO", validFrom: days(30), validTo: days(400) })],
       NOW,
+      nameOf,
     );
 
     expect(posed[0]?.status).toBe("scheduled");
@@ -132,6 +140,7 @@ describe("l'état à l'instant lu", () => {
     const posed = posedMercuriales(
       [rule({ sku: "CRO", validFrom: days(-100), validTo: NOW })],
       NOW,
+      nameOf,
     );
 
     expect(posed[0]?.status).toBe("expired");
@@ -144,6 +153,7 @@ describe("l'état à l'instant lu", () => {
         rule({ sku: "PAC", suspendedFrom: days(-1) }),
       ],
       NOW,
+      nameOf,
     );
 
     expect(posed[0]?.status).toBe("suspended");
@@ -156,6 +166,7 @@ describe("l'état à l'instant lu", () => {
     const posed = posedMercuriales(
       [rule({ sku: "CRO", suspendedFrom: days(-1) }), rule({ sku: "PAC" })],
       NOW,
+      nameOf,
     );
 
     expect(posed[0]?.status).toBe("active");
@@ -165,7 +176,7 @@ describe("l'état à l'instant lu", () => {
     // `suspendedFrom` confond la pause et l'archivage — le calcul n'a aucune
     // raison de les distinguer. Mais il compare à l'instant LU : une règle
     // rangée demain agissait aujourd'hui.
-    const posed = posedMercuriales([rule({ sku: "CRO", suspendedFrom: days(5) })], NOW);
+    const posed = posedMercuriales([rule({ sku: "CRO", suspendedFrom: days(5) })], NOW, nameOf);
 
     expect(posed[0]?.status).toBe("active");
   });
@@ -176,7 +187,7 @@ describe("ce que le regroupement confond, et qu'il faut lire en le sachant", () 
     // Documenté plutôt que corrigé : sans identité de pose en base, rien ici ne
     // permet de les distinguer. C'est l'argument pour donner une identité à la
     // pose, et le test existe pour que ce défaut soit vu et non découvert.
-    const posed = posedMercuriales([rule({ sku: "CRO" }), rule({ sku: "PAC" })], NOW);
+    const posed = posedMercuriales([rule({ sku: "CRO" }), rule({ sku: "PAC" })], NOW, nameOf);
 
     expect(posed).toHaveLength(1);
     expect(posed[0]?.ruleCount).toBe(2);
@@ -192,6 +203,7 @@ describe("ce que le regroupement confond, et qu'il faut lire en le sachant", () 
         rule({ sku: "CRO", label: "A", validFrom: days(200), validTo: days(300) }),
       ],
       NOW,
+      nameOf,
     );
 
     expect(posed).toHaveLength(2);
