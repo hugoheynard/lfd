@@ -165,60 +165,83 @@ côte à côte au lieu de réécrire l'explication d'une facture déjà payée.
 qu'un rôle, être lu. Corriger une faute de frappe ne devrait pas coûter une
 décision close.
 
-## 7. Ce qu'elle ne sait PAS faire aujourd'hui
+## 7. Ce qu'elle sait faire, et ce qu'elle ne sait pas
 
-Ces limites sont réelles et mesurées. Elles ne sont pas des bugs à corriger au
-passage — chacune a sa raison ou son chantier.
+> 🔴 **Cette section listait cinq limites le 2026-09-08. Quatre sont levées**,
+> et elles sont réécrites ici au **présent** : garder comme manquant ce qui
+> existe fait construire un contournement pour un problème résolu. Chacune a été
+> revérifiée contre le code le 2026-09-09.
 
-### Elle n'existe pas comme objet
+### Elle EST un objet
 
-🔴 **La limite qui explique presque toutes les autres.** Poser une mercuriale
-écrit N règles **indépendantes** dans `price_rules` — une par article et par
-palier — et aucune ne sait qu'elle appartient à une mercuriale.
+C'était la limite qui expliquait presque toutes les autres. Poser écrivait N
+règles indépendantes dans `price_rules` — une par article et par palier — dont
+aucune ne savait qu'elle appartenait à une mercuriale ; « Mercuriale 2027 » était
+**reconstituée** à la lecture, en regroupant les règles qui partageaient
+`(libellé, fenêtre)`.
 
-Ce que l'écran appelle « Mercuriale 2027 » est **reconstitué** à la lecture, en
-regroupant les règles qui partagent `(libellé, fenêtre)`. C'est la seule chose
-qu'elles ont en commun.
+C'est désormais un **agrégat** (`CompanyMercuriale`) et **une ligne**
+(`company_mercuriales`), qui porte son identifiant, ses paliers en `jsonb`, sa
+fenêtre et son cycle de vie. Ce que la déduction ne savait pas faire, elle le
+fait :
 
-Ce que la déduction ne sait pas faire, et qu'il faut lire en le sachant :
+- **clore**, c'est fermer une ligne — plus archiver N règles ;
+- **renommer**, c'est écrire un champ — plus en réécrire N ;
+- deux mercuriales **homonymes** sur la même fenêtre ne se confondent plus,
+  puisque ce n'est plus le nom qui les distingue ;
+- une règle saisie à la main ne peut plus s'y ranger par hasard.
 
-- deux mercuriales de **même libellé sur la même fenêtre** chez le même client se
-  confondent en une seule ligne ;
-- une règle saisie à la main qui reprendrait par hasard le libellé et la fenêtre
-  s'y rangerait aussi ;
-- clore, c'est archiver N règles ; renommer, c'est en réécrire N — d'où un refus
-  d'homonymie au renommage, qui n'existe que pour compenser cette absence.
+⚠️ Le refus d'homonymie au renommage (`MercurialeNameTakenError`) n'existait
+**que** pour compenser cette absence. Il n'est plus levé nulle part, et son
+propre JSDoc l'annonçait : « le jour où la pose portera son propre identifiant,
+ce refus n'aura plus de raison d'être ». Le retirer est suivi au registre (R10).
 
-C'est le trou **T2**, et le
-[plan](./plan-la-mercuriale-devient-un-objet.md) le referme.
+### Une seule mercuriale court chez un client
 
-### Deux mercuriales disjointes peuvent coexister
+Deux mercuriales portant sur des articles différents pouvaient courir en même
+temps, le chevauchement n'étant refusé que **par article et par seuil**.
 
-Puisque le chevauchement est refusé **par article et par seuil**, deux
-mercuriales portant sur des articles différents peuvent courir en même temps chez
-le même client. C'est possible aujourd'hui ; le plan y met fin (une par client).
+La contrainte porte maintenant sur le **client** : une exclusion GiST sur
+`(company_id, [valid_from, valid_to))`, partielle `WHERE archived_at IS NULL`.
+Deux mercuriales qui se recouvrent chez un même client sont **inexprimables**,
+pas surveillées. La succession, elle, reste permise — celle qui court, et celle
+qu'on a préparée pour janvier.
 
-### Les prix ne suivent pas le fuseau de Paris
+### Les fenêtres s'ouvrent à minuit, à Paris
 
-Les fenêtres sont construites à **minuit UTC**. À Paris, « à partir du 1er
-janvier » ouvre donc à 01 h 00 ou 02 h 00 selon la saison. Le dépôt a un contrat
-pour ça (`contracts/src/paris-time.ts`) qu'aucun écran de tarification n'utilise.
-C'est le trou **T7**.
+Elles se construisaient à **minuit UTC** : « à partir du 1ᵉʳ janvier » ouvrait à
+01 h 00 ou 02 h 00 selon la saison. Elles passent par `businessDayStart`, et
+`lint:business-day` tient la ligne sur les quatre dossiers de tarification — une
+conversion de jour en minuit UTC y échoue désormais à la porte.
 
-### L'écran de tarification et la caisse peuvent se contredire
+### L'écran de tarification et la caisse annoncent le même prix
 
-🔴 Sur un article dont un **barème de volume s'ouvre dès la première pièce**,
-l'écran de tarification annonce un prix et la caisse en facture un autre — l'écran
-n'injecte pas les barèmes dans sa résolution. La mercuriale n'y est pour rien,
-mais l'écart se lit **sur** l'onglet Tarifs d'un client. Défaut ouvert :
-[`../../todos/todo-ecran-tarification-ignore-les-baremes.md`](../../todos/todo-ecran-tarification-ignore-les-baremes.md).
+Sur un article dont un barème s'ouvrait dès la première pièce, l'écran annonçait
+1,83924 € quand la caisse facturait 1,65532 € : il n'injectait pas les barèmes
+dans sa résolution.
 
-### Une pose par gabarit n'est pas atomique
+Les deux passent maintenant par **le même tarificateur**, seul appelant de
+`resolvePrice` du dépôt — `lint:price-pipeline` le tient à **une** entrée. Ce
+n'est plus une propriété à espérer : un e2e exige que les deux chemins tombent
+d'accord, et il ne teste aucune valeur en particulier.
 
-Poser un gabarit chez un client écrit ses règles **une par une, hors
-transaction** : un refus à mi-parcours laisse le client à moitié tarifé. La pose
-depuis la fiche d'un compte, elle, est transactionnelle. C'est le trou **T3**, à
-moitié fermé.
+### Une pose par gabarit est atomique
+
+Elle écrivait ses règles une par une, hors transaction : un refus à mi-parcours
+laissait le client à moitié tarifé.
+
+Elle écrit **une ligne**, donc tout ou rien — et **sans transaction ajoutée**,
+ce qui est la bonne façon de fermer ce trou plutôt qu'un pansement. Les deux
+chemins, la fiche et le gabarit, convergent en outre sur le même agrégat : tant
+qu'ils divergeaient, une grille refusée d'un côté passait de l'autre.
+
+### Ce qu'elle ne sait toujours pas faire
+
+Une seule chose, et elle n'est pas dans la mercuriale : **le volume prévu
+appartient au gabarit, pas au client**. Un gabarit posé chez trois clients porte
+une seule hypothèse de saison, si bien que toute la simulation décrit le gabarit
+et jamais le client qu'on a en face — alors que la base connaît ses volumes
+réels. Suivi au registre (**R11**).
 
 ## 8. Les mots voisins, pour ne pas les confondre
 

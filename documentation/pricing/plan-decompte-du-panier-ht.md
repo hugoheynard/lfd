@@ -1,7 +1,14 @@
 # Le décompte du panier — en HT, comme la facture
 
-> **État : 🟢 livré, sauf B5.** Écrit puis bâti le 2026-09-05. B1 à B4 sont dans
-> le code ; **B5 (la surtaxe de retard) attend la réponse du §7.2**.
+> **État : ✅ livré en entier.** Écrit puis bâti le 2026-09-05 ; **B5 fermé
+> depuis**, et cet en-tête l'annonçait encore en attente le 2026-09-09.
+>
+> La surtaxe de commande tardive est dans le code et dans la base :
+> `orders.late_fee_cents` porte son montant, `late_fee_adjustment` **ce qui l'a
+> produit** — l'ajustement et le taux de TVA retenus ce jour-là, figés comme le
+> reste. Le §7.2 a donc sa réponse : elle s'applique, elle s'ajoute **après** la
+> remise (on ne fait pas de geste commercial sur une pénalité de retard), et
+> `ventilateVat` l'exécute au lieu de la commenter.
 >
 > Les §2 à §6 décrivent le raisonnement TEL QU'IL A ÉTÉ FAIT, avant la bascule —
 > ils sont conservés parce que c'est là qu'est la démonstration, pas dans le
@@ -317,13 +324,13 @@ le déplacement, pas après (§7).
 
 ## 8. Les lots
 
-| Lot    | Ce qu'il fait                                                                                              | État              |
-| ------ | ---------------------------------------------------------------------------------------------------------- | ----------------- |
-| **B1** | La ventilation par taux descend dans `@lfd/money`, testée ; les **trois** copies délèguent.                | ✅ 2026-09-05     |
-| **B2** | Le coursier porte sa TVA au décompte du panier. **Corrige l'écart de montant.**                            | ✅ 2026-09-05     |
-| **B3** | Le décompte passe en HT : sous-total HT, remise/coursier, une ligne par taux, total TTC. La légende tombe. | ✅ 2026-09-05     |
-| **B4** | Le rayon, la fiche et le bouton portent la mention `HT`. Copie fr/en/it.                                   | ✅ 2026-09-05     |
-| B5     | La surtaxe de commande tardive, **si** le §7.2 dit qu'elle s'applique.                                     | ⏸️ attend le §7.2 |
+| Lot    | Ce qu'il fait                                                                                              | État          |
+| ------ | ---------------------------------------------------------------------------------------------------------- | ------------- |
+| **B1** | La ventilation par taux descend dans `@lfd/money`, testée ; les **trois** copies délèguent.                | ✅ 2026-09-05 |
+| **B2** | Le coursier porte sa TVA au décompte du panier. **Corrige l'écart de montant.**                            | ✅ 2026-09-05 |
+| **B3** | Le décompte passe en HT : sous-total HT, remise/coursier, une ligne par taux, total TTC. La légende tombe. | ✅ 2026-09-05 |
+| **B4** | Le rayon, la fiche et le bouton portent la mention `HT`. Copie fr/en/it.                                   | ✅ 2026-09-05 |
+| B5     | La surtaxe de commande tardive. Le §7.2 a tranché : elle s'applique, après la remise.                      | ✅ livrée     |
 
 B1 était incolore par construction — c'est ce qui a permis de la livrer d'abord
 et de vérifier qu'elle ne bougeait rien (les 10 tests de `computeVatCents`

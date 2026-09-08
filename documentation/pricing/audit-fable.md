@@ -14,12 +14,16 @@ ne faut surtout pas toucher._
 > [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md) ; ce document garde son
 > raisonnement, plus sa liste.
 >
-> ## Le verdict, en une ligne
+> ## Le verdict, et ce qu'il est devenu
 >
-> **7/10 aujourd'hui. 9/10 en huit commits, dont trois demandent une
-> conception.** Le moteur est au niveau 9 ; ce qui retient la note est
-> **autour** de lui — à la frontière moteur → commande, dans ce qu'aucun test
-> ne tient, et dans ce qu'une facture ne pourra pas relire.
+> **7/10 le 2026-09-06. Sept des huit lots sont faits au 2026-09-09.** Le
+> diagnostic tenait : le moteur était au niveau 9, et ce qui retenait la note
+> était **autour** de lui — à la frontière moteur → commande, dans ce qu'aucun
+> test ne tenait, et dans ce qu'une facture ne pouvait pas relire. C'est
+> exactement ce qui a été refermé.
+>
+> Le seul lot qui reste est **P2**, `expectedTotalCents` — et il attend une
+> décision, pas un commit (cf. R13 au registre).
 
 > ## Ce que ce document affirme, et comment
 >
@@ -35,134 +39,76 @@ ne faut surtout pas toucher._
 
 ---
 
-## 1. Ce qui est rouge maintenant
+## 1. Les portes sont vertes
 
-`pnpm lint:gates` **échoue** — la 25ᵉ porte n'est pas la dernière ajoutée,
-c'est `clock-port`, et elle rougit sur trois lignes du semis de développement :
+Ce document s'ouvrait sur `pnpm lint:gates` **en échec** : `clock-port` rougissait
+sur trois lectures du mur dans le semis de développement, et six commits étaient
+partis en annonçant « 24 portes vertes » alors qu'il y en avait 25 dont une
+rouge.
 
-```
-✗ clock-port : 3 lecture(s) du mur hors adaptateur.
-  apps/lfd-api/src/dev/seeding/client.seed.ts:294
-  apps/lfd-api/src/dev/seeding/client.seed.ts:302
-  apps/lfd-api/src/dev/seeding/orders.seed.ts:81
-```
+Elle est verte : « les 1263 fichiers de production lisent le temps par le port ».
+Et il y a désormais **29 portes**, dont deux nées de ce dossier —
+`lint:business-day` et `lint:price-pipeline` — plus `lint:prisma-model-ownership`.
 
-La porte date du **2026-09-03** (`fac344e9`) ; les commits du semis datent du
-**2026-09-06** à partir de 16 h 42. Six commits sont donc partis rouges, chacun
-annonçant « 24 portes vertes » — il y en a 25, et une échouait. La racine
-`pnpm test` rend 23/23, mais en **FULL TURBO** : elle rejoue un cache, elle ne
-prouve rien de neuf.
-
-Ce n'est pas un défaut de prix. C'est écrit en premier parce qu'un audit qui
+Le paragraphe reste en tête pour sa raison, qui n'a pas vieilli : _un audit qui
 note un système sans dire que sa porte est rouge note autre chose que le
-système.
-
-**Le remède** : le `now` du semis descend d'en haut, au lieu d'être lu au fond.
-
-> 🔴 **Correction du 2026-09-07.** Ce paragraphe disait « `DevSeedService` l'a
-> déjà ». **C'est faux** : le service n'injecte pas de `Clock` (il ne prend que
-> `PrismaService`, `CommandBus` et `AppConfig`), et le contexte qu'il passe aux
-> semis ne porte aucune date. Le lot n'est donc pas « un commit » : il faut
-> injecter le `Clock` dans `DevSeedService`, ajouter le `now` au contexte de
-> semis, et faire de même dans les scripts CLI qui appellent les mêmes fonctions.
-> Petit, mais à plusieurs points d'appel.
+système._
 
 ---
 
-## 2. Les défauts — par ce que se tromper coûte
+## 2. Les trois défauts, et ce qui les a fermés
 
-### B1 🔴 Le plancher zéro **tue la commande** — reproduit, pas supposé
+### B1 — le plancher zéro tuait la commande · **fermé le 2026-09-09**
 
-[`resolve-price.ts:108`](../../apps/lfd-api/src/b2b/pricing/domain/resolve-price.ts)
-ramène à zéro un prix passé sous zéro, et son commentaire **affirme** que c'est
-ce qui évite le refus sur la ligne de commande — « le refus tombait plus loin,
-sur la ligne de commande, sans que rien n'ait alerté ». Le refus y tombe encore.
+Il était **reproduit, pas supposé** : une règle « −5 € » sur un article à 2,00 €
+donnait `final: 0`, `clamped: true`, dernier étage à `−300 000`, et
+`OrderLine.create` refusait la ligne. Un **500** sur le chemin qui encaisse.
 
-Exécuté le 2026-09-06, une règle « −5 € sur tout » sur un article à 2,00 € :
+`clampedToZero` traverse maintenant toute la chaîne — le contrat, la colonne
+`order_lines.pricing_clamped_to_zero`, l'écriture, la lecture — et
+`assertConsistent` l'a appris. 🔴 En devenant **plus strict** : un ramené-à-zéro
+n'éteint pas le contrôle, il exige que la chaîne finisse sous zéro ET que la
+ligne facture zéro.
 
-```
-resolvePrice(200 000, [« −5 € »]) → { final: 0, clamped: true, lastStep: −300 000 }
-OrderLine.create(…)                → THROWS
-  « la trace aboutit à -300000 centimes, la ligne en facture 0 »
-```
+### B2 — rien ne prouvait que le devis prédit la facture · **fermé le 2026-09-09**
 
-Le mécanisme, en trois lignes :
+L'invariant était tenu **par construction** — même `ventilateVat`, même
+`CartAdjustments`, même `OrderLinePricing` — et une construction partagée le rend
+_probable_, pas _tenu_.
 
-| Étape       | Ce qui se passe                                                                                       | Où                                                                                          |
-| ----------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| résolution  | `clampedToZero: true`, `finalMillicents: 0`, mais le dernier étage garde `resultMillicents: −300 000` | `resolve-price.ts:124-135`                                                                  |
-| trace figée | `clampedToZero` **n'est pas recopié** dans `OrderLinePricingTrace`                                    | [`price-line.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/price-line.ts)          |
-| ligne       | `assertConsistent` compare le dernier étage au prix : `−300 000 ≠ 0`, et `floored` est faux           | [`order-line.ts:133`](../../apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts) |
+`quote-order-parity.e2e-spec.ts` le tient : même panier, même acheminement, et
+**chaque montant** comparé aux colonnes de la commande, ventilation par taux
+comprise. Le panier est choisi pour casser — deux taux, deux quantités — et un
+cas ouvre un barème, sans quoi les autres passeraient même si un chemin ignorait
+toute la tarification.
 
-⚠️ **Le numéro de ligne a été retiré le 2026-09-09**, la recette ayant quitté ce
-fichier pour `pricing/domain/loaded-pricer.ts` — `priceLine` ne fait plus que du
-façonnage. **Le constat, lui, tient** : `PricedArticle.clampedToZero` existe
-désormais et traverse la façade, mais `OrderLinePricingTrace` — la trace figée
-sur la commande — ne le porte toujours pas.
+### B3 — un gabarit se posait à moitié · **fermé le 2026-09-08**
 
-**Le scénario** : un commercial pose « −5 € sur la famille pains » ; une baguette
-à 1,20 €. Le devis de la boutique affiche **0,00 €** — `POST /shop/quote` ne
-crée pas de `OrderLine`, il fait `lineTotalCents(0, q)` — puis **`POST /orders`
-échoue**. L'écran de tarification, lui, voit le clamp
-([`board-item.ts:121`](../../apps/lfd-api/src/b2b/pricing/application/board-item.ts))
-et le montre. L'écran et la caisse ne disent pas la même chose : c'est le mode
-de panne que tout le dossier chasse, réintroduit par une garde de cohérence qui
-ignore l'une des deux décisions qu'elle devait connaître.
+Il bouclait `rules.save`, chaque règle dans sa propre transaction : un
+recouvrement à la trente et unième laissait trente mercuriales posées.
 
-**Le remède** : porter `clampedToZero` dans la trace et l'enseigner à
-`assertConsistent` — un prix à zéro dont le dernier étage est négatif est
-cohérent _si_ le clamp est consigné. Un test nommé d'après le symptôme, sur
-`Order.draft` et non sur `resolvePrice` : c'est la frontière qui casse, pas le
-moteur.
-
-Au passage, les deux messages d'erreur de `order-line.ts` (`:83`, `:136`) disent
-« centimes » pour des millicentimes.
-
-### B2 🟠 Aucun test ne prouve que **le devis prédit la facture**
-
-`shop-quote.e2e-spec.ts` (12 cas) vérifie des nombres ; `orders.e2e-spec.ts` en
-vérifie d'autres. **Aucun ne fait les deux** : même panier, même acheminement,
-`POST /shop/quote`.`totalCents` **===** `orders.total_cents` après `POST /orders`.
-
-C'est *l'*invariant de la semaine — « un devis qui ne prédit pas la facture ne
-sert à rien » —, il est tenu **par construction** (même `ventilateVat`, même
-`CartAdjustments`, même `OrderLinePricing`), et rien ne rougirait si quelqu'un
-ajoutait un terme d'un seul côté. Une construction partagée est ce qui rend
-l'invariant _probable_ ; un test est ce qui le rend _tenu_.
-
-**Le remède** : un e2e, et un seul, qui pose un panier, demande le devis, passe
-la commande, et compare les deux totaux au centime — en retrait avec remise, en
-coursier avec frais.
-
-### B3 🟠 Un gabarit se pose **à moitié**
-
-[`price-template.handlers.ts:117`](../../apps/lfd-api/src/b2b/pricing/application/commands/price-template.handlers.ts)
-boucle `rules.save`, et chaque règle part dans **sa propre** transaction
-(`PricingActWriter.around`). Un recouvrement à la règle 31 sur 60 laisse trente
-mercuriales posées chez le client. Le commentaire le sait — « arrêtera
-l'application » — et l'assume comme un refus. Ce n'en est pas un : un refus ne
-laisse rien, et un client avec la moitié de sa grille négociée est pire qu'un
-client sans grille, parce que personne ne sait laquelle.
-
-**Le remède** : une unité de travail autour de la boucle. Le cache des matériaux
-en profite — il est vidé soixante fois aujourd'hui, une fois demain.
+Fermé **sans transaction ajoutée** : une mercuriale est désormais **une ligne**,
+donc atomique par construction. C'est le geste à retenir — la transaction
+n'aurait été qu'un pansement sur une modélisation qui rendait la moitié
+possible.
 
 ---
 
-## 3. Ce qui manque pour la production — des trous, pas des bugs
+## 3. Les cinq trous de production — quatre comblés
 
-|        | Le trou                                                                                                                                                                                       | Ce que ça coûte                                                                                                                                                                                                                 | Où                                                                                                                                                                                                 |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P1** | **Rien ne borne la quantité.** `int().positive()` sans `max` sur `/shop/quote` (public), `/orders`, `/shop/cart`                                                                              | 10⁹ pièces à 2 € → `line_total_cents Int` déborde à l'écriture : un **500** là où un 400 était dû. Le calcul, lui, tient — `lineTotalCents` est en `bigint`                                                                     | [`shop-quote.ts:40`](../../packages/contracts/src/shop-quote.ts), [`order.ts:68`](../../packages/contracts/src/order.ts)                                                                           |
-| **P2** | **Ni prix bloqué, ni idempotence.** `POST /orders` ne porte pas de `expectedTotalCents` ; pas de clé d'idempotence                                                                            | En règlement **au compte**, une promotion qui expire entre le devis et le clic change le total **en silence** — la carte, elle, montre `amountCents` avant Stripe. Un double clic fait deux commandes et deux intentions        | [`place-order.handler.ts`](../../apps/lfd-api/src/b2b/orders/application/commands/place-order.handler.ts), [`architecture-prix-vivant-prix-bloque.md`](architecture-prix-vivant-prix-bloque.md) 🔵 |
-| **P3** | **La facture ne pourra pas se relire.** `delivery_fee_cents` est figé **sans** l'ajustement qui l'a produit ; la TVA n'est persistée qu'en total ; le 20 % du transport n'est figé nulle part | La remise et la surtaxe figent le leur — la zone non, et `zone.fee` est mutable. « Une ligne par taux » devra être **recalculée** sur les lignes persistées, et restera juste tant que `ventilateVat` ne change pas             | [`schema.prisma:820`](../../apps/lfd-api/prisma/schema.prisma), [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md)                                                         |
-| **P4** | **Le cache suppose une seule instance**                                                                                                                                                       | Documenté, et ops dit « max 1 ». Le jour du passage à deux, c'est un **prix faux**, pas une lenteur. Une estampille — le dernier `pricing_events.id`, lu par requête — garderait le cache sûr pour une lecture au lieu de trois | [`pricing-materials.cache.ts:46`](../../apps/lfd-api/src/b2b/pricing/infrastructure/pricing-materials.cache.ts)                                                                                    |
-| **P5** | **Les trois requêtes de production** ne sont toujours pas passées                                                                                                                             | `P11` est livré sous une hypothèse écrite, pas vérifiée                                                                                                                                                                         | `audit-calcul-du-panier-et-du-prix.md` §A.1                                                                                                                                                        |
+Revérifiés contre le code le 2026-09-09.
 
-`P3` mérite une phrase de plus : `architecture-facturation.md` est le plus gros
-trou du système, et ces trois champs en sont la préparation la moins chère. Les
-poser **maintenant**, tant que les commandes sont peu nombreuses, coûte une
-migration additive ; les poser après coûte une reprise.
+|        | Le trou                                                                                                                                                                               | Où il en est                                                                                                                                                                                                                                                                                                                    |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P1** | Rien ne bornait la quantité — `int().positive()` sans `max` sur une route **publique**. 10⁹ pièces à 2 € faisaient déborder `line_total_cents Int` : un **500** là où un 400 était dû | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à cent sur `/shop/quote`                                                                                                                                                                                                                                         |
+| **P2** | Ni prix bloqué, ni idempotence                                                                                                                                                        | 🟡 **À moitié.** L'idempotence est livrée (`idempotencyKeySchema`) ; `expectedTotalCents` n'existe nulle part. En règlement **au compte**, une promotion qui expire entre le devis et le clic change le total en silence — la carte, elle, montre `amountCents` avant Stripe. Suivi en **R4**, et il attend la décision **R13** |
+| **P3** | La facture ne pourrait pas se relire : `delivery_fee_cents` figé sans son ajustement, la TVA persistée en total seul                                                                  | ✅ `vat_shares` (2026-09-07), `discount_adjustment`, `late_fee_adjustment`, et `delivery_fee_adjustment` le 2026-09-09. Les quatre termes du panier figent ce qui les a produits                                                                                                                                                |
+| **P4** | Le cache supposait **une seule instance**                                                                                                                                             | ✅ Il lit une **estampille** — le dernier `pricing_events.id` — avant de servir. Correct à N instances, au prix d'une lecture par rafale                                                                                                                                                                                        |
+| **P5** | Les trois requêtes de production jamais passées                                                                                                                                       | 🟡 Toujours ouvertes, suivies en **R12**. Le `.env` local pointe `localhost`                                                                                                                                                                                                                                                    |
+
+`P3` méritait une phrase de plus, et elle s'est vérifiée : ces colonnes coûtaient
+une migration **additive** tant que les commandes sont peu nombreuses, et une
+reprise après. Elles sont posées.
 
 ---
 
@@ -201,24 +147,27 @@ trace séparée du calcul. Rien ici ne le contredit.
 
 ---
 
-## 5. Le chemin vers 9/10, dans l'ordre
+## 5. Le chemin vers 9/10 — parcouru
 
-| #   | Lot                                                                                                                   | Coût                   | Ce qu'il rend                                        |
-| --- | --------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
-| 1   | Portes vertes (§1)                                                                                                    | un commit              | le droit de dire « vert »                            |
-| 2   | **B1** — `clampedToZero` dans la trace, `assertConsistent` l'apprend, un test sur `Order.draft`                       | un commit              | une remise en euros ne tue plus une commande         |
-| 3   | **B2** — l'e2e de parité devis ↔ commande                                                                             | un commit              | l'invariant de la semaine, **tenu**                  |
-| 4   | **P1** — `max` sur les quantités, dans `contracts`                                                                    | un commit              | un 400 au lieu d'un 500, sur une route publique      |
-| 5   | **B3** — le gabarit atomique                                                                                          | un commit              | tout ou rien, et un cache vidé une fois              |
-|     | **→ 8/10.** Cinq commits, aucune conception, aucune migration.                                                        |                        |                                                      |
-| 6   | **P2** — `expectedTotalCents` + `Idempotency-Key` sur `POST /orders`                                                  | conception             | le client paie ce qu'il a vu ; un clic, une commande |
-| 7   | **P3** — figer l'ajustement de zone, la TVA par taux, le taux du transport                                            | migration **additive** | une facture qui se relit sans recalcul               |
-| 8   | **P4** — l'estampille du cache                                                                                        | conception             | un cache qui survit à la deuxième instance           |
-|     | **→ 9/10.** Trois conceptions qui touchent à l'argent : **`vitruve` avant**, et `lecteur-de-migrations` sur le lot 7. |                        |                                                      |
+| #   | Lot                                                  | État                                                                |
+| --- | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| 1   | Portes vertes                                        | ✅                                                                  |
+| 2   | **B1** — `clampedToZero` dans la trace               | ✅ 2026-09-09                                                       |
+| 3   | **B2** — l'e2e de parité devis ↔ commande            | ✅ 2026-09-09                                                       |
+| 4   | **P1** — `max` sur les quantités                     | ✅                                                                  |
+| 5   | **B3** — le gabarit atomique                         | ✅ 2026-09-08                                                       |
+| 6   | **P2** — `expectedTotalCents` + `Idempotency-Key`    | 🟡 la clé est livrée ; le prix bloqué attend une **décision** (R13) |
+| 7   | **P3** — figer l'ajustement de zone, la TVA par taux | ✅ 2026-09-09                                                       |
+| 8   | **P4** — l'estampille du cache                       | ✅ 2026-09-09                                                       |
 
-Ce qui ferait 10, et qui n'est pas dans ce tableau : le type nominal d'unité
-(§4, dernier point), et la facturation elle-même. Le premier est un chantier de
-compilateur ; le second est un contexte.
+**Sept sur huit.** Le seul qui reste n'est pas un commit : « qui porte le risque
+d'un prix qui bouge » est une question qu'on n'a pas tranchée, et coder une
+réponse avant de l'avoir posée serait la trancher par accident.
+
+Ce que ce document nommait comme faisant **10** et qui n'a pas bougé : le type
+nominal d'unité (`Millicents` / `Cents`), le seul cran qui fermerait ce que
+`lint:money-units` ne peut pas voir — un `Exact` qui change d'unité en cours de
+route. Et la facturation elle-même, qui est un contexte, pas un lot.
 
 ---
 

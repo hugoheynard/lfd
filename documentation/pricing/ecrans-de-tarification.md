@@ -16,6 +16,21 @@ Décrit du code qui tourne.
 > de tarification ne calcule rien**. Il lit ce que le moteur rend. Chaque fois
 > qu'un de ces écrans a recalculé de son côté, les deux réponses ont divergé —
 > le document en porte trois exemples.
+>
+> 🔴 **Il y en a eu cinq** (compté le 2026-09-09). La quatrième est l'écran de
+> tarification, qui annonçait 1,83924 € quand la caisse facturait 1,65532 € : il
+> recevait les barèmes et ne les passait pas. Elle est **fermée**, et par la
+> racine — `LoadedPricer` est le seul appelant de `resolvePrice`, une porte CI le
+> tient à une entrée, et un e2e exige que les deux chemins tombent d'accord.
+>
+> La cinquième est **ouverte** : `commercial/tarification/simulation/` résout un
+> prix unitaire dans le navigateur et réimplémente les trois régimes
+> d'engagement, sans jamais appeler le serveur. Suivie en **R2** au
+> [registre](ce-qui-reste-a-faire.md).
+>
+> Cinq occurrences d'un même motif, c'est ce qui distingue une maladresse d'un
+> défaut de conception : la contrainte ci-dessus n'est tenue par rien côté
+> front. Le serveur, lui, a désormais sa porte.
 
 > ## Les trois écrans, et la question de chacun
 >

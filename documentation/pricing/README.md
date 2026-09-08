@@ -136,13 +136,13 @@ point, écrit dans son bandeau.
 
 ### Les plans livrés — on les lit pour le raisonnement
 
-| Document                                                                                                   | État | Ce qu'il porte                                                 |
-| ---------------------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------- |
-| [`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md)                                                   | ✅   | Charger une fois. **N'accélère rien** — et c'est le point.     |
-| [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md)                                                     | ✅   | La boutique lit l'API ; l'argent cesse d'avoir deux sources.   |
-| [`plan-decompte-du-panier-ht.md`](plan-decompte-du-panier-ht.md)                                           | ✅   | Le panier compte en HT, comme la facture.                      |
-| [`mercuriales/plan-la-mercuriale-devient-un-objet.md`](mercuriales/plan-la-mercuriale-devient-un-objet.md) | ✅   | Livré. Porte les **deux versions contredites** avant la bonne. |
-| [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md)                                 | ✅   | Le coût réel, et pourquoi le chronomètre ment.                 |
+| Document                                                                                                   | État | Ce qu'il porte                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md)                                                   | ✅   | Charger une fois. **N'accélère rien** — et c'est le point.                                                                  |
+| [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md)                                                     | ✅   | La boutique lit l'API ; l'argent cesse d'avoir deux sources.                                                                |
+| [`plan-decompte-du-panier-ht.md`](plan-decompte-du-panier-ht.md)                                           | ✅   | Le panier compte en HT, comme la facture. **B5 compris** — la surtaxe de retard, que l'en-tête annonçait encore en attente. |
+| [`mercuriales/plan-la-mercuriale-devient-un-objet.md`](mercuriales/plan-la-mercuriale-devient-un-objet.md) | ✅   | Livré. Porte les **deux versions contredites** avant la bonne.                                                              |
+| [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md)                                 | ✅   | Le coût réel, et pourquoi le chronomètre ment.                                                                              |
 
 ### Les registres — ce qui a été trouvé, et où en est le travail
 
@@ -150,8 +150,8 @@ point, écrit dans son bandeau.
 | ---------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md)                                                 | 🔴   | **Le registre unique.** Quatorze entrées, toutes vérifiées.                                                                                                                                         |
 | [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)                       | ✅   | Registre **clos** : dix défauts, treize lots, tous refermés.                                                                                                                                        |
-| [`audit-fable.md`](audit-fable.md)                                                                   | 🟡   | Le second regard. Sa note est périmée ; trois de ses constats sont refermés.                                                                                                                        |
-| [`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)                                       | 🟡   | Quatre chantiers sur cinq bâtis. Sa note par axe est conservée comme **photo**.                                                                                                                     |
+| [`audit-fable.md`](audit-fable.md)                                                                   | ✅   | **Le second regard, et ce qu'il a produit.** Sept de ses huit lots sont faits ; chacun est réécrit au présent, avec ce qui l'a fermé. Le huitième n'est pas un commit : il attend une décision.     |
+| [`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)                                       | ✅   | **Quatre chantiers sur cinq, bâtis.** La note par axe en deux colonnes — la photo qui a motivé le travail, l'état vérifié. Et un §7 qui dit les deux fois où ce document s'est trompé.              |
 | [`mercuriales/etat-des-lieux-mercuriale-client.md`](mercuriales/etat-des-lieux-mercuriale-client.md) | ✅   | **Comment un client reçoit un tarif négocié.** Les deux gestes qui convergent sur le même agrégat, les quatre couches, et ce que les cinq fermetures ont établi — en affirmations, plus en manques. |
 
 ### Ce qui n'est pas tranché
