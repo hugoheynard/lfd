@@ -83,6 +83,11 @@ export class DevSeedPage {
       count(reset.people, 'personne', 'personnes'),
       count(reset.pickupPoints, 'point de retrait', 'points de retrait'),
       count(reset.zones, 'zone', 'zones'),
+      // Comptées et dites : une décision tarifaire d'essai n'est pas un décor,
+      // c'est un prix. En retirer quatre sans le nommer laisserait croire que le
+      // catalogue a changé sous les pieds de celui qui recharge.
+      count(reset.priceRules, 'règle de prix', 'règles de prix'),
+      count(reset.volumeLadders, 'barème de volume', 'barèmes de volume'),
     ].filter((part) => part !== null);
     return parts.length === 0 ? null : parts.join(', ');
   });

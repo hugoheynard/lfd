@@ -16,6 +16,15 @@ export interface DevSeedResetReport {
   readonly people: number;
   readonly pickupPoints: number;
   readonly zones: number;
+  /**
+   * Règles de prix retirées — promotions, gestes, mercuriales d'essai.
+   *
+   * Comptées et dites : une décision tarifaire d'essai n'est pas un décor, c'est
+   * un prix. Retirer quatre remises sans le nommer laisserait croire que le
+   * catalogue a changé.
+   */
+  readonly priceRules: number;
+  readonly volumeLadders: number;
 }
 
 /** Ce que le semis a posé, et les deux journées qui font l'invariant. */

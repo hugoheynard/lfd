@@ -21,11 +21,32 @@ import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
  * n'importe lequel des deux. La station est un décor de vente ; un décor faux se
  * lit comme un produit cassé.
  *
+ * 3. **les décisions tarifaires** — toute règle de prix et tout barème de
+ *    volume. Aucune n'est semée : elles s'accumulent à la main, écran après
+ *    écran, et elles ne sont pas inertes non plus.
+ *
+ * ## Pourquoi les décisions tarifaires, alors qu'il les épargnait
+ *
+ * _(2026-09-08 — ce paragraphe disait l'inverse.)_ Un poste finissait avec une
+ * promotion produit à −12 %, une promotion de rayon à −8 %, un geste global à
+ * −2 % et un **barème de volume à −10 % dès la première pièce**, tous posés en
+ * essayant des écrans. Composés, ils faisaient payer un croissant 1,66 € au
+ * lieu de 2,13 € — et plus personne ne pouvait lire ce qu'une mercuriale
+ * ajoutait, puisque le tarif de départ n'était déjà plus celui du catalogue.
+ *
+ * Une décision tarifaire d'essai n'est pas un décor : c'est un prix. Un poste
+ * qui en garde de vieilles ment sur ce que la caisse ferait.
+ *
+ * ⚠️ **Les LIMITES sont épargnées** (`price_floors`), et c'est délibéré : ce
+ * sont des garde-fous, pas des remises. Les retirer supprimerait la protection
+ * que l'écran affiche, et le poste cesserait de refuser ce que la production
+ * refuse.
+ *
  * ## Ce qu'il NE touche pas
  *
- * Le catalogue, le référentiel PIM, les heures limites, l'annuaire du staff, les
- * règles de prix. Et il ne touche aucun point ni aucune zone que le seed
- * déclare : le semis les repose à l'identique.
+ * Le catalogue, le référentiel PIM, les heures limites, l'annuaire du staff, et
+ * les **limites de marge**. Ni aucun point ni aucune zone que le seed déclare :
+ * le semis les repose à l'identique.
  *
  * ## Ce qui se regénère
  *
@@ -40,6 +61,10 @@ export interface ResetReport {
   readonly people: number;
   readonly pickupPoints: number;
   readonly zones: number;
+  /** Règles de prix retirées — promotions, gestes, mercuriales d'essai. */
+  readonly priceRules: number;
+  /** Barèmes de volume retirés. */
+  readonly volumeLadders: number;
 }
 
 export async function resetToSeed(prisma: PrismaClient): Promise<ResetReport> {
@@ -76,7 +101,38 @@ export async function resetToSeed(prisma: PrismaClient): Promise<ResetReport> {
 
   await wipe(prisma, companyIds, userIds);
   const station = await trimStation(prisma);
-  return { companies: companyIds.length, people: userIds.length, ...station };
+  const pricing = await trimPricing(prisma);
+  return { companies: companyIds.length, people: userIds.length, ...station, ...pricing };
+}
+
+/**
+ * Retire **toutes** les décisions tarifaires : règles et barèmes.
+ *
+ * Toutes, y compris les mercuriales : un rechargement qui en laisserait une
+ * rendrait le cas « client sans tarif négocié » inéprouvable, alors que c'est
+ * le cas de départ de tout nouveau compte.
+ *
+ * Le **journal** part avec elles. Il est append-only par nature et on ne
+ * l'efface nulle part ailleurs — mais il n'y a pas de fait à préserver ici :
+ * ses lignes décrivent des règles qui n'existent plus, sur une base de
+ * démonstration. Les garder ferait un journal qui raconte une histoire dont
+ * aucun sujet n'est là.
+ *
+ * ⚠️ Aucune commande n'en dépend : le prix qu'une ligne a payé est **figé sur
+ * elle**, avec sa trace. Retirer la règle ne rend donc aucune facture muette —
+ * c'est toute la raison d'être de ce figeage.
+ */
+async function trimPricing(
+  prisma: PrismaClient,
+): Promise<{ priceRules: number; volumeLadders: number }> {
+  await prisma.pricingEvent.deleteMany();
+  const rules = await prisma.priceRule.deleteMany();
+  const ladders = await prisma.volumeLadder.deleteMany();
+  // Les engagements de volume pointent une société : ils sont déjà partis avec
+  // elles, sauf ceux du client gardé. Ils se rattachent aux barèmes qu'on vient
+  // de retirer, donc ils n'ouvrent plus rien.
+  await prisma.volumeCommitment.deleteMany();
+  return { priceRules: rules.count, volumeLadders: ladders.count };
 }
 
 /**
