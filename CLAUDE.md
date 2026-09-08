@@ -949,6 +949,7 @@ pnpm --filter lfd-api dev        # Nest en watch
 pnpm --filter lfd-api lint
 pnpm --filter lfd-api test
 pnpm --filter lfd-api exec tsc --noEmit
+pnpm --filter lfd-api dev:typecheck  # les SPECS, en watch — nest ne les compile pas
 pnpm --filter lfd-api db:migrate  # / db:deploy, db:seed, db:studio
 pnpm --filter lfd-api db:test:setup  # base jetable des e2e
 pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible locale only)

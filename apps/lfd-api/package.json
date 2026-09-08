@@ -13,6 +13,7 @@
     "start:debug": "pnpm run free-port && nest start --debug --watch",
     "start:prod": "node dist/main",
     "dev": "pnpm run free-port && nest start --watch",
+    "dev:typecheck": "tsc --noEmit --watch --preserveWatchOutput -p tsconfig.test.json",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",
     "lint:ci": "eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:e2e",

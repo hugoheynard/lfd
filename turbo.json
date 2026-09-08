@@ -10,6 +10,33 @@
       "cache": false,
       "persistent": true
     },
+    "dev:typecheck": {
+      // **Le typecheck des SPECS, en continu.**
+      //
+      // `nest start --watch` compile `tsconfig.build.json` — donc `src`, jamais
+      // `test`. Les fronts, eux, compilent `tsconfig.app.json` par `ng serve`.
+      // Personne ne regardait les specs avant le pre-push, et vingt-trois
+      // erreurs s'y étaient accumulées sur soixante-quatre commits : ts-jest
+      // les ignore à l'exécution, donc les suites étaient vertes et le type
+      // faux. Deux d'entre elles disaient quelque chose de vrai — un doublé de
+      // port amputé de deux méthodes, deux appels qui n'avaient pas suivi une
+      // signature.
+      //
+      // `^build` et non `build` : ce watch ne produit rien, il lit — il lui
+      // faut seulement les paquets amont compilés. `--preserveWatchOutput`
+      // parce que plusieurs watchers partagent le terminal, et qu'effacer
+      // l'écran ferait disparaître ce qu'un autre vient de dire.
+      //
+      // ⚠️ **Seul `lfd-api` en déclare un.** Les deux fronts ont bien le même
+      // trou — `ng serve` compile `tsconfig.app.json`, jamais leurs specs —
+      // mais leur `tsconfig.spec.json` ne tient pas en isolé : il rend des
+      // `TS6059 rootDir` sur les paquets du workspace. Un watch qui crache un
+      // mur d'erreurs fausses se fait ignorer, ce qui est pire que rien. Leur
+      // pre-push ne l'utilise pas non plus, et pour la même raison.
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
     "dev:watch": {
       // `build` (du MÊME package), pas `^build` : turbo lance le build une seule
       // fois (partagé avec le `^build` des apps), le termine, PUIS démarre le
