@@ -51,6 +51,7 @@ import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-tem
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
 import { AdminCompanyPricingController } from "./http/admin-company-pricing.controller.js";
 import { CompanyPricingQuery } from "./application/queries/company-pricing.query.js";
+import { MercurialeDrafts } from "./application/mercuriale-drafts.store.js";
 import {
   CloseCompanyMercurialeHandler,
   PoseCompanyMercurialeHandler,
@@ -109,6 +110,7 @@ import { PricingModule } from "./pricing.module.js";
     PriceTemplatesQuery,
     MercurialeBenchmarkQuery,
     CompanyPricingQuery,
+    MercurialeDrafts,
     PoseCompanyMercurialeHandler,
     CloseCompanyMercurialeHandler,
     SavePriceTemplateHandler,

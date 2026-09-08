@@ -15,6 +15,7 @@ import {
 import { describeRule } from "../../domain/pricing-act.js";
 import { templateToRules } from "../../domain/services/template-to-rules.js";
 import { ruleStateFromRow } from "../../infrastructure/price-rows.js";
+import { MercurialeDrafts } from "../mercuriale-drafts.store.js";
 
 /**
  * **Établir une mercuriale depuis la fiche d'un compte**, et la clore.
@@ -66,6 +67,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly prisma: PrismaService,
     private readonly rules: PricingRuleRepository,
     private readonly ids: IdGenerator,
+    private readonly drafts: MercurialeDrafts,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
   ) {}
@@ -141,6 +143,14 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
         });
       }
     });
+    // Le brouillon a servi : il est devenu une décision. Le garder ferait
+    // rouvrir l'écran sur une négociation déjà close, et la prochaine
+    // sauvegarde écraserait sans qu'on sache laquelle des deux fait foi.
+    //
+    // APRÈS la transaction, jamais dedans : jeter un brouillon n'est pas une
+    // écriture qu'on veut annuler si la pose échoue — au contraire, c'est
+    // exactement le moment où il faut le garder.
+    await this.drafts.discard(companyId);
     return drafts.length;
   }
 

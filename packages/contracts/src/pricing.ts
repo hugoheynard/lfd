@@ -1348,6 +1348,14 @@ export interface PosedMercurialeView {
   /** Sur combien d'articles distincts elle porte. */
   readonly skuCount: number;
   /**
+   * **Qui l'a établie** — le `sub` du membre du staff qui l'a posée.
+   *
+   * Sur un tarif négocié, la question posée six mois plus tard est toujours
+   * « qui a accordé ça ». La réponse vit déjà sur chaque règle ; elle remonte
+   * ici pour être lisible sans ouvrir le journal.
+   */
+  readonly createdBy: string;
+  /**
    * **Ce qu'elle accorde**, article par article, du moins cher au plus cher.
    *
    * Porté par la lecture et non demandé à la demande : une mercuriale fait au
@@ -1449,4 +1457,46 @@ export type CloseCompanyMercurialePayload = z.infer<typeof closeCompanyMercurial
 /** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
 export interface AffectedRulesResponse {
   readonly affectedRules: number;
+}
+
+/**
+ * **Le brouillon de mercuriale d'un client** — une négociation en cours.
+ *
+ * Il ne tarife RIEN : aucune lecture de prix ne le regarde, et le supprimer ne
+ * change aucune facture. C'est du texte en attente, pas une décision. Ce qui
+ * engage est la règle posée.
+ *
+ * Un seul par société, et enregistrer remplace : une négociation se reprend,
+ * elle ne se collectionne pas.
+ */
+export const saveMercurialeDraftPayloadSchema = z.object({
+  label: z.string().max(120),
+  /**
+   * Les bornes envisagées, ou `null` : on écrit la grille avant de la dater.
+   *
+   * C'est la différence avec une pose, qui les exige toutes les deux — un
+   * brouillon a le droit d'être incomplet, c'est même sa raison d'être.
+   */
+  validFrom: z.string().datetime().nullable(),
+  validTo: z.string().datetime().nullable(),
+  lines: z.array(companyMercurialeLineSchema).max(300),
+});
+export type SaveMercurialeDraftPayload = z.infer<typeof saveMercurialeDraftPayloadSchema>;
+
+export interface MercurialeDraftView extends SaveMercurialeDraftPayload {
+  /** Qui l'a touché en dernier — une négociation se reprend souvent à deux. */
+  readonly updatedBy: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * **La réponse enveloppe le brouillon**, plutôt que de rendre `null` nu.
+ *
+ * Un `null` rendu par un contrôleur part en corps VIDE : sur le fil, « pas de
+ * brouillon » devient indistinguable de « pas de corps », et un client qui
+ * bronche sur l'un traiterait l'autre pareil. L'enveloppe rend l'absence
+ * explicite — et laisse la place à ce qui l'accompagnera plus tard.
+ */
+export interface MercurialeDraftResponse {
+  readonly draft: MercurialeDraftView | null;
 }

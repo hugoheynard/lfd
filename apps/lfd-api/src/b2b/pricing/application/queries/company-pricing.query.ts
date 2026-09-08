@@ -157,8 +157,10 @@ export class CompanyPricingQuery {
       categories: measured,
       mercuriales: posedMercuriales(
         rules
-          .map((entry) => entry.rule)
-          .filter((rule) => rule.stage === "mercuriale" && rule.audience.type === "company"),
+          .filter(
+            (entry) => entry.rule.stage === "mercuriale" && entry.rule.audience.type === "company",
+          )
+          .map((entry) => ({ rule: entry.rule, createdBy: entry.view.createdBy })),
         at,
         // Le nom du catalogue, ou le SKU nu : une mercuriale garde ses lignes
         // quand un article cesse d'être publié, et l'écran doit pouvoir dire

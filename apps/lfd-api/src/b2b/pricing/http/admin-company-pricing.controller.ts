@@ -1,12 +1,25 @@
 import {
   closeCompanyMercurialePayloadSchema,
   poseCompanyMercurialePayloadSchema,
+  saveMercurialeDraftPayloadSchema,
   type AffectedRulesResponse,
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
+  type MercurialeDraftResponse,
   type PoseCompanyMercurialePayload,
+  type SaveMercurialeDraftPayload,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -17,6 +30,7 @@ import {
   PoseCompanyMercurialeCommand,
 } from "../application/commands/company-mercuriale.handlers.js";
 import { CompanyPricingQuery } from "../application/queries/company-pricing.query.js";
+import { MercurialeDrafts } from "../application/mercuriale-drafts.store.js";
 
 /**
  * **La tarification d'UN client** — l'onglet « Tarifs » de sa fiche.
@@ -46,6 +60,7 @@ export class AdminCompanyPricingController {
   constructor(
     private readonly commands: CommandBus,
     private readonly pricing: CompanyPricingQuery,
+    private readonly drafts: MercurialeDrafts,
   ) {}
 
   /** Ce que ce client paie **aujourd'hui**, article par article, et ses mercuriales. */
@@ -90,5 +105,43 @@ export class AdminCompanyPricingController {
       new CloseCompanyMercurialeCommand(companyId, payload, staffSub),
     );
     return { affectedRules };
+  }
+
+  /**
+   * **Le brouillon en cours**, ou `null`.
+   *
+   * `draft: null` et non un 404 : « ce compte n'a pas de négociation ouverte »
+   * est une réponse, pas une absence de ressource. L'écran s'en sert pour
+   * choisir entre l'état vide et la reprise, et un 404 l'obligerait à traiter un
+   * cas normal comme une erreur.
+   *
+   * Enveloppé plutôt que rendu nu : un `null` de contrôleur part en corps VIDE,
+   * et « pas de brouillon » cesserait de se distinguer de « pas de corps ».
+   */
+  @Get("mercuriale/draft")
+  async draft(@Param("companyId") companyId: string): Promise<MercurialeDraftResponse> {
+    return { draft: await this.drafts.forCompany(companyId) };
+  }
+
+  /**
+   * **Enregistrer le brouillon.** `PUT` et non `PATCH` : il se remplace entier,
+   * comme la grille qu'il porte. Un brouillon fusionné ligne à ligne garderait
+   * un prix qu'on vient précisément de retirer.
+   */
+  @Put("mercuriale/draft")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async saveDraft(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(saveMercurialeDraftPayloadSchema)) payload: SaveMercurialeDraftPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.drafts.save(companyId, payload, staffSub);
+  }
+
+  /** **Jeter le brouillon.** Silencieux s'il n'y en a pas : l'état visé est atteint. */
+  @Delete("mercuriale/draft")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async discardDraft(@Param("companyId") companyId: string): Promise<void> {
+    await this.drafts.discard(companyId);
   }
 }

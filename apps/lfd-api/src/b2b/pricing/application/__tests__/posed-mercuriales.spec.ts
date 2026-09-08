@@ -1,4 +1,4 @@
-import { posedMercuriales } from "../posed-mercuriales.js";
+import { posedMercuriales, type AuthoredRule } from "../posed-mercuriales.js";
 import type { PriceRule } from "../../domain/price-rule.js";
 
 /**
@@ -36,13 +36,18 @@ interface RuleFixture {
   readonly validFrom?: Date;
   readonly validTo?: Date | null;
   readonly suspendedFrom?: Date | null;
+  readonly createdBy?: string;
 }
 
 /** Le catalogue, réduit à ce que le regroupement lui demande : un nom. */
 const nameOf = (sku: string): string => `Article ${sku}`;
 
-function rule(fixture: RuleFixture): PriceRule {
+function rule(fixture: RuleFixture): AuthoredRule {
   seq += 1;
+  return { createdBy: fixture.createdBy ?? "staff|marie", rule: ruleOf(fixture) };
+}
+
+function ruleOf(fixture: RuleFixture): PriceRule {
   return {
     // Un compteur et non `Math.random()` : la porte `clock-port` refuse l'aléa,
     // et un identifiant de fixture n'a aucune raison d'en demander.

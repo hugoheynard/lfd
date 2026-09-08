@@ -46,6 +46,8 @@ const staff = () => ctx.asSub("staff-e2e");
 const SKU = "VIE-001";
 const OTHER_SKU = "VIE-002";
 const CANONICAL_MILLICENTS = 200_000;
+/** Le prix négocié de référence de cette suite. */
+const NEGOTIATED_MILLICENTS = 150_000;
 
 /**
  * ⚠️ Les fenêtres de ce fichier sont **absolues**, et c'est l'exception écrite
@@ -62,6 +64,12 @@ function relative(days: number): string {
   at.setUTCDate(at.getUTCDate() + days);
   return at.toISOString();
 }
+
+/** Pose la mercuriale de référence sur ce compte. */
+const poseOn = (companyId: string) =>
+  pose(companyId, { lines: [{ sku: SKU, unitPriceMillicents: NEGOTIATED_MILLICENTS }] }).expect(
+    201,
+  );
 
 const read = async (companyId: string): Promise<CompanyPricingView> =>
   jsonBody<CompanyPricingView>(
@@ -319,5 +327,127 @@ describe("clore", () => {
     const company = await createCompany(ctx.prisma);
 
     await close(company.id, { label: "Jamais posée" }).expect(404);
+  });
+});
+
+/**
+ * **Le brouillon de mercuriale** — une négociation qu'on reprend.
+ *
+ * Ce qu'il ne fait pas est aussi important que ce qu'il fait : il ne tarife
+ * rien. Un brouillon posé sur un compte ne change aucun prix, et c'est ce qui
+ * autorise à l'enregistrer incomplet.
+ */
+describe("le brouillon", () => {
+  const draft = (companyId: string) => `/admin/pricing/companies/${companyId}/mercuriale/draft`;
+
+  it("répond `null` quand il n'y en a pas — pas un 404", async () => {
+    // « Ce compte n'a pas de négociation ouverte » est une réponse, pas une
+    // absence de ressource. Un 404 obligerait l'écran à traiter le cas normal
+    // comme une erreur.
+    const company = await createCompany(ctx.prisma);
+
+    const body = jsonBody<{ draft: unknown }>(await staff().get(draft(company.id)).expect(200));
+    expect(body.draft).toBeNull();
+  });
+
+  it("s'enregistre INCOMPLET — c'est sa raison d'être", async () => {
+    // On écrit les prix avant de dater, on date avant de nommer. Refuser une
+    // grille sans bornes ferait du brouillon une pose au rabais.
+    const company = await createCompany(ctx.prisma);
+
+    await staff()
+      .put(draft(company.id))
+      .send({ label: "", validFrom: null, validTo: null, lines: [] })
+      .expect(204);
+
+    const { draft: saved } = jsonBody<{ draft: { label: string; lines: unknown[] } }>(
+      await staff().get(draft(company.id)).expect(200),
+    );
+    expect(saved.lines).toEqual([]);
+  });
+
+  it("se remplace, il ne s'accumule pas", async () => {
+    const company = await createCompany(ctx.prisma);
+    const save = (label: string, price: number) =>
+      staff()
+        .put(draft(company.id))
+        .send({
+          label,
+          validFrom: FROM,
+          validTo: TO,
+          lines: [{ sku: SKU, unitPriceMillicents: price }],
+        })
+        .expect(204);
+
+    await save("Premier jet", 180_000);
+    await save("Deuxième jet", 170_000);
+
+    const { draft: saved } = jsonBody<{
+      draft: { label: string; lines: { unitPriceMillicents: number }[] };
+    }>(await staff().get(draft(company.id)).expect(200));
+    expect(saved.label).toBe("Deuxième jet");
+    expect(saved.lines).toEqual([{ sku: SKU, unitPriceMillicents: 170_000 }]);
+  });
+
+  it("🔴 ne tarife RIEN : un brouillon ne change aucun prix", async () => {
+    const company = await createCompany(ctx.prisma);
+    await staff()
+      .put(draft(company.id))
+      .send({
+        label: "Jamais posée",
+        validFrom: FROM,
+        validTo: TO,
+        lines: [{ sku: SKU, unitPriceMillicents: 10_000 }],
+      })
+      .expect(204);
+
+    const view = await read(company.id);
+
+    expect(itemOf(view, SKU)?.finalMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(view.mercuriales).toEqual([]);
+  });
+
+  it("est JETÉ par la pose — il est devenu une décision", async () => {
+    // Le garder ferait rouvrir l'écran sur une négociation déjà close, et la
+    // prochaine sauvegarde écraserait sans qu'on sache laquelle fait foi.
+    const company = await createCompany(ctx.prisma);
+    await staff()
+      .put(draft(company.id))
+      .send({
+        label: "Mercuriale Club Med",
+        validFrom: FROM,
+        validTo: TO,
+        lines: [{ sku: SKU, unitPriceMillicents: NEGOTIATED_MILLICENTS }],
+      })
+      .expect(204);
+
+    await pose(company.id, {
+      lines: [{ sku: SKU, unitPriceMillicents: NEGOTIATED_MILLICENTS }],
+    }).expect(201);
+
+    const body = jsonBody<{ draft: unknown }>(await staff().get(draft(company.id)).expect(200));
+    expect(body.draft).toBeNull();
+  });
+
+  it("se jette à la demande, et le geste est SILENCIEUX s'il n'y en a pas", async () => {
+    // L'état visé — « plus de brouillon sur ce compte » — est atteint dans les
+    // deux cas. C'est ce qui rend le geste sûr à répéter.
+    const company = await createCompany(ctx.prisma);
+
+    await staff().delete(draft(company.id)).expect(204);
+    await staff().delete(draft(company.id)).expect(204);
+  });
+});
+
+describe("qui a établi la mercuriale", () => {
+  it("remonte l'auteur avec la mercuriale, sans ouvrir le journal", async () => {
+    // Sur un tarif négocié, la question posée six mois plus tard est toujours
+    // « qui a accordé ça ».
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+
+    const view = await read(company.id);
+
+    expect(view.mercuriales[0]?.createdBy).toBe("staff-e2e");
   });
 });

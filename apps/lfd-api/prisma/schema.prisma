@@ -2791,6 +2791,54 @@ model VolumeLadder {
 /// Posé chez un client, un gabarit devient N règles de l'étage mercuriale à des
 /// seuils différents — une forme que le moteur résout déjà, et dont l'unicité
 /// est déjà garantie (la contrainte d'exclusion porte sur `min_quantity`).
+/// **Le brouillon de mercuriale d'un client** — une négociation en cours.
+///
+/// ## Pourquoi une table, et pas un gabarit
+///
+/// Un gabarit est un MODÈLE : une grille qu'on prépare une fois et qu'on repose
+/// chez plusieurs clients. Un brouillon est l'inverse — il ne vise qu'une
+/// maison, et il n'a de sens que tant qu'il n'est pas posé. Les ranger ensemble
+/// aurait rempli la liste des gabarits de grilles nominatives, et « gabarit »
+/// aurait cessé de vouloir dire quelque chose.
+///
+/// ## Pourquoi un seul par société
+///
+/// `company_id` est la CLÉ. Une négociation se reprend, elle ne se collectionne
+/// pas : deux brouillons ouverts sur le même compte poseraient la question de
+/// savoir lequel fait foi, à laquelle personne n'aurait de réponse. Enregistrer
+/// remplace.
+///
+/// ## Ce qu'il n'est pas
+///
+/// Il ne tarife RIEN. Aucune lecture de prix ne le regarde, et le supprimer ne
+/// change aucune facture : c'est du texte en attente, pas une décision. Ce qui
+/// engage est la règle posée, et elle vit dans `price_rules`.
+model MercurialeDraft {
+  /// La société, et l'identifiant : un brouillon par compte.
+  companyId String @id @map("company_id")
+
+  /// Ce que le client lira dans la trace de son prix, une fois posé.
+  label String
+
+  /// Les bornes envisagées. Nullables : on écrit la grille avant de dater.
+  validFrom DateTime? @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// Les lignes, `[{ sku, unitPriceMillicents }]`.
+  ///
+  /// En JSON comme celles d'un gabarit, et pour la même raison : une grille
+  /// s'écrit entière ou pas du tout. Une table fille permettrait d'en
+  /// enregistrer la moitié, et personne ne le verrait.
+  lines Json
+
+  /// Qui l'a touché en dernier — la négociation se reprend souvent à deux.
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("mercuriale_drafts")
+  @@schema("public")
+}
+
 model PriceTemplate {
   id String @id
 

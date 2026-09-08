@@ -632,6 +632,7 @@ export {
   companyMercurialeLineSchema,
   poseCompanyMercurialePayloadSchema,
   closeCompanyMercurialePayloadSchema,
+  saveMercurialeDraftPayloadSchema,
   renamePriceRulePayloadSchema,
   ruleStatusSchema,
   authoredPriceStageSchema,
@@ -727,6 +728,9 @@ export type {
   PoseCompanyMercurialePayload,
   CloseCompanyMercurialePayload,
   AffectedRulesResponse,
+  SaveMercurialeDraftPayload,
+  MercurialeDraftView,
+  MercurialeDraftResponse,
 } from "./pricing.js";
 
 export { activityModuleSchema, activityQuerySchema } from "./activity-journal.js";
