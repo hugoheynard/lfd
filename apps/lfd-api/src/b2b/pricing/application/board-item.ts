@@ -10,6 +10,7 @@ import { floorMillicentsFor, resolveScopedFloor } from "../domain/resolve-floor.
 import { resolvePrice } from "../domain/resolve-price.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
+import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import {
   PRICE_STAGES,
   type PriceRule,
@@ -49,17 +50,24 @@ export interface BoardMaterials {
   readonly floors: readonly ScopedPriceFloor[];
   /** Les règles par étage — l'axe sur lequel l'éviction se joue. */
   readonly byStage: ReadonlyMap<PriceStage, readonly PriceRule[]>;
+  /**
+   * La mercuriale du client lu, ou `null`. **En objet, jamais convertie** :
+   * elle vise un article et une mesure, donc sa règle se dérive par article,
+   * dans `itemView`. Cf. `CompanyMercuriale.asRuleFor`.
+   */
+  readonly mercuriale: CompanyMercuriale | null;
 }
 
 export function boardMaterials(
   loadedRules: readonly LoadedRule[],
   loadedFloors: readonly LoadedFloor[],
+  mercuriale: CompanyMercuriale | null = null,
 ): BoardMaterials {
   const rules = loadedRules.map((entry) => entry.rule);
   const byStage = new Map<PriceStage, readonly PriceRule[]>(
     PRICE_STAGES.map((stage) => [stage, rules.filter((rule) => rule.stage === stage)]),
   );
-  return { rules, floors: loadedFloors.map((entry) => entry.floor), byStage };
+  return { rules, floors: loadedFloors.map((entry) => entry.floor), byStage, mercuriale };
 }
 
 /**
@@ -89,7 +97,13 @@ export function itemView(
       : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null })
           .applied;
 
-  const resolved = resolvePrice(article.canonicalMillicents, materials.rules, context, applied);
+  // La règle de la mercuriale se dérive ICI : elle dépend de l'article et de la
+  // mesure, que les matériaux — chargés une fois pour tout le tableau — ne
+  // connaissent pas.
+  const mercuriale = materials.mercuriale?.asRuleFor(context) ?? null;
+  const rules = mercuriale === null ? materials.rules : [...materials.rules, mercuriale];
+
+  const resolved = resolvePrice(article.canonicalMillicents, rules, context, applied);
 
   return {
     sku: article.sku,
@@ -103,17 +117,20 @@ export function itemView(
     volumeTiers: volumeTierPrices(
       article.canonicalMillicents,
       ladders,
+      // Les règles SANS la mercuriale : la grille la reconvertit elle-même à
+      // chaque palier sondé, et la recevoir toute faite la figerait.
       materials.rules,
       context,
       // Le tableau n'a pas d'historique de volume à présenter : la porte
       // dynamique reste fermée, comme pour le prix qu'il affiche à côté.
       winner === null ? null : { policy: winner.policy, observedVolumeRatioBp: null },
+      materials.mercuriale,
     ),
     effectiveFloor: loaded.floors.find((entry) => entry.floor.id === winner?.id)?.view ?? null,
     rules: loaded.rules
       .filter((entry) => targetsArticle(entry.rule.scope, article.sku))
       .map((entry) => entry.view),
-    supersededRuleIds: supersededIn(materials.byStage, context),
+    supersededRuleIds: supersededIn(materials.byStage, context, mercuriale),
     sealedByRuleId: resolved.sealedByRuleId,
     sealedRuleIds: resolved.sealedRuleIds,
     steps: resolved.steps.map((step) => ({ ...step })),
@@ -147,10 +164,19 @@ export function targetsArticle(scope: PriceScope, sku: string): boolean {
 function supersededIn(
   byStage: ReadonlyMap<PriceStage, readonly PriceRule[]>,
   context: PricingContext,
+  /**
+   * La règle de la mercuriale pour CET article, déjà dérivée. Elle n'est pas
+   * dans `byStage` — ce groupement est calculé une fois pour tout le tableau,
+   * alors qu'elle dépend de l'article.
+   */
+  mercuriale: PriceRule | null,
 ): string[] {
   const evicted: string[] = [];
   for (const stage of PRICE_STAGES) {
-    const applicable = (byStage.get(stage) ?? []).filter((rule) => applies(rule, context));
+    const inStage = byStage.get(stage) ?? [];
+    const candidates =
+      stage === "mercuriale" && mercuriale !== null ? [...inStage, mercuriale] : inStage;
+    const applicable = candidates.filter((rule) => applies(rule, context));
     if (applicable.length < 2) {
       continue;
     }

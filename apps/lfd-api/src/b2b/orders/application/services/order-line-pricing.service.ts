@@ -10,6 +10,7 @@ import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
 import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
+import { CompanyMercurialeReader } from "../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { SkuVolumeReader } from "../../../pricing/domain/ports/sku-volume.reader.js";
 import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
 import { VolumeLadderReader } from "../../../pricing/domain/ports/volume-ladder.reader.js";
@@ -81,6 +82,7 @@ export class OrderLinePricing {
   constructor(
     private readonly catalog: ProductCatalogReader,
     private readonly priceRules: PriceRuleReader,
+    private readonly mercuriales: CompanyMercurialeReader,
     private readonly priceFloors: PriceFloorReader,
     private readonly skuVolumes: SkuVolumeReader,
     private readonly volumeLadders: VolumeLadderReader,
@@ -178,15 +180,18 @@ export class OrderLinePricing {
     }
     // Quatre lectures pour tout le panier, en parallèle — contre trois PAR
     // article auparavant, plus celle des engagements.
-    const [rules, floors, ladders, commitments] = await Promise.all([
+    const [rules, floors, ladders, commitments, mercuriale] = await Promise.all([
       this.priceRules.inScopes(scopes),
       this.priceFloors.inScopes(scopes),
       this.volumeLadders.inScopes(scopes),
       // Un client de passage n'a pas d'engagement, et le port le sait sans
       // interroger la base.
       this.commitments.liveFor(parties.companyId),
+      // La mercuriale arrive en OBJET : c'est ici qu'on ne connaît pas encore la
+      // quantité de chaque ligne, donc pas le palier. Cf. `asRuleFor`.
+      this.mercuriales.liveFor(parties.companyId, at),
     ]);
-    const materials = materialsOf({ rules, floors, ladders, commitments });
+    const materials = materialsOf({ rules, floors, ladders, commitments, mercuriale });
     const evidence = await this.measure(entries, materials, at);
 
     return entries.map((entry) =>

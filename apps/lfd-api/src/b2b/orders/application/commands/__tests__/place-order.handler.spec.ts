@@ -37,6 +37,7 @@ import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.r
 import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladder.reader.js";
 import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
+import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
@@ -74,6 +75,11 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
  * seule règle n'existe. Ces suites éprouvent la commande, pas le prix — la
  * résolution a ses propres tests, purs et exhaustifs.
  */
+/** Aucun tarif négocié : le client paie le catalogue, comme un visiteur. */
+const noMercuriales: CompanyMercurialeReader = {
+  liveFor: () => Promise.resolve(null),
+};
+
 const noPriceRules: PriceRuleReader = {
   listArchived: () => Promise.resolve([]),
   inScopes: () => Promise.resolve([]),
@@ -298,6 +304,7 @@ function drafting(
     new OrderLinePricing(
       catalog,
       noPriceRules,
+      noMercuriales,
       noPriceFloors,
       noSkuVolumes,
       noVolumeLadders,

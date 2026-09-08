@@ -822,3 +822,26 @@ export class ArchivedMercurialeIsSealedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Une mercuriale illisible en base.**
+ *
+ * Sa grille vit en `jsonb`, donc en `unknown` : ni Postgres ni Prisma ne
+ * garantissent sa forme. Une main dans la table, une migration ratée, et la
+ * ligne devient un objet que rien ne rattrape — sauf ici.
+ *
+ * `TechnicalError` (500) et non `DomainError` : le client n'a rien fait de mal,
+ * c'est la donnée qui est cassée. Un 400 lui ferait corriger sa saisie pour un
+ * problème qui n'est pas le sien.
+ */
+export class CorruptedMercurialeError extends TechnicalError {
+  constructor(
+    readonly id: string,
+    readonly why: string,
+  ) {
+    super(
+      "pricing.mercuriale.corrupted",
+      `La mercuriale ${id} est illisible : ${why}. Le tarif de ce client ne peut pas être calculé.`,
+    );
+  }
+}

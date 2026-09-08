@@ -1,4 +1,5 @@
 import { CompanyMercuriale, type CompanyMercurialeDraft } from "../company-mercuriale.js";
+import type { PricingContext } from "../../price-rule.js";
 import {
   ArchivedMercurialeIsSealedError,
   DuplicateMercurialeSkuError,
@@ -137,6 +138,105 @@ describe("la grille, réunie en une décision", () => {
     expect(() =>
       pose({ lines: [{ sku: "VIE-012", tiers: [{ minQuantity: 1, unitPriceMillicents: 0 }] }] }),
     ).not.toThrow();
+  });
+});
+
+/**
+ * **La conversion en règle** — ce que la résolution voit d'une mercuriale.
+ *
+ * Ce qui est éprouvé ici est exactement ce qui a tué la v2 du plan : la règle
+ * dépend d'une MESURE, donc elle ne peut pas être dérivée au chargement.
+ */
+describe("vue comme une règle", () => {
+  const CONTEXT: PricingContext = {
+    at: new Date("2026-06-01T00:00:00.000Z"),
+    quantity: 1,
+    cumulativeQuantity: null,
+    variantSku: "VIE-012",
+    productSku: "VIE-012",
+    categoryId: "viennoiserie",
+    companyId: "co_folie",
+    segmentId: null,
+  };
+
+  const ladder = (): CompanyMercuriale =>
+    pose({
+      lines: [
+        {
+          sku: "VIE-012",
+          tiers: [
+            { minQuantity: 1, unitPriceMillicents: 173_270 },
+            { minQuantity: 500, unitPriceMillicents: 160_000 },
+          ],
+        },
+      ],
+    });
+
+  it("pose un PRIX, jamais un pourcentage", () => {
+    // Le piège central du modèle : une mercuriale en pourcentage suivrait les
+    // hausses du tarif de liste.
+    expect(pose().asRuleFor(CONTEXT)).toMatchObject({
+      nature: "replace",
+      amountMillicents: 173_270,
+      stage: "mercuriale",
+    });
+  });
+
+  it("vise l'article nommément et la société nommément", () => {
+    expect(pose().asRuleFor(CONTEXT)).toMatchObject({
+      scope: { type: "product", id: "VIE-012" },
+      audience: { type: "company", id: "co_folie" },
+    });
+  });
+
+  it("est transparente sur un article qu'elle ne porte pas", () => {
+    // Le silence d'une mercuriale est une information : l'article retombe sur
+    // le tarif catalogue et SUIT ses évolutions.
+    expect(pose().asRuleFor({ ...CONTEXT, productSku: "VIE-999" })).toBeNull();
+  });
+
+  it("🔴 rend AU PLUS UNE règle, même sur une grille à plusieurs paliers", () => {
+    // Deux règles de même identifiant à un étage rendaient la résolution
+    // ambiguë — 400 sur une commande de 20, déjà payé à l'étage volume. Le
+    // palier est donc choisi ici, pas laissé à la résolution.
+    const rule = ladder().asRuleFor({ ...CONTEXT, quantity: 800 });
+
+    expect(rule?.minQuantity).toBe(500);
+    expect(rule?.amountMillicents).toBe(160_000);
+  });
+
+  it("prend le PLUS HAUT palier atteint", () => {
+    expect(ladder().asRuleFor({ ...CONTEXT, quantity: 499 })?.amountMillicents).toBe(173_270);
+    expect(ladder().asRuleFor({ ...CONTEXT, quantity: 500 })?.amountMillicents).toBe(160_000);
+  });
+
+  it("🔴 mesure le CUMUL quand il existe, pas la commande", () => {
+    // Un client sous engagement obtient le palier qu'il a négocié dès sa
+    // PREMIÈRE commande — c'est tout l'objet de l'engagement.
+    const rule = ladder().asRuleFor({ ...CONTEXT, quantity: 10, cumulativeQuantity: 800 });
+
+    expect(rule?.amountMillicents).toBe(160_000);
+  });
+
+  it("est transparente sous le premier palier", () => {
+    const haut = pose({
+      lines: [{ sku: "VIE-012", tiers: [{ minQuantity: 500, unitPriceMillicents: 160_000 }] }],
+    });
+
+    expect(haut.asRuleFor(CONTEXT)).toBeNull();
+  });
+
+  it("ne se déclare jamais cumulable par-dessus une mercuriale", () => {
+    // C'est elle qui scelle : le drapeau ne désignerait rien.
+    expect(pose().asRuleFor(CONTEXT)?.stacksOverMercuriale).toBe(false);
+  });
+
+  it("porte l'instant où elle a cessé d'agir", () => {
+    // La résolution ne distingue pas une pause d'une clôture : les deux disent
+    // « n'agit plus ».
+    const closed = pose().close("staff|marie", new Date("2026-03-01T00:00:00.000Z"), null);
+
+    expect(closed.asRuleFor(CONTEXT)?.suspendedFrom).toEqual(new Date("2026-03-01T00:00:00.000Z"));
   });
 });
 

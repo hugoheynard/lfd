@@ -5,9 +5,16 @@ import {
   NonDecreasingMercurialeTiersError,
   ReversedValidityWindowError,
 } from "../pricing-errors.js";
-import { normalizeGrid, type GridRefusals, type PricingGridLine } from "../pricing-grid.js";
+import {
+  normalizeGrid,
+  type GridRefusals,
+  type PricingGridLine,
+  type PricingTier,
+} from "../pricing-grid.js";
 import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
+import { volumeQuantityOf } from "../price-rule.js";
+import type { PriceRule, PricingContext } from "../price-rule.js";
 
 /**
  * Les trois refus d'une grille, **dits en mercuriale**. Le contrôle est partagé
@@ -182,6 +189,77 @@ export class CompanyMercuriale {
   close(by: string, at: Date, reason: string | null): CompanyMercuriale {
     this.assertNotArchived();
     return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
+  }
+
+  /**
+   * **La mercuriale vue comme la règle de son étage**, pour CET article et à la
+   * mesure de CE contexte. `null` quand elle ne porte pas l'article, ou quand la
+   * mesure n'atteint aucun palier — l'étage est alors transparent, exactement
+   * comme lorsqu'aucune règle ne s'applique.
+   *
+   * ## Pourquoi ici, et pas dans le lecteur
+   *
+   * Parce qu'il faut la **mesure**, et qu'un lecteur ne l'a pas : il charge une
+   * fois pour tout un panier, dont chaque ligne a sa propre quantité. C'est la
+   * décision qu'a prise le barème de volume avant nous — `ladderAsRule` n'est
+   * appelé par aucun lecteur, chaque appelant convertit au moment où il connaît
+   * la quantité.
+   *
+   * Et ce n'est pas une préférence : convertir trop tôt ne casse pas, ça
+   * **ment**. La projection charge ses candidats une fois puis résout à N
+   * quantités ; une mercuriale figée au premier palier y rendrait une courbe
+   * plate, et une courbe plate se lit comme une réponse.
+   *
+   * ## 🔴 Au plus UNE règle
+   *
+   * Toutes les règles issues d'une mercuriale portent `id = mercuriale.id`. En
+   * rendre deux — deux paliers du même article — recréerait l'ambiguïté qui a
+   * déjà coûté un 400 sur une commande de 20 à l'étage volume. Le palier est
+   * donc choisi ici, pas laissé à la résolution.
+   *
+   * ## La mesure est le CUMUL, pas la commande
+   *
+   * `volumeQuantityOf` rend `cumulativeQuantity ?? quantity`, et c'est ce que
+   * `applies` mesure pour cet étage. Un client sous engagement obtient donc le
+   * palier qu'il a négocié dès sa première commande — c'est tout l'objet de
+   * l'engagement.
+   */
+  asRuleFor(context: PricingContext): PriceRule | null {
+    // La portée d'une mercuriale est l'ARTICLE, comme `templateToRules` l'écrit.
+    // `pricingContextFor` renseigne `productSku` et `variantSku` avec le même
+    // sku ; lire l'un des deux suffit et dit lequel fait foi.
+    const line = this.state.lines.find((candidate) => candidate.sku === context.productSku);
+    if (line === undefined) {
+      return null;
+    }
+    const measured = volumeQuantityOf(context);
+    // Le PLUS HAUT palier atteint gagne — les paliers sont triés croissants par
+    // l'agrégat, donc le dernier qui passe est le bon.
+    let tier: PricingTier | null = null;
+    for (const candidate of line.tiers) {
+      if (measured >= candidate.minQuantity) {
+        tier = candidate;
+      }
+    }
+    if (tier === null) {
+      return null;
+    }
+    return {
+      id: this.state.id,
+      stage: "mercuriale",
+      scope: { type: "product", id: line.sku },
+      audience: { type: "company", id: this.state.companyId },
+      minQuantity: tier.minQuantity,
+      validFrom: this.state.validFrom,
+      validTo: this.state.validTo,
+      suspendedFrom: suspendedFromOf(this.state.lifecycle),
+      label: this.state.label,
+      // Une mercuriale ne franchit pas son propre scellement — l'agrégat des
+      // règles le refuse, et le dire ici évite qu'on se demande.
+      stacksOverMercuriale: false,
+      nature: "replace",
+      amountMillicents: tier.unitPriceMillicents,
+    };
   }
 
   toPersistence(): CompanyMercurialeState {

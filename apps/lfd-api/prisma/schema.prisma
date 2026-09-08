@@ -2780,6 +2780,72 @@ model VolumeLadder {
   @@schema("public")
 }
 
+/// **La mercuriale d'un client** — son tarif négocié, en un seul objet.
+///
+/// Elle a été N règles indépendantes : une par article et par palier, que rien
+/// ne reliait. « Mercuriale 2027 » n'existait alors que comme une déduction —
+/// les règles qui partagent un libellé et une fenêtre — avec ce que ça implique :
+/// clore, c'était archiver N lignes ; renommer, en réécrire N ; et deux
+/// mercuriales homonymes se confondaient à la lecture.
+///
+/// Réunies en un objet, elles deviennent UNE décision, et l'agrégat peut refuser
+/// ce qu'aucune règle isolée ne pouvait voir : une grille où commander plus
+/// coûte plus cher.
+///
+/// Elle se prend **en bloc** : posée entière, close entière, jamais retouchée
+/// article par article. Un prix faux se clôt et se repose, ce qui laisse les
+/// deux décisions côte à côte plutôt que de réécrire l'explication d'une facture
+/// déjà payée.
+model CompanyMercuriale {
+  /// ULID opaque : deux mercuriales SUCCESSIVES coexistent chez le même client
+  /// (celle de cette année, celle de janvier prochain), donc l'identifiant ne
+  /// peut pas dériver de la société. C'est la contrainte d'exclusion qui
+  /// garantit l'unicité — pas dans l'absolu, mais À UN INSTANT DONNÉ.
+  id String @id
+
+  /// Identifiant **opaque** de la société. Aucune clé étrangère : un tarif
+  /// négocié survit à la fiche, comme une commande survit au catalogue.
+  companyId String @map("company_id")
+
+  /// Ce que le client lira dans la trace de son prix.
+  label String
+
+  /// La grille : `[{ sku, tiers: [{ minQuantity, unitPriceMillicents }] }]`.
+  ///
+  /// En JSON et non dans une table fille, pour la raison écrite sur
+  /// `VolumeLadder.tiers` : une grille s'écrit **entière** ou pas du tout. Une
+  /// table fille permettrait d'insérer une ligne sans les autres — exactement ce
+  /// que cet agrégat existe pour empêcher.
+  ///
+  /// Des PALIERS, même quand il n'y en a qu'un : le « prix fixe » est la grille
+  /// à un seul palier, à partir de 1. Deux façons de saisir, une seule chose
+  /// stockée — comme pour le gabarit.
+  lines Json
+
+  /// Borne basse **incluse**, borne haute **exclue** — la convention de tout le
+  /// modèle. `Timestamptz` pour la même raison que sur les règles : sans fuseau,
+  /// `tstzrange()` dépend du réglage de session, donc n'est pas IMMUTABLE, donc
+  /// ne peut pas entrer dans la contrainte d'exclusion.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Même cycle de vie qu'une règle : suspendre garde la place, clore la rend.
+  pausedAt      DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy      String?   @map("paused_by")
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  /// La lecture qui facture : « la mercuriale vivante de ce client ».
+  @@index([companyId, archivedAt])
+  @@map("company_mercuriales")
+  @@schema("public")
+}
+
 /// **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
 /// repose chez plusieurs clients.
 ///
@@ -4538,14 +4604,14 @@ model ProductionOrder {
   /// événement. Deux faits distincts, chacun chez celui qui l'observe.
   packedAt DateTime? @map("packed_at")
   /// L'identité staff qui a scanné, figée. Elle ne vient jamais de la charge.
-  packedBy String? @map("packed_by")
+  packedBy String?   @map("packed_by")
 
   lines ProductionOrderLine[]
 
-  @@index([serviceDay, packedAt])
   /// Une commande n'entre qu'UNE fois dans une journée. Refusé en base plutôt
   /// que vérifié : une clôture rejouée ne doit pas doubler ce qu'on fabrique.
   @@unique([serviceDay, orderId])
+  @@index([serviceDay, packedAt])
   @@map("production_order")
   @@schema("production")
 }
@@ -4574,11 +4640,11 @@ model OrderHandover {
   /// Le numéro lisible, `ORD-…` — celui qu'on saisit quand le code manque.
   reference String @unique
 
-  handedOverAt DateTime @map("handed_over_at")
+  handedOverAt  DateTime @map("handed_over_at")
   /// L'identité staff qui a constaté, figée. Une preuve sans auteur n'en est pas.
-  handedOverBy String @map("handed_over_by")
+  handedOverBy  String   @map("handed_over_by")
   /// `scan` (les deux parties étaient là) ou `manual` (l'équipe a saisi).
-  handedOverVia String @map("handed_over_via")
+  handedOverVia String   @map("handed_over_via")
 
   @@map("order_handover")
   @@schema("production")

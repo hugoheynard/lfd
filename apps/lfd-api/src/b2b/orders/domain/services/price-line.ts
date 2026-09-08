@@ -7,6 +7,7 @@ import { decideFloor } from "../../../pricing/domain/floor-policy.js";
 import {
   floorsFor,
   laddersFor,
+  mercurialeFor,
   rulesFor,
   type PricingEvidence,
   type PricingMaterials,
@@ -116,6 +117,9 @@ export function priceLine(
 
   const rules = rulesFor(materials, context);
   const ladders = laddersFor(materials, context);
+  // La mercuriale du client, vue comme la règle de son étage à CETTE mesure.
+  // Dérivée ici et pas au chargement : le lecteur ne connaît pas la quantité.
+  const mercuriale = mercurialeFor(materials, context);
 
   // Le barème de volume rejoint les règles sous la forme de la règle d'étage
   // volume qu'il est à CETTE quantité. La spécificité arbitre ensuite comme
@@ -137,7 +141,7 @@ export function priceLine(
   const applied = floorDecision?.applied ?? null;
   const resolved = resolvePrice(
     item.unitPriceMillicents,
-    [...rules, ...volumeRules],
+    mercuriale === null ? [...rules, ...volumeRules] : [...rules, ...volumeRules, mercuriale],
     context,
     applied,
   );
@@ -198,6 +202,10 @@ export function priceLine(
           rules,
           context,
           scoped === null ? null : { policy: scoped.policy, observedVolumeRatioBp },
+          // L'OBJET, pas la règle dérivée : la grille reconvertit à chaque
+          // palier qu'elle sonde. Même raison que pour les barèmes, deux lignes
+          // plus haut.
+          materials.mercuriale,
         )
       : null,
     floorMillicents:

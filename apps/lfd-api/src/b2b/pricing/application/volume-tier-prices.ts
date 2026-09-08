@@ -1,6 +1,7 @@
 import { decideFloor, type PriceFloorPolicy } from "../domain/floor-policy.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { ladderAsRule, tierFor } from "../domain/volume-ladder.js";
+import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import type { PriceRule, PricingContext } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
@@ -75,9 +76,18 @@ export function volumeTierPrices(
     readonly policy: PriceFloorPolicy;
     readonly observedVolumeRatioBp: number | null;
   } | null,
+  /**
+   * La mercuriale du client, **en objet** — jamais sa règle dérivée.
+   *
+   * C'est toute la raison de ce paramètre : cette grille reconvertit à CHAQUE
+   * palier sondé, et une règle reçue toute faite y serait figée à la mesure du
+   * panier. Une mercuriale à paliers reperdrait alors ses seuils négociés, ce
+   * qui est exactement le défaut que le 🔴 du haut de ce fichier décrit.
+   */
+  mercuriale: CompanyMercuriale | null = null,
 ): readonly VolumeTierPriceView[] | null {
   const ladder = winningLadder(ladders, context);
-  const thresholds = allThresholds(ladder, rules, context);
+  const thresholds = allThresholds(ladder, rules, context, mercuriale);
   if (thresholds.length === 0) {
     // Aucun seuil nulle part : le prix ne dépend pas de la quantité, et une
     // grille à une ligne dirait le contraire.
@@ -93,7 +103,12 @@ export function volumeTierPrices(
             quantity: orderQuantityAt(context, minQuantity),
             observedVolumeRatioBp: floor.observedVolumeRatioBp,
           }).applied;
-    const resolved = resolvePrice(canonicalMillicents, withLadder(rules, ladders, at), at, applied);
+    const resolved = resolvePrice(
+      canonicalMillicents,
+      withLadder(rules, ladders, mercuriale, at),
+      at,
+      applied,
+    );
     return {
       minQuantity,
       unitPriceMillicents: resolved.finalMillicents,
@@ -118,6 +133,7 @@ function allThresholds(
   ladder: VolumeLadder | null,
   rules: readonly PriceRule[],
   context: PricingContext,
+  mercuriale: CompanyMercuriale | null,
 ): number[] {
   const fromLadder = ladder === null ? [] : ladder.tiers.map((tier) => tier.minQuantity);
   const fromRules = rules.flatMap((rule) =>
@@ -125,7 +141,18 @@ function allThresholds(
       ? []
       : [rule.minQuantity],
   );
-  return [...new Set([...fromLadder, ...fromRules])].sort((left, right) => left - right);
+  // Les seuils de la mercuriale se lisent sur l'OBJET, la grille n'étant plus
+  // une collection de règles. Même critère que pour les règles : un seuil compte
+  // s'il ouvre quelque chose **à sa propre quantité**.
+  const fromMercuriale =
+    mercuriale === null
+      ? []
+      : (mercuriale.lines.find((line) => line.sku === context.productSku)?.tiers ?? [])
+          .filter((tier) => mercuriale.asRuleFor(atQuantity(context, tier.minQuantity)) !== null)
+          .map((tier) => tier.minQuantity);
+  return [...new Set([...fromLadder, ...fromRules, ...fromMercuriale])].sort(
+    (left, right) => left - right,
+  );
 }
 
 /**
@@ -177,10 +204,17 @@ function orderQuantityAt(context: PricingContext, threshold: number): number {
   return context.cumulativeQuantity === null ? threshold : context.quantity;
 }
 
-/** Les règles du moment, plus le palier que les barèmes ouvrent à cette quantité. */
+/**
+ * Les règles du moment, plus le palier que les barèmes ouvrent à cette quantité,
+ * plus celui de la mercuriale.
+ *
+ * Les trois se dérivent **à cette quantité-ci**, jamais avant : c'est ce que la
+ * grille sonde, palier par palier.
+ */
 function withLadder(
   rules: readonly PriceRule[],
   ladders: readonly VolumeLadder[],
+  mercuriale: CompanyMercuriale | null,
   context: PricingContext,
 ): PriceRule[] {
   const fromLadders = ladders
@@ -188,7 +222,10 @@ function withLadder(
       tierFor(ladder, context.quantity) === null ? null : ladderAsRule(ladder, context),
     )
     .filter((rule): rule is PriceRule => rule !== null);
-  return [...rules, ...fromLadders];
+  const fromMercuriale = mercuriale?.asRuleFor(context) ?? null;
+  return fromMercuriale === null
+    ? [...rules, ...fromLadders]
+    : [...rules, ...fromLadders, fromMercuriale];
 }
 
 /** L'écart au tarif d'entrée, en points de base d'une baisse. Jamais négatif. */

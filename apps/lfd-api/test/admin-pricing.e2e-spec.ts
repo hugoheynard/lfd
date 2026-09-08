@@ -180,24 +180,28 @@ describe("poser une règle", () => {
   });
 
   /**
-   * Le refus central du modèle, vu du bord : une mercuriale en pourcentage
-   * suivrait les hausses du tarif de liste, ce qui n'est pas ce qui a été
-   * négocié. `400`, et non un 500 qui ferait accuser l'infrastructure.
+   * 🔴 **La porte fermée le 2026-09-08.** Une mercuriale ne s'écrit plus comme
+   * une règle nue : c'est une grille posée sur un client, et elle a sa route.
+   *
+   * Ce que ce refus empêche n'est pas une saisie bizarre, c'est un **400 au
+   * paiement** : une mercuriale saisie ici survivrait dans `price_rules` à côté
+   * de la grille du même client, deux décisions au même étage qu'aucune
+   * contrainte ne voit ensemble, et `winnerOf` refuserait de départager.
+   *
+   * Les deux formes sont éprouvées — celle qui était acceptée hier comme celle
+   * qui était refusée — parce que c'est le STAGE qui est fermé, pas l'effet.
    */
-  it("refuse une mercuriale en pourcentage, en 400", async () => {
-    const response = await postRule({ stage: "mercuriale" });
-
-    expect(response.status).toBe(400);
-  });
-
-  it("accepte une mercuriale qui pose un prix", async () => {
-    const response = await postRule({
+  it("🔴 refuse une mercuriale saisie à la main, quelle que soit sa forme", async () => {
+    const percent = await postRule({ stage: "mercuriale" });
+    const firm = await postRule({
       stage: "mercuriale",
       effect: { nature: "replace", amountMillicents: 210_000 },
       audience: { type: "company", id: "cmp_absent" },
     });
 
-    expect(response.status).toBe(201);
+    expect(percent.status).toBe(400);
+    // Celle-là répondait 201 jusqu'au 2026-09-08.
+    expect(firm.status).toBe(400);
   });
 
   /**
@@ -907,11 +911,20 @@ describe("l'écran de tarification", () => {
   });
 
   it("n'applique pas une mercuriale visant un client à la vitrine", async () => {
-    await postRule({
-      stage: "mercuriale",
-      effect: { nature: "replace", amountMillicents: 150_000 },
-      audience: { type: "company", id: "cmp_dupont" },
-    });
+    // La mercuriale se pose par SA route depuis le 2026-09-08 — la saisie à la
+    // main est fermée. Elle vise donc une société réelle, ce qui rend le cas
+    // plus proche du vrai qu'il ne l'était : le tableau résout à `companyId:
+    // null`, et c'est ça qui l'écarte.
+    const client = await createCompany(ctx.prisma);
+    await staff()
+      .post(`/admin/pricing/companies/${client.id}/mercuriale`)
+      .send({
+        label: "Mercuriale Dupont",
+        validFrom: daysFromToday(-1),
+        validTo: daysFromToday(365),
+        lines: [{ sku: SKU, unitPriceMillicents: 150_000 }],
+      })
+      .expect(201);
 
     expect((await croissant()).finalMillicents).toBe(millicentsFromCents(CANONICAL));
   });

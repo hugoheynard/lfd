@@ -54,8 +54,26 @@ export type PriceStage = z.infer<typeof priceStageSchema>;
  * L'étage, lui, **reste** dans {@link priceStageSchema} : le barème s'y présente
  * au moment du calcul, et toutes les traces déjà figées le nomment. Ce qui
  * disparaît, c'est la façon de l'écrire à la main — pas l'étage.
+ *
+ * ---
+ *
+ * **La mercuriale en est sortie le 2026-09-08**, et pour la même raison, un cran
+ * plus tôt. Elle n'est pas une règle qu'on écrit : c'est une **grille posée sur
+ * un client**, avec son écran, ses invariants et son unité. Deux façons de la
+ * produire — la fiche d'un compte et une règle nue — donnaient deux objets que
+ * rien ne pouvait rapprocher, et la seconde n'avait aucun appelant : le panneau
+ * de saisie n'offre que « promotion » et « geste » depuis toujours.
+ *
+ * Ce qui se serait passé sinon : une mercuriale saisie à la main survivant dans
+ * `price_rules` à côté de la grille du même client, deux décisions au même étage
+ * qu'aucune contrainte ne voit ensemble, et `AmbiguousPriceRulesError` — un
+ * **400 au paiement**. Exactement le cas que le barème a fermé ici même.
+ *
+ * L'étage, lui, **reste** dans {@link priceStageSchema}, comme pour le volume :
+ * la grille s'y présente au moment du calcul, et toutes les traces figées le
+ * nomment.
  */
-export const authoredPriceStageSchema = z.enum(["mercuriale", "promotion", "geste"]);
+export const authoredPriceStageSchema = z.enum(["promotion", "geste"]);
 export type AuthoredPriceStage = z.infer<typeof authoredPriceStageSchema>;
 
 /** Ce qu'une règle vise, du plus large au plus précis. */
@@ -355,7 +373,15 @@ export const pricingActSchema = z.enum([
 export type PricingActKind = z.infer<typeof pricingActSchema>;
 
 /** Ce sur quoi un acte porte : une règle, une limite, ou un barème de volume. */
-export const pricingSubjectSchema = z.enum(["rule", "floor", "ladder"]);
+/**
+ * Ce sur quoi un acte tarifaire porte.
+ *
+ * `mercuriale` est arrivée le 2026-09-08, quand la grille d'un client a cessé
+ * d'être N règles. Un sujet à part, et non `rule` : relire « pourquoi ce prix »
+ * doit rendre UN acte — « posée le 8 septembre, 92 articles » — et non les N que
+ * la pose écrivait, dont aucun ne disait à quelle grille il appartenait.
+ */
+export const pricingSubjectSchema = z.enum(["rule", "floor", "ladder", "mercuriale"]);
 export type PricingSubjectType = z.infer<typeof pricingSubjectSchema>;
 
 export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {

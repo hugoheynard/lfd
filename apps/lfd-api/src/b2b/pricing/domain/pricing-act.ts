@@ -36,7 +36,7 @@ export const PRICING_ACTS = [
 ] as const;
 export type PricingActKind = (typeof PRICING_ACTS)[number];
 
-export type PricingSubjectType = "rule" | "floor" | "ladder";
+export type PricingSubjectType = "rule" | "floor" | "ladder" | "mercuriale";
 
 export interface PricingAct {
   readonly subjectType: PricingSubjectType;
@@ -210,6 +210,11 @@ const FACT_PREFIX: Readonly<Record<PricingSubjectType, string>> = {
   rule: "price_rule",
   floor: "price_floor",
   ladder: "volume_ladder",
+  // Un sujet à part, et non `price_rule` : une mercuriale n'est plus une
+  // collection de règles. Relire « pourquoi ce prix » six mois plus tard doit
+  // rendre UN acte — « posée le 8 septembre » — et non les N que la pose
+  // écrivait, dont aucun ne disait à quelle grille il appartenait.
+  mercuriale: "company_mercuriale",
 };
 
 /** Le sujet du journal général, aligné sur le préfixe du fait. */

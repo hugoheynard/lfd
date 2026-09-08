@@ -7,6 +7,7 @@ import { OverlappingVolumeLadderError } from "../domain/pricing-errors.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import { ladderStateFromRow } from "./volume-ladder-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
+import { isExclusionViolation } from "./exclusion-violation.js";
 
 /**
  * **Le nom de la contrainte**, et non son code SQLSTATE — même raison que pour
@@ -49,7 +50,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
         }),
       );
     } catch (error) {
-      if (isExclusionViolation(error)) {
+      if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new OverlappingVolumeLadderError(error);
       }
       throw error;
@@ -80,16 +81,3 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
 }
 
 /** Violation de la contrainte d'exclusion, duck-typée — cf. les règles. */
-function isExclusionViolation(error: unknown): boolean {
-  for (let current = error, depth = 0; current !== null && depth < 5; depth += 1) {
-    if (typeof current !== "object") {
-      return false;
-    }
-    const message: unknown = Reflect.get(current, "message");
-    if (typeof message === "string" && message.includes(OVERLAP_CONSTRAINT)) {
-      return true;
-    }
-    current = Reflect.get(current, "cause");
-  }
-  return false;
-}

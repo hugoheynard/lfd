@@ -7,6 +7,7 @@ import { OverlappingPriceRuleError } from "../domain/pricing-errors.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import { ruleStateFromRow, type RuleRow } from "./price-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
+import { isExclusionViolation } from "./exclusion-violation.js";
 
 /**
  * **Le nom de la contrainte**, et non son code SQLSTATE.
@@ -48,7 +49,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
     try {
       await this.acts.around(act, () => this.prisma.priceRule.create({ data: ruleData(rule) }));
     } catch (error) {
-      if (isExclusionViolation(error)) {
+      if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new OverlappingPriceRuleError(rule.toPersistence().stage, error);
       }
       throw error;
@@ -144,16 +145,3 @@ function magnitudeOf(
  * silence à la prochaine montée de version — en rendant un 500 là où le staff
  * lisait une phrase.
  */
-function isExclusionViolation(error: unknown): boolean {
-  for (let current = error, depth = 0; current !== null && depth < 5; depth += 1) {
-    if (typeof current !== "object") {
-      return false;
-    }
-    const message: unknown = Reflect.get(current, "message");
-    if (typeof message === "string" && message.includes(OVERLAP_CONSTRAINT)) {
-      return true;
-    }
-    current = Reflect.get(current, "cause");
-  }
-  return false;
-}

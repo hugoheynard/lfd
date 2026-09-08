@@ -2,6 +2,7 @@ import type { PriceRule, PricingContext, ScopedPriceFloor } from "./price-rule.j
 import { candidatesIn, indexByScope, type ScopeIndex } from "./scope-index.js";
 import type { VolumeCommitment } from "./volume-commitment.js";
 import type { VolumeLadder } from "./volume-ladder.js";
+import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 
 /**
  * **Tout ce qu'il faut pour tarifer un panier**, chargé une fois et rangé.
@@ -48,6 +49,19 @@ export interface PricingMaterials {
    * décision dans une clé.
    */
   readonly commitments: readonly VolumeCommitment[];
+  /**
+   * **La mercuriale en cours de ce client**, ou `null`.
+   *
+   * Au plus une : la base n'en laisse pas deux se recouvrir chez un même
+   * client. Elle n'est **pas** rangée par portée comme les règles — elle porte
+   * sa propre grille, et c'est elle qui sait quel article elle vise.
+   *
+   * 🔴 **Elle est ici en OBJET, jamais convertie.** Trois appelants font varier
+   * la quantité sur les mêmes matériaux — la projection, la colonne des paliers,
+   * la caisse quand elle sonde — et une règle dérivée trop tôt y serait figée
+   * au premier palier. Cf. `CompanyMercuriale.asRuleFor`.
+   */
+  readonly mercuriale: CompanyMercuriale | null;
 }
 
 /** Range les matériaux d'un panier. Chacun sait où lire sa portée. */
@@ -56,18 +70,41 @@ export function materialsOf(loaded: {
   readonly floors: readonly ScopedPriceFloor[];
   readonly ladders: readonly VolumeLadder[];
   readonly commitments: readonly VolumeCommitment[];
+  readonly mercuriale: CompanyMercuriale | null;
 }): PricingMaterials {
   return {
     rules: indexByScope(loaded.rules, (rule) => rule.scope),
     floors: indexByScope(loaded.floors, (floor) => floor.scope),
     ladders: indexByScope(loaded.ladders, (ladder) => ladder.scope),
     commitments: loaded.commitments,
+    mercuriale: loaded.mercuriale,
   };
 }
 
 /** Les règles qui visent cet article — la concaténation de ses quatre seaux. */
 export function rulesFor(materials: PricingMaterials, context: PricingContext): PriceRule[] {
   return candidatesIn(materials.rules, context);
+}
+
+/**
+ * **La mercuriale de ce client, vue comme une règle pour cet article.**
+ *
+ * `null` si le client n'en a pas, si elle ne porte pas l'article, ou si la
+ * mesure n'atteint aucun palier.
+ *
+ * 🔴 **Elle n'est PAS jointe par `rulesFor`, et c'est délibéré.** `price-line`
+ * passe à `volumeTierPrices` les règles **sans** les barèmes, parce que
+ * celui-ci les reconvertit à chaque palier qu'il sonde — deux règles de même
+ * identifiant à un étage rendaient la résolution ambiguë, et c'était un 400 sur
+ * une commande de 20. Une mercuriale pré-jointe y reproduirait le même défaut.
+ * Chaque appelant la demande donc explicitement, au moment où il sait à quelle
+ * mesure il résout.
+ */
+export function mercurialeFor(
+  materials: PricingMaterials,
+  context: PricingContext,
+): PriceRule | null {
+  return materials.mercuriale?.asRuleFor(context) ?? null;
 }
 
 /** Les planchers qui visent cet article. */
