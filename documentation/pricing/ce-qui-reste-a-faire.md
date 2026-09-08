@@ -19,36 +19,60 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 > dit _où_ — un fichier ouvert, une porte lancée, un `grep` posé. Les six qui
 > ont été refermées depuis leur écriture sont au §5, avec la preuve : une liste
 > qui ne fait que grandir n'est pas un registre, c'est un cimetière.
+>
+> **R15 à R26 ont été ajoutées le 2026-09-08** par le troisième regard,
+> [`audit-du-moteur-a-la-facade.md`](audit-du-moteur-a-la-facade.md), qui tient
+> le raisonnement. Ce registre ne tient que le fait, la preuve et le remède.
+>
+> ⚠️ **Sur les dates.** Les entrées R1 à R14 se datent du 2026-09-09 ; les
+> commits qui les portent sont du 2026-09-08 (`git log`). L'écart est nommé
+> plutôt qu'hérité : ce qui est ajouté depuis porte la date de git.
 
 ---
 
 ## 1. Le tableau, en un écran
 
-| #       | Ce que c'est                                               | Gravité | Coût                   |
-| ------- | ---------------------------------------------------------- | ------- | ---------------------- |
-| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                  | ✅      | **clos le 2026-09-09** |
-| **R2**  | La simulation rejoue les paliers **dans le navigateur**    | 🔴      | conception             |
-| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~ | ✅      | **clos le 2026-09-09** |
-| **R4**  | Le client peut payer autre chose que ce qu'il a vu         | 🟠      | conception             |
-| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~    | ✅      | **clos le 2026-09-09** |
-| **R6**  | L'engagement de volume n'a **aucun écran**                 | 🟠      | un lot front           |
-| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~           | ✅      | **clos le 2026-09-09** |
-| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~       | ✅      | **clos le 2026-09-09** |
-| **R9**  | 19 conversions de jour en minuit UTC, hors tarification    | 🟡      | inventaire fait        |
-| **R10** | **Deux** traces mortes dans la tarification                | 🟡      | trivial                |
-| **R11** | Le volume prévu appartient au gabarit, pas au client       | 🟡      | conception             |
-| **R12** | Trois requêtes de production jamais lancées                | 🟡      | trois `psql`           |
-| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**         | 🔵      | décision               |
-| **R14** | Les conditionnements — conception **périmée**              | 🔵      | à réécrire             |
+| #       | Ce que c'est                                                               | Gravité   | Coût                    |
+| ------- | -------------------------------------------------------------------------- | --------- | ----------------------- |
+| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                  | ✅        | **clos le 2026-09-09**  |
+| **R2**  | La simulation rejoue les paliers **dans le navigateur**                    | 🔴        | conception              |
+| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                 | ✅        | **clos le 2026-09-09**  |
+| **R4**  | Le client peut payer autre chose que ce qu'il a vu                         | 🟠        | conception              |
+| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                    | ✅        | **clos le 2026-09-09**  |
+| **R6**  | L'engagement de volume n'a **aucun écran**                                 | 🟠        | un lot front            |
+| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                           | ✅        | **clos le 2026-09-09**  |
+| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                       | ✅        | **clos le 2026-09-09**  |
+| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                    | 🟡        | inventaire fait         |
+| **R10** | **Deux** traces mortes dans la tarification                                | 🟡        | trivial                 |
+| **R11** | Le volume prévu appartient au gabarit, pas au client                       | 🟡        | conception              |
+| **R12** | Trois requêtes de production jamais lancées                                | 🟡        | trois `psql`            |
+| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                         | 🔵        | décision                |
+| **R14** | Les conditionnements — conception **périmée**                              | 🔵        | à réécrire              |
+| **R15** | La projection ouvre le plancher dynamique sur une quantité **fictive**     | 🔴        | un test, un correctif   |
+| **R16** | Un engagement de portée famille est mesuré **par SKU**                     | 🔴        | décision, puis un lot   |
+| **R17** | La lecture datée `at` ignore ce qui a été **archivé depuis**               | 🔴 latent | décision                |
+| **R18** | Engagement et gabarit répondent **400** là où le reste répond 404 et 409   | 🟠        | une heure               |
+| **R19** | Treize commentaires disent « centimes » sur des millicentimes              | 🟠        | une heure, puis un type |
+| **R20** | La doc de référence contredit le code — promis/livré, unités, index global | 🟠        | un lot doc              |
+| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`       | 🟠        | tombe avec R26          |
+| **R22** | La vitrine **publique** ne passe pas par le fabricant                      | 🟠        | un lot back             |
+| **R23** | Le front recalcule un plancher — **sixième** occurrence du motif           | 🟠        | rejoint R2              |
+| **R24** | États inatteignables et colonnes mortes                                    | 🟡        | trivial                 |
+| **R25** | La trace figée ne persiste ni scellement ni éviction                       | 🟡        | deux colonnes additives |
+| **R26** | `Pricer` n'a **aucun** appelant ; la façade unique reste à dessiner        | 🔵        | conception, `vitruve`   |
 
 **Cinq entrées sont closes le jour même de ce registre** — R1, R3, R5, R7 et R8.
-Il reste **neuf** entrées, dont deux décisions et deux documents à réécrire. Elles restent listées avec leur preuve plutôt que retirées :
-une entrée effacée est une entrée que quelqu'un rouvrira.
+**Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26). Il
+reste **vingt et une** entrées, dont trois décisions et trois documents à
+réécrire. Elles restent listées avec leur preuve plutôt que retirées : une entrée
+effacée est une entrée que quelqu'un rouvrira.
 
-**Rien de ce qui reste ne fausse un prix résolu.** Le moteur est propre : une seule
-porte sur `resolvePrice`, quatre étages composés en rationnel exact, un arrondi,
-une trace figée. Ce qui reste est **autour** — à la frontière moteur → commande,
-dans ce qu'aucun test ne tient, et dans ce qu'une facture ne pourra pas relire.
+⚠️ **Ce paragraphe disait « rien de ce qui reste ne fausse un prix résolu ».
+C'est faux depuis R15 et R16.** Le moteur — `resolvePrice`, la spécificité, le
+plancher, l'arrondi — reste propre. Mais l'objet qui l'appelle juge la porte
+d'un plancher dynamique sur une quantité qui n'est pas une commande, et mesure un
+engagement de famille sur un seul article. Ce qui fausse n'est plus _autour_ du
+moteur : c'est **dans sa porte**.
 
 ---
 
@@ -151,6 +175,49 @@ fait rougir le cas coursier, et lui seul.
 
 ⚠️ **Ce qu'il ne couvre pas** : la surtaxe de retard, qui dépend de l'heure
 limite. L'opposer ici mélangerait deux sujets ; elle a ses propres suites.
+
+### R15 🔴 La projection ouvre le plancher dynamique sur une quantité fictive
+
+**Le fait, vérifié le 2026-09-08.** `priceAtCumulative(item, N)`
+(`loaded-pricer.ts:196`) construit un contexte où `quantity` **et**
+`cumulativeQuantity` valent `N`, et `resolve()` (`loaded-pricer.ts:388`) juge la
+porte du plancher dynamique sur `context.quantity`. Une porte
+`{ minQuantity: 50, minVolumeRatioBp: null }` — légale : seules les deux
+conditions nulles sont refusées — s'ouvre donc à `N = 10 000`, et la projection
+annonce un prix **sous le mur dur** qu'une commande de 500 pièces ne verra jamais.
+
+Le JSDoc promet le contraire — « la porte d'un plancher dynamique reste
+FERMÉE » — ce qui est vrai pour la condition de volume et faux pour celle de
+quantité. Et `volume-tier-prices.ts:48` fait l'inverse pour la même question,
+avec `orderQuantityAt`. Deux méthodes du même objet, deux règles.
+
+**Ce qui ne le tient pas.** Le seul cas sur la porte fermée
+(`loaded-pricer.spec.ts:377`) n'a qu'une condition de volume (`:119`).
+
+**Le remède.** Un test qui échoue, puis la porte se juge sur la quantité de
+commande — ou ne s'ouvre jamais en projection, comme la doc le promet. La forme
+structurelle est la lentille de **R26**. Détail :
+[`audit-du-moteur-a-la-facade.md`](audit-du-moteur-a-la-facade.md) B.1.
+
+### R16 🔴 Un engagement de portée famille est mesuré par SKU
+
+**Le fait, vérifié le 2026-09-08.** `commitmentOf` (`loaded-pricer.ts:346`)
+calcule `orderedBySku.get(item.sku) + quantity`, et le chargeur
+(`pricing-materials.loader.ts:143`) lit les volumes **par SKU**. Un engagement
+`category:viennoiserie` de 10 000 promis ne voit, sur une ligne de croissants,
+que les croissants — ni les autres viennoiseries de l'historique, ni les autres
+lignes du panier. `max(promis, livré)` ne bascule qu'à 10 000 **croissants**, et
+`commitment.cumulativeQuantity` figé sur la ligne est faux.
+
+**Ce qui ne le tient pas.** `volume-commitment.spec.ts:66` teste le **choix**
+d'un engagement de famille, jamais sa **mesure**. Le modèle accepte `category`
+et `global`.
+
+**Le remède, à trancher.** Mesurer par portée — joindre le catalogue,
+`order_lines` ne portant que le SKU —, ou rendre la famille **inexprimable** en
+bornant la portée d'un engagement à `product` / `variant`. Tous les exemples du
+dossier sont par article ; la seconde voie est la moins chère. Détail : audit
+B.2.
 
 ---
 
@@ -256,6 +323,85 @@ on retombe sur la dernière estampille connue, c'est-à-dire le comportement
 d'avant. Servir un prix peut-être périmé vaut mieux qu'un refus de vente — et
 c'est le seul endroit de cette chaîne où ce compromis est le bon.
 
+### R17 🔴 La lecture datée ignore ce qui a été archivé depuis
+
+**Le fait, vérifié le 2026-09-08.** Les quatre lecteurs du chargeur excluent
+l'archivage **en absolu**, quel que soit `at` : `prisma-price-rule.reader.ts:54`,
+`prisma-price-floor.reader.ts:40`, `prisma-company-mercuriale.reader.ts:35`,
+`prisma-volume-commitment.reader.ts:25` — dont le port ne prend même pas d'`at`.
+Une mercuriale **close** depuis n'est donc pas retrouvée par une lecture datée
+d'avant sa clôture — ce que `company-mercuriale.ts:184`,
+[`comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md)
+(ligne 152) et `pricer.ts:36` (« que payait-il le 3 mars ? ») promettent tous
+trois. Le cas normal d'une mercuriale est « on clôt, on repose » : la question
+a la mauvaise réponse dans le cas où on la pose.
+
+Le tableau de bord, lui, lit avec `unarchivedAt(at)`
+(`prisma-pricing-board.reader.ts:115`) : **deux sémantiques d'archivage**, ce
+qu'`archived-at.ts` interdit en toutes lettres.
+
+**Latent, et il faut le dire.** Aucun chemin de production ne passe une date
+passée par le chargeur — `Pricer` n'a pas d'appelant (R26), le `at?`
+d'`OrderLinePricing.resolve` n'est passé par personne, la projection reçoit
+`clock.now()`. Le seul e2e (`pricer.e2e-spec.ts:351`) couvre l'expiration, pas
+la clôture. La porte est ouverte, documentée, et fausse ; son premier
+consommateur la franchira.
+
+**Le remède, à trancher.** `at` vrai partout — lecteurs datés, cache contourné
+pour une date passée — ou `at` **retiré** de `PriceRequest` et
+d'`OrderLinePricing.resolve`, la lecture datée restant au tableau de bord, seul
+endroit où elle est juste. Le moment le moins cher pour trancher est celui où
+personne ne l'emprunte. Détail : audit B.3.
+
+### R21 🟠 Deux séquences de chargement, et une query qui injecte Prisma
+
+**Le fait, vérifié le 2026-09-08.** Cinq endroits écrivent « la **seule**
+séquence de chargement » — `pricing.module.ts:31`,
+`pricing-materials.loader.ts:44`, `pricer.ts:73`,
+[`comment-un-prix-se-fabrique.md`](comment-un-prix-se-fabrique.md) ligne 42,
+[`architecture-pricer.md`](architecture-pricer.md) ligne 49. Le tableau et la
+fiche client chargent **eux-mêmes** : `company-pricing.query.ts:86` fait
+`prisma.priceRule.findMany` et `prisma.priceFloor.findMany`, puis
+`boardMaterials` (`:116`) construit un `LoadedPricer` avec `commitments: []` et
+`NO_EVIDENCE` ; `prisma-pricing-board.reader.ts:114` de même. C'est cette seconde
+séquence qui produit la double sémantique de R17.
+
+Et `CompanyPricingQuery` injecte `PrismaService` (`company-pricing.query.ts:69`)
+— `CLAUDE.md` §4 : « le handler dépend de ports, jamais de `PrismaService` ».
+
+**Le remède.** Tombe avec R26 : le tableau passe par la façade, lentille
+`screen`. Détail : audit B.7.
+
+### R22 🟠 La vitrine publique ne passe pas par le fabricant
+
+**Le fait, vérifié le 2026-09-08.** `read-shop-catalogue.ts:62` sert le prix du
+miroir — le canonique, jamais résolu. Une promotion publique (`audience: all`)
+est **invisible au rayon** et n'apparaît qu'au panier. Seule la route reconnue
+résout (`read-my-shop-catalogue.ts:82`), et seulement pour une société. La
+règle n° 1 du [`README.md`](README.md) — un seul fabricant — n'est pas tenue
+pour le visiteur, et le bandeau d'[`architecture-prix-boutique.md`](architecture-prix-boutique.md)
+(ligne 24) décrit une résolution « à 1 » qui n'a pas lieu.
+
+**Ce que ça coûte.** L'écart est dans le sens agréable. Mais une promotion qu'on
+ne voit pas ne fait pas vendre.
+
+**Le remède.** La route publique résout à `companyId: null`, quantité 1, par la
+même façade — quatre lectures pour toute la vitrine, comme la route reconnue.
+Détail : audit B.8.
+
+### R23 🟠 Le front recalcule un plancher — la sixième occurrence
+
+**Le fait, vérifié le 2026-09-08.** `resolve-floor.ts:67` interdit nommément
+« un `Math.round(canonical * bp / 10000)` qui aurait l'air identique ».
+`mercuriale-row.ts:50` l'écrit tel quel, et `mercuriale-row.ts:61` réimplémente
+l'écart au catalogue que [`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)
+(ligne 111) dit descendu dans `@lfd/money`. C'est l'écran où un commercial lit
+la **marge de négoce** avant de signer.
+
+**Le remède.** Rejoint **R2** : même lot front. Le critère de clôture du
+chantier 4 — « aucun `Math.round` sur un prix dans un composant Angular » —
+compte désormais deux fichiers. Détail : audit B.9.
+
 ---
 
 ## 4. Les garde-fous qui manquent
@@ -307,17 +453,51 @@ autres sites sont inventoriés et triés dans
 — **aucun défaut avéré**, deux questions ouvertes. Cité ici pour que ce registre
 soit complet, pas parce qu'il y a du travail immédiat.
 
+### R18 🟠 Engagement et gabarit répondent 400 là où le reste répond 404 et 409
+
+**Le fait, vérifié le 2026-09-08**, dans `pricing-errors.ts`. Introuvable :
+`ResourceNotFoundError` (404) pour les règles, barèmes et mercuriales (`:305`,
+`:589`), `DomainError` (400) pour l'engagement et le gabarit (`:631`, `:683`).
+Archivé, scellé : `BusinessError` (409) ici (`:385`, `:562`, `:817`),
+`DomainError` là (`:611`, `:673`). Recouvrement : 409 (`:285`, `:530`) contre
+400 (`:621`). La doc de résolution écrit « c'est un 409, pas un 404 » — deux
+agrégats sur cinq répondent 400, dont l'engagement, l'objet du moteur qui
+décide le plus.
+
+**Le remède.** Trois familles, une règle : `*NotFoundError` étend
+`ResourceNotFoundError`, `Archived*IsSealedError` et `Overlapping*Error` étendent
+`BusinessError`. Découper les 869 lignes par agrégat au passage. Détail : audit
+B.4.
+
+### R19 🟠 Treize commentaires disent « centimes » sur des millicentimes
+
+**Le fait, vérifié le 2026-09-08.** Le vecteur exact de D10 — « le commentaire
+disait _centimes_ ; trois panneaux de saisie l'ont cru » — est vivant sur treize
+sites : le schéma (`schema.prisma:2601`, `:2608`, `:2612`, `:2690`, `:2934`), le
+contrat (`pricing.ts:140`, `:467`, `:670`, `:672`, `:1033`, `:1202`), le domaine
+(`resolve-floor.ts:65`), et deux **messages lus par le staff**
+(`order-line.ts:83`, `:172`). `lint:money-units` lit les noms, pas les
+commentaires — son en-tête le dit.
+
+**Le remède.** Une heure pour les phrases. Puis le type nominal `Millicents` /
+`Cents` dans `@lfd/money`, que deux audits nomment déjà comme le seul cran qui
+ferme. Détail : audit B.5.
+
 ---
 
 ## 5. Les petits, et les décisions
 
-| #       | Le fait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Ce qui le ferme                                                                                                               |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **R10** | 🟡 **Deux traces mortes**, vérifiées par `grep` le 2026-09-09. `PriceTemplate.archive()` n'est appelé de nulle part — du code mort qui a l'air vivant. Et `MercurialeNameTakenError` n'est plus levée depuis que la mercuriale porte son identifiant : son JSDoc annonçait sa fin — « le jour où la pose portera son propre identifiant, ce refus n'aura plus de raison d'être ». **Conséquence métier** : rien n'interdit plus à un client deux grilles homonymes ; c'était notre modèle de lecture qui l'interdisait | Supprimer l'erreur. Pour `archive()` : le supprimer, ou lui donner sa route — pas les deux.                                   |
-| **R11** | 🟡 `plannedVolume` est stocké dans la **grille**. Un gabarit posé chez trois clients porte une seule hypothèse de saison — toute la simulation décrit alors le gabarit, jamais le client qu'on a en face                                                                                                                                                                                                                                                                                                               | Le volume prévu devient une donnée **du client**. La base le connaît déjà (`prisma-customer-volume.reader.ts`). Voisin de R2. |
-| **R12** | 🟡 Trois requêtes de production **jamais lancées**, en lecture seule, détaillées au §A.1 de [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md) : les paliers sous le centime (`D10`), les articles qui quittent la vitrine (`D8`), les remises qui dépassent le panier (`P4`)                                                                                                                                                                                                              | Le `.env` local pointe `localhost` ; elles demandent un accès prod.                                                           |
-| **R13** | 🔵 **Prix vivant / prix bloqué** — [le document](architecture-prix-vivant-prix-bloque.md) pose la question « qui porte le risque d'un prix qui bouge », et **zéro code** en découle. R4 en dépend                                                                                                                                                                                                                                                                                                                      | Une décision de Hugo, pas un lot.                                                                                             |
-| **R14** | 🔵 **Les conditionnements** — [le document](architecture-conditionnements-pricing.md) date du 2026-08-04 et affirme que « le PIM ne porte AUJOURD'HUI ni prix ni `unitsPerPack` ». **C'est faux depuis le 2026-08-31** : `ProductVariant.priceCents` existe                                                                                                                                                                                                                                                            | À réécrire sur l'existant, ou à archiver. En l'état il ferait construire contre le modèle en place.                           |
+| #       | Le fait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Ce qui le ferme                                                                                                                                   |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R10** | 🟡 **Deux traces mortes**, vérifiées par `grep` le 2026-09-09. `PriceTemplate.archive()` n'est appelé de nulle part — du code mort qui a l'air vivant. Et `MercurialeNameTakenError` n'est plus levée depuis que la mercuriale porte son identifiant : son JSDoc annonçait sa fin — « le jour où la pose portera son propre identifiant, ce refus n'aura plus de raison d'être ». **Conséquence métier** : rien n'interdit plus à un client deux grilles homonymes ; c'était notre modèle de lecture qui l'interdisait                                                                                                                                                                             | Supprimer l'erreur. Pour `archive()` : le supprimer, ou lui donner sa route — pas les deux.                                                       |
+| **R11** | 🟡 `plannedVolume` est stocké dans la **grille**. Un gabarit posé chez trois clients porte une seule hypothèse de saison — toute la simulation décrit alors le gabarit, jamais le client qu'on a en face                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Le volume prévu devient une donnée **du client**. La base le connaît déjà (`prisma-customer-volume.reader.ts`). Voisin de R2.                     |
+| **R12** | 🟡 Trois requêtes de production **jamais lancées**, en lecture seule, détaillées au §A.1 de [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md) : les paliers sous le centime (`D10`), les articles qui quittent la vitrine (`D8`), les remises qui dépassent le panier (`P4`)                                                                                                                                                                                                                                                                                                                                                                                          | Le `.env` local pointe `localhost` ; elles demandent un accès prod.                                                                               |
+| **R13** | 🔵 **Prix vivant / prix bloqué** — [le document](architecture-prix-vivant-prix-bloque.md) pose la question « qui porte le risque d'un prix qui bouge », et **zéro code** en découle. R4 en dépend                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Une décision de Hugo, pas un lot.                                                                                                                 |
+| **R14** | 🔵 **Les conditionnements** — [le document](architecture-conditionnements-pricing.md) date du 2026-08-04 et affirme que « le PIM ne porte AUJOURD'HUI ni prix ni `unitsPerPack` ». **C'est faux depuis le 2026-08-31** : `ProductVariant.priceCents` existe                                                                                                                                                                                                                                                                                                                                                                                                                                        | À réécrire sur l'existant, ou à archiver. En l'état il ferait construire contre le modèle en place.                                               |
+| **R20** | 🟠 **La doc de référence contredit le code.** [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) ligne 713 : « la promesse ne calcule rien » — le code fait `max(promis, livré)`, et le même document le dit ligne 1096 ; sa partie B est en centimes ; « `supersededIn` a disparu » alors qu'il tourne (`board-item.ts:186`). [`ecrans-de-tarification.md`](ecrans-de-tarification.md) : une observation par client (le code : par palier, `mercuriale-benchmark.query.ts:60`), une mercuriale « en `alter` », un gabarit qui « fabrique des règles ». L'index global ([`../README.md`](../README.md)) : six lignes périmées. Et les dates du 09-09 sur des commits du 08 | Un lot doc, partie B d'abord. Détail : audit B.6                                                                                                  |
+| **R24** | 🟡 **États inatteignables.** `company_mercuriales.paused_at` est écrit, relu (`mercuriale-rows.ts:44`) et filtré (`prisma-company-mercuriale.reader.ts:59`) sans aucun `pause()` sur l'agrégat ; `price_rules.floor_mode` / `floor_value` ne sont jamais lus ; `AuthoredPriceStage` du domaine (`price-rule.ts:36`) accepte encore `mercuriale` quand le contrat l'a sortie (`pricing.ts:76`)                                                                                                                                                                                                                                                                                                      | Retirer, ou donner un geste — pas les deux. Détail : audit B.10                                                                                   |
+| **R25** | 🟡 **La trace figée ne persiste ni scellement ni éviction** (`pricing.ts:523`, `:615`). « Pourquoi ma promotion ne s'est pas appliquée ? » a trois réponses, la ligne n'en garde aucune                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Deux colonnes additives, `NULL` = antérieur. Détail : audit B.11                                                                                  |
+| **R26** | 🔵 **`Pricer` n'a aucun appelant** — `app.module.ts:110` l'importe, personne ne l'injecte. Les trois consommateurs refont la chorégraphie, le mapping est copié six fois, `pricerFor` rend `null`, « ce qu'on écarte » a trois formes, `pricing → orders` pour le catalogue, le domaine importe `@lfd/contracts`, la lecture est hors bus                                                                                                                                                                                                                                                                                                                                                          | **Une façade** : un lot qui connaît ses articles, une lentille qui nomme ce qu'elle écarte. Conception en audit C.4 ; touche l'argent : `vitruve` |
 
 ---
 
@@ -357,8 +537,17 @@ clôture — _« aucun `Math.round` sur un prix dans un composant Angular »_ �
 5. **R2** — conception, `vitruve`, puis un lot front. **Le plus gros du reste.**
 6. **R6** — le seul mécanisme du moteur que personne ne peut manipuler.
 7. ~~**R7**, **R8**~~ — ✅ faits le 2026-09-09.
+8. **R15 et R16** — deux tests qui échouent, puis le correctif : les seuls
+   constats qui produisent un **prix faux**.
+9. **R17** — trancher `at` pendant qu'il n'a aucun consommateur.
+10. **R18 et R19** — une heure, zéro risque, et le vecteur de D10 se ferme.
+11. **R26** — la façade avec sa lentille, `vitruve` d'abord ; R21, R24 et R25
+    tombent avec elle.
+12. **R20**, puis **R22 et R23** — ce dernier avec R2, dont il est le même lot.
 
-**Ce que je ne ferais pas.** Toucher au moteur. Il a une seule porte, une trace
-figée, des contraintes d'exclusion qui rendent le chevauchement impossible, et
-49 tests neufs qui mordent — vérifié par mutation le 2026-09-09. Tout ce qui
-reste est autour de lui, et c'est là qu'il faut travailler.
+**Ce que je ne ferais pas.** Toucher au moteur — `resolvePrice`, la spécificité,
+le plancher, la grille des paliers. Il a une trace figée, des contraintes
+d'exclusion qui rendent le chevauchement impossible, et 49 tests neufs qui
+mordent — vérifié par mutation le 2026-09-09. ⚠️ **R15 et R16 ne sont pas dans
+le moteur : ils sont dans `LoadedPricer`, sa porte** — et c'est cette porte que
+R26 redessine.
