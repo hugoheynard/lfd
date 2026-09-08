@@ -18,5 +18,12 @@ export {
   roundToCents,
   divideByBasisPoints,
 } from "./exact.js";
+export {
+  RATIO_UNIT_BP,
+  isoRevenueRatioBp,
+  requiredVolume,
+  attainmentBp,
+  observedRatioBp,
+} from "./elasticity.js";
 export { DELIVERY_VAT_RATE, ventilateVat } from "./vat.js";
 export type { VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";

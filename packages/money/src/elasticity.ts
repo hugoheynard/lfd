@@ -1,6 +1,15 @@
 /**
  * **Ce qu'une altération coûte en volume.**
  *
+ * 🔴 **Dans `@lfd/money` et non dans un domaine**, depuis le 2026-09-08 : deux
+ * surfaces en ont besoin, et pour la même phrase. Le serveur mesure l'effort
+ * d'une règle POSÉE ; l'écran qui établit une mercuriale mesure celui d'un prix
+ * qu'on est en train de TAPER, donc avant qu'aucune règle n'existe. Une seconde
+ * implémentation côté navigateur aurait annoncé un objectif pendant la
+ * négociation, et un autre une fois le prix posé — sur le même article, le même
+ * jour. C'est de l'arithmétique en points de base sur de l'argent : elle est ici
+ * chez elle, à côté de `scaleByBasisPoints`.
+ *
  * Une remise ne se juge pas au pourcentage, elle se juge à ce qu'elle oblige à
  * vendre : baisser de 20 % impose de vendre ×1,25 pour encaisser le même
  * chiffre. Ce module ne calcule que ça — sans base, sans horloge, sans réseau —

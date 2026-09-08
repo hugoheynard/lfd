@@ -1,4 +1,4 @@
-import { RATIO_UNIT_BP } from "./elasticity.js";
+import { RATIO_UNIT_BP } from "@lfd/money";
 import type { PriceFloor } from "./price-rule.js";
 
 /**

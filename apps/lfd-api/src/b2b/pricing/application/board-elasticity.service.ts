@@ -85,8 +85,22 @@ export class BoardElasticityService {
     ruleDates: ReadonlyMap<string, Date>,
     now: Date,
     volumes: VolumeSource,
+    /**
+     * **Quels articles méritent d'être mesurés.**
+     *
+     * Par défaut, ceux dont le prix a bougé : sur le tableau général, mesurer
+     * les autres afficherait « ×1,00 » sur quatre-vingt-dix lignes, c'est-à-dire
+     * du bruit qu'on apprend à sauter.
+     *
+     * 🔴 L'écran qui **établit** une mercuriale passe `() => true`, et ce n'est
+     * pas un caprice : il calcule l'effort d'un prix qu'on est en train de
+     * taper, donc AVANT qu'aucune règle n'existe. Sans mesure sur les articles
+     * encore au tarif catalogue, la colonne resterait vide exactement là où on
+     * négocie.
+     */
+    select: (item: PricingItemView) => boolean = hasAlteration,
   ): Promise<readonly C[]> {
-    const altered = categories.flatMap((category) => category.items.filter(hasAlteration));
+    const altered = categories.flatMap((category) => category.items.filter(select));
     if (altered.length === 0) {
       return categories;
     }
@@ -102,7 +116,7 @@ export class BoardElasticityService {
     ]);
 
     return categories.map((category) =>
-      withElasticity(category, rolling, sinceChange, changeDates),
+      withElasticity(category, rolling, sinceChange, changeDates, select),
     );
   }
 
@@ -182,11 +196,12 @@ function withElasticity<C extends ElasticityCategory>(
   rolling: MeasuredWindows,
   sinceChange: ReadonlyMap<string, MeasuredWindows>,
   changeDates: ReadonlyMap<string, Date | null>,
+  select: (item: PricingItemView) => boolean,
 ): C {
   return {
     ...category,
     items: category.items.map((item) => {
-      if (!hasAlteration(item)) {
+      if (!select(item)) {
         return item;
       }
       const change = changeDates.get(item.sku) ?? null;

@@ -5,7 +5,7 @@ import {
   pricingContextFor,
   type PricingParties,
 } from "../../../pricing/application/pricing-context.js";
-import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
+import { observedRatioBp } from "@lfd/money";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
 import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";

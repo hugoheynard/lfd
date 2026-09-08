@@ -138,6 +138,12 @@ export class CompanyPricingQuery {
       new Map(rules.map((entry) => [entry.rule.id, entry.rule.validFrom])),
       at,
       (skus, window) => this.customerVolumes.volumesFor(companyId, skus, window),
+      // 🔴 TOUS les articles, pas seulement ceux dont le prix a déjà bougé.
+      // Cet écran calcule l'effort d'un prix qu'on TAPE : sur un compte sans
+      // mercuriale, aucun article n'a d'altération, et s'en tenir au défaut
+      // laisserait la colonne vide sur la totalité du catalogue — muette au
+      // moment précis où l'on négocie.
+      () => true,
     );
 
     const sealed = measured.flatMap((category) =>

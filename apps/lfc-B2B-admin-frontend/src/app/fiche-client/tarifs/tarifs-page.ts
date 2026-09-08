@@ -47,6 +47,7 @@ import {
   type MercurialeRow,
 } from '../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from './company-pricing.service';
+import { liveEffort } from './live-effort';
 import { openRoomMillicents } from './negotiation-room';
 import {
   draftFromView,
@@ -199,7 +200,10 @@ export class ClientTarifsPage {
         const row = mercurialeRow(item, millicentsIn(draft, item.sku));
         return {
           ...row,
-          elasticity: item.elasticity,
+          // L'effort suit le prix qu'on TAPE, pas celui qui est posé — et il
+          // vise le prix FINAL, celui que la limite a relevé s'il le fallait :
+          // c'est ce qui sera facturé, donc le seul dont l'effort soit réel.
+          elasticity: liveEffort(item.elasticity, row.catalogMillicents, row.finalMillicents),
           openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
           priceEuros: eurosIn(draft, item.sku),
         };

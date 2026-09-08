@@ -1,6 +1,6 @@
 import type { ElasticityComparison, ItemElasticityView, VolumeWindowView } from "@lfd/contracts";
 
-import { attainmentBp, isoRevenueRatioBp, requiredVolume } from "../domain/elasticity.js";
+import { attainmentBp, isoRevenueRatioBp, requiredVolume } from "@lfd/money";
 import type { WindowPair } from "../domain/elasticity-windows.js";
 import type { VolumeWindow } from "../domain/ports/sku-volume.reader.js";
 
