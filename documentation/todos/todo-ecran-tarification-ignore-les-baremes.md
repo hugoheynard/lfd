@@ -1,6 +1,21 @@
 # L'écran de tarification n'annonce pas le prix que la caisse facture
 
-**Ouvert le 2026-09-08.** 🔴 Défaut mesuré, non corrigé. Écran en service.
+**Ouvert le 2026-09-08.** ✅ **Clos le 2026-09-09.**
+
+> **Corrigé, et par la racine plutôt que par le symptôme.** L'écran ne passait
+> pas les barèmes à `resolvePrice` ; le corriger là aurait laissé les quatre
+> autres appelants libres de refaire la même chose — et l'un d'eux l'avait déjà
+> fait, sur la mercuriale.
+>
+> Ce qui a été fait à la place : les six gestes qu'un prix demande sont passés
+> dans `LoadedPricer`, **seul appelant de `resolvePrice`** du dépôt, et
+> `lint:price-pipeline` est passée de cinq entrées à une. L'écran ne compose
+> plus de prix : il en demande un.
+>
+> **Le test qui tient la fermeture** : `pricing-budget.e2e-spec.ts` exige que
+> `GET /admin/pricing` et `POST /shop/quote` annoncent le **même** prix sur un
+> article dont un barème s'ouvre dès la première pièce — le cas exact décrit
+> ci-dessous. Voir [`../pricing/architecture-pricer.md`](../pricing/architecture-pricer.md).
 
 > Trouvé en cherchant autre chose : Hugo signalait un écart entre un prix de
 > mercuriale et ce que la boutique affichait. La mercuriale n'était pas en

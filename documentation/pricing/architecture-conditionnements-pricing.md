@@ -8,6 +8,25 @@
 > Statut : **conception.** Date : 2026-08-04, **révisé le 2026-08-23**.
 > Voisin : [`audit-catalogue-boutique-b2b.md`](../b2b/audit-catalogue-boutique-b2b.md).
 
+> 🔴 **PÉRIMÉ — relu le 2026-09-09, conservé mais à ne pas suivre.**
+>
+> Son « point de départ » affirme que **« le PIM ne porte AUJOURD'HUI ni prix ni
+> `unitsPerPack` »** et que « le prix vit dans le seed B2B ». **Les deux sont
+> faux depuis le 2026-08-31** : `ProductVariant.priceCents` existe, le prix se
+> saisit en TTC sur la déclinaison, et chaque taux en dérive son HT
+> ([`architecture-prix-ancre-ttc.md`](architecture-prix-ancre-ttc.md)).
+>
+> Tout le raisonnement de ce document repose sur ce point de départ. Le suivre
+> ferait **construire contre le modèle en place**, ce qui est précisément ce
+> qu'une doc périmée coûte. Il n'est pas réécrit de mémoire — ce serait la faute
+> inverse, et plus chère. Il est suivi comme **R14** dans
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md) : à réécrire sur
+> l'existant, ou à archiver.
+>
+> **Ce qui vaut toujours** : la question qu'il pose — séparer le **fait produit**
+> (un carton de 50 existe) de la **décision commerciale** (il coûte moins cher à
+> l'unité). Cette séparation est bonne, et rien ne l'a implémentée.
+
 ## Point de départ (ce qui existe déjà)
 
 - Le PIM a **`ProductVariant`** = « la **déclinaison**, l'unité réellement vendue

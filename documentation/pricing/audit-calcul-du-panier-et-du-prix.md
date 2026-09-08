@@ -1,6 +1,14 @@
 # Le calcul du panier et du prix — audit de l'existant
 
-**Ouvert le 2026-09-05. Relu et découpé le 2026-09-06.**
+**Ouvert le 2026-09-05. Relu et découpé le 2026-09-06, revérifié le 2026-09-09.**
+
+> ✅ **Ses dix défauts et ses treize lots sont tous refermés.** Ce document est
+> un **registre clos** : on le lit pour comprendre ce qui a été corrigé et
+> pourquoi, plus pour savoir quoi faire.
+>
+> La seule chose qu'il porte encore d'ouvert est les **trois requêtes de
+> production** du §A.1, suivies comme **R12** dans
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md).
 
 > ## Où en est-on
 >

@@ -7,6 +7,13 @@ prolonge pas : il **relit le résultat** avec la question qu'on pose avant une
 mise en production — _qu'est-ce qui casse, qu'est-ce qui manque, qu'est-ce qu'il
 ne faut surtout pas toucher._
 
+> 🔴 **Relu le 2026-09-09. Trois de ses constats sont refermés**, et sa note ne
+> vaut plus : `lint:gates` est verte (§1), le gabarit est atomique (B3), les
+> quantités sont bornées (P1). **B1 et B2 restent vrais** — B2 seulement du côté
+> boutique, le côté admin étant couvert depuis. Le registre unique du dossier est
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md) ; ce document garde son
+> raisonnement, plus sa liste.
+>
 > ## Le verdict, en une ligne
 >
 > **7/10 aujourd'hui. 9/10 en huit commits, dont trois demandent une

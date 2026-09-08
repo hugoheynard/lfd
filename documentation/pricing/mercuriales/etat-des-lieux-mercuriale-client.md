@@ -1,6 +1,13 @@
 # Établir une mercuriale pour un compte client — état des lieux
 
-**Ouvert le 2026-09-08.** 🟡 Décrit du code qui tourne, et nomme ce qui manque.
+**Ouvert le 2026-09-08.** 🟡 Décrit du code qui tourne.
+
+> 🔴 **Relu le 2026-09-09.** **T7 est fermé** — les bornes de fenêtre passent par
+> `businessDayStart`, et `lint:business-day` le tient. **T4, T5 et T8 restent
+> ouverts** et sont désormais suivis dans
+> [`../ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md) (R6, R10, R11) : ce
+> document décrit un chantier, il n'est plus l'endroit où l'on cherche quoi
+> faire.
 
 > ## ✅ 2026-09-08 (même jour) — T1 est fermé, et T3 l'est à moitié
 >

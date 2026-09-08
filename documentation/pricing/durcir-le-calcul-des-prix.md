@@ -1,6 +1,20 @@
 # Durcir le calcul des prix
 
-**Écrit le 2026-09-08.** 📐 Feuille de route — rien n'est bâti.
+**Écrit le 2026-09-08.** ✅ **Quatre chantiers sur cinq sont bâtis.**
+
+> 🔴 **Relu le 2026-09-09. La note par axe ci-dessous est PÉRIMÉE**, et elle est
+> conservée telle quelle : c'est la photo qui a motivé le chantier, pas l'état
+> du code. Ce qui a bougé depuis :
+>
+> | Chantier                           | État                                                                                                                                            |
+> | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **1** — l'assemblage               | ✅ 2026-09-09. Cinq appelants de `resolvePrice` → **un**, `lint:price-pipeline` à 1 entrée. L'axe passe de 5 à 9.                               |
+> | **2** — le temps de Paris          | ✅ `lint:business-day` sur les fenêtres tarifaires. L'axe passe de 5 à 8 — 19 sites hors tarification restent (R9).                             |
+> | **3** — la discipline              | ❌ Ouvert. C'est **R8** du registre.                                                                                                            |
+> | **4** — les écrans qui recalculent | 🟡 **À moitié.** L'écart au tarif est dans `@lfd/money` ; la simulation du back-office rejoue toujours les paliers dans le navigateur — **R2**. |
+> | **5** — la charge                  | ✅ `pricing-budget.e2e-spec.ts` compte les opérations ORM.                                                                                      |
+>
+> Le travail restant est dans [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md).
 
 > Ce document répond à une question posée telle quelle : **« que faudrait-il pour
 > passer de 7,5 à 9 ? »**

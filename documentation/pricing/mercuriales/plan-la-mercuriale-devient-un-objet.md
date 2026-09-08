@@ -1,7 +1,14 @@
 # La mercuriale devient un objet
 
-**Plan v3, réécrit le 2026-09-08.** 📐 Doc-first : décidé, rien n'est bâti — sauf
-le lot 1 domaine, déjà posé (`cb088368`).
+**Plan v3, réécrit le 2026-09-08.** 🟢 **Livré le 2026-09-08.**
+
+> 🔴 **Cet en-tête disait « rien n'est bâti sauf le lot 1 » jusqu'au 2026-09-09.**
+> Les cinq lots sont dans le code : l'agrégat, la migration avec sa reprise, les
+> lecteurs, l'écran, et la bascule du prix. Le corps du plan est conservé tel
+> qu'il a été écrit — c'est le raisonnement qui vaut, et notamment les **deux
+> versions contredites** avant celle-ci.
+>
+> Pour l'état réel : [`comprendre-une-mercuriale.md`](comprendre-une-mercuriale.md).
 
 > **Décision de Hugo, 2026-09-08 :** une mercuriale se prend **en bloc**. On la
 > pose entière, on la clôt entière ; si un prix est faux, on assume et on
