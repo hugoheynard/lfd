@@ -35,6 +35,13 @@
 
   <div class="foot">
     <span class="price">
+      <!-- Le tarif catalogue, barré, quand ce client paie moins. Il ne
+           s'affiche que sur les articles négociés : une rature sur tout le
+           rayon ne dirait plus rien, et sur aucun elle cacherait ce qu'on lui
+           a consenti. -->
+      @if (striked(); as catalogue) {
+        <s class="price-was">{{ catalogue }}</s>
+      }
       {{ price() }}
       <span class="price-ht">{{ t().shop.htSuffix }}</span>
     </span>

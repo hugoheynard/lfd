@@ -50,6 +50,27 @@ describe('ProductTile', () => {
 
     expect(el.querySelector('.price-ht')?.textContent?.trim()).toBe(FR.shop.htSuffix);
     // Le montant seul, sans la mention collée dedans.
-    expect(el.querySelector('.price')?.firstChild?.textContent?.trim()).toBe('1,40 €');
+    //
+    // Lu par SOUSTRACTION plutôt qu'au premier nœud : depuis qu'un tarif
+    // catalogue barré peut précéder le prix, `firstChild` n'est plus le
+    // montant. Viser une position dans le DOM faisait dépendre ce cas de
+    // l'ordre des fragments, alors qu'il n'éprouve que leur séparation.
+    const price = el.querySelector('.price');
+    const suffix = el.querySelector('.price-ht')?.textContent ?? '';
+    expect((price?.textContent ?? '').replace(suffix, '').trim()).toBe('1,40 €');
+  });
+
+  /**
+   * 🔴 **Rien n'est barré tant qu'il n'y a rien à barrer.**
+   *
+   * Le serveur ne remplit `catalogPriceMillicents` que sur les articles où le
+   * prix servi diffère du tarif — c'est-à-dire sur ceux qu'un client a
+   * négociés. Une rature qui apparaîtrait partout ne dirait plus rien, et la
+   * tuile ne doit pas en inventer une à partir d'un champ absent.
+   */
+  it('ne barre RIEN sur un article que le client paie au tarif', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.price-was')).toBeNull();
   });
 });

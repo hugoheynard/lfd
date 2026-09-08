@@ -254,3 +254,14 @@ app-quantity-rail.wide-only {
     padding: 10px 12px 12px;
   }
 }
+
+// Le tarif d'avant, barré : plus discret que le prix courant, parce qu'il ne
+// sert qu'à mesurer l'écart. Aussi lisible que lui, il ferait hésiter sur
+// lequel des deux on paie.
+.price-was {
+  margin-inline-end: 0.35rem;
+  color: var(--fold-color-text-muted);
+  font-weight: 400;
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration-thickness: 1px;
+}

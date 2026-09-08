@@ -56,6 +56,23 @@ export class ProductTile {
     formatCents(unitPriceCents(this.product().unitPriceMillicents)),
   );
 
+  /**
+   * **Le tarif catalogue barré**, ou `null` quand il n'y a rien à barrer.
+   *
+   * Le serveur ne remplit `catalogPriceMillicents` que sur les articles où le
+   * prix servi diffère du tarif : l'absence EST la réponse, et la revérifier
+   * ici ferait une seconde règle qui pourrait diverger de la sienne.
+   *
+   * Formaté comme le prix courant — centimes arrondis — et non en
+   * millicentimes : deux échelles côte à côte se lisent mal, et « 2,1327 € »
+   * barré au-dessus de « 1,73 € » ferait chercher une précision qui n'a pas de
+   * sens sur une vignette.
+   */
+  protected readonly striked = computed(() => {
+    const catalogue = this.product().catalogPriceMillicents;
+    return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
+  });
+
   /** Le visuel du référentiel, ou l'illustration de son rayon. */
   protected readonly art = computed(() => artOf(this.product()));
 
