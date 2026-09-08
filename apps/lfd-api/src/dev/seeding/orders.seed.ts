@@ -297,6 +297,9 @@ async function place(
     // le semis poserait une seule ligne au lieu de son historique.
     idempotencyKey: randomUUID(),
     companyId: target.companyId,
+    // Le semis ne choisit pas : il laisse le serveur décider comme il l'a
+    // toujours fait — au compte si les termes sont accordés, par carte sinon.
+    settlement: null,
     fulfillmentMethod: order.method,
     deliveryAddress: order.method === "delivery" ? DELIVERY : null,
     deliveryAddressId: order.method === "delivery" ? target.deliveryAddressId : null,

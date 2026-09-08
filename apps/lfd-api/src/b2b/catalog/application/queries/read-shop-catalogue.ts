@@ -31,10 +31,22 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
    * rendrait un panier que la caisse ne sait pas lire.
    */
   async execute(): Promise<ShopCatalogueView> {
-    const sellable = await this.catalog.listSellable();
-    const items = sellable.filter((item) => item.isDefault).map(toItem);
-    return { shelves: shelvesOf(sellable, items), items };
+    return shopCatalogueOf(await this.catalog.listSellable());
   }
+}
+
+/**
+ * **Ce qui est vendable, et comment ça se range** — écrit une fois.
+ *
+ * Exporté parce que la route RECONNUE en a besoin à l'identique : mêmes
+ * articles, mêmes rayons, seul le prix change. La dupliquer aurait donné deux
+ * définitions de « ce que la vitrine montre », qui auraient divergé au premier
+ * article retiré — et une boutique qui montre à un client un article que
+ * l'autre ne voit pas est le genre d'écart qu'on ne découvre qu'au téléphone.
+ */
+export function shopCatalogueOf(sellable: readonly ResolvedCatalogItem[]): ShopCatalogueView {
+  const items = sellable.filter((item) => item.isDefault).map(toItem);
+  return { shelves: shelvesOf(sellable, items), items };
 }
 
 function toItem(item: ResolvedCatalogItem): ShopItemView {

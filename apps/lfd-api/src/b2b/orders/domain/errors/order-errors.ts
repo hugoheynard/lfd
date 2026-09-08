@@ -294,3 +294,26 @@ export class IdempotencyKeyReusedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Le compte a été demandé sans qu'un crédit ait été accordé.**
+ *
+ * Un 409 : ce n'est pas une saisie mal formée, c'est un état du monde qui
+ * s'oppose au geste. Le crédit se négocie avec une société cliente ; il ne se
+ * demande pas au moment de valider un panier.
+ *
+ * Refusé plutôt que rabattu silencieusement sur la carte : un client qui croit
+ * commander au compte et à qui l'on prélève 400 € sans le dire a de bonnes
+ * raisons d'appeler. Le refus nomme la sortie — payer par carte, ou faire
+ * ouvrir les termes.
+ */
+export class TermsNotGrantedError extends BusinessError {
+  constructor(readonly companyId: string | null) {
+    super(
+      "order.terms_not_granted",
+      companyId === null
+        ? "Une commande personnelle se règle par carte : le compte se négocie avec une société."
+        : "Aucun terme de paiement n'a été accordé à cette société : cette commande se règle par carte.",
+    );
+  }
+}

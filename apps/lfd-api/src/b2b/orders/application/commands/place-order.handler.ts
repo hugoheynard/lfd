@@ -6,9 +6,12 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
+import type { OrderSettlement } from "@lfd/contracts";
+
 import {
   IdempotencyKeyReusedError,
   OrderAlreadyInFlightError,
+  TermsNotGrantedError,
 } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
@@ -111,7 +114,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       payload,
     );
 
-    const intent = await this.settle(order, companyId);
+    const intent = await this.settle(order, companyId, payload.settlement);
     // LA COMMANDE ET SA CLÉ, ENSEMBLE. `transactionalPrisma` fait rejoindre les
     // deux dépôts à la transaction ouverte ici : il n'existe donc aucun instant
     // où la commande est écrite et la clé ne l'est pas — le seul état que ce
@@ -211,8 +214,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   private async settle(
     order: Order,
     companyId: string | null,
+    settlement: OrderSettlement | null,
   ): Promise<{ clientSecret: string } | null> {
-    const requiresCard = (await this.requiresCard(companyId)) && order.totalCents > 0;
+    const requiresCard = (await this.requiresCard(companyId, settlement)) && order.totalCents > 0;
     if (!requiresCard) {
       order.deferPayment();
       return null;
@@ -227,20 +231,49 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   }
 
   /**
-   * Une carte est requise, sauf pour une entreprise **active** à qui un crédit a
-   * été accordé — sa commande part alors au compte, facturée au terme.
+   * **La carte est-elle requise ?** — le choix du client d'abord, la règle ensuite.
    *
-   * Sans entreprise, ou entreprise non activée : carte. Le crédit se négocie
+   * @throws {TermsNotGrantedError} le compte a été demandé sans crédit accordé.
+   */
+  private async requiresCard(
+    companyId: string | null,
+    settlement: OrderSettlement | null,
+  ): Promise<boolean> {
+    const onAccount = await this.maySettleOnAccount(companyId);
+    // **Payer comptant est toujours possible**, y compris pour une société à qui
+    // le mensuel a été accordé. Le crédit est une facilité, pas une obligation :
+    // un client qui veut régler tout de suite avec SON tarif doit pouvoir le
+    // faire, et c'est exactement ce que la boutique lui demandera.
+    if (settlement === "card") {
+      return true;
+    }
+    // Le compte se REFUSE plutôt que de se rabattre en silence sur la carte :
+    // prélever quelqu'un qui croyait commander au compte est le genre de
+    // surprise qui se règle au téléphone.
+    if (settlement === "account") {
+      if (!onAccount) {
+        throw new TermsNotGrantedError(companyId);
+      }
+      return false;
+    }
+    // Rien de demandé : la décision d'avant, mot pour mot. C'est le chemin du
+    // back-office, qui n'a personne devant l'écran pour choisir.
+    return !onAccount;
+  }
+
+  /**
+   * Une société **active** à qui un crédit a été accordé peut régler au compte.
+   *
+   * Sans entreprise, ou entreprise non activée : jamais. Le crédit se négocie
    * avec une société cliente, pas avec un panier.
    */
-  private async requiresCard(companyId: string | null): Promise<boolean> {
+  private async maySettleOnAccount(companyId: string | null): Promise<boolean> {
     if (companyId === null) {
-      return true;
+      return false;
     }
-    const status = await this.guard.companyStatusOf(companyId);
-    if (status !== "active") {
-      return true;
+    if ((await this.guard.companyStatusOf(companyId)) !== "active") {
+      return false;
     }
-    return !(await this.guard.settlesOnAccount(companyId));
+    return this.guard.settlesOnAccount(companyId);
   }
 }

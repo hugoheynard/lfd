@@ -65,6 +65,27 @@ export interface ShopItemView {
    * servir SON prix, et ce sera un second chemin.
    */
   readonly unitPriceMillicents: number;
+  /**
+   * **Le tarif catalogue pro, à barrer** — **absent** quand il n'y a rien à
+   * barrer.
+   *
+   * Optionnel, donc absent DU FIL sur la vitrine publique plutôt que présent à
+   * `null`. Ce n'est pas une coquetterie : un e2e énumère les clés de cette vue
+   * pour que la surface publique reste étroite, et une clé qui y vaudrait
+   * toujours `null` l'élargirait sans rien apprendre à personne. La route
+   * publique n'a pas de client, donc aucun écart à montrer — le champ n'a rien
+   * à y faire.
+   *
+   * Rempli par la route reconnue, et seulement sur les articles où le prix servi
+   * diffère du tarif : c'est l'écart que le client a négocié.
+   *
+   * 🔴 **Le tarif catalogue, jamais le prix public promotionnel.** Une
+   * mercuriale SCELLE la chaîne : un client qui en a une n'aurait de toute façon
+   * pas eu la promotion du moment. Barrer un prix promo lui montrerait une
+   * remise qu'il n'a pas perdue, et gonflerait l'écart affiché d'une réduction
+   * à laquelle il n'avait pas droit.
+   */
+  readonly catalogPriceMillicents?: number;
   /** Le taux applicable, en pourcentage (5.5, 10). Un article sans taux ne sort pas d'ici. */
   readonly vatRatePercent: number;
   readonly shelfId: string;

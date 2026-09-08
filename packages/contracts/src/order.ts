@@ -293,10 +293,30 @@ export function deliveryAddressIssue(): { message: string; path: PropertyKey[] }
  */
 export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue (UUID)");
 
+/**
+ * **Comment le client veut régler.**
+ *
+ * - `card` — tout de suite, par carte. **Toujours possible**, y compris pour une
+ *   société à qui le mensuel a été accordé : payer comptant avec son propre
+ *   tarif est un droit, pas une exception.
+ * - `account` — au compte, facturé au terme. **Refusé** si aucun crédit n'a été
+ *   accordé à la société : le crédit se négocie, il ne se demande pas au panier.
+ * - **absent** — le serveur décide comme il l'a toujours fait : au compte si les
+ *   termes sont accordés, par carte sinon. C'est ce que fait le back-office, qui
+ *   n'a pas de client devant l'écran pour choisir.
+ *
+ * Le champ est donc **additif** : une commande qui ne le porte pas se comporte
+ * exactement comme avant.
+ */
+export const orderSettlementSchema = z.enum(["card", "account"]);
+export type OrderSettlement = z.infer<typeof orderSettlementSchema>;
+
 export const placeOrderPayloadSchema = z
   .object({
     /** Entreprise cliente, ou `null` = commande personnelle (client connecté). */
     companyId: z.string().trim().min(1).nullable().default(null),
+    /** Le règlement choisi, ou `null` = le serveur décide. Cf. {@link orderSettlementSchema}. */
+    settlement: orderSettlementSchema.nullable().default(null),
     idempotencyKey: idempotencyKeySchema,
     ...orderContentShape,
   })

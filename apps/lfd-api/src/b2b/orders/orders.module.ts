@@ -76,6 +76,8 @@ import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-d
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
+import { MyShopCatalogueController } from "./http/my-shop-catalogue.controller.js";
+import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
 
 /**
  * Contexte **commandes** : le checkout (panier → `Order` en Postgres) et la
@@ -101,6 +103,7 @@ import { OrdersController } from "./http/orders.controller.js";
   ],
   controllers: [
     OrdersController,
+    MyShopCatalogueController,
     CompanyOrdersController,
     AdminOrdersController,
     AdminProductionController,
@@ -159,6 +162,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
+    ReadMyShopCatalogueHandler,
     QuoteShopCartHandler,
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
