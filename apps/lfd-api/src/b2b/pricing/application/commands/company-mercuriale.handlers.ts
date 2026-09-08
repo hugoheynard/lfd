@@ -1,4 +1,8 @@
-import type { CloseCompanyMercurialePayload, PoseCompanyMercurialePayload } from "@lfd/contracts";
+import type {
+  CloseCompanyMercurialePayload,
+  PoseCompanyMercurialePayload,
+  RenameCompanyMercurialePayload,
+} from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
@@ -8,6 +12,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import {
+  MercurialeNameTakenError,
   PricedCompanyNotFoundError,
   PosedMercurialeNotFoundError,
   RunningMercurialeError,
@@ -45,6 +50,20 @@ export class PoseCompanyMercurialeCommand {
   constructor(
     readonly companyId: string,
     readonly payload: PoseCompanyMercurialePayload,
+    readonly staffSub: string,
+  ) {}
+}
+
+/**
+ * Renommer une mercuriale posée : **toutes** ses règles changent de libellé.
+ *
+ * Elle est désignée par ce qui la fait exister — libellé et fenêtre — comme la
+ * clôture, et pour la même raison : c'est la seule clé disponible.
+ */
+export class RenameCompanyMercurialeCommand {
+  constructor(
+    readonly companyId: string,
+    readonly payload: RenameCompanyMercurialePayload,
     readonly staffSub: string,
   ) {}
 }
@@ -267,5 +286,124 @@ export class CloseCompanyMercurialeHandler implements ICommandHandler<
       }
     });
     return rows.length;
+  }
+}
+
+@CommandHandler(RenameCompanyMercurialeCommand)
+export class RenameCompanyMercurialeHandler implements ICommandHandler<
+  RenameCompanyMercurialeCommand,
+  number
+> {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rules: PricingRuleRepository,
+    private readonly uow: UnitOfWork,
+    private readonly clock: Clock,
+  ) {}
+
+  /**
+   * Renomme toutes les règles de cette mercuriale, et rend combien.
+   *
+   * ## Pourquoi ça ne change rien, et pourquoi ça change tout
+   *
+   * **Rien, côté calcul.** Le libellé n'entre dans aucune résolution de prix :
+   * `resolvePrice` trie par étage, audience et seuil, jamais par nom. Les
+   * commandes déjà passées portent leur montant figé, et le journal garde le
+   * résumé de chaque acte tel qu'il était au moment où il a eu lieu.
+   *
+   * **Tout, côté identité.** Une mercuriale n'existe pas en base : elle est
+   * recollée par **(libellé, fenêtre)**. Le nom n'est pas posé À CÔTÉ de
+   * l'objet, il en est la moitié. D'où les deux exigences ci-dessous, dont
+   * aucune ne serait nécessaire si la pose portait son propre identifiant — le
+   * trou T2 de l'état des lieux.
+   *
+   * 1. **Tout ou rien** — la transaction. Renommer la moitié des règles couperait
+   *    la mercuriale en deux à la lecture suivante : deux lignes à l'écran, deux
+   *    grilles partielles, et aucune façon de les recoller.
+   * 2. **Pas de nom déjà pris** sur la même fenêtre chez ce client. Deux
+   *    mercuriales homonymes fusionneraient irréversiblement, puisque ce qui les
+   *    distinguait était le nom.
+   *
+   * ⚠️ Les règles **archivées** ne sont pas touchées : `PricingRule.rename` les
+   * refuse, et c'est la bonne lecture. Une mercuriale close est une décision
+   * terminée ; la relire six mois plus tard doit rendre la phrase qu'elle
+   * portait, pas celle qu'on aurait préféré écrire.
+   *
+   * @throws {PosedMercurialeNotFoundError} rien ne correspond à cette clé.
+   * @throws {MercurialeNameTakenError} le nouveau nom est déjà pris sur cette
+   *   fenêtre.
+   */
+  async execute(command: RenameCompanyMercurialeCommand): Promise<number> {
+    const { companyId, payload, staffSub } = command;
+    const validFrom = new Date(payload.validFrom);
+    const validTo = payload.validTo === null ? null : new Date(payload.validTo);
+    const newLabel = payload.newLabel.trim();
+
+    const rows = await this.findRules(companyId, payload.label, validFrom, validTo);
+    if (rows.length === 0) {
+      throw new PosedMercurialeNotFoundError(payload.label);
+    }
+    // Renommer en soi-même n'est pas une erreur, et ce test est ce qui le rend
+    // vrai : sans lui, le contrôle d'homonymie ci-dessous se heurterait aux
+    // règles qu'on s'apprête justement à renommer.
+    if (newLabel !== payload.label) {
+      await this.assertNameFree(companyId, newLabel, validFrom, validTo);
+    }
+
+    const now = this.clock.now();
+    await this.uow.run(async () => {
+      for (const { id } of rows) {
+        const rule = await this.rules.load(id);
+        // Disparue entre la liste et la boucle : quelqu'un l'a archivée. Rien à
+        // faire — une règle qui ne porte plus le tarif n'a pas à porter son nom.
+        if (rule === null) {
+          continue;
+        }
+        await this.rules.rename(rule.rename(newLabel), {
+          subjectType: "rule",
+          subjectId: rule.id,
+          kind: "renamed",
+          actor: staffSub,
+          at: now,
+          reason: `Mercuriale « ${payload.label} » renommée « ${newLabel} »`,
+          // Le résumé décrit la règle d'AVANT, comme partout ailleurs dans ce
+          // journal : ce qu'on relit est ce qui a été renommé.
+          summary: describeRule(rule.asPriceRule),
+        });
+      }
+    });
+    return rows.length;
+  }
+
+  private async findRules(
+    companyId: string,
+    label: string,
+    validFrom: Date,
+    validTo: Date | null,
+  ): Promise<readonly { readonly id: string }[]> {
+    return this.prisma.priceRule.findMany({
+      where: {
+        stage: "mercuriale",
+        audienceType: "company",
+        audienceId: companyId,
+        label,
+        validFrom,
+        validTo,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+  }
+
+  private async assertNameFree(
+    companyId: string,
+    newLabel: string,
+    validFrom: Date,
+    validTo: Date | null,
+  ): Promise<void> {
+    const taken = await this.findRules(companyId, newLabel, validFrom, validTo);
+    if (taken.length > 0) {
+      throw new MercurialeNameTakenError(newLabel);
+    }
   }
 }

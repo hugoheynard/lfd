@@ -182,6 +182,24 @@ Conséquences, toutes réelles :
   délibéré, mais rien à l'écran ne dit lesquels de ses clients portent l'ancienne
   version.
 
+**Ce que le renommage a ajouté à ce trou (2026-09-08).** Renommer une mercuriale
+depuis la fiche d'un compte est possible, et c'est un geste banal : corriger une
+faute, poser un millésime. Il ne touche aucun prix — le libellé n'entre dans
+aucune résolution. Mais comme la mercuriale n'existe **que** par le couple
+(libellé, fenêtre), le nom n'est pas une étiquette à côté de l'objet : il en est
+la moitié. D'où deux garde-fous qui n'auraient aucune raison d'être si la pose
+portait son identifiant :
+
+- le renommage est **transactionnel** — une mercuriale à moitié renommée se
+  couperait en deux lignes à la lecture suivante ;
+- un nom **déjà pris sur la même fenêtre** est refusé (`MercurialeNameTakenError`)
+  — les deux mercuriales fusionneraient irréversiblement, puisque ce qui les
+  distinguait était le nom.
+
+Le second est une **perte de fonctionnalité mesurable** : rien, métier, n'interdit
+à un client d'avoir deux grilles homonymes sur la même période. C'est notre
+modèle de lecture qui l'interdit.
+
 ### T3 — 🟡 à moitié fermé le 2026-09-08 · _Une pose refusée à mi-parcours laisse le client à moitié tarifé_
 
 `ApplyPriceTemplateHandler.execute` boucle `for (const draft of drafts)` et

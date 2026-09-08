@@ -1454,6 +1454,33 @@ export const closeCompanyMercurialePayloadSchema = z.object({
 });
 export type CloseCompanyMercurialePayload = z.infer<typeof closeCompanyMercurialePayloadSchema>;
 
+/**
+ * **Renommer une mercuriale posée.**
+ *
+ * 🔴 **Le libellé n'est pas décoratif : il est la MOITIÉ de l'identité.** Une
+ * mercuriale n'existe pas en base (cf. {@link PosedMercurialeView}) — elle est
+ * recollée par **(libellé, fenêtre)**. Renommer ne retouche donc pas une
+ * étiquette à côté d'un objet, ça déplace la clé sous laquelle il existe.
+ *
+ * Ça reste sûr, à une condition : **toutes** ses règles changent de nom dans la
+ * même transaction, ce qui les garde groupées sous le nouveau libellé. Rien du
+ * calcul ne bouge — le libellé n'entre dans aucune résolution de prix, et les
+ * commandes déjà passées portent leur montant figé.
+ *
+ * La condition qui reste, et que le serveur refuse : **un nom déjà pris sur la
+ * même fenêtre chez ce client**. Les deux mercuriales fusionneraient à la
+ * lecture suivante en une seule ligne, sans que rien ne permette de les
+ * redistinguer. C'est la seule perte irréversible du geste, d'où le refus.
+ */
+export const renameCompanyMercurialePayloadSchema = z.object({
+  label: z.string().min(1).max(120),
+  validFrom: z.string().datetime(),
+  validTo: z.string().datetime().nullable(),
+  /** Le nouveau libellé. Vide interdit : il servirait de clé. */
+  newLabel: z.string().min(1).max(120),
+});
+export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercurialePayloadSchema>;
+
 /** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
 export interface AffectedRulesResponse {
   readonly affectedRules: number;

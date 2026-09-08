@@ -331,6 +331,112 @@ describe("clore", () => {
 });
 
 /**
+ * **Renommer une mercuriale.**
+ *
+ * Le geste a l'air anodin et ne l'est pas : le libellé est la MOITIÉ de la clé
+ * qui recolle les règles en une mercuriale. Ce que ces cas tiennent est
+ * exactement ce que cette absence d'identité rend fragile — l'atomicité du
+ * renommage, et l'homonymie qui ferait fusionner deux négociations en une.
+ */
+describe("renommer", () => {
+  const rename = (companyId: string, body: Record<string, unknown> = {}) =>
+    staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/rename`)
+      .send({
+        label: "Mercuriale Club Med",
+        validFrom: FROM,
+        validTo: TO,
+        newLabel: "Mercuriale 2026",
+        ...body,
+      });
+
+  it("change le nom SANS toucher aux prix", async () => {
+    // Le libellé n'entre dans aucune résolution : ce test le prouve plutôt que
+    // de le supposer, parce que c'est la promesse faite au commercial qui
+    // renomme un tarif déjà en vigueur chez un client.
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+
+    const renamed = jsonBody<{ affectedRules: number }>(await rename(company.id).expect(200));
+
+    expect(renamed.affectedRules).toBe(1);
+    const view = await read(company.id);
+    expect(view.mercuriales).toHaveLength(1);
+    expect(view.mercuriales[0]?.label).toBe("Mercuriale 2026");
+    expect(itemOf(view, SKU)?.finalMillicents).toBe(NEGOTIATED_MILLICENTS);
+  });
+
+  it("🔴 renomme TOUTES ses règles, jamais une partie", async () => {
+    // Le cas qui justifie la transaction : une mercuriale à moitié renommée se
+    // couperait en DEUX lignes à la lecture suivante — deux grilles partielles,
+    // et aucune façon de les recoller.
+    const company = await createCompany(ctx.prisma);
+    await pose(company.id, {
+      lines: [
+        { sku: SKU, unitPriceMillicents: 150_000 },
+        { sku: OTHER_SKU, unitPriceMillicents: 120_000 },
+      ],
+    }).expect(201);
+
+    await rename(company.id).expect(200);
+
+    const view = await read(company.id);
+    expect(view.mercuriales).toHaveLength(1);
+    expect(view.mercuriales[0]?.lines).toHaveLength(2);
+  });
+
+  it("🔴 refuse un nom déjà pris sur la même fenêtre", async () => {
+    // Sans ce refus, les deux mercuriales fusionneraient à la lecture suivante
+    // en une seule ligne, et rien ne permettrait de les redistinguer : ce qui
+    // les distinguait était précisément le nom.
+    const company = await createCompany(ctx.prisma);
+    await pose(company.id, { lines: [{ sku: SKU, unitPriceMillicents: 150_000 }] }).expect(201);
+    await pose(company.id, {
+      label: "Mercuriale 2026",
+      lines: [{ sku: OTHER_SKU, unitPriceMillicents: 120_000 }],
+    }).expect(201);
+
+    await rename(company.id).expect(409);
+
+    const view = await read(company.id);
+    expect(view.mercuriales.map((entry) => entry.label).sort()).toEqual([
+      "Mercuriale 2026",
+      "Mercuriale Club Med",
+    ]);
+  });
+
+  it("accepte de renommer en son propre nom", async () => {
+    // Corriger une faute de frappe sans en faire une reprend le même nom : le
+    // contrôle d'homonymie se heurterait aux règles qu'on renomme, et refuserait
+    // un geste qui ne change rien.
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+
+    await rename(company.id, { newLabel: "Mercuriale Club Med" }).expect(200);
+  });
+
+  it("répond 404 quand rien ne correspond à cette clé", async () => {
+    const company = await createCompany(ctx.prisma);
+
+    await rename(company.id, { label: "Jamais posée" }).expect(404);
+  });
+
+  it("🔴 ne touche pas la mercuriale d'un AUTRE client de même nom", async () => {
+    // Le mur d'audience vaut aussi pour les gestes, pas seulement pour la
+    // lecture : deux clients portent couramment le même nom de grille.
+    const mine = await createCompany(ctx.prisma);
+    const theirs = await createCompany(ctx.prisma);
+    await poseOn(mine.id);
+    await poseOn(theirs.id);
+
+    await rename(mine.id).expect(200);
+
+    const view = await read(theirs.id);
+    expect(view.mercuriales[0]?.label).toBe("Mercuriale Club Med");
+  });
+});
+
+/**
  * **Le brouillon de mercuriale** — une négociation qu'on reprend.
  *
  * Ce qu'il ne fait pas est aussi important que ce qu'il fait : il ne tarife

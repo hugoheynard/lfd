@@ -54,6 +54,7 @@ import { CompanyPricingQuery } from "./application/queries/company-pricing.query
 import { MercurialeDrafts } from "./application/mercuriale-drafts.store.js";
 import {
   CloseCompanyMercurialeHandler,
+  RenameCompanyMercurialeHandler,
   PoseCompanyMercurialeHandler,
 } from "./application/commands/company-mercuriale.handlers.js";
 import {
@@ -113,6 +114,7 @@ import { PricingModule } from "./pricing.module.js";
     MercurialeDrafts,
     PoseCompanyMercurialeHandler,
     CloseCompanyMercurialeHandler,
+    RenameCompanyMercurialeHandler,
     SavePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     // Possède « écrire un acte » : l'état, le journal du domaine et son miroir

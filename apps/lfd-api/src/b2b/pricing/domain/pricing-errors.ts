@@ -709,3 +709,26 @@ export class PosedMercurialeNotFoundError extends ResourceNotFoundError {
     super("pricing.mercuriale.not_found", `Aucune mercuriale « ${label} » à clore sur ce compte.`);
   }
 }
+
+/**
+ * **Ce nom est déjà celui d'une autre mercuriale sur la même fenêtre.**
+ *
+ * Un **409**, et le seul refus qu'un renommage puisse opposer. Une mercuriale se
+ * recolle par **(libellé, fenêtre)** : accepter le doublon ferait fusionner deux
+ * listes de prix en une seule à la lecture suivante — deux négociations
+ * distinctes, deux auteurs, deux grilles, rendues comme une. Rien ensuite ne
+ * permettrait de les redistinguer, puisque ce qui les distinguait était
+ * précisément le nom.
+ *
+ * C'est la contrepartie d'une identité déduite. Le jour où la pose portera son
+ * propre identifiant, ce refus n'aura plus de raison d'être.
+ */
+export class MercurialeNameTakenError extends BusinessError {
+  constructor(readonly label: string) {
+    super(
+      "pricing.mercuriale.name_taken",
+      `Une autre mercuriale « ${label} » couvre déjà la même période sur ce compte. ` +
+        "Deux mercuriales de même nom et de même fenêtre se confondraient : choisissez un autre nom.",
+    );
+  }
+}

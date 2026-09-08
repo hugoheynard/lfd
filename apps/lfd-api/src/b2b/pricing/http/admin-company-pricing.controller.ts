@@ -1,12 +1,14 @@
 import {
   closeCompanyMercurialePayloadSchema,
   poseCompanyMercurialePayloadSchema,
+  renameCompanyMercurialePayloadSchema,
   saveMercurialeDraftPayloadSchema,
   type AffectedRulesResponse,
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
   type MercurialeDraftResponse,
   type PoseCompanyMercurialePayload,
+  type RenameCompanyMercurialePayload,
   type SaveMercurialeDraftPayload,
 } from "@lfd/contracts";
 import {
@@ -28,6 +30,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   CloseCompanyMercurialeCommand,
   PoseCompanyMercurialeCommand,
+  RenameCompanyMercurialeCommand,
 } from "../application/commands/company-mercuriale.handlers.js";
 import { CompanyPricingQuery } from "../application/queries/company-pricing.query.js";
 import { MercurialeDrafts } from "../application/mercuriale-drafts.store.js";
@@ -103,6 +106,28 @@ export class AdminCompanyPricingController {
   ): Promise<AffectedRulesResponse> {
     const affectedRules = await this.commands.execute<CloseCompanyMercurialeCommand, number>(
       new CloseCompanyMercurialeCommand(companyId, payload, staffSub),
+    );
+    return { affectedRules };
+  }
+
+  /**
+   * **Renommer une mercuriale.** `POST` et non `PATCH` : ce n'est pas la retouche
+   * d'un champ, c'est un geste sur un objet — et un objet qui n'a pas d'URL à
+   * lui, faute d'identité en base.
+   *
+   * Rend le nombre de règles renommées. Refuse si le nom est déjà pris sur la
+   * même fenêtre : les deux mercuriales se confondraient à la lecture suivante.
+   */
+  @Post("mercuriale/rename")
+  @HttpCode(HttpStatus.OK)
+  async rename(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(renameCompanyMercurialePayloadSchema))
+    payload: RenameCompanyMercurialePayload,
+    @StaffSub() staffSub: string,
+  ): Promise<AffectedRulesResponse> {
+    const affectedRules = await this.commands.execute<RenameCompanyMercurialeCommand, number>(
+      new RenameCompanyMercurialeCommand(companyId, payload, staffSub),
     );
     return { affectedRules };
   }
