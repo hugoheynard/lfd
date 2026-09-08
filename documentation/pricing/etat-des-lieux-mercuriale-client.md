@@ -2,6 +2,34 @@
 
 **Ouvert le 2026-09-08.** 🟡 Décrit du code qui tourne, et nomme ce qui manque.
 
+> ## ✅ 2026-09-08 (même jour) — T1 est fermé, et T3 l'est à moitié
+>
+> L'onglet **Tarifs** existe sur la fiche d'un compte
+> (`comptes-clients/:id/tarifs`), et il ne fait pas que lire : c'est là qu'on
+> **établit** la mercuriale du client. Ce que ça change au §4 :
+>
+> | Trou   | État                                                                                                                                                                                                      |
+> | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **T1** | ✅ fermé. `GET /admin/pricing/companies/:id` lit le tableau **à l'audience du client**, filtre posé dans la requête. Une règle d'un tiers ne peut ni gagner un étage, ni apparaître.                      |
+> | **T3** | 🟡 fermé **sur ce chemin**. Poser depuis la fiche pré-contrôle le chevauchement puis écrit en **une transaction** : rien, ou tout. La pose d'un **gabarit** écrit toujours une par une, hors transaction. |
+> | **T2** | ✗ inchangé, et c'est délibéré. La mercuriale reste **reconstituée** à la lecture par `(libellé, fenêtre)` — `posed-mercuriales.ts` porte la limite, et un test l'éprouve.                                 |
+> | **T6** | ✅ sans objet ici : la fiche EST le client, il n'y a plus de liste à présélectionner.                                                                                                                     |
+> | **T7** | ✗ inchangé — cet écran fabrique lui aussi ses bornes en minuit **UTC**.                                                                                                                                   |
+>
+> Deux décisions prises avec Hugo, qui expliquent la forme :
+>
+> - **on ne borne pas l'ancienne mercuriale automatiquement.** Un chevauchement
+>   est refusé, en **nommant** celle qui tourne ; la sortie est de la clore, et
+>   clore **archive** ses règles (ce qui rend leur place dans la contrainte
+>   d'exclusion — la condition pour reposer sur la même période) ;
+> - **prix fixe uniquement, séparé à la racine.** Le contrat de cet écran ne
+>   porte pas de paliers. Les mercuriales à paliers arriveront comme une forme
+>   de plus, pas comme un mode caché de celle-ci.
+>
+> La fenêtre y est **datée aux deux bouts**, et la fin est obligatoire — alors
+> qu'un gabarit posé peut rester ouvert. Un tarif négocié sans terme est un
+> tarif que personne ne rouvre.
+
 > **Ce document ne conçoit rien.** Il répond à une seule question — _« aujourd'hui,
 > qu'est-ce qui existe pour donner un tarif négocié à un client, et où ça
 > s'arrête ? »_ — en n'affirmant que ce qui a été ouvert. Chaque manque du §4
@@ -124,7 +152,7 @@ auquel cas le volume annoncé ouvre tous les paliers dès la première commande.
 
 ## 4. Ce qui manque — huit trous, du plus structurant au plus petit
 
-### T1 — 🔴 Aucun écran ne répond à « que paie ce client ? »
+### T1 — ✅ fermé le 2026-09-08 · _Aucun écran ne répondait à « que paie ce client ? »_
 
 La fiche d'un compte porte huit onglets — tableau de bord, informations,
 commandes, paniers récurrents, facturation, alertes, stats, données
@@ -154,7 +182,7 @@ Conséquences, toutes réelles :
   délibéré, mais rien à l'écran ne dit lesquels de ses clients portent l'ancienne
   version.
 
-### T3 — 🔴 Une pose refusée à mi-parcours laisse le client à moitié tarifé
+### T3 — 🟡 à moitié fermé le 2026-09-08 · _Une pose refusée à mi-parcours laisse le client à moitié tarifé_
 
 `ApplyPriceTemplateHandler.execute` boucle `for (const draft of drafts)` et
 `await rules.save(...)` — **sans transaction**. Le recouvrement, lui, est refusé
@@ -185,7 +213,7 @@ Le filtre garde donc contre un état que rien ne peut produire, et **la liste de
 gabarits ne peut que grandir** — y compris des essais et des grilles d'une saison
 révolue, mêlés à celles qu'on repose.
 
-### T6 — 🟠 La barre de pose présélectionne un client
+### T6 — ✅ sans objet sur la fiche · _La barre de pose (des gabarits) présélectionne un client_
 
 `pose-bar.ts` charge **toutes** les sociétés (`companiesService.list()`, sans
 pagination ni recherche) et fait `this.companyId.set(companies[0]?.id ?? '')`.
