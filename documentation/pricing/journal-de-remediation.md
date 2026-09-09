@@ -1574,3 +1574,84 @@ reste à décider de sa forme (R25).
 ⚠️ **`/admin/orders/*` n'est pas touchée**, et c'est le point : la trace entière
 reste servie au comptoir. L'écran d'explication de la trace par reconstruction se
 bâtira dessus — le rétrécissement le protège au lieu de le gêner.
+
+---
+
+## R25 · 2026-09-09 — lots 1 et 2 : ce que le moteur a écarté
+
+**Plan** : [`plan-la-trace-qui-explique.md`](plan-la-trace-qui-explique.md), §11
+(la forme v3, après deux contradictions). **Arbitrage de Hugo** : une colonne
+additive, plutôt qu'une trace qui assume de ne pas répondre.
+
+### 1. Ce qui est livré
+
+Le moteur consigne désormais **ce qu'il a regardé sans l'appliquer**, avec sa
+raison : `superseded`, `sealed`, `below_threshold`, plus les quatre causes
+d'`applies` qu'il ne voit qu'en test. Chaque entrée porte son **libellé** — une
+règle se renomme, donc l'identifiant seul serait muet six mois plus tard.
+
+Trois choses ont demandé plus qu'un champ :
+
+- **`assembled()` rend ses recalés.** Un barème ou une mercuriale dont aucun
+  palier n'est atteint ne devient jamais une règle : il n'atteignait donc pas la
+  boucle, et « pourquoi n'ai-je pas eu mon prix de volume ? » — la question de
+  seuil la plus posée — n'avait aucune réponse.
+- **La cause se décide prédicat par prédicat** (`rejectionCauseOf`). Écrire
+  `!applies(...) ⇒ seuil` aurait fait dire « palier non atteint » d'une
+  promotion **expirée**. En production ces causes-là n'atteignent pas le moteur,
+  mais `resolvePrice` est pure et doit rester juste sur un tableau fabriqué à la
+  main — ce que fait chacun de ses tests.
+- **`sealedRuleIds` est devenu une dérivation.** Deux listes tenues en parallèle
+  finissent par diverger d'un cas.
+
+### 2. 🔴 Les deux pièges que la contradiction a évités, et qui étaient réels
+
+**Une cause fausse en masse.** `mercuriale.asRuleFor` rend `null` **d'abord
+parce que la grille ne porte pas l'article**, et seulement ensuite parce que le
+palier n'est pas atteint — et la mercuriale est passée au moteur **entière, non
+filtrée par portée**. Confondre les deux aurait écrit « palier non atteint » sur
+chaque ligne de chaque commande de chaque client sous mercuriale, pour tout
+article hors grille. `missesTierFor` sépare les deux, et un cas le tient.
+
+**Une règle regardée passant pour une règle qui a facturé.** `hasPriced`
+interroge `pricing_steps` en containment jsonb pour refuser de reposer une
+décision qui a produit une facture. **Joué contre Postgres le 2026-09-09** :
+
+```
+[{"ruleId":"promo","cause":"below_threshold"}] @> [{"ruleId":"promo"}]   →  true
+[{"ruleId":"merc","supersedes":[{"ruleId":"promo"}]}] @> [{"ruleId":"promo"}] → false
+```
+
+La première ligne est la raison d'être de la colonne **séparée** : loger les
+écartées dans `pricing_steps` aurait fait refuser au staff la repose d'une
+promotion n'ayant jamais produit un centime. Un e2e le tient de bout en bout —
+il pose, fait évincer par un scellement, range, et **repose sur la même
+période**.
+
+La seconde ligne dit qu'écrire `supersedes` ne tromperait pas cette porte. On ne
+l'écrit pas quand même : son défaut de relecture est `[]`, donc l'écrire rendrait
+à jamais indistinguables « aucune rivale » et « on ne consignait pas ». Le fait
+tient dans `pricing_rejected`, qui est nullable.
+
+### 3. Les trois états, tenus de bout en bout
+
+`NULL` = on ne consignait pas · `[]` = **affirmation** que rien n'a été écarté ·
+une valeur = qui et pourquoi. Tenu à l'écriture (`Prisma.DbNull`, jamais
+`rejected ?? []`), à la relecture (`safeParse().data ?? null`), et dans le
+domaine (une ligne neuve écrit toujours l'un des deux derniers).
+
+Une entrée illisible ne fait perdre que le commentaire, jamais la commande —
+même indulgence que le plancher et l'engagement, et il fallait le décider plutôt
+que l'hériter.
+
+### 4. Ce que ça n'a pas emporté
+
+Le **lot 3** (l'écran) et le **lot 4** (les causes non figées) restent. Et la
+réserve du lot 4 est écrite au plan : la fenêtre, l'audience et la portée d'une
+règle sont **immuables** — les commandes qui existent sont créer, suspendre,
+reprendre, archiver, renommer —, donc la règle d'aujourd'hui dit la vérité. La
+seule donnée détruite est la période de pause, que `resume()` efface et que le
+journal garde.
+
+⚠️ **Un écran qui affiche `NULL` comme « aucune règle écartée » détruirait tout
+ce lot.** C'est la seule façon de perdre la distinction qu'il construit.
