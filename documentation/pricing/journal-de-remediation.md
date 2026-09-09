@@ -1050,7 +1050,7 @@ qu'on relit sous pression ne doit pas promettre ça.
 
 ## R26 · 2026-09-09 — lot 1
 
-**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) ·
+**Plan** : [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) ·
 **Registre** : [R26](ce-qui-reste-a-faire.md) · **Portée** : le premier des
 quatre lots.
 
@@ -1118,7 +1118,7 @@ une spec a suivi son code, comme `lint:tests-colocated` l'exige.
 
 ## R26 · 2026-09-09 — lot 2
 
-**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.2 · Le
+**Plan** : [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) §4.2 · Le
 deuxième des quatre lots : **la marque**.
 
 ### 1. Ce que la marque protège
@@ -1221,7 +1221,7 @@ seulement dire si c'est vert, mais voir où le vert s'arrête.
 
 ## R26 · 2026-09-09 — lot 3
 
-**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.2 et §5 ·
+**Plan** : [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) §4.2 et §5 ·
 Le troisième des quatre lots : **la porte**.
 
 ### 1. Ce que la CI a tranché à ma place
@@ -1306,7 +1306,7 @@ traque depuis le premier jour.
 
 ## R26 · 2026-09-09 — lot 4
 
-**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.4 · Le
+**Plan** : [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) §4.4 · Le
 dernier des quatre lots : **la lentille**.
 
 ### 1. Une décision qui vivait à trois endroits

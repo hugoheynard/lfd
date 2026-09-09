@@ -463,12 +463,20 @@ mois plus tard »), pas un détail de contrat.
 
 # C · La façade, vue de qui l'appelle
 
-## C.1 Personne n'appelle `Pricer`
+## ~~C.1~~ ✅ Personne n'appelait `Pricer`
 
-`PricerModule` est importé dans `apps/lfd-api/src/appBootstrap/app.module.ts:110`.
+> **Clos le 2026-09-09.** Trois appelants passent par la porte — la caisse, la
+> vitrine, la projection. Elle ne prend plus de SKU mais des **articles
+> scellés**, ce qui a supprimé d'un coup la lecture en trop, la permission de
+> contourner qu'elle s'accordait par écrit, et un cycle de modules. Le quatrième,
+> le tableau, ne peut pas y passer tant que le chargeur ne sait pas lire une date
+> (R17). État réel :
+> [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md).
+
+~~`PricerModule` est importé dans `apps/lfd-api/src/appBootstrap/app.module.ts:110`.
 **Aucune classe de production n'injecte `Pricer`** (vérifié par `grep` le
 2026-09-08). La façade a quinze tests unitaires, douze e2e, son module et son
-document — et n'est sur aucun chemin.
+document — et n'est sur aucun chemin.~~
 
 ```mermaid
 flowchart LR
@@ -517,13 +525,17 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
 
 ## C.2 Les pièges de l'API
 
-- **`pricerFor(): LoadedPricer | null`** (`pricing-materials.loader.ts:83`) —
-  `null` sur un lot vide. Trois appelants, trois traitements d'une branche
-  inatteignable : `[]` (`order-line-pricing.service.ts:155`),
-  `UnresolvedArticleError` marquée « inatteignable » (`pricer.ts`),
-  `UnknownSkuError` — la mauvaise erreur (`price-projection.query.ts:67`). Un
-  tarificateur sur des matériaux vides est parfaitement valide ; le `null` est
-  un défaut de conception.
+> **2026-09-09 — trois sont fermés, un l'est à moitié, cinq restent.** Chaque
+> ligne ci-dessous est revérifiée contre le code ; ce qui n'est pas barré est
+> encore vrai. Rayer la section entière aurait laissé croire que la façade a tout
+> emporté.
+
+- 🟠 **À MOITIÉ.** ~~Trois appelants, trois traitements d'une branche
+  inatteignable~~ — il n'y en a plus qu'un : `Pricer.load` refuse un lot vide
+  (`EmptyLotError`), et les appelants qui peuvent en avoir un le testent avant de
+  charger. **Le `null` reste** dans la signature interne de `pricerFor`, où il
+  n'a toujours pas de sens : un tarificateur sur des matériaux vides est
+  parfaitement valide.
 - **`pricerFor(items: { item, quantity }[])`** — la quantité n'est lue par
   **rien** du chargement : portée, engagement, ratio n'en dépendent pas. La
   projection écrit `quantity: 1` avec un commentaire pour s'excuser
@@ -531,16 +543,19 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
   (`apps/lfd-api/src/b2b/pricing/domain/pricing-scopes.ts:66`) calcule trois
   tableaux de portées qu'**aucun lecteur ne lit plus** depuis que le cache garde
   les tables entières — il ne sert qu'à détecter le lot vide.
-- **Le contrat de lot n'est pas tenu.** `LoadedPricer` ne sait pas pour quels
-  articles il a été chargé ; `pricer.price(autreArticle, n)` rend un prix
-  plausible. Il est correct pour les **matériaux** par accident du cache (tables
-  entières), et **faux pour les preuves** : un article hors lot n'a ni ratio ni
-  cumul mesurés — porte fermée, cumul sous-compté. Rien ne le signale.
-- **Trois formes pour « ce que cette question écarte »** : un booléen
-  `withEvidence` (`loaded-pricer.ts:382`), `NO_EVIDENCE` + `commitments: []`
-  dans `boardMaterials` (`board-item.ts:104`), `commitment: null` dans
-  `priceAtCumulative`. La même décision — quelles preuves sont recevables — est
-  encodée trois fois, trois formes. **C'est exactement là que B.1 s'est glissé.**
+- ✅ **CLOS.** ~~Le contrat de lot n'est pas tenu.~~ `PricedLot` connaît ses
+  articles et refuse un SKU qu'il n'a pas chargé (`ArticleNotInLotError`, dont le
+  message dit lequel manque et combien le lot en porte). Le constat reste juste
+  sur le **pourquoi** : le prix rendu était plausible — matériaux corrects par
+  accident du cache, preuves fausses —, et c'est précisément ce que le refus
+  empêche. Éprouvé par `priced-lot.spec.ts`, huit cas.
+- 🟠 **À MOITIÉ.** `PriceLens` nomme la décision une fois, dans un type que le
+  chargeur lit — et sous `unproven` il n'interroge même plus les engagements.
+  **Il reste deux formes**, et elles ne disent pas la même chose : le booléen de
+  `LoadedPricer` gouverne la **question** posée (une projection ne prouve pas de
+  commande), la lentille gouverne les **matériaux**. Et `board-item.ts` monte
+  encore `NO_EVIDENCE` + `commitments: []` à la main, faute de pouvoir passer par
+  la porte (R17). Le constat garde sa leçon : **c'est là que B.1 s'est glissé.**
 - **`mercurialeAlone(mercuriale, companyId, item, minQuantity, at)`**
   (`loaded-pricer.ts:252`) : cinq paramètres dont `companyId`, que
   `mercuriale.companyId` porte déjà — l'appelant fait
@@ -551,10 +566,9 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
   recopier ici en ferait une quatrième copie » ; et pour une règle `replace`,
   `resolvePrice` rend `tier.unitPriceMillicents` — le détour n'achète que des
   vérifications que `liveEverywhere(at)` a déjà faites.
-- **Deux portes, deux politiques.** `Pricer.forAll` refuse un SKU en double
-  (`pricer.ts`, 400) ; `OrderLinePricing` fusionne les quantités
-  (`order-line-pricing.service.ts:103`). Même panier, réponse différente selon
-  la porte — dans un système qui affirme n'avoir qu'un fabricant.
+- ✅ **CLOS.** ~~Deux portes, deux politiques.~~ `forAll` n'existe plus : il
+  n'y a qu'une porte, `load`, qui refuse un doublon — et la caisse fusionne les
+  quantités **avant** de la franchir. Même panier, même réponse.
 - **Redondances.** `PricedArticle.floorMillicents` (`loaded-pricer.ts:397`) vaut
   toujours `floorDecision?.floorMillicents ?? null` (`:417`) ;
   `ResolvedOrderLine` (`price-line.ts:24`) duplique quatre champs de son propre
@@ -574,15 +588,19 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
 
 ## C.3 Les frontières qui rendent l'extension coûteuse
 
-- **`pricing → orders` pour le catalogue.** Dix imports depuis `pricing/` vers
-  `apps/lfd-api/src/b2b/catalog/domain/ports/product-catalog.reader.ts` et
-  `apps/lfd-api/src/b2b/orders/domain/errors/order-errors.ts`. Or
-  `apps/lfd-api/src/b2b/catalog/domain/ports/catalog.reader.ts` existe. **Deux
-  ports catalogue**, et un cycle de contextes contourné par
-  `apps/lfd-api/src/b2b/pricing/pricer.module.ts` et
-  `apps/lfd-api/src/b2b/pricing/pricing-admin.module.ts`, dont les JSDoc
-  parlent tous deux de « fermer le cycle ». La bonne flèche est
-  `pricing → catalog`.
+> **2026-09-09 — une est fermée, trois restent.**
+
+- ✅ **CLOS.** ~~`pricing → orders` pour le catalogue.~~ Le port descend dans
+  `catalog/` avec son adaptateur — qui ne faisait que traduire `CatalogReader` —,
+  et `pricing` n'importe **plus rien** d'`orders` : zéro import, contre neuf
+  fichiers et deux modules. Les deux JSDoc qui parlaient de « fermer le cycle »
+  sont réécrits ; l'un d'eux disait vrai pour une raison qui n'existait plus.
+
+  ⚠️ Le constat visait juste **et** se trompait de mot : ce n'était pas un cycle,
+  c'étaient **deux ports empilés** dont l'autoritaire vivait dans le contexte qui
+  n'en est pas la source. Le vrai cycle est apparu plus tard, quand la vitrine a
+  voulu passer par la porte — et il a été refusé par `lint:import-cycles`.
+
 - **La lecture n'est pas sur le bus.** `PriceProjectionQuery`,
   `MercurialeBenchmarkQuery`, `CompanyPricingQuery`, `PriceTemplatesQuery`,
   `VolumeCommitmentsQuery` sont des `@Injectable`
@@ -601,7 +619,23 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
   (écart n° 1). La spécificité arbitre sur des axes sans donnée — ce n'est pas
   faux, c'est du poids à porter à chaque lecture.
 
-## C.4 🔵 La façade à laquelle on ne peut pas se tromper — CONCEPTION, zéro code — R26
+## ~~C.4~~ ✅ La façade à laquelle on ne peut pas se tromper — **bâtie** — R26
+
+> **Bâtie le 2026-09-09, en quatre lots.** Ce qui suit est la conception
+> d'origine, conservée telle qu'elle a été écrite. Elle a été **contredite sur
+> ses quatre décisions** avant qu'une ligne soit posée, puis corrigée : la porte
+> prend des articles **scellés** et non des SKU, la lentille a **deux** valeurs
+> et non trois, `at` n'a pas été retiré (une route le sert), et le mapping vit
+> dans le **port** plutôt que dans la façade.
+>
+> - l'état réel :
+>   [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) ;
+> - le raisonnement, les versions démolies et ce que chaque lot a trouvé :
+>   [journal de remédiation](journal-de-remediation.md) §R26.
+>
+> ⚠️ **Ce qu'elle n'a pas emporté** : le tableau n'emprunte pas la porte (R21),
+> parce qu'il lit ses matériaux à une **date** que le chargeur ne sait pas lire
+> (R17).
 
 > **Ce paragraphe décrit ce qui n'existe pas.** Il touche l'argent : `vitruve`
 > avant de bâtir, comme `CLAUDE.md` §9 bis l'exige. Les noms sont proposés, pas
