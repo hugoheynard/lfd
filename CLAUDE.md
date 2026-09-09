@@ -16,10 +16,11 @@
 > **Ce qu'il ne sait pas**, faute d'avoir vécu ces trois jours :
 >
 > - le §10 annonçait **23 portes** ; il y en avait **26** au 2026-09-07, et
->   **28** depuis le 2026-09-08 (`lint:business-day`, `lint:price-pipeline`) et
+>   **28** depuis le 2026-09-08 (`lint:business-day`, `lint:price-pipeline`),
 >   **29** depuis le 2026-09-09 (`lint:prisma-model-ownership`, qui ferme le trou
 >   que le §3 nomme deux fois : « une frontière qu'on ne franchit qu'en SQL est
->   franchie quand même »). C'est la **seule**
+>   franchie quand même ») et **30** le même jour (`lint:handler-per-file`, dette
+>   gelée à 24 fichiers). C'est la **seule**
 >   correction faite dans le corps, parce qu'un chiffre faux se vérifie en une
 >   commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -959,7 +960,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 29 portes du dépôt, d'un coup
+pnpm lint:gates         # les 30 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
