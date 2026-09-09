@@ -1,4 +1,4 @@
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 
 import type { OrderDocument } from './order-detail/order-detail';
 
@@ -42,7 +42,7 @@ export const ORDER_DOC_INVOICE = 'invoice';
  * navigateur produirait un document sans valeur que quelqu'un finirait par
  * envoyer à son comptable.
  */
-export function orderDocuments(order: OrderView): readonly OrderDocument[] {
+export function orderDocuments(order: CustomerOrderView): readonly OrderDocument[] {
   const settled = order.status !== 'draft' && order.status !== 'cancelled';
   return [
     {
@@ -64,7 +64,7 @@ export function orderDocuments(order: OrderView): readonly OrderDocument[] {
 
 /**
  * ⚠️ Le rendu du bon **a déménagé** dans `order-sheet-text.ts`, et il ne prend
- * plus une `OrderView` mais un `OrderSheet` — la feuille projetée par le
+ * plus une `CustomerOrderView` mais un `OrderSheet` — la feuille projetée par le
  * serveur. C'est ce qui fait que l'audience (et donc la présence des montants)
  * n'est plus une décision d'écran.
  */

@@ -711,6 +711,195 @@ export interface OrderView {
   readonly handedOverAt: string | null;
 }
 
+// ─── La commande telle qu'un CLIENT la reçoit ────────────────────────────────
+
+/**
+ * **Un étage tarifaire, tel qu'un client le lit** : son libellé, et rien d'autre.
+ *
+ * Ce que la vue staff porte en plus n'explique pas un prix à celui qui l'a payé,
+ * il décrit la machine qui l'a produit : `ruleId` (une clé de nos règles),
+ * `stage` (le nom de nos étages), `scope`, `resultMillicents` (le prix
+ * intermédiaire de chaque passe) et surtout `supersedes` — le **libellé
+ * commercial des règles rivales**, c'est-à-dire le nom des promotions que ce
+ * client n'a pas eues.
+ *
+ * Le libellé, lui, est écrit POUR le client : c'est ce que le contrat en dit
+ * ({@link PriceStepView}), et c'est ce que l'écran de commande affiche des deux
+ * côtés depuis toujours.
+ */
+export interface CustomerPriceStepView {
+  readonly label: string;
+}
+
+/**
+ * **La trace du prix telle qu'un client la reçoit** — pourquoi ce prix, sans la
+ * marge qui l'a borné.
+ *
+ * 🔴 `GET /orders/mine`, `GET /orders/:id` et `GET /companies/:id/orders`
+ * servaient {@link OrderLinePricingTrace} **en entier**, alors que
+ * `POST /orders/quote` avait été rétrécie exactement pour ça. Ce qui partait au
+ * client : l'identifiant et le libellé de chaque règle, et
+ * `floorDecision` — le **plancher**, c'est-à-dire la marge, avec les preuves qui
+ * l'ont ouvert (défaut R27, corrigé le 2026-09-09).
+ *
+ * **La règle de tri est celle du devis** : un champ passe s'il répond à
+ * « combien ça m'a coûté, et pourquoi ». Le reste appartient au comptoir.
+ *
+ * ⚠️ **`floored` reste, alors que le devis l'a perdu**, et l'asymétrie est
+ * voulue. Sur un devis, le client choisit la quantité : faire varier la ligne
+ * jusqu'à ce que le drapeau bascule **encadre le plancher** en quelques appels.
+ * Sur une commande passée, il n'y a rien à faire varier — c'est un fait clos, et
+ * l'écran l'affiche déjà des deux côtés (la pastille « plancher »). Le retirer
+ * serait une décision commerciale, pas une fermeture de fuite.
+ *
+ * ⚠️ **`commitment` ne passe PAS**, bien qu'il ne porte que les chiffres du
+ * client lui-même. Aucun écran ne le lit, et l'engagement de volume n'a pas
+ * d'écran du tout (R6) : le champ se rouvrira quand quelqu'un l'affichera.
+ * Élargir un contrat coûte un déploiement, le rétrécir en coûte trois.
+ */
+export interface CustomerOrderLinePricingTrace {
+  /** Le tarif d'entrée, avant tout étage — celui du catalogue, que le client voit au rayon. */
+  readonly basePriceMillicents: number;
+  /** Les étages qui ont produit un effet, dans l'ordre. Vide = aucun. */
+  readonly steps: readonly CustomerPriceStepView[];
+  /** Une limite a-t-elle **relevé** ce prix ? Cf. l'asymétrie ci-dessus. */
+  readonly floored: boolean;
+}
+
+/** Une ligne de commande telle qu'un client la reçoit — cf. {@link CustomerOrderLinePricingTrace}. */
+export interface CustomerOrderLineView {
+  readonly sku: string;
+  readonly productName: string;
+  readonly unitPriceMillicents: number;
+  readonly vatRate: number;
+  readonly quantity: number;
+  readonly lineTotalCents: number;
+  /** `null` sur une commande passée avant que la trace n'existe — cf. {@link OrderLineView.pricing}. */
+  readonly pricing: CustomerOrderLinePricingTrace | null;
+  /** Ce qui était déclaré au moment de commander — cf. {@link OrderLineView.allergens}. */
+  readonly allergens: OrderLineAllergens | null;
+}
+
+/**
+ * **La commande telle qu'un client la reçoit.**
+ *
+ * Le premier niveau est celui de {@link OrderView}, champ pour champ : chacun y
+ * a été décidé pour le client, et les trois qui pourraient surprendre portent
+ * déjà leur raison ({@link OrderView.origin}, {@link OrderView.placedByStaffId},
+ * {@link OrderView.handoverToken}). Ce que R27 a trouvé n'était pas là : c'était
+ * dans `lines[].pricing`.
+ *
+ * ⚠️ **Écrite en entier plutôt que dérivée par un `Omit`**, et c'est le seul
+ * point à ne pas « simplifier ». Un `Omit` ferait entrer ici tout champ ajouté
+ * demain à la vue staff, et {@link toCustomerOrder} ne compilerait plus tant
+ * qu'on ne l'aurait pas recopié — le geste le plus court serait alors de le
+ * laisser passer. Écrite à la main, elle ignore ce champ : il n'atteint pas le
+ * client, et personne n'a eu à y penser.
+ */
+export interface CustomerOrderView {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly status: OrderStatus;
+  readonly paymentStatus: PaymentStatus;
+  readonly requestedDeliveryDate: string | null;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly deliveryAddressId: string | null;
+  readonly deliveryAddress: BillingAddressPayload | null;
+  readonly pickupAddress: BillingAddressPayload | null;
+  readonly fulfillment: OrderFulfillment;
+  readonly note: string;
+  readonly subtotalCents: number;
+  readonly discountCents: number;
+  readonly discountAdjustment: CartAdjustment | null;
+  readonly deliveryFeeCents: number;
+  readonly deliveryFeeAdjustment: CartAdjustment | null;
+  readonly lateFeeCents: number;
+  readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  readonly vatCents: number;
+  readonly vatShares: readonly VatShareView[] | null;
+  readonly totalCents: number;
+  readonly currency: string;
+  readonly customerLabel: string;
+  readonly companyId: string | null;
+  readonly fromSubscriptionId: string | null;
+  readonly origin: OrderOrigin;
+  readonly placedByStaffId: string | null;
+  readonly recurringDeltas: RecurringDeltas | null;
+  readonly placedAt: string;
+  readonly lines: readonly CustomerOrderLineView[];
+  readonly handoverToken: string | null;
+  readonly confirmedAt: string | null;
+  readonly readyAt: string | null;
+  readonly handedOverAt: string | null;
+}
+
+/**
+ * La commande staff → la commande client, **champ par champ**.
+ *
+ * Jamais un `omit` ni un `...view` : retirer des clés laisse la vue s'élargir en
+ * silence, alors qu'une liste oblige à décider pour chaque champ ajouté. C'est
+ * la seule barrière qui survive à un contributeur qui ne connaît pas ce
+ * commentaire — TypeScript, lui, accepte le surplus dès que l'objet n'est pas un
+ * littéral.
+ *
+ * Même geste que {@link toCustomerQuote}, sur l'autre moitié du cycle : le devis
+ * était rétréci depuis le 2026-09-09, la commande **passée** ne l'était pas.
+ */
+export function toCustomerOrder(view: OrderView): CustomerOrderView {
+  return {
+    id: view.id,
+    orderNumber: view.orderNumber,
+    status: view.status,
+    paymentStatus: view.paymentStatus,
+    requestedDeliveryDate: view.requestedDeliveryDate,
+    fulfillmentMethod: view.fulfillmentMethod,
+    deliveryAddressId: view.deliveryAddressId,
+    deliveryAddress: view.deliveryAddress,
+    pickupAddress: view.pickupAddress,
+    fulfillment: view.fulfillment,
+    note: view.note,
+    subtotalCents: view.subtotalCents,
+    discountCents: view.discountCents,
+    discountAdjustment: view.discountAdjustment,
+    deliveryFeeCents: view.deliveryFeeCents,
+    deliveryFeeAdjustment: view.deliveryFeeAdjustment,
+    lateFeeCents: view.lateFeeCents,
+    lateFeeAdjustment: view.lateFeeAdjustment,
+    vatCents: view.vatCents,
+    vatShares: view.vatShares,
+    totalCents: view.totalCents,
+    currency: view.currency,
+    customerLabel: view.customerLabel,
+    companyId: view.companyId,
+    fromSubscriptionId: view.fromSubscriptionId,
+    origin: view.origin,
+    placedByStaffId: view.placedByStaffId,
+    recurringDeltas: view.recurringDeltas,
+    placedAt: view.placedAt,
+    lines: view.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      unitPriceMillicents: line.unitPriceMillicents,
+      vatRate: line.vatRate,
+      quantity: line.quantity,
+      lineTotalCents: line.lineTotalCents,
+      pricing:
+        line.pricing === null
+          ? null
+          : {
+              basePriceMillicents: line.pricing.basePriceMillicents,
+              steps: line.pricing.steps.map((step) => ({ label: step.label })),
+              floored: line.pricing.floored,
+            },
+      allergens: line.allergens,
+    })),
+    handoverToken: view.handoverToken,
+    confirmedAt: view.confirmedAt,
+    readyAt: view.readyAt,
+    handedOverAt: view.handedOverAt,
+  };
+}
+
 /**
  * Détails de paiement renvoyés au checkout **quand une carte est requise**
  * (société `per_order`). Le client monte le Payment Element de Stripe avec le

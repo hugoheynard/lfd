@@ -1497,3 +1497,80 @@ L'oracle, anonymisé, vit dans `apps/lfd-api/test/devis-comptable-fixture.ts` : 
 contact, SIRET, référence de l'affaire, coordonnées bancaires et libellés
 d'articles retirés. Restent les quantités et les prix — les réduire aurait
 détruit la preuve, l'arrondi par ligne ne se voyant qu'à ces volumes.
+
+---
+
+## R27 · 2026-09-09 — le mur du prix, côté commande passée
+
+**Origine** : trouvé en bâtissant R25. `POST /orders/quote` avait été rétrécie le
+matin même ; `GET /orders/mine`, `GET /orders/:id` et `GET /companies/:id/orders`
+servaient toujours `OrderView` en entier, trace de prix comprise.
+
+### 1. Ce que l'entrée du registre disait, et qui était faux
+
+Deux affirmations sur l'existant, écrites de mémoire. Les deux sont tombées en
+ouvrant les fichiers — c'est la même racine que
+[le plan des allergènes](../todos/todo-allergenes-objections-vitruve.md), et ça
+reste l'artefact le plus faible du dossier.
+
+| L'entrée disait                                                             | En fait                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| « donc `pricing.steps` avec le libellé commercial de chaque règle »         | Le **libellé est écrit POUR le client** — {@link PriceStepView} le dit, et l'écran de commande l'affiche des deux côtés depuis toujours. Ce qui fuyait vraiment était à côté : `floorDecision`, c'est-à-dire **le plancher et les preuves qui l'ont ouvert**. L'entrée nommait le champ le plus visible, pas le pire. |
+| « **Aucun front ne lit `line.pricing`** : le rétrécissement ne casse rien » | `packages/b2b-ui/src/order/order-pricing.ts` le lit — trois fois — et `lfd-order-detail` est monté par les **deux** fronts. Le `grep` qui a produit cette phrase a cherché dans `apps/`, pas dans `packages/`.                                                                                                        |
+
+La seconde a changé la conception : il ne s'agissait plus de retirer `pricing`,
+mais de le **trier champ par champ**.
+
+### 2. Le tri, et les deux décisions qui ne vont pas de soi
+
+**Part au client** : le tarif d'entrée (il est au rayon), le **libellé** de
+chaque étage, et `floored`.
+**Reste au comptoir** : `floorDecision`, `ruleId`, `stage`, `scope`,
+`resultMillicents`, `supersedes`, `clampedToZero`, `commitment`.
+
+🔴 **`floored` reste, alors que le devis l'a perdu.** L'asymétrie est le cœur du
+lot. Sur un devis, le client choisit la quantité : faire varier la ligne jusqu'à
+ce que le drapeau bascule **encadre le plancher** en quelques appels. Sur une
+commande passée, il n'y a rien à faire varier — c'est un fait clos. Le même bit
+est une sonde d'un côté et une pastille de l'autre.
+
+🟡 **`commitment` part, bien qu'il ne porte que les chiffres du client.** Il
+passerait la règle de tri ; aucun écran ne le lit, et l'engagement de volume n'a
+pas d'écran du tout (R6). Élargir un contrat coûte un déploiement, le rétrécir en
+coûte trois.
+
+### 3. Pourquoi la vue est écrite à la main plutôt que dérivée
+
+`Omit<OrderView, "lines">` aurait été plus court et **plus faible**. Un champ
+ajouté demain à la vue staff entrerait dans la vue client, `toCustomerOrder` ne
+compilerait plus, et le geste le plus court serait de le recopier — la porte
+rougirait pour faire passer la fuite. Écrite à la main, elle ignore ce champ : il
+n'atteint pas le client, et personne n'a eu à y penser. C'est la hiérarchie
+habituelle du dépôt : **inexprimable** avant **porte CI**.
+
+Le mapper, lui, est explicite pour la raison déjà écrite sur `toCustomerQuote` :
+TypeScript accepte le surplus dès que l'objet n'est pas un littéral, donc un
+`...view` laisserait tout passer sans qu'une ligne rougisse.
+
+### 4. Ce qui le tient
+
+- `packages/contracts/src/__tests__/customer-order.spec.ts` — le **jeu de clés
+  exact**, jamais une liste d'absences.
+- `apps/lfd-api/test/admin-orders.e2e-spec.ts` — les **deux publics sur la même
+  commande** : six clés de trace au comptoir, trois au client, et le même prix
+  des deux côtés. Rouge avant le correctif (trois clés en trop), vert après.
+- `packages/b2b-ui` prend désormais la vue **client** en entrée. `OrderView` lui
+  est structurellement assignable, donc le back-office passe la sienne sans rien
+  convertir — mais le gabarit partagé ne peut plus _atteindre_ un champ de
+  comptoir, donc plus l'afficher par accident.
+
+### 5. Ce que ça débloque, et ce que ça ne touche pas
+
+`supersedes` — le nom des promotions évincées — peut maintenant être persisté :
+c'est ce que le commentaire de `prisma-order.repository.ts` attendait, et c'est
+la moitié manquante de « pourquoi ma promotion ne s'est pas appliquée ». Il
+reste à décider de sa forme (R25).
+
+⚠️ **`/admin/orders/*` n'est pas touchée**, et c'est le point : la trace entière
+reste servie au comptoir. L'écran d'explication de la trace par reconstruction se
+bâtira dessus — le rétrécissement le protège au lieu de le gêner.

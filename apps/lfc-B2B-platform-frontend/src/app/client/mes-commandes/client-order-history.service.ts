@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { effect, inject, Injectable, signal } from '@angular/core';
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { AccountService } from '../../account/account.service';
@@ -37,7 +37,7 @@ export class ClientOrderHistory {
   private readonly auth = inject(AuthFacade);
   private readonly account = inject(AccountService);
 
-  private readonly rows = signal<readonly OrderView[]>([]);
+  private readonly rows = signal<readonly CustomerOrderView[]>([]);
 
   /** Toutes les commandes lues, **la plus récente en tête**. */
   readonly orders = this.rows.asReadonly();
@@ -63,7 +63,7 @@ export class ClientOrderHistory {
   }
 
   /** Pose une liste déjà obtenue — les suites s'en servent au lieu de doubler. */
-  receive(orders: readonly OrderView[]): void {
+  receive(orders: readonly CustomerOrderView[]): void {
     this.rows.set(sorted(orders));
     this.loadedFor = 'posé-par-la-suite';
   }
@@ -80,14 +80,14 @@ export class ClientOrderHistory {
    * bien pour une commande qui n'existe pas que pour celle d'un autre. L'écran
    * n'a pas à distinguer — dans les deux cas il n'y a rien à montrer.
    */
-  async byId(orderId: string): Promise<OrderView | null> {
+  async byId(orderId: string): Promise<CustomerOrderView | null> {
     if (!this.auth.isAuthenticated()) {
       return null;
     }
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
       return await firstValueFrom(
-        this.http.get<OrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${orderId}`, {
+        this.http.get<CustomerOrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${orderId}`, {
           headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
         }),
       );
@@ -102,11 +102,14 @@ export class ClientOrderHistory {
       const token = await firstValueFrom(this.auth.accessToken$());
       const headers = { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) };
       const [personal, company] = await Promise.all([
-        firstValueFrom(this.http.get<readonly OrderView[]>(`${base}/orders/mine`, headers)),
+        firstValueFrom(this.http.get<readonly CustomerOrderView[]>(`${base}/orders/mine`, headers)),
         companyId === null
-          ? Promise.resolve<readonly OrderView[]>([])
+          ? Promise.resolve<readonly CustomerOrderView[]>([])
           : firstValueFrom(
-              this.http.get<readonly OrderView[]>(`${base}/companies/${companyId}/orders`, headers),
+              this.http.get<readonly CustomerOrderView[]>(
+                `${base}/companies/${companyId}/orders`,
+                headers,
+              ),
             ),
       ]);
       this.rows.set(sorted([...personal, ...company]));
@@ -124,7 +127,7 @@ export class ClientOrderHistory {
  * l'instant où il a cliqué. Deux commandes du même jour se départagent alors sur
  * l'heure de passation, qui est toujours présente.
  */
-function sorted(orders: readonly OrderView[]): readonly OrderView[] {
+function sorted(orders: readonly CustomerOrderView[]): readonly CustomerOrderView[] {
   return [...orders].sort((a, b) => {
     const day = (b.requestedDeliveryDate ?? '').localeCompare(a.requestedDeliveryDate ?? '');
     return day === 0 ? b.placedAt.localeCompare(a.placedAt) : day;

@@ -11,7 +11,12 @@ import { randomUUID } from "node:crypto";
  * Deux frontières doublées : la signature du jeton **staff** (tenant Auth0
  * distant) et la passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
  */
-import type { AdminOrderRow, OrderView, PlacedOrderResponse } from "@lfd/contracts";
+import type {
+  AdminOrderRow,
+  CustomerOrderView,
+  OrderView,
+  PlacedOrderResponse,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
@@ -230,5 +235,65 @@ describe("GET /admin/orders/:id", () => {
 
   it("rend 404 sur une commande inexistante", async () => {
     await staff().get("/admin/orders/ord_inconnue").expect(404);
+  });
+
+  /**
+   * 🔴 **Régression R27 (2026-09-09) : la trace du prix partait au CLIENT.**
+   *
+   * `GET /orders/:id` servait `OrderView` sans rétrécissement, donc
+   * `floorDecision` — le plancher, c'est-à-dire la marge — et l'identifiant de
+   * chaque règle, alors que `POST /orders/quote` était rétrécie exactement pour
+   * ça depuis le matin même.
+   *
+   * Ce cas tient les DEUX moitiés sur la MÊME commande, et c'est le seul niveau
+   * qui le peut : le comptoir garde tout (l'écran d'explication de la trace se
+   * bâtira dessus), le client n'a que ce qui explique sa facture. Deux tests
+   * séparés laisseraient passer un rétrécissement qui aurait aussi appauvri le
+   * staff.
+   */
+  it("sert la trace entière au comptoir, et amputée au client", async () => {
+    await seedPickup();
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    const member = await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send({
+          ...pickupContent(),
+          companyId: company.id,
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        })
+        .expect(201),
+    );
+
+    const staffLine = jsonBody<OrderView>(
+      await staff().get(`/admin/orders/${placed.id}`).expect(200),
+    ).lines[0];
+    const clientLine = jsonBody<CustomerOrderView>(
+      await ctx.asSub(MEMBER).get(`/orders/${placed.id}`).expect(200),
+    ).lines[0];
+
+    // Le comptoir : tout ce dont un écran d'explication aura besoin.
+    expect(Object.keys(staffLine?.pricing ?? {}).sort()).toEqual([
+      "basePriceMillicents",
+      "clampedToZero",
+      "commitment",
+      "floorDecision",
+      "floored",
+      "steps",
+    ]);
+    // Le client : de quoi comprendre sa facture, et rien sur la façon dont on la
+    // borne. Un jeu de clés exact, jamais une liste d'absences — un champ ajouté
+    // demain à la vue staff passerait entre les mailles de la seconde.
+    expect(Object.keys(clientLine?.pricing ?? {}).sort()).toEqual([
+      "basePriceMillicents",
+      "floored",
+      "steps",
+    ]);
+    // Et le prix, lui, est le même des deux côtés : rétrécir n'a pas changé la
+    // facture.
+    expect(clientLine?.unitPriceMillicents).toBe(staffLine?.unitPriceMillicents);
   });
 });

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 import { QrCode } from '@lfd/b2b-ui/order';
 import { map } from 'rxjs/operators';
 
@@ -17,7 +17,7 @@ type Phase = 'loading' | 'ready' | 'none';
 /**
  * **Le QR de retrait**, côté client.
  *
- * 🔴 Le jeton existait, descendait jusqu'au navigateur (`OrderView.handoverToken`)
+ * 🔴 Le jeton existait, descendait jusqu'au navigateur (`CustomerOrderView.handoverToken`)
  * et **aucun écran ne l'affichait** : la confirmation promettait « le QR de
  * retrait est dedans » derrière un bouton qui répondait « cet écran arrive au
  * prochain lot ». Le staff, lui, avait déjà sa route de scan (`/retrait/:token`)
@@ -66,7 +66,7 @@ export class RetraitPage {
   );
 
   protected readonly phase = signal<Phase>('loading');
-  private readonly order = signal<OrderView | null>(null);
+  private readonly order = signal<CustomerOrderView | null>(null);
 
   protected readonly reference = computed(() => this.order()?.orderNumber ?? '');
 

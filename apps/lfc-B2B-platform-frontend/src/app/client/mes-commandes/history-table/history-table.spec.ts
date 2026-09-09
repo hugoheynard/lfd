@@ -29,7 +29,7 @@ describe('HistoryTable', () => {
 
   /**
    * 🔴 La colonne « Passée par » nommait une personne que la commande ne désigne
-   * pas : `OrderView` porte l'auteur STAFF d'une saisie, jamais l'acheteur.
+   * pas : `CustomerOrderView` porte l'auteur STAFF d'une saisie, jamais l'acheteur.
    */
   it('ne prétend plus dire QUI a commandé', () => {
     expect(el().querySelector('fold-avatar-detail')).toBeNull();

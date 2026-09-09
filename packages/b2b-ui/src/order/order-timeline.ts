@@ -1,4 +1,9 @@
-import type { FulfillmentMethod, OrderStatus, OrderView, PaymentStatus } from '@lfd/contracts';
+import type {
+  FulfillmentMethod,
+  OrderStatus,
+  CustomerOrderView,
+  PaymentStatus,
+} from '@lfd/contracts';
 import type { FoldIconName, FoldTimelineNode } from 'fold-ng';
 
 import { formatOrderDay, formatOrderInstant } from './order-format';
@@ -258,7 +263,7 @@ function stateOf(spec: StepSpec, rank: number, blocked: boolean): StepState {
  * base aujourd'hui — la création. Le reste attend que le cycle de vie s'écrive
  * (cf. `documentation/order/architecture-cycle-de-vie-commande.md`).
  */
-function instantOf(spec: StepSpec, order: OrderView): string | null {
+function instantOf(spec: StepSpec, order: CustomerOrderView): string | null {
   return spec.when === 'placed' ? formatOrderInstant(order.placedAt) : null;
 }
 
@@ -270,7 +275,7 @@ function instantOf(spec: StepSpec, order: OrderView): string | null {
  * jalon où l'on se tient est au mieux inutile, au pire faux — et c'est le cas de
  * la dernière étape, qui est `current` quand elle est atteinte, jamais `done`.
  */
-function expectationOf(spec: StepSpec, order: OrderView, state: StepState): string | null {
+function expectationOf(spec: StepSpec, order: CustomerOrderView, state: StepState): string | null {
   if (spec.when !== 'fulfillment' || state !== 'upcoming' || order.requestedDeliveryDate === null) {
     return null;
   }
@@ -287,7 +292,7 @@ function detailFor(detail: string, audience: OrderAudience): string | null {
  * `paymentStatus`, `fulfillmentMethod`, `placedAt`) — aucune invention.
  */
 export function buildTimeline(
-  order: OrderView,
+  order: CustomerOrderView,
   audience: OrderAudience = 'client',
 ): readonly TimelineStep[] {
   const pay = PAYMENT_STEPS[order.paymentStatus];

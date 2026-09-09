@@ -69,7 +69,7 @@ export class HistoryTable {
     const copy = this.t().orders;
     return [
       { key: 'reference', label: copy.colOrder },
-      // 🔴 La colonne « Passée par » est partie : `OrderView` porte l'auteur
+      // 🔴 La colonne « Passée par » est partie : `CustomerOrderView` porte l'auteur
       // STAFF d'une saisie, jamais l'acheteur. Elle répétait le nom du compte à
       // chaque ligne, et c'était le seul endroit où on le lisait comme un fait.
       { key: 'mode', label: copy.colMode },

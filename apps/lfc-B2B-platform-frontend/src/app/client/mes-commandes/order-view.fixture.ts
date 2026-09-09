@@ -1,4 +1,4 @@
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 
 /**
  * **Une commande telle que NOTRE base la rend** — pas telle que le navigateur
@@ -10,10 +10,10 @@ import type { OrderView } from '@lfd/contracts';
  * donc une commande de cette forme-là, partagée, plutôt qu'une par suite.
  *
  * Écrite **en entier** plutôt que castée depuis un objet partiel : un champ
- * ajouté demain à `OrderView` doit faire rougir cette ligne, pas passer sous un
+ * ajouté demain à `CustomerOrderView` doit faire rougir cette ligne, pas passer sous un
  * `as`. C'est le seul intérêt d'un fixture typé.
  */
-export const LIVE_PICKUP: OrderView = {
+export const LIVE_PICKUP: CustomerOrderView = {
   id: 'ord_9',
   orderNumber: 'CMD-0009',
   status: 'placed',

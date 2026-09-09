@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import type { OrderView, PlaceOrderPayload, PlacedOrderResponse } from '@lfd/contracts';
+import type { CustomerOrderView, PlaceOrderPayload, PlacedOrderResponse } from '@lfd/contracts';
 import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -21,7 +21,7 @@ export class OrdersService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  private readonly _orders = signal<readonly OrderView[]>([]);
+  private readonly _orders = signal<readonly CustomerOrderView[]>([]);
   readonly orders = this._orders.asReadonly();
 
   /**
@@ -49,7 +49,7 @@ export class OrdersService {
       .accessToken$()
       .pipe(
         switchMap((token) =>
-          this.http.get<readonly OrderView[]>(
+          this.http.get<readonly CustomerOrderView[]>(
             `${AUTH_CONFIG.apiBaseUrl}/orders/mine`,
             headers(token),
           ),
@@ -67,7 +67,7 @@ export class OrdersService {
       .accessToken$()
       .pipe(
         switchMap((token) =>
-          this.http.get<readonly OrderView[]>(
+          this.http.get<readonly CustomerOrderView[]>(
             `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/orders`,
             headers(token),
           ),

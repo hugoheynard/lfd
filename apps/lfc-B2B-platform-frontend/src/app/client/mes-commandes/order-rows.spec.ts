@@ -1,4 +1,4 @@
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 
 import { historyRowOf, isLive, trackedOf, type RowCopy } from './order-rows';
 
@@ -37,7 +37,7 @@ const ORDER = {
   confirmedAt: null,
   readyAt: null,
   handedOverAt: null,
-} as unknown as OrderView;
+} as unknown as CustomerOrderView;
 
 /**
  * 🔴 Ces lignes venaient d'un fichier de maquette. Ce qui compte ici est autant
@@ -55,9 +55,9 @@ describe('les lignes de l’écran des commandes', () => {
   /** `not_required` = portée au compte ; tout le reste est passé par la carte. */
   it('déduit le régime de règlement de l’état du paiement', () => {
     expect(historyRowOf(ORDER, '', COPY).payment).toBe('account');
-    expect(historyRowOf({ ...ORDER, paymentStatus: 'paid' } as OrderView, '', COPY).payment).toBe(
-      'card',
-    );
+    expect(
+      historyRowOf({ ...ORDER, paymentStatus: 'paid' } as CustomerOrderView, '', COPY).payment,
+    ).toBe('card');
   });
 
   /**
@@ -76,7 +76,7 @@ describe('les lignes de l’écran des commandes', () => {
   });
 
   it('date la remise dès qu’elle a eu lieu', () => {
-    const handed = { ...ORDER, handedOverAt: '2026-09-07T05:58:00.000Z' } as OrderView;
+    const handed = { ...ORDER, handedOverAt: '2026-09-07T05:58:00.000Z' } as CustomerOrderView;
 
     expect(trackedOf(handed, COPY).steps[3]?.at).not.toBe('');
   });
@@ -84,7 +84,9 @@ describe('les lignes de l’écran des commandes', () => {
   /** Le QR n'est annoncé que si le jeton EXISTE — il n'est émis qu'en retrait. */
   it('n’annonce le QR que lorsqu’il a été émis', () => {
     expect(trackedOf(ORDER, COPY).pickupNote).toBe(COPY.qrReady);
-    expect(trackedOf({ ...ORDER, handoverToken: null } as OrderView, COPY).pickupNote).toBe('');
+    expect(trackedOf({ ...ORDER, handoverToken: null } as CustomerOrderView, COPY).pickupNote).toBe(
+      '',
+    );
   });
 
   /** Un client peut ne demander aucune tranche : c'est un choix, pas un trou. */
@@ -92,26 +94,27 @@ describe('les lignes de l’écran des commandes', () => {
     const free = {
       ...ORDER,
       fulfillment: { window: { value: null, source: 'request' } },
-    } as unknown as OrderView;
+    } as unknown as CustomerOrderView;
 
     expect(trackedOf(free, COPY).sub).toBe(COPY.noWindow);
     expect(historyRowOf(free, '', COPY).slot).toBe('');
   });
 
   it('distingue le retrait de la livraison une fois la commande servie', () => {
-    const done = { ...ORDER, status: 'fulfilled' } as OrderView;
+    const done = { ...ORDER, status: 'fulfilled' } as CustomerOrderView;
 
     expect(historyRowOf(done, '', COPY).status).toBe('done');
     expect(
-      historyRowOf({ ...done, fulfillmentMethod: 'delivery' } as OrderView, '', COPY).status,
+      historyRowOf({ ...done, fulfillmentMethod: 'delivery' } as CustomerOrderView, '', COPY)
+        .status,
     ).toBe('delivered');
   });
 
   /** Le suivi ne montre que ce qui VIT : ni remis, ni annulé. */
   it('sort du suivi ce qui est remis ou annulé', () => {
     expect(isLive(ORDER)).toBe(true);
-    expect(isLive({ ...ORDER, status: 'fulfilled' } as OrderView)).toBe(false);
-    expect(isLive({ ...ORDER, status: 'cancelled' } as OrderView)).toBe(false);
+    expect(isLive({ ...ORDER, status: 'fulfilled' } as CustomerOrderView)).toBe(false);
+    expect(isLive({ ...ORDER, status: 'cancelled' } as CustomerOrderView)).toBe(false);
   });
 });
 
@@ -131,7 +134,7 @@ describe('les quatre étapes, datées par les faits du fournil', () => {
       status: 'ready',
       confirmedAt: '2026-09-06T18:00:00.000Z',
       readyAt: '2026-09-07T04:30:00.000Z',
-    } as OrderView;
+    } as CustomerOrderView;
 
     expect(trackedOf(packed, COPY).at).toBe(2);
   });
@@ -145,7 +148,7 @@ describe('les quatre étapes, datées par les faits du fournil', () => {
       status: 'ready',
       confirmedAt: '2026-09-06T18:00:00.000Z',
       readyAt: '2026-09-07T04:30:00.000Z',
-    } as OrderView;
+    } as CustomerOrderView;
 
     const steps = trackedOf(packed, COPY).steps;
     expect(steps[1]?.at).not.toBe('');
@@ -165,7 +168,7 @@ describe('les quatre étapes, datées par les faits du fournil', () => {
   it('avance la barre avec l’étape, sans la calculer deux fois', () => {
     // 3 étapes sur 4 franchies = 75 %. Le pourcentage DÉRIVE de `at` : deux
     // sources se contrediraient le jour où une étape s'ajoute.
-    const packed = { ...ORDER, status: 'ready' } as OrderView;
+    const packed = { ...ORDER, status: 'ready' } as CustomerOrderView;
     expect(trackedOf(packed, COPY).percent).toBe(75);
   });
 });
@@ -181,7 +184,7 @@ describe('les quatre étapes, datées par les faits du fournil', () => {
  */
 describe('le statut annoncé au client', () => {
   function statusFor(status: string): string {
-    return historyRowOf({ ...ORDER, status } as OrderView, 'Les Tommeuses', COPY).status;
+    return historyRowOf({ ...ORDER, status } as CustomerOrderView, 'Les Tommeuses', COPY).status;
   }
 
   it('dit « reçue » d’une commande à peine passée', () => {
@@ -200,7 +203,11 @@ describe('le statut annoncé au client', () => {
     // Le domaine n'a qu'un `fulfilled` : c'est l'acheminement qui choisit le
     // mot, et le client ne lit jamais « retirée » sur une livraison.
     expect(statusFor('fulfilled')).toBe('done');
-    const delivered = { ...ORDER, status: 'fulfilled', fulfillmentMethod: 'delivery' } as OrderView;
+    const delivered = {
+      ...ORDER,
+      status: 'fulfilled',
+      fulfillmentMethod: 'delivery',
+    } as CustomerOrderView;
     expect(historyRowOf(delivered, 'Les Tommeuses', COPY).status).toBe('delivered');
   });
 

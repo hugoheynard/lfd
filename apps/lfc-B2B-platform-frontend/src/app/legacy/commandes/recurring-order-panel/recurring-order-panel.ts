@@ -10,7 +10,7 @@ import {
 import type {
   CreateSubscriptionPayload,
   FulfillmentMethod,
-  OrderView,
+  CustomerOrderView,
   Recurrence,
 } from '@lfd/contracts';
 import {
@@ -56,7 +56,7 @@ export class RecurringOrderPanel {
   static readonly foldPanel: FoldPanelDefaults = { modal: true, surface: 'solid', side: 'auto' };
 
   /** Commande d'origine (ses lignes alimentent le gabarit). */
-  readonly data = input.required<OrderView>();
+  readonly data = input.required<CustomerOrderView>();
 
   private readonly ref = inject(FoldPanelRef);
   private readonly subscriptions = inject(SubscriptionsService);

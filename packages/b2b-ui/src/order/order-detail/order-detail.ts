@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { BillingAddressPayload, OrderLineView, OrderView } from '@lfd/contracts';
+import type {
+  BillingAddressPayload,
+  CustomerOrderLineView,
+  CustomerOrderView,
+} from '@lfd/contracts';
 
 import {
   entryPriceOf,
@@ -95,7 +99,21 @@ interface RemovedLine {
   styleUrl: './order-detail.scss',
 })
 export class OrderDetail {
-  readonly order = input.required<OrderView>();
+  /**
+   * **La vue CLIENT, et non la vue staff** — alors que le back-office monte ce
+   * même composant.
+   *
+   * Ce n'est pas un appauvrissement : `OrderView` est structurellement
+   * assignable à {@link CustomerOrderView}, donc l'admin passe sa vue entière
+   * sans rien convertir. Ce que le type change est ce que le GABARIT peut
+   * atteindre — un champ réservé au comptoir (l'identifiant d'une règle, le
+   * plancher qui l'a bornée) ne compile pas ici, et ne peut donc pas s'afficher
+   * par accident sur l'écran que le client ouvre (R27, 2026-09-09).
+   *
+   * Le jour où le back-office aura son écran d'explication de la trace, il
+   * prendra la vue staff — dans SON composant, pas dans celui-ci.
+   */
+  readonly order = input.required<CustomerOrderView>();
 
   /**
    * À qui s'adresse la page. Le parcours est le même des deux côtés ; seul le
@@ -217,7 +235,7 @@ export class OrderDetail {
   protected readonly priceStepLabels = priceStepLabels;
   protected readonly wasFloored = wasFloored;
 
-  protected isAdded(line: OrderLineView): boolean {
+  protected isAdded(line: CustomerOrderLineView): boolean {
     return this.addedSkus().has(line.sku);
   }
 

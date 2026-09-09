@@ -1,4 +1,4 @@
-import type { OrderLineView, OrderView } from '@lfd/contracts';
+import type { CustomerOrderLineView, CustomerOrderView } from '@lfd/contracts';
 
 import { formatAdjustment, formatCents, formatLateFeeTerms } from './order-format';
 
@@ -27,7 +27,7 @@ import { formatAdjustment, formatCents, formatLateFeeTerms } from './order-forma
  *   ou une ligne fabriquée par un import. L'absence est rendue telle quelle
  *   plutôt qu'inventée.
  */
-export function entryPriceOf(line: OrderLineView): number | null {
+export function entryPriceOf(line: CustomerOrderLineView): number | null {
   const base = line.pricing?.basePriceMillicents ?? null;
   return base === null || base === line.unitPriceMillicents ? null : base;
 }
@@ -40,7 +40,7 @@ export function entryPriceOf(line: OrderLineView): number | null {
  * ligne sans trace n'a rien à dire, et rend une liste vide plutôt qu'une phrase
  * inventée.
  */
-export function priceStepLabels(line: OrderLineView): readonly string[] {
+export function priceStepLabels(line: CustomerOrderLineView): readonly string[] {
   return (line.pricing?.steps ?? []).map((step) => step.label);
 }
 
@@ -50,7 +50,7 @@ export function priceStepLabels(line: OrderLineView): readonly string[] {
  * C'est le signe qu'une règle n'a pas produit son effet — et c'est exactement ce
  * qu'un client remarque avant nous.
  */
-export function wasFloored(line: OrderLineView): boolean {
+export function wasFloored(line: CustomerOrderLineView): boolean {
   return line.pricing?.floored ?? false;
 }
 
@@ -70,7 +70,7 @@ export interface TotalRow {
  * son nom est déjà figé dans le snapshot d'adresse : on ne le redemande pas au
  * serveur, et il reste juste même si le point est renommé ou supprimé après coup.
  */
-function discountLabel(order: OrderView): string {
+function discountLabel(order: CustomerOrderView): string {
   const point = order.fulfillmentMethod === 'pickup' ? order.pickupAddress : null;
   return point === null || point.label === '' ? 'Remise' : `Retrait — ${point.label}`;
 }
@@ -91,7 +91,7 @@ function discountLabel(order: OrderView): string {
  * Hors du composant, comme le reste de ce module : c'est de l'arithmétique de
  * lecture, et l'arithmétique se teste sans monter un gabarit.
  */
-export function orderTotalRows(order: OrderView): readonly TotalRow[] {
+export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
   const rows: TotalRow[] = [
     {
       key: 'subtotal',

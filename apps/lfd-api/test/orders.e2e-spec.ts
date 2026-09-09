@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
  */
 import type { CompanyStatus } from "../src/platform/database/client/client.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import type { BillingAddressPayload, OrderView, PlacedOrderResponse } from "@lfd/contracts";
+import type { BillingAddressPayload, CustomerOrderView, PlacedOrderResponse } from "@lfd/contracts";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CatalogVersion } from "../src/b2b/catalog/domain/entities/catalog-version.js";
 import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
@@ -188,7 +188,7 @@ describe("zéro friction — commande sans entreprise", () => {
     expect(stored.paymentStatus).toBe("pending");
     expect(stored.stripePaymentIntentId).toBe("pi_e2e");
 
-    const mine = jsonBody<readonly OrderView[]>(
+    const mine = jsonBody<readonly CustomerOrderView[]>(
       await ctx.asSub(MEMBER).get(`/orders/mine`).expect(200),
     );
     expect(mine).toHaveLength(1);
@@ -249,7 +249,7 @@ describe("checkout → Order", () => {
     const placed = jsonBody<PlacedOrderResponse>(response);
     expect(placed.orderNumber).toMatch(/^ORD-/u);
 
-    const list = jsonBody<readonly OrderView[]>(
+    const list = jsonBody<readonly CustomerOrderView[]>(
       await ctx.asSub(MEMBER).get(`/companies/${companyId}/orders`).expect(200),
     );
     expect(list).toHaveLength(1);
@@ -266,16 +266,14 @@ describe("checkout → Order", () => {
         lineTotalCents: 600,
         // Vue de commande : la trace remonte sous sa forme de contrat. Aucune
         // règle en base ici — elle dit donc qu'aucun étage n'a joué.
+        // 🔴 **Rétrécie depuis le 2026-09-09** (R27) : cette route est servie au
+        // client, et la trace staff y portait `floorDecision` — le plancher,
+        // c'est-à-dire la marge. Ce qui reste explique la facture sans dire
+        // comment on la borne. `clampedToZero` et `commitment` sont partis avec.
         pricing: {
           basePriceMillicents: 200_000,
           steps: [],
           floored: false,
-          // Consigné depuis le 2026-09-09. `false` et non `null` : cette ligne
-          // vient d'être résolue, on SAIT que la chaîne n'est pas passée sous
-          // zéro — `null` est réservé aux commandes antérieures à la colonne.
-          clampedToZero: false,
-          floorDecision: null,
-          commitment: null,
         },
         // La fixture de catalogue ne déclare rien : l'ABSENCE traverse telle
         // quelle. C'est le point le plus important de ce champ — un `{codes: []}`

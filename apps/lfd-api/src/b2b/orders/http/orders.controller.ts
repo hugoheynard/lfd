@@ -9,8 +9,10 @@ import {
   orderQuotePayloadSchema,
   type OrderQuotePayload,
   type CustomerOrderQuoteView,
+  type CustomerOrderView,
   type OrderQuoteView,
   toCustomerQuote,
+  toCustomerOrder,
 } from "@lfd/contracts";
 import {
   Body,
@@ -117,12 +119,21 @@ export class OrdersController {
     );
   }
 
-  /** Liste les commandes **personnelles** du client (sans entreprise). */
+  /**
+   * Liste les commandes **personnelles** du client (sans entreprise).
+   *
+   * 🔴 **Rétrécie**, comme `POST /orders/quote` et pour la même raison : la
+   * trace du prix figée sur chaque ligne porte l'identifiant de nos règles et le
+   * plancher qui les a bornées, c'est-à-dire la marge. Cf.
+   * {@link CustomerOrderLinePricingTrace}. `/admin/orders/*` continue de servir
+   * la trace entière — c'est là que se lit le « pourquoi ce prix ».
+   */
   @Get("mine")
-  async mine(@CurrentUser() user: Principal): Promise<readonly OrderView[]> {
-    return this.queries.execute<ListPersonalOrdersQuery, readonly OrderView[]>(
+  async mine(@CurrentUser() user: Principal): Promise<readonly CustomerOrderView[]> {
+    const orders = await this.queries.execute<ListPersonalOrdersQuery, readonly OrderView[]>(
       new ListPersonalOrdersQuery(user.userId),
     );
+    return orders.map(toCustomerOrder);
   }
 
   /**
@@ -132,10 +143,14 @@ export class OrdersController {
    *
    * Déclarée **après** `mine` : Nest apparie dans l'ordre de déclaration, et
    * `:id` avalerait sinon le mot `mine`.
+   *
+   * 🔴 **Rétrécie** — cf. {@link OrdersController.mine}.
    */
   @Get(":id")
-  async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<OrderView> {
-    return this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id));
+  async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<CustomerOrderView> {
+    return toCustomerOrder(
+      await this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id)),
+    );
   }
 
   /**

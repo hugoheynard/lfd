@@ -444,6 +444,7 @@ export {
   MAX_LINE_QUANTITY,
   MAX_ORDER_LINES,
   toCustomerQuote,
+  toCustomerOrder,
 } from "./order.js";
 export type {
   OrderStatus,
@@ -467,6 +468,10 @@ export type {
   OrderQuoteView,
   CustomerOrderQuoteLineView,
   CustomerOrderQuoteView,
+  CustomerPriceStepView,
+  CustomerOrderLinePricingTrace,
+  CustomerOrderLineView,
+  CustomerOrderView,
   OrderLineAllergens,
   OrderLineAllergenLabel,
 } from "./order.js";

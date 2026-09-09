@@ -1,4 +1,4 @@
-import { type OrderView } from "@lfd/contracts";
+import { type CustomerOrderView, type OrderView, toCustomerOrder } from "@lfd/contracts";
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
@@ -16,14 +16,22 @@ import { ListCompanyOrdersQuery } from "../application/queries/list-company-orde
 export class CompanyOrdersController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Liste les commandes de l'entreprise (membre). */
+  /**
+   * Liste les commandes de l'entreprise (membre).
+   *
+   * 🔴 **Rétrécie** — cf. {@link OrdersController.mine}. Le mur de cette route
+   * protège une entreprise d'une autre ; il ne protégeait pas la machinerie de
+   * nos prix contre le membre lui-même. Le back-office ne passe pas par ici : il
+   * lit `/admin/orders/*`, qui sert la trace entière.
+   */
   @Get(":companyId/orders")
   async list(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
-  ): Promise<readonly OrderView[]> {
-    return this.queries.execute<ListCompanyOrdersQuery, readonly OrderView[]>(
+  ): Promise<readonly CustomerOrderView[]> {
+    const orders = await this.queries.execute<ListCompanyOrdersQuery, readonly OrderView[]>(
       new ListCompanyOrdersQuery(user.userId, companyId),
     );
+    return orders.map(toCustomerOrder);
   }
 }

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 import {
   canSettle,
   ORDER_DOC_ORDER_SHEET,
@@ -60,7 +60,7 @@ export class CommandePage {
 
   protected readonly state = signal<PageState>('loading');
   protected readonly error = signal<string>('');
-  protected readonly order = signal<OrderView | null>(null);
+  protected readonly order = signal<CustomerOrderView | null>(null);
 
   /**
    * Les noms de produits du catalogue, pour nommer les lignes **retirées** d'une
@@ -115,17 +115,17 @@ export class CommandePage {
   }
 
   /** Le règlement est encore à faire — le bouton n'apparaît que dans ce cas. */
-  protected settlable(order: OrderView): boolean {
+  protected settlable(order: CustomerOrderView): boolean {
     return canSettle(order.paymentStatus);
   }
 
   /** Règlement d'une commande — endpoint de settle par commande à câbler (à venir). */
-  protected settle(order: OrderView): void {
+  protected settle(order: CustomerOrderView): void {
     this.notify.info(`Le règlement en ligne de ${order.orderNumber} arrive bientôt.`);
   }
 
   /** Ouvre « transformer en panier récurrent » avec cette commande. */
-  protected makeRecurring(order: OrderView): void {
+  protected makeRecurring(order: CustomerOrderView): void {
     this.panelHost.open(RecurringOrderPanel, { data: order });
   }
 

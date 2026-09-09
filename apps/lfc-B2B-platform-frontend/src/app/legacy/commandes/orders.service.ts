@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { ClientSheet, OrderPaymentIntent, OrderView } from '@lfd/contracts';
+import type { ClientSheet, OrderPaymentIntent, CustomerOrderView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -25,7 +25,7 @@ export class OrdersService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  private readonly state = signal<readonly OrderView[]>([]);
+  private readonly state = signal<readonly CustomerOrderView[]>([]);
   private readonly _status = signal<OrdersStatus>('idle');
   private readonly _error = signal<string | null>(null);
 
@@ -45,19 +45,22 @@ export class OrdersService {
    * voir. L'état de page (chargement, erreur) appartient à l'écran, pas au
    * service : deux détails ouverts ne partagent rien.
    */
-  async byId(id: string): Promise<OrderView> {
+  async byId(id: string): Promise<CustomerOrderView> {
     const token = await firstValueFrom(this.auth.accessToken$());
     return firstValueFrom(
-      this.http.get<OrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+      this.http.get<CustomerOrderView>(
+        `${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ),
     );
   }
 
   /**
    * Le **bon de commande** du client (`GET /orders/:id/bon`).
    *
-   * Il se demande au serveur au lieu de se dériver de l'`OrderView` déjà en
+   * Il se demande au serveur au lieu de se dériver de l'`CustomerOrderView` déjà en
    * main, et ce n'est pas un détour : c'est le serveur qui décide de ce que le
    * client a le droit de lire. Le fabriquer ici supposerait que la charge utile
    * porte déjà les SKU et la trace du prix — donc qu'ils soient dans l'onglet
@@ -75,7 +78,7 @@ export class OrdersService {
   /**
    * De quoi **régler** une commande laissée en attente (`GET /orders/:id/payment`).
    *
-   * Le `clientSecret` n'est jamais dans `OrderView` : il ne descend que lorsque
+   * Le `clientSecret` n'est jamais dans `CustomerOrderView` : il ne descend que lorsque
    * le client demande explicitement à payer. C'est la cible du lien qu'un
    * commercial transmet après avoir saisi une commande au téléphone.
    */
@@ -96,7 +99,7 @@ export class OrdersService {
       .accessToken$()
       .pipe(
         switchMap((token) =>
-          this.http.get<readonly OrderView[]>(`${AUTH_CONFIG.apiBaseUrl}/orders/mine`, {
+          this.http.get<readonly CustomerOrderView[]>(`${AUTH_CONFIG.apiBaseUrl}/orders/mine`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ),

@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
-import type { OrderView } from '@lfd/contracts';
+import type { CustomerOrderView } from '@lfd/contracts';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,11 +14,11 @@ import { LIVE_PICKUP } from '../order-view.fixture';
 import { RetraitPage } from './retrait-page';
 
 /** Une commande de retrait, dont ces cas ne font varier que ce qu'ils éprouvent. */
-function order(over: Partial<OrderView> = {}): OrderView {
+function order(over: Partial<CustomerOrderView> = {}): CustomerOrderView {
   return { ...LIVE_PICKUP, ...over };
 }
 
-async function boot(found: OrderView | null): Promise<ComponentFixture<RetraitPage>> {
+async function boot(found: CustomerOrderView | null): Promise<ComponentFixture<RetraitPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [RetraitPage],
@@ -45,7 +45,7 @@ const text = (fixture: ComponentFixture<RetraitPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 /**
- * 🔴 **Le jeton descendait, aucun écran ne l'affichait.** `OrderView` porte
+ * 🔴 **Le jeton descendait, aucun écran ne l'affichait.** `CustomerOrderView` porte
  * `handoverToken` depuis toujours, le staff a sa route de scan depuis toujours,
  * et le bouton « Voir mon QR de retrait » répondait « cet écran arrive au
  * prochain lot ». Ces cas tiennent l'écran qui manquait.

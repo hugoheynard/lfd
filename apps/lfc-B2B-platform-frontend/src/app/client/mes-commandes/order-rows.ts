@@ -1,8 +1,8 @@
-import type { FulfillmentWindow, OrderView } from '@lfd/contracts';
+import type { FulfillmentWindow, CustomerOrderView } from '@lfd/contracts';
 
 /**
  * **Ce que l'écran des commandes lit** — les modèles de vue, et leur fabrication
- * depuis `OrderView`.
+ * depuis `CustomerOrderView`.
  *
  * 🔴 Ils venaient d'un fichier de maquette : deux suivis et six lignes
  * d'historique écrits en dur, avec leurs références, leurs montants et leurs
@@ -30,7 +30,7 @@ import type { FulfillmentWindow, OrderView } from '@lfd/contracts';
  *
  * - **Le coursier.** Ni son prénom ni son téléphone n'existent : la tournée de
  *   livraison n'est pas construite.
- * - **QUI a commandé.** `OrderView` porte l'auteur STAFF d'une saisie, jamais
+ * - **QUI a commandé.** `CustomerOrderView` porte l'auteur STAFF d'une saisie, jamais
  *   l'acheteur. La colonne est partie plutôt que de répéter le nom du compte à
  *   chaque ligne.
  *
@@ -167,12 +167,12 @@ const STEP_OF_STATUS: Readonly<Record<string, number>> = {
 };
 
 /** Une commande est-elle encore VIVANTE ? Le suivi ne montre que celles-là. */
-export function isLive(order: OrderView): boolean {
+export function isLive(order: CustomerOrderView): boolean {
   return order.status !== 'fulfilled' && order.status !== 'cancelled';
 }
 
 /** Le suivi d'une commande en cours. */
-export function trackedOf(order: OrderView, copy: RowCopy): TrackedOrder {
+export function trackedOf(order: CustomerOrderView, copy: RowCopy): TrackedOrder {
   const at = STEP_OF_STATUS[order.status] ?? 0;
   const place = placeOf(order);
   return {
@@ -196,7 +196,7 @@ export function trackedOf(order: OrderView, copy: RowCopy): TrackedOrder {
 }
 
 /** Une ligne d'historique. */
-export function historyRowOf(order: OrderView, org: string, copy: RowCopy): HistoryOrder {
+export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCopy): HistoryOrder {
   return {
     id: order.id,
     reference: order.orderNumber,
@@ -223,7 +223,7 @@ export function historyRowOf(order: OrderView, org: string, copy: RowCopy): Hist
  * donc aucune ne peut mentir sur l'ordre — si le fournil n'a rien constaté,
  * l'étape reste vide plutôt que d'emprunter l'heure de sa voisine.
  */
-function stepsOf(order: OrderView, copy: RowCopy): readonly TrackStep[] {
+function stepsOf(order: CustomerOrderView, copy: RowCopy): readonly TrackStep[] {
   const handed =
     order.fulfillmentMethod === 'pickup' ? copy.stepHandedPickup : copy.stepHandedDelivery;
   return [
@@ -243,7 +243,7 @@ function stepsOf(order: OrderView, copy: RowCopy): readonly TrackStep[] {
  * défaut d'origine : le mot le plus engageant était celui qu'on disait quand on
  * ne savait pas.
  */
-function statusOf(order: OrderView): OrderRowStatus {
+function statusOf(order: CustomerOrderView): OrderRowStatus {
   if (order.status === 'cancelled') {
     return 'cancelled';
   }
@@ -259,7 +259,7 @@ function statusOf(order: OrderView): OrderRowStatus {
   return order.status === 'confirmed' ? 'bakery' : 'received';
 }
 
-function originOf(order: OrderView): OrderOrigin {
+function originOf(order: CustomerOrderView): OrderOrigin {
   if (order.origin === 'recurring') {
     return 'recurring';
   }
@@ -267,11 +267,11 @@ function originOf(order: OrderView): OrderOrigin {
 }
 
 /** Le nombre de pièces : la somme des quantités, pas le nombre de lignes. */
-function piecesOf(order: OrderView): number {
+function piecesOf(order: CustomerOrderView): number {
   return order.lines.reduce((total, line) => total + line.quantity, 0);
 }
 
-function modeLabel(order: OrderView, copy: RowCopy): string {
+function modeLabel(order: CustomerOrderView, copy: RowCopy): string {
   return order.fulfillmentMethod === 'pickup' ? copy.pickup : copy.delivery;
 }
 
@@ -281,7 +281,7 @@ function modeLabel(order: OrderView, copy: RowCopy): string {
  * livrée. Exporté pour la même raison que `windowOf` : l'accueil et le suivi
  * nomment le même endroit, et deux dérivations finiraient par diverger.
  */
-export function placeOf(order: OrderView): string {
+export function placeOf(order: CustomerOrderView): string {
   const snapshot =
     order.fulfillmentMethod === 'pickup' ? order.pickupAddress : order.deliveryAddress;
   if (snapshot === null) {
@@ -297,7 +297,7 @@ export function placeOf(order: OrderView): string {
  * façons de la mettre en forme finiraient par se contredire sur l'écran qui la
  * lit le moins.
  */
-export function windowOf(order: OrderView): string {
+export function windowOf(order: CustomerOrderView): string {
   const window: FulfillmentWindow | null = order.fulfillment.window.value;
   if (window === null) {
     return '';
