@@ -104,7 +104,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     const at = instant ?? this.clock.now();
     const loaded = await this.load(at);
     const ruleDates = new Map(loaded.rules.map((entry) => [entry.rule.id, entry.rule.validFrom]));
-    return this.elasticity.enrich(this.assemble(loaded, at), ruleDates, at);
+    return this.elasticity.enrich(await this.assemble(loaded, at), ruleDates, at);
   }
 
   private async load(at: Date): Promise<LoadedBoard> {
@@ -177,8 +177,15 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     return { rules, floors, ladders, articles, historyStartsAt };
   }
 
-  private assemble(loaded: LoadedBoard, at: Date): PricingBoardView {
-    const materials = boardMaterials(loaded.rules, loaded.floors, at, null, loaded.ladders, null);
+  private async assemble(loaded: LoadedBoard, at: Date): Promise<PricingBoardView> {
+    const materials = await boardMaterials(
+      loaded.rules,
+      loaded.floors,
+      at,
+      null,
+      loaded.ladders,
+      null,
+    );
     // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
     // proportionnel au produit familles × articles, pour un découpage qui ne
     // change jamais d'une famille à l'autre.

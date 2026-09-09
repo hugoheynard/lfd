@@ -92,13 +92,16 @@ function loadedFloor(id: string, scope: PriceScope, bp: number): LoadedFloor {
 }
 
 describe("un nœud du tableau", () => {
-  it("rend le prix de la fonction qui facture, composé et non additionné", () => {
+  it("rend le prix de la fonction qui facture, composé et non additionné", async () => {
     const rules = loadedRules([
       ruleRow("a", { bp: 2_000 }),
       ruleRow("b", { stage: "geste", bp: 1_000 }),
     ]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, [], AT), {
+      rules,
+      floors: [],
+    });
 
     // −20 % puis −10 % font −28 %, pas −30 % : 200 → 160 → 144.
     expect(view.finalMillicents).toBe(144_000);
@@ -110,23 +113,29 @@ describe("un nœud du tableau", () => {
    * s'enchaînent pas, la plus spécifique remplace l'autre. Sans ce champ, on
    * lirait deux remises et un total qui ne colle avec aucune des deux.
    */
-  it("nomme la règle évincée dans son étage, et ne la compte pas dans le prix", () => {
+  it("nomme la règle évincée dans son étage, et ne la compte pas dans le prix", async () => {
     const rules = loadedRules([
       ruleRow("catalogue", { bp: 2_000 }),
       ruleRow("produit", { bp: 500, scope: { type: "product", id: "VIE-001" } }),
     ]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, [], AT), {
+      rules,
+      floors: [],
+    });
 
     expect(view.supersededRuleIds).toEqual(["catalogue"]);
     expect(view.steps).toHaveLength(1);
     expect(view.finalMillicents).toBe(190_000);
   });
 
-  it("n'annonce aucune marge de négociation quand aucune limite n'est posée", () => {
+  it("n'annonce aucune marge de négociation quand aucune limite n'est posée", async () => {
     const rules = loadedRules([ruleRow("a")]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, [], AT), {
+      rules,
+      floors: [],
+    });
 
     expect(view.negotiationRoom).toBeNull();
   });
@@ -136,11 +145,14 @@ describe("un nœud du tableau", () => {
    * annonce « je te fais 5 % » — et jamais sous zéro : un prix déjà relevé au
    * plancher rend `0`, ce qui est une information, pas une remise négative.
    */
-  it("borne la marge de négociation à zéro sur un prix déjà relevé", () => {
+  it("borne la marge de négociation à zéro sur un prix déjà relevé", async () => {
     const rules = loadedRules([ruleRow("a", { bp: 5_000 })]);
     const floors = [loadedFloor("plancher", { type: "global", id: null }, 9_000)];
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors, AT), { rules, floors });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, floors, AT), {
+      rules,
+      floors,
+    });
 
     expect(view.floored).toBe(true);
     expect(view.finalMillicents).toBe(180_000);
@@ -152,34 +164,40 @@ describe("un nœud du tableau", () => {
   });
 
   /** Le plus spécifique REMPLACE : un plancher d'article ne s'ajoute pas à celui de sa famille. */
-  it("retient le plancher le plus spécifique, même quand il est plus bas", () => {
+  it("retient le plancher le plus spécifique, même quand il est plus bas", async () => {
     const floors = [
       loadedFloor("famille", { type: "category", id: "viennoiserie" }, 9_000),
       loadedFloor("article", { type: "product", id: "VIE-001" }, 5_000),
     ];
     const rules = loadedRules([ruleRow("a", { bp: 4_000 })]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, floors, AT), { rules, floors });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, floors, AT), {
+      rules,
+      floors,
+    });
 
     expect(view.effectiveFloor?.id).toBe("article");
     expect(view.floored).toBe(false);
     expect(view.finalMillicents).toBe(120_000);
   });
 
-  it("laisse la mesure des ventes à la passe qui la fait", () => {
+  it("laisse la mesure des ventes à la passe qui la fait", async () => {
     const rules = loadedRules([ruleRow("a")]);
 
-    const view = itemView(ARTICLE, CONTEXT, boardMaterials(rules, [], AT), { rules, floors: [] });
+    const view = itemView(ARTICLE, CONTEXT, await boardMaterials(rules, [], AT), {
+      rules,
+      floors: [],
+    });
 
     expect(view.elasticity).toBeNull();
   });
 });
 
 describe("les matériaux d'une lecture", () => {
-  it("range les règles par étage, une seule fois pour tout le tableau", () => {
+  it("range les règles par étage, une seule fois pour tout le tableau", async () => {
     const rules = loadedRules([ruleRow("a"), ruleRow("b", { stage: "geste" }), ruleRow("c")]);
 
-    const materials = boardMaterials(rules, [], AT);
+    const materials = await boardMaterials(rules, [], AT);
 
     expect(materials.rules).toHaveLength(3);
     expect(materials.byStage.get("promotion")?.map((entry) => entry.id)).toEqual(["a", "c"]);
@@ -191,7 +209,7 @@ describe("les matériaux d'une lecture", () => {
 });
 
 describe("viser un article nommément", () => {
-  it("ne retient que les portées produit et déclinaison", () => {
+  it("ne retient que les portées produit et déclinaison", async () => {
     expect(targetsArticle({ type: "product", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "variant", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "category", id: "viennoiserie" }, "VIE-001")).toBe(false);

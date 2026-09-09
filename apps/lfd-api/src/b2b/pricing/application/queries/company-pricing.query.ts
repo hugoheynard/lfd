@@ -134,7 +134,7 @@ export class CompanyPricingQuery {
     });
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
-    const materials = boardMaterials(rules, floors, at, live, ladders, companyId);
+    const materials = await boardMaterials(rules, floors, at, live, ladders, companyId);
     const byCategory = groupByCategory(articles);
     const categories: CompanyPricingCategoryView[] = CATALOG_CATEGORY_ORDER.map((category) => ({
       id: category,

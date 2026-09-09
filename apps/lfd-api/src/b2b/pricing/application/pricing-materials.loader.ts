@@ -14,10 +14,10 @@ import { LoadedPricer, type PricingParties } from "../domain/loaded-pricer.js";
 import { admitsEvidence, type PriceLens } from "../domain/price-lens.js";
 import { readsArchived, type PriceEpoch } from "../domain/price-epoch.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
+import { pricerOver } from "./pricer-over.js";
 import type { PricingContext } from "../domain/price-rule.js";
 import {
   floorsFor,
-  materialsOf,
   NO_EVIDENCE,
   type PricingEvidence,
   type PricingMaterials,
@@ -144,14 +144,25 @@ export class PricingMaterialsLoader {
         ? this.mercuriales.liveAsOf(parties.companyId, at)
         : this.mercuriales.liveFor(parties.companyId, at),
     ]);
-    const materials = materialsOf({ rules, floors, ladders, commitments, mercuriale });
-    // Sans preuves recevables, il n'y a rien à mesurer — et `NO_EVIDENCE` est la
-    // réponse honnête, pas un défaut prudent : la porte d'un plancher dynamique
-    // reste alors fermée, ce qui est ce qu'une question sans preuve mérite.
-    const evidence = admitsEvidence(lens)
-      ? await this.measure(entries, materials, at)
-      : NO_EVIDENCE;
-    return LoadedPricer.over(materials, evidence, parties, at);
+    // 🔴 **La fabrique est commune à ce chargeur et aux écrans.** Elle l'est
+    // depuis R21 : `LoadedPricer.over` avait deux appelants, et le second — le
+    // tableau de tarification — montait `commitments: []` et `NO_EVIDENCE` à la
+    // main. Deux fabriques pour une décision qui n'en a qu'une.
+    return pricerOver(
+      admitsEvidence(lens)
+        ? {
+            rules,
+            floors,
+            ladders,
+            mercuriale,
+            lens: "measured",
+            commitments,
+            measure: (materials) => this.measure(entries, materials, at),
+          }
+        : { rules, floors, ladders, mercuriale, lens: "unproven" },
+      parties,
+      at,
+    );
   }
 
   /**

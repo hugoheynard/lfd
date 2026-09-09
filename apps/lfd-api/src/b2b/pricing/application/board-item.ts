@@ -7,8 +7,8 @@ import type {
 
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
 import { LoadedPricer } from "../domain/loaded-pricer.js";
+import { pricerOver } from "./pricer-over.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
-import { materialsOf, NO_EVIDENCE } from "../domain/pricing-materials.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import {
@@ -71,7 +71,7 @@ export interface BoardMaterials {
   readonly pricer: LoadedPricer;
 }
 
-export function boardMaterials(
+export async function boardMaterials(
   loadedRules: readonly LoadedRule[],
   loadedFloors: readonly LoadedFloor[],
   /**
@@ -88,7 +88,7 @@ export function boardMaterials(
    * ce que voit un compte sans tarif négocié.
    */
   companyId: string | null = null,
-): BoardMaterials {
+): Promise<BoardMaterials> {
   const rules = loadedRules.map((entry) => entry.rule);
   const floors = loadedFloors.map((entry) => entry.floor);
   const byStage = new Map<PriceStage, readonly PriceRule[]>(
@@ -99,11 +99,16 @@ export function boardMaterials(
     floors,
     byStage,
     mercuriale,
-    pricer: LoadedPricer.over(
-      // Aucun engagement : le tableau montre un prix de vitrine, et un
-      // engagement ouvrirait un palier que la vitrine ne promet pas.
-      materialsOf({ rules, floors, ladders, commitments: [], mercuriale }),
-      NO_EVIDENCE,
+    // 🔴 **La fabrique commune, sous la lentille `unproven`.** Cette ligne
+    // montait `commitments: []` et `NO_EVIDENCE` à la main : c'était le
+    // troisième encodage recensé par `price-lens.ts`, celui que la lentille
+    // n'avait pas fermé. La lentille le dit maintenant, et sa signature refuse
+    // les engagements — ce n'est plus « le tableau pense à ne pas en passer ».
+    //
+    // Le sens est inchangé : le tableau montre un prix de vitrine, et un
+    // engagement ouvrirait un palier que la vitrine ne promet pas.
+    pricer: await pricerOver(
+      { rules, floors, ladders, mercuriale, lens: "unproven" },
       { companyId },
       at,
     ),
