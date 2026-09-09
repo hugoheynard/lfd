@@ -157,13 +157,8 @@ export class Pricer {
       if (found === undefined) {
         throw new UnknownSkuError(sku);
       }
-      const item: PricedItem = {
-        sku: found.sku,
-        name: found.name,
-        category: found.category,
-        canonicalMillicents: found.unitPriceMillicents,
-      };
-      return { item, quantity };
+      // L'article SCELLÉ, jamais reconstruit : c'est ce que le chargeur exige.
+      return { item: found.article, quantity };
     });
 
     const pricer = await this.materials.pricerFor(items, { companyId: request.companyId }, at);

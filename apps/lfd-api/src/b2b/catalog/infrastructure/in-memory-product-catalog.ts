@@ -1,4 +1,9 @@
-import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
+import { catalogueArticle } from "../domain/catalogue-article.js";
+import {
+  ProductCatalogReader,
+  type CatalogItem,
+  type UnsealedCatalogItem,
+} from "../domain/ports/product-catalog.reader.js";
 
 /**
  * **Un catalogue en mémoire**, monté à partir d'une poignée d'articles.
@@ -15,9 +20,16 @@ import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-
 export class InMemoryProductCatalog extends ProductCatalogReader {
   private readonly bySku: ReadonlyMap<string, CatalogItem>;
 
-  constructor(items: readonly CatalogItem[]) {
+  /**
+   * Les articles **sans leur sceau** : une suite décrit un catalogue, elle n'a
+   * pas à savoir le frapper. Le double le fait, comme la source le fait — c'est
+   * précisément ce que le double doit imiter.
+   */
+  constructor(items: readonly UnsealedCatalogItem[]) {
     super();
-    this.bySku = new Map(items.map((item) => [item.sku, item]));
+    this.bySku = new Map(
+      items.map((item) => [item.sku, { ...item, article: catalogueArticle(item) }]),
+    );
   }
 
   resolve(sku: string): Promise<CatalogItem | null> {

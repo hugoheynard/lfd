@@ -3,12 +3,12 @@ import {
   CustomerSkuReader,
   type CustomerSkuTally,
 } from "../../../domain/ports/customer-sku.reader.js";
-import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
+import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCustomerSkusHandler } from "../list-customer-skus.handler.js";
 import { ListCustomerSkusQuery } from "../list-customer-skus.query.js";
 
 /** Le catalogue d'AUJOURD'HUI : le croissant a augmenté, la brioche a disparu. */
-const CATALOG: Record<string, CatalogItem> = {
+const CATALOG: Record<string, UnsealedCatalogItem> = {
   "VIE-001": {
     sku: "VIE-001",
     name: "Croissant",

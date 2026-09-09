@@ -120,12 +120,7 @@ export class CompanyPricingQuery {
       name: CATALOG_CATEGORY_LABELS[category],
       items: (byCategory.get(category) ?? []).map((article) =>
         itemView(
-          {
-            sku: article.sku,
-            name: article.name,
-            category: article.category,
-            canonicalMillicents: article.unitPriceMillicents,
-          },
+          article.article,
           pricingContextFor(article.sku, article.category, 1, { companyId }, at),
           materials,
           { rules, floors },

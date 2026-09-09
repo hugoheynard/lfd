@@ -135,20 +135,16 @@ export class OrderLinePricing {
         vatRate: found.vatRate,
         category: found.category,
         allergens: found.allergens,
+        // L'article SCELLÉ, tel que le catalogue l'a frappé : c'est lui que le
+        // tarificateur exige, et c'est ce qui interdit de lui présenter un prix
+        // qu'on aurait recopié d'ailleurs.
+        article: found.article,
       };
       return { item, quantity };
     });
 
     const pricer = await this.materials.pricerFor(
-      lines.map(({ item, quantity }) => ({
-        item: {
-          sku: item.sku,
-          name: item.name,
-          category: item.category,
-          canonicalMillicents: item.unitPriceMillicents,
-        },
-        quantity,
-      })),
+      lines.map(({ item, quantity }) => ({ item: item.article, quantity })),
       parties,
       at,
     );

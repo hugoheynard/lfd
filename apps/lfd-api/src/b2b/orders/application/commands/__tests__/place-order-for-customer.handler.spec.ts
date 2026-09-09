@@ -21,7 +21,7 @@ import {
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
+import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import {
   type DeliveryDefaults,
   DeliveryDefaultsReader,
@@ -118,7 +118,7 @@ const noCustomerVolumes: CustomerVolumeReader = {
   volumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
-const CATALOG: Record<string, CatalogItem> = {
+const CATALOG: Record<string, UnsealedCatalogItem> = {
   "VIE-001": {
     sku: "VIE-001",
     name: "Croissant",

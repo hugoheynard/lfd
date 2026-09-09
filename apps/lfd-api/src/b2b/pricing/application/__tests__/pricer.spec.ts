@@ -21,6 +21,7 @@
  * doublé qui dérive du port qu'il prétend jouer ne fait rougir personne.
  */
 import type { OrderLineAllergens, OrderLimitSpec } from "@lfd/contracts";
+import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import { millicentsFromCents } from "@lfd/money";
 
 import { Clock } from "../../../../platform/time/clock.js";
@@ -74,6 +75,15 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     category: "viennoiserie",
     allergens: null satisfies OrderLineAllergens | null,
     orderTimeLimit: null satisfies OrderLimitSpec | null,
+    // Ce double SCELLE ce qu'il rend, comme la source le fait : c'est ce qui le
+    // garde substituable au vrai catalogue. Un double qui rendrait un article
+    // non scellé éprouverait un monde que la production ne peut pas produire.
+    article: catalogueArticle({
+      sku,
+      name,
+      category: "viennoiserie",
+      unitPriceMillicents: millicentsFromCents(cents),
+    }),
   };
 }
 

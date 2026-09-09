@@ -2,9 +2,9 @@ import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/cont
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
-import type { PricedItem } from "../../pricing/domain/loaded-pricer.js";
 import { PricingMaterialsLoader } from "../../pricing/application/pricing-materials.loader.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
+import { catalogueArticle } from "../domain/catalogue-article.js";
 import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
 import { shelfOfCategory } from "../domain/shelf-of-category.js";
 import { shopCatalogueOf } from "./shop-catalogue-view.js";
@@ -105,12 +105,14 @@ export class ShopCataloguePricing {
         ? []
         : [
             {
-              item: {
+              // La frappe : la vitrine vient de LIRE le catalogue, elle est donc
+              // en droit de sceller ce qu'elle a lu.
+              item: catalogueArticle({
                 sku: item.sku,
                 name: item.name,
                 category: shelf,
-                canonicalMillicents: item.unitPriceMillicents,
-              } satisfies PricedItem,
+                unitPriceMillicents: item.unitPriceMillicents,
+              }),
               // 🔴 **Quantité 1, et c'est une limite assumée.** `minQuantity`
               // existe à tous les étages : un palier « à partir de 50 » ne se
               // voit pas au rayon. Le panier, lui, résout à la quantité réelle.

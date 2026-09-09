@@ -73,12 +73,8 @@ export function categoryView(
     ladders: lineageLadders.filter((ladder) => ladder.suspendedFrom === null).map(ladderBandView),
     items: articles.map((item) =>
       itemView(
-        {
-          sku: item.sku,
-          name: item.name,
-          category: item.category,
-          canonicalMillicents: item.unitPriceMillicents,
-        },
+        // L'article scellé par le catalogue — plus de traduction ici.
+        item.article,
         pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
         materials,
         loaded,

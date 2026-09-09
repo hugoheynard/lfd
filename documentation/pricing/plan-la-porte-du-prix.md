@@ -154,11 +154,40 @@ lot.projectAt(sku, 10_000);
 lot.all(lines);
 ```
 
-**L'autorité de prix devient portée par le TYPE**, et c'est plus fort
-qu'aujourd'hui : aujourd'hui elle tient à ce que `Pricer` résolve lui-même —
-une discipline. Demain, un canonique fabriqué ne **compile pas**. Forger la
-marque demanderait un `as unknown as`, que `lint:no-type-escapes` refuse : la
-hiérarchie des garde-fous joue sur ses deux premiers crans.
+**L'autorité de prix devient portée par le TYPE** — mais pas toute seule, et il
+faut être exact sur ce que chaque cran tient.
+
+⚠️ **Vérifié empiriquement le 2026-09-09**, contre une première rédaction qui
+affirmait qu'« un canonique fabriqué ne compile pas » :
+
+| Ce qu'on écrit                        | Ce que TypeScript fait |
+| ------------------------------------- | ---------------------- |
+| `price({ sku, canonicalMillicents })` | ✅ **refusé**          |
+| `price({ … } as CatalogArticle)`      | ⚠️ **compile**         |
+| `price(objetTypé as CatalogArticle)`  | ⚠️ **compile**         |
+
+La marque bloque donc **l'accident** — le littéral qu'on passe sans y penser,
+qui est le cas réel — et **pas la fraude** : une assertion simple suffit, et
+`lint:no-type-escapes` ne refuse que `as unknown as`. Prétendre le contraire
+serait exactement la faute que ce plan a déjà commise une fois.
+
+D'où **deux crans, pas un** :
+
+1. **la marque** — un `unique symbol` **non exporté**. Hors du fichier qui le
+   déclare, la clé n'est pas nommable : l'objet ne se construit pas ;
+2. **`lint:catalogue-authority`** — le type marqué ne se fabrique que sous
+   `apps/lfd-api/src/b2b/catalog/`. C'est le patron de `lint:price-pipeline`,
+   qui tient « une seule entrée » depuis qu'elle en avait cinq.
+
+Le cran 1 et le cran 4 de la hiérarchie du dépôt : inexprimable pour ce qui se
+fait par mégarde, porte CI pour ce qui se ferait exprès.
+
+🔴 **Et la règle est « seul `catalog/` fabrique », pas « seul le port ».** La
+vitrine lit `CatalogReader.listSellable()` — un **autre** port — parce qu'elle a
+besoin de `productSku`, `categoryId`, `note`, `image`, que `CatalogItem` ne porte
+pas. Marquer le seul `ProductCatalogReader` laisserait le consommateur le plus
+exposé hors de la garantie, celui qui sert la route anonyme. La marque atteste
+une provenance de **contexte**, et les deux ports y vivent depuis le lot 1.
 
 Ce que cette forme ferme, et que ni C.4 ni la version à articles nus ne
 fermaient :
@@ -250,12 +279,12 @@ lire une date ? Ce plan ne le tranche pas, et ne retire rien.
 
 ## 5. Les lots, dans l'ordre
 
-| #   | Lot                                                                                            | Ce qu'il ferme                                           | Risque                                        |
-| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
-| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                               | deux ports empilés, `pricing → orders` : **zéro import** | tenu : 1 239 tests, aucune assertion modifiée |
-| 2   | **La marque** — le port rend des `CatalogArticle` ; les six mappings meurent dans l'adaptateur | le prix fabriqué, les six copies                         | moyen                                         |
-| 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes        | le contournement, la seconde séquence, le lot vide       | moyen — appelant par appelant                 |
-| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                             | les encodages épars de « ce qu'on écarte »               | **fort — il touche le prix servi**            |
+| #   | Lot                                                                                     | Ce qu'il ferme                                           | Risque                                                                  |
+| --- | --------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                        | deux ports empilés, `pricing → orders` : **zéro import** | tenu : 1 239 tests, aucune assertion modifiée                           |
+| ✅2 | ~~**La marque**~~ — **faite le 2026-09-09**                                             | le prix fabriqué, les six copies → **une**               | a trouvé un bug le jour même : la lecture datée gardait un sceau périmé |
+| 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes | le contournement, la seconde séquence, le lot vide       | moyen — appelant par appelant                                           |
+| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                      | les encodages épars de « ce qu'on écarte »               | **fort — il touche le prix servi**                                      |
 
 ✅ **Le lot 1 est fait le 2026-09-09**, et la promesse a tenu : aucune signature
 n'a changé, aucune assertion n'a été réécrite, une seule spec a suivi son code.

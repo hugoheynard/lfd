@@ -6,6 +6,7 @@ import type {
 import { materialsOf, NO_EVIDENCE } from "../../../../pricing/domain/pricing-materials.js";
 import type { PriceRule, ScopedPriceFloor } from "../../../../pricing/domain/price-rule.js";
 import type { VolumeCommitment } from "../../../../pricing/domain/volume-commitment.js";
+import { catalogueArticle } from "../../../../catalog/domain/catalogue-article.js";
 import { priceLine, type LinePricingInput, type LineToPrice } from "../price-line.js";
 
 /**
@@ -35,6 +36,15 @@ const CROISSANT: LineToPrice = {
   vatRate: 5.5,
   category: "viennoiserie",
   allergens: null,
+  // La suite déclare SON catalogue, et le scelle comme le port le ferait. Le
+  // tarificateur n'accepte plus un article construit à la main — c'est ce qui
+  // interdit à la production de lui présenter un prix qu'elle aurait recopié.
+  article: catalogueArticle({
+    sku: "VIE-001",
+    name: "Croissant au beurre",
+    category: "viennoiserie",
+    unitPriceMillicents: 200_000,
+  }),
 };
 
 function input(over: Partial<LinePricingInput> = {}): LinePricingInput {

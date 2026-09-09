@@ -7,7 +7,6 @@ import type {
 
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
-import type { PricedItem } from "../../domain/loaded-pricer.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 
 /**
@@ -67,12 +66,7 @@ export class PriceProjectionQuery {
     if (found === null) {
       throw new UnknownSkuError(payload.sku);
     }
-    const item: PricedItem = {
-      sku: found.sku,
-      name: found.name,
-      category: found.category,
-      canonicalMillicents: found.unitPriceMillicents,
-    };
+    const item = found.article;
 
     // Un seul chargement, à la plus petite quantité : les matériaux qui visent
     // l'article ne dépendent ni de la quantité ni du cumul.

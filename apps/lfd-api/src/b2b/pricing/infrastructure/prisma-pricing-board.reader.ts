@@ -9,6 +9,7 @@ import {
   type CatalogItem,
 } from "../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
+import { atCanonicalPrice } from "../../catalog/domain/catalogue-article.js";
 import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonical-price-history.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
@@ -145,7 +146,11 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     const current = await this.catalog.all();
     const articles = current.map((item) => {
       const past = pastPrices.get(item.sku);
-      return past === undefined ? item : { ...item, unitPriceMillicents: past.unitPriceMillicents };
+      // 🔴 `atCanonicalPrice` et non un spread : changer le tarif REFRAPPE le
+      // sceau. Un spread laissait l'article scellé porter le prix d'aujourd'hui
+      // pendant que la ligne affichait celui d'alors — et c'est le sceau que le
+      // tarificateur lit.
+      return past === undefined ? item : atCanonicalPrice(item, past.unitPriceMillicents);
     });
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);

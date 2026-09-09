@@ -2,6 +2,7 @@ import { CATALOG_CATEGORY_ORDER } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import { catalogueArticle } from "../domain/catalogue-article.js";
 import { shelfOfCategory } from "../domain/shelf-of-category.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
 
@@ -79,6 +80,14 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     allergens: item.allergens,
     orderTimeLimit: item.orderTimeLimit,
     category: shelf,
+    // 🔴 La frappe, ici et pas ailleurs : c'est l'endroit qui vient de LIRE le
+    // catalogue. Le prix scellé ne peut donc pas venir d'un appelant.
+    article: catalogueArticle({
+      sku: item.productSku,
+      name: item.name,
+      category: shelf,
+      unitPriceMillicents: item.unitPriceMillicents,
+    }),
   };
 }
 

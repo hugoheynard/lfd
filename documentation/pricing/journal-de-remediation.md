@@ -23,7 +23,7 @@
 | [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix            | ✅ **close** — 2026-09-09                                                                |
 | [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite             | ✅ **close** — 2026-09-09                                                                |
 | [R25](#r25--2026-09-09) | la trace figée ne répond pas à la question qu'elle existe pour poser | 🟠 **un tiers fait** — la contradiction a trouvé une fuite et deux trous (2026-09-09)    |
-| [R26](#r26--2026-09-09) | la porte du prix — lot 1 : le port catalogue rentre chez lui         | ✅ **lot 1** — 2026-09-09                                                                |
+| [R26](#r26--2026-09-09) | la porte du prix — lots 1 et 2                                       | ✅ **lots 1–2** — 2026-09-09                                                             |
 
 ---
 
@@ -1113,3 +1113,106 @@ une spec a suivi son code, comme `lint:tests-colocated` l'exige.
 - `lint:import-cycles` — aucun cycle ; `lint:context-boundaries` — tenues sans
   exception ; `lint:tests-colocated` — 278 specs ; `lint:price-pipeline` —
   toujours **1 entrée**, le moteur n'a pas été touché.
+
+---
+
+## R26 · 2026-09-09 — lot 2
+
+**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.2 · Le
+deuxième des quatre lots : **la marque**.
+
+### 1. Ce que la marque protège
+
+Le port du catalogue porte la doctrine du checkout depuis toujours : « ne jamais
+faire confiance au prix envoyé par le client ». Elle tenait par la
+**discipline** — chaque appelant résolvait le catalogue avant de tarifer, et
+rien ne vérifiait qu'il l'avait fait. **Six sites** construisaient l'article à
+tarifer à la main, en traduisant `unitPriceMillicents` (le catalogue) en
+`canonicalMillicents` (le moteur). Il aurait suffi qu'un seul se trompe de champ.
+
+`CatalogArticle` porte un `unique symbol` **non exporté** : hors du fichier qui
+le déclare, la clé n'est pas nommable, donc l'objet ne se construit pas. Le port
+le pose sur chaque `CatalogItem`, et `PricingMaterialsLoader.pricerFor`
+**l'exige** — c'est là que la marque mord.
+
+Les six traductions sont devenues **une**, dans la frappe.
+
+### 2. Ce que la marque ne fait PAS, vérifié plutôt que supposé
+
+Une première rédaction du plan affirmait qu'« un canonique fabriqué ne compile
+pas ». Essayé, le 2026-09-09 :
+
+| Ce qu'on écrit                 | TypeScript |
+| ------------------------------ | ---------- |
+| `{ sku, canonicalMillicents }` | ✅ refusé  |
+| `{ … } as CatalogArticle`      | ⚠️ compile |
+| `objetTypé as CatalogArticle`  | ⚠️ compile |
+
+`lint:no-type-escapes` ne refuse que `as unknown as`. La marque bloque donc
+**l'accident** — le cas réel — et pas la **fraude**. D'où
+`lint:catalogue-authority`, qui refuse hors de `b2b/catalog/` la frappe **et**
+`as CatalogArticle`. Cran 1 de la hiérarchie pour ce qui se fait par mégarde,
+cran 4 pour ce qui se ferait exprès.
+
+### 3. 🔴 Ce que la marque a trouvé le jour même
+
+La lecture datée du tableau (`GET /admin/pricing?at=`) rejoue le tarif d'alors.
+Elle le faisait **par un spread** :
+
+```ts
+return { ...item, unitPriceMillicents: past.unitPriceMillicents };
+```
+
+L'objet portait donc le prix d'**hier** dans un champ, et celui d'**aujourd'hui**
+dans son article scellé — deux vérités, dont c'est la mauvaise que le
+tarificateur lit. Un e2e a rougi dans l'heure, en nommant l'écart : 200 000
+attendu, 999 000 reçu.
+
+**Le défaut n'existait pas avant** — il n'y avait qu'une vérité. Mais la forme
+qui le crée est exactement celle que la marque rend **visible**, et c'est ce
+qu'on lui demande.
+
+Le correctif nomme le geste : `atCanonicalPrice` vit dans `catalog/`, parce que
+**changer le tarif d'un article est un geste du catalogue** et non une retouche
+d'objet chez le lecteur qui l'affiche. Il **refrappe** le sceau — un article dont
+le prix change ne peut pas garder l'ancien.
+
+### 4. Une règle que j'ai dû retirer en la bâtissant
+
+La porte interdisait aussi la frappe **dans les suites**, au motif qu'un cast
+dans un test coûte plus cher qu'ailleurs (`CLAUDE.md` §6).
+
+L'argument ne tient pas ici, et l'essayer l'a montré : le cast du §6 est
+dangereux parce qu'il laisse un **doublé dériver** du port qu'il prétend jouer.
+La frappe, elle, **est** la fonction du port — il n'y a rien dont dériver.
+Interdire aux specs de déclarer leur catalogue les forçait à traverser un double
+asynchrone pour éprouver une fonction pure : un test moins lisible, pour une
+production pas plus sûre.
+
+L'exception est écrite dans la porte, avec sa raison.
+
+### 5. Ce que la construction a appris au passage
+
+**Les specs ne passent pas dans `tsc --noEmit`** — `nest` ne les compile pas, et
+c'est `tsconfig.test.json` qui les couvre. Quatre fixtures ont donc échoué au
+**runtime** là où un typecheck aurait suffi. D'où `UnsealedCatalogItem`, nommé
+pour ce qu'il est : un article **avant sa frappe**, ce qu'une suite déclare.
+
+### 6. Une porte fermée par la batterie elle-même
+
+`board-item.ts::itemView` — non touché par ce lot — acceptait encore un
+**littéral de même forme** là où `pricerFor` exige le sceau. Ses deux appelants
+passaient déjà l'article du catalogue, donc rien n'était fabriqué ; mais la
+signature, elle, aurait laissé passer n'importe quel `canonicalMillicents`.
+
+Relevé par `cerberus` comme « la porte structurelle la plus proche encore
+ouverte », et fermée le même jour. C'est ce qu'on attend d'une batterie : pas
+seulement dire si c'est vert, mais voir où le vert s'arrête.
+
+### 7. Ce qui le prouve
+
+- **2 532 tests unitaires et 1 053 e2e**, tous verts ;
+- `lint:catalogue-authority` — 7 frappes dans `catalog/`, **zéro** ailleurs en
+  production ;
+- le compilateur a nommé lui-même les six sites à convertir, ce qui est la
+  meilleure démonstration que la marque tient : on n'a pas eu à les chercher.

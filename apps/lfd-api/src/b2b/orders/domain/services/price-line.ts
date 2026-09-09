@@ -1,3 +1,4 @@
+import type { CatalogArticle } from "../../../catalog/domain/catalogue-article.js";
 import type { VolumeTierPriceView } from "@lfd/contracts";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
@@ -18,6 +19,15 @@ export interface LineToPrice {
    * la réponse plutôt que de l'omettre.
    */
   readonly allergens: OrderLineAllergens | null;
+  /**
+   * **L'article scellé par le catalogue**, tel qu'il part au tarificateur.
+   *
+   * Porté ici plutôt que reconstruit plus loin : `canonicalMillicents` est le
+   * nombre sur lequel s'appliquent mercuriale, paliers, promotions et plancher.
+   * Le refabriquer à partir des champs voisins, c'est se rendre capable de le
+   * fabriquer tout court (2026-09-09).
+   */
+  readonly article: CatalogArticle;
 }
 
 /** Une ligne résolue : ce qui part sur la commande, et ce qui explique son prix. */
@@ -85,7 +95,7 @@ export interface LinePricingInput {
  */
 export function priceLine(input: LinePricingInput, pricer: LoadedPricer): ResolvedOrderLine {
   const { item, quantity, withTiers } = input;
-  const priced = pricer.price(articleOf(item), quantity);
+  const priced = pricer.price(item.article, quantity);
 
   return {
     line: {
@@ -125,17 +135,7 @@ export function priceLine(input: LinePricingInput, pricer: LoadedPricer): Resolv
     sealedByRuleId: priced.sealedByRuleId,
     sealedRuleIds: priced.sealedRuleIds,
     priced,
-    volumeTiers: withTiers ? pricer.tiers(articleOf(item), quantity) : null,
+    volumeTiers: withTiers ? pricer.tiers(item.article, quantity) : null,
     floorMillicents: priced.floorMillicents,
-  };
-}
-
-/** L'article de commande, réduit à ce que le tarificateur lit. */
-function articleOf(item: LineToPrice) {
-  return {
-    sku: item.sku,
-    name: item.name,
-    category: item.category,
-    canonicalMillicents: item.unitPriceMillicents,
   };
 }

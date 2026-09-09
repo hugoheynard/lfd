@@ -1,5 +1,7 @@
 import type { CatalogCategory, OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
+import type { CatalogArticle } from "../catalogue-article.js";
+
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en centimes. */
 export interface PricedSku {
   readonly sku: string;
@@ -34,7 +36,28 @@ export interface CatalogItem extends PricedSku {
    * du commerce, ce qui est le comportement d'hier.
    */
   readonly orderTimeLimit: OrderLimitSpec | null;
+  /**
+   * **Ce qu'il faut pour le tarifer, scellé par le catalogue.**
+   *
+   * Frappé par l'adaptateur, donc porteur de la preuve que son
+   * `canonicalMillicents` a été **lu** et non reçu. C'est ce que le tarificateur
+   * exige : un article construit à la main ne lui est plus assignable.
+   *
+   * 🔴 Le champ existe pour que la traduction — `unitPriceMillicents` du
+   * catalogue → `canonicalMillicents` du moteur — se fasse **une** fois. Elle
+   * était recopiée sur six sites au 2026-09-09.
+   */
+  readonly article: CatalogArticle;
 }
+
+/**
+ * Un article de catalogue **avant sa frappe** — ce qu'une suite déclare.
+ *
+ * Le sceau se pose au bord du contexte, jamais dans la fixture : un double qui
+ * rendrait un article non scellé éprouverait un monde que la production ne peut
+ * pas produire, et cesserait d'être substituable à la source.
+ */
+export type UnsealedCatalogItem = Omit<CatalogItem, "article">;
 
 /**
  * Port de **lecture** du catalogue — l'autorité de prix au checkout.

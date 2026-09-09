@@ -1,3 +1,4 @@
+import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import { boardMaterials, itemView, targetsArticle } from "../board-item.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import {
@@ -26,12 +27,13 @@ import type { PriceScope, PriceStage } from "../../domain/price-rule.js";
 
 const AT = new Date("2026-08-17T00:00:00.000Z");
 const CONTEXT = pricingContextFor("VIE-001", "viennoiserie", 1, { companyId: null }, AT);
-const ARTICLE = {
+/** La suite déclare son catalogue, et le scelle comme le port le ferait. */
+const ARTICLE = catalogueArticle({
   sku: "VIE-001",
   name: "Croissant",
   category: "viennoiserie",
-  canonicalMillicents: 200_000,
-};
+  unitPriceMillicents: 200_000,
+});
 
 function ruleRow(
   id: string,

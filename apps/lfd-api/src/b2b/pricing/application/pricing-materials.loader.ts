@@ -9,7 +9,8 @@ import { PriceRuleReader } from "../domain/ports/price-rule.reader.js";
 import { SkuVolumeReader } from "../domain/ports/sku-volume.reader.js";
 import { VolumeCommitmentReader } from "../domain/ports/volume-commitment.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
-import { LoadedPricer, type PricedItem, type PricingParties } from "../domain/loaded-pricer.js";
+import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import { LoadedPricer, type PricingParties } from "../domain/loaded-pricer.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
 import type { PricingContext } from "../domain/price-rule.js";
 import {
@@ -25,7 +26,7 @@ import { commitmentFor, type VolumeCommitment } from "../domain/volume-commitmen
 
 /** Un article du lot, sa quantité, et la portée qu'il vise. */
 interface LotEntry {
-  readonly item: PricedItem;
+  readonly item: CatalogArticle;
   readonly quantity: number;
   /**
    * Le contexte **sans le cumul d'engagement**.
@@ -79,9 +80,16 @@ export class PricingMaterialsLoader {
    * `null` sur un lot vide : il n'y a rien à charger, et rendre un tarificateur
    * sans matériaux inviterait à lui poser une question qu'il ne peut pas
    * honorer.
+   *
+   * 🔴 **Des `CatalogArticle`, pas des `PricedItem`.** C'est ici que la marque
+   * mord : le `canonicalMillicents` sur lequel s'appliquent mercuriale, paliers,
+   * promotions et plancher doit avoir été **lu** du catalogue. Un article
+   * construit à la main n'est plus assignable, et la doctrine du port — « ne
+   * jamais faire confiance au prix envoyé par le client » — cesse de reposer sur
+   * la seule discipline des appelants (2026-09-09).
    */
   async pricerFor(
-    items: readonly { readonly item: PricedItem; readonly quantity: number }[],
+    items: readonly { readonly item: CatalogArticle; readonly quantity: number }[],
     parties: PricingParties,
     at: Date,
   ): Promise<LoadedPricer | null> {

@@ -5,6 +5,7 @@ import type {
   PricingItemView,
 } from "@lfd/contracts";
 
+import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
 import { LoadedPricer } from "../domain/loaded-pricer.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
 import { materialsOf, NO_EVIDENCE } from "../domain/pricing-materials.js";
@@ -118,7 +119,14 @@ export function boardMaterials(
  * client conteste.
  */
 export function itemView(
-  article: { sku: string; name: string; canonicalMillicents: number; category: string },
+  /**
+   * 🔴 **Un article SCELLÉ**, pas un littéral de même forme. Ses deux appelants
+   * passaient déjà l'article du catalogue ; la signature, elle, acceptait
+   * n'importe quel objet — donc n'importe quel `canonicalMillicents`. C'était la
+   * porte structurelle la plus proche encore ouverte après le lot 2, relevée par
+   * la batterie et fermée le même jour.
+   */
+  article: CatalogArticle,
   context: PricingContext,
   materials: BoardMaterials,
   loaded: { rules: readonly LoadedRule[]; floors: readonly LoadedFloor[] },

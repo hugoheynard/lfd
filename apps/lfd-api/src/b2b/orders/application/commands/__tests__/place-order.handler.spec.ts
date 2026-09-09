@@ -26,7 +26,7 @@ import {
 } from "../../../domain/ports/order-guard.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
+import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   type DeliveryDefaults,
@@ -142,7 +142,7 @@ function versionsAt(id: string | null): CatalogVersionReader {
   };
 }
 
-const CATALOG: Record<string, CatalogItem> = {
+const CATALOG: Record<string, UnsealedCatalogItem> = {
   "VIE-001": {
     category: "pain",
     allergens: null,
