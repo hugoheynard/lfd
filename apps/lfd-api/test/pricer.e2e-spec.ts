@@ -30,9 +30,10 @@
  */
 import { millicentsFromCents } from "@lfd/money";
 
+import { EmptyLotError, type PricedLot } from "../src/b2b/pricing/application/priced-lot.js";
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { DuplicateArticleError } from "../src/b2b/pricing/domain/pricing-errors.js";
-import { UnknownSkuError } from "../src/b2b/catalog/domain/errors/unknown-sku.error.js";
+import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -45,6 +46,7 @@ const stubAdminVerifier = {
 
 let ctx: E2eContext;
 let pricer: Pricer;
+let catalog: ProductCatalogReader;
 let counter: SchemaOpsCounter;
 
 beforeAll(async () => {
@@ -52,6 +54,7 @@ beforeAll(async () => {
     overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
   });
   pricer = ctx.app.get(Pricer);
+  catalog = ctx.app.get(ProductCatalogReader);
   counter = ctx.app.get(SchemaOpsCounter);
 });
 
@@ -80,6 +83,41 @@ const SKUS = [
 ] as const;
 
 const SKU = "VIE-001";
+
+/**
+ * Charge un lot pour ces SKU, **articles résolus au catalogue d'abord**.
+ *
+ * La porte prend des `CatalogArticle` scellés et non des SKU : c'est l'appelant
+ * qui a déjà lu son catalogue — la caisse, la vitrine, le tableau — et le sceau
+ * ne se pose qu'au bord du contexte `catalog`. Le test emprunte donc le même
+ * chemin que la production, avec le vrai adaptateur.
+ */
+async function lotOf(
+  lines: readonly { readonly sku: string; readonly quantity: number }[],
+  companyId: string | null,
+  at?: Date,
+): Promise<PricedLot> {
+  const resolved = await catalog.resolveMany(lines.map((line) => line.sku));
+  const articles = lines.map((line) => {
+    const found = resolved.get(line.sku);
+    if (found === undefined) {
+      throw new Error(`Le catalogue e2e ne connaît pas « ${line.sku} ».`);
+    }
+    return { article: found.article, quantity: line.quantity };
+  });
+  return pricer.load({ articles, companyId, at });
+}
+
+/** Le prix d'UN article, du chargement à la question — le geste le plus courant. */
+async function priceOne(
+  sku: string,
+  companyId: string | null,
+  quantity: number,
+  at?: Date,
+): Promise<ReturnType<PricedLot["price"]>> {
+  const lot = await lotOf([{ sku, quantity }], companyId, at);
+  return lot.price(sku, quantity);
+}
 
 /**
  * Le coût **à froid**, en opérations ORM, du premier appel de ce test.
@@ -201,7 +239,7 @@ describe("la façade et la caisse", () => {
     const { companyId, sub } = await customerOf("auth0|pricer_ladder");
     await seedLadderFromOne();
 
-    const priced = await pricer.for({ sku: SKU, companyId, quantity: 1 });
+    const priced = await priceOne(SKU, companyId, 1);
 
     expect(priced.finalMillicents).toBe(await quotedByCheckout(sub, companyId, 1));
   });
@@ -211,7 +249,7 @@ describe("la façade et la caisse", () => {
     await seedPromotion();
     await poseMercuriale(companyId, 150);
 
-    const priced = await pricer.for({ sku: SKU, companyId, quantity: 4 });
+    const priced = await priceOne(SKU, companyId, 4);
 
     expect(priced.finalMillicents).toBe(millicentsFromCents(150));
     expect(priced.sealedByRuleId).not.toBeNull();
@@ -239,7 +277,7 @@ describe("la façade et la caisse", () => {
     });
 
     for (const quantity of [1, 10, 49, 50, 120]) {
-      const priced = await pricer.for({ sku: SKU, companyId, quantity });
+      const priced = await priceOne(SKU, companyId, quantity);
       expect([quantity, priced.finalMillicents]).toEqual([
         quantity,
         await quotedByCheckout(sub, companyId, quantity),
@@ -251,7 +289,7 @@ describe("la façade et la caisse", () => {
     await createUser(ctx.prisma, { auth0Sub: "auth0|pricer_solo" });
     await seedPromotion();
 
-    const priced = await pricer.for({ sku: SKU, companyId: null, quantity: 3 });
+    const priced = await priceOne(SKU, null, 3);
 
     expect(priced.finalMillicents).toBe(await quotedByCheckout("auth0|pricer_solo", null, 3));
   });
@@ -260,7 +298,7 @@ describe("la façade et la caisse", () => {
 /**
  * 🔴 **Le coût ne suit pas le nombre d'articles.**
  *
- * `forAll` charge une fois, range par portée, et résout N fois en mémoire.
+ * `load` charge une fois, range par portée, et résout N fois en mémoire.
  * Sans ces cas, la façade deviendrait le N+1 qu'elle prétend éviter — et
  * personne ne le verrait avant qu'un écran ne demande vingt prix.
  */
@@ -268,17 +306,15 @@ describe("le budget de la façade", () => {
   it("🔴 coûte EXACTEMENT autant pour dix articles que pour un", async () => {
     const { companyId } = await customerOf("auth0|pricer_budget");
 
-    const one = await coldOperationsOf(() =>
-      pricer.forAll({ articles: [{ sku: SKU, quantity: 2 }], companyId }),
-    );
+    const one = await coldOperationsOf(() => lotOf([{ sku: SKU, quantity: 2 }], companyId));
 
     await ctx.reset();
     const again = await customerOf("auth0|pricer_budget2");
     const ten = await coldOperationsOf(() =>
-      pricer.forAll({
-        articles: SKUS.map((sku) => ({ sku, quantity: 2 })),
-        companyId: again.companyId,
-      }),
+      lotOf(
+        SKUS.map((sku) => ({ sku, quantity: 2 })),
+        again.companyId,
+      ),
     );
 
     expect(ten).toBe(one);
@@ -292,30 +328,36 @@ describe("le budget de la façade", () => {
   it("ne coûte pas plus cher parce que le client a une mercuriale", async () => {
     const bare = await customerOf("auth0|pricer_bare");
     const bareCost = await coldOperationsOf(() =>
-      pricer.forAll({
-        articles: SKUS.map((sku) => ({ sku, quantity: 2 })),
-        companyId: bare.companyId,
-      }),
+      lotOf(
+        SKUS.map((sku) => ({ sku, quantity: 2 })),
+        bare.companyId,
+      ),
     );
 
     await ctx.reset();
     const negotiated = await customerOf("auth0|pricer_negotiated");
     await poseMercuriale(negotiated.companyId, 150);
     const negotiatedCost = await coldOperationsOf(() =>
-      pricer.forAll({
-        articles: SKUS.map((sku) => ({ sku, quantity: 2 })),
-        companyId: negotiated.companyId,
-      }),
+      lotOf(
+        SKUS.map((sku) => ({ sku, quantity: 2 })),
+        negotiated.companyId,
+      ),
     );
 
     expect(negotiatedCost).toBe(bareCost);
   });
 
-  /** Une demande vide ne touche **pas** la base — pas même le catalogue. */
-  it("ne lit rien pour une demande vide", async () => {
+  /**
+   * Un lot vide est **refusé**, et sans toucher la base : charger des matériaux
+   * pour zéro article rend un tarificateur auquel on ne peut plus rien
+   * demander. L'appelant qui peut avoir un panier vide le teste avant.
+   */
+  it("refuse un lot vide", async () => {
     const { companyId } = await customerOf("auth0|pricer_empty");
 
-    const cost = await coldOperationsOf(() => pricer.forAll({ articles: [], companyId }));
+    const cost = await coldOperationsOf(async () => {
+      await expect(pricer.load({ articles: [], companyId })).rejects.toBeInstanceOf(EmptyLotError);
+    });
 
     expect(cost).toBe(0);
   });
@@ -333,7 +375,7 @@ describe("le mur, et la fenêtre", () => {
     const theirs = await customerOf("auth0|pricer_theirs");
     await poseMercuriale(theirs.companyId, 100);
 
-    const priced = await pricer.for({ sku: SKU, companyId: mine.companyId, quantity: 1 });
+    const priced = await priceOne(SKU, mine.companyId, 1);
 
     expect(priced.sealedByRuleId).toBeNull();
     expect(priced.finalMillicents).toBe(priced.canonicalMillicents);
@@ -355,13 +397,8 @@ describe("le mur, et la fenêtre", () => {
       to: "2026-02-01T00:00:00.000Z",
     });
 
-    const today = await pricer.for({ sku: SKU, companyId, quantity: 1 });
-    const back = await pricer.for({
-      sku: SKU,
-      companyId,
-      quantity: 1,
-      at: new Date("2026-01-15T09:00:00.000Z"),
-    });
+    const today = await priceOne(SKU, companyId, 1);
+    const back = await priceOne(SKU, companyId, 1, new Date("2026-01-15T09:00:00.000Z"));
 
     expect(today.finalMillicents).toBe(today.canonicalMillicents);
     expect(back.finalMillicents).toBe(millicentsFromCents(100));
@@ -369,31 +406,27 @@ describe("le mur, et la fenêtre", () => {
   });
 });
 
-/** Ce que la façade **refuse**, et qui doit le rester. */
+/**
+ * Ce que la façade **refuse**, et qui doit le rester.
+ *
+ * Le refus d'un SKU inconnu n'y est plus : il appartient au port du catalogue
+ * (`ProductCatalogReader` / `UnknownSkuError`), que ses appelants interrogent
+ * avant de charger un lot.
+ */
 describe("les refus", () => {
-  it("🔴 échoue en entier sur un SKU inconnu, plutôt que de raccourcir la liste", async () => {
-    const { companyId } = await customerOf("auth0|pricer_unknown");
-
-    await expect(
-      pricer.forAll({
-        articles: [
-          { sku: SKU, quantity: 1 },
-          { sku: "SKU-QUI-N-EXISTE-PAS", quantity: 1 },
-          { sku: "PAI-001", quantity: 1 },
-        ],
-        companyId,
-      }),
-    ).rejects.toBeInstanceOf(UnknownSkuError);
-  });
-
   it("refuse le même article demandé deux fois", async () => {
     const { companyId } = await customerOf("auth0|pricer_dup");
+    const found = await catalog.resolve(SKU);
+    const article = found?.article;
+    if (article === undefined) {
+      throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);
+    }
 
     await expect(
-      pricer.forAll({
+      pricer.load({
         articles: [
-          { sku: SKU, quantity: 5 },
-          { sku: SKU, quantity: 5 },
+          { article, quantity: 5 },
+          { article, quantity: 5 },
         ],
         companyId,
       }),
@@ -413,7 +446,7 @@ describe("la trace", () => {
     await seedPromotion();
     await seedLadderFromOne();
 
-    const priced = await pricer.for({ sku: SKU, companyId, quantity: 1 });
+    const priced = await priceOne(SKU, companyId, 1);
 
     expect(priced.steps.map((step) => step.stage)).toEqual(["volume", "promotion"]);
     expect(priced.steps.map((step) => step.ruleId)).toEqual(["ladder_pricer", "rule_pricer_promo"]);

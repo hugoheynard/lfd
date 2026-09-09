@@ -6,7 +6,7 @@ import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repo
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
-import { PricingModule } from "../pricing/pricing.module.js";
+import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-fulfilled.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
@@ -98,7 +98,10 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     OrderWaiversModule,
     PaymentsModule,
     CatalogModule,
-    PricingModule,
+    // La caisse passe par LA porte du prix depuis le 2026-09-09, plus par le
+    // chargeur : elle avait sa propre chorégraphie, comme les trois autres
+    // appelants, et c'est ainsi que deux d'entre eux ont oublié un étage.
+    PricerModule,
   ],
   controllers: [
     OrdersController,

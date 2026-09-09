@@ -47,6 +47,7 @@ import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
+import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
@@ -309,18 +310,20 @@ function drafting(
   return new OrderDrafting(
     new OrderLinePricing(
       catalog,
-      // Le chargement des matériaux vit désormais dans UN service — c'est la
-      // seule séquence de lecture du dépôt. Le monter ici plutôt que d'aligner
-      // sept ports dans le constructeur de la caisse est exactement ce que
-      // l'extraction a rendu possible.
-      new PricingMaterialsLoader(
-        noPriceRules,
-        noMercuriales,
-        noPriceFloors,
-        noSkuVolumes,
-        noVolumeLadders,
-        noCommitments,
-        noCustomerVolumes,
+      // LA porte du prix, montée sur la seule séquence de chargement du dépôt.
+      // L'assembler ici plutôt que d'aligner sept ports dans le constructeur de
+      // la caisse est exactement ce que l'extraction a rendu possible.
+      new Pricer(
+        new PricingMaterialsLoader(
+          noPriceRules,
+          noMercuriales,
+          noPriceFloors,
+          noSkuVolumes,
+          noVolumeLadders,
+          noCommitments,
+          noCustomerVolumes,
+        ),
+        new FixedClock(PRICED_AT),
       ),
       new FixedClock(PRICED_AT),
     ),

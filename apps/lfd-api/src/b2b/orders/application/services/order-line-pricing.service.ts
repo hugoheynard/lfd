@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
 import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
-import { PricingMaterialsLoader } from "../../../pricing/application/pricing-materials.loader.js";
+import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import {
@@ -41,7 +41,7 @@ export type { ResolvedOrderLine };
 export class OrderLinePricing {
   constructor(
     private readonly catalog: ProductCatalogReader,
-    private readonly materials: PricingMaterialsLoader,
+    private readonly pricer: Pricer,
     private readonly clock: Clock,
   ) {}
 
@@ -143,15 +143,19 @@ export class OrderLinePricing {
       return { item, quantity };
     });
 
-    const pricer = await this.materials.pricerFor(
-      lines.map(({ item, quantity }) => ({ item: item.article, quantity })),
-      parties,
-      at,
-    );
-    if (pricer === null) {
+    if (lines.length === 0) {
+      // Un panier vide n'a rien à charger. La porte le refuse, et c'est à
+      // l'appelant qui peut en avoir un de le dire — pas au chargeur de rendre
+      // un tarificateur muet.
       return [];
     }
 
-    return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, pricer));
+    const lot = await this.pricer.load({
+      articles: lines.map(({ item, quantity }) => ({ article: item.article, quantity })),
+      companyId: parties.companyId,
+      at,
+    });
+
+    return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, lot));
   }
 }

@@ -23,7 +23,7 @@
 | [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix            | ✅ **close** — 2026-09-09                                                                |
 | [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite             | ✅ **close** — 2026-09-09                                                                |
 | [R25](#r25--2026-09-09) | la trace figée ne répond pas à la question qu'elle existe pour poser | 🟠 **un tiers fait** — la contradiction a trouvé une fuite et deux trous (2026-09-09)    |
-| [R26](#r26--2026-09-09) | la porte du prix — lots 1 et 2                                       | ✅ **lots 1–2** — 2026-09-09                                                             |
+| [R26](#r26--2026-09-09) | la porte du prix — lots 1, 2 et 3                                    | ✅ **lots 1–3** — 2026-09-09                                                             |
 
 ---
 
@@ -1216,3 +1216,88 @@ seulement dire si c'est vert, mais voir où le vert s'arrête.
   production ;
 - le compilateur a nommé lui-même les six sites à convertir, ce qui est la
   meilleure démonstration que la marque tient : on n'a pas eu à les chercher.
+
+---
+
+## R26 · 2026-09-09 — lot 3
+
+**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.2 et §5 ·
+Le troisième des quatre lots : **la porte**.
+
+### 1. Ce que la CI a tranché à ma place
+
+Le lot commençait par migrer un appelant. `lint:import-cycles` a refusé :
+
+```
+catalog/catalog.module.ts → pricing/pricer.module.ts → catalog/catalog.module.ts
+```
+
+La vitrine vit dans `catalog/`. Pour passer par la porte, `catalog` doit importer
+`Pricer` — mais `Pricer` portait encore `for(sku)` / `forAll(skus)`, donc
+injectait le port catalogue, donc `PricerModule` importait `CatalogModule`.
+
+**C'est exactement la racine que le plan avait nommée** au §3.3 : « `Pricer`
+prend des SKU, donc il doit résoudre un catalogue, donc il doit connaître un
+contexte catalogue. Tout part de là. » Je l'avais écrit, et j'ai quand même
+commencé par migrer un appelant sans retirer la cause. Une porte CI a rappelé un
+paragraphe que j'avais rédigé la veille.
+
+⚠️ À ne pas confondre avec le cycle **imaginaire** du §3.1, que la v1 du plan
+invoquait pour périmer C.4 et qui n'existait pas. Celui-ci est réel, il a un
+chemin, et il a été refusé par une commande.
+
+### 2. `for` et `forAll` sont supprimées
+
+Elles n'avaient **aucun appelant de production**, elles étaient la seule raison
+de la dépendance au catalogue, et leur JSDoc **autorisait** le contournement que
+ce lot existe pour fermer : « un appelant qui charge déjà en lot s'adresse au
+`LoadedPricer` directement ».
+
+Résoudre un SKU redevient le travail de qui a un SKU — le port est là pour ça et
+refuse ce qu'il ne connaît pas.
+
+### 3. La porte, et le lot qui connaît ses articles
+
+```ts
+const lot = await this.pricer.load({ articles, companyId, at });
+lot.price(sku, 12);
+```
+
+`PricedLot` **connaît ses articles**. Avant, l'article voyageait **deux fois** —
+une fois pour charger les matériaux, une fois pour tarifer — et rien n'exigeait
+que ce soit le même : un appelant pouvait charger sur un article et tarifer sur
+un autre sans qu'une ligne rougisse. Un SKU non chargé est désormais refusé, et
+le refus dit combien d'articles le lot porte.
+
+Trois appelants sur quatre sont passés : **la projection**, **la vitrine**, **la
+caisse**. Le tableau attend le lot 4 — il écarte délibérément engagements et
+historique, ce que seule la lentille sait nommer.
+
+### 4. `lint:price-door` — ce qui rend le contournement inexprimable
+
+Aucun code servi hors de `b2b/pricing/` n'atteint `PricingMaterialsLoader` ni
+`LoadedPricer`. La porte lit les **imports** seulement, jamais la prose : un
+JSDoc qui nomme `LoadedPricer` pour dire où il vit est utile, et le compter
+ferait de cette porte un bruit qu'on apprend à ignorer.
+
+Les suites en sont exemptées, et pour une raison précise : une spec qui monte
+`new Pricer(new PricingMaterialsLoader(…), clock)` **construit** la production,
+elle ne la contourne pas. C'est le même arbitrage que `catalogue-authority`.
+
+### 5. Ce que le lot a corrigé au passage
+
+Le JSDoc de la vitrine expliquait encore **pourquoi elle contournait la
+façade** — un raisonnement juste la veille, faux depuis que la porte prend des
+articles. Une justification qui survit à ce qui l'a périmée est ce que ce dossier
+traque depuis le premier jour.
+
+### 6. Ce qui le prouve
+
+- **13 cas unitaires + 11 e2e retargetés** vers `load` ; deux supprimés, ceux qui
+  n'éprouvaient que la résolution de SKU par la porte — le refus vit maintenant
+  dans le port, et un commentaire d'une ligne le dit à l'endroit qu'ils
+  occupaient ;
+- « ne lit rien pour une demande vide » devient « **refuse un lot vide** » : la
+  porte refuse plutôt que de rendre un tarificateur auquel on ne peut rien
+  demander ;
+- `lint:price-door` et `lint:import-cycles` vertes, la suite complète aussi.

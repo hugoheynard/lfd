@@ -47,7 +47,7 @@ Chaque ligne vient d'un `grep` ou d'un fichier ouvert ce jour-là.
 
 ### Ce que ça coûte, en faits
 
-- **Le mapping vers `PricedItem` est copié six fois** : `pricer.ts:164`,
+- **Le mapping vers `PricedItem` est copié six fois** : `pricer.ts`,
   `order-line-pricing.service.ts:148`, `shop-catalogue-pricing.service.ts:112`,
   `board-category.ts:80`, `price-projection.query.ts:74`,
   `company-pricing.query.ts:127`.
@@ -279,12 +279,12 @@ lire une date ? Ce plan ne le tranche pas, et ne retire rien.
 
 ## 5. Les lots, dans l'ordre
 
-| #   | Lot                                                                                     | Ce qu'il ferme                                           | Risque                                                                  |
-| --- | --------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
-| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                        | deux ports empilés, `pricing → orders` : **zéro import** | tenu : 1 239 tests, aucune assertion modifiée                           |
-| ✅2 | ~~**La marque**~~ — **faite le 2026-09-09**                                             | le prix fabriqué, les six copies → **une**               | a trouvé un bug le jour même : la lecture datée gardait un sceau périmé |
-| 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes | le contournement, la seconde séquence, le lot vide       | moyen — appelant par appelant                                           |
-| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                      | les encodages épars de « ce qu'on écarte »               | **fort — il touche le prix servi**                                      |
+| #   | Lot                                                                                           | Ce qu'il ferme                                                | Risque                                                                  |
+| --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                              | deux ports empilés, `pricing → orders` : **zéro import**      | tenu : 1 239 tests, aucune assertion modifiée                           |
+| ✅2 | ~~**La marque**~~ — **faite le 2026-09-09**                                                   | le prix fabriqué, les six copies → **une**                    | a trouvé un bug le jour même : la lecture datée gardait un sceau périmé |
+| ✅3 | ~~**`load(articles)` et `PricedLot`**~~ — **fait le 2026-09-09** (le tableau attend le lot 4) | le contournement, le lot vide, l'article qui voyage deux fois | `for`/`forAll` supprimées : elles fermaient un cycle réel               |
+| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                            | les encodages épars de « ce qu'on écarte »                    | **fort — il touche le prix servi**                                      |
 
 ✅ **Le lot 1 est fait le 2026-09-09**, et la promesse a tenu : aucune signature
 n'a changé, aucune assertion n'a été réécrite, une seule spec a suivi son code.

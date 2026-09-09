@@ -2,170 +2,98 @@ import { Injectable } from "@nestjs/common";
 
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { UnknownSkuError } from "../../catalog/domain/errors/unknown-sku.error.js";
-import { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
-import type { PricedArticle, PricedItem } from "../domain/loaded-pricer.js";
 import { DuplicateArticleError } from "../domain/pricing-errors.js";
+import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
 
-export type { PricedArticle, PricedItem };
+export type { PricedArticle } from "../domain/loaded-pricer.js";
 
 /**
- * **Ce qu'on demande au `Pricer`** — un article, un client, une quantité.
+ * **Un lot à charger** — la demande de la porte.
  *
- * Trois champs, dont deux obligatoires. Tout le reste — quel étage s'applique,
- * quel palier s'ouvre, quel plancher relève — est une réponse, pas une entrée.
+ * Elle prend des **articles**, pas des SKU : la caisse, la vitrine et le tableau
+ * ont déjà lu leur catalogue, et leur faire relire serait une lecture de plus sur
+ * le chemin qui facture. Les articles sont **scellés** (`CatalogArticle`), donc
+ * leur prix d'entrée vient du catalogue et non de l'appelant.
  */
-export interface PriceRequest {
-  readonly sku: string;
-  /** `null` = un visiteur sans société : le tarif public, et aucune mercuriale lue. */
-  readonly companyId: string | null;
-  /**
-   * 🔴 **Obligatoire.**
-   *
-   * « Le prix » n'existe pas sans quantité dès qu'un barème ou une mercuriale à
-   * paliers est posé. Un défaut à `1` fabriquerait un chiffre plausible et faux
-   * — exactement la famille de défaut qui a produit les deux divergences
-   * connues. Une vitrine écrit `quantity: 1`, et cette ligne **dit ce qu'elle
-   * fait**.
-   */
-  readonly quantity: number;
-  /**
-   * L'instant de résolution. **Absent, c'est l'horloge injectée.**
-   *
-   * Le renseigner sert les lectures datées — « que payait-il le 3 mars ? ». Le
-   * choix est résolu **ici**, explicitement, et jamais par une valeur par défaut
-   * dans une signature : le dépôt a déjà payé `floorViewFromRow(now = new
-   * Date())`, dont le JSDoc dit « le pire des trois — un appelant qui l'oublie
-   * ne reçoit pas une erreur, il reçoit une réponse plausible ». La valeur vient
-   * ici d'un port et non du mur ; la ressemblance de forme suffisait à écarter
-   * le défaut de paramètre.
-   */
-  readonly at?: Date | undefined;
-}
-
-/** Plusieurs articles, **un seul chargement**. */
-export interface PriceListRequest {
+export interface LotRequest {
   /** Dans l'ordre où ils seront rendus. Un SKU en double est refusé. */
-  readonly articles: readonly { readonly sku: string; readonly quantity: number }[];
+  readonly articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[];
   readonly companyId: string | null;
   readonly at?: Date | undefined;
 }
 
 /**
- * **La porte d'entrée du prix.**
+ * **LA porte du prix.**
  *
  * ## Ce qu'elle remplace
  *
- * Pour obtenir UN prix, un consommateur écrivait une vingtaine de lignes : cinq
+ * Pour obtenir un prix, un consommateur écrivait une vingtaine de lignes : cinq
  * ports, trois fonctions de domaine, un ordre à connaître, deux signatures de
  * chargement différentes. Ce n'était pas une gêne esthétique — c'est la cause
- * des **deux divergences connues**. Chacun des cinq appelants avait réécrit
- * cette séquence à la main, et deux s'étaient trompés : l'écran de tarification
- * avait oublié les barèmes (1,83924 € contre 1,65532 € à la caisse), la
- * projection avait oublié la mercuriale (une courbe au tarif catalogue pour un
- * client qui en avait un).
+ * des **deux divergences connues** : l'écran de tarification avait oublié les
+ * barèmes (1,83924 € contre 1,65532 € à la caisse), la projection avait oublié
+ * la mercuriale (une courbe au tarif catalogue pour un client qui en avait un).
  *
- * ## Trois objets, un seul chemin
+ * ## 🔴 Elle prend des ARTICLES, jamais des SKU
  *
- * - `Pricer` — **cet objet** : la porte pour qui n'a rien en main. Il résout le
- *   catalogue, demande les matériaux, rend des prix.
- * - `PricingMaterialsLoader` — la **seule** séquence de chargement du dépôt.
- * - `LoadedPricer` — le tarificateur pur, **seul appelant de `resolvePrice`**,
- *   et c'est `lint:price-pipeline` qui le tient.
+ * C'est la décision qui rend cette porte empruntable, et elle a été prise en
+ * corrigeant l'inverse. Une première version portait `for(sku)` / `forAll(skus)`
+ * et résolvait le catalogue elle-même — d'où trois conséquences qui se tenaient
+ * la main :
  *
- * Un appelant qui charge déjà en lot — la caisse, l'écran de tarification —
- * s'adresse au `LoadedPricer` directement : lui faire repasser par ici lui
- * ferait relire ce qu'il a déjà lu. Ce qu'il ne peut plus faire, c'est écrire sa
- * propre recette.
+ * - une **lecture en trop** pour tout appelant qui avait déjà lu son catalogue,
+ *   c'est-à-dire tous ;
+ * - un **droit de contourner**, écrit noir sur blanc dans son propre JSDoc
+ *   (« un appelant qui charge déjà en lot s'adresse au `LoadedPricer` ») — et
+ *   la vitrine l'a exercé ;
+ * - un **cycle de modules** : la porte de `catalog` ne peut pas dépendre de
+ *   `catalog`. `lint:import-cycles` l'a refusé le 2026-09-09, et c'est ce refus
+ *   qui a fait retirer les deux méthodes. Elles n'avaient aucun appelant.
+ *
+ * Les articles sont **scellés** (`CatalogArticle`) : leur prix d'entrée vient du
+ * catalogue, pas de l'appelant. Résoudre un SKU reste le travail de qui a un
+ * SKU — le port est là pour ça, et il refuse ce qu'il ne connaît pas.
  *
  * ## Ce qu'elle ne fait pas
  *
  * Elle ne compose pas un **panier** — acheminement, TVA, totaux appartiennent à
  * `OrderLinePricing`, et un panier n'est pas une somme de prix d'articles. Elle
- * n'écrit rien : le chemin qui facture ne doit pas pouvoir poser un tarif, et
- * c'est déjà la règle des ports.
+ * n'écrit rien : le chemin qui facture ne doit pas pouvoir poser un tarif.
  */
 @Injectable()
 export class Pricer {
   constructor(
-    private readonly catalog: ProductCatalogReader,
     private readonly materials: PricingMaterialsLoader,
     private readonly clock: Clock,
   ) {}
 
-  /**
-   * **Le prix d'un article**, pour un client, à un instant.
-   *
-   * @throws {UnknownSkuError} le catalogue ne connaît pas ce SKU. Un refus, et
-   * non un `null` : un écran qui reçoit `null` affiche un vide, et un vide se
-   * lit « gratuit » ou « indisponible » selon qui regarde.
-   */
-  async for(request: PriceRequest): Promise<PricedArticle> {
-    const [only] = await this.forAll({
-      articles: [{ sku: request.sku, quantity: request.quantity }],
-      companyId: request.companyId,
-      at: request.at,
-    });
-    // `forAll` rend autant d'articles qu'on en demande, ou lève : un SKU inconnu
-    // ne raccourcit pas la liste. L'absence est donc impossible, et la garde est
-    // là pour le type, pas pour un cas.
-    if (only === undefined) {
-      throw new UnresolvedArticleError(request.sku);
+  async load(request: LotRequest): Promise<PricedLot> {
+    if (request.articles.length === 0) {
+      throw new EmptyLotError();
     }
-    return only;
-  }
-
-  /**
-   * **Le prix de plusieurs articles, en un seul chargement.**
-   *
-   * 🔴 C'est la méthode qui empêche la façade de devenir le problème. Appeler
-   * `for` dans une boucle réintroduirait exactement le N+1 que `materialsOf`
-   * existe pour empêcher : vingt articles, vingt chargements — le JSDoc de
-   * `materialsOf` raconte les soixante requêtes que ça coûtait avant lui.
-   *
-   * **Ordre et complétude.** Le tableau rendu suit celui demandé, et un SKU
-   * inconnu fait échouer l'appel **entier** plutôt que de raccourcir la liste :
-   * une liste plus courte que demandée est un écran qui ment par omission, et
-   * personne ne compte les lignes.
-   *
-   * @throws {DuplicateArticleError} le même SKU demandé deux fois.
-   * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
-   */
-  async forAll(request: PriceListRequest): Promise<readonly PricedArticle[]> {
     const seen = new Set<string>();
-    for (const article of request.articles) {
+    for (const { article } of request.articles) {
       if (seen.has(article.sku)) {
         throw new DuplicateArticleError(article.sku);
       }
       seen.add(article.sku);
-    }
-    if (request.articles.length === 0) {
-      return [];
     }
 
     // L'instant est résolu ICI, une fois, et le même pour tous les articles :
     // deux résolutions à quelques millisecondes d'écart pourraient sinon tomber
     // de part et d'autre du basculement d'une promotion.
     const at = request.at ?? this.clock.now();
-
-    // Le catalogue en un lot, et AVANT les matériaux : un SKU inconnu doit être
-    // refusé sans qu'on ait payé les lectures d'une demande qu'on va rejeter.
-    const catalogue = await this.catalog.resolveMany(request.articles.map(({ sku }) => sku));
-    const items = request.articles.map(({ sku, quantity }) => {
-      const found = catalogue.get(sku);
-      if (found === undefined) {
-        throw new UnknownSkuError(sku);
-      }
-      // L'article SCELLÉ, jamais reconstruit : c'est ce que le chargeur exige.
-      return { item: found.article, quantity };
-    });
-
+    const items = request.articles.map(({ article, quantity }) => ({ item: article, quantity }));
     const pricer = await this.materials.pricerFor(items, { companyId: request.companyId }, at);
     if (pricer === null) {
       throw new UnresolvedArticleError(items[0]?.item.sku ?? "");
     }
-    return pricer.priceAll(items);
+    return new PricedLot(
+      pricer,
+      request.articles.map(({ article }) => article),
+    );
   }
 }
 

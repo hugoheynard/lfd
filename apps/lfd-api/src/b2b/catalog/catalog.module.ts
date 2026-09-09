@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
-import { PricingModule } from "../pricing/pricing.module.js";
+import { PricerModule } from "../pricing/pricer.module.js";
 
 import {
   AlignOnPimPriceHandler,
@@ -76,10 +76,12 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
   // parité a besoin de savoir ce que le référentiel publierait. C'est le
   // franchissement `b2b → pim` que la matrice autorise — un port, jamais une
   // table.
-  // `PricingModule` parce que la vitrine TARIFE depuis le 2026-09-09 : elle
+  // `PricerModule` parce que la vitrine TARIFE depuis le 2026-09-09 : elle
   // servait le canonique, donc une promotion publique n'apparaissait qu'au
-  // panier (R22). Aucun cycle — `PricingModule` n'importe rien.
-  imports: [B2bPlatformModule, PricingModule],
+  // panier (R22). Elle passe par LA porte du prix, et non par le chargeur —
+  // c'est ce qui a fait retirer les entrées par SKU de la porte, qui la
+  // faisaient dépendre du catalogue et fermaient le cycle.
+  imports: [B2bPlatformModule, PricerModule],
   controllers: [
     AdminCatalogController,
     AdminCatalogParityController,

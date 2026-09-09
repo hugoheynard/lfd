@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { CatalogModule } from "../catalog/catalog.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { Pricer } from "./application/pricer.js";
 
@@ -9,14 +8,15 @@ import { Pricer } from "./application/pricer.js";
  *
  * ## Pourquoi pas dans `PricingModule`
  *
- * Le `Pricer` résout le **catalogue** — c'est ce qui lui permet de répondre à
- * un SKU nu plutôt qu'à un article déjà chargé —, et `CatalogModule` importe
- * `PricingModule` depuis que la vitrine tarife (R22). Le ranger dans
- * `PricingModule` fermerait donc le cycle.
+ * `PricingModule` porte les lecteurs et le chargeur ; y ranger la porte y
+ * mettrait une façade de lecture au milieu des adaptateurs.
  *
- * ⚠️ Ce paragraphe disait « le catalogue vit dans `OrdersModule` ». Il y vivait
- * par accident d'histoire : son port descend dans `catalog/` le 2026-09-09,
- * avec la source qu'il traduit.
+ * ⚠️ Ce paragraphe a dit deux choses fausses avant d'être réécrit le
+ * 2026-09-09. « Le catalogue vit dans `OrdersModule` » — il y vivait par
+ * accident d'histoire, son port est descendu dans `catalog/`. Puis « le `Pricer`
+ * résout le catalogue » — il ne le résout plus : il prend des articles déjà
+ * scellés, et c'est ce qui lui permet d'être la porte de `catalog` sans en
+ * dépendre.
  *
  * ⚠️ Un appelant qui a **déjà** ses articles et ses matériaux ne passe pas par
  * ici : il s'adresse au `LoadedPricer`, qui est pur et n'a pas de module. C'est
@@ -35,7 +35,7 @@ import { Pricer } from "./application/pricer.js";
  * disent quelque chose.
  */
 @Module({
-  imports: [CatalogModule, PricingModule],
+  imports: [PricingModule],
   providers: [Pricer],
   exports: [Pricer],
 })

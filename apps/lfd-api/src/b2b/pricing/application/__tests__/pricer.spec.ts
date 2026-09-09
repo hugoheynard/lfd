@@ -13,7 +13,7 @@
  * - **la surface** — ce qu'elle accepte, ce qu'elle refuse, ce qu'elle rend ;
  * - **la traversée de la trace** — une façade qui aplatirait `steps` rendrait
  *   la chaîne indéfendable, et rien ne rougirait ;
- * - **l'ordre et la complétude** de `forAll` ;
+ * - **l'ordre et la complétude** d'un lot de plusieurs articles ;
  * - **l'instant** — que `at` soit réellement lu, et que l'horloge injectée
  *   serve quand il est absent.
  *
@@ -21,12 +21,14 @@
  * doublé qui dérive du port qu'il prétend jouer ne fait rougir personne.
  */
 import type { OrderLineAllergens, OrderLimitSpec } from "@lfd/contracts";
-import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
+import {
+  catalogueArticle,
+  type CatalogArticle,
+} from "../../../catalog/domain/catalogue-article.js";
 import { millicentsFromCents } from "@lfd/money";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Instant } from "../../../../platform/context/request-context.js";
-import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 import {
   ProductCatalogReader,
@@ -44,6 +46,7 @@ import type { PriceRule, ScopedPriceFloor } from "../../domain/price-rule.js";
 import { DuplicateArticleError } from "../../domain/pricing-errors.js";
 import type { VolumeCommitment } from "../../domain/volume-commitment.js";
 import type { VolumeLadder } from "../../domain/volume-ladder.js";
+import { EmptyLotError, type PricedLot } from "../priced-lot.js";
 import { Pricer } from "../pricer.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
@@ -94,9 +97,6 @@ const CATALOGUE: readonly CatalogItem[] = [
 ];
 
 class StubCatalog extends ProductCatalogReader {
-  /** Ce que le catalogue a été SOLLICITÉ de résoudre — une lecture par appel. */
-  readonly calls: string[][] = [];
-
   resolve(sku: string): Promise<CatalogItem | null> {
     return Promise.resolve(CATALOGUE.find((entry) => entry.sku === sku) ?? null);
   }
@@ -104,13 +104,46 @@ class StubCatalog extends ProductCatalogReader {
     return Promise.resolve(CATALOGUE);
   }
   resolveMany(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogItem>> {
-    this.calls.push([...skus]);
     return Promise.resolve(
       new Map(
         CATALOGUE.filter((entry) => skus.includes(entry.sku)).map((entry) => [entry.sku, entry]),
       ),
     );
   }
+}
+
+const catalog = new StubCatalog();
+
+/**
+ * Résout un article **au catalogue**, comme le fait la production.
+ *
+ * La porte prend des `CatalogArticle` scellés et non des SKU : c'est l'appelant
+ * qui a déjà lu son catalogue, et le sceau ne se pose que là. Fabriquer
+ * l'article dans la fixture éprouverait un monde que la production ne produit
+ * pas — d'où ce détour par le double du port.
+ */
+async function articleOf(sku: string): Promise<CatalogArticle> {
+  const found = await catalog.resolve(sku);
+  if (found === null) {
+    throw new Error(`Le catalogue doublé ne connaît pas « ${sku} ».`);
+  }
+  return found.article;
+}
+
+/** Charge un lot pour ces SKU du catalogue doublé, dans l'ordre donné. */
+async function lotOf(
+  pricer: Pricer,
+  lines: readonly { readonly sku: string; readonly quantity: number }[],
+  companyId: string | null,
+  at?: Date,
+): Promise<PricedLot> {
+  const articles = await Promise.all(
+    lines.map(async (line) => ({
+      article: await articleOf(line.sku),
+      quantity: line.quantity,
+    })),
+  );
+  return pricer.load({ articles, companyId, at });
 }
 
 // ── Les matériaux ─────────────────────────────────────────────────────────
@@ -230,7 +263,6 @@ class StubSkuVolumes extends SkuVolumeReader {
 }
 
 interface Doubles {
-  readonly catalog: StubCatalog;
   readonly rules: StubRules;
   readonly mercuriales: StubMercuriales;
   readonly commitments: StubCommitments;
@@ -246,7 +278,6 @@ function pricerWith(
     ordered?: ReadonlyMap<string, number>;
   } = {},
 ): { pricer: Pricer; doubles: Doubles } {
-  const catalog = new StubCatalog();
   const rules = new StubRules(parts.rules ?? []);
   const mercuriales = new StubMercuriales(parts.mercuriales ?? []);
   const commitments = new StubCommitments(parts.commitments ?? []);
@@ -260,8 +291,8 @@ function pricerWith(
     new StubCustomerVolumes(parts.ordered ?? new Map()),
   );
   return {
-    pricer: new Pricer(catalog, loader, new FrozenClock(NOW)),
-    doubles: { catalog, rules, mercuriales, commitments },
+    pricer: new Pricer(loader, new FrozenClock(NOW)),
+    doubles: { rules, mercuriales, commitments },
   };
 }
 
@@ -325,13 +356,16 @@ function mercurialeFor(
   };
 }
 
-describe("Pricer.for — le prix d'un article", () => {
+// Le refus d'un SKU que le catalogue ne connaît pas n'appartient plus à cette
+// porte : il vit dans `ProductCatalogReader` (et l'`UnknownSkuError` que ses
+// appelants lèvent), qui a ses propres tests.
+describe("Pricer.load — le prix d'un article", () => {
   it("rend le tarif catalogue quand rien ne le touche", async () => {
     const { pricer } = pricerWith();
 
-    const priced = await pricer.for({ sku: "CRO-001", companyId: null, quantity: 1 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
-    expect(priced).toMatchObject({
+    expect(lot.price("CRO-001", 1)).toMatchObject({
       sku: "CRO-001",
       name: "Croissant",
       canonicalMillicents: millicentsFromCents(100),
@@ -348,7 +382,7 @@ describe("Pricer.for — le prix d'un article", () => {
   /**
    * 🔴 **La trace traverse la façade intacte.**
    *
-   * Sans ce cas, rien n'empêcherait `articleOf` de n'emporter que le chiffre —
+   * Sans ce cas, rien n'empêcherait la porte de n'emporter que le chiffre —
    * ce qui serait plus commode, et supprimerait la propriété qui fait la valeur
    * de toute la chaîne : pouvoir défendre un prix six mois plus tard, quand la
    * règle qui l'a produit a été retirée.
@@ -356,8 +390,9 @@ describe("Pricer.for — le prix d'un article", () => {
   it("🔴 emporte la trace, pas seulement le chiffre", async () => {
     const { pricer } = pricerWith({ rules: [TEN_PERCENT_OFF] });
 
-    const priced = await pricer.for({ sku: "CRO-001", companyId: null, quantity: 1 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
+    const priced = lot.price("CRO-001", 1);
     expect(priced.finalMillicents).toBe(millicentsFromCents(90));
     expect(priced.steps).toHaveLength(1);
     expect(priced.steps[0]).toMatchObject({
@@ -377,11 +412,10 @@ describe("Pricer.for — le prix d'un article", () => {
   it("🔴 lit la quantité : le barème ne s'ouvre qu'au dixième article", async () => {
     const { pricer } = pricerWith({ ladders: [LADDER_FROM_TEN] });
 
-    const alone = await pricer.for({ sku: "CRO-001", companyId: null, quantity: 1 });
-    const byTen = await pricer.for({ sku: "CRO-001", companyId: null, quantity: 10 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
-    expect(alone.finalMillicents).toBe(millicentsFromCents(100));
-    expect(byTen.finalMillicents).toBe(millicentsFromCents(80));
+    expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
+    expect(lot.price("CRO-001", 10).finalMillicents).toBe(millicentsFromCents(80));
   });
 
   /**
@@ -395,8 +429,9 @@ describe("Pricer.for — le prix d'un article", () => {
       mercuriales: [mercurialeFor("cmp_1", 80)],
     });
 
-    const priced = await pricer.for({ sku: "CRO-001", companyId: "cmp_1", quantity: 1 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1");
 
+    const priced = lot.price("CRO-001", 1);
     expect(priced.finalMillicents).toBe(millicentsFromCents(80));
     expect(priced.sealedByRuleId).toBe("merc_cmp_1");
     expect(priced.sealedRuleIds).toContain("rule_promo");
@@ -413,9 +448,9 @@ describe("Pricer.for — le prix d'un article", () => {
   it("🔴 ne lit aucune mercuriale pour un visiteur sans société", async () => {
     const { pricer, doubles } = pricerWith({ mercuriales: [mercurialeFor("cmp_1", 80)] });
 
-    const priced = await pricer.for({ sku: "CRO-001", companyId: null, quantity: 1 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
-    expect(priced.finalMillicents).toBe(millicentsFromCents(100));
+    expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
     expect(doubles.mercuriales.asked).toEqual([{ companyId: null, at: NOW }]);
     expect(doubles.commitments.asked).toEqual([null]);
   });
@@ -423,26 +458,19 @@ describe("Pricer.for — le prix d'un article", () => {
   it("ne prend pas la mercuriale d'un AUTRE client", async () => {
     const { pricer } = pricerWith({ mercuriales: [mercurialeFor("cmp_1", 80)] });
 
-    const priced = await pricer.for({ sku: "CRO-001", companyId: "cmp_2", quantity: 1 });
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_2");
 
+    const priced = lot.price("CRO-001", 1);
     expect(priced.finalMillicents).toBe(millicentsFromCents(100));
     expect(priced.sealedByRuleId).toBeNull();
   });
-
-  it("refuse un SKU que le catalogue ne connaît pas", async () => {
-    const { pricer } = pricerWith();
-
-    await expect(
-      pricer.for({ sku: "INCONNU", companyId: null, quantity: 1 }),
-    ).rejects.toBeInstanceOf(UnknownSkuError);
-  });
 });
 
-describe("Pricer.for — l'instant", () => {
+describe("Pricer.load — l'instant", () => {
   it("résout à l'horloge injectée quand `at` est absent", async () => {
     const { pricer, doubles } = pricerWith();
 
-    await pricer.for({ sku: "CRO-001", companyId: null, quantity: 1 });
+    await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
     expect(doubles.rules.seenAt).toEqual([NOW]);
   });
@@ -460,44 +488,40 @@ describe("Pricer.for — l'instant", () => {
     const expired = mercurialeFor("cmp_1", 80, new Date("2026-04-01T00:00:00.000Z"));
     const { pricer, doubles } = pricerWith({ mercuriales: [expired] });
 
-    const today = await pricer.for({ sku: "CRO-001", companyId: "cmp_1", quantity: 1 });
-    const back = await pricer.for({
-      sku: "CRO-001",
-      companyId: "cmp_1",
-      quantity: 1,
-      at: BEFORE_NOW,
-    });
+    const today = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1");
+    const back = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1", BEFORE_NOW);
 
-    expect(today.finalMillicents).toBe(millicentsFromCents(100));
-    expect(back.finalMillicents).toBe(millicentsFromCents(80));
+    expect(today.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
+    expect(back.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(80));
     expect(doubles.rules.seenAt).toEqual([NOW, BEFORE_NOW]);
   });
 });
 
-describe("Pricer.forAll — plusieurs articles", () => {
+describe("Pricer.load — plusieurs articles", () => {
   /**
    * 🔴 **Un seul chargement, quel que soit le nombre d'articles.**
    *
    * C'est la méthode qui empêche la façade de devenir le problème qu'elle
-   * prétend résoudre : `for` dans une boucle réintroduirait le N+1 que
+   * prétend résoudre : un chargement par article réintroduirait le N+1 que
    * `materialsOf` existe pour empêcher. Le compte des sollicitations le dit
    * ici ; le budget e2e le mesure sur la vraie base.
    */
   it("🔴 ne charge qu'une fois pour trois articles", async () => {
     const { pricer, doubles } = pricerWith({ rules: [TEN_PERCENT_OFF] });
 
-    await pricer.forAll({
-      articles: [
+    await lotOf(
+      pricer,
+      [
         { sku: "CRO-001", quantity: 1 },
         { sku: "PAI-001", quantity: 1 },
         { sku: "CHO-001", quantity: 1 },
       ],
-      companyId: "cmp_1",
-    });
+      "cmp_1",
+    );
 
-    expect(doubles.catalog.calls).toEqual([["CRO-001", "PAI-001", "CHO-001"]]);
     expect(doubles.rules.seenAt).toEqual([NOW]);
     expect(doubles.mercuriales.asked).toHaveLength(1);
+    expect(doubles.commitments.asked).toHaveLength(1);
   });
 
   /**
@@ -510,43 +534,21 @@ describe("Pricer.forAll — plusieurs articles", () => {
    */
   it("🔴 rend les articles dans l'ordre demandé", async () => {
     const { pricer } = pricerWith();
+    const lines = [
+      { sku: "CHO-001", quantity: 1 },
+      { sku: "CRO-001", quantity: 1 },
+      { sku: "PAI-001", quantity: 1 },
+    ];
 
-    const priced = await pricer.forAll({
-      articles: [
-        { sku: "CHO-001", quantity: 1 },
-        { sku: "CRO-001", quantity: 1 },
-        { sku: "PAI-001", quantity: 1 },
-      ],
-      companyId: null,
-    });
+    const lot = await lotOf(pricer, lines, null);
 
+    const priced = lot.all(lines);
     expect(priced.map((article) => article.sku)).toEqual(["CHO-001", "CRO-001", "PAI-001"]);
     expect(priced.map((article) => article.finalMillicents)).toEqual([
       millicentsFromCents(300),
       millicentsFromCents(100),
       millicentsFromCents(200),
     ]);
-  });
-
-  /**
-   * 🔴 **Un SKU inconnu fait échouer l'appel ENTIER.**
-   *
-   * Il ne raccourcit pas la liste : une liste plus courte que demandée est un
-   * écran qui ment par omission, et personne ne compte les lignes.
-   */
-  it("🔴 échoue en entier sur un SKU inconnu, plutôt que de raccourcir la liste", async () => {
-    const { pricer } = pricerWith();
-
-    await expect(
-      pricer.forAll({
-        articles: [
-          { sku: "CRO-001", quantity: 1 },
-          { sku: "INCONNU", quantity: 1 },
-          { sku: "PAI-001", quantity: 1 },
-        ],
-        companyId: null,
-      }),
-    ).rejects.toBeInstanceOf(UnknownSkuError);
   });
 
   /**
@@ -559,22 +561,29 @@ describe("Pricer.forAll — plusieurs articles", () => {
     const { pricer } = pricerWith();
 
     await expect(
-      pricer.forAll({
-        articles: [
+      lotOf(
+        pricer,
+        [
           { sku: "CRO-001", quantity: 5 },
           { sku: "CRO-001", quantity: 5 },
         ],
-        companyId: null,
-      }),
+        null,
+      ),
     ).rejects.toBeInstanceOf(DuplicateArticleError);
   });
 
-  /** Une demande vide ne coûte **aucune** lecture — pas même celle du catalogue. */
-  it("ne lit rien pour une demande vide", async () => {
+  /**
+   * Un lot vide est **refusé**, et non servi vide : charger des matériaux pour
+   * zéro article rend un tarificateur auquel on ne peut plus rien demander. Le
+   * refus est ici, plutôt qu'une lecture qui ne coûte rien, pour que l'appelant
+   * qui peut avoir un panier vide le teste **avant** de charger.
+   */
+  it("refuse un lot vide", async () => {
     const { pricer, doubles } = pricerWith();
 
-    await expect(pricer.forAll({ articles: [], companyId: "cmp_1" })).resolves.toEqual([]);
-    expect(doubles.catalog.calls).toEqual([]);
+    await expect(pricer.load({ articles: [], companyId: "cmp_1" })).rejects.toBeInstanceOf(
+      EmptyLotError,
+    );
     expect(doubles.rules.seenAt).toEqual([]);
   });
 
@@ -585,15 +594,14 @@ describe("Pricer.forAll — plusieurs articles", () => {
    */
   it("résout chaque article à SA quantité", async () => {
     const { pricer } = pricerWith({ ladders: [LADDER_FROM_TEN] });
+    const lines = [
+      { sku: "CRO-001", quantity: 12 },
+      { sku: "PAI-001", quantity: 1 },
+    ];
 
-    const priced = await pricer.forAll({
-      articles: [
-        { sku: "CRO-001", quantity: 12 },
-        { sku: "PAI-001", quantity: 1 },
-      ],
-      companyId: null,
-    });
+    const lot = await lotOf(pricer, lines, null);
 
+    const priced = lot.all(lines);
     expect(priced[0]).toMatchObject({
       sku: "CRO-001",
       quantity: 12,

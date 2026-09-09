@@ -2,7 +2,8 @@ import type { CatalogArticle } from "../../../catalog/domain/catalogue-article.j
 import type { VolumeTierPriceView } from "@lfd/contracts";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
-import type { LoadedPricer, PricedArticle } from "../../../pricing/domain/loaded-pricer.js";
+import type { PricedLot } from "../../../pricing/application/priced-lot.js";
+import type { PricedArticle } from "../../../pricing/domain/loaded-pricer.js";
 
 import type { OrderLineInput } from "../value-objects/order-line.js";
 
@@ -93,9 +94,11 @@ export interface LinePricingInput {
  * @throws {AmbiguousPriceRulesError} deux règles également spécifiques.
  * @throws {AmbiguousPriceFloorsError} deux planchers également spécifiques.
  */
-export function priceLine(input: LinePricingInput, pricer: LoadedPricer): ResolvedOrderLine {
+export function priceLine(input: LinePricingInput, lot: PricedLot): ResolvedOrderLine {
   const { item, quantity, withTiers } = input;
-  const priced = pricer.price(item.article, quantity);
+  // Au LOT, par SKU : il connaît ses articles, et un SKU qu'il n'a pas chargé
+  // est refusé plutôt que tarifé sur des matériaux qui ne le visent pas.
+  const priced = lot.price(item.sku, quantity);
 
   return {
     line: {
@@ -135,7 +138,7 @@ export function priceLine(input: LinePricingInput, pricer: LoadedPricer): Resolv
     sealedByRuleId: priced.sealedByRuleId,
     sealedRuleIds: priced.sealedRuleIds,
     priced,
-    volumeTiers: withTiers ? pricer.tiers(item.article, quantity) : null,
+    volumeTiers: withTiers ? lot.tiers(item.sku, quantity) : null,
     floorMillicents: priced.floorMillicents,
   };
 }

@@ -7,7 +7,7 @@ import type {
 
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
-import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
+import { Pricer } from "../pricer.js";
 
 /**
  * **Ce que l'article coûterait à des niveaux de cumul qui n'existent pas encore.**
@@ -57,7 +57,7 @@ import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 export class PriceProjectionQuery {
   constructor(
     private readonly catalog: ProductCatalogReader,
-    private readonly materials: PricingMaterialsLoader,
+    private readonly pricer: Pricer,
   ) {}
 
   /** @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas. */
@@ -70,14 +70,11 @@ export class PriceProjectionQuery {
 
     // Un seul chargement, à la plus petite quantité : les matériaux qui visent
     // l'article ne dépendent ni de la quantité ni du cumul.
-    const pricer = await this.materials.pricerFor(
-      [{ item, quantity: 1 }],
-      { companyId: payload.companyId },
+    const lot = await this.pricer.load({
+      articles: [{ article: item, quantity: 1 }],
+      companyId: payload.companyId,
       at,
-    );
-    if (pricer === null) {
-      throw new UnknownSkuError(payload.sku);
-    }
+    });
 
     return {
       productName: item.name,
@@ -86,7 +83,7 @@ export class PriceProjectionQuery {
         // projection répond à « si ce niveau était atteint », et distinguer les
         // deux supposerait un rythme de livraison que l'écran, lui, connaît — et
         // applique en choisissant les niveaux qu'il demande.
-        const priced = pricer.priceAtCumulative(item, cumulative);
+        const priced = lot.projectAt(item.sku, cumulative);
         return {
           cumulativeQuantity: cumulative,
           canonicalMillicents: priced.canonicalMillicents,

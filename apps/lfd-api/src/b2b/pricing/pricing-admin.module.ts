@@ -61,6 +61,7 @@ import {
   SignVolumeCommitmentHandler,
 } from "./application/commands/volume-commitment.handlers.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
+import { PricerModule } from "./pricer.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { CompanyMercurialeRepository } from "./domain/ports/company-mercuriale.repository.js";
 import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-company-mercuriale.repository.js";
@@ -81,7 +82,10 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
 @Module({
   // `CatalogModule` pour l'historique du tarif : la lecture datée doit rendre le
   // tarif de CE jour-là, et lui seul sait le relire.
-  imports: [CatalogModule, PricingModule],
+  // `PricerModule` depuis le 2026-09-09 : les lectures de ce module passent par
+  // LA porte du prix, plus par le chargeur. Elles avaient chacune leur
+  // chorégraphie, et c'est ainsi que deux d'entre elles ont oublié un étage.
+  imports: [CatalogModule, PricingModule, PricerModule],
   controllers: [
     AdminPricingController,
     AdminPriceFloorsController,

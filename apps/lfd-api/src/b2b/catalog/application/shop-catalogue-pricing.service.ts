@@ -1,8 +1,7 @@
 import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { Clock } from "../../../platform/time/clock.js";
-import { PricingMaterialsLoader } from "../../pricing/application/pricing-materials.loader.js";
+import { Pricer } from "../../pricing/application/pricer.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
@@ -40,12 +39,16 @@ import { shopCatalogueOf } from "./shop-catalogue-view.js";
  * l'autre faisait — c'est l'histoire de tout ce contexte. Ici la seule variable
  * est l'argument.
  *
- * ## Pourquoi le chargeur et non `Pricer`
+ * ## Pourquoi la porte, et plus le chargeur
  *
- * La façade relit le catalogue (`resolveMany`) alors qu'on l'a déjà en main :
- * ce serait une lecture de plus sur la **seule route anonyme** du dépôt. Le
- * JSDoc de `Pricer` le dit lui-même — « un appelant qui charge déjà en lot
- * s'adresse au `LoadedPricer` directement ».
+ * ⚠️ Ce paragraphe expliquait le contraire jusqu'au 2026-09-09 : la vitrine
+ * **contournait** la façade, parce que celle-ci relisait le catalogue
+ * (`resolveMany`) qu'on avait déjà en main — une lecture de plus sur la seule
+ * route anonyme du dépôt. Le JSDoc de `Pricer` l'y autorisait explicitement.
+ *
+ * La façade ne relit plus rien : elle prend des **articles**. Le motif du
+ * contournement a disparu, l'autorisation aussi, et `lint:price-door` interdit
+ * désormais d'atteindre le chargeur depuis ici.
  *
  * ## Le coût, compté plutôt qu'estimé
  *
@@ -72,8 +75,7 @@ import { shopCatalogueOf } from "./shop-catalogue-view.js";
 export class ShopCataloguePricing {
   constructor(
     private readonly catalog: CatalogReader,
-    private readonly materials: PricingMaterialsLoader,
-    private readonly clock: Clock,
+    private readonly pricer: Pricer,
   ) {}
 
   /**
@@ -107,7 +109,7 @@ export class ShopCataloguePricing {
             {
               // La frappe : la vitrine vient de LIRE le catalogue, elle est donc
               // en droit de sceller ce qu'elle a lu.
-              item: catalogueArticle({
+              article: catalogueArticle({
                 sku: item.sku,
                 name: item.name,
                 category: shelf,
@@ -121,19 +123,19 @@ export class ShopCataloguePricing {
           ];
     });
 
-    // L'instant est pris UNE fois pour toute la vitrine : deux articles résolus
-    // à quelques millisecondes d'écart pourraient tomber de part et d'autre du
-    // basculement d'une promotion.
-    const pricer = await this.materials.pricerFor(articles, { companyId }, this.clock.now());
-    if (articles.length === 0 || pricer === null) {
-      // Rien à tarifer, ou aucune portée à interroger : la vitrine sort au
-      // tarif, c'est-à-dire exactement ce qu'elle servait avant R22. Un rayon
-      // vide serait pire qu'un rayon au canonique.
+    if (articles.length === 0) {
+      // Rien à tarifer : la vitrine sort au tarif, c'est-à-dire exactement ce
+      // qu'elle servait avant R22. Un rayon vide serait pire qu'un rayon au
+      // canonique.
       return catalogue;
     }
-    const prices = new Map(
-      pricer.priceAll(articles).map((priced) => [priced.sku, priced.finalMillicents]),
-    );
+
+    // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
+    // articles résolus à quelques millisecondes d'écart pourraient sinon tomber
+    // de part et d'autre du basculement d'une promotion.
+    const lot = await this.pricer.load({ articles, companyId });
+    const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
+    const prices = new Map(lot.all(lines).map((priced) => [priced.sku, priced.finalMillicents]));
     return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices)) };
   }
 }

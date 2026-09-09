@@ -1,3 +1,4 @@
+import { PricedLot } from "../../../../pricing/application/priced-lot.js";
 import { LoadedPricer } from "../../../../pricing/domain/loaded-pricer.js";
 import type {
   PricingEvidence,
@@ -70,7 +71,13 @@ function line(
   evidence: PricingEvidence,
   companyId: string | null = null,
 ) {
-  return priceLine(input(over), LoadedPricer.over(materials, evidence, { companyId }, AT));
+  // Un LOT, pas un tarificateur nu : `priceLine` parle désormais par SKU, et le
+  // lot est ce qui sait à quel article ce SKU correspond.
+  const built = input(over);
+  return priceLine(
+    built,
+    new PricedLot(LoadedPricer.over(materials, evidence, { companyId }, AT), [built.item.article]),
+  );
 }
 
 /** Une promotion globale de −10 %, ouverte à tous. */

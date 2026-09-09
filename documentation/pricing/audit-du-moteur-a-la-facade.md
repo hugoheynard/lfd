@@ -520,7 +520,7 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
 - **`pricerFor(): LoadedPricer | null`** (`pricing-materials.loader.ts:83`) —
   `null` sur un lot vide. Trois appelants, trois traitements d'une branche
   inatteignable : `[]` (`order-line-pricing.service.ts:155`),
-  `UnresolvedArticleError` marquée « inatteignable » (`pricer.ts:170`),
+  `UnresolvedArticleError` marquée « inatteignable » (`pricer.ts`),
   `UnknownSkuError` — la mauvaise erreur (`price-projection.query.ts:67`). Un
   tarificateur sur des matériaux vides est parfaitement valide ; le `null` est
   un défaut de conception.
@@ -552,7 +552,7 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
   `resolvePrice` rend `tier.unitPriceMillicents` — le détour n'achète que des
   vérifications que `liveEverywhere(at)` a déjà faites.
 - **Deux portes, deux politiques.** `Pricer.forAll` refuse un SKU en double
-  (`pricer.ts:136`, 400) ; `OrderLinePricing` fusionne les quantités
+  (`pricer.ts`, 400) ; `OrderLinePricing` fusionne les quantités
   (`order-line-pricing.service.ts:103`). Même panier, réponse différente selon
   la porte — dans un système qui affirme n'avoir qu'un fabricant.
 - **Redondances.** `PricedArticle.floorMillicents` (`loaded-pricer.ts:397`) vaut
