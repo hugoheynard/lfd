@@ -538,6 +538,52 @@ describe("une règle change le prix facturé", () => {
  * négocié empochait aussi la promotion publique. Personne n'avait décidé ce
  * cumul, et il ne se voyait qu'en comparant deux factures.
  */
+/**
+ * **L'autre moitié de « pourquoi ce prix »** — ce que la trace figée ne pouvait
+ * pas garder (R25, lot 4).
+ *
+ * Une règle dont l'audience ne vise pas ce client n'atteint **jamais** le
+ * moteur : l'adaptateur l'écarte au chargement. Elle n'est donc ni dans les
+ * étages, ni dans les écartées, et seule une relecture datée peut la nommer.
+ */
+describe("les décisions en vigueur ce jour-là que la trace n'explique pas", () => {
+  it("nomme une règle qui visait un autre client", async () => {
+    await seedRule({
+      id: "ciblee",
+      stage: "promotion",
+      bp: 1500,
+      audienceType: "company",
+      audienceId: "cmp_autre",
+    });
+
+    const orderId = jsonBody<{ id: string }>(await placeOrder(1)).id;
+
+    // Elle n'a laissé AUCUNE trace sur la ligne — c'est le point.
+    const line = await lineOf(orderId);
+    expect(line.pricingSteps).toEqual([]);
+    expect(line.pricingRejected).toEqual([]);
+
+    const body = jsonBody<{ at: string; rules: { ruleId: string; cause: string | null }[] }>(
+      await ctx.asSub(E2E_STAFF_SUB).get(`/admin/orders/${orderId}/lines/${SKU}/rules`).expect(200),
+    );
+
+    expect(body.rules).toEqual([
+      expect.objectContaining({ ruleId: "ciblee", cause: "out_of_audience" }),
+    ]);
+  });
+
+  it("n'a rien à dire quand aucune autre décision n'était en vigueur", async () => {
+    // Vide est une réponse : ce jour-là, rien d'autre ne visait cet article.
+    const orderId = jsonBody<{ id: string }>(await placeOrder(1)).id;
+
+    const body = jsonBody<{ rules: unknown[] }>(
+      await ctx.asSub(E2E_STAFF_SUB).get(`/admin/orders/${orderId}/lines/${SKU}/rules`).expect(200),
+    );
+
+    expect(body.rules).toEqual([]);
+  });
+});
+
 describe("le scellement par la mercuriale", () => {
   it("une promotion ne s'applique PAS par-dessus un tarif négocié", async () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });

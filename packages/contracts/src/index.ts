@@ -688,6 +688,8 @@ export type {
   PriceStepView,
   RejectedRuleView,
   RejectionCause,
+  UnexplainedRuleView,
+  LineRuleReconstructionView,
   DynamicFloorPayload,
   FloorDecisionView,
   FloorDriftView,

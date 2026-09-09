@@ -10,6 +10,7 @@ import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
+import { OrderPricingModule } from "../b2b/orders/order-pricing.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
@@ -106,6 +107,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     ProductionModule,
     ProductionFeedModule,
     PricingAdminModule,
+    OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.
     PricerModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.

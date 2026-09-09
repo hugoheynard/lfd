@@ -191,5 +191,16 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],
+  /**
+   * 🔴 **Deux LECTURES sortent d'ici, et rien d'autre.** L'écran qui explique le
+   * prix d'une ligne de commande a besoin des décisions d'un jour donné et du
+   * journal ; il n'a aucune raison de voir les dépôts d'écriture, qui restent
+   * enfermés dans ce module — c'est la raison même de son existence, écrite au
+   * JSDoc de `PricerModule`.
+   *
+   * Le module qui les consomme est {@link OrderPricingModule}, une **jointure**
+   * : ni `orders` ni `pricing` ne s'importent l'un l'autre pour ça.
+   */
+  exports: [PricingBoardReader, PricingJournalReader],
 })
 export class PricingAdminModule {}

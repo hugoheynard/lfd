@@ -656,6 +656,54 @@ export interface RejectedRuleView {
   readonly cause: RejectionCause;
 }
 
+/**
+ * **Une décision qui était en vigueur le jour de la commande, et dont la trace
+ * ne dit rien.**
+ *
+ * Les règles que le moteur a regardées puis écartées sont dans
+ * {@link OrderLinePricingTrace.rejected} — figées, donc sûres. Celle-ci est
+ * l'autre moitié : une décision qui n'a **jamais atteint** le moteur, parce que
+ * son audience ou sa portée ne visait pas cette ligne.
+ *
+ * 🔴 **Elle est RECONSTRUITE, pas figée.** Ce qui la rend honnête tient en une
+ * phrase, vérifiée le 2026-09-09 : la fenêtre, l'audience et la portée d'une
+ * règle **ne se modifient jamais** — les seules commandes qui existent sont
+ * créer, suspendre, reprendre, archiver et renommer, et l'archivage BORNE la
+ * fenêtre au lieu de l'effacer. La règle d'aujourd'hui dit donc la vérité sur
+ * ce qu'elle visait.
+ *
+ * Deux réserves, et l'écran doit les porter : un **libellé se renomme**, donc ce
+ * nom est celui d'aujourd'hui ; et le **segment** d'un client n'est pas figé sur
+ * la commande, donc une règle de segment ne se juge pas — sa cause reste `null`.
+ */
+export interface UnexplainedRuleView {
+  readonly ruleId: string;
+  readonly label: string;
+  readonly stage: PriceStage;
+  readonly scope: PriceScopePayload;
+  /**
+   * Pourquoi elle n'a rien produit, **quand on sait le dire**.
+   *
+   * `null` n'est pas « aucune raison » : c'est « on ne sait pas », et c'est le
+   * cas d'une règle de segment, ou d'une règle qui visait tout le monde et
+   * aurait dû agir. Le second cas mérite qu'on ouvre le dossier.
+   */
+  readonly cause: "suspended" | "out_of_audience" | null;
+}
+
+/**
+ * **Ce que la trace figée ne pouvait pas dire**, reconstruit à la date de la
+ * commande.
+ *
+ * `rules` vide **affirme** qu'aucune autre décision n'était en vigueur ce
+ * jour-là sur cet article. C'est une réponse, pas une absence de réponse.
+ */
+export interface LineRuleReconstructionView {
+  /** L'instant de la commande — tout ce qui précède y est jugé. ISO. */
+  readonly at: string;
+  readonly rules: readonly UnexplainedRuleView[];
+}
+
 /** Le schéma des règles écartées, pour **relire** une trace persistée. */
 export const rejectedRulesSchema = z.array(
   z.object({
