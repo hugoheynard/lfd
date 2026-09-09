@@ -31,27 +31,75 @@
 
       @if (canWrite()) {
         <div class="rule-form">
-          <fold-number-input
-            label="Remise (%)"
-            [min]="0"
-            [max]="99.99"
-            [step]="0.5"
-            [disabled]="isLoading()"
-            [value]="draftDiscount()"
-            (valueChange)="draftDiscount.set($event)"
-          />
+          <div class="fields">
+            <fold-number-input
+              label="Remise (%)"
+              [min]="0"
+              [max]="99.99"
+              [step]="0.5"
+              [disabled]="isLoading()"
+              [value]="draftDiscount()"
+              (valueChange)="draftDiscount.set($event)"
+            />
+
+            <!-- Le prix du simulateur. Il ne s'enregistre pas : c'est une
+                 question posée à la règle, pas une décision. Le bouton d'à côté
+                 ne le concerne donc pas, et son libellé le dit. -->
+            <fold-number-input
+              label="Sur un article à (€ TTC)"
+              [min]="0.01"
+              [step]="0.1"
+              [value]="samplePublicEur()"
+              (valueChange)="samplePublicEur.set($event)"
+            />
+          </div>
 
           <!-- L'aperçu est calculé par `proPriceFromPublic`, celui du serveur :
                un aperçu qui arrondirait autrement que la facture serait pire
                qu'aucun aperçu. -->
           <p class="preview">
             @if (samplePro(); as pro) {
-              Un article à <strong>{{ samplePublic }}</strong> TTC public sera à
+              Un article à <strong>{{ samplePublic() }}</strong> TTC public sera à
               <strong>{{ pro }}</strong> TTC pour un professionnel.
+            } @else if (samplePublicCents() === null) {
+              Un prix d'article se saisit au-dessus de zéro.
             } @else {
               Une remise se saisit entre 0 et 99,99&nbsp;%.
             }
           </p>
+
+          <!-- Le simulateur, sous la phrase : elle donne les deux prix TTC, il
+               montre ce que chaque taux en déduit. Les colonnes TTC n'y sont
+               PAS répétées — elles ne bougent pas d'une ligne à l'autre, et les
+               afficher trois fois identiques ferait chercher une différence qui
+               n'existe pas. C'est justement ce que le tableau démontre. -->
+          @if (sampleRates(); as rates) {
+            <div class="sample">
+              <p class="sample-caption">
+                Le même article sous les trois taux&nbsp;: le prix d'étiquette ne bouge pas, sa part
+                hors taxe si.
+              </p>
+
+              <!-- Repli par DÉFAUT (`scroll`), et non `cards` comme le tableau des
+                   taux : une carte empile des paires libellé/valeur, ce qui
+                   détruit l'alignement en colonnes — or c'est cet alignement
+                   qui rend trois nombres comparables d'un coup d'œil. Une carte
+                   sert une ligne riche ; ici la ligne est trois montants. -->
+              <fold-data-table [columns]="sampleColumns" [rows]="rates" [rowKey]="rateKey">
+                <ng-template foldCell="rate" let-row>
+                  <strong>{{ row.label }}</strong>
+                </ng-template>
+                <ng-template foldCell="publicHt" let-row>{{ row.publicHt }}</ng-template>
+                <ng-template foldCell="proHt" let-row>{{ row.proHt }}</ng-template>
+              </fold-data-table>
+
+              <p class="sample-say">
+                La remise reste la même partout&nbsp;: elle porte sur le TTC, et la TVA est
+                proportionnelle. Le taux ne change donc pas ce que le professionnel gagne — il
+                change ce que la comptabilité inscrit.
+              </p>
+            </div>
+          }
 
           <button
             foldButton

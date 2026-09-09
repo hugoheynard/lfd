@@ -61,3 +61,37 @@ h2 {
   color: var(--fold-color-text);
   font-variant-numeric: tabular-nums;
 }
+
+/* Le simulateur. Le TABLEAU est `fold-data-table` — alignement, zébrure et
+   repli en cartes viennent de lui. Ne restent ici que les deux phrases qui
+   l'encadrent, que fold n'a pas à connaître. */
+.sample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  /* Borné, mais pas trop : `fold-data-table` prend toute sa place, et trois
+     colonnes de nombres écartées sur 46rem se comparent mal — l'œil perd la
+     ligne entre le taux et son montant.
+     ⚠️ 26rem le faisait basculer en CARTES (`narrowLayout="cards"`), ce qui
+     détruit précisément l'alignement en colonnes qui rend ce tableau lisible.
+     Une carte convient à une ligne riche, pas à une comparaison de trois
+     nombres. Mesuré dans le navigateur le 2026-09-09. */
+  max-width: 36rem;
+}
+
+.sample-caption,
+.sample-say {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* Les deux saisies côte à côte : la remise qu'on RÈGLE, et le prix qu'on
+   INTERROGE. Elles s'enroulent plutôt que de se serrer — un champ étroit sur un
+   montant se lit mal. */
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: flex-end;
+}
