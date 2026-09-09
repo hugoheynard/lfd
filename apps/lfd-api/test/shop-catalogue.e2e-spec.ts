@@ -6,12 +6,12 @@
  * mégarde serait public le jour du déploiement — d'où un test qui énumère les
  * clés au lieu de vérifier celles qu'il attend.
  */
-import type { ShopCatalogueView } from "@lfd/contracts";
+import type { ShopCatalogueView, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
-import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
 
@@ -199,5 +199,110 @@ describe("la vitrine publique", () => {
 
     expect(status).toBe(200);
     expect(await catalogue()).toEqual({ shelves: [], items: [] });
+  });
+});
+
+/**
+ * **La vitrine tarife** — le rayon annonce ce que la caisse facturera.
+ *
+ * Elle a servi le prix **canonique** jusqu'au 2026-09-09 : une promotion
+ * publique était invisible au rayon et n'apparaissait qu'au panier. L'écart
+ * était dans le sens agréable — 2,00 € affiché, 1,80 € facturé — donc personne
+ * ne réclamait ; mais **une promotion qu'on ne voit pas ne fait pas vendre**.
+ * C'est un trou commercial, pas une divergence d'écran (R22).
+ */
+describe("la vitrine publique sert le prix RÉSOLU", () => {
+  /**
+   * Une règle posée en direct.
+   *
+   * `ctx.reset()` vide le cache des matériaux (`e2e-harness.ts`), donc un semis
+   * direct est vu par la lecture suivante — sans quoi ces cas passeraient au
+   * vert sur les matériaux du test d'avant.
+   */
+  function seedRule(over: {
+    id: string;
+    direction: "increase" | "decrease";
+    bp: number;
+  }): Promise<unknown> {
+    return ctx.prisma.priceRule.create({
+      data: {
+        id: over.id,
+        stage: "promotion",
+        nature: "alter",
+        scopeType: "global",
+        scopeId: null,
+        // 🔴 `all` : c'est TOUT le sujet. Une promotion publique ne demande
+        // aucun client, et `matchesAudience` la rend applicable à un visiteur.
+        audienceType: "all",
+        audienceId: null,
+        minQuantity: null,
+        direction: over.direction,
+        mode: "percent",
+        value: over.bp,
+        validFrom: new Date("2020-01-01T00:00:00.000Z"),
+        validTo: null,
+        label: over.id,
+        stacksOverMercuriale: false,
+        createdBy: "e2e",
+      },
+    });
+  }
+
+  /**
+   * Régression R22 : la promotion publique n'apparaissait qu'au panier.
+   *
+   * Le rayon servait `unitPriceMillicents` du miroir — le canonique, jamais
+   * résolu — parce qu'une justification du contrat affirmait « elle est
+   * publique, donc sans client ». Un prix NÉGOCIÉ exige un client ; une
+   * promotion publique, non (fix 2026-09-09).
+   */
+  it("🔴 montre la promotion au rayon, et barre le tarif", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 200_000 }]);
+    await seedRule({ id: "promo_publique", direction: "decrease", bp: 1_000 });
+
+    const body = await catalogue();
+
+    expect(body.items[0]?.unitPriceMillicents).toBe(180_000);
+    expect(body.items[0]?.catalogPriceMillicents).toBe(200_000);
+  });
+
+  /**
+   * 🔴 **Barré seulement vers le BAS.**
+   *
+   * Un prix résolu peut monter au-dessus du tarif — une altération `increase`,
+   * une règle `replace` posée plus haut, ou un plancher qui relève. Sur le
+   * prédicat « les deux diffèrent », la vitrine aurait barré le prix le plus
+   * BAS et affiché une référence mensongère sur une page publique. Le prix servi
+   * suit dans les deux sens ; la rature, elle, exige une baisse.
+   */
+  it("🔴 ne barre RIEN quand le prix résolu monte", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 200_000 }]);
+    await seedRule({ id: "supplement", direction: "increase", bp: 1_000 });
+
+    const body = await catalogue();
+
+    expect(body.items[0]?.unitPriceMillicents).toBe(220_000);
+    expect(body.items[0]?.catalogPriceMillicents).toBeUndefined();
+  });
+
+  /**
+   * **La parité, et c'est elle qui vaut le lot.** Ce que le rayon annonce est ce
+   * que le devis chiffre — deux routes, un seul fabricant de prix. Tant qu'elles
+   * en avaient deux, l'une a oublié ce que l'autre faisait.
+   */
+  it("annonce au rayon le prix que le devis chiffre", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 200_000 }]);
+    await seedRule({ id: "promo_parite", direction: "decrease", bp: 1_000 });
+
+    const rayon = (await catalogue()).items[0]?.unitPriceMillicents;
+    const devis = jsonBody<ShopQuoteView>(
+      await request(ctx.app.getHttpServer())
+        .post("/shop/quote")
+        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .expect(200),
+    );
+
+    expect(rayon).toBe(180_000);
+    expect(devis.lines[0]?.unitPriceMillicents).toBe(rayon);
   });
 });

@@ -368,13 +368,18 @@ sémantique d'archivage de B.3. Et une **query d'application injecte
 
 ## B.8 🟠 La vitrine publique ne passe pas par le fabricant — R22
 
-**Le fait.** `apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts:62`
+> ✅ **Corrigé le 2026-09-09.** Les deux vitrines partagent une seule logique de
+> prix. Ce constat visait juste ; ce qu'il ne disait pas, c'est que la route
+> RECONNUE ratait la même promotion, par le même raisonnement. Détail :
+> [journal de remédiation](journal-de-remediation.md) §R22.
+
+**Le fait.** `apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts`
 sert `item.unitPriceMillicents` du miroir — le **canonique**, jamais résolu. Une
 promotion publique (`audience: all`, −10 % sur les viennoiseries) est donc
 **invisible au rayon** et n'apparaît qu'au panier, où `/shop/quote` la résout.
 
 Seule la route reconnue résout
-(`apps/lfd-api/src/b2b/orders/application/queries/read-my-shop-catalogue.ts:82`),
+(`apps/lfd-api/src/b2b/orders/application/queries/read-my-shop-catalogue.ts:73`),
 et seulement si `companyId !== null` : le visiteur reçoit le canonique.
 
 **Ce que ça contredit.** La règle n° 1 du [`README.md`](README.md) — « il n'y a

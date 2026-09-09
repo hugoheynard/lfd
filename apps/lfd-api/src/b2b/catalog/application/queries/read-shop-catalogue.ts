@@ -1,7 +1,7 @@
-import type { ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
+import type { ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
+import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
 
 /**
  * **Ce qui est en vente**, pour une vitrine publique.
@@ -14,83 +14,23 @@ export class ReadShopCatalogueQuery {}
 
 @QueryHandler(ReadShopCatalogueQuery)
 export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogueQuery> {
-  constructor(private readonly catalog: CatalogReader) {}
+  constructor(private readonly pricing: ShopCataloguePricing) {}
 
   /**
-   * Le catalogue vendable, réduit à ce qu'une vitrine montre.
+   * Le catalogue vendable, **au prix qu'un visiteur paiera**.
    *
-   * 🔴 **`listSellable` et rien d'autre.** Elle porte déjà la définition de « ce
-   * qui se vend » — pas retiré, pas masqué, un taux de TVA connu — et la
-   * réécrire ici en donnerait une seconde, qui dériverait le jour où l'une des
-   * trois conditions bouge. Un article vendu par la vitrine que la caisse
-   * refuse est le pire des deux mondes.
+   * 🔴 **`companyId: null`, et c'est la seule différence avec la route
+   * reconnue.** Un visiteur n'a rien négocié, donc aucune mercuriale n'est lue —
+   * mais une promotion publique, elle, ne demande aucun client. Cette route a
+   * servi le prix **canonique** jusqu'au 2026-09-09 : une promotion `audience:
+   * all` était invisible au rayon et n'apparaissait qu'au panier (R22).
    *
-   * Seules les déclinaisons **par défaut** sortent, sous le SKU de leur produit.
-   * C'est ce que la boutique vend depuis l'ouverture commerciale et ce
-   * qu'acceptent `POST /orders` et le devis : exposer les SKU du référentiel
-   * rendrait un panier que la caisse ne sait pas lire.
+   * Ce qui est vendable et son rangement viennent de `shopCatalogueOf` ; le prix
+   * vient de `ShopCataloguePricing`, que la route reconnue appelle à
+   * l'identique. Deux implémentations auraient divergé — c'est exactement
+   * comment ce trou s'est ouvert.
    */
   async execute(): Promise<ShopCatalogueView> {
-    return shopCatalogueOf(await this.catalog.listSellable());
+    return this.pricing.priced(null);
   }
-}
-
-/**
- * **Ce qui est vendable, et comment ça se range** — écrit une fois.
- *
- * Exporté parce que la route RECONNUE en a besoin à l'identique : mêmes
- * articles, mêmes rayons, seul le prix change. La dupliquer aurait donné deux
- * définitions de « ce que la vitrine montre », qui auraient divergé au premier
- * article retiré — et une boutique qui montre à un client un article que
- * l'autre ne voit pas est le genre d'écart qu'on ne découvre qu'au téléphone.
- */
-export function shopCatalogueOf(sellable: readonly ResolvedCatalogItem[]): ShopCatalogueView {
-  const items = sellable.filter((item) => item.isDefault).map(toItem);
-  return { shelves: shelvesOf(sellable, items), items };
-}
-
-function toItem(item: ResolvedCatalogItem): ShopItemView {
-  return {
-    sku: item.productSku,
-    name: item.name,
-    note: item.note,
-    image: item.image,
-    // Le prix EFFECTIF — celui du B2B s'il a été décidé, celui du référentiel
-    // sinon. C'est ce qu'un visiteur paiera, et c'est ce que la caisse
-    // appliquera : les deux viennent de la même composition, faite une fois
-    // dans le lecteur.
-    unitPriceMillicents: item.unitPriceMillicents,
-    vatRatePercent: item.vatRate,
-    shelfId: item.categoryId,
-    isFeatured: item.isFeatured,
-  };
-}
-
-/**
- * Les rayons **réellement peuplés**, dans l'ordre du référentiel.
- *
- * Un rayon vide n'est pas une famille de moins au catalogue : c'est une
- * pastille sur laquelle un client clique pour ne rien voir. La vitrine ne
- * range que ce qu'elle montre.
- *
- * La position vient de la première occurrence : `listSellable` rend déjà les
- * articles dans l'ordre d'affichage, rayon par rayon.
- */
-function shelvesOf(
-  sellable: readonly ResolvedCatalogItem[],
-  shown: readonly ShopItemView[],
-): readonly ShopShelfView[] {
-  const peopled = new Set(shown.map((item) => item.shelfId));
-  const shelves = new Map<string, ShopShelfView>();
-  for (const item of sellable) {
-    if (!peopled.has(item.categoryId) || shelves.has(item.categoryId)) {
-      continue;
-    }
-    shelves.set(item.categoryId, {
-      id: item.categoryId,
-      name: item.categoryName,
-      position: shelves.size,
-    });
-  }
-  return [...shelves.values()];
 }

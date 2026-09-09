@@ -14,11 +14,16 @@ import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalog
  * on s'identifie pour régler. Une route murée aurait rendu la vitrine
  * inaccessible à qui n'a pas encore de compte — c'est-à-dire à tout prospect.
  *
- * Ce qu'elle sert est donc le prix CANONIQUE, qui pour un visiteur EST le prix.
- * Un client sous mercuriale paiera moins, et cette route ne peut pas le savoir :
- * elle n'a pas de client. Le jour où la boutique s'authentifie, elle devra
- * servir SON prix, et ce sera un second chemin — pas une modification de
- * celui-ci.
+ * ⚠️ **Elle servait le prix CANONIQUE jusqu'au 2026-09-09**, et la raison écrite
+ * ici était fausse à moitié : « elle n'a pas de client ». Un prix **négocié**
+ * exige effectivement un client, et cette route ne le sert pas. Une **promotion
+ * publique** n'en exige aucun — elle était donc invisible au rayon et
+ * n'apparaissait qu'au panier (R22).
+ *
+ * Elle sert désormais le prix **résolu à `companyId: null`** : promotions
+ * comprises, mercuriale exclue, tarif barré quand le prix servi est plus bas.
+ * Le second chemin annoncé ici existe (`/shop/catalogue/mine`) et appelle **la
+ * même** logique avec un client.
  *
  * Surface anonyme ⇒ throttle resserré (60/min/IP) sous le défaut global, comme
  * `pickup-addresses` : c'est la partie la plus exposée de l'API, aucune auth ne

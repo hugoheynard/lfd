@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
+import { PricingModule } from "../pricing/pricing.module.js";
 
 import {
   AlignOnPimPriceHandler,
@@ -35,6 +36,7 @@ import { AdminCatalogParityController } from "./http/admin-catalog-parity.contro
 import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
+import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
 import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
@@ -72,7 +74,10 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
   // parité a besoin de savoir ce que le référentiel publierait. C'est le
   // franchissement `b2b → pim` que la matrice autorise — un port, jamais une
   // table.
-  imports: [B2bPlatformModule],
+  // `PricingModule` parce que la vitrine TARIFE depuis le 2026-09-09 : elle
+  // servait le canonique, donc une promotion publique n'apparaissait qu'au
+  // panier (R22). Aucun cycle — `PricingModule` n'importe rien.
+  imports: [B2bPlatformModule, PricingModule],
   controllers: [
     AdminCatalogController,
     AdminCatalogParityController,
@@ -93,6 +98,10 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     PreviewCatalogPushHandler,
     CheckCatalogHealthHandler,
     ReadShopCatalogueHandler,
+    // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
+    // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
+    // `null`, et c'est la seule différence entre elles.
+    ShopCataloguePricing,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,
     SetCatalogVisibilityHandler,
@@ -123,6 +132,11 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
   // c'est le geste explicite qui remplace le `@Public()` d'un contrôleur.
   exports: [
     CatalogReader,
+    // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
+    // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
+    // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est
+    // descendue ici.
+    ShopCataloguePricing,
     CatalogItemRepository,
     CanonicalPriceHistoryReader,
     IngestCatalogService,

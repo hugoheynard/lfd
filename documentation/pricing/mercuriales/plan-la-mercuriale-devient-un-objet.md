@@ -131,7 +131,7 @@ dit rien, tout étant supérieur ou égal à 0. Le contrat l'interdit d'ailleurs
 affichent un prix résolvent à la quantité **1** — le tableau général
 (`board-category.ts:77`), la projection, l'onglet Tarifs
 (`company-pricing.query.ts:120`) et la vitrine au prix du client
-(`read-my-shop-catalogue.ts:83`). `applies` teste `measured >= minQuantity`, donc
+(`read-my-shop-catalogue.ts:73`). `applies` teste `measured >= minQuantity`, donc
 `1 >= 1` passe.
 
 **En dynamique, la même construction se retourne.** Si la mesure devient le

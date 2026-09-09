@@ -20,6 +20,7 @@
 | [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09)         |
 | [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                 | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
 | [R20](#r20--2026-09-09) | la documentation de référence contredit le code                    | ✅ **close** — 2026-09-09                                                                |
+| [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix          | ✅ **close** — 2026-09-09                                                                |
 
 ---
 
@@ -575,3 +576,203 @@ cet ordre :
    marquée en tête (`optimisation-resolution-de-prix.md`, « Où le calcul vit »).
    La supprimer perdrait le POURQUOI, la seule chose qu'un document sache garder
    mieux que le code.
+
+---
+
+## R22 · 2026-09-09
+
+**Constat** : [B.8](audit-du-moteur-a-la-facade.md) · **Registre** :
+[R22](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 un trou **commercial** — une
+promotion que personne ne voit ne fait pas vendre.
+
+### 1. Le constat, et ce qui l'a caché
+
+`ReadShopCatalogueHandler`
+(`apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts`) sert
+`item.unitPriceMillicents` du miroir — le **canonique**, jamais résolu. Une
+promotion publique (`audience: all`, −10 % sur les viennoiseries) est donc
+invisible au rayon et n'apparaît qu'au panier, où `/shop/quote` la résout.
+
+**Ce qui l'a caché est une justification fausse**, et elle est dans le contrat :
+
+> ⚠️ **C'est le prix CANONIQUE.** Un client connecté à qui l'on a consenti une
+> mercuriale paiera moins, et cette route ne le sait pas — **elle est publique,
+> donc sans client.**
+
+Elle confond deux choses. Un prix **négocié** exige un client : vrai, la route
+publique ne peut pas le servir. Une **promotion publique** n'en exige aucun —
+`matchesAudience` rend `true` sans rien regarder pour `audience: all`. « Publique
+donc canonique » est présenté comme une nécessité alors que seul « publique donc
+pas de prix négocié » l'est.
+
+**Et le raisonnement a contaminé la route reconnue** :
+
+```ts
+// read-my-shop-catalogue.ts
+// Résoudre à `companyId: null` rendrait la même chose en payant quatre requêtes pour rien.
+if (query.companyId === null || catalogue.items.length === 0) return catalogue;
+```
+
+Non : ça rendrait la promotion. **Deux** routes ratent donc le même prix, dont
+une qui croit avoir mesuré que c'était inutile.
+
+### 2. Le piège qu'une implémentation naïve aurait posé
+
+`PricedItem.category` n'est **pas** le `shelfId` de la vitrine. La vitrine
+expose `shelfId = categoryId` (la famille du PIM, `cat_vien`), tandis que le
+tarificateur attend le **rayon** (`viennoiserie`), dérivé par
+`SHELF_BY_PIM_CATEGORY` dans `orders/infrastructure/catalog-backed-product-catalog.ts`
+— dont le commentaire prévient : « un rayon faux ferait appliquer les règles de
+prix d'une AUTRE famille ».
+
+Construire un `PricedItem` depuis la vue aurait donc silencieusement fait rater
+toutes les règles de portée `category` sur la boutique. C'est le même genre de
+divergence que celle qu'on répare.
+
+### 3. Ce qui est décidé, et par qui
+
+**Hugo, le 2026-09-09** : la baisse des prix publics **est le but** ; on veut le
+prix promo **et** le tarif pro barré ; la logique doit être **uniforme** entre
+les deux routes ; **pas de barré quand il n'y a pas d'écart**.
+
+### 4. La conception
+
+**Une seule logique, deux appelants qui ne diffèrent que par `companyId`.**
+
+Un service `ShopCataloguePricing` dans `b2b/catalog/application/` :
+
+```
+listSellable → shopCatalogueOf → PricingMaterialsLoader.pricerFor(items, {companyId}, at)
+             → LoadedPricer.priceAll(items, quantité 1)
+             → prix résolu ; canonique barré SI et SEULEMENT SI les deux diffèrent
+```
+
+- `ReadShopCatalogueHandler` appelle `priced(null)` ;
+- `ReadMyShopCatalogueHandler` appelle `priced(companyId)` et **perd son
+  court-circuit** ainsi que sa dépendance à `OrderLinePricing` — composer un
+  panier pour obtenir des prix unitaires était déjà de trop, un catalogue n'est
+  pas un panier.
+
+**Pourquoi `PricingMaterialsLoader` et non `Pricer`.** La façade relit le
+catalogue (`resolveMany`) alors qu'on l'a déjà en main : ce serait une lecture de
+plus sur la seule route anonyme du dépôt. Le JSDoc de `Pricer` le dit lui-même —
+« un appelant qui charge déjà en lot s'adresse au `LoadedPricer` directement ».
+
+**Où vit la table des rayons.** `SHELF_BY_PIM_CATEGORY` descend dans `catalog/`,
+d'où vient son entrée (`CatalogCategoryProjection` y tient déjà le miroir des
+familles), et `orders/` l'importe — le sens autorisé, `OrdersModule` important
+déjà `CatalogModule`. Sans ce déplacement, la logique partagée devrait vivre
+dans `orders/`, et la route publique ne pourrait pas l'atteindre sans cycle.
+
+**Le cycle est vérifié** : `PricingModule` n'a **aucun** `imports:`.
+`CatalogModule → PricingModule` n'en crée donc pas.
+
+### 5. Le coût, et ce qu'on ne fait pas
+
+**Quatre lectures de plus sur la seule route anonyme** (60/min/IP, aucun cache
+dans `b2b/catalog` aujourd'hui). À `companyId: null` la réponse est **identique
+pour tous les visiteurs** — un cache d'une entrée suffirait. **On ne le pose
+pas** : il amènerait l'invalidation, et une promotion posée doit apparaître au
+rayon immédiatement, ce que `price-rules.e2e-spec.ts` exige déjà pour les
+règles. Le coût est **épinglé par un test** plutôt que supposé —
+`pricing-budget.e2e-spec.ts` compte les opérations ORM.
+
+**On ne touche pas à la quantité.** La vitrine résout à **1**, comme
+aujourd'hui : un palier « à partir de 50 » ne se voit pas au rayon, et c'est la
+limite assumée du §3 d'`architecture-prix-boutique.md`.
+
+### 6. Ce qui le prouvera
+
+- un e2e : une promotion `audience: all` posée **se voit au rayon**, canonique
+  barré — rouge avant ;
+- un e2e : **sans** promotion, aucun champ barré, et la surface publique reste
+  étroite (`shop-catalogue.e2e-spec.ts:117` énumère les clés et devra changer,
+  ce qui est le point) ;
+- la parité rayon ↔ devis sur le même article ;
+- le budget d'opérations ORM de la route publique.
+
+### 7. Ce que la contradiction a renversé — 2026-09-09
+
+`vitruve` rend **trois BLOQUANT**, et **deux étaient déjà dans le code écrit**.
+Les deux ont été corrigés avant le premier test vert ; le troisième est une
+conséquence à assumer, pas un défaut.
+
+#### 7.1 🔴 La vitrine anonyme serait tombée en 500 sur une famille inédite
+
+`shelfOfCategory` **lève** sur une famille sans rayon — la bonne réponse au
+checkout : mieux vaut ne pas vendre que facturer au hasard. Appliquée telle
+quelle à la vitrine, une seule famille que le PIM vient d'inventer aurait fait
+tomber **toute la page**, en 500, pour tous les visiteurs — alors qu'avant R22
+cette route survivait, ne traversant pas la table.
+
+Corrigé : l'article sans rayon sort **à son tarif**, non tarifé, et la page
+tient. Ce n'est pas un prix inventé — c'est le canonique, exactement ce que la
+route servait la veille —, et la famille inconnue reste refusée là où elle
+compte : au moment de commander.
+
+#### 7.2 🔴 Le prédicat de rature était faux dans un sens
+
+Le plan écrivait « barré si et seulement si les deux **diffèrent** ». Or un prix
+résolu peut **monter** au-dessus du tarif — une altération `increase`, une règle
+`replace` posée plus haut, un plancher qui relève (`resolve-price.ts:121`). La
+vitrine aurait alors barré le prix le plus **BAS** et affiché une référence
+mensongère sur une page publique.
+
+Corrigé : la rature exige une **baisse**. Le prix servi, lui, suit dans les deux
+sens — c'est celui qui sera facturé.
+
+> ⚠️ **Le défaut existait déjà**, dans le `priced()` de la route reconnue, avec
+> le même `!==`. Il est parti avec elle : les deux routes partagent désormais la
+> fonction corrigée.
+
+#### 7.3 🟠 Se connecter peut faire MONTER les prix affichés
+
+Une mercuriale **scelle** : un client qui en a une n'obtient pas la promotion du
+moment. Avant R22 les deux routes servaient le canonique, donc l'écart était
+invisible. Désormais un visiteur voit la promotion, et ce client-là voit sa
+mercuriale — qui peut être **moins avantageuse** que la promo du jour.
+
+**Ce n'est pas un défaut introduit, c'est un fait révélé** : c'est déjà le prix
+que la caisse lui applique. Le masquer était l'ancien bug — un écran qui annonce
+autre chose que la facture. Ce que ça ouvre est une question commerciale que le
+moteur ne peut pas trancher : **une mercuriale doit-elle perdre contre une
+promotion publique plus généreuse ?** Aujourd'hui elle gagne, par scellement.
+Signalé à Hugo, non tranché ici.
+
+#### 7.4 Ce que le §5 chiffrait mal
+
+« Quatre lectures de plus » était faux dans les deux sens. À `companyId: null`,
+**deux lecteurs répondent sans requête** — un visiteur n'a ni engagement ni
+mercuriale —, et les trois autres passent par `PricingMaterialsCache`, qui porte
+déjà son invalidation et son estampille : une rafale de visiteurs coûte une
+lecture d'estampille.
+
+Ce qui n'est pas caché, et que le plan avait raté : si un plancher visant ces
+articles porte une **porte de volume**, le chargeur ajoute deux agrégats
+d'historique par appel, sur la route anonyme. Aucun plancher public n'en porte
+aujourd'hui ; le jour où l'un en portera, c'est là que le cache de réponse se
+posera. Écrit dans le service plutôt que dans un registre.
+
+Le refus du cache est donc reformulé : ce n'est pas « l'invalidation coûterait
+trop cher » — `PricingMaterialsCache` la porte déjà — mais « un second cache
+demanderait une seconde invalidation à tenir d'accord avec la première », pour
+un gain nul tant que la porte de volume est absente.
+
+#### 7.5 Ce qui a été corrigé en plus, parce que ce lot les rend fausses
+
+Trois justifications, pas une : le JSDoc de `unitPriceMillicents` (« c'est le
+prix CANONIQUE »), celui de `catalogPriceMillicents` (« la route publique n'a pas
+de client, donc aucun écart à montrer ») et celui de `ShopCatalogueController`.
+Toutes datées.
+
+### 8. Ce qui le prouve
+
+- `shop-catalogue.e2e-spec.ts` — trois cas, **rouges avant le correctif**
+  (200 000 servi au lieu de 180 000) : la promotion se voit au rayon avec le
+  tarif barré ; **rien n'est barré** quand le prix résolu monte ; et le rayon
+  annonce **le prix que le devis chiffre**.
+- Les treize cas de `my-shop-catalogue.e2e-spec.ts` passent inchangés — dont
+  celui d'un demandeur sans société, qui prend le chemin `companyId: null`.
+- Les deux cas qui énumèrent les clés de la vue publique passent **sans
+  modification** : sans promotion, aucun champ barré n'apparaît. C'est la règle
+  « pas de promo, pas de barré » vérifiée par un test qui ne la vise même pas.

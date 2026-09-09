@@ -11,6 +11,11 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
  * Lever plutôt que ranger par défaut : un rayon faux ferait appliquer à
  * l'article les règles de prix d'une AUTRE famille, et rien ne le signalerait
  * avant la facture.
+ *
+ * Elle vit dans `catalog/` depuis le 2026-09-09, avec la table qui la lève :
+ * deux contextes en ont besoin — la caisse pour tarifer une commande, la
+ * vitrine pour tarifer un rayon — et `orders` peut importer `catalog`, jamais
+ * l'inverse.
  */
 export class UnknownCatalogShelfError extends TechnicalError {
   constructor(

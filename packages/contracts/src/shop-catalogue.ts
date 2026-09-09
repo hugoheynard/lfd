@@ -59,31 +59,43 @@ export interface ShopItemView {
    * et que le front n'a plus à convertir : un flottant en euros est exactement
    * ce que ce chantier retire.
    *
-   * ⚠️ **C'est le prix CANONIQUE.** Un client connecté à qui l'on a consenti
-   * une mercuriale paiera moins, et cette route ne le sait pas — elle est
-   * publique, donc sans client. Le jour où la boutique s'authentifie, elle doit
-   * servir SON prix, et ce sera un second chemin.
+   * 🔴 **C'est le prix RÉSOLU**, depuis le 2026-09-09 — celui que la caisse
+   * appliquera à qui regarde : promotions publiques comprises sur la route
+   * anonyme, mercuriale comprise sur la route reconnue.
+   *
+   * ⚠️ Ce champ a porté le prix **canonique** jusque-là, et la raison écrite ici
+   * — « elle est publique, donc sans client » — confondait deux choses. Un prix
+   * NÉGOCIÉ exige un client ; une promotion publique, non. Une promotion
+   * `audience: all` était donc invisible au rayon et n'apparaissait qu'au
+   * panier : l'écart était dans le sens agréable, mais une promotion qu'on ne
+   * voit pas ne fait pas vendre (R22).
    */
   readonly unitPriceMillicents: number;
   /**
    * **Le tarif catalogue pro, à barrer** — **absent** quand il n'y a rien à
    * barrer.
    *
-   * Optionnel, donc absent DU FIL sur la vitrine publique plutôt que présent à
-   * `null`. Ce n'est pas une coquetterie : un e2e énumère les clés de cette vue
-   * pour que la surface publique reste étroite, et une clé qui y vaudrait
-   * toujours `null` l'élargirait sans rien apprendre à personne. La route
-   * publique n'a pas de client, donc aucun écart à montrer — le champ n'a rien
-   * à y faire.
+   * Optionnel, donc **absent DU FIL** quand il n'y a rien à barrer, plutôt que
+   * présent à `null`. Ce n'est pas une coquetterie : un e2e énumère les clés de
+   * cette vue pour que la surface publique reste étroite, et une clé qui y
+   * vaudrait toujours `null` l'élargirait sans rien apprendre à personne.
    *
-   * Rempli par la route reconnue, et seulement sur les articles où le prix servi
-   * diffère du tarif : c'est l'écart que le client a négocié.
+   * Rempli sur les **deux** routes depuis le 2026-09-09, et seulement quand le
+   * prix servi est **plus bas** que le tarif : la remise qu'une promotion
+   * publique accorde à un visiteur, l'écart qu'un client a négocié. ⚠️ Ce
+   * paragraphe disait « la route publique n'a pas de client, donc aucun écart à
+   * montrer » — elle en a un dès qu'une promotion court (R22).
    *
-   * 🔴 **Le tarif catalogue, jamais le prix public promotionnel.** Une
-   * mercuriale SCELLE la chaîne : un client qui en a une n'aurait de toute façon
-   * pas eu la promotion du moment. Barrer un prix promo lui montrerait une
-   * remise qu'il n'a pas perdue, et gonflerait l'écart affiché d'une réduction
-   * à laquelle il n'avait pas droit.
+   * 🔴 **Toujours le tarif, jamais l'autre prix servi.** Barré vers le bas
+   * uniquement : un prix résolu peut MONTER (altération `increase`, règle
+   * `replace` posée plus haut, plancher qui relève), et barrer alors le tarif
+   * afficherait une référence **inférieure** au prix demandé — un prix de
+   * référence mensonger sur une page publique.
+   *
+   * 🔴 **Jamais le prix promotionnel comme référence pour un client sous
+   * mercuriale.** Une mercuriale SCELLE la chaîne : ce client n'aurait de toute
+   * façon pas eu la promotion du moment. Lui barrer un prix promo lui montrerait
+   * une remise qu'il n'a pas perdue.
    */
   readonly catalogPriceMillicents?: number;
   /** Le taux applicable, en pourcentage (5.5, 10). Un article sans taux ne sort pas d'ici. */
