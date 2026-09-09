@@ -76,6 +76,29 @@ export class StaffUserPanel {
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvel utilisateur staff' : "Modifier l'utilisateur staff",
   );
+  /**
+   * **Ce que changer l'adresse fait vraiment**, et ça dépend d'une seule chose :
+   * cette personne a-t-elle déjà une identité chez le fournisseur ?
+   *
+   * Sur une fiche liée, l'adresse n'est pas un champ de contact — c'est son
+   * **identifiant de connexion**. L'enregistrer la propage chez Auth0, qui la
+   * repasse non vérifiée et lui envoie son mail de vérification. Le libellé ne
+   * disait que « c'est à cette adresse que part l'invitation » : vrai à la
+   * création, muet là où l'effet compte, et la personne prenait ce mail
+   * inattendu pour du hameçonnage.
+   *
+   * `pending` est exactement « aucune identité » : `auth0Id` et un statut autre
+   * que `pending` s'écrivent ensemble, à l'invitation comme au rapprochement de
+   * première connexion (vérifié le 2026-09-09 — `markInvited` et
+   * `PrismaStaffAccessResolver`, les deux seuls écrivains du champ).
+   */
+  protected readonly emailHint = computed(() =>
+    this.isCreate() || (this.data()?.user?.status ?? 'pending') === 'pending'
+      ? "C'est à cette adresse que part l'invitation."
+      : "C'est son identifiant de connexion : la changer la met à jour chez le fournisseur d'identité, " +
+        'qui lui enverra un mail de vérification à confirmer.',
+  );
+
   protected readonly canSubmit = computed(
     () =>
       this.firstName().trim() !== '' &&

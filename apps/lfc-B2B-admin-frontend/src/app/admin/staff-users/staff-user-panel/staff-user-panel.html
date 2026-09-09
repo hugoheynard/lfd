@@ -13,13 +13,7 @@
       <fold-input label="Prénom" [(value)]="firstName" required />
       <fold-input label="Nom" [(value)]="lastName" required />
     </div>
-    <fold-input
-      label="E-mail"
-      type="email"
-      hint="C'est à cette adresse que part l'invitation."
-      [(value)]="email"
-      required
-    />
+    <fold-input label="E-mail" type="email" [hint]="emailHint()" [(value)]="email" required />
     <div class="pair">
       <fold-input label="Téléphone" type="tel" [(value)]="phone" />
       <fold-input label="Fonction" placeholder="Responsable grands comptes" [(value)]="jobTitle" />
