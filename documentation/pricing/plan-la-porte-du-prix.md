@@ -180,7 +180,7 @@ copies disparaissent sans qu'on ait à leur trouver une signature commune — ce
 qu'elles n'ont pas : trois partent de `CatalogItem`, une d'un item de vue
 vitrine plus une résolution de rayon, une d'un mapping en deux temps.
 
-### 4.4 La lentille — quatre configurations, pas trois
+### 4.4 La lentille — trois valeurs, nommées par ce qu'elles ADMETTENT
 
 Les décisions réellement prises aujourd'hui, relevées appelant par appelant :
 
@@ -191,14 +191,51 @@ Les décisions réellement prises aujourd'hui, relevées appelant par appelant :
 | le tableau    | `NO_EVIDENCE`        | **aucun**   | celle demandée                  |
 | la projection | aucune               | aucun       | le niveau projeté               |
 
-**Trois valeurs ne suffisent pas.** La vitrine n'a de place ni en `checkout`
-(elle ne facture pas) ni en `screen` — qui refuserait l'historique, donc
-changerait le prix servi sur la seule route anonyme du dépôt. Et le tableau
-exclut les engagements, ce qu'aucune des trois lentilles ne dit.
+#### Ce que la lentille ne doit PAS porter
 
-La lentille est donc **à concevoir sur quatre axes** (historique, engagements,
-quantité, instant), et non sur un nom de scène. C'est un lot à part entière, pas
-un paramètre — et il choisit, par appelant, quelles preuves ouvrent un plancher.
+**Ni la quantité, ni le client.** La vitrine ne diffère de la caisse que par
+deux choses, et aucune n'est une preuve : elle résout à **1**, et elle sert
+parfois un visiteur. La première est un **argument de `price()`** ; la seconde
+est `companyId` — et `companyId: null` **court-circuite déjà** les deux lecteurs
+concernés, sans requête (vérifié le 2026-09-09 : « un visiteur sans société n'a
+pas de tarif négocié : pas de requête »).
+
+> 🔴 **Une lentille `public` dirait donc une seconde fois ce que `companyId` dit
+> déjà.** Et deux façons de dire la même chose finissent par ne plus dire la même
+> chose : c'est la maladie de tout ce contexte — trois encodages de « ce qu'on
+> écarte », six copies d'une formule d'écart, deux ports catalogue empilés. La
+> vitrine n'a pas de lentille à elle : elle est la caisse, à quantité 1.
+
+#### Les trois valeurs
+
+| Lentille   | Ce qu'elle admet                                          | Qui                              |
+| ---------- | --------------------------------------------------------- | -------------------------------- |
+| `measured` | tout ce que le client a — historique, engagements         | la caisse, les **deux** vitrines |
+| `vitrine`  | son tarif négocié, **ni engagement ni historique**        | le tableau de tarification       |
+| `unproven` | rien : le nombre reçu est une hypothèse, pas une commande | la projection                    |
+
+**`vitrine` n'est pas un nom trouvé après coup** : c'est celui que le tableau se
+donne lui-même. `board-item.ts` écarte les engagements en écrivant « le tableau
+montre un **prix de vitrine**, et un engagement ouvrirait un palier que la
+vitrine ne promet pas ». La lentille nomme une décision déjà prise et déjà
+justifiée ; elle ne l'invente pas.
+
+#### Pourquoi ces noms-là
+
+`checkout` / `screen` / `projection` — les noms de C.4 — désignent des
+**scènes**. Le jour où un cinquième appelant arrive, on lui cherche une scène, et
+on en invente une de plus.
+
+`measured` / `vitrine` / `unproven` désignent des **preuves recevables**. Un
+nouvel appelant se range en répondant à une question qu'il peut trancher seul :
+_qu'est-ce que je suis en mesure de PROUVER ?_ C'est la même bascule que celle
+de R15 — l'ignorance devient dicible, donc le défaut prudent s'hérite au lieu de
+se redécider.
+
+⚠️ **La première version de ce plan concluait « trois valeurs ne suffisent pas »
+et partait sur quatre axes.** Elle comptait la quantité et le client comme des
+preuves. Ce sont des arguments, et les traiter en lentille aurait dupliqué
+`companyId` — la faute que ce paragraphe existe pour éviter.
 
 ### 4.5 `at` : ni retiré, ni ignoré
 
@@ -218,7 +255,7 @@ lire une date ? Ce plan ne le tranche pas, et ne retire rien.
 | 1   | **Le port descend dans `catalog/`** — `ProductCatalogReader` et son adaptateur, les neuf imports suivent | deux ports empilés, `pricing → orders`             | faible — un déplacement, aucune signature ne change |
 | 2   | **La marque** — le port rend des `CatalogArticle` ; les six mappings meurent dans l'adaptateur           | le prix fabriqué, les six copies                   | moyen                                               |
 | 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes                  | le contournement, la seconde séquence, le lot vide | moyen — appelant par appelant                       |
-| 4   | **La lentille sur quatre axes**                                                                          | les encodages épars de « ce qu'on écarte »         | **fort — il touche le prix servi**                  |
+| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                                       | les encodages épars de « ce qu'on écarte »         | **fort — il touche le prix servi**                  |
 
 ⚠️ **Le lot 1 n'est pas « à risque nul », et la version précédente le prétendait
 en le mélangeant au reste.** Il déplace un port dont neuf fichiers dépendent ;
