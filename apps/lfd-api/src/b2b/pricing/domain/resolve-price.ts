@@ -7,10 +7,16 @@ import {
   scaleByBasisPoints,
   type Exact,
 } from "@lfd/money";
-import { PRICE_STAGES, type PriceFloor, type PriceRule, type PriceStep } from "./price-rule.js";
+import {
+  PRICE_STAGES,
+  type PriceFloor,
+  type PriceRule,
+  type PriceStep,
+  type RejectedRule,
+} from "./price-rule.js";
 import type { PricingContext, ResolvedPrice } from "./price-rule.js";
 import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";
-import { applies, winnerOf } from "./specificity.js";
+import { applies, rejectionCauseOf, winnerOf } from "./specificity.js";
 import { ladderAsRule } from "./volume-ladder.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
@@ -61,7 +67,7 @@ export function resolvePrice(
   //
   // Dedans, l'oubli n'est plus exprimable : on ne peut pas ne pas passer ce
   // qu'on n'a pas le droit de ne pas passer.
-  const rules = assembled(inputs, context);
+  const { rules, dropped } = assembled(inputs, context);
   // Zéro est **accepté** : un article offert (échantillon, geste commercial
   // catalogué) est un cas réel, et le contrat de fil le permet déjà
   // (`nonnegative`). Seul le négatif est refusé — il n'a aucune lecture. La
@@ -72,7 +78,10 @@ export function resolvePrice(
   }
 
   const steps: PriceStep[] = [];
-  const sealedRuleIds: string[] = [];
+  // Les matériaux recalés AVANT l'assemblage y sont déjà : un barème ou une
+  // mercuriale dont aucun palier n'est atteint ne devient pas une règle, donc la
+  // boucle ci-dessous ne peut pas les voir.
+  const rejected: RejectedRule[] = [...dropped];
   let running = fromCents(canonicalMillicents);
   let sealedByRuleId: string | null = null;
 
@@ -88,14 +97,34 @@ export function resolvePrice(
     // reste que le gagnant, et dire quelle règle il a évincée demanderait de
     // refaire l'arbitrage ailleurs — ce que l'écran de tarification faisait, au
     // risque que les deux réponses divergent.
-    const applicable = rules.filter((rule) => rule.stage === stage && applies(rule, context));
+    const ofStage = rules.filter((rule) => rule.stage === stage);
+    const applicable = ofStage.filter((rule) => applies(rule, context));
+
+    // Ce qu'`applies` a refusé, avec la raison — rejouée prédicat par prédicat.
+    // Nommer « seuil » tout ce qu'il refuse ferait dire « palier non atteint »
+    // d'une promotion expirée, sur l'écran qu'on ouvre en litige.
+    for (const rule of ofStage) {
+      const cause = rejectionCauseOf(rule, context);
+      if (cause !== null) {
+        rejected.push(rejection(rule, cause));
+      }
+    }
+
     const winner = winnerOf(applicable, context);
     if (winner === null) {
       continue; // Étage transparent : il laisse passer le prix entrant.
     }
+    const losers = applicable.filter((rule) => rule.id !== winner.id);
     if (sealedByRuleId !== null && !winner.stacksOverMercuriale) {
       // Scellé : la règle est écartée, et le fait est CONSIGNÉ plutôt qu'avalé.
-      sealedRuleIds.push(winner.id);
+      //
+      // Les perdants de cet étage y passent aussi, et sous « évincée » : ils ont
+      // perdu leur étage AVANT que le scellement ne se pose. Il n'y a ici aucune
+      // barre de gagnant à décorer — c'est tout l'étage qui est transparent.
+      rejected.push(rejection(winner, "sealed"));
+      for (const loser of losers) {
+        rejected.push(rejection(loser, "superseded"));
+      }
       continue;
     }
     running = apply(running, winner);
@@ -108,10 +137,15 @@ export function resolvePrice(
       // la chaîne. Reprendre cette valeur arrondie serait l'arrondi par étage
       // qu'on cherche justement à éviter.
       resultMillicents: roundToCents(running),
-      supersedes: applicable
-        .filter((rule) => rule.id !== winner.id)
-        .map((rule) => ({ ruleId: rule.id, label: rule.label })),
+      // Même source que les entrées `superseded` ci-dessous : une seule liste de
+      // perdants, deux formes. `supersedes` s'affiche sur la barre du gagnant
+      // (c'est là qu'un duel se dessine) et ne se persiste PAS ; la trace figée,
+      // elle, garde ces mêmes règles dans `rejected`.
+      supersedes: losers.map((rule) => ({ ruleId: rule.id, label: rule.label })),
     });
+    for (const loser of losers) {
+      rejected.push(rejection(loser, "superseded"));
+    }
     if (stage === "mercuriale") {
       sealedByRuleId = winner.id;
     }
@@ -146,8 +180,25 @@ export function resolvePrice(
     floored,
     clampedToZero,
     sealedByRuleId,
-    sealedRuleIds,
+    // **Dérivé**, plus construit à part : deux listes tenues en parallèle
+    // finissent par diverger d'un cas. Les vues vivantes qui le servent déjà ne
+    // voient aucune différence.
+    sealedRuleIds: rejected
+      .filter((entry) => entry.cause === "sealed")
+      .map((entry) => entry.ruleId),
+    rejected,
     finalMillicents: clampedToZero ? 0 : rounded,
+  };
+}
+
+/** Une règle écartée, avec ce que la trace garde d'elle. */
+function rejection(rule: PriceRule, cause: RejectedRule["cause"]): RejectedRule {
+  return {
+    stage: rule.stage,
+    ruleId: rule.id,
+    label: rule.label,
+    scope: rule.scope,
+    cause,
   };
 }
 
@@ -186,14 +237,49 @@ export interface PriceInputs {
  * la résolution. Deux règles de même identifiant à un étage rendraient
  * l'arbitrage ambigu — c'était un 400 sur une commande de vingt.
  */
-function assembled(inputs: PriceInputs, context: PricingContext): readonly PriceRule[] {
-  const fromLadders = inputs.ladders
-    .map((ladder) => ladderAsRule(ladder, context))
-    .filter((rule): rule is PriceRule => rule !== null);
-  const fromMercuriale = inputs.mercuriale?.asRuleFor(context) ?? null;
-  return fromMercuriale === null
-    ? [...inputs.rules, ...fromLadders]
-    : [...inputs.rules, ...fromLadders, fromMercuriale];
+function assembled(
+  inputs: PriceInputs,
+  context: PricingContext,
+): { rules: readonly PriceRule[]; dropped: readonly RejectedRule[] } {
+  const rules: PriceRule[] = [...inputs.rules];
+  const dropped: RejectedRule[] = [];
+
+  for (const ladder of inputs.ladders) {
+    const rule = ladderAsRule(ladder, context);
+    if (rule !== null) {
+      rules.push(rule);
+      continue;
+    }
+    // Un barème n'a qu'une raison de ne pas devenir une règle : la mesure
+    // n'atteint aucun palier. La portée et l'audience ont été jugées au
+    // chargement, et il ne porte rien d'autre.
+    dropped.push({
+      stage: "volume",
+      ruleId: ladder.id,
+      label: ladder.label,
+      scope: ladder.scope,
+      cause: "below_threshold",
+    });
+  }
+
+  const { mercuriale } = inputs;
+  const fromMercuriale = mercuriale?.asRuleFor(context) ?? null;
+  if (fromMercuriale !== null) {
+    rules.push(fromMercuriale);
+  } else if (mercuriale?.missesTierFor(context) === true) {
+    // 🔴 Et **seulement** dans ce cas. `asRuleFor` rend aussi `null` quand la
+    // grille ne porte pas l'article — la mercuriale n'avait alors rien à en
+    // dire, ce n'est pas une règle écartée.
+    dropped.push({
+      stage: "mercuriale",
+      ruleId: mercuriale.id,
+      label: mercuriale.label,
+      scope: { type: "product", id: context.productSku },
+      cause: "below_threshold",
+    });
+  }
+
+  return { rules, dropped };
 }
 
 /** `replace` pose un prix ; `alter` modifie celui qui entre. */

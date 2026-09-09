@@ -285,6 +285,27 @@ export class CompanyMercuriale {
     };
   }
 
+  /**
+   * La grille **porte cet article** mais aucun palier n'est atteint à cette
+   * mesure — le seul `null` de {@link asRuleFor} qui soit une décision.
+   *
+   * 🔴 Il existe parce que `asRuleFor` rend `null` pour **deux** raisons, et que
+   * les confondre écrirait « palier non atteint » sur chaque ligne de chaque
+   * commande d'un client sous mercuriale, pour tout article hors grille — un
+   * motif faux, en volume non borné, sur l'écran fait pour le litige (R25).
+   *
+   * L'article hors grille n'est pas une règle écartée : la mercuriale n'avait
+   * rien à en dire.
+   */
+  missesTierFor(context: PricingContext): boolean {
+    const line = this.state.lines.find((candidate) => candidate.sku === context.productSku);
+    if (line === undefined) {
+      return false;
+    }
+    const measured = volumeQuantityOf(context);
+    return !line.tiers.some((tier) => measured >= tier.minQuantity);
+  }
+
   toPersistence(): CompanyMercurialeState {
     return this.state;
   }

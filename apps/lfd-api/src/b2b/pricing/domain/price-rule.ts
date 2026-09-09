@@ -310,5 +310,59 @@ export interface ResolvedPrice {
    * appliquerait une décision que l'éviction avait écartée.
    */
   readonly sealedRuleIds: readonly string[];
+  /**
+   * **Ce que le moteur a regardé et n'a pas appliqué**, avec la raison.
+   *
+   * C'est la moitié de « pourquoi ce prix » que rien ne gardait : une règle sans
+   * effet ne laissait aucune trace, et le service client ne pouvait pas
+   * distinguer « elle a expiré » de « une autre l'a battue » de « votre tarif
+   * négocié la scelle » (R25).
+   *
+   * 🔴 **Vide est une AFFIRMATION** : le moteur n'a écarté personne. C'est la
+   * colonne persistée, nullable, qui porte le troisième état — « on ne
+   * consignait pas encore ». Un tableau ne sait pas avouer une ignorance.
+   */
+  readonly rejected: readonly RejectedRule[];
   readonly finalMillicents: number;
+}
+
+/**
+ * **Pourquoi une règle n'a rien produit.**
+ *
+ * Les cinq premières sont les conjonctions de {@link applies}, dans son ordre ;
+ * les deux dernières se décident après, quand la règle était pourtant
+ * applicable.
+ *
+ * ⚠️ En production, les cinq premières sont **rares** : l'adaptateur écarte au
+ * chargement ce qui est hors fenêtre, suspendu ou hors audience, et l'index de
+ * portée fait le reste. Elles existent tout de même, parce que `resolvePrice`
+ * est pure et doit rester juste quand on l'appelle avec un tableau fabriqué à la
+ * main — ce que fait chacun de ses tests. Nommer « seuil » tout ce qu'`applies`
+ * refuse la ferait mentir exactement là.
+ */
+export type RejectionCause =
+  | "expired"
+  | "suspended"
+  | "out_of_scope"
+  | "out_of_audience"
+  | "below_threshold"
+  | "superseded"
+  | "sealed";
+
+/**
+ * Une règle que le moteur a écartée, telle que la trace la garde.
+ *
+ * Le **libellé** est figé avec l'identifiant, et ce n'est pas une commodité
+ * d'affichage : `RenamePriceRuleCommand` existe, donc le nom d'aujourd'hui n'est
+ * pas forcément celui qui a facturé. Une trace qui ne porterait que des
+ * identifiants serait muette six mois plus tard, ce qui est la panne même que
+ * R25 ferme (vérifié le 2026-09-09 : aucune suppression physique de règle, mais
+ * un renommage bien réel).
+ */
+export interface RejectedRule {
+  readonly stage: PriceStage;
+  readonly ruleId: string;
+  readonly label: string;
+  readonly scope: PriceScope;
+  readonly cause: RejectionCause;
 }

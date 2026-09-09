@@ -6,6 +6,7 @@ import type {
   PriceScope,
   PriceStage,
   PricingContext,
+  RejectionCause,
 } from "./price-rule.js";
 
 /**
@@ -231,6 +232,44 @@ export function applies(rule: PriceRule, context: PricingContext): boolean {
     matchesAudience(rule.audience, context) &&
     (rule.minQuantity === null || measured >= rule.minQuantity)
   );
+}
+
+/**
+ * **Pourquoi cette règle ne s'applique pas ici**, ou `null` si elle s'applique.
+ *
+ * Les prédicats sont rejoués **dans l'ordre de {@link applies}**, et c'est tout
+ * l'intérêt : une règle peut échouer sur plusieurs, et la première rencontrée
+ * est celle qu'on nomme. Un `!applies(...)` suivi d'une cause unique dirait
+ * « seuil non atteint » d'une promotion expirée — la trace mentirait sur le seul
+ * écran qu'on ouvre en litige.
+ *
+ * 🔴 **Cette fonction n'est PAS la vérité de l'application** : c'est `applies`
+ * qui décide, ici on explique. Les deux doivent rester d'accord, et le test le
+ * tient sur les cinq prédicats plutôt que sur un cas.
+ */
+export function rejectionCauseOf(
+  rule: PriceRule,
+  context: PricingContext,
+): Exclude<RejectionCause, "superseded" | "sealed"> | null {
+  if (!isInForce(rule, context.at)) {
+    return "expired";
+  }
+  if (isSuspended(rule, context.at)) {
+    return "suspended";
+  }
+  if (!matchesScope(rule.scope, context)) {
+    return "out_of_scope";
+  }
+  if (!matchesAudience(rule.audience, context)) {
+    return "out_of_audience";
+  }
+  const measured = CONTRACT_STAGES.includes(rule.stage)
+    ? volumeQuantityOf(context)
+    : context.quantity;
+  if (rule.minQuantity !== null && measured < rule.minQuantity) {
+    return "below_threshold";
+  }
+  return null;
 }
 
 /**

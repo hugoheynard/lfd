@@ -6,7 +6,13 @@ import { resolvePrice } from "./resolve-price.js";
 import { floorsFor, laddersFor, rulesFor } from "./pricing-materials.js";
 import type { PricingEvidence, PricingMaterials } from "./pricing-materials.js";
 import { commitmentFor, retainedQuantity } from "./volume-commitment.js";
-import type { PriceFloor, PriceStep, PricingContext, ResolvedPrice } from "./price-rule.js";
+import type {
+  PriceFloor,
+  PriceStep,
+  PricingContext,
+  RejectedRule,
+  ResolvedPrice,
+} from "./price-rule.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 import { pricingContextFor } from "./pricing-context.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
@@ -76,6 +82,14 @@ export interface PricedArticle {
    * majorité des lignes.
    */
   readonly commitment: CommitmentDecisionView | null;
+  /**
+   * **Ce que le moteur a regardé sans l'appliquer**, avec la raison — évincée,
+   * scellée, sous le seuil.
+   *
+   * Vide **affirme** qu'il n'a écarté personne : c'est la colonne persistée,
+   * nullable, qui porte « on ne consignait pas encore » (R25).
+   */
+  readonly rejected: readonly RejectedRule[];
 }
 
 /** La décision de plancher, telle qu'elle part sur une commande. */
@@ -436,6 +450,7 @@ export class LoadedPricer {
               volumeMet: decision.unlock?.volumeMet ?? true,
             },
       commitment,
+      rejected: resolved.rejected,
     };
   }
 }
