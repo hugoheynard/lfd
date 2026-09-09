@@ -20,7 +20,10 @@
 >   **29** depuis le 2026-09-09 (`lint:prisma-model-ownership`, qui ferme le trou
 >   que le §3 nomme deux fois : « une frontière qu'on ne franchit qu'en SQL est
 >   franchie quand même ») et **32** le même jour (`lint:handler-per-file`,
->   `lint:catalogue-authority`, `lint:price-door`). C'est la **seule**
+>   `lint:catalogue-authority`, `lint:price-door`), puis **33** avec
+>   `lint:dated-decisions` : toute décision qui entre dans la résolution du prix
+>   porte une fenêtre, sans quoi une lecture datée lui applique les valeurs
+>   d'aujourd'hui — ce que le plancher faisait en silence. C'est la **seule**
 >   correction faite dans le corps, parce qu'un chiffre faux se vérifie en une
 >   commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -960,7 +963,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 32 portes du dépôt, d'un coup
+pnpm lint:gates         # les 33 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
