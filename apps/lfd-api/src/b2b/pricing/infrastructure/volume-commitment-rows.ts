@@ -52,10 +52,12 @@ export function commitmentStateFromRow(row: CommitmentRow): VolumeCommitmentStat
  * `orderedQuantity` est **mesuré** et passé par l'appelant : ce fichier convertit
  * des lignes, il n'interroge pas les commandes. C'est aussi ce qui garde le
  * suivi honnête — le volume atteint n'est jamais dérivé de la promesse.
+ *
+ * `null` = rien à mesurer à cette portée, et c'est un fait distinct de zéro.
  */
 export function commitmentViewFromRow(
   row: CommitmentRow,
-  orderedQuantity: number,
+  orderedQuantity: number | null,
 ): VolumeCommitmentView {
   const state = commitmentStateFromRow(row);
   return {

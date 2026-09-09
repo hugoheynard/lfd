@@ -2978,9 +2978,16 @@ model VolumeCommitment {
   scopeType String  @map("scope_type")
   scopeId   String? @map("scope_id")
 
-  /// Le volume visé. Il sert au SUIVI, jamais au calcul : c'est le cumul mesuré
-  /// qui décide du palier. Un engagement dont la promesse piloterait le prix
-  /// serait une remise accordée sur une intention.
+  /// Le volume visé. Il **fait le prix** : le palier se juge sur
+  /// `max(promis, livré)`, donc la promesse ouvre le palier dès la première
+  /// commande et le livré reprend la main s'il dépasse.
+  ///
+  /// ⚠️ Ce commentaire a dit l'inverse — « il sert au SUIVI, jamais au calcul »
+  /// — jusqu'au 2026-09-09. C'était vrai à la première écriture et faux depuis
+  /// la correction du **2026-08-19** (`volume-commitment.ts`, `retainedQuantity`) :
+  /// un client qui annonce sa saison et paie le tarif d'entrée pendant trois
+  /// mois n'a rien obtenu de ce qu'il a négocié. La remise EST accordée sur une
+  /// intention, et c'est la décision — pas un effet de bord.
   promisedQuantity Int @map("promised_quantity")
 
   /// Borne basse incluse, borne haute exclue — et la haute est OBLIGATOIRE : un

@@ -32,34 +32,34 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 
 ## 1. Le tableau, en un écran
 
-| #       | Ce que c'est                                                               | Gravité   | Coût                    |
-| ------- | -------------------------------------------------------------------------- | --------- | ----------------------- |
-| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                  | ✅        | **clos le 2026-09-09**  |
-| **R2**  | La simulation rejoue les paliers **dans le navigateur**                    | 🔴        | conception              |
-| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                 | ✅        | **clos le 2026-09-09**  |
-| **R4**  | Le client peut payer autre chose que ce qu'il a vu                         | 🟠        | conception              |
-| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                    | ✅        | **clos le 2026-09-09**  |
-| **R6**  | L'engagement de volume n'a **aucun écran**                                 | 🟠        | un lot front            |
-| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                           | ✅        | **clos le 2026-09-09**  |
-| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                       | ✅        | **clos le 2026-09-09**  |
-| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                    | 🟡        | inventaire fait         |
-| **R10** | **Deux** traces mortes dans la tarification                                | 🟡        | trivial                 |
-| **R11** | Le volume prévu appartient au gabarit, pas au client                       | 🟡        | conception              |
-| **R12** | Trois requêtes de production jamais lancées                                | 🟡        | trois `psql`            |
-| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                         | 🔵        | décision                |
-| **R14** | Les conditionnements — conception **périmée**                              | 🔵        | à réécrire              |
-| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**          | 🟠        | contrat + front         |
-| **R16** | Un engagement de portée famille est mesuré **par SKU**                     | 🔴        | décision, puis un lot   |
-| **R17** | La lecture datée `at` ignore ce qui a été **archivé depuis**               | 🔴 latent | décision                |
-| **R18** | Engagement et gabarit répondent **400** là où le reste répond 404 et 409   | 🟠        | une heure               |
-| **R19** | Treize commentaires disent « centimes » sur des millicentimes              | 🟠        | une heure, puis un type |
-| **R20** | La doc de référence contredit le code — promis/livré, unités, index global | 🟠        | un lot doc              |
-| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`       | 🟠        | tombe avec R26          |
-| **R22** | La vitrine **publique** ne passe pas par le fabricant                      | 🟠        | un lot back             |
-| **R23** | Le front recalcule un plancher — **sixième** occurrence du motif           | 🟠        | rejoint R2              |
-| **R24** | États inatteignables et colonnes mortes                                    | 🟡        | trivial                 |
-| **R25** | La trace figée ne persiste ni scellement ni éviction                       | 🟡        | deux colonnes additives |
-| **R26** | `Pricer` n'a **aucun** appelant ; la façade unique reste à dessiner        | 🔵        | conception, `vitruve`   |
+| #       | Ce que c'est                                                                 | Gravité   | Coût                     |
+| ------- | ---------------------------------------------------------------------------- | --------- | ------------------------ |
+| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                    | ✅        | **clos le 2026-09-09**   |
+| **R2**  | La simulation rejoue les paliers **dans le navigateur**                      | 🔴        | conception               |
+| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                   | ✅        | **clos le 2026-09-09**   |
+| **R4**  | Le client peut payer autre chose que ce qu'il a vu                           | 🟠        | conception               |
+| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                      | ✅        | **clos le 2026-09-09**   |
+| **R6**  | L'engagement de volume n'a **aucun écran**                                   | 🟠        | un lot front             |
+| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                             | ✅        | **clos le 2026-09-09**   |
+| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                         | ✅        | **clos le 2026-09-09**   |
+| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                      | 🟡        | inventaire fait          |
+| **R10** | **Deux** traces mortes dans la tarification                                  | 🟡        | trivial                  |
+| **R11** | Le volume prévu appartient au gabarit, pas au client                         | 🟡        | conception               |
+| **R12** | Trois requêtes de production jamais lancées                                  | 🟡        | trois `psql`             |
+| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                           | 🔵        | décision                 |
+| **R14** | Les conditionnements — conception **périmée**                                | 🔵        | à réécrire               |
+| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**            | 🟠        | contrat + front          |
+| **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**         | 🔴        | une décision commerciale |
+| **R17** | La lecture datée `at` ignore ce qui a été **archivé depuis**                 | 🔴 latent | décision                 |
+| **R18** | ~~Engagement~~ et **gabarit** répondent 400 là où le reste répond 404 et 409 | 🟡        | l'engagement est fait    |
+| **R19** | Treize commentaires disent « centimes » sur des millicentimes                | 🟠        | une heure, puis un type  |
+| **R20** | La doc de référence contredit le code — promis/livré, unités, index global   | 🟠        | un lot doc               |
+| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`         | 🟠        | tombe avec R26           |
+| **R22** | La vitrine **publique** ne passe pas par le fabricant                        | 🟠        | un lot back              |
+| **R23** | Le front recalcule un plancher — **sixième** occurrence du motif             | 🟠        | rejoint R2               |
+| **R24** | États inatteignables et colonnes mortes                                      | 🟡        | trivial                  |
+| **R25** | La trace figée ne persiste ni scellement ni éviction                         | 🟡        | deux colonnes additives  |
+| **R26** | `Pricer` n'a **aucun** appelant ; la façade unique reste à dessiner          | 🔵        | conception, `vitruve`    |
 
 **Cinq entrées sont closes le jour même de ce registre** — R1, R3, R5, R7 et R8.
 **Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26), et
@@ -241,6 +241,20 @@ lignes du panier. `max(promis, livré)` ne bascule qu'à 10 000 **croissants**, 
 **Ce qui ne le tient pas.** `volume-commitment.spec.ts:66` teste le **choix**
 d'un engagement de famille, jamais sa **mesure**. Le modèle accepte `category`
 et `global`.
+
+> 🔴 **2026-09-09 — le sens du défaut est inversé, et l'entrée ci-dessus décrit
+> le régime marginal.** `volumeQuantityOf` lit `max(promis, cumulSku)`, donc un
+> engagement `category:viennoiserie / 10 000` ouvre le palier 10 000 sur
+> **chaque** article de la famille, quelle que soit la quantité commandée : le
+> prix est trop **bas**, et c'est le cas courant. Le cumul mesuré par SKU ne
+> fausse que le régime `cumul de famille > promesse`, où le prix est trop haut.
+>
+> La question qui commande la suite n'est donc pas technique : **une promesse de
+> famille se partage-t-elle entre ses articles, ou s'applique-t-elle à
+> chacun ?** Le code fait la seconde, aucun document ne tranche. Les cinq
+> branches, leur coût réel et la requête de déblocage — corrigée, un `CHECK`
+> voyant aussi les lignes archivées — sont au
+> [journal de remédiation](journal-de-remediation.md) §7.
 
 **Le remède, à trancher.** Mesurer par portée — joindre le catalogue,
 `order_lines` ne portant que le SKU —, ou rendre la famille **inexprimable** en
@@ -497,6 +511,15 @@ décide le plus.
 `ResourceNotFoundError`, `Archived*IsSealedError` et `Overlapping*Error` étendent
 `BusinessError`. Découper les 869 lignes par agrégat au passage. Détail : audit
 B.4.
+
+> ✅ **Les trois de l'ENGAGEMENT sont faites le 2026-09-09** — 404 pour
+> l'introuvable, 409 pour le clos et pour le recouvrement —, et la dernière est
+> tenue par un e2e qui a d'abord échoué en 400
+> (`price-rules.e2e-spec.ts`). Elles ont été trouvées en écrivant le premier
+> e2e de la route de signature, pas en relisant la liste.
+>
+> **Le gabarit reste**, et c'est tout ce qui reste de R18 : `:673`, `:683`. Il
+> n'est pas touché faute d'un cas rouge pour le tenir.
 
 ### R19 🟠 Treize commentaires disent « centimes » sur des millicentimes
 

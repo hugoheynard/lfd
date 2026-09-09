@@ -943,3 +943,90 @@ describe("une remise en euros plus grande que le prix", () => {
     expect(line.pricingFloored).toBe(true);
   });
 });
+
+/**
+ * **Les engagements de volume, par leur vraie route staff.**
+ *
+ * La route n'était traversée par aucun e2e : le seul `commitment` du fichier
+ * était un semis direct, qui prouve la tarification et pas la signature.
+ *
+ * Ce que ce niveau seul établit : une portée que rien ne sait mesurer se signe
+ * quand même, et le suivi doit l'AVOUER plutôt que d'afficher un chiffre.
+ *
+ * ⚠️ La route n'a **aucun consommateur** dans le dépôt — ni front, ni
+ * `@lfd/endpoints` (vérifié le 2026-09-09). Ces cas sont donc son seul
+ * exercice, et l'écran de suivi qu'ils décrivent n'existe pas encore.
+ */
+describe("les engagements de volume, signés par la route staff", () => {
+  const staff = () => ctx.asSub(E2E_STAFF_SUB);
+  let companyId = "company_absente";
+
+  beforeEach(async () => {
+    const company = await createCompany(ctx.prisma);
+    companyId = company.id;
+  });
+
+  function sign(scope: { type: string; id: string | null }, promised: number) {
+    return staff().post("/admin/pricing/commitments").send({
+      companyId,
+      scope,
+      promisedQuantity: promised,
+      validFrom: "2026-01-01T00:00:00.000Z",
+      validTo: "2027-01-01T00:00:00.000Z",
+    });
+  }
+
+  it("signe un engagement sur un article, et le suivi le mesure", async () => {
+    await sign({ type: "product", id: SKU }, 6_000).expect(201);
+
+    const listed = jsonBody<{ scope: { type: string }; orderedQuantity: number | null }[]>(
+      await staff().get(`/admin/pricing/commitments?companyId=${companyId}`).expect(200),
+    );
+
+    expect(listed).toHaveLength(1);
+    // Rien de commandé sur la période : zéro MESURÉ, et c'est un fait.
+    expect(listed[0]).toMatchObject({ scope: { type: "product" }, orderedQuantity: 0 });
+  });
+
+  /**
+   * Régression R16 : le suivi rendait `0` sur une portée qu'il ne peut pas
+   * mesurer.
+   *
+   * Une famille n'est pas un SKU, et la seule mesure disponible compte par SKU.
+   * `reached()` rendait donc `0`, que la vue présentait comme une mesure sous un
+   * JSDoc affirmant « Mesuré, jamais promis » — une ignorance déguisée en
+   * relevé. `null` le dit (fix 2026-09-09).
+   *
+   * 🔴 Ce cas ne prouve PAS que la tarification soit réparée : le tarificateur
+   * substitue toujours le SKU de la ligne au périmètre de l'engagement. C'est la
+   * décision de branche du journal de remédiation.
+   */
+  it("🔴 avoue ne rien mesurer sur une portée de FAMILLE, au lieu de rendre zéro", async () => {
+    await sign({ type: "category", id: "viennoiserie" }, 10_000).expect(201);
+
+    const listed = jsonBody<{ scope: { type: string }; orderedQuantity: number | null }[]>(
+      await staff().get(`/admin/pricing/commitments?companyId=${companyId}`).expect(200),
+    );
+
+    expect(listed[0]).toMatchObject({ scope: { type: "category" } });
+    expect(listed[0]?.orderedQuantity).toBeNull();
+  });
+
+  /**
+   * La contrainte d'exclusion mord ici aussi : deux engagements vivants sur la
+   * même cible donneraient deux cumuls, donc un prix qui dépend d'un ordre de
+   * tri. Une cible DIFFÉRENTE, elle, coexiste — c'est la portée qui départage.
+   *
+   * Régression R18 : ce refus répondait **400**. La règle et le barème
+   * répondaient 409 sur le même fait ; l'engagement disait au staff que sa
+   * saisie était malformée alors que seule la base la refusait. Ce cas a été
+   * écrit en attendant 409, il a échoué, et c'est ainsi que la ligne du registre
+   * est devenue un fait (fix 2026-09-09).
+   */
+  it("refuse deux engagements qui se recouvrent sur la même cible", async () => {
+    await sign({ type: "product", id: SKU }, 6_000).expect(201);
+    await sign({ type: "category", id: "viennoiserie" }, 6_000).expect(201);
+
+    await sign({ type: "product", id: SKU }, 9_000).expect(409);
+  });
+});

@@ -607,8 +607,14 @@ export class InvalidPromisedVolumeError extends DomainError {
   }
 }
 
-/** Un engagement clos ne se rouvre pas : on en signe un nouveau. */
-export class ArchivedVolumeCommitmentIsSealedError extends DomainError {
+/**
+ * Un engagement clos ne se rouvre pas : on en signe un nouveau.
+ *
+ * **409 depuis le 2026-09-09**, comme `Archived*IsSealedError` partout ailleurs
+ * : la demande est bien formée, c'est l'état de la ressource qui la refuse
+ * (R18).
+ */
+export class ArchivedVolumeCommitmentIsSealedError extends BusinessError {
   constructor(id: string) {
     super(
       "pricing.commitment.archived_is_sealed",
@@ -617,8 +623,17 @@ export class ArchivedVolumeCommitmentIsSealedError extends DomainError {
   }
 }
 
-/** Deux engagements vivants sur la même cible et la même période, pour un client. */
-export class OverlappingVolumeCommitmentError extends DomainError {
+/**
+ * Deux engagements vivants sur la même cible et la même période, pour un client.
+ *
+ * **`BusinessError` (409), et non `DomainError` (400), depuis le 2026-09-09.**
+ * C'est la contrainte d'exclusion qui parle : la saisie est parfaitement bien
+ * formée, c'est l'état de la base qui la refuse. Ses deux sœurs — la règle et le
+ * barème — répondaient déjà 409 sur le MÊME fait ; l'engagement répondait 400,
+ * et un back-office qui distingue « votre saisie est mauvaise » de « quelqu'un
+ * est déjà passé » lisait deux réponses pour une seule situation (R18).
+ */
+export class OverlappingVolumeCommitmentError extends BusinessError {
   constructor() {
     super(
       "pricing.commitment.overlaps",
@@ -627,8 +642,14 @@ export class OverlappingVolumeCommitmentError extends DomainError {
   }
 }
 
-/** L'engagement demandé n'existe pas, ou ne concerne pas ce client. */
-export class VolumeCommitmentNotFoundError extends DomainError {
+/**
+ * L'engagement demandé n'existe pas, ou ne concerne pas ce client.
+ *
+ * **404 depuis le 2026-09-09**, comme toute ressource absente du dépôt. Il
+ * répondait 400, ce qui disait au staff que sa requête était malformée alors
+ * qu'elle était impeccable (R18).
+ */
+export class VolumeCommitmentNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
     super("pricing.commitment.not_found", `Aucun engagement de volume ${id}.`);
   }

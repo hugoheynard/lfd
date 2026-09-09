@@ -1099,7 +1099,13 @@ export interface PricingComparisonView {
 export const createVolumeCommitmentPayloadSchema = z.object({
   companyId: z.string().min(1),
   scope: priceScopeSchema,
-  /** Le volume visé sur la période. Sert à l'écran, jamais au calcul. */
+  /**
+   * Le volume visé sur la période. **Il fait le prix**, il ne sert pas qu'à
+   * l'écran : le palier se juge sur `max(promis, livré)`, donc la promesse
+   * l'ouvre dès la première commande (décidé le 2026-08-18, corrigé le
+   * 2026-08-19). La phrase « sert à l'écran, jamais au calcul » a survécu ici
+   * jusqu'au 2026-09-09.
+   */
   promisedQuantity: z.number().int().positive(),
   /** Borne basse **incluse**. */
   validFrom: z.string().datetime(),
@@ -1128,10 +1134,18 @@ export interface VolumeCommitmentView {
   /**
    * Le volume **déjà commandé** sur la période, à l'instant de la lecture.
    *
-   * Mesuré, jamais promis : c'est lui qui décide du palier, et l'écart avec
-   * `promisedQuantity` est toute l'information que le suivi apporte.
+   * Mesuré, jamais promis — l'écart avec `promisedQuantity` est toute
+   * l'information que le suivi apporte. Ce n'est pas lui seul qui décide du
+   * palier : c'est `max(promis, livré)`.
+   *
+   * 🔴 `null` = **il n'y a rien à mesurer à cette portée**. Une famille ou le
+   * catalogue entier ne sont pas des SKU, et la seule mesure disponible compte
+   * par SKU. Ce champ valait `0` jusqu'au 2026-09-09, sous un JSDoc qui disait
+   * « mesuré » : une ignorance présentée comme une mesure, et le suivi d'un
+   * engagement de famille affichait « 0 atteint » avec l'aplomb d'un chiffre
+   * relevé (R16). `0` veut désormais dire zéro.
    */
-  readonly orderedQuantity: number;
+  readonly orderedQuantity: number | null;
 }
 
 /**

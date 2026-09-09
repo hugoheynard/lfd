@@ -15,9 +15,10 @@
 > même quand la suite lui donne tort — c'est précisément ce cas-là qui a de la
 > valeur. Une correction s'ajoute en dessous, datée.
 
-| Entrée                  | Constat                                                            | Statut                                                                           |
-| ----------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09) |
+| Entrée                  | Constat                                                            | Statut                                                                                   |
+| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09)         |
+| [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                 | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
 
 ---
 
@@ -234,3 +235,257 @@ n'est pas un correctif, c'est une tranche, et elle appartient à Hugo.
 - **R26** (la lentille de C.4) reste entier : D rend le défaut prudent, elle ne
   nomme toujours pas dans un type quelle question autorise quelles preuves.
 - **R16** est indépendant.
+
+---
+
+## R16 · 2026-09-09
+
+**Constat** : [B.2](audit-du-moteur-a-la-facade.md) · **Registre** :
+[R16](ce-qui-reste-a-faire.md) · **Gravité** : ~~🔴 prix faux à la caisse~~ —
+**voir le §7 : le sens du défaut est inversé, et la question est commerciale
+avant d'être technique.**
+
+### 1. Le constat, retrouvé dans le code
+
+`commitmentOf`
+([`loaded-pricer.ts`](../../apps/lfd-api/src/b2b/pricing/domain/loaded-pricer.ts))
+calcule `orderedBySku.get(item.sku) + quantity`, et le chargeur
+([`pricing-materials.loader.ts`](../../apps/lfd-api/src/b2b/pricing/application/pricing-materials.loader.ts))
+lit `customerVolumes.volumesFor(companyId, skus, window)` — une `Map` **par
+SKU**, bornée aux SKU du panier.
+
+Un engagement `category:viennoiserie`, 10 000 promis : le cumul d'une ligne de
+croissants ne compte que les croissants. Ni les autres viennoiseries de
+l'historique, ni les autres lignes du même panier.
+
+**Précision utile, et elle borne le défaut.** Les lignes sont **fusionnées par
+SKU** avant tarification (`order-line-pricing.service.ts:103`, que
+`price-line.ts:58` ne fait que commenter), donc pour une portée `product` ou
+`variant` la mesure est **juste**. Le défaut est exactement co-extensif aux deux
+portées que rien ne sait mesurer : `category` et `global`.
+
+⚠️ **Ce paragraphe ne dit pas dans quel SENS le prix se trompe, et le §7 montre
+qu'il se trompe surtout dans l'autre.**
+
+### 2. La racine — une portée déclarée dans un vocabulaire que la mesure ne parle pas
+
+Un engagement déclare sa cible en **portées** (`global`, `category`, `product`,
+`variant`). La seule mesure disponible, `CustomerVolumeReader`, parle **SKU**.
+**Rien ne traduit entre les deux.** Alors chaque lecteur substitue ce qu'il a
+sous la main :
+
+| Lecteur                              | Ce qu'il substitue | Ce que ça produit                                      |
+| ------------------------------------ | ------------------ | ------------------------------------------------------ |
+| le tarificateur (chemin qui facture) | le SKU de la ligne | un prix faux — mais pas dans le sens écrit ici, cf. §7 |
+| le suivi (`VolumeCommitmentsQuery`)  | le nombre **zéro** | un « volume atteint » inventé, typé comme une mesure   |
+
+_(Le second est corrigé par cette entrée même — `null` depuis le 2026-09-09 ; il
+est décrit au passé dans le §3 et au présent ici parce que c'est l'état trouvé.)_
+
+C'est **la leçon de R15, un étage plus haut**. Là, `UnlockEvidence` ne savait pas
+dire « il n'y a pas de commande » ; ici, `VolumeCommitmentView.orderedQuantity`
+ne sait pas dire « ce n'est pas mesurable ». Dans les deux cas l'ignorance,
+faute de mot, entre déguisée en mesure — et dans les deux cas le JSDoc juste
+au-dessus affirme le contraire.
+
+> Le commentaire de `reached()` dit : « le suivi **s'abstient** plutôt que
+> d'inventer un chiffre qui passerait pour une mesure ». Il rend `0`, et la vue
+> le type `number` sous un JSDoc qui dit « Mesuré, jamais promis ». L'abstention
+> était l'intention ; le type ne l'a pas permise.
+
+### 3. Ce que la lecture a trouvé au passage — quatre affirmations fausses
+
+Elles ne sont pas des à-côtés : trois d'entre elles **justifient** un mécanisme,
+et c'est la catégorie de commentaire que le dépôt tient pour la plus dangereuse.
+
+| Où                                                       | Ce qui est écrit                                                              | Pourquoi c'est faux                                                                            |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `schema.prisma` (`promised_quantity`)                    | « Il sert au SUIVI, **jamais au calcul** : c'est le cumul mesuré qui décide » | `retainedQuantity` fait `max(promis, livré)` — la promesse ouvre le palier dès la 1ʳᵉ commande |
+| `packages/contracts/src/pricing.ts` (`promisedQuantity`) | « Sert à l'écran, **jamais au calcul** »                                      | idem — la même phrase, dans le contrat servi                                                   |
+| `packages/contracts/src/pricing.ts` (`orderedQuantity`)  | « Mesuré, jamais promis : **c'est lui qui décide du palier** »                | c'est `max(promis, livré)` qui décide ; et sur `category`/`global` ce n'est même pas mesuré    |
+| `volume-commitments.query.ts` (`reached`)                | « le suivi **s'abstient** plutôt que d'inventer un chiffre »                  | il rend `0`, que la vue présente comme une mesure                                              |
+
+Les deux premières sont déjà au registre sous **R20** ; elles sont nommées ici
+parce qu'elles vivent à trois lignes du code qu'on répare, et qu'une doc fausse
+laissée en place pendant qu'on corrige le code d'à côté est une doc qu'on
+approuve.
+
+### 4. Les branches
+
+| Branche                                           | Ce qu'elle fait                                                                                                               | Ce qu'elle coûte                                                                                                                                                                       |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A — interdire l'imesurable**                    | la signature n'accepte plus que `product` et `variant` ; un `CHECK` en base ; le cas spécial du suivi meurt                   | **une capacité perdue** — mais qui n'a jamais fonctionné. Exige de savoir si la production porte déjà de tels engagements : je ne peux pas l'interroger                                |
+| **B — apprendre à la mesure à parler portée**     | un port `orderedInScope(companyId, scope, window)` qui résout l'ensemble de SKU (catalogue pour `category`/`global`) et somme | une lecture catalogue sur le chemin qui facture **quand un tel engagement existe** ; et `pricing → orders` pour le catalogue, dépendance déjà signalée par **R26**                     |
+| **C — figer la famille sur la ligne de commande** | colonne `category_snapshot` additive, puis la mesure se fait en SQL sans traverser de contexte                                | une migration en trois déploiements **et** une reprise d'historique : la famille d'aujourd'hui n'est pas celle sous laquelle une vieille ligne a été commandée. On réécrirait le passé |
+| **D — ne rien mesurer, mais le DIRE**             | `orderedQuantity: number \| null` ; le tarificateur refuse d'ouvrir un palier sur un engagement imesurable                    | change **le prix d'un client vivant** sans décision commerciale. À ne pas faire seul                                                                                                   |
+
+### 5. Ce que je recommande, et ce qui me bloque
+
+**A**, et pour la raison qui gouverne tout ce dépôt : la hiérarchie des
+garde-fous commence par « inexprimable ». `category` et `global` sont
+aujourd'hui **signables mais ni tarifables ni suivables** — la capacité n'existe
+pas, seule son apparence existe. La retirer rend le reste juste **par
+construction**, sans une ligne de mesure nouvelle, sans lecture supplémentaire
+sur le chemin qui facture, et supprime le cas spécial du suivi au lieu de le
+réparer.
+
+**Ce qui me bloque, et je ne le contourne pas** : A n'est sûre que si la
+production ne porte aucun engagement `category` ou `global`. Poser le `CHECK`
+sans le savoir ferait échouer un déploiement. La requête est en lecture seule,
+elle tient en une ligne, et elle rejoint les trois de **R12** que personne n'a
+encore lancées :
+
+```sql
+SELECT scope_type, count(*)
+FROM volume_commitments
+WHERE archived_at IS NULL
+GROUP BY scope_type;
+```
+
+Si la réponse ne contient que `product` et `variant`, A est un petit lot. Si
+elle contient autre chose, la question n'est plus technique : ces clients ont un
+prix, et il faudra décider si on le corrige (B) ou si on le laisse tel quel en
+fermant la porte derrière.
+
+### 6. Ce qui est livré aujourd'hui, et ce qui ne l'est pas
+
+**Livré**, parce que vrai quelle que soit la branche :
+
+- les **quatre affirmations fausses** du §3, corrigées et datées sur place ;
+- `VolumeCommitmentView.orderedQuantity` devient `number | null` — l'abstention
+  que le commentaire revendiquait est **dicible**, donc réelle. Aucun front ne
+  lit cette vue (R6 : l'engagement n'a pas d'écran), donc rien ne casse ;
+- la route de signature gagne son **premier e2e**. Elle n'en avait aucun : le
+  seul `commitment` des suites était un semis direct, qui éprouve la
+  tarification et pas la signature.
+
+**Trouvé en écrivant cet e2e, et corrigé** : un recouvrement d'engagements
+répondait **400**. La règle et le barème répondent **409** sur le fait
+identique, et `VolumeCommitmentNotFoundError` répondait 400 au lieu de 404.
+C'était la ligne **R18** du registre ; elle est désormais un cas rouge devenu
+vert, sur les deux erreurs de l'engagement. Le gabarit, l'autre moitié de R18,
+n'est pas touché.
+
+**Rien du correctif de R16 lui-même.**
+
+**Pas livré, et volontairement** : la mesure. Chacune des quatre branches change
+un prix ou retire une capacité — c'est une décision commerciale déguisée en
+correctif, et la faire seul serait exactement ce que le §3 reproche aux
+commentaires qu'il corrige.
+
+### 7. Ce que la contradiction a renversé — 2026-09-09
+
+`vitruve` rend **trois BLOQUANT**. Les trois tiennent, et le premier retourne
+l'entrée.
+
+#### 7.1 🔴 Le sens du défaut est inversé, et le régime dominant n'est pas celui décrit
+
+Vérifié en suivant la chaîne : `commitmentOf` pose
+`cumulativeQuantity = retainedQuantity = max(promis, cumulSku)`, et
+`volumeQuantityOf` (`price-rule.ts:220`) rend `cumulativeQuantity ?? quantity` —
+c'est donc lui que le barème et la mercuriale lisent.
+
+Conséquence pour `category:viennoiserie / 10 000` : **chaque ligne de la famille
+résout son barème à 10 000**, quelle que soit la quantité commandée. Dix
+croissants sont facturés au palier 10 000, et le pain au chocolat aussi. La
+promesse n'est pas partagée : elle est appliquée **en entier, à chaque SKU**.
+Pour `global`, c'est le catalogue entier qui bascule.
+
+Le défaut de mesure que cette entrée décrit — le cumul par SKU — n'agit donc que
+dans le régime `cumul de famille > promesse`, le seul où le `max` bascule. C'est
+un cas **marginal**, et c'est le seul où le prix est trop haut. Dans le régime
+courant, le prix est trop **bas**.
+
+**Ce que ça casse dans le raisonnement** : la branche B ne corrige pas ce
+prix-là. `max(promesse, sommeDePortée)` laisse chaque ligne au palier de la
+promesse entière tant que le cumul de famille reste dessous. **Aucune des quatre
+branches n'adresse le régime dominant** — parce qu'il n'est pas un bug tant que
+la question suivante n'est pas tranchée.
+
+> 🔴 **La vraie question, et elle n'est pas technique.** Une promesse de 10 000
+> sur une FAMILLE se **partage**-t-elle entre ses articles, ou s'applique-t-elle
+> **à chacun** ? Le code fait aujourd'hui la seconde. Aucun document du dépôt ne
+> tranche ; tous les exemples sont par article. Tant qu'elle n'a pas de réponse,
+> « corriger la mesure » n'a pas de cible.
+
+#### 7.2 🔴 La requête de déblocage du §5 est fausse
+
+Un `CHECK` s'applique à **toutes** les lignes, archivées comprises — seule la
+contrainte d'exclusion est partielle. Un engagement `category` **clos l'an
+dernier** ferait donc échouer le déploiement, et ma requête, filtrée sur
+`archived_at IS NULL`, l'aurait déclaré vert. La panne que le §5 disait éviter
+était dans la ligne écrite pour l'éviter. La bonne :
+
+```sql
+SELECT scope_type, archived_at IS NULL AS vivant, count(*)
+FROM volume_commitments
+GROUP BY 1, 2;
+```
+
+#### 7.3 🔴 « Une capacité qui n'a jamais fonctionné » est faux
+
+Elle fonctionne : elle se signe, elle est **tarifée** (7.1 — elle ouvre le palier
+promis sur toute la famille, ce qu'un commercial appellerait « ma famille
+viennoiserie à 10 000 »), et depuis aujourd'hui elle est testée. **A ne retire
+donc pas une apparence : elle AUGMENTE le prix d'un client vivant** — exactement
+le reproche que le §4 faisait à la branche D.
+
+#### 7.4 La branche que je n'avais pas vue, et qui est la moins chère
+
+**A′ — interdire ET convertir.** Chaque engagement de famille devient un
+engagement `product` par SKU de la famille, **même volume promis**. Comme le prix
+ne dépend aujourd'hui que de la promesse appliquée à chaque article (7.1), la
+conversion **reproduit le prix à l'identique** — tout en rendant la mesure juste
+et le suivi mesurable. `volume_commitments_no_overlap` l'autorise, les cibles
+étant différentes.
+
+C'est A sans le changement de prix, **si** la réponse à la question du 7.1 est
+« à chacun ». Si elle est « partagée », aucune branche du §4 ne convient et il
+faut concevoir le partage.
+
+#### 7.5 Ce que le tableau du §4 sous-estimait
+
+- **B est moins chère que dit pour `global`** : il suffit de retirer le filtre
+  `sku IN (…)` du lecteur — une agrégation, même coût. Mais elle impose de
+  reclefer `PricingEvidence.orderedBySku` **par engagement**, ce que le §4 ne
+  chiffrait pas.
+- **B porte le défaut qui condamnait C** : mesurer une famille par le catalogue
+  d'**aujourd'hui** attribue à l'historique les appartenances actuelles. « On
+  réécrirait le passé » — le reproche fait à C vaut pour B, et je ne l'avais pas
+  vu.
+- **A n'est pas un « petit lot »** : `priceScopeSchema` est **partagé** avec les
+  règles et les planchers ; le resserrer les casserait. Il faut un schéma dédié,
+  un refus dans l'agrégat, une erreur nommée, et le `CHECK` — quatre endroits.
+- **A est la seule branche irréversible.** Le `CHECK` est un resserrement au sens
+  du §0 de `CLAUDE.md` ; revenir demanderait la migration inverse **et** une
+  re-signature commerciale.
+- **La trace figée reste fausse quoi qu'on fasse.** `pricing_commitment` sur les
+  lignes déjà écrites consigne un cumul par SKU sous un `commitmentId` de portée
+  famille. Aucune branche ne reprend le passé, et le cumul d'alors n'est pas
+  reconstituable.
+
+#### 7.6 Ce que ma propre livraison a coûté
+
+`orderedQuantity: number | null` inscrit `category` dans un **contrat servi**. Si
+A ou A′ passe, ce `null` devient inatteignable et son retrait demande trois
+déploiements. Livrer « ce n'est pas mesurable » puis recommander « ce n'est pas
+signable » est un aller-retour — il est petit, il est assumé, et il est écrit ici
+plutôt que découvert plus tard.
+
+De même, le commentaire de `volume_commitments_no_overlap` qui justifie son
+`coalesce` par « la portée globale est justement celle dont le `scope_id` est
+NULL » deviendrait une justification sans objet sous A. À corriger dans le même
+lot.
+
+#### 7.7 Ce que je recommande maintenant
+
+**Rien, avant une réponse à la question du 7.1.** Elle est commerciale : une
+promesse de famille se partage-t-elle ou s'applique-t-elle à chacun ?
+
+- « à chacun » → **A′**, précédée de la requête corrigée du 7.2 ;
+- « partagée » → aucune branche du §4 ne suffit : il faut concevoir un partage
+  de promesse, ce qu'aucun document ne décrit et qu'aucun code n'esquisse.
+
+Ce n'est pas une dérobade : recommander A sur le tableau du §4 aurait augmenté le
+prix d'un client vivant sur la foi d'une phrase — « ça n'a jamais fonctionné » —
+que je n'avais pas vérifiée.
