@@ -93,13 +93,13 @@ flowchart TB
   F --> A
 ```
 
-| Méthode             | Ce qu'elle lit en plus                           | Ce qu'elle écarte, et pourquoi                                                                                                                                       |
-| ------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `price`             | l'engagement du client, les mesures d'historique | —                                                                                                                                                                    |
-| `priceAll`          | idem, **un seul chargement** pour N articles     | —                                                                                                                                                                    |
-| `tiers`             | rejoue la résolution **à chaque seuil**          | —                                                                                                                                                                    |
-| `priceAtCumulative` | rien                                             | **les preuves et les engagements** : une projection ne peut pas prouver un volume observé, et l'ouvrir sur une hypothèse accorderait une remise que rien n'a établie |
-| `mercurialeAlone`   | rien (statique, sans matériaux)                  | **barème et plancher** : on mesure ce qu'une mercuriale accorde SEULE, pour la comparer à celle d'un autre client qui n'a pas les mêmes                              |
+| Méthode             | Ce qu'elle lit en plus                           | Ce qu'elle écarte, et pourquoi                                                                                                                                                                                                                      |
+| ------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `price`             | l'engagement du client, les mesures d'historique | —                                                                                                                                                                                                                                                   |
+| `priceAll`          | idem, **un seul chargement** pour N articles     | —                                                                                                                                                                                                                                                   |
+| `tiers`             | rejoue la résolution **à chaque seuil**          | —                                                                                                                                                                                                                                                   |
+| `priceAtCumulative` | rien                                             | **les preuves et les engagements** : une projection ne prouve ni un volume observé, ni une commande — `N` est un cumul de saison, pas un panier. Ouvrir la porte d'un plancher dessus accorderait une remise que rien n'a établie (R15, 2026-09-09) |
+| `mercurialeAlone`   | rien (statique, sans matériaux)                  | **barème et plancher** : on mesure ce qu'une mercuriale accorde SEULE, pour la comparer à celle d'un autre client qui n'a pas les mêmes                                                                                                             |
 
 ## 4. Tous les cas de figure
 

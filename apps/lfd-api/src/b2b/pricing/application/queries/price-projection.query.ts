@@ -36,6 +36,23 @@ import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
  * « si le cumul valait N », pas à « où en est ce client ». Les deux questions se
  * ressemblent et n'ont pas la même réponse — le suivi d'un engagement est
  * ailleurs, et `priceAtCumulative` écarte délibérément les preuves.
+ *
+ * ## ⚠️ La divergence qui subsiste, dans l'autre sens (2026-09-09)
+ *
+ * Le paragraphe ci-dessus se félicite de ne pas laisser l'écran désigner un
+ * palier que la caisse contredirait. **Une divergence subsiste par l'autre
+ * bout** : la porte d'un plancher dynamique se juge sur la quantité d'une
+ * COMMANDE, et la charge n'en porte pas — elle ne dit que des cumuls. Le
+ * serveur ne l'ouvre donc jamais, tandis que la grille des paliers
+ * (`volume-tier-prices.ts`) la rouvre au seuil sondé quand aucun engagement ne
+ * couvre l'article. Sur l'écran qui affiche les deux, la courbe peut donc être
+ * plus haute que la grille.
+ *
+ * C'est l'état **assumé** de R15 : la porte a d'abord été fermée parce qu'elle
+ * s'ouvrait sur un cumul de saison, ce qui annonçait un prix sous le mur dur.
+ * La refermer était le sens prudent ; la juger juste demande que la charge dise
+ * quelle commande amène à chaque niveau, ce que l'écran calcule déjà
+ * (`commitment-bench.ts`, `quantity = cumulative - previous`) et n'envoie pas.
  */
 @Injectable()
 export class PriceProjectionQuery {

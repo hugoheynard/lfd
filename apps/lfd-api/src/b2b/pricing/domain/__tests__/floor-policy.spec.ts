@@ -97,6 +97,37 @@ describe("faute de mesure, on protège", () => {
 
     expect(decision.tier).toBe("dynamic");
   });
+
+  /**
+   * Régression R15 : la même règle, de l'AUTRE côté.
+   *
+   * `quantity` était un nombre obligatoire, donc un appelant sans commande —
+   * une projection, un comparatif — devait en inventer une, et la porte
+   * s'ouvrait dessus. « Faute de mesure, on protège » n'était tenable que sur
+   * le volume (fix 2026-09-09).
+   */
+  it("ferme la porte quand il n'y a PAS de commande", () => {
+    const decision = decideFloor(policy(100, null), {
+      quantity: null,
+      observedVolumeRatioBp: null,
+    });
+
+    expect(decision.tier).toBe("hard");
+    expect(decision.unlock).toMatchObject({ quantityMet: false });
+  });
+
+  /**
+   * Le corollaire qui rend la promesse d'une projection DÉMONTRABLE : la saisie
+   * refuse une porte dont les deux conditions sont nulles, donc au moins une
+   * est posée — et sans mesure, aucune des deux n'est remplie.
+   */
+  it("ne peut ouvrir AUCUNE porte sans la moindre mesure", () => {
+    const doors = [policy(100, null), policy(null, 12_500), policy(100, 12_500)];
+
+    for (const door of doors) {
+      expect(decideFloor(door, { quantity: null, observedVolumeRatioBp: null }).tier).toBe("hard");
+    }
+  });
 });
 
 describe("ce que la décision rend à figer", () => {

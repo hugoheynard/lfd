@@ -79,13 +79,13 @@ Une question, une méthode. Ce sont des **variantes de la même question**, pas 
 recettes de plus — chacune écarte délibérément quelque chose, et sa raison est
 écrite au-dessus d'elle.
 
-| La question                         | La méthode                          | Ce qu'elle écarte                                                                             |
-| ----------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| « combien coûte cet article ? »     | `price(item, quantity)`             | —                                                                                             |
-| « et pour ces dix-là ? »            | `priceAll(items)`                   | —                                                                                             |
-| « à combien je lui fais les 100 ? » | `tiers(item, quantity)`             | —                                                                                             |
-| « si le cumul valait N ? »          | `priceAtCumulative(item, n)`        | les **preuves** et les **engagements** : une projection ne peut pas prouver un volume observé |
-| « ce que le marché paie »           | `mercurialeAlone(...)` _(statique)_ | **barème et plancher** : on mesure ce qu'une mercuriale accorde SEULE                         |
+| La question                         | La méthode                          | Ce qu'elle écarte                                                                                                                                                                               |
+| ----------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| « combien coûte cet article ? »     | `price(item, quantity)`             | —                                                                                                                                                                                               |
+| « et pour ces dix-là ? »            | `priceAll(items)`                   | —                                                                                                                                                                                               |
+| « à combien je lui fais les 100 ? » | `tiers(item, quantity)`             | —                                                                                                                                                                                               |
+| « si le cumul valait N ? »          | `priceAtCumulative(item, n)`        | les **preuves** et les **engagements** : une projection ne prouve ni un volume observé, ni une commande — la porte d'un plancher dynamique y reste donc fermée des deux côtés (R15, 2026-09-09) |
+| « ce que le marché paie »           | `mercurialeAlone(...)` _(statique)_ | **barème et plancher** : on mesure ce qu'une mercuriale accorde SEULE                                                                                                                           |
 
 Et pour qui n'a qu'un SKU : `Pricer.for(request)` / `Pricer.forAll(request)`.
 

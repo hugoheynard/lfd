@@ -1141,8 +1141,15 @@ export interface VolumeCommitmentView {
  * C'est ce qui rend le devis temporel possible sans rien inventer : plutôt que
  * de rejouer côté écran la règle « le plus haut palier atteint gagne », on
  * demande au serveur de RÉSOUDRE à chaque niveau de cumul. Chaque point rendu
- * est donc un prix produit par la fonction qui facture, exactement comme si le
- * client y était.
+ * est donc un prix produit par la fonction qui facture.
+ *
+ * ⚠️ **« exactement comme si le client y était » a été retiré le 2026-09-09**,
+ * et l'écart est nommé plutôt que tu : la charge ne dit pas quelle COMMANDE
+ * amène à chaque niveau, alors que la porte d'un plancher dynamique se juge sur
+ * la commande. Faute de la connaître, le serveur ne l'ouvre pas — un point peut
+ * donc être relevé par le mur dur là où la commande réelle l'aurait fait
+ * tomber. L'écart penche du côté de la maison ; il ne penche pas du côté de la
+ * vérité (R15).
  *
  * `cumulativeQuantities` sont des niveaux de **cumul**, pas des quantités de
  * commande : c'est la mesure sur laquelle l'étage volume se juge sous

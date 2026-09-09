@@ -32,8 +32,15 @@ export interface PriceFloorPolicy {
 
 /** Ce qu'on sait au moment de décider : la commande, et l'historique. */
 export interface UnlockEvidence {
-  /** La quantité de CE SKU dans CETTE commande, lignes déjà fusionnées. */
-  readonly quantity: number;
+  /**
+   * La quantité de CE SKU dans CETTE commande, lignes déjà fusionnées.
+   *
+   * `null` = **il n'y a pas de commande**. Une projection, un comparatif, un
+   * écran de simulation n'en ont pas : le nombre qu'ils manipulent est un cumul
+   * de saison ou une hypothèse, jamais un panier. Sans ce mot, ils devaient en
+   * inventer un — et la porte s'ouvrait dessus (R15).
+   */
+  readonly quantity: number | null;
   /**
    * Le ratio du volume observé sur son volume de référence, en points de base.
    * `null` = pas de référence (article neuf, aucun historique).
@@ -62,10 +69,16 @@ export interface FloorDecision {
  * feraient du plancher dynamique un plancher tout court, ce que la saisie
  * refuse.
  *
- * **Faute de mesure, on protège.** Sans volume de référence, la condition de
- * volume est *non remplie* et le mur s'applique. Le défaut penche du côté de la
- * maison : un déverrouillage par ignorance serait une remise accordée par un
- * trou dans les données, et personne ne la verrait passer.
+ * **Faute de mesure, on protège**, et des DEUX côtés. Sans volume de référence,
+ * la condition de volume est *non remplie* ; sans commande, celle de quantité
+ * l'est aussi. Le défaut penche du côté de la maison : un déverrouillage par
+ * ignorance serait une remise accordée par un trou dans les données, et personne
+ * ne la verrait passer.
+ *
+ * 🔴 La symétrie est le garde-fou lui-même. Tant que `quantity` était un nombre
+ * obligatoire, un appelant sans commande devait en inventer une, et la règle
+ * ci-dessus n'était tenable que d'un côté — c'est exactement par là que la
+ * projection ouvrait la porte sur un cumul de saison (R15, 2026-09-09).
  *
  * La décision rend ce qu'elle a mesuré, et l'appelant le **fige avec le prix**.
  * C'est ce qui rend le plancher dynamique tenable : faire dépendre un prix de
@@ -79,7 +92,8 @@ export function decideFloor(policy: PriceFloorPolicy, evidence: UnlockEvidence):
   }
 
   const quantityMet =
-    dynamic.unlock.minQuantity === null || evidence.quantity >= dynamic.unlock.minQuantity;
+    dynamic.unlock.minQuantity === null ||
+    (evidence.quantity !== null && evidence.quantity >= dynamic.unlock.minQuantity);
   const volumeMet =
     dynamic.unlock.minVolumeRatioBp === null ||
     (evidence.observedVolumeRatioBp !== null &&

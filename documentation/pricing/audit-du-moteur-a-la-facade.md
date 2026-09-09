@@ -119,6 +119,14 @@ fait, ce qu'il coûte, ce qui ne le tient pas, le numéro au registre.
 
 ## B.1 🔴 La projection ouvre le plancher dynamique sur une quantité qui n'est pas une commande — R15
 
+> 🟠 **À moitié corrigé le 2026-09-09**, et la racine n'était pas ici :
+> `UnlockEvidence` ne savait pas dire « il n'y a pas de commande ». Le prix
+> **sous le mur dur** est parti ; la fidélité du banc reste ouverte, parce que
+> la charge de projection ne dit pas quelle commande amène à chaque niveau. Ce
+> constat est conservé tel qu'il a été écrit ; le raisonnement, la branche
+> écartée à tort et la contradiction sont au
+> [journal de remédiation](journal-de-remediation.md).
+
 **Le fait.** `priceAtCumulative(item, N)`
 (`apps/lfd-api/src/b2b/pricing/domain/loaded-pricer.ts:196`) construit un
 contexte où `quantity` **et** `cumulativeQuantity` valent `N`, puis `resolve()`

@@ -120,6 +120,15 @@ const GATED_ON_VOLUME: PriceFloorPolicy = {
   },
 };
 
+/** Un mur à 90 %, qui s'abaisse à 50 % dès 50 pièces **commandées**. */
+const GATED_ON_QUANTITY: PriceFloorPolicy = {
+  hard: { mode: "percent", bp: 9_000 },
+  dynamic: {
+    floor: { mode: "percent", bp: 5_000 },
+    unlock: { minQuantity: 50, minVolumeRatioBp: null },
+  },
+};
+
 /** Un engagement : 10 000 pièces promises sur la saison. */
 const PROMISE: VolumeCommitment = {
   id: "com_1",
@@ -406,6 +415,33 @@ describe("priceAtCumulative — « si ce niveau était atteint »", () => {
     expect(pricer.price(CROISSANT, 10).finalMillicents).toBe(180_000);
     expect(pricer.priceAtCumulative(CROISSANT, 10).finalMillicents).toBe(200_000);
     expect(pricer.priceAtCumulative(CROISSANT, 10).commitment).toBeNull();
+  });
+
+  /**
+   * Régression R15 : la porte s'ouvrait sur la quantité **projetée**.
+   *
+   * `priceAtCumulative` posait `quantity = cumulative`, et la porte se jugeait
+   * dessus. Une politique déverrouillée par la seule QUANTITÉ — légale, seules
+   * les deux conditions nulles sont refusées — s'ouvrait donc à un cumul de
+   * saison, et le banc d'essai annonçait un prix **sous le mur dur** qu'aucune
+   * commande ne sert. Le cas de la porte fermée qui existait n'avait qu'une
+   * condition de volume : il ne pouvait pas le voir (fix 2026-09-09).
+   */
+  it("🔴 n'ouvre PAS la porte dynamique posée sur une QUANTITÉ", () => {
+    const pricer = pricerOver({
+      rules: [alteration("promo", 5_000)],
+      floors: [floor(GATED_ON_QUANTITY)],
+    });
+
+    // Une COMMANDE de 50 pièces ouvre la porte : le plancher tombe à 50 %.
+    expect(pricer.price(CROISSANT, 50).finalMillicents).toBe(100_000);
+
+    // Le même nombre lu comme un CUMUL de saison ne prouve aucune commande —
+    // et 10 000 pièces sur l'année ne disent rien de celle qu'on passera.
+    const projected = pricer.priceAtCumulative(CROISSANT, 10_000);
+    expect(projected.finalMillicents).toBe(180_000);
+    expect(projected.floorDecision?.tier).toBe("hard");
+    expect(projected.floorDecision?.quantityMet).toBe(false);
   });
 });
 

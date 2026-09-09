@@ -146,6 +146,11 @@ export class LoadedPricer {
    * **fermée**, ce qui est la lecture prudente — un écran ne peut pas prouver
    * un volume, et l'ouvrir sur une hypothèse accorderait une remise que rien
    * n'a établie.
+   *
+   * ⚠️ Cette phrase a été **fausse d'un côté** jusqu'au 2026-09-09 : la porte
+   * restait bien fermée sur une condition de volume, et s'ouvrait sur une
+   * condition de quantité, faute pour `UnlockEvidence` de savoir dire « pas de
+   * commande ». Il sait le dire depuis (R15).
    */
   static over(
     materials: PricingMaterials,
@@ -194,9 +199,10 @@ export class LoadedPricer {
    * ressemblent et n'ont pas la même réponse.
    */
   priceAtCumulative(item: PricedItem, cumulative: number): PricedArticle {
-    // 🔴 **Sans les preuves**, et c'est une décision : une projection ne peut
-    // pas prouver un volume observé. Ouvrir la porte d'un plancher dynamique
-    // sur une hypothèse accorderait une remise que rien n'a établie.
+    // 🔴 **Sans aucune preuve**, et c'est une décision : une projection ne peut
+    // prouver ni un volume observé, ni une commande. `N` est un cumul de saison,
+    // pas un panier — le passer à la porte d'un plancher dynamique l'ouvrirait
+    // sur une hypothèse, et accorderait une remise que rien n'a établie.
     return this.resolve(item, this.contextFor(item, cumulative, cumulative), null, false);
   }
 
@@ -378,19 +384,29 @@ export class LoadedPricer {
     item: PricedItem,
     context: PricingContext,
     commitment: CommitmentDecisionView | null,
-    /** La mesure d'historique est-elle recevable pour cette question ? */
-    withEvidence: boolean,
+    /**
+     * Cette question dispose-t-elle de **mesures** — une commande réelle, un
+     * historique ?
+     *
+     * `false` ferme la porte du plancher dynamique **par construction**, et non
+     * par un cas particulier : la saisie refuse une porte dont les deux
+     * conditions sont nulles, donc au moins une est posée, et aucune des deux
+     * n'est prouvée ici (vérifié le 2026-09-09).
+     */
+    measured: boolean,
   ): PricedArticle {
     const scoped = this.scopedFloorFor(context);
     // Deux questions distinctes : quel plancher VISE l'article, puis lequel de
     // ses étages s'ouvre — la seconde dépendant de la commande et de
-    // l'historique. La porte se juge sur la quantité de CETTE commande.
+    // l'historique. La porte se juge sur la quantité de CETTE commande, et sur
+    // rien d'autre : `context.quantity` n'en est une que si la question posée
+    // en est une (R15).
     const decision =
       scoped === null
         ? null
         : decideFloor(scoped.policy, {
-            quantity: context.quantity,
-            observedVolumeRatioBp: withEvidence ? this.observedRatioFor(item) : null,
+            quantity: measured ? context.quantity : null,
+            observedVolumeRatioBp: measured ? this.observedRatioFor(item) : null,
           });
     const applied = decision?.applied ?? null;
     const resolved = this.resolveAt(item, context, applied);

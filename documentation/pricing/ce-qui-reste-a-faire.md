@@ -48,7 +48,7 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | **R12** | Trois requêtes de production jamais lancées                                | 🟡        | trois `psql`            |
 | **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                         | 🔵        | décision                |
 | **R14** | Les conditionnements — conception **périmée**                              | 🔵        | à réécrire              |
-| **R15** | La projection ouvre le plancher dynamique sur une quantité **fictive**     | 🔴        | un test, un correctif   |
+| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**          | 🟠        | contrat + front         |
 | **R16** | Un engagement de portée famille est mesuré **par SKU**                     | 🔴        | décision, puis un lot   |
 | **R17** | La lecture datée `at` ignore ce qui a été **archivé depuis**               | 🔴 latent | décision                |
 | **R18** | Engagement et gabarit répondent **400** là où le reste répond 404 et 409   | 🟠        | une heure               |
@@ -62,10 +62,10 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | **R26** | `Pricer` n'a **aucun** appelant ; la façade unique reste à dessiner        | 🔵        | conception, `vitruve`   |
 
 **Cinq entrées sont closes le jour même de ce registre** — R1, R3, R5, R7 et R8.
-**Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26). Il
-reste **vingt et une** entrées, dont trois décisions et trois documents à
-réécrire. Elles restent listées avec leur preuve plutôt que retirées : une entrée
-effacée est une entrée que quelqu'un rouvrira.
+**Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26), et
+**R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **vingt et une**
+entrées, dont trois décisions et trois documents à réécrire. Elles restent listées avec leur preuve
+plutôt que retirées : une entrée effacée est une entrée que quelqu'un rouvrira.
 
 ⚠️ **Ce paragraphe disait « rien de ce qui reste ne fausse un prix résolu ».
 C'est faux depuis R15 et R16.** Le moteur — `resolvePrice`, la spécificité, le
@@ -73,6 +73,15 @@ plancher, l'arrondi — reste propre. Mais l'objet qui l'appelle juge la porte
 d'un plancher dynamique sur une quantité qui n'est pas une commande, et mesure un
 engagement de famille sur un seul article. Ce qui fausse n'est plus _autour_ du
 moteur : c'est **dans sa porte**.
+
+**R15 est à moitié fermée le 2026-09-09.** Le prix **sous le mur dur** est parti
+— une projection ne peut plus ouvrir la porte d'un plancher, `UnlockEvidence`
+sachant désormais dire « il n'y a pas de commande ». Reste l'inverse : faute que
+la charge dise quelle commande amène à chaque niveau, la courbe peut être plus
+HAUTE que la grille des paliers du même écran. Le raisonnement, la branche
+écartée à tort et la contradiction qui l'a rattrapée sont au
+[journal de remédiation](journal-de-remediation.md) §8. **R16 reste entière** :
+elle fausse encore un prix résolu.
 
 ---
 
@@ -176,7 +185,27 @@ fait rougir le cas coursier, et lui seul.
 ⚠️ **Ce qu'il ne couvre pas** : la surtaxe de retard, qui dépend de l'heure
 limite. L'opposer ici mélangerait deux sujets ; elle a ses propres suites.
 
-### R15 🔴 La projection ouvre le plancher dynamique sur une quantité fictive
+### R15 🟠 La projection jugeait la porte sur un cumul — à moitié fermée
+
+> **2026-09-09 — la moitié dangereuse est fermée.** `UnlockEvidence.quantity`
+> est devenu `number | null` : « il n'y a pas de commande » est un mot du type,
+> `quantityMet` se calcule comme `volumeMet`, et une projection ne peut plus
+> annoncer un prix **sous le mur dur**.
+>
+> **Ce qui reste, et pourquoi c'est une tranche et non un correctif.** La porte
+> se juge sur une quantité de COMMANDE ; la charge de projection ne porte que
+> des cumuls. Faute de mesure on protège, donc la porte ne s'ouvre jamais — et
+> la grille des paliers, elle, la rouvre au seuil sondé : sur l'écran qui
+> affiche les deux, la courbe peut être plus haute que la grille. L'écran
+> **calcule déjà** la quantité de chaque échéance (`commitment-bench.ts`,
+> `quantity = cumulative - previous`) et ne l'envoie pas. La lui faire envoyer
+> coûte un contrat additif, une requête et un lot front — plus une décision : la
+> charge partage aujourd'hui un point entre les trois scénarios
+> (`projectionLevels`), ce qui empêche un point de porter une seule quantité.
+>
+> Raisonnement complet, branche écartée à tort et contradiction :
+> [journal de remédiation](journal-de-remediation.md) §8. Le constat d'origine
+> est conservé ci-dessous, mot pour mot.
 
 **Le fait, vérifié le 2026-09-08.** `priceAtCumulative(item, N)`
 (`loaded-pricer.ts:196`) construit un contexte où `quantity` **et**
@@ -506,18 +535,19 @@ ferme. Détail : audit B.5.
 Six entrées portées comme ouvertes par les documents d'origine **ne le sont
 plus**. Elles sont ici avec leur preuve, pour que personne ne reparte les faire.
 
-| Portée comme ouverte par                              | En fait                                                                                                                                              |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `audit-fable.md` §1 — « `lint:gates` échoue »         | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                                                         |
-| `audit-fable.md` B3 — « un gabarit se pose à moitié » | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.                                         |
-| `audit-fable.md` P1 — « rien ne borne la quantité »   | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                                                              |
-| `durcir-le-calcul-des-prix.md` chantier 1             | ✅ Livré le 2026-09-09. Cinq appelants de `resolvePrice` → **un**, et `lint:price-pipeline` est à **1 entrée**.                                      |
-| `durcir-le-calcul-des-prix.md` chantiers 2 et 5       | ✅ `lint:business-day` sur les fenêtres tarifaires, et `pricing-budget.e2e-spec.ts` qui compte les opérations ORM.                                   |
-| `etat-des-lieux-mercuriale-client.md` T7              | ✅ Les bornes de fenêtre passent par `businessDayStart` ; la porte le tient.                                                                         |
-| **R1 de ce registre** — le prix ramené à zéro         | ✅ Clos le **2026-09-09**, cf. §2 : le champ traverse la chaîne, la colonne est posée, et `assertConsistent` exige désormais **davantage** qu'avant. |
-| **R3 de ce registre** — la parité devis ↔ facture     | ✅ Clos le **2026-09-09**, cf. §2 : quatre cas comparent le devis public aux colonnes de la commande, montant par montant.                           |
-| **R5 de ce registre** — le barème de zone figé        | ✅ Clos le **2026-09-09**, cf. §3 : colonne additive, garde dans l'agrégat, et un cas qui survit à la modification de la zone.                       |
-| **R7 et R8 de ce registre**                           | ✅ Clos le **2026-09-09** : l'estampille du cache, et la 29ᵉ porte qui dérive la propriété d'un modèle de qui l'écrit.                               |
+| Portée comme ouverte par                                           | En fait                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit-fable.md` §1 — « `lint:gates` échoue »                      | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                                                                                                                                                               |
+| `audit-fable.md` B3 — « un gabarit se pose à moitié »              | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.                                                                                                                                               |
+| `audit-fable.md` P1 — « rien ne borne la quantité »                | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                                                                                                                                                                    |
+| `durcir-le-calcul-des-prix.md` chantier 1                          | ✅ Livré le 2026-09-09. Cinq appelants de `resolvePrice` → **un**, et `lint:price-pipeline` est à **1 entrée**.                                                                                                                                            |
+| `durcir-le-calcul-des-prix.md` chantiers 2 et 5                    | ✅ `lint:business-day` sur les fenêtres tarifaires, et `pricing-budget.e2e-spec.ts` qui compte les opérations ORM.                                                                                                                                         |
+| `etat-des-lieux-mercuriale-client.md` T7                           | ✅ Les bornes de fenêtre passent par `businessDayStart` ; la porte le tient.                                                                                                                                                                               |
+| **R1 de ce registre** — le prix ramené à zéro                      | ✅ Clos le **2026-09-09**, cf. §2 : le champ traverse la chaîne, la colonne est posée, et `assertConsistent` exige désormais **davantage** qu'avant.                                                                                                       |
+| **R3 de ce registre** — la parité devis ↔ facture                  | ✅ Clos le **2026-09-09**, cf. §2 : quatre cas comparent le devis public aux colonnes de la commande, montant par montant.                                                                                                                                 |
+| **R15 de ce registre** — le prix **sous le mur dur** en projection | ✅ Clos le **2026-09-09** : `UnlockEvidence.quantity` est nullable, et deux cas rouges avant le correctif le tiennent (`loaded-pricer.spec.ts`, `floor-policy.spec.ts`). ⚠️ **Seule cette moitié est close** — la fidélité du banc reste ouverte sous R15. |
+| **R5 de ce registre** — le barème de zone figé                     | ✅ Clos le **2026-09-09**, cf. §3 : colonne additive, garde dans l'agrégat, et un cas qui survit à la modification de la zone.                                                                                                                             |
+| **R7 et R8 de ce registre**                                        | ✅ Clos le **2026-09-09** : l'estampille du cache, et la 29ᵉ porte qui dérive la propriété d'un modèle de qui l'écrit.                                                                                                                                     |
 
 ⚠️ **Le chantier 4 de `durcir` n'est fermé qu'à MOITIÉ**, et je l'avais annoncé
 fermé. Ce qui l'est : l'écart au tarif, descendu dans `@lfd/money` (`gapBp`,
