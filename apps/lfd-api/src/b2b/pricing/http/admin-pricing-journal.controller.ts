@@ -1,13 +1,11 @@
 import { Controller, Get, Param } from "@nestjs/common";
+import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { PricingJournalReader } from "../domain/ports/pricing-journal.reader.js";
+import { ReadPricingJournalQuery } from "../application/queries/read-pricing-journal.query.js";
+import { ReadSubjectJournalQuery } from "../application/queries/read-subject-journal.query.js";
 import { UnknownPricingSubjectError } from "../domain/pricing-errors.js";
 import type { PricingJournalEntryView } from "@lfd/contracts";
-import type { JournalEntry } from "../domain/ports/pricing-journal.reader.js";
-
-/** Au-delà, ce n'est plus une histoire, c'est un fichier de logs. */
-const RECENT_ENTRIES = 50;
 
 const SUBJECT_TYPES = ["rule", "floor", "ladder"] as const;
 
@@ -22,23 +20,25 @@ const SUBJECT_TYPES = ["rule", "floor", "ladder"] as const;
 @Controller("admin/pricing/journal")
 @AdminSurface("b2b_pricing")
 export class AdminPricingJournalController {
-  constructor(private readonly journal: PricingJournalReader) {}
+  constructor(private readonly queries: QueryBus) {}
 
   /** Les derniers actes, tous sujets confondus — « qui a touché aux prix ». */
   @Get()
-  async recent(): Promise<PricingJournalEntryView[]> {
-    const entries = await this.journal.recent(RECENT_ENTRIES);
-    return entries.map(journalView);
+  recent(): Promise<PricingJournalEntryView[]> {
+    return this.queries.execute<ReadPricingJournalQuery, PricingJournalEntryView[]>(
+      new ReadPricingJournalQuery(),
+    );
   }
 
   /** Tout ce qui est arrivé à cette règle ou à cette limite, du plus récent au plus ancien. */
   @Get(":subjectType/:subjectId")
-  async forSubject(
+  forSubject(
     @Param("subjectType") subjectType: string,
     @Param("subjectId") subjectId: string,
   ): Promise<PricingJournalEntryView[]> {
-    const entries = await this.journal.forSubject(parseSubjectType(subjectType), subjectId);
-    return entries.map(journalView);
+    return this.queries.execute<ReadSubjectJournalQuery, PricingJournalEntryView[]>(
+      new ReadSubjectJournalQuery(parseSubjectType(subjectType), subjectId),
+    );
   }
 }
 
@@ -53,18 +53,4 @@ function parseSubjectType(value: string): (typeof SUBJECT_TYPES)[number] {
     throw new UnknownPricingSubjectError(value);
   }
   return match;
-}
-
-/** Acte de domaine → vue de fil. Les dates traversent en ISO, comme partout. */
-function journalView(entry: JournalEntry): PricingJournalEntryView {
-  return {
-    id: entry.id,
-    subjectType: entry.subjectType,
-    subjectId: entry.subjectId,
-    act: entry.kind,
-    actor: entry.actor,
-    occurredAt: entry.at.toISOString(),
-    reason: entry.reason,
-    summary: entry.summary,
-  };
 }

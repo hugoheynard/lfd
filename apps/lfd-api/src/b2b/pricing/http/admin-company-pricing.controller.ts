@@ -7,6 +7,7 @@ import {
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
   type MercurialeDraftResponse,
+  type MercurialeDraftView,
   type PoseCompanyMercurialePayload,
   type RenameCompanyMercurialePayload,
   type SaveMercurialeDraftPayload,
@@ -22,7 +23,7 @@ import {
   Post,
   Put,
 } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
@@ -32,8 +33,10 @@ import {
   PoseCompanyMercurialeCommand,
   RenameCompanyMercurialeCommand,
 } from "../application/commands/company-mercuriale.handlers.js";
-import { CompanyPricingQuery } from "../application/queries/company-pricing.query.js";
-import { MercurialeDraftStore } from "../application/ports/mercuriale-draft.store.js";
+import { DiscardMercurialeDraftCommand } from "../application/commands/discard-mercuriale-draft.command.js";
+import { SaveMercurialeDraftCommand } from "../application/commands/save-mercuriale-draft.command.js";
+import { ReadCompanyPricingQuery } from "../application/queries/read-company-pricing.query.js";
+import { ReadMercurialeDraftQuery } from "../application/queries/read-mercuriale-draft.query.js";
 
 /**
  * **La tarification d'UN client** — l'onglet « Tarifs » de sa fiche.
@@ -62,14 +65,15 @@ import { MercurialeDraftStore } from "../application/ports/mercuriale-draft.stor
 export class AdminCompanyPricingController {
   constructor(
     private readonly commands: CommandBus,
-    private readonly pricing: CompanyPricingQuery,
-    private readonly drafts: MercurialeDraftStore,
+    private readonly queries: QueryBus,
   ) {}
 
   /** Ce que ce client paie **aujourd'hui**, article par article, et ses mercuriales. */
   @Get()
   async read(@Param("companyId") companyId: string): Promise<CompanyPricingView> {
-    return this.pricing.forCompany(companyId);
+    return this.queries.execute<ReadCompanyPricingQuery, CompanyPricingView>(
+      new ReadCompanyPricingQuery(companyId),
+    );
   }
 
   /**
@@ -145,7 +149,10 @@ export class AdminCompanyPricingController {
    */
   @Get("mercuriale/draft")
   async draft(@Param("companyId") companyId: string): Promise<MercurialeDraftResponse> {
-    return { draft: await this.drafts.forCompany(companyId) };
+    const draft = await this.queries.execute<ReadMercurialeDraftQuery, MercurialeDraftView | null>(
+      new ReadMercurialeDraftQuery(companyId),
+    );
+    return { draft };
   }
 
   /**
@@ -160,13 +167,17 @@ export class AdminCompanyPricingController {
     @Body(new ZodBody(saveMercurialeDraftPayloadSchema)) payload: SaveMercurialeDraftPayload,
     @StaffSub() staffSub: string,
   ): Promise<void> {
-    await this.drafts.save(companyId, payload, staffSub);
+    await this.commands.execute<SaveMercurialeDraftCommand, void>(
+      new SaveMercurialeDraftCommand(companyId, payload, staffSub),
+    );
   }
 
   /** **Jeter le brouillon.** Silencieux s'il n'y en a pas : l'état visé est atteint. */
   @Delete("mercuriale/draft")
   @HttpCode(HttpStatus.NO_CONTENT)
   async discardDraft(@Param("companyId") companyId: string): Promise<void> {
-    await this.drafts.discard(companyId);
+    await this.commands.execute<DiscardMercurialeDraftCommand, void>(
+      new DiscardMercurialeDraftCommand(companyId),
+    );
   }
 }

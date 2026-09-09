@@ -6,7 +6,7 @@ import {
   type VolumeCommitmentView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
@@ -15,7 +15,7 @@ import {
   CloseVolumeCommitmentCommand,
   SignVolumeCommitmentCommand,
 } from "../application/commands/volume-commitment.handlers.js";
-import { VolumeCommitmentsQuery } from "../application/queries/volume-commitments.query.js";
+import { ListVolumeCommitmentsQuery } from "../application/queries/list-volume-commitments.query.js";
 import type { CreatedIdResponse } from "@lfd/contracts";
 
 /**
@@ -32,13 +32,15 @@ import type { CreatedIdResponse } from "@lfd/contracts";
 export class AdminVolumeCommitmentsController {
   constructor(
     private readonly commands: CommandBus,
-    private readonly commitments: VolumeCommitmentsQuery,
+    private readonly queries: QueryBus,
   ) {}
 
   /** Le suivi d'un client : ses engagements, et le volume atteint sur chacun. */
   @Get()
   async list(@Query("companyId") companyId: string): Promise<readonly VolumeCommitmentView[]> {
-    return this.commitments.forCompany(companyId);
+    return this.queries.execute<ListVolumeCommitmentsQuery, readonly VolumeCommitmentView[]>(
+      new ListVolumeCommitmentsQuery(companyId),
+    );
   }
 
   @Post()

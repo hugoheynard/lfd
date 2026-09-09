@@ -24,11 +24,13 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { Clock } from "../../../platform/time/clock.js";
-import { PriceProjectionQuery } from "../application/queries/price-projection.query.js";
+import { ComparePricingBoardQuery } from "../application/queries/compare-pricing-board.query.js";
+import { ListArchivedPriceRulesQuery } from "../application/queries/list-archived-price-rules.query.js";
+import { ProjectPriceQuery } from "../application/queries/project-price.query.js";
+import { ReadPricingBoardQuery } from "../application/queries/read-pricing-board.query.js";
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
@@ -42,9 +44,7 @@ import {
   ResumeVolumeLadderCommand,
   ArchiveVolumeLadderCommand,
 } from "../application/commands/pricing.commands.js";
-import { BoardComparisonService } from "../application/board-comparison.service.js";
 import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
-import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
 import type {
   CreatedIdResponse,
   PriceRuleView,
@@ -73,11 +73,8 @@ import type { PriceScope } from "../domain/price-rule.js";
 @AdminSurface("b2b_pricing")
 export class AdminPricingController {
   constructor(
-    private readonly board: PricingBoardReader,
-    private readonly comparison: BoardComparisonService,
     private readonly commands: CommandBus,
-    private readonly projection: PriceProjectionQuery,
-    private readonly clock: Clock,
+    private readonly queries: QueryBus,
   ) {}
 
   /**
@@ -87,13 +84,12 @@ export class AdminPricingController {
    * instant y reviennent, les suspensions postérieures ne comptent pas. Ce que
    * la lecture datée montre, ce sont les DÉCISIONS en vigueur ce jour-là — pas
    * le prix facturé, le tarif canonique n'étant pas historisé.
-   *
-   * `readForScreen` et non `read` : c'est la seule route qui montre le rapport
-   * prix/volume, donc la seule qui doive payer les requêtes de ventes.
    */
   @Get()
   read(@Query("at") at?: string): Promise<PricingBoardView> {
-    return this.board.readForScreen(at === undefined ? undefined : parseInstant(at));
+    return this.queries.execute<ReadPricingBoardQuery, PricingBoardView>(
+      new ReadPricingBoardQuery(at === undefined ? undefined : parseInstant(at)),
+    );
   }
 
   /**
@@ -106,7 +102,9 @@ export class AdminPricingController {
    */
   @Get("comparison")
   compare(@Query("from") from: string, @Query("to") to: string): Promise<PricingComparisonView> {
-    return this.comparison.compare(parseInstant(from), parseInstant(to));
+    return this.queries.execute<ComparePricingBoardQuery, PricingComparisonView>(
+      new ComparePricingBoardQuery(parseInstant(from), parseInstant(to)),
+    );
   }
 
   /**
@@ -119,7 +117,9 @@ export class AdminPricingController {
    */
   @Get("rules/archived")
   archivedRules(): Promise<PriceRuleView[]> {
-    return this.board.archivedRules();
+    return this.queries.execute<ListArchivedPriceRulesQuery, PriceRuleView[]>(
+      new ListArchivedPriceRulesQuery(),
+    );
   }
 
   /**
@@ -215,7 +215,9 @@ export class AdminPricingController {
   async project(
     @Body(new ZodBody(priceProjectionPayloadSchema)) payload: PriceProjectionPayload,
   ): Promise<PriceProjectionView> {
-    return this.projection.project(payload, this.clock.now());
+    return this.queries.execute<ProjectPriceQuery, PriceProjectionView>(
+      new ProjectPriceQuery(payload),
+    );
   }
 
   @Post("rules")

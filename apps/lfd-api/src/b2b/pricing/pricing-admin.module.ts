@@ -70,6 +70,20 @@ import {
   SignVolumeCommitmentHandler,
 } from "./application/commands/volume-commitment.handlers.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
+import { ReadPricingBoardHandler } from "./application/queries/read-pricing-board.handler.js";
+import { ComparePricingBoardHandler } from "./application/queries/compare-pricing-board.handler.js";
+import { ListArchivedPriceRulesHandler } from "./application/queries/list-archived-price-rules.handler.js";
+import { ProjectPriceHandler } from "./application/queries/project-price.handler.js";
+import { ReadCompanyPricingHandler } from "./application/queries/read-company-pricing.handler.js";
+import { ReadMercurialeDraftHandler } from "./application/queries/read-mercuriale-draft.handler.js";
+import { ReadPricingJournalHandler } from "./application/queries/read-pricing-journal.handler.js";
+import { ReadSubjectJournalHandler } from "./application/queries/read-subject-journal.handler.js";
+import { ReadMercurialeBenchmarkHandler } from "./application/queries/read-mercuriale-benchmark.handler.js";
+import { ListPriceTemplatesHandler } from "./application/queries/list-price-templates.handler.js";
+import { GetPriceTemplateHandler } from "./application/queries/get-price-template.handler.js";
+import { ListVolumeCommitmentsHandler } from "./application/queries/list-volume-commitments.handler.js";
+import { SaveMercurialeDraftHandler } from "./application/commands/save-mercuriale-draft.handler.js";
+import { DiscardMercurialeDraftHandler } from "./application/commands/discard-mercuriale-draft.handler.js";
 import { PricerModule } from "./pricer.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { CompanyMercurialeRepository } from "./domain/ports/company-mercuriale.repository.js";
@@ -127,6 +141,23 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     PriceTemplatesQuery,
     MercurialeBenchmarkQuery,
     CompanyPricingQuery,
+    // Les lectures de ces cinq contrôleurs ont chacune un NOM et un handler
+    // depuis le 2026-09-09 : les services ci-dessus ne s'injectent plus dans du
+    // HTTP, ils sont délégués depuis le bus.
+    ReadPricingBoardHandler,
+    ComparePricingBoardHandler,
+    ListArchivedPriceRulesHandler,
+    ProjectPriceHandler,
+    ReadCompanyPricingHandler,
+    ReadMercurialeDraftHandler,
+    ReadPricingJournalHandler,
+    ReadSubjectJournalHandler,
+    ReadMercurialeBenchmarkHandler,
+    ListPriceTemplatesHandler,
+    GetPriceTemplateHandler,
+    ListVolumeCommitmentsHandler,
+    SaveMercurialeDraftHandler,
+    DiscardMercurialeDraftHandler,
     // 🔴 **Les trois dernières lectures directes de la couche application.**
     // Chacune interrogeait sa table en Prisma depuis un service applicatif —
     // ce que `CLAUDE.md` §4 interdit — et l'entrée R21 n'en comptait qu'une.

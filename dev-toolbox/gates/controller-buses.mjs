@@ -78,6 +78,28 @@ const SCOPE = [
   // Né drainé le 2026-09-02 : la porte machine du contrôle de santé sert la
   // MÊME requête que la porte staff, par le même bus. Deux serrures, une lecture.
   "apps/lfd-api/src/b2b/catalog/http/ops-catalog-health.controller.ts",
+  // Drainé le 2026-09-09 (dernière tranche de R21) : `PricingBoardReader`, `BoardComparisonService`,
+  // `PriceProjectionQuery` et `Clock` — l'horloge est descendue dans le handler
+  // de la projection, un contrôleur ne décide pas d'un instant.
+  "apps/lfd-api/src/b2b/pricing/http/admin-pricing.controller.ts",
+  // Drainé le 2026-09-09 : `CompanyPricingQuery` et `MercurialeDraftStore` — les
+  // deux écritures du brouillon passent par `CommandBus`, sa lecture par `QueryBus`.
+  "apps/lfd-api/src/b2b/pricing/http/admin-company-pricing.controller.ts",
+  // Drainé le 2026-09-09 : `PricingJournalReader`, et le mapping `journalView`
+  // avec lui — un contrôleur traduit du HTTP, il ne transforme pas un acte.
+  "apps/lfd-api/src/b2b/pricing/http/admin-pricing-journal.controller.ts",
+  // Drainé le 2026-09-09 : `PriceTemplatesQuery` et `MercurialeBenchmarkQuery`.
+  // Le `NotFoundException` reste au contrôleur, sur le `null` rendu : le lever
+  // au handler changerait la forme du corps servi à un front en service.
+  "apps/lfd-api/src/b2b/pricing/http/admin-price-templates.controller.ts",
+  // Drainé le 2026-09-09 : `VolumeCommitmentsQuery`.
+  "apps/lfd-api/src/b2b/pricing/http/admin-volume-commitments.controller.ts",
+  // Le SIXIÈME de `pricing/`, et il était déjà propre : il n'injecte que
+  // `CommandBus`. Il entre le 2026-09-09 avec les cinq autres, parce qu'un
+  // fichier conforme mais hors liste n'est pas protégé — la porte ne compte
+  // que ce qu'elle voit fauter, et rien n'aurait rougi le jour où quelqu'un y
+  // aurait injecté un port. Être vert et être tenu sont deux choses.
+  "apps/lfd-api/src/b2b/pricing/http/admin-price-floors.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

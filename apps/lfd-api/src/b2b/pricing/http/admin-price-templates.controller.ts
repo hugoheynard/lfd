@@ -19,7 +19,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
@@ -28,8 +28,9 @@ import {
   ApplyPriceTemplateCommand,
   SavePriceTemplateCommand,
 } from "../application/commands/price-template.handlers.js";
-import { MercurialeBenchmarkQuery } from "../application/queries/mercuriale-benchmark.query.js";
-import { PriceTemplatesQuery } from "../application/queries/price-templates.query.js";
+import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
+import { ListPriceTemplatesQuery } from "../application/queries/list-price-templates.query.js";
+import { ReadMercurialeBenchmarkQuery } from "../application/queries/read-mercuriale-benchmark.query.js";
 import type { CreatedIdResponse, PosedRulesResponse } from "@lfd/contracts";
 
 /**
@@ -45,8 +46,7 @@ import type { CreatedIdResponse, PosedRulesResponse } from "@lfd/contracts";
 export class AdminPriceTemplatesController {
   constructor(
     private readonly commands: CommandBus,
-    private readonly templates: PriceTemplatesQuery,
-    private readonly benchmark: MercurialeBenchmarkQuery,
+    private readonly queries: QueryBus,
   ) {}
 
   /**
@@ -58,17 +58,27 @@ export class AdminPriceTemplatesController {
    */
   @Get("benchmark")
   async benchmarkByProduct(): Promise<readonly MercurialeBenchmarkView[]> {
-    return this.benchmark.byProduct();
+    return this.queries.execute<ReadMercurialeBenchmarkQuery, readonly MercurialeBenchmarkView[]>(
+      new ReadMercurialeBenchmarkQuery(),
+    );
   }
 
   @Get()
   async list(@Query("kind") kind: string): Promise<readonly PriceTemplateView[]> {
-    return this.templates.list(priceTemplateKindSchema.parse(kind));
+    return this.queries.execute<ListPriceTemplatesQuery, readonly PriceTemplateView[]>(
+      new ListPriceTemplatesQuery(priceTemplateKindSchema.parse(kind)),
+    );
   }
 
+  /**
+   * Le 404 est **traduit ici** et non levé par la lecture : la forme du corps
+   * d'erreur est servie à un front en service, et la déplacer la changerait.
+   */
   @Get(":id")
   async byId(@Param("id") id: string): Promise<PriceTemplateView> {
-    const template = await this.templates.byId(id);
+    const template = await this.queries.execute<GetPriceTemplateQuery, PriceTemplateView | null>(
+      new GetPriceTemplateQuery(id),
+    );
     if (template === null) {
       throw new NotFoundException("Gabarit tarifaire introuvable.");
     }
