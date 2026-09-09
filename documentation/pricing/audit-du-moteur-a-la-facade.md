@@ -193,7 +193,23 @@ la portée d'un engagement se restreint à `product` / `variant` et une famille
 devient **inexprimable**. Tous les exemples du dossier (« 10 000 baguettes »)
 sont par article ; la seconde voie est la moins chère et la plus sûre.
 
-## B.3 🔴 La lecture datée est fausse dès qu'une décision a été archivée depuis — R17
+## ~~B.3~~ ✅ La lecture datée était fausse dès qu'une décision avait été archivée depuis — R17
+
+> **Close le 2026-09-09.** La branche prise est **`at` vrai partout** : les cinq
+> lectures ont leur variante datée, le cache est **contourné** pour une question
+> passée, et les deux sémantiques d'archivage n'en font plus qu'une. La décision
+> se prend une seule fois, dans `Pricer`, sous le nom de `PriceEpoch`.
+>
+> **Ce que ce constat n'avait pas vu** — et c'est la moitié du travail : le
+> plancher était la seule décision tarifaire **sans fenêtre**, et re-poser le
+> **réécrivait**. Datées les quatre autres familles sans lui, une relecture
+> aurait appliqué le plancher d'aujourd'hui aux prix d'alors — et un plancher
+> **relève**, donc le mode de défaillance était un prix historique **gonflé**,
+> silencieux. Conception, contradictions et fenêtres :
+> [`architecture-clore-nest-pas-ranger.md`](architecture-clore-nest-pas-ranger.md) ;
+> état de la ligne : [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md).
+>
+> Le constat d'origine suit.
 
 **Le fait.** Tous les lecteurs du chargeur excluent l'archivage **en absolu**,
 quel que soit `at` :
@@ -700,14 +716,16 @@ devrait inquiéter : la première (`architecture-pricer.md`) a ramené cinq entr
 1. **R15 et R16** (B.1, B.2) — deux tests qui échouent aujourd'hui, puis le
    correctif. Ce sont les deux seuls constats qui produisent un **prix faux** :
    l'un en défaveur de la maison, l'autre du client.
-2. **R17** (B.3) — trancher : `at` vrai partout, ou `at` retiré de la façade et
-   d'`OrderLinePricing`. Une porte qui ment est pire qu'une porte absente, et
-   elle n'a aujourd'hui aucun consommateur : c'est le moment le moins cher pour
-   la fermer.
+2. ~~**R17**~~ (B.3) — ✅ **fait le 2026-09-09** : `at` vrai partout. Elle a été
+   fermée pendant qu'elle n'avait aucun consommateur, ce qui était bien le
+   moment le moins cher — mais elle a coûté une migration et un changement de
+   modèle d'identité que ce classement ne prévoyait pas, le plancher n'ayant
+   pas de fenêtre.
 3. **R18 et R19** (B.4, B.5) — une heure, zéro risque, et ça ferme le vecteur
    exact de D10.
-4. **R26** (C.4) — la façade avec `lens`. C'est le chantier qui rend 1 à 3
-   **structurels** au lieu de corrigés. Il touche l'argent : `vitruve` d'abord.
+4. ~~**R26**~~ (C.4) — ✅ **fait le 2026-09-09**, en quatre lots, `vitruve`
+   d'abord. La façade avec `lens`, et `lint:price-door` qui rend le
+   contournement **inexprimable**.
 5. **R20** (B.6) — réécrire la partie B d'`architecture-resolution-de-prix.md`,
    les quatre phrases d'`ecrans-de-tarification.md`, les six lignes de l'index
    global, et les dates. Tant que le document de référence dit « la promesse ne
@@ -716,8 +734,14 @@ devrait inquiéter : la première (`architecture-pricer.md`) a ramené cinq entr
    `mercuriale-row.ts` sur `@lfd/money`. R23 rejoint R2 : c'est le même lot
    front, et il est le sixième du motif.
 
-R21, R24 et R25 tombent avec R26 ou se font en passant ; ils sont au registre
-pour que personne ne les redécouvre.
+⚠️ **Cette phrase disait « R21, R24 et R25 tombent avec R26 ou se font en
+passant ». R26 est close, et aucune des trois n'est tombée.** R21 avait un
+blocage que le quatrième lot a nommé — le tableau ne pouvait pas passer par la
+porte tant que le chargeur ne savait pas lire une date, c'est-à-dire tant que
+R17 restait ouverte. R17 l'est depuis, donc R21 est **faisable**, mais c'est un
+lot à part entière. R24 et R25 n'ont jamais dépendu de la façade. Elles sont au
+registre pour que personne ne les redécouvre — et pour que personne ne les
+croie faites.
 
 ---
 

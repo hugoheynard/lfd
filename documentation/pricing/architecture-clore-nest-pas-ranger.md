@@ -244,9 +244,10 @@ finit désactivée plutôt que corrigée. Ce qu'elle laisse passer est écrit da
 propre JSDoc : une famille dont un type voisin porte la fenêtre sans qu'elle-même
 l'ait.
 
-### 🔴 Deux entrées de la reconstitution ne sont pas datées
+### ✅ Les cinq entrées de la reconstitution sont datées
 
-Une reconstitution complète a **cinq entrées** ; trois le sont :
+Une reconstitution complète a **cinq entrées**, et c'est le tableau de bord de
+R17. Les cinq y sont :
 
 | #   | Entrée                                   | État                                                                        |
 | --- | ---------------------------------------- | --------------------------------------------------------------------------- |
@@ -266,9 +267,21 @@ terme de l'engagement. Ce qui ne change pas, c'est le **résultat** : le cumul s
 compte sur `order.createdAt`, et aucune commande n'est créée dans le futur. Dire
 « sans effet au présent » serait vrai du résultat et faux de la fenêtre.
 
-Reste donc la **quatrième**, et elle est du même genre : `catalogueArticle`
+⚠️ **Ce paragraphe annonçait la quatrième comme restante** — « `catalogueArticle`
 scelle au prix d'aujourd'hui, donc une relecture datée combine les décisions
-d'alors avec le tarif d'entrée du jour.
+d'alors avec le tarif d'entrée du jour ». C'était vrai à l'heure où il a été
+écrit, et le tableau au-dessus l'a démenti sans que la phrase soit relue : la
+porte **rescelle** les articles au tarif de la date demandée (`sealedAt`), et
+**refuse** l'article dont l'histoire ne remonte pas jusque-là plutôt que de lui
+prêter le prix du jour. La cinquième, elle, était la dangereuse — une lecture du
+3 mars appliquait un palier atteint en novembre, et rien ne le signalait.
+
+**R17 est donc close**, et le registre le porte :
+[`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md). Ce qui ne l'est pas, et
+qu'il ne faut pas confondre avec elle, c'est **R21** : le tableau de
+tarification garde sa propre séquence de chargement. Il lit juste — c'est le
+chargeur qui a rejoint sa sémantique, pas l'inverse — mais il la lit **à côté**
+de la porte.
 
 ### Et la migration qui n'a pas eu lieu
 
