@@ -5,7 +5,7 @@ import { entryMillicents, floorMillicentsOf, mercurialeRow, tally } from '../mer
 
 /**
  * La marge telle que le SERVEUR la sert : le plancher **appliqué**, déjà ramené
- * en centimes sur l'article. L'écran la lit, il ne la refabrique pas.
+ * en millicentimes sur l'article. L'écran la lit, il ne la refabrique pas.
  */
 const room = (floorMillicents: number): NegotiationRoom => ({
   floorMillicents,

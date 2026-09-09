@@ -137,7 +137,7 @@ export const priceEffectSchema = z
   .discriminatedUnion("nature", [
     z.object({
       nature: z.literal("replace"),
-      /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
+      /** Le prix posé, HT en **millicentimes**. Zéro passe — un article offert est réel. */
       amountMillicents: z.number().int().nonnegative(),
     }),
     z.object({
@@ -464,7 +464,7 @@ export interface PriceFloorView {
  */
 export interface FloorDecisionView {
   readonly tier: "hard" | "dynamic";
-  /** Le plancher appliqué, ramené en centimes sur cet article. */
+  /** Le plancher appliqué, ramené en **millicentimes** sur cet article. */
   readonly floorMillicents: number;
   /** Le ratio de volume mesuré à cet instant. `null` = pas de référence. */
   readonly observedVolumeRatioBp: number | null;
@@ -689,9 +689,9 @@ export interface OrderLinePricingTrace {
  * information, pas une absence.
  */
 export interface NegotiationRoom {
-  /** Le plancher qui s'applique, ramené en centimes sur CET article. */
+  /** Le plancher qui s'applique, ramené en **millicentimes** sur CET article. */
   readonly floorMillicents: number;
-  /** Ce qu'on peut encore accorder, en centimes. Jamais négatif. */
+  /** Ce qu'on peut encore accorder, en **millicentimes**. Jamais négatif. */
   readonly maxDiscountMillicents: number;
   /** La même chose en points de base du prix final (`500` = 5 %). */
   readonly maxDiscountBp: number;
@@ -1052,7 +1052,7 @@ export interface PricingComparisonItemView {
   readonly name: string;
   readonly categoryId: string;
   readonly categoryName: string;
-  /** Le prix résolu au premier marqueur, puis au second. HT, en centimes. */
+  /** Le prix résolu au premier marqueur, puis au second. HT, en **millicentimes**. */
   readonly fromMillicents: number;
   readonly toMillicents: number;
   /**
@@ -1242,7 +1242,7 @@ export type PriceTemplateKind = z.infer<typeof priceTemplateKindSchema>;
 export const templateTierSchema = z.object({
   /** Quantité minimale. `1` = le prix d'entrée, donc le cas « prix fixe ». */
   minQuantity: z.number().int().positive(),
-  /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
+  /** Le prix posé, HT en **millicentimes**. Zéro passe — un article offert est réel. */
   unitPriceMillicents: z.number().int().nonnegative(),
 });
 export type TemplateTierPayload = z.infer<typeof templateTierSchema>;

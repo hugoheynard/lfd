@@ -2,7 +2,7 @@ import type { CatalogCategory, OrderLimitSpec, OrderLineAllergens } from "@lfd/c
 
 import type { CatalogArticle } from "../catalogue-article.js";
 
-/** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en centimes. */
+/** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
 export interface PricedSku {
   readonly sku: string;
   readonly name: string;

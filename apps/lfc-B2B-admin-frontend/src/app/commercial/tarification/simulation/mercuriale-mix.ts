@@ -45,7 +45,7 @@ export interface CategoryMix {
    * rien qu'un camembert ne dise mieux.
    */
   readonly hasTier: boolean;
-  /** Le chiffre du plan tenu, en centimes. */
+  /** Le chiffre du plan tenu, en **millicentimes**. */
   readonly plannedMillicents: number;
   /** Ce que le plan tenu laisse au client, face au tarif catalogue. */
   readonly concededMillicents: number;

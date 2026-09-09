@@ -19,9 +19,9 @@ export interface MercurialeRow {
   readonly name: string;
   /** Le tarif catalogue B2B — la colonne de référence. */
   readonly catalogMillicents: number;
-  /** Ce qui est saisi, en centimes. `null` = pas de prix sur cet article. */
+  /** Ce qui est saisi, en **millicentimes**. `null` = pas de prix sur cet article. */
   readonly mercurialeMillicents: number | null;
-  /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
+  /** La limite qui vise l'article, en **millicentimes**. `null` = aucune n'est posée. */
   readonly floorMillicents: number | null;
   /** Le prix réellement facturé : la saisie, relevée par la limite. */
   readonly finalMillicents: number | null;

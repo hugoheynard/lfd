@@ -35,7 +35,7 @@ export interface ReferenceEntry {
   /** SKU de la **déclinaison** : la clé de rapprochement des deux côtés. */
   readonly sku: string;
   readonly name: string;
-  /** Prix canonique HT, en centimes. Celui du référentiel, avant toute décision. */
+  /** Prix canonique HT, en **millicentimes**. Celui du référentiel, avant toute décision. */
   readonly priceMillicents: number;
   /**
    * Le taux de TVA que le référentiel publierait pour cet article.

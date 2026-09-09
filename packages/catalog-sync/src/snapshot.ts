@@ -123,7 +123,7 @@ export const syncVariantSchema = z.object({
   sku: z.string().min(1),
   name: z.string().min(1),
   /**
-   * Prix canonique **HT**, en centimes, entier. C'est le tarif de référence
+   * Prix canonique **HT**, en **millicentimes** (10⁻⁵ €), entier. C'est le tarif de référence
    * **pré-altération** : la plateforme peut poser le sien par-dessus, et les
    * étages de la résolution de prix (mercuriale, volume, promo) viennent encore
    * au-dessus. Rien de tout cela ne remonte jamais ici.

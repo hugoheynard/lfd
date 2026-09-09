@@ -235,6 +235,104 @@ function findingsIn(file) {
   return found;
 }
 
+/**
+ * **Le schéma Prisma, lu comme les sources.**
+ *
+ * Il porte les colonnes, donc les phrases qui les décrivent — et sept des
+ * vingt-deux mentions fausses de R19 y vivaient. Le laisser dehors aurait rendu
+ * la seconde passe aveugle à l'endroit où la donnée est définie.
+ */
+const SCHEMA = "apps/lfd-api/prisma/schema.prisma";
+
+/**
+ * **Seconde passe : ce que les COMMENTAIRES promettent.**
+ *
+ * ⚠️ **La première passe blanchit les commentaires** — « ce sont des mots, pas
+ * du code ». Cette phrase reste vraie pour elle, et fausse pour le dépôt : le
+ * post-mortem de D10 tient en une ligne, « le commentaire disait _centimes_ ;
+ * trois panneaux de saisie l'ont cru ». Un mot qu'on croit fait exactement ce
+ * qu'une valeur fait.
+ *
+ * R19 a compté **vingt-deux** phrases qui disaient « centimes » au-dessus d'un
+ * champ en millicentimes — l'audit qui les a signalées en annonçait treize, et
+ * il avait cherché dans quatre fichiers. Une liste écrite à la main sur un
+ * motif mécanique se périme le jour où on la ferme.
+ *
+ * La règle : un identifiant qui finit par `Millicents` ne peut pas porter, juste
+ * au-dessus de lui ou en bout de ligne, un commentaire qui parle de centimes
+ * sans parler de millicentimes.
+ *
+ * ## 🔴 Ce qu'elle ne voit pas, et c'est le trou qui compte
+ *
+ * Elle s'accroche au **nom**. Un champ dont le nom ne dit pas son unité lui est
+ * invisible — et ce sont exactement les plus dangereux, puisque le commentaire y
+ * est la SEULE mention de l'unité. Trois colonnes du schéma sont dans ce cas :
+ *
+ * - `price_rules.value` — « bp si percent, MILLICENTIMES si amount » ;
+ * - `price_rules.floor_value` — idem, et la colonne est morte (R24) ;
+ * - `price_floors.value` — « une limite absolue en millicentimes ».
+ *
+ * Les trois ont été corrigées à la main le 2026-09-09 ; **rien ne les tient**.
+ * Vérifié par mutation : remettre « cents » sur `price_rules.value` laisse cette
+ * porte verte. C'est ce qu'un type nominal `Millicents` / `Cents` fermerait, et
+ * c'est la même limite de fond que la première passe déclare déjà — dite deux
+ * fois parce qu'elle se paie deux fois.
+ *
+ * ⚠️ Second angle mort, plus étroit : une phrase qui décrit une OPÉRATION plutôt
+ * qu'un champ. « Arrondi au centime » au-dessus d'un `Math.round` qui arrondit au
+ * millicentime était faux de la même façon, et la porte ne l'attrape que parce
+ * que le champ lié s'appelait `averageUnitMillicents`. Écrit plus loin de sa
+ * cible, il passerait.
+ */
+const DECLARATION = /(?:^|\s)([A-Za-z_$][A-Za-z0-9_$]*Millicents)\s*(?:[:?]|Int\b)/;
+
+/**
+ * Une mention de centimes **en prose**, et non la seule identité `Cents`.
+ *
+ * 🔴 `CENTS_MENTION` ne convient pas ici, et c'est le genre de détail qui rend
+ * une porte muette sans qu'on s'en aperçoive : elle cherche le mot anglais
+ * `cents`, qui n'est pas contenu dans le mot français **centimes**. Les
+ * commentaires du dépôt sont en français (`CLAUDE.md` §8) — une seconde passe
+ * bâtie sur elle serait passée verte sur les vingt-deux sites qu'elle existe
+ * pour trouver. Vérifié par mutation le 2026-09-09.
+ */
+const CENTS_IN_PROSE = /(?<!milli)(?<!Milli)(?:[Cc]entimes?\b|\b[Cc]ents\b)/;
+
+/** Une ligne de commentaire, dans les deux langages que la porte lit. */
+const COMMENT_LINE = /^\s*(?:\/\/\/?|\*|\/\*\*)/;
+
+/**
+ * Les phrases qui mentent, fichier par fichier.
+ *
+ * Le commentaire retenu est celui qui **touche** la déclaration : les lignes de
+ * commentaire contiguës juste au-dessus, plus ce qui suit un `//` en bout de la
+ * ligne elle-même. Remonter plus haut ramasserait le JSDoc du champ précédent,
+ * et une porte qui accuse à côté finit désactivée plutôt que corrigée.
+ */
+function lyingCommentsIn(file) {
+  const lines = readFileSync(file, "utf8").split("\n");
+  const found = [];
+  for (const [index, line] of lines.entries()) {
+    if (COMMENT_LINE.test(line)) {
+      continue;
+    }
+    const declared = DECLARATION.exec(line);
+    if (declared === null) {
+      continue;
+    }
+    const doc = [];
+    for (let above = index - 1; above >= 0 && COMMENT_LINE.test(lines[above]); above -= 1) {
+      doc.unshift(lines[above]);
+    }
+    const trailing = /\/\/(.*)$/.exec(line);
+    const said = [...doc, trailing === null ? "" : trailing[1]].join(" ");
+    if (CENTS_IN_PROSE.test(said) && !/millicentime/i.test(said)) {
+      found.push({ name: declared[1], line: index + 1 });
+    }
+  }
+  return found;
+}
+
 function tsFiles(dir) {
   const out = [];
   let entries;
@@ -258,7 +356,17 @@ function tsFiles(dir) {
 }
 
 const stray = [];
+const lying = [];
 const seen = new Set();
+
+const scanned = [...WATCHED.flatMap((dir) => tsFiles(join(ROOT, dir))), join(ROOT, SCHEMA)];
+
+for (const file of scanned) {
+  const path = relative(ROOT, file);
+  for (const { name, line } of lyingCommentsIn(file)) {
+    lying.push(`${path}:${String(line)}  ${name}`);
+  }
+}
 
 for (const dir of WATCHED) {
   for (const file of tsFiles(join(ROOT, dir))) {
@@ -290,6 +398,19 @@ if (stray.length > 0) {
   );
 }
 
+if (lying.length > 0) {
+  failed = true;
+  console.error("\n❌ Un commentaire qui promet des centimes sur un champ en millicentimes :\n");
+  for (const where of lying.sort()) {
+    console.error(`   ${where}`);
+  }
+  console.error(
+    "\n   C'est le vecteur exact de D10 : « le commentaire disait centimes ;\n" +
+      "   trois panneaux de saisie l'ont cru ». Écrire millicentimes, ou dire\n" +
+      "   ce que le champ porte vraiment.\n",
+  );
+}
+
 if (cleaned.length > 0) {
   failed = true;
   console.error("\n❌ Sites nettoyés, encore inscrits à la dette :\n");
@@ -305,6 +426,6 @@ if (failed) {
 
 console.log(
   KNOWN.size === 0
-    ? "✓ money-units : aucun centime dérivé d'un millicentime, et aucune dette."
+    ? `✓ money-units : aucun centime dérivé d'un millicentime, aucune phrase qui le promet\n  ${String(scanned.length)} fichier(s) lus, schéma Prisma compris. Aucune dette.`
     : `✓ money-units : 0 site neuf, ${String(KNOWN.size)} déclaré(s) — compté, en baisse seulement.`,
 );

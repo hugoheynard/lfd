@@ -87,8 +87,9 @@ describe('CartStore', () => {
    */
   it('arrondit une fois PAR LIGNE, comme la commande', () => {
     const cart = new CartStore();
-    // 8,185 € HT : un hors taxe déduit d'un prix d'étiquette tombe sur un demi-
-    // centime, et c'est le seul cas où les deux arrondis divergent.
+    // 818 500 millicentimes, soit 8,185 € HT : un hors taxe déduit d'un prix
+    // d'étiquette tombe sur un demi-centime, et c'est le seul cas où les deux
+    // arrondis divergent.
     cart.add({ sku: 'VIE-002', name: 'Chausson', unitPriceMillicents: 818_500 }, 1);
     cart.add({ sku: 'VIE-003', name: 'Pain suisse', unitPriceMillicents: 818_500 }, 1);
 

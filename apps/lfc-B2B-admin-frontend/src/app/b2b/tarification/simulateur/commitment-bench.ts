@@ -137,8 +137,14 @@ export function scenarioOf(
     bp,
     totalQuantity: volume,
     totalMillicents,
-    // Arrondi au centime : c'est un indicateur de comparaison, pas un prix
-    // facturé. Le total, lui, est exact — il est la somme de prix résolus.
+    // Arrondi au MILLICENTIME — c'est ce que `Math.round` fait ici, la division
+    // portant sur des millicentimes. La phrase disait « au centime », ce qui
+    // annonçait un chiffre cent fois plus grossier qu'il ne l'est (R19,
+    // 2026-09-09).
+    //
+    // Un indicateur de comparaison, pas un prix facturé : c'est une moyenne, et
+    // aucune ligne ne la paie. Le total, lui, est exact — il est la somme de
+    // prix résolus.
     averageUnitMillicents: volume === 0 ? 0 : Math.round(totalMillicents / volume),
     installments: built,
   };

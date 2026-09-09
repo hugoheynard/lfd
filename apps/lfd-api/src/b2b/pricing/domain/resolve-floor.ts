@@ -69,7 +69,7 @@ export function resolveScopedFloor(
 }
 
 /**
- * Un plancher, **en centimes**, sur un article donné.
+ * Un plancher, **en millicentimes**, sur un article donné.
  *
  * Passe par la même arithmétique exacte que `resolvePrice` — et pas par un
  * `Math.round(canonical * bp / 10000)` qui aurait l'air identique. Les deux

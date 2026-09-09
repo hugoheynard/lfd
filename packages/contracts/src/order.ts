@@ -850,7 +850,7 @@ export interface OrderQuoteLineView {
    * que la commande contredirait.
    */
   readonly volumeTiers: readonly VolumeTierPriceView[] | null;
-  /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
+  /** La limite qui vise l'article, en **millicentimes**. `null` = aucune n'est posée. */
   readonly floorMillicents: number | null;
 }
 

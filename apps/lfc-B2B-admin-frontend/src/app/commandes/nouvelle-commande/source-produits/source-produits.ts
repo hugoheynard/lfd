@@ -39,7 +39,7 @@ import { HistoriqueCommandes } from '../historique-commandes/historique-commande
 export interface ProposedLine {
   readonly product: CatalogProduct;
   /**
-   * Prix unitaire HT en **centimes**. La rangée affiche `product.price`, déjà
+   * Prix unitaire HT en **millicentimes**. La rangée affiche `product.price`, déjà
    * formaté ; le panier, lui, a besoin du nombre pour sommer. Deux
    * représentations du même prix, et c'est assumé : formater dans le panier
    * puis reparser à l'addition serait pire.

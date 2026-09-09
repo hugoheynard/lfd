@@ -80,7 +80,15 @@ export class OrderLine {
       throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
     }
     if (!Number.isInteger(input.unitPriceMillicents) || input.unitPriceMillicents < 0) {
-      throw new InvalidOrderLineError(input.sku, "prix unitaire en centimes ≥ 0 attendu");
+      // 🔴 « millicentimes » et non « centimes » : ce message est lu par du
+      // personnel qui n'a pas le code sous les yeux, et le nombre qu'il verra
+      // à côté est cent fois celui qu'il attendrait. Le vecteur de D10 était
+      // exactement là — un commentaire qui dit centimes, et quelqu'un qui le
+      // croit (R19, 2026-09-09).
+      throw new InvalidOrderLineError(
+        input.sku,
+        "prix unitaire entier ≥ 0 attendu, en millicentimes (10⁻⁵ €)",
+      );
     }
     return new OrderLine(
       input.sku,
@@ -169,7 +177,7 @@ function assertConsistent(input: OrderLineInput): OrderLinePricingTrace | null {
   if (!trace.floored && expected !== input.unitPriceMillicents) {
     throw new InvalidOrderLineError(
       input.sku,
-      `la trace aboutit à ${String(expected)} centimes, la ligne en facture ${String(input.unitPriceMillicents)}`,
+      `la trace aboutit à ${String(expected)} millicentimes, la ligne en facture ${String(input.unitPriceMillicents)}`,
     );
   }
   return trace;

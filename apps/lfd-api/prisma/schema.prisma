@@ -2223,7 +2223,7 @@ model CatalogPriceHistory {
   /// Le SKU du PRODUIT : c'est par lui que la boutique vend, donc par lui qu'on relit.
   productSku String @map("product_sku")
 
-  /// Prix HT en centimes réellement applicable à cet instant.
+  /// Prix HT en **millicentimes** (10⁻⁵ €) réellement applicable à cet instant.
   priceMillicents Int    @map("price_millicents")
   /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
   source          String
@@ -2290,7 +2290,8 @@ model CatalogItem {
   categoryId String          @map("category_id")
   category   CatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  /// Prix canonique HT en centimes, tel que le PIM le tarife. **Pré-altération** :
+  /// Prix canonique HT en **millicentimes** (10⁻⁵ €), tel que le PIM le tarife.
+  /// **Pré-altération** :
   /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
   priceMillicents Int     @map("price_millicents")
   weightGrams     Int?    @map("weight_grams")
@@ -2541,7 +2542,7 @@ model CatalogItemOverride {
   sku  String      @id
   item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Cascade)
 
-  /// Prix de liste **du canal B2B**, HT en centimes. `NULL` = on garde celui du
+  /// Prix de liste **du canal B2B**, HT en **millicentimes**. `NULL` = on garde celui du
   /// PIM. C'est l'ENTRÉE du pipeline de résolution de prix, pas un de ses étages :
   /// mercuriale, dégressif et promotions viendront par-dessus.
   priceMillicents Int? @map("price_millicents")
@@ -2598,18 +2599,19 @@ model PriceRule {
   /// Palier de quantité de l'étage volume. `NULL` = aucun seuil.
   minQuantity Int? @map("min_quantity")
 
-  /// `nature = 'replace'` : le prix posé, HT en centimes.
+  /// `nature = 'replace'` : le prix posé, HT en **millicentimes** — un PRIX
+  /// UNITAIRE, comme tous les prix unitaires de ce schéma.
   amountMillicents Int? @map("amount_millicents")
 
   /// `nature = 'alter'` : sens, unité, grandeur. La grandeur est **toujours
   /// positive** — le sens vit dans `direction`.
   direction String? // increase | decrease
   mode      String? // percent | amount
-  value     Int? // bp si percent, cents si amount
+  value     Int? // bp si percent, MILLICENTIMES si amount
 
   /// Plancher propre à la règle. `NULL` = celui de la plateforme s'applique.
   floorMode  String? @map("floor_mode") // percent | amount
-  floorValue Int?    @map("floor_value") // bp du canonique, ou cents
+  floorValue Int?    @map("floor_value") // bp du canonique, ou MILLICENTIMES
 
   /// Borne basse **incluse**, borne haute **exclue** : deux règles qui se
   /// succèdent au même instant ne se chevauchent jamais.
@@ -2687,7 +2689,8 @@ model PriceFloor {
   /// **Le mur** — jamais franchi, quoi qu'il arrive.
   ///
   /// `percent` : une fraction du prix canonique, en points de base — elle suit
-  /// le tarif quand le PIM augmente. `amount` : une limite absolue en centimes.
+  /// le tarif quand le PIM augmente. `amount` : une limite absolue en
+  /// **millicentimes** — un plancher borne un prix unitaire.
   mode  String
   value Int
 
