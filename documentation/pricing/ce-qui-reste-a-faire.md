@@ -54,7 +54,7 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | ~~R18~~ | ~~Engagement et gabarit répondent 400 là où le reste répond 404 et 409~~       | ✅      | **clos le 2026-09-09**   |
 | ~~R19~~ | ~~Treize commentaires disent « centimes » sur des millicentimes~~              | ✅      | **clos le 2026-09-09**   |
 | ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~        | ✅      | **clos le 2026-09-09**   |
-| **R21** | Deux séquences de chargement ; **cinq** classes d'application injectent Prisma | 🟡      | trois lectures           |
+| ~~R21~~ | ~~Deux séquences de chargement ; cinq classes d'application injectent Prisma~~ | ✅      | **clos le 2026-09-09**   |
 | ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                      | ✅      | **clos le 2026-09-09**   |
 | ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~           | ✅      | **clos le 2026-09-09**   |
 | **R24** | États inatteignables et colonnes mortes                                        | 🟡      | trivial                  |
@@ -63,11 +63,11 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~            | ✅      | **clos le 2026-09-09**   |
 | **R29** | Rien ne tient l'unité d'un champ dont le NOM ne la dit pas                     | 🟠      | un type nominal          |
 
-**Douze entrées sur vingt-huit sont closes** — R1, R3, R5, R7, R8 et R20 le jour
+**Treize entrées sur vingt-huit sont closes** — R1, R3, R5, R7, R8 et R20 le jour
 même de ce registre, puis R22, R23, **R17**, **R26**, **R18** et **R19** dans la
 foulée.
 **Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26), et
-**R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **seize** entrées,
+**R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **quinze** entrées,
 dont trois décisions et trois documents à réécrire. Elles restent listées avec
 leur preuve plutôt que retirées : une entrée effacée est une entrée que
 quelqu'un rouvrira.
@@ -439,7 +439,7 @@ d'`OrderLinePricing.resolve`, la lecture datée restant au tableau de bord, seul
 endroit où elle est juste. Le moment le moins cher pour trancher est celui où
 personne ne l'emprunte. Détail : audit B.3.
 
-### R21 🟠 Deux séquences de chargement, et une query qui injecte Prisma
+### ~~R21~~ ✅ Deux séquences de chargement, et cinq classes qui injectaient Prisma
 
 **Le fait, vérifié le 2026-09-08.** Cinq endroits écrivent « la **seule**
 séquence de chargement » — `pricing.module.ts:31`,
@@ -455,7 +455,8 @@ séquence qui produit la double sémantique de R17.
 Et `CompanyPricingQuery` injecte `PrismaService` (`company-pricing.query.ts:69`)
 — `CLAUDE.md` §4 : « le handler dépend de ports, jamais de `PrismaService` ».
 
-> **Deux tiers faits le 2026-09-09**, et l'entrée se comptait mal.
+> **Close le 2026-09-09**, en quatre lots — et l'entrée se comptait mal sur
+> ses deux moitiés.
 >
 > ✅ **Une seule fabrique de tarificateur.** `LoadedPricer.over` avait deux
 > appelants ; `boardMaterials` montait `commitments: []` et `NO_EVIDENCE` à la
@@ -494,11 +495,21 @@ Et `CompanyPricingQuery` injecte `PrismaService` (`company-pricing.query.ts:69`)
 >   le cas, la query devait lire la ligne elle-même : une ligne ne franchit pas
 >   `infrastructure/` (§3). Elle se fabrique désormais depuis l'**état**.
 >
-> Reste aussi le **§4 que l'entrée ne nomme pas** : `AdminPricingController`
-> injecte `PricingBoardReader` (compté par `lint:controller-buses`) et
-> `AdminCompanyPricingController` injecte `CompanyPricingQuery`. Aucune des deux
-> lectures n'a de nom ni de handler — et la porte ne compte que la première,
-> parce qu'elle ne reconnaît que les ports.
+> ✅ **Le §4 que l'entrée ne nommait pas est fait aussi** : les **six**
+> contrôleurs de `pricing` ne connaissent plus que les bus. Douze lectures et
+> deux écritures avaient une route mais pas de nom.
+>
+> Le `Clock` du tableau et le mapping du journal descendent avec elles — un
+> contrôleur traduit du HTTP, il ne décide pas d'un instant et ne transforme
+> rien. `lint:controller-buses` passe de 5 à **11 fichiers drainés** ; il en
+> reste 6 hors scope dans le dépôt, aucun dans `pricing`.
+>
+> ⚠️ **Ce que ce lot laisse derrière**, et qui vaut son propre chantier : le
+> suffixe `Query` désigne maintenant deux choses dans ce contexte — la question
+> posée au bus, et cinq services qui le portaient déjà (`PriceProjectionQuery`,
+> `PriceTemplatesQuery`, `MercurialeBenchmarkQuery`, `VolumeCommitmentsQuery`,
+> `CompanyPricingQuery`). Aucun n'a été renommé : ils sont cités par la doc, et
+> mêler un renommage à un déplacement d'adresse aurait rendu le diff illisible.
 
 **Le remède.** ⚠️ **Cette ligne disait « tombe avec R26 ». R26 est close, et
 R21 n'est pas tombée** — le journal l'avait d'ailleurs écrit en livrant le
