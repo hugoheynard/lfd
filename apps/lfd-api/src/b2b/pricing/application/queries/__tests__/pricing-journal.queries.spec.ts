@@ -22,7 +22,6 @@ import {
   type JournalEntry,
 } from "../../../domain/ports/pricing-journal.reader.js";
 import { ReadPricingJournalHandler } from "../read-pricing-journal.handler.js";
-import { ReadPricingJournalQuery } from "../read-pricing-journal.query.js";
 import { ReadSubjectJournalHandler } from "../read-subject-journal.handler.js";
 import { ReadSubjectJournalQuery } from "../read-subject-journal.query.js";
 
@@ -66,7 +65,10 @@ describe("ReadPricingJournalHandler", () => {
   it("borne le fil général à cinquante actes", async () => {
     const journal = new RecordingPricingJournal([]);
 
-    await new ReadPricingJournalHandler(journal).execute(new ReadPricingJournalQuery());
+    // `execute()` ne prend rien : la profondeur du fil est une décision de
+    // lecture, pas une option de l'appelant (cf. `ReadPricingJournalQuery`, qui
+    // est vide).
+    await new ReadPricingJournalHandler(journal).execute();
 
     expect(journal.recentLimit).toBe(50);
   });
@@ -74,9 +76,7 @@ describe("ReadPricingJournalHandler", () => {
   it("traduit l'acte en vue de fil — la date en ISO, `kind` en `act`", async () => {
     const journal = new RecordingPricingJournal([act({ reason: "fin de promo" })]);
 
-    const view = await new ReadPricingJournalHandler(journal).execute(
-      new ReadPricingJournalQuery(),
-    );
+    const view = await new ReadPricingJournalHandler(journal).execute();
 
     expect(view).toEqual([
       {

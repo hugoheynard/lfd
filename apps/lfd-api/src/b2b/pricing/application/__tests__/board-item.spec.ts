@@ -9,7 +9,9 @@ import {
   type FloorRow,
   type RuleRow,
 } from "../../infrastructure/price-rows.js";
-import type { LoadedFloor, LoadedRule } from "../board-item.js";
+// Chez elles : `board-item.ts` ne fait que les importer, il ne les réexporte
+// pas — et n'a pas à le faire pour un test.
+import type { LoadedFloor, LoadedRule } from "../ports/pricing-decisions.reader.js";
 import type { PriceScope, PriceStage } from "../../domain/price-rule.js";
 
 /**
