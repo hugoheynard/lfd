@@ -90,7 +90,28 @@ export class CompanyPricingQuery {
         where: { AND: [unarchivedAt(at), audienceOf(companyId)] },
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
-      this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
+      // 🔴 **La fenêtre, en plus du rangement.** Depuis que la limite est
+      // versionnée (R17), une portée porte N lignes — une par période — et
+      // `ownFloor` n'en montre qu'une, par un `find` sur la portée : sans ce
+      // filtre, il rendait la PREMIÈRE venue, donc la limite d'AVANT une
+      // re-pose, avec son signal de dérive, sur l'écran où l'on négocie.
+      //
+      // ⚠️ Le prix, lui, était juste : `resolveScopedFloor` filtre par fenêtre
+      // avant d'arbitrer la portée. C'est ce qui rendait le défaut discret —
+      // l'écran contredisait son propre chiffre sans que rien ne le signale.
+      //
+      // Troisième lecteur du même oubli, et le seul que les e2e de R17
+      // n'avaient pas attrapé : ils posaient deux fois sur le tableau général,
+      // jamais sur une fiche client (corrigé le 2026-09-09).
+      this.prisma.priceFloor.findMany({
+        where: {
+          AND: [
+            unarchivedAt(at),
+            { validFrom: { lte: at } },
+            { OR: [{ validTo: null }, { validTo: { gt: at } }] },
+          ],
+        },
+      }),
       this.ladders.listAll(at),
       this.catalog.all(),
       // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.

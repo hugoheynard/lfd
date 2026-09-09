@@ -705,3 +705,43 @@ describe("🔴 reposer sur une période close", () => {
     expect(jsonBody<{ message: string }>(refus).message).toContain("Posez la nouvelle mercuriale");
   });
 });
+
+/**
+ * **Régression R17, troisième lecteur.** Depuis que les planchers sont versionnés,
+ * une portée porte N lignes — une par période — et le code qui l'ignore prend la
+ * première venue.
+ *
+ * Deux lecteurs avaient été corrigés le 2026-09-09 : le tableau général et le
+ * journal. Celui-ci a été manqué, et il a été trouvé en faisant contredire le
+ * plan de R21 — pas par un test, pas par une relecture.
+ *
+ * 🔴 **Le PRIX n'était pas faux**, et c'est ce qui rendait le défaut discret :
+ * `resolveScopedFloor` filtre par fenêtre avant de trancher la portée. Ce qui
+ * était faux est ce que le commercial LIT — `ownFloor` et, avec lui, le signal
+ * de dérive : il voyait la limite d'avant, sur l'écran où il négocie.
+ */
+describe("🔴 re-poser un plancher, vu depuis la fiche client", () => {
+  const putFloor = (value: number) =>
+    staff()
+      .put("/admin/pricing/floors")
+      .send({
+        scope: { type: "product", id: SKU },
+        mode: "percent",
+        value,
+        dynamic: null,
+      })
+      .expect(204);
+
+  it("montre la limite EN VIGUEUR, pas la version qu'elle a remplacée", async () => {
+    const company = await createCompany(ctx.prisma);
+    await putFloor(5_000);
+    await putFloor(6_000);
+
+    // Deux lignes en base, une seule ouverte : c'est le bornage de R17.
+    expect(await ctx.prisma.priceFloor.count({ where: { scopeId: SKU } })).toBe(2);
+
+    const view = await read(company.id);
+
+    expect(itemOf(view, SKU)?.ownFloor?.value).toBe(6_000);
+  });
+});
