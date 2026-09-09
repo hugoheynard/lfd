@@ -295,7 +295,25 @@ invalide » se trompe sur **l'engagement**, l'objet du moteur qui décide le plu
 `ResourceNotFoundError`, `Archived*IsSealedError` et `Overlapping*Error` étendent
 `BusinessError`. Et le fichier de 869 lignes se découpe par agrégat en le faisant.
 
-## B.5 🟠 Les commentaires d'unité recréent le vecteur de D10 — R19
+## ~~B.5~~ ✅ Les commentaires d'unité recréaient le vecteur de D10 — R19
+
+> **Close le 2026-09-09**, et le tableau ci-dessous était incomplet de neuf.
+>
+> **Treize recensés, vingt-deux trouvés.** Ce constat avait cherché dans quatre
+> fichiers ; le motif est mécanique et vivait dans quatorze. C'est la leçon à
+> retenir de cette entrée, plus que les phrases : **un motif mécanique se
+> recompte, il ne se relit pas**.
+>
+> Ce qui ferme n'est donc pas la correction mais la **seconde passe de
+> `lint:money-units`**, qui lit ce que la première blanchit volontairement, et
+> dont le périmètre inclut le schéma Prisma — sept des vingt-deux y vivaient.
+>
+> 🔴 **Elle ne tient pas tout, et c'est mesuré** : un champ dont le nom ne dit
+> pas son unité lui échappe. Trois colonnes sont dans ce cas, et ce sont les plus
+> dangereuses puisque le commentaire y est la seule mention. C'est **R29** au
+> registre, et le type nominal en est la seule sortie.
+>
+> Le constat d'origine suit.
 
 Le post-mortem de D10, dans `audit-calcul-du-panier-et-du-prix.md` : « le
 commentaire disait _centimes_ ; trois panneaux de saisie l'ont cru ». Le même

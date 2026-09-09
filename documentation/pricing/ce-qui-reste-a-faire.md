@@ -52,7 +52,7 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**      | 🔴      | une décision commerciale |
 | ~~R17~~ | ~~La lecture datée `at` ignore ce qui a été **archivé depuis**~~          | ✅      | **clos le 2026-09-09**   |
 | ~~R18~~ | ~~Engagement et gabarit répondent 400 là où le reste répond 404 et 409~~  | ✅      | **clos le 2026-09-09**   |
-| **R19** | Treize commentaires disent « centimes » sur des millicentimes             | 🟠      | une heure, puis un type  |
+| ~~R19~~ | ~~Treize commentaires disent « centimes » sur des millicentimes~~         | ✅      | **clos le 2026-09-09**   |
 | ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~   | ✅      | **clos le 2026-09-09**   |
 | **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`      | 🟠      | un lot, seule            |
 | ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                 | ✅      | **clos le 2026-09-09**   |
@@ -61,9 +61,11 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | **R25** | La trace figée : `scope` est écrit, le **scellement** est à reconcevoir   | 🟡      | forme à reprendre        |
 | **R27** | La trace de prix part au **client** sur trois routes, sans rétrécissement | 🟠      | une vue client           |
 | ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~       | ✅      | **clos le 2026-09-09**   |
+| **R29** | Rien ne tient l'unité d'un champ dont le NOM ne la dit pas                | 🟠      | un type nominal          |
 
-**Onze entrées sur vingt-sept sont closes** — R1, R3, R5, R7, R8 et R20 le jour
-même de ce registre, puis R22, R23, **R17**, **R26** et **R18** dans la foulée.
+**Douze entrées sur vingt-huit sont closes** — R1, R3, R5, R7, R8 et R20 le jour
+même de ce registre, puis R22, R23, **R17**, **R26**, **R18** et **R19** dans la
+foulée.
 **Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26), et
 **R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **seize** entrées,
 dont trois décisions et trois documents à réécrire. Elles restent listées avec
@@ -531,6 +533,36 @@ compte désormais deux fichiers. Détail : audit B.9.
 
 ## 4. Les garde-fous qui manquent
 
+### R29 🟠 Rien ne tient l'unité d'un champ dont le nom ne la dit pas
+
+**Ouverte le 2026-09-09**, en fermant R19 — c'est la moitié de son remède que
+les phrases ne pouvaient pas porter, et elle mérite d'être comptée plutôt que
+d'être la queue d'une entrée close.
+
+**Le fait, vérifié par mutation.** `lint:money-units` s'accroche aux **noms** :
+sa première passe surveille ce qu'un nom en `*Cents` reçoit, sa seconde ce qu'un
+commentaire promet au-dessus d'un `*Millicents`. Trois colonnes échappent aux
+deux, faute d'un nom qui parle :
+
+| Colonne                   | Ce qui dit son unité     | Ce qui la tient       |
+| ------------------------- | ------------------------ | --------------------- |
+| `price_rules.value`       | un commentaire de ligne  | rien                  |
+| `price_rules.floor_value` | un commentaire de ligne  | rien (et morte — R24) |
+| `price_floors.value`      | un `///` de trois lignes | rien                  |
+
+🔴 **Ce sont les plus dangereuses**, précisément parce que le commentaire y est
+la SEULE mention : remettre « cents » sur `price_rules.value` laisse la porte
+verte, et c'est le champ qui porte la grandeur d'une altération de prix.
+
+**Le remède, et il est nommé depuis deux audits** : un type nominal `Millicents`
+/ `Cents` dans `@lfd/money`. C'est le seul cran qui déplace la question du nom
+vers le **type** — donc le seul qui tienne un champ appelé `value`.
+
+⚠️ Le renommer serait plus simple, et c'est un piège : le nom d'une colonne se
+change par **migration**, en trois déploiements
+([`ops/pipelines.md`](../ops/pipelines.md)), pour un défaut que le type ferme
+sans toucher aux données.
+
 ### ~~R8~~ ✅ Aucune porte sur `prisma.<modèle>` — **close le 2026-09-09**
 
 **Ce que c'était.** `lint:cross-schema-join` lit le SQL **écrit à la main**.
@@ -625,7 +657,45 @@ B.4.
 >
 > ✅ **Le gabarit a suivi le même jour**, et le découpage du fichier avec lui.
 
-### R19 🟠 Treize commentaires disent « centimes » sur des millicentimes
+### ~~R19~~ ✅ Vingt-deux commentaires disaient « centimes » sur des millicentimes
+
+> **Close le 2026-09-09**, et le compte du constat était le premier défaut.
+>
+> **Treize annoncés, vingt-deux trouvés.** L'audit avait cherché dans quatre
+> fichiers ; ils vivaient dans quatorze — le schéma, quatre contrats, le
+> domaine, deux ports, la synchro catalogue et cinq écrans. Une liste écrite à
+> la main sur un motif **mécanique** se périme le jour où on la ferme, et c'est
+> l'enseignement de l'entrée plus que les phrases elles-mêmes.
+>
+> Deux formes que le constat ne nommait pas :
+>
+> - une phrase qui se trompe de **précision** et non de champ — « arrondi au
+>   centime » au-dessus d'un `Math.round` qui arrondit au millicentime, donc un
+>   indicateur annoncé cent fois plus grossier qu'il ne l'est ;
+> - deux **messages lus par le staff**, qui annonçaient des centimes à côté d'un
+>   nombre cent fois plus grand.
+>
+> **Ce qui ferme n'est pas la relecture, c'est la seconde passe de
+> `lint:money-units`** — elle lit ce que la première blanchit volontairement.
+> Le schéma Prisma entre dans son périmètre : sept des vingt-deux y vivaient.
+>
+> 🔴 **Deux choses vérifiées par mutation**, parce qu'une porte qu'on croit
+> efficace est pire qu'une porte absente :
+>
+> - bâtie sur le motif existant `CENTS_MENTION`, elle serait passée **verte sur
+>   les vingt-deux**. Ce motif cherche le mot anglais « cents », que le mot
+>   français « centimes » ne contient pas — et les commentaires du dépôt sont en
+>   français (`CLAUDE.md` §8) ;
+> - elle reste **aveugle aux trois colonnes dont le nom ne dit pas l'unité** —
+>   `price_rules.value`, `price_rules.floor_value`, `price_floors.value` —,
+>   c'est-à-dire aux plus dangereuses, celles où le commentaire est la seule
+>   mention. Elles sont corrigées à la main ; rien ne les tient.
+>
+> **Le type nominal `Millicents` / `Cents` reste donc à faire**, et il n'est plus
+> « le cran au-dessus » : c'est la seule chose qui fermerait ces trois-là. Il
+> vaut son entrée propre plutôt que la queue de celle-ci.
+>
+> Le constat d'origine suit.
 
 **Le fait, vérifié le 2026-09-08.** Le vecteur exact de D10 — « le commentaire
 disait _centimes_ ; trois panneaux de saisie l'ont cru » — est vivant sur treize
@@ -702,8 +772,9 @@ clôture — _« aucun `Math.round` sur un prix dans un composant Angular »_ �
 8. **R15 et R16** — deux tests qui échouent, puis le correctif : les seuls
    constats qui produisent un **prix faux**.
 9. ~~**R17**~~ — ✅ fait le 2026-09-09 : `at` est vrai partout.
-10. ~~**R18**~~ — ✅ fait le 2026-09-09. **R19** reste : une heure, zéro
-    risque, et le vecteur de D10 se ferme.
+10. ~~**R18 et R19**~~ — ✅ faits le 2026-09-09. R19 a coûté plus que « une
+    heure, zéro risque » : le compte était faux de neuf, et ce qui ferme est
+    une porte, pas les phrases.
 11. ~~**R26**~~ — ✅ fait le 2026-09-09, en quatre lots. ⚠️ **R21, R24 et R25 ne
     sont PAS tombées avec elle**, contrairement à ce que cette ligne annonçait :
     R21 est désormais un lot à part (son blocage, R17, est levé), R24 et R25
