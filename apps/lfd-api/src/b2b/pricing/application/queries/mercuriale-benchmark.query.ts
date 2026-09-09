@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { MercurialeBenchmarkView } from "@lfd/contracts";
 
-import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { benchmarkByProduct } from "../../domain/services/mercuriale-benchmark.js";
 import type { NegotiatedPrice } from "../../domain/services/mercuriale-benchmark.js";

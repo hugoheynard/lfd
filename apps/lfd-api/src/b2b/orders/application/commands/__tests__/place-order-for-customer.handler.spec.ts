@@ -1,5 +1,5 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
@@ -21,7 +21,7 @@ import {
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
+import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import {
   type DeliveryDefaults,
   DeliveryDefaultsReader,

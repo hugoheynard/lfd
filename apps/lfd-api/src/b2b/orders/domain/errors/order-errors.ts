@@ -32,13 +32,6 @@ export class EmptyOrderError extends DomainError {
   }
 }
 
-/** Un SKU envoyé par le client n'existe pas au catalogue. */
-export class UnknownSkuError extends DomainError {
-  constructor(readonly sku: string) {
-    super("orders.sku.unknown", `Article inconnu au catalogue : ${sku}.`);
-  }
-}
-
 /**
  * Un **retrait** est demandé mais aucun point de retrait n'est configuré (l'adresse
  * labo dans les Réglages). Refus **métier** (409) : la demande est bien formée,

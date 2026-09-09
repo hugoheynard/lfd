@@ -10,7 +10,7 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { PrismaService } from "../../../../platform/database/prisma.service.js";
-import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
 import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import { PricedCompanyNotFoundError } from "../../domain/pricing-errors.js";

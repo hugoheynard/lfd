@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { OrdersModule } from "../orders/orders.module.js";
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { Pricer } from "./application/pricer.js";
 
@@ -10,10 +10,13 @@ import { Pricer } from "./application/pricer.js";
  * ## Pourquoi pas dans `PricingModule`
  *
  * Le `Pricer` résout le **catalogue** — c'est ce qui lui permet de répondre à
- * un SKU nu plutôt qu'à un article déjà chargé —, et le catalogue vit dans
- * `OrdersModule`, qui importe déjà `PricingModule`. Le ranger là-bas aurait
- * fermé le cycle, exactement comme pour le lecteur de l'écran de tarification :
- * l'en-tête de `PricingAdminModule` écrit cette contrainte depuis le début.
+ * un SKU nu plutôt qu'à un article déjà chargé —, et `CatalogModule` importe
+ * `PricingModule` depuis que la vitrine tarife (R22). Le ranger dans
+ * `PricingModule` fermerait donc le cycle.
+ *
+ * ⚠️ Ce paragraphe disait « le catalogue vit dans `OrdersModule` ». Il y vivait
+ * par accident d'histoire : son port descend dans `catalog/` le 2026-09-09,
+ * avec la source qu'il traduit.
  *
  * ⚠️ Un appelant qui a **déjà** ses articles et ses matériaux ne passe pas par
  * ici : il s'adresse au `LoadedPricer`, qui est pur et n'a pas de module. C'est
@@ -32,7 +35,7 @@ import { Pricer } from "./application/pricer.js";
  * disent quelque chose.
  */
 @Module({
-  imports: [OrdersModule, PricingModule],
+  imports: [CatalogModule, PricingModule],
   providers: [Pricer],
   exports: [Pricer],
 })

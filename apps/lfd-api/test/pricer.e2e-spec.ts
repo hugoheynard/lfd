@@ -32,7 +32,7 @@ import { millicentsFromCents } from "@lfd/money";
 
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { DuplicateArticleError } from "../src/b2b/pricing/domain/pricing-errors.js";
-import { UnknownSkuError } from "../src/b2b/orders/domain/errors/order-errors.js";
+import { UnknownSkuError } from "../src/b2b/catalog/domain/errors/unknown-sku.error.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";

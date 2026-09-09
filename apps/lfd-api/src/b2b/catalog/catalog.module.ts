@@ -20,6 +20,8 @@ import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
 import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
+import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
+import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
 import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.reader.js";
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
@@ -109,6 +111,12 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
+    // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le
+    // 2026-09-09. Elle vivait dans `OrdersModule`, alors que son unique
+    // adaptateur ne fait que TRADUIRE `CatalogReader` — deux ports empilés, dont
+    // l'autoritaire logé dans le contexte qui n'en est pas la source. `pricing`
+    // importait `orders` neuf fois pour une donnée qui n'y est pas.
+    { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
     { provide: CanonicalPriceHistoryReader, useClass: PrismaCanonicalPriceHistoryReader },
     // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
@@ -132,6 +140,9 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
   // c'est le geste explicite qui remplace le `@Public()` d'un contrôleur.
   exports: [
     CatalogReader,
+    // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
+    // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.
+    ProductCatalogReader,
     // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
     // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est

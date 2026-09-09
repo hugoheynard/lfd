@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { PriceTemplateKind, PriceTemplateView } from "@lfd/contracts";
 
 import { PrismaService } from "../../../../platform/database/prisma.service.js";
-import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { templateStateFromRow } from "../../infrastructure/price-template-rows.js";
 import type { TemplateRow } from "../../infrastructure/price-template-rows.js";
 

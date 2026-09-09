@@ -1,9 +1,9 @@
-import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import {
   CustomerSkuReader,
   type CustomerSkuTally,
 } from "../../../domain/ports/customer-sku.reader.js";
-import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
+import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCustomerSkusHandler } from "../list-customer-skus.handler.js";
 import { ListCustomerSkusQuery } from "../list-customer-skus.query.js";
 

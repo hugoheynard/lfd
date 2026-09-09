@@ -59,7 +59,6 @@ import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
 import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
 import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
-import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
@@ -67,7 +66,6 @@ import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repo
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idempotency.store.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
-import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
@@ -179,7 +177,6 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     { provide: OrderCutoffReader, useExisting: OrderCutoffRepository },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
-    { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
@@ -201,7 +198,6 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.
     OrderReader,
-    ProductCatalogReader,
   ],
 })
 export class OrdersModule {}

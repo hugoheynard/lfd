@@ -3,8 +3,8 @@ import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
 import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
 import { PricingMaterialsLoader } from "../../../pricing/application/pricing-materials.loader.js";
-import { UnknownSkuError } from "../../domain/errors/order-errors.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import {
   priceLine,
   type LineToPrice,

@@ -23,6 +23,7 @@
 | [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix            | ✅ **close** — 2026-09-09                                                                |
 | [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite             | ✅ **close** — 2026-09-09                                                                |
 | [R25](#r25--2026-09-09) | la trace figée ne répond pas à la question qu'elle existe pour poser | 🟠 **un tiers fait** — la contradiction a trouvé une fuite et deux trous (2026-09-09)    |
+| [R26](#r26--2026-09-09) | la porte du prix — lot 1 : le port catalogue rentre chez lui         | ✅ **lot 1** — 2026-09-09                                                                |
 
 ---
 
@@ -623,7 +624,7 @@ une qui croit avoir mesuré que c'était inutile.
 `PricedItem.category` n'est **pas** le `shelfId` de la vitrine. La vitrine
 expose `shelfId = categoryId` (la famille du PIM, `cat_vien`), tandis que le
 tarificateur attend le **rayon** (`viennoiserie`), dérivé par
-`SHELF_BY_PIM_CATEGORY` dans `orders/infrastructure/catalog-backed-product-catalog.ts`
+`SHELF_BY_PIM_CATEGORY` dans `apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts`
 — dont le commentaire prévient : « un rayon faux ferait appliquer les règles de
 prix d'une AUTRE famille ».
 
@@ -1044,3 +1045,71 @@ usage possible d'un geste irréversible.
 gratuit, le `DROP COLUMN` détruit les scellements écrits entre-temps sans reprise
 possible — et le §0 de `CLAUDE.md` interdit de supprimer une colonne. Une phrase
 qu'on relit sous pression ne doit pas promettre ça.
+
+---
+
+## R26 · 2026-09-09 — lot 1
+
+**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) ·
+**Registre** : [R26](ce-qui-reste-a-faire.md) · **Portée** : le premier des
+quatre lots.
+
+### 1. Ce que ce lot fait, et pourquoi c'est le premier
+
+`ProductCatalogReader` — **l'autorité de prix du checkout**, celle dont le JSDoc
+dit « ne jamais faire confiance au prix envoyé par le client » — vivait dans
+`orders/domain/ports/`. Son unique adaptateur de production ne fait pourtant que
+**traduire** `CatalogReader`, le port de `catalog/` : deux ports empilés, dont
+l'autoritaire logé dans le contexte qui n'en est pas la source.
+
+C'est ce qui faisait importer `orders` par `pricing` **neuf fois**, pour une
+donnée qui n'y est pas.
+
+Le port descend donc dans `catalog/`, avec son adaptateur, son double en
+mémoire, sa spec — et `UnknownSkuError`, qui est le refus que le catalogue
+oppose à ce qu'il ne connaît pas.
+
+> 🔴 **Le code d'erreur ne bouge PAS.** `UnknownSkuError` garde
+> `"orders.sku.unknown"` : un code est une **valeur servie**, pas un nom de
+> fichier. Le renommer serait un contrat cassé pour tout client qui l'aiguille.
+> Même règle que `VAT_HANDLE_PREFIX`, qui vaut toujours `"tva-"`.
+
+### 2. Ce qui a bougé
+
+| Ce qui se déplace                                  | D'où → vers                                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `product-catalog.reader.ts`                        | `orders/domain/ports/` → `catalog/domain/ports/`                                      |
+| `catalog-backed-product-catalog.ts` **et sa spec** | `orders/infrastructure/` → `catalog/infrastructure/`                                  |
+| `in-memory-product-catalog.ts`                     | idem                                                                                  |
+| `UnknownSkuError`                                  | `orders/domain/errors/order-errors.ts` → `catalog/domain/errors/unknown-sku.error.ts` |
+| le **fournisseur** Nest                            | `OrdersModule` → `CatalogModule`, qui l'exporte                                       |
+| `PricerModule`, `PricingAdminModule`               | importaient `OrdersModule`, importent `CatalogModule`                                 |
+
+### 3. Ce que ça ferme
+
+- **`pricing` n'importe plus rien d'`orders`** — vérifié par `grep` : zéro
+  import, contre neuf fichiers et deux modules avant ;
+- **le JSDoc de `PricerModule` cesse de mentir.** Il justifiait sa propre
+  existence par « le catalogue vit dans `OrdersModule`, qui importe déjà
+  `PricingModule` : le ranger là-bas fermerait le cycle ». Le catalogue n'y vit
+  plus. La contrainte, elle, **tient toujours** — mais pour une autre raison,
+  écrite à sa place : `CatalogModule` importe `PricingModule` depuis que la
+  vitrine tarife (R22).
+
+### 4. Ce que ça NE fait pas
+
+Aucune signature ne change, aucun comportement ne bouge. C'est un
+**déménagement**, et c'est exactement ce qu'on lui demande : rendre les trois
+lots suivants possibles sans avoir rien engagé.
+
+⚠️ La v1 du plan appelait ce lot « à risque nul ». Il ne l'est pas : il touche
+neuf fichiers, deux modules Nest et un port que la caisse consulte à chaque
+commande. Ce qui est vrai, c'est qu'**aucun test n'a eu à être réécrit** — seule
+une spec a suivi son code, comme `lint:tests-colocated` l'exige.
+
+### 5. Ce qui le prouve
+
+- **1 239 tests** de `src/b2b`, 142 suites, sans une assertion modifiée ;
+- `lint:import-cycles` — aucun cycle ; `lint:context-boundaries` — tenues sans
+  exception ; `lint:tests-colocated` — 278 specs ; `lint:price-pipeline` —
+  toujours **1 entrée**, le moteur n'a pas été touché.

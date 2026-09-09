@@ -575,7 +575,7 @@ laissé la **chorégraphie** en quatre exemplaires, plus une façade vide.
 ## C.3 Les frontières qui rendent l'extension coûteuse
 
 - **`pricing → orders` pour le catalogue.** Dix imports depuis `pricing/` vers
-  `apps/lfd-api/src/b2b/orders/domain/ports/product-catalog.reader.ts` et
+  `apps/lfd-api/src/b2b/catalog/domain/ports/product-catalog.reader.ts` et
   `apps/lfd-api/src/b2b/orders/domain/errors/order-errors.ts`. Or
   `apps/lfd-api/src/b2b/catalog/domain/ports/catalog.reader.ts` existe. **Deux
   ports catalogue**, et un cycle de contextes contourné par

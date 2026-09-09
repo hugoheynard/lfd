@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
-import { OrdersModule } from "../orders/orders.module.js";
 import {
   ArchivePriceFloorHandler,
   ConfirmPriceFloorHandler,
@@ -82,7 +81,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
 @Module({
   // `CatalogModule` pour l'historique du tarif : la lecture datée doit rendre le
   // tarif de CE jour-là, et lui seul sait le relire.
-  imports: [CatalogModule, OrdersModule, PricingModule],
+  imports: [CatalogModule, PricingModule],
   controllers: [
     AdminPricingController,
     AdminPriceFloorsController,

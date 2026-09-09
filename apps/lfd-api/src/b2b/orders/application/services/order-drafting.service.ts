@@ -29,7 +29,7 @@ import {
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";

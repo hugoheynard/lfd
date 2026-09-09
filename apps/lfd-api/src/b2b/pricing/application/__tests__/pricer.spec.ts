@@ -25,12 +25,12 @@ import { millicentsFromCents } from "@lfd/money";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Instant } from "../../../../platform/context/request-context.js";
-import { UnknownSkuError } from "../../../orders/domain/errors/order-errors.js";
+import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 import {
   ProductCatalogReader,
   type CatalogItem,
-} from "../../../orders/domain/ports/product-catalog.reader.js";
+} from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";

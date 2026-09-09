@@ -5,8 +5,8 @@ import type {
   PriceProjectionView,
 } from "@lfd/contracts";
 
-import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
-import { UnknownSkuError } from "../../../orders/domain/errors/order-errors.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import type { PricedItem } from "../../domain/loaded-pricer.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 

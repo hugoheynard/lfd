@@ -6,7 +6,7 @@ import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
-import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { describeFloorPolicy, describeRule } from "../../domain/pricing-act.js";

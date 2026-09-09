@@ -9,7 +9,7 @@ import {
 import { lineageSegments } from "../domain/lineage-overlaps.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
 import { itemView, type BoardMaterials, type LoadedFloor, type LoadedRule } from "./board-item.js";
-import type { CatalogItem } from "../../orders/domain/ports/product-catalog.reader.js";
+import type { CatalogItem } from "../../catalog/domain/ports/product-catalog.reader.js";
 import type { OverlapSegment } from "../domain/rule-overlaps.js";
 import type { PriceRule, PriceScope } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";

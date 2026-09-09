@@ -2,7 +2,7 @@ import type { CustomerSkuStat } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CustomerSkuReader } from "../../domain/ports/customer-sku.reader.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCustomerSkusQuery } from "./list-customer-skus.query.js";
 
 /**

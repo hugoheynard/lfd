@@ -1,5 +1,5 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import type {
   BillingAddressPayload,
   DeliveryZoneView,
@@ -17,8 +17,8 @@ import {
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
-  UnknownSkuError,
 } from "../../../domain/errors/order-errors.js";
+import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
 import {
   OrderGuardReader,
   type OrderCompanyStatus,
@@ -26,7 +26,7 @@ import {
 } from "../../../domain/ports/order-guard.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
+import { type CatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   type DeliveryDefaults,

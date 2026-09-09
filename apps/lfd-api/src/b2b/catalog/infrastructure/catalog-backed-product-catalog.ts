@@ -1,11 +1,8 @@
 import { CATALOG_CATEGORY_ORDER } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import {
-  CatalogReader,
-  type ResolvedCatalogItem,
-} from "../../catalog/domain/ports/catalog.reader.js";
-import { shelfOfCategory } from "../../catalog/domain/shelf-of-category.js";
+import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import { shelfOfCategory } from "../domain/shelf-of-category.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
 
 /**

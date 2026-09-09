@@ -1,7 +1,7 @@
 import type { CatalogItemView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCatalogQuery } from "./list-catalog.query.js";
 
 /**

@@ -7,7 +7,7 @@ import { BoardElasticityService } from "../application/board-elasticity.service.
 import {
   ProductCatalogReader,
   type CatalogItem,
-} from "../../orders/domain/ports/product-catalog.reader.js";
+} from "../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonical-price-history.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";

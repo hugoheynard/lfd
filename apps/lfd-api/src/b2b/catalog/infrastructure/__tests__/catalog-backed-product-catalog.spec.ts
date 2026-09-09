@@ -1,9 +1,6 @@
-import {
-  CatalogReader,
-  type ResolvedCatalogItem,
-} from "../../../catalog/domain/ports/catalog.reader.js";
+import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { CatalogBackedProductCatalog } from "../catalog-backed-product-catalog.js";
-import { UnknownCatalogShelfError } from "../../../catalog/domain/errors/unknown-catalog-shelf.error.js";
+import { UnknownCatalogShelfError } from "../../domain/errors/unknown-catalog-shelf.error.js";
 
 /**
  * **La bascule du catalogue** (Cat C5b), éprouvée sur ce qui compte : ce que

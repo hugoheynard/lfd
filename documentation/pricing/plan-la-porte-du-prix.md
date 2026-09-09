@@ -250,18 +250,22 @@ lire une date ? Ce plan ne le tranche pas, et ne retire rien.
 
 ## 5. Les lots, dans l'ordre
 
-| #   | Lot                                                                                                      | Ce qu'il ferme                                     | Risque                                              |
-| --- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
-| 1   | **Le port descend dans `catalog/`** — `ProductCatalogReader` et son adaptateur, les neuf imports suivent | deux ports empilés, `pricing → orders`             | faible — un déplacement, aucune signature ne change |
-| 2   | **La marque** — le port rend des `CatalogArticle` ; les six mappings meurent dans l'adaptateur           | le prix fabriqué, les six copies                   | moyen                                               |
-| 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes                  | le contournement, la seconde séquence, le lot vide | moyen — appelant par appelant                       |
-| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                                       | les encodages épars de « ce qu'on écarte »         | **fort — il touche le prix servi**                  |
+| #   | Lot                                                                                            | Ce qu'il ferme                                           | Risque                                        |
+| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
+| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                               | deux ports empilés, `pricing → orders` : **zéro import** | tenu : 1 239 tests, aucune assertion modifiée |
+| 2   | **La marque** — le port rend des `CatalogArticle` ; les six mappings meurent dans l'adaptateur | le prix fabriqué, les six copies                         | moyen                                         |
+| 3   | **`load(articles)` et `PricedLot`** — `LoadedPricer` et le chargeur deviennent internes        | le contournement, la seconde séquence, le lot vide       | moyen — appelant par appelant                 |
+| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                             | les encodages épars de « ce qu'on écarte »               | **fort — il touche le prix servi**            |
 
-⚠️ **Le lot 1 n'est pas « à risque nul », et la version précédente le prétendait
-en le mélangeant au reste.** Il déplace un port dont neuf fichiers dépendent ;
-il ne change aucune signature, mais il touche deux modules Nest et la racine de
-composition. « Aucun comportement ne bouge » est une promesse à tenir par les
-tests, pas par l'intention.
+✅ **Le lot 1 est fait le 2026-09-09**, et la promesse a tenu : aucune signature
+n'a changé, aucune assertion n'a été réécrite, une seule spec a suivi son code.
+`pricing` n'importe plus rien d'`orders`. Détail :
+[journal de remédiation](journal-de-remediation.md) §R26.
+
+⚠️ Il n'était pas « à risque nul » comme la v1 le prétendait — neuf fichiers,
+deux modules Nest, et le port que la caisse consulte à chaque commande. « Aucun
+comportement ne bouge » était une promesse à tenir par les tests, pas par
+l'intention.
 
 ⚠️ **Le point de non-retour est le PREMIER appelant migré au lot 3**, pas le
 dernier : revenir demanderait de recabler le port dans l'autre sens.
