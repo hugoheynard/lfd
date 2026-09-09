@@ -100,6 +100,15 @@
                       plancher
                     </span>
                   }
+                  <!-- Un bouton, pas une ligne cliquable : la cible du clic doit
+                       s'atteindre au clavier et s'annoncer, ce qu'un `<tr>` ne
+                       fait pas. Absent côté client, où la trace ne descend
+                       plus. -->
+                  @if (selectableLines()) {
+                    <button type="button" class="od-why" (click)="lineSelected.emit(line.sku)">
+                      pourquoi ce prix ?
+                    </button>
+                  }
                 </td>
                 <td class="od-col-num">
                   @if (entryPriceOf(line); as entry) {

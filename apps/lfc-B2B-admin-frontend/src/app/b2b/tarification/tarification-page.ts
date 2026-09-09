@@ -9,7 +9,7 @@ import type {
 import { RouterLink } from '@angular/router';
 import { formatEuros } from '@lfd/catalog-ui';
 
-import { floorLabel, ruleSentence } from './pricing-format';
+import { chainOf, floorLabel, ruleSentence } from './pricing-format';
 import {
   FoldButtonComponent,
   FoldBadgeComponent,
@@ -110,6 +110,8 @@ export class TarificationPage {
   // limite, l'éviction d'une règle de famille — a suivi la table dans son
   // composant : la page ne les lisait plus.
   protected readonly floorLabel = floorLabel;
+  /** L'item vivant, vu comme une chaîne — cf. `PriceChain`, qui sert aussi au figé. */
+  protected readonly chainOf = chainOf;
 
   protected readonly categories = computed<readonly PricingCategoryView[]>(
     () => this.board()?.categories ?? [],

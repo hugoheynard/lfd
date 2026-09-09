@@ -487,3 +487,17 @@ fold-aside-layout {
   margin-right: var(--fold-space-xs, 0.25rem);
   color: var(--fold-color-text-muted);
 }
+
+/* Le geste d'explication : discret dans la ligne, lisible au clavier. Aucune
+   couleur écrite — la teinte vient du lien de la surface courante. */
+.od-why {
+  margin-left: var(--fold-space-xs);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}

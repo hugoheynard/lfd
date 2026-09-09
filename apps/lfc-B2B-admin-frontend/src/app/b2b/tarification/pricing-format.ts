@@ -9,6 +9,8 @@ import type {
   PriceScopePayload,
   PriceScopeType,
   PriceStage,
+  PriceStepView,
+  NegotiationRoom,
   PricingItemView,
 } from '@lfd/contracts';
 
@@ -28,7 +30,7 @@ import type {
  * `null` quand rien n'a bougé : un « 0 % » sur chaque ligne inchangée serait du
  * bruit là où l'absence de puce dit déjà tout.
  */
-export function deltaLabel(item: PricingItemView): string | null {
+export function deltaLabel(item: PriceEnds): string | null {
   if (item.canonicalMillicents <= 0 || item.finalMillicents === item.canonicalMillicents) {
     return null;
   }
@@ -38,8 +40,11 @@ export function deltaLabel(item: PricingItemView): string | null {
     .replace('.', ',')} %`;
 }
 
+/** Les deux bouts d'une chaîne — tout ce qu'un écart demande. */
+type PriceEnds = Pick<PriceChain, 'canonicalMillicents' | 'finalMillicents'>;
+
 /** Une baisse et une hausse ne se lisent pas pareil : la puce le dit. */
-export function isDiscount(item: PricingItemView): boolean {
+export function isDiscount(item: PriceEnds): boolean {
   return item.finalMillicents < item.canonicalMillicents;
 }
 
@@ -324,6 +329,19 @@ export interface PricePathLeg {
 }
 
 /**
+ * **Les quatre champs que l'arithmétique de la cascade lit**, et pas un de plus.
+ *
+ * Typé sur la forme plutôt que sur `PricingItemView` : une résolution du jour et
+ * la trace **figée** d'une commande passée les portent toutes les deux, sans
+ * être la même chose. C'est ce qui permet de dessiner les deux sans fabriquer un
+ * faux item vivant.
+ */
+type ChainShape = Pick<
+  PriceChain,
+  'canonicalMillicents' | 'steps' | 'floored' | 'clampedToZero' | 'finalMillicents'
+>;
+
+/**
  * **Ce que la limite a REPRIS** sur ce que la chaîne avait produit, en
  * millicentimes. `0` quand elle n'a pas mordu.
  *
@@ -331,7 +349,7 @@ export interface PricePathLeg {
  * une règle posée, un geste accordé, et presque rien qui arrive au client. Il
  * demande `steps` ET `floored` réunis — donc la trace, pas la grille.
  */
-export function floorRecoveryMillicents(item: PricingItemView): number {
+export function floorRecoveryMillicents(item: ChainShape): number {
   if (!item.floored) {
     return 0;
   }
@@ -339,9 +357,57 @@ export function floorRecoveryMillicents(item: PricingItemView): number {
 }
 
 /** Le prix au bout de la chaîne, AVANT que la limite ne s'en mêle. */
-function chainEndMillicents(item: PricingItemView): number {
+function chainEndMillicents(item: ChainShape): number {
   const last = item.steps.at(-1);
   return last === undefined ? item.canonicalMillicents : last.resultMillicents;
+}
+
+/**
+ * **Ce qu'il faut pour dessiner un chemin de prix**, et rien de plus.
+ *
+ * 🔴 Existe pour que la trace **figée** d'une commande passée puisse être
+ * dessinée sans fabriquer un faux `PricingItemView`. Un item vivant contrefait
+ * aurait marché et aurait été le pire choix du lot : le même écran aurait servi
+ * une résolution du jour et une facture de l'an dernier sans qu'on puisse les
+ * distinguer — et en litige, on défend ce qui a été facturé, pas ce que le
+ * moteur ferait aujourd'hui.
+ *
+ * D'où `origin`, qui n'est pas décoratif : il décide de ce qui se dit sous le
+ * prix final. La marge de négociation est une notion **vivante** — sur une
+ * commande close, il n'y a plus rien à négocier.
+ */
+export interface PriceChain {
+  /** D'où vient cette chaîne — et l'écran doit le DIRE. */
+  readonly origin: 'live' | 'frozen';
+  /** L'article, tel qu'on le nomme en tête de panneau. */
+  readonly subject: string;
+  readonly canonicalMillicents: number;
+  readonly steps: readonly PriceStepView[];
+  readonly floored: boolean;
+  readonly clampedToZero: boolean;
+  readonly finalMillicents: number;
+  /** La limite qui s'applique, en millicentimes, ou `null` si aucune n'est posée. */
+  readonly floorMillicents: number | null;
+  /** La portée de cette limite, quand on la connaît — une trace figée ne la porte pas. */
+  readonly floorScope: PriceScopePayload | null;
+  /** Ce qu'on peut encore lâcher. **Vivant seulement** : `null` sur une trace figée. */
+  readonly room: NegotiationRoom | null;
+}
+
+/** La résolution du jour, vue comme une chaîne. */
+export function chainOf(item: PricingItemView): PriceChain {
+  return {
+    origin: 'live',
+    subject: item.name,
+    canonicalMillicents: item.canonicalMillicents,
+    steps: item.steps,
+    floored: item.floored,
+    clampedToZero: item.clampedToZero,
+    finalMillicents: item.finalMillicents,
+    floorMillicents: item.negotiationRoom?.floorMillicents ?? null,
+    floorScope: item.effectiveFloor?.scope ?? null,
+    room: item.negotiationRoom,
+  };
 }
 
 /**
@@ -354,8 +420,14 @@ function chainEndMillicents(item: PricingItemView): number {
  * laisserait croire qu'elle compose avec les autres.
  */
 export function pricePath(item: PricingItemView): readonly PricePathLeg[] {
+  return pathOf(chainOf(item));
+}
+
+/** Le même dessin, à partir de ce qui suffit à le faire — cf. {@link PriceChain}. */
+export function pathOf(chain: PriceChain): readonly PricePathLeg[] {
   const legs: PricePathLeg[] = [];
-  const room = item.negotiationRoom;
+  const item = chain;
+  const floorMillicents = chain.floorMillicents;
 
   legs.push({
     key: 'canonical',
@@ -405,14 +477,14 @@ export function pricePath(item: PricingItemView): readonly PricePathLeg[] {
     entering = step.resultMillicents;
   });
 
-  if (room !== null) {
+  if (floorMillicents !== null) {
     const recovery = floorRecoveryMillicents(item);
     legs.push({
       key: 'floor',
       kind: 'floor',
       stage: null,
-      title: floorTitle(item.effectiveFloor?.scope ?? null),
-      amountMillicents: room.floorMillicents,
+      title: floorTitle(chain.floorScope),
+      amountMillicents: floorMillicents,
       effect: recovery > 0 ? signedEuros(recovery) : null,
       scopeLabel: null,
       supersedes: [],
@@ -431,7 +503,7 @@ export function pricePath(item: PricingItemView): readonly PricePathLeg[] {
     effect: null,
     scopeLabel: null,
     supersedes: [],
-    notes: finalNotes(item),
+    notes: finalNotes(chain),
     dashed: false,
     heightPercent: 0,
   });
@@ -443,7 +515,7 @@ export function pricePath(item: PricingItemView): readonly PricePathLeg[] {
  * La limite a-t-elle repris tout ou partie de ce que le dernier étage venait
  * d'accorder ?
  */
-function absorbedByFloor(item: PricingItemView, enteringLastStep: number): boolean {
+function absorbedByFloor(item: ChainShape, enteringLastStep: number): boolean {
   if (!item.floored) {
     return false;
   }
@@ -463,12 +535,18 @@ function floorTitle(scope: PriceScopePayload | null): string {
  * limite posée, il n'y a pas de marge définie, et annoncer un nombre supposerait
  * un plancher que personne n'a décidé.
  */
-function finalNotes(item: PricingItemView): readonly PricePathNote[] {
+function finalNotes(chain: PriceChain): readonly PricePathNote[] {
   const notes: PricePathNote[] = [];
-  if (item.clampedToZero) {
+  if (chain.clampedToZero) {
     notes.push({ text: 'ramené à zéro', tone: 'alert' });
   }
-  const room = item.negotiationRoom;
+  // 🔴 Sur une commande close, il n'y a **rien à négocier** : la marge est une
+  // notion du jour. « Pas de référence » y ferait croire qu'aucune limite
+  // n'était posée, alors que la trace figée en garde une.
+  if (chain.origin === 'frozen') {
+    return notes;
+  }
+  const room = chain.room;
   if (room === null) {
     notes.push({ text: 'pas de référence', tone: 'muted' });
     return notes;
@@ -549,7 +627,7 @@ export interface PriceVerdictPart {
  * la phrase dit *quoi*. Quatre gabarits, et un cinquième que le moteur peut
  * produire sans qu'aucune règle n'agisse : un tarif déjà sous sa propre limite.
  */
-export function priceVerdict(item: PricingItemView): readonly PriceVerdictPart[] {
+export function priceVerdict(item: ChainShape): readonly PriceVerdictPart[] {
   const acted = item.steps.length;
   const superseded = item.steps.reduce((total, step) => total + step.supersedes.length, 0);
   const recovery = floorRecoveryMillicents(item);
@@ -611,7 +689,7 @@ export function priceVerdict(item: PricingItemView): readonly PriceVerdictPart[]
 }
 
 /** La phrase à plat — pour les tests, et pour tout lecteur qui n'a pas de balises. */
-export function priceVerdictText(item: PricingItemView): string {
+export function priceVerdictText(item: ChainShape): string {
   return priceVerdict(item)
     .map((part) => part.text)
     .join('');

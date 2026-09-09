@@ -116,6 +116,19 @@ export class OrderDetail {
   readonly order = input.required<CustomerOrderView>();
 
   /**
+   * **Les lignes offrent-elles d'expliquer leur prix ?** Faux par défaut.
+   *
+   * 🔴 Le drapeau existe pour que le COMPTOIR gagne un geste sans que le client
+   * en hérite : l'explication s'appuie sur la trace entière, que les routes
+   * clientes ne servent plus (R27). Un bouton qui n'ouvrirait rien serait pire
+   * qu'une absence de bouton.
+   */
+  readonly selectableLines = input(false);
+
+  /** Le SKU de la ligne dont on demande l'explication. */
+  readonly lineSelected = output<string>();
+
+  /**
    * À qui s'adresse la page. Le parcours est le même des deux côtés ; seul le
    * **niveau de détail** de la frise change — le staff voit ce que chaque jalon
    * veut dire dans l'atelier, le client voit l'étape.

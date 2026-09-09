@@ -97,7 +97,7 @@
           laquelle cet écran a maintenant une notion de sélection.
         -->
           @if (selectedItem(); as focused) {
-            <app-price-path [item]="focused" (dismissed)="selectedSku.set(null)" />
+            <app-price-path [chain]="chainOf(focused)" (dismissed)="selectedSku.set(null)" />
           }
         </fold-page-section>
 

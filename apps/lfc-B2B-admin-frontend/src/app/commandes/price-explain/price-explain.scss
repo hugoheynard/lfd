@@ -1,0 +1,46 @@
+/* Aucune couleur écrite : les encres viennent des tokens fold, et le panneau du
+   chemin repointe déjà sa polarité sur `chrome`. */
+:host {
+  display: block;
+}
+
+.rejected {
+  margin-top: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text-muted);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.entry {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+/* Le nom de la règle est barré : elle a été regardée, elle n'a rien produit. */
+.entry-label {
+  text-decoration: line-through;
+  color: var(--fold-color-text-muted);
+}
+
+.entry-reason {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}

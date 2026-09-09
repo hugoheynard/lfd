@@ -1,0 +1,37 @@
+@if (chain(); as path) {
+  <app-price-path [chain]="path" (dismissed)="dismissed.emit()" />
+
+  <section class="rejected">
+    <h3 class="title">Règles regardées, et non appliquées</h3>
+
+    @if (!consigned()) {
+      <!-- 🔴 « On ne sait pas » n'est PAS « il n'y en a eu aucune ». Cette
+           commande est antérieure au jour où l'on a commencé à consigner les
+           règles écartées ; afficher un vide affirmerait quelque chose sur la
+           seule commande qu'on ne peut plus vérifier. -->
+      <fold-callout variant="info">
+        Cette commande est antérieure au moment où l'on a commencé à consigner les règles écartées.
+        On ne sait pas ce que le moteur avait regardé.
+      </fold-callout>
+    } @else if (rejected().length === 0) {
+      <fold-empty-state
+        title="Aucune règle écartée"
+        subtitle="Le moteur a regardé, et tout ce qui pouvait agir a agi."
+      />
+    } @else {
+      <ul class="list">
+        @for (entry of rejected(); track entry.key) {
+          <li class="entry">
+            <span class="entry-label">{{ entry.label }}</span>
+            <span class="entry-reason">{{ entry.reason }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+} @else {
+  <fold-empty-state
+    title="Pas de trace sur cette ligne"
+    subtitle="Cette commande a été passée avant que la trace du prix n'existe. Le montant facturé reste celui de la ligne ; l'explication, elle, n'a pas été gardée."
+  />
+}

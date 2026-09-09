@@ -2,7 +2,14 @@
   <header class="head">
     <p class="eyebrow">
       Chemin du prix ·
-      <span class="subject">{{ item().name }}</span>
+      <span class="subject">{{ chain().subject }}</span>
+      <!-- 🔴 Un chemin figé et un chemin du jour se ressemblent, et c'est le
+           seul endroit du dossier où les confondre coûterait cher : en litige,
+           on défend ce qui a été facturé, pas ce que le moteur ferait
+           aujourd'hui. La mention n'est donc pas décorative. -->
+      @if (frozen()) {
+        <span class="frozen">figé à la commande</span>
+      }
     </p>
 
     <!-- La phrase de verdict est le livrable : elle répond à « qu'est-ce qui
@@ -25,8 +32,8 @@
     </p>
 
     <div class="triptych">
-      <span class="from">{{ euros(item().canonicalMillicents) }}</span>
-      <span class="to">{{ euros(item().finalMillicents) }}</span>
+      <span class="from">{{ euros(chain().canonicalMillicents) }}</span>
+      <span class="to">{{ euros(chain().finalMillicents) }}</span>
       @if (delta(); as ecart) {
         <span class="gap" [class.is-up]="!discount()">{{ ecart }}</span>
       }

@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import type { OrderView } from '@lfd/contracts';
+import type { OrderLineView, OrderView } from '@lfd/contracts';
 import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -21,6 +21,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { isOrderSheet } from './order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
+import { PriceExplain } from '../price-explain/price-explain';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -43,6 +44,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     OrderDetail,
+    PriceExplain,
     FoldEmptyStateComponent,
   ],
   templateUrl: './commande-page.html',
@@ -58,6 +60,19 @@ export class AdminCommandePage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly order = signal<OrderView | null>(null);
+
+  /**
+   * La ligne dont on demande « pourquoi ce prix ». Le SKU identifie la ligne :
+   * une commande ne porte jamais deux lignes du même article (la passation les
+   * fusionne).
+   */
+  protected readonly explainedSku = signal<string | null>(null);
+
+  /** La ligne à expliquer, ou `null` — l'article a pu disparaître d'un rechargement. */
+  protected readonly explained = computed<OrderLineView | null>(() => {
+    const sku = this.explainedSku();
+    return sku === null ? null : (this.order()?.lines.find((line) => line.sku === sku) ?? null);
+  });
 
   protected readonly documents = computed<readonly OrderDocument[]>(() => {
     const order = this.order();

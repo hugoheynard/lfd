@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { PricePath } from '../price-path/price-path';
 
 import {
+  chainOf,
   floorRecoveryMillicents,
   gaugeWidth,
   pricePath,
@@ -396,7 +397,9 @@ describe('le panneau du chemin du prix', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({});
     const fixture = TestBed.createComponent(PricePath);
-    fixture.componentRef.setInput('item', view);
+    // Le panneau prend une CHAÎNE depuis le lot 3 : le même dessin sert la
+    // résolution du jour et la trace figée d'une commande passée.
+    fixture.componentRef.setInput('chain', chainOf(view));
     fixture.detectChanges();
     return fixture;
   }
