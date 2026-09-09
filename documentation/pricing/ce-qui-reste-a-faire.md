@@ -32,40 +32,40 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 
 ## 1. Le tableau, en un écran
 
-| #       | Ce que c'est                                                                 | Gravité | Coût                     |
-| ------- | ---------------------------------------------------------------------------- | ------- | ------------------------ |
-| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                    | ✅      | **clos le 2026-09-09**   |
-| **R2**  | La simulation rejoue les paliers **dans le navigateur**                      | 🔴      | conception               |
-| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                   | ✅      | **clos le 2026-09-09**   |
-| **R4**  | Le client peut payer autre chose que ce qu'il a vu                           | 🟠      | conception               |
-| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                      | ✅      | **clos le 2026-09-09**   |
-| **R6**  | L'engagement de volume n'a **aucun écran**                                   | 🟠      | un lot front             |
-| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                             | ✅      | **clos le 2026-09-09**   |
-| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                         | ✅      | **clos le 2026-09-09**   |
-| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                      | 🟡      | inventaire fait          |
-| **R10** | **Deux** traces mortes dans la tarification                                  | 🟡      | trivial                  |
-| **R11** | Le volume prévu appartient au gabarit, pas au client                         | 🟡      | conception               |
-| **R12** | Trois requêtes de production jamais lancées                                  | 🟡      | trois `psql`             |
-| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                           | 🔵      | décision                 |
-| **R14** | Les conditionnements — conception **périmée**                                | 🔵      | à réécrire               |
-| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**            | 🟠      | contrat + front          |
-| **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**         | 🔴      | une décision commerciale |
-| ~~R17~~ | ~~La lecture datée `at` ignore ce qui a été **archivé depuis**~~             | ✅      | **clos le 2026-09-09**   |
-| **R18** | ~~Engagement~~ et **gabarit** répondent 400 là où le reste répond 404 et 409 | 🟡      | l'engagement est fait    |
-| **R19** | Treize commentaires disent « centimes » sur des millicentimes                | 🟠      | une heure, puis un type  |
-| ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~      | ✅      | **clos le 2026-09-09**   |
-| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`         | 🟠      | un lot, seule            |
-| ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                    | ✅      | **clos le 2026-09-09**   |
-| ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~         | ✅      | **clos le 2026-09-09**   |
-| **R24** | États inatteignables et colonnes mortes                                      | 🟡      | trivial                  |
-| **R25** | La trace figée : `scope` est écrit, le **scellement** est à reconcevoir      | 🟡      | forme à reprendre        |
-| **R27** | La trace de prix part au **client** sur trois routes, sans rétrécissement    | 🟠      | une vue client           |
-| ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~          | ✅      | **clos le 2026-09-09**   |
+| #       | Ce que c'est                                                              | Gravité | Coût                     |
+| ------- | ------------------------------------------------------------------------- | ------- | ------------------------ |
+| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                 | ✅      | **clos le 2026-09-09**   |
+| **R2**  | La simulation rejoue les paliers **dans le navigateur**                   | 🔴      | conception               |
+| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                | ✅      | **clos le 2026-09-09**   |
+| **R4**  | Le client peut payer autre chose que ce qu'il a vu                        | 🟠      | conception               |
+| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                   | ✅      | **clos le 2026-09-09**   |
+| **R6**  | L'engagement de volume n'a **aucun écran**                                | 🟠      | un lot front             |
+| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                          | ✅      | **clos le 2026-09-09**   |
+| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                      | ✅      | **clos le 2026-09-09**   |
+| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                   | 🟡      | inventaire fait          |
+| **R10** | **Deux** traces mortes dans la tarification                               | 🟡      | trivial                  |
+| **R11** | Le volume prévu appartient au gabarit, pas au client                      | 🟡      | conception               |
+| **R12** | Trois requêtes de production jamais lancées                               | 🟡      | trois `psql`             |
+| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                        | 🔵      | décision                 |
+| **R14** | Les conditionnements — conception **périmée**                             | 🔵      | à réécrire               |
+| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**         | 🟠      | contrat + front          |
+| **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**      | 🔴      | une décision commerciale |
+| ~~R17~~ | ~~La lecture datée `at` ignore ce qui a été **archivé depuis**~~          | ✅      | **clos le 2026-09-09**   |
+| ~~R18~~ | ~~Engagement et gabarit répondent 400 là où le reste répond 404 et 409~~  | ✅      | **clos le 2026-09-09**   |
+| **R19** | Treize commentaires disent « centimes » sur des millicentimes             | 🟠      | une heure, puis un type  |
+| ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~   | ✅      | **clos le 2026-09-09**   |
+| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`      | 🟠      | un lot, seule            |
+| ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                 | ✅      | **clos le 2026-09-09**   |
+| ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~      | ✅      | **clos le 2026-09-09**   |
+| **R24** | États inatteignables et colonnes mortes                                   | 🟡      | trivial                  |
+| **R25** | La trace figée : `scope` est écrit, le **scellement** est à reconcevoir   | 🟡      | forme à reprendre        |
+| **R27** | La trace de prix part au **client** sur trois routes, sans rétrécissement | 🟠      | une vue client           |
+| ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~       | ✅      | **clos le 2026-09-09**   |
 
-**Dix entrées sur vingt-sept sont closes** — R1, R3, R5, R7, R8 et R20 le jour
-même de ce registre, puis R22, R23, **R17** et **R26** dans la foulée.
+**Onze entrées sur vingt-sept sont closes** — R1, R3, R5, R7, R8 et R20 le jour
+même de ce registre, puis R22, R23, **R17**, **R26** et **R18** dans la foulée.
 **Douze ont été ajoutées le 2026-09-08** par le troisième regard (R15 à R26), et
-**R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **dix-sept** entrées,
+**R15 a été ramenée de 🔴 à 🟠 le 2026-09-09**. Il reste **seize** entrées,
 dont trois décisions et trois documents à réécrire. Elles restent listées avec
 leur preuve plutôt que retirées : une entrée effacée est une entrée que
 quelqu'un rouvrira.
@@ -578,7 +578,30 @@ autres sites sont inventoriés et triés dans
 — **aucun défaut avéré**, deux questions ouvertes. Cité ici pour que ce registre
 soit complet, pas parce qu'il y a du travail immédiat.
 
-### R18 🟠 Engagement et gabarit répondent 400 là où le reste répond 404 et 409
+### ~~R18~~ ✅ Engagement et gabarit répondaient 400 là où le reste répond 404 et 409
+
+> **Close le 2026-09-09.** Les cinq agrégats répondent désormais pareil au même
+> refus : **404** sur l'introuvable, **409** sur le clos et sur le recouvrement.
+>
+> **Les deux refus du gabarit ne s'éprouvent pas au même endroit**, et c'est le
+> seul point de cette entrée qui mérite d'être relu :
+>
+> - l'**introuvable** a son e2e, sur les deux routes qui chargent un gabarit —
+>   réviser et poser. Écrit en attendant 404, il a échoué en 400 ;
+> - le **scellé** n'a qu'une spec d'agrégat, parce qu'**aucune route ne
+>   l'atteint** : archiver un gabarit n'a pas d'appelant, c'est la trace morte
+>   que **R10** recense. C'est ce qui bloquait l'entrée — « pas de cas rouge
+>   pour le tenir ». La sortie n'était pas d'attendre la route : une catégorie
+>   fausse qui attend, invisible, le jour où quelqu'un branche le geste est
+>   exactement ce qu'on ne veut pas laisser derrière soi.
+>
+> **La seconde moitié du remède est faite aussi** : `pricing-errors.ts` portait
+> 56 classes sur 964 lignes, et c'est ce qui a laissé vivre l'incohérence — la
+> voir demandait de tenir six familles en tête sur un seul défilement. Sept
+> fichiers dans `domain/errors/`, le plus gros à 220 lignes ; l'adresse ne bouge
+> pas, le fichier d'origine ne porte plus que des ré-exports.
+>
+> Le constat d'origine suit.
 
 **Le fait, vérifié le 2026-09-08**, dans `pricing-errors.ts`. Introuvable :
 `ResourceNotFoundError` (404) pour les règles, barèmes et mercuriales (`:305`,
@@ -600,8 +623,7 @@ B.4.
 > (`price-rules.e2e-spec.ts`). Elles ont été trouvées en écrivant le premier
 > e2e de la route de signature, pas en relisant la liste.
 >
-> **Le gabarit reste**, et c'est tout ce qui reste de R18 : `:673`, `:683`. Il
-> n'est pas touché faute d'un cas rouge pour le tenir.
+> ✅ **Le gabarit a suivi le même jour**, et le découpage du fichier avec lui.
 
 ### R19 🟠 Treize commentaires disent « centimes » sur des millicentimes
 
@@ -680,7 +702,8 @@ clôture — _« aucun `Math.round` sur un prix dans un composant Angular »_ �
 8. **R15 et R16** — deux tests qui échouent, puis le correctif : les seuls
    constats qui produisent un **prix faux**.
 9. ~~**R17**~~ — ✅ fait le 2026-09-09 : `at` est vrai partout.
-10. **R18 et R19** — une heure, zéro risque, et le vecteur de D10 se ferme.
+10. ~~**R18**~~ — ✅ fait le 2026-09-09. **R19** reste : une heure, zéro
+    risque, et le vecteur de D10 se ferme.
 11. ~~**R26**~~ — ✅ fait le 2026-09-09, en quatre lots. ⚠️ **R21, R24 et R25 ne
     sont PAS tombées avec elle**, contrairement à ce que cette ligne annonçait :
     R21 est désormais un lot à part (son blocage, R17, est levé), R24 et R25

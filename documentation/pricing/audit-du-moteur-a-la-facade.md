@@ -258,7 +258,24 @@ lecture passée —, soit `at` **disparaît** de la surface publique (`PriceRequ
 `OrderLinePricing.resolve`) et la lecture datée reste au tableau de bord, seul
 endroit où elle est juste. Une porte qui ment est pire qu'une porte absente.
 
-## B.4 🟠 Les catégories d'erreur sont incohérentes — donc les statuts HTTP — R18
+## ~~B.4~~ ✅ Les catégories d'erreur étaient incohérentes — donc les statuts HTTP — R18
+
+> **Close le 2026-09-09.** Les cinq agrégats répondent pareil au même refus :
+> 404 sur l'introuvable, 409 sur le clos et sur le recouvrement. L'engagement
+> d'abord, le gabarit ensuite.
+>
+> **Le découpage annoncé « en le faisant » a été fait** : sept fichiers dans
+> `domain/errors/`, le plus gros à 220 lignes, et l'adresse d'import inchangée.
+> C'est la partie qui compte le plus pour la suite — ce constat n'a pas été
+> trouvé par relecture mais par comparaison, et 56 classes sur un seul
+> défilement rendaient la comparaison impraticable.
+>
+> ⚠️ Un refus sur les six n'a **aucune route qui l'atteigne** : archiver un
+> gabarit n'a pas d'appelant (la trace morte de B.10). Il est corrigé quand
+> même, et tenu par une spec d'agrégat — dit ici pour que personne ne cherche
+> l'e2e manquant.
+>
+> Le constat d'origine suit.
 
 Dans `apps/lfd-api/src/b2b/pricing/domain/pricing-errors.ts`, le même refus ne
 porte pas la même catégorie selon l'agrégat :
