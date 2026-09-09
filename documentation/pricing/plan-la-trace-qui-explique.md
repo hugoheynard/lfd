@@ -3,6 +3,12 @@
 **Ouvert le 2026-09-09.** Reprend la moitié de [R25](journal-de-remediation.md)
 que la contradiction a refusé de laisser bâtir : la **forme** du scellement.
 
+> 🔴 **Les §1 à §8 décrivent une forme MORTE.** `vitruve` l'a démolie en six
+> points (§9), dont quatre fatals. La forme à bâtir est au **§10** ; ce qui
+> précède est gardé parce que l'idée qu'il porte est la plus naturelle du sujet,
+> et que quelqu'un la reproposera. Le §1 (les faits ouverts) reste valable, à sa
+> ligne d'attribution corrigée près.
+
 > **Ce que ce plan remplace.** Le §4 du journal retenait « une colonne
 > `pricing_seal Json?` ». `vitruve` l'a démolie sur trois points, tous vérifiés :
 > elle portait des identifiants **nus** (donc muets dès qu'une règle est
@@ -245,3 +251,227 @@ Reste une décision qui n'est pas la mienne : **une colonne additive
 `pricing_rejected Json?` sur `order_lines`** — nullable, donc les trois états du
 point 4, et un domicile propre pour le point 1 — ou **aucune colonne**, et une
 trace qui assume de ne pas répondre à trois des causes.
+
+---
+
+## 10. La forme v2 — après contradiction et arbitrage
+
+**Arbitrage de Hugo, 2026-09-09** : une colonne additive, plutôt qu'une trace qui
+assume de ne pas répondre.
+
+### 10.1 Deux faits vérifiés contre Postgres, que la v1 avait supposés
+
+Joués sur le conteneur de dev, pas déduits :
+
+| Cas                                                                             | Résultat  | Ce qu'il décide                                                                                                                                        |
+| ------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `[{"ruleId":"promo","outcome":"below_threshold"}] @> [{"ruleId":"promo"}]`      | **true**  | 🔴 L'objection 2 est réelle : une entrée écartée logée dans `pricing_steps` ferait dire à `hasPriced` qu'une règle **a facturé**. Elle sort du tableau |
+| `[{"ruleId":"merc","supersedes":[{"ruleId":"promo"}]}] @> [{"ruleId":"promo"}]` | **false** | Un rival **imbriqué** n'est pas atteint par la containment : écrire enfin `supersedes` ne trompe pas cette porte                                       |
+
+### 10.2 Le domicile
+
+Une colonne **`pricing_rejected Json?`** sur `order_lines`, à côté de
+`pricing_steps` et non dedans. Elle donne les trois états que l'objection 4
+exige :
+
+- `NULL` — ligne écrite avant ce lot : **on ne consignait pas**, on ne sait pas ;
+- `[]` — une **affirmation** : le moteur n'a écarté aucune règle sur cette ligne ;
+- une valeur — ce qui a été écarté, et pourquoi.
+
+Chaque entrée : `{ stage, ruleId, label, scope, cause }`. Le **libellé** y est,
+parce qu'un `ruleId` survit volontairement à la suppression de sa règle — c'est
+le reproche exact que la contradiction avait fait à `sealedRuleIds`.
+
+⚠️ **Aucun `resultMillicents`**, et cette fois c'est sans danger : rien ne lit
+cette colonne pour vérifier un prix. C'est précisément ce que la v1 ne pouvait
+pas dire.
+
+### 10.3 Où vit chaque fait — un seul domicile chacun
+
+| Ce qui est arrivé à la règle                    | Où c'est écrit                        | Pourquoi là                                                                              |
+| ----------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| elle a agi                                      | `pricing_steps`, inchangé             | c'est ce que le mot veut dire dans douze lecteurs                                        |
+| battue dans un étage **qui a produit un étage** | `supersedes` du gagnant               | l'écran barre le perdant sur la barre du gagnant : un duel se dessine là où il a eu lieu |
+| battue dans un étage **scellé**                 | `pricing_rejected`, `superseded`      | il n'y a pas de barre de gagnant à décorer — l'étage entier est transparent              |
+| gagnante d'un étage scellé                      | `pricing_rejected`, `sealed`          | —                                                                                        |
+| sous son seuil de quantité                      | `pricing_rejected`, `below_threshold` | —                                                                                        |
+
+`sealedByRuleId` et `sealedRuleIds` **ne se persistent pas** : le premier est
+l'étage `mercuriale` appliqué, le second se **dérive** des entrées `sealed`. Une
+seule source dans le domaine, deux formes dans les vues vivantes qui les servent
+déjà — pas deux vérités.
+
+### 10.4 🔴 Le barème et la mercuriale, que la v1 croyait couverts
+
+`ladderAsRule` et `mercuriale.asRuleFor` rendent **`null`** quand aucun palier
+n'est atteint (`volume-ladder.ts:98`) : le matériau n'entre alors pas dans
+`rules`, et le moteur ne peut pas le voir. Or « pourquoi n'ai-je pas eu mon prix
+de volume ? » est la question de seuil la plus posée.
+
+**`assembled()` doit donc dire ce qu'il a laissé tomber** — rendre
+`{ rules, dropped }` au lieu d'un tableau. C'est le seul endroit du dossier qui
+connaît à la fois le matériau et la mesure qui l'a recalé.
+
+### 10.5 Ce qu'on ne fige pas, et comment on y répond quand même
+
+Expiration, suspension, audience, portée : ces règles n'atteignent jamais le
+moteur — l'adaptateur et l'index de portée les ont écartées avant. Les figer
+demanderait de transporter jusqu'au moteur, pour **chaque ligne de chaque
+commande**, des règles qui ne la concernent pas.
+
+🔴 **Et on ne les reconstruit pas depuis la règle d'aujourd'hui** : `resume()`
+efface `pausedAt` (`pricing-rule.ts:207`), donc une promotion suspendue puis
+reprise se relirait comme « elle était en vigueur ». Sur l'écran du litige, ce
+n'est pas une réponse manquante, c'est un **mensonge**.
+
+Elles se répondent depuis le **journal**, qui est append-only et où la pose, la
+pause et la reprise sont des actes datés. C'est ce que le JSDoc de
+`specificity.ts:141` dit déjà : « cet intervalle vit dans le journal, qui est
+l'endroit fait pour ça ». Lot 4.
+
+### 10.6 Ce que la migration fait, et ce qu'elle ne défait pas
+
+- **Additive et seule** : une colonne nullable, aucun `DEFAULT`, aucune reprise.
+- **Le rollback applicatif est gratuit** — rien ne dépend de la colonne tant que
+  le lecteur la traite comme optionnelle.
+- 🔴 **Le `DROP COLUMN`, lui, n'est pas un rollback** : il détruit sans reprise
+  possible tout ce qui aura été écrit entre-temps, et le §0 de `CLAUDE.md`
+  l'interdit sur la production. La v1 promettait « réversible en un
+  déploiement » ; c'était faux, et une phrase qu'on relit sous pression ne doit
+  pas promettre ça.
+- `lecteur-de-migrations` avant toute promotion vers `main`.
+
+### 10.7 Les lots
+
+| Lot   | Ce qu'il fait                                                                                                                          | Migration |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **1** | Domaine : `assembled()` rend ses recalés, `resolvePrice` rend `rejected`, `sealedRuleIds` en devient une **dérivation**                | aucune    |
+| **2** | Persistance : la colonne, son schéma de relecture, `jsonSteps` qui écrit **enfin** `supersedes`, et la vue staff qui expose `rejected` | **une**   |
+| **3** | L'écran : `price-path` prend une seconde source, et **dit** laquelle il montre                                                         | aucune    |
+| **4** | Les trois causes non figées, reconstruites **depuis le journal**, nommées comme reconstruites                                          | aucune    |
+
+### 10.8 Ce qui le prouvera
+
+- Une promotion scellée laisse `{ruleId, label, cause:"sealed"}` sur la ligne
+  persistée — le cas existe, il affirme `supersedes: []`, son commentaire dit que
+  le trou est là.
+- Un barème dont le palier n'est pas atteint apparaît en `below_threshold`.
+  Aujourd'hui il n'existe nulle part (§10.4).
+- 🔴 **`hasPriced` ne lit PAS la nouvelle colonne** : une règle regardée puis
+  écartée n'a rien facturé, et la porte de repose doit continuer de l'autoriser.
+  Un cas rouge sans ce garde-fou.
+- Une trace ancienne relit `pricing_rejected: null` — pas `[]`.
+- `toCustomerOrder` ne rend pas `rejected` : jeu de clés exact.
+- Les **cinq** assertions `expect(line.pricingSteps).toEqual([…])` de
+  `price-rules.e2e-spec.ts` (l. 198, 209, 238, 262, 552) changent avec l'arrivée
+  de `supersedes` : elles sont dans le lot 2, pas une surprise.
+
+### 10.9 Ce que la v2 n'a pas vérifié
+
+- Que `price-path` accepte une seconde source sans se déformer : il prend un
+  `PricingItemView` (canonique, plancher effectif, marge, élasticité) dont une
+  trace figée n'a rien. Le lot 3 est soit un adaptateur, soit une refonte de sa
+  signature — **et un adaptateur qui fabriquerait un `PricingItemView` synthétique
+  serait une résolution vivante contrefaite**, ce que le §5 interdit.
+- Le coût en lectures du lot 4, et l'absence de cas de budget sur le détail d'une
+  commande.
+- Le volume réel de `pricing_rejected` (l'accès prod manque, R12).
+
+---
+
+## 11. La forme v3 — la contradiction a simplifié, deux fois
+
+`vitruve`, seconde passe : les quatre objections fatales de la v1 sont bien
+refermées par le §10, et deux BLOQUANT neufs le corrigent. Les deux ont été
+rouverts dans le code ; les deux **retirent** de l'ouvrage plutôt qu'ils n'en
+ajoutent.
+
+### 11.1 🔴 Le §10.5 se trompait de magasin — et de problème
+
+Le journal ne porte **aucun champ structuré** d'audience, de portée ou de
+fenêtre : `pricing_events` a `subjectType`, `subjectId`, `act`, `actor`,
+`occurredAt`, `reason` et un `summary` qui est une **phrase française** produite
+pour l'œil. Y répondre à « cette règle visait-elle ce client ? » demanderait de
+parser un libellé d'affichage pour tenir un litige.
+
+Mais la vraie découverte est l'inverse, et elle vaut mieux : **la fenêtre,
+l'audience et la portée d'une règle ne changent jamais.** Les commandes qui
+existent sont `Create`, `Pause`, `Resume`, `Archive`, `Rename` — et rien d'autre
+(vérifié dans `pricing.commands.ts` le 2026-09-09) ; un barème ou une mercuriale
+qu'on repose prend un **nouvel identifiant** ; et `archive()` **borne `validTo`**
+au lieu de l'effacer.
+
+Donc **lire la règle d'aujourd'hui dit la vérité** sur trois des quatre causes.
+La seule donnée réellement détruite est l'intervalle de pause — `resume()` remet
+`pausedAt` à `null` — et celle-là, et elle seule, se retrouve au journal par
+l'`occurredAt` des actes `paused` / `resumed`.
+
+**Correction du §10.5** : on ne « répond pas depuis le journal ». On lit la règle,
+qui est immuable là où ça compte, et on ne va au journal que pour la pause.
+
+⚠️ Deux réserves qui restent, et qui doivent être écrites sur l'écran : un
+libellé se **renomme**, donc un nom reconstruit n'est pas forcément le nom
+facturé ; et `entryFromRow` aplatit tout verbe inconnu en `posed`, ce qui
+interdit de bâtir une frise naïve sur ce lecteur.
+
+### 11.2 🔴 Le §10.4 aurait écrit une cause FAUSSE, en volume non borné
+
+`mercuriale.asRuleFor` rend `null` **d'abord parce que la grille ne porte pas cet
+article** (`company-mercuriale.ts:254`), et ne juge le palier qu'ensuite. Or la
+mercuriale est passée **entière, non filtrée par portée** au moteur.
+
+Écrire `below_threshold` sur tout `null` aurait donc marqué « palier non
+atteint » sur **chaque ligne de chaque commande de chaque client sous
+mercuriale**, pour tout article hors grille. Une cause fausse, en masse, sur
+l'écran fait pour le litige.
+
+**Correction** : un matériau qui ne vise pas l'article n'est pas une règle
+écartée — il n'a rien à dire, et il ne va pas dans `rejected`. Seul « la mesure
+n'atteint aucun palier » y va. `asRuleFor` et `ladderAsRule` doivent donc dire
+**pourquoi** ils rendent `null`, au lieu de rendre `null`.
+
+### 11.3 La simplification que l'objection 5 impose — un seul domicile
+
+`priceStepsSchema` déclare `supersedes` avec un défaut `[]` (et non
+`.nullable().default(null)` comme `scope`). Tant que rien ne l'écrit, ce `[]`
+veut dire « on ne consignait pas » ; le jour où le lot 2 l'écrit, il veut dire
+« aucune rivale » — et **plus rien ne distinguera jamais** les traces d'avant de
+celles d'après. C'est le grief de l'objection 4, sur le champ voisin, et il est
+irréversible dès le premier déploiement.
+
+**Donc `supersedes` n'est PAS persisté, ni maintenant ni plus tard.** Il reste ce
+qu'il est : un champ de la vue **vivante**, que le tableau de tarification
+affiche sur une résolution du jour.
+
+Et le tableau du §10.3 s'effondre en une ligne : **tout ce qui n'a pas produit
+d'étage va dans `pricing_rejected`**, avec sa cause — évincée, scellée, sous le
+seuil. Un seul domicile, une seule colonne, trois états, aucune ambiguïté à
+créer sur un champ existant.
+
+### 11.4 Ce qui reste à trancher avant de bâtir
+
+- **La cause se décide prédicat par prédicat.** `applies` en conjoint cinq, et
+  `resolvePrice` est pure : elle doit rester juste sur un tableau fabriqué à la
+  main, ce que chacun de ses tests fait. Écrire « `!applies` ⇒ seuil » la ferait
+  mentir là. La cause se nomme donc en rejouant les prédicats dans l'ordre, ou
+  `rejected` n'est peuplé que sur le chemin pré-filtré — à écrire, pas à
+  supposer.
+- **Le chemin de plomberie n'est ni nommé ni chiffré** : `ResolvedPrice` →
+  `PricedArticle` → `priceLine` → `OrderLineInput` → `OrderLine` → `Order.place`
+  → dépôt → reader → vue. Sept sites, aucun cité par le §10.7.
+- **`Prisma.DbNull` et non `null`** à l'écriture, sans quoi les trois états
+  s'effondrent en deux dès la première ligne écrite.
+- **`parseTrace` est du tout-ou-rien** : il faut dire si une entrée `rejected`
+  illisible emporte la trace entière, ou seulement elle-même.
+
+### 11.5 Trois justifications à corriger, qu'aucun lot ne portait
+
+- `jsonSteps` (`prisma-order.repository.ts:254`) et
+  `PriceStepView.supersedes` (`pricing.ts:530`) disent tous deux que l'écriture
+  « attend le rétrécissement des trois routes ». Il a shippé ce matin (R27), et
+  la v3 décide de **ne pas** écrire ce champ : les deux phrases sont périmées
+  pour deux raisons différentes, et un lecteur les défendrait pour un mur qui
+  n'existe plus.
+- Le §10.2 justifie le libellé figé par « un `ruleId` survit à la suppression de
+  sa règle ». Il n'y a **aucune suppression** — `archive` est un effacement doux.
+  La vraie raison est `RenamePriceRuleCommand`, qui existe et qui ship.
