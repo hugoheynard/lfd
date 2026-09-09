@@ -1,9 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import type { VolumeCommitmentView } from "@lfd/contracts";
 
-import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
-import { commitmentViewFromRow } from "../../infrastructure/volume-commitment-rows.js";
+import { commitmentView } from "../volume-commitment-view.js";
+import {
+  VolumeCommitmentsReader,
+  type StoredVolumeCommitment,
+} from "../ports/volume-commitments.reader.js";
 
 /**
  * **Le suivi des engagements d'un client** — la promesse, et où on en est.
@@ -23,17 +26,14 @@ import { commitmentViewFromRow } from "../../infrastructure/volume-commitment-ro
 @Injectable()
 export class VolumeCommitmentsQuery {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly commitments: VolumeCommitmentsReader,
     private readonly volumes: CustomerVolumeReader,
   ) {}
 
   async forCompany(companyId: string): Promise<readonly VolumeCommitmentView[]> {
-    const rows = await this.prisma.volumeCommitment.findMany({
-      where: { companyId },
-      orderBy: { validFrom: "desc" },
-    });
+    const stored = await this.commitments.allFor(companyId);
     return Promise.all(
-      rows.map(async (row) => commitmentViewFromRow(row, await this.reached(row))),
+      stored.map(async (entry) => commitmentView(entry, await this.reached(entry))),
     );
   }
 
@@ -53,20 +53,15 @@ export class VolumeCommitmentsQuery {
    * toujours le SKU de la ligne au périmètre de l'engagement, et fait un prix
    * avec. La décision de branche est au journal de remédiation.
    */
-  private async reached(row: {
-    companyId: string;
-    scopeType: string;
-    scopeId: string | null;
-    validFrom: Date;
-    validTo: Date;
-  }): Promise<number | null> {
-    const sku = row.scopeType === "product" || row.scopeType === "variant" ? row.scopeId : null;
+  private async reached({ state }: StoredVolumeCommitment): Promise<number | null> {
+    const sku =
+      state.scope.type === "product" || state.scope.type === "variant" ? state.scope.id : null;
     if (sku === null) {
       return null;
     }
-    const measured = await this.volumes.volumesFor(row.companyId, [sku], {
-      from: row.validFrom,
-      to: row.validTo,
+    const measured = await this.volumes.volumesFor(state.companyId, [sku], {
+      from: state.validFrom,
+      to: state.validTo,
     });
     return measured.get(sku) ?? 0;
   }

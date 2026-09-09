@@ -438,10 +438,18 @@ for (const dir of SCOPE) {
 }
 
 // L'autre sens : le code qui nomme un document.
+//
+// ⚠️ **`existsSync` en plus de `git ls-files`**, et ce n'est pas une ceinture de
+// sécurité : l'index git connaît un fichier SUPPRIMÉ mais pas encore indexé, et
+// la porte mourait alors sur un `ENOENT` — une trace de pile Node, là où le
+// travail en cours était simplement un `git rm` non fait. Une porte qui plante
+// au lieu de dire ce qu'elle reproche se contourne au lieu de se lire
+// (constaté le 2026-09-09, en déplaçant un fichier).
 const SOURCES = everyFile.filter(
   (file) =>
     !file.startsWith("documentation/") &&
-    /\.(?:ts|tsx|mjs|cjs|js|prisma|sql|html|json)$/u.test(file),
+    /\.(?:ts|tsx|mjs|cjs|js|prisma|sql|html|json)$/u.test(file) &&
+    existsSync(join(ROOT, file)),
 );
 for (const file of SOURCES) {
   for (const [line, raw, why] of deadDocPathsIn(file)) {

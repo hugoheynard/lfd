@@ -2,35 +2,21 @@ import type { MercurialeDraftView, SaveMercurialeDraftPayload } from "@lfd/contr
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { MercurialeDraftStore } from "../application/ports/mercuriale-draft.store.js";
 
 /**
- * **Le brouillon de mercuriale d'un client** — lire, enregistrer, jeter.
+ * **Le brouillon de mercuriale, en base.**
  *
- * Un `*Store` et non un `*Query` : il ÉCRIT autant qu'il lit, et le nommer
- * « query » aurait fait passer `save` et `discard` pour des lectures dans la
- * liste des fichiers — exactement ce que la séparation lecture/écriture du
- * dépôt existe pour rendre visible.
- *
- * ## Pourquoi ce n'est pas un agrégat
- *
- * Il n'a **aucun invariant à protéger**. Une grille incomplète est son état
- * normal — c'est même sa raison d'être : on écrit les prix avant de dater, on
- * date avant de nommer, et rien de tout cela ne doit être refusé. Un agrégat
- * ici serait de la cérémonie, et la question de tri du dépôt le dit :
- * « existe-t-il une règle qui peut refuser cette écriture ? » — non.
- *
- * Les refus arrivent **à la pose**, où ils ont un sens : c'est là qu'une grille
- * devient une décision, et c'est `PricingRule` qui les porte.
- *
- * ## Un seul par société, et enregistrer remplace
- *
- * `companyId` est la clé primaire. Une négociation se reprend, elle ne se
- * collectionne pas : deux brouillons ouverts sur le même compte poseraient la
- * question de savoir lequel fait foi, à laquelle personne n'aurait de réponse.
+ * La classe vivait dans `application/` et injectait `PrismaService` — ce que
+ * `CLAUDE.md` §4 interdit. Le port porte désormais le raisonnement (pourquoi ce
+ * n'est pas un agrégat, pourquoi un seul port) ; ici il ne reste que la ligne et
+ * sa conversion.
  */
 @Injectable()
-export class MercurialeDrafts {
-  constructor(private readonly prisma: PrismaService) {}
+export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   /** Le brouillon en cours, ou `null` — il n'y en a jamais eu, ou il est posé. */
   async forCompany(companyId: string): Promise<MercurialeDraftView | null> {

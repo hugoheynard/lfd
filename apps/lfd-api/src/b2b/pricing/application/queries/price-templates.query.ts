@@ -1,10 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { PriceTemplateKind, PriceTemplateView } from "@lfd/contracts";
 
-import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
-import { templateStateFromRow } from "../../infrastructure/price-template-rows.js";
-import type { TemplateRow } from "../../infrastructure/price-template-rows.js";
+import { PriceTemplatesReader, type StoredPriceTemplate } from "../ports/price-templates.reader.js";
 
 /**
  * **Les gabarits, avec le tarif catalogue en regard.**
@@ -20,21 +18,17 @@ import type { TemplateRow } from "../../infrastructure/price-template-rows.js";
 @Injectable()
 export class PriceTemplatesQuery {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly templates: PriceTemplatesReader,
     private readonly catalog: ProductCatalogReader,
   ) {}
 
   async list(kind: PriceTemplateKind): Promise<readonly PriceTemplateView[]> {
-    const rows = await this.prisma.priceTemplate.findMany({
-      where: { kind, archivedAt: null },
-      orderBy: { updatedAt: "desc" },
-    });
-    return this.decorate(rows);
+    return this.decorate(await this.templates.list(kind));
   }
 
   async byId(id: string): Promise<PriceTemplateView | null> {
-    const row = await this.prisma.priceTemplate.findUnique({ where: { id } });
-    return row === null ? null : ((await this.decorate([row]))[0] ?? null);
+    const template = await this.templates.byId(id);
+    return template === null ? null : ((await this.decorate([template]))[0] ?? null);
   }
 
   /**
@@ -42,13 +36,15 @@ export class PriceTemplatesQuery {
    * par ligne ferait, sur une liste de gabarits d'une centaine de lignes,
    * autant de requêtes que d'articles — sur un écran qu'on ouvre pour lire.
    */
-  private async decorate(rows: readonly TemplateRow[]): Promise<readonly PriceTemplateView[]> {
-    const states = rows.map(templateStateFromRow);
+  private async decorate(
+    stored: readonly StoredPriceTemplate[],
+  ): Promise<readonly PriceTemplateView[]> {
+    const states = stored.map((entry) => entry.state);
     const skus = [...new Set(states.flatMap((state) => state.lines.map((line) => line.sku)))];
     const catalogue = await this.catalog.resolveMany(skus);
 
     return states.map((state, index) => {
-      const row = rows[index];
+      const row = stored[index];
       return {
         id: state.id,
         kind: state.kind,

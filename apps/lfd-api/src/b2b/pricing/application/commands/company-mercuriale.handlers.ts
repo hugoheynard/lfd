@@ -18,7 +18,7 @@ import {
   PricedPeriodIsSealedError,
   RunningMercurialeError,
 } from "../../domain/pricing-errors.js";
-import { MercurialeDrafts } from "../mercuriale-drafts.store.js";
+import { MercurialeDraftStore } from "../ports/mercuriale-draft.store.js";
 
 /**
  * **Établir la mercuriale d'un compte**, la clore, la renommer.
@@ -137,7 +137,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly companies: PricedCompanyReader,
     private readonly mercuriales: CompanyMercurialeRepository,
     private readonly ids: IdGenerator,
-    private readonly drafts: MercurialeDrafts,
+    private readonly drafts: MercurialeDraftStore,
     private readonly priced: PricedDecisionsReader,
   ) {}
 

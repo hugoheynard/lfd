@@ -476,12 +476,23 @@ Et `CompanyPricingQuery` injecte `PrismaService` (`company-pricing.query.ts:69`)
 > règles de compte. Les prix n'auraient pas bougé ; l'écran aurait perdu des
 > lignes en silence. Un e2e le tient désormais, vérifié par mutation.
 >
+> ✅ **Plus aucune injection de `PrismaService` dans `pricing/application`.**
+>
 > ⚠️ **Le compte de cette entrée était faux.** Elle dit « **une** query injecte
-> `PrismaService` ». Il y en avait **cinq**. Deux sont parties — dont un
-> `prisma.company.findUnique` écrit deux fois, sur la table d'un autre contexte,
-> depuis un handler d'écriture. **Trois restent**, chacune sur sa propre table :
-> `mercuriale-drafts.store.ts`, `queries/price-templates.query.ts`,
-> `queries/volume-commitments.query.ts`.
+> `PrismaService` ». Il y en avait **cinq** : la fiche client, un
+> `prisma.company.findUnique` écrit deux fois sur la table d'un autre contexte
+> (dont une depuis un handler d'écriture), le magasin de brouillons de
+> mercuriale, la query des gabarits et celle des engagements.
+>
+> Les cinq sont passées derrière un port. Deux d'entre elles ont demandé plus
+> qu'un déplacement, et c'est ce qui explique qu'elles aient duré :
+>
+> - le magasin de brouillons **écrit** autant qu'il lit ; il descend en
+>   `infrastructure/` entier, et son port assume de ne pas séparer lecture et
+>   écriture — avec la raison écrite, parce que `CLAUDE.md` §2 dit l'inverse ;
+> - la vue d'un engagement se fabriquait **depuis la ligne**. Tant que c'était
+>   le cas, la query devait lire la ligne elle-même : une ligne ne franchit pas
+>   `infrastructure/` (§3). Elle se fabrique désormais depuis l'**état**.
 >
 > Reste aussi le **§4 que l'entrée ne nomme pas** : `AdminPricingController`
 > injecte `PricingBoardReader` (compté par `lint:controller-buses`) et

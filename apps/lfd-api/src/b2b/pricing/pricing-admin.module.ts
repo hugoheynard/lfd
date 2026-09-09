@@ -54,7 +54,12 @@ import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-tem
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
 import { AdminCompanyPricingController } from "./http/admin-company-pricing.controller.js";
 import { CompanyPricingQuery } from "./application/queries/company-pricing.query.js";
-import { MercurialeDrafts } from "./application/mercuriale-drafts.store.js";
+import { MercurialeDraftStore } from "./application/ports/mercuriale-draft.store.js";
+import { PrismaMercurialeDraftStore } from "./infrastructure/prisma-mercuriale-draft.store.js";
+import { PriceTemplatesReader } from "./application/ports/price-templates.reader.js";
+import { PrismaPriceTemplatesReader } from "./infrastructure/prisma-price-templates.reader.js";
+import { VolumeCommitmentsReader } from "./application/ports/volume-commitments.reader.js";
+import { PrismaVolumeCommitmentsReader } from "./infrastructure/prisma-volume-commitments.reader.js";
 import {
   CloseCompanyMercurialeHandler,
   RenameCompanyMercurialeHandler,
@@ -122,7 +127,12 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     PriceTemplatesQuery,
     MercurialeBenchmarkQuery,
     CompanyPricingQuery,
-    MercurialeDrafts,
+    // 🔴 **Les trois dernières lectures directes de la couche application.**
+    // Chacune interrogeait sa table en Prisma depuis un service applicatif —
+    // ce que `CLAUDE.md` §4 interdit — et l'entrée R21 n'en comptait qu'une.
+    { provide: MercurialeDraftStore, useClass: PrismaMercurialeDraftStore },
+    { provide: PriceTemplatesReader, useClass: PrismaPriceTemplatesReader },
+    { provide: VolumeCommitmentsReader, useClass: PrismaVolumeCommitmentsReader },
     { provide: CompanyMercurialeRepository, useClass: PrismaCompanyMercurialeRepository },
     // Le port est déclaré par `pricing`, l'adaptateur vit dans `orders` : la
     // réponse « a-t-elle facturé ? » est gelée sur la ligne de commande, et

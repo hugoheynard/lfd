@@ -794,7 +794,7 @@ croie faites.
   `pricing-rule.ts`, `volume-ladder.ts`, `volume-commitment.ts`, les ports),
   l'application (`pricer.ts`, `pricing-materials.loader.ts`, `board-item.ts`,
   les queries `company-pricing`, `price-projection`, `mercuriale-benchmark`,
-  `pricing.commands.ts`, `pricing.handlers.ts`, `mercuriale-drafts.store.ts`),
+  `pricing.commands.ts`, `pricing.handlers.ts`, le magasin de brouillons),
   l'infrastructure (le cache, `pricing-act.writer.ts`, `price-rows.ts`,
   `archived-at.ts`, les lecteurs Prisma des règles, planchers, mercuriales,
   engagements, volumes), les trois modules, `admin-pricing.controller.ts` ;

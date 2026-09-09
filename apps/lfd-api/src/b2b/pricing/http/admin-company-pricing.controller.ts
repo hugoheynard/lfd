@@ -33,7 +33,7 @@ import {
   RenameCompanyMercurialeCommand,
 } from "../application/commands/company-mercuriale.handlers.js";
 import { CompanyPricingQuery } from "../application/queries/company-pricing.query.js";
-import { MercurialeDrafts } from "../application/mercuriale-drafts.store.js";
+import { MercurialeDraftStore } from "../application/ports/mercuriale-draft.store.js";
 
 /**
  * **La tarification d'UN client** — l'onglet « Tarifs » de sa fiche.
@@ -63,7 +63,7 @@ export class AdminCompanyPricingController {
   constructor(
     private readonly commands: CommandBus,
     private readonly pricing: CompanyPricingQuery,
-    private readonly drafts: MercurialeDrafts,
+    private readonly drafts: MercurialeDraftStore,
   ) {}
 
   /** Ce que ce client paie **aujourd'hui**, article par article, et ses mercuriales. */
