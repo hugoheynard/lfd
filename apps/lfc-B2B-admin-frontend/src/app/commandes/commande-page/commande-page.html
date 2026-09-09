@@ -46,7 +46,7 @@
         </lfd-order-detail>
 
         @if (explained(); as line) {
-          <app-price-explain [line]="line" (dismissed)="explainedSku.set(null)" />
+          <app-price-explain [line]="line" [orderId]="o.id" (dismissed)="explainedSku.set(null)" />
         }
       }
     }

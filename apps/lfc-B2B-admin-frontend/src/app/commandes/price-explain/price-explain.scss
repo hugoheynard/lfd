@@ -44,3 +44,23 @@
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-secondary);
 }
+
+/* « reconstruit » : la mention qui sépare ce qui a été facturé de ce qui est
+   relu aujourd'hui. Discrète, mais jamais absente. */
+.rebuilt {
+  margin-left: var(--fold-space-xs);
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+}
+
+.caveat {
+  margin: 0;
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}

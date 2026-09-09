@@ -60,3 +60,18 @@ export const REJECTION_LABELS: Readonly<Record<RejectionCause, string>> = {
   superseded: 'supplantée par une règle plus précise',
   sealed: 'écartée par le tarif négocié',
 };
+
+/**
+ * Les raisons **reconstruites**, en français.
+ *
+ * `unknown` n'est pas un habillage poli de « rien » : il couvre deux cas réels —
+ * une règle de segment, qu'on refuse de juger parce que le segment n'est pas
+ * figé sur la commande, et une règle ouverte à tous qui aurait dû agir. Le
+ * second mérite qu'on ouvre le dossier, et l'écran ne doit pas l'enterrer sous
+ * une phrase rassurante.
+ */
+export const UNEXPLAINED_LABELS = {
+  suspended: "suspendue ce jour-là, d'après le journal",
+  out_of_audience: 'ne visait pas ce client',
+  unknown: 'aucune raison trouvée — à regarder',
+} as const;

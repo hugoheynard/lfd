@@ -1,19 +1,25 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
-import type { OrderLineView, OrderLinePricingTrace, RejectedRuleView } from '@lfd/contracts';
+import type {
+  OrderLineView,
+  OrderLinePricingTrace,
+  RejectedRuleView,
+  UnexplainedRuleView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { AdminOrdersService } from '../orders.service';
 import { PriceExplain } from './price-explain';
 import { frozenChainOf } from './frozen-chain';
 
 /**
  * **« Pourquoi ce prix », sur une commande déjà partie.**
  *
- * Ces cas visent surtout **une** chose : les trois états de `rejected`. `null`
- * (la commande est antérieure à la colonne), `[]` (le moteur n'a écarté
- * personne) et une valeur se dessinent naturellement pareil — un écran vide —,
- * et c'est exactement ainsi qu'on détruirait la distinction que toute la
- * colonne construit, sans que personne ne s'en aperçoive (R25).
+ * Ces cas visent surtout une chose : les trois états de `rejected`. `null` (la
+ * commande est antérieure à la colonne), `[]` (le moteur n'a écarté personne) et
+ * une valeur se dessinent naturellement pareil — un écran vide —, et c'est
+ * exactement ainsi qu'on détruirait la distinction que toute la colonne
+ * construit, sans que personne ne s'en aperçoive (R25).
  */
 const TRACE: OrderLinePricingTrace = {
   basePriceMillicents: 200_000,
@@ -51,11 +57,42 @@ function rejected(...entries: readonly RejectedRuleView[]): OrderLineView {
   return line({ ...TRACE, rejected: entries });
 }
 
-function mount(view: OrderLineView): ComponentFixture<PriceExplain> {
+/**
+ * Le doublé rend une liste vide par défaut : les cas de la trace FIGÉE ne
+ * doivent rien devoir à la reconstruction, qui a les siens plus bas.
+ */
+function mount(
+  view: OrderLineView,
+  rules: readonly UnexplainedRuleView[] | Error = [],
+): ComponentFixture<PriceExplain> {
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({});
+  TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: AdminOrdersService,
+        useValue: {
+          lineRules: (): Promise<{ at: string; rules: readonly UnexplainedRuleView[] }> =>
+            rules instanceof Error
+              ? Promise.reject(rules)
+              : Promise.resolve({ at: '2026-03-10T09:00:00.000Z', rules }),
+        },
+      },
+    ],
+  });
   const fixture = TestBed.createComponent(PriceExplain);
   fixture.componentRef.setInput('line', view);
+  fixture.componentRef.setInput('orderId', 'ord_1');
+  fixture.detectChanges();
+  return fixture;
+}
+
+/** Le rendu APRÈS la lecture asynchrone — sans quoi on n'observe que l'attente. */
+async function mounted(
+  view: OrderLineView,
+  rules: readonly UnexplainedRuleView[] | Error = [],
+): Promise<ComponentFixture<PriceExplain>> {
+  const fixture = mount(view, rules);
+  await fixture.whenStable();
   fixture.detectChanges();
   return fixture;
 }
@@ -74,7 +111,7 @@ describe('frozenChainOf', () => {
     const chain = frozenChainOf(line());
 
     expect(chain?.origin).toBe('frozen');
-    // 🔴 La marge est une notion du jour : sur une commande close, il n'y a plus
+    // La marge est une notion du jour : sur une commande close, il n'y a plus
     // rien à lâcher. Un nombre ici serait une invitation à négocier le passé.
     expect(chain?.room).toBeNull();
   });
@@ -145,5 +182,61 @@ describe('le panneau « pourquoi ce prix »', () => {
     );
 
     expect(rendered).toContain('à cette date');
+  });
+});
+
+/**
+ * **L'autre moitié** : ce qui n'a jamais atteint le moteur, donc ce que la trace
+ * ne pouvait pas garder. Elle est RECONSTRUITE, et ces cas tiennent surtout ça.
+ */
+describe('les décisions reconstruites', () => {
+  const rule = (over: Partial<UnexplainedRuleView> = {}): UnexplainedRuleView => ({
+    ruleId: 'ciblee',
+    label: 'Promo grands comptes',
+    stage: 'promotion',
+    scope: { type: 'global', id: null },
+    cause: 'out_of_audience',
+    ...over,
+  });
+
+  it("dit qu'elle est reconstruite, jamais figée", async () => {
+    expect(text(await mounted(line(), [rule()]))).toContain('reconstruit');
+  });
+
+  it("nomme la règle et pourquoi elle n'a pas joué", async () => {
+    const rendered = text(await mounted(line(), [rule()]));
+
+    expect(rendered).toContain('Promo grands comptes');
+    expect(rendered).toContain('ne visait pas ce client');
+  });
+
+  it("avertit que les libellés sont ceux d'aujourd'hui", async () => {
+    // Une règle se renomme : le nom affiché n'est pas forcément celui qui a
+    // facturé, et c'est le genre de détail qui décide d'un litige.
+    expect(text(await mounted(line(), [rule()]))).toContain("ceux d'aujourd'hui");
+  });
+
+  /**
+   * 🔴 Une absence de raison n'est pas une raison. Le cas « ouverte à tous et
+   * pourtant sans effet » doit ressortir, pas se ranger sous une phrase
+   * rassurante.
+   */
+  it("montre qu'il n'a pas de raison plutôt que d'en inventer une", async () => {
+    expect(text(await mounted(line(), [rule({ cause: null })]))).toContain('à regarder');
+  });
+
+  it("affirme le vide quand rien d'autre n'était en vigueur", async () => {
+    expect(text(await mounted(line(), []))).toContain('Aucune autre décision');
+  });
+
+  /**
+   * 🔴 Une panne de lecture n'affirme RIEN. Retomber sur une liste vide dirait
+   * « rien d'autre n'était en vigueur » — une phrase qu'on aurait fabriquée.
+   */
+  it("n'affirme rien quand la relecture échoue", async () => {
+    const rendered = text(await mounted(line(), new Error('réseau')));
+
+    expect(rendered).toContain('Impossible de relire');
+    expect(rendered).not.toContain('Aucune autre décision');
   });
 });

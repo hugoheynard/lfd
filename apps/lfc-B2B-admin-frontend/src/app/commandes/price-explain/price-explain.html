@@ -29,6 +29,43 @@
       </ul>
     }
   </section>
+
+  <!-- 🔴 L'autre moitié, et elle n'est PAS figée. Le dire n'est pas une
+       précaution de style : ce qui précède est ce qui a été facturé, ceci est
+       relu aujourd'hui. En litige, on ne défend pas les deux de la même façon. -->
+  <section class="rejected">
+    <h3 class="title">
+      Autres décisions en vigueur ce jour-là
+      <span class="rebuilt">reconstruit</span>
+    </h3>
+
+    @if (loading()) {
+      <fold-loading message="Relecture des décisions de ce jour-là…" />
+    } @else if (failed()) {
+      <fold-callout variant="alert">
+        Impossible de relire les décisions de ce jour-là. La trace figée ci-dessus, elle, reste
+        exacte.
+      </fold-callout>
+    } @else if (unexplainedLines().length === 0) {
+      <fold-empty-state
+        title="Aucune autre décision"
+        subtitle="Ce jour-là, rien d'autre n'était en vigueur sur cet article."
+      />
+    } @else {
+      <ul class="list">
+        @for (entry of unexplainedLines(); track entry.key) {
+          <li class="entry">
+            <span class="entry-label">{{ entry.label }}</span>
+            <span class="entry-reason">{{ entry.reason }}</span>
+          </li>
+        }
+      </ul>
+      <p class="caveat">
+        Les libellés sont ceux d'aujourd'hui : une règle se renomme. Une règle de segment n'est pas
+        jugée — l'appartenance d'un client n'est pas figée sur la commande.
+      </p>
+    }
+  </section>
 } @else {
   <fold-empty-state
     title="Pas de trace sur cette ligne"

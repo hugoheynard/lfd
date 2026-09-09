@@ -3,12 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
-  OrderQuotePayload,
-  OrderQuoteView,
   AdminOrderRow,
   AdminOrdersQuery,
   AdminPlaceOrderPayload,
   AdminPlacedOrderResponse,
+  LineRuleReconstructionView,
+  OrderQuotePayload,
+  OrderQuoteView,
   OrderView,
 } from '@lfd/contracts';
 
@@ -50,6 +51,21 @@ export class AdminOrdersService {
   async byId(id: string): Promise<OrderView> {
     return firstValueFrom(
       this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /**
+   * **Ce que la trace figée ne dit pas** — les décisions qui étaient en vigueur
+   * le jour de la commande, sur cet article, et dont la ligne ne parle pas.
+   *
+   * Une route à part, et un appel à part : c'est la lecture d'un tableau daté,
+   * on ne la fait qu'au clic.
+   */
+  async lineRules(id: string, sku: string): Promise<LineRuleReconstructionView> {
+    return firstValueFrom(
+      this.http.get<LineRuleReconstructionView>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/lines/${encodeURIComponent(sku)}/rules`,
+      ),
     );
   }
 
