@@ -93,8 +93,11 @@ une base : c'est-à-dire jamais.
 | `infrastructure/prisma-…-board.reader`   | lit les lignes, les convertit, appelle la composition        |
 
 Le **port a quitté `domain/`**. Il se contractualise en `PricingBoardView`,
-c'est-à-dire en type de **fil** : c'était le seul fichier de domaine à importer
-`@lfd/contracts`, et il y faisait entrer la forme d'un écran. Les ports du
+c'est-à-dire en type de **fil** : il y faisait entrer la forme d'un écran dans le
+domaine. ⚠️ La justification d'origine disait « c'était le **seul** fichier de
+domaine à importer `@lfd/contracts` » — ils sont **quatre** dans
+`pricing/domain` et dix-huit dans `orders/domain` (compté le 2026-09-09). Le
+déplacement reste juste ; son unicité, non. Les ports du
 domaine — règles, planchers, barèmes, volumes — ne parlent que de types de
 domaine, et cette frontière doit rester lisible d'un coup d'œil sur les imports.
 
@@ -301,8 +304,11 @@ validation contredirait.
 ## Les gabarits tarifaires, et ce qu'on découvre en traçant leur courbe
 
 Un **gabarit** est une grille de prix nommée, composée hors de tout client, puis
-**posée** chez l'un d'eux sur une fenêtre. Il ne facture rien : il fabrique des
-règles de l'étage `mercuriale`. C'est pour cela qu'il est le seul objet de ce
+**posée** chez l'un d'eux sur une fenêtre. Il ne facture rien : poser **écrit
+une `CompanyMercuriale`** — une ligne, donc atomique. ⚠️ Il « fabriquait des
+règles de l'étage `mercuriale` » jusqu'à ce que la mercuriale devienne un objet ;
+la phrase a survécu à ce qui l'a périmée (corrigée le 2026-09-09), et elle
+faisait croire qu'une pose pouvait rester à moitié faite. C'est pour cela qu'il est le seul objet de ce
 contexte qui se **révise** — les mercuriales qu'il a déjà posées sont des
 décisions closes et ne bougent pas.
 
@@ -354,7 +360,13 @@ régularisation de fin de saison sera proposée (« on te rend la différence su
 tout le volume »), elle ne sera pas un geste commercial de détail — elle
 supprimera _entièrement_ cette protection et aplatira le barème sur le prix fixe.
 
-### Où le calcul vit, et pourquoi il n'est pas au serveur
+### ~~Où le calcul vit, et pourquoi il n'est pas au serveur~~
+
+> 🔴 **L'en-tête de ce document condamne ce que cette section défend.** La
+> simulation « pure et côté écran » rejoue dans le navigateur une règle que le
+> serveur détient — c'est **R2** au registre, et le premier des défauts du
+> dossier. La section est conservée parce qu'elle explique **pourquoi** ce choix
+> a été fait ; elle ne dit plus ce qu'il faut faire (2026-09-09).
 
 Une mercuriale **scelle** : ni palier ni promotion ne s'ajoutent par-dessus. Le
 prix facturé sous mercuriale est donc le prix du palier, relevé par la limite
@@ -443,19 +455,26 @@ chez les autres clients**, avec ses bornes et le nombre de clients.
 au tout premier client tirerait la moyenne et ferait passer un tarif normal pour
 une largesse. Quatre décisions vont avec, et chacune évite un chiffre faux :
 
-- **une observation par CLIENT**, pas par règle. Une mercuriale à trois paliers
-  pèserait sinon trois fois plus lourd qu'un prix fixe, et un gros compte
-  déplacerait la médiane à lui seul en négociant des paliers. Le prix retenu est
-  celui du **plus petit seuil** — le même choix que la colonne d'entrée de la
-  grille, pour la même raison ;
+- ~~**une observation par CLIENT**, pas par règle.~~ 🔴 **Faux depuis le
+  passage de la mercuriale à un objet** (vérifié le 2026-09-09) : le code fait
+  **une observation par PALIER**, et l'écrit — « 1,73 € l'unité, 1,60 € à partir
+  de 500 sont deux points du marché, pas un »
+  (`mercuriale-benchmark.query.ts`). Ce paragraphe décrit donc l'arbitrage
+  **inverse** de celui qui tourne, et la raison qu'il donne — un gros compte
+  déplacerait la médiane en négociant des paliers — est un risque réel que le
+  code assume, pas une garantie qu'il tient ;
 - **en place** veut dire : ni archivée, ni suspendue, et dans sa fenêtre. Une
   décision qui a cessé d'agir n'est plus ce que le client paie ;
 - **nommément un article, chez un client nommé**. Une règle de famille ou de
   catalogue n'est pas un prix négocié, c'est le tarif de tout le monde ;
 - le prix de chaque observation passe par `resolvePrice`, **la fonction qui
-  facture**. Une mercuriale peut être posée en `replace` (un prix) comme en
-  `alter` (une remise) : lire `amountCents` ignorerait la seconde forme, et
-  l'écran comparerait des prix à des remises.
+  facture**. ⚠️ La raison donnée ici — « une mercuriale peut être posée en
+  `replace` comme en `alter` » — est **fausse depuis le premier commit qui a
+  permis d'écrire une règle**, et elle a été corrigée dans le JSDoc le
+  2026-09-08 sans l'être ici. Une mercuriale est **toujours** un prix ferme. Le
+  passage par la fonction qui facture reste juste, pour une autre raison : deux
+  façons de dériver un prix négocié finiraient par ne plus dire la même
+  chose.
 
 Le **plancher n'est pas appliqué**, délibérément : il est propre à un client,
 alors qu'on mesure un prix de marché. Un prix relevé chez un seul compte n'est

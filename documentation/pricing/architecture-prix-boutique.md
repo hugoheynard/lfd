@@ -21,9 +21,13 @@
 >
 > **Ce qui tient toujours, et qu'il faut continuer de lire :**
 >
-> - **§3, la quantité de résolution** — la liste résout à 1, et la raison
->   (`minQuantity` existe à tous les étages, pas seulement au volume) n'a pas
->   bougé ;
+> - **§3, la quantité de résolution** — la RAISON n'a pas bougé (`minQuantity`
+>   existe à tous les étages, pas seulement au volume), mais 🔴 **la vitrine
+>   publique ne résout pas du tout** : `read-shop-catalogue.ts` sert le
+>   canonique du miroir, et seule la route reconnue passe par la résolution. Il
+>   n'y a donc pas de « résolution à 1 » à défendre pour un visiteur — une
+>   promotion publique est invisible au rayon et n'apparaît qu'au panier
+>   (constaté le 2026-09-09, suivi en **R22**) ;
 > - **§4, « ce qui ne franchit PAS la frontière »** — appliqué à la lettre, et
 >   deux fois : `ShopItemView` et `ShopQuoteView` sont toutes deux étroites, et
 >   un test e2e énumère les clés de la seconde pour que ça le reste ;

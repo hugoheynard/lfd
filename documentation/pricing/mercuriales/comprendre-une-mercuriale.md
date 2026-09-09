@@ -167,10 +167,14 @@ décision close.
 
 ## 7. Ce qu'elle sait faire, et ce qu'elle ne sait pas
 
-> 🔴 **Cette section listait cinq limites le 2026-09-08. Quatre sont levées**,
+> 🔴 **Cette section listait six limites le 2026-09-08. Cinq sont levées**,
 > et elles sont réécrites ici au **présent** : garder comme manquant ce qui
 > existe fait construire un contournement pour un problème résolu. Chacune a été
 > revérifiée contre le code le 2026-09-09.
+>
+> ⚠️ Ce bandeau annonçait « cinq limites, quatre levées » : il se comptait mal
+> lui-même — cinq sont réécrites au présent ci-dessous, une seule reste
+> (recompté le 2026-09-09).
 
 ### Elle EST un objet
 

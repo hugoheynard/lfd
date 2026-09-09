@@ -291,6 +291,12 @@ relecture. En attendant : les treize phrases se corrigent en une heure.
 
 ## B.6 🟠 La documentation contredit le code — R20
 
+> ✅ **Corrigé le 2026-09-09.** Les seize items ont été rouverts dans le code
+> avant correction, et deux s'y sont ajoutés que ce constat n'avait pas vus :
+> une **septième** ligne périmée dans l'index global, et un document qui se
+> comptait mal lui-même. Ce constat est conservé tel qu'il a été écrit ; la
+> méthode est au [journal de remédiation](journal-de-remediation.md) §R20.
+
 ### Le document de référence sémantique se contredit lui-même
 
 [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md), dont

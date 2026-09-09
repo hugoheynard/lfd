@@ -25,8 +25,16 @@ contradiction a établi.**
 
 ## 1. Le fait
 
-Résoudre le prix d'**un** article coûte **trois lectures**, et jusqu'à six. Elles
-sont dans `resolveOne`, donc par article, et rien ne les mutualise :
+> ✅ **Ce fait n'existe plus depuis le 2026-09-08**, et ce document est conservé
+> pour son RAISONNEMENT — le coût qui compte n'est pas le temps mais les
+> opérations facturées, et le hissage d'un plancher est dangereux là où celui
+> d'une règle est sûr. Les lectures sont désormais **quatre par LOT**, quelle
+> qu'en soit la taille, dans `PricingMaterialsLoader` ; `resolveOne` et sa boucle
+> par article n'existent plus. L'index global l'a présenté comme « le coût réel »
+> jusqu'au 2026-09-09.
+
+Résoudre le prix d'**un** article coûtait **trois lectures**, et jusqu'à six.
+Elles étaient dans `resolveOne`, donc par article, et rien ne les mutualisait :
 
 ```ts
 // order-line-pricing.service.ts — dans resolveOne, PAR ARTICLE

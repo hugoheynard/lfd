@@ -19,6 +19,7 @@
 | ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09)         |
 | [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                 | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
+| [R20](#r20--2026-09-09) | la documentation de référence contredit le code                    | ✅ **close** — 2026-09-09                                                                |
 
 ---
 
@@ -489,3 +490,88 @@ promesse de famille se partage-t-elle ou s'applique-t-elle à chacun ?
 Ce n'est pas une dérobade : recommander A sur le tableau du §4 aurait augmenté le
 prix d'un client vivant sur la foi d'une phrase — « ça n'a jamais fonctionné » —
 que je n'avais pas vérifiée.
+
+---
+
+## R20 · 2026-09-09
+
+**Constat** : [B.6](audit-du-moteur-a-la-facade.md) · **Registre** :
+[R20](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 aucune ligne de code, et c'est
+ce qui la rend traître.
+
+### 1. Pourquoi celle-ci se traite seule
+
+Les deux entrées précédentes ont buté sur une décision. Celle-ci n'en demande
+aucune : le code va bien, c'est la doc qui ment sur lui. Le seul risque est de
+**réécrire de mémoire** — exactement la faute qui a coûté deux allers-retours ce
+matin. D'où la règle appliquée ici : **chaque item a été rouvert dans le code
+avant d'être corrigé**, aucun ne vient de la liste de l'audit sans vérification.
+
+Elle a payé deux fois. Une affirmation de l'audit était **incomplète** (§3), et
+un document se comptait mal **lui-même** (§4) — ni l'un ni l'autre n'était dans
+la liste de départ.
+
+### 2. Ce qui a été corrigé
+
+| Document                             | Ce qu'il disait                                                | Ce que le code dit                                                               |
+| ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `architecture-resolution-de-prix.md` | « la promesse ne calcule rien »                                | `max(promis, livré)` — **le même document le dit 380 lignes plus bas**           |
+| idem                                 | `amount_cents`, `basePriceCents`, `resultCents`, `finalCents`  | millicentimes partout ; la colonne s'appelle `amount_millicents`                 |
+| idem                                 | la trace d'engagement porte **trois** champs                   | **quatre** — et le quatrième explique un palier ouvert par la promesse           |
+| idem                                 | « ce qui a disparu est la nécessité de refaire le calcul »     | `supersededIn` rejoue `winnerOf` par étage, à chaque article                     |
+| `ecrans-de-tarification.md`          | comparatif : « une observation par **CLIENT** »                | une observation **par palier**, et le code l'écrit                               |
+| idem                                 | « une mercuriale peut être posée en `alter` »                  | jamais — corrigé dans le JSDoc le 2026-09-08, laissé ici                         |
+| idem                                 | « la simulation est pure et vit côté écran »                   | c'est **R2**, le premier défaut du dossier                                       |
+| idem                                 | « le **seul** fichier de domaine à importer `@lfd/contracts` » | quatre dans `pricing/domain`, dix-huit dans `orders/domain`                      |
+| idem                                 | un gabarit « fabrique des règles de l'étage `mercuriale` »     | il écrit **une `CompanyMercuriale`** — une ligne, donc atomique                  |
+| `architecture-prix-boutique.md`      | « §3 tient toujours — la liste résout à 1 »                    | la vitrine **publique ne résout pas** : elle sert le canonique du miroir (R22)   |
+| `optimisation-resolution-de-prix.md` | « Le fait » : trois lectures par article, dans `resolveOne`    | quatre lectures **par lot** ; `resolveOne` n'existe plus                         |
+| `../README.md` (index global)        | sept lignes périmées                                           | S5 livré, le défaut à 1,83924 € clos, B5 fermée, deux registres clos, un todo 🔴 |
+
+### 3. Ce que l'audit avait sous-estimé
+
+Il notait « **six** lignes périmées sur vingt-deux » dans l'index global. Il y en
+a **sept** : `todos/todo-ecran-tarification-ignore-les-baremes.md` y est encore
+🔴 alors que son propre fichier s'ouvre sur « ✅ Clos le 2026-09-09 », test de
+fermeture cité. Un index qui contredit le document qu'il indexe est pire qu'un
+index absent.
+
+### 4. Ce que personne n'avait vu — un document qui se compte mal lui-même
+
+Le §7 de [`comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md)
+ouvrait sur « cette section listait **cinq** limites, **quatre** sont levées ».
+Elle en réécrit **cinq** au présent et en garde **une** : elle en listait donc
+six. Les deux index recopiaient « six limites mesurées », ce qui se lit comme
+« six limitations existent » alors que cinq sont tombées.
+
+Ce n'est pas une coquetterie de compte : c'est un bandeau écrit pour **empêcher**
+qu'on construise un contournement à un problème résolu, et il laissait croire
+qu'il en restait cinq fois plus.
+
+### 5. Ce qui n'est PAS fait, et pourquoi
+
+**Les dates.** Le registre et les documents refaits le 2026-09-08 portent
+2026-09-09. L'écart est **nommé** dans l'en-tête du registre plutôt que corrigé,
+et c'est délibéré : réécrire une trentaine de dates de mémoire les transformerait
+en suppositions, alors que `git log` les porte exactement. Une date fausse qui se
+sait vaut mieux qu'une date fausse qui ne se sait plus.
+
+**Le commentaire `value // bp si percent, cents si amount` de `schema.prisma`**
+est faux de la même façon — mais il appartient à **R19** (treize commentaires qui
+disent « centimes » sur des millicentimes), et le corriger ici en aurait fait le
+quatorzième traité sans sa porte.
+
+### 6. La méthode, pour la prochaine fois
+
+Une doc périmée ne trompe pas comme un code faux : elle **gèle**. Personne ne
+construit contre elle, tout le monde construit **à côté**. Deux traitements, dans
+cet ordre :
+
+1. **la phrase fausse est barrée, pas effacée**, et la vraie est écrite en
+   dessous avec sa date. L'effacer laisse le lecteur suivant croire qu'elle a
+   toujours été juste — et il ne comprend pas pourquoi le code d'à côté porte
+   des cicatrices ;
+2. **une section entièrement périmée est conservée pour son raisonnement** et
+   marquée en tête (`optimisation-resolution-de-prix.md`, « Où le calcul vit »).
+   La supprimer perdrait le POURQUOI, la seule chose qu'un document sache garder
+   mieux que le code.
