@@ -624,6 +624,50 @@ export const floorDecisionSchema = z.object({
 });
 
 /**
+ * **Pourquoi une règle n'a rien produit** — les cinq conditions d'application,
+ * dans leur ordre, plus les deux décisions qui viennent après.
+ */
+export const rejectionCauseSchema = z.enum([
+  "expired",
+  "suspended",
+  "out_of_scope",
+  "out_of_audience",
+  "below_threshold",
+  "superseded",
+  "sealed",
+]);
+export type RejectionCause = z.infer<typeof rejectionCauseSchema>;
+
+/**
+ * **Une règle que le moteur a regardée et écartée**, telle que la trace la
+ * garde.
+ *
+ * Le **libellé** est figé avec l'identifiant, et ce n'est pas une commodité
+ * d'affichage : une règle se renomme (`RenamePriceRuleCommand`), donc le nom
+ * d'aujourd'hui n'est pas forcément celui qui a facturé. Une trace qui ne
+ * porterait que des identifiants serait muette six mois plus tard — la panne
+ * même que R25 ferme.
+ */
+export interface RejectedRuleView {
+  readonly stage: PriceStage;
+  readonly ruleId: string;
+  readonly label: string;
+  readonly scope: PriceScopePayload;
+  readonly cause: RejectionCause;
+}
+
+/** Le schéma des règles écartées, pour **relire** une trace persistée. */
+export const rejectedRulesSchema = z.array(
+  z.object({
+    stage: priceStageSchema,
+    ruleId: z.string(),
+    label: z.string(),
+    scope: priceScopeSchema,
+    cause: rejectionCauseSchema,
+  }),
+);
+
+/**
  * **La trace figée sur une ligne de commande.**
  *
  * Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles qui
@@ -674,6 +718,22 @@ export interface OrderLinePricingTrace {
    * la quantité de la commande.
    */
   readonly commitment: CommitmentDecisionView | null;
+  /**
+   * **Ce que le moteur a regardé et n'a pas appliqué**, avec la raison.
+   *
+   * 🔴 **Trois états, et il faut les trois.** `null` = ligne écrite avant le
+   * 2026-09-09 : on ne consignait pas, donc on ne sait pas. `[]` **affirme** que
+   * le moteur n'a écarté personne. Une valeur dit qui, et pourquoi. Réduire le
+   * premier au second transformerait une ignorance en affirmation sur les seules
+   * commandes qu'on ne peut plus vérifier — c'est la raison pour laquelle ces
+   * faits ne pouvaient pas voyager dans {@link OrderLinePricingTrace.steps},
+   * dont le défaut de relecture est `[]`.
+   *
+   * ⚠️ **Ne part pas au client** : il porte le libellé commercial des
+   * promotions qu'il n'a PAS eues. `toCustomerOrder` est écrite champ par champ
+   * précisément pour que ce genre d'oubli soit une décision (R27).
+   */
+  readonly rejected: readonly RejectedRuleView[] | null;
 }
 
 /**

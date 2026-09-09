@@ -558,6 +558,77 @@ describe("le scellement par la mercuriale", () => {
         scope: { type: "global", id: null },
       },
     ]);
+    // 🔴 **Et ce que la trace ne disait PAS jusqu'au 2026-09-09** : la promotion
+    // écartée n'existait nulle part. « Pourquoi ma promo ne s'est pas
+    // appliquée ? » n'avait aucune réponse sur une commande close — ni ici, ni
+    // ailleurs (R25). Le LIBELLÉ voyage avec l'identifiant : une règle se
+    // renomme, et le nom d'aujourd'hui n'est pas celui qui a facturé.
+    expect(line.pricingRejected).toEqual([
+      {
+        stage: "promotion",
+        ruleId: "promo",
+        label: "promo",
+        scope: { type: "global", id: null },
+        cause: "sealed",
+      },
+    ]);
+  });
+
+  /**
+   * 🔴 **Régression R25 : une règle REGARDÉE n'est pas une règle qui a
+   * FACTURÉ.**
+   *
+   * La porte qui refuse de reposer une décision par-dessus une période déjà
+   * facturée interroge `pricing_steps` en containment jsonb — et vérifié contre
+   * Postgres le 2026-09-09, **une clé en plus ne gêne pas ce `@>`**. Loger les
+   * règles écartées dans ce tableau aurait donc fait passer une promotion que le
+   * scellement a évincée pour une promotion qui a facturé, et le staff se serait
+   * vu refuser de la reposer — alors qu'elle n'a jamais produit un centime.
+   *
+   * C'est la raison d'être d'une colonne SÉPARÉE, et c'est ce cas qui la tient.
+   */
+  it("laisse reposer une promotion que le scellement avait écartée", async () => {
+    const staff = () => ctx.asSub(E2E_STAFF_SUB);
+    await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
+    const promo = jsonBody<{ id: string }>(
+      await staff()
+        .post("/admin/pricing/rules")
+        .send({
+          stage: "promotion",
+          scope: { type: "global", id: null },
+          audience: { type: "all", id: null },
+          minQuantity: null,
+          effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1000 },
+          label: "Promo évincée",
+          validFrom: "2026-01-01T00:00:00.000Z",
+          validTo: null,
+        })
+        .expect(201),
+    ).id;
+
+    // Elle est regardée, écartée par le scellement, et consignée comme telle.
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
+    expect(line.pricingRejected).toEqual([
+      expect.objectContaining({ ruleId: promo, cause: "sealed" }),
+    ]);
+    expect(line.pricingSteps).toEqual([expect.objectContaining({ ruleId: "merc" })]);
+
+    // Rangée, puis reposée sur la MÊME période : le geste ordinaire « je me suis
+    // trompé, je recommence ». Il doit passer, parce qu'elle n'a rien facturé.
+    await staff().delete(`/admin/pricing/rules/${promo}`).expect(204);
+    await staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        scope: { type: "global", id: null },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1500 },
+        label: "Promo reposée",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+      })
+      .expect(201);
   });
 
   it("une promotion explicitement cumulable franchit le scellement", async () => {

@@ -113,6 +113,7 @@ describe("OrderLine", () => {
         clampedToZero: true,
         floorDecision: null,
         commitment: null,
+        rejected: [],
       },
     });
 
@@ -149,6 +150,7 @@ describe("OrderLine", () => {
           clampedToZero: true,
           floorDecision: null,
           commitment: null,
+          rejected: [],
         },
       }),
     ).toThrow(InvalidOrderLineError);
@@ -171,6 +173,10 @@ describe("OrderLine", () => {
         clampedToZero: null,
         floorDecision: null,
         commitment: null,
+        // Antérieure aussi sur ce champ-là : `null` avoue qu'on ne consignait
+        // pas les règles écartées, quand `[]` affirmerait qu'il n'y en a eu
+        // aucune.
+        rejected: null,
       },
     });
 

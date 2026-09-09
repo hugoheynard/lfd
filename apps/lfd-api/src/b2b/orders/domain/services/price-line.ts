@@ -132,6 +132,11 @@ export function priceLine(input: LinePricingInput, lot: PricedLot): ResolvedOrde
         // plancher : sans elle, « pourquoi ce palier-là ? » n'a plus de réponse
         // dès que le client passe la commande suivante.
         commitment: priced.commitment,
+        // Ce que le moteur a regardé sans l'appliquer. Écrit **toujours**, même
+        // vide : `[]` affirme qu'il n'a écarté personne, et c'est la colonne
+        // nullable qui portera « on ne consignait pas encore » pour les
+        // commandes d'avant (R25).
+        rejected: priced.rejected,
       },
     },
     canonicalMillicents: item.unitPriceMillicents,

@@ -275,13 +275,15 @@ describe("GET /admin/orders/:id", () => {
       await ctx.asSub(MEMBER).get(`/orders/${placed.id}`).expect(200),
     ).lines[0];
 
-    // Le comptoir : tout ce dont un écran d'explication aura besoin.
+    // Le comptoir : tout ce dont un écran d'explication aura besoin — y compris
+    // `rejected`, les règles regardées et non appliquées (R25).
     expect(Object.keys(staffLine?.pricing ?? {}).sort()).toEqual([
       "basePriceMillicents",
       "clampedToZero",
       "commitment",
       "floorDecision",
       "floored",
+      "rejected",
       "steps",
     ]);
     // Le client : de quoi comprendre sa facture, et rien sur la façon dont on la

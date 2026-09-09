@@ -624,6 +624,10 @@ describe("PlaceOrderHandler", () => {
           floorDecision: null,
           // Aucun engagement : le palier s'est joué sur la quantité du panier.
           commitment: null,
+          // Même affirmation, sur l'autre moitié de « pourquoi ce prix » : le
+          // moteur a regardé et n'a écarté personne. `null` serait réservé aux
+          // commandes d'avant la colonne (R25).
+          rejected: [],
         },
         // Le catalogue doublé n'en déclare pas : l'absence traverse telle
         // quelle. Un `{ codes: [] }` ici affirmerait « aucun allergène », et

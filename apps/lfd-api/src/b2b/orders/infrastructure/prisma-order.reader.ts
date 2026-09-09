@@ -14,6 +14,7 @@ import {
   type OrderLinePricingTrace,
   priceStepsSchema,
   commitmentDecisionSchema,
+  rejectedRulesSchema,
   floorDecisionSchema,
   type OrderStatus,
   type OrderFulfillment,
@@ -54,6 +55,7 @@ interface OrderLineRow {
   readonly pricingFloor: Prisma.JsonValue | null;
   readonly allergens: Prisma.JsonValue | null;
   readonly pricingCommitment: Prisma.JsonValue | null;
+  readonly pricingRejected: Prisma.JsonValue | null;
 }
 
 /** Une commande telle que Prisma la sélectionne. */
@@ -149,6 +151,7 @@ const ORDER_SELECT = {
       pricingClampedToZero: true,
       pricingFloor: true,
       pricingCommitment: true,
+      pricingRejected: true,
       allergens: true,
     },
   },
@@ -740,5 +743,12 @@ function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     // Même indulgence, même raison : l'engagement explique un palier, il ne le
     // refait pas. Illisible, on perd l'explication, pas la commande.
     commitment: commitmentDecisionSchema.safeParse(line.pricingCommitment).data ?? null,
+    // **Même indulgence, et il faut la dire** : une entrée illisible ne fait
+    // perdre que le commentaire, jamais la commande. `null` couvre donc deux
+    // cas — la ligne d'avant la colonne, et la valeur qu'on ne sait plus lire —
+    // et les deux se traitent pareil à l'écran : on se tait. Un `[]` de repli
+    // affirmerait « le moteur n'a écarté personne », ce qui est exactement la
+    // phrase qu'on ne doit pas fabriquer (R25).
+    rejected: rejectedRulesSchema.safeParse(line.pricingRejected).data ?? null,
   };
 }

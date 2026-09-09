@@ -1,0 +1,37 @@
+-- ───────────────────────────────────────────────────────────────────────────
+-- CE QUE LE MOTEUR A REGARDÉ ET N'A PAS APPLIQUÉ
+--
+-- « Pourquoi ma promotion ne s'est pas appliquée ? » n'avait aucune réponse sur
+-- une commande close : une règle sans effet ne laissait aucune trace, et le
+-- service client ne pouvait pas distinguer « elle a expiré » de « une autre l'a
+-- battue » de « votre tarif négocié la scelle » (R25).
+--
+-- 🔴 **Trois états, et c'est toute la raison de la colonne.**
+--   NULL  → ligne écrite avant ce lot : on ne consignait pas, on ne sait pas.
+--   []    → une AFFIRMATION : le moteur a regardé et n'a écarté personne.
+--   valeur→ qui, et pourquoi.
+-- Un tableau ne sait pas avouer une ignorance : c'est pourquoi ces faits ne
+-- pouvaient pas voyager dans `pricing_steps`, et pourquoi il n'y a **aucun
+-- DEFAULT** ici. Un défaut à `[]` transformerait l'ignorance de toutes les
+-- commandes déjà passées en affirmation, sur les seules qu'on ne peut plus
+-- vérifier.
+--
+-- 🔴 **À part de `pricing_steps`, et ce n'est pas un rangement.** `hasPriced`
+-- interroge ce tableau-là en containment jsonb pour refuser de reposer une
+-- règle qui **a facturé**. Vérifié contre Postgres le 2026-09-09 :
+-- `[{"ruleId":"r","cause":"below_threshold"}] @> [{"ruleId":"r"}]` est **vrai** —
+-- une clé en plus ne gêne pas la containment. Une règle seulement regardée y
+-- serait donc passée pour une règle qui a facturé, et le staff se serait vu
+-- refuser la repose d'une règle n'ayant jamais produit un centime.
+--
+-- **Aucun index**, délibérément : rien n'interroge cette colonne: elle se lit
+-- avec sa ligne, par la clé primaire. Le jour où quelque chose la questionnera,
+-- l'index sera un geste additif de plus — pas une dette posée à l'avance.
+--
+-- ⚠️ **Additive, sans reprise, et le retour arrière n'est PAS un DROP.** Le
+-- rollback applicatif est gratuit — rien n'en dépend tant que le lecteur la
+-- traite comme optionnelle. Mais `DROP COLUMN` détruirait sans reprise possible
+-- tout ce qui aura été écrit entre-temps, et le §0 de CLAUDE.md l'interdit sur
+-- la production.
+-- ───────────────────────────────────────────────────────────────────────────
+ALTER TABLE "order_lines" ADD COLUMN "pricing_rejected" JSONB;

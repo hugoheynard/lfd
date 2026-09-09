@@ -107,6 +107,14 @@ export class PrismaOrderRepository extends OrderRepository {
                 : { ...line.pricing.floorDecision },
             pricingCommitment:
               line.pricing?.commitment == null ? Prisma.DbNull : { ...line.pricing.commitment },
+            // Même `Prisma.DbNull`, et il porte ici les trois états de la
+            // colonne : absence = « on ne consignait pas », `[]` = « le moteur
+            // n'a écarté personne », valeur = qui et pourquoi. Une ligne neuve
+            // écrit toujours l'un des deux derniers.
+            pricingRejected:
+              line.pricing?.rejected == null
+                ? Prisma.DbNull
+                : line.pricing.rejected.map((entry) => ({ ...entry, scope: { ...entry.scope } })),
             // Même distinction, et elle porte ici l'enjeu le plus lourd du
             // fichier : `Prisma.DbNull` dit « on ne sait pas », là où un `[]`
             // écrit affirmerait « aucun allergène ». Sur une commande qu'on

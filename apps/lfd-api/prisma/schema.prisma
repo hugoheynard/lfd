@@ -979,6 +979,31 @@ model OrderLine {
   /// cette ligne, le palier s'est joué sur la quantité de la commande.
   pricingCommitment Json? @map("pricing_commitment")
 
+  /// **Ce que le moteur a regardé et n'a pas appliqué**, avec la raison —
+  /// `[{ stage, ruleId, label, scope, cause }]`.
+  ///
+  /// C'est la moitié de « pourquoi ce prix » que rien ne gardait : une règle
+  /// sans effet ne laissait aucune trace, et le service client ne pouvait pas
+  /// distinguer « elle a expiré » de « une autre l'a battue » de « votre tarif
+  /// négocié la scelle » (R25, 2026-09-09).
+  ///
+  /// 🔴 **Trois états, et c'est la raison d'être de la colonne.** `NULL` = ligne
+  /// écrite avant ce lot, on ne consignait pas ; `[]` **affirme** que le moteur
+  /// n'a écarté personne ; une valeur dit qui, et pourquoi. Un tableau ne sait
+  /// pas avouer une ignorance — c'est pourquoi ces faits ne pouvaient pas
+  /// voyager dans `pricing_steps`.
+  ///
+  /// À part de `pricing_steps`, et ce n'est pas un rangement : `hasPriced`
+  /// interroge ce tableau-là en containment jsonb pour savoir si une règle **a
+  /// facturé**, et les clés en plus ne la gênent pas. Une règle seulement
+  /// regardée y serait passée pour une règle qui a facturé, et le staff se
+  /// serait vu refuser la repose d'une règle qui n'a jamais produit un centime.
+  ///
+  /// Le **libellé** est figé avec l'identifiant : une règle se renomme
+  /// (`RenamePriceRuleCommand`), donc le nom d'aujourd'hui n'est pas forcément
+  /// celui qui a facturé.
+  pricingRejected Json? @map("pricing_rejected")
+
   /// **Ce qui était déclaré au moment de commander** — codes GS1 ET mentions
   /// d'étiquette, plus l'aveu que la liste a pu être amputée.
   ///

@@ -37,6 +37,7 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
       ],
       floored: false,
       floorDecision: null,
+      rejected: [],
       commitment: null,
     },
     allergens: null,
