@@ -1,11 +1,7 @@
-import type {
-  NegotiationRoom,
-  PriceFloorView,
-  PriceRuleView,
-  PricingItemView,
-} from "@lfd/contracts";
+import type { NegotiationRoom, PricingItemView } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import type { LoadedFloor, LoadedRule } from "./ports/pricing-decisions.reader.js";
 import { LoadedPricer } from "../domain/loaded-pricer.js";
 import { pricerOver } from "./pricer-over.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
@@ -20,17 +16,6 @@ import {
   type ScopedPriceFloor,
 } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
-
-/** Une règle lue une fois, sous ses deux formes : celle qui calcule, celle qui s'affiche. */
-export interface LoadedRule {
-  readonly rule: PriceRule;
-  readonly view: PriceRuleView;
-}
-
-export interface LoadedFloor {
-  readonly floor: ScopedPriceFloor;
-  readonly view: PriceFloorView;
-}
 
 /**
  * **Ce qui ne dépend pas de l'article, calculé une seule fois par lecture.**

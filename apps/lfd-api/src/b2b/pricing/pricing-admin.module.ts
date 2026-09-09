@@ -31,6 +31,10 @@ import { AdminPriceFloorsController } from "./http/admin-price-floors.controller
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
 import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
 import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.reader.js";
+import { PrismaPricingDecisionsReader } from "./infrastructure/prisma-pricing-decisions.reader.js";
+import { PrismaPricedCompanyReader } from "./infrastructure/prisma-priced-company.reader.js";
+import { PricingDecisionsReader } from "./application/ports/pricing-decisions.reader.js";
+import { PricedCompanyReader } from "./domain/ports/priced-company.reader.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
 import { PricingActWriter } from "./infrastructure/pricing-act.writer.js";
@@ -139,6 +143,11 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     { provide: PriceTemplateRepository, useClass: PrismaPriceTemplateRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
     { provide: PricingBoardReader, useClass: PrismaPricingBoardReader },
+    // 🔴 **Une seule lecture d'écran pour les deux tableaux.** Le général et
+    // l'onglet Tarifs d'une fiche compte lisaient ces tables chacun de son
+    // côté, avec deux clauses `where` — et elles avaient déjà divergé (R21).
+    { provide: PricingDecisionsReader, useClass: PrismaPricingDecisionsReader },
+    { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],
 })

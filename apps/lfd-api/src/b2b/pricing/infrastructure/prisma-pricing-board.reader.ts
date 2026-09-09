@@ -8,16 +8,19 @@ import {
   ProductCatalogReader,
   type CatalogItem,
 } from "../../catalog/domain/ports/product-catalog.reader.js";
-import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { atCanonicalPrice } from "../../catalog/domain/catalogue-article.js";
 import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonical-price-history.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
-import { boardMaterials, type LoadedFloor, type LoadedRule } from "../application/board-item.js";
+import { boardMaterials } from "../application/board-item.js";
+import {
+  PricingDecisionsReader,
+  type LoadedFloor,
+  type LoadedRule,
+} from "../application/ports/pricing-decisions.reader.js";
 import { actsAt, categoryView, groupByCategory } from "../application/board-category.js";
-import { unarchivedAt } from "./archived-at.js";
-import { floorFromRow, floorViewFromRow, ruleFromRow, ruleViewFromRow } from "./price-rows.js";
+import { ruleViewFromRow } from "./price-rows.js";
 
 /** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
 const ARCHIVED_PAGE = 100;
@@ -56,6 +59,7 @@ interface LoadedBoard {
 export class PrismaPricingBoardReader extends PricingBoardReader {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly decisions: PricingDecisionsReader,
     private readonly catalog: ProductCatalogReader,
     private readonly elasticity: BoardElasticityService,
     private readonly ladders: VolumeLadderReader,
@@ -111,35 +115,13 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // **Les archivées n'entrent pas dans le tableau** : ranger sert précisément
     // à ne plus les voir. « Archivée » se lit à l'instant demandé — cf.
     // `unarchivedAt`, qui porte le pourquoi.
-    const [ruleRows, floorRows, ladders, pastPrices, historyStartsAt] = await Promise.all([
-      this.prisma.priceRule.findMany({
-        where: unarchivedAt(at),
-        orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
-      }),
-      // 🔴 **La fenêtre, en plus du rangement.** Depuis que la limite est
-      // versionnée (R17), une portée porte N lignes — une par période — et le
-      // tableau n'en montre qu'une : celle qui ARBITRE à l'instant lu. Sans ce
-      // filtre, `find` sur la portée rendait la PREMIÈRE ligne venue, donc
-      // l'écran affichait une limite périmée juste après une re-pose, et le
-      // signal de dérive restait allumé sur une limite qu'on venait de revoir.
-      this.prisma.priceFloor.findMany({
-        where: {
-          AND: [
-            unarchivedAt(at),
-            { validFrom: { lte: at } },
-            { OR: [{ validTo: null }, { validTo: { gt: at } }] },
-          ],
-        },
-      }),
+    const [ladders, pastPrices, historyStartsAt, current] = await Promise.all([
       this.ladders.listAll(at),
       this.history.pricingAt(at),
       this.history.startsAt(),
+      this.catalog.all(),
     ]);
 
-    const rules: LoadedRule[] = ruleRows.map((row) => ({
-      rule: ruleFromRow(row),
-      view: ruleViewFromRow(row),
-    }));
     // Le tarif représentatif d'AUJOURD'HUI, par portée : c'est lui qui, comparé
     // à celui figé à la pose, dit si l'intention a vieilli.
     // **Le tarif de CE jour-là**, pas celui d'aujourd'hui.
@@ -157,7 +139,6 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // Seul le PRIX est repris du passé, pas le taux : le sujet de ce tableau est
     // le tarif canonique. Le taux historisé sert au devis, qui engage — le
     // reprendre ici changerait la mesure sans qu'on l'ait demandé.
-    const current = await this.catalog.all();
     const articles = current.map((item) => {
       const past = pastPrices.get(item.sku);
       // 🔴 `atCanonicalPrice` et non un spread : changer le tarif REFRAPPE le
@@ -166,13 +147,16 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       // tarificateur lit.
       return past === undefined ? item : atCanonicalPrice(item, past.unitPriceMillicents);
     });
-    const floors: LoadedFloor[] = floorRows.map((row) => {
-      const floor = floorFromRow(row);
-      return {
-        floor,
-        view: floorViewFromRow(row, referenceCanonicalFor(floor.scope, articles), at),
-      };
-    });
+    // 🔴 **Les décisions se lisent APRÈS le catalogue**, et par le même port
+    // que la fiche client. Une vue de plancher porte l'écart au tarif de
+    // référence : elle a besoin des articles, et de ceux de `at` — repris
+    // ci-dessus — pour qu'une lecture datée ne compare pas un passé au tarif
+    // d'aujourd'hui.
+    //
+    // `companyId: null` : ce tableau montre ce qui JOUE sur un prix, tarifs
+    // négociés d'autres comptes compris. C'est sa question, et elle n'est pas
+    // celle de la fiche client.
+    const { rules, floors } = await this.decisions.decisionsAt(at, { companyId: null }, articles);
 
     return { rules, floors, ladders, articles, historyStartsAt };
   }

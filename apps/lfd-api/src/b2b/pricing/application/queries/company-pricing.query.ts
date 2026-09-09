@@ -9,22 +9,15 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
 import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import { PricedCompanyNotFoundError } from "../../domain/pricing-errors.js";
-import { unarchivedAt } from "../../infrastructure/archived-at.js";
-import {
-  floorFromRow,
-  floorViewFromRow,
-  ruleFromRow,
-  ruleViewFromRow,
-} from "../../infrastructure/price-rows.js";
 import { BoardElasticityService } from "../board-elasticity.service.js";
-import { boardMaterials, itemView, type LoadedFloor, type LoadedRule } from "../board-item.js";
+import { boardMaterials, itemView } from "../board-item.js";
+import { PricingDecisionsReader } from "../ports/pricing-decisions.reader.js";
+import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
 import { groupByCategory } from "../board-category.js";
-import { referenceCanonicalFor } from "../floor-reference.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
@@ -66,7 +59,8 @@ import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.r
 @Injectable()
 export class CompanyPricingQuery {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly decisions: PricingDecisionsReader,
+    private readonly companies: PricedCompanyReader,
     private readonly catalog: ProductCatalogReader,
     private readonly ladders: VolumeLadderReader,
     private readonly mercuriales: CompanyMercurialeReader,
@@ -82,36 +76,7 @@ export class CompanyPricingQuery {
     const at = this.clock.now();
     await this.assertCompanyExists(companyId);
 
-    const [ruleRows, floorRows, ladders, articles, mercuriales, live] = await Promise.all([
-      this.prisma.priceRule.findMany({
-        // 🔴 Le filtre d'audience est ici, dans la REQUÊTE, et non plus loin :
-        // une règle d'un tiers qui entrerait dans le matériau pourrait gagner
-        // son étage, et le prix rendu serait celui d'un autre client.
-        where: { AND: [unarchivedAt(at), audienceOf(companyId)] },
-        orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
-      }),
-      // 🔴 **La fenêtre, en plus du rangement.** Depuis que la limite est
-      // versionnée (R17), une portée porte N lignes — une par période — et
-      // `ownFloor` n'en montre qu'une, par un `find` sur la portée : sans ce
-      // filtre, il rendait la PREMIÈRE venue, donc la limite d'AVANT une
-      // re-pose, avec son signal de dérive, sur l'écran où l'on négocie.
-      //
-      // ⚠️ Le prix, lui, était juste : `resolveScopedFloor` filtre par fenêtre
-      // avant d'arbitrer la portée. C'est ce qui rendait le défaut discret —
-      // l'écran contredisait son propre chiffre sans que rien ne le signale.
-      //
-      // Troisième lecteur du même oubli, et le seul que les e2e de R17
-      // n'avaient pas attrapé : ils posaient deux fois sur le tableau général,
-      // jamais sur une fiche client (corrigé le 2026-09-09).
-      this.prisma.priceFloor.findMany({
-        where: {
-          AND: [
-            unarchivedAt(at),
-            { validFrom: { lte: at } },
-            { OR: [{ validTo: null }, { validTo: { gt: at } }] },
-          ],
-        },
-      }),
+    const [ladders, articles, mercuriales, live] = await Promise.all([
       this.ladders.listAll(at),
       this.catalog.all(),
       // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.
@@ -120,18 +85,15 @@ export class CompanyPricingQuery {
       // prix. Deux questions, deux lectures — cf. le port.
       this.mercuriales.liveFor(companyId, at),
     ]);
-
-    const rules: LoadedRule[] = ruleRows.map((row) => ({
-      rule: ruleFromRow(row),
-      view: ruleViewFromRow(row),
-    }));
-    const floors: LoadedFloor[] = floorRows.map((row) => {
-      const floor = floorFromRow(row);
-      return {
-        floor,
-        view: floorViewFromRow(row, referenceCanonicalFor(floor.scope, articles), at),
-      };
-    });
+    // 🔴 **Après le catalogue, et non avec lui** : une vue de plancher porte
+    // l'écart au tarif de référence, donc a besoin des articles. C'est une
+    // seconde vague, comme avant ce port — le catalogue s'attendait déjà seul.
+    //
+    // Le filtre d'audience vit dans la REQUÊTE de l'adaptateur, et il y reste :
+    // une règle d'un tiers qui entrerait dans le matériau pourrait gagner son
+    // étage, et le prix rendu serait celui d'un autre client. La fenêtre des
+    // planchers y est aussi — c'est là qu'elle manquait.
+    const { rules, floors } = await this.decisions.decisionsAt(at, { companyId }, articles);
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
     const materials = await boardMaterials(rules, floors, at, live, ladders, companyId);
@@ -203,25 +165,10 @@ export class CompanyPricingQuery {
    * distinguent.
    */
   private async assertCompanyExists(companyId: string): Promise<void> {
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-      select: { id: true },
-    });
-    if (company === null) {
+    if (!(await this.companies.exists(companyId))) {
       throw new PricedCompanyNotFoundError(companyId);
     }
   }
-}
-
-/** Les règles que ce client peut se voir appliquer : les siennes, et celles de tous. */
-function audienceOf(companyId: string): {
-  OR: [{ audienceType: "all" }, { audienceType: "company"; audienceId: string }];
-} {
-  // `segment` est volontairement absent : aucune société ne porte de segment
-  // aujourd'hui (cf. `pricing-context.ts`), donc une règle de segment ne peut
-  // viser personne. L'inclure ferait apparaître dans le dossier d'un client des
-  // règles dont on sait qu'elles ne s'appliqueront pas à lui.
-  return { OR: [{ audienceType: "all" }, { audienceType: "company", audienceId: companyId }] };
 }
 
 /**

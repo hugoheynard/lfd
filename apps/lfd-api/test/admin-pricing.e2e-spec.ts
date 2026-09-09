@@ -205,6 +205,40 @@ describe("poser une règle", () => {
   });
 
   /**
+   * 🔴 **Le tableau général montre les règles des AUTRES comptes**, et c'est sa
+   * raison d'être : sa question est « qu'est-ce qui joue sur ce prix », toutes
+   * audiences confondues. La fiche d'un client, elle, affirme « voici ce qui
+   * s'applique à LUI » et filtre — ce sont deux écrans, deux questions.
+   *
+   * Ce cas existe parce que la garantie tient désormais à **une ligne** :
+   * `audienceClause(null)` rend une clause vide dans
+   * `PrismaPricingDecisionsReader`. C'est exactement le genre de ligne qu'on
+   * « simplifie », et sa disparition ne ferait rougir aucun test de prix — les
+   * prix resteraient justes, l'écran perdrait des lignes en silence.
+   *
+   * C'est l'objection qui a fait abandonner la première conception de R21 :
+   * faire passer cet écran par la porte du prix aurait appliqué l'audience à la
+   * lecture, sans client, donc effacé toutes les règles de compte (2026-09-09).
+   */
+  it("🔴 montre une règle qui vise UN AUTRE compte, sans la lui appliquer", async () => {
+    const company = await createCompany(ctx.prisma);
+    await postRule({
+      // Une portée ARTICLE : `item.rules` ne retient que ce qui vise l'article
+      // nommément — une règle de catalogue s'affiche ailleurs sur l'écran.
+      scope: { type: "product", id: SKU },
+      audience: { type: "company", id: company.id },
+      label: "Geste chez un tiers",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 3000 },
+    }).expect(201);
+
+    const item = await croissant();
+
+    expect(item.rules.map((rule) => rule.label)).toContain("Geste chez un tiers");
+    // Elle est VISIBLE et n'agit pas : le tableau se lit sans client.
+    expect(item.finalMillicents).toBe(millicentsFromCents(CANONICAL));
+  });
+
+  /**
    * **La porte fermée.** Une remise de volume n'est plus une règle : c'est un
    * barème, et le barème existe pour garantir ce qu'aucune règle isolée ne
    * pouvait voir — que commander plus n'accorde jamais moins. Tant que cette

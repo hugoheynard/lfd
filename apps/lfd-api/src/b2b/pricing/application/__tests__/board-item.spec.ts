@@ -209,7 +209,7 @@ describe("les matériaux d'une lecture", () => {
 });
 
 describe("viser un article nommément", () => {
-  it("ne retient que les portées produit et déclinaison", async () => {
+  it("ne retient que les portées produit et déclinaison", () => {
     expect(targetsArticle({ type: "product", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "variant", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "category", id: "viennoiserie" }, "VIE-001")).toBe(false);
