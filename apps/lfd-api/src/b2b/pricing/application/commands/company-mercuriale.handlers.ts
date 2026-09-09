@@ -8,7 +8,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { PrismaService } from "../../../../platform/database/prisma.service.js";
+import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
@@ -134,7 +134,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
   number
 > {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly companies: PricedCompanyReader,
     private readonly mercuriales: CompanyMercurialeRepository,
     private readonly ids: IdGenerator,
     private readonly drafts: MercurialeDrafts,
@@ -231,12 +231,16 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     return mercuriale.lines.length;
   }
 
+  /**
+   * 🔴 **Par le port, et non par Prisma.** Ce contrôle était écrit deux fois —
+   * ici et dans `CompanyPricingQuery` — et les deux lisaient `companies` en
+   * Prisma direct depuis la couche application. C'est la frontière que
+   * `CLAUDE.md` §3 décrit comme franchie quand même : le graphe d'imports ne
+   * voit pas une table interrogée sans import, et il écrit que « c'est arrivé
+   * deux fois ». C'en était une troisième (2026-09-09, R21).
+   */
   private async assertCompanyExists(companyId: string): Promise<void> {
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-      select: { id: true },
-    });
-    if (company === null) {
+    if (!(await this.companies.exists(companyId))) {
       throw new PricedCompanyNotFoundError(companyId);
     }
   }
