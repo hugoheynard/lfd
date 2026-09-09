@@ -32,36 +32,36 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 
 ## 1. Le tableau, en un écran
 
-| #       | Ce que c'est                                                              | Gravité | Coût                     |
-| ------- | ------------------------------------------------------------------------- | ------- | ------------------------ |
-| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                 | ✅      | **clos le 2026-09-09**   |
-| **R2**  | La simulation rejoue les paliers **dans le navigateur**                   | 🔴      | conception               |
-| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                | ✅      | **clos le 2026-09-09**   |
-| **R4**  | Le client peut payer autre chose que ce qu'il a vu                        | 🟠      | conception               |
-| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                   | ✅      | **clos le 2026-09-09**   |
-| **R6**  | L'engagement de volume n'a **aucun écran**                                | 🟠      | un lot front             |
-| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                          | ✅      | **clos le 2026-09-09**   |
-| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                      | ✅      | **clos le 2026-09-09**   |
-| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                   | 🟡      | inventaire fait          |
-| **R10** | **Deux** traces mortes dans la tarification                               | 🟡      | trivial                  |
-| **R11** | Le volume prévu appartient au gabarit, pas au client                      | 🟡      | conception               |
-| **R12** | Trois requêtes de production jamais lancées                               | 🟡      | trois `psql`             |
-| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                        | 🔵      | décision                 |
-| **R14** | Les conditionnements — conception **périmée**                             | 🔵      | à réécrire               |
-| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**         | 🟠      | contrat + front          |
-| **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**      | 🔴      | une décision commerciale |
-| ~~R17~~ | ~~La lecture datée `at` ignore ce qui a été **archivé depuis**~~          | ✅      | **clos le 2026-09-09**   |
-| ~~R18~~ | ~~Engagement et gabarit répondent 400 là où le reste répond 404 et 409~~  | ✅      | **clos le 2026-09-09**   |
-| ~~R19~~ | ~~Treize commentaires disent « centimes » sur des millicentimes~~         | ✅      | **clos le 2026-09-09**   |
-| ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~   | ✅      | **clos le 2026-09-09**   |
-| **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`      | 🟠      | un lot, seule            |
-| ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                 | ✅      | **clos le 2026-09-09**   |
-| ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~      | ✅      | **clos le 2026-09-09**   |
-| **R24** | États inatteignables et colonnes mortes                                   | 🟡      | trivial                  |
-| **R25** | La trace figée : `scope` est écrit, le **scellement** est à reconcevoir   | 🟡      | forme à reprendre        |
-| **R27** | La trace de prix part au **client** sur trois routes, sans rétrécissement | 🟠      | une vue client           |
-| ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~       | ✅      | **clos le 2026-09-09**   |
-| **R29** | Rien ne tient l'unité d'un champ dont le NOM ne la dit pas                | 🟠      | un type nominal          |
+| #       | Ce que c'est                                                                   | Gravité | Coût                     |
+| ------- | ------------------------------------------------------------------------------ | ------- | ------------------------ |
+| ~~R1~~  | ~~Un prix ramené à zéro tue la commande~~                                      | ✅      | **clos le 2026-09-09**   |
+| **R2**  | La simulation rejoue les paliers **dans le navigateur**                        | 🔴      | conception               |
+| ~~R3~~  | ~~Rien ne prouve que le devis boutique prédit la facture~~                     | ✅      | **clos le 2026-09-09**   |
+| **R4**  | Le client peut payer autre chose que ce qu'il a vu                             | 🟠      | conception               |
+| ~~R5~~  | ~~L'ajustement de zone n'est pas figé sur la commande~~                        | ✅      | **clos le 2026-09-09**   |
+| **R6**  | L'engagement de volume n'a **aucun écran**                                     | 🟠      | un lot front             |
+| ~~R7~~  | ~~Le cache suppose une seule instance de l'API~~                               | ✅      | **clos le 2026-09-09**   |
+| ~~R8~~  | ~~Aucune porte sur `prisma.<modèle>` hors contexte~~                           | ✅      | **clos le 2026-09-09**   |
+| **R9**  | 19 conversions de jour en minuit UTC, hors tarification                        | 🟡      | inventaire fait          |
+| **R10** | **Deux** traces mortes dans la tarification                                    | 🟡      | trivial                  |
+| **R11** | Le volume prévu appartient au gabarit, pas au client                           | 🟡      | conception               |
+| **R12** | Trois requêtes de production jamais lancées                                    | 🟡      | trois `psql`             |
+| **R13** | Prix vivant / prix bloqué — **rien n'est tranché**                             | 🔵      | décision                 |
+| **R14** | Les conditionnements — conception **périmée**                                  | 🔵      | à réécrire               |
+| **R15** | La projection jugeait la porte sur un cumul — **à moitié fermée**              | 🟠      | contrat + front          |
+| **R16** | Un engagement de portée famille — **une sémantique jamais tranchée**           | 🔴      | une décision commerciale |
+| ~~R17~~ | ~~La lecture datée `at` ignore ce qui a été **archivé depuis**~~               | ✅      | **clos le 2026-09-09**   |
+| ~~R18~~ | ~~Engagement et gabarit répondent 400 là où le reste répond 404 et 409~~       | ✅      | **clos le 2026-09-09**   |
+| ~~R19~~ | ~~Treize commentaires disent « centimes » sur des millicentimes~~              | ✅      | **clos le 2026-09-09**   |
+| ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~        | ✅      | **clos le 2026-09-09**   |
+| **R21** | Deux séquences de chargement ; **cinq** classes d'application injectent Prisma | 🟡      | trois lectures           |
+| ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                      | ✅      | **clos le 2026-09-09**   |
+| ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~           | ✅      | **clos le 2026-09-09**   |
+| **R24** | États inatteignables et colonnes mortes                                        | 🟡      | trivial                  |
+| **R25** | La trace figée : `scope` est écrit, le **scellement** est à reconcevoir        | 🟡      | forme à reprendre        |
+| **R27** | La trace de prix part au **client** sur trois routes, sans rétrécissement      | 🟠      | une vue client           |
+| ~~R26~~ | ~~`Pricer` n'a **aucun** appelant — le plan de la porte est écrit~~            | ✅      | **clos le 2026-09-09**   |
+| **R29** | Rien ne tient l'unité d'un champ dont le NOM ne la dit pas                     | 🟠      | un type nominal          |
 
 **Douze entrées sur vingt-huit sont closes** — R1, R3, R5, R7, R8 et R20 le jour
 même de ce registre, puis R22, R23, **R17**, **R26**, **R18** et **R19** dans la
@@ -454,6 +454,40 @@ séquence qui produit la double sémantique de R17.
 
 Et `CompanyPricingQuery` injecte `PrismaService` (`company-pricing.query.ts:69`)
 — `CLAUDE.md` §4 : « le handler dépend de ports, jamais de `PrismaService` ».
+
+> **Deux tiers faits le 2026-09-09**, et l'entrée se comptait mal.
+>
+> ✅ **Une seule fabrique de tarificateur.** `LoadedPricer.over` avait deux
+> appelants ; `boardMaterials` montait `commitments: []` et `NO_EVIDENCE` à la
+> main — le troisième encodage que `price-lens.ts` recensait sans l'avoir fermé.
+> `pricerOver` l'impose désormais par une **union discriminée** : `unproven` n'a
+> pas de champ où passer des engagements.
+>
+> ✅ **Une seule lecture d'écran.** Le tableau général et la fiche client
+> lisaient les règles et les planchers chacun de son côté, avec deux clauses
+> `where`. Elles avaient déjà divergé — la fiche n'avait pas la fenêtre de
+> validité des planchers, et montrait la limite d'avant une re-pose.
+>
+> 🔴 **Ce lot ne passe PAS par la porte du prix**, et c'est un résultat, pas un
+> renoncement. `vitruve` a démoli le plan qui le proposait : `Pricer` lit par
+> `inScopes`, donc par `inForceFor`, qui écarte le hors-fenêtre, le suspendu et
+> le hors-audience — c'est-à-dire ce qu'un écran de paramétrage montre. Sur le
+> tableau général, lu sans client, l'audience aurait effacé **toutes** les
+> règles de compte. Les prix n'auraient pas bougé ; l'écran aurait perdu des
+> lignes en silence. Un e2e le tient désormais, vérifié par mutation.
+>
+> ⚠️ **Le compte de cette entrée était faux.** Elle dit « **une** query injecte
+> `PrismaService` ». Il y en avait **cinq**. Deux sont parties — dont un
+> `prisma.company.findUnique` écrit deux fois, sur la table d'un autre contexte,
+> depuis un handler d'écriture. **Trois restent**, chacune sur sa propre table :
+> `mercuriale-drafts.store.ts`, `queries/price-templates.query.ts`,
+> `queries/volume-commitments.query.ts`.
+>
+> Reste aussi le **§4 que l'entrée ne nomme pas** : `AdminPricingController`
+> injecte `PricingBoardReader` (compté par `lint:controller-buses`) et
+> `AdminCompanyPricingController` injecte `CompanyPricingQuery`. Aucune des deux
+> lectures n'a de nom ni de handler — et la porte ne compte que la première,
+> parce qu'elle ne reconnaît que les ports.
 
 **Le remède.** ⚠️ **Cette ligne disait « tombe avec R26 ». R26 est close, et
 R21 n'est pas tombée** — le journal l'avait d'ailleurs écrit en livrant le

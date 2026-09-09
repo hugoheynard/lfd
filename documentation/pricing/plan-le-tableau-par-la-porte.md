@@ -1,7 +1,12 @@
 # R21 — faire passer le tableau par la porte du prix
 
-> **Plan, 2026-09-09.** Rien n'est bâti. Il touche l'argent : `vitruve` avant
-> Hugo, et ses objections `BLOQUANT` / `SÉRIEUX` remontent avec lui.
+> **État réel au 2026-09-09.** Ce document a été écrit comme un plan, **démoli
+> par `vitruve`**, puis rebâti sur une autre découpe. Ce qui est décrit au §3 n'a
+> **pas** été fait, et le §6 dit ce qui l'a été à la place — c'est la partie à
+> lire avant de reproposer la première idée, qui est la plus naturelle.
+>
+> Ce qui reste ouvert est au registre :
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md), entrée R21.
 
 ## 1. Ce qui est vrai aujourd'hui, vérifié dans le code
 
@@ -111,3 +116,49 @@ Il ne touche ni la caisse, ni la vitrine, ni la projection : leur chemin est
 déjà la porte. Il ne change **aucun prix** — la lentille `unproven` reproduit à
 l'identique ce que `boardMaterials` monte, et c'est le critère de recette :
 l'écran doit afficher les mêmes nombres avant et après.
+
+---
+
+## 6. Ce que la contradiction a renversé, et ce qui a été bâti
+
+`vitruve` a rendu **quatre BLOQUANTS**. Trois ont été rouverts et confirmés à la
+main ; ils condamnent tous le §3.
+
+| Ce que le §3 supposait                           | Ce que le code dit                                                                                                                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| la porte lit les mêmes lignes que l'écran        | `inScopes` passe par `inForceFor`, qui filtre **fenêtre, suspension, audience** — c'est-à-dire ce que l'écran montre exprès, avec son statut                                           |
+| une lecture datée par la porte est équivalente   | `sealedAt` **lève** `NoCanonicalPriceAtError` dès qu'un article n'a pas de trace à `at` ; le tableau dégrade et publie `canonicalHistoryStartsAt`                                      |
+| les vues se fabriquent « là où la ligne existe » | une vue de plancher a besoin du **catalogue**, donc un port qui la fabriquerait ferait dépendre `pricing` de `catalog` — le cycle que `lint:import-cycles` a refusé à la porte du prix |
+
+🔴 **Le mode de défaillance est le pire qui soit** : les prix n'auraient pas
+bougé. L'écran aurait perdu des lignes — les règles programmées, les suspendues,
+et sur le tableau général **toutes** les règles de compte — et aucun test de prix
+n'aurait rougi.
+
+### Deux de mes trois objections étaient surestimées
+
+- **§4.2** — `matchesAudience` avec un client admet `all` + `company X`, mot pour
+  mot la clause SQL. La garantie change de **lieu**, pas de nature. Ce qui se
+  perdait était ailleurs : les règles hors fenêtre ou en pause de ce client.
+- **§4.3** — l'inversion existe **déjà** : `PrismaPricingBoardReader` injecte un
+  service applicatif. Mon objection nommait une dette, pas un obstacle.
+
+### La découpe retenue
+
+1. **une seule fabrique** — `pricerOver`, union discriminée sur la lentille :
+   `unproven` n'a pas de champ où passer des engagements. C'est le vrai défaut
+   que R21 nommait mal : ce qui divergeait n'était pas la clause SQL, c'était la
+   fabrique du tarificateur ;
+2. **une seule lecture d'écran** — `PricingDecisionsReader`, datée, avec la
+   fenêtre des planchers et le filtre d'audience dedans. Les deux écrans y
+   passent ; `CompanyPricingQuery` n'injecte plus `PrismaService`.
+
+### Ce qui a été trouvé en chemin, et qui ne se cherchait pas
+
+- **un défaut en service** : la fiche client montrait la limite d'AVANT une
+  re-pose, avec son signal de dérive, sur l'écran où l'on négocie. Le prix était
+  juste — `resolveScopedFloor` filtre par fenêtre —, ce qui le rendait discret.
+  Troisième lecteur de R17 ;
+- **le compte de R21 était faux** : « une query injecte `PrismaService` » — il y
+  en avait **cinq**, dont un `findUnique` sur la table d'un autre contexte écrit
+  deux fois. Trois restent.
