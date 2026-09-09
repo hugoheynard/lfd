@@ -11,6 +11,7 @@ import { VolumeCommitmentReader } from "../domain/ports/volume-commitment.reader
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
 import { LoadedPricer, type PricingParties } from "../domain/loaded-pricer.js";
+import { admitsEvidence, type PriceLens } from "../domain/price-lens.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
 import type { PricingContext } from "../domain/price-rule.js";
 import {
@@ -92,6 +93,7 @@ export class PricingMaterialsLoader {
     items: readonly { readonly item: CatalogArticle; readonly quantity: number }[],
     parties: PricingParties,
     at: Date,
+    lens: PriceLens,
   ): Promise<LoadedPricer | null> {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
@@ -108,15 +110,26 @@ export class PricingMaterialsLoader {
       this.priceRules.inScopes(scopes),
       this.priceFloors.inScopes(scopes),
       this.volumeLadders.inScopes(scopes),
-      // Un client de passage n'a pas d'engagement, et le port le sait sans
+      // 🔴 La lentille décide, pas la méthode qui posera la question ensuite.
+      // Une question `unproven` — l'écran de tarification, la projection — ne
+      // peut rien prouver de l'historique d'un client : lire ses engagements
+      // serait payer une requête pour un fait qu'on va écarter. La projection le
+      // faisait, et l'ignorait ensuite.
+      //
+      // Un client de passage n'en a pas non plus, et le port le sait sans
       // interroger la base.
-      this.commitments.liveFor(parties.companyId),
+      admitsEvidence(lens) ? this.commitments.liveFor(parties.companyId) : [],
       // La mercuriale arrive en OBJET : on ne connaît pas encore la quantité de
       // chaque ligne, donc pas le palier. Cf. `asRuleFor`.
       this.mercuriales.liveFor(parties.companyId, at),
     ]);
     const materials = materialsOf({ rules, floors, ladders, commitments, mercuriale });
-    const evidence = await this.measure(entries, materials, at);
+    // Sans preuves recevables, il n'y a rien à mesurer — et `NO_EVIDENCE` est la
+    // réponse honnête, pas un défaut prudent : la porte d'un plancher dynamique
+    // reste alors fermée, ce qui est ce qu'une question sans preuve mérite.
+    const evidence = admitsEvidence(lens)
+      ? await this.measure(entries, materials, at)
+      : NO_EVIDENCE;
     return LoadedPricer.over(materials, evidence, parties, at);
   }
 

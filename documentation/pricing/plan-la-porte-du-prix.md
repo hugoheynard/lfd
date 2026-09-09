@@ -209,7 +209,7 @@ copies disparaissent sans qu'on ait à leur trouver une signature commune — ce
 qu'elles n'ont pas : trois partent de `CatalogItem`, une d'un item de vue
 vitrine plus une résolution de rayon, une d'un mapping en deux temps.
 
-### 4.4 La lentille — trois valeurs, nommées par ce qu'elles ADMETTENT
+### 4.4 La lentille — deux valeurs, nommées par ce qu'elles ADMETTENT
 
 Les décisions réellement prises aujourd'hui, relevées appelant par appelant :
 
@@ -235,19 +235,44 @@ pas de tarif négocié : pas de requête »).
 > écarte », six copies d'une formule d'écart, deux ports catalogue empilés. La
 > vitrine n'a pas de lentille à elle : elle est la caisse, à quantité 1.
 
-#### Les trois valeurs
+#### DEUX valeurs, et pas trois
 
-| Lentille   | Ce qu'elle admet                                          | Qui                              |
-| ---------- | --------------------------------------------------------- | -------------------------------- |
-| `measured` | tout ce que le client a — historique, engagements         | la caisse, les **deux** vitrines |
-| `vitrine`  | son tarif négocié, **ni engagement ni historique**        | le tableau de tarification       |
-| `unproven` | rien : le nombre reçu est une hypothèse, pas une commande | la projection                    |
+⚠️ **Ce paragraphe en annonçait trois** — `measured`, `vitrine`, `unproven` — et
+c'était une de trop. Les configurations réelles, relevées au chargement le
+2026-09-09 :
 
-**`vitrine` n'est pas un nom trouvé après coup** : c'est celui que le tableau se
-donne lui-même. `board-item.ts` écarte les engagements en écrivant « le tableau
-montre un **prix de vitrine**, et un engagement ouvrirait un palier que la
-vitrine ne promet pas ». La lentille nomme une décision déjà prise et déjà
-justifiée ; elle ne l'invente pas.
+| Appelant      | Engagements | Historique |
+| ------------- | ----------- | ---------- |
+| la caisse     | ✓           | ✓          |
+| la vitrine    | ✓           | ✓          |
+| le tableau    | ✗           | ✗          |
+| la projection | ✗           | ✗          |
+
+La caisse et la vitrine sont **identiques**. Le tableau et la projection aussi.
+Ce qui sépare ces deux derniers n'est pas une lentille mais la **question
+posée** — `price(sku, qty)` contre `projectAt(sku, cumul)` —, et c'est déjà
+tranché depuis R15 : une projection ne prouve ni commande ni historique, par
+construction.
+
+| Lentille   | Ce qu'elle admet                                  | Qui                              |
+| ---------- | ------------------------------------------------- | -------------------------------- |
+| `measured` | tout ce que le client a — historique, engagements | la caisse, les **deux** vitrines |
+| `unproven` | ni l'un ni l'autre                                | le tableau, la projection        |
+
+**Ce que `unproven` fait gagner, concrètement** : la projection paie aujourd'hui
+une lecture d'engagements qu'elle **ignore** ensuite. La lentille rend structurel
+ce qui était une décision prise par méthode, et supprime la lecture.
+
+⚠️ « `vitrine` » nommait une différence qui n'existe pas à cet endroit : le
+tableau et la projection écartent exactement les mêmes preuves. C'est le même
+travers que la v1, qui comptait quatre axes là où il y en a deux — décrire les
+appelants par leur **scène** plutôt que par ce qu'ils **admettent**.
+
+🔴 **Le tableau ne migre PAS avec cette lentille**, et c'est vérifié : il lit ses
+matériaux **à une date** (`unarchivedAt(at)`), là où le chargeur lit
+`archivedAt: null` en absolu. Le faire passer par la porte demanderait que le
+chargeur sache lire une date — c'est **R17**, un sujet à part. La seconde
+séquence de chargement (R21) reste donc ouverte après ce lot.
 
 #### Pourquoi ces noms-là
 
@@ -279,12 +304,12 @@ lire une date ? Ce plan ne le tranche pas, et ne retire rien.
 
 ## 5. Les lots, dans l'ordre
 
-| #   | Lot                                                                                           | Ce qu'il ferme                                                | Risque                                                                  |
-| --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                              | deux ports empilés, `pricing → orders` : **zéro import**      | tenu : 1 239 tests, aucune assertion modifiée                           |
-| ✅2 | ~~**La marque**~~ — **faite le 2026-09-09**                                                   | le prix fabriqué, les six copies → **une**                    | a trouvé un bug le jour même : la lecture datée gardait un sceau périmé |
-| ✅3 | ~~**`load(articles)` et `PricedLot`**~~ — **fait le 2026-09-09** (le tableau attend le lot 4) | le contournement, le lot vide, l'article qui voyage deux fois | `for`/`forAll` supprimées : elles fermaient un cycle réel               |
-| 4   | **La lentille** — trois valeurs, nommées par ce qu'elles admettent                            | les encodages épars de « ce qu'on écarte »                    | **fort — il touche le prix servi**                                      |
+| #   | Lot                                                                                           | Ce qu'il ferme                                                                                    | Risque                                                                  |
+| --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ✅1 | ~~**Le port descend dans `catalog/`**~~ — **fait le 2026-09-09**                              | deux ports empilés, `pricing → orders` : **zéro import**                                          | tenu : 1 239 tests, aucune assertion modifiée                           |
+| ✅2 | ~~**La marque**~~ — **faite le 2026-09-09**                                                   | le prix fabriqué, les six copies → **une**                                                        | a trouvé un bug le jour même : la lecture datée gardait un sceau périmé |
+| ✅3 | ~~**`load(articles)` et `PricedLot`**~~ — **fait le 2026-09-09** (le tableau attend le lot 4) | le contournement, le lot vide, l'article qui voyage deux fois                                     | `for`/`forAll` supprimées : elles fermaient un cycle réel               |
+| ✅4 | ~~**La lentille**~~ — **faite le 2026-09-09**, deux valeurs                                   | les trois encodages de « ce qu'on écarte » ; une lecture d'engagements que la projection ignorait | le tableau reste dehors : il lit à une DATE, c'est R17                  |
 
 ✅ **Le lot 1 est fait le 2026-09-09**, et la promesse a tenu : aucune signature
 n'a changé, aucune assertion n'a été réécrite, une seule spec a suivi son code.

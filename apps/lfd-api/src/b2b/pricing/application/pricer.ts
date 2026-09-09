@@ -4,6 +4,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DuplicateArticleError } from "../domain/pricing-errors.js";
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import type { PriceLens } from "../domain/price-lens.js";
 import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
 
@@ -21,6 +22,14 @@ export interface LotRequest {
   /** Dans l'ordre où ils seront rendus. Un SKU en double est refusé. */
   readonly articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[];
   readonly companyId: string | null;
+  /**
+   * **Ce que cette question autorise à prouver** — cf. {@link PriceLens}.
+   *
+   * Par défaut `measured` : la question ordinaire est celle d'un client réel,
+   * dont l'historique et l'engagement comptent. Une question qui ne prouve rien
+   * le **dit**, plutôt que de le laisser deviner par la méthode appelée ensuite.
+   */
+  readonly lens?: PriceLens | undefined;
   readonly at?: Date | undefined;
 }
 
@@ -86,7 +95,12 @@ export class Pricer {
     // de part et d'autre du basculement d'une promotion.
     const at = request.at ?? this.clock.now();
     const items = request.articles.map(({ article, quantity }) => ({ item: article, quantity }));
-    const pricer = await this.materials.pricerFor(items, { companyId: request.companyId }, at);
+    const pricer = await this.materials.pricerFor(
+      items,
+      { companyId: request.companyId },
+      at,
+      request.lens ?? "measured",
+    );
     if (pricer === null) {
       throw new UnresolvedArticleError(items[0]?.item.sku ?? "");
     }

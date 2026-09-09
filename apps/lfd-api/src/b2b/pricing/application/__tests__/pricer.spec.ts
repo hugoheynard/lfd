@@ -146,6 +146,21 @@ async function lotOf(
   return pricer.load({ articles, companyId, at });
 }
 
+/** Le même lot, mais pour une question qui ne prouve rien. */
+async function unprovenLotOf(
+  pricer: Pricer,
+  lines: readonly { readonly sku: string; readonly quantity: number }[],
+  companyId: string | null,
+): Promise<PricedLot> {
+  const articles = await Promise.all(
+    lines.map(async (line) => ({
+      article: await articleOf(line.sku),
+      quantity: line.quantity,
+    })),
+  );
+  return pricer.load({ articles, companyId, lens: "unproven" });
+}
+
 // ── Les matériaux ─────────────────────────────────────────────────────────
 
 class StubRules extends PriceRuleReader {
@@ -453,6 +468,27 @@ describe("Pricer.load — le prix d'un article", () => {
     expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
     expect(doubles.mercuriales.asked).toEqual([{ companyId: null, at: NOW }]);
     expect(doubles.commitments.asked).toEqual([null]);
+  });
+
+  /**
+   * 🔴 **`unproven` n'interroge pas les engagements** — elle ne les écarte pas
+   * après coup, elle ne les lit pas.
+   *
+   * C'est ce que la lentille achète. La projection payait cette lecture puis
+   * l'ignorait : `priceAtCumulative` ne consulte aucun engagement, mais le
+   * chargeur, lui, en demandait quand même. La décision « quelles preuves sont
+   * recevables » vivait dans la méthode qui pose la question, donc trop tard
+   * pour éviter la requête (2026-09-09).
+   */
+  it("🔴 ne lit AUCUN engagement pour une question qui ne prouve rien", async () => {
+    const { pricer, doubles } = pricerWith();
+
+    await unprovenLotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1");
+
+    expect(doubles.commitments.asked).toEqual([]);
+    // La mercuriale, elle, reste lue : un tarif négocié n'est pas une preuve à
+    // prouver, c'est une décision déjà prise pour ce client.
+    expect(doubles.mercuriales.asked).toHaveLength(1);
   });
 
   it("ne prend pas la mercuriale d'un AUTRE client", async () => {

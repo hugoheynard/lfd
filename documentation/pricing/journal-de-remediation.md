@@ -23,7 +23,7 @@
 | [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix            | ✅ **close** — 2026-09-09                                                                |
 | [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite             | ✅ **close** — 2026-09-09                                                                |
 | [R25](#r25--2026-09-09) | la trace figée ne répond pas à la question qu'elle existe pour poser | 🟠 **un tiers fait** — la contradiction a trouvé une fuite et deux trous (2026-09-09)    |
-| [R26](#r26--2026-09-09) | la porte du prix — lots 1, 2 et 3                                    | ✅ **lots 1–3** — 2026-09-09                                                             |
+| [R26](#r26--2026-09-09) | la porte du prix — les quatre lots                                   | ✅ **lots 1–4** — 2026-09-09                                                             |
 
 ---
 
@@ -1301,3 +1301,98 @@ traque depuis le premier jour.
   porte refuse plutôt que de rendre un tarificateur auquel on ne peut rien
   demander ;
 - `lint:price-door` et `lint:import-cycles` vertes, la suite complète aussi.
+
+---
+
+## R26 · 2026-09-09 — lot 4
+
+**Plan** : [`plan-la-porte-du-prix.md`](plan-la-porte-du-prix.md) §4.4 · Le
+dernier des quatre lots : **la lentille**.
+
+### 1. Une décision qui vivait à trois endroits
+
+« Quelles preuves sont recevables » se décidait dans **trois** encodages :
+
+- un booléen `measured` dans `LoadedPricer.resolve` ;
+- la constante `NO_EVIDENCE`, qu'un appelant passait ou non ;
+- un `commitments: []` monté à la main par l'écran de tarification.
+
+Trois façons de dire une chose, donc trois occasions de ne pas dire la même.
+**C'est par cet éparpillement que R15 s'est glissé** ce matin : la projection
+ouvrait la porte d'un plancher de marge sur une quantité qu'elle avait inventée,
+et aucun des trois endroits ne pouvait le voir seul.
+
+`PriceLens` la nomme, une fois, dans un type que le chargeur lit.
+
+### 2. Deux valeurs, et pas trois — vérifié plutôt que raconté
+
+Le plan en annonçait trois : `measured`, `vitrine`, `unproven`. Relevé appelant
+par appelant, **au chargement** :
+
+| Appelant      | Engagements | Historique |
+| ------------- | ----------- | ---------- |
+| la caisse     | ✓           | ✓          |
+| la vitrine    | ✓           | ✓          |
+| le tableau    | ✗           | ✗          |
+| la projection | ✗           | ✗          |
+
+La caisse et la vitrine sont **identiques** ; le tableau et la projection aussi.
+Ce qui sépare ces deux derniers n'est pas une lentille mais la **question
+posée** — `price(sku, qty)` contre `projectAt(sku, cumul)` —, et R15 l'a déjà
+tranché : une projection ne prouve ni commande ni historique, par construction.
+
+⚠️ « `vitrine` » nommait une différence qui n'existe pas à cet endroit. C'est le
+même travers que la v1 du plan, qui comptait **quatre axes** là où il y en a
+deux : décrire les appelants par leur **scène** plutôt que par ce qu'ils
+**admettent**. Deux fois le même document, deux fois la même faute — et deux
+fois elle se voit en ouvrant les quatre appelants.
+
+### 3. Ce que ça fait gagner, en une requête
+
+`admitsEvidence(lens) ? this.commitments.liveFor(companyId) : []`
+
+La projection **payait une lecture d'engagements qu'elle ignorait ensuite**.
+`priceAtCumulative` n'en consulte aucun — mais le chargeur en demandait quand
+même, parce que la décision vivait dans la méthode qui pose la question, donc
+**trop tard pour éviter la requête**.
+
+Un cas le tient : `commitments.asked` est vide sous `unproven`. Et la mercuriale
+reste lue, ce que le même cas affirme — un tarif négocié n'est pas une preuve à
+prouver, c'est une décision déjà prise pour ce client.
+
+⚠️ **Le gain est LU dans le code, pas mesuré.** `pricing-budget.e2e-spec.ts`
+compte les opérations ORM du devis et du tableau — **pas celles de la
+projection**. Le doublé de `pricer.spec.ts` prouve que le port n'est pas
+interrogé ; il ne prouve pas qu'une requête de moins part vers Postgres sur le
+chemin réel. Dire « une lecture de moins » comme un chiffre vérifié serait faire
+passer une lecture de code pour une mesure — relevé par la batterie, corrigé
+ici.
+
+### 4. Pourquoi les noms ne sont pas des scènes
+
+`checkout` / `screen` / `projection` — les noms de C.4 — désignent des écrans.
+Au cinquième appelant, on en invente un de plus, et le choix se fait par
+ressemblance.
+
+`measured` / `unproven` désignent des **preuves recevables**. Un nouvel appelant
+se range en répondant à une question qu'il peut trancher seul : _qu'est-ce que je
+suis en mesure de prouver ?_ C'est la bascule de R15 — l'ignorance devient
+dicible, donc le défaut prudent s'hérite au lieu de se redécider.
+
+### 5. 🔴 Ce que ce lot NE ferme pas, et pourquoi
+
+**Le tableau ne migre pas**, et ce n'est pas un oubli : il lit ses matériaux **à
+une date** (`unarchivedAt(at)`), là où le chargeur lit `archivedAt: null` en
+absolu. Le faire passer par la porte demanderait que le chargeur sache lire une
+date — c'est **R17**, un sujet à part et non tranché.
+
+Donc **R21 reste ouverte** : la seconde séquence de chargement existe toujours,
+et `LoadedPricer.over` garde deux appelants. Le dire ici plutôt que de laisser
+croire que la porte est complète — une façade qu'on annonce fermée alors qu'un
+appelant passe encore à côté est pire qu'une façade assumée partielle.
+
+### 6. Ce qui le prouve
+
+- le cas « ne lit AUCUN engagement pour une question qui ne prouve rien » ;
+- les 14 cas de `pricer.spec.ts`, les 316 du contexte, la suite complète ;
+- les 32 portes.
