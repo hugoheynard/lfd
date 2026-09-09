@@ -1896,6 +1896,39 @@ describe("les gabarits tarifaires", () => {
       },
     ]).expect(400);
   });
+
+  /**
+   * **Régression R18 : un gabarit inconnu répondait 400.**
+   *
+   * Les règles, les barèmes, les mercuriales et — depuis le 2026-09-09 — les
+   * engagements répondent **404** sur l'introuvable. Le gabarit était le dernier
+   * à répondre 400, c'est-à-dire à dire au staff « votre requête est malformée »
+   * pour une requête impeccable dont seule la cible manquait.
+   *
+   * 🔴 **Le statut n'est pas une décoration** : un back-office distingue « votre
+   * saisie est mauvaise » (on corrige le formulaire) de « cet objet n'existe
+   * plus » (on rafraîchit la liste). Les deux gestes n'ont rien à voir, et
+   * l'écran ne peut les séparer que par le code.
+   *
+   * Les DEUX routes qui chargent un gabarit sont ici : réviser et poser. La
+   * seconde compte le plus — c'est celle qui pose un tarif chez un client, donc
+   * celle qu'on relance après un échec (fix 2026-09-09).
+   */
+  it("répond 404, et non 400, sur un gabarit qui n'existe pas", async () => {
+    const inconnu = "tpl_ceci_nexiste_pas";
+
+    await staff()
+      .put(`/admin/pricing/templates/${inconnu}`)
+      .send({
+        kind: "mercuriale",
+        label: "Révision d'un fantôme",
+        lines: [{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }] }],
+      })
+      .expect(404);
+
+    const company = await createCompany(ctx.prisma);
+    await apply(inconnu, company.id).expect(404);
+  });
 });
 
 /**

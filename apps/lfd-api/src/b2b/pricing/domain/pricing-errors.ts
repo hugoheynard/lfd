@@ -690,8 +690,21 @@ export class NonDecreasingTemplateTiersError extends DomainError {
   }
 }
 
-/** Un gabarit archivé ne se retouche plus : on en compose un nouveau. */
-export class ArchivedPriceTemplateIsSealedError extends DomainError {
+/**
+ * Un gabarit archivé ne se retouche plus : on en compose un nouveau.
+ *
+ * **409 depuis le 2026-09-09**, comme `Archived*IsSealedError` partout ailleurs
+ * : la grille envoyée est parfaitement bien formée, c'est l'état du gabarit qui
+ * la refuse. Le 400 disait au staff de corriger sa saisie, alors qu'aucune
+ * saisie ne pouvait passer (R18).
+ *
+ * ⚠️ **Aucune route ne l'atteint aujourd'hui** : archiver un gabarit n'a pas
+ * d'appelant — c'est la trace morte que R10 recense. Ce refus se tient donc au
+ * niveau de l'agrégat, et c'est là qu'il est éprouvé. Le corriger malgré tout,
+ * c'est refuser qu'une catégorie fausse attende, invisible, le jour où
+ * quelqu'un branchera le geste (vérifié le 2026-09-09).
+ */
+export class ArchivedPriceTemplateIsSealedError extends BusinessError {
   constructor(id: string) {
     super(
       "pricing.template.archived_is_sealed",
@@ -700,8 +713,16 @@ export class ArchivedPriceTemplateIsSealedError extends DomainError {
   }
 }
 
-/** Le gabarit demandé n'existe pas. */
-export class PriceTemplateNotFoundError extends DomainError {
+/**
+ * Le gabarit demandé n'existe pas.
+ *
+ * **404 depuis le 2026-09-09**, comme toute ressource absente du dépôt. Il
+ * répondait **400** — le dernier des cinq agrégats à le faire —, ce qui disait
+ * au staff que sa requête était malformée quand seule la cible manquait. Un
+ * back-office traite les deux autrement : on corrige un formulaire, on
+ * rafraîchit une liste (R18).
+ */
+export class PriceTemplateNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
     super("pricing.template.not_found", `Aucun gabarit tarifaire ${id}.`);
   }
