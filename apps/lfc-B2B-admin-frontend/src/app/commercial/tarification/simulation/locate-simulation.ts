@@ -43,7 +43,7 @@ export function locateSimulation(
       sku,
       name: item.name,
       catalogMillicents: item.canonicalMillicents,
-      floorMillicents: floorMillicentsOf(item.effectiveFloor, item.canonicalMillicents),
+      floorMillicents: floorMillicentsOf(item),
     };
   }
   return null;

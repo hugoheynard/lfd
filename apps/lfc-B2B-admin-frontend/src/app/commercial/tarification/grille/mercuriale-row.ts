@@ -1,9 +1,5 @@
-import type {
-  MercurialeBenchmarkView,
-  PriceFloorView,
-  PricingItemView,
-  TemplateTierPayload,
-} from '@lfd/contracts';
+import type { MercurialeBenchmarkView, PricingItemView, TemplateTierPayload } from '@lfd/contracts';
+import { gapBp } from '@lfd/money';
 
 /**
  * **Une ligne de la grille mercuriale**, dérivée de bout en bout.
@@ -45,25 +41,29 @@ export interface MercurialeRow {
   readonly versusMarket: 'under' | 'over' | 'at' | null;
 }
 
-/** La limite d'un article, en centimes, quelle que soit sa forme. */
-export function floorMillicentsOf(
-  floor: PriceFloorView | null,
-  canonicalMillicents: number,
-): number | null {
-  if (floor === null) {
-    return null;
-  }
-  return floor.mode === 'amount'
-    ? floor.value
-    : Math.round((canonicalMillicents * floor.value) / 10_000);
-}
-
-/** L'écart au tarif catalogue, signé — positif = moins cher que le catalogue. */
-export function impactBp(catalogMillicents: number, finalMillicents: number): number | null {
-  if (catalogMillicents <= 0) {
-    return null;
-  }
-  return Math.round(((catalogMillicents - finalMillicents) / catalogMillicents) * 10_000);
+/**
+ * **La limite d'un article — LUE, jamais recalculée.**
+ *
+ * `negotiationRoom.floorMillicents` est le plancher **appliqué**, ramené en
+ * centimes sur cet article par la même arithmétique exacte que la caisse.
+ * `null` quand aucune limite ne vise l'article — il n'y a alors rien à afficher.
+ *
+ * ## 🔴 Ce que ce champ répare, et qui n'était pas qu'un arrondi
+ *
+ * Cette fonction calculait `Math.round((canonique × floor.value) / 10_000)` à
+ * partir d'`effectiveFloor` — la formule que `resolve-floor.ts` interdit
+ * **nommément** (« les deux divergeraient d'un centime sur certaines valeurs, et
+ * l'écran promettrait alors une marge que la caisse refuserait »).
+ *
+ * Le défaut était plus grave que l'arrondi. `PriceFloorView.mode/value` porte le
+ * **mur dur** ; la porte dynamique vit dans son champ `dynamic`. Sur un article
+ * dont la porte s'ouvre, la grille annonçait donc le MUR là où la caisse
+ * applique la PORTE, c'est-à-dire une limite plus haute que la vraie : elle
+ * disait au commercial qu'il pouvait moins lâcher qu'il ne pouvait, sur l'écran
+ * où il décide de signer (corrigé le 2026-09-09, R23).
+ */
+export function floorMillicentsOf(item: Pick<PricingItemView, 'negotiationRoom'>): number | null {
+  return item.negotiationRoom?.floorMillicents ?? null;
 }
 
 /**
@@ -74,11 +74,11 @@ export function impactBp(catalogMillicents: number, finalMillicents: number): nu
  * porte aucune décision, et afficher un prix final la ferait passer pour tarifée.
  */
 export function mercurialeRow(
-  item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'effectiveFloor'>,
+  item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'negotiationRoom'>,
   mercurialeMillicents: number | null,
   benchmark: MercurialeBenchmarkView | null = null,
 ): MercurialeRow {
-  const floorMillicents = floorMillicentsOf(item.effectiveFloor, item.canonicalMillicents);
+  const floorMillicents = floorMillicentsOf(item);
   if (mercurialeMillicents === null) {
     return {
       sku: item.sku,
@@ -109,7 +109,12 @@ export function mercurialeRow(
     // il en a zéro — ce qui est une information, pas la même chose qu'une absence.
     roomMillicents:
       floorMillicents === null ? null : Math.max(0, finalMillicents - floorMillicents),
-    impactBp: impactBp(item.canonicalMillicents, finalMillicents),
+    // `gapBp` et non une formule locale : c'était la SIXIÈME copie de la même
+    // division, et `@lfd/money/gap.ts` existe parce que les cinq précédentes
+    // donnaient trois réponses différentes au cas du canonique nul. Pas
+    // `discountBp`, qui borne à zéro : cette colonne montre aussi les articles
+    // devenus plus CHERS, et l'écran en affiche la direction (R23, 2026-09-09).
+    impactBp: gapBp(item.canonicalMillicents, finalMillicents),
     benchmark,
     versusMarket: benchmark === null ? null : versus(finalMillicents, benchmark.medianMillicents),
   };

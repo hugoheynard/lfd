@@ -13,9 +13,16 @@
  * | `quote-bench.variationBp` (front) | `0` |
  * | `volume-tier-prices.discountBpOf` (back) | `0`, et le résultat borné à zéro |
  * | `company-pricing.query` (back) | la ligne est **exclue** de la moyenne |
+ * | `mercuriale-row.impactBp` (front) | `null` — **trouvée le 2026-09-09** |
  *
  * Aucune n'était fausse. Elles ne disaient simplement pas la même chose, et
  * deux écrans côte à côte pouvaient afficher deux écarts pour un même article.
+ *
+ * ⚠️ **Ce tableau a annoncé CINQ exemplaires jusqu'au 2026-09-09**, et il y en
+ * avait six : la grille mercuriale en portait un que l'inventaire d'origine
+ * n'avait pas vu — un calque exact de {@link gapBp}, `null` compris. Un module
+ * créé pour unifier une formule et qui se compte mal lui-même laisse croire que
+ * le travail est fini (R23).
  *
  * ## La convention, écrite une fois
  *

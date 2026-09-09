@@ -1,54 +1,56 @@
 import { describe, expect, it } from 'vitest';
-import type { PriceFloorView, PricingItemView } from '@lfd/contracts';
+import type { NegotiationRoom, PricingItemView } from '@lfd/contracts';
 
-import {
-  entryMillicents,
-  floorMillicentsOf,
-  impactBp,
-  mercurialeRow,
-  tally,
-} from '../mercuriale-row';
+import { entryMillicents, floorMillicentsOf, mercurialeRow, tally } from '../mercuriale-row';
 
-const floor = (over: Partial<PriceFloorView>): PriceFloorView =>
-  ({
-    id: 'f',
-    scope: { type: 'product', id: 'PAI-001' },
-    mode: 'amount',
-    value: 70,
-    dynamic: null,
-    drift: null,
-    createdBy: 'e2e',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    ...over,
-  }) as PriceFloorView;
+/**
+ * La marge telle que le SERVEUR la sert : le plancher **appliqué**, déjà ramené
+ * en centimes sur l'article. L'écran la lit, il ne la refabrique pas.
+ */
+const room = (floorMillicents: number): NegotiationRoom => ({
+  floorMillicents,
+  maxDiscountMillicents: 0,
+  maxDiscountBp: 0,
+});
 
 const item = (
   over: Partial<
-    Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'effectiveFloor'>
+    Pick<PricingItemView, 'sku' | 'name' | 'canonicalMillicents' | 'negotiationRoom'>
   > = {},
 ) => ({
   sku: 'PAI-001',
   name: 'Baguette',
   canonicalMillicents: 100,
-  effectiveFloor: null,
+  negotiationRoom: null,
   ...over,
 });
 
 describe('floorMillicentsOf', () => {
-  it('rend un montant tel quel, et une fraction calculée sur le canonique', () => {
-    expect(floorMillicentsOf(floor({ mode: 'amount', value: 70 }), 100)).toBe(70);
-    expect(floorMillicentsOf(floor({ mode: 'percent', value: 7000 }), 100)).toBe(70);
+  it('lit la limite que le serveur a calculée', () => {
+    expect(floorMillicentsOf(item({ negotiationRoom: room(70) }))).toBe(70);
   });
 
   it('ne rend rien sans limite posée', () => {
-    expect(floorMillicentsOf(null, 100)).toBeNull();
+    expect(floorMillicentsOf(item())).toBeNull();
   });
-});
 
-describe('impactBp', () => {
-  it('rend une baisse positive et une hausse négative', () => {
-    expect(impactBp(100, 80)).toBe(2000);
-    expect(impactBp(100, 110)).toBe(-1000);
+  /**
+   * Régression R23 : l'écran annonçait le MUR quand la caisse applique la PORTE.
+   *
+   * Il calculait `Math.round((canonique × effectiveFloor.value) / 10_000)` — la
+   * formule que `resolve-floor.ts` interdit nommément —, et sur le mauvais
+   * champ : `PriceFloorView.mode/value` porte le mur dur, la porte dynamique
+   * vivant dans `dynamic`. Sur un article dont la porte s'ouvre, la grille
+   * annonçait donc une limite PLUS HAUTE que la vraie, c'est-à-dire moins de
+   * marge que le commercial n'en avait — sur l'écran où il décide de signer.
+   *
+   * `negotiationRoom.floorMillicents` est le plancher **appliqué**, après
+   * `decideFloor` (fix 2026-09-09).
+   */
+  it('🔴 rend la PORTE ouverte, pas le mur dur', () => {
+    // Le mur est à 90 ; la porte, ouverte, descend à 50. L'ancien calcul rendait
+    // 90 — il ne regardait que le mur.
+    expect(floorMillicentsOf(item({ negotiationRoom: room(50) }))).toBe(50);
   });
 });
 
@@ -71,7 +73,7 @@ describe('mercurialeRow', () => {
    * client un prix que la caisse relèverait.
    */
   it('la limite RELÈVE un prix négocié trop bas, et le dit', () => {
-    const row = mercurialeRow(item({ effectiveFloor: floor({ value: 70 }) }), 60);
+    const row = mercurialeRow(item({ negotiationRoom: room(70) }), 60);
 
     expect(row.finalMillicents).toBe(70);
     expect(row.floored).toBe(true);
@@ -82,14 +84,14 @@ describe('mercurialeRow', () => {
   });
 
   it('la marge est la distance entre le prix final et la limite', () => {
-    const row = mercurialeRow(item({ effectiveFloor: floor({ value: 70 }) }), 85);
+    const row = mercurialeRow(item({ negotiationRoom: room(70) }), 85);
 
     expect(row.roomMillicents).toBe(15);
   });
 
   /** Un article que le gabarit ne tarife pas ne retombe PAS sur le catalogue. */
   it('laisse tout vide sur un article sans prix — il ne porte aucune décision', () => {
-    const row = mercurialeRow(item({ effectiveFloor: floor({}) }), null);
+    const row = mercurialeRow(item({ negotiationRoom: room(70) }), null);
 
     expect(row).toMatchObject({
       mercurialeMillicents: null,
@@ -122,7 +124,7 @@ describe('tally', () => {
   it('compte les articles tarifés, les relevés, et la moyenne des impacts', () => {
     const rows = [
       mercurialeRow(item(), 80),
-      mercurialeRow(item({ sku: 'PAI-002', effectiveFloor: floor({ value: 70 }) }), 60),
+      mercurialeRow(item({ sku: 'PAI-002', negotiationRoom: room(70) }), 60),
       mercurialeRow(item({ sku: 'PAI-003' }), null),
     ];
 
@@ -146,7 +148,7 @@ describe('mercurialeRow · la médiane du marché', () => {
     sku: 'baguette',
     name: 'Baguette',
     canonicalMillicents: 200,
-    effectiveFloor: null,
+    negotiationRoom: null,
   };
 
   it('situe le prix saisi sous, sur, ou au-dessus de la médiane', () => {

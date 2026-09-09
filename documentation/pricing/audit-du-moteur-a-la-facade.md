@@ -393,6 +393,12 @@ vendre** : c'est un trou commercial, pas seulement une divergence d'écran.
 
 ## B.9 🟠 Le front recalcule un plancher avec la formule que le domaine interdit nommément — R23
 
+> ✅ **Corrigé le 2026-09-09**, et ce constat se trompait deux fois. La formule
+> interdite n'était pas le défaut principal : l'écran lisait le **mur dur** là
+> où la caisse applique la **porte**. Et l'écart au catalogue ne réimplémente
+> pas `discountBp` mais `gapBp` — les substituer aurait effacé le cas « plus
+> cher ». Détail : [journal de remédiation](journal-de-remediation.md) §R23.
+
 **Le fait.** `apps/lfd-api/src/b2b/pricing/domain/resolve-floor.ts:67` :
 « pas par un `Math.round(canonical * bp / 10000)` qui aurait l'air identique.
 Les deux divergeraient d'un centime sur certaines valeurs ».

@@ -21,6 +21,7 @@
 | [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                 | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
 | [R20](#r20--2026-09-09) | la documentation de référence contredit le code                    | ✅ **close** — 2026-09-09                                                                |
 | [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix          | ✅ **close** — 2026-09-09                                                                |
+| [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite           | ✅ **close** — 2026-09-09                                                                |
 
 ---
 
@@ -776,3 +777,79 @@ Toutes datées.
 - Les deux cas qui énumèrent les clés de la vue publique passent **sans
   modification** : sans promotion, aucun champ barré n'apparaît. C'est la règle
   « pas de promo, pas de barré » vérifiée par un test qui ne la vise même pas.
+
+---
+
+## R23 · 2026-09-09
+
+**Constat** : [B.9](audit-du-moteur-a-la-facade.md) · **Registre** :
+[R23](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 un nombre faux sur l'écran où
+l'on décide de signer.
+
+### 1. Ce que l'audit disait, et ce qui était plus grave
+
+Il relevait une **formule interdite** : `mercuriale-row.ts` calculait
+`Math.round((canonique × floor.value) / 10_000)`, que `resolve-floor.ts:67`
+proscrit nommément — « les deux divergeraient d'un centime sur certaines
+valeurs, et l'écran promettrait alors une marge que la caisse refuserait ».
+
+En ouvrant les deux fichiers, le défaut n'est pas l'arrondi. Il est dans le
+**champ lu** : `PriceFloorView.mode/value` porte le **mur dur**, la porte
+dynamique vivant dans son champ `dynamic`. Sur un article dont la porte s'ouvre,
+la grille annonçait donc le MUR là où la caisse applique la PORTE — une limite
+plus HAUTE que la vraie, c'est-à-dire **moins de marge que le commercial n'en
+avait**. Un écart d'un centime aurait été le moindre de ses problèmes.
+
+Et le bon nombre était déjà servi : `negotiationRoom.floorMillicents`, « le
+plancher qui s'applique, ramené en centimes sur CET article », calculé par
+`floorMillicentsFor` **après** `decideFloor`. L'écran n'avait pas à calculer, il
+avait à lire.
+
+### 2. L'audit désigne la mauvaise fonction
+
+Il écrit que `impactBp` réimplémente `discountBp`, « descendu dans `@lfd/money` ».
+Non : `discountBp` borne à zéro (`Math.max(0, …)`), quand `impactBp` rend
+**−1000** sur un article devenu plus cher — et l'écran affiche cette direction
+(`'is-' + direction(row.impactBp)`). Les substituer aurait effacé le cas
+« plus cher » d'une colonne qui existe pour le montrer.
+
+La bonne est **`gapBp`** : même formule, même `null` quand la référence est
+nulle, même convention de signe. Un calque exact.
+
+### 3. Ce que personne n'avait compté
+
+`gap.ts` a été créé le 2026-09-08 parce que la même division existait en **cinq
+exemplaires**, avec trois réponses différentes au cas du canonique nul — son
+JSDoc en dresse le tableau. `impactBp` en est un **sixième**, que l'inventaire
+n'avait pas vu.
+
+Un module écrit pour unifier une formule, et dont l'inventaire est incomplet,
+laisse croire que le travail est fini. Le tableau porte désormais six lignes et
+dit qu'il en portait cinq.
+
+### 4. Ce qui a changé
+
+| Fichier                                     | Ce qui bouge                                                                                              |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `mercuriale-row.ts`                         | `floorMillicentsOf` **lit** `negotiationRoom.floorMillicents` ; `impactBp` disparaît au profit de `gapBp` |
+| `mercuriale-mix.ts`, `locate-simulation.ts` | les deux autres appelants suivent — même signature, un article au lieu d'un plancher et d'un canonique    |
+| `packages/money/src/gap.ts`                 | le tableau passe de cinq à six exemplaires, daté                                                          |
+| `__tests__/mercuriale-row.spec.ts`          | le cas de non-régression : la porte ouverte, pas le mur                                                   |
+
+Après ce lot, **aucune formule de plancher ne subsiste au front** (vérifié par
+`grep` le 2026-09-09). `effectiveFloor` y reste lu, mais pour ce qu'il est : une
+identité — sa portée, son héritage, sa péremption —, jamais une valeur.
+
+### 5. Ce qui le prouve
+
+- `mercuriale-row.spec.ts` — « 🔴 rend la PORTE ouverte, pas le mur dur » ;
+- les 96 cas de `commercial/tarification` passent, dont ceux qui décrivaient la
+  limite par son ancien champ ;
+- les 58 cas de `@lfd/money`.
+
+### 6. Ce que ce lot NE ferme pas
+
+**R2 reste entier.** La simulation rejoue toujours les paliers dans le
+navigateur ; ce lot lui retire une formule fausse, il ne lui retire pas le
+calcul. Les deux fichiers de `simulation/` touchés ici le sont parce qu'ils
+appelaient la même fonction, pas parce que leur sujet est réglé.

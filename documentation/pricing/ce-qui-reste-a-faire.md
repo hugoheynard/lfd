@@ -56,7 +56,7 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 | ~~R20~~ | ~~La doc de référence contredit le code — promis/livré, unités, index~~      | ✅        | **clos le 2026-09-09**   |
 | **R21** | **Deux** séquences de chargement ; une query injecte `PrismaService`         | 🟠        | tombe avec R26           |
 | ~~R22~~ | ~~La vitrine **publique** ne passe pas par le fabricant~~                    | ✅        | **clos le 2026-09-09**   |
-| **R23** | Le front recalcule un plancher — **sixième** occurrence du motif             | 🟠        | rejoint R2               |
+| ~~R23~~ | ~~Le front recalcule un plancher — **sixième** occurrence du motif~~         | ✅        | **clos le 2026-09-09**   |
 | **R24** | États inatteignables et colonnes mortes                                      | 🟡        | trivial                  |
 | **R25** | La trace figée ne persiste ni scellement ni éviction                         | 🟡        | deux colonnes additives  |
 | **R26** | `Pricer` n'a **aucun** appelant ; la façade unique reste à dessiner          | 🔵        | conception, `vitruve`    |
@@ -450,7 +450,22 @@ ne voit pas ne fait pas vendre.
 même façade — quatre lectures pour toute la vitrine, comme la route reconnue.
 Détail : audit B.8.
 
-### R23 🟠 Le front recalcule un plancher — la sixième occurrence
+### ~~R23~~ ✅ Le front recalculait un plancher — la sixième occurrence
+
+> **Close le 2026-09-09**, et le défaut n'était pas celui qu'on croyait. La
+> formule interdite était le symptôme ; la cause est que l'écran lisait
+> `effectiveFloor`, c'est-à-dire le **mur dur**, quand la caisse applique la
+> **porte**. Il annonçait donc au commercial MOINS de marge qu'il n'en avait.
+> Le bon nombre était déjà servi : `negotiationRoom.floorMillicents`.
+>
+> ⚠️ **Ce constat désignait `discountBp`** : c'est `gapBp`. `discountBp` borne à
+> zéro et aurait effacé le cas « plus cher », que cette colonne existe pour
+> montrer. `impactBp` était la **sixième** copie de la formule que `gap.ts`
+> unifie — son propre tableau en recensait cinq. Détail :
+> [journal de remédiation](journal-de-remediation.md) §R23.
+>
+> **R2 n'est pas fermée pour autant** : la simulation rejoue toujours les
+> paliers dans le navigateur. Le constat d'origine suit.
 
 **Le fait, vérifié le 2026-09-08.** `resolve-floor.ts:67` interdit nommément
 « un `Math.round(canonical * bp / 10000)` qui aurait l'air identique ».
@@ -589,6 +604,7 @@ plus**. Elles sont ici avec leur preuve, pour que personne ne reparte les faire.
 | **R15 de ce registre** — le prix **sous le mur dur** en projection | ✅ Clos le **2026-09-09** : `UnlockEvidence.quantity` est nullable, et deux cas rouges avant le correctif le tiennent (`loaded-pricer.spec.ts`, `floor-policy.spec.ts`). ⚠️ **Seule cette moitié est close** — la fidélité du banc reste ouverte sous R15.                         |
 | **R20 de ce registre** — la doc contredit le code                  | ✅ Clos le **2026-09-09** : six documents corrigés, phrases fausses **barrées et datées** plutôt qu'effacées. Deux items trouvés en vérifiant, absents de la liste d'origine. Restent les dates, nommées plutôt que réécrites.                                                     |
 | **R22 de ce registre** — la vitrine publique au canonique          | ✅ Clos le **2026-09-09** : les deux routes partagent `ShopCataloguePricing`, seul le `companyId` diffère. Trois e2e rouges avant, dont la parité rayon ↔ devis. La contradiction a rattrapé deux défauts dans le code écrit — un 500 sur toute la page, et une rature à l'envers. |
+| **R23 de ce registre** — le plancher recalculé au front            | ✅ Clos le **2026-09-09** : l'écran LIT `negotiationRoom.floorMillicents` au lieu de refaire le calcul, et `gapBp` remplace la sixième copie de la formule d'écart. Le défaut n'était pas l'arrondi : le front lisait le **mur dur** quand la caisse applique la **porte**.        |
 | **R5 de ce registre** — le barème de zone figé                     | ✅ Clos le **2026-09-09**, cf. §3 : colonne additive, garde dans l'agrégat, et un cas qui survit à la modification de la zone.                                                                                                                                                     |
 | **R7 et R8 de ce registre**                                        | ✅ Clos le **2026-09-09** : l'estampille du cache, et la 29ᵉ porte qui dérive la propriété d'un modèle de qui l'écrit.                                                                                                                                                             |
 
