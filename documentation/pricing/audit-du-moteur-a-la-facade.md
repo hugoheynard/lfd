@@ -439,6 +439,15 @@ du motif « un écran qui recalcule » est sous-compté : celle-ci fait **six**.
 
 ## B.11 🟡 La trace figée ne répond pas à la question qu'elle existe pour poser — R25
 
+> 🟠 **Un tiers fait le 2026-09-09.** `scope` est persisté — il ne l'avait
+> **jamais** été, le schéma de relecture l'accueillant depuis le 09-03 derrière
+> un défaut qui couvrait le fil débranché. Le scellement, lui, est à
+> **reconcevoir** : `sealedRuleIds` ne porte que le gagnant de l'étage scellé,
+> en identifiants nus, et les causes d'une règle sans effet sont cinq et non
+> trois. Et `supersedes` attend **R27** — une trace qui part au client sans
+> rétrécissement, trouvée en bâtissant celle-ci. Détail :
+> [journal de remédiation](journal-de-remediation.md) §R25.
+
 `sealedByRuleId`, `sealedRuleIds` et `steps[].supersedes` **ne sont pas
 persistés** — `packages/contracts/src/pricing.ts:523` : « Vide **aussi** sur une
 trace persistée, tant que `jsonSteps` ne l'écrit pas » ; `OrderLinePricingTrace`

@@ -15,13 +15,14 @@
 > même quand la suite lui donne tort — c'est précisément ce cas-là qui a de la
 > valeur. Une correction s'ajoute en dessous, datée.
 
-| Entrée                  | Constat                                                            | Statut                                                                                   |
-| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09)         |
-| [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                 | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
-| [R20](#r20--2026-09-09) | la documentation de référence contredit le code                    | ✅ **close** — 2026-09-09                                                                |
-| [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix          | ✅ **close** — 2026-09-09                                                                |
-| [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite           | ✅ **close** — 2026-09-09                                                                |
+| Entrée                  | Constat                                                              | Statut                                                                                   |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [R15](#r15--2026-09-09) | la projection ouvre le plancher dynamique sur une quantité fictive   | 🟠 **à moitié** — le prix faux est parti, la fidélité du banc reste (2026-09-09)         |
+| [R16](#r16--2026-09-09) | un engagement de portée famille est mesuré par SKU                   | 🔵 **analyse renversée par la contradiction** — la question est commerciale (2026-09-09) |
+| [R20](#r20--2026-09-09) | la documentation de référence contredit le code                      | ✅ **close** — 2026-09-09                                                                |
+| [R22](#r22--2026-09-09) | la vitrine publique ne passe pas par le fabricant de prix            | ✅ **close** — 2026-09-09                                                                |
+| [R23](#r23--2026-09-09) | le front recalcule un plancher avec la formule interdite             | ✅ **close** — 2026-09-09                                                                |
+| [R25](#r25--2026-09-09) | la trace figée ne répond pas à la question qu'elle existe pour poser | 🟠 **un tiers fait** — la contradiction a trouvé une fuite et deux trous (2026-09-09)    |
 
 ---
 
@@ -853,3 +854,193 @@ identité — sa portée, son héritage, sa péremption —, jamais une valeur.
 navigateur ; ce lot lui retire une formule fausse, il ne lui retire pas le
 calcul. Les deux fichiers de `simulation/` touchés ici le sont parce qu'ils
 appelaient la même fonction, pas parce que leur sujet est réglé.
+
+---
+
+## R25 · 2026-09-09
+
+**Constat** : [B.11](audit-du-moteur-a-la-facade.md) · **Registre** :
+[R25](ce-qui-reste-a-faire.md) · **Gravité** : 🟡 un trou dans la promesse
+centrale du système — « un prix qu'on peut défendre six mois plus tard ».
+
+### 1. Ce que l'audit annonçait, et ce qu'il y avait vraiment
+
+Il demandait « deux colonnes additives ». En ouvrant les fichiers, le travail se
+coupe en deux moitiés de nature **différente**, et l'une ne coûte pas de colonne
+du tout.
+
+**« Pourquoi ma promotion ne s'est pas appliquée ? » a trois réponses** —
+expirée, évincée, scellée. Sur une commande close, la trace n'en gardait
+**aucune** : dans les trois cas la règle n'apparaît nulle part.
+
+### 2. La moitié gratuite — un fil jamais branché
+
+`priceStepsSchema` accueille `scope` et `supersedes` **depuis le 2026-09-03**,
+avec leurs défauts (`null`, `[]`) pour qu'une trace ancienne reste lisible. Mais
+`jsonSteps` — le mapping qui écrit la trace — s'arrêtait à quatre champs.
+
+Conséquence : les deux champs valaient `null` et `[]` sur **toutes** les traces,
+y compris celles écrites le jour même. Le lecteur était prêt, l'écrivain n'a
+jamais été branché, et **le défaut couvrait le trou** : rien ne pouvait rougir.
+
+> 🔴 **La leçon, et elle a déjà servi deux fois aujourd'hui.** Un défaut de
+> lecture posé pour la compatibilité ascendante devient indistinguable d'un fil
+> non connecté. Ici il a tenu six jours ; sur `orderedQuantity` (R16) c'était un
+> `0` qui passait pour une mesure. Un défaut protège d'un passé — il ne doit
+> jamais rendre le présent muet.
+
+**Et une justification fausse par-dessus.** Le contrat écrivait que `scope` vaut
+`null` « sur une trace **antérieure au 2026-09-03** ». Il imputait au calendrier
+ce qui était un fil débranché — et une phrase qui accuse une date empêche de
+chercher la cause. Corrigée, datée.
+
+Coût réel : **deux lignes**, aucune migration.
+
+### 3. La moitié qui coûte — le scellement
+
+`sealedByRuleId` et `sealedRuleIds` sont des faits de **ligne**, pas d'étage. Ils
+ne peuvent pas voyager dans `pricing_steps`, qui est un **tableau** d'étages.
+
+### 4. Est-ce qu'une colonne est vraiment la bonne réponse ?
+
+Six formes pesées, et cinq écartées **pour des raisons différentes** :
+
+| Forme                                                              | Pourquoi non                                                                                                                                                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **C** — changer `pricing_steps` en objet `{ steps, seal }`         | casse la forme des lignes **déjà écrites**. C'est l'inverse d'additif : chaque trace passée deviendrait illisible, donc muette                                                       |
+| **D** — porter le scellement dans le `supersedes` de la mercuriale | conflerait deux des **trois** réponses. « Évincée dans son étage » et « rendue transparente par un scellement » sont des faits distincts, et c'est précisément ce qu'on veut séparer |
+| **F** — une étape de synthèse par règle scellée                    | une étape **est** le fait qu'une règle a produit un effet. Une règle scellée n'en produit aucun : tout lecteur qui parcourt `steps` lirait un prix qui n'a pas eu lieu               |
+| **G** — une table `order_line_pricing_seals`                       | une jointure pour un fait toujours 1:0..1, sur un instantané qui n'est pas une entité. Plus cher à lire, plus cher à relire                                                          |
+| **E** — recalculer à la lecture                                    | la doctrine du dossier, mot pour mot : « c'est un fait clos, on ne le recalcule jamais, on le relit ». Et les règles peuvent avoir disparu                                           |
+| **B** — deux colonnes `sealed_by_rule_id` + `sealed_rule_ids[]`    | 🔴 **une liste scalaire Prisma ne peut pas être nulle** — elle vaut `[]` par défaut. « On ne sait pas » deviendrait indistinguable de « rien n'a été scellé »                        |
+
+**B mérite qu'on s'y arrête**, parce qu'elle avait un argument fort : deux
+colonnes acceptent un `CHECK` (`(sealed_by IS NULL) = (ids IS NULL)`), donc un
+refus **en base**, plus haut dans la hiérarchie des garde-fous qu'un refus
+applicatif. Elle tombe sur une contrainte de l'outil, et le dépôt a déjà tranché
+exactement ce cas — pour les allergènes, `schema.prisma:2314` :
+
+> « `Json` et non `String[]`, pour une raison précise : une liste scalaire Prisma
+> ne peut pas être nulle, elle vaut `[]` par défaut — or il faut distinguer TROIS
+> états. »
+
+Ici les trois états sont les mêmes : `null` = trace antérieure (on ne sait pas),
+`{ sealedByRuleId: null, sealedRuleIds: [] }` = **rien n'a été scellé** (une
+affirmation), une valeur = ce qui a été scellé et contre qui.
+
+**Retenue : A — une colonne `pricing_seal` `Json?`.** Ce n'est pas « comme les
+autres » par mimétisme : `pricing_floor` et `pricing_commitment` sont exactement
+le même genre de fait — un instantané de décision, à trois états, écrit une fois
+et jamais relu autrement. La cohérence de forme est ici la cohérence du
+raisonnement.
+
+### 5. Ce que la migration fait, et ne fait pas
+
+- **Additive et seule** : une colonne nullable, aucun `DEFAULT`, aucune reprise
+  de données. Les lignes existantes restent `NULL`, ce qui est **la vérité** —
+  on ne sait pas ce qui a été scellé sur une commande d'avant.
+- **Réversible en un déploiement** : rien ne dépend de la colonne tant que le
+  lecteur la traite comme optionnelle.
+- **Aucun renommage, aucun resserrement.** Ce n'est pas le geste en trois
+  déploiements du §0 de `CLAUDE.md` — c'est le premier des trois, et il se
+  suffit.
+
+### 6. Ce qui le prouvera
+
+- un e2e : une promotion scellée par une mercuriale laisse, sur la ligne
+  persistée, **qui** a scellé et **qui** a été écarté — le cas exact du test
+  existant, qui aujourd'hui affirme `supersedes: []` avec un commentaire disant
+  que le trou est là ;
+- la relecture d'une ligne **sans** la colonne rend `null`, pas `[]` ;
+- `lecteur-de-migrations` avant toute promotion.
+
+### 7. Ce que la contradiction a renversé — 2026-09-09
+
+`vitruve` rend **trois BLOQUANT**. Le premier vise du code **déjà bâti et vert**,
+et les deux autres démolissent la forme du §4 avant qu'une ligne en soit écrite.
+C'est la contradiction la plus rentable de la journée.
+
+#### 7.1 🔴 Le §2 rouvrait au client ce que la route `quote` a été rétrécie pour lui cacher
+
+Vérifié : `POST /orders/quote` rend une vue **rétrécie**, et son JSDoc dit
+pourquoi — elle rendait « `steps` (l'identifiant et le **libellé commercial** de
+chaque règle, plus **les rivales qu'elle a évincées**), `sealedByRuleId`,
+`sealedRuleIds`, `floorMillicents` (le plancher, c'est-à-dire la marge) ».
+
+Mais `GET /orders/mine`, `GET /orders/:id` et `GET /companies/:id/orders`
+servent `OrderView` **sans rétrécissement**, et `OrderLineView.pricing` est la
+trace entière. Écrire `supersedes` y aurait donc envoyé au client **le nom des
+promotions qu'il n'a pas eues** — « Promo grands comptes −20 % ». Deux JSDoc
+côte à côte se seraient contredits, et le mauvais des deux aurait gagné.
+
+**Décision** : `scope` est écrit, `supersedes` ne l'est pas. Il attend le
+rétrécissement des trois routes, qui est un lot à part et **une entrée neuve au
+registre** — le trou existe déjà, ce lot ne fait que l'élargir.
+
+> Vérifié aussi, et c'est ce qui rend le rétrécissement peu coûteux : **aucun
+> front ne lit `line.pricing`** — ni la boutique, ni le back-office. La trace
+> part au client, et personne ne l'affiche.
+
+#### 7.2 🔴 `sealedRuleIds` ne répond pas à la question qu'on lui pose
+
+Deux fois, et les deux se lisent dans `resolve-price.ts` :
+
+- **seul le GAGNANT de l'étage scellé y entre.** Les autres règles applicables
+  de cet étage disparaissent sans trace — ni étape, ni `supersedes`, ni
+  `sealedRuleIds`. C'est le cas courant dès qu'un étage a plus d'une règle ;
+- **c'est une liste de `string` nus.** Tout le reste de la trace fige
+  `{ ruleId, label }`, et le JSDoc de `scope` dit pourquoi : un `ruleId` survit
+  volontairement à la suppression de sa règle, « donc parfois pas du tout ».
+  Persister des identifiants sans libellé produit une trace **muette six mois
+  plus tard** — exactement la panne que R25 prétend fermer.
+
+Une colonne posée sur cette forme coûterait une migration pour un fait illisible.
+
+#### 7.3 🔴 Les causes sont CINQ, pas trois
+
+`applicable` est calculé **après** le filtre de `specificity.ts` : une règle
+expirée, suspendue, hors audience, hors portée, ou dont le seuil de quantité
+n'est pas atteint n'entre ni dans `supersedes`, ni dans `sealedRuleIds`.
+
+« Trois réponses » était donc déjà faux au §1, et la colonne du §4 n'en ferme
+qu'une et demie. Poser `pricing_seal` maintenant, c'est s'engager à poser une
+septième colonne de trace à la prochaine question.
+
+#### 7.4 Ce que le §4 justifiait mal, tout en concluant juste
+
+« `pricing_floor` et `pricing_commitment` sont exactement le même genre de fait —
+un instantané à trois états » est **faux**. `schema.prisma` dit de
+`pricing_commitment` : « `NULL` = aucun engagement ne couvrait cette ligne » —
+une affirmation à **deux** états, pas une ignorance. Suivre cette analogie ferait
+écrire `NULL` pour « rien n'a été scellé », c'est-à-dire précisément la confusion
+contre laquelle le §4 argumentait.
+
+Le choix A tient ; sa justification écrite était fausse, et c'est elle qu'on
+relit.
+
+**Et B a été écartée sur un argument qui ne la visait pas.** « Une liste scalaire
+Prisma ne peut pas être nulle » est vrai de `String[]` — pas d'une variante
+`sealed_by_rule_id String?` + `sealed_rule_ids Json?`, qui garde le `CHECK` en
+base que le §4 reconnaissait lui-même comme plus haut dans la hiérarchie.
+
+Une **septième forme** manquait au tableau : un discriminant sur l'étape
+(`outcome: "applied" | "sealed" | "expired"`, défailli à `"applied"`), zéro
+colonne et zéro migration, qui porterait les **cinq** causes du 7.3 au lieu de
+deux. Le refus de F décrivait le choix actuel du type, pas une impossibilité.
+
+#### 7.5 Ce qui est livré, et ce qui ne l'est pas
+
+**Livré** : `scope` persisté, et les trois justifications fausses corrigées —
+celle qui imputait à une date un fil débranché, celle qui jugeait l'éviction sans
+intérêt pour une facture, et celle du schéma de relecture.
+
+**Pas livré, et c'est la contradiction qui l'a décidé** : la colonne. Sa forme
+est à reprendre — porter `{ ruleId, label }` plutôt que des identifiants nus,
+couvrir les cinq causes plutôt que deux, et peser la septième forme. Poser une
+migration sur `order_lines` pour un fait incomplet et muet aurait été le pire
+usage possible d'un geste irréversible.
+
+**Et « réversible en un déploiement » était faux** : le rollback applicatif est
+gratuit, le `DROP COLUMN` détruit les scellements écrits entre-temps sans reprise
+possible — et le §0 de `CLAUDE.md` interdit de supprimer une colonne. Une phrase
+qu'on relit sous pression ne doit pas promettre ça.

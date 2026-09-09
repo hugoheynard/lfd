@@ -203,8 +203,20 @@ describe("la trace figée sur la ligne", () => {
 
     expect(line.basePriceMillicents).toBe(millicentsFromCents(CANONICAL));
     expect(line.pricingSteps).toEqual([
-      { stage: "volume", ruleId: "vol", label: "vol", resultMillicents: 160_000 },
-      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 144_000 },
+      {
+        stage: "volume",
+        ruleId: "vol",
+        label: "vol",
+        resultMillicents: 160_000,
+        scope: { type: "global", id: null },
+      },
+      {
+        stage: "promotion",
+        ruleId: "promo",
+        label: "promo",
+        resultMillicents: 144_000,
+        scope: { type: "global", id: null },
+      },
     ]);
     expect(line.unitPriceMillicents).toBe(144_000);
   });
@@ -220,7 +232,13 @@ describe("la trace figée sur la ligne", () => {
     // plancher a imposé (150). Les deux nombres sont vrais, et leur écart est
     // exactement ce qu'on veut pouvoir montrer.
     expect(line.pricingSteps).toEqual([
-      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 100_000 },
+      {
+        stage: "promotion",
+        ruleId: "promo",
+        label: "promo",
+        resultMillicents: 100_000,
+        scope: { type: "global", id: null },
+      },
     ]);
     expect(line.unitPriceMillicents).toBe(150_000);
   });
@@ -238,7 +256,16 @@ describe("la trace figée sur la ligne", () => {
 
     const line = await lineOf(orderId);
     expect(line.pricingSteps).toEqual([
-      { stage: "promotion", ruleId: "promo", label: "promo", resultMillicents: 180_000 },
+      {
+        stage: "promotion",
+        ruleId: "promo",
+        label: "promo",
+        resultMillicents: 180_000,
+        // La PORTÉE survit elle aussi : une étape est le fait qu'une règle a agi
+        // à cette portée-là, et ce fait ne se redéduit pas d'un `ruleId` dont la
+        // règle n'existe plus.
+        scope: { type: "global", id: null },
+      },
     ]);
   });
 });
@@ -519,7 +546,13 @@ describe("le scellement par la mercuriale", () => {
     // La trace ne cite QUE l'étage qui a joué — elle décrit ce qui a fait le
     // prix, pas ce qui aurait pu le faire.
     expect(line.pricingSteps).toEqual([
-      { stage: "mercuriale", ruleId: "merc", label: "merc", resultMillicents: 180_000 },
+      {
+        stage: "mercuriale",
+        ruleId: "merc",
+        label: "merc",
+        resultMillicents: 180_000,
+        scope: { type: "global", id: null },
+      },
     ]);
   });
 

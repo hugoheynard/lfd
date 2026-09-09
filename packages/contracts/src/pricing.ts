@@ -509,10 +509,17 @@ export interface PriceStepView {
    * un `ruleId` qui survit volontairement à sa suppression (cf.
    * {@link OrderLinePricingTrace}), donc parfois pas du tout.
    *
-   * `null` sur une trace **antérieure au 2026-09-03** : la portée n'y était pas
+   * `null` sur une trace **antérieure au 2026-09-09** : la portée n'y était pas
    * consignée, et lui en inventer une réécrirait l'explication d'une facture
    * déjà payée. Même arbitrage, mot pour mot, que
    * {@link CommitmentDecisionView.retainedQuantity}.
+   *
+   * ⚠️ **Ce paragraphe a dit « antérieure au 2026-09-03 » jusqu'au 2026-09-09**,
+   * et il imputait à une date ce qui était un fil non branché : le schéma de
+   * relecture accueillait ce champ depuis le 03, `jsonSteps` ne l'écrivait
+   * pas. Il valait donc `null` sur **toutes** les traces, y compris celles
+   * écrites le jour même. Une justification qui accuse le calendrier empêche de
+   * chercher la cause (R25).
    */
   readonly scope: PriceScopePayload | null;
   /** Le prix **au sortir** de cet étage. */
@@ -520,12 +527,23 @@ export interface PriceStepView {
   /**
    * Les règles que celle-ci a **évincées** dans son étage. Vide = aucune.
    *
-   * Vide **aussi** sur une trace persistée, tant que `jsonSteps` ne l'écrit pas :
-   * l'arbitrage entre deux règles d'admin explique un tableau de bord, pas une
-   * facture. Sur le tableau de tarification — qui résout à chaque lecture — il
-   * est toujours à jour. Un lecteur ne peut donc pas distinguer « aucune » de
-   * « pas consignée » sur une commande close, et c'est sans conséquence :
-   * l'écran n'affiche rien dans les deux cas.
+   * 🔴 **Toujours vide sur une trace persistée, et pour une raison qui a
+   * changé le 2026-09-09.**
+   *
+   * L'ancienne — « l'arbitrage entre deux règles explique un tableau de bord,
+   * pas une facture » — était fausse : sur une commande close, l'éviction est
+   * l'une des réponses à « pourquoi ma promotion ne s'est pas appliquée ? », et
+   * elle y est indistinguable de l'expiration.
+   *
+   * La vraie raison est une **fuite**. Ce champ porte le LIBELLÉ COMMERCIAL des
+   * règles rivales, et `GET /orders/mine`, `GET /orders/:id` et
+   * `GET /companies/:id/orders` servent la trace au client **sans
+   * rétrécissement** — alors que `POST /orders/quote` a été rétrécie
+   * précisément pour cacher « les rivales qu'elle a évincées ». L'écrire
+   * enverrait au client le nom des promotions qu'il n'a pas eues.
+   *
+   * Il sera persisté quand ces trois routes auront leur vue client. Le domaine
+   * le calcule déjà, le schéma l'accueille déjà : il ne manque que le mur.
    */
   readonly supersedes: readonly PriceStepRivalView[];
 }
@@ -544,12 +562,16 @@ export const priceStepsSchema = z.array(
     ruleId: z.string(),
     label: z.string(),
     resultMillicents: z.number().int(),
-    // Les deux champs du 2026-09-03 sont **défaillis**, jamais requis, et c'est
-    // la seule chose à ne pas changer ici : `parseTrace` rend `null` pour la
-    // trace ENTIÈRE dès qu'une étape ne se lit pas. Un champ requis rendrait
-    // donc muettes d'un coup toutes les commandes déjà passées — sans erreur,
-    // sans bruit, juste un « pourquoi ce prix ? » sans réponse sur tout
-    // l'historique.
+    // Les deux champs sont **défaillis**, jamais requis, et c'est la seule
+    // chose à ne pas changer ici : `parseTrace` rend `null` pour la trace
+    // ENTIÈRE dès qu'une étape ne se lit pas. Un champ requis rendrait donc
+    // muettes d'un coup toutes les commandes déjà passées — sans erreur, sans
+    // bruit, juste un « pourquoi ce prix ? » sans réponse sur tout l'historique.
+    //
+    // ⚠️ Déclarés ici le 2026-09-03 et **écrits seulement le 2026-09-09** :
+    // pendant six jours le lecteur les accueillait et l'écrivain ne les envoyait
+    // pas, si bien que le défaut servait TOUTES les traces, y compris neuves.
+    // Un défaut qui couvre un fil non branché ne rougit jamais (R25).
     scope: priceScopeSchema.nullable().default(null),
     supersedes: z.array(z.object({ ruleId: z.string(), label: z.string() })).default([]),
   }),

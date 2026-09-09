@@ -242,5 +242,25 @@ function jsonSteps(steps: readonly PriceStepView[]): Prisma.InputJsonValue {
     ruleId: step.ruleId,
     label: step.label,
     resultMillicents: step.resultMillicents,
+    // 🔴 **Le champ que le lecteur attendait depuis le 2026-09-03.**
+    //
+    // `priceStepsSchema` le déclare défailli — `scope` à `null` — pour qu'une
+    // trace ancienne reste lisible. Il n'était simplement **jamais écrit** : ce
+    // mapping s'arrêtait à quatre champs, si bien que TOUTE trace persistée, y
+    // compris celle de la commande passée à l'instant, relisait `scope: null`.
+    // Un défaut posé pour lire le passé rendait le présent muet, et rien ne
+    // pouvait rougir (R25, 2026-09-09).
+    scope: step.scope === null ? null : { ...step.scope },
+    // ⚠️ **`supersedes` n'est PAS écrit, et c'est délibéré.** Il porte le
+    // LIBELLÉ COMMERCIAL des règles rivales — « Promo grands comptes −20 % ».
+    // `GET /orders/mine`, `GET /orders/:id` et `GET /companies/:id/orders`
+    // servent la trace au client **sans rétrécissement**, alors que
+    // `POST /orders/quote` a été rétrécie exactement pour ça (cf. son JSDoc :
+    // « les rivales qu'elle a évincées »). L'écrire ici enverrait au client le
+    // nom des promotions qu'il n'a pas eues.
+    //
+    // Il attend donc le rétrécissement des trois routes client — un lot à part,
+    // au registre. Rien d'autre ne le retient : le domaine le calcule, le
+    // lecteur l'accueille.
   }));
 }
