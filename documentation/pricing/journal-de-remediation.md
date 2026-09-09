@@ -1396,3 +1396,104 @@ appelant passe encore à côté est pire qu'une façade assumée partielle.
 - le cas « ne lit AUCUN engagement pour une question qui ne prouve rien » ;
 - les 14 cas de `pricer.spec.ts`, les 316 du contexte, la suite complète ;
 - les 32 portes.
+
+---
+
+## R28 · 2026-09-09 — un oracle venu du dehors
+
+**Origine** : aucun registre. Hugo a fourni un **devis établi par le logiciel
+comptable de la maison**, indépendamment de ce dépôt, avec une question simple :
+_est-ce qu'on tombe sur les mêmes montants ?_
+
+### 1. Pourquoi ce document valait plus que nos 2 500 tests
+
+Tous nos tests vérifient que le moteur fait ce que **son auteur** croit qu'il
+doit faire. Ils ne peuvent donc pas attraper une erreur que le code et son
+auteur partagent. Un document fabriqué dehors le peut — et il l'a fait dès la
+première lecture.
+
+### 2. 🔴 Ce qu'il a trouvé, que rien chez nous ne pouvait voir
+
+`MAX_LINE_QUANTITY = 10 000` refusait **quatre des quarante-quatre lignes** du
+devis — 43,6 % du montant, la plus grosse à **101 380 pièces**. Un engagement de
+saison pour un village de vacances, c'est-à-dire un document parfaitement
+ordinaire, ne passait pas notre API.
+
+Le JSDoc de la borne justifiait pourtant sa valeur ainsi : « le plus gros client
+de la maison prend quelques centaines de pièces par ligne : elle ne refusera
+jamais une commande réelle ». **Faux, et invérifiable de l'intérieur** : c'est la
+classe d'affirmation que rien dans le dépôt ne peut contredire, parce que les
+tests qui l'entourent sont écrits par quelqu'un qui connaît la borne.
+
+**Décision (Hugo)** : le devis n'est pas un panier — borne à part, aucune borne
+commerciale. `quoteQuantitySchema` est né de là. Le panier garde la sienne : il
+écrit, il encaisse, il part au fournil.
+
+⚠️ Une seule borne subsiste côté devis, et **ce n'est pas une quantité** :
+`.safe()`. `z.number().int()` accepte `1e308` — un entier au sens de
+`Number.isInteger`, un flottant au sens de l'addition. Sans elle, un total faux
+sortirait **sans qu'aucune erreur ne soit levée**.
+
+### 3. Ce que la contradiction a renversé, dans un test cette fois
+
+Le cas `order-quantity.spec.ts` affirmait « la borne vaut pour les quatre
+portes », en se justifiant ainsi : « une borne qui n'existerait qu'au devis
+laisserait entrer par la caisse ce qu'on avait interdit d'estimer ».
+
+Le raisonnement est juste et vise **l'asymétrie inverse**. Ici le devis est le
+plus large, la caisse la plus étroite : on ne peut rien commander qu'on n'ait pu
+estimer. La phrase a été gardée et datée plutôt que supprimée — sinon le
+prochain lecteur refait le raisonnement et « corrige » l'asymétrie.
+
+### 4. Les montants, et l'accord qui n'est pas ce qu'il paraît
+
+|           |     Document |             Nous |
+| --------- | -----------: | ---------------: |
+| HT        | 292 561,22 € | **292 561,22 €** |
+| TVA 5,5 % |  16 090,87 € |  **16 090,87 €** |
+| TTC       | 308 652,09 € | **308 652,09 €** |
+
+🔴 **L'accord passe par deux différences qui s'annulent :**
+
+1. le logiciel additionne les produits **exacts** et n'arrondit qu'une fois ;
+   nous arrondissons **chaque ligne** puis nous sommons. La somme des montants
+   _affichés_ sur le document fait 292 561,**21** — il ne s'additionne pas
+   lui-même ;
+2. une ligne tombe sur un demi exact (75 × 1,575 € = 118,125 €) : le document
+   rend 118,12, nous rendons 118,13.
+
+Ce centime rattrape exactement l'écart du point 1. **Sur un autre panier, ils ne
+s'annuleraient pas** — d'où des assertions ligne à ligne, jamais sur le seul
+total.
+
+**Ne pas retourner notre arrondi sur cette base.** Le nôtre s'éloigne de zéro,
+et `roundToCents` écarte explicitement l'arrondi au pair comme « indéfendable
+devant un client qui recompte ». Le 118,12 du logiciel est soit cet arrondi au
+pair, soit un artefact de flottant — 1,575 n'est pas représentable en binaire.
+Un seul point de mesure ne départage pas deux hypothèses.
+
+### 5. Deux validations gratuites
+
+- **La TVA se calcule par taux sur l'assiette agrégée**, comme chez nous. Ligne
+  à ligne, le document aurait porté 16 090,89 € — deux centimes de trop.
+- **Les PU du logiciel ont cinq décimales** (8,72038 € · 28,43602 €). C'est
+  exactement le millicentime : la conversion ne perd rien.
+
+### 6. Ce que ça ne prouve pas
+
+Le cas facile. Un seul taux, remise nulle partout, aucune promotion, aucun
+palier, aucun plancher. La colonne vertébrale du calcul est éprouvée ; les
+décisions du moteur ne le sont pas.
+
+### 7. Ce qui le prouve
+
+`apps/lfd-api/test/devis-comptable.e2e-spec.ts` — **7 cas**, par les vraies routes contre un
+vrai Postgres : la mercuriale de 44 lignes posée par
+`POST /admin/pricing/companies/:id/mercuriale`, le chiffrage par
+`POST /orders/quote`. Les deux derniers cas tiennent la décision **dans les deux
+sens** : le devis chiffre 101 380 pièces, la commande les refuse toujours.
+
+L'oracle, anonymisé, vit dans `apps/lfd-api/test/devis-comptable-fixture.ts` : client,
+contact, SIRET, référence de l'affaire, coordonnées bancaires et libellés
+d'articles retirés. Restent les quantités et les prix — les réduire aurait
+détruit la preuve, l'arrondi par ligne ne se voyant qu'à ces volumes.

@@ -50,18 +50,58 @@ describe("la borne de quantité", () => {
   });
 
   /**
-   * Les quatre portes partagent UNE définition. Une borne qui n'existerait qu'à
-   * la caisse laisserait chiffrer un panier qu'on refuserait ensuite ; une borne
-   * qui n'existerait qu'au devis laisserait entrer par la caisse ce qu'on avait
-   * interdit d'estimer.
+   * Les portes qui ÉCRIVENT partagent une définition — la commande et le panier
+   * de boutique. Une borne qui n'existerait qu'à la caisse laisserait chiffrer
+   * un panier qu'on refuserait ensuite.
+   *
+   * ⚠️ **Ce cas incluait le devis, et affirmait « les quatre portes » jusqu'au
+   * 2026-09-09.** Sa justification — « une borne qui n'existerait qu'au devis
+   * laisserait entrer par la caisse ce qu'on avait interdit d'estimer » — vise
+   * l'asymétrie **inverse** de celle qu'on a posée : ici le devis est le plus
+   * large, la caisse la plus étroite, et on ne peut donc rien commander qu'on
+   * n'ait pu estimer. C'est le sens qui compte, pas la symétrie.
    */
-  it("vaut pour la commande, le devis ET la boutique", () => {
+  it("vaut pour la commande ET la boutique — celles qui écrivent", () => {
     const trop = ligne(MAX_LINE_QUANTITY + 1);
     expect(shopQuoteLineSchema.safeParse(trop).success).toBe(false);
-    expect(orderQuotePayloadSchema.safeParse({ companyId: null, lines: [trop] }).success).toBe(
-      false,
-    );
     expect(placeOrderPayloadSchema.safeParse({ ...PANIER, lines: [trop] }).success).toBe(false);
+  });
+});
+
+/**
+ * **Le devis n'est pas un panier**, et c'est un document extérieur qui l'a
+ * établi : un devis de saison réel portait 101 380 pièces sur une ligne, et
+ * quatre de ses quarante-quatre lignes — 43,6 % du montant — passaient la borne
+ * (`test/devis-comptable-fixture.ts` dans `lfd-api`, relevé le 2026-09-09).
+ *
+ * Un devis n'écrit rien, n'encaisse rien et ne part pas au fournil. Ce que la
+ * borne protège n'existe pas de ce côté.
+ */
+describe("la quantité du DEVIS, sans borne commerciale", () => {
+  const devis = (quantity: number) =>
+    orderQuotePayloadSchema.safeParse({ companyId: null, lines: [ligne(quantity)] }).success;
+
+  it("chiffre une ligne que la commande refuse", () => {
+    expect(devis(MAX_LINE_QUANTITY + 1)).toBe(true);
+    expect(devis(101_380)).toBe(true);
+  });
+
+  it("refuse toujours zéro, le négatif et le non-entier", () => {
+    expect(devis(0)).toBe(false);
+    expect(devis(-3)).toBe(false);
+    expect(devis(12.5)).toBe(false);
+  });
+
+  /**
+   * 🔴 La seule borne qui reste, et ce n'est pas une borne de quantité : au-delà
+   * du safe integer, `z.number().int()` accepte encore `1e308` — un entier au
+   * sens de `Number.isInteger`, un flottant au sens de l'addition. Sans
+   * `.safe()`, un total faux sortirait **sans qu'aucune erreur ne soit levée**.
+   */
+  it("refuse ce qui n'est plus un entier qu'on peut additionner", () => {
+    expect(devis(Number.MAX_SAFE_INTEGER)).toBe(true);
+    expect(devis(Number.MAX_SAFE_INTEGER + 2)).toBe(false);
+    expect(devis(1e308)).toBe(false);
   });
 });
 

@@ -80,14 +80,21 @@ export type FulfillmentMethod = z.infer<typeof fulfillmentMethodSchema>;
  * un zéro de trop sur un écran tactile — et personne ne le voyait avant le
  * fournil.
  *
- * `10 000` est **large exprès**. Le plus gros client de la maison prend
- * quelques centaines de pièces par ligne : la borne ne refusera jamais une
- * commande réelle. Elle n'est pas là pour rationner, elle est là pour qu'une
- * quantité absurde soit refusée à la frontière plutôt que constatée au four.
+ * `10 000` borne ce qu'un **panier** peut demander : au-delà, une quantité
+ * absurde est refusée à la frontière plutôt que constatée au four.
  *
- * Bornée **au contrat**, donc sur les quatre portes à la fois — commande
- * client, commande staff, devis, panier de boutique. La poser dans un handler
- * n'en aurait protégé qu'une.
+ * ⚠️ **Ce paragraphe a justifié la borne par « le plus gros client de la maison
+ * prend quelques centaines de pièces par ligne : elle ne refusera jamais une
+ * commande réelle ». C'est faux, et un document extérieur l'a montré le
+ * 2026-09-09** : un devis de saison réel porte 101 380 baguettes sur une seule
+ * ligne, et quatre de ses quarante-quatre lignes — 43,6 % du montant — passent
+ * la borne. Aucun de nos tests ne pouvait le voir : ils sont tous écrits par
+ * quelqu'un qui connaissait la borne.
+ *
+ * Bornée **au contrat**, donc sur les trois portes qui écrivent ou encaissent —
+ * commande client, commande staff, panier de boutique. Le **devis** en est
+ * sorti le même jour : il n'écrit rien, et un engagement de saison n'est pas un
+ * panier (cf. {@link quoteQuantitySchema}).
  */
 export const MAX_LINE_QUANTITY = 10_000;
 
@@ -113,6 +120,35 @@ export const orderLineInputSchema = z.object({
   quantity: orderQuantitySchema,
 });
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
+
+/**
+ * **La quantité d'un DEVIS — sans borne commerciale.**
+ *
+ * Un devis n'est pas un panier : il n'écrit rien, n'encaisse rien, ne part pas
+ * au fournil. Il chiffre un engagement, et un engagement de saison se compte en
+ * dizaines de milliers de pièces. {@link MAX_LINE_QUANTITY} refusait un
+ * document parfaitement ordinaire — c'est le constat qui a séparé les deux
+ * portes le 2026-09-09.
+ *
+ * 🔴 **`.safe()` n'est PAS une borne de quantité**, et il ne faut pas le lire
+ * comme le retour du plafond par la fenêtre. C'est la limite de ce qu'un entier
+ * *est* ici : `z.number().int()` accepte `1e308`, qui est un entier au sens de
+ * `Number.isInteger` et un flottant au sens de l'addition. Sans `.safe()`, un
+ * total faux sortirait **sans qu'aucune erreur ne soit levée** — le pire des
+ * deux mondes, puisque c'est un chiffre plausible.
+ *
+ * Le nombre de LIGNES reste, lui, à {@link MAX_ORDER_LINES}. Une mercuriale en
+ * accepte trois cents, donc la question se posera ; elle ne s'est pas encore
+ * posée, et l'ouvrir sans cas réel serait deviner.
+ */
+export const quoteQuantitySchema = z.number().int().positive("quantité ≥ 1").safe();
+
+/** Une ligne de devis : un SKU, et une quantité que seul l'entier borne. */
+export const quoteLineInputSchema = z.object({
+  sku: z.string().trim().min(1, "sku requis"),
+  quantity: quoteQuantitySchema,
+});
+export type QuoteLineInput = z.infer<typeof quoteLineInputSchema>;
 
 /**
  * **Ce que dit un panier**, indépendamment de qui l'envoie : l'acheminement, la
@@ -774,7 +810,11 @@ export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
 export const orderQuotePayloadSchema = z.object({
   /** `null` pour une commande sans entreprise : seules les règles ouvertes à tous jouent. */
   companyId: z.string().min(1).nullable(),
-  lines: z.array(orderLineInputSchema).min(1).max(MAX_ORDER_LINES),
+  /**
+   * Les lignes du devis, **sans borne de quantité** : un engagement de saison
+   * n'est pas un panier (cf. {@link quoteQuantitySchema}).
+   */
+  lines: z.array(quoteLineInputSchema).min(1).max(MAX_ORDER_LINES),
 });
 export type OrderQuotePayload = z.infer<typeof orderQuotePayloadSchema>;
 
