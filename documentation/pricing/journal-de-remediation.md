@@ -1722,3 +1722,69 @@ méthode.
 ⚠️ Corollaire déjà rencontré ici : un attribut statique inconnu sur un composant
 (`tone=` sur `fold-callout`, qui prend `variant`) est du HTML valide. Ni `tsc` ni
 l'AOT ne le voient. Un site de l'app est dans ce cas, noté à part.
+
+---
+
+## R25 · 2026-09-09 — lot 4 : ce qui n'a jamais atteint le moteur
+
+**R25 est close.** Le lot 4 nomme les décisions qui n'ont laissé **aucune trace**
+sur la ligne : une règle dont l'audience ou la portée ne visait pas cette commande
+est écartée **au chargement**, donc elle n'est ni dans les étages, ni dans les
+écartées. Seule une relecture datée peut la nommer.
+
+### 1. Le tableau daté est réutilisé, pas réécrit
+
+`PricingBoardReader.read(at)` sait déjà dire « quelles décisions étaient en
+vigueur ce jour-là » (R17), et son `companyId: null` rend **tout**, tarifs
+négociés d'autres comptes compris — exactement ce qu'il faut ici.
+
+Écrire une seconde réponse à cette question aurait fait ce que ce dossier redoute
+depuis le début : deux implémentations d'une même règle, dont celle qu'on regarde
+le moins finit par diverger. C'est l'argument qui a fait exporter
+`compareSpecificity`, et il vaut ici.
+
+⚠️ **Le coût est celui d'un tableau entier pour une question d'une ligne.** C'est
+assumé et écrit : le geste est un clic de staff, et c'est la lecture que l'écran
+de tarification fait déjà.
+
+### 2. 🔴 La seule donnée qu'une reprise détruit
+
+`PricingRule.resume()` remet `pausedAt` à `null` : l'intervalle de suspension
+disparaît. Une promotion suspendue le 12 et reprise le 13 se relirait « en vigueur
+le 12 » — sur l'écran du litige, pas une réponse manquante mais une réponse
+**fausse**.
+
+`suspendedAt()` la lit donc au **journal**, qui est append-only : le dernier acte
+`paused` / `resumed` avant l'instant décide. C'est ce que le JSDoc de
+`isSuspended` annonçait déjà — « cet intervalle vit dans le journal, qui est
+l'endroit fait pour ça ».
+
+### 3. Ce que l'écran refuse d'affirmer, encore
+
+| Cas                              | Ce que l'écran dit                                    |
+| -------------------------------- | ----------------------------------------------------- |
+| règle de **segment**             | rien — l'appartenance n'est pas figée sur la commande |
+| règle ouverte à tous, sans effet | « aucune raison trouvée — à regarder »                |
+| la relecture **échoue**          | « impossible de relire » — jamais une liste vide      |
+
+La dernière ligne est la plus importante : retomber sur `[]` en cas de panne
+dirait « rien d'autre n'était en vigueur ». C'est le même défaut que le `[]` de
+la colonne, déplacé dans le navigateur.
+
+Et le bloc porte la mention **reconstruit**, plus le rappel que les libellés sont
+ceux d'aujourd'hui — une règle se renomme.
+
+### 4. Le module de jointure, et pourquoi il existe
+
+Les deux importations naturelles sont interdites, chacune pour une raison écrite :
+
+- `OrdersModule` **n'importe pas** `PricingAdminModule` — celui-ci porte les
+  dépôts d'**écriture** de la tarification, et le module qui encaisse n'a aucune
+  raison de les traîner. C'est le motif de `PricerModule`, dit dans son JSDoc ;
+- `pricing` **n'importe pas** `orders` — la dépendance a été retirée le
+  2026-09-09, et la rétablir pour un écran de lecture serait la reprendre par
+  l'autre bout.
+
+D'où `OrderPricingModule` : il ne fournit aucun adaptateur, il branche un handler
+sur deux modules qui s'ignorent. `PricingAdminModule` n'en exporte que **deux
+lectures**.
