@@ -1,3 +1,4 @@
+import { inForceFor } from "../specificity.js";
 import { scopesOf, type PricingScopes } from "../pricing-scopes.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
 
@@ -51,6 +52,28 @@ export abstract class PriceRuleReader {
    */
   async candidatesFor(context: PricingContext): Promise<PriceRule[]> {
     return this.inScopes(scopesOf(context));
+  }
+
+  /**
+   * **Les mêmes règles, à un instant PASSÉ** — la relecture d'un prix d'alors.
+   *
+   * Deux différences avec {@link inScopes}, et chacune ferme un défaut :
+   *
+   * - elle lit les **rangées**, à condition qu'elles l'aient été après `at`.
+   *   Sans ça, ranger une règle la faisait disparaître du passé, alors que
+   *   quatre affirmations du dépôt promettaient de la retrouver (R17) ;
+   * - elle ne passe **pas par le cache**. Celui-ci retient des tables entières,
+   *   pour tous les clients, sous une clé qui ne porte que le nom de la table :
+   *   une lecture datée qui s'y rangerait servirait des lignes rangées **au
+   *   chemin qui facture**.
+   *
+   * Concrète, et servie par {@link listAll} : c'est ce qui garantit que la
+   * lecture datée n'a qu'une seule clause dans tout le dépôt. Elle est
+   * **non cachée par construction**, pas par discipline — on ne peut pas
+   * l'oublier ici, il n'y a rien à oublier.
+   */
+  async inScopesAt(scopes: PricingScopes, at: Date): Promise<PriceRule[]> {
+    return inForceFor(await this.listAll(at), scopes);
   }
 
   /**

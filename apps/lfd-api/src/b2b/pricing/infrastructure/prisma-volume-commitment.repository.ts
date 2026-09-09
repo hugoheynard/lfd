@@ -19,6 +19,34 @@ export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository
     super();
   }
 
+  /**
+   * **Les engagements RANGÉS qui recouvrent cette fenêtre**, par identifiant.
+   *
+   * La contrainte d'exclusion est **partielle** (`WHERE archived_at IS NULL`) :
+   * elle ne protège que du recouvrement avec un engagement en cours. Poser
+   * par-dessus une période rangée reste possible en base — et c'est ce qu'il
+   * faut refuser quand cette période a **facturé**, sans quoi la relecture datée
+   * y trouverait deux décisions concurrentes.
+   *
+   * ⚠️ La clé est celle du tuple d'exclusion de SA table : société et portée. La recopier de
+   * travers rendrait un ensemble vide rassurant et faux.
+   */
+  async archivedOverlapping(commitment: VolumeCommitmentAggregate): Promise<readonly string[]> {
+    const state = commitment.toPersistence();
+    const rows = await this.prisma.volumeCommitment.findMany({
+      where: {
+        archivedAt: { not: null },
+        companyId: state.companyId,
+        scopeType: state.scope.type,
+        scopeId: state.scope.id,
+        validFrom: { lt: state.validTo },
+        validTo: { gt: state.validFrom },
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   async sign(commitment: VolumeCommitmentAggregate): Promise<void> {
     const state = commitment.toPersistence();
     try {

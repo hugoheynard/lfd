@@ -149,6 +149,10 @@ function seedFloor(scopeType: string, scopeId: string | null, cents: number) {
       mode: "amount",
       value: millicentsFromCents(cents),
       createdBy: "e2e",
+      // Ouverte depuis longtemps : ces cas éprouvent le plancher, pas sa
+      // datation — et une fenêtre qui commencerait « maintenant » les rendrait
+      // dépendants de l'ordre d'exécution.
+      validFrom: new Date(0),
     },
   });
 }

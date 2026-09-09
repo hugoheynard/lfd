@@ -119,6 +119,9 @@ function hardFloor(bp: number): ScopedPriceFloor {
     id: "floor_global",
     scope: { type: "global", id: null },
     policy: { hard: { mode: "percent", bp }, dynamic: null },
+    // Fenêtre ouverte : ces cas éprouvent la PORTÉE et la porte, pas la date.
+    validFrom: new Date(0),
+    validTo: null,
   };
 }
 
@@ -247,6 +250,8 @@ describe("priceLine — la recette, sans base ni doublé", () => {
           unlock: { minQuantity: null, minVolumeRatioBp: 12_500 },
         },
       },
+      validFrom: new Date(0),
+      validTo: null,
     };
     const materials = materialsOf({
       rules: [promotion({ alteration: { direction: "decrease", mode: "percent", bp: 5_000 } })],
@@ -274,6 +279,8 @@ describe("priceLine — la recette, sans base ni doublé", () => {
           unlock: { minQuantity: null, minVolumeRatioBp: 12_500 },
         },
       },
+      validFrom: new Date(0),
+      validTo: null,
     };
     const materials = materialsOf({
       rules: [promotion({ alteration: { direction: "decrease", mode: "percent", bp: 5_000 } })],

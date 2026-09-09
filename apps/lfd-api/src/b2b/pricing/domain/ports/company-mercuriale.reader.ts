@@ -33,6 +33,27 @@ export abstract class CompanyMercurialeReader {
   abstract liveFor(companyId: string | null, at: Date): Promise<CompanyMercuriale | null>;
 
   /**
+   * **La mercuriale de ce client à un instant PASSÉ** — la relecture.
+   *
+   * Identique à {@link liveFor} sur la fenêtre, et différente sur une seule
+   * chose : elle rend aussi les mercuriales **closes**, à condition qu'elles
+   * l'aient été après `at`. Sans ça, clore faisait disparaître du passé un tarif
+   * qui avait bel et bien facturé — le défaut R17.
+   *
+   * 🔴 **Elle DOIT départager**, là où `liveFor` n'en a pas besoin. Le présent
+   * est protégé par la contrainte d'exclusion, qui est partielle
+   * (`WHERE archived_at IS NULL`) : une seule mercuriale non close peut couvrir
+   * un instant. Le passé, lui, ne l'est pas — une close et une posée
+   * rétroactivement peuvent couvrir la même date. Un `findFirst` sans ordre
+   * rendrait alors l'une des deux, et laquelle n'est pas défini : la réponse à
+   * « que payait-il le 3 mars ? » serait un tirage.
+   *
+   * L'ordre est donc explicite, et il dit une règle : **une mercuriale encore
+   * ouverte l'emporte sur une close**, puis la plus récemment posée l'emporte.
+   */
+  abstract liveAsOf(companyId: string | null, at: Date): Promise<CompanyMercuriale | null>;
+
+  /**
    * **Ce qu'on a décidé chez ce client** — de la plus récemment ouverte à la
    * plus ancienne, closes exclues.
    *

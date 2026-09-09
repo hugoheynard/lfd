@@ -78,6 +78,8 @@ function loadedFloor(id: string, scope: PriceScope, bp: number): LoadedFloor {
     scopeId: scope.id,
     mode: "percent",
     value: bp,
+    validFrom: new Date(0),
+    validTo: null,
     dynamicMode: null,
     dynamicValue: null,
     unlockMinQuantity: null,

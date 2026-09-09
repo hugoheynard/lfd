@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { DomainError, TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { epochOf, readsArchived, type PriceEpoch } from "../domain/price-epoch.js";
 import { DuplicateArticleError } from "../domain/pricing-errors.js";
-import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import { atCanonicalPrice, type CatalogArticle } from "../../catalog/domain/catalogue-article.js";
+import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { PriceLens } from "../domain/price-lens.js";
 import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
@@ -76,6 +78,7 @@ export class Pricer {
   constructor(
     private readonly materials: PricingMaterialsLoader,
     private readonly clock: Clock,
+    private readonly history: CanonicalPriceHistoryReader,
   ) {}
 
   async load(request: LotRequest): Promise<PricedLot> {
@@ -93,20 +96,110 @@ export class Pricer {
     // L'instant est résolu ICI, une fois, et le même pour tous les articles :
     // deux résolutions à quelques millisecondes d'écart pourraient sinon tomber
     // de part et d'autre du basculement d'une promotion.
-    const at = request.at ?? this.clock.now();
-    const items = request.articles.map(({ article, quantity }) => ({ item: article, quantity }));
+    const now = this.clock.now();
+    const at = request.at ?? now;
+    // 🔴 **L'époque se décide ICI, et nulle part ailleurs.** C'est le seul
+    // endroit du chemin qui tient à la fois l'instant demandé et l'horloge : le
+    // chargeur ne l'a pas, les lecteurs non plus. Leur faire descendre le
+    // `Clock` pour qu'ils recalculent chacun la même comparaison, ce serait cinq
+    // encodages d'une seule décision — l'éparpillement par lequel R15 s'est
+    // glissé. Cf. `price-epoch.ts`.
+    const epoch = epochOf(at, now);
+    const items = await this.sealedAt(request.articles, at, epoch);
     const pricer = await this.materials.pricerFor(
       items,
       { companyId: request.companyId },
       at,
       request.lens ?? "measured",
+      epoch,
     );
     if (pricer === null) {
       throw new UnresolvedArticleError(items[0]?.item.sku ?? "");
     }
     return new PricedLot(
       pricer,
-      request.articles.map(({ article }) => article),
+      items.map(({ item }) => item),
+    );
+  }
+
+  /**
+   * **Les articles scellés au tarif de l'INSTANT demandé.**
+   *
+   * Au présent, rien à faire : l'appelant a lu son catalogue, et son sceau porte
+   * le prix du jour — qui est le bon.
+   *
+   * Sur une **relecture**, non. Le sceau porte encore le prix d'aujourd'hui,
+   * alors que toutes les décisions viennent d'être lues à leur date : le lot
+   * combinerait les règles d'alors avec le tarif d'entrée du jour. C'est la
+   * dernière entrée d'une reconstitution datée qui restait fausse, et la faute
+   * ne se voit pas — elle rend un prix **plausible**.
+   *
+   * 🔴 **Un article sans trace à cette date est REFUSÉ**, jamais scellé au prix
+   * du jour. C'est la doctrine que porte déjà `CanonicalPriceHistoryReader` :
+   * « rendre le prix d'aujourd'hui à sa place serait exactement le mensonge que
+   * cet historique existe pour supprimer ». Le refus nomme l'article et le
+   * premier instant que l'histoire couvre — sans quoi on ne saurait pas si le
+   * produit n'existait pas encore ou si l'historique ne remonte pas si loin.
+   */
+  private async sealedAt(
+    articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[],
+    at: Date,
+    epoch: PriceEpoch,
+  ): Promise<{ readonly item: CatalogArticle; readonly quantity: number }[]> {
+    if (!readsArchived(epoch)) {
+      return articles.map(({ article, quantity }) => ({ item: article, quantity }));
+    }
+    const [pricing, startsAt] = await Promise.all([
+      this.history.pricingAt(at),
+      this.history.startsAt(),
+    ]);
+    return articles.map(({ article, quantity }) => {
+      const past = pricing.get(article.sku);
+      if (past === undefined) {
+        throw new NoCanonicalPriceAtError(article.sku, at, startsAt);
+      }
+      return {
+        item: atCanonicalPrice(
+          {
+            sku: article.sku,
+            name: article.name,
+            category: article.category,
+            unitPriceMillicents: article.canonicalMillicents,
+          },
+          past.unitPriceMillicents,
+        ).article,
+        quantity,
+      };
+    });
+  }
+}
+
+/**
+ * **L'historique ne connaît pas le tarif de cet article à cette date.**
+ *
+ * Un `DomainError` — 400 — et non une erreur technique : la demande est
+ * recevable, c'est la question qui ne peut pas être honorée. Rendre le prix
+ * d'aujourd'hui à la place aurait produit un chiffre plausible mêlant les
+ * décisions d'alors au tarif du jour.
+ *
+ * Le message distingue les deux causes, parce qu'elles n'appellent pas le même
+ * geste : un produit qui n'existait pas encore, ou une histoire qui ne remonte
+ * pas si loin.
+ */
+export class NoCanonicalPriceAtError extends DomainError {
+  constructor(
+    readonly sku: string,
+    readonly at: Date,
+    readonly historyStartsAt: Date | null,
+  ) {
+    super(
+      "pricing.canonical.unknown_at",
+      `Le tarif de « ${sku} » au ${at.toISOString().slice(0, 10)} est inconnu : ` +
+        (historyStartsAt === null || historyStartsAt.getTime() > at.getTime()
+          ? `l'historique des tarifs ne commence que le ${
+              historyStartsAt === null ? "…" : historyStartsAt.toISOString().slice(0, 10)
+            }.`
+          : `cet article n'était pas encore au catalogue.`),
     );
   }
 }

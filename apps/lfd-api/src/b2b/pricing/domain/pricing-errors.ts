@@ -760,6 +760,59 @@ export class RunningMercurialeError extends BusinessError {
   }
 }
 
+/**
+ * **Cette période a déjà FACTURÉ, sous une mercuriale close.**
+ *
+ * Un **409**, comme {@link RunningMercurialeError}, et pour une raison plus
+ * lourde : la mercuriale qui couvrait ces dates n'est plus en cours, mais des
+ * factures la citent. Poser par-dessus donnerait deux tarifs à la même date —
+ * celui qui a été payé, figé sur la commande, et celui qu'une relecture rendrait.
+ *
+ * 🔴 **Le refus vise « a facturé », pas « est passé ».** Une mercuriale close
+ * sans qu'aucune commande ne l'ait citée ne bloque rien : la reposer sur sa
+ * période est le geste ordinaire « je me suis trompé, je recommence », et le
+ * refuser aurait supprimé un usage réel pour protéger un cas qui ne se produit
+ * pas. C'est le port `PricedDecisionsReader` qui fait cette différence, et c'est
+ * toute sa raison d'être.
+ *
+ * La sortie n'est pas de clore quoi que ce soit — c'est déjà fait. Elle est de
+ * **poser après**, ou d'assumer une correction qui passe par ailleurs. Le
+ * message le dit, parce qu'un refus qui ne nomme pas la sortie fait rouvrir le
+ * même ticket trois fois.
+ */
+/**
+ * Ce qu'on tentait de poser, **dit avec le mot du métier** et accordé.
+ *
+ * Une table plutôt que des ternaires dans le message : le genre grammatical
+ * n'est pas une règle qu'on recalcule, et un message lu sous pression par du
+ * personnel qui n'a pas le code sous les yeux mérite d'être lisible dans le
+ * fichier aussi.
+ */
+const SEALED_SUBJECTS = {
+  mercuriale: { rangee: "une mercuriale rangée", posez: "la nouvelle mercuriale" },
+  règle: { rangee: "une règle rangée", posez: "la nouvelle règle" },
+  barème: { rangee: "un barème rangé", posez: "le nouveau barème" },
+  engagement: { rangee: "un engagement rangé", posez: "le nouvel engagement" },
+} as const;
+
+export type SealedSubject = keyof typeof SEALED_SUBJECTS;
+
+export class PricedPeriodIsSealedError extends BusinessError {
+  constructor(
+    readonly subject: SealedSubject,
+    readonly validFrom: Date,
+  ) {
+    const words = SEALED_SUBJECTS[subject];
+    super(
+      "pricing.priced_period_sealed",
+      `Cette période a déjà été facturée sous ${words.rangee} depuis le ` +
+        `${validFrom.toISOString().slice(0, 10)}. On ne repose pas par-dessus : ` +
+        `une facture citerait un tarif, la relecture en rendrait un autre. ` +
+        `Posez ${words.posez} à partir d'aujourd'hui.`,
+    );
+  }
+}
+
 /** Aucune mercuriale en cours ne porte ce libellé et cette fenêtre chez ce client. */
 export class PosedMercurialeNotFoundError extends ResourceNotFoundError {
   constructor(readonly label: string) {

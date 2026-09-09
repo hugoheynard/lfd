@@ -116,7 +116,21 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
         where: unarchivedAt(at),
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
-      this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
+      // 🔴 **La fenêtre, en plus du rangement.** Depuis que la limite est
+      // versionnée (R17), une portée porte N lignes — une par période — et le
+      // tableau n'en montre qu'une : celle qui ARBITRE à l'instant lu. Sans ce
+      // filtre, `find` sur la portée rendait la PREMIÈRE ligne venue, donc
+      // l'écran affichait une limite périmée juste après une re-pose, et le
+      // signal de dérive restait allumé sur une limite qu'on venait de revoir.
+      this.prisma.priceFloor.findMany({
+        where: {
+          AND: [
+            unarchivedAt(at),
+            { validFrom: { lte: at } },
+            { OR: [{ validTo: null }, { validTo: { gt: at } }] },
+          ],
+        },
+      }),
       this.ladders.listAll(at),
       this.history.pricingAt(at),
       this.history.startsAt(),

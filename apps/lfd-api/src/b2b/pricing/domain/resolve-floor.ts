@@ -1,6 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 import { AmbiguousPriceFloorsError } from "./pricing-errors.js";
-import { matchesScope, SCOPE_RANK } from "./specificity.js";
+import { isInForce, matchesScope, SCOPE_RANK } from "./specificity.js";
 import type { PriceFloor, PricingContext, ScopedPriceFloor } from "./price-rule.js";
 
 /**
@@ -38,7 +38,14 @@ export function resolveScopedFloor(
   floors: readonly ScopedPriceFloor[],
   context: PricingContext,
 ): ScopedPriceFloor | null {
-  const [first, ...rest] = floors.filter((candidate) => matchesScope(candidate.scope, context));
+  // 🔴 **La fenêtre d'abord, la portée ensuite.** Un plancher n'en avait aucune
+  // jusqu'au 2026-09-09 : il était la seule décision tarifaire que ce filtre ne
+  // touchait pas, et une lecture datée lui appliquait donc les valeurs
+  // d'aujourd'hui. Un plancher RELÈVE un prix — le mode de défaillance était un
+  // prix historique gonflé, et il ne se voyait pas.
+  const [first, ...rest] = floors.filter(
+    (candidate) => isInForce(candidate, context.at) && matchesScope(candidate.scope, context),
+  );
   if (first === undefined) {
     return null;
   }

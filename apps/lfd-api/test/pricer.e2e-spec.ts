@@ -36,7 +36,7 @@ import { DuplicateArticleError } from "../src/b2b/pricing/domain/pricing-errors.
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const stubAdminVerifier = {
@@ -452,5 +452,81 @@ describe("la trace", () => {
     expect(priced.steps.map((step) => step.ruleId)).toEqual(["ladder_pricer", "rule_pricer_promo"]);
     // Composition, pas addition : −10 % puis −15 % font −23,5 %.
     expect(priced.finalMillicents).toBe(Math.round(priced.canonicalMillicents * 0.9 * 0.85));
+  });
+});
+
+/** L'identifiant de la mercuriale du dossier — c'est lui qui la désigne pour la clore. */
+async function mercurialeIdOf(companyId: string): Promise<string> {
+  const view = jsonBody<{ mercuriales: readonly { id: string }[] }>(
+    await staff().get(`/admin/pricing/companies/${companyId}`).expect(200),
+  );
+  const id = view.mercuriales[0]?.id;
+  if (id === undefined) {
+    throw new Error("Aucune mercuriale posée sur ce dossier.");
+  }
+  return id;
+}
+
+/**
+ * **R17 — ce qu'un tarif RANGÉ répond quand on le relit à sa date.**
+ *
+ * Le seul chemin où ça se prouve est la base : c'est une clause SQL qui décide
+ * si une mercuriale close reparaît, et c'est elle qu'on éprouve. Un doublé
+ * dirait ce qu'on lui a appris à dire.
+ *
+ * ## Ce qui était faux avant le 2026-09-09
+ *
+ * Clore posait `archived_at` et **rien d'autre**. Tous les lecteurs du chargeur
+ * filtrent `archived_at IS NULL` : le tarif disparaissait donc du passé, alors
+ * que quatre affirmations du dépôt promettaient qu'« une lecture datée d'avant
+ * la clôture la retrouve ». La réponse à « que payait-il le 3 mars ? » était le
+ * tarif catalogue — un chiffre **plausible**, et faux.
+ *
+ * Deux gestes le referment, et il faut les deux :
+ *
+ * - clore **borne** la fenêtre, donc le tarif porte enfin sa vraie fin ;
+ * - la relecture datée lit les rangées (`unarchivedAt(at)`), hors cache.
+ */
+describe("🔴 relire un tarif RANGÉ à sa date", () => {
+  it("retrouve la mercuriale close, au prix qu'elle scellait", async () => {
+    const { companyId } = await customerOf("auth0|pricer_r17");
+    // Une fin LOINTAINE, et c'est le point : c'est la CLÔTURE qui doit fermer,
+    // pas la borne posée d'avance — sans quoi le cas éprouverait l'expiration,
+    // qui marchait déjà. (Une mercuriale sans terme est refusée : un tarif
+    // négocié sans fin est un tarif que personne ne rouvre.)
+    await poseMercuriale(companyId, 150, { from: daysAgo(30), to: daysAgo(-365) });
+    const posedId = await mercurialeIdOf(companyId);
+
+    const pendant = new Date(Date.parse(daysAgo(10)));
+    await staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/close`)
+      .send({ id: posedId, reason: "fin de saison" })
+      .expect(200);
+
+    // Aujourd'hui : close, donc le tarif catalogue.
+    const aujourdhui = await lotOf([{ sku: SKU, quantity: 1 }], companyId);
+    // À une date où elle courait : son prix, bien qu'elle soit rangée depuis.
+    const alors = await lotOf([{ sku: SKU, quantity: 1 }], companyId, pendant);
+
+    expect(alors.price(SKU, 1).finalMillicents).toBe(millicentsFromCents(150));
+    expect(aujourdhui.price(SKU, 1).finalMillicents).not.toBe(millicentsFromCents(150));
+  });
+
+  /**
+   * L'autre moitié du bornage : clore ne **ressuscite** pas une décision dont la
+   * fenêtre était déjà finie, et ne la fait pas non plus reparaître après sa fin.
+   */
+  it("ne rend rien à une date POSTÉRIEURE à la clôture", async () => {
+    const { companyId } = await customerOf("auth0|pricer_r17_apres");
+    await poseMercuriale(companyId, 150, { from: daysAgo(30), to: daysAgo(-365) });
+    const posedId = await mercurialeIdOf(companyId);
+    await staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/close`)
+      .send({ id: posedId, reason: "fin de saison" })
+      .expect(200);
+
+    const apres = await lotOf([{ sku: SKU, quantity: 1 }], companyId);
+
+    expect(apres.price(SKU, 1).finalMillicents).not.toBe(millicentsFromCents(150));
   });
 });

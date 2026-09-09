@@ -12,6 +12,7 @@ import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
 import { LoadedPricer, type PricingParties } from "../domain/loaded-pricer.js";
 import { admitsEvidence, type PriceLens } from "../domain/price-lens.js";
+import { readsArchived, type PriceEpoch } from "../domain/price-epoch.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
 import type { PricingContext } from "../domain/price-rule.js";
 import {
@@ -94,6 +95,7 @@ export class PricingMaterialsLoader {
     parties: PricingParties,
     at: Date,
     lens: PriceLens,
+    epoch: PriceEpoch,
   ): Promise<LoadedPricer | null> {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
@@ -105,11 +107,24 @@ export class PricingMaterialsLoader {
       return null;
     }
 
+    // 🔴 L'ÉPOQUE choisit la paire de lectures, une fois pour les cinq.
+    //
+    // `replay` lit les décisions RANGÉES — celles qui l'ont été après `at` —
+    // parce qu'elles agissaient ce jour-là ; et elle **contourne le cache**, qui
+    // retient des tables entières pour tous les clients sous une clé qui ne
+    // porte que le nom de la table. Une lecture datée qui s'y rangerait servirait
+    // des lignes rangées au chemin qui facture.
+    //
+    // Le choix est fait ici et non dans chaque lecteur : eux n'ont pas
+    // d'horloge, et leur faire recalculer la même comparaison serait cinq
+    // encodages d'une décision. Cf. `price-epoch.ts`.
+    const replay = readsArchived(epoch);
+
     // Quatre lectures pour tout le lot, en parallèle.
     const [rules, floors, ladders, commitments, mercuriale] = await Promise.all([
-      this.priceRules.inScopes(scopes),
-      this.priceFloors.inScopes(scopes),
-      this.volumeLadders.inScopes(scopes),
+      replay ? this.priceRules.inScopesAt(scopes, at) : this.priceRules.inScopes(scopes),
+      replay ? this.priceFloors.inScopesAt(scopes, at) : this.priceFloors.inScopes(scopes),
+      replay ? this.volumeLadders.inScopesAt(scopes, at) : this.volumeLadders.inScopes(scopes),
       // 🔴 La lentille décide, pas la méthode qui posera la question ensuite.
       // Une question `unproven` — l'écran de tarification, la projection — ne
       // peut rien prouver de l'historique d'un client : lire ses engagements
@@ -118,10 +133,16 @@ export class PricingMaterialsLoader {
       //
       // Un client de passage n'en a pas non plus, et le port le sait sans
       // interroger la base.
-      admitsEvidence(lens) ? this.commitments.liveFor(parties.companyId) : [],
+      admitsEvidence(lens)
+        ? replay
+          ? this.commitments.liveAsOf(parties.companyId, at)
+          : this.commitments.liveFor(parties.companyId)
+        : [],
       // La mercuriale arrive en OBJET : on ne connaît pas encore la quantité de
       // chaque ligne, donc pas le palier. Cf. `asRuleFor`.
-      this.mercuriales.liveFor(parties.companyId, at),
+      replay
+        ? this.mercuriales.liveAsOf(parties.companyId, at)
+        : this.mercuriales.liveFor(parties.companyId, at),
     ]);
     const materials = materialsOf({ rules, floors, ladders, commitments, mercuriale });
     // Sans preuves recevables, il n'y a rien à mesurer — et `NO_EVIDENCE` est la
@@ -190,7 +211,21 @@ export class PricingMaterialsLoader {
       [...bySkus.values()].map(({ commitment, skus }) =>
         this.customerVolumes.volumesFor(commitment.companyId, skus, {
           from: commitment.validFrom,
-          to: commitment.validTo,
+          // 🔴 **Borné à l'instant demandé**, et non à la fin de l'engagement.
+          //
+          // La fenêtre de l'engagement est aussi sa fenêtre de MESURE. Compter
+          // jusqu'à sa fin sur une relecture datée revenait à répondre « ce
+          // qu'il payait le 3 mars » avec un palier qu'il n'a atteint qu'en
+          // novembre — un prix **plausible**, et faux, que rien ne signalait.
+          // Même famille que R15 : une preuve qu'on n'était pas en mesure de
+          // mesurer à cette date.
+          //
+          // ⚠️ Au présent, la fenêtre est bornée elle aussi — à l'instant
+          // courant, et non au terme de l'engagement. Ce qui ne change pas,
+          // c'est le RÉSULTAT : le cumul se compte sur `order.createdAt`, et
+          // aucune commande n'est créée dans le futur. Dire « sans effet au
+          // présent » serait vrai du résultat et faux de la fenêtre.
+          to: earliest(commitment.validTo, at),
         }),
       ),
     );
@@ -232,4 +267,16 @@ export class PricingMaterialsLoader {
       gated.map((sku) => [sku, observedRatioBp(baseline.get(sku) ?? 0, observed.get(sku) ?? 0)]),
     );
   }
+}
+
+/**
+ * Le plus tôt des deux instants.
+ *
+ * Nommée plutôt qu'écrite en ligne : c'est une **borne de mesure**, et la
+ * confondre avec un `Math.min` sur des millisecondes rendrait le point
+ * illisible à la relecture. Elle ne sert qu'à un endroit, et cet endroit est
+ * celui où se trompait R17.
+ */
+function earliest(left: Date, right: Date): Date {
+  return left.getTime() <= right.getTime() ? left : right;
 }

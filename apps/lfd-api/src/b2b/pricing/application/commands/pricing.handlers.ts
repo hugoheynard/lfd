@@ -1,7 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { PricedPeriodIsSealedError } from "../../domain/pricing-errors.js";
+import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { PricingFloor, floorIdForScope } from "../../domain/entities/pricing-floor.js";
+import { PricingFloor, floorScopeKey } from "../../domain/entities/pricing-floor.js";
 import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
@@ -34,11 +36,26 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
     private readonly rules: PricingRuleRepository,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly priced: PricedDecisionsReader,
   ) {}
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   async execute(command: CreatePriceRuleCommand): Promise<string> {
     const rule = PricingRule.create(this.ids.next(), command.draft, command.staffSub);
+    // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
+    // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
+    // avec une règle en cours, jamais avec une rangé. Depuis que clore borne
+    // la fenêtre (R17), une règle rangé garde sa place dans le passé, et poser
+    // par-dessus donnerait deux décisions à la même date.
+    //
+    // ⚠️ Le refus vise « **a facturé** », pas « est passé ». Une règle posé
+    // puis rangé dix minutes plus tard n'a rien facturé : le reposer est le
+    // geste ordinaire « je me suis trompé, je recommence ».
+    const sealed = await this.rules.archivedOverlapping(rule);
+    if (sealed.length > 0 && (await this.priced.anyPriced(sealed))) {
+      throw new PricedPeriodIsSealedError("règle", rule.toPersistence().validFrom);
+    }
+
     await this.rules.save(rule, {
       subjectType: "rule",
       subjectId: rule.id,
@@ -58,6 +75,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
     private readonly floors: PricingFloorRepository,
     private readonly catalog: ProductCatalogReader,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   /**
@@ -70,12 +88,14 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
    * apprend qu'une décision antérieure existait, et invite à chercher laquelle.
    */
   async execute(command: SetPriceFloorCommand): Promise<void> {
-    const existing = await this.floors.load(floorIdForScope(command.scope));
+    const now = this.clock.now();
+    const existing = await this.floors.inForceFor(command.scope, now);
     await this.pose(
       command.scope,
       command.policy,
       command.staffSub,
       existing === null ? "posed" : "replaced",
+      now,
     );
   }
 
@@ -84,19 +104,29 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
     policy: PriceFloorPolicy,
     staffSub: string,
     kind: PricingActKind,
+    at: Date,
   ): Promise<void> {
     const floor = PricingFloor.pose(
+      this.ids.next(),
       scope,
       policy,
       staffSub,
+      at,
       referenceCanonicalFor(scope, await this.catalog.all()),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",
-      subjectId: floor.id,
+      // 🔴 **La PORTÉE, jamais la version.** Le versionnage (R17) a donné un
+      // identifiant propre à chaque période ; journaliser celui-là couperait
+      // l'histoire en tronçons d'une entrée, et orphelinerait tout ce que le
+      // journal contient déjà — écrit quand l'identifiant ÉTAIT la portée.
+      //
+      // Or la question qu'on pose au journal est « qu'est-ce qui a protégé cet
+      // article, et qui l'a décidé ? ». Son sujet est la cible, pas la ligne.
+      subjectId: floorScopeKey(scope),
       kind,
       actor: staffSub,
-      at: this.clock.now(),
+      at,
       reason: null,
       summary: describeFloorPolicy(policy),
     });
@@ -109,6 +139,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
     private readonly floors: PricingFloorRepository,
     private readonly catalog: ProductCatalogReader,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   /**
@@ -123,23 +154,26 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
    * REVU cette limite, ou traîne-t-elle depuis deux ans ?
    */
   async execute(command: ConfirmPriceFloorCommand): Promise<void> {
-    const existing = await this.floors.load(floorIdForScope(command.scope));
+    const now = this.clock.now();
+    const existing = await this.floors.inForceFor(command.scope, now);
     if (existing === null) {
       throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
     }
     const state = existing.toPersistence();
     const floor = PricingFloor.pose(
+      this.ids.next(),
       state.scope,
       state.policy,
       command.staffSub,
+      now,
       referenceCanonicalFor(state.scope, await this.catalog.all()),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",
-      subjectId: floor.id,
+      subjectId: floorScopeKey(state.scope),
       kind: "confirmed",
       actor: command.staffSub,
-      at: this.clock.now(),
+      at: now,
       reason: null,
       summary: describeFloorPolicy(state.policy),
     });
@@ -161,17 +195,18 @@ export class ArchivePriceFloorHandler implements ICommandHandler<ArchivePriceFlo
    * relisant : « qu'est-ce qui protégeait cet article avant ? ».
    */
   async execute(command: ArchivePriceFloorCommand): Promise<void> {
-    const id = floorIdForScope(command.scope);
-    const existing = await this.floors.load(id);
+    const now = this.clock.now();
+    const existing = await this.floors.inForceFor(command.scope, now);
     if (existing === null) {
       throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
     }
+    const id = existing.id;
     const act: PricingAct = {
       subjectType: "floor",
-      subjectId: id,
+      subjectId: floorScopeKey(command.scope),
       kind: "archived",
       actor: command.staffSub,
-      at: this.clock.now(),
+      at: now,
       reason: command.reason,
       summary: describeFloorPolicy(existing.toPersistence().policy),
     };

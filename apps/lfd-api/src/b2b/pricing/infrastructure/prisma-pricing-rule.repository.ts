@@ -45,6 +45,38 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
    *   et sa réponse est traduite plutôt qu'avalée : le staff doit savoir laquelle
    *   des deux il est en train de dupliquer.
    */
+  /**
+   * **Les règles RANGÉES qui recouvrent cette fenêtre**, par identifiant.
+   *
+   * La contrainte d'exclusion est **partielle** (`WHERE archived_at IS NULL`) :
+   * elle ne protège donc que du recouvrement avec une règle en cours. Poser
+   * par-dessus une période rangée reste possible en base — et c'est ce qu'il
+   * faut refuser quand cette période a **facturé**, sans quoi la relecture datée
+   * y trouverait deux décisions concurrentes.
+   *
+   * ⚠️ La clé est celle du tuple d'exclusion de SA table, et elle diffère d'une
+   * famille à l'autre. La recopier de travers rendrait un ensemble vide
+   * rassurant et faux.
+   */
+  async archivedOverlapping(rule: PricingRule): Promise<readonly string[]> {
+    const state = rule.toPersistence();
+    const rows = await this.prisma.priceRule.findMany({
+      where: {
+        archivedAt: { not: null },
+        stage: state.stage,
+        scopeType: state.scope.type,
+        scopeId: state.scope.id,
+        audienceType: state.audience.type,
+        audienceId: state.audience.id,
+        minQuantity: state.minQuantity,
+        ...(state.validTo === null ? {} : { validFrom: { lt: state.validTo } }),
+        OR: [{ validTo: null }, { validTo: { gt: state.validFrom } }],
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   async save(rule: PricingRule, act: PricingAct): Promise<void> {
     try {
       await this.acts.around(act, () => this.prisma.priceRule.create({ data: ruleData(rule) }));

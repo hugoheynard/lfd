@@ -32,6 +32,34 @@ export abstract class PriceFloorReader {
   abstract inScopes(scopes: PricingScopes): Promise<ScopedPriceFloor[]>;
 
   /**
+   * **Les mêmes planchers, à un instant PASSÉ** — la relecture d'un prix
+   * d'alors.
+   *
+   * `scopes` n'est pas lu, exactement comme dans {@link inScopes} : un plancher
+   * ne porte ni fenêtre ni audience, la résolution filtre sur la seule portée,
+   * et l'index d'application la rejuge. Le paramètre reste pour que les cinq
+   * lecteurs du chargeur aient la même forme — une signature qui diverge est une
+   * invitation à oublier lequel prend quoi.
+   *
+   * 🔴 **Cette lecture est la moins fiable des cinq, et il faut le savoir.** Un
+   * plancher n'ayant pas de fenêtre, `unarchivedAt(at)` est le SEUL mécanisme
+   * qui l'écarte du passé — et reposer un plancher **réécrit sa ligne en place**
+   * en remettant `archived_at` à `null`, avec les valeurs du jour. Une lecture
+   * datée peut donc appliquer un plancher aux valeurs d'aujourd'hui sur une
+   * période où il disait autre chose. Un plancher **relève** un prix : le mode
+   * de défaillance est un prix historique gonflé.
+   *
+   * Le remède est de leur donner une fenêtre, comme les quatre autres familles
+   * en ont une ; il est nommé au §7 de
+   * `documentation/pricing/architecture-clore-nest-pas-ranger.md` et n'est pas
+   * bâti. En attendant, la **facture** ne dépend pas de cette lecture : la ligne
+   * porte `floorDecision` figée avec son prix.
+   */
+  async inScopesAt(_scopes: PricingScopes, at: Date): Promise<ScopedPriceFloor[]> {
+    return [...(await this.listAll(at))];
+  }
+
+  /**
    * Les planchers candidates pour **un** article — la question du tableau de bord
    * et du simulateur.
    *

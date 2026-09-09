@@ -64,6 +64,8 @@ import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitment
 import { PricerModule } from "./pricer.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { CompanyMercurialeRepository } from "./domain/ports/company-mercuriale.repository.js";
+import { PricedDecisionsReader } from "./domain/ports/priced-decisions.reader.js";
+import { PrismaPricedDecisionsReader } from "../orders/infrastructure/prisma-priced-decisions.reader.js";
 import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-company-mercuriale.repository.js";
 
 /**
@@ -118,6 +120,10 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     CompanyPricingQuery,
     MercurialeDrafts,
     { provide: CompanyMercurialeRepository, useClass: PrismaCompanyMercurialeRepository },
+    // Le port est déclaré par `pricing`, l'adaptateur vit dans `orders` : la
+    // réponse « a-t-elle facturé ? » est gelée sur la ligne de commande, et
+    // `pricing` n'a pas le droit de lire ces tables.
+    { provide: PricedDecisionsReader, useClass: PrismaPricedDecisionsReader },
     PoseCompanyMercurialeHandler,
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,

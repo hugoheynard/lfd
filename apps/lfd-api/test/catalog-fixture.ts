@@ -67,6 +67,40 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
     }),
   });
 
+  /**
+   * 🔴 **La trace du tarif se sème AVEC l'article, jamais après.**
+   *
+   * En production, les deux s'écrivent dans une seule transaction — c'est
+   * exactement ce que `PrismaCatalogItemRepository.saveMany` garantit, « le seul
+   * point par lequel ils passent ». Une fixture qui pose l'article sans sa trace
+   * fabrique donc un état que la production **ne peut pas produire** : un
+   * catalogue sans histoire.
+   *
+   * Ça ne se voyait pas tant que rien ne relisait le passé. Depuis que la porte
+   * du prix rescelle les articles au tarif de la date demandée (R17), une
+   * relecture datée sur ce catalogue-là ne trouve rien et refuse — ce qui est le
+   * bon comportement du code, sur une donnée impossible.
+   */
+  const canonicalTrace = (sku: string, priceMillicents: number) => ({
+    id: `cph_${sku}`,
+    sku: `${sku}-1`,
+    productSku: sku,
+    priceMillicents,
+    vatRatePercent: FOOD_VAT_RATE,
+    // `pim` : le semis joue un push du référentiel, pas une décision B2B.
+    source: "pim",
+    // La MÊME date que l'article. Deux instants distincts laisseraient une
+    // fenêtre où l'article existe sans prix connu, et un test daté juste dedans
+    // échouerait sans que rien ne l'explique.
+    recordedAt: receivedAt,
+  });
+
+  await prisma.catalogPriceHistory.createMany({
+    data: CATALOG_SEED.map((item) =>
+      canonicalTrace(item.sku, millicentsFromCents(item.unitPriceCents)),
+    ),
+  });
+
   await prisma.catalogItem.createMany({
     data: CATALOG_SEED.map((item, index) => {
       const prefix = item.sku.slice(0, 3);

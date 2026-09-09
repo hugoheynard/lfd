@@ -1,3 +1,4 @@
+import { inForceFor } from "../specificity.js";
 import { scopesOf, type PricingScopes } from "../pricing-scopes.js";
 import type { PricingContext } from "../price-rule.js";
 import type { VolumeLadder } from "../volume-ladder.js";
@@ -42,6 +43,18 @@ export abstract class VolumeLadderReader {
    */
   async candidatesFor(context: PricingContext): Promise<VolumeLadder[]> {
     return this.inScopes(scopesOf(context));
+  }
+
+  /**
+   * **Les mêmes barèmes, à un instant PASSÉ** — la relecture d'un prix d'alors.
+   *
+   * Même raison et même construction que `PriceRuleReader.inScopesAt` : elle lit
+   * les rangés (rangés APRÈS `at`), et elle ne passe **pas par le cache**, qui
+   * retient des tables entières pour tous les clients. Servie par
+   * {@link listAll}, donc non cachée par construction.
+   */
+  async inScopesAt(scopes: PricingScopes, at: Date): Promise<VolumeLadder[]> {
+    return inForceFor(await this.listAll(at), scopes);
   }
 
   /**

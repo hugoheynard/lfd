@@ -16,8 +16,19 @@
 import type { CompanyPricingView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import { randomUUID } from "node:crypto";
+
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+
+/** Passerelle de paiement doublée : intention fixe, aucun appel réseau. */
+const fakeGateway = {
+  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+};
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -28,7 +39,13 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      // La seule frontière SORTANTE de cette suite : Stripe. Un cas y passe une
+      // vraie commande — c'est la caisse qui fige la trace, et la trace est ce
+      // qu'on éprouve — et la passation crée une intention de paiement.
+      { token: PaymentGateway, value: fakeGateway },
+    ],
   });
 });
 
@@ -606,5 +623,85 @@ describe("qui a établi la mercuriale", () => {
     const view = await read(company.id);
 
     expect(view.mercuriales[0]?.createdBy).toBe("staff-e2e");
+  });
+});
+
+/**
+ * **Reposer sur une période close : refusé SI elle a facturé.**
+ *
+ * Depuis que clore borne la fenêtre (R17), une mercuriale close garde sa place
+ * dans le passé. Poser par-dessus donnerait deux tarifs à la même date — celui
+ * qui a été payé, figé sur la commande, et celui qu'une relecture rendrait.
+ *
+ * 🔴 **Les deux cas comptent autant l'un que l'autre**, et c'est tout l'objet du
+ * port `PricedDecisionsReader`. La frontière est « **a-t-elle facturé** », pas
+ * « est-elle passée » : refuser toute pose rétroactive aurait supprimé le geste
+ * ordinaire « je me suis trompé, je range et je recommence » — attesté ailleurs
+ * dans le dépôt — pour protéger un cas qui ne se produisait pas.
+ *
+ * Ça ne se prouve que sur la base : c'est la lecture de la trace `jsonb` des
+ * lignes de commande qui fait la différence. Et la commande est **réellement
+ * passée** par la route, pas semée : une trace que la tarification n'aurait pas
+ * produite ne prouverait pas que la mercuriale a facturé.
+ */
+describe("🔴 reposer sur une période close", () => {
+  const grid = { lines: [{ sku: SKU, unitPriceMillicents: NEGOTIATED_MILLICENTS }] };
+
+  async function idOfPosed(companyId: string): Promise<string | undefined> {
+    return (await read(companyId)).mercuriales[0]?.id;
+  }
+
+  const close = (companyId: string, id: string | undefined) =>
+    staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/close`)
+      .send({ id, reason: "fin de saison" })
+      .expect(200);
+
+  it("l'AUTORISE quand rien ne l'a citée — « je me suis trompé, je recommence »", async () => {
+    const company = await createCompany(ctx.prisma);
+    await pose(company.id, grid).expect(201);
+    await close(company.id, await idOfPosed(company.id));
+
+    await pose(company.id, grid).expect(201);
+  });
+
+  it("la REFUSE quand une commande la cite, et nomme la sortie", async () => {
+    const company = await createCompany(ctx.prisma);
+    const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|acheteur_mercuriale" });
+    await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
+    const pickup = await ctx.prisma.pickupAddress.create({
+      data: {
+        label: "Labo",
+        ligne1: "La Daille",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+        isDefault: true,
+      },
+      select: { id: true },
+    });
+    await pose(company.id, grid).expect(201);
+
+    // La vraie caisse : c'est elle qui fige la trace, et donc elle seule qui
+    // peut attester que la mercuriale a facturé.
+    await ctx
+      .asSub("auth0|acheteur_mercuriale")
+      .post("/orders")
+      .send({
+        idempotencyKey: randomUUID(),
+        companyId: company.id,
+        requestedDeliveryDate: serviceDay(),
+        note: "",
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickup.id,
+        lines: [{ sku: SKU, quantity: 1 }],
+      })
+      .expect(201);
+
+    await close(company.id, await idOfPosed(company.id));
+
+    const refus = await pose(company.id, grid).expect(409);
+
+    expect(jsonBody<{ message: string }>(refus).message).toContain("Posez la nouvelle mercuriale");
   });
 });

@@ -10,7 +10,7 @@ import {
   ScopeIdMismatchError,
   ReversedValidityWindowError,
 } from "../pricing-errors.js";
-import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import type {
   AuthoredPriceStage,
@@ -216,11 +216,31 @@ export class PricingRule {
    * Une règle en pause s'archive aussi : la pause n'est pas un état protégé,
    * c'est une suspension.
    *
+   * ## 🔴 Ranger BORNE la fenêtre — depuis le 2026-09-09
+   *
+   * `archived_at` disait deux choses : « rangée de l'écran » et « elle n'agit
+   * plus ». La clause `archived_at IS NULL` des lecteurs transformait la seconde
+   * en **disparition** (R17). Ranger écrit donc aussi la fin dans la fenêtre,
+   * qui est l'endroit où le domaine la lit déjà.
+   *
+   * {@link closingWindowAt} porte les quatre cas — dont les **trois** où ne rien
+   * borner est la bonne réponse.
+   *
    * @throws {ArchivedPriceRuleIsSealedError} elle l'est déjà.
    */
   archive(by: string, at: Date, reason: string | null): PricingRule {
     this.assertNotArchived();
-    return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
+    const closedAt = closingWindowAt(this.state, suspendedFromOf(this.state.lifecycle), at);
+    return new PricingRule({
+      ...this.state,
+      ...(closedAt === null ? {} : { validTo: closedAt }),
+      lifecycle: {
+        ...this.state.lifecycle,
+        archivedAt: at,
+        archivedBy: by,
+        archiveReason: reason,
+      },
+    });
   }
 
   /**

@@ -45,9 +45,11 @@ import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import type { PriceRule, ScopedPriceFloor } from "../../domain/price-rule.js";
 import { DuplicateArticleError } from "../../domain/pricing-errors.js";
 import type { VolumeCommitment } from "../../domain/volume-commitment.js";
+import { CanonicalPriceHistoryReader } from "../../../catalog/domain/ports/canonical-price-history.reader.js";
+import type { CatalogPricing } from "@lfd/contracts";
 import type { VolumeLadder } from "../../domain/volume-ladder.js";
 import { EmptyLotError, type PricedLot } from "../priced-lot.js";
-import { Pricer } from "../pricer.js";
+import { NoCanonicalPriceAtError, Pricer } from "../pricer.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -174,7 +176,14 @@ class StubRules extends PriceRuleReader {
     this.seenAt.push(scopes.at);
     return Promise.resolve([...this.rules]);
   }
-  listAll(): Promise<PriceRule[]> {
+  /**
+   * ⚠️ La relecture datée n'emprunte PAS `inScopes` : `inScopesAt` est concrète
+   * sur le port et passe par `listAll(at)`, hors cache et rangées comprises.
+   * L'instant se note donc ici aussi, sans quoi `seenAt` ne verrait que les
+   * questions du présent — et le cas qui prouve que `at` porte deviendrait muet.
+   */
+  listAll(at: Date): Promise<PriceRule[]> {
+    this.seenAt.push(at);
     return Promise.resolve([...this.rules]);
   }
   listArchived(): Promise<PriceRule[]> {
@@ -241,6 +250,14 @@ class StubMercuriales extends CompanyMercurialeReader {
       )?.mercuriale ?? null,
     );
   }
+  /**
+   * Le doublé rend la MÊME chose aux deux questions : ces cas n'éprouvent pas
+   * la relecture datée, et faire diverger les deux réponses ici cacherait un
+   * appelant qui se serait trompé de méthode.
+   */
+  liveAsOf(companyId: string | null, at: Date): Promise<CompanyMercuriale | null> {
+    return this.liveFor(companyId, at);
+  }
   listFor(): Promise<readonly CompanyMercuriale[]> {
     return Promise.resolve(this.posed.map((entry) => entry.mercuriale));
   }
@@ -260,14 +277,60 @@ class StubCommitments extends VolumeCommitmentReader {
     this.asked.push(companyId);
     return Promise.resolve(companyId === null ? [] : this.commitments);
   }
+  /** Même réponse : la relecture datée n'est pas le sujet de ces cas. */
+  liveAsOf(companyId: string | null): Promise<readonly VolumeCommitment[]> {
+    return this.liveFor(companyId);
+  }
 }
 
 class StubCustomerVolumes extends CustomerVolumeReader {
+  /**
+   * Les fenêtres de MESURE demandées — c'est ce qui prouve que le cumul est
+   * borné à l'instant de la question, et non à la fin de l'engagement.
+   */
+  readonly windows: { from: Date; to: Date }[] = [];
+
   constructor(private readonly volumes: ReadonlyMap<string, number> = new Map()) {
     super();
   }
-  volumesFor(): Promise<ReadonlyMap<string, number>> {
+  volumesFor(
+    _companyId: string,
+    _skus: readonly string[],
+    window: { readonly from: Date; readonly to: Date },
+  ): Promise<ReadonlyMap<string, number>> {
+    this.windows.push({ from: window.from, to: window.to });
     return Promise.resolve(this.volumes);
+  }
+}
+
+/**
+ * L'historique du tarif canonique.
+ *
+ * Par défaut il rend **le tarif d'aujourd'hui** pour chaque article du
+ * catalogue : les cas de ce fichier n'éprouvent pas la dérive du canonique, et
+ * leur faire refuser une relecture faute d'historique déplacerait leur sujet.
+ *
+ * Un cas qui veut prouver que le canonique est bien daté passe `pastPrices`.
+ */
+class StubPriceHistory extends CanonicalPriceHistoryReader {
+  constructor(private readonly past: ReadonlyMap<string, number> | null = null) {
+    super();
+  }
+  pricingAt(): Promise<ReadonlyMap<string, CatalogPricing>> {
+    const prices =
+      this.past ??
+      new Map(CATALOGUE.map((entry) => [entry.sku, entry.unitPriceMillicents] as const));
+    return Promise.resolve(
+      new Map(
+        [...prices].map(([sku, unitPriceMillicents]) => [
+          sku,
+          { sku, unitPriceMillicents, vatRatePercent: 5.5 },
+        ]),
+      ),
+    );
+  }
+  startsAt(): Promise<Date | null> {
+    return Promise.resolve(LONG_AGO);
   }
 }
 
@@ -281,6 +344,7 @@ interface Doubles {
   readonly rules: StubRules;
   readonly mercuriales: StubMercuriales;
   readonly commitments: StubCommitments;
+  readonly volumes: StubCustomerVolumes;
 }
 
 function pricerWith(
@@ -291,11 +355,14 @@ function pricerWith(
     mercuriales?: readonly PosedMercuriale[];
     commitments?: readonly VolumeCommitment[];
     ordered?: ReadonlyMap<string, number>;
+    /** Le tarif canonique À LA DATE, quand un cas veut prouver qu'il est daté. */
+    pastPrices?: ReadonlyMap<string, number>;
   } = {},
 ): { pricer: Pricer; doubles: Doubles } {
   const rules = new StubRules(parts.rules ?? []);
   const mercuriales = new StubMercuriales(parts.mercuriales ?? []);
   const commitments = new StubCommitments(parts.commitments ?? []);
+  const volumes = new StubCustomerVolumes(parts.ordered ?? new Map());
   const loader = new PricingMaterialsLoader(
     rules,
     mercuriales,
@@ -303,11 +370,15 @@ function pricerWith(
     new StubSkuVolumes(),
     new StubLadders(parts.ladders ?? []),
     commitments,
-    new StubCustomerVolumes(parts.ordered ?? new Map()),
+    volumes,
   );
   return {
-    pricer: new Pricer(loader, new FrozenClock(NOW)),
-    doubles: { rules, mercuriales, commitments },
+    pricer: new Pricer(
+      loader,
+      new FrozenClock(NOW),
+      new StubPriceHistory(parts.pastPrices ?? null),
+    ),
+    doubles: { rules, mercuriales, commitments, volumes },
   };
 }
 
@@ -644,5 +715,105 @@ describe("Pricer.load — plusieurs articles", () => {
       finalMillicents: millicentsFromCents(80),
     });
     expect(priced[1]).toMatchObject({ sku: "PAI-001", quantity: 1 });
+  });
+});
+
+/**
+ * 🔴 **Le cumul se mesure jusqu'à la QUESTION, pas jusqu'à la fin de
+ * l'engagement.**
+ *
+ * La fenêtre d'un engagement est aussi sa fenêtre de mesure. Compter jusqu'à sa
+ * fin sur une relecture datée revenait à répondre « ce qu'il payait le 3 mars »
+ * avec un palier qu'il n'a atteint qu'en novembre — un prix **plausible**, et
+ * faux, que rien ne signalait. Même famille que R15 : une preuve qu'on n'était
+ * pas en mesure de mesurer à cette date.
+ *
+ * ⚠️ Le cas du présent compte autant, et il faut le dire juste : la fenêtre y
+ * est bornée elle aussi, à l'instant courant. Ce qui ne change pas, c'est le
+ * RÉSULTAT — le cumul se compte sur `order.createdAt`, et aucune commande n'est
+ * créée dans le futur.
+ */
+describe("Pricer.load — la fenêtre de mesure du cumul", () => {
+  const COMMITMENT: VolumeCommitment = {
+    id: "cmt_1",
+    companyId: "cmp_1",
+    scope: { type: "global", id: null },
+    promisedQuantity: 5_000,
+    validFrom: LONG_AGO,
+    validTo: new Date("2026-12-31T00:00:00.000Z"),
+  };
+
+  it("borne la mesure à l'instant demandé sur une relecture", async () => {
+    const { pricer, doubles } = pricerWith({ commitments: [COMMITMENT] });
+
+    await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1", BEFORE_NOW);
+
+    expect(doubles.volumes.windows).toEqual([{ from: LONG_AGO, to: BEFORE_NOW }]);
+  });
+
+  /**
+   * Au présent aussi la fenêtre est bornée — à `NOW`, et non au terme de
+   * l'engagement. **L'effet, lui, est nul** : le cumul se compte sur
+   * `order.createdAt`, et aucune commande n'est créée dans le futur. Dit ainsi
+   * plutôt que « ça ne change rien au présent », qui serait faux de la fenêtre
+   * et vrai seulement du résultat.
+   */
+  it("borne aussi au présent — sans effet, faute de commande à venir", async () => {
+    const { pricer, doubles } = pricerWith({ commitments: [COMMITMENT] });
+
+    await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], "cmp_1");
+
+    expect(doubles.volumes.windows).toEqual([{ from: LONG_AGO, to: NOW }]);
+  });
+});
+
+/**
+ * 🔴 **Le tarif d'entrée aussi se lit à la date.**
+ *
+ * C'était la dernière entrée fausse d'une reconstitution datée. Toutes les
+ * décisions — règles, barèmes, mercuriale, engagements — étaient relues à leur
+ * date, mais l'article restait scellé au tarif d'**aujourd'hui**. Le lot
+ * combinait donc les décisions d'alors avec le prix d'entrée du jour : une
+ * remise de 10 % appliquée au bon pourcentage, sur le mauvais nombre.
+ *
+ * La faute ne se voit pas — elle rend un prix plausible.
+ */
+describe("Pricer.load — le tarif canonique à la date", () => {
+  it("rescelle l'article au tarif d'alors, pas à celui d'aujourd'hui", async () => {
+    const { pricer } = pricerWith({
+      pastPrices: new Map([["CRO-001", millicentsFromCents(80)]]),
+    });
+
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null, BEFORE_NOW);
+
+    // 80 c en mars, contre 100 c au catalogue d'aujourd'hui.
+    expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(80));
+    expect(lot.price("CRO-001", 1).canonicalMillicents).toBe(millicentsFromCents(80));
+  });
+
+  /**
+   * 🔴 **Sans trace, on REFUSE** — jamais le tarif du jour à la place.
+   *
+   * C'est la doctrine que `CanonicalPriceHistoryReader` porte déjà : « rendre le
+   * prix d'aujourd'hui à sa place serait exactement le mensonge que cet
+   * historique existe pour supprimer ». Un prix inventé pour une date qu'on ne
+   * couvre pas serait indistinguable d'un prix vrai.
+   */
+  it("refuse un article dont l'historique ne connaît pas le tarif à cette date", async () => {
+    const { pricer } = pricerWith({ pastPrices: new Map() });
+
+    await expect(
+      lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null, BEFORE_NOW),
+    ).rejects.toBeInstanceOf(NoCanonicalPriceAtError);
+  });
+
+  it("ne rescelle RIEN au présent : le sceau de l'appelant fait foi", async () => {
+    const { pricer } = pricerWith({
+      pastPrices: new Map([["CRO-001", millicentsFromCents(80)]]),
+    });
+
+    const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
+
+    expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
   });
 });

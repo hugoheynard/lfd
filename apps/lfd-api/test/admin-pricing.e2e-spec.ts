@@ -731,12 +731,31 @@ describe("poser une limite", () => {
     expect((await putFloor({ type: "global", id: null }, "percent", 5_000)).status).toBe(204);
   });
 
-  /** Idempotent par portée : re-poser REMPLACE, il n'y a jamais deux limites. */
-  it("re-poser sur la même portée remplace au lieu d'empiler", async () => {
+  /**
+   * **Re-poser BORNE la précédente ; elle ne l'écrase plus.**
+   *
+   * ⚠️ Ce test affirmait l'inverse jusqu'au 2026-09-09 — « il n'y a jamais deux
+   * limites », une seule ligne par portée — et il avait raison de l'affirmer :
+   * l'identifiant était dérivé de la portée, donc re-poser était un `upsert` qui
+   * réécrivait sur place.
+   *
+   * C'est précisément ce qui rendait le passé illisible. Un plancher **relève**
+   * un prix : réécrire la limite de mars faisait rendre à une relecture de mars
+   * un prix gonflé par la limite d'aujourd'hui, sans que rien ne le signale.
+   *
+   * Ce qui est conservé, et qui est la vraie règle, tient en une ligne : **une
+   * seule limite ARBITRE à un instant donné**. Ce n'est plus la table qui le
+   * garantit par sa clé primaire, c'est la contrainte d'exclusion
+   * `price_floors_no_overlap` — et l'écran continue de ne voir qu'un plancher.
+   */
+  it("re-poser sur la même portée borne la précédente au lieu de l'écraser", async () => {
     await putFloor({ type: "global", id: null }, "percent", 5_000);
     await putFloor({ type: "global", id: null }, "percent", 6_000);
 
-    expect(await ctx.prisma.priceFloor.count()).toBe(1);
+    // Deux périodes en base — l'histoire de la portée.
+    expect(await ctx.prisma.priceFloor.count()).toBe(2);
+    // Une seule sans fin : celle qui arbitre.
+    expect(await ctx.prisma.priceFloor.count({ where: { validTo: null } })).toBe(1);
     expect((await board()).globalFloor?.value).toBe(6_000);
   });
 
@@ -1154,10 +1173,15 @@ describe("le signal de dérive de la limite", () => {
    *
    * La référence se donne en **centimes** — elle se lit comme un prix — et se
    * range en millicentimes, l'unité de la colonne.
+   *
+   * ⚠️ Elle s'adressait par identifiant — `product:VIE-001`, dérivé de la portée
+   * — jusqu'au 2026-09-09. Depuis le versionnage, il y a N lignes par portée et
+   * l'identifiant est tiré : c'est la portée **et la période en cours** qui
+   * désignent, exactement comme `inForceFor` le fait côté production.
    */
   function ageFloor(referenceCents: number, daysAgo: number) {
-    return ctx.prisma.priceFloor.update({
-      where: { id: `product:${SKU}` },
+    return ctx.prisma.priceFloor.updateMany({
+      where: { scopeType: "product", scopeId: SKU, archivedAt: null, validTo: null },
       data: {
         referenceCanonicalMillicents: millicentsFromCents(referenceCents),
         updatedAt: new Date(Date.now() - daysAgo * DAY_MS),
@@ -1871,5 +1895,51 @@ describe("les gabarits tarifaires", () => {
         ],
       },
     ]).expect(400);
+  });
+});
+
+/**
+ * **Reposer sur une période close : refusé SI elle a facturé.**
+ *
+ * Le pendant, pour les règles et les barèmes, de ce que
+ * `company-pricing.e2e-spec.ts` éprouve sur la mercuriale. Depuis que ranger
+ * BORNE la fenêtre (R17), une décision rangée garde sa place dans le passé —
+ * et la contrainte d'exclusion, **partielle**, ne la voit pas.
+ *
+ * 🔴 Le cas qui passe compte autant que celui qui refuse : c'est lui qui atteste
+ * que « je me suis trompé, je range et je recommence » survit. La frontière est
+ * « a facturé », pas « est passé ».
+ */
+describe("🔴 reposer sur une période rangée", () => {
+  it("l'autorise pour une RÈGLE que rien n'a citée", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule({ label: "Avant" }).expect(201));
+    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "rangée" }).expect(204);
+
+    await postRule({ label: "Après" }).expect(201);
+  });
+
+  /** Le barème a son propre helper, hors de portée ici : la pose est inline. */
+  const ladder = (over: Record<string, unknown> = {}) =>
+    staff()
+      .put("/admin/pricing/volume-ladders")
+      .send({
+        scope: { type: "product", id: SKU },
+        audience: { type: "all", id: null },
+        unit: "percent",
+        tiers: [{ minQuantity: 50, value: 500 }],
+        label: "Barème rangé",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+        ...over,
+      });
+
+  it("l'autorise pour un BARÈME que rien n'a cité", async () => {
+    const { id } = jsonBody<{ id: string }>(await ladder().expect(201));
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .send({ reason: "on repart de zéro" })
+      .expect(204);
+
+    await ladder({ label: "Le suivant" }).expect(201);
   });
 });

@@ -9,7 +9,7 @@ import {
   RegressiveVolumeLadderError,
   ScopeIdMismatchError,
 } from "../pricing-errors.js";
-import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import type { PriceAudience, PriceScope } from "../price-rule.js";
 import type { VolumeLadder, VolumeLadderUnit, VolumeTier } from "../volume-ladder.js";
@@ -142,11 +142,31 @@ export class VolumeLadderAggregate {
    * Rien ne s'efface : une échelle a facturé, et la retirer effacerait la
    * réponse à « pourquoi ce prix » alors que la facture, elle, reste.
    *
+   * ## 🔴 Ranger BORNE la fenêtre — depuis le 2026-09-09
+   *
+   * Même raison que pour la règle : `archived_at` disait « rangé de l'écran »
+   * ET « il n'agit plus », et la clause `archived_at IS NULL` des lecteurs
+   * transformait la seconde en **disparition** (R17). La fin s'écrit désormais
+   * dans la fenêtre, où le domaine la lit déjà.
+   *
+   * {@link closingWindowAt} porte les quatre cas — dont les **trois** où ne rien
+   * borner est la bonne réponse.
+   *
    * @throws {ArchivedVolumeLadderIsSealedError} il l'est déjà.
    */
   archive(by: string, at: Date, reason: string | null): VolumeLadderAggregate {
     this.assertNotArchived();
-    return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
+    const closedAt = closingWindowAt(this.state, suspendedFromOf(this.state.lifecycle), at);
+    return new VolumeLadderAggregate({
+      ...this.state,
+      ...(closedAt === null ? {} : { validTo: closedAt }),
+      lifecycle: {
+        ...this.state.lifecycle,
+        archivedAt: at,
+        archivedBy: by,
+        archiveReason: reason,
+      },
+    });
   }
 
   private assertNotArchived(): void {

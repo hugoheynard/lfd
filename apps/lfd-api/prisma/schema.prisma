@@ -2723,13 +2723,32 @@ model PriceFloor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// **Depuis quand cette limite arbitre**, borne basse incluse.
+  ///
+  /// Ajoutée le 2026-09-09. Un plancher n'avait aucune fenêtre — la résolution
+  /// filtrait sur la portée, « jamais sur la date » — et re-poser RÉÉCRIVAIT la
+  /// ligne. Une lecture datée appliquait donc les valeurs d'aujourd'hui à une
+  /// période où la limite disait autre chose ; un plancher **relève** un prix,
+  /// si bien que le mode de défaillance était un prix historique gonflé.
+  validFrom DateTime @map("valid_from") @db.Timestamptz(3)
+
+  /// Borne haute **exclue**. `NULL` = elle arbitre encore.
+  ///
+  /// Écrite en re-posant : la précédente s'arrête là où la nouvelle commence.
+  /// Rien n'est détruit, et la référence de dérive de chacune reste la sienne —
+  /// ce que la réécriture en place effaçait.
+  validTo DateTime? @map("valid_to") @db.Timestamptz(3)
+
   /// **Archivée.** Une limite ne se supprime pas davantage qu'une règle : elle a
   /// arbitré des prix, et savoir qu'elle existait explique des factures.
   ///
-  /// Pas de versionnage ici, à la différence des règles : l'identifiant est
-  /// DÉRIVÉ de la portée, donc il n'y a jamais qu'une ligne par cible. Une limite
-  /// retirée puis re-posée reprend sa ligne, et son histoire vit dans le journal
-  /// — l'endroit fait pour ça.
+  /// ⚠️ **Ce commentaire a dit « pas de versionnage ici » jusqu'au 2026-09-09**,
+  /// et s'en servait pour justifier un identifiant DÉRIVÉ de la portée — donc
+  /// une seule ligne par cible, et un `upsert` atomique sans lecture préalable.
+  /// C'était vrai, et c'est exactement ce qui rendait le passé illisible. Il y a
+  /// désormais N lignes par portée, une par période ; la course que l'identifiant
+  /// dérivé évitait est rattrapée par la contrainte d'exclusion, comme pour les
+  /// quatre autres familles.
   archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")

@@ -123,6 +123,16 @@ export interface ScopedPriceFloor {
    * « lequel de ses étages s'ouvre ? ».
    */
   readonly policy: PriceFloorPolicy;
+  /**
+   * Depuis quand elle arbitre — borne basse **incluse**.
+   *
+   * Ajoutée le 2026-09-09 : un plancher était la seule décision tarifaire sans
+   * fenêtre, si bien qu'une lecture datée lui appliquait les valeurs
+   * d'aujourd'hui. Il rejoint {@link inForceFor}, dont il était l'exception.
+   */
+  readonly validFrom: Date;
+  /** Borne haute **exclue**. `null` = elle arbitre encore. */
+  readonly validTo: Date | null;
 }
 
 /**

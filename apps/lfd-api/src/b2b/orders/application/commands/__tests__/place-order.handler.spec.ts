@@ -64,6 +64,23 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
 import { PlaceOrderCommand } from "../place-order.command.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
+import type { CatalogPricing } from "@lfd/contracts";
+
+/**
+ * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
+ * aucune question datée, donc la porte n'a rien à resceller. Il refuse plutôt
+ * que de rendre un tarif : si un cas se mettait à relire le passé, il le dirait
+ * au lieu de servir un prix d'aujourd'hui déguisé en prix d'alors.
+ */
+const noPriceHistory = new (class extends CanonicalPriceHistoryReader {
+  pricingAt(): Promise<ReadonlyMap<string, CatalogPricing>> {
+    return Promise.resolve(new Map());
+  }
+  startsAt(): Promise<Date | null> {
+    return Promise.resolve(null);
+  }
+})();
 
 /**
  * L'instant où les prix sont résolus. Une constante plutôt qu'un `new Date()` :
@@ -80,6 +97,7 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
 /** Aucun tarif négocié : le client paie le catalogue, comme un visiteur. */
 const noMercuriales: CompanyMercurialeReader = {
   liveFor: () => Promise.resolve(null),
+  liveAsOf: () => Promise.resolve(null),
   // Les deux autres questions du port. Ces suites ne les posent pas, mais un
   // doublé partiel n'est pas le port : c'est ce que `tsconfig.test.json`
   // attrape et que ts-jest laisse passer.
@@ -90,6 +108,8 @@ const noMercuriales: CompanyMercurialeReader = {
 const noPriceRules: PriceRuleReader = {
   listArchived: () => Promise.resolve([]),
   inScopes: () => Promise.resolve([]),
+  // La relecture datée n'est pas le sujet de ces cas : même réponse.
+  inScopesAt: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -97,6 +117,8 @@ const noPriceRules: PriceRuleReader = {
 /** Aucune limite posée : le prix sort du pipeline tel quel. */
 const noPriceFloors: PriceFloorReader = {
   inScopes: () => Promise.resolve([]),
+  // La relecture datée n'est pas le sujet de ces cas : même réponse.
+  inScopesAt: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -111,6 +133,8 @@ const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Ma
 /** Aucun barème de volume : ces cas mesurent autre chose. */
 const noVolumeLadders: VolumeLadderReader = {
   inScopes: () => Promise.resolve([]),
+  // La relecture datée n'est pas le sujet de ces cas : même réponse.
+  inScopesAt: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -122,6 +146,7 @@ const noVolumeLadders: VolumeLadderReader = {
  */
 const noCommitments: VolumeCommitmentReader = {
   liveFor: () => Promise.resolve([]),
+  liveAsOf: () => Promise.resolve([]),
 };
 
 const noCustomerVolumes: CustomerVolumeReader = {
@@ -324,6 +349,7 @@ function drafting(
           noCustomerVolumes,
         ),
         new FixedClock(PRICED_AT),
+        noPriceHistory,
       ),
       new FixedClock(PRICED_AT),
     ),

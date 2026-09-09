@@ -90,3 +90,59 @@ export function suspendedFromOf(lifecycle: RuleLifecycle): Date | null {
   }
   return pausedAt.getTime() <= archivedAt.getTime() ? pausedAt : archivedAt;
 }
+
+/**
+ * **L'instant où une décision a cessé d'agir**, ou `null` s'il ne faut RIEN
+ * borner.
+ *
+ * ## Pourquoi ranger doit écrire dans la FENÊTRE
+ *
+ * `archived_at` disait deux choses à la fois : « rangée de l'écran » et « elle
+ * n'agit plus ». La seconde ne se lisait que par ce champ, et la clause
+ * `archived_at IS NULL` des lecteurs la transformait en **disparition** — une
+ * décision en vigueur le 3 mars, rangée en avril, devenait introuvable pour une
+ * lecture datée du 3 mars, alors que quatre affirmations du dépôt promettaient
+ * cette lecture (R17, 2026-09-09).
+ *
+ * Ranger écrit donc aussi la fin dans la fenêtre, qui est l'endroit où le
+ * domaine la lit déjà ({@link isInForce}). `archived_at` retrouve son seul
+ * rôle : ce qui est rangé de l'écran, et ce qui rend sa place dans la contrainte
+ * d'exclusion partielle.
+ *
+ * ## Les trois `null` valent autant que la valeur
+ *
+ * Ce ne sont pas des cas dégénérés : ce sont ceux où la fenêtre dit **déjà** la
+ * vérité, et où l'écrire la falsifierait.
+ *
+ * | Cas | Réponse | Pourquoi |
+ * | --- | --- | --- |
+ * | `validFrom >= at` | `null` | elle n'a jamais agi. Borner donnerait `validTo <= validFrom`, que `tstzrange` refuse en **22000** — que `isExclusionViolation` n'attrape pas, puisqu'il compare un NOM de contrainte. Un **500** sur un geste de staff |
+ * | déjà terminée | `null` | sa fenêtre porte déjà sa fin ; la repousser à `at` la **ressusciterait** sur l'intervalle écoulé. C'est le cas le plus courant : on range ce qui est fini |
+ * | suspendue avant d'agir | `null` | même raison que le premier cas |
+ * | suspendue **pendant** | `suspendedFrom` | elle s'est arrêtée là, pas au rangement — sinon `[pause, rangement[` resterait occupé par une décision qui ne s'y appliquait pas, et le staff se verrait refuser une remplaçante sur une période où rien ne courait |
+ *
+ * ⚠️ `validFrom >= at` est une comparaison **large**, et l'égalité est le cas,
+ * pas la limite : borner à `validFrom` produirait une plage **vide**, et une
+ * plage vide n'est `&&` avec rien — la ligne échapperait entièrement à la
+ * contrainte d'exclusion.
+ */
+export function closingWindowAt(
+  window: { readonly validFrom: Date; readonly validTo: Date | null },
+  suspendedFrom: Date | null,
+  at: Date,
+): Date | null {
+  const { validFrom, validTo } = window;
+  if (validFrom.getTime() >= at.getTime()) {
+    return null;
+  }
+  if (validTo !== null && validTo.getTime() <= at.getTime()) {
+    return null;
+  }
+  if (suspendedFrom === null) {
+    return at;
+  }
+  if (suspendedFrom.getTime() <= validFrom.getTime()) {
+    return null;
+  }
+  return suspendedFrom.getTime() < at.getTime() ? suspendedFrom : at;
+}

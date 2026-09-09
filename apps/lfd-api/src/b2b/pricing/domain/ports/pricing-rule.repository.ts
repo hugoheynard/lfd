@@ -21,6 +21,21 @@ import type { PricingAct } from "../pricing-act.js";
  * les deux dans la **même transaction**.
  */
 export abstract class PricingRuleRepository {
+  /**
+   * **Les règles RANGÉES qui recouvrent la fenêtre de celui-ci**, par
+   * identifiant.
+   *
+   * La contrainte d'exclusion est **partielle** (`WHERE archived_at IS NULL`) :
+   * elle ne protège que du recouvrement avec une règle en cours. Depuis que
+   * clore BORNE la fenêtre (R17), une règle rangé garde pourtant sa place dans
+   * le passé — et poser par-dessus donnerait deux décisions à la même date.
+   *
+   * Rend des identifiants, pas des agrégats : l'appelant leur pose une seule
+   * question, via `PricedDecisionsReader`. Le refus ne vise que ce qui a
+   * **facturé**, jamais ce qui est simplement passé.
+   */
+  abstract archivedOverlapping(rule: PricingRule): Promise<readonly string[]>;
+
   abstract save(rule: PricingRule, act: PricingAct): Promise<void>;
 
   /**

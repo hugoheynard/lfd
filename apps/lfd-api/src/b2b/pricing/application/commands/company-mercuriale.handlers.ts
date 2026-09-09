@@ -6,6 +6,7 @@ import type {
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
@@ -14,6 +15,7 @@ import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuria
 import {
   PricedCompanyNotFoundError,
   PosedMercurialeNotFoundError,
+  PricedPeriodIsSealedError,
   RunningMercurialeError,
 } from "../../domain/pricing-errors.js";
 import { MercurialeDrafts } from "../mercuriale-drafts.store.js";
@@ -136,6 +138,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly mercuriales: CompanyMercurialeRepository,
     private readonly ids: IdGenerator,
     private readonly drafts: MercurialeDrafts,
+    private readonly priced: PricedDecisionsReader,
   ) {}
 
   /**
@@ -172,6 +175,25 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     if (running !== null) {
       const state = running.toPersistence();
       throw new RunningMercurialeError(state.label, state.validFrom, state.validTo);
+    }
+
+    // 🔴 **Le second recouvrement, celui que la base ne voit pas.**
+    //
+    // La contrainte d'exclusion est PARTIELLE (`WHERE archived_at IS NULL`) :
+    // elle protège du chevauchement avec une mercuriale en cours, jamais avec
+    // une close. Depuis que clore BORNE la fenêtre (R17), une close garde
+    // pourtant sa place dans le passé — et poser par-dessus donnerait deux
+    // tarifs à la même date : celui qui a été payé, figé sur la commande, et
+    // celui qu'une relecture datée rendrait.
+    //
+    // ⚠️ Le refus vise **« a facturé »**, pas « est passé ». Une mercuriale
+    // close que personne n'a citée ne bloque rien : la reposer sur sa période
+    // est le geste ordinaire « je me suis trompé, je recommence ». Interdire
+    // toute pose rétroactive aurait supprimé cet usage — attesté par un e2e —
+    // pour protéger un cas qui ne se produisait pas.
+    const closed = await this.mercuriales.archivedOverlapping(companyId, validFrom, validTo);
+    if (closed.length > 0 && (await this.priced.anyPriced(closed))) {
+      throw new PricedPeriodIsSealedError("mercuriale", validFrom);
     }
 
     const mercuriale = CompanyMercuriale.pose(

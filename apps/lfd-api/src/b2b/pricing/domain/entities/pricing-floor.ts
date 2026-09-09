@@ -21,21 +21,36 @@ export interface PricingFloorState {
    * que d'annoncer un écart nul qu'il n'a pas mesuré.
    */
   readonly referenceCanonicalMillicents: number | null;
+  /** Depuis quand elle arbitre — borne basse **incluse**. */
+  readonly validFrom: Date;
+  /** Borne haute **exclue**. `null` = elle arbitre encore. */
+  readonly validTo: Date | null;
 }
 
 /** 100 % du prix canonique, en points de base. */
 const FULL_CANONICAL_BP = 10_000;
 
 /**
- * L'identifiant **dérivé de la portée**, et non tiré au sort.
+ * La portée, **en clé de regroupement** — pas en identifiant.
  *
- * C'est ce qui rend « un seul plancher par cible » structurel plutôt que
- * surveillé : deux planchers sur la même portée ne peuvent pas même porter deux
- * noms différents, donc re-poser est un `upsert` sur la clé primaire — atomique,
- * sans lecture préalable, et sans course entre deux écritures concurrentes.
- * L'index unique en base devient une seconde barrière, pas la seule.
+ * ⚠️ Elle ÉTAIT l'identifiant jusqu'au 2026-09-09, et pour une bonne raison :
+ * « un seul plancher par cible » devenait structurel plutôt que surveillé, et
+ * re-poser était un `upsert` sur la clé primaire — atomique, sans lecture
+ * préalable, sans course.
+ *
+ * C'est aussi ce qui rendait le passé illisible : une seule ligne par portée
+ * veut dire qu'on **réécrit** en re-posant, donc qu'aucune lecture datée ne peut
+ * retrouver la limite d'alors. Un plancher relève un prix ; le mode de
+ * défaillance était un prix historique gonflé.
+ *
+ * Le plancher est donc versionné comme les quatre autres familles, et la course
+ * que l'identifiant dérivé évitait est rattrapée là où elle l'est partout
+ * ailleurs : par la **contrainte d'exclusion** `price_floors_no_overlap`.
+ *
+ * La fonction reste, parce que regrouper par portée reste utile — l'écran
+ * adresse toujours « le plancher de cette portée ».
  */
-export function floorIdForScope(scope: PriceScope): string {
+export function floorScopeKey(scope: PriceScope): string {
   return `${scope.type}:${scope.id ?? ""}`;
 }
 
@@ -54,9 +69,11 @@ export class PricingFloor {
    * @throws {AmountFloorOnBroadScopeError} limite en euros au-delà d'un article.
    */
   static pose(
+    id: string,
     scope: PriceScope,
     policy: PriceFloorPolicy,
     createdBy: string,
+    at: Date,
     referenceCanonicalMillicents: number | null = null,
   ): PricingFloor {
     if ((scope.type === "global") !== (scope.id === null)) {
@@ -85,11 +102,15 @@ export class PricingFloor {
     }
 
     return new PricingFloor({
-      id: floorIdForScope(scope),
+      id,
       scope,
       policy,
       createdBy,
       referenceCanonicalMillicents,
+      // Elle arbitre à partir de MAINTENANT, jamais d'une date choisie : poser
+      // rétroactivement un plancher réécrirait ce qu'une facture a déjà expliqué.
+      validFrom: at,
+      validTo: null,
     });
   }
 
@@ -103,7 +124,26 @@ export class PricingFloor {
 
   /** La forme que lit la résolution. */
   get asScopedFloor(): ScopedPriceFloor {
-    return { id: this.state.id, scope: this.state.scope, policy: this.state.policy };
+    return {
+      id: this.state.id,
+      scope: this.state.scope,
+      policy: this.state.policy,
+      validFrom: this.state.validFrom,
+      validTo: this.state.validTo,
+    };
+  }
+
+  /**
+   * **Borner cette limite**, parce qu'une autre prend sa place — ou parce qu'on
+   * la range.
+   *
+   * Elle ne se réécrit pas : la nouvelle commence là où celle-ci s'arrête, et
+   * les deux restent lisibles côte à côte. C'est ce qui rend l'histoire d'une
+   * portée relisible sans détruire la référence de dérive de chacune — ce que
+   * la réécriture en place effaçait.
+   */
+  closedAt(at: Date): PricingFloor {
+    return new PricingFloor({ ...this.state, validTo: at });
   }
 
   toPersistence(): PricingFloorState {

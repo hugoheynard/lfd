@@ -68,6 +68,10 @@ export interface FloorRow {
   readonly referenceCanonicalMillicents: number | null;
   readonly createdBy: string;
   readonly updatedAt: Date;
+  /** Depuis quand elle arbitre — cf. `price_floors.valid_from`. */
+  readonly validFrom: Date;
+  /** Borne haute exclue. `null` = elle arbitre encore. */
+  readonly validTo: Date | null;
 }
 
 const SCOPE_TYPES: readonly PriceScopeType[] = ["global", "category", "product", "variant"];
@@ -190,6 +194,8 @@ export function floorFromRow(row: FloorRow): ScopedPriceFloor {
     id: row.id,
     scope: { type: scopeType, id: row.scopeId },
     policy: { hard: floorOf(row.id, row.mode, row.value), dynamic: dynamicOf(row) },
+    validFrom: row.validFrom,
+    validTo: row.validTo,
   };
 }
 

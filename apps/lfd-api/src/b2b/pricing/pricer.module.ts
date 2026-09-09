@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CanonicalPriceHistoryModule } from "../catalog/canonical-price-history.module.js";
 import { PricingModule } from "./pricing.module.js";
 import { Pricer } from "./application/pricer.js";
 
@@ -35,7 +36,14 @@ import { Pricer } from "./application/pricer.js";
  * disent quelque chose.
  */
 @Module({
-  imports: [PricingModule],
+  // L'historique du tarif, et lui seul : la porte rescelle les articles au tarif
+  // de la date demandée sur une relecture. Sans lui, elle combinerait les
+  // décisions d'alors avec le tarif d'entrée du jour.
+  //
+  // Son propre module, et non `CatalogModule` : celui-ci importe déjà celui-ci,
+  // et le cycle casse le chargement paresseux à l'exécution sans que rien ne
+  // rougisse à la compilation.
+  imports: [PricingModule, CanonicalPriceHistoryModule],
   providers: [Pricer],
   exports: [Pricer],
 })

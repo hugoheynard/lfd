@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CompanyMercurialeReader } from "../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
+import { unarchivedAt } from "./archived-at.js";
 import { mercurialeFromRow } from "./mercuriale-rows.js";
 
 /**
@@ -36,6 +37,44 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
         validFrom: { lte: at },
         OR: [{ validTo: null }, { validTo: { gt: at } }],
       },
+    });
+    return row === null ? null : mercurialeFromRow(row);
+  }
+
+  /**
+   * La relecture datée : les closes APRÈS `at` sont rendues elles aussi.
+   *
+   * ⚠️ Deux détails que la forme de `liveFor` ne pardonnerait pas ici.
+   *
+   * Le `AND` explicite, d'abord : `unarchivedAt` rend un objet `{ OR: [...] }`,
+   * et cette clause en porte déjà un pour la borne haute. Les fondre par
+   * étalement écraserait l'un des deux — et selon l'ordre, on perdrait soit le
+   * filtre d'archivage, soit **le filtre de fenêtre**, sans que TypeScript ne
+   * bronche.
+   *
+   * L'`orderBy`, ensuite, et il n'est pas décoratif : au présent, la contrainte
+   * d'exclusion **partielle** garantit qu'une seule mercuriale non close couvre
+   * un instant. Au passé, non — une close et une posée rétroactivement peuvent
+   * couvrir la même date. Sans ordre, Postgres en rendrait une, et laquelle
+   * n'est pas défini. La règle écrite ici : **une mercuriale encore ouverte
+   * l'emporte sur une close**, puis la plus récemment posée.
+   */
+  async liveAsOf(companyId: string | null, at: Date): Promise<CompanyMercuriale | null> {
+    if (companyId === null) {
+      return null;
+    }
+    const row = await this.prisma.companyMercuriale.findFirst({
+      where: {
+        AND: [
+          unarchivedAt(at),
+          {
+            companyId,
+            validFrom: { lte: at },
+            OR: [{ validTo: null }, { validTo: { gt: at } }],
+          },
+        ],
+      },
+      orderBy: [{ archivedAt: { sort: "desc", nulls: "first" } }, { validFrom: "desc" }],
     });
     return row === null ? null : mercurialeFromRow(row);
   }

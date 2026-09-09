@@ -6,7 +6,7 @@ import { PricingFloor } from "../domain/entities/pricing-floor.js";
 import { floorFromRow } from "./price-rows.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import type { PricingAct } from "../domain/pricing-act.js";
-import type { PriceFloor } from "../domain/price-rule.js";
+import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
 
 @Injectable()
 export class PrismaPricingFloorRepository extends PricingFloorRepository {
@@ -18,9 +18,19 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
   }
 
   /**
-   * Un `upsert` sur la **clé primaire**, et c'est possible uniquement parce que
-   * l'identifiant est dérivé de la portée : pas de lecture préalable, donc pas de
-   * fenêtre entre « je regarde s'il existe » et « je l'écris ».
+   * **Borne la limite en vigueur, puis pose la nouvelle** — dans une seule
+   * transaction.
+   *
+   * ⚠️ C'était un `upsert` sur la clé primaire jusqu'au 2026-09-09, possible
+   * parce que l'identifiant était dérivé de la portée : pas de lecture
+   * préalable, donc pas de fenêtre entre « je regarde s'il existe » et « je
+   * l'écris ». C'est aussi ce qui **réécrivait** la limite précédente, et rendait
+   * le passé illisible.
+   *
+   * La course que l'`upsert` évitait est désormais rattrapée là où elle l'est
+   * pour les quatre autres familles : par la contrainte d'exclusion
+   * `price_floors_no_overlap`. Deux poses concurrentes ne peuvent pas laisser
+   * deux limites en vigueur sur la même portée.
    */
   async pose(floor: PricingFloor, act: PricingAct): Promise<void> {
     const state = floor.toPersistence();
@@ -41,29 +51,53 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       // Re-posée = re-décidée : la référence se rafraîchit, et l'écart repart
       // de zéro. C'est exactement ce qu'on veut d'une confirmation — sans quoi
       // le signal ne s'éteindrait jamais et on apprendrait à l'ignorer.
+      //
+      // ⚠️ Cet effet est PRÉSERVÉ par le versionnage, et il fallait le vérifier :
+      // la ligne neuve porte sa propre référence, donc l'écart repart bien de
+      // zéro. Ce qu'on ne perd plus, c'est l'ancienne — que la réécriture en
+      // place effaçait.
       referenceCanonicalMillicents: state.referenceCanonicalMillicents,
       createdBy: state.createdBy,
-      // Re-poser sur une portée archivée la REND : c'est une nouvelle décision,
-      // avec son auteur et sa date, et l'histoire de la portée reste lisible
-      // dans le journal. Laisser `archived_at` en place aurait donné une limite
-      // qui protège et qui se dit retirée.
-      archivedAt: null,
-      archivedBy: null,
-      archiveReason: null,
+      validFrom: state.validFrom,
+      validTo: state.validTo,
     };
 
     await this.acts.around(act, () =>
-      this.prisma.priceFloor.upsert({
-        where: { id: state.id },
-        create: { id: state.id, ...shared },
-        update: shared,
+      this.prisma.$transaction(async (tx) => {
+        // La précédente s'arrête là où la nouvelle commence — bornée, pas
+        // réécrite. C'est ce qui rend l'histoire de la portée relisible, et ce
+        // que l'`upsert` sur la clé primaire rendait impossible.
+        await tx.priceFloor.updateMany({
+          where: {
+            scopeType: state.scope.type,
+            scopeId: state.scope.id,
+            archivedAt: null,
+            OR: [{ validTo: null }, { validTo: { gt: state.validFrom } }],
+          },
+          data: { validTo: state.validFrom },
+        });
+        await tx.priceFloor.create({ data: { id: state.id, ...shared } });
       }),
     );
   }
 
-  /** La limite **en vigueur** : une limite archivée n'en est plus une. */
-  async load(id: string): Promise<PricingFloor | null> {
-    const row = await this.prisma.priceFloor.findFirst({ where: { id, archivedAt: null } });
+  /**
+   * **La limite qui arbitre cette portée à cet instant.**
+   *
+   * Elle s'adressait par identifiant — dérivé de la portée, donc unique. Il y a
+   * désormais N lignes par portée, une par période : c'est la portée **et
+   * l'instant** qui désignent, et l'écran continue de ne connaître que la portée.
+   */
+  async inForceFor(scope: PriceScope, at: Date): Promise<PricingFloor | null> {
+    const row = await this.prisma.priceFloor.findFirst({
+      where: {
+        scopeType: scope.type,
+        scopeId: scope.id,
+        archivedAt: null,
+        validFrom: { lte: at },
+        OR: [{ validTo: null }, { validTo: { gt: at } }],
+      },
+    });
     if (row === null) {
       return null;
     }
@@ -74,6 +108,8 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       policy: scoped.policy,
       createdBy: row.createdBy,
       referenceCanonicalMillicents: row.referenceCanonicalMillicents,
+      validFrom: row.validFrom,
+      validTo: row.validTo,
     });
   }
 
@@ -90,7 +126,16 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
     return this.acts.aroundChange(act, async () => {
       const { count } = await this.prisma.priceFloor.updateMany({
         where: { id, archivedAt: null },
-        data: { archivedAt: act.at, archivedBy: act.actor, archiveReason: act.reason },
+        // Ranger BORNE aussi, comme pour les quatre autres familles : sans ça,
+        // une relecture datée postérieure au rangement appliquerait encore la
+        // limite. Le `validTo` n'est posé que s'il ne recule pas — une limite
+        // déjà bornée porte sa vraie fin.
+        data: {
+          archivedAt: act.at,
+          archivedBy: act.actor,
+          archiveReason: act.reason,
+          validTo: act.at,
+        },
       });
       return count > 0;
     });

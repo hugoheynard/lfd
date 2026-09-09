@@ -135,15 +135,46 @@ describe("VolumeCommitmentAggregate.close", () => {
     });
   });
 
-  /** La clôture ne révise rien : la période et le volume visé restent intacts. */
-  it("ne touche ni la période ni le volume visé", () => {
+  /**
+   * 🔴 **Ce cas affirmait « ne touche ni la période ni le volume visé » jusqu'au
+   * 2026-09-09.** Il encodait le défaut de R17 : `archived_at` disait à la fois
+   * « rangé » et « il n'agit plus », et comme tous les lecteurs filtrent
+   * `archived_at IS NULL`, la seconde moitié devenait une **disparition** — un
+   * engagement clos en juillet était introuvable pour une lecture datée de mars,
+   * alors qu'il courait ce jour-là.
+   *
+   * Clore borne donc la fenêtre à l'instant de la clôture. Le **volume visé**,
+   * lui, reste bien intact : clore ne révise pas la promesse, et les commandes
+   * déjà passées gardent le palier qu'elles ont mérité — leur trace est figée.
+   *
+   * ⚠️ La fenêtre d'un engagement est aussi sa fenêtre de **mesure**
+   * (`PricingMaterialsLoader` compte le cumul entre ses bornes). La borner
+   * change donc l'assiette : un engagement clos cesse de mesurer après sa
+   * clôture, ce qui est ce qu'on veut dire par « clos ».
+   */
+  it("borne la période à la clôture, sans toucher au volume visé", () => {
     const closed = signed.close("auth0|hugo", JUILLET, null);
 
     expect(closed.asCommitment).toMatchObject({
       promisedQuantity: 6000,
       validFrom: JANVIER,
-      validTo: DECEMBRE,
+      validTo: JUILLET,
     });
+  });
+
+  /**
+   * Les `null` de `closingWindowAt` comptent ici plus qu'ailleurs : `valid_to`
+   * est NOT NULL en base et porte un CHECK `valid_to > valid_from`. Borner un
+   * engagement qui n'a pas commencé lèverait un **23514** — que
+   * `isExclusionViolation` n'attrape pas, puisqu'il compare un nom de contrainte
+   * d'exclusion. Donc un 500 sur un geste de staff.
+   */
+  it("ne borne RIEN sur un engagement qui n'avait pas commencé", () => {
+    const avantDebut = new Date(JANVIER.getTime() - 86_400_000);
+
+    const closed = signed.close("auth0|hugo", avantDebut, null);
+
+    expect(closed.asCommitment).toMatchObject({ validFrom: JANVIER, validTo: DECEMBRE });
   });
 
   it("refuse de clore deux fois", () => {

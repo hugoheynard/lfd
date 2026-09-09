@@ -111,6 +111,36 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
     return row === null ? null : mercurialeFromRow(row);
   }
 
+  /**
+   * **Les mercuriales RANGÉES qui recouvrent cette fenêtre.**
+   *
+   * Même clause que {@link runningFor}, à l'archivage près — et c'est ce qui la
+   * rend nécessaire : la contrainte d'exclusion est **partielle**
+   * (`WHERE archived_at IS NULL`), donc elle ne voit pas les rangées. Sans cette
+   * lecture, on peut poser par-dessus une période qu'une mercuriale close a
+   * réellement facturée, et la relecture datée y trouverait alors deux tarifs.
+   *
+   * Elle rend des **identifiants** et non des objets : l'appelant n'en fait
+   * qu'une chose, demander au port des commandes si l'une d'elles a facturé.
+   * Reconstituer des agrégats pour les jeter serait payer la grille de chacune.
+   */
+  async archivedOverlapping(
+    companyId: string,
+    validFrom: Date,
+    validTo: Date | null,
+  ): Promise<readonly string[]> {
+    const rows = await this.prisma.companyMercuriale.findMany({
+      where: {
+        companyId,
+        archivedAt: { not: null },
+        ...(validTo === null ? {} : { validFrom: { lt: validTo } }),
+        OR: [{ validTo: null }, { validTo: { gt: validFrom } }],
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   async runningFor(
     companyId: string,
     validFrom: Date,

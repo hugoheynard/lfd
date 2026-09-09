@@ -23,6 +23,9 @@ function floor(
     id,
     scope: { type, id: scopeId },
     policy: { hard: { mode: "amount", millicents }, dynamic: null },
+    // Fenêtre ouverte : ces cas éprouvent la PORTÉE et la porte, pas la date.
+    validFrom: new Date(0),
+    validTo: null,
   };
 }
 
@@ -102,6 +105,9 @@ describe("resolveFloor", () => {
       id: "f",
       scope: { type: "global", id: null },
       policy: { hard: { mode: "percent", bp: 5000 }, dynamic: null },
+      // Fenêtre ouverte : ces cas éprouvent la PORTÉE et la porte, pas la date.
+      validFrom: new Date(0),
+      validTo: null,
     };
 
     expect(resolveFloor([fraction], CONTEXT)).toEqual({ mode: "percent", bp: 5000 });
@@ -125,5 +131,48 @@ describe("resolveFloor", () => {
     const posés = [floor("c", "category", "viennoiserie", 100), floor("g", "global", null, 200)];
 
     expect(() => resolveFloor(posés, CONTEXT)).not.toThrow();
+  });
+});
+
+/**
+ * 🔴 **Le plancher se lit AUSSI à la date.**
+ *
+ * Il était la seule décision tarifaire sans fenêtre : l'index de sa migration
+ * l'écrivait, « la résolution filtre sur la portée, **jamais sur la date** ». Et
+ * re-poser réécrivait la ligne en place, si bien qu'une lecture datée appliquait
+ * les valeurs d'aujourd'hui à une période où la limite disait autre chose.
+ *
+ * Un plancher **relève** un prix : le mode de défaillance était un prix
+ * historique **gonflé**, et rien ne le signalait.
+ */
+describe("la fenêtre du plancher", () => {
+  const dated = (from: Date, to: Date | null): ScopedPriceFloor => ({
+    ...floor("flr_daté", "global", null, 150),
+    validFrom: from,
+    validTo: to,
+  });
+
+  it("n'applique pas une limite qui n'avait pas encore été posée", () => {
+    const posedLater = dated(new Date(CONTEXT.at.getTime() + 86_400_000), null);
+
+    expect(resolveFloor([posedLater], CONTEXT)).toBeNull();
+  });
+
+  it("n'applique pas une limite déjà remplacée à cet instant", () => {
+    const replaced = dated(new Date(0), new Date(CONTEXT.at.getTime() - 86_400_000));
+
+    expect(resolveFloor([replaced], CONTEXT)).toBeNull();
+  });
+
+  /**
+   * Le cas qui donne son sens au versionnage : deux limites sur la même portée,
+   * qui se succèdent. Sans fenêtre, elles ne pouvaient pas coexister — la
+   * seconde écrasait la première, et l'histoire disparaissait.
+   */
+  it("choisit celle qui arbitrait à CET instant, parmi deux qui se succèdent", () => {
+    const avant = { ...dated(new Date(0), new Date(CONTEXT.at.getTime() - 1)), id: "flr_avant" };
+    const apres = { ...dated(new Date(CONTEXT.at.getTime() - 1), null), id: "flr_apres" };
+
+    expect(resolveScopedFloor([avant, apres], CONTEXT)?.id).toBe("flr_apres");
   });
 });

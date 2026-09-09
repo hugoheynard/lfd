@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { CreateVolumeCommitmentPayload } from "@lfd/contracts";
 
+import { PricedPeriodIsSealedError } from "../../domain/pricing-errors.js";
+import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -46,6 +48,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly priced: PricedDecisionsReader,
   ) {}
 
   async execute(command: SignVolumeCommitmentCommand): Promise<string> {
@@ -61,6 +64,20 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
       },
       command.staffSub,
     );
+    // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
+    // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
+    // avec un engagement en cours, jamais avec un rangé. Depuis que clore borne
+    // la fenêtre (R17), un engagement rangé garde sa place dans le passé, et poser
+    // par-dessus donnerait deux décisions à la même date.
+    //
+    // ⚠️ Le refus vise « **a facturé** », pas « est passé ». Un engagement posé
+    // puis rangé dix minutes plus tard n'a rien facturé : le reposer est le
+    // geste ordinaire « je me suis trompé, je recommence ».
+    const sealed = await this.commitments.archivedOverlapping(commitment);
+    if (sealed.length > 0 && (await this.priced.anyPriced(sealed))) {
+      throw new PricedPeriodIsSealedError("engagement", commitment.toPersistence().validFrom);
+    }
+
     await this.uow.run(async () => {
       await this.commitments.sign(commitment);
       await this.events.publishTraced(new VolumeCommitmentSignedEvent(commitment));

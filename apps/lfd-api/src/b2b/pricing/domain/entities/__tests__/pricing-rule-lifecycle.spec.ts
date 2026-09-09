@@ -193,3 +193,78 @@ describe("archiver", () => {
     expect(archived.asPriceRule.suspendedFrom).toBe(PLUS_TARD);
   });
 });
+
+/**
+ * **Ranger BORNE la fenêtre.** Ajouté le 2026-09-09 avec R17.
+ *
+ * `archived_at` disait deux choses : « rangée de l'écran » et « elle n'agit
+ * plus ». La clause `archived_at IS NULL` des lecteurs transformait la seconde
+ * en **disparition** — une règle en vigueur le 3 mars, rangée en avril, devenait
+ * introuvable pour une lecture datée du 3 mars.
+ *
+ * Ranger écrit donc la fin dans la fenêtre, qui est l'endroit où le domaine la
+ * lit déjà. Les trois cas où l'on ne borne PAS comptent autant que celui où l'on
+ * borne : la fenêtre y dit déjà la vérité, et l'écrire la falsifierait.
+ */
+describe("🔴 ranger borne la fenêtre", () => {
+  it("borne à l'instant du rangement une règle qui courait", () => {
+    const rangee = create().archive("auth0|marc", PENDANT, "rangée");
+
+    expect(rangee.toPersistence().validTo).toEqual(PENDANT);
+    expect(rangee.status).toBe("archived");
+  });
+
+  /**
+   * Elle s'est arrêtée à la PAUSE, pas au rangement. Borner au rangement
+   * occuperait `[pause, rangement[` avec une décision qui ne s'y appliquait
+   * pas — et le staff se verrait refuser une remplaçante sur une période où,
+   * de l'aveu du système, rien ne courait.
+   */
+  it("borne à la SUSPENSION une règle mise en pause avant d'être rangée", () => {
+    const rangee = create().pause("auth0|marc", PENDANT).archive("auth0|marc", PLUS_TARD, null);
+
+    expect(rangee.toPersistence().validTo).toEqual(PENDANT);
+  });
+
+  /**
+   * 🔴 Le cas qui produirait un **500**. Borner donnerait `validTo <= validFrom`,
+   * que `tstzrange` refuse en SQLSTATE 22000 — et `isExclusionViolation` guette
+   * un NOM de contrainte, donc ne l'attrape pas. Le staff verrait une erreur
+   * technique sur un geste ordinaire.
+   */
+  it("ne borne RIEN sur une règle qui n'a jamais agi", () => {
+    const future = create({ validFrom: APRES, validTo: null });
+
+    const rangee = future.archive("auth0|marc", PENDANT, null);
+
+    expect(rangee.toPersistence().validTo).toBeNull();
+  });
+
+  /**
+   * Sa fenêtre porte déjà sa fin. La repousser au rangement la **ressusciterait**
+   * sur l'intervalle écoulé — et c'est le cas le plus courant, puisqu'on range
+   * généralement ce qui est fini.
+   */
+  it("ne borne RIEN sur une règle déjà terminée, et ne la ressuscite pas", () => {
+    const rangee = create().archive("auth0|marc", APRES, null);
+
+    expect(rangee.toPersistence().validTo).toEqual(FIN);
+  });
+
+  it("ne borne RIEN sur une règle suspendue avant même d'avoir agi", () => {
+    const future = create({ validFrom: APRES, validTo: null });
+
+    const rangee = future.pause("auth0|marc", PENDANT).archive("auth0|marc", PLUS_TARD, null);
+
+    expect(rangee.toPersistence().validTo).toBeNull();
+  });
+
+  /** Le rangement reste terminal, et la garde qui le dit n'a pas bougé. */
+  it("refuse toujours de ranger deux fois", () => {
+    const rangee = create().archive("auth0|marc", PENDANT, null);
+
+    expect(() => rangee.archive("auth0|marc", PLUS_TARD, null)).toThrow(
+      ArchivedPriceRuleIsSealedError,
+    );
+  });
+});

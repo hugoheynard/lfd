@@ -39,6 +39,24 @@ export abstract class CompanyMercurialeRepository {
    * **message** — un refus qui nomme la mercuriale en cours, sans quoi on ne
    * saurait pas quoi clore.
    */
+  /**
+   * **Les mercuriales RANGÉES qui recouvrent cette fenêtre**, par identifiant.
+   *
+   * La contrainte d'exclusion est partielle (`WHERE archived_at IS NULL`) : elle
+   * ne protège donc que du recouvrement avec une mercuriale **en cours**. Poser
+   * par-dessus une période close reste possible en base, et c'est ce qu'il faut
+   * refuser quand cette période a **facturé** — sans quoi la relecture datée y
+   * trouverait deux tarifs concurrents.
+   *
+   * Rend des identifiants, pas des agrégats : l'appelant leur pose une seule
+   * question, via `PricedDecisionsReader`.
+   */
+  abstract archivedOverlapping(
+    companyId: string,
+    validFrom: Date,
+    validTo: Date | null,
+  ): Promise<readonly string[]>;
+
   abstract runningFor(
     companyId: string,
     validFrom: Date,

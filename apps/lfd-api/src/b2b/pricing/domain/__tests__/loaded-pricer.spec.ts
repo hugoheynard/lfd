@@ -105,7 +105,14 @@ function ladder(from: number, bp: number): VolumeLadder {
 }
 
 function floor(policy: PriceFloorPolicy): ScopedPriceFloor {
-  return { id: "floor_1", scope: { type: "global", id: null }, policy };
+  // Fenêtre ouverte : ces cas éprouvent la porte du plancher, pas sa datation.
+  return {
+    id: "floor_1",
+    scope: { type: "global", id: null },
+    policy,
+    validFrom: new Date(0),
+    validTo: null,
+  };
 }
 
 /** Un mur dur à 90 % du canonique, sans porte. */

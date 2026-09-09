@@ -26,6 +26,35 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
   }
 
   /** Le barème **et** son acte, dans la même transaction. */
+  /**
+   * **Les barèmes RANGÉS qui recouvrent cette fenêtre**, par identifiant.
+   *
+   * La contrainte d'exclusion est **partielle** (`WHERE archived_at IS NULL`) :
+   * elle ne protège que du recouvrement avec un barème en cours. Poser
+   * par-dessus une période rangée reste possible en base — et c'est ce qu'il
+   * faut refuser quand cette période a **facturé**, sans quoi la relecture datée
+   * y trouverait deux décisions concurrentes.
+   *
+   * ⚠️ La clé est celle du tuple d'exclusion de SA table : portée et audience, sans l'étage ni le seuil. La recopier de
+   * travers rendrait un ensemble vide rassurant et faux.
+   */
+  async archivedOverlapping(ladder: VolumeLadderAggregate): Promise<readonly string[]> {
+    const state = ladder.toPersistence();
+    const rows = await this.prisma.volumeLadder.findMany({
+      where: {
+        archivedAt: { not: null },
+        scopeType: state.scope.type,
+        scopeId: state.scope.id,
+        audienceType: state.audience.type,
+        audienceId: state.audience.id,
+        ...(state.validTo === null ? {} : { validFrom: { lt: state.validTo } }),
+        OR: [{ validTo: null }, { validTo: { gt: state.validFrom } }],
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   async pose(ladder: VolumeLadderAggregate, act: PricingAct): Promise<void> {
     const state = ladder.toPersistence();
     try {

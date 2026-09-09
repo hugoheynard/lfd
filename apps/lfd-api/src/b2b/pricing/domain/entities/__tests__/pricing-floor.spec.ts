@@ -1,4 +1,4 @@
-import { PricingFloor, floorIdForScope } from "../pricing-floor.js";
+import { PricingFloor, floorScopeKey } from "../pricing-floor.js";
 import {
   AmountFloorOnBroadScopeError,
   DynamicFloorNotBelowHardError,
@@ -11,6 +11,8 @@ import type { PriceFloorPolicy } from "../../floor-policy.js";
 import type { PriceFloor } from "../../price-rule.js";
 
 /** Un mur seul — le cas courant. */
+const POSED_AT = new Date("2026-06-15T09:00:00.000Z");
+
 function wall(hard: PriceFloor): PriceFloorPolicy {
   return { hard, dynamic: null };
 }
@@ -18,49 +20,84 @@ function wall(hard: PriceFloor): PriceFloorPolicy {
 describe("PricingFloor.pose", () => {
   it("pose un mur en euros, sans porte", () => {
     const floor = PricingFloor.pose(
+      "flr_1",
       { type: "product", id: "VIE-001" },
       { hard: { mode: "amount", millicents: 150 }, dynamic: null },
       "auth0|cecile",
+      POSED_AT,
     );
 
     expect(floor.asScopedFloor).toEqual({
-      id: "product:VIE-001",
+      id: "flr_1",
       scope: { type: "product", id: "VIE-001" },
       policy: { hard: { mode: "amount", millicents: 150 }, dynamic: null },
+      validFrom: POSED_AT,
+      validTo: null,
     });
   });
 
   /**
-   * L'identifiant **dérive de la portée**. C'est ce qui rend « une seule limite
-   * par cible » structurel : deux planchers sur la même portée ne peuvent pas
-   * même porter deux noms différents, donc re-poser est un remplacement, sans
-   * lecture préalable ni course entre deux écritures.
+   * ⚠️ **Ce cas affirmait l'inverse jusqu'au 2026-09-09** : « deux limites sur la
+   * même portée portent le MÊME identifiant », parce que l'identifiant dérivait
+   * de la portée. C'est ce qui rendait « une seule limite par cible »
+   * structurel — et c'est aussi ce qui **réécrivait** la précédente en re-posant,
+   * donc ce qui rendait le passé illisible.
+   *
+   * Les planchers sont versionnés depuis : N lignes par portée, une par période.
+   * La portée reste une clé de REGROUPEMENT — l'écran adresse toujours « le
+   * plancher de cette catégorie » — mais elle n'identifie plus une ligne.
    */
-  it("deux limites sur la même portée portent le MÊME identifiant", () => {
+  it("deux limites sur la même portée sont DEUX décisions, groupées par la portée", () => {
     const scope = { type: "category", id: "viennoiserie" } as const;
-    const first = PricingFloor.pose(scope, wall({ mode: "percent", bp: 6_000 }), "a");
-    const second = PricingFloor.pose(scope, wall({ mode: "percent", bp: 4000 }), "b");
+    const first = PricingFloor.pose(
+      "flr_1",
+      scope,
+      wall({ mode: "percent", bp: 6_000 }),
+      "a",
+      POSED_AT,
+    );
+    const second = PricingFloor.pose(
+      "flr_2",
+      scope,
+      wall({ mode: "percent", bp: 4000 }),
+      "b",
+      POSED_AT,
+    );
 
-    expect(first.id).toBe(second.id);
-    expect(first.id).toBe(floorIdForScope(scope));
+    expect(first.id).not.toBe(second.id);
+    expect(floorScopeKey(first.asScopedFloor.scope)).toBe(
+      floorScopeKey(second.asScopedFloor.scope),
+    );
   });
 
   it("distingue la portée globale de tout le reste", () => {
-    expect(floorIdForScope({ type: "global", id: null })).not.toBe(
-      floorIdForScope({ type: "category", id: "" }),
+    expect(floorScopeKey({ type: "global", id: null })).not.toBe(
+      floorScopeKey({ type: "category", id: "" }),
     );
   });
 
   it("accepte une fraction du canonique", () => {
     expect(() =>
-      PricingFloor.pose({ type: "global", id: null }, wall({ mode: "percent", bp: 5000 }), "a"),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "global", id: null },
+        wall({ mode: "percent", bp: 5000 }),
+        "a",
+        POSED_AT,
+      ),
     ).not.toThrow();
   });
 
   /** 100 % pile est une limite légitime : « ne descend jamais sous le tarif ». */
   it("accepte 100 % du canonique", () => {
     expect(() =>
-      PricingFloor.pose({ type: "global", id: null }, wall({ mode: "percent", bp: 10_000 }), "a"),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "global", id: null },
+        wall({ mode: "percent", bp: 10_000 }),
+        "a",
+        POSED_AT,
+      ),
     ).not.toThrow();
   });
 
@@ -71,16 +108,24 @@ describe("PricingFloor.pose", () => {
    */
   it("refuse une fraction supérieure au prix canonique", () => {
     expect(() =>
-      PricingFloor.pose({ type: "global", id: null }, wall({ mode: "percent", bp: 12_000 }), "a"),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "global", id: null },
+        wall({ mode: "percent", bp: 12_000 }),
+        "a",
+        POSED_AT,
+      ),
     ).toThrow(FloorAboveCanonicalError);
   });
 
   it("refuse une portée « famille » qui ne nomme aucune famille", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         { type: "category", id: null },
         wall({ mode: "amount", millicents: 100 }),
         "a",
+        POSED_AT,
       ),
     ).toThrow(ScopeIdMismatchError);
   });
@@ -88,9 +133,11 @@ describe("PricingFloor.pose", () => {
   it("refuse une grandeur nulle", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         { type: "product", id: "VIE-001" },
         wall({ mode: "amount", millicents: 0 }),
         "a",
+        POSED_AT,
       ),
     ).toThrow(InvalidAlterationError);
   });
@@ -105,6 +152,7 @@ describe("la porte", () => {
   it("s'ouvre sur une quantité, sur un volume, ou sur les deux", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         scope,
         {
           hard: HARD,
@@ -114,6 +162,7 @@ describe("la porte", () => {
           },
         },
         "a",
+        POSED_AT,
       ),
     ).not.toThrow();
   });
@@ -126,6 +175,7 @@ describe("la porte", () => {
   it("refuse une porte sans clé", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         scope,
         {
           hard: HARD,
@@ -135,6 +185,7 @@ describe("la porte", () => {
           },
         },
         "a",
+        POSED_AT,
       ),
     ).toThrow(UnlockableDynamicFloorError);
   });
@@ -143,6 +194,7 @@ describe("la porte", () => {
   it("refuse une porte au-dessus du mur", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         scope,
         {
           hard: HARD,
@@ -152,6 +204,7 @@ describe("la porte", () => {
           },
         },
         "a",
+        POSED_AT,
       ),
     ).toThrow(DynamicFloorNotBelowHardError);
   });
@@ -164,6 +217,7 @@ describe("la porte", () => {
   it("laisse passer deux unités différentes, qu'elle ne peut pas comparer ici", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         scope,
         {
           hard: HARD,
@@ -173,6 +227,7 @@ describe("la porte", () => {
           },
         },
         "a",
+        POSED_AT,
       ),
     ).not.toThrow();
   });
@@ -190,32 +245,39 @@ describe("une limite en euros", () => {
 
   it("se pose sur un article", () => {
     expect(() =>
-      PricingFloor.pose({ type: "product", id: "VIE-001" }, wall(AMOUNT), "a"),
+      PricingFloor.pose("flr_1", { type: "product", id: "VIE-001" }, wall(AMOUNT), "a", POSED_AT),
     ).not.toThrow();
   });
 
   it("se pose sur une déclinaison", () => {
     expect(() =>
-      PricingFloor.pose({ type: "variant", id: "VIE-001-1" }, wall(AMOUNT), "a"),
+      PricingFloor.pose("flr_1", { type: "variant", id: "VIE-001-1" }, wall(AMOUNT), "a", POSED_AT),
     ).not.toThrow();
   });
 
   it("est refusée sur une famille", () => {
     expect(() =>
-      PricingFloor.pose({ type: "category", id: "viennoiserie" }, wall(AMOUNT), "a"),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "category", id: "viennoiserie" },
+        wall(AMOUNT),
+        "a",
+        POSED_AT,
+      ),
     ).toThrow(AmountFloorOnBroadScopeError);
   });
 
   it("est refusée sur tout le catalogue", () => {
-    expect(() => PricingFloor.pose({ type: "global", id: null }, wall(AMOUNT), "a")).toThrow(
-      AmountFloorOnBroadScopeError,
-    );
+    expect(() =>
+      PricingFloor.pose("flr_1", { type: "global", id: null }, wall(AMOUNT), "a", POSED_AT),
+    ).toThrow(AmountFloorOnBroadScopeError);
   });
 
   /** Le refus vaut aussi pour la PORTE : elle est une limite, comme le mur. */
   it("est refusée sur la porte d'une portée large", () => {
     expect(() =>
       PricingFloor.pose(
+        "flr_1",
         { type: "category", id: "viennoiserie" },
         {
           hard: { mode: "percent", bp: 6_000 },
@@ -225,6 +287,7 @@ describe("une limite en euros", () => {
           },
         },
         "a",
+        POSED_AT,
       ),
     ).toThrow(AmountFloorOnBroadScopeError);
   });
@@ -233,9 +296,11 @@ describe("une limite en euros", () => {
   it("laisse passer une fraction sur toutes les portées", () => {
     const percent = wall({ mode: "percent", bp: 6_000 });
 
-    expect(() => PricingFloor.pose({ type: "global", id: null }, percent, "a")).not.toThrow();
     expect(() =>
-      PricingFloor.pose({ type: "category", id: "viennoiserie" }, percent, "a"),
+      PricingFloor.pose("flr_1", { type: "global", id: null }, percent, "a", POSED_AT),
+    ).not.toThrow();
+    expect(() =>
+      PricingFloor.pose("flr_1", { type: "category", id: "viennoiserie" }, percent, "a", POSED_AT),
     ).not.toThrow();
   });
 });

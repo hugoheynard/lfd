@@ -120,7 +120,7 @@ function matchesAudience(audience: PriceAudience, context: PricingAudienceOf): b
  * au même instant ne se chevauchent alors jamais, et personne n'a à se demander
  * laquelle s'applique à minuit pile.
  */
-function isInForce(
+export function isInForce(
   rule: { readonly validFrom: Date; readonly validTo: Date | null },
   at: Date,
 ): boolean {

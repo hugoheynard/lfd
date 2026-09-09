@@ -18,7 +18,7 @@ import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repos
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
-import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
+import { CanonicalPriceHistoryModule } from "./canonical-price-history.module.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
@@ -30,7 +30,6 @@ import {
   PrismaCatalogVersionReader,
   PrismaCatalogVersionRepository,
 } from "./infrastructure/prisma-catalog-version.repository.js";
-import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminCatalogDeliveryController } from "./http/admin-catalog-delivery.controller.js";
@@ -81,7 +80,7 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
   // panier (R22). Elle passe par LA porte du prix, et non par le chargeur —
   // c'est ce qui a fait retirer les entrées par SKU de la porte, qui la
   // faisaient dépendre du catalogue et fermaient le cycle.
-  imports: [B2bPlatformModule, PricerModule],
+  imports: [B2bPlatformModule, PricerModule, CanonicalPriceHistoryModule],
   controllers: [
     AdminCatalogController,
     AdminCatalogParityController,
@@ -120,7 +119,6 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // importait `orders` neuf fois pour une donnée qui n'y est pas.
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
-    { provide: CanonicalPriceHistoryReader, useClass: PrismaCanonicalPriceHistoryReader },
     // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
     // continue d'écrire les faits en direct, et la bascule est un déploiement
     // séparé, derrière un drapeau `B2B_DELIVERY_INBOX`.
@@ -151,7 +149,11 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // descendue ici.
     ShopCataloguePricing,
     CatalogItemRepository,
-    CanonicalPriceHistoryReader,
+    // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
+    // que l'historique a son propre module — Nest refuse d'exporter un provider
+    // dont il n'est pas le propriétaire, et il le dit au BOOT, pas à la
+    // compilation.
+    CanonicalPriceHistoryModule,
     IngestCatalogService,
     CheckCatalogParityService,
     // Exporté pour la racine de composition : c'est elle qui relie le driver du

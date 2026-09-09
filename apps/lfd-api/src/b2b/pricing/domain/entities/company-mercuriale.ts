@@ -11,7 +11,7 @@ import {
   type PricingGridLine,
   type PricingTier,
 } from "../pricing-grid.js";
-import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import { volumeQuantityOf } from "../price-rule.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
@@ -184,11 +184,34 @@ export class CompanyMercuriale {
    * Rien n'est effacé — une lecture datée d'avant la clôture la retrouve, et ce
    * qu'elle a facturé est figé sur les commandes.
    *
+   * ## 🔴 Cette dernière phrase était FAUSSE jusqu'au 2026-09-09
+   *
+   * Une lecture datée ne la retrouvait pas : tous les lecteurs filtrent
+   * `archived_at IS NULL`, donc clore la faisait **disparaître** du passé
+   * — alors que quatre affirmations du dépôt promettaient l'inverse (R17).
+   *
+   * Clore écrit désormais **aussi** la fin dans la fenêtre, qui est l'endroit où
+   * le domaine la lit déjà. `archived_at` garde son rôle : rendre sa place dans
+   * la contrainte d'exclusion, pour qu'on puisse reposer.
+   *
+   * {@link closingWindowAt} porte les quatre cas — dont les **trois** où ne rien
+   * borner est la bonne réponse.
+   *
    * @throws {ArchivedMercurialeIsSealedError} elle l'est déjà.
    */
   close(by: string, at: Date, reason: string | null): CompanyMercuriale {
     this.assertNotArchived();
-    return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
+    const closedAt = closingWindowAt(this.state, suspendedFromOf(this.state.lifecycle), at);
+    return new CompanyMercuriale({
+      ...this.state,
+      ...(closedAt === null ? {} : { validTo: closedAt }),
+      lifecycle: {
+        ...this.state.lifecycle,
+        archivedAt: at,
+        archivedBy: by,
+        archiveReason: reason,
+      },
+    });
   }
 
   /**
@@ -264,13 +287,6 @@ export class CompanyMercuriale {
 
   toPersistence(): CompanyMercurialeState {
     return this.state;
-  }
-
-  private withLifecycle(change: Partial<RuleLifecycle>): CompanyMercuriale {
-    return new CompanyMercuriale({
-      ...this.state,
-      lifecycle: { ...this.state.lifecycle, ...change },
-    });
   }
 
   private assertNotArchived(): void {

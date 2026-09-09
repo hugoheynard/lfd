@@ -6,6 +6,7 @@ import {
 } from "../pricing-errors.js";
 import type { PriceScope } from "../price-rule.js";
 import type { VolumeCommitment } from "../volume-commitment.js";
+import { closingWindowAt } from "../rule-lifecycle.js";
 
 /** Ce qu'un appelant apporte pour signer un engagement — l'intention. */
 export interface VolumeCommitmentDraft {
@@ -95,8 +96,24 @@ export class VolumeCommitmentAggregate {
     if (this.state.archivedAt !== null) {
       throw new ArchivedVolumeCommitmentIsSealedError(this.state.id);
     }
+    // 🔴 Clore BORNE la fenêtre depuis le 2026-09-09 : `archived_at` disait à la
+    // fois « rangé » et « il n'agit plus », et la clause `archived_at IS NULL`
+    // des lecteurs transformait la seconde en disparition (R17).
+    //
+    // ⚠️ Ici plus qu'ailleurs, les `null` de `closingWindowAt` comptent :
+    // `valid_to` est NOT NULL et porte un CHECK `valid_to > valid_from`
+    // (`volume_commitments_window_opens_before_closing`). Borner un engagement
+    // qui n'a pas commencé lèverait un **23514** — que `isExclusionViolation`
+    // n'attrape pas, puisqu'il compare un nom de contrainte d'exclusion.
+    //
+    // ⚠️ Et la fenêtre d'un engagement est aussi sa fenêtre de MESURE :
+    // `PricingMaterialsLoader` compte le cumul entre `validFrom` et `validTo`.
+    // La borner change donc l'assiette du palier — c'est voulu, un engagement
+    // clos ne mesure plus après sa clôture.
+    const closedAt = closingWindowAt(this.state, null, at);
     return new VolumeCommitmentAggregate({
       ...this.state,
+      ...(closedAt === null ? {} : { validTo: closedAt }),
       archivedAt: at,
       archivedBy: by,
       archiveReason: reason,
