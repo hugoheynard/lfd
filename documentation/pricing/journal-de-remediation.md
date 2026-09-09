@@ -1655,3 +1655,70 @@ journal garde.
 
 ⚠️ **Un écran qui affiche `NULL` comme « aucune règle écartée » détruirait tout
 ce lot.** C'est la seule façon de perdre la distinction qu'il construit.
+
+---
+
+## R25 · 2026-09-09 — lot 3 : l'écran qui explique, et qui dit ce qu'il montre
+
+### 1. Le piège que le plan avait nommé sans le résoudre
+
+`price-path` dessine déjà le chemin d'un prix — les étages, les évincées barrées,
+la limite en pointillé. Mais il prend un `PricingItemView`, c'est-à-dire une
+résolution **du jour**, dont une trace figée n'a ni la marge de négociation, ni
+l'élasticité, ni le plancher effectif.
+
+La route courte était de fabriquer un `PricingItemView` synthétique. Elle aurait
+marché, et elle aurait été le pire choix du lot : le même écran aurait servi
+« ce que le moteur ferait aujourd'hui » et « ce qui a été facturé » sans qu'on
+puisse les distinguer — sur l'écran qu'on ouvre en litige.
+
+**Ce qui est fait à la place** : une `PriceChain`, qui porte ce que le dessin
+demande et **rien de plus**, plus son `origin`. Deux adaptateurs — `chainOf` pour
+le vivant, `frozenChainOf` pour le figé —, un seul dessin. L'origine n'est pas
+décorative : elle décide de ce qui se dit sous le prix final, parce que **sur une
+commande close il n'y a plus rien à négocier**, et que « pas de référence » y
+ferait croire qu'aucune limite n'était posée.
+
+### 2. Ce que l'écran refuse d'affirmer
+
+Trois états, trois phrases, et c'est tout l'enjeu du lot :
+
+| Ce que porte la ligne | Ce que l'écran dit                                                      |
+| --------------------- | ----------------------------------------------------------------------- |
+| aucune trace          | « Pas de trace sur cette ligne » — le montant reste, l'explication non  |
+| `rejected: null`      | « On ne sait pas ce que le moteur avait regardé » — commande antérieure |
+| `rejected: []`        | « Aucune règle écartée » — une **affirmation**                          |
+| des entrées           | chaque règle, barrée, avec sa raison                                    |
+
+Les deux du milieu se dessineraient naturellement pareil — un écran vide —, et
+c'est exactement ainsi qu'on aurait détruit la distinction que toute la colonne
+construit, sans que personne ne s'en aperçoive. Un cas les sépare.
+
+⚠️ **Les libellés parlent du jour de la commande** : « hors de sa période **à
+cette date** ». Une règle expirée depuis a pu être en vigueur ce jour-là.
+
+### 3. Le geste, offert au comptoir seulement
+
+`lfd-order-detail` est monté par les **deux** fronts. Le bouton « pourquoi ce
+prix ? » n'apparaît donc que si l'appelant le demande (`selectableLines`), et
+seul le back-office le demande : l'explication s'appuie sur la trace entière, que
+les routes clientes ne servent plus (R27). Un bouton qui n'ouvrirait rien serait
+pire qu'une absence de bouton.
+
+C'est un **bouton**, pas une ligne cliquable : une cible de clic doit s'atteindre
+au clavier et s'annoncer.
+
+### 4. 🔴 Ce que ce lot a appris sur nos propres vérifications
+
+`npx tsc --noEmit -p tsconfig.json` sur le front admin **ne compile aucune
+source** — le fichier est une racine de solution. La commande rend zéro, et ne
+prouve rien. Vérifié en y glissant une erreur volontaire : elle est passée.
+
+Les contrôles qui mordent côté front sont `tsconfig.app.json`, le **build AOT** et
+`ng test`. Deux « verts » de cette session venaient de la commande creuse ; ce
+qu'ils prétendaient couvrir l'était par le build, mais c'est un hasard, pas une
+méthode.
+
+⚠️ Corollaire déjà rencontré ici : un attribut statique inconnu sur un composant
+(`tone=` sur `fold-callout`, qui prend `variant`) est du HTML valide. Ni `tsc` ni
+l'AOT ne le voient. Un site de l'app est dans ce cas, noté à part.
