@@ -69,10 +69,27 @@ Un attribut statique inconnu est du HTML valide : Angular l'ignore en silence.
 « Masquer » s'affichait donc en **solide primaire** sur chaque ligne, à côté
 d'un éditeur de prix invisible.
 
-> ⚠️ **Le même piège existe ailleurs** : neuf autres `variant=` sur `foldButton`
-> et six `description=` sur `fold-empty-state` (l'entrée s'appelle `subtitle`)
-> dans les deux fronts, au 2026-09-10. Aucun ne casse la compilation, aucun ne
-> fait ce qu'il annonce.
+> ⚠️ **Le même piège existait partout**, et il a été balayé le 2026-09-10 :
+> **quinze** `variant=` sur `foldButton` et **six** `description=` sur
+> `fold-empty-state` (l'entrée s'appelle `subtitle`), dans les deux fronts.
+>
+> Le premier compte annoncé était de quinze pour les deux familles réunies. Il
+> en manquait six : un `grep` ligne à ligne ne voit pas un attribut posé sur sa
+> propre ligne. C'est la deuxième fois dans la même journée qu'un contrôle rend
+> un chiffre rassurant sans avoir regardé — c'est le genre de vérification qu'il faut mécaniser.
+>
+> 🔴 **Six autres familles restent**, vérifiées contre les entrées déclarées par
+> les types publiés de fold-ng : `fold-callout title=` (8, l'entrée n'existe pas
+> — ça rend une infobulle native au lieu d'un titre) et `tone=` (1, c'est
+> `variant`), `fold-input inputmode=` (7, le clavier mobile est donc perdu),
+> `fold-inline-confirm confirmLabel=` / `label=` / `tone=` (6, c'est `labels` et
+> `intent`), `fold-badge size=` (2), `fold-element-title eyebrow=` (1, c'est
+> `variant="eyebrow"`). Elles ne se corrigent pas mécaniquement : un titre de
+> callout devient du contenu projeté, ce qui est une décision par site.
+>
+> **Une porte CI est le seul remède durable** : lire les entrées déclarées dans
+> les types publiés de fold et refuser tout attribut statique inconnu sur un sélecteur
+> `fold-*` ou sur `foldButton`. Elle reste à écrire.
 
 ---
 
