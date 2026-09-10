@@ -6,12 +6,14 @@ import {
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
+
+import { SendPanel, type SendIntent, type SendPanelData } from './send-panel/send-panel';
 
 import {
   B2bChannelApi,
@@ -74,7 +76,6 @@ const CHANGES: Readonly<Record<string, string>> = {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
   ],
@@ -83,6 +84,7 @@ const CHANGES: Readonly<Record<string, string>> = {
 })
 export class PublicationB2b {
   private readonly api = inject(B2bChannelApi);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly preview = signal<B2bPushPreviewView | null>(null);
   protected readonly sent = signal<B2bPushSummaryView | null>(null);
@@ -134,6 +136,7 @@ export class PublicationB2b {
     ];
   });
 
+  /** Combien d'articles portent ce changement. Lu deux fois : la synthèse, et le panneau. */
   private countOf(change: string): number {
     return (this.preview()?.outgoing ?? []).filter((item) => item.change === change).length;
   }
@@ -185,43 +188,49 @@ export class PublicationB2b {
    * fait le rechargement en fin de méthode — y compris après un refus.
    */
   /**
-   * **L'intention de cet envoi**, qui devient le nom de l'ancre.
+   * **Envoyer, en deux temps** : on dit ce qu'on publie, puis ça part.
    *
-   * 🔴 Elle se demande ICI et nulle part ailleurs : c'est le seul moment où
-   * quelqu'un décide de publier, et le seul où les changements sont sous les
-   * yeux — « Ce que cet envoi changerait » est juste en dessous. Le push posait
-   * une ancre anonyme à chaque fois, et cinq révisions sur neuf n'avaient
-   * aucune intention lisible.
+   * 🔴 L'intention se demande ICI et nulle part ailleurs : c'est le seul moment
+   * où quelqu'un décide de publier, et le seul où les changements sont sous les
+   * yeux. Le push posait une ancre anonyme à chaque envoi, et cinq révisions
+   * sur neuf n'avaient aucune intention lisible.
    *
-   * ⚠️ Le SERVEUR ne l'exige pas encore : le front en ligne appelle la route
-   * sans elle, et une API resserrée avant ce déploiement empêcherait toute
-   * publication le temps du décalage. C'est donc l'écran qui tient la règle
-   * pour l'instant — le serveur la reprendra au troisième temps.
+   * Un panneau MODAL plutôt qu'un champ de plus sur l'écran : envoyer le
+   * catalogue chez des clients est le geste le plus conséquent du référentiel,
+   * et il mérite un moment où l'on ne fait que ça. Fermer le panneau sans
+   * confirmer n'envoie rien — le renoncement est gratuit, ce qui est la moitié
+   * de l'intérêt d'un temps d'arrêt.
+   *
+   * ⚠️ Le SERVEUR n'exige pas encore le nom : le front en ligne appelle la
+   * route sans lui, et une API resserrée avant ce déploiement empêcherait toute
+   * publication le temps du décalage. C'est donc l'écran qui tient la règle.
    */
-  protected readonly intent = signal('');
-
-  /** Rien ne part sans intention : elle est ce qui rend l'ancre relisible. */
-  protected readonly canSend = computed(
-    () => !this.busy() && !this.settled() && this.intent().trim() !== '',
-  );
-
   protected async send(): Promise<void> {
-    const fingerprint = this.preview()?.fingerprint;
-    const label = this.intent().trim();
-    if (fingerprint === undefined || label === '') {
+    const view = this.preview();
+    const fingerprint = view?.fingerprint;
+    if (view === undefined || view === null || fingerprint === undefined) {
+      return;
+    }
+    const intent = await this.panels.open<SendPanelData, SendIntent | null>(SendPanel, {
+      data: {
+        entering: this.countOf('added'),
+        changing: this.countOf('changed'),
+        removing: view.removed.length,
+      },
+      width: 'md',
+    }).closed;
+    if (intent === undefined || intent === null) {
       return;
     }
     this.busy.set(true);
     this.error.set(null);
     try {
-      this.sent.set(await this.api.push(false, fingerprint, label));
+      this.sent.set(await this.api.push(false, fingerprint, intent.label, intent.note));
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Envoi impossible.'));
     } finally {
       this.busy.set(false);
-      // L'intention appartient à l'envoi qui vient d'avoir lieu : la garder
-      // ferait repartir le suivant sous un nom écrit pour un autre catalogue.
-      this.intent.set('');
+
       // Après un envoi comme après un refus, ce qui est à l'écran est périmé :
       // le canal a changé, ou le catalogue avait déjà changé. Le relire est la
       // seule façon d'en sortir.

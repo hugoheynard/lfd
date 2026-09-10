@@ -1,0 +1,46 @@
+<fold-panel-header title="Envoyer le catalogue" subtitle="Vers la boutique B2B" />
+
+<div class="body">
+  <!-- Ce que l'envoi va faire, redit ici : on ne confirme pas à l'aveugle un
+       geste dont le détail est resté derrière le panneau. -->
+  <fold-callout appearance="inset" variant="info">
+    <strong>{{ summary() }}</strong> partiront vers la boutique. Les clients les verront
+    immédiatement.
+  </fold-callout>
+
+  <!--
+    🔴 Le NOM, obligatoire. Le push posait une ancre anonyme à chaque envoi, et
+    cinq révisions sur neuf n'avaient aucune intention lisible. Il se lit dans
+    une liste, à côté de quinze autres : il tient en une phrase.
+  -->
+  <fold-input
+    label="Nom de la révision"
+    placeholder="hausse de la rentrée"
+    hint="Une phrase courte. C'est ce qu'on lit dans la liste des révisions."
+    required
+    [value]="label()"
+    (valueChange)="label.set($event)"
+  />
+
+  <!--
+    La NOTE, facultative même quand le nom ne l'est pas : un envoi de routine se
+    nomme en cinq mots et n'a rien de plus à dire. La rendre obligatoire ferait
+    écrire « RAS » quatre-vingt-dix fois, et une note remplie par obligation ne
+    se relit pas.
+  -->
+  <fold-textarea
+    label="Note"
+    optional
+    placeholder="Les 12 viennoiseries passent à +3 %. Décidé avec Cécile le 8, appliqué avant la rentrée scolaire."
+    hint="Ce qu'on relira dans six mois, devant un client qui conteste un prix."
+    [rows]="4"
+    [value]="note()"
+    (valueChange)="note.set($event)"
+  />
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSend()" (click)="confirm()">Envoyer</button>
+</footer>

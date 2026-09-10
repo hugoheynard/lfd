@@ -58,12 +58,20 @@ export class B2bChannelApi {
    * @param label **l'intention de cet envoi**, qui devient le nom de l'ancre.
    *   Le push en posait une anonyme à chaque fois : c'est la cause directe des
    *   révisions sans intention. Une ancre déjà nommée garde le sien.
+   * @param note le POURQUOI, en clair. Facultatif même quand le nom ne l'est
+   *   pas : un envoi de routine se nomme en cinq mots et n'a rien de plus à
+   *   dire.
    * @param fingerprint l'empreinte rendue par l'aperçu qu'on vient de lire.
    *   Le serveur refuse en `409` si le catalogue a bougé depuis — c'est ce qui
    *   empêche d'envoyer autre chose que ce qui a été relu. Omise en simulation :
    *   c'est elle qui la produit.
    */
-  push(dryRun: boolean, fingerprint?: string, label?: string): Promise<B2bPushSummaryView> {
+  push(
+    dryRun: boolean,
+    fingerprint?: string,
+    label?: string,
+    note?: string | null,
+  ): Promise<B2bPushSummaryView> {
     return firstValueFrom(
       // `base` porte déjà le préfixe `/pim` (cf. data/api.ts).
       this.http.post<B2bPushSummaryView>(`${this.base}/channels/b2b/push`, {
@@ -72,6 +80,7 @@ export class B2bChannelApi {
         // L'INTENTION de cet envoi : elle devient le nom de l'ancre. Omise en
         // simulation, qui ne pose rien.
         ...(label === undefined ? {} : { label }),
+        ...(note === undefined || note === null ? {} : { note }),
       }),
     );
   }

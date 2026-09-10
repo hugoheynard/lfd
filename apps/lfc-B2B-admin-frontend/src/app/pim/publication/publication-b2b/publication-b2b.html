@@ -31,33 +31,12 @@
       </fold-callout>
     }
 
-    <!--
-      **L'intention de cet envoi**, juste au-dessus du bouton qui l'expédie.
-
-      🔴 Le push posait une ancre ANONYME à chaque fois — cinq révisions sur
-      neuf sans intention lisible. C'est le seul moment où quelqu'un décide de
-      publier, et le seul où les changements sont sous les yeux : « Ce que cet
-      envoi changerait » est juste en dessous.
-
-      Elle ne sert pas qu'à l'archive : c'est ce qu'on lira dans six mois devant
-      un client qui conteste un prix.
-    -->
-    @if (!settled()) {
-      <fold-input
-        class="intent"
-        label="Ce que cet envoi change, en une phrase"
-        placeholder="hausse de la rentrée · correction des allergènes noisette"
-        hint="Elle devient le nom de la révision. Une ancre déjà nommée garde le sien."
-        [value]="intent()"
-        (valueChange)="intent.set($event)"
-      />
-    }
-
     <div class="actions">
       <button foldButton emphasis="soft" [disabled]="busy()" (click)="load()">Recalculer</button>
-      <!-- Désactivé sans intention : le serveur ne l'exige pas encore (le front
-           en ligne appelle sans elle), donc c'est l'écran qui tient la règle. -->
-      <button foldButton [disabled]="!canSend()" (click)="send()">Envoyer</button>
+      <!-- Ouvre le panneau où l'on dit CE QU'ON PUBLIE avant que ça parte.
+           Envoyer le catalogue chez des clients mérite un moment où l'on ne
+           fait que ça — et fermer le panneau n'envoie rien. -->
+      <button foldButton [disabled]="busy() || settled()" (click)="send()">Envoyer…</button>
     </div>
 
     @if (sent(); as s) {

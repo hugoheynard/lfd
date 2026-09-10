@@ -27,6 +27,7 @@ const OVERVIEW: CatalogOverviewView = {
     id: 'rev_1',
     reference: 'R-AAAAAA',
     label: null,
+    note: null,
     hash: 'empreinte-A',
     takenAt: '2026-01-01T09:00:00.000Z',
     takenBy: 'staff_1',

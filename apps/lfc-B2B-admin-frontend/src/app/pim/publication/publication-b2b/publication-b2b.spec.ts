@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { B2bPushPreviewView } from '@lfd/contracts';
 import type { B2bPushSummaryView } from '@lfd/pim-contracts';
+import { FoldPanelHostService } from 'fold-ng';
+
 import { B2bChannelApi } from '../../channels/b2b-channel-api';
 import { PublicationB2b } from './publication-b2b';
+import type { SendIntent } from './send-panel/send-panel';
 
 /**
  * Ce que ces cas tiennent, et c'est deux choses.
@@ -66,7 +69,7 @@ function summary(over: Partial<B2bPushSummaryView> = {}): B2bPushSummaryView {
 /** Note ce que l'écran a demandé — c'est tout le sujet. */
 class FakeApi {
   readonly calls: string[] = [];
-  readonly pushes: { dryRun: boolean; fingerprint?: string; label?: string }[] = [];
+  readonly pushes: { dryRun: boolean; fingerprint?: string; label?: string; note?: string }[] = [];
   next: B2bPushPreviewView = preview();
   rejectPush: Error | null = null;
 
@@ -75,21 +78,48 @@ class FakeApi {
     return Promise.resolve(this.next);
   }
 
-  push(dryRun: boolean, fingerprint?: string, label?: string): Promise<B2bPushSummaryView> {
+  push(
+    dryRun: boolean,
+    fingerprint?: string,
+    label?: string,
+    note?: string | null,
+  ): Promise<B2bPushSummaryView> {
     this.calls.push('push');
     this.pushes.push({
       dryRun,
       ...(fingerprint === undefined ? {} : { fingerprint }),
       ...(label === undefined ? {} : { label }),
+      ...(note === undefined || note === null ? {} : { note }),
     });
     return this.rejectPush === null ? Promise.resolve(summary()) : Promise.reject(this.rejectPush);
   }
 }
 
-async function make(api: FakeApi) {
+/**
+ * Le panneau d'envoi, doublé : il rend l'intention qu'on lui dicte, ou `null`
+ * quand on ferme sans confirmer.
+ *
+ * On double le SERVICE et pas le panneau : ce qu'on éprouve ici est le câblage
+ * — l'écran ouvre-t-il le panneau, et fait-il partir ce qu'il en reçoit. Ce que
+ * le panneau exige de son côté est éprouvé dans `send-panel.spec.ts`.
+ */
+class FakePanels {
+  opened = 0;
+  answer: SendIntent | null = { label: 'hausse de la rentrée', note: null };
+
+  open(): { closed: Promise<SendIntent | null> } {
+    this.opened += 1;
+    return { closed: Promise.resolve(this.answer) };
+  }
+}
+
+async function make(api: FakeApi, panels: FakePanels = new FakePanels()) {
   TestBed.configureTestingModule({
     imports: [PublicationB2b],
-    providers: [{ provide: B2bChannelApi, useValue: api }],
+    providers: [
+      { provide: B2bChannelApi, useValue: api },
+      { provide: FoldPanelHostService, useValue: panels },
+    ],
   });
   const fixture = TestBed.createComponent(PublicationB2b);
   fixture.detectChanges();
@@ -115,24 +145,7 @@ async function make(api: FakeApi) {
     fixture.detectChanges();
   };
 
-  /**
-   * Écrit l'intention de l'envoi.
-   *
-   * Presque tous les cas passent par là depuis que rien ne part sans elle :
-   * c'est le geste réel, et le sauter testerait un écran qu'on n'a pas.
-   */
-  const intend = async (what: string): Promise<void> => {
-    const input = fixture.nativeElement.querySelector('.intent input');
-    if (!(input instanceof HTMLInputElement)) {
-      throw new Error("Le champ d'intention est absent de l'écran.");
-    }
-    input.value = what;
-    input.dispatchEvent(new Event('input'));
-    await fixture.whenStable();
-    fixture.detectChanges();
-  };
-
-  return { fixture, click, buttonNamed, intend };
+  return { fixture, click, buttonNamed, panels };
 }
 
 describe('la publication B2B lit son aperçu toute seule', () => {
@@ -145,20 +158,18 @@ describe('la publication B2B lit son aperçu toute seule', () => {
 
   it('ne demande JAMAIS de simulation — regarder ne doit rien écrire', async () => {
     const api = new FakeApi();
-    const { click, intend } = await make(api);
+    const { click } = await make(api);
 
-    await intend('hausse de la rentrée');
-    await click('Envoyer');
+    await click('Envoyer…');
 
     expect(api.pushes.every((call) => !call.dryRun)).toBe(true);
   });
 
   it('redonne à l’envoi l’empreinte de l’aperçu affiché', async () => {
     const api = new FakeApi();
-    const { click, intend } = await make(api);
+    const { click } = await make(api);
 
-    await intend('hausse de la rentrée');
-    await click('Envoyer');
+    await click('Envoyer…');
 
     expect(api.pushes).toEqual([
       { dryRun: false, fingerprint: 'empreinte-A', label: 'hausse de la rentrée' },
@@ -174,17 +185,14 @@ describe('la publication B2B lit son aperçu toute seule', () => {
   it('relit après un refus, et repart avec la NOUVELLE empreinte', async () => {
     const api = new FakeApi();
     api.rejectPush = new Error('Le catalogue a changé depuis votre relecture');
-    const { click, intend } = await make(api);
+    const panels = new FakePanels();
+    const { click } = await make(api, panels);
 
-    await intend('hausse de la rentrée');
-    await click('Envoyer');
+    await click('Envoyer…');
     api.rejectPush = null;
     api.next = preview({ fingerprint: 'empreinte-B' });
-    // 🔴 L'intention est repartie avec l'envoi précédent : il faut la réécrire.
-    // La garder ferait repartir le suivant sous un nom écrit pour un autre
-    // catalogue — et ce catalogue-ci a justement changé, c'est le motif du refus.
-    await intend('nouvelle tentative');
-    await click('Envoyer');
+    panels.answer = { label: 'nouvelle tentative', note: null };
+    await click('Envoyer…');
 
     expect(api.calls).toEqual(['preview', 'push', 'preview', 'push', 'preview']);
     expect(api.pushes.at(-1)).toEqual({
@@ -268,7 +276,7 @@ describe('la publication B2B lit son aperçu toute seule', () => {
     });
     const { buttonNamed } = await make(api);
 
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
+    expect(buttonNamed('Envoyer…').disabled).toBe(true);
   });
 
   /** Ce que la simulation ne pouvait pas voir : ce que l'envoi RETIRE. */
@@ -283,45 +291,54 @@ describe('la publication B2B lit son aperçu toute seule', () => {
   });
 
   /**
-   * 🔴 **Rien ne part sans intention.**
+   * 🔴 **Rien ne part sans qu'on ait dit quoi.**
    *
    * Le push posait une ancre ANONYME à chaque envoi, sans jamais interroger
    * personne : cinq révisions sur neuf n'avaient aucune intention lisible. Le
-   * serveur ne l'exige pas encore — le front en ligne appelle la route sans
-   * elle, et une API resserrée avant ce déploiement empêcherait toute
-   * publication le temps du décalage. C'est donc l'écran qui tient la règle, et
-   * c'est ce cas qui la tient.
+   * bouton ouvre donc un panneau, et l'envoi n'a lieu que si on y confirme.
    */
-  it("n'envoie rien tant que l'intention n'est pas écrite", async () => {
+  it("ouvre le panneau au lieu d'envoyer directement", async () => {
     const api = new FakeApi();
-    const { buttonNamed, click } = await make(api);
+    const panels = new FakePanels();
+    const { click } = await make(api, panels);
 
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
-    await click('Envoyer');
+    await click('Envoyer…');
 
-    expect(api.pushes).toEqual([]);
-  });
-
-  it("refuse une intention faite d'espaces", async () => {
-    const api = new FakeApi();
-    const { buttonNamed, intend } = await make(api);
-
-    await intend('   ');
-
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
+    expect(panels.opened).toBe(1);
   });
 
   /**
-   * L'intention appartient à l'envoi qui vient d'avoir lieu. La garder ferait
-   * repartir le suivant sous un nom écrit pour un autre catalogue.
+   * Fermer sans confirmer n'envoie rien. Le renoncement gratuit est la moitié
+   * de l'intérêt d'un temps d'arrêt : sans lui, le panneau ne serait qu'une
+   * formalité qu'on apprend à traverser sans lire.
    */
-  it("oublie l'intention une fois l'envoi parti", async () => {
+  it("n'envoie rien quand on referme le panneau sans confirmer", async () => {
     const api = new FakeApi();
-    const { buttonNamed, click, intend } = await make(api);
+    const panels = new FakePanels();
+    panels.answer = null;
+    const { click } = await make(api, panels);
 
-    await intend('hausse de la rentrée');
-    await click('Envoyer');
+    await click('Envoyer…');
 
-    expect(buttonNamed('Envoyer').disabled).toBe(true);
+    expect(api.pushes).toEqual([]);
+    expect(api.calls).toEqual(['preview']);
+  });
+
+  it("porte jusqu'à l'API le nom ET la note du panneau", async () => {
+    const api = new FakeApi();
+    const panels = new FakePanels();
+    panels.answer = { label: 'hausse de la rentrée', note: 'décidé avec Cécile le 8' };
+    const { click } = await make(api, panels);
+
+    await click('Envoyer…');
+
+    expect(api.pushes).toEqual([
+      {
+        dryRun: false,
+        fingerprint: 'empreinte-A',
+        label: 'hausse de la rentrée',
+        note: 'décidé avec Cécile le 8',
+      },
+    ]);
   });
 });

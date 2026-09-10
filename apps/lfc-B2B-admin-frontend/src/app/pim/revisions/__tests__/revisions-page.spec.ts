@@ -26,6 +26,7 @@ function revision(over: Partial<CatalogRevisionSummaryView> = {}): CatalogRevisi
     id: 'rev_2',
     reference: 'R-TEST2',
     label: 'rentrée',
+    note: null,
     hash: 'h2',
     takenAt: '2026-08-31T09:00:00.000Z',
     takenBy: 'staff_hugo',

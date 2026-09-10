@@ -24,6 +24,7 @@ function overview(over: Partial<CatalogOverviewView> = {}): CatalogOverviewView 
       id: 'rev_1',
       reference: 'R-TEST4',
       label: 'rentrée',
+      note: null,
       hash: 'h',
       takenAt: '2026-08-31T09:00:00.000Z',
       takenBy: 'staff_hugo',

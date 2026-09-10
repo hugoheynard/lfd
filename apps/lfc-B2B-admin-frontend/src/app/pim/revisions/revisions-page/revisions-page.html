@@ -165,6 +165,13 @@
               <span class="rp-meta">{{ revision.articles }} articles</span>
               <span class="rp-meta">{{ when(revision.takenAt) }}</span>
               <span class="rp-meta">{{ revision.takenBy }}</span>
+              @if (revision.note; as note) {
+                <!-- La note se lit quand on ouvre, pas dans la liste — mais
+                     l'écran des révisions EST l'endroit où l'on ouvre. Elle
+                     prend donc sa ligne, en retrait, sous le nom qu'elle
+                     détaille. -->
+                <p class="rp-note">{{ note }}</p>
+              }
             </li>
           }
         </ul>

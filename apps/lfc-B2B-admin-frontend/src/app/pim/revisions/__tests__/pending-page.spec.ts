@@ -26,6 +26,7 @@ const REFERENCE: CatalogRevisionSummaryView = {
   id: 'rev_1',
   reference: 'R-PUBLIE',
   label: 'rentrée',
+  note: null,
   hash: 'h1',
   takenAt: '2026-08-31T09:00:00.000Z',
   takenBy: 'staff_hugo',

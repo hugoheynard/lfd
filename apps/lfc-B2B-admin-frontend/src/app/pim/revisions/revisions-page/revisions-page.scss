@@ -71,3 +71,13 @@
   color: var(--fold-color-text-muted);
   font-style: italic;
 }
+
+/* La note détaille le nom : elle prend toute la largeur de la ligne, sous lui,
+   et en encre secondaire — c’est un complément, pas une seconde identité. */
+.rp-note {
+  grid-column: 1 / -1;
+  margin: var(--fold-space-xs) 0 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  max-inline-size: 70ch;
+}

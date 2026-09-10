@@ -1,0 +1,19 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-block-start: var(--fold-space-xl);
+}
+
+/* Les deux actions à droite, l'envoi en dernier : c'est le sens de lecture, et
+   le bouton le plus conséquent ne doit pas se trouver sous le pouce par
+   hasard. */
+.spacer {
+  flex: 1;
+}
