@@ -215,7 +215,7 @@ Webhooks à traiter, en plus des deux actuels :
 | `mandate.updated` (révocation)  | mandat `revoked` → la société repasse à un autre instrument |
 
 Le canal d'alerte existe déjà (cf.
-[`architecture-alertes-compte-client.md`](architecture-alertes-compte-client.md)) :
+[`architecture-alertes-compte-client.md`](../b2b/architecture-alertes-compte-client.md)) :
 un rejet de prélèvement est un fait commercial, il a sa place dans le même
 journal que les autres.
 

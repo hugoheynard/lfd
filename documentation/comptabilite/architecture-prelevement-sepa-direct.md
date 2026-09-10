@@ -11,7 +11,7 @@
 > Décidé le **2026-09-01**. Prérequis lus :
 > [`architecture-prelevement-sepa.md`](architecture-prelevement-sepa.md) (le
 > socle Stripe, qui reste en place et gelé) et
-> [`architecture-facturation.md`](architecture-facturation.md) (dont ce document
+> [`architecture-facturation.md`](../b2b/architecture-facturation.md) (dont ce document
 > périme la tranche 7 et la §6).
 >
 > ## ▶️ CHANTIER REPRIS — décidé le 2026-09-10
@@ -80,7 +80,7 @@ passantes au moment du gel.
 **`LegalEntity` n'est pas du SEPA.** C'est la **tranche 0 de la facturation**,
 qui la déclare bloquante depuis toujours : « Identité du vendeur (LFC) — _nulle
 part_ — raison sociale, SIRET, TVA intracom, adresse, RCS, capital, IBAN »
-([`architecture-facturation.md`](architecture-facturation.md)). Aucune facture
+([`architecture-facturation.md`](../b2b/architecture-facturation.md)). Aucune facture
 régulière ne sort sans elle, que l'encaissement passe par Stripe ou pas. Ce
 morceau-là est à finir un jour de toute façon — persistance, écran, et il est
 livré.
@@ -651,10 +651,10 @@ encaissement réussi.
 
 ## 12. Ce que ce document périme
 
-- [`architecture-facturation.md`](architecture-facturation.md) **tranche 7** :
+- [`architecture-facturation.md`](../b2b/architecture-facturation.md) **tranche 7** :
   `MandateGateway.charge(...)` — la méthode n'existe pas (le port ne fait que
   `registerMandate` / `revokeMandate`) et n'existera pas.
-- [`architecture-facturation.md`](architecture-facturation.md) **§6** : « Stripe
+- [`architecture-facturation.md`](../b2b/architecture-facturation.md) **§6** : « Stripe
   fait du SEPA Core » — remplacé par la §1 ci-dessus.
 - [`architecture-prelevement-sepa.md`](architecture-prelevement-sepa.md)
   **décision B** (aucune coordonnée bancaire chez nous) : retournée, cf. §4.

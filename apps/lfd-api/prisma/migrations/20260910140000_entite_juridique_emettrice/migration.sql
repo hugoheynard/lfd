@@ -37,7 +37,7 @@
 --    a prélevé. Postgres traite les NULL comme distincts, donc l'unicité sur
 --    `ics` ne gêne pas les entités encore sans ICS — c'est exactement ce qu'on
 --    veut ici, et c'est le piège qu'il faudra éviter ailleurs (cf. §0 ter,
---    objection 2 de `documentation/b2b/architecture-prelevement-sepa-direct.md`).
+--    objection 2 de `documentation/comptabilite/architecture-prelevement-sepa-direct.md`).
 --
 -- ⚠️ L'invariant central n'est PAS ici : `ics` ne se remplace pas une fois posé,
 -- parce qu'il est imprimé sur chaque mandat signé. Un CHECK ne sait pas comparer
