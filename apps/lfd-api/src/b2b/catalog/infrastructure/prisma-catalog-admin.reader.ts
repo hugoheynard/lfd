@@ -46,7 +46,16 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       // l'envoie plus.
       where: { ...STILL_SOLD },
       include: { category: true, override: true },
-      orderBy: [{ category: { position: "asc" } }, { position: "asc" }],
+      // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
+      // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
+      // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
+      // donc à égalité sur tout un rayon, et Postgres rend alors l'ordre qu'il
+      // veut : celui du tas, qui change dès qu'une ligne est réécrite. Poser un
+      // prix faisait SAUTER l'article qu'on venait d'éditer.
+      //
+      // Le départage tient que `position` finisse garni ou non : un tri à
+      // égalités n'est pas un tri.
+      orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
     return rows.map(toView);
   }

@@ -451,3 +451,65 @@ function croissantIn(board: {
     .flatMap((category) => category.items)
     .find((item) => item.sku === "VIE-001")?.canonicalMillicents;
 }
+
+describe("GET /admin/catalog — l'ordre du rayon", () => {
+  /**
+   * Régression : le tri était `famille.position` puis `article.position`, et le
+   * référentiel envoie `position: 0` sur **tous** les articles. Les deux
+   * critères étaient donc à égalité sur tout un rayon, et Postgres rendait
+   * l'ordre du tas — celui qui change dès qu'une ligne est réécrite. Poser un
+   * prix faisait sauter de place l'article qu'on venait d'éditer, sur l'écran de
+   * catalogue comme dans la vitrine (fix 2026-09-10).
+   *
+   * Le SKU départage. Le semis les déclare à l'ENVERS de l'ordre attendu : sans
+   * le départage, la seule façon d'obtenir cet ordre serait la chance.
+   */
+  it("départage par SKU les articles de même position", async () => {
+    await ctx.app.get(B2bCatalogDriver).send(
+      {
+        version: CATALOG_SNAPSHOT_VERSION,
+        generatedAt: "2026-08-17T08:00:00.000Z",
+        categories: [
+          {
+            id: "cat_vien",
+            name: "Viennoiseries",
+            slug: "viennoiseries",
+            parentId: null,
+            position: 0,
+            vatRatePercent: 5.5,
+          },
+        ],
+        products: ["VIE-003", "VIE-001", "VIE-002"].map((sku, index) => ({
+          id: `prd_${sku}`,
+          sku,
+          name: sku,
+          categoryId: "cat_vien",
+          kind: "daily",
+          variants: [
+            {
+              ...NO_SHEET,
+              id: `var_${sku}`,
+              sku: `${sku}-1`,
+              name: sku,
+              priceMillicents: millicentsFromCents(200 + index),
+              weightGrams: null,
+              isDefault: true,
+              // Le point du test : tous à la MÊME position, comme en vrai.
+              position: 0,
+              vatRatePercent: 5.5,
+            },
+          ],
+          note: null,
+          image: null,
+        })),
+        orderTimeLimits: [],
+      },
+      { revisionId: "rev_ordre", fingerprint: "empreinte-ordre" },
+    );
+
+    const response = await asStaff().get("/admin/catalog");
+    const items = jsonBody<{ sku: string }[]>(response);
+
+    expect(items.map((item) => item.sku)).toEqual(["VIE-001-1", "VIE-002-1", "VIE-003-1"]);
+  });
+});
